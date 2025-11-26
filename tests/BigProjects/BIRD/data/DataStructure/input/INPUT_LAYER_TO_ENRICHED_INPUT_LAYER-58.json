@@ -1,19 +1,13 @@
 {
   "datasets": [
     {
-      "name": "CNTRY",
+      "name": "CMMTMNT_PRTCTN",
       "DataStructure": [
         {
-          "name": "CNTRY",
+          "name": "CMMTMNT_UNQ_ID",
           "role": "Identifier",
           "type": "String",
           "nullable": false
-        },
-        {
-          "name": "CRRNCY",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
         },
         {
           "name": "DT_RFRNC",
@@ -22,16 +16,28 @@
           "nullable": false
         },
         {
-          "name": "EXTRNL_CRDT_ASSSSMNT",
-          "role": "Measure",
+          "name": "PRSPCTV_ID",
+          "role": "Identifier",
           "type": "String",
-          "nullable": true
+          "nullable": false
         },
         {
-          "name": "IS_MMBR_STT",
+          "name": "PRTCTN_ALLCTD_VL",
           "role": "Measure",
+          "type": "Number",
+          "nullable": false
+        },
+        {
+          "name": "PRTCTN_ID",
+          "role": "Identifier",
           "type": "String",
-          "nullable": true
+          "nullable": false
+        },
+        {
+          "name": "THRD_PRTY_PRRTY_CLMS",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": false
         }
       ]
     }

@@ -2140,7 +2140,7 @@ class AggregateOperatorsTest(AdditionalHelper):
                         [calc BNFCR_ID := BNFCRS_CNTRPRTY_ID,
                             TRNSFR_ID := TRNSFR_CNTRPRTY_ID];"""
         code = "10-7"
-        number_inputs = 2
+        number_inputs = 1
         references_names = ["DS_r1", "DS_r2"]
 
         self.BaseTest(
@@ -3966,6 +3966,16 @@ class TimeOperatorsTest(AdditionalHelper):
         code = "GH_273"
         number_inputs = 1
         exception_code = "2-1-19-20"
+
+        self.NewSemanticExceptionTest(
+            text=text, code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
+    def test_GH_292(self):
+        text = "DS_r <- period_indicator(DS_1);"
+        code = "GH_292"
+        number_inputs = 1
+        exception_code = "1-1-19-1"
 
         self.NewSemanticExceptionTest(
             text=text, code=code, number_inputs=number_inputs, exception_code=exception_code

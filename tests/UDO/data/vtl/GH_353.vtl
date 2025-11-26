@@ -1,0 +1,7 @@
+define operator filRoundEr (ds dattt, comp component, margin number)
+      returns dataset is
+        ds[filter comp > margin or comp < -margin]
+    end operator;
+
+    DS_r :=
+        filRoundEr(DS_1, Me_1, 1);

@@ -1,0 +1,20 @@
+{
+    "insertion": {
+        "1": [
+            "DS_1",
+            "DS_2"
+        ]
+    },
+    "deletion": {
+        "1": [
+            "DS_1",
+            "DS_2",
+            "DS_r"
+        ]
+    },
+    "global_inputs": [
+        "DS_1",
+        "DS_2"
+    ],
+    "persistent": []
+}

@@ -1,0 +1,584 @@
+{
+    "insertion": {
+        "1": [
+            "ANCRDT_ENTTY"
+        ],
+        "5": [
+            "ANCRDT_INSTRMNT_C"
+        ],
+        "6": [
+            "ANCRDT_ENTTY_INSTRMNT_C"
+        ],
+        "8": [
+            "ANCRDT_PRTCTN_RCVD_C"
+        ],
+        "14": [
+            "ANCRDT_FNNCL_C"
+        ],
+        "15": [
+            "ANCRDT_ENTTY_DFLT_C",
+            "ANCRDT_ENTTY_DFLT_C_T1"
+        ],
+        "16": [
+            "ANCRDT_PRTCTN_RCVD_C_T1"
+        ],
+        "17": [
+            "ANCRDT_INSTRMNT_PRTCTN_RCVD_C"
+        ],
+        "20": [
+            "ANCRDT_INSTRMNT_C_T1"
+        ],
+        "22": [
+            "ANCRDT_FNNCL_C_T1"
+        ],
+        "24": [
+            "ANCRDT_ENTTY_RSK_C"
+        ],
+        "26": [
+            "ANCRDT_ACCNTNG_C_Z"
+        ],
+        "33": [
+            "ANCRDT_JNT_LBLTS_C"
+        ],
+        "47": [
+            "ANCRDT_ACCNTNG_C"
+        ]
+    },
+    "deletion": {
+        "64": [
+            "comp_count.CC0010_DS"
+        ],
+        "65": [
+            "comp_count.FRGN_BRNCH_DS",
+            "comp_count.SPFUND_DS"
+        ],
+        "122": [
+            "comp_count.CC010_FLTR"
+        ],
+        "123": [
+            "comp_count.CC011_MX"
+        ],
+        "66": [
+            "comp_count.CC012_FLTR"
+        ],
+        "68": [
+            "comp_count.DBTR_INSTRMNT"
+        ],
+        "69": [
+            "comp_count.CC015_CD"
+        ],
+        "70": [
+            "comp_count.CC019_FLTR"
+        ],
+        "71": [
+            "comp_count.CC020_FLTR"
+        ],
+        "84": [
+            "RI0210",
+            "dsPrep.LST_RIAD_CDS",
+            "dsPrep.PRTCTN_RCVD_P"
+        ],
+        "72": [
+            "dsPrep.ENTTY_INSTRMNT_P"
+        ],
+        "101": [
+            "dsPrep.DBTRS"
+        ],
+        "74": [
+            "DP_RLST_INSTRMNT_FNNCL_RSLT",
+            "dsPrep.INSTRMNTS_FLL_MNTHLY"
+        ],
+        "75": [
+            "DP_RLST_CNTRPRTY_DFLT_LST_MNTH_RSLT",
+            "dsPrep.CNTRPRTY_DFLT_T_T1"
+        ],
+        "76": [
+            "DP_RLST_PRTCTN_RCVD_LST_MNTH_RSLT",
+            "dsPrep.PRTCTN_RCVD_T_T1"
+        ],
+        "77": [
+            "dsPrep.INSTRMNTS_SYNTHTC_PRTCTNS"
+        ],
+        "78": [
+            "dsPrep.PRTCTN_RCVD_PRVDR_CD"
+        ],
+        "80": [
+            "dsPrep.ANCRDT_INSTRMNT_C_T1_WODT",
+            "dsPrep.ANCRDT_INSTRMNT_C_WODT"
+        ],
+        "81": [
+            "dsPrep.ANCRDT_FNNCL_C_T1_WODT",
+            "dsPrep.ANCRDT_FNNCL_C_WODT"
+        ],
+        "82": [
+            "DP_RLST_INSTRMNT_PRTCTNS_RSLT",
+            "dsPrep.INSTRMTNS_PRTCTNS"
+        ],
+        "83": [
+            "dsPrep.ENTTY_DFLT_RSK"
+        ],
+        "108": [
+            "dsPrep.INSTR_ACCNTNG_Z"
+        ],
+        "85": [
+            "dsPrep.ENTTY_INSTRUMNT_OA"
+        ],
+        "87": [
+            "dsPrep.INSTRMNT_OBSRVD_AGNT"
+        ],
+        "88": [
+            "dsPrep.ENTTY_INSTRUMNT_CRDTR",
+            "dsPrep.ENTTY_INSTRUMNT_DBTR"
+        ],
+        "89": [
+            "CN0620",
+            "dsPrep.INSTRMNTS_TRDTNL_SCRTSTN_CRDTR_FVC"
+        ],
+        "111": [
+            "dsPrep.ENTTY_DFLT_USD",
+            "dsPrep.ENTTY_INSTRMNT_USD",
+            "dsPrep.ENTTY_RSK_USD",
+            "dsPrep.JNT_LBLTS_USD",
+            "dsPrep.PRTCTN_PRVDR_USD"
+        ],
+        "90": [
+            "dsPrep.PRTCTN_PRVDR"
+        ],
+        "91": [
+            "ANCRDT_PRTCTN_RCVD_C",
+            "dsPrep.INSTRMNT_PRTCTN_AGGR"
+        ],
+        "38": [
+            "DP_RLST_INSTRMNT_RSLT"
+        ],
+        "39": [
+            "DP_RLST_FNNCL_RSLT"
+        ],
+        "40": [
+            "DP_RLST_CNTRPRTY_DFLT_RSLT"
+        ],
+        "41": [
+            "DP_RLST_PRTCTN_RCVD_RSLT"
+        ],
+        "42": [
+            "DP_RLST_JNT_LBLTS_RSLT"
+        ],
+        "43": [
+            "DP_RLST_ENTTY_THRSHLDS_RSLT"
+        ],
+        "44": [
+            "GRNLR_CMA_ENTTY"
+        ],
+        "45": [
+            "CN0330"
+        ],
+        "46": [
+            "CN0621"
+        ],
+        "92": [
+            "comp_cred.CD0039_P"
+        ],
+        "148": [
+            "comp_cred.CD0020_DS",
+            "comp_cred.CD0030_DS",
+            "comp_cred.CD0039_DS",
+            "comp_cred.CD0040_DS",
+            "comp_cred.CD0041_DS",
+            "comp_cred.CD0050_DS",
+            "comp_cred.CD0060_DS"
+        ],
+        "93": [
+            "ANCRDT_ACCNTNG_C_Z",
+            "comp_cred.CRDTR_OBSRVD_AGNT"
+        ],
+        "154": [
+            "comp_cred.ATTRBTS_FLL_P",
+            "comp_cred.CD0170_DS"
+        ],
+        "164": [
+            "comp_cred.ENTTY_DFLT_INSTRMNT"
+        ],
+        "169": [
+            "comp_cred.PRTCN_INSTRMNT"
+        ],
+        "53": [
+            "RI0030"
+        ],
+        "54": [
+            "RI0050"
+        ],
+        "55": [
+            "RI0060"
+        ],
+        "56": [
+            "RI0070"
+        ],
+        "57": [
+            "RI0090"
+        ],
+        "58": [
+            "RI0110"
+        ],
+        "59": [
+            "RI0120"
+        ],
+        "60": [
+            "RI0130"
+        ],
+        "61": [
+            "RI0220"
+        ],
+        "62": [
+            "RI0250"
+        ],
+        "63": [
+            "RI0290"
+        ],
+        "171": [
+            "comp_count.CC0010_CC0020",
+            "comp_count.CC010",
+            "comp_count.CC011",
+            "comp_count.CC012",
+            "comp_count.CC013",
+            "comp_count.CC014",
+            "comp_count.CC015",
+            "comp_count.CC016",
+            "comp_count.CC017",
+            "comp_count.CC018",
+            "comp_count.CC019",
+            "comp_count.CC020"
+        ],
+        "94": [
+            "comp_count.FRGN_BRNCHS_SPFUND"
+        ],
+        "124": [
+            "comp_count.CC012_MX"
+        ],
+        "96": [
+            "comp_count.DBTR_INSTRMNT_MX_DT"
+        ],
+        "97": [
+            "comp_count.TRD_RCVBL_NN_RCRS_DBTRS"
+        ],
+        "127": [
+            "comp_count.CC015_MX"
+        ],
+        "129": [
+            "comp_count.CC019_MX"
+        ],
+        "130": [
+            "comp_count.CC020_MX",
+            "comp_count.TYP_ENTTY"
+        ],
+        "99": [
+            "RI0201",
+            "dsPrep.DBTRS_PRTCTRS"
+        ],
+        "153": [
+            "dsPrep.NMBR_DBTRS",
+            "dsPrep.NMBR_DBTRS_DFLT"
+        ],
+        "102": [
+            "CN0230",
+            "dsPrep.CN0230_DTST"
+        ],
+        "103": [
+            "ANCRDT_ENTTY_INSTRMNT_C",
+            "dsPrep.INSTRMNT_PRTCTN_PRVDR_CD"
+        ],
+        "104": [
+            "DP_RLST_INSTRMNT_LST_MNTH_RSLT",
+            "dsPrep.INSTRMNT_T_T1"
+        ],
+        "105": [
+            "DP_RLST_INSTRMNT_FNNCL_LST_MNTH_RSLT",
+            "dsPrep.INSTRMNT_FNNCL_T_T1"
+        ],
+        "106": [
+            "DP_RLST_FNNCL_LST_MNTH_RSLT",
+            "dsPrep.FNNCL_T_T1"
+        ],
+        "132": [
+            "dsPrep.ENTTY_PD",
+            "dsPrep.FNNCL_NT_JN"
+        ],
+        "133": [
+            "dsPrep.CRDTR_SRVCR_DBTR_PVT",
+            "dsPrep.ENTTY_INSTRUMNT_MX"
+        ],
+        "109": [
+            "dsPrep.ENTTY_HD_QRTR_CRDTR_P"
+        ],
+        "112": [
+            "GRNLR_CMA_PRTCTN",
+            "dsPrep.PRTCTN_AGGRGTD_INSTRMNT_PRTCTN"
+        ],
+        "113": [
+            "comp_cred.CD0060_P"
+        ],
+        "114": [
+            "comp_count.FRGN_BRNCHS_SPFUND_FLL"
+        ],
+        "125": [
+            "comp_count.CC013_CNTRPRTS_BFR_DT"
+        ],
+        "126": [
+            "comp_count.CC014_CNTRPRTS_AFTR_DT",
+            "comp_count.MX_TRD_RCVBL_NN_RCRS"
+        ],
+        "98": [
+            "RI0191"
+        ],
+        "116": [
+            "RI0260",
+            "dsPrep.ENTTY_INSTRMNTS_OVR_1_DBTR"
+        ],
+        "117": [
+            "dsPrep.ENTTY_INSTRMNT_1_DBTR"
+        ],
+        "118": [
+            "CN0622",
+            "dsPrep.CN0622_DTST"
+        ],
+        "107": [
+            "GRNLR_CMA_ENTTY_RSK"
+        ],
+        "119": [
+            "dsPrep.CRDTR_PVT"
+        ],
+        "120": [
+            "dsPrep.ENTTY_HD_QRTR_CRDTR"
+        ],
+        "128": [
+            "comp_count.PRTCTN_PRVDR_USD"
+        ],
+        "121": [
+            "dsPrep.ENTTS_USD"
+        ],
+        "131": [
+            "dsPrep.ENTTY_INSTRMNTS_OVR_1_DBTR_FNNCL"
+        ],
+        "134": [
+            "dsPrep.CRDTR_SRVCR_PVT"
+        ],
+        "135": [
+            "dsPrep.ENTTY_HD_QRTR"
+        ],
+        "136": [
+            "CN0869",
+            "dsPrep.ENTTS_USD_BRTH"
+        ],
+        "137": [
+            "comp_count.CC010_JN"
+        ],
+        "138": [
+            "comp_count.CC011_JN"
+        ],
+        "139": [
+            "comp_count.CC012_JN"
+        ],
+        "140": [
+            "comp_count.CC013_DT_JN"
+        ],
+        "141": [
+            "comp_count.CC014_DT_JN"
+        ],
+        "142": [
+            "comp_count.CC015_JN"
+        ],
+        "143": [
+            "comp_count.TYP_ENTTY_IS_PRTCTN_PRVDR_P"
+        ],
+        "144": [
+            "comp_count.CC019_JN"
+        ],
+        "145": [
+            "comp_count.CC020_JN"
+        ],
+        "146": [
+            "dsPrep.DBTRS_DFLT"
+        ],
+        "147": [
+            "GRNLR_CMA_ENTTY_INSTRMNT",
+            "dsPrep.ENTTY_INSTRMNT_CMA"
+        ],
+        "149": [
+            "comp_count.CC0140"
+        ],
+        "152": [
+            "comp_count.TYP_ENTTY_IS_PRTCTN_PRVDR"
+        ],
+        "155": [
+            "comp_count.CC0140B"
+        ],
+        "156": [
+            "comp_count.CC016_FLTR"
+        ],
+        "157": [
+            "comp_count.CC017_FLTR"
+        ],
+        "158": [
+            "comp_count.CC018_FLTR"
+        ],
+        "159": [
+            "dsPrep.OVR_1_DBTR_DFLTS"
+        ],
+        "160": [
+            "comp_cred.ATTRBTS_FLL_CD0170_DS"
+        ],
+        "161": [
+            "comp_count.CC0140C"
+        ],
+        "162": [
+            "IG0070",
+            "dsPrep.OVR_1_DBTR_ALL_DFLTD"
+        ],
+        "170": [
+            "comp_cred.ATTRBTS_FLL"
+        ],
+        "172": [
+            "INSTRMNT_CMPLTNSS",
+            "comp_cred.INSTRMNT_CHCK"
+        ],
+        "173": [
+            "ENTTY_DFLT_CMPLTNSS",
+            "comp_cred.ENTTY_DFLT_CHK"
+        ],
+        "174": [
+            "FNNCL_CMPLTNSS",
+            "comp_cred.FNNCL_CHCK"
+        ],
+        "175": [
+            "ACCNTNG_CMPLTNSS",
+            "comp_cred.ACCNTNG_CHCK"
+        ],
+        "176": [
+            "INSTRMNT_PRTCTN_RCVD_CMPLNTNSS",
+            "comp_cred.INSTRMNT_PRTCTN_RCVD_CHK"
+        ],
+        "177": [
+            "JNT_LBLTS_CMPLTNSS",
+            "comp_cred.JNT_LBLTS_CHK"
+        ],
+        "178": [
+            "PRTCTN_RCVD_CMPLTNSS",
+            "comp_cred.PRTCTN_RCVD_CHK"
+        ],
+        "179": [
+            "ANCRDT_ENTTY_RSK_C",
+            "comp_cred.ATTRBTS_ENTTY"
+        ],
+        "180": [
+            "comp_count.VLDTN_CNDTNS"
+        ],
+        "181": [
+            "ENTTY_RSK_CMPLTNSS",
+            "comp_cred.ENTTY_RSK_CHK"
+        ],
+        "182": [
+            "ANCRDT_ENTTY",
+            "comp_count.VLDTN_CNDTNS_FLL"
+        ],
+        "183": [
+            "CNTRPRTY_CMPLTNSS",
+            "comp_count.ENTTY_VLDTN"
+        ],
+        "163": [
+            "ANCRDT_INSTRMNT_C"
+        ],
+        "165": [
+            "ANCRDT_FNNCL_C"
+        ],
+        "15": [
+            "ANCRDT_ENTTY_DFLT_C_T1"
+        ],
+        "115": [
+            "ANCRDT_ENTTY_DFLT_C"
+        ],
+        "16": [
+            "ANCRDT_PRTCTN_RCVD_C_T1"
+        ],
+        "167": [
+            "ANCRDT_INSTRMNT_PRTCTN_RCVD_C"
+        ],
+        "20": [
+            "ANCRDT_INSTRMNT_C_T1"
+        ],
+        "22": [
+            "ANCRDT_FNNCL_C_T1"
+        ],
+        "168": [
+            "ANCRDT_JNT_LBLTS_C"
+        ],
+        "166": [
+            "ANCRDT_ACCNTNG_C"
+        ]
+    },
+    "global_inputs": [
+        "ANCRDT_ACCNTNG_C",
+        "ANCRDT_ACCNTNG_C_Z",
+        "ANCRDT_ENTTY",
+        "ANCRDT_ENTTY_DFLT_C",
+        "ANCRDT_ENTTY_DFLT_C_T1",
+        "ANCRDT_ENTTY_INSTRMNT_C",
+        "ANCRDT_ENTTY_RSK_C",
+        "ANCRDT_FNNCL_C",
+        "ANCRDT_FNNCL_C_T1",
+        "ANCRDT_INSTRMNT_C",
+        "ANCRDT_INSTRMNT_C_T1",
+        "ANCRDT_INSTRMNT_PRTCTN_RCVD_C",
+        "ANCRDT_JNT_LBLTS_C",
+        "ANCRDT_PRTCTN_RCVD_C",
+        "ANCRDT_PRTCTN_RCVD_C_T1"
+    ],
+    "persistent": [
+        "ACCNTNG_CMPLTNSS",
+        "CN0230",
+        "CN0330",
+        "CN0620",
+        "CN0621",
+        "CN0622",
+        "CN0869",
+        "CNTRPRTY_CMPLTNSS",
+        "DP_RLST_CNTRPRTY_DFLT_LST_MNTH_RSLT",
+        "DP_RLST_CNTRPRTY_DFLT_RSLT",
+        "DP_RLST_ENTTY_THRSHLDS_RSLT",
+        "DP_RLST_FNNCL_LST_MNTH_RSLT",
+        "DP_RLST_FNNCL_RSLT",
+        "DP_RLST_INSTRMNT_FNNCL_LST_MNTH_RSLT",
+        "DP_RLST_INSTRMNT_FNNCL_RSLT",
+        "DP_RLST_INSTRMNT_LST_MNTH_RSLT",
+        "DP_RLST_INSTRMNT_PRTCTNS_RSLT",
+        "DP_RLST_INSTRMNT_RSLT",
+        "DP_RLST_JNT_LBLTS_RSLT",
+        "DP_RLST_PRTCTN_RCVD_LST_MNTH_RSLT",
+        "DP_RLST_PRTCTN_RCVD_RSLT",
+        "ENTTY_DFLT_CMPLTNSS",
+        "ENTTY_RSK_CMPLTNSS",
+        "FNNCL_CMPLTNSS",
+        "GRNLR_CMA_ENTTY",
+        "GRNLR_CMA_ENTTY_INSTRMNT",
+        "GRNLR_CMA_ENTTY_RSK",
+        "GRNLR_CMA_PRTCTN",
+        "IG0070",
+        "INSTRMNT_CMPLTNSS",
+        "INSTRMNT_PRTCTN_RCVD_CMPLNTNSS",
+        "JNT_LBLTS_CMPLTNSS",
+        "PRTCTN_RCVD_CMPLTNSS",
+        "RI0030",
+        "RI0050",
+        "RI0060",
+        "RI0070",
+        "RI0090",
+        "RI0110",
+        "RI0120",
+        "RI0130",
+        "RI0191",
+        "RI0201",
+        "RI0210",
+        "RI0220",
+        "RI0250",
+        "RI0260",
+        "RI0290"
+    ]
+}

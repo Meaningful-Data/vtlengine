@@ -353,11 +353,11 @@ class Terminals(VtlVisitor):
                 return Scalar(name="", data_type=None, value=None)
             type_node = self.visitBasicScalarType(scalartype)
 
-        elif isinstance(scalartype, Parser.ValueDomainNameContext):
-            # type_node = self.visitValueDomainName(scalartype)
-            raise NotImplementedError
         else:
-            raise NotImplementedError
+            raise SyntaxError(
+                f"Invalid parameter type definition {scalartype.children[0]} at line "
+                f"{ctx.start.line}:{ctx.start.column}."
+            )
 
         if len(scalartype_constraint) != 0:
             # AST_ASTCONSTRUCTOR.45

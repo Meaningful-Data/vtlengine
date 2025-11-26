@@ -1,0 +1,17 @@
+define hierarchical ruleset HR1(
+	valuedomain
+	condition Id_x
+	rule RS) is
+	R1t: R1 = S11 + S12 + S13 + S14;
+
+	R2t: R2 = S21 + S23;
+
+	R3t: R3 = S32 + S35
+end hierarchical ruleset;
+
+DS_r :=
+	check_hierarchy(
+		DS_1,
+		HR1
+		condition Id_1
+		rule RS);

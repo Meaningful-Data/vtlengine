@@ -618,7 +618,7 @@ class HRuleset(AST):
 
     name: str
     signature_type: str
-    element: DefIdentifier
+    element: Union[DefIdentifier, List[DefIdentifier]]
     rules: List[HRule]
 
     __eq__ = AST.ast_equality

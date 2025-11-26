@@ -159,6 +159,10 @@ class InterpreterAnalyzer(ASTTemplate):
     is_from_case_then: bool = False
     signature_values: Optional[Dict[str, Any]] = None
 
+    def __post_init__(self) -> None:
+        self.datasets_inputs = set(self.datasets.keys())
+        self.scalars_inputs = set(self.scalars.keys()) if self.scalars else set()
+
     # **********************************
     # *                                *
     # *          Memory efficient      *
@@ -234,6 +238,8 @@ class InterpreterAnalyzer(ASTTemplate):
             Operators.only_semantic = False
         results = {}
         scalars_to_save = set()
+        invalid_dataset_outputs = []
+        invalid_scalar_outputs = []
         for child in node.children:
             if isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
                 vtlengine.Exceptions.dataset_output = child.left.value  # type: ignore[attr-defined]
@@ -246,6 +252,10 @@ class InterpreterAnalyzer(ASTTemplate):
                 result = self.visit(child)
             except duckdb.Error as e:
                 raise (vtlengine.Exceptions.RunTimeError.map_duckdb_error(e))
+            if isinstance(result, Dataset) and result.name in self.datasets_inputs:
+                invalid_dataset_outputs.append(result.name)
+            if isinstance(result, Scalar) and result.name in self.scalars_inputs:
+                invalid_scalar_outputs.append(result.name)
 
             # Reset some handlers (joins and if)
             self.is_from_join = False
@@ -273,6 +283,18 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.scalars[result.name] = copy(result)
             self._save_datapoints_efficient(statement_num)
             statement_num += 1
+        if invalid_dataset_outputs:
+            raise SemanticError("0-1-2-8", names=", ".join(invalid_dataset_outputs))
+        if invalid_scalar_outputs:
+            raise SemanticError("0-1-2-8", names=", ".join(invalid_scalar_outputs))
+
+        if self.output_path is not None and scalars_to_save:
+            scalars_filtered = {
+                name: self.scalars[name]  # type: ignore[index]
+                for name in scalars_to_save
+                if (not self.return_only_persistent or name in self.ds_analysis.get(PERSISTENT, []))  # type: ignore[union-attr]
+            }
+            self._save_scalars_efficient(scalars_filtered)
 
         if self.output_path is not None:
             # Removing data from results
@@ -415,7 +437,10 @@ class InterpreterAnalyzer(ASTTemplate):
         self.is_from_assignment = False
         right_operand: Union[Dataset, DataComponent] = self.visit(node.right)
         self.is_from_component_assignment = False
-        return Assignment.analyze(left_operand, right_operand)
+        result = Assignment.analyze(left_operand, right_operand)
+        if isinstance(result, (Dataset, Scalar)):
+            result.persistent = isinstance(node, AST.PersistentAssignment)
+        return result
 
     def visit_PersistentAssignment(self, node: AST.PersistentAssignment) -> Any:
         return self.visit_Assignment(node)
@@ -602,15 +627,16 @@ class InterpreterAnalyzer(ASTTemplate):
                 operand = self.regular_aggregation_dataset
             else:
                 operand_comp = self.visit(node.operand)
-                component_name = operand_comp.data.columns[0]
+                component_name = operand_comp.name
+                id_names = self.regular_aggregation_dataset.get_identifiers_names()
                 measure_names = self.regular_aggregation_dataset.get_measures_names()
-                self.regular_aggregation_dataset.get_attributes_names()
+                attribute_names = self.regular_aggregation_dataset.get_attributes_names()
                 dataset_components = self.regular_aggregation_dataset.components.copy()
-                for name in measure_names:
+                for name in measure_names + attribute_names:
                     dataset_components.pop(name)
 
-                dataset_components[component_name] = Component(
-                    name=component_name,
+                dataset_components[operand_comp.name] = Component(
+                    name=operand_comp.name,
                     data_type=operand_comp.data_type,
                     role=operand_comp.role,
                     nullable=operand_comp.nullable,
@@ -619,10 +645,8 @@ class InterpreterAnalyzer(ASTTemplate):
                 if self.only_semantic or self.regular_aggregation_dataset.data is None:
                     data = None
                 else:
-                    # data = self.regular_aggregation_dataset.data[dataset_components.keys()]
-                    data = duckdb_select(
-                        self.regular_aggregation_dataset.data, dataset_components.keys()
-                    )
+                    data = self.regular_aggregation_dataset.data[id_names].copy()
+                    data[operand_comp.name] = operand_comp.data
 
                 operand = Dataset(
                     name=self.regular_aggregation_dataset.name,

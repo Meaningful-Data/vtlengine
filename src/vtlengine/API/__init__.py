@@ -40,6 +40,7 @@ from vtlengine.files.output._time_period_representation import (
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import DataComponent, Dataset, Scalar
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.Model import Dataset, Scalar
 
 pd.options.mode.chained_assignment = None
 
@@ -129,6 +130,7 @@ def create_ast(text: str) -> Start:
     Raises:
         Exception: When the vtl syntax expression is wrong.
     """
+    text = text + "\n"
     stream = _lexer(text)
     cst = _parser(stream)
     visitor = ASTVisitor()
@@ -137,11 +139,66 @@ def create_ast(text: str) -> Start:
     return ast
 
 
+def validate_dataset(
+    data_structures: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
+    datapoints: Optional[
+        Union[Dict[str, Union[pd.DataFrame, Path, str]], List[Union[str, Path]], Path, str]
+    ] = None,
+    scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
+) -> None:
+    """
+    Validate that datasets can be loaded from the given data_structures and optional datapoints.
+
+    Args:
+        data_structures: Dict, Path, or List of Dict/Path objects representing data structures.
+        datapoints: Optional Dict, Path, or List of Dict/Path objects representing datapoints.
+        scalar_values: Optional Dict with scalar values to be used in the datasets.
+
+    Raises:
+        Exception: If the data structures or datapoints are invalid or cannot be loaded.
+    """
+    load_datasets_with_data(data_structures, datapoints, scalar_values)
+
+
+def validate_value_domain(
+    input: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
+) -> None:
+    """
+    Validate ValueDomain(s) using JSON Schema.
+
+    Args:
+        input: Dict, Path, or List of Dict/Path objects representing value domain definitions.
+
+    Raises:
+        Exception: If the input file is invalid, does not exist,
+                   or the JSON content does not follow the schema.
+    """
+    load_value_domains(input)
+
+
+def validate_external_routine(
+    input: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
+) -> None:
+    """
+    Validate External Routine(s) using JSON Schema and SQLGlot.
+
+    Args:
+        input: Dict, Path, or List of Dict/Path objects representing external routines.
+
+    Raises:
+        Exception: If JSON schema validation fails,
+                   SQL syntax is invalid, or file type is wrong.
+    """
+    load_external_routines(input)
+
+
 def semantic_analysis(
     script: Union[str, TransformationScheme, Path],
     data_structures: Union[Dict[str, Any], Path, List[Dict[str, Any]], List[Path]],
-    value_domains: Optional[Union[Dict[str, Any], Path]] = None,
-    external_routines: Optional[Union[Dict[str, Any], Path]] = None,
+    value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
+    external_routines: Optional[
+        Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
+    ] = None,
 ) -> Dict[str, Dataset]:
     """
     Checks if the vtl scripts and its related datastructures are valid. As part of the compatibility
@@ -167,8 +224,17 @@ def semantic_analysis(
         that holds the vtl script.
         data_structures: Dict or Path (file or folder), \
         or List of Dicts or Paths with the data structures JSON files.
-        value_domains: Dict or Path of the value domains JSON files. (default: None)
-        external_routines: String or Path of the external routines SQL files. (default: None)
+        value_domains: Dict or Path, or List of Dicts or Paths of the \
+        value domains JSON files. (default:None) It is passed as an object, that can be read from \
+        a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
+        Check the following example: \
+        :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
+
+        external_routines: String or Path, or List of Strings or Paths of the \
+        external routines SQL files. (default: None) It is passed as an object, that can be read \
+        from a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
+        Check the following example: \
+        :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
 
     Returns:
         The computed datasets.
@@ -209,9 +275,11 @@ def semantic_analysis(
 def run(
     script: Union[str, TransformationScheme, Path],
     data_structures: Union[Dict[str, Any], Path, List[Dict[str, Any]], List[Path]],
-    datapoints: Union[Dict[str, DuckDBPyRelation], str, Path, List[Dict[str, Any]], List[Path]],
-    value_domains: Optional[Union[Dict[str, Any], Path]] = None,
-    external_routines: Optional[Union[str, Path]] = None,
+    datapoints: Union[Dict[str, Union[DuckDBPyRelation, str, Path]], List[Union[str, Path]], str, Path],
+    value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
+    external_routines: Optional[
+        Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
+    ] = None,
     time_period_output_format: str = "vtl",
     return_only_persistent: bool = True,
     output_folder: Optional[Union[str, Path]] = None,
@@ -267,11 +335,23 @@ def run(
 
         data_structures: Dict, Path or a List of Dicts or Paths with the data structures.
 
-        datapoints: Dict, Path, S3 URI or List of S3 URIs or Paths with data.
+        datapoints: Dict, Path, S3 URI or List of S3 URIs or Paths with data. \
+        You can also use a custom name for the dataset by passing a dictionary with \
+        the dataset name as key and the Path, S3 URI or DataFrame as value. \
+        Check the following example: \
+        :ref:`Example 6 <example_6_run_using_paths>`.
 
-        value_domains: Dict or Path of the value domains JSON files. (default:None)
+        value_domains: Dict or Path, or List of Dicts or Paths of the \
+        value domains JSON files. (default:None) It is passed as an object, that can be read from \
+        a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
+        Check the following example: \
+        :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
 
-        external_routines: String or Path of the external routines SQL files. (default: None)
+        external_routines: String or Path, or List of Strings or Paths of the \
+        external routines JSON files. (default: None) It is passed as an object, that can be read \
+        from a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
+        Check the following example: \
+        :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
 
         time_period_output_format: String with the possible values \
         ("sdmx_gregorian", "sdmx_reporting", "vtl") for the representation of the \
@@ -366,8 +446,10 @@ def run_sdmx(  # noqa: C901
     script: Union[str, TransformationScheme, Path],
     datasets: Sequence[PandasDataset],
     mappings: Optional[Union[VtlDataflowMapping, Dict[str, str]]] = None,
-    value_domains: Optional[Union[Dict[str, Any], Path]] = None,
-    external_routines: Optional[Union[str, Path]] = None,
+    value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
+    external_routines: Optional[
+        Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
+    ] = None,
     time_period_output_format: str = "vtl",
     return_only_persistent: bool = True,
     output_folder: Optional[Union[str, Path]] = None,
@@ -406,9 +488,17 @@ def run_sdmx(  # noqa: C901
 
         mappings: A dictionary or VtlDataflowMapping object that maps the dataset names.
 
-        value_domains: Dict or Path of the value domains JSON files. (default:None)
+        value_domains: Dict or Path, or List of Dicts or Paths of the \
+        value domains JSON files. (default:None) It is passed as an object, that can be read from \
+        a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
+        Check the following example: \
+        :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
 
-        external_routines: String or Path of the external routines SQL files. (default: None)
+        external_routines: String or Path, or List of Strings or Paths of the \
+        external routines JSON files. (default: None) It is passed as an object, that can be read \
+        from a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
+        Check the following example: \
+        :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
 
         time_period_output_format: String with the possible values \
         ("sdmx_gregorian", "sdmx_reporting", "vtl") for the representation of the \

@@ -349,7 +349,13 @@ class Cast(Operator.Unary):
         from_type = operand.data_type
         cls.check_cast(from_type, to_type, mask)
         comp_name = VirtualCounter._new_dc_name()
-        return DataComponent(name=comp_name, data=None, data_type=to_type, role=operand.role)
+        return DataComponent(
+            name=comp_name,
+            data=None,
+            data_type=to_type,
+            role=operand.role,
+            nullable=operand.nullable,
+        )
 
     @classmethod
     def scalar_validation(  # type: ignore[override]

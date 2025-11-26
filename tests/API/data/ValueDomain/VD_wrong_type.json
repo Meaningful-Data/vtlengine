@@ -1,0 +1,9 @@
+{
+  "name": "AnaCreditCountries",
+  "setlist": [
+    "AT",
+    "BE",
+    "CY"
+  ],
+  "type": "Integer"
+}

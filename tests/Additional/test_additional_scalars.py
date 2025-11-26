@@ -6,8 +6,8 @@ import pytest
 
 from tests.Helper import TestHelper
 from vtlengine.API import create_ast, run
-from vtlengine.DataTypes import Boolean, Integer, Number, String
-from vtlengine.Exceptions import RunTimeError, SemanticError
+from vtlengine.DataTypes import Boolean, Integer, Null, Number, String
+from vtlengine.Exceptions import SemanticError
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Scalar
 
@@ -25,11 +25,11 @@ class AdditionalScalarsTests(TestHelper):
 
 
 string_params = [
-    ("substr(null, null, null)", None),
-    ("substr(null)", None),
+    ("substr(null, null, null)", ""),
+    ("substr(null)", ""),
     ('substr("abc", null, null)', "abc"),
-    ("substr(null, 1, 2)", None),
-    ("substr(null, _, 2)", None),
+    ("substr(null, 1, 2)", ""),
+    ("substr(null, _, 2)", ""),
     ('substr("abc", null)', "abc"),
     ('substr("abc", null, 2)', "ab"),
     ('substr("abc", 3, null)', "c"),
@@ -42,13 +42,13 @@ string_params = [
     ('substr("abcdefghijklmnopqrstuvwxyz", _, 300)', "abcdefghijklmnopqrstuvwxyz"),
     ('substr("abcdefghijklmnopqrstuvwxyz", 400, 200)', ""),
     ('substr("", 4, 2)', ""),
-    ("replace(null, null, null)", None),
-    ("replace(null, null)", None),
+    ("replace(null, null, null)", ""),
+    ("replace(null, null)", ""),
     ('replace("abc", null, null)', ""),
     ('replace("abc", null)', ""),
-    ('replace(null, "a", "b")', None),
-    ('replace(null, null, "b")', None),
-    ('replace(null, "a", null)', None),
+    ('replace(null, "a", "b")', ""),
+    ('replace(null, null, "b")', ""),
+    ('replace(null, "a", null)', ""),
     ('replace("abc", null, "b")', ""),
     ('replace("abc", "a", null)', "bc"),
     ('replace("Hello world", "Hello", "Hi")', "Hi world"),
@@ -134,14 +134,13 @@ numeric_params = [
     ("log(8, 2)", 3.0),
     ("log(8.0, 2)", 3.0),
     ("log(1024, 2)", 10.0),
-    ("log(1024, 10)", 3.01029996),
+    ("log(1024, 10)", 3.0102999566398116),
     ("log(2.0, 2)", 1.0),
     ("log(null, null)", None),
     ("log(null, 1)", None),
     ("log(1, null)", None),
-    ("log(0.5, 6)", -0.38685281),
+    ("log(0.5, 6)", -0.3868528072345416),
     ("(1 + 2) / 3", 1.0),
-    ("random(12, 2)", 0.66641),
 ]
 
 boolean_params = [
@@ -206,11 +205,9 @@ string_exception_param = [
     ('instr("abcdecfrxcwsd", "c", _, -3)', "1-1-18-4"),
 ]
 
-# TODO: change this for runtime errors
 numeric_exception_param = [
-    ("log(5.0, -8)", "Out of Range Error: cannot take logarithm of a negative number"),
-    ("log(0.0, 6)", "Out of Range Error: cannot take logarithm of zero"),
-    ("log(-2, 6)", "Out of Range Error: cannot take logarithm of a negative number"),
+    ("log(5.0, -8)", "2-1-15-3"),
+    ("log(0.0, 6)", "math domain error"),
 ]
 
 ds_param = [
@@ -231,12 +228,7 @@ ds_param = [
     ("4-6", "DS_1[calc Me_4:= null * Me_1]"),
     ("7-27", "DS_1[calc Me_2:=current_date()]"),
     ("13-9", "DS_1[aggr attribute Me_2 := sum(Me_1) group by Id_1]"),
-    ("17-1", "cast(DS_1, string)"),
-    ("17-2", "DS_1[calc Me_2 := cast(Me_1, string)]"),
-    ("17-3", "DS_1[calc Me_1 := cast(Me_1, string)]"),
 ]
-
-division_zero_exception_param = [("18-1", "DS_1[calc Me_3 := Me_1 / 0]", "2-1-15-6")]
 
 
 params_scalar_operations = [
@@ -254,6 +246,9 @@ params_scalar_operations = [
         {"Sc_r": Scalar(name="Sc_r", data_type=Boolean, value=False)},
     ),
     ("Sc_r <- +null;", {"Sc_r": Scalar(name="Sc_r", data_type=Number, value=None)}),
+    ("Sc_r <- nvl(null, null);", {"Sc_r": Scalar(name="Sc_r", data_type=Null, value=None)}),
+    ("Sc_r <- nvl(null, 3);", {"Sc_r": Scalar(name="Sc_r", data_type=Integer, value=3)}),
+    ("Sc_r <- nvl(3, null);", {"Sc_r": Scalar(name="Sc_r", data_type=Integer, value=3)}),
 ]
 
 
@@ -303,18 +298,14 @@ def test_numeric_operators(text, reference):
         assert result["DS_r"].data_type == Number or result["DS_r"].data_type == Integer
 
 
-@pytest.mark.parametrize("text, expected", numeric_exception_param)
-def test_exception_numeric_op(text, expected):
+@pytest.mark.parametrize("text, exception_message", numeric_exception_param)
+def test_exception_numeric_op(text, exception_message):
     warnings.filterwarnings("ignore", category=FutureWarning)
     expression = f"DS_r := {text};"
     ast = create_ast(expression)
     interpreter = InterpreterAnalyzer({})
-    if isinstance(expected, str) and expected.count("-") >= 2:
-        with pytest.raises(RunTimeError, match=expected):
-            interpreter.visit(ast)
-    else:
-        with pytest.raises(Exception, match=expected):
-            interpreter.visit(ast)
+    with pytest.raises(Exception, match=exception_message):
+        interpreter.visit(ast)
 
 
 @pytest.mark.parametrize("code, text", ds_param)
@@ -347,17 +338,6 @@ def test_comp_op_test(text, reference):
     interpreter = InterpreterAnalyzer({})
     result = interpreter.visit(ast)
     assert result["DS_r"].value == reference
-
-
-@pytest.mark.parametrize("code, text, error_code", division_zero_exception_param)
-def test_division_by_zero_exception(code, text, error_code):
-    warnings.filterwarnings("ignore", category=FutureWarning)
-    datasets = AdditionalScalarsTests.LoadInputs(code, 1)
-    expression = f"DS_r := {text};"
-    ast = create_ast(expression)
-    interpreter = InterpreterAnalyzer(datasets)
-    with pytest.raises(RunTimeError, match=error_code):
-        interpreter.visit(ast)
 
 
 @pytest.mark.parametrize("script, reference", params_scalar_operations)

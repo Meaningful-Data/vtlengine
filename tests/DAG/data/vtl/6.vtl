@@ -1,0 +1,66 @@
+define hierarchical ruleset sectorsHierarchy(variable rule COUNT_SECTOR) is
+	A = B + N + U
+	errorcode "totalComparedToBanks"
+	errorlevel 4;
+
+	A >= U
+	errorcode "totalGeUnal"
+	errorlevel 3
+end hierarchical ruleset;
+
+define operator filRoundEr(ds dataset, comp component, margin number)
+	returns dataset is
+		ds
+		[filter
+				comp > margin or
+					comp < -margin
+		]
+end operator;
+
+Aggregation.numDPCouYear :=
+	count(
+		BIS_LOC_STATS group by REP_COUNTRY, REF_DATE
+		);
+Validation.valResult_nonFiltered :=
+	check_hierarchy(
+		BIS_LOC_STATS,
+		sectorsHierarchy
+		rule COUNT_SECTOR all);
+Other.exRate :=
+	DS3
+		[sub CURRENCY = "EUR", CURRENCY_DENOM = "ISK", EXR_TYPE = "EN00", EXR_SUFFIX = "E", FREQ = "M"]
+		[keep OBS_VALUE];
+Other.DS1_tim :=
+	sum(
+		DS1 group by TIME_PERIOD
+		);
+Other.DS2_tim :=
+	sum(
+		DS2 group by TIME_PERIOD
+		);
+numCouYear <-
+	count(
+		Aggregation.numDPCouYear group by REF_DATE
+		);
+numYearCou <-
+	count(
+		Aggregation.numDPCouYear group by REP_COUNTRY
+		);
+Validation.valResult_filtered :=
+	filRoundEr(Validation.valResult_nonFiltered, 'imbalance', 1);
+valResult <-
+	Validation.valResult_nonFiltered
+		[calc DSD_ID := "BIS_LOC_STATS"];
+Other.DS1_enr :=
+	inner_join(
+		DS1,
+		Other.exRate
+		[rename OBS_VALUE to EXCHANGE_RATE] as DS3
+		);
+Other.DS1_conv :=
+	DS1 * Other.exRate;
+Other.val :=
+	check(Other.DS1_tim > 0.75 * Other.DS2_tim and Other.DS1_tim < 1.25 * Other.DS2_tim errorcode "DS1 is not between 75% and 125% of DS2" errorlevel 3 imbalance (Other.DS1_tim - Other.DS2_tim) / Other.DS2_tim invalid);
+Other.DS1_fin :=
+	Other.DS1_enr
+		[calc OBS_VALUE_EUR := OBS_VALUE * EXCHANGE_RATE];

@@ -41,7 +41,32 @@ class Scalar:
 
     name: str
     data_type: Type[ScalarType]
-    value: Any
+    _value: Any
+    persistent: bool = False
+
+    def __init__(
+        self, name: str, data_type: Type[ScalarType], value: Any, persistent: bool = False
+    ) -> None:
+        self.name = name
+        self.data_type = data_type
+        self.value = value
+        self.persistent = persistent
+
+    @property
+    def value(self) -> Any:
+        return self._value
+
+    @value.setter
+    def value(self, new_value: Any) -> None:
+        if self.data_type and not self.data_type.check(new_value):
+            raise InputValidationException(
+                code="0-1-2-7",
+                value=new_value,
+                type_=self.data_type.__name__,
+                op_type=self.__class__.__name__,
+                name=self.name,
+            )
+        self._value = new_value
 
     @classmethod
     def from_json(cls, json_str: str) -> "Scalar":
@@ -241,6 +266,8 @@ class Dataset:
     name: str
     components: Dict[str, Component]
     _data: Optional[RelationProxy] = None
+    persistent: bool = False
+
 
     @property
     def data(self) -> Optional[RelationProxy]:
@@ -492,7 +519,30 @@ class ScalarSet:
     """
 
     data_type: Type[ScalarType]
-    values: Union[List[Union[int, float, str, bool]], DuckDBPyRelation]
+    _values: List[Union[int, float, str, bool]]
+
+    def __init__(
+        self, data_type: Type[ScalarType], values: List[Union[int, float, str, bool]]
+    ) -> None:
+        self.data_type = data_type
+        self.values = values
+
+    @property
+    def values(self) -> List[Union[int, float, str, bool]]:
+        return self._values
+
+    @values.setter
+    def values(self, new_values: List[Union[int, float, str, bool]]) -> None:
+        for value in new_values:
+            if self.data_type and not self.data_type.check(value):
+                raise InputValidationException(
+                    code="0-1-2-7",
+                    value=value,
+                    type_=self.data_type.__name__,
+                    op_type=self.__class__.__name__,
+                    name="",
+                )
+        self._values = new_values
 
     def __contains__(self, item: str) -> Optional[bool]:
         if isinstance(item, float) and item.is_integer():
@@ -563,8 +613,11 @@ class ExternalRoutine:
 
     @classmethod
     def from_sql_query(cls, name: str, query: str) -> "ExternalRoutine":
-        dataset_names = cls._extract_dataset_names(query)
-        return cls(dataset_names, query, name)
+        try:
+            dataset_names = cls._extract_dataset_names(query)
+            return cls(dataset_names, query, name)
+        except sqlglot.errors.ParseError as e:
+            raise Exception(f"Invalid SQL query in external routine '{name}': {e}") from e
 
     @classmethod
     def _extract_dataset_names(cls, query: str) -> List[str]:

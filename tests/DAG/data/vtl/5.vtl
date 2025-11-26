@@ -1,0 +1,48 @@
+define hierarchical ruleset ref_area_hierarchy(valuedomain rule REF_AREA) is
+	OECD = AUS + AUT + BEL + CAN + CHL + COL + CZE + DNK + EST + FIN + FRA + DEU + GRC + HUN + ISL + IRL + ISR + ITA + JPN + KOR + LVA + LTU + LUX + MEX + NLD + NZL + NOR + POL + PRT + SVK + SVN + ESP + SWE + CHE + TUR + GBR + USA + CRI
+	errorcode "OECD_COUNTRIES"
+	errorlevel 1;
+
+	A2 = CAN + GRL + USA + BMU + SPM
+	errorcode "NorthAmericaCountries"
+	errorlevel 2
+end hierarchical ruleset;
+
+define datapoint ruleset dpr_validation(variable MEASURE, OBS_VALUE, UNIT_MEASURE) is
+				when
+				UNIT_MEASURE = "KG_PS"
+			then
+				OBS_VALUE >= 0
+			errorcode  "NegativeKilograms"
+			errorlevel 1;
+
+				when
+				MEASURE = "QP_BD"
+			then
+				UNIT_MEASURE = "L"
+			errorcode  "LitresBiodiesel"
+			errorlevel 2
+end datapoint ruleset;
+
+DS_check_agr <-
+	check_datapoint(
+	DSD_AGR,
+	dpr_validation
+
+);
+DS_check_countries <-
+	check_hierarchy(
+		DSD_AGR,
+		ref_area_hierarchy
+		rule REF_AREA);
+derivation.population_arranged :=
+	DSD_POP
+		[sub MEASURE = "POP", AGE = "_T", SEX = "_T", UNIT_MEASURE = "PS", TIME_HORIZ = "H"];
+derivation.agriculture_arranged :=
+	DSD_AGR
+		[sub MEASURE = "ST", UNIT_MEASURE = "T"];
+derivation.new_ratio :=
+	derivation.agriculture_arranged / derivation.population_arranged;
+final_dataset <-
+	derivation.new_ratio
+		[calc identifier MEASURE := "ST_PC", identifier UNIT_MEAS := "T"];

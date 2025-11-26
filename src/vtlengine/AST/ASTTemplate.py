@@ -411,7 +411,11 @@ class ASTTemplate(NodeVisitor):
             for rule in node.rules:
                 self.visit(rule)
         """
-        self.visit(node.element)
+        if isinstance(node.element, list):
+            for element in node.element:
+                self.visit(element)
+        else:
+            self.visit(node.element)
         for rule in node.rules:
             self.visit(rule)
 

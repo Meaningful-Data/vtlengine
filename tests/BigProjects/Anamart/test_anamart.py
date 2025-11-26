@@ -22,7 +22,7 @@ class ASeries(AnamartHelper):
     def test_2(self):
         """ """
         code = "A02"
-        number_inputs = 2
+        number_inputs = 1
         references_names = [
             "NLE",
             "LE",
@@ -93,7 +93,7 @@ class BSeries(AnamartHelper):
     def test_4(self):
         """ """
         code = "B04"
-        number_inputs = 7
+        number_inputs = 6
         references_names = [
             "INSTRMNT_FCT_CV_1",
             "INSTRMNT_PRTCTN_TTL_INSTRMNT",

@@ -1,6 +1,7 @@
 Id_1,Id_2,bool_var
 1,A,False
 1,B,
+2,A,
 2,B,
 3,A,False
 3,B,

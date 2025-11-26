@@ -1,0 +1,5 @@
+DS_r :=
+	DS_1
+		[calc Me_count := count(
+			Me_1 over(partition by Id_1, Id_2 order by Me_1  range between 0 preceding and 0 following)
+		)];

@@ -1,0 +1,143 @@
+{
+    "insertion": {
+        "1": [
+            "Income_PT"
+        ],
+        "2": [
+            "Inflation_PT"
+        ],
+        "3": [
+            "Vendas_PT_2025_Q1"
+        ],
+        "4": [
+            "Oferta_PT_2025_Q1"
+        ],
+        "5": [
+            "Inflation_divisors_Q"
+        ]
+    },
+    "deletion": {
+        "5": [
+            "INCOME.income_01"
+        ],
+        "6": [
+            "INFLATION.inflation_base_01"
+        ],
+        "8": [
+            "SUPDEMM.sales_01"
+        ],
+        "10": [
+            "SUPDEMM.supply_01"
+        ],
+        "28": [
+            "INCOME.income_02",
+            "output_inflation"
+        ],
+        "11": [
+            "INFLATION.inflation_base",
+            "Inflation_divisors_Q"
+        ],
+        "12": [
+            "SUPDEMM.sales_02_AM_Lisboa",
+            "SUPDEMM.sales_02_AM_Porto"
+        ],
+        "13": [
+            "SUPDEMM.supply_02_AM_Lisboa",
+            "SUPDEMM.supply_02_AM_Porto"
+        ],
+        "14": [
+            "INFLATION.inflation_q_01"
+        ],
+        "16": [
+            "SUPDEMM.sales_03"
+        ],
+        "19": [
+            "SUPDEMM.supply_03"
+        ],
+        "20": [
+            "INFLATION.inflation_q_02"
+        ],
+        "21": [
+            "SUPDEMM.sales_price",
+            "SUPDEMM.sales_transactions"
+        ],
+        "22": [
+            "SUPDEMM.supply_units_new",
+            "SUPDEMM.supply_units_total"
+        ],
+        "25": [
+            "SUPDEMM.supply_price",
+            "SUPDEMM.supply_units"
+        ],
+        "23": [
+            "INFLATION.inflation_q_03"
+        ],
+        "24": [
+            "SUPDEMM.sales_summary_01"
+        ],
+        "32": [
+            "INFLATION.inflation",
+            "SUPDEMM.housing_dataset_02"
+        ],
+        "29": [
+            "SUPDEMM.sales_summary",
+            "SUPDEMM.supply_summary"
+        ],
+        "27": [
+            "SUPDEMM.supply_summary_01"
+        ],
+        "30": [
+            "INCOME.income_03"
+        ],
+        "31": [
+            "SUPDEMM.housing_dataset_01"
+        ],
+        "33": [
+            "INCOME.income_final",
+            "SUPDEMM.housing_dataset_03"
+        ],
+        "34": [
+            "SUPDEMM.housing_dataset_04"
+        ],
+        "35": [
+            "SUPDEMM.housing_dataset_final"
+        ],
+        "36": [
+            "OUTPUT.housing_output_generic_01"
+        ],
+        "37": [
+            "OUTPUT.housing_output_generic_02"
+        ],
+        "38": [
+            "OUTPUT.housing_output_generic_03"
+        ],
+        "39": [
+            "output_generic",
+            "output_generic_eda"
+        ],
+        "1": [
+            "Income_PT"
+        ],
+        "2": [
+            "Inflation_PT"
+        ],
+        "3": [
+            "Vendas_PT_2025_Q1"
+        ],
+        "4": [
+            "Oferta_PT_2025_Q1"
+        ]
+    },
+    "global_inputs": [
+        "Income_PT",
+        "Inflation_PT",
+        "Inflation_divisors_Q",
+        "Oferta_PT_2025_Q1",
+        "Vendas_PT_2025_Q1"
+    ],
+    "persistent": [
+        "output_generic",
+        "output_generic_eda",
+        "output_inflation"
+    ]
+}

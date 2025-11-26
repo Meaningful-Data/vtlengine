@@ -1,31 +1,19 @@
 {
   "datasets": [
     {
-      "name": "CRDT_DRVTV",
+      "name": "CNTRY",
       "DataStructure": [
         {
-          "name": "ACCMLTD_CHNGS_FV",
-          "role": "Measure",
-          "type": "Number",
+          "name": "CNTRY",
+          "role": "Identifier",
+          "type": "String",
           "nullable": false
         },
         {
-          "name": "ACCMLTD_CHNGS_FV_PRD",
+          "name": "CRRNCY",
           "role": "Measure",
-          "type": "Number",
-          "nullable": false
-        },
-        {
-          "name": "CLS_OUT_AMNT",
-          "role": "Measure",
-          "type": "Number",
-          "nullable": false
-        },
-        {
-          "name": "CRRYNG_AMNT",
-          "role": "Measure",
-          "type": "Number",
-          "nullable": false
+          "type": "String",
+          "nullable": true
         },
         {
           "name": "DT_RFRNC",
@@ -34,112 +22,16 @@
           "nullable": false
         },
         {
-          "name": "FV",
-          "role": "Measure",
-          "type": "Number",
-          "nullable": false
-        },
-        {
-          "name": "FV_HRRCHY",
-          "role": "Measure",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "FVO_DSGNTN",
-          "role": "Measure",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "GVRND_EU_LW",
-          "role": "Measure",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "INSTRMNT_ID",
+          "name": "EXTRNL_CRDT_ASSSSMNT",
           "role": "Measure",
           "type": "String",
           "nullable": true
         },
         {
-          "name": "IS_LCM",
-          "role": "Measure",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "IS_MN_CMPNNT",
-          "role": "Measure",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "MREL_ELGBL",
-          "role": "Measure",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "NTNL_AMNT",
-          "role": "Measure",
-          "type": "Number",
-          "nullable": false
-        },
-        {
-          "name": "NTTNG_AGRMNT_ID",
+          "name": "IS_MMBR_STT",
           "role": "Measure",
           "type": "String",
           "nullable": true
-        },
-        {
-          "name": "PEST_ACCMLTD_CHNGS_FV_PRD",
-          "role": "Attribute",
-          "type": "Date",
-          "nullable": false
-        },
-        {
-          "name": "PRSPCTV_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "PSTN_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "PSTN_INSTRMNT",
-          "role": "Measure",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "TYP_DRVTV",
-          "role": "Measure",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "TYP_HDG",
-          "role": "Measure",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "TYP_INSTRMNT",
-          "role": "Measure",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "TYP_MRKT",
-          "role": "Measure",
-          "type": "String",
-          "nullable": false
         }
       ]
     }
