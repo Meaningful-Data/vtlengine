@@ -111,6 +111,7 @@ class Eval(Unary):
     def _execute_query(
         query: str, dataset_names: List[str], data: Dict[str, pd.DataFrame]
     ) -> pd.DataFrame:
+        query = re.sub(r'"([^"]*)"', r"'\1'", query)
         for forbidden in ["INSTALL", "LOAD"]:
             if re.search(rf"\b{forbidden}\b", query, re.IGNORECASE):
                 raise Exception(f"Query contains forbidden command: {forbidden}")
