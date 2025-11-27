@@ -57,4 +57,4 @@ jobs:
           pip install "./vtlengine-$(poetry version -s)-py3-none-any.whl" --no-dependencies --break-system-packages
 
       - name: Run tests
-        run: pytest --verbose --tb=short --strict-markers --strict-config --durations=10
+        run: pytest --verbose --tb=short --strict-markers --strict-config --durations=10 -n auto
