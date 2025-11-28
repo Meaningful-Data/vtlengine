@@ -133,7 +133,7 @@ def test_execute_query_duckdb_function():
 
 
 def test_execute_query_empty_row_with_function_error():
-    # On duckdb, julianday does not exist.
+    # On duckdb, julianday does not exist. It is called julian.
     query = """
     SELECT
         julianday(DT_LGL_FNL_MTRTY) - julianday(DT_MTRTY_PRTCTN) AS PRTCTN_RSDL_MTRTY_DYS
