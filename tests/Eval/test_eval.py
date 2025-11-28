@@ -82,6 +82,7 @@ class SQLliteEval(TestEval):
                 sql_names=sql_names,
             )
 
+
 def test_execute_query_valid():
     query = "SELECT A, B FROM DS_1;"
     datasets = {"DS_1": pd.DataFrame([{"A": 1, "B": 2}])}
@@ -89,6 +90,7 @@ def test_execute_query_valid():
     assert result.shape == (1, 2)
     assert result.loc[0, "A"] == 1
     assert result.loc[0, "B"] == 2
+
 
 def test_execute_query_empty_row():
     query = "SELECT CNTRCT_ID, DT_RFRNC FROM MSMTCH_BL_DS;"
@@ -105,11 +107,13 @@ def test_execute_query_forbid_install():
     with pytest.raises(Exception, match="Query contains forbidden command: INSTALL"):
         Eval._execute_query(query, ["DS_1"], datasets)
 
+
 def test_execute_query_forbid_load():
     query = "LOAD 'some_file';"
     datasets = {"DS_1": pd.DataFrame([{"A": 1}])}
     with pytest.raises(Exception, match="Query contains forbidden command: LOAD"):
         Eval._execute_query(query, ["DS_1"], datasets)
+
 
 def test_execute_query_forbid_url_in_from():
     query = "SELECT column_a FROM 'https://domain.tld/file.parquet';"
@@ -139,13 +143,6 @@ def test_execute_query_empty_row_with_function_error():
         julianday(DT_LGL_FNL_MTRTY) - julianday(DT_MTRTY_PRTCTN) AS PRTCTN_RSDL_MTRTY_DYS
     FROM MSMTCH_BL_DS;
     """
-    datasets = {
-        "MSMTCH_BL_DS": pd.DataFrame([
-            {
-                "DT_LGL_FNL_MTRTY": None,
-                "DT_MTRTY_PRTCTN": None
-            }
-        ])
-    }
+    datasets = {"MSMTCH_BL_DS": pd.DataFrame([{"DT_LGL_FNL_MTRTY": None, "DT_MTRTY_PRTCTN": None}])}
     with pytest.raises(Exception, match="Error executing SQL query:"):
         Eval._execute_query(query, ["MSMTCH_BL_DS"], datasets)

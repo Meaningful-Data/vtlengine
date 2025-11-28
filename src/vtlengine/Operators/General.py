@@ -1,8 +1,7 @@
 import re
-
-import duckdb
 from typing import Any, Dict, List, Union
 
+import duckdb
 import pandas as pd
 
 from vtlengine.DataTypes import COMP_NAME_MAPPING
@@ -109,7 +108,7 @@ class Eval(Unary):
 
     @staticmethod
     def _execute_query(
-            query: str, dataset_names: List[str], data: Dict[str, pd.DataFrame]
+        query: str, dataset_names: List[str], data: Dict[str, pd.DataFrame]
     ) -> pd.DataFrame:
         query = re.sub(r'"([^"]*)"', r"'\1'", query)
         for forbidden in ["INSTALL", "LOAD"]:
@@ -118,7 +117,7 @@ class Eval(Unary):
         if re.search(r"FROM\s+'https?://", query, re.IGNORECASE):
             raise Exception("Query contains forbidden URL in FROM clause")
         try:
-            conn = duckdb.connect(database=':memory:', read_only=False)
+            conn = duckdb.connect(database=":memory:", read_only=False)
 
             try:
                 for ds_name in dataset_names:
