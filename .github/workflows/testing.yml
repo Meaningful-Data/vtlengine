@@ -38,6 +38,6 @@ jobs:
     - name: Run type checks
       run: poetry run mypy --show-error-codes --pretty
     - name: Run tests
-      run: poetry run pytest --cov
+      run: poetry run pytest --cov=vtlengine -n auto --verbose --tb=short --strict-markers --strict-config --durations=10
     - name: Check coverage
       run: poetry run coverage report --fail-under=90
