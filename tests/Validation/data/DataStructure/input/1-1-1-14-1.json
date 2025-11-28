@@ -1,7 +1,7 @@
 {
   "datasets": [
     {
-      "name": "BOP",
+      "name": "DS_1",
       "DataStructure": [
         {
           "name": "ACCOUNTING_ENTRY",

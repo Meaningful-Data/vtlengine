@@ -370,7 +370,7 @@ class ValidationOperatorsTests(ValidationHelper):
         Dataset --> Dataset
         Status: OK
 
-        DS_r := check (BOP > 0 errorcode 111 errorlevel 1 imbalance - BOP all)[rename error_level to level];
+        DS_r := check (DS_1 > 0 errorcode 111 errorlevel 1 imbalance - DS_1 all)[rename error_level to level];
 
         Git Branch: 309-validation-operators-tests.
         Goal: Check the result of check. Check the performance of imbalance as Integer.
