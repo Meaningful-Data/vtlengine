@@ -109,7 +109,7 @@ class Eval(Unary):
 
     @staticmethod
     def _execute_query(
-        query: str, dataset_names: List[str], data: Dict[str, pd.DataFrame]
+            query: str, dataset_names: List[str], data: Dict[str, pd.DataFrame]
     ) -> pd.DataFrame:
         query = re.sub(r'"([^"]*)"', r"'\1'", query)
         for forbidden in ["INSTALL", "LOAD"]:
@@ -123,8 +123,6 @@ class Eval(Unary):
             try:
                 for ds_name in dataset_names:
                     df = data[ds_name]
-                    if df.empty:
-                        df = pd.DataFrame([{col: None for col in df.columns}])
                     conn.register(ds_name, df)
                 df_result = conn.execute(query).fetchdf()
                 conn.close()
