@@ -710,6 +710,12 @@ params_validate_ds = [
         True,
         None,
     ),
+    (
+        [filepath_json / "DS_1.json"],
+        {"DS_1": filepath_csv / "DS_1_invalid.csv"},
+        False,
+        "On Dataset DS_1 loading: not possible to cast column Me_1 to Number.",
+    ),
 ]
 
 params_validate_vd = [
