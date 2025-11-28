@@ -364,6 +364,23 @@ class ValidationOperatorsTests(ValidationHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_14(self):
+        """
+        Define datapoint ruleset, with OBS_VALUE as Integer.
+        Dataset --> Dataset
+        Status: OK
+
+        DS_r := check (BOP > 0 errorcode 111 errorlevel 1 imbalance - BOP all)[rename error_level to level];
+
+        Git Branch: 309-validation-operators-tests.
+        Goal: Check the result of check. Check the performance of imbalance as Integer.
+        """
+        code = "1-1-1-14"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GL_446_2(self):
         """
         Description: Left_join review.
