@@ -4,45 +4,21 @@
       "name": "DS_1",
       "DataStructure": [
         {
-          "name": "ACCOUNTING_ENTRY",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "FUNCTIONAL_CAT",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "INSTR_ASSET",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "INT_ACC_ITEM",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "REF_AREA",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "REF_SECTOR",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "OBS_VALUE",
-          "role": "Measure",
+          "name": "Id_1",
           "type": "Integer",
+          "role": "Identifier",
+          "nullable": false
+        },
+        {
+          "name": "Id_2",
+          "type": "String",
+          "role": "Identifier",
+          "nullable": false
+        },
+        {
+          "name": "Me_1",
+          "type": "Integer",
+          "role": "Measure",
           "nullable": true
         }
       ]
