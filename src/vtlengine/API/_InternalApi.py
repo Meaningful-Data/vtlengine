@@ -30,7 +30,6 @@ from vtlengine.Exceptions import (
 )
 from vtlengine.files.parser import (
     _fill_dataset_empty_data,
-    _validate_csv_path,
     _validate_pandas,
     load_datapoints,
 )
@@ -392,13 +391,8 @@ def load_datasets_with_data(
             raise InputValidationException(f"Not found dataset {dataset_name} in datastructures.")
         # Validate csv path for this dataset
         components = datasets[dataset_name].components
-        if isinstance(csv_pointer, str):  # S3 URI case, we load as in memory just to check
-            _ = load_datapoints(
-                components=components, dataset_name=dataset_name, csv_path=csv_pointer
-            )
-            gc.collect()  # Garbage collector to free memory after loading in memory
-        else:  # Path case
-            _validate_csv_path(components=components, csv_path=csv_pointer)
+        _ = load_datapoints(components=components, dataset_name=dataset_name, csv_path=csv_pointer)
+    gc.collect()  # Garbage collector to free memory after we loaded everything and discarded them
 
     _handle_empty_datasets(datasets)
     _handle_scalars_values(scalars, scalar_values)
