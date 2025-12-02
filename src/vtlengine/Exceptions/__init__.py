@@ -47,12 +47,12 @@ class SemanticError(VTLEngineException):
     def __init__(self, code: str, comp_code: Optional[str] = None, **kwargs: Any) -> None:
         if dataset_output:
             message = (
-                centralised_messages[code].format(**kwargs)
+                centralised_messages[code]["message"].format(**kwargs)
                 + self.output_message
                 + str(dataset_output)
             )
         else:
-            message = centralised_messages[code].format(**kwargs)
+            message = centralised_messages[code]["message"].format(**kwargs)
 
         super().__init__(message, None, None, code)
 
@@ -70,7 +70,7 @@ class RunTimeError(VTLEngineException):
         comp_code: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
-        message = centralised_messages[code].format(**kwargs)
+        message = centralised_messages[code]["message"].format(**kwargs)
         if dataset_output:
             message += self.output_message + str(dataset_output)
 
@@ -92,7 +92,7 @@ class InputValidationException(VTLEngineException):
         **kwargs: Any,
     ) -> None:
         if code is not None:
-            message = centralised_messages[code].format(**kwargs)
+            message = centralised_messages[code]["message"].format(**kwargs)
             super().__init__(message, lino, colno, code)
         else:
             super().__init__(message, lino, colno)
@@ -147,7 +147,7 @@ class DataLoadError(VTLEngineException):
         comp_code: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
-        message = centralised_messages[code].format(**kwargs)
+        message = centralised_messages[code]["message"].format(**kwargs)
         if dataset_output:
             message += self.output_message + " " + str(dataset_output)
         else:
