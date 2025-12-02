@@ -1254,10 +1254,13 @@ class Expr(VtlVisitor):
         )
 
         if not rule_comp:
-            if isinstance(de_ruleset_elements[rule_name_node.value], list):
-                rule_element = de_ruleset_elements[rule_name_node.value][-1]
+            rule_name = rule_name_node.value
+            if rule_name not in de_ruleset_elements:
+                raise SemanticError(code="1-4-2-8", rule_name=rule_name)
+            if isinstance(de_ruleset_elements[rule_name], list):
+                rule_element = de_ruleset_elements[rule_name][-1]
             else:
-                rule_element = de_ruleset_elements[rule_name_node.value]
+                rule_element = de_ruleset_elements[rule_name]
 
             if rule_element.kind == "DatasetID":
                 check_hierarchy_rule = rule_element.value
