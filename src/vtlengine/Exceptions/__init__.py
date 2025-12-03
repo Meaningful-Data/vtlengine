@@ -41,7 +41,7 @@ class VTLEngineException(Exception):
 class SemanticError(VTLEngineException):
     """ """
 
-    output_message = " Please check transformation with output dataset "
+    output_message = " Please check transformation with output Dataset "
     comp_code = None
 
     def __init__(self, code: str, comp_code: Optional[str] = None, **kwargs: Any) -> None:
@@ -61,7 +61,7 @@ class SemanticError(VTLEngineException):
 
 
 class RunTimeError(VTLEngineException):
-    output_message = " Please check transformation with output dataset "
+    output_message = " Please check transformation with output Dataset "
     comp_code = None
 
     def __init__(

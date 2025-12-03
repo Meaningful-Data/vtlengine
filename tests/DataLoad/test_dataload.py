@@ -271,7 +271,7 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_81-15"
         number_inputs = 1
 
-        message = "The following identifiers Id_1 were not found , review file GL_81-15-1.csv"
+        message = "The following Identifiers Id_1 were not found , review file GL_81-15-1.csv"
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_message=message
         )
@@ -287,7 +287,7 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_81-16"
         number_inputs = 1
 
-        message = "The following identifiers VLD_T were not found , review file GL_81-16-1.csv"
+        message = "The following Identifiers VLD_T were not found , review file GL_81-16-1.csv"
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_message=message
         )
