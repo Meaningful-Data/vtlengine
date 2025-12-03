@@ -7,16 +7,16 @@ Description
 All exceptions exposed by the Vtl engine.
 """
 # -------------- Codification --------------
-
+#
 # -------------- INPUT ERRORS --------------
 # 0-1-X-X = Input Validation Errors
 # 0-3-X-X = DataLoad Errors
-
+#
 # -------------- SEMANTIC ERRORS --------------
 # 1-1-X-X = Operators Semantic Errors
 # 1-3-X-X = Semantic Analyzer Errors
 # 1-4-X-X = AST Errors
-
+#
 # -------------- RUNTIME ERRORS --------------
 # 2-X-X-X = RunTime Operator Errors
 
