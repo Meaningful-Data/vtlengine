@@ -56,7 +56,7 @@ class Check(Operator):
                 raise SemanticError("1-1-10-1", op=cls.op, op_type="imbalance", me_type="Numeric")
 
             imbalance_measure = imbalance_element.get_measures()[0]
-            if imbalance_measure.data_type != Number:
+            if imbalance_measure.data_type not in (Number, Integer):
                 raise SemanticError("1-1-10-1", op=cls.op, op_type="imbalance", me_type="Numeric")
 
         # Generating the result dataset components
