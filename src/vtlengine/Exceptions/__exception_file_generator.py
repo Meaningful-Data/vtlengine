@@ -3,8 +3,6 @@ from typing import Any, Dict
 
 output_filepath = Path(__file__).parent.parent.parent.parent / "Docs" / "error_messages.rst"
 
-# Import centralised messages
-# from vtlengine.Exceptions.messages import centralised_messages
 
 
 def generate_errors_rst(file_path: Path, messages: Dict[str, Any]) -> None:
@@ -14,6 +12,15 @@ def generate_errors_rst(file_path: Path, messages: Dict[str, Any]) -> None:
 
     def sort_key(code: str) -> Any:
         return tuple(int(part) for part in code.split("-"))
+
+    def escape_for_sphinx(text: str) -> str:
+        """
+        Scapes placeholders for Sphinx formatting.
+        """
+        placeholders = ["{type}", "{type_}", "{format}", "{format_}", "{param}", "{op}", "{value}"]
+        for ph in placeholders:
+            text = text.replace(ph, f"``{ph}``")
+        return text
 
     path = Path(file_path)
     lines = []
@@ -30,7 +37,6 @@ def generate_errors_rst(file_path: Path, messages: Dict[str, Any]) -> None:
     lines.append("")
     category_header = "Category"
     pattern_header = "Pattern"
-
     legend_rows = [
         ("INPUT ERRORS", "0-1-X-X = Input Validation Errors\n"),
         ("", "0-3-X-X = DataLoad Errors"),
@@ -42,16 +48,13 @@ def generate_errors_rst(file_path: Path, messages: Dict[str, Any]) -> None:
 
     max_cat = max(len(category_header), max(len(row[0]) for row in legend_rows))
     max_pat = max(len(pattern_header), max(len(row[1]) for row in legend_rows))
-
     sep_legend = f"{'=' * max_cat}  {'=' * max_pat}"
 
     lines.append(sep_legend)
     lines.append(f"{category_header.ljust(max_cat)}  {pattern_header.ljust(max_pat)}")
     lines.append(sep_legend)
-
     for cat, pat in legend_rows:
         lines.append(f"{cat.ljust(max_cat)}  {pat.ljust(max_pat)}")
-
     lines.append(sep_legend)
     lines.append("")
     lines.append("The following table contains all available error codes:")
@@ -61,10 +64,10 @@ def generate_errors_rst(file_path: Path, messages: Dict[str, Any]) -> None:
 
     for code, info in messages.items():
         if isinstance(info, dict):
-            message = info.get("message", "")
-            description = info.get("description", "")
+            message = escape_for_sphinx(info.get("message", ""))
+            description = escape_for_sphinx(info.get("description", ""))
         else:
-            message = str(info)
+            message = escape_for_sphinx(str(info))
             description = ""
         max_lengths[0] = max(max_lengths[0], len(code))
         max_lengths[1] = max(max_lengths[1], len(message))
@@ -79,12 +82,11 @@ def generate_errors_rst(file_path: Path, messages: Dict[str, Any]) -> None:
     for code in sorted(messages.keys(), key=sort_key):
         info = messages[code]
         if isinstance(info, dict):
-            message = info.get("message", "")
-            description = info.get("description", "")
+            message = escape_for_sphinx(info.get("message", ""))
+            description = escape_for_sphinx(info.get("description", ""))
         else:
-            message = str(info)
+            message = escape_for_sphinx(str(info))
             description = ""
-
         row = "  ".join(s.ljust(max_lengths[i]) for i, s in enumerate([code, message, description]))
         lines.append(row)
 
