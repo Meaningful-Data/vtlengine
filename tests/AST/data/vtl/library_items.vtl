@@ -59,3 +59,10 @@ HR_ds := check_hierarchy(DS_1, accountingEntry rule ACCOUNTING_ENTRY partial_nul
 DR_ds := check_datapoint(DS_1, dr_test);
 UDO_ds := drop_identifier(DS_1, Id_3);
 value_domain_sc := "ES" in countries;
+
+define hierarchical ruleset rule_count (variable rule Id_2) is
+    A= B + C errorcode "count_1" errorlevel 4
+end hierarchical ruleset;
+
+HR_VD_ds := check_hierarchy(DS_1, rule_count);
+HR_VD_hie_ds := hierarchy(DS_1, rule_count);

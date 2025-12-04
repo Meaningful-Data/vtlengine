@@ -1305,7 +1305,11 @@ class InterpreterAnalyzer(ASTTemplate):
                 output=output,
             )
         elif node.op in (CHECK_HIERARCHY, HIERARCHY):
-            if len(node.children) == 3:
+            component: Optional[str] = None
+            if len(node.children) == 2:
+                dataset, hr_name = (self.visit(x) for x in node.children)
+                cond_components: List[str] = []
+            elif len(node.children) == 3:
                 dataset, component, hr_name = (self.visit(x) for x in node.children)
                 cond_components = []
             else:
@@ -1348,6 +1352,12 @@ class InterpreterAnalyzer(ASTTemplate):
                     )
                 elif hr_info["node"].signature_type == "valuedomain" and component is None:
                     raise SemanticError("1-1-10-4", op=node.op)
+                elif component is None:
+                    # TODO: Leaving this until refactor in Ruleset handling is done
+                    raise NotImplementedError(
+                        "Hierarchical Ruleset handling without component "
+                        "and signature type variable is not implemented yet."
+                    )
 
                 cond_info = {}
                 for i, cond_comp in enumerate(hr_info["condition"]):
