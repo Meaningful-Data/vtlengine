@@ -37,6 +37,7 @@ def create_ast_with_comments(text: str) -> Start:
     # Call the create_ast function to generate the AST from channel 0
     ast = create_ast(text)
 
+    text = text if text.endswith("\n") else text + "\n"
     # Reading the script on channel 2 to get the comments
     lexer_ = Lexer(InputStream(text))
     stream = CommonTokenStream(lexer_, channel=2)
