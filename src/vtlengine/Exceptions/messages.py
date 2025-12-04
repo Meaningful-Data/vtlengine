@@ -320,4 +320,5 @@ centralised_messages = {
     "1-4-2-6": "At op {op}: Window must be provided.",
     "1-4-2-7": "At op {op}: Partition by or order by clause must be provided for Analytic "
     "operators.",
+    "1-4-2-8": "{rule_name} rule is not defined in the given ruleset.",
 }

@@ -330,6 +330,14 @@ class ASTString(ASTTemplate):
             )
 
         elif node.op in (CHECK_HIERARCHY, HIERARCHY):
+            if len(node.children) == 2:
+                operand = self.visit(node.children[0])
+                rule_name = self.visit(node.children[1])
+
+                if self.pretty:
+                    return f"{node.op}({nl}{tab * 2}{operand},{nl}{tab * 2}{rule_name}{nl})"
+                else:
+                    return f"{node.op}({operand}, {rule_name})"
             operand = self.visit(node.children[0])
             component_name = self.visit(node.children[1])
             rule_name = self.visit(node.children[2])
