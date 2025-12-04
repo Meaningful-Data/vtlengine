@@ -495,7 +495,7 @@ class ExternalRoutine:
 
     @classmethod
     def _extract_dataset_names(cls, query: str) -> List[str]:
-        expression = sqlglot.parse_one(query, read="sqlite")
+        expression = sqlglot.parse_one(query)
         tables_info = list(expression.find_all(exp.Table))
         dataset_names = [t.name for t in tables_info]
         return dataset_names
