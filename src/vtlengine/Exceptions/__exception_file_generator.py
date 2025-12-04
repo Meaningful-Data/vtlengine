@@ -4,7 +4,6 @@ from typing import Any, Dict
 output_filepath = Path(__file__).parent.parent.parent.parent / "Docs" / "error_messages.rst"
 
 
-
 def generate_errors_rst(file_path: Path, messages: Dict[str, Any]) -> None:
     """
     Generates an RST file with a grid of error codes, messages, and descriptions.
