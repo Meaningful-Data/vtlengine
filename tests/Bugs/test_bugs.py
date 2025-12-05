@@ -241,7 +241,7 @@ class JoinBugs(BugHelper):
         """
         code = "GL_47_4"
         number_inputs = 2
-        message = "1-3-1"
+        message = "1-2-1"
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -1443,7 +1443,7 @@ class AggregationBugs(BugHelper):
 
         code = "GL_410"
         number_inputs = 1
-        message = "1-3-35"
+        message = "1-2-14"
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -1458,7 +1458,7 @@ class DataValidationBugs(BugHelper):
         """ """
         code = "VTLEN_503"
         number_inputs = 1
-        message = "1-3-19"
+        message = "1-2-6"
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -2200,7 +2200,7 @@ class ClauseBugs(BugHelper):
         code = "GL_31_4"
         number_inputs = 1
 
-        message = "1-3-1"
+        message = "1-2-1"
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -2230,7 +2230,7 @@ class ClauseBugs(BugHelper):
         code = "GL_31_6"
         number_inputs = 1
 
-        message = "1-3-1"  # 1-1-6-2 the error code was wrong this is better
+        message = "1-2-1"  # 1-1-6-2 the error code was wrong this is better
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -2357,7 +2357,7 @@ class DefinedBugs(BugHelper):
         code = "VTLEN_410"
         number_inputs = 3
 
-        message = "1-4-1-1"
+        message = "1-3-1-1"
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -2490,7 +2490,7 @@ class OtherBugs(BugHelper):
         code = "VTLEN_495"
         number_inputs = 1
 
-        message = "1-3-19"
+        message = "1-2-6"
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -2604,7 +2604,7 @@ class OtherBugs(BugHelper):
         code = "GL_120"
         number_inputs = 1
 
-        message = "1-3-20"
+        message = "1-2-7"
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )

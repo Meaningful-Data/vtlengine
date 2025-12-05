@@ -337,7 +337,7 @@ class ExprComp(VtlVisitor):
         ]
         if len(language_name) == 0:
             # AST_ASTCONSTRUCTOR.12
-            raise SemanticError("1-4-2-1", option="language")
+            raise SemanticError("1-3-2-1", option="language")
         # Reference manual says it is mandatory.
         output_node = [
             Terminals().visitOutputParameterTypeComponent(output)
@@ -346,7 +346,7 @@ class ExprComp(VtlVisitor):
         ]
         if len(output_node) == 0:
             # AST_ASTCONSTRUCTOR.13
-            raise SemanticError("1-4-2-1", option="output")
+            raise SemanticError("1-3-2-1", option="output")
 
         return EvalOp(
             name=routine_name,

@@ -210,7 +210,7 @@ class Rename(Operator):
         to_names = [operand.new_name for operand in operands]
         if len(to_names) != len(set(to_names)):  # If duplicates
             duplicates = set([name for name in to_names if to_names.count(name) > 1])
-            raise SemanticError("1-3-1", alias=duplicates)
+            raise SemanticError("1-2-1", alias=duplicates)
 
         for operand in operands:
             if operand.old_name not in dataset.components:
@@ -268,7 +268,7 @@ class Unpivot(Operator):
         identifier, measure = operands
 
         if len(dataset.get_identifiers()) < 1:
-            raise SemanticError("1-3-27", op=cls.op)
+            raise SemanticError("1-2-10", op=cls.op)
         if identifier in dataset.components:
             raise SemanticError("1-1-6-2", op=cls.op, name=identifier, dataset=dataset_name)
 
@@ -315,7 +315,7 @@ class Sub(Operator):
     def validate(cls, operands: List[DataComponent], dataset: Dataset) -> Dataset:
         dataset_name = VirtualCounter._new_ds_name()
         if len(dataset.get_identifiers()) < 1:
-            raise SemanticError("1-3-27", op=cls.op)
+            raise SemanticError("1-2-10", op=cls.op)
         for operand in operands:
             if operand.name not in dataset.components:
                 raise SemanticError(

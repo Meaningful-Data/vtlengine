@@ -235,6 +235,6 @@ def test_reference_exceptions(input_datasets, reference_datasets, ast, param):
     warnings.filterwarnings("ignore", category=FutureWarning)
     input_datasets = load_dataset(*input_datasets, dp_dir=input_dp_dir, param=param)
     interpreter = InterpreterAnalyzer(input_datasets)
-    with pytest.raises(Exception, match="Operation not allowed for multimeasure datasets"):
+    with pytest.raises(Exception, match="Operation not allowed for multimeasure Datasets"):
         # result = interpreter.visit(ast) # to match with F841
         interpreter.visit(ast)

@@ -58,7 +58,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-2"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_3(self):
@@ -202,7 +202,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-10"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_11(self):
@@ -274,7 +274,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-14"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_15(self):
@@ -344,7 +344,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-18"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_19(self):
@@ -416,7 +416,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-22"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_23(self):
@@ -486,7 +486,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-26"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_27(self):
@@ -558,7 +558,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-30"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_31(self):
@@ -628,7 +628,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-34"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_35(self):
@@ -700,7 +700,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-38"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_39(self):
@@ -770,7 +770,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-42"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_43(self):
@@ -842,7 +842,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-46"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_47(self):
@@ -912,7 +912,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-50"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_51(self):
@@ -984,7 +984,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-54"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_55(self):
@@ -1054,7 +1054,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-58"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_59(self):
@@ -1126,7 +1126,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-62"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_63(self):
@@ -1196,7 +1196,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-66"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_67(self):
@@ -1268,7 +1268,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-70"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_71(self):
@@ -1338,7 +1338,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-74"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_75(self):
@@ -1410,7 +1410,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-78"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_79(self):
@@ -1480,7 +1480,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-82"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_83(self):
@@ -1552,7 +1552,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-86"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_87(self):
@@ -1622,7 +1622,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-90"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_91(self):
@@ -1694,7 +1694,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-94"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_95(self):
@@ -1764,7 +1764,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-98"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_99(self):
@@ -1836,7 +1836,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-102"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_103(self):
@@ -1906,7 +1906,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-106"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_107(self):
@@ -1978,7 +1978,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-110"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_111(self):
@@ -2048,7 +2048,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-114"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_115(self):
@@ -2120,7 +2120,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-118"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_119(self):
@@ -2190,7 +2190,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-122"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_123(self):
@@ -2262,7 +2262,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-126"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_127(self):
@@ -2332,7 +2332,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-130"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_131(self):
@@ -2404,7 +2404,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-134"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_135(self):
@@ -2474,7 +2474,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-138"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_139(self):
@@ -2546,7 +2546,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-142"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_143(self):
@@ -2619,7 +2619,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-146"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_147(self):
@@ -2691,7 +2691,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-150"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_151(self):
@@ -2764,7 +2764,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-154"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_155(self):
@@ -2836,7 +2836,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-158"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_161(self):
@@ -2872,7 +2872,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-162"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_163(self):
@@ -2944,7 +2944,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-166"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_167(self):
@@ -3014,7 +3014,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-170"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_171(self):
@@ -3068,7 +3068,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-174"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_174(self):
@@ -3084,7 +3084,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-174"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_175(self):
@@ -3156,7 +3156,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-178"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_179(self):
@@ -3228,7 +3228,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-182"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_183(self):
@@ -3298,7 +3298,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-186"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_187(self):
@@ -3369,7 +3369,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-190"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_191(self):
@@ -3437,7 +3437,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-194"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_195(self):
@@ -3509,7 +3509,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-198"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_199(self):
@@ -3579,7 +3579,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-202"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_203(self):
@@ -3651,7 +3651,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-206"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_207(self):
@@ -3721,7 +3721,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-210"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_211(self):
@@ -3793,7 +3793,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-214"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_215(self):
@@ -3863,7 +3863,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-218"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_219(self):
@@ -3935,7 +3935,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-222"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_223(self):
@@ -4005,7 +4005,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-226"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_227(self):
@@ -4077,7 +4077,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-230"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_231(self):
@@ -4147,7 +4147,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-234"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_235(self):
@@ -4219,7 +4219,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-238"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_239(self):
@@ -4289,7 +4289,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-242"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_243(self):
@@ -4361,7 +4361,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-246"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_247(self):
@@ -4431,7 +4431,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-250"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_251(self):
@@ -4503,7 +4503,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-254"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_255(self):
@@ -4573,7 +4573,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-258"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_259(self):
@@ -4645,7 +4645,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-262"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_263(self):
@@ -4715,7 +4715,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-266"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_267(self):
@@ -4787,7 +4787,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-270"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_271(self):
@@ -4857,7 +4857,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-274"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_275(self):
@@ -4929,7 +4929,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-278"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_279(self):
@@ -4999,7 +4999,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-282"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_283(self):
@@ -5071,7 +5071,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-286"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_287(self):
@@ -5141,7 +5141,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-290"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_291(self):
@@ -5213,7 +5213,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-294"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_295(self):
@@ -5283,7 +5283,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-298"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_299(self):
@@ -5355,7 +5355,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-302"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_303(self):
@@ -5425,7 +5425,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-306"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_307(self):
@@ -5497,7 +5497,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-310"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_311(self):
@@ -5567,7 +5567,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-314"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_315(self):
@@ -5639,7 +5639,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-318"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_319(self):
@@ -5709,7 +5709,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-322"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_323(self):
@@ -5781,7 +5781,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-326"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_327(self):
@@ -5851,7 +5851,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-330"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_331(self):
@@ -5923,7 +5923,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-334"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_335(self):
@@ -5993,7 +5993,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-338"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_339(self):
@@ -6065,7 +6065,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-342"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_343(self):
@@ -6135,7 +6135,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-346"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_347(self):
@@ -6207,7 +6207,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-350"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_351(self):
@@ -6277,7 +6277,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-354"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_355(self):
@@ -6349,7 +6349,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-358"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_359(self):
@@ -6419,7 +6419,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-362"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_363(self):
@@ -6491,7 +6491,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-366"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_367(self):
@@ -6561,7 +6561,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-370"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_371(self):
@@ -6632,7 +6632,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-374"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_375(self):
@@ -6702,7 +6702,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-378"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_379(self):
@@ -6774,7 +6774,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-382"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_383(self):
@@ -6844,7 +6844,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-386"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_387(self):
@@ -6916,7 +6916,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-390"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_391(self):
@@ -6986,7 +6986,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-394"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_395(self):
@@ -7058,7 +7058,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-398"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_399(self):
@@ -7124,7 +7124,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-402"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_403(self):
@@ -7194,7 +7194,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-406"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_407(self):
@@ -7260,7 +7260,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-410"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_411(self):
@@ -7332,7 +7332,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-414"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_415(self):
@@ -7400,7 +7400,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-418"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_419(self):
@@ -7471,7 +7471,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-422"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_423(self):
@@ -7541,7 +7541,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-426"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_427(self):
@@ -7613,7 +7613,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-430"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_431(self):
@@ -7683,7 +7683,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-434"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_435(self):
@@ -7755,7 +7755,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-438"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_439(self):
@@ -7825,7 +7825,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-442"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_443(self):
@@ -7897,7 +7897,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-446"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_447(self):
@@ -7967,7 +7967,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-450"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_451(self):
@@ -8039,7 +8039,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-454"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_455(self):
@@ -8109,7 +8109,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-458"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_459(self):
@@ -8181,7 +8181,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-462"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_463(self):
@@ -8251,7 +8251,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-466"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_467(self):
@@ -8323,7 +8323,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-470"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_471(self):
@@ -8393,7 +8393,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = "4-3-3-474"
         number_inputs = 1
 
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_475(self):
@@ -8465,7 +8465,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         """
         code = "4-3-3-478"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_479(self):

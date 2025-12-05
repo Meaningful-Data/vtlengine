@@ -34,7 +34,7 @@ from vtlengine.DataTypes.TimeHandling import (
     TimeIntervalHandler,
     TimePeriodHandler,
 )
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, Dataset, Role
 
 
@@ -83,7 +83,7 @@ class Aggregation(Operator.Unary):
                     if cls.op in [MAX, MIN]:
                         indicators = {v.period_indicator for v in data[measure.name].dropna()}
                         if len(indicators) > 1:
-                            raise SemanticError("2-1-19-20", op=cls.op)
+                            raise RunTimeError("2-1-19-20", op=cls.op)
                 else:
                     data[measure.name] = data[measure.name].map(
                         lambda x: str(x), na_action="ignore"
@@ -243,9 +243,9 @@ class Aggregation(Operator.Unary):
             return duckdb.query(query).to_df().astype(object)
         except RuntimeError as e:
             if "Conversion" in e.args[0]:
-                raise SemanticError("2-3-8", op=cls.op, msg=e.args[0].split(":")[-1])
+                raise RunTimeError("2-3-8", op=cls.op, msg=e.args[0].split(":")[-1])
             else:
-                raise SemanticError("2-1-1-1", op=cls.op)
+                raise RunTimeError("2-1-1-1", op=cls.op)
 
     @classmethod
     def evaluate(  # type: ignore[override]
@@ -266,7 +266,7 @@ class Aggregation(Operator.Unary):
         if cls.op in [MAX, MIN]:
             for measure in operand.get_measures():
                 if measure.data_type == TimeInterval:
-                    raise SemanticError("2-1-19-18", op=cls.op)
+                    raise RunTimeError("2-1-19-18", op=cls.op)
         cls._handle_data_types(result_df, operand.get_measures(), "input")
         result_df = cls._agg_func(result_df, grouping_keys, measure_names, having_expr)
 

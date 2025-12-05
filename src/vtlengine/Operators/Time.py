@@ -38,7 +38,7 @@ from vtlengine.DataTypes.TimeHandling import (
     date_to_period,
     period_to_date,
 )
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
@@ -1099,7 +1099,7 @@ class Day_to_Year(Operators.Unary):
     @classmethod
     def py_op(cls, value: int) -> str:
         if value < 0:
-            raise SemanticError("2-1-19-16", op=cls.op)
+            raise RunTimeError("2-1-19-16", op=cls.op)
         years = 0
         days_remaining = value
         if value >= 365:
@@ -1115,7 +1115,7 @@ class Day_to_Month(Operators.Unary):
     @classmethod
     def py_op(cls, value: int) -> str:
         if value < 0:
-            raise SemanticError("2-1-19-16", op=cls.op)
+            raise RunTimeError("2-1-19-16", op=cls.op)
         months = 0
         days_remaining = value
         if value >= 30:

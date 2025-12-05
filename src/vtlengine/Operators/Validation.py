@@ -265,7 +265,7 @@ class Check_Hierarchy(Validation):
             )
         if dataset.components[component_name].role != Role.IDENTIFIER:
             raise SemanticError(
-                "1-3-20",
+                "1-2-7",
                 name=component_name,
                 role=dataset.components[component_name].role.value,
             )

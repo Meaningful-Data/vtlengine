@@ -170,7 +170,7 @@ class ASTVisitor(VtlVisitor):
         ][0]
 
         if len(return_) == 0:
-            raise SemanticError("1-4-2-5", op=operator)
+            raise SemanticError("1-3-2-2", op=operator)
         else:
             return_node = return_[0]
 

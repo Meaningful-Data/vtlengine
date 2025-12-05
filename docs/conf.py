@@ -3,11 +3,15 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 import asyncio
+import logging
 import os
 import sys
 from pathlib import Path
 
 from toml import load as toml_load
+
+from vtlengine.Exceptions.__exception_file_generator import generate_errors_rst
+from vtlengine.Exceptions.messages import centralised_messages
 
 if sys.version_info[0] == 3 and sys.version_info[1] >= 8 and sys.platform.startswith("win"):
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -46,3 +50,17 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "sphinx_rtd_theme"
+
+
+def setup_error_docs(app):
+    logger = logging.getLogger(__name__)
+    output_filepath = Path(__file__).parent / "error_messages.rst"
+    try:
+        generate_errors_rst(output_filepath, centralised_messages)
+        logger.info(f"[DOCS] Generated error messages documentation at {output_filepath}")
+    except Exception as e:
+        logger.warning(f"[DOCS] Failed to generate error messages RST: {e}")
+
+
+def setup(app):
+    app.connect("builder-inited", setup_error_docs)

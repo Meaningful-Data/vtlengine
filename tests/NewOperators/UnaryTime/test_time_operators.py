@@ -6,7 +6,7 @@ from pytest import mark
 
 from vtlengine.API import create_ast
 from vtlengine.DataTypes import Integer
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Interpreter import InterpreterAnalyzer
 
 pytestmark = mark.input_path(Path(__file__).parent / "data")
@@ -23,12 +23,12 @@ ds_param = [
 ]
 
 error_param = [
-    ("9", "DS_r := DS_1[calc Me_2 := daytomonth(Me_1)];", "2-1-19-16"),
-    ("10", "DS_r := DS_1[calc Me_2 := daytoyear(Me_1)];", "2-1-19-16"),
-    ("13", "DS_r := DS_1 [calc Me_2 := year(Me_1)];", "1-1-19-10"),
-    ("14", "DS_r := DS_1 [calc Me_2 := month(Me_1)];", "1-1-19-10"),
-    ("15", "DS_r := DS_1 [calc Me_2 := dayofmonth(Me_1)];", "1-1-19-10"),
-    ("16", "DS_r := DS_1 [calc Me_2 := dayofyear(Me_1)];", "1-1-19-10"),
+    ("9", "DS_r := DS_1[calc Me_2 := daytomonth(Me_1)];", RunTimeError, "2-1-19-16"),
+    ("10", "DS_r := DS_1[calc Me_2 := daytoyear(Me_1)];", RunTimeError, "2-1-19-16"),
+    ("13", "DS_r := DS_1 [calc Me_2 := year(Me_1)];", SemanticError, "1-1-19-10"),
+    ("14", "DS_r := DS_1 [calc Me_2 := month(Me_1)];", SemanticError, "1-1-19-10"),
+    ("15", "DS_r := DS_1 [calc Me_2 := dayofmonth(Me_1)];", SemanticError, "1-1-19-10"),
+    ("16", "DS_r := DS_1 [calc Me_2 := dayofyear(Me_1)];", SemanticError, "1-1-19-10"),
 ]
 
 scalar_time_params = [
@@ -74,11 +74,11 @@ def test_unary_time_ds(load_input, load_reference, code, expression):
     assert result == load_reference
 
 
-@pytest.mark.parametrize("code, expression, error_code", error_param)
-def test_errors_ds(load_input, code, expression, error_code):
+@pytest.mark.parametrize("code, expression, type_error, error_code", error_param)
+def test_errors_ds(load_input, code, expression, type_error, error_code):
     warnings.filterwarnings("ignore", category=FutureWarning)
     datasets = load_input
-    with pytest.raises(SemanticError) as context:
+    with pytest.raises(type_error) as context:
         ast = create_ast(expression)
         interpreter = InterpreterAnalyzer(datasets)
         interpreter.visit(ast)

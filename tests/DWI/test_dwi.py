@@ -31,7 +31,7 @@ class Membership(DWIHelper):
         """
         code = "GL_200-1"
         number_inputs = 1
-        message = "1-3-27"
+        message = "1-2-10"
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -47,7 +47,7 @@ class Membership(DWIHelper):
         code = "GL_218_1"
         number_inputs = 2
 
-        message = "1-3-27"
+        message = "1-2-10"
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -77,7 +77,7 @@ class Membership(DWIHelper):
         code = "GL_218_3"
         number_inputs = 2
 
-        message = "1-3-27"
+        message = "1-2-10"
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -504,7 +504,7 @@ class Clause(DWIHelper):
         """
         code = "GL_218_16"
         number_inputs = 1
-        message = "1-3-27"
+        message = "1-2-10"
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -520,7 +520,7 @@ class Clause(DWIHelper):
         """
         code = "GL_218_17"
         number_inputs = 1
-        message = "1-3-27"
+        message = "1-2-10"
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -535,7 +535,7 @@ class Clause(DWIHelper):
         """
         code = "GL_218_18"
         number_inputs = 1
-        message = "1-3-27"
+        message = "1-2-10"
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -618,7 +618,7 @@ class Join(DWIHelper):
         """
         code = "GL_218_23"
         number_inputs = 2
-        message = "1-3-27"
+        message = "1-2-10"
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -633,7 +633,7 @@ class Join(DWIHelper):
         """
         code = "GL_218_25"
         number_inputs = 2
-        message = "1-3-27"
+        message = "1-2-10"
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -648,7 +648,7 @@ class Join(DWIHelper):
         """
         code = "GL_218_26"
         number_inputs = 2
-        message = "1-3-27"
+        message = "1-2-10"
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -663,7 +663,7 @@ class Join(DWIHelper):
         """
         code = "GL_218_27"
         number_inputs = 2
-        message = "1-3-27"
+        message = "1-2-10"
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -678,7 +678,7 @@ class Join(DWIHelper):
         """
         code = "GL_218_28"
         number_inputs = 2
-        message = "1-3-27"
+        message = "1-2-10"
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -695,7 +695,7 @@ class Join(DWIHelper):
         """
         code = "GL_218_29"
         number_inputs = 2
-        message = "1-3-27"
+        message = "1-2-10"
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )

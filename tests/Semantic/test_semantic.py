@@ -1069,7 +1069,7 @@ class MembershipTests(SemanticHelper):
         """
         code = "Memb_5"
         number_inputs = 2
-        error_code = "1-4-1-1"
+        error_code = "1-3-1-1"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code
@@ -1481,7 +1481,7 @@ class AliasTests(SemanticHelper):
         """
         code = "Al_22"
         number_inputs = 1
-        error_code = "1-3-1"  # "1-1-6-8"
+        error_code = "1-2-1"  # "1-1-6-8"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code
@@ -1902,7 +1902,7 @@ class ScalarTests(SemanticHelper):
         """
         code = "Sc_1"
         number_inputs = 1
-        error_code = "1-3-3"
+        error_code = "1-2-2"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code
@@ -2718,7 +2718,7 @@ class ScalarTests(SemanticHelper):
         """
         code = "Sc_43"
         number_inputs = 1
-        error_code = "1-4-1-1"
+        error_code = "1-3-1-1"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code
@@ -2746,7 +2746,7 @@ class ScalarTests(SemanticHelper):
         """
         code = "Sc_44"
         number_inputs = 1
-        error_code = "1-4-1-1"
+        error_code = "1-3-1-1"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code

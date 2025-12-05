@@ -161,7 +161,7 @@ class DAGAnalyzer(ASTTemplate):
                 dag.check_overwriting(MLStatements)
             return dag
 
-        except nx.NetworkXUnfeasible as error:
+        except nx.NetworkXUnfeasible:
             error_keys = {}
             for v in dag.edges.values():
                 aux_v0, aux_v1 = v[1], v[0]
@@ -170,14 +170,11 @@ class DAGAnalyzer(ASTTemplate):
                         error_keys[aux_v0] = dag.dependencies[aux_v0]
                         error_keys[aux_v1] = dag.dependencies[aux_v1]
                         break
-            raise Exception(
-                "Vtl Script contains Cycles, no DAG established.\nSuggestion {}, "
-                "more_info:{}".format(error, error_keys)
-            ) from None
+            raise SemanticError("1-3-2-3", op="createDAG", nodes=error_keys) from None
         except SemanticError as error:
             raise error
         except Exception as error:
-            raise Exception("Error creating DAG.") from error
+            raise SemanticError(code="1-3-2-0") from error
 
     def loadVertex(self):
         """ """
@@ -231,7 +228,7 @@ class DAGAnalyzer(ASTTemplate):
         non_repeated_outputs = []
         for statement in statements:
             if statement.left.value in non_repeated_outputs:
-                raise SemanticError("1-3-3", varId_value=statement.left.value)
+                raise SemanticError("1-2-2", varId_value=statement.left.value)
             else:
                 non_repeated_outputs.append(statement.left.value)
 
@@ -423,7 +420,7 @@ class HRDAGAnalyzer(DAGAnalyzer):
                 ast.rules = dag.rules_ast
             return dag
 
-        except nx.NetworkXUnfeasible as error:
+        except nx.NetworkXUnfeasible:
             error_keys = {}
             for v in dag.edges.values():
                 aux_v0, aux_v1 = v[1], v[0]
@@ -432,10 +429,7 @@ class HRDAGAnalyzer(DAGAnalyzer):
                         error_keys[aux_v0] = dag.dependencies[aux_v0]
                         error_keys[aux_v1] = dag.dependencies[aux_v1]
                         break
-            raise Exception(
-                f"Vtl Script contains Cycles, no DAG established."
-                f"\nSuggestion {error}, more_info:{error_keys}"
-            )
+            raise SemanticError(code="1-3-2-3", op="createHRDAG", nodes=error_keys)
 
     def visit_HRuleset(self, node: HRuleset) -> None:
         """
