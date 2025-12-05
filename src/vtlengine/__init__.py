@@ -1,4 +1,5 @@
 from vtlengine.API import (
+    create_ast,
     generate_sdmx,
     prettify,
     run,
@@ -8,8 +9,11 @@ from vtlengine.API import (
     validate_external_routine,
     validate_value_domain,
 )
+from vtlengine.AST.ASTComment import create_ast_with_comments
 
 __all__ = [
+    "create_ast",
+    "create_ast_with_comments",
     "semantic_analysis",
     "run",
     "generate_sdmx",
@@ -20,4 +24,4 @@ __all__ = [
     "validate_external_routine",
 ]
 
-__version__ = "1.3.0"
+__version__ = "1.4.0rc1"

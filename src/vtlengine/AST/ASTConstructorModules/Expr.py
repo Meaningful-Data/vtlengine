@@ -1124,7 +1124,7 @@ class Expr(VtlVisitor):
             ParamConstant(type_="PARAM_OUTPUT", value=retains, **extract_token_info(ctx))
         )
 
-        if not rule_comp:
+        if not rule_comp and rule_name_node.value in de_ruleset_elements:
             if isinstance(de_ruleset_elements[rule_name_node.value], list):
                 rule_element = de_ruleset_elements[rule_name_node.value][-1]
             else:
@@ -1136,10 +1136,11 @@ class Expr(VtlVisitor):
                 )
             else:  # ValuedomainID
                 raise SemanticError("1-1-10-4", op=op)
-
+        children = [dataset_node, rule_comp, rule_name_node, *conditions]
+        children = [node for node in children if node is not None]
         return ParamOp(
             op=op,
-            children=[dataset_node, rule_comp, rule_name_node, *conditions],
+            children=children,
             params=param_constant_node,
             **extract_token_info(ctx),
         )
@@ -1254,24 +1255,27 @@ class Expr(VtlVisitor):
         )
 
         if not rule_comp:
-            if isinstance(de_ruleset_elements[rule_name_node.value], list):
-                rule_element = de_ruleset_elements[rule_name_node.value][-1]
-            else:
-                rule_element = de_ruleset_elements[rule_name_node.value]
+            rule_name = rule_name_node.value
+            if rule_name in de_ruleset_elements:
+                if isinstance(de_ruleset_elements[rule_name], list):
+                    rule_element = de_ruleset_elements[rule_name][-1]
+                else:
+                    rule_element = de_ruleset_elements[rule_name]
 
-            if rule_element.kind == "DatasetID":
-                check_hierarchy_rule = rule_element.value
-                rule_comp = Identifier(
-                    value=check_hierarchy_rule,
-                    kind="ComponentID",
-                    **extract_token_info(ctx),
-                )
-            else:  # ValuedomainID
-                raise SemanticError("1-1-10-4", op=op)
-
+                if rule_element.kind == "DatasetID":
+                    check_hierarchy_rule = rule_element.value
+                    rule_comp = Identifier(
+                        value=check_hierarchy_rule,
+                        kind="ComponentID",
+                        **extract_token_info(ctx),
+                    )
+                else:  # ValuedomainID
+                    raise SemanticError("1-1-10-4", op=op)
+        children = [dataset_node, rule_comp, rule_name_node, *conditions]
+        children = [node for node in children if node is not None]
         return ParamOp(
             op=op,
-            children=[dataset_node, rule_comp, rule_name_node, *conditions],
+            children=children,
             params=param_constant_node,
             **extract_token_info(ctx),
         )

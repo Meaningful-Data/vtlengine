@@ -1000,4 +1000,5 @@ centralised_messages = {
         "message": "{pos} operand must be a Dataset.",
         "description": "Raised when an operand expected to be a Dataset is not a Dataset.",
     },
+    "1-4-2-8": "{rule_name} rule is not defined in the given ruleset.",
 }
