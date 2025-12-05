@@ -83,5 +83,5 @@ class FullJoinIdentifiersTypeChecking(TestFullJoinTypeChecking):
         """
         code = "2-2-3-4"
         number_inputs = 2
-        message = "0-3-1-7"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)

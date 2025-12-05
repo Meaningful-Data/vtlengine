@@ -10,12 +10,13 @@ All exceptions exposed by the Vtl engine.
 #
 # -------------- INPUT ERRORS --------------
 # 0-1-X-X = Input Validation Errors
+# 0-2-X-X = JSON Schema Errors
 # 0-3-X-X = DataLoad Errors
 #
 # -------------- SEMANTIC ERRORS --------------
 # 1-1-X-X = Operators Semantic Errors
-# 1-3-X-X = Semantic Analyzer Errors
-# 1-4-X-X = AST Errors
+# 1-2-X-X = Semantic Analyzer Errors
+# 1-3-X-X = AST Errors
 #
 # -------------- RUNTIME ERRORS --------------
 # 2-X-X-X = RunTime Operator Errors
@@ -93,10 +94,6 @@ centralised_messages = {
         "in the script, please check: {names}",
         "description": "Raised when an output of a transformation is incorrectly used as an input.",
     },
-    "0-1-2-9": {
-        "message": "The provided JSON does not follow the required JSON Schema",
-        "description": "Occurs when a JSON input does not comply with the expected schema.",
-    },
     # Run SDMX errors
     "0-1-3-1": {
         "message": "Expected exactly one input Dataset in the whole script, "
@@ -133,42 +130,47 @@ centralised_messages = {
         "description": "Raised when the type of input Datasets is incorrect; "
         "a sequence of PandasDataset is expected.",
     },
-    # DataLoad errors
-    "0-3-1-1": {
+    # JSON Schema errors
+    "0-2-1-1": {
+        "message": "The provided JSON does not follow the required JSON Schema",
+        "description": "Occurs when a JSON input does not comply with the expected schema.",
+    },
+    "0-2-1-2": {
         "message": "Dataset {dataset} is not valid according to JSON schema",
         "description": "Raised when the Dataset does not conform to the expected JSON schema.",
     },
-    "0-3-1-2": {
+    # DataLoad errors
+    "0-3-1-1": {
         "message": "{file} file not found. Please verify that the file exists and the provided "
         "path is correct.",
         "description": "Occurs when the specified file cannot be located at the given path.",
     },
-    "0-3-1-3": {
+    "0-3-1-2": {
         "message": "Output folder {folder} not found or invalid. Must be a valid Path or "
         "S3 directory.",
         "description": "Raised when the output folder path is missing or not valid "
         "for saving results.",
     },
-    "0-3-1-4": {
+    "0-3-1-3": {
         "message": "On Dataset {name} loading:  An Identifier cannot have null values, "
         "found null values on {null_identifier}.",
         "description": "Occurs when a Dataset Identifier contains null values, which "
         "is not allowed.",
     },
-    "0-3-1-5": {
+    "0-3-1-4": {
         "message": "On Dataset {name} loading: Datasets without Identifiers "
         "must have 0 or 1 datapoints.",
         "description": "Raised when a Dataset without Identifiers has more than one datapoint.",
     },
-    "0-3-1-6": {
+    "0-3-1-5": {
         "message": "On Dataset {name} loading: Component {comp_name} is missing in Datapoints.",
         "description": "Occurs when a required component is missing from the Dataset datapoints.",
     },
-    "0-3-1-7": {
+    "0-3-1-6": {
         "message": "On Dataset {name} loading: not possible to cast column {column} to {type}.",
         "description": "Raised when a Dataset column cannot be cast to the expected data type.",
     },
-    "0-3-1-8": {
+    "0-3-1-7": {
         "message": "On Dataset {name} loading: Duplicated Identifiers are not allowed, "
         "found on row {row_index}",
         "description": "Occurs when a Dataset contains duplicated Identifiers, "
@@ -739,215 +741,134 @@ centralised_messages = {
         "definition outside an aggregation context.",
     },
     # ---------Semantic Analyzer Common----
-    "1-3-1": {
+    "1-2-1": {
         "message": "Please don't use twice {alias} like var_to.",
         "description": "Raised when the same alias is used more than once in a variable "
         "assignment.",
     },
-    "1-3-3": {
+    "1-2-2": {
         "message": "Overwriting a Dataset/variable is not allowed, trying it with {varId_value}.",
         "description": "Occurs when an attempt is made to overwrite an existing "
         "Dataset or variable.",
     },
-    "1-3-4": {
-        "message": "Cannot perform a rename with two equal values: {left_value} -> {right_value}.",
-        "description": "Raised when a rename operation is attempted with identical source and "
-        "target values.",
-    },
-    "1-3-5": {
+    "1-2-3": {
         "message": "{node_op} not found or not valid for {op_type}.",
         "description": "Occurs when an operator node is not recognized or incompatible with the "
         "operation type.",
     },
-    "1-3-8": {
+    "1-2-4": {
         "message": "Defined Operator {node_value} not previously defined.",
         "description": "Raised when a user-defined operator is used before being defined.",
     },
-    "1-3-9": {
-        "message": "Not valid set declaration, found duplicates {duplicates}.",
-        "description": "Occurs when a set declaration contains duplicate elements.",
-    },
-    "1-3-10": {
-        "message": "Not valid set declaration, mixed Scalar types {Scalar_1} and {Scalar_2}.",
-        "description": "Raised when a set contains incompatible Scalar types.",
-    },
-    "1-3-12": {
-        "message": "Default arguments cannot be followed by non-default arguments.",
-        "description": "Occurs when a function definition places default arguments before "
-        "non-default arguments.",
-    },
-    "1-3-15": {
-        "message": "Missing datastructure definition for required input Dataset {input}.",
-        "description": "Raised when a required Dataset does not have a defined data structure.",
-    },
-    "1-3-17": {
+    "1-2-5": {
         "message": "Operations without output assigned are not available.",
         "description": "Occurs when attempting to execute operations that require an assigned "
         "output but none is provided.",
     },
-    "1-3-19": {
+    "1-2-6": {
         "message": "No {node_type} {node_value} found.",
         "description": "Raised when a required node of a specific type is missing.",
     },
-    "1-3-20": {
+    "1-2-7": {
         "message": "RuleComp of Hierarchical Ruleset can only be an Identifier, "
         "{name} is a {role}.",
         "description": "Occurs when a rule component in a hierarchical ruleset "
         "is not an Identifier.",
     },
-    "1-3-21": {
-        "message": "Value {value} not valid, kind {node_kind}.",
-        "description": "Raised when a value is invalid for the expected kind of node.",
-    },
-    "1-3-22": {
-        "message": "Unable to categorize {node_value}.",
-        "description": "Occurs when a node value cannot be classified.",
-    },
-    "1-3-23": {
+    "1-2-8": {
         "message": "Missing value domain '{name}' definition, please provide an structure.",
         "description": "Raised when a required value domain is missing its definition.",
     },
-    "1-3-24": {
-        "message": "Internal error on Analytic operators inside a calc, No partition "
-        "or order symbol found.",
-        "description": "Occurs when analytic operators are used without necessary "
-        "partitioning or ordering symbols.",
-    },
-    "1-3-26": {
+    "1-2-9": {
         "message": "Value domain {name} not found.",
         "description": "Raised when a specified value domain cannot be found.",
     },
-    "1-3-27": {
+    "1-2-10": {
         "message": "Dataset without Identifiers are not allowed in {op} operator.",
         "description": "Occurs when an operator is applied to a Dataset lacking Identifiers.",
     },
-    "1-3-28": {
+    "1-2-11": {
         "message": "At op {op}: invalid number of parameters: received {received}, "
         "expected at least: {expected}",
         "description": "Raised when the number of parameters provided to an operation is "
         "less than expected.",
     },
-    "1-3-29": {
+    "1-2-12": {
         "message": "At op {op}: can not use user defined operator that returns a component outside "
         "Clause operator or Rule",
         "description": "Occurs when a user-defined operator returning a component is used outside "
         "an allowed context.",
     },
-    "1-3-30": {
-        "message": "At op {op}: too many parameters: received {received}, expected: {expected}",
-        "description": "Raised when more parameters are provided than an operation expects.",
-    },
-    "1-3-31": {
-        "message": "Cannot use component {name} outside an aggregate function in a HAVING clause.",
-        "description": "Occurs when a component is used improperly outside an aggregate function "
-        "in a HAVING clause.",
-    },
-    "1-3-32": {
-        "message": "Cannot perform operation {op} inside HAVING clause.",
-        "description": "Raised when an operation is attempted inside a HAVING "
-        "clause where it is not allowed.",
-    },
-    "1-3-33": {
+    "1-2-13": {
         "message": "Having clause is not permitted if group by clause is not present.",
         "description": "Occurs when a HAVING clause is used without a corresponding "
         "GROUP BY clause.",
     },
-    "1-3-34": {
-        "message": "At op {op}: Cannot use constant as a {type} parameter, found on {param}.",
-        "description": "Raised when a constant is used as a parameter type where "
-        "it is not allowed.",
-    },
-    "1-3-35": {
+    "1-2-14": {
         "message": "At op {op}: Cannot perform aggregation inside a Calc.",
         "description": "Occurs when an aggregation operation is attempted inside a "
         "Calc expression.",
     },
     # AST Helpers
-    "1-4-1-1": {
+    "1-3-1-1": {
         "message": "At op {op}: User defined {option} declared as {type_1}, found {type_2}.",
         "description": "Occurs when a user-defined option has a type mismatch in its declaration.",
     },
-    "1-4-1-2": {
+    "1-3-1-2": {
         "message": "Using variable {value}, not defined at {op} definition.",
         "description": "Raised when a variable is used without being defined in "
         "the operation's context.",
     },
-    "1-4-1-3": {
+    "1-3-1-3": {
         "message": "At op {op}: using variable {value}, not defined as an argument.",
         "description": "Occurs when a variable is referenced but not declared as an argument.",
     },
-    "1-4-1-4": {
+    "1-3-1-4": {
         "message": "Found duplicates at arguments naming, please review {type} definition {op}.",
         "description": "Raised when duplicate argument names are found in a definition.",
     },
-    "1-4-1-5": {
+    "1-3-1-5": {
         "message": "Found duplicates at rule naming: {names}. "
         "Please review {type} {ruleset_name} definition.",
         "description": "Occurs when multiple rules share the same name in a ruleset.",
     },
-    "1-4-1-6": {
+    "1-3-1-6": {
         "message": "At op {op}: Arguments incoherence, {defined} defined {passed} passed.",
         "description": "Raised when the number of defined arguments and passed arguments "
         "do not match.",
     },
-    "1-4-1-7": {
+    "1-3-1-7": {
         "message": "All rules must be named or not named, but found mixed criteria at "
         "{type} definition {name}.",
         "description": "Occurs when some rules are named and others are not in the same ruleset.",
     },
-    "1-4-1-8": {
+    "1-3-1-8": {
         "message": "All rules must have different code items in the left side of '=' in "
         "hierarchy operator at hierachical ruleset definition {name}.",
         "description": "Raised when duplicate left-hand side code items are found "
         "in hierarchical ruleset definitions.",
     },
-    "1-4-1-9": {
+    "1-3-1-9": {
         "message": "At op check_datapoint: {name} has an invalid datatype expected Dataset, "
         "found Scalar.",
         "description": "Occurs when a datapoint has an invalid datatype; a Dataset is expected "
         "but a Scalar was found.",
     },
     # AST Creation
-    "1-4-2-0": {
+    "1-3-2-0": {
         "message": "Error creating DAG.",
         "description": "Raised when the DAG (Directed Acyclic Graph) creation fails.",
     },
-    "1-4-2-1": {
+    "1-3-2-1": {
         "message": "Eval could not be called without a {option} type definition.",
         "description": "Occurs when an evaluation is attempted without a necessary "
         "type definition.",
     },
-    "1-4-2-2": {
-        "message": "Optional or empty expression node is not allowed in time_agg.",
-        "description": "Raised when a time aggregation expression node is optional or empty, "
-        "which is not allowed.",
-    },
-    "1-4-2-3": {
-        "message": "{value} could not be called in the count.",
-        "description": "Occurs when a value is used incorrectly in a count operation.",
-    },
-    "1-4-2-4": {
-        "message": "At op {op}: Only one order_by element must be used in Analytic with "
-        "range windowing.",
-        "description": "Raised when more than one ORDER BY element is used with analytic "
-        "functions requiring a single range window.",
-    },
-    "1-4-2-5": {
+    "1-3-2-2": {
         "message": "At op {op}: User defined operator without returns is not implemented.",
         "description": "Occurs when a user-defined operator lacks a return definition.",
     },
-    "1-4-2-6": {
-        "message": "At op {op}: Window must be provided.",
-        "description": "Raised when a required window specification is missing "
-        "for an analytic operation.",
-    },
-    "1-4-2-7": {
-        "message": "At op {op}: Partition by or order by clause must be provided for "
-        "Analytic operators.",
-        "description": "Occurs when an analytic operator is missing partitioning "
-        "or ordering clauses.",
-    },
-    "1-4-2-8": {
+    "1-3-2-3": {
         "message": "At op {op}: Vtl Script contains Cycles, no DAG established. "
         "Nodes involved: {nodes}.",
         "description": "Raised when cyclic dependencies are detected in a VTL script, "
@@ -1054,15 +975,6 @@ centralised_messages = {
         "with different period indicators.",
     },
     # ----------- Interpreter Common ------
-    "2-3-1": {
-        "message": "{comp_type} {comp_name} not found.",
-        "description": "Occurs when the specified component cannot be found.",
-    },
-    "2-3-2": {
-        "message": "{op_type} cannot be used with {node_op} operators.",
-        "description": "Raised when an operation type is incompatible with the "
-        "given operator nodes.",
-    },
     "2-3-4": {
         "message": "{op} operator must have a {comp}",
         "description": "Occurs when a required component is missing for the operator.",

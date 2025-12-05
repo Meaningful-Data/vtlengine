@@ -37,9 +37,9 @@ TIME_CHECKS_MAPPING: Dict[Type[ScalarType], Any] = {
 def _validate_csv_path(components: Dict[str, Component], csv_path: Path) -> None:
     # GE1 check if the file is empty
     if not csv_path.exists():
-        raise DataLoadError(code="0-3-1-2", file=csv_path)
+        raise DataLoadError(code="0-3-1-1", file=csv_path)
     if not csv_path.is_file():
-        raise DataLoadError(code="0-3-1-2", file=csv_path)
+        raise DataLoadError(code="0-3-1-1", file=csv_path)
     register_rfc()
     try:
         with open(csv_path, "r", errors="replace", encoding="utf-8") as f:
@@ -140,15 +140,15 @@ def _validate_pandas(
     if missing_columns:
         for name in missing_columns:
             if components[name].nullable is False:
-                raise DataLoadError("0-3-1-6", name=dataset_name, comp_name=name)
+                raise DataLoadError("0-3-1-5", name=dataset_name, comp_name=name)
             data[name] = None
 
     for id_name in id_names:
         if data[id_name].isnull().any():
-            raise DataLoadError("0-3-1-4", null_identifier=id_name, name=dataset_name)
+            raise DataLoadError("0-3-1-3", null_identifier=id_name, name=dataset_name)
 
     if len(id_names) == 0 and len(data) > 1:
-        raise DataLoadError("0-3-1-5", name=dataset_name)
+        raise DataLoadError("0-3-1-4", name=dataset_name)
 
     data = data.fillna(np.nan).replace([np.nan], None)
     # Checking data types on all data types
@@ -203,7 +203,7 @@ def _validate_pandas(
 
     except ValueError:
         str_comp = SCALAR_TYPES_CLASS_REVERSE[comp.data_type] if comp else "Null"
-        raise DataLoadError("0-3-1-7", name=dataset_name, column=comp_name, type=str_comp)
+        raise DataLoadError("0-3-1-6", name=dataset_name, column=comp_name, type=str_comp)
 
     if id_names:
         check_identifiers_duplicity(data, id_names, dataset_name)
@@ -215,7 +215,7 @@ def check_identifiers_duplicity(data: pd.DataFrame, identifiers: List[str], name
     dup_id_row = data.duplicated(subset=identifiers, keep=False)
     if dup_id_row.any():
         row_index = int(dup_id_row.idxmax()) + 1
-        raise DataLoadError("0-3-1-8", name=name, row_index=row_index)
+        raise DataLoadError("0-3-1-7", name=name, row_index=row_index)
 
 
 def load_datapoints(

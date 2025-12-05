@@ -75,7 +75,7 @@ class ScalarComponentTypeChecking(TestScalarComponentTypeChecking):
         """
         code = "4-1-3-3"
         number_inputs = 1
-        message = "0-3-1-7"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_4(self):

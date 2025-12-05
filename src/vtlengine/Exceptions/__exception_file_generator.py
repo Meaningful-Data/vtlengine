@@ -38,10 +38,11 @@ def generate_errors_rst(file_path: Path, messages: Dict[str, Any]) -> None:
     pattern_header = "Pattern"
     legend_rows = [
         ("INPUT ERRORS", "0-1-X-X = Input Validation Errors\n"),
+        ("", "0-2-X-X = JSON Schema Errors\n"),
         ("", "0-3-X-X = DataLoad Errors"),
         ("SEMANTIC ERRORS", "1-1-X-X = Operators Semantic Errors\n"),
-        ("", "1-3-X-X = Semantic Analyzer Errors\n"),
-        ("", "1-4-X-X = AST Errors"),
+        ("", "1-2-X-X = Semantic Analyzer Errors\n"),
+        ("", "1-3-X-X = AST Errors"),
         ("RUNTIME ERRORS", "2-X-X-X = RunTime Operator Errors"),
     ]
 

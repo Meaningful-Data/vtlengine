@@ -78,11 +78,11 @@ def _load_dataset_from_structure(
                     if s["name"] == structure_name:
                         structure_json = s
                 if structure_json is None:
-                    raise InputValidationException(code="0-3-1-1", message="Structure not found.")
+                    raise InputValidationException(code="0-2-1-2", message="Structure not found.")
                 try:
                     jsonschema.validate(instance=structure_json, schema=schema)
                 except jsonschema.exceptions.ValidationError as e:
-                    raise InputValidationException(code="0-3-1-1", message=e.message)
+                    raise InputValidationException(code="0-2-1-2", message=e.message)
 
                 for component in structure_json["components"]:
                     check_key("data_type", SCALAR_TYPES.keys(), component["data_type"])
@@ -166,7 +166,7 @@ def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Union[str, 
             )
     # Validation of Path object
     if not datapoint.exists():
-        raise DataLoadError(code="0-3-1-2", file=datapoint)
+        raise DataLoadError(code="0-3-1-1", file=datapoint)
 
     # Generation of datapoints dictionary with Path objects
     dict_paths: Dict[str, Path] = {}
@@ -243,7 +243,7 @@ def _load_datastructure_single(
             code="0-1-1-2", input=data_structure, message="Input must be a dict or Path object"
         )
     if not data_structure.exists():
-        raise DataLoadError(code="0-3-1-2", file=data_structure)
+        raise DataLoadError(code="0-3-1-1", file=data_structure)
     if data_structure.is_dir():
         datasets: Dict[str, Dataset] = {}
         scalars: Dict[str, Scalar] = {}
@@ -424,7 +424,7 @@ def load_vtl(input: Union[str, Path]) -> str:
             code="0-1-1-2", input=input, message="Input is not a Path object"
         )
     if not input.exists():
-        raise DataLoadError(code="0-3-1-2", file=input)
+        raise DataLoadError(code="0-3-1-1", file=input)
     if input.suffix != ".vtl":
         raise InputValidationException(code="0-1-1-3", expected_ext=".vtl", ext=input.suffix)
     with open(input, "r") as f:
@@ -435,7 +435,7 @@ def _validate_json(data: Dict[str, Any], schema: Dict[str, Any]) -> None:
     try:
         jsonschema.validate(instance=data, schema=schema)
     except jsonschema.ValidationError as e:
-        raise InputValidationException(code="0-1-2-9", message=f"{e}")
+        raise InputValidationException(code="0-2-1-1", message=f"{e}")
 
 
 def _load_single_value_domain(input: Path) -> Dict[str, ValueDomain]:
@@ -479,7 +479,7 @@ def load_value_domains(
             code="0-1-1-2", input=input, message="Input is not a Path object"
         )
     if not input.exists():
-        raise DataLoadError(code="0-3-1-2", file=input)
+        raise DataLoadError(code="0-3-1-1", file=input)
     if input.is_dir():
         value_domains = {}
         for f in input.iterdir():
@@ -525,7 +525,7 @@ def load_external_routines(
             code="0-1-1-2", input=input, message="Input must be a json file."
         )
     if not input.exists():
-        raise DataLoadError(code="0-3-1-2", file=input)
+        raise DataLoadError(code="0-3-1-1", file=input)
     if input.is_dir():
         for f in input.iterdir():
             if f.suffix != ".sql":
@@ -551,7 +551,7 @@ def _load_single_external_routine_from_file(input: Path) -> Any:
     if not isinstance(input, Path):
         raise InputValidationException(code="0-1-1-2", input=input)
     if not input.exists():
-        raise DataLoadError(code="0-3-1-2", file=input)
+        raise DataLoadError(code="0-3-1-1", file=input)
     if input.suffix != ".json":
         raise InputValidationException(code="0-1-1-3", expected_ext=".json", ext=input.suffix)
     routine_name = input.stem
@@ -570,18 +570,18 @@ def _check_output_folder(output_folder: Union[str, Path]) -> None:
         if "s3://" in output_folder:
             __check_s3_extra()
             if not output_folder.endswith("/"):
-                raise DataLoadError("0-3-1-3", folder=str(output_folder))
+                raise DataLoadError("0-3-1-2", folder=str(output_folder))
             return
         try:
             output_folder = Path(output_folder)
         except Exception:
-            raise DataLoadError("0-3-1-3", folder=str(output_folder))
+            raise DataLoadError("0-3-1-2", folder=str(output_folder))
 
     if not isinstance(output_folder, Path):
-        raise DataLoadError("0-3-1-3", folder=str(output_folder))
+        raise DataLoadError("0-3-1-2", folder=str(output_folder))
     if not output_folder.exists():
         if output_folder.suffix != "":
-            raise DataLoadError("0-3-1-3", folder=str(output_folder))
+            raise DataLoadError("0-3-1-2", folder=str(output_folder))
         os.mkdir(output_folder)
 
 

@@ -242,7 +242,7 @@ class InterpreterAnalyzer(ASTTemplate):
             if not isinstance(
                 child, (AST.HRuleset, AST.DPRuleset, AST.Operator)
             ) and not isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
-                raise SemanticError("1-3-17")
+                raise SemanticError("1-2-5")
             result = self.visit(child)
             if isinstance(result, Dataset) and result.name in self.datasets_inputs:
                 invalid_dataset_outputs.append(result.name)
@@ -328,7 +328,7 @@ class InterpreterAnalyzer(ASTTemplate):
         # If provided, all must be provided
         rule_names = [rule.name for rule in node.rules if rule.name is not None]
         if len(rule_names) != 0 and len(node.rules) != len(rule_names):
-            raise SemanticError("1-4-1-7", type="Datapoint Ruleset", name=node.name)
+            raise SemanticError("1-3-1-7", type="Datapoint Ruleset", name=node.name)
         if len(rule_names) == 0:
             for i, rule in enumerate(node.rules):
                 rule.name = (i + 1).__str__()
@@ -336,7 +336,7 @@ class InterpreterAnalyzer(ASTTemplate):
         if len(rule_names) != len(set(rule_names)):
             not_unique = [name for name in rule_names if rule_names.count(name) > 1]
             raise SemanticError(
-                "1-4-1-5",
+                "1-3-1-5",
                 type="Datapoint Ruleset",
                 names=", ".join(not_unique),
                 ruleset_name=node.name,
@@ -467,7 +467,7 @@ class InterpreterAnalyzer(ASTTemplate):
             elif self.is_from_regular_aggregation:
                 raise SemanticError("1-1-6-6", dataset_name=left_operand, comp_name=right_operand)
             elif len(left_operand.get_identifiers()) == 0:
-                raise SemanticError("1-3-27", op=node.op)
+                raise SemanticError("1-2-10", op=node.op)
         return BINARY_MAPPING[node.op].analyze(left_operand, right_operand)
 
     def visit_UnaryOp(self, node: AST.UnaryOp) -> None:
@@ -526,7 +526,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 raise SemanticError("2-1-12-1", op=node.op)
 
         if node.having_clause is not None and node.grouping is None:
-            raise SemanticError("1-3-33")
+            raise SemanticError("1-2-13")
 
         groupings: Any = []
         having = None
@@ -909,7 +909,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     duplicates.append(ref_element)
                 elements.append(self.visit(child).value)
             if len(duplicates) > 0:
-                raise SemanticError("1-3-9", duplicates=duplicates)
+                raise SemanticError("1-2-5", duplicates=duplicates)
             for element in elements:
                 if type(element) is not type(elements[0]):
                     raise Exception("All elements in a set must be of the same type")
@@ -922,11 +922,11 @@ class InterpreterAnalyzer(ASTTemplate):
             if self.value_domains is None:
                 raise SemanticError("2-3-10", comp_type="Value Domains")
             if node.name not in self.value_domains:
-                raise SemanticError("1-3-23", name=node.name)
+                raise SemanticError("1-2-8", name=node.name)
             vd = self.value_domains[node.name]
             return ScalarSet(data_type=vd.type, values=vd.setlist)
         else:
-            raise SemanticError("1-3-26", name=node.name)
+            raise SemanticError("1-2-9", name=node.name)
 
     def visit_RegularAggregation(self, node: AST.RegularAggregation) -> None:  # noqa: C901
         operands = []
@@ -942,7 +942,7 @@ class InterpreterAnalyzer(ASTTemplate):
             operands.append(self.visit(child))
             self.is_from_regular_aggregation = False
         if node.op == CALC and any(isinstance(operand, Dataset) for operand in operands):
-            raise SemanticError("1-3-35", op=node.op)
+            raise SemanticError("1-2-14", op=node.op)
         if node.op == AGGREGATE:
             # Extracting the role encoded inside the children assignments
             role_info = {
@@ -1248,11 +1248,11 @@ class InterpreterAnalyzer(ASTTemplate):
 
         elif node.op == CHECK_DATAPOINT:
             if self.dprs is None:
-                raise SemanticError("1-3-19", node_type="Datapoint Rulesets", node_value="")
+                raise SemanticError("1-2-6", node_type="Datapoint Rulesets", node_value="")
             # Checking if ruleset exists
             dpr_name: Any = node.children[1]
             if dpr_name not in self.dprs:
-                raise SemanticError("1-3-19", node_type="Datapoint Ruleset", node_value=dpr_name)
+                raise SemanticError("1-2-6", node_type="Datapoint Ruleset", node_value=dpr_name)
             dpr_info = self.dprs[dpr_name]
 
             # Extracting dataset
@@ -1321,11 +1321,11 @@ class InterpreterAnalyzer(ASTTemplate):
             # Sanitise the hierarchical ruleset and the call
 
             if self.hrs is None:
-                raise SemanticError("1-3-19", node_type="Hierarchical Rulesets", node_value="")
+                raise SemanticError("1-2-6", node_type="Hierarchical Rulesets", node_value="")
             else:
                 if hr_name not in self.hrs:
                     raise SemanticError(
-                        "1-3-19", node_type="Hierarchical Ruleset", node_value=hr_name
+                        "1-2-6", node_type="Hierarchical Ruleset", node_value=hr_name
                     )
 
                 if not isinstance(dataset, Dataset):
@@ -1878,7 +1878,7 @@ class InterpreterAnalyzer(ASTTemplate):
         if self.udos is None:
             raise SemanticError("2-3-10", comp_type="User Defined Operators")
         elif node.op not in self.udos:
-            raise SemanticError("1-3-5", node_op=node.op, op_type="User Defined Operator")
+            raise SemanticError("1-2-3", node_op=node.op, op_type="User Defined Operator")
         if self.signature_values is None:
             self.signature_values = {}
 
@@ -1886,11 +1886,11 @@ class InterpreterAnalyzer(ASTTemplate):
         signature_values = {}
 
         if operator is None:
-            raise SemanticError("1-3-5", node_op=node.op, op_type="User Defined Operator")
+            raise SemanticError("1-2-3", node_op=node.op, op_type="User Defined Operator")
         if operator["output"] == "Component" and not (
             self.is_from_regular_aggregation or self.is_from_rule
         ):
-            raise SemanticError("1-3-29", op=node.op)
+            raise SemanticError("1-2-12", op=node.op)
 
         for i, param in enumerate(operator["params"]):
             if i >= len(node.params):
@@ -1901,7 +1901,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     )
                 else:
                     raise SemanticError(
-                        "1-3-28",
+                        "1-2-11",
                         op=node.op,
                         received=len(node.params),
                         expected=len(operator["params"]),
@@ -1918,7 +1918,7 @@ class InterpreterAnalyzer(ASTTemplate):
                             if isinstance(param_element, Dataset):
                                 if param["type"] == "Component":
                                     raise SemanticError(
-                                        "1-4-1-1",
+                                        "1-3-1-1",
                                         op=node.op,
                                         option=param["name"],
                                         type_1=param["type"],
@@ -1929,7 +1929,7 @@ class InterpreterAnalyzer(ASTTemplate):
                                 "Component",
                             ]:
                                 raise SemanticError(
-                                    "1-4-1-1",
+                                    "1-3-1-1",
                                     op=node.op,
                                     option=param["name"],
                                     type_1=param["type"],
@@ -1946,7 +1946,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     if isinstance(param_element, (Dataset, DataComponent)):
                         type_2 = "Dataset" if isinstance(param_element, Dataset) else "Component"
                         raise SemanticError(
-                            "1-4-1-1",
+                            "1-3-1-1",
                             op=node.op,
                             option=param["name"],
                             type_1=param["type"],
@@ -1993,7 +1993,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
         if result_type != operator["output"]:
             raise SemanticError(
-                "1-4-1-1",
+                "1-3-1-1",
                 op=node.op,
                 option="output",
                 type_1=operator["output"],

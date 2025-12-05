@@ -77,7 +77,7 @@ input_vtl_params_OK = [
 input_vtl_error_params = [
     (filepath_VTL, "0-1-1-3"),
     (filepath_csv / "DS_1.csv", "0-1-1-3"),
-    (filepath_VTL / "3.vtl", "0-3-1-2"),
+    (filepath_VTL / "3.vtl", "0-3-1-1"),
     ({"DS": "dataset"}, "0-1-1-2"),
     (2, "0-1-1-2"),
 ]
@@ -88,16 +88,16 @@ input_vd_OK = [
 ]
 
 input_vd_error_params = [
-    (filepath_VTL / "VD_1.json", "0-3-1-2"),
+    (filepath_VTL / "VD_1.json", "0-3-1-1"),
     (filepath_VTL / "1.vtl", "0-1-1-3"),
     (
         filepath_json / "DS_1.json",
-        "0-1-2-9",
+        "0-2-1-1",
     ),
     (2, "0-1-1-2"),
     (
         {"setlist": ["AT", "BE", "CY"], "type": "String"},
-        "0-1-2-9",
+        "0-2-1-1",
     ),
 ]
 
@@ -141,7 +141,7 @@ load_datasets_input_params_OK = [
 ]
 
 load_datasets_wrong_input_params = [
-    (filepath_json / "VD_1.json", "0-3-1-2"),
+    (filepath_json / "VD_1.json", "0-3-1-1"),
     (filepath_csv / "DS_1.csv", "0-1-1-3"),
 ]
 
@@ -330,10 +330,10 @@ ext_params_OK = [(filepath_sql / "1.json")]
 ext_params_wrong = [
     (
         filepath_json / "DS_1.json",
-        "0-1-2-9",
+        "0-2-1-1",
     ),
     (5, "0-1-1-2"),
-    (filepath_sql / "6.sql", "0-3-1-2"),
+    (filepath_sql / "6.sql", "0-3-1-1"),
 ]
 
 params_semantic = [
@@ -665,7 +665,7 @@ params_validate_ds = [
         filepath_json / "DS_1.json",
         {"DS_1": pd.DataFrame({"wrong_col": [1, 2]})},
         False,
-        "0-3-1-6",
+        "0-3-1-5",
     ),
     (filepath_json / "DS_1.json", None, True, None),
     (
@@ -702,7 +702,7 @@ params_validate_ds = [
         [filepath_json / "DS_1.json"],
         {"DS_1": pd.DataFrame({"wrong": [1]})},
         False,
-        "0-3-1-6",
+        "0-3-1-5",
     ),
     (
         [filepath_json / "DS_1.json", filepath_json / "DS_2.json"],
@@ -1417,7 +1417,7 @@ def test_non_mandatory_fill_me():
 
 
 def test_mandatory_at_error():
-    exception_code = "0-3-1-6"
+    exception_code = "0-3-1-5"
 
     script = """
         DS_r := DS_1;
@@ -1470,7 +1470,7 @@ def test_mandatory_at_error():
 
 
 def test_mandatory_me_error():
-    exception_code = "0-3-1-6"
+    exception_code = "0-3-1-5"
 
     script = """
         DS_r := DS_1;
@@ -2085,7 +2085,7 @@ def test_attempt_to_validate_invalid_vd(path_schema, path_vd):
         vd_data = json.load(f)
     with open(path_schema, "r") as f:
         vd_schema = json.load(f)
-    with pytest.raises(InputValidationException, match="0-1-2-9"):
+    with pytest.raises(InputValidationException, match="0-2-1-1"):
         _validate_json(vd_data, vd_schema)
 
 
@@ -2098,7 +2098,7 @@ def test_attempt_to_validate_invalid_sql(path_schema, path_sql):
     try:
         _validate_json(ext_routine_data, ext_routine_schema)
     except InputValidationException:
-        with pytest.raises(InputValidationException, match="0-1-2-9"):
+        with pytest.raises(InputValidationException, match="0-2-1-1"):
             _validate_json(ext_routine_data, ext_routine_schema)
         return
     query = ext_routine_data.get("query")

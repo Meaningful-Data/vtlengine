@@ -207,7 +207,7 @@ class Join(Operator):
             return Dataset(name=dataset_name, components=operands[0].components, data=None)
         for op in operands:
             if len(op.get_identifiers()) == 0:
-                raise SemanticError("1-3-27", op=cls.op)
+                raise SemanticError("1-2-10", op=cls.op)
         cls.reference_dataset = (
             max(operands, key=lambda x: len(x.get_identifiers_names()))
             if cls.how not in ["cross", "left"]
