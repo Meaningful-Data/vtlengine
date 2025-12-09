@@ -28,11 +28,15 @@ class Scalar:
     name: str
     data_type: Type[ScalarType]
     _value: Any
+    persistent: bool = False
 
-    def __init__(self, name: str, data_type: Type[ScalarType], value: Any) -> None:
+    def __init__(
+        self, name: str, data_type: Type[ScalarType], value: Any, persistent: bool = False
+    ) -> None:
         self.name = name
         self.data_type = data_type
         self.value = value
+        self.persistent = persistent
 
     @property
     def value(self) -> Any:
@@ -177,8 +181,8 @@ class Component:
 class Dataset:
     name: str
     components: Dict[str, Component]
-    # data: Optional[Union[SparkDataFrame, PandasDataFrame]]
     data: Optional[PandasDataFrame] = None
+    persistent: bool = False
 
     def __post_init__(self) -> None:
         if self.data is not None:
@@ -483,8 +487,11 @@ class ExternalRoutine:
 
     @classmethod
     def from_sql_query(cls, name: str, query: str) -> "ExternalRoutine":
-        dataset_names = cls._extract_dataset_names(query)
-        return cls(dataset_names, query, name)
+        try:
+            dataset_names = cls._extract_dataset_names(query)
+            return cls(dataset_names, query, name)
+        except sqlglot.errors.ParseError as e:
+            raise Exception(f"Invalid SQL query in external routine '{name}': {e}") from e
 
     @classmethod
     def _extract_dataset_names(cls, query: str) -> List[str]:

@@ -40,7 +40,11 @@ from vtlengine.Interpreter import InterpreterAnalyzer
 base_path = Path(__file__).parent
 filepath = base_path / "data" / "encode"
 
-param = ["DS_r := DS_1 + DS_2;"]
+param = [
+    "DS_r := DS_1 + DS_2;",
+    """DS_r := DS_1 + DS_2;
+         //comment""",
+]
 
 
 param_ast = [
@@ -569,3 +573,17 @@ def test_visit_DPRIdentifier():
 def test_error_DAG_two_outputs_same_name(script, error):
     with pytest.raises(SemanticError, match=error):
         create_ast(text=script)
+
+
+def test_rule_name_not_in_ruleset():
+    script = """
+    DS_r := check_hierarchy(DS_1, rule_count);
+    """
+    ast = create_ast(text=script)
+    assert len(ast.children) == 1
+
+    script = """
+        DS_r := hierarchy(DS_1, rule_count);
+        """
+    ast = create_ast(text=script)
+    assert len(ast.children) == 1

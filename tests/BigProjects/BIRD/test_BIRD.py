@@ -32,7 +32,7 @@ class SemanticBIRD(BIRDHelper):
     def test_INPUT_LAYER_TO_ENRICHED_INPUT_LAYER(self):
         """ """
         code = "INPUT_LAYER_TO_ENRICHED_INPUT_LAYER"
-        number_inputs = 62
+        number_inputs = 59
         references_names = [
             "ADVNCS_NT_LNS_E",
             "INSTRMNTS_BNFCRS_E",

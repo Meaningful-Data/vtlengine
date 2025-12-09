@@ -1,0 +1,29 @@
+mdl1.B :=
+	A
+		[filter
+				var1 in {1, 2, 3}
+		];
+mdl1.B2 :=
+	mdl1.B
+		[rename var2 to varRel];
+mdl2.C :=
+	inner_join(
+		mdl1.B2,
+		A2
+		 keep varRel, var3
+	);
+mld3.D :=
+	mdl2.C
+		[calc varRel2 := varRel * 5]
+		[calc varF := var3 * varRel2]
+		[filter
+				varF > 1000 and
+					var3 > 100
+		];
+mld3.D2 :=
+	sum(
+		mld3.D group by Id_1
+		);
+F <-
+	mld3.D2
+		[calc varF := cast(varF, number)];

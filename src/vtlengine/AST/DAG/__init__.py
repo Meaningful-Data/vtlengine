@@ -19,6 +19,7 @@ from vtlengine.AST import (
     Analytic,
     Assignment,
     BinOp,
+    Constant,
     DefIdentifier,
     DPRuleset,
     HRuleset,
@@ -29,12 +30,14 @@ from vtlengine.AST import (
     PersistentAssignment,
     RegularAggregation,
     Start,
+    UDOCall,
     VarID,
 )
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.DAG._words import DELETE, GLOBAL, INPUTS, INSERT, OUTPUTS, PERSISTENT, UNKNOWN
 from vtlengine.AST.Grammar.tokens import AS, DROP, KEEP, MEMBERSHIP, RENAME, TO
 from vtlengine.Exceptions import SemanticError
+from vtlengine.Model import Component
 
 
 @dataclass
@@ -191,18 +194,22 @@ class DAGAnalyzer(ASTTemplate):
     def loadEdges(self):
         """ """
         if len(self.vertex) != 0:
-            countEdges = 0
-            # For each vertex
+            count_edges = 0
+            # Build a mapping of datasets to their statement keys
+            ref_to_keys = {}
             for key, statement in self.dependencies.items():
-                outputs = statement[OUTPUTS]
-                persistent = statement[PERSISTENT]
-                reference = outputs + persistent
-                for subKey, subStatement in self.dependencies.items():
-                    subInputs = subStatement[INPUTS]
-                    candidates = subInputs
-                    if candidates and reference[0] in candidates:
-                        self.edges[countEdges] = (key, subKey)
-                        countEdges += 1
+                reference = statement[OUTPUTS] + statement[PERSISTENT]
+                if reference:
+                    ref_value = reference[0]
+                    ref_to_keys[ref_value] = key
+
+            # Create edges by checking inputs against the mapping
+            for subKey, subStatement in self.dependencies.items():
+                for input_val in subStatement[INPUTS]:
+                    if input_val in ref_to_keys:
+                        key = ref_to_keys[input_val]
+                        self.edges[count_edges] = (key, subKey)
+                        count_edges += 1
 
     def nx_topologicalSort(self):
         """ """
@@ -387,6 +394,16 @@ class DAGAnalyzer(ASTTemplate):
     def visit_JoinOp(self, node: JoinOp) -> None:
         for clause in node.clauses:
             self.visit(clause)
+
+    def visit_UDOCall(self, node: UDOCall) -> None:
+        node_args = (self.udos or {}).get(node.op)
+        if not node_args:
+            super().visit_UDOCall(node)
+        else:
+            node_sig = [type(p.type_) for p in node_args.parameters]
+            for sig, param in zip(node_sig, node.params):
+                if not isinstance(param, Constant) and sig is not Component:
+                    self.visit(param)
 
 
 class HRDAGAnalyzer(DAGAnalyzer):

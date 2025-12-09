@@ -3,6 +3,8 @@ from pathlib import Path
 import pytest
 
 from tests.Helper import TestHelper
+from vtlengine import semantic_analysis
+from vtlengine.Exceptions import SemanticError
 
 
 class SemanticHelper(TestHelper):
@@ -2119,7 +2121,7 @@ class ScalarTests(SemanticHelper):
         """
         Dataset --> Dataset
         Status:
-        Expression: DS_1 := DS_1[calc identifier Id_3 := Me_1 <> sc_2];
+        Expression: DS_r := DS_1[calc identifier Id_3 := Me_1 <> sc_2];
         Description:
 
         Git Branch:
@@ -2780,3 +2782,92 @@ class ScalarTests(SemanticHelper):
             references_names=references_names,
             scalars={"sc_1": 3},
         )
+
+
+def test_bug_297():
+    """
+    Github issue #297. Resolves a bug in semantic analysis.
+    """
+    script = """
+        Mod1.DS_cond :=
+            DS_1 # Me_bool;
+        Mod1.DS_then :=
+            DS_1 # Me_int;
+        Mod1.DS_else :=
+            DS_1 # Me_int;
+        Mod1.if_ds_ds :=
+            if Mod1.DS_cond # Id_2 = "A"then Mod1.DS_then else Mod1.DS_else;
+    """
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "nullable": False, "role": "Identifier"},
+                    {"name": "Id_2", "type": "String", "nullable": False, "role": "Identifier"},
+                    {"name": "Id_3", "type": "Integer", "nullable": False, "role": "Identifier"},
+                    {"name": "Id_date", "type": "Date", "nullable": False, "role": "Identifier"},
+                    {
+                        "name": "Id_period",
+                        "type": "Time_Period",
+                        "nullable": False,
+                        "role": "Identifier",
+                    },
+                    {"name": "Me_bool", "type": "Boolean", "nullable": True, "role": "Measure"},
+                    {"name": "Me_int", "type": "Integer", "nullable": True, "role": "Measure"},
+                    {"name": "Me_interval", "type": "Time", "nullable": True, "role": "Measure"},
+                    {"name": "Me_num", "type": "Number", "nullable": True, "role": "Measure"},
+                    {"name": "Me_str", "type": "String", "nullable": True, "role": "Measure"},
+                ],
+            }
+        ]
+    }
+    try:
+        semantic_analysis(script, data_structures=data_structures)
+    except Exception as e:
+        pytest.fail(f"semantic_analysis raised an exception: {e}")
+
+
+def test_bug_349():
+    """
+    Github issue #349. Resolves a bug in semantic analysis where input name is the same
+    as an output defined.
+    """
+    script_1 = """
+                sc_r <- sc_1;
+                sc_1 <- sc_2 + 10;
+            """
+
+    data_structures_1 = {
+        "scalars": [
+            {"name": "sc_1", "type": "Number"},
+            {"name": "sc_2", "type": "Number"},
+        ]
+    }
+    script_2 = """
+            DS_r <- DS_1;
+            DS_1 <- DS_2 + 10;
+        """
+
+    data_structures_2 = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            },
+            {
+                "name": "DS_2",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            },
+        ],
+    }
+    with pytest.raises(SemanticError, match="0-1-2-8"):
+        semantic_analysis(script_1, data_structures=data_structures_1)
+    with pytest.raises(SemanticError, match="0-1-2-8"):
+        semantic_analysis(script_2, data_structures=data_structures_2)

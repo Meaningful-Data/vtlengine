@@ -19,6 +19,9 @@ centralised_messages = {
     "0-1-2-5": "File {file} must be encoded in utf-8 (without BOM).",
     "0-1-2-6": "Not found scalar {name} in datastructures",
     "0-1-2-7": "Invalid value '{value}' for type {type_} {op_type} {name}.",
+    "0-1-2-8": "Cannot pass as inputs datasets/scalars defined as outputs of transformations "
+    "in the script, please check: {names}",
+    "0-1-2-9": "The provided JSON does not follow the required JSON Schema",
     # Run SDMX errors
     "0-1-3-1": "Expected exactly one input dataset in the whole script, found: {number_datasets}",
     "0-1-3-2": "SDMX Dataset {schema} requires to have a Schema object defined as structure",
@@ -31,7 +34,6 @@ centralised_messages = {
     "0-3-1-1": "Dataset {dataset} is not valid according to JSON schema",
     # Infer Data Structure errors
     "0-1-1-2": "The provided {source} must have data to can infer the data structure.",
-    "0-1-1-3": "Can not infer data structure: {errors}.",
     "0-1-1-4": "On Dataset {name} loading:  An identifier cannot have null values, found null "
     "values on {null_identifier}.",
     "0-1-1-5": "On Dataset {name} loading: Datasets without identifiers must have 0 or "
@@ -207,6 +209,7 @@ centralised_messages = {
     "1-1-18-8": "At op {op}: {msg} in regexp: {regexp},  in position {pos}.",
     "1-1-18-10": "At op {op}: Cannot have a Dataset as parameter",
     # Time operators
+    "1-1-19-1": "At op {op}: {op} must have a {data_type} type on {comp}.",
     "1-1-19-2": "At op {op}: Unknown date type for {op}.",
     "1-1-19-3": "At op {op}: Invalid {param} for {op}.",
     "1-1-19-4": "At op {op}: Invalid values {value_1} and {value_2}, periodIndTo parameter must be "
@@ -317,4 +320,5 @@ centralised_messages = {
     "1-4-2-6": "At op {op}: Window must be provided.",
     "1-4-2-7": "At op {op}: Partition by or order by clause must be provided for Analytic "
     "operators.",
+    "1-4-2-8": "{rule_name} rule is not defined in the given ruleset.",
 }

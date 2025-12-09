@@ -5,11 +5,13 @@ from unittest.mock import patch
 import pandas as pd
 import pytest
 
-from vtlengine import DataTypes, run
+from vtlengine import DataTypes, run, validate_dataset
 from vtlengine.Exceptions import InputValidationException
 from vtlengine.files.output import TimePeriodRepresentation, save_datapoints
 from vtlengine.files.parser import load_datapoints
 from vtlengine.Model import Component, Dataset, Role
+
+pytest.importorskip("fsspec", reason="s3 extra is not installed.")
 
 base_path = Path(__file__).parent
 filepath_output = base_path / "data" / "DataSet" / "output"
@@ -156,6 +158,26 @@ def test_run_s3(mock_read_csv):
     input_path = "s3://path/to/input/DS_1.csv"
     with pytest.raises(InputValidationException):
         run(script="DS_r := DS_1;", data_structures=data_structures, datapoints=input_path)
+
+    dtypes = {comp["name"]: object for comp in data_structures["datasets"][0]["DataStructure"]}
+    mock_read_csv.assert_called_once_with(
+        input_path,
+        dtype=dtypes,
+        engine="c",
+        keep_default_na=False,
+        na_values=[""],
+        encoding_errors="replace",
+    )
+
+
+@patch("pandas.read_csv")
+def test_validate_dataset_s3(mock_read_csv):
+    with open(filepath_datastructure / "DS_1.json") as f:
+        data_structures = json.load(f)
+
+    input_path = "s3://path/to/input/DS_1.csv"
+    with pytest.raises(InputValidationException):
+        validate_dataset(data_structures=data_structures, datapoints=input_path)
 
     dtypes = {comp["name"]: object for comp in data_structures["datasets"][0]["DataStructure"]}
     mock_read_csv.assert_called_once_with(

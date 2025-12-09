@@ -1,0 +1,125 @@
+{
+    "insertion": {
+        "1": [
+            "ANCRDT_ACCNTNG_C"
+        ],
+        "2": [
+            "ANCRDT_FNNCL_C"
+        ],
+        "6": [
+            "ANCRDT_INSTRMNT_C"
+        ],
+        "7": [
+            "ANCRDT_ENTTY_INSTRMNT_C"
+        ],
+        "8": [
+            "ANCRDT_ACCNTNG_C_T3",
+            "ANCRDT_INSTRMNT_C_T1",
+            "ANCRDT_INSTRMNT_C_T2",
+            "ANCRDT_INSTRMNT_C_T3"
+        ],
+        "9": [
+            "ANCRDT_ENTTY"
+        ],
+        "13": [
+            "ANCRDT_ENTTY_DFLT_C"
+        ]
+    },
+    "deletion": {
+        "1": [
+            "DP_RLST_ACCNTNG_RSLT"
+        ],
+        "2": [
+            "DP_RLST_FNNCL_RSLT"
+        ],
+        "3": [
+            "RI0040"
+        ],
+        "4": [
+            "RI0100"
+        ],
+        "11": [
+            "DP_RLST_FNNCL_ACCNTNG_RSLT",
+            "dsPrep.ACCNTNG_FNNCL"
+        ],
+        "12": [
+            "DP_RLST_INSTRMNT_ACCNTNG_RSLT",
+            "dsPrep.INSTRMNT_ACCNTNG"
+        ],
+        "13": [
+            "ANCRDT_ENTTY_DFLT_C",
+            "dsPrep.INSTRMNT_DBTR"
+        ],
+        "14": [
+            "DP_RLST_INSTRMNTS_FLL_LST_QRTR_RSLT",
+            "dsPrep.ACCNTNG_INSTRMNT_T_T3"
+        ],
+        "15": [
+            "dsPrep.LGL_ENTTY_OBSRVD_AGNT"
+        ],
+        "16": [
+            "dsPrep.ENTTY_INSTRMNT_HDQRTR"
+        ],
+        "17": [
+            "DP_RLST_INSTRMNT_ENTTY_RSK_RSLT",
+            "dsPrep.INSTRMNT_ENTTY_RSK"
+        ],
+        "18": [
+            "ANCRDT_ENTTY",
+            "dsPrep.LGL_ENTTY_ACCNTNG"
+        ],
+        "19": [
+            "dsPrep.ENTTY_INSTRMNT_LGL_ENTTY_CD_ID"
+        ],
+        "20": [
+            "DP_RLST_ACCNTNG_FRMWRK_RSLT",
+            "dsPrep.ANCRDT_ACCNTNG_ACCNTNG_FRMWRK"
+        ],
+        "21": [
+            "dsPrep.ENTTY_INSTRMNT_BY_LGL_ENTTY"
+        ],
+        "22": [
+            "ANCRDT_ACCNTNG_C",
+            "ANCRDT_FNNCL_C",
+            "ANCRDT_INSTRMNT_C",
+            "dsPrep.INTRCMPNY_LNS_INTRSCTN"
+        ],
+        "23": [
+            "DP_RLST_ACCNTNG_INTRCMPNY",
+            "dsPrep.INTRCMPNY_LNS_INSMRMNTS"
+        ],
+        "10": [
+            "ANCRDT_ENTTY_INSTRMNT_C"
+        ],
+        "8": [
+            "ANCRDT_ACCNTNG_C_T3",
+            "ANCRDT_INSTRMNT_C_T1",
+            "ANCRDT_INSTRMNT_C_T2",
+            "ANCRDT_INSTRMNT_C_T3"
+        ]
+    },
+    "global_inputs": [
+        "ANCRDT_ACCNTNG_C",
+        "ANCRDT_ACCNTNG_C_T3",
+        "ANCRDT_ENTTY",
+        "ANCRDT_ENTTY_DFLT_C",
+        "ANCRDT_ENTTY_INSTRMNT_C",
+        "ANCRDT_FNNCL_C",
+        "ANCRDT_INSTRMNT_C",
+        "ANCRDT_INSTRMNT_C_T1",
+        "ANCRDT_INSTRMNT_C_T2",
+        "ANCRDT_INSTRMNT_C_T3"
+    ],
+    "persistent": [
+        "DP_RLST_ACCNTNG_FRMWRK_RSLT",
+        "DP_RLST_ACCNTNG_INTRCMPNY",
+        "DP_RLST_ACCNTNG_RSLT",
+        "DP_RLST_FNNCL_ACCNTNG_RSLT",
+        "DP_RLST_FNNCL_RSLT",
+        "DP_RLST_INSTRMNTS_FLL_LST_QRTR_RSLT",
+        "DP_RLST_INSTRMNT_ACCNTNG_RSLT",
+        "DP_RLST_INSTRMNT_ENTTY_RSK_RSLT",
+        "RI0040",
+        "RI0100"
+    ]
+}

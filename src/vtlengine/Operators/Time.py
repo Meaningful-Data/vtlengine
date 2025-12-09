@@ -68,6 +68,8 @@ class Time(Operators.Operator):
                 if reference_id is not None:
                     raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
                 reference_id = id.name
+        if reference_id is None:
+            raise SemanticError("1-1-19-1", op=cls.op, data_type="Time_Period", comp="identifier")
         return str(reference_id)
 
     @classmethod
@@ -206,7 +208,9 @@ class Period_indicator(Unary):
         if operand.data_type != TimePeriod:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time period component")
         if isinstance(operand, DataComponent):
-            return DataComponent(name=operand.name, data_type=Duration, data=None)
+            return DataComponent(
+                name=operand.name, data_type=Duration, data=None, nullable=operand.nullable
+            )
         return Scalar(name=operand.name, data_type=Duration, value=None)
 
     @classmethod
@@ -705,7 +709,9 @@ class Time_Aggregation(Time):
         if operand.data_type == TimeInterval:
             raise SemanticError("1-1-19-6", op=cls.op, comp=operand.name)
 
-        return DataComponent(name=operand.name, data_type=operand.data_type, data=None)
+        return DataComponent(
+            name=operand.name, data_type=operand.data_type, data=None, nullable=operand.nullable
+        )
 
     @classmethod
     def scalar_validation(
@@ -940,7 +946,9 @@ class Date_Add(Parametrized):
         if isinstance(operand, Scalar):
             return Scalar(name=operand.name, data_type=operand.data_type, value=None)
         if isinstance(operand, DataComponent):
-            return DataComponent(name=operand.name, data_type=operand.data_type, data=None)
+            return DataComponent(
+                name=operand.name, data_type=operand.data_type, data=None, nullable=operand.nullable
+            )
 
         if all(comp.data_type not in [Date, TimePeriod] for comp in operand.components.values()):
             raise SemanticError("2-1-19-14", op=cls.op, name=operand.name)

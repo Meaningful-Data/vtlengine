@@ -1,4 +1,4 @@
 {
   "name": "1",
-  "query": ""
+  "query": "UPDTE users SET name = 'John' WHERE id = 1;"
 }
