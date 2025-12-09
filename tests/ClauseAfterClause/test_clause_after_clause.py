@@ -980,3 +980,20 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_50(self):
+        """
+        GL_564: keep after sub
+        Dataset --> Dataset
+        Status: OK
+        Expression: wb_econ_01 := TIPSNA40[sub freq = "A"]
+                      [sub na_item = "B1GQ"]
+                      [sub 'unit' = "CLV15_EUR_HAB"]
+                      [keep OBS_VALUE];
+        Git Branch: Cr-295
+        """
+        code = "GL_564"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)

@@ -1420,6 +1420,21 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
             code=code, number_inputs=number_inputs, exception_code=error_code
         )
 
+    def test_GL_566_1(self):
+        """
+        Dataset --> Dataset
+        Status: OK
+        Expression: Check GL_566_1.vtl
+
+        Git Branch: Cr-295.
+        """
+
+        code = "GL_566_1"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
     """
