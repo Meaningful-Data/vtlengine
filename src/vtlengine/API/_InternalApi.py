@@ -24,8 +24,8 @@ from vtlengine.AST import Assignment, DPRuleset, HRuleset, Operator, PersistentA
 from vtlengine.AST.ASTString import ASTString
 from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.Exceptions import (
+    DataLoadError,
     InputValidationException,
-    SemanticError,
     check_key,
 )
 from vtlengine.files.parser import (
@@ -78,11 +78,11 @@ def _load_dataset_from_structure(
                     if s["name"] == structure_name:
                         structure_json = s
                 if structure_json is None:
-                    raise InputValidationException(code="0-3-1-1", message="Structure not found.")
+                    raise InputValidationException(code="0-2-1-2", message="Structure not found.")
                 try:
                     jsonschema.validate(instance=structure_json, schema=schema)
                 except jsonschema.exceptions.ValidationError as e:
-                    raise InputValidationException(code="0-3-1-1", message=e.message)
+                    raise InputValidationException(code="0-2-1-2", message=e.message)
 
                 for component in structure_json["components"]:
                     check_key("data_type", SCALAR_TYPES.keys(), component["data_type"])
@@ -148,7 +148,9 @@ def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Union[str, 
     Returns a dict with the data given from one dataset.
     """
     if not isinstance(datapoint, (str, Path)):
-        raise Exception("Invalid datapoint. Input must be a Path or an S3 URI")
+        raise InputValidationException(
+            code="0-1-1-2", input=datapoint, message="Input must be a Path or an S3 URI"
+        )
     # Handling of str values
     if isinstance(datapoint, str):
         if "s3://" in datapoint:
@@ -159,10 +161,12 @@ def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Union[str, 
         try:
             datapoint = Path(datapoint)
         except Exception:
-            raise Exception("Invalid datapoint. Input must refer to a Path or an S3 URI")
+            raise InputValidationException(
+                code="0-1-1-2", input=datapoint, message="Input must refer to a Path or an S3 URI"
+            )
     # Validation of Path object
     if not datapoint.exists():
-        raise Exception(f"Datapoint file not found: {datapoint}")
+        raise DataLoadError(code="0-3-1-1", file=datapoint)
 
     # Generation of datapoints dictionary with Path objects
     dict_paths: Dict[str, Path] = {}
@@ -185,7 +189,7 @@ def _check_unique_datapoints(
     """
     for x in datapoints_to_add:
         if x in datapoints_present:
-            raise Exception(
+            raise InputValidationException(
                 f"Duplicate dataset name found in datapoints: {x}. "
                 f"Please check file names and dictionary keys in datapoints."
             )
@@ -201,10 +205,16 @@ def _load_datapoints_path(
     if isinstance(datapoints, dict):
         for dataset_name, datapoint in datapoints.items():
             if not isinstance(dataset_name, str):
-                raise Exception("Invalid dataset name. Datapoints dictionary keys must be strings.")
+                raise InputValidationException(
+                    code="0-1-1-2",
+                    input=dataset_name,
+                    message="Datapoints dictionary keys must be strings.",
+                )
             if not isinstance(datapoint, (str, Path)):
-                raise Exception(
-                    "Invalid datapoint. Datapoints dictionary values must be Paths or S3 URIs."
+                raise InputValidationException(
+                    code="0-1-1-2",
+                    input=datapoint,
+                    message="Datapoints dictionary values must be Paths or S3 URIs.",
                 )
             single_datapoint = _load_single_datapoint(datapoint)
             first_datapoint = list(single_datapoint.values())[0]
@@ -229,9 +239,11 @@ def _load_datastructure_single(
     if isinstance(data_structure, dict):
         return _load_dataset_from_structure(data_structure)
     if not isinstance(data_structure, Path):
-        raise Exception("Invalid datastructure. Input must be a dict or Path object")
+        raise InputValidationException(
+            code="0-1-1-2", input=data_structure, message="Input must be a dict or Path object"
+        )
     if not data_structure.exists():
-        raise Exception("Invalid datastructure. Input does not exist")
+        raise DataLoadError(code="0-3-1-1", file=data_structure)
     if data_structure.is_dir():
         datasets: Dict[str, Dataset] = {}
         scalars: Dict[str, Scalar] = {}
@@ -244,7 +256,9 @@ def _load_datastructure_single(
         return datasets, scalars
     else:
         if data_structure.suffix != ".json":
-            raise Exception("Invalid datastructure. Must have .json extension")
+            raise InputValidationException(
+                code="0-1-1-3", expected_ext=".json", ext=data_structure.suffix
+            )
         with open(data_structure, "r") as file:
             structures = json.load(file)
     return _load_dataset_from_structure(structures)
@@ -343,10 +357,12 @@ def load_datasets_with_data(
     ):
         for dataset_name, data in datapoints.items():
             if dataset_name not in datasets:
-                raise Exception(f"Not found dataset {dataset_name} in datastructures.")
+                raise InputValidationException(
+                    f"Not found dataset {dataset_name} in datastructures."
+                )
             # This exception is not needed due to the all() check above, but it is left for safety
             if not isinstance(data, pd.DataFrame):
-                raise Exception(
+                raise InputValidationException(
                     f"Invalid datapoint for dataset {dataset_name}. Must be a Pandas Dataframe."
                 )
             datasets[dataset_name].data = _validate_pandas(
@@ -361,7 +377,7 @@ def load_datasets_with_data(
     if isinstance(datapoints, dict) and any(
         not isinstance(v, (str, Path)) for v in datapoints.values()
     ):
-        raise Exception(
+        raise InputValidationException(
             "Invalid datapoints. All values in the dictionary must be Paths or S3 URIs, "
             "or all values must be Pandas Dataframes."
         )
@@ -372,8 +388,8 @@ def load_datasets_with_data(
     for dataset_name, csv_pointer in datapoints_path.items():
         # Check if dataset exists in datastructures
         if dataset_name not in datasets:
-            raise Exception(f"Not found dataset {dataset_name} in datastructures.")
-        # Validate csv path for this dataset, by loading it and removing memory afterwards
+            raise InputValidationException(f"Not found dataset {dataset_name} in datastructures.")
+        # Validate csv path for this dataset
         components = datasets[dataset_name].components
         _ = load_datapoints(components=components, dataset_name=dataset_name, csv_path=csv_pointer)
     gc.collect()  # Garbage collector to free memory after we loaded everything and discarded them
@@ -404,11 +420,13 @@ def load_vtl(input: Union[str, Path]) -> str:
         else:
             return input
     if not isinstance(input, Path):
-        raise Exception("Invalid vtl file. Input is not a Path object")
+        raise InputValidationException(
+            code="0-1-1-2", input=input, message="Input is not a Path object"
+        )
     if not input.exists():
-        raise Exception("Invalid vtl file. Input does not exist")
+        raise DataLoadError(code="0-3-1-1", file=input)
     if input.suffix != ".vtl":
-        raise Exception("Invalid vtl file. Must have .vtl extension")
+        raise InputValidationException(code="0-1-1-3", expected_ext=".vtl", ext=input.suffix)
     with open(input, "r") as f:
         return f.read()
 
@@ -417,12 +435,12 @@ def _validate_json(data: Dict[str, Any], schema: Dict[str, Any]) -> None:
     try:
         jsonschema.validate(instance=data, schema=schema)
     except jsonschema.ValidationError as e:
-        raise InputValidationException(code="0-1-2-9", message=f"{e}")
+        raise InputValidationException(code="0-2-1-1", message=f"{e}")
 
 
 def _load_single_value_domain(input: Path) -> Dict[str, ValueDomain]:
     if input.suffix != ".json":
-        raise Exception("Invalid Value Domain file. Must have .json extension")
+        raise InputValidationException(code="0-1-1-3", expected_ext=".json", ext=input.suffix)
     with open(input, "r") as f:
         data = json.load(f)
     _validate_json(data, vd_schema)
@@ -457,9 +475,11 @@ def load_value_domains(
             value_domains.update(load_value_domains(item))
         return value_domains
     if not isinstance(input, Path):
-        raise Exception("Invalid vd file. Input is not a Path object")
+        raise InputValidationException(
+            code="0-1-1-2", input=input, message="Input is not a Path object"
+        )
     if not input.exists():
-        raise Exception("Invalid vd file. Input does not exist")
+        raise DataLoadError(code="0-3-1-1", file=input)
     if input.is_dir():
         value_domains = {}
         for f in input.iterdir():
@@ -467,7 +487,7 @@ def load_value_domains(
             value_domains = {**value_domains, **vd}
         return value_domains
     if input.suffix != ".json":
-        raise Exception("Invalid vd file. Must have .json extension")
+        raise InputValidationException(code="0-1-1-3", expected_ext=".json", ext=input.suffix)
     return _load_single_value_domain(input)
 
 
@@ -501,9 +521,11 @@ def load_external_routines(
             ext_routines.update(load_external_routines(item))
         return ext_routines
     if not isinstance(input, Path):
-        raise Exception("Input invalid. Input must be a json file.")
+        raise InputValidationException(
+            code="0-1-1-2", input=input, message="Input must be a json file."
+        )
     if not input.exists():
-        raise Exception("Input invalid. Input does not exist")
+        raise DataLoadError(code="0-3-1-1", file=input)
     if input.is_dir():
         for f in input.iterdir():
             if f.suffix != ".sql":
@@ -527,11 +549,11 @@ def _return_only_persistent_datasets(
 
 def _load_single_external_routine_from_file(input: Path) -> Any:
     if not isinstance(input, Path):
-        raise Exception("Input invalid")
+        raise InputValidationException(code="0-1-1-2", input=input)
     if not input.exists():
-        raise Exception("Input does not exist")
+        raise DataLoadError(code="0-3-1-1", file=input)
     if input.suffix != ".json":
-        raise Exception("Input must be a json file")
+        raise InputValidationException(code="0-1-1-3", expected_ext=".json", ext=input.suffix)
     routine_name = input.stem
     with open(input, "r") as f:
         data = json.load(f)
@@ -548,18 +570,18 @@ def _check_output_folder(output_folder: Union[str, Path]) -> None:
         if "s3://" in output_folder:
             __check_s3_extra()
             if not output_folder.endswith("/"):
-                raise ValueError("Output folder must be a Path or S3 URI to a directory")
+                raise DataLoadError("0-3-1-2", folder=str(output_folder))
             return
         try:
             output_folder = Path(output_folder)
         except Exception:
-            raise ValueError("Output folder must be a Path or S3 URI to a directory")
+            raise DataLoadError("0-3-1-2", folder=str(output_folder))
 
     if not isinstance(output_folder, Path):
-        raise ValueError("Output folder must be a Path or S3 URI to a directory")
+        raise DataLoadError("0-3-1-2", folder=str(output_folder))
     if not output_folder.exists():
         if output_folder.suffix != "":
-            raise ValueError("Output folder must be a Path or S3 URI to a directory")
+            raise DataLoadError("0-3-1-2", folder=str(output_folder))
         os.mkdir(output_folder)
 
 
@@ -757,7 +779,7 @@ def _check_script(script: Union[str, TransformationScheme, Path]) -> str:
     Check if the TransformationScheme object is valid to generate a vtl script.
     """
     if not isinstance(script, (str, TransformationScheme, Path)):
-        raise SemanticError("0-1-1-1", format_=type(script).__name__)
+        raise InputValidationException("0-1-1-1", format_=type(script).__name__)
     if isinstance(script, TransformationScheme):
         from pysdmx.toolkit.vtl import (
             generate_vtl_script,

@@ -29,7 +29,7 @@ from vtlengine.AST.ASTString import ASTString
 from vtlengine.AST.DAG import DAGAnalyzer
 from vtlengine.AST.Grammar.lexer import Lexer
 from vtlengine.AST.Grammar.parser import Parser
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import InputValidationException
 from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
     format_time_period_external_representation,
@@ -507,18 +507,18 @@ def run_sdmx(  # noqa: C901
         if isinstance(datasets, (list, set)):
             object_typing = {type(o).__name__ for o in datasets}
             type_ = f"{type_}[{', '.join(object_typing)}]"
-        raise SemanticError("0-1-3-7", type_=type_)
+        raise InputValidationException("0-1-3-7", type_=type_)
 
     # Mapping handling
     if mappings is None:
         if len(datasets) != 1:
-            raise SemanticError("0-1-3-3")
+            raise InputValidationException("0-1-3-3")
         if len(datasets) == 1:
             if len(input_names) != 1:
-                raise SemanticError("0-1-3-1", number_datasets=len(input_names))
+                raise InputValidationException("0-1-3-1", number_datasets=len(input_names))
             schema = datasets[0].structure
             if not isinstance(schema, Schema):
-                raise SemanticError("0-1-3-2", schema=schema)
+                raise InputValidationException("0-1-3-2", schema=schema)
             mapping_dict = {schema.short_urn: input_names[0]}
     elif isinstance(mappings, Dict):
         mapping_dict = mappings
@@ -540,27 +540,27 @@ def run_sdmx(  # noqa: C901
         elif isinstance(mappings.dataflow, Dataflow):
             short_urn = mappings.dataflow.short_urn
         else:
-            raise TypeError(
+            raise InputValidationException(
                 "Expected str, Reference, DataflowRef or Dataflow type for dataflow in "
                 "VtlDataflowMapping."
             )
 
         mapping_dict = {short_urn: mappings.dataflow_alias}
     else:
-        raise TypeError("Expected dict or VtlDataflowMapping type for mappings.")
+        raise InputValidationException("Expected dict or VtlDataflowMapping type for mappings.")
 
     for vtl_name in mapping_dict.values():
         if vtl_name not in input_names:
-            raise SemanticError("0-1-3-5", dataset_name=vtl_name)
+            raise InputValidationException("0-1-3-5", dataset_name=vtl_name)
 
     datapoints = {}
     data_structures = []
     for dataset in datasets:
         schema = dataset.structure
         if not isinstance(schema, Schema):
-            raise SemanticError("0-1-3-2", schema=schema)
+            raise InputValidationException("0-1-3-2", schema=schema)
         if schema.short_urn not in mapping_dict:
-            raise SemanticError("0-1-3-4", short_urn=schema.short_urn)
+            raise InputValidationException("0-1-3-4", short_urn=schema.short_urn)
         # Generating VTL Datastructure and Datapoints.
         dataset_name = mapping_dict[schema.short_urn]
         vtl_structure = to_vtl_json(schema, dataset_name)
@@ -572,7 +572,7 @@ def run_sdmx(  # noqa: C901
         if input_name not in mapping_dict.values():
             missing.append(input_name)
     if missing:
-        raise SemanticError("0-1-3-6", missing=missing)
+        raise InputValidationException("0-1-3-6", missing=missing)
 
     result = run(
         script=script,
