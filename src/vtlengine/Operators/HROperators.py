@@ -48,7 +48,7 @@ class HRComparison(Operators.Binary):
 
         if mask_remove is not None:
             # Adding ignore here because mypy cannot infer typing of setting values in a Series
-            result[mask_remove] = "REMOVE_VALUE" # type: ignore[call-overload]
+            result[mask_remove] = "REMOVE_VALUE"  # type: ignore[call-overload]
             if mask_null is not None:
                 result[mask_null] = None
         return result
