@@ -314,7 +314,7 @@ class Binary(Operator):
 
         join_keys = list(set(left_identifiers).intersection(right_identifiers))
         if len(join_keys) == 0:
-            raise SemanticError("1-3-27", op=cls.op)
+            raise SemanticError("1-2-10", op=cls.op)
 
         # Deleting extra identifiers that we do not need anymore
 

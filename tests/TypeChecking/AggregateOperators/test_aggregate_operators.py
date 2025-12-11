@@ -87,7 +87,7 @@ class AggregateOperatorsDatasetTypeChecking(TestAggregateTypeChecking):
         """
         code = "10-1-4"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_5(self):
@@ -116,7 +116,7 @@ class AggregateOperatorsDatasetTypeChecking(TestAggregateTypeChecking):
         """
         code = "10-1-6"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_7(self):
@@ -399,7 +399,7 @@ class AggregateOperatorsDatasetTypeChecking(TestAggregateTypeChecking):
         """
         code = "10-1-24"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_25(self):
@@ -525,7 +525,7 @@ class AggregateOperatorsDatasetTypeChecking(TestAggregateTypeChecking):
         """
         code = "10-1-32"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_33(self):
@@ -646,7 +646,7 @@ class AggregateOperatorsDatasetTypeChecking(TestAggregateTypeChecking):
         """
         code = "10-1-40"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
         # references_names = ["DS_r"]
         #
@@ -770,7 +770,7 @@ class AggregateOperatorsDatasetTypeChecking(TestAggregateTypeChecking):
         """
         code = "10-1-48"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_49(self):
@@ -895,7 +895,7 @@ class AggregateOperatorsDatasetTypeChecking(TestAggregateTypeChecking):
         # 4 For clause- for the moment only op cross_join
         # 1 Number of test
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_57(self):
@@ -1016,7 +1016,7 @@ class AggregateOperatorsDatasetTypeChecking(TestAggregateTypeChecking):
         """
         code = "10-1-64"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_65(self):
@@ -1137,7 +1137,7 @@ class AggregateOperatorsDatasetTypeChecking(TestAggregateTypeChecking):
         """
         code = "10-1-72"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_73(self):
@@ -1258,7 +1258,7 @@ class AggregateOperatorsDatasetTypeChecking(TestAggregateTypeChecking):
         """
         code = "10-1-80"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_81(self):
@@ -1387,7 +1387,7 @@ class AggregateOperatorsComponentTypeChecking(TestAggregateTypeChecking):
         """
         code = "10-2-4"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_5(self):
@@ -1415,7 +1415,7 @@ class AggregateOperatorsComponentTypeChecking(TestAggregateTypeChecking):
         """
         code = "10-2-6"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_7(self):
@@ -1623,7 +1623,7 @@ class AggregateOperatorsComponentTypeChecking(TestAggregateTypeChecking):
         """
         code = "10-2-20"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
         # references_names = ["DS_r"]
         #
@@ -1746,7 +1746,7 @@ class AggregateOperatorsComponentTypeChecking(TestAggregateTypeChecking):
         """
         code = "10-2-28"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_29(self):
@@ -1865,7 +1865,7 @@ class AggregateOperatorsComponentTypeChecking(TestAggregateTypeChecking):
         """
         code = "10-2-36"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
         # references_names = ["DS_r"]
         #
@@ -1989,7 +1989,7 @@ class AggregateOperatorsComponentTypeChecking(TestAggregateTypeChecking):
         """
         code = "10-2-44"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_45(self):
@@ -2110,7 +2110,7 @@ class AggregateOperatorsComponentTypeChecking(TestAggregateTypeChecking):
         """
         code = "10-2-52"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_53(self):
@@ -2231,7 +2231,7 @@ class AggregateOperatorsComponentTypeChecking(TestAggregateTypeChecking):
         """
         code = "10-2-60"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_61(self):
@@ -2353,7 +2353,7 @@ class AggregateOperatorsComponentTypeChecking(TestAggregateTypeChecking):
         """
         code = "10-2-68"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_69(self):
@@ -2474,7 +2474,7 @@ class AggregateOperatorsComponentTypeChecking(TestAggregateTypeChecking):
         """
         code = "10-2-76"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-6"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_77(self):

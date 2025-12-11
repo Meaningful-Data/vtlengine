@@ -13,7 +13,7 @@ from vtlengine.DataTypes.TimeHandling import (
     date_to_period_str,
     str_period_to_date,
 )
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import RunTimeError, SemanticError
 
 DTYPE_MAPPING: Dict[str, str] = {
     "String": "string",
@@ -149,7 +149,7 @@ class String(ScalarType):
         if from_type in {TimePeriod, Date, String}:
             return str(value)
 
-        raise SemanticError(
+        raise RunTimeError(
             "2-1-5-1",
             value=value,
             type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
@@ -180,7 +180,7 @@ class Number(ScalarType):
         if from_type in {Integer, Number}:
             return float(value)
 
-        raise SemanticError(
+        raise RunTimeError(
             "2-1-5-1",
             value=value,
             type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
@@ -200,7 +200,7 @@ class Number(ScalarType):
             except ValueError:
                 pass
 
-        raise SemanticError(
+        raise RunTimeError(
             "2-1-5-1",
             value=value,
             type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
@@ -253,14 +253,14 @@ class Integer(Number):
             if value.is_integer():
                 return int(value)
             else:
-                raise SemanticError(
+                raise RunTimeError(
                     "2-1-5-1",
                     value=value,
                     type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
                     type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
                 )
 
-        raise SemanticError(
+        raise RunTimeError(
             "2-1-5-1",
             value=value,
             type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
@@ -277,14 +277,14 @@ class Integer(Number):
         if from_type in {Number, String}:
             try:
                 if float(value) - int(value) != 0:
-                    raise SemanticError(
+                    raise RunTimeError(
                         "2-1-5-1",
                         value=value,
                         type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
                         type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
                     )
             except ValueError:
-                raise SemanticError(
+                raise RunTimeError(
                     "2-1-5-1",
                     value=value,
                     type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
@@ -292,7 +292,7 @@ class Integer(Number):
                 )
             return int(value)
 
-        raise SemanticError(
+        raise RunTimeError(
             "2-1-5-1",
             value=value,
             type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
@@ -347,7 +347,7 @@ class TimeInterval(ScalarType):
             end_value = str_period_to_date(value, start=False).isoformat()
             return f"{init_value}/{end_value}"
 
-        raise SemanticError(
+        raise RunTimeError(
             "2-1-5-1",
             value=value,
             type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
@@ -358,7 +358,7 @@ class TimeInterval(ScalarType):
     def explicit_cast(cls, value: Any, from_type: Any) -> Any:
         if from_type == String:
             return value  # check_time(value). TODO: resolve this to avoid a circular import.
-        raise SemanticError(
+        raise RunTimeError(
             "2-1-5-1",
             value=value,
             type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
@@ -387,7 +387,7 @@ class Date(TimeInterval):
         if from_type in {Date, String}:
             return check_max_date(value)
 
-        raise SemanticError(
+        raise RunTimeError(
             "2-1-5-1",
             value=value,
             type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
@@ -400,7 +400,7 @@ class Date(TimeInterval):
         if from_type == String:
             return check_max_date(value)
 
-        raise SemanticError(
+        raise RunTimeError(
             "2-1-5-1",
             value=value,
             type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
@@ -429,7 +429,7 @@ class TimePeriod(TimeInterval):
         if from_type in {TimePeriod, String}:
             return value
 
-        raise SemanticError(
+        raise RunTimeError(
             "2-1-5-1",
             value=value,
             type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
@@ -442,7 +442,7 @@ class TimePeriod(TimeInterval):
             try:
                 period_str = date_to_period_str(value, "D")
             except ValueError:
-                raise SemanticError(
+                raise RunTimeError(
                     "2-1-5-1",
                     value=value,
                     type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
@@ -453,7 +453,7 @@ class TimePeriod(TimeInterval):
         elif from_type == String:
             return value  # check_time_period(value) TODO: resolve this to avoid a circular import.
 
-        raise SemanticError(
+        raise RunTimeError(
             "2-1-5-1",
             value=value,
             type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
@@ -480,14 +480,16 @@ class Duration(ScalarType):
             match = re.match(cls.iso8601_duration_pattern, value)
             return bool(match)
         except Exception:
-            raise Exception("Must be valid")
+            raise RunTimeError(
+                "2-1-5-1", value=value, type_1=type(value).__name__, type_2="Duration"
+            )
 
     @classmethod
     def implicit_cast(cls, value: Any, from_type: Any) -> str:
         if from_type == String and cls.validate_duration(value):
             return value
 
-        raise SemanticError(
+        raise RunTimeError(
             "2-1-5-1",
             value=value,
             type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
@@ -499,7 +501,7 @@ class Duration(ScalarType):
         if from_type == String and cls.validate_duration(value):
             return value
 
-        raise SemanticError(
+        raise RunTimeError(
             "2-1-5-1",
             value=value,
             type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
@@ -509,9 +511,7 @@ class Duration(ScalarType):
     @classmethod
     def to_days(cls, value: Any) -> int:
         if not cls.validate_duration(value):
-            raise SemanticError(
-                "2-1-19-15", "{op} can only be applied according to the iso 8601 format mask"
-            )
+            raise RunTimeError("2-1-19-15", op=value)
 
         match = re.match(cls.iso8601_duration_pattern, value)
 
@@ -575,7 +575,7 @@ class Boolean(ScalarType):
         if from_type in {Boolean}:
             return value
 
-        raise SemanticError(
+        raise RunTimeError(
             "2-1-5-1",
             value=value,
             type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
@@ -587,7 +587,7 @@ class Boolean(ScalarType):
         if from_type in {Number, Integer}:
             return value not in {0}
 
-        raise SemanticError(
+        raise RunTimeError(
             "2-1-5-1",
             value=value,
             type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
