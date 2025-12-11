@@ -614,7 +614,8 @@ class ASTString(ASTTemplate):
             imbalance = f"{nl}{tab * 2}{imbalance.strip()}" if imbalance else ""
             invalid = f"{nl}{tab * 2}{invalid.strip()}" if invalid else ""
             return (
-                f"{node.op}({nl}{tab * 2}{operand}{error_code}{error_level}{imbalance}{invalid}{nl}{tab})"
+                f"{node.op}({nl}{tab * 2}{operand}{error_code}{error_level}"
+                f"{imbalance}{invalid}{nl}{tab})"
             )
         return f"{node.op}({operand}{error_code}{error_level}{imbalance}{invalid})"
 
