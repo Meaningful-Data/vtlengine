@@ -608,6 +608,14 @@ class ASTString(ASTTemplate):
         )
         error_level = f" errorlevel {node.error_level}" if node.error_level is not None else ""
         invalid = " invalid" if node.invalid else " all"
+        if self.pretty:
+            error_code = f"{nl}{tab * 2}{error_code.strip()}" if error_code else ""
+            error_level = f"{nl}{tab * 2}{error_level.strip()}" if error_level else ""
+            imbalance = f"{nl}{tab * 2}{imbalance.strip()}" if imbalance else ""
+            invalid = f"{nl}{tab * 2}{invalid.strip()}" if invalid else ""
+            return (
+                f"{node.op}({nl}{tab * 2}{operand}{error_code}{error_level}{imbalance}{invalid}{nl}{tab})"
+            )
         return f"{node.op}({operand}{error_code}{error_level}{imbalance}{invalid})"
 
     # ---------------------- Constants and IDs ----------------------
