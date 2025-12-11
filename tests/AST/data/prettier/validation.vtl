@@ -1,0 +1,8 @@
+agg.val :=
+	check(
+		agg.DS1_tim > 0.75 * agg.DS2_tim and agg.DS1_tim < 1.25 * agg.DS2_tim
+		errorcode "DS1 is not between 75% and 125% of DS2"
+		errorlevel 3
+		imbalance (agg.DS1_tim - agg.DS2_tim) / agg.DS2_tim
+		invalid
+	);
