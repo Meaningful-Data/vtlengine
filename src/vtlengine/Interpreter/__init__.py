@@ -1556,14 +1556,16 @@ class InterpreterAnalyzer(ASTTemplate):
                     left_operand.data = pd.DataFrame({measure_name: []})
                 if right_operand.data is None:
                     right_operand.data = pd.DataFrame({measure_name: []})
-                left_null_indexes = set(
-                    left_operand.data[left_operand.data[measure_name].isnull()].index
+
+                invalid_value = 0 if self.ruleset_mode == "partial_zero" else None
+                left_invalid_indexes = set(
+                    left_operand.data[left_operand.data[measure_name] == invalid_value].index
                 )
-                right_null_indexes = set(
-                    right_operand.data[right_operand.data[measure_name].isnull()].index
+                right_invalid_indexes = set(
+                    right_operand.data[right_operand.data[measure_name] == invalid_value].index
                 )
                 # If no indexes are in common, then one datapoint is not null
-                invalid_indexes = list(left_null_indexes.intersection(right_null_indexes))
+                invalid_indexes = list(left_invalid_indexes.intersection(right_invalid_indexes))
                 if len(invalid_indexes) > 0:
                     left_operand.data.loc[invalid_indexes, measure_name] = "REMOVE_VALUE"
             if isinstance(left_operand, Dataset):
@@ -1876,7 +1878,6 @@ class InterpreterAnalyzer(ASTTemplate):
                     return Dataset(name=name, components=result_components, data=df)
                 elif self.ruleset_mode == "partial_null":
                     partial_is_valid = False
-            df = df.head(1)
             df[hr_component] = node.value
             if self.ruleset_mode in ("non_zero", "partial_zero", "always_zero"):
                 df[measure_name] = 0

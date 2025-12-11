@@ -189,7 +189,7 @@ class HAAssignment(Operators.Binary):
 
     @classmethod
     def evaluate(  # type: ignore[override]
-        cls, left: Dataset, right: DataComponent, hr_mode: str, hr_component
+        cls, left: Dataset, right: DataComponent, hr_mode: str, hr_component: str
     ) -> Dataset:
         result = cls.validate(left, right, hr_mode, hr_component)
         measure_name = left.get_measures_names()[0]
