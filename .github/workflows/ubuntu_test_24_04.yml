@@ -40,7 +40,7 @@ jobs:
             sdmxschemas==1.0.0 \
             parsy==2.2 \
             msgspec==0.19.0 \
-            duckdb==1.10.1 \
+            duckdb==1.1 \
             pysdmx==1.9.0
 
       - name: Install Poetry
