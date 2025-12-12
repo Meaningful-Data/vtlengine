@@ -2068,7 +2068,7 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = "3-4-7-7"
         number_inputs = 2
-        message = ""
+        message = None
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_message=message
         )
