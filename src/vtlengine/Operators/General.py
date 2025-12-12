@@ -1,6 +1,7 @@
-import sqlite3
+import re
 from typing import Any, Dict, List, Union
 
+import duckdb
 import pandas as pd
 
 from vtlengine.DataTypes import COMP_NAME_MAPPING
@@ -109,23 +110,32 @@ class Eval(Unary):
     def _execute_query(
         query: str, dataset_names: List[str], data: Dict[str, pd.DataFrame]
     ) -> pd.DataFrame:
+        query = re.sub(r'"([^"]*)"', r"'\1'", query)
+        for forbidden in ["INSTALL", "LOAD"]:
+            if re.search(rf"\b{forbidden}\b", query, re.IGNORECASE):
+                raise Exception(f"Query contains forbidden command: {forbidden}")
+        if re.search(r"FROM\s+'https?://", query, re.IGNORECASE):
+            raise Exception("Query contains forbidden URL in FROM clause")
         try:
-            conn = sqlite3.connect(":memory:")
+            conn = duckdb.connect(database=":memory:", read_only=False)
+            conn.execute("SET enable_external_access = false")
+            conn.execute("SET allow_unsigned_extensions = false")
+            conn.execute("SET allow_community_extensions = false")
+            conn.execute("SET autoinstall_known_extensions = false")
+            conn.execute("SET autoload_known_extensions = false")
+            conn.execute("SET lock_configuration = true")
+
             try:
                 for ds_name in dataset_names:
-                    data[ds_name].to_sql(ds_name, conn, index=False)
-                conn.commit()
-
-                df_result = pd.read_sql_query(query, conn)
-
+                    df = data[ds_name]
+                    conn.register(ds_name, df)
+                df_result = conn.execute(query).fetchdf()
                 conn.close()
-
             except Exception as e:
                 conn.close()
                 raise Exception(f"Error executing SQL query: {e}")
         except Exception as e:
-            raise Exception(f"Error connecting to In-Memory SQLite: {e}")
-
+            raise Exception(f"Error connecting to DuckDB in memory: {e}")
         return df_result
 
     @classmethod
