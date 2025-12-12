@@ -118,6 +118,12 @@ class Eval(Unary):
             raise Exception("Query contains forbidden URL in FROM clause")
         try:
             conn = duckdb.connect(database=":memory:", read_only=False)
+            conn.execute("SET enable_external_access = false")
+            conn.execute("SET allow_unsigned_extensions = false")
+            conn.execute("SET allow_community_extensions = false")
+            conn.execute("SET autoinstall_known_extensions = false")
+            conn.execute("SET autoload_known_extensions = false")
+            conn.execute("SET lock_configuration = true")
 
             try:
                 for ds_name in dataset_names:
