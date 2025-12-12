@@ -24,6 +24,7 @@ params = [
     "GH_347.vtl",
     "GH_352.vtl",
     "GH_358.vtl",
+    "comments_end_line.vtl",
 ]
 
 params_prettier = [
@@ -47,6 +48,7 @@ params_prettier = [
     ("HR_with_condition.vtl", "reference_HR_with_condition.vtl"),
     ("GH_352.vtl", "reference_GH_352.vtl"),
     ("GH_358.vtl", "reference_GH_358.vtl"),
+    ("validation.vtl", "reference_validation.vtl"),
     ("unbounded.vtl", "reference_unbounded.vtl"),
 ]
 
@@ -90,6 +92,17 @@ def test_comments_parsing():
     assert "*/" in ast.children[2].value[-2:]
     assert ast.children[2].line_start == 3
     assert ast.children[2].line_stop == 6
+
+
+def test_comments_end_line_parsing():
+    with open(vtl_filepath / "comments_end_line.vtl", "r") as file:
+        script = file.read()
+
+    ast = create_ast_with_comments(script)
+    assert len(ast.children) == 2
+    assert isinstance(ast.children[1], Comment)
+    assert ast.children[1].line_start == 2
+    assert ast.children[1].line_stop == 2
 
 
 def test_check_ast_string_output():

@@ -125,7 +125,7 @@ class UdoTest(UDOHelper):
         """
         code = "1-1-1-4"
         number_inputs = 1
-        message = "1-3-28"
+        message = "1-2-11"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
@@ -442,7 +442,7 @@ class UdoTest(UDOHelper):
         """
         code = "GL_381"
         number_inputs = 0
-        message = "1-4-1-1"
+        message = "1-3-1-1"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
@@ -486,7 +486,7 @@ class UdoTest(UDOHelper):
         """
         code = "GL_452_1"
         number_inputs = 1
-        message = "1-4-1-1"
+        message = "1-3-1-1"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
@@ -500,7 +500,7 @@ class UdoTest(UDOHelper):
         """
         code = "GL_452_2"
         number_inputs = 1
-        message = "1-4-2-5"
+        message = "1-3-2-2"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
@@ -543,7 +543,7 @@ class UdoTest(UDOHelper):
         """
         code = "GL_452_5"
         number_inputs = 2
-        message = "1-4-1-1"
+        message = "1-3-1-1"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
@@ -667,7 +667,7 @@ class UdoTest(UDOHelper):
         """
         code = "GL_474_3"
         number_inputs = 1
-        message = "1-3-5"
+        message = "1-2-3"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message

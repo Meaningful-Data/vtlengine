@@ -41,7 +41,7 @@ from vtlengine.API._InternalApi import (
     to_vtl_json,
 )
 from vtlengine.DataTypes import Integer, String
-from vtlengine.Exceptions import InputValidationException, SemanticError
+from vtlengine.Exceptions import DataLoadError, InputValidationException, SemanticError
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 
 # Path selection
@@ -75,11 +75,11 @@ input_vtl_params_OK = [
 ]
 
 input_vtl_error_params = [
-    (filepath_VTL, "Invalid vtl file. Must have .vtl extension"),
-    (filepath_csv / "DS_1.csv", "Invalid vtl file. Must have .vtl extension"),
-    (filepath_VTL / "3.vtl", "Invalid vtl file. Input does not exist"),
-    ({"DS": "dataset"}, "Invalid vtl file. Input is not a Path object"),
-    (2, "Invalid vtl file. Input is not a Path object"),
+    (filepath_VTL, "0-1-1-3"),
+    (filepath_csv / "DS_1.csv", "0-1-1-3"),
+    (filepath_VTL / "3.vtl", "0-3-1-1"),
+    ({"DS": "dataset"}, "0-1-1-2"),
+    (2, "0-1-1-2"),
 ]
 
 input_vd_OK = [
@@ -88,16 +88,16 @@ input_vd_OK = [
 ]
 
 input_vd_error_params = [
-    (filepath_VTL / "VD_1.json", "Invalid vd file. Input does not exist"),
-    (filepath_VTL / "1.vtl", "Invalid vd file. Must have .json extension"),
+    (filepath_VTL / "VD_1.json", "0-3-1-1"),
+    (filepath_VTL / "1.vtl", "0-1-1-3"),
     (
         filepath_json / "DS_1.json",
-        "0-1-2-9",
+        "0-2-1-1",
     ),
-    (2, "Invalid vd file. Input is not a Path object"),
+    (2, "0-1-1-2"),
     (
         {"setlist": ["AT", "BE", "CY"], "type": "String"},
-        "0-1-2-9",
+        "0-2-1-1",
     ),
 ]
 
@@ -141,8 +141,8 @@ load_datasets_input_params_OK = [
 ]
 
 load_datasets_wrong_input_params = [
-    (filepath_json / "VD_1.json", "Invalid datastructure. Input does not exist"),
-    (filepath_csv / "DS_1.csv", "Invalid datastructure. Must have .json extension"),
+    (filepath_json / "VD_1.json", "0-3-1-1"),
+    (filepath_csv / "DS_1.csv", "0-1-1-3"),
 ]
 
 load_datasets_with_data_without_dp_params_OK = [
@@ -315,14 +315,14 @@ load_datasets_with_data_and_wrong_inputs = [
     (
         filepath_csv / "DS_1.csv",
         filepath_csv / "DS_1.csv",
-        "Invalid datastructure. Must have .json extension",
+        "0-1-1-3",
     ),
     (
         filepath_json / "DS_1.json",
         filepath_json / "DS_2.json",
         "Not found dataset DS_2.json",
     ),
-    (2, 2, "Invalid datastructure. Input must be a dict or Path object"),
+    (2, 2, "0-1-1-2"),
 ]
 
 ext_params_OK = [(filepath_sql / "1.json")]
@@ -330,10 +330,10 @@ ext_params_OK = [(filepath_sql / "1.json")]
 ext_params_wrong = [
     (
         filepath_json / "DS_1.json",
-        "0-1-2-9",
+        "0-2-1-1",
     ),
-    (5, "Input invalid. Input must be a json file."),
-    (filepath_sql / "6.sql", "Input invalid. Input does not exist"),
+    (5, "0-1-1-2"),
+    (filepath_sql / "6.sql", "0-3-1-1"),
 ]
 
 params_semantic = [
@@ -458,7 +458,7 @@ params_run_sdmx_errors = [
             ),
         ],
         None,
-        SemanticError,
+        InputValidationException,
         "0-1-3-3",
     ),
     (
@@ -471,7 +471,7 @@ params_run_sdmx_errors = [
             )
         ],
         42,
-        TypeError,
+        InputValidationException,
         "Expected dict or VtlDataflowMapping type for mappings.",
     ),
     (
@@ -488,7 +488,7 @@ params_run_sdmx_errors = [
             dataflow_alias="ALIAS",
             id="Test",
         ),
-        TypeError,
+        InputValidationException,
         "Expected str, Reference, DataflowRef or Dataflow type for dataflow in VtlDataflowMapping.",
     ),
 ]
@@ -665,7 +665,7 @@ params_validate_ds = [
         filepath_json / "DS_1.json",
         {"DS_1": pd.DataFrame({"wrong_col": [1, 2]})},
         False,
-        "On Dataset DS_1 loading: Component Id_1 is missing in Datapoints.",
+        "0-3-1-5",
     ),
     (filepath_json / "DS_1.json", None, True, None),
     (
@@ -702,7 +702,7 @@ params_validate_ds = [
         [filepath_json / "DS_1.json"],
         {"DS_1": pd.DataFrame({"wrong": [1]})},
         False,
-        "On Dataset DS_1 loading: Component Id_1 is missing in Datapoints.",
+        "0-3-1-5",
     ),
     (
         [filepath_json / "DS_1.json", filepath_json / "DS_2.json"],
@@ -749,9 +749,9 @@ def test_load_external_routine(input):
     assert result == reference
 
 
-@pytest.mark.parametrize("input, error_message", ext_params_wrong)
-def test_load_external_routine_with_wrong_params(input, error_message):
-    with pytest.raises(Exception, match=error_message):
+@pytest.mark.parametrize("input, code", ext_params_wrong)
+def test_load_external_routine_with_wrong_params(input, code):
+    with pytest.raises(Exception, match=code):
         load_external_routines(input)
 
 
@@ -762,9 +762,9 @@ def test_load_input_vtl(input, expression):
     assert result == expression
 
 
-@pytest.mark.parametrize("input, error_message", input_vtl_error_params)
-def test_load_wrong_inputs_vtl(input, error_message):
-    with pytest.raises(Exception, match=error_message):
+@pytest.mark.parametrize("input, code", input_vtl_error_params)
+def test_load_wrong_inputs_vtl(input, code):
+    with pytest.raises(Exception, match=code):
         load_vtl(input)
 
 
@@ -776,9 +776,9 @@ def test_load_input_vd(input):
     assert result["AnaCreditCountries"] == reference
 
 
-@pytest.mark.parametrize("input, error_message", input_vd_error_params)
-def test_load_wrong_inputs_vd(input, error_message):
-    with pytest.raises(Exception, match=error_message):
+@pytest.mark.parametrize("input, code", input_vd_error_params)
+def test_load_wrong_inputs_vd(input, code):
+    with pytest.raises(Exception, match=code):
         load_value_domains(input)
 
 
@@ -822,9 +822,9 @@ def test_load_datastructures(datastructure):
     assert scalars["sc_1"] == reference_scalar
 
 
-@pytest.mark.parametrize("input, error_message", load_datasets_wrong_input_params)
-def test_load_wrong_inputs_datastructures(input, error_message):
-    with pytest.raises(Exception, match=error_message):
+@pytest.mark.parametrize("input, code", load_datasets_wrong_input_params)
+def test_load_wrong_inputs_datastructures(input, code):
+    with pytest.raises(Exception, match=code):
         load_datasets(input)
 
 
@@ -1417,7 +1417,7 @@ def test_non_mandatory_fill_me():
 
 
 def test_mandatory_at_error():
-    exception_code = "0-1-1-10"
+    exception_code = "0-3-1-5"
 
     script = """
         DS_r := DS_1;
@@ -1461,7 +1461,7 @@ def test_mandatory_at_error():
 
     datapoints = {"DS_1": data_df}
 
-    with pytest.raises(SemanticError) as context:
+    with pytest.raises(DataLoadError) as context:
         run(script=script, data_structures=data_structures, datapoints=datapoints)
     result = exception_code == str(context.value.args[1])
     if result is False:
@@ -1470,7 +1470,7 @@ def test_mandatory_at_error():
 
 
 def test_mandatory_me_error():
-    exception_code = "0-1-1-10"
+    exception_code = "0-3-1-5"
 
     script = """
         DS_r := DS_1;
@@ -1514,7 +1514,7 @@ def test_mandatory_me_error():
 
     datapoints = {"DS_1": data_df}
 
-    with pytest.raises(SemanticError) as context:
+    with pytest.raises(DataLoadError) as context:
         run(script=script, data_structures=data_structures, datapoints=datapoints)
     result = exception_code == str(context.value.args[1])
     if result is False:
@@ -1636,7 +1636,7 @@ def test_run_sdmx_2_1_gen_all(code, data, structure):
 @pytest.mark.parametrize("data, error_code", params_exception_vtl_to_json)
 def test_to_vtl_json_exception(data, error_code):
     datasets = get_datasets(data)
-    with pytest.raises(SemanticError, match=error_code):
+    with pytest.raises(InputValidationException, match=error_code):
         run_sdmx("DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", datasets)
 
 
@@ -1786,8 +1786,8 @@ def test_check_script_with_string_input():
 
 def test_check_script_invalid_input_type():
     with pytest.raises(
-        Exception,
-        match="invalid script format type: int. Input must be a string, TransformationScheme or Path object",
+        InputValidationException,
+        match="0-1-1-1",
     ):
         _check_script(12345)
 
@@ -2085,7 +2085,7 @@ def test_attempt_to_validate_invalid_vd(path_schema, path_vd):
         vd_data = json.load(f)
     with open(path_schema, "r") as f:
         vd_schema = json.load(f)
-    with pytest.raises(InputValidationException, match="0-1-2-9"):
+    with pytest.raises(InputValidationException, match="0-2-1-1"):
         _validate_json(vd_data, vd_schema)
 
 
@@ -2098,7 +2098,7 @@ def test_attempt_to_validate_invalid_sql(path_schema, path_sql):
     try:
         _validate_json(ext_routine_data, ext_routine_schema)
     except InputValidationException:
-        with pytest.raises(InputValidationException, match="0-1-2-9"):
+        with pytest.raises(InputValidationException, match="0-2-1-1"):
             _validate_json(ext_routine_data, ext_routine_schema)
         return
     query = ext_routine_data.get("query")

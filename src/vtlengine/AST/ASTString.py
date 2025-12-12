@@ -330,6 +330,14 @@ class ASTString(ASTTemplate):
             )
 
         elif node.op in (CHECK_HIERARCHY, HIERARCHY):
+            if len(node.children) == 2:
+                operand = self.visit(node.children[0])
+                rule_name = self.visit(node.children[1])
+
+                if self.pretty:
+                    return f"{node.op}({nl}{tab * 2}{operand},{nl}{tab * 2}{rule_name}{nl})"
+                else:
+                    return f"{node.op}({operand}, {rule_name})"
             operand = self.visit(node.children[0])
             component_name = self.visit(node.children[1])
             rule_name = self.visit(node.children[2])
@@ -600,6 +608,15 @@ class ASTString(ASTTemplate):
         )
         error_level = f" errorlevel {node.error_level}" if node.error_level is not None else ""
         invalid = " invalid" if node.invalid else " all"
+        if self.pretty:
+            error_code = f"{nl}{tab * 2}{error_code.strip()}" if error_code else ""
+            error_level = f"{nl}{tab * 2}{error_level.strip()}" if error_level else ""
+            imbalance = f"{nl}{tab * 2}{imbalance.strip()}" if imbalance else ""
+            invalid = f"{nl}{tab * 2}{invalid.strip()}" if invalid else ""
+            return (
+                f"{node.op}({nl}{tab * 2}{operand}{error_code}{error_level}"
+                f"{imbalance}{invalid}{nl}{tab})"
+            )
         return f"{node.op}({operand}{error_code}{error_level}{imbalance}{invalid})"
 
     # ---------------------- Constants and IDs ----------------------
