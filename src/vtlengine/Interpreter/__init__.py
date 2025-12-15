@@ -1314,7 +1314,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 cond_components = []
             else:
                 children = [self.visit(x) for x in node.children]
-                dataset = children[0]
+                dataset = deepcopy(children[0])
                 component = children[1]
                 hr_name = children[2]
                 cond_components = children[3:]
@@ -1529,7 +1529,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.hr_partial_is_valid = []
 
             if self.is_from_hr_agg:
-                return HAAssignment.analyze(left_operand, right_operand, self.ruleset_mode, self.ruleset_signature["RULE_COMPONENT"])
+                return HAAssignment.analyze(left_operand, right_operand, self.ruleset_mode)
             else:
                 result = HR_COMP_MAPPING[node.op].analyze(
                     left_operand, right_operand, self.ruleset_mode
@@ -1557,15 +1557,20 @@ class InterpreterAnalyzer(ASTTemplate):
                 if right_operand.data is None:
                     right_operand.data = pd.DataFrame({measure_name: []})
 
-                invalid_value = 0 if self.ruleset_mode == "partial_zero" else None
-                left_invalid_indexes = set(
-                    left_operand.data[left_operand.data[measure_name] == invalid_value].index
+                left_null_indexes = set(
+                    left_operand.data[left_operand.data[measure_name].isnull()].index
                 )
-                right_invalid_indexes = set(
-                    right_operand.data[right_operand.data[measure_name] == invalid_value].index
+                if self.ruleset_mode == "partial_zero":
+                    left_operand.data[measure_name].fillna(0, inplace=True)
+
+                right_null_indexes = set(
+                    right_operand.data[right_operand.data[measure_name].isnull()].index
                 )
+                if self.ruleset_mode == "partial_zero":
+                    right_operand.data[measure_name].fillna(0, inplace=True)
+
                 # If no indexes are in common, then one datapoint is not null
-                invalid_indexes = list(left_invalid_indexes.intersection(right_invalid_indexes))
+                invalid_indexes = list(left_null_indexes.intersection(right_null_indexes))
                 if len(invalid_indexes) > 0:
                     left_operand.data.loc[invalid_indexes, measure_name] = "REMOVE_VALUE"
             if isinstance(left_operand, Dataset):
@@ -1855,12 +1860,11 @@ class InterpreterAnalyzer(ASTTemplate):
             if self.ruleset_mode in ("partial_null", "partial_zero"):
                 # We do not care about the presence of the leftCodeItem in Hierarchy Roll-up
                 if self.is_from_hr_agg and self.is_from_assignment:
-                    code_data[hr_component] = node.value
-                    return Dataset(name=name, components=result_components, data=code_data)
+                    pass
                 elif code_data[hr_component].isnull().any():
                     partial_is_valid = False
 
-            if self.ruleset_mode in ("non_zero", "partial_zero", "always_zero"):
+            if self.ruleset_mode in ("non_zero", "always_zero"):
                 fill_indexes = code_data[code_data[hr_component].isnull()].index
                 code_data.loc[fill_indexes, measure_name] = 0
             code_data[hr_component] = node.value
@@ -1873,13 +1877,11 @@ class InterpreterAnalyzer(ASTTemplate):
             if self.ruleset_mode in ("partial_null", "partial_zero"):
                 # We do not care about the presence of the leftCodeItem in Hierarchy Roll-up
                 if self.is_from_hr_agg and self.is_from_assignment:
-                    ids = self.ruleset_dataset.get_identifiers_names()
-                    df = df.drop_duplicates(subset=ids).reset_index(drop=True)
-                    return Dataset(name=name, components=result_components, data=df)
+                    pass
                 elif self.ruleset_mode == "partial_null":
                     partial_is_valid = False
             df[hr_component] = node.value
-            if self.ruleset_mode in ("non_zero", "partial_zero", "always_zero"):
+            if self.ruleset_mode in ("non_zero", "always_zero"):
                 df[measure_name] = 0
             else:  # For non_null, partial_null and always_null
                 df[measure_name] = None
