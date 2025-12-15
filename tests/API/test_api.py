@@ -1994,6 +1994,7 @@ def test_run_with_scalar_being_none(data_structures, datapoints, tmp_path):
         rows = list(reader)
     assert len(rows) == 2
     assert rows[0] == ["Name", "Value"]
+    assert rows[1] == ["Sc_r", ""]
 
 
 def test_script_with_component_working_as_scalar_and_component():
