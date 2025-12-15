@@ -1,3 +1,4 @@
+import csv
 from copy import copy, deepcopy
 from dataclasses import dataclass
 from pathlib import Path
@@ -213,11 +214,16 @@ class InterpreterAnalyzer(ASTTemplate):
     def _save_scalars_efficient(self, scalars: Dict[str, Scalar]) -> None:
         output_path = Path(self.output_path)  # type: ignore[arg-type]
         output_path.mkdir(parents=True, exist_ok=True)
-
-        for name, scalar in scalars.items():
-            file_path = output_path / f"{name}.csv"
-            df = pd.DataFrame([[scalar.value]] if scalar.value is not None else [[]])
-            df.to_csv(file_path, header=False, index=False)
+        result_scalars = dict(scalars)
+        if result_scalars:
+            sorted(result_scalars.keys())
+            file_path = output_path / "_scalars.csv"
+            with open(file_path, "w", newline="", encoding="utf-8") as csv_file:
+                writer = csv.writer(csv_file)
+                writer.writerow(["Name", "Value"])
+                for name, scalar in sorted(result_scalars.items(), key=lambda item: item[0]):
+                    value_to_write = "" if scalar.value is None else scalar.value
+                    writer.writerow([name, str(value_to_write)])
 
     # **********************************
     # *                                *
