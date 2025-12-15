@@ -495,7 +495,7 @@ Returns:
 Run with Scalar Values
 **********************
 The VTL Engine also supports the use of scalar values to be used as input within the VTL script. When an output path is provided,
-the engine generates CSV files containing the results of the script execution. Scalar results are saved as CSV files containing the resulting scalar value.
+the engine generates CSV files containing the results of the script execution. Scalar results are saved as a CSV file containing all resulting scalar values.
 
 =================================
 Example 7: Run with Scalar Values
@@ -509,6 +509,7 @@ Example 7: Run with Scalar Values
     script = """
         DS_r <- DS_1[filter Me_1 = Sc_1];
         Sc_r <- Sc_1 + 10;
+        Sc_r2 <- Sc_r * 2;
     """
 
     data_structures = {
@@ -541,8 +542,7 @@ Example 7: Run with Scalar Values
         return_only_persistent=True
     )
 
-    print(run_result["DS_r"].data)
-    print(run_result["Sc_r"].value)
+    print(run_result)
 
 
 Returns:
@@ -551,9 +551,9 @@ Returns:
     :file: _static/DS_r_run_with_scalars.csv
     :header-rows: 1
 
-.. code-block:: text
-
-    30
+.. csv-table::
+    :file: _static/Sc_r_run_with_scalars.csv
+    :header-rows: 1
 
 
 ********
