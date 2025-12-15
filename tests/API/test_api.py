@@ -1862,6 +1862,7 @@ def test_run_with_scalars(data_structures, datapoints, tmp_path):
         DS_r <- DS_3[filter Me_1 = sc_1];
         DS_r2 <- DS_3[sub Id_1 = sc_1];
         Sc_r <- sc_1 + sc_2 + 3 + sc_3;
+        Sc_r2 <- sc_1 - sc_2;
     """
     scalars = {"sc_1": 20, "sc_2": 5, "sc_3": 3}
     output_folder = tmp_path
@@ -1905,10 +1906,11 @@ def test_run_with_scalars(data_structures, datapoints, tmp_path):
             data=pd.DataFrame({"Me_1": []}),
         ),
         "Sc_r": Scalar(name="Sc_r", data_type=Integer, value=31),
+        "Sc_r2": Scalar(name="Sc_r2", data_type=Integer, value=15),
     }
     assert run_result == reference
     ds_csv = output_folder / "DS_r.csv"
-    sc_csv = output_folder / "Sc_r.csv"
+    sc_csv = output_folder / "_scalars.csv"
     assert ds_csv.exists()
     assert sc_csv.exists()
     df = pd.read_csv(ds_csv)
@@ -1918,8 +1920,10 @@ def test_run_with_scalars(data_structures, datapoints, tmp_path):
     with open(sc_csv, newline="") as f:
         reader = csv.reader(f)
         rows = list(reader)
-    assert len(rows) == 1
-    assert rows[0][0] == str(reference["Sc_r"].value)
+    assert len(rows) == 3
+    assert rows[0] == ["Name", "Value"]
+    assert rows[1] == ["Sc_r", "31"]
+    assert rows[2] == ["Sc_r2", "15"]
     assert all(isinstance(v, (Dataset, Scalar)) for v in run_result.values())
 
 
@@ -1975,7 +1979,7 @@ def test_run_with_scalar_being_none(data_structures, datapoints, tmp_path):
     }
     assert run_result == reference
     ds_csv = output_folder / "DS_r.csv"
-    sc_csv = output_folder / "Sc_r.csv"
+    sc_csv = output_folder / "_scalars.csv"
     assert ds_csv.exists()
     assert sc_csv.exists()
     df = pd.read_csv(ds_csv)
@@ -1985,8 +1989,8 @@ def test_run_with_scalar_being_none(data_structures, datapoints, tmp_path):
     with open(sc_csv, newline="") as f:
         reader = csv.reader(f)
         rows = list(reader)
-    assert len(rows) == 1
-    assert rows[0] == [] or rows[0] == [""]
+    assert len(rows) == 2
+    assert rows[0] == ["Name", "Value"]
 
 
 def test_script_with_component_working_as_scalar_and_component():
