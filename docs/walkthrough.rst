@@ -510,6 +510,7 @@ Example 7: Run with Scalar Values
         DS_r <- DS_1[filter Me_1 = Sc_1];
         Sc_r <- Sc_1 + 10;
         Sc_r2 <- Sc_r * 2;
+        Sc_r3 <- null;
     """
 
     data_structures = {
