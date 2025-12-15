@@ -3,7 +3,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Type, Union
 
+import numpy as np
 import pandas as pd
+from pandas.core.dtypes.inference import is_re
 
 import vtlengine.AST as AST
 import vtlengine.Exceptions
@@ -1545,38 +1547,58 @@ class InterpreterAnalyzer(ASTTemplate):
         else:
             left_operand = self.visit(node.left)
             right_operand = self.visit(node.right)
-            if (
-                isinstance(left_operand, Dataset)
-                and isinstance(right_operand, Dataset)
-                and self.ruleset_mode in ("partial_null", "partial_zero")
+            check_partial = (
+                self.ruleset_mode in ("partial_null", "partial_zero")
                 and not self.only_semantic
-            ):
-                measure_name = left_operand.get_measures_names()[0]
+                and isinstance(left_operand, (Dataset, DataComponent))
+                and isinstance(right_operand, (Dataset, DataComponent))
+            )
+
+            if check_partial:
+                left_measure_name = left_operand.get_measures_names()[0] if isinstance(left_operand, Dataset) else left_operand.name
+                right_measure_name = right_operand.get_measures_names()[0] if isinstance(right_operand, Dataset) else right_operand.name
+
                 if left_operand.data is None:
-                    left_operand.data = pd.DataFrame({measure_name: []})
+                    left_operand.data = pd.DataFrame({left_measure_name: []})
                 if right_operand.data is None:
-                    right_operand.data = pd.DataFrame({measure_name: []})
+                    right_operand.data = pd.DataFrame({right_measure_name: []})
+
+                is_left_datacomp = isinstance(left_operand, DataComponent)
+                is_right_datacomp = isinstance(right_operand, DataComponent)
+                if is_left_datacomp:
+                    left_operand.data = pd.DataFrame({left_measure_name: left_operand.data})
+                if is_right_datacomp:
+                    right_operand.data = pd.DataFrame({right_measure_name: right_operand.data})
+
+                left_operand.data[left_measure_name].replace("REMOVE_VALUE", np.nan, inplace=True)
+                right_operand.data[right_measure_name].replace("REMOVE_VALUE", np.nan, inplace=True)
 
                 left_null_indexes = set(
-                    left_operand.data[left_operand.data[measure_name].isnull()].index
+                    left_operand.data[left_operand.data[left_measure_name].isnull()].index
                 )
-                if self.ruleset_mode == "partial_zero":
-                    left_operand.data[measure_name].fillna(0, inplace=True)
-
                 right_null_indexes = set(
-                    right_operand.data[right_operand.data[measure_name].isnull()].index
+                    right_operand.data[right_operand.data[right_measure_name].isnull()].index
                 )
+
                 if self.ruleset_mode == "partial_zero":
-                    right_operand.data[measure_name].fillna(0, inplace=True)
+                    left_operand.data[left_measure_name].fillna(0, inplace=True)
+                    right_operand.data[right_measure_name].fillna(0, inplace=True)
 
                 # If no indexes are in common, then one datapoint is not null
                 invalid_indexes = list(left_null_indexes.intersection(right_null_indexes))
                 if len(invalid_indexes) > 0:
-                    left_operand.data.loc[invalid_indexes, measure_name] = "REMOVE_VALUE"
+                    left_operand.data.loc[invalid_indexes, left_measure_name] = "REMOVE_VALUE"
+
+                if is_left_datacomp:
+                    left_operand.data = left_operand.data[left_measure_name]
+                if is_right_datacomp:
+                    right_operand.data = right_operand.data[right_measure_name]
+
             if isinstance(left_operand, Dataset):
                 left_operand = get_measure_from_dataset(left_operand, node.left.value)
             if isinstance(right_operand, Dataset):
                 right_operand = get_measure_from_dataset(right_operand, node.right.value)
+
             return HR_NUM_BINARY_MAPPING[node.op].analyze(left_operand, right_operand)
 
     def visit_HRUnOp(self, node: AST.HRUnOp) -> None:
@@ -1830,7 +1852,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
         if (
             self.hr_agg_rules_computed is not None
-            and self.hr_input == "rule"
+            and self.hr_input in ["rule", "rule_priority"]
             and node.value in self.hr_agg_rules_computed
         ):
             df = self.hr_agg_rules_computed[node.value].copy()
