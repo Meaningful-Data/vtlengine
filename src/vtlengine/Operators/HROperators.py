@@ -32,6 +32,8 @@ class HRComparison(Operators.Binary):
     @staticmethod
     def hr_func(left_series: Any, right_series: Any, hr_mode: str) -> Any:
         result = pd.Series(True, index=left_series.index)
+        mask_remove = None
+        mask_null = None
 
         if hr_mode in ("partial_null", "partial_zero"):
             mask_remove = (right_series == "REMOVE_VALUE") & (right_series.notnull())
@@ -39,15 +41,16 @@ class HRComparison(Operators.Binary):
                 mask_null = mask_remove & left_series.notnull()
             else:
                 mask_null = mask_remove & (left_series != 0)
-            result[mask_remove] = "REMOVE_VALUE"
-            result[mask_null] = None
         elif hr_mode == "non_null":
             mask_remove = left_series.isnull() | right_series.isnull()
-            result[mask_remove] = "REMOVE_VALUE"
         elif hr_mode == "non_zero":
             mask_remove = (left_series == 0) & (right_series == 0)
-            result[mask_remove] = "REMOVE_VALUE"
 
+        if mask_remove is not None:
+            # Adding ignore here because mypy cannot infer typing of setting values in a Series
+            result[mask_remove] = "REMOVE_VALUE"  # type: ignore[call-overload, unused-ignore]
+            if mask_null is not None:
+                result[mask_null] = None
         return result
 
     @classmethod
