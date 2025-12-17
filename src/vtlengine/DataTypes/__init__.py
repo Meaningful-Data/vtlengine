@@ -9,11 +9,12 @@ from vtlengine.DataTypes._time_checking import (
     check_time_period,
 )
 from vtlengine.DataTypes.TimeHandling import (
+    PERIOD_IND_MAPPING,
     check_max_date,
     date_to_period_str,
-    str_period_to_date, PERIOD_IND_MAPPING,
+    str_period_to_date,
 )
-from vtlengine.Exceptions import RunTimeError, SemanticError, InputValidationException
+from vtlengine.Exceptions import InputValidationException, RunTimeError, SemanticError
 
 DTYPE_MAPPING: Dict[str, str] = {
     "String": "string",
@@ -479,8 +480,9 @@ class Duration(ScalarType):
                 return True
             else:
                 raise InputValidationException(
-                "2-1-5-1", value=value, type_1=type(value).__name__, type_2="Duration"
-            )
+                    "2-1-5-1", value=value, type_1=type(value).__name__, type_2="Duration"
+                )
+        return False
 
     @classmethod
     def implicit_cast(cls, value: Any, from_type: Any) -> str:
@@ -505,7 +507,6 @@ class Duration(ScalarType):
             type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
             type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
         )
-
 
     @classmethod
     def check(cls, value: Any) -> bool:
