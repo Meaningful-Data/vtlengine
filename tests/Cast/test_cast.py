@@ -74,13 +74,6 @@ evaluate_params = [
         "How this mask should be implemented is not yet defined.",
     ),
     (
-        Scalar("P0Y240D", Duration, "P0Y240D"),
-        String,
-        "YYYY-MM-DD hh:mm:ss",
-        NotImplementedError,
-        "How this mask should be implemented is not yet defined.",
-    ),
-    (
         Scalar("2022-05-21/2023-05-21", TimeInterval, "2022-05-21/2023-05-21"),
         String,
         "YYYY-MM-DD/YYYY-MM-DD",

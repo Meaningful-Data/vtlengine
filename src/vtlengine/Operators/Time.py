@@ -1094,7 +1094,7 @@ class Day_of_Year(SimpleUnaryTime):
 
 class Day_to_Year(Operators.Unary):
     op = DAYTOYEAR
-    return_type = Duration
+    return_type = String
 
     @classmethod
     def py_op(cls, value: int) -> str:
@@ -1110,7 +1110,7 @@ class Day_to_Year(Operators.Unary):
 
 class Day_to_Month(Operators.Unary):
     op = DAYTOMONTH
-    return_type = Duration
+    return_type = String
 
     @classmethod
     def py_op(cls, value: int) -> str:
