@@ -901,7 +901,7 @@ class Unary(Operator):
         return result_component
 
     @classmethod
-    def to_days(cls, value: Any) -> int:
+    def to_days(cls, value: str) -> int:
         iso8601_duration_pattern = r"^P((\d+Y)?(\d+M)?(\d+D)?)$"
         match = re.match(iso8601_duration_pattern, value)
 
