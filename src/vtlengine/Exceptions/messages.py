@@ -167,7 +167,8 @@ centralised_messages = {
         "description": "Occurs when a required component is missing from the Dataset datapoints.",
     },
     "0-3-1-6": {
-        "message": "On Dataset {name} loading: not possible to cast column {column} to {type}.",
+        "message": "On Dataset {name} loading: not possible to cast column {column} to {type}. "
+        'Error found: "{error}"',
         "description": "Raised when a Dataset column cannot be cast to the expected data type.",
     },
     "0-3-1-7": {
