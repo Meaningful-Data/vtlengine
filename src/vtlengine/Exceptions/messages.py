@@ -1068,4 +1068,55 @@ centralised_messages = {
         "message": "Missing value domain '{name}' definition, please provide an structure.",
         "description": "Raised when a referenced value domain has not been defined.",
     },
+    "1-3-24": {
+        "message": "Internal error on Analytic operators inside a calc, No partition or "
+        "order symbol found.",
+        "description": "Occurs when an analytic operator is used without partition "
+        "or order clauses.",
+    },
+    "1-3-26": {
+        "message": "Value domain {name} not found.",
+        "description": "Raised when a referenced value domain does not exist.",
+    },
+    "1-3-27": {
+        "message": "Dataset without identifiers are not allowed in {op} operator.",
+        "description": "Occurs when an operator requires datasets with identifiers "
+        "and none are provided.",
+    },
+    "1-3-28": {
+        "message": "At op {op}: invalid number of parameters: received {received}, "
+        "expected at least: {expected}.",
+        "description": "Raised when an operator receives fewer parameters than required.",
+    },
+    "1-3-29": {
+        "message": "At op {op}: can not use user defined operator that returns a "
+        "component outside clause operator or rule.",
+        "description": "Occurs when a user-defined operator is used outside its valid context.",
+    },
+    "1-3-30": {
+        "message": "At op {op}: too many parameters: received {received}, expected: {expected}.",
+        "description": "Raised when an operator receives more parameters than allowed.",
+    },
+    "1-3-31": {
+        "message": "Cannot use component {name} outside an aggregate function in a having clause.",
+        "description": "Occurs when a non-aggregated component is used in a HAVING clause.",
+    },
+    "1-3-32": {
+        "message": "Cannot perform operation {op} inside having clause.",
+        "description": "Raised when an invalid operation is used within a HAVING clause.",
+    },
+    "1-3-33": {
+        "message": "Having clause is not permitted if group by clause is not present.",
+        "description": "Occurs when a HAVING clause is defined without a corresponding "
+        "GROUP BY clause.",
+    },
+    "1-3-34": {
+        "message": "At op {op}: Cannot use constant as a {type} parameter, found on {param}.",
+        "description": "Raised when a constant value is provided where a non-constant parameter "
+        "is required.",
+    },
+    "1-3-35": {
+        "message": "At op {op}: Cannot perform aggregation inside a calc.",
+        "description": "Occurs when an aggregation function is used inside a calc operation.",
+    },
 }
