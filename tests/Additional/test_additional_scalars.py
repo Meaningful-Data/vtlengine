@@ -5,11 +5,12 @@ import pandas as pd
 import pytest
 
 from tests.Helper import TestHelper
+from vtlengine import DataTypes
 from vtlengine.API import create_ast, run
 from vtlengine.DataTypes import Boolean, Integer, Null, Number, String
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Interpreter import InterpreterAnalyzer
-from vtlengine.Model import Scalar
+from vtlengine.Model import Component, Dataset, Role, Scalar
 
 
 class AdditionalScalarsTests(TestHelper):
@@ -230,7 +231,6 @@ ds_param = [
     ("13-9", "DS_1[aggr attribute Me_2 := sum(Me_1) group by Id_1]"),
 ]
 
-
 params_scalar_operations = [
     ("Sc_r <- sc_1 + sc_2 + 3 + sc_3;", {"Sc_r": Scalar(name="Sc_r", data_type=Integer, value=21)}),
     (
@@ -249,6 +249,49 @@ params_scalar_operations = [
     ("Sc_r <- nvl(null, null);", {"Sc_r": Scalar(name="Sc_r", data_type=Null, value=None)}),
     ("Sc_r <- nvl(null, 3);", {"Sc_r": Scalar(name="Sc_r", data_type=Integer, value=3)}),
     ("Sc_r <- nvl(3, null);", {"Sc_r": Scalar(name="Sc_r", data_type=Integer, value=3)}),
+]
+
+params_filter_operations = [
+    (
+        "DS_A <- DS_3[filter Me_2 = sc_8];",
+        {
+            "DS_A": Dataset(
+                name="DS_A",
+                components={
+                    "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
+                    "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
+                    "Me_2": Component("Me_2", DataTypes.Duration, Role.MEASURE, True),
+                },
+                data=pd.DataFrame(
+                    {
+                        "Id_1": [1],
+                        "Me_1": [10.0],
+                        "Me_2": ["A"],
+                    }
+                ),
+            )
+        },
+    ),
+    (
+        "DS_A <- DS_3[filter Me_2 = sc_9];",
+        {
+            "DS_A": Dataset(
+                name="DS_A",
+                components={
+                    "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
+                    "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
+                    "Me_2": Component("Me_2", DataTypes.Duration, Role.MEASURE, True),
+                },
+                data=pd.DataFrame(
+                    {
+                        "Id_1": [],
+                        "Me_1": [],
+                        "Me_2": [],
+                    }
+                ),
+            )
+        },
+    ),
 ]
 
 
@@ -359,6 +402,7 @@ def test_run_scalars_operations(script, reference, tmp_path):
                 "DataStructure": [
                     {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
                     {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                    {"name": "Me_2", "type": "Duration", "role": "Measure", "nullable": True},
                 ],
             }
         ],
@@ -370,6 +414,8 @@ def test_run_scalars_operations(script, reference, tmp_path):
             {"name": "sc_5", "type": "String"},
             {"name": "sc_6", "type": "Boolean"},
             {"name": "sc_7", "type": "Boolean"},
+            {"name": "sc_8", "type": "Duration"},
+            {"name": "sc_9", "type": "Duration"},
         ],
     }
 
@@ -378,6 +424,7 @@ def test_run_scalars_operations(script, reference, tmp_path):
             {
                 "Id_1": [1, 2, 3],
                 "Me_1": [10.0, 20.5, 30.1],
+                "Me_2": ["A", "M", None],
             }
         )
     }
@@ -395,3 +442,47 @@ def test_run_scalars_operations(script, reference, tmp_path):
         result_scalar = run_result[k]
         assert result_scalar.value == expected_scalar.value
         assert result_scalar.data_type == expected_scalar.data_type
+
+
+@pytest.mark.parametrize("script, reference", params_filter_operations)
+def test_filter_op(script, reference):
+    scalar_values = {
+        "sc_8": "A",
+        "sc_9": None,
+    }
+
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_3",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                    {"name": "Me_2", "type": "Duration", "role": "Measure", "nullable": True},
+                ],
+            }
+        ],
+        "scalars": [
+            {"name": "sc_8", "type": "Duration"},
+            {"name": "sc_9", "type": "Duration"},
+        ],
+    }
+
+    datapoints = {
+        "DS_3": pd.DataFrame(
+            {
+                "Id_1": [1, 2, 3],
+                "Me_1": [10.0, 20.5, 30.1],
+                "Me_2": ["A", "M", None],
+            }
+        )
+    }
+
+    run_result = run(
+        script=script,
+        data_structures=data_structures,
+        datapoints=datapoints,
+        scalar_values=scalar_values,
+        return_only_persistent=True,
+    )
+    assert run_result == reference

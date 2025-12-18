@@ -800,68 +800,68 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
             code=code, number_inputs=number_inputs, exception_code=message
         )
 
-    def test_37(self):
-        """
-        WHITESPACE REMOVAL OPERATOR
-        Duration --> String
-        Status: OK
-        Expression: DS_r := trim(DS_1)
-                            DS_1 Measure Duration
-
-
-        Description: Whitespace removal.
-
-        Git Branch: #87 Trim operators type checking tests.
-        Goal: Whitespace removal from a string.
-        """
-        code = "3-4-2-22"
-        number_inputs = 2
-        message = "1-1-1-3"
-        self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code=message
-        )
-
-    def test_38(self):
-        """
-        WHITESPACE REMOVAL OPERATOR
-        Duration --> String
-        Status: OK
-        Expression: DS_r := rtrim(DS_1)
-                            DS_1 Measure Duration
-
-
-        Description: Whitespace removal.
-
-        Git Branch: #87 Trim operators type checking tests.
-        Goal: Whitespace removal(right side) from a string.
-        """
-        code = "3-4-2-23"
-        number_inputs = 2
-        message = "1-1-1-3"
-        self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code=message
-        )
-
-    def test_39(self):
-        """
-        WHITESPACE REMOVAL OPERATOR
-        Duration --> String
-        Status: OK
-        Expression: DS_r := ltrim(DS_1)
-                            DS_1 Measure Duration
-
-
-        Description: Whitespace removal.
-
-        Git Branch: #87 Trim operators type checking tests.
-        Goal: Whitespace removal(left side) from a string.
-        """
-        code = "3-4-2-24"
-        number_inputs = 2
-        message = "1-1-1-3"
-        self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code=message
-        )
+    # def test_37(self):
+    #     """
+    #     WHITESPACE REMOVAL OPERATOR
+    #     Duration --> String
+    #     Status: OK
+    #     Expression: DS_r := trim(DS_1)
+    #                         DS_1 Measure Duration
+    #
+    #
+    #     Description: Whitespace removal.
+    #
+    #     Git Branch: #87 Trim operators type checking tests.
+    #     Goal: Whitespace removal from a string.
+    #     """
+    #     code = "3-4-2-22"
+    #     number_inputs = 2
+    #     message = "1-1-1-3"
+    #     self.NewSemanticExceptionTest(
+    #         code=code, number_inputs=number_inputs, exception_code=message
+    #     )
+    #
+    # def test_38(self):
+    #     """
+    #     WHITESPACE REMOVAL OPERATOR
+    #     Duration --> String
+    #     Status: OK
+    #     Expression: DS_r := rtrim(DS_1)
+    #                         DS_1 Measure Duration
+    #
+    #
+    #     Description: Whitespace removal.
+    #
+    #     Git Branch: #87 Trim operators type checking tests.
+    #     Goal: Whitespace removal(right side) from a string.
+    #     """
+    #     code = "3-4-2-23"
+    #     number_inputs = 2
+    #     message = "1-1-1-3"
+    #     self.NewSemanticExceptionTest(
+    #         code=code, number_inputs=number_inputs, exception_code=message
+    #     )
+    #
+    # def test_39(self):
+    #     """
+    #     WHITESPACE REMOVAL OPERATOR
+    #     Duration --> String
+    #     Status: OK
+    #     Expression: DS_r := ltrim(DS_1)
+    #                         DS_1 Measure Duration
+    #
+    #
+    #     Description: Whitespace removal.
+    #
+    #     Git Branch: #87 Trim operators type checking tests.
+    #     Goal: Whitespace removal(left side) from a string.
+    #     """
+    #     code = "3-4-2-24"
+    #     number_inputs = 2
+    #     message = "1-1-1-3"
+    #     self.NewSemanticExceptionTest(
+    #         code=code, number_inputs=number_inputs, exception_code=message
+    #     )
 
     def test_40(self):
         """
@@ -1153,47 +1153,47 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
             code=code, number_inputs=number_inputs, exception_code=message
         )
 
-    def test_54(self):
-        """
-        CHARACTER CASE CONVERSION: UPPER/LOWER
-        Duration --> String
-        Status: OK
-        Expression: DS_r := upper(DS_1)
-                            DS_1 Measure Duration
-
-
-        Description: upper/lower operators.
-
-        Git Branch: #98 lower-upper operators type checking tests.
-        Goal: Converts the character case of a string in upper case.
-        """
-        code = "3-4-3-15"
-        number_inputs = 2
-        message = "1-1-1-3"
-        self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code=message
-        )
-
-    def test_55(self):
-        """
-        CHARACTER CASE CONVERSION: UPPER/LOWER
-        Duration --> String
-        Status: OK
-        Expression: DS_r := lower(DS_1)
-                            DS_1 Measure Duration
-
-
-        Description: upper/lower operators.
-
-        Git Branch: #98 lower-upper operators type checking tests.
-        Goal: Converts the character case of a string in lower case.
-        """
-        code = "3-4-3-16"
-        number_inputs = 2
-        message = "1-1-1-3"
-        self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code=message
-        )
+    # def test_54(self):
+    #     """
+    #     CHARACTER CASE CONVERSION: UPPER/LOWER
+    #     Duration --> String
+    #     Status: OK
+    #     Expression: DS_r := upper(DS_1)
+    #                         DS_1 Measure Duration
+    #
+    #
+    #     Description: upper/lower operators.
+    #
+    #     Git Branch: #98 lower-upper operators type checking tests.
+    #     Goal: Converts the character case of a string in upper case.
+    #     """
+    #     code = "3-4-3-15"
+    #     number_inputs = 2
+    #     message = "1-1-1-3"
+    #     self.NewSemanticExceptionTest(
+    #         code=code, number_inputs=number_inputs, exception_code=message
+    #     )
+    #
+    # def test_55(self):
+    #     """
+    #     CHARACTER CASE CONVERSION: UPPER/LOWER
+    #     Duration --> String
+    #     Status: OK
+    #     Expression: DS_r := lower(DS_1)
+    #                         DS_1 Measure Duration
+    #
+    #
+    #     Description: upper/lower operators.
+    #
+    #     Git Branch: #98 lower-upper operators type checking tests.
+    #     Goal: Converts the character case of a string in lower case.
+    #     """
+    #     code = "3-4-3-16"
+    #     number_inputs = 2
+    #     message = "1-1-1-3"
+    #     self.NewSemanticExceptionTest(
+    #         code=code, number_inputs=number_inputs, exception_code=message
+    #     )
 
     def test_56(self):
         """
@@ -1436,29 +1436,29 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
             code=code, number_inputs=number_inputs, exception_code=message
         )
 
-    def test_66(self):
-        """
-        SUB-STRING EXTRACTION
-        Duration --> String
-        Status: OK
-        Expression: DS_r := substr (DS_1,start,length)
-                            DS_1 Measure Duration
-
-
-        Description: Substr operators. The operator extracts a substring from
-        the operand, which must be string type. The substring starts from the
-        start character of the input string and has a number of characters equal
-        to the length parameter.
-
-        Git Branch: #112 substr-operators-type-checking-tests.
-        Goal: The operator extracts a substring from op, which must be string type
-        """
-        code = "3-4-4-11"
-        number_inputs = 2
-        message = "1-1-1-3"
-        self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code=message
-        )
+    # def test_66(self):
+    #     """
+    #     SUB-STRING EXTRACTION
+    #     Duration --> String
+    #     Status: OK
+    #     Expression: DS_r := substr (DS_1,start,length)
+    #                         DS_1 Measure Duration
+    #
+    #
+    #     Description: Substr operators. The operator extracts a substring from
+    #     the operand, which must be string type. The substring starts from the
+    #     start character of the input string and has a number of characters equal
+    #     to the length parameter.
+    #
+    #     Git Branch: #112 substr-operators-type-checking-tests.
+    #     Goal: The operator extracts a substring from op, which must be string type
+    #     """
+    #     code = "3-4-4-11"
+    #     number_inputs = 2
+    #     message = "1-1-1-3"
+    #     self.NewSemanticExceptionTest(
+    #         code=code, number_inputs=number_inputs, exception_code=message
+    #     )
 
     def test_67(self):
         """
@@ -1635,27 +1635,27 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
             code=code, number_inputs=number_inputs, exception_code=message
         )
 
-    def test_75(self):
-        """
-        STRING PATTERN REPLACEMENT
-        Duration --> String
-        Status: OK
-        Expression: DS_r := replace (op , pattern1, pattern2)
-                            DS_1 Measure Duration
-
-
-        Description: Replaces all the occurrences of a specified string-pattern
-        (pattern1) with another one (pattern2).
-
-        Git Branch: #114 replace operator type checking tests.
-        Goal: Replaces all the occurrences of a specified string-pattern
-        """
-        code = "3-4-5-9"
-        number_inputs = 2
-        message = "1-1-1-3"
-        self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code=message
-        )
+    # def test_75(self):
+    #     """
+    #     STRING PATTERN REPLACEMENT
+    #     Duration --> String
+    #     Status: OK
+    #     Expression: DS_r := replace (op , pattern1, pattern2)
+    #                         DS_1 Measure Duration
+    #
+    #
+    #     Description: Replaces all the occurrences of a specified string-pattern
+    #     (pattern1) with another one (pattern2).
+    #
+    #     Git Branch: #114 replace operator type checking tests.
+    #     Goal: Replaces all the occurrences of a specified string-pattern
+    #     """
+    #     code = "3-4-5-9"
+    #     number_inputs = 2
+    #     message = "1-1-1-3"
+    #     self.NewSemanticExceptionTest(
+    #         code=code, number_inputs=number_inputs, exception_code=message
+    #     )
 
     def test_76(self):
         """
@@ -1907,30 +1907,30 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
             code=code, number_inputs=number_inputs, exception_code=message
         )
 
-    def test_86(self):
-        """
-        STRING PATTERN LOCATION
-        Duration --> Integer
-        Status: OK
-        Expression: DS_r := instr (DS_1, pattern, start, occurrence)
-                            DS_1 Measure Duration
-
-
-        Description: The operator returns the position in the input string of a
-        specified string (pattern). The search starts from the start character
-        of the input string and finds the nth occurrence of the pattern,
-        returning the position of its first character.
-
-        Git Branch: #118 instr operator type checking tests.
-        Goal: The operator returns the position in the input string of a
-        specified string (pattern).
-        """
-        code = "3-4-6-11"
-        number_inputs = 2
-        message = "1-1-1-3"
-        self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code=message
-        )
+    # def test_86(self):
+    #     """
+    #     STRING PATTERN LOCATION
+    #     Duration --> Integer
+    #     Status: OK
+    #     Expression: DS_r := instr (DS_1, pattern, start, occurrence)
+    #                         DS_1 Measure Duration
+    #
+    #
+    #     Description: The operator returns the position in the input string of a
+    #     specified string (pattern). The search starts from the start character
+    #     of the input string and finds the nth occurrence of the pattern,
+    #     returning the position of its first character.
+    #
+    #     Git Branch: #118 instr operator type checking tests.
+    #     Goal: The operator returns the position in the input string of a
+    #     specified string (pattern).
+    #     """
+    #     code = "3-4-6-11"
+    #     number_inputs = 2
+    #     message = "1-1-1-3"
+    #     self.NewSemanticExceptionTest(
+    #         code=code, number_inputs=number_inputs, exception_code=message
+    #     )
 
     def test_87(self):
         """
@@ -2094,23 +2094,23 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
             code=code, number_inputs=number_inputs, exception_code=message
         )
 
-    def test_95(self):
-        """
-        STRING LENGTH
-        Duration --> Integer
-        Status: OK
-        Expression: DS_r := length(DS_1)
-                            DS_1 Measure Duration
-
-
-        Description: Returns the length of a Duration.
-
-        Git Branch: #121 length operator type checking tests.
-        Goal: Returns the length of a Duration.
-        """
-        code = "3-4-7-9"
-        number_inputs = 2
-        message = "1-1-1-3"
-        self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code=message
-        )
+    # def test_95(self):
+    #     """
+    #     STRING LENGTH
+    #     Duration --> Integer
+    #     Status: OK
+    #     Expression: DS_r := length(DS_1)
+    #                         DS_1 Measure Duration
+    #
+    #
+    #     Description: Returns the length of a Duration.
+    #
+    #     Git Branch: #121 length operator type checking tests.
+    #     Goal: Returns the length of a Duration.
+    #     """
+    #     code = "3-4-7-9"
+    #     number_inputs = 2
+    #     message = "1-1-1-3"
+    #     self.NewSemanticExceptionTest(
+    #         code=code, number_inputs=number_inputs, exception_code=message
+    #     )

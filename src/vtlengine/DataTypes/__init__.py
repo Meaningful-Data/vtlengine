@@ -9,11 +9,12 @@ from vtlengine.DataTypes._time_checking import (
     check_time_period,
 )
 from vtlengine.DataTypes.TimeHandling import (
+    PERIOD_IND_MAPPING,
     check_max_date,
     date_to_period_str,
     str_period_to_date,
 )
-from vtlengine.Exceptions import RunTimeError, SemanticError
+from vtlengine.Exceptions import InputValidationException, RunTimeError, SemanticError
 
 DTYPE_MAPPING: Dict[str, str] = {
     "String": "string",
@@ -472,17 +473,16 @@ class TimePeriod(TimeInterval):
 
 
 class Duration(ScalarType):
-    iso8601_duration_pattern = r"^P((\d+Y)?(\d+M)?(\d+D)?)$"
-
     @classmethod
     def validate_duration(cls, value: Any) -> bool:
-        try:
-            match = re.match(cls.iso8601_duration_pattern, value)
-            return bool(match)
-        except Exception:
-            raise RunTimeError(
-                "2-1-5-1", value=value, type_1=type(value).__name__, type_2="Duration"
-            )
+        if isinstance(value, str):
+            if value in PERIOD_IND_MAPPING:
+                return True
+            else:
+                raise InputValidationException(
+                    "2-1-5-1", value=value, type_1=type(value).__name__, type_2="Duration"
+                )
+        return False
 
     @classmethod
     def implicit_cast(cls, value: Any, from_type: Any) -> str:
@@ -509,35 +509,12 @@ class Duration(ScalarType):
         )
 
     @classmethod
-    def to_days(cls, value: Any) -> int:
-        if not cls.validate_duration(value):
-            raise RunTimeError("2-1-19-15", op=value)
-
-        match = re.match(cls.iso8601_duration_pattern, value)
-
-        years = 0
-        months = 0
-        days = 0
-
-        years_str = match.group(2)  # type: ignore[union-attr]
-        months_str = match.group(3)  # type: ignore[union-attr]
-        days_str = match.group(4)  # type: ignore[union-attr]
-        if years_str:
-            years = int(years_str[:-1])
-        if months_str:
-            months = int(months_str[:-1])
-        if days_str:
-            days = int(days_str[:-1])
-        total_days = years * 365 + months * 30 + days
-        return int(total_days)
-
-    @classmethod
     def check(cls, value: Any) -> bool:
         if pd.isnull(value):
             return True
 
         if isinstance(value, str):
-            match = re.match(cls.iso8601_duration_pattern, value)
+            match = cls.validate_duration(value)
             return bool(match)
         return False
 
