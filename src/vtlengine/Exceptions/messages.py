@@ -854,6 +854,11 @@ centralised_messages = {
         "description": "Occurs when a datapoint has an invalid datatype; a Dataset is expected "
         "but a Scalar was found.",
     },
+    "1-3-12": {
+        "message": "Default arguments cannot be followed by non-default arguments.",
+        "description": "Occurs when a function definition places non-default parameters "
+        "after default ones.",
+    },
     # AST Creation
     "1-3-2-0": {
         "message": "Error creating DAG.",
@@ -873,6 +878,12 @@ centralised_messages = {
         "Nodes involved: {nodes}.",
         "description": "Raised when cyclic dependencies are detected in a VTL script, "
         "preventing DAG creation.",
+    },
+    # ---------- Interpreter ----------
+    "1-3-5": {
+        "message": "{node_op} not found or not valid for {op_type}.",
+        "description": "Occurs when an operator is undefined or incompatible with "
+        "the given operation type.",
     },
     # ---------- RunTimeErrors ----------
     "2-1-19-1": {
@@ -1000,5 +1011,4 @@ centralised_messages = {
         "message": "{pos} operand must be a Dataset.",
         "description": "Raised when an operand expected to be a Dataset is not a Dataset.",
     },
-    "1-4-2-8": "{rule_name} rule is not defined in the given ruleset.",
 }
