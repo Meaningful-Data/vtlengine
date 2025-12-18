@@ -36,7 +36,8 @@ def create_ast_with_comments(text: str) -> Start:
     """
 
     # Reading the script on channel 2 to get the comments
-    lexer_ = Lexer(InputStream(text))
+    # Adding \n at the end to ensure single line comments at the end of the script are captured
+    lexer_ = Lexer(InputStream(text + '\n'))
     stream = CommonTokenStream(lexer_, channel=2)
 
     # Fill the stream with tokens on the buffer
