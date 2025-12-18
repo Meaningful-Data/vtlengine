@@ -77,21 +77,21 @@ def test_decode_ast(script):
 params_comments_ast = [
     "",
     """
-            
+
     """,
     """
     // This is a comment
-    /* This 
-    is 
-    a 
-    multi-line 
+    /* This
+    is
+    a
+    multi-line
     comment */
-    
+
     """,
     """
     //comment
     a <- 1;
-    """
+    """,
 ]
 
 
