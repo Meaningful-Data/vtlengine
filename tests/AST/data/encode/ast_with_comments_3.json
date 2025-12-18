@@ -1,0 +1,25 @@
+{
+    "class_name": "Start",
+    "column_stop": 0,
+    "line_stop": 1,
+    "column_start": 0,
+    "line_start": 1,
+    "children": [
+        {
+            "class_name": "Comment",
+            "column_stop": 25,
+            "line_stop": 2,
+            "column_start": 4,
+            "line_start": 2,
+            "value": "// This is a comment"
+        },
+        {
+            "class_name": "Comment",
+            "column_stop": 58,
+            "line_stop": 7,
+            "column_start": 4,
+            "line_start": 3,
+            "value": "/* This \n    is \n    a \n    multi-line \n    comment */"
+        }
+    ]
+}

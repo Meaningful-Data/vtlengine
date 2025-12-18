@@ -1,0 +1,42 @@
+{
+    "class_name": "Start",
+    "column_stop": 11,
+    "line_stop": 3,
+    "column_start": 4,
+    "line_start": 3,
+    "children": [
+        {
+            "class_name": "Comment",
+            "column_stop": 14,
+            "line_stop": 2,
+            "column_start": 4,
+            "line_start": 2,
+            "value": "//comment"
+        },
+        {
+            "class_name": "PersistentAssignment",
+            "column_stop": 10,
+            "line_stop": 3,
+            "column_start": 4,
+            "line_start": 3,
+            "right": {
+                "class_name": "Constant",
+                "column_stop": 10,
+                "line_stop": 3,
+                "column_start": 9,
+                "line_start": 3,
+                "value": 1,
+                "type_": "INTEGER_CONSTANT"
+            },
+            "op": "<-",
+            "left": {
+                "class_name": "VarID",
+                "column_stop": 5,
+                "line_stop": 3,
+                "column_start": 4,
+                "line_start": 3,
+                "value": "a"
+            }
+        }
+    ]
+}
