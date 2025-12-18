@@ -480,7 +480,7 @@ class Duration(ScalarType):
                 return True
             else:
                 raise InputValidationException(
-                    "2-1-5-1", value=value, type_1=type(value).__name__, type_2="Duration"
+                    code="2-1-5-1", value=value, type_1=type(value).__name__, type_2="Duration"
                 )
         return False
 
