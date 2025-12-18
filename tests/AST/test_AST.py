@@ -5,6 +5,7 @@ from unittest.mock import Mock
 
 import pytest
 
+from vtlengine import create_ast_with_comments
 from vtlengine.API import create_ast, load_vtl
 from vtlengine.AST import (
     ID,
@@ -71,6 +72,37 @@ def test_decode_ast(script):
     with open(filepath / "reference_encode.json") as file:
         ast_decode = json.load(file, object_hook=ComplexDecoder.object_hook)
     assert ast_decode == ast
+
+
+params_comments_ast = [
+    "",
+    """
+
+    """,
+    """
+    // This is a comment
+    /* This
+    is
+    a
+    multi-line
+    comment */
+
+    """,
+    """
+    //comment
+    a <- 1;
+    """,
+]
+
+
+@pytest.mark.parametrize("script", params_comments_ast)
+def test_ast_with_comments(script):
+    vtl = load_vtl(script)
+    ast = create_ast_with_comments(vtl)
+    reference_file = f"ast_with_comments_{params_comments_ast.index(script) + 1}.json"
+    with open(filepath / reference_file, "r") as f:
+        reference = json.load(f, object_hook=ComplexDecoder.object_hook)
+    assert ast == reference
 
 
 def test_visit_TimeAggregation_error():
