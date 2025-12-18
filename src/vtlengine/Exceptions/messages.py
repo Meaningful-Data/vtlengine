@@ -854,6 +854,11 @@ centralised_messages = {
         "description": "Occurs when a datapoint has an invalid datatype; a Dataset is expected "
         "but a Scalar was found.",
     },
+    "1-3-12": {
+        "message": "Default arguments cannot be followed by non-default arguments.",
+        "description": "Occurs when a function definition places non-default parameters "
+        "after default ones.",
+    },
     # AST Creation
     "1-3-2-0": {
         "message": "Error creating DAG.",
@@ -873,6 +878,12 @@ centralised_messages = {
         "Nodes involved: {nodes}.",
         "description": "Raised when cyclic dependencies are detected in a VTL script, "
         "preventing DAG creation.",
+    },
+    # ---------- Interpreter ----------
+    "1-3-5": {
+        "message": "{node_op} not found or not valid for {op_type}.",
+        "description": "Occurs when an operator is undefined or incompatible with "
+        "the given operation type.",
     },
     # ---------- RunTimeErrors ----------
     "2-1-19-1": {
@@ -999,124 +1010,5 @@ centralised_messages = {
     "2-3-11": {
         "message": "{pos} operand must be a Dataset.",
         "description": "Raised when an operand expected to be a Dataset is not a Dataset.",
-    },
-    "1-4-2-8": {
-        "message": "{rule_name} rule is not defined in the given ruleset.",
-        "description": "Occurs when a referenced rule does not exist in the provided ruleset.",
-    },
-    "1-3-1": {
-        "message": "Please don't use twice {alias} like var_to.",
-        "description": "Raised when the same alias is defined more than once.",
-    },
-    "1-3-3": {
-        "message": "Overwriting a dataset/variable is not allowed, trying it with {varId_value}.",
-        "description": "Occurs when attempting to redefine an existing dataset or variable.",
-    },
-    "1-3-4": {
-        "message": "Cannot perform a rename with two equal values: {left_value} -> {right_value}.",
-        "description": "Raised when a rename operation uses identical source and target values.",
-    },
-    "1-3-5": {
-        "message": "{node_op} not found or not valid for {op_type}.",
-        "description": "Occurs when an operator is undefined or incompatible with "
-        "the given operation type.",
-    },
-    "1-3-8": {
-        "message": "Defined Operator {node_value} not previously defined.",
-        "description": "Raised when an operator is referenced before being defined.",
-    },
-    "1-3-9": {
-        "message": "Not valid set declaration, found duplicates {duplicates}.",
-        "description": "Occurs when a set declaration contains duplicate values.",
-    },
-    "1-3-10": {
-        "message": "Not valid set declaration, mixed scalar types {scalar_1} and {scalar_2}.",
-        "description": "Raised when a set declaration mixes incompatible scalar types.",
-    },
-    "1-3-12": {
-        "message": "Default arguments cannot be followed by non-default arguments.",
-        "description": "Occurs when a function definition places non-default parameters "
-        "after default ones.",
-    },
-    "1-3-15": {
-        "message": "Missing datastructure definition for required input Dataset {input}.",
-        "description": "Raised when a required input dataset has not been defined.",
-    },
-    "1-3-17": {
-        "message": "Operations without output assigned are not available.",
-        "description": "Occurs when an operation does not assign its result to an output.",
-    },
-    "1-3-19": {
-        "message": "No {node_type} {node_value} found.",
-        "description": "Raised when a referenced node of the given type cannot be found.",
-    },
-    "1-3-20": {
-        "message": "RuleComp of Hierarchical Ruleset can only be an identifier, "
-        "{name} is a {role}.",
-        "description": "Occurs when a non-identifier is used where an identifier "
-        "is required in a hierarchical ruleset.",
-    },
-    "1-3-21": {
-        "message": "Value {value} not valid, kind {node_kind}.",
-        "description": "Raised when a value does not match the expected kind or type.",
-    },
-    "1-3-22": {
-        "message": "Unable to categorize {node_value}.",
-        "description": "Occurs when the system cannot determine the category of a node.",
-    },
-    "1-3-23": {
-        "message": "Missing value domain '{name}' definition, please provide an structure.",
-        "description": "Raised when a referenced value domain has not been defined.",
-    },
-    "1-3-24": {
-        "message": "Internal error on Analytic operators inside a calc, No partition or "
-        "order symbol found.",
-        "description": "Occurs when an analytic operator is used without partition "
-        "or order clauses.",
-    },
-    "1-3-26": {
-        "message": "Value domain {name} not found.",
-        "description": "Raised when a referenced value domain does not exist.",
-    },
-    "1-3-27": {
-        "message": "Dataset without identifiers are not allowed in {op} operator.",
-        "description": "Occurs when an operator requires datasets with identifiers "
-        "and none are provided.",
-    },
-    "1-3-28": {
-        "message": "At op {op}: invalid number of parameters: received {received}, "
-        "expected at least: {expected}.",
-        "description": "Raised when an operator receives fewer parameters than required.",
-    },
-    "1-3-29": {
-        "message": "At op {op}: can not use user defined operator that returns a "
-        "component outside clause operator or rule.",
-        "description": "Occurs when a user-defined operator is used outside its valid context.",
-    },
-    "1-3-30": {
-        "message": "At op {op}: too many parameters: received {received}, expected: {expected}.",
-        "description": "Raised when an operator receives more parameters than allowed.",
-    },
-    "1-3-31": {
-        "message": "Cannot use component {name} outside an aggregate function in a having clause.",
-        "description": "Occurs when a non-aggregated component is used in a HAVING clause.",
-    },
-    "1-3-32": {
-        "message": "Cannot perform operation {op} inside having clause.",
-        "description": "Raised when an invalid operation is used within a HAVING clause.",
-    },
-    "1-3-33": {
-        "message": "Having clause is not permitted if group by clause is not present.",
-        "description": "Occurs when a HAVING clause is defined without a corresponding "
-        "GROUP BY clause.",
-    },
-    "1-3-34": {
-        "message": "At op {op}: Cannot use constant as a {type} parameter, found on {param}.",
-        "description": "Raised when a constant value is provided where a non-constant parameter "
-        "is required.",
-    },
-    "1-3-35": {
-        "message": "At op {op}: Cannot perform aggregation inside a calc.",
-        "description": "Occurs when an aggregation function is used inside a calc operation.",
     },
 }
