@@ -1000,5 +1000,72 @@ centralised_messages = {
         "message": "{pos} operand must be a Dataset.",
         "description": "Raised when an operand expected to be a Dataset is not a Dataset.",
     },
-    "1-4-2-8": "{rule_name} rule is not defined in the given ruleset.",
+    "1-4-2-8": {
+        "message": "{rule_name} rule is not defined in the given ruleset.",
+        "description": "Occurs when a referenced rule does not exist in the provided ruleset.",
+    },
+    "1-3-1": {
+        "message": "Please don't use twice {alias} like var_to.",
+        "description": "Raised when the same alias is defined more than once.",
+    },
+    "1-3-3": {
+        "message": "Overwriting a dataset/variable is not allowed, trying it with {varId_value}.",
+        "description": "Occurs when attempting to redefine an existing dataset or variable.",
+    },
+    "1-3-4": {
+        "message": "Cannot perform a rename with two equal values: {left_value} -> {right_value}.",
+        "description": "Raised when a rename operation uses identical source and target values.",
+    },
+    "1-3-5": {
+        "message": "{node_op} not found or not valid for {op_type}.",
+        "description": "Occurs when an operator is undefined or incompatible with "
+        "the given operation type.",
+    },
+    "1-3-8": {
+        "message": "Defined Operator {node_value} not previously defined.",
+        "description": "Raised when an operator is referenced before being defined.",
+    },
+    "1-3-9": {
+        "message": "Not valid set declaration, found duplicates {duplicates}.",
+        "description": "Occurs when a set declaration contains duplicate values.",
+    },
+    "1-3-10": {
+        "message": "Not valid set declaration, mixed scalar types {scalar_1} and {scalar_2}.",
+        "description": "Raised when a set declaration mixes incompatible scalar types.",
+    },
+    "1-3-12": {
+        "message": "Default arguments cannot be followed by non-default arguments.",
+        "description": "Occurs when a function definition places non-default parameters "
+        "after default ones.",
+    },
+    "1-3-15": {
+        "message": "Missing datastructure definition for required input Dataset {input}.",
+        "description": "Raised when a required input dataset has not been defined.",
+    },
+    "1-3-17": {
+        "message": "Operations without output assigned are not available.",
+        "description": "Occurs when an operation does not assign its result to an output.",
+    },
+    "1-3-19": {
+        "message": "No {node_type} {node_value} found.",
+        "description": "Raised when a referenced node of the given type cannot be found.",
+    },
+    "1-3-20": {
+        "message": "RuleComp of Hierarchical Ruleset can only be an identifier, "
+        "{name} is a {role}.",
+        "description": "Occurs when a non-identifier is used where an identifier "
+        "is required in a hierarchical ruleset.",
+    },
+    "1-3-21": {
+        "message": "Value {value} not valid, kind {node_kind}.",
+        "description": "Raised when a value does not match the expected kind or type.",
+    },
+    "1-3-22": {
+        "message": "Unable to categorize {node_value}.",
+        "description": "Occurs when the system cannot determine the category of a node.",
+    },
+    "1-3-23": {
+        "message": "Missing value domain '{name}' definition, please provide an structure.",
+        "description": "Raised when a referenced value domain has not been defined.",
+    },
 }
