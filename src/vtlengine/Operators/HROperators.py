@@ -1,15 +1,18 @@
 import operator
 from copy import copy
-from typing import Any, Dict
+from typing import Any, Dict, Tuple, Optional
 
 import pandas as pd
 from pandas import DataFrame
 
 import vtlengine.Operators as Operators
-from vtlengine.AST.Grammar.tokens import HIERARCHY
+from vtlengine.AST.Grammar.tokens import HIERARCHY, PARTIAL_NULL, PARTIAL_ZERO, NON_ZERO, NON_NULL
 from vtlengine.DataTypes import Boolean, Number
 from vtlengine.Model import Component, DataComponent, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+
+
+REMOVE = "REMOVE_VALUE"
 
 
 def get_measure_from_dataset(dataset: Dataset, code_item: str) -> DataComponent:
@@ -24,44 +27,54 @@ def get_measure_from_dataset(dataset: Dataset, code_item: str) -> DataComponent:
     )
 
 
-class HRComparison(Operators.Binary):
+class HRBinOp(Operators.Binary):
     @classmethod
-    def imbalance_func(cls, x: Any, y: Any) -> Any:
+    def apply_operation_two_series(cls, left: pd.Series, right: pd.Series, op: Optional[Any] = None) -> pd.Series:
+        op = op if op is not None else cls.op_func
+        result = list(map(op, left.values, right.values))
+        return pd.Series(result, index=list(range(len(result))), dtype=object)
+    
+    @classmethod
+    def align_series(cls, left: pd.Series, right: pd.Series, mode: str) -> Tuple[pd.Series, pd.Series]:
+        value = 0 if mode.endswith("zero") else None
+
+        left_idx = left.index
+        right_idx = right.index
+
+        left_aligned, right_aligned = left.align(right, join="outer")
+
+        left_new = ~left_aligned.index.isin(left_idx)
+        right_new = ~right_aligned.index.isin(right_idx)
+
+        left_aligned[left_new] = REMOVE
+        right_aligned[right_new] = REMOVE
+
+        left_remove = left_aligned == REMOVE
+        right_remove = right_aligned == REMOVE
+
+        left_aligned[left_remove] = value
+        right_aligned[right_remove] = value
+
+        if mode in (PARTIAL_ZERO, PARTIAL_NULL):
+            mask_remove = left_remove & right_remove
+        elif mode == NON_NULL:
+            mask_remove = left_aligned.isna() | right_aligned.isna()
+        elif mode == NON_ZERO:
+            mask_remove = (left_aligned == 0) & (right_aligned == 0)
+        else:
+            return left_aligned, right_aligned
+        return left_aligned[~mask_remove], right_aligned[~mask_remove]
+
+    @classmethod
+    def hr_op(cls, left_series: pd.Series, right_series: pd.Series, hr_mode: str) -> Any:
+        left, right = cls.align_series(left_series, right_series, hr_mode)
+        return cls.apply_operation_two_series(left, right)
+
+
+class HRComparison(HRBinOp):
+    @classmethod
+    def imbalance_op(cls, x: Any, y: Any) -> Any:
         return None if pd.isnull(x) or pd.isnull(y) else x - y
-
-    @staticmethod
-    def hr_func(left_series: Any, right_series: Any, hr_mode: str) -> Any:
-        result = pd.Series(True, index=left_series.index)
-
-        if hr_mode in ("partial_null", "partial_zero"):
-            mask_remove = (right_series == "REMOVE_VALUE") & (right_series.notnull())
-            if hr_mode == "partial_null":
-                mask_null = mask_remove & left_series.notnull()
-            else:
-                mask_null = mask_remove & (left_series != 0)
-            result[mask_remove] = "REMOVE_VALUE"
-            result[mask_null] = None
-        elif hr_mode == "non_null":
-            mask_remove = left_series.isnull() | right_series.isnull()
-            result[mask_remove] = "REMOVE_VALUE"
-        elif hr_mode == "non_zero":
-            mask_remove = (left_series == 0) & (right_series == 0)
-            result[mask_remove] = "REMOVE_VALUE"
-
-        return result
-
-    @classmethod
-    def apply_hr_func(cls, left_series: Any, right_series: Any, hr_mode: str, func: Any) -> Any:
-        # In order not to apply the function to the whole series, we align the series
-        # and apply the function only to the valid values based on a validation mask.
-        # The function is applied to the aligned series and the result is combined with the
-        # original series.
-        left_series, right_series = left_series.align(right_series)
-        remove_result = cls.hr_func(left_series, right_series, hr_mode)
-        mask_valid = remove_result == True
-        result = pd.Series(remove_result, index=left_series.index)
-        result.loc[mask_valid] = left_series[mask_valid].combine(right_series[mask_valid], func)
-        return result
 
     @classmethod
     def validate(cls, left_operand: Dataset, right_operand: DataComponent, hr_mode: str) -> Dataset:
@@ -83,23 +96,17 @@ class HRComparison(Operators.Binary):
         )
 
     @classmethod
-    def evaluate(cls, left: Dataset, right: DataComponent, hr_mode: str) -> Dataset:  # type: ignore[override]
-        result = cls.validate(left, right, hr_mode)
+    def evaluate(cls, left: Dataset, right: DataComponent, mode: str) -> Dataset:  # type: ignore[override]
+        result = cls.validate(left, right, mode)
         result.data = left.data.copy() if left.data is not None else pd.DataFrame()
         measure_name = left.get_measures_names()[0]
 
         if left.data is not None and right.data is not None:
-            result.data["bool_var"] = cls.apply_hr_func(
-                left.data[measure_name], right.data, hr_mode, cls.op_func
-            )
-            result.data["imbalance"] = cls.apply_hr_func(
-                left.data[measure_name], right.data, hr_mode, cls.imbalance_func
-            )
+            left_data, right_data = cls.align_series(left.data[measure_name], right.data, mode)
+            result.data = result.data.iloc[left_data.index]
+            result.data["bool_var"] = cls.apply_operation_two_series(left_data, right_data)
+            result.data["imbalance"] = cls.apply_operation_two_series(left_data, right_data, cls.imbalance_op)
 
-        # Removing datapoints that should not be returned
-        # (we do it below imbalance calculation
-        # to avoid errors on different shape)
-        result.data = result.data[result.data["bool_var"] != "REMOVE_VALUE"]
         result.data.drop(measure_name, axis=1, inplace=True)
         return result
 
@@ -129,16 +136,10 @@ class HRLessEqual(HRComparison):
     py_op = operator.le
 
 
-class HRBinNumeric(Operators.Binary):
+class HRBinNumeric(HRBinOp):
     @classmethod
-    def op_func(cls, x: Any, y: Any) -> Any:
-        if not pd.isnull(x) and x == "REMOVE_VALUE":
-            return "REMOVE_VALUE"
-        return super().op_func(x, y)
-
-    @classmethod
-    def evaluate(cls, left: DataComponent, right: DataComponent) -> DataComponent:
-        result_data = cls.apply_operation_two_series(left.data, right.data)
+    def evaluate(cls, left: DataComponent, right: DataComponent, hr_mode: str) -> DataComponent:
+        result_data = cls.hr_op(left.data, right.data, hr_mode)
         return DataComponent(
             name=f"{left.name}{cls.op}{right.name}",
             data=result_data,
@@ -198,15 +199,15 @@ class HAAssignment(Operators.Binary):
             result.data[measure_name] = right.data.map(lambda x: cls.handle_mode(x, hr_mode))
             result.data = result.data.iloc[right.data.index[0:len(result.data)]]
 
-        result.data = result.data[result.data[measure_name] != "REMOVE_VALUE"]
+        result.data = result.data[result.data[measure_name] != REMOVE]
         return result
 
     @classmethod
     def handle_mode(cls, x: Any, hr_mode: str) -> Any:
-        if not pd.isnull(x) and x == "REMOVE_VALUE":
-            return "REMOVE_VALUE"
+        if not pd.isnull(x) and x == REMOVE:
+            return REMOVE
         if hr_mode == "non_null" and pd.isnull(x) or hr_mode == "non_zero" and x == 0:
-            return "REMOVE_VALUE"
+            return REMOVE
         return x
 
 
