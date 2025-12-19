@@ -736,10 +736,9 @@ centralised_messages = {
         "Time Period.",
     },
     "1-1-19-11": {
-        "message": "The Time aggregation operand has to be defined if not used inside an "
-        "aggregation.",
-        "description": "Raised when a Time aggregation operator is missing the operand "
-        "definition outside an aggregation context.",
+        "message": "At op time_agg: If used over a Date, first/last parameter must be declared.",
+        "description": "Raised when the first/last parameter is missing in a time aggregation "
+        "over a Date type.",
     },
     # ---------Semantic Analyzer Common----
     "1-2-1": {
@@ -880,6 +879,12 @@ centralised_messages = {
         "description": "Raised when cyclic dependencies are detected in a VTL script, "
         "preventing DAG creation.",
     },
+    "1-3-2-4": {
+        "message": "The Time aggregation operand has to be defined if not used inside an "
+        "aggregation.",
+        "description": "Raised when a Time aggregation operator is missing the operand "
+        "definition outside an aggregation context.",
+    },
     # ---------- Interpreter ----------
     "1-3-5": {
         "message": "{node_op} not found or not valid for {op_type}.",
@@ -893,8 +898,9 @@ centralised_messages = {
     },
     # ---------- RunTimeErrors ----------
     "2-1-19-1": {
-        "message": "At op {op}: Invalid values {value_1} and {value_2} for duration, periodIndTo "
-        "parameter must be a larger duration value than the values to aggregate.",
+        "message": "At op time_agg: Invalid value {value} to aggregate to "
+        "periodIndTo {new_indicator} , "
+        "periodIndTo parameter must be a larger duration value than the values to aggregate.",
         "description": "Raised when the periodIndTo parameter is smaller than "
         "the values being aggregated.",
     },

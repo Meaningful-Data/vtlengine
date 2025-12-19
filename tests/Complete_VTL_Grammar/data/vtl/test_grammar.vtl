@@ -296,7 +296,7 @@ timeshift_period_ds := timeshift(drop_identifier(DS_1_without_time, Id_date), -2
 datediff_ds := DS_1[calc Me_diff := datediff(Me_interval, Id_period)];
 date_add_ds := DS_1[calc Me_add := dateadd(Id_period, 2, "M")];
 
-time_agg_date_ds := sum(drop_identifier(DS_1_without_time, Id_period)#Me_int group all time_agg("A", _, Id_date));
+time_agg_date_ds := sum(drop_identifier(DS_1_without_time, Id_period)#Me_int group all time_agg("A", _, Id_date, first));
 time_agg_period_ds := sum(drop_identifier(DS_1_without_time, Id_date)#Me_num group all time_agg("M", _, Id_period));
 
 /*************************************************

@@ -119,7 +119,7 @@ def test_visit_TimeAggregation_error():
         column_stop=1,
     )
 
-    with pytest.raises(SemanticError, match="1-1-19-11"):
+    with pytest.raises(SemanticError, match="1-3-2-4"):
         interpreter.visit_TimeAggregation(node)
 
 
