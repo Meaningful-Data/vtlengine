@@ -201,9 +201,12 @@ def _validate_pandas(
                 )
             data[comp_name] = data[comp_name].astype(object, errors="raise")
 
-    except ValueError:
+    except (ValueError, InputValidationException) as e:
         str_comp = SCALAR_TYPES_CLASS_REVERSE[comp.data_type] if comp else "Null"
-        raise DataLoadError("0-3-1-6", name=dataset_name, column=comp_name, type=str_comp)
+        error = e.args[0] if isinstance(e, InputValidationException) else str(e)
+        raise DataLoadError(
+            "0-3-1-6", name=dataset_name, column=comp_name, type=str_comp, error=error
+        ) from None
 
     if id_names:
         check_identifiers_duplicity(data, id_names, dataset_name)
