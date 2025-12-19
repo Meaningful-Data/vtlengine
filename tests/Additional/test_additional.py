@@ -3993,7 +3993,7 @@ class TimeOperatorsTest(AdditionalHelper):
         )
 
     def test_GH_425_1(self):
-        """Tests Semantic error 1-1-19-1 (missing conf parameter) over a Dataset with identifier of type Date"""
+        """Tests Semantic error 1-1-19-11 (missing conf parameter) over a Dataset with identifier of type Date"""
         text = 'DS_r <- sum(DS_1 group all time_agg("M"));'
         code = "GH_425_1"
         number_inputs = 1
@@ -4004,7 +4004,7 @@ class TimeOperatorsTest(AdditionalHelper):
         )
 
     def test_GH_425_2(self):
-        """Tests Semantic error 1-1-19-1 (missing conf parameter) over a Dataset with measure of type Date
+        """Tests Semantic error 1-1-19-11 (missing conf parameter) over a Dataset with measure of type Date
         (dataset evaluation)
         """
         text = 'DS_r <- time_agg("M", DS_1);'
@@ -4017,7 +4017,7 @@ class TimeOperatorsTest(AdditionalHelper):
         )
 
     def test_GH_425_3(self):
-        """Tests Semantic error 1-1-19-1 (missing conf parameter) over a Dataset with measure of type Date
+        """Tests Semantic error 1-1-19-11 (missing conf parameter) over a Dataset with measure of type Date
         (component evaluation)
         """
         text = 'DS_r <- DS_1[calc Me_2 := time_agg("M", Me_1);'
@@ -4030,7 +4030,7 @@ class TimeOperatorsTest(AdditionalHelper):
         )
 
     def test_GH_425_4(self):
-        """Tests Semantic error 1-1-19-1 (missing conf parameter) over a scalar of type Date"""
+        """Tests Semantic error 1-1-19-11 (missing conf parameter) over a scalar of type Date"""
         text = 'DS_r <- time_agg("D", cast("2025-01-01", date));'
         code = "GH_425_4"
         number_inputs = 0
