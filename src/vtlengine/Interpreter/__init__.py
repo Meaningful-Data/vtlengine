@@ -869,6 +869,12 @@ class InterpreterAnalyzer(ASTTemplate):
                     data = copy(self.regular_aggregation_dataset.data[node.value])
                 else:
                     data = None
+                if node.value not in self.regular_aggregation_dataset.components:
+                    raise SemanticError(
+                        "1-1-1-10",
+                        comp_name=node.value,
+                        dataset_name=self.regular_aggregation_dataset.name,
+                    )
                 return DataComponent(
                     name=node.value,
                     data=data,
