@@ -1923,7 +1923,7 @@ def test_run_with_scalars(data_structures, datapoints, tmp_path):
         reader = csv.reader(f)
         rows = list(reader)
     assert len(rows) == 4
-    assert rows[0] == ["Name", "Value"]
+    assert rows[0] == ["name", "value"]
     assert rows[1] == ["Sc_r", "31"]
     assert rows[2] == ["Sc_r2", "15"]
     assert rows[3] == ["Sc_r3", ""]
@@ -1993,7 +1993,7 @@ def test_run_with_scalar_being_none(data_structures, datapoints, tmp_path):
         reader = csv.reader(f)
         rows = list(reader)
     assert len(rows) == 2
-    assert rows[0] == ["Name", "Value"]
+    assert rows[0] == ["name", "value"]
     assert rows[1] == ["Sc_r", ""]
 
 
