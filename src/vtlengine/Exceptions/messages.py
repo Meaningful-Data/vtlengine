@@ -885,6 +885,11 @@ centralised_messages = {
         "description": "Occurs when an operator is undefined or incompatible with "
         "the given operation type.",
     },
+    "1-3-6": {
+        "message": "Language {language} not supported on Eval operator. Only"
+        "'SQL' language is supported.",
+        "description": "Raised when an unsupported language is specified in an Eval operation.",
+    },
     # ---------- RunTimeErrors ----------
     "2-1-19-1": {
         "message": "At op {op}: Invalid values {value_1} and {value_2} for duration, periodIndTo "

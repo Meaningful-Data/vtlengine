@@ -1614,7 +1614,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
         """
         if node.language not in EXTERNAL:
-            raise Exception(f"Language {node.language} not supported on Eval")
+            raise SemanticError(code="1-3-6", language=node.language)
 
         if self.external_routines is None:
             raise SemanticError("2-3-10", comp_type="External Routines")
