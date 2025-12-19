@@ -220,7 +220,7 @@ class InterpreterAnalyzer(ASTTemplate):
             file_path = output_path / "_scalars.csv"
             with open(file_path, "w", newline="", encoding="utf-8") as csv_file:
                 writer = csv.writer(csv_file)
-                writer.writerow(["Name", "Value"])
+                writer.writerow(["name", "value"])
                 for name, scalar in sorted(result_scalars.items(), key=lambda item: item[0]):
                     value_to_write = "" if scalar.value is None else scalar.value
                     writer.writerow([name, str(value_to_write)])
