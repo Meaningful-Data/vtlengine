@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional, Union
 import pandas as pd
 
 from vtlengine.AST.Grammar.tokens import GT, GTE, LT, LTE
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import RunTimeError, SemanticError
 
 PERIOD_IND_MAPPING = {"A": 6, "S": 5, "Q": 4, "M": 3, "W": 2, "D": 1}
 
@@ -326,7 +326,7 @@ class TimePeriodHandler:
         if self.period_indicator == new_indicator:
             return
         if PERIOD_IND_MAPPING[self.period_indicator] > PERIOD_IND_MAPPING[new_indicator]:
-            raise SemanticError(
+            raise RunTimeError(
                 "2-1-19-1",
                 value=self.period_indicator,
                 new_indicator=new_indicator,

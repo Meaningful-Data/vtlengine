@@ -4020,7 +4020,7 @@ class TimeOperatorsTest(AdditionalHelper):
         """Tests Semantic error 1-1-19-11 (missing conf parameter) over a Dataset with measure of type Date
         (component evaluation)
         """
-        text = 'DS_r <- DS_1[calc Me_2 := time_agg("M", Me_1);'
+        text = 'DS_r <- DS_1[calc Me_2 := time_agg("M", Me_1)];'
         code = "GH_425_3"
         number_inputs = 1
         exception_code = "1-1-19-11"
