@@ -2120,8 +2120,8 @@ def test_with_multiple_vd_and_ext_routines():
     script = """
       DS_r <- DS_1 [ calc Me_2:= Me_1 in Countries];
       DS_r2 <- DS_1 [ calc Me_2:= Me_1 in Countries_EU_Sample];
-      DS_r3 <- eval(SQL_3(DS_1) language "sqlite" returns dataset {identifier<integer> Id_1, measure<number> Me_1});
-      DS_r4 <- eval(SQL_4(DS_1) language "sqlite" returns dataset {identifier<integer> Id_1, measure<number> Me_1});
+      DS_r3 <- eval(SQL_3(DS_1) language "SQL" returns dataset {identifier<integer> Id_1, measure<number> Me_1});
+      DS_r4 <- eval(SQL_4(DS_1) language "SQL" returns dataset {identifier<integer> Id_1, measure<number> Me_1});
     """
 
     data_structures = {
@@ -2248,8 +2248,8 @@ def test_semantic_analysis_list_vd_ext_routines():
     script = """
           DS_r <- DS_1 [ calc Me_2:= Me_1 in Countries];
           DS_r2 <- DS_1 [ calc Me_2:= Me_1 in Countries_EU_Sample];
-          DS_r3 <- eval(SQL_3(DS_1) language "sqlite" returns dataset {identifier<integer> Id_1, measure<number> Me_1});
-          DS_r4 <- eval(SQL_4(DS_1) language "sqlite" returns dataset {identifier<integer> Id_1, measure<number> Me_1});
+          DS_r3 <- eval(SQL_3(DS_1) language "SQL" returns dataset {identifier<integer> Id_1, measure<number> Me_1});
+          DS_r4 <- eval(SQL_4(DS_1) language "SQL" returns dataset {identifier<integer> Id_1, measure<number> Me_1});
         """
 
     data_structures = {

@@ -4,6 +4,7 @@ import pandas as pd
 import pytest
 
 from tests.Helper import TestHelper
+from vtlengine.Exceptions import SemanticError
 from vtlengine.Operators.General import Eval
 
 
@@ -74,6 +75,26 @@ class SQLliteEval(TestEval):
         with pytest.raises(
             ValueError,
             match="External Routine dataset DS_X is not present in Eval operands",
+        ):
+            self.BaseTest(
+                code=code,
+                number_inputs=number_inputs,
+                references_names=references_names,
+                sql_names=sql_names,
+            )
+
+    def test_5(self):
+        """
+        Semantic Error on Dataset not found in the SQL Query
+        that does not match the operands in Eval.
+        """
+        code = "SQL_INVALID_LANGUAGE"
+        number_inputs = 1
+        references_names = ["DS_r"]
+        sql_names = ["SQL_INVALID_LANGUAGE"]
+        with pytest.raises(
+            SemanticError,
+            match="1-3-6",
         ):
             self.BaseTest(
                 code=code,
