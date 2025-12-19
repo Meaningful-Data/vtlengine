@@ -325,6 +325,12 @@ class TimePeriodHandler:
     def change_indicator(self, new_indicator: str) -> None:
         if self.period_indicator == new_indicator:
             return
+        if PERIOD_IND_MAPPING[self.period_indicator] > PERIOD_IND_MAPPING[new_indicator]:
+            raise SemanticError(
+                "2-1-19-1",
+                value=self.period_indicator,
+                new_indicator=new_indicator,
+            )
         date_value = period_to_date(self.year, self.period_indicator, self.period_number)
         self.period_indicator = new_indicator
         self.period_number = date_to_period(

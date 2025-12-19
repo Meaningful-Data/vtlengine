@@ -641,6 +641,32 @@ class Time_Aggregation(Time):
     op = TIME_AGG
 
     @classmethod
+    def _execute_without_operand(
+        cls, aggregation_dataset: Dataset, period_from: Optional[str], period_to: str, conf: str
+    ) -> Any:
+        time_id_name = cls._get_time_id(aggregation_dataset)
+        time_id = aggregation_dataset.components[time_id_name]
+        if time_id.data_type == TimePeriod and period_to == "D":
+            raise SemanticError("1-1-19-5", op=cls.op)
+        if time_id.data_type == TimeInterval:
+            raise SemanticError("1-1-19-6", op=cls.op, comp=time_id.name)
+
+        if aggregation_dataset.data is not None:
+            series_data = aggregation_dataset.data[time_id_name].map(
+                lambda x: cls._execute_time_aggregation(
+                    x, time_id.data_type, period_from, period_to, conf
+                ),
+                na_action="ignore",
+            )
+        else:
+            series_data = None # For semantic
+        result = DataComponent(
+            name=time_id_name, data=series_data, data_type=TimePeriod, role=Role.IDENTIFIER, nullable=False
+        )
+
+        return result
+
+    @classmethod
     def _check_duration(cls, value: str) -> None:
         if value not in PERIOD_IND_MAPPING:
             raise SemanticError("1-1-19-3", op=cls.op, param="duration")
@@ -668,18 +694,6 @@ class Time_Aggregation(Time):
                     raise SemanticError("1-1-19-5", op=cls.op)
                 if measure.data_type == TimeInterval:
                     raise SemanticError("1-1-19-6", op=cls.op, comp=measure.name)
-
-        count_time_types = 0
-        for id_ in operand.get_identifiers():
-            if id_.data_type in cls.TIME_DATA_TYPES:
-                count_time_types += 1
-        if count_time_types != 1:
-            raise SemanticError(
-                "1-1-19-9",
-                op=cls.op,
-                comp_type="dataset",
-                param="single time identifier",
-            )
 
         if count_time_types != 1:
             raise SemanticError(
@@ -749,12 +763,7 @@ class Time_Aggregation(Time):
     ) -> Dataset:
         result = cls.dataset_validation(operand, period_from, period_to, conf)
         result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
-        try:
-            time_measure = [
-                m for m in operand.get_measures() if m.data_type in cls.TIME_DATA_TYPES
-            ][0]
-        except IndexError:
-            raise SemanticError(code="1-1-19-12", op=cls.__name__, ds=operand.name)
+        time_measure = [m for m in operand.get_measures() if m.data_type in cls.TIME_DATA_TYPES][0]
         result.data[time_measure.name] = result.data[time_measure.name].map(
             lambda x: cls._execute_time_aggregation(
                 x, time_measure.data_type, period_from, period_to, conf

@@ -3826,11 +3826,12 @@ class TimeOperatorsTest(AdditionalHelper):
 
     def test_26(self):
         """
-        Runtime Error on time_agg if any row has lower or equal duration than periodIndTo
+        Runtime Error on time_agg if any row has lower or equal duration than periodIndTo.
+        periodIndTo is W while there is a value that has M as period indicator.
         """
         code = "7-26"
         number_inputs = 1
-        message = "1-1-19-9"
+        message = "2-1-19-1"
         self.NewSemanticExceptionTest(
             text=None, code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -3855,7 +3856,7 @@ class TimeOperatorsTest(AdditionalHelper):
         text = """DS_r <- time_agg("A", DS_1);"""
         code = "7-29"
         number_inputs = 1
-        exception_code = "1-1-19-12"
+        exception_code = "1-1-19-9"
 
         self.NewSemanticExceptionTest(
             text=text, code=code, number_inputs=number_inputs, exception_code=exception_code

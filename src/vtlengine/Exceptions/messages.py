@@ -735,17 +735,6 @@ centralised_messages = {
         "description": "Occurs when operands of a time operator are not of type Date or "
         "Time Period.",
     },
-    "1-1-19-11": {
-        "message": "The Time aggregation operand has to be defined if not used inside an "
-        "aggregation.",
-        "description": "Raised when a Time aggregation operator is missing the operand "
-        "definition outside an aggregation context.",
-    },
-    "1-1-19-12": {
-        "message": "At op {op}: {ds} does not define any Time data type required by the operator",
-        "description": "Raised when a Time operator is applied to a component that has no "
-        "time-based measures defined.",
-    },
     # ---------Semantic Analyzer Common----
     "1-2-1": {
         "message": "Please don't use twice {alias} like var_to.",
@@ -885,6 +874,12 @@ centralised_messages = {
         "description": "Raised when cyclic dependencies are detected in a VTL script, "
         "preventing DAG creation.",
     },
+    "1-3-2-4": {
+        "message": "The Time aggregation operand has to be defined if not used inside an "
+        "aggregation.",
+        "description": "Raised when a Time aggregation operator is missing the operand "
+        "definition outside an aggregation context.",
+    },
     # ---------- Interpreter ----------
     "1-3-5": {
         "message": "{node_op} not found or not valid for {op_type}.",
@@ -898,8 +893,9 @@ centralised_messages = {
     },
     # ---------- RunTimeErrors ----------
     "2-1-19-1": {
-        "message": "At op {op}: Invalid values {value_1} and {value_2} for duration, periodIndTo "
-        "parameter must be a larger duration value than the values to aggregate.",
+        "message": "At op time_agg: Invalid value {value} to aggregate to "
+        "periodIndTo {new_indicator} , "
+        "periodIndTo parameter must be a larger duration value than the values to aggregate.",
         "description": "Raised when the periodIndTo parameter is smaller than "
         "the values being aggregated.",
     },
