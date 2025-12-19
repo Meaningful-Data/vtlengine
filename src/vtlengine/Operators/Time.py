@@ -750,13 +750,11 @@ class Time_Aggregation(Time):
         result = cls.dataset_validation(operand, period_from, period_to, conf)
         result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
         try:
-            time_measure = [m for m in operand.get_measures() if m.data_type in cls.TIME_DATA_TYPES][0]
+            time_measure = [
+                m for m in operand.get_measures() if m.data_type in cls.TIME_DATA_TYPES
+            ][0]
         except IndexError:
-            raise SemanticError(
-                code="1-1-19-12",
-                op=cls.__name__,
-                ds=operand.name
-            )
+            raise SemanticError(code="1-1-19-12", op=cls.__name__, ds=operand.name)
         result.data[time_measure.name] = result.data[time_measure.name].map(
             lambda x: cls._execute_time_aggregation(
                 x, time_measure.data_type, period_from, period_to, conf

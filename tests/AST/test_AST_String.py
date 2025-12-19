@@ -168,6 +168,7 @@ def test_syntax_validation_prettier(filename):
     except Exception as e:
         pytest.fail(f"Syntax validation failed for generated script {filename}: {e}")
 
+
 def test_time_agg_non_operand():
     script = """DS_A <- sum (DS_1 group all time_agg ("A"));"""
     ast = create_ast(script)
