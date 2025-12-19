@@ -779,7 +779,7 @@ def _check_script(script: Union[str, TransformationScheme, Path]) -> str:
     Check if the TransformationScheme object is valid to generate a vtl script.
     """
     if not isinstance(script, (str, TransformationScheme, Path)):
-        raise InputValidationException("0-1-1-1", format_=type(script).__name__)
+        raise InputValidationException(code="0-1-1-1", format_=type(script).__name__)
     if isinstance(script, TransformationScheme):
         from pysdmx.toolkit.vtl import (
             generate_vtl_script,
