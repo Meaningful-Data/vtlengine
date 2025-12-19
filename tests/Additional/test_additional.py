@@ -3851,6 +3851,16 @@ class TimeOperatorsTest(AdditionalHelper):
             references_names=references_names,
         )
 
+    def test_29(self):
+        text = """DS_r <- time_agg("A", DS_1);"""
+        code = "7-29"
+        number_inputs = 1
+        exception_code = "1-1-19-12"
+
+        self.NewSemanticExceptionTest(
+            text=text, code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
     def test_GH_261_1(self):
         text = "DS_r <- DS_1[calc Me_2 := Me_1 < Me_1];"
         code = "GH_261"

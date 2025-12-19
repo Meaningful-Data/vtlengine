@@ -26,28 +26,28 @@ centralised_messages = {
     "0-1-0-1": {
         "message": "Trying to redefine input Datasets {dataset}.",
         "description": "Raised when the user attempts to redefine an input Dataset "
-        "that already exists.",
+                       "that already exists.",
     },
     "0-1-1-1": {
         "message": "invalid script format type: {format_}. Input must be a string, "
-        "TransformationScheme or Path object",
+                   "TransformationScheme or Path object",
         "description": "Occurs when the script input type is not valid. It must be "
-        "a string, TransformationScheme, or Path object.",
+                       "a string, TransformationScheme, or Path object.",
     },
     "0-1-1-2": {
         "message": "The provided input {input} can not be used in this instance.",
         "description": "Raised when an input Dataset or value cannot be used in "
-        "the current context.",
+                       "the current context.",
     },
     "0-1-1-3": {
         "message": "Invalid file extension: expected {expected_ext}, got {ext}",
         "description": "Occurs when a file has an incorrect extension compared "
-        "to the expected one.",
+                       "to the expected one.",
     },
     "0-1-1-6": {
         "message": "Duplicated records. Combination of Identifiers are repeated.",
         "description": "Raised when duplicate rows are detected based on the Identifiers "
-        "combination.",
+                       "combination.",
     },
     "0-1-1-7": {
         "message": "G1 - The provided CSV file is empty.",
@@ -59,9 +59,9 @@ centralised_messages = {
     },
     "0-1-1-9": {
         "message": "You have a problem related with commas, review rfc4180 standard, "
-        "review file {file}.",
+                   "review file {file}.",
         "description": "Occurs when CSV formatting issues are detected, particularly with commas, "
-        "violating RFC4180.",
+                       "violating RFC4180.",
     },
     "0-1-1-11": {
         "message": "Wrong data in the file for this Scalar/Dataset {name}.",
@@ -78,7 +78,7 @@ centralised_messages = {
     "0-1-2-3": {
         "message": "{element_type} '{element}' is/are duplicated.",
         "description": "Occurs when an element (e.g., Identifier or component) "
-        "appears more than once.",
+                       "appears more than once.",
     },
     "0-1-2-5": {
         "message": "File {file} must be encoded in utf-8 (without BOM).",
@@ -87,19 +87,19 @@ centralised_messages = {
     "0-1-2-7": {
         "message": "Invalid value '{value}' for type {type_} {op_type} {name}.",
         "description": "Occurs when a value does not match the expected type or operation "
-        "constraints.",
+                       "constraints.",
     },
     "0-1-2-8": {
         "message": "Cannot pass as inputs Datasets/Scalars defined as outputs of transformations "
-        "in the script, please check: {names}",
+                   "in the script, please check: {names}",
         "description": "Raised when an output of a transformation is incorrectly used as an input.",
     },
     # Run SDMX errors
     "0-1-3-1": {
         "message": "Expected exactly one input Dataset in the whole script, "
-        "found: {number_Datasets}",
+                   "found: {number_Datasets}",
         "description": "Raised when the script expects exactly one input Dataset but finds "
-        "more than one.",
+                       "more than one.",
     },
     "0-1-3-2": {
         "message": "SDMX Dataset {schema} requires to have a Schema object defined as structure",
@@ -108,27 +108,27 @@ centralised_messages = {
     "0-1-3-3": {
         "message": "If no mappings are provided, only one Dataset is allowed.",
         "description": "Raised when multiple Datasets are provided without mappings, "
-        "but only one is allowed.",
+                       "but only one is allowed.",
     },
     "0-1-3-4": {
         "message": "Dataset {short_urn} not found in mapping dictionary.",
         "description": "Occurs when the Datasets short URN is does not exists in the "
-        "mapping dictionary.",
+                       "mapping dictionary.",
     },
     "0-1-3-5": {
         "message": "Dataset {dataset_name} not found in the input Datasets.",
         "description": "Raised when a Dataset expected as input is missing from the "
-        "provided Datasets.",
+                       "provided Datasets.",
     },
     "0-1-3-6": {
         "message": "Input name {missing} not found in the input Datasets.",
         "description": "Occurs when a named input Dataset cannot be found among "
-        "the available inputs.",
+                       "the available inputs.",
     },
     "0-1-3-7": {
         "message": "Invalid input Datasets type: {type_}. Expected a sequence of PandasDataset.",
         "description": "Raised when the type of input Datasets is incorrect; "
-        "a sequence of PandasDataset is expected.",
+                       "a sequence of PandasDataset is expected.",
     },
     # JSON Schema errors
     "0-2-1-1": {
@@ -142,24 +142,24 @@ centralised_messages = {
     # DataLoad errors
     "0-3-1-1": {
         "message": "{file} file not found. Please verify that the file exists and the provided "
-        "path is correct.",
+                   "path is correct.",
         "description": "Occurs when the specified file cannot be located at the given path.",
     },
     "0-3-1-2": {
         "message": "Output folder {folder} not found or invalid. Must be a valid Path or "
-        "S3 directory.",
+                   "S3 directory.",
         "description": "Raised when the output folder path is missing or not valid "
-        "for saving results.",
+                       "for saving results.",
     },
     "0-3-1-3": {
         "message": "On Dataset {name} loading:  An Identifier cannot have null values, "
-        "found null values on {null_identifier}.",
+                   "found null values on {null_identifier}.",
         "description": "Occurs when a Dataset Identifier contains null values, which "
-        "is not allowed.",
+                       "is not allowed.",
     },
     "0-3-1-4": {
         "message": "On Dataset {name} loading: Datasets without Identifiers "
-        "must have 0 or 1 datapoints.",
+                   "must have 0 or 1 datapoints.",
         "description": "Raised when a Dataset without Identifiers has more than one datapoint.",
     },
     "0-3-1-5": {
@@ -168,41 +168,41 @@ centralised_messages = {
     },
     "0-3-1-6": {
         "message": "On Dataset {name} loading: not possible to cast column {column} to {type}. "
-        'Error found: "{error}"',
+                   'Error found: "{error}"',
         "description": "Raised when a Dataset column cannot be cast to the expected data type.",
     },
     "0-3-1-7": {
         "message": "On Dataset {name} loading: Duplicated Identifiers are not allowed, "
-        "found on row {row_index}",
+                   "found on row {row_index}",
         "description": "Occurs when a Dataset contains duplicated Identifiers, "
-        "which is not allowed.",
+                       "which is not allowed.",
     },
     # ------------Operators-------------
     # General Semantic errors
     "1-1-1-1": {
         "message": "Invalid implicit cast from {type_1} to {type_2}.",
         "description": "Raised when an implicit type conversion from {type_1} to {type_2} "
-        "is not allowed.",
+                       "is not allowed.",
     },
     "1-1-1-2": {
         "message": "Invalid implicit cast from {type_1} and {type_2} to {type_check}.",
         "description": "Occurs when the combination of types {type_1} and {type_2} "
-        "cannot be implicitly cast to {type_check}.",
+                       "cannot be implicitly cast to {type_check}.",
     },
     "1-1-1-3": {
         "message": "At op {op}: {entity} {name} cannot be promoted to {target_type}.",
         "description": "Raised when a Dataset or Scalar cannot be promoted to "
-        "the required target type in the operation {op}.",
+                       "the required target type in the operation {op}.",
     },
     "1-1-1-4": {
         "message": "At op {op}: Operation not allowed for multimeasure Datasets.",
         "description": "Occurs when an operation is attempted on a Dataset with multiple Measures, "
-        "which is not permitted.",
+                       "which is not permitted.",
     },
     "1-1-1-5": {
         "message": "At op {op}: Invalid type {type}.",
         "description": "Raised when an operand or component has an invalid type for "
-        "the operation {op}.",
+                       "the operation {op}.",
     },
     "1-1-1-8": {
         "message": "At op {op}: Invalid Dataset {name}, no Measures defined.",
@@ -210,7 +210,7 @@ centralised_messages = {
     },
     "1-1-1-9": {
         "message": "At op {op}: Invalid Dataset {name}, all Measures must have "
-        "the same type: {type}.",
+                   "the same type: {type}.",
         "description": "Raised when Measures in a Dataset have different types each other.",
     },
     "1-1-1-10": {
@@ -223,59 +223,59 @@ centralised_messages = {
     },
     "1-1-1-15": {
         "message": "At op {op}: Datasets {name_1} and {name_2} does not contain the same "
-        "number of {type}.",
+                   "number of {type}.",
         "description": "Occurs when two Datasets expected to have the same number of a "
-        "specific type of components do not match.",
+                       "specific type of components do not match.",
     },
     "1-1-1-16": {
         "message": "Found structure not nullable and null values.",
         "description": "Raised when null values are found in a structure that "
-        "is defined as non-nullable.",
+                       "is defined as non-nullable.",
     },
     "1-1-1-20": {
         "message": "At op {op}: Only applies to Datasets, instead of this a Scalar was provided.",
         "description": "Occurs when a Scalar is provided to an operation "
-        "that only supports Datasets.",
+                       "that only supports Datasets.",
     },
     # Aggregate errors
     "1-1-2-2": {
         "message": "At op {op}: Only Identifiers are allowed for grouping, "
-        "found {id_name} - {id_type}.",
+                   "found {id_name} - {id_type}.",
         "description": "Raised when a non-Identifier component is used in a grouping operation.",
     },
     "1-1-2-3": {
         "message": "Having component output type must be boolean, found {type}.",
         "description": "Occurs when the output of a component in a HAVING clause "
-        "is not boolean as required.",
+                       "is not boolean as required.",
     },
     # Analytic errors
     "1-1-3-2": {
         "message": "At op {op}: Only Identifiers are allowed for partitioning, "
-        "found {id_name} - {id_type}.",
+                   "found {id_name} - {id_type}.",
         "description": "Raised when a non-Identifier component is used as a "
-        "partitioning key in an analytic operation.",
+                       "partitioning key in an analytic operation.",
     },
     # Cast errors
     "1-1-5-1": {
         "message": "Type {type_1}, cannot be cast to {type_2}.",
         "description": "Occurs when an explicit or implicit cast between incompatible types "
-        "is attempted.",
+                       "is attempted.",
     },
     "1-1-5-3": {
         "message": "Impossible to cast from type {type_1} to {type_2}, without providing a mask.",
         "description": "Raised when a cast requires a mask to resolve ambiguities, "
-        "but none is provided.",
+                       "but none is provided.",
     },
     "1-1-5-4": {
         "message": "Invalid mask to cast from type {type_1} to {type_2}.",
         "description": "Occurs when the mask provided for casting is invalid or incompatible "
-        "with the types.",
+                       "with the types.",
     },
     "1-1-5-5": {
         "message": "A mask can't be provided to cast from type {type_1} to {type_2}. "
-        "Mask provided: {mask_value}.",
+                   "Mask provided: {mask_value}.",
         "description": "Raised when a mask is provided in a context where it should not be used "
-        "for the cast.",
+                       "for the cast.",
     },
     "2-1-5-1": {
         "message": "Impossible to cast {value} from type {type_1} to {type_2}.",
@@ -284,19 +284,19 @@ centralised_messages = {
     "2-1-5-2": {
         "message": "Value {value} has decimals, cannot cast to integer",
         "description": "Raised when attempting to cast a decimal value to an integer, "
-        "which is not allowed.",
+                       "which is not allowed.",
     },
     # Clause errors
     "1-1-6-2": {
         "message": "At op {op}: The Identifier {name} in Dataset {dataset} could not be included "
-        "in the {op} op.",
+                   "in the {op} op.",
         "description": "Raised when an Identifier cannot be included in the specified operation.",
     },
     "1-1-6-4": {
         "message": "At op {op}: Alias symbol cannot have the name of a "
-        "component symbol: {symbol_name} - {comp_name}.",
+                   "component symbol: {symbol_name} - {comp_name}.",
         "description": "Occurs when an alias uses a name that conflicts with an "
-        "existing component symbol.",
+                       "existing component symbol.",
     },
     "1-1-6-5": {
         "message": "At op {op}: Scalar values are not allowed at sub operator, found {name}.",
@@ -305,19 +305,19 @@ centralised_messages = {
     "1-1-6-6": {
         "message": "Membership is not allowed inside a clause, found {dataset_name}#{comp_name}.",
         "description": "Occurs when a membership operation is attempted inside a clause, "
-        "which is invalid.",
+                       "which is invalid.",
     },
     "1-1-6-7": {
         "message": "Cannot use component {comp_name} as it was generated in another "
-        "calc expression.",
+                   "calc expression.",
         "description": "Raised when trying to reuse a component generated in a "
-        "different calculation expression.",
+                       "different calculation expression.",
     },
     "1-1-6-8": {
         "message": "Cannot use component {comp_name} for rename, it is already in the "
-        "Dataset {dataset_name}.",
+                   "Dataset {dataset_name}.",
         "description": "Occurs when attempting to rename a component that already "
-        "exists in the Dataset.",
+                       "exists in the Dataset.",
     },
     "1-1-6-9": {
         "message": "At op {op}: The following components are repeated: {from_components}.",
@@ -330,7 +330,7 @@ centralised_messages = {
     "1-1-6-11": {
         "message": "Ambiguity for this variable {comp_name}, exists as a Scalar and component.",
         "description": "Raised when a variable name exists both as a Scalar and component, "
-        "creating ambiguity.",
+                       "creating ambiguity.",
     },
     "1-1-6-12": {
         "message": "At op {op}: Not allowed to drop the last element.",
@@ -343,25 +343,25 @@ centralised_messages = {
     # Comparison errors
     "1-1-7-1": {
         "message": "At op {op}: Value in {left_name} of type {left_type} is not comparable "
-        "to value {right_name} of type {right_type}.",
+                   "to value {right_name} of type {right_type}.",
         "description": "Occurs when attempting to compare values of incompatible types.",
     },
     # Conditional errors
     "1-1-9-1": {
         "message": "At op {op}: The evaluation condition must result in a Boolean expression, "
-        "found '{type}'.",
+                   "found '{type}'.",
         "description": "Raised when the condition in a conditional operation does not evaluate "
-        "to Boolean.",
+                       "to Boolean.",
     },
     "1-1-9-3": {
         "message": "At op {op}: Then clause {then_name} and else clause {else_name}, "
-        "both must be Scalars.",
+                   "both must be Scalars.",
         "description": "Occurs when then/else clauses are not both Scalars, which it is required.",
     },
     "1-1-9-4": {
         "message": "At op {op}: The condition Dataset {name} must contain an unique Measure.",
         "description": "Raised when the condition Dataset has multiple Measures "
-        "instead of a single one.",
+                       "instead of a single one.",
     },
     "1-1-9-5": {
         "message": "At op {op}: The condition Dataset Measure must be a Boolean, found '{type}'.",
@@ -369,18 +369,18 @@ centralised_messages = {
     },
     "1-1-9-6": {
         "message": "At op {op}: Then-else Datasets have different number of Identifiers compared "
-        "with condition Dataset.",
+                   "with condition Dataset.",
         "description": "Raised when the then-else Datasets do not match the Identifier "
-        "count of the condition Dataset.",
+                       "count of the condition Dataset.",
     },
     "1-1-9-9": {
         "message": "At op {op}: {clause} component {clause_name} role must be {role_1}, "
-        "found {role_2}.",
+                   "found {role_2}.",
         "description": "Occurs when a component in a clause has an incorrect role type.",
     },
     "1-1-9-10": {
         "message": "At op {op}: {clause} Dataset have different number of Identifiers compared "
-        "with condition Dataset.",
+                   "with condition Dataset.",
         "description": "Raised when a Dataset in a clause has mismatched Identifier count.",
     },
     "1-1-9-11": {
@@ -389,13 +389,13 @@ centralised_messages = {
     },
     "1-1-9-12": {
         "message": "At op {op}: then clause {then_symbol} and else clause {else_symbol}, "
-        "both must be Datasets or at least one of them a Scalar.",
+                   "both must be Datasets or at least one of them a Scalar.",
         "description": "Raised when then/else clauses do not meet required "
-        "type rules (Dataset/Scalar).",
+                       "type rules (Dataset/Scalar).",
     },
     "1-1-9-13": {
         "message": "At op {op}: then {then} and else {else_clause} Datasets must contain "
-        "the same number of components.",
+                   "the same number of components.",
         "description": "Occurs when then and else Datasets have differing numbers of components.",
     },
     "2-1-9-1": {
@@ -429,60 +429,60 @@ centralised_messages = {
     # Data Validation errors
     "1-1-10-1": {
         "message": "At op {op}: The {op_type} operand must have exactly one Measure "
-        "of type {me_type}",
+                   "of type {me_type}",
         "description": "Raised when an operand does not have exactly one Measure "
-        "of the required type.",
+                       "of the required type.",
     },
     "1-1-10-2": {
         "message": "At op {op}: Number of variable has to be equal between the call and signature.",
         "description": "Occurs when the number of variables in the call does not match the "
-        "function signature.",
+                       "function signature.",
     },
     "1-1-10-3": {
         "message": "At op {op}: Name in the call {found} has to be equal to variable rule "
-        "in signature {expected}.",
+                   "in signature {expected}.",
         "description": "Raised when a variable name in the call differs "
-        "from the expected signature.",
+                       "from the expected signature.",
     },
     "1-1-10-4": {
         "message": "At op {op}: When a hierarchical ruleset is defined for value domain, "
-        "it is necessary to specify the component with the rule clause on call.",
+                   "it is necessary to specify the component with the rule clause on call.",
         "description": "Occurs when a hierarchical ruleset defined for value domain,"
-        "requires a component but it is missing in the call.",
+                       "requires a component but it is missing in the call.",
     },
     "1-1-10-5": {
         "message": "No rules to analyze on Hierarchy Roll-up as rules have no = operator.",
         "description": "Raised when there are no applicable rules in a Hierarchy Roll-up "
-        "due to missing '=' operators.",
+                       "due to missing '=' operators.",
     },
     "1-1-10-6": {
         "message": "At op {op}: Name in the call {found} has to be equal to variable condition "
-        "in signature {expected} .",
+                   "in signature {expected} .",
         "description": "Occurs when a variable name in the call does not match the "
-        "expected condition in the signature.",
+                       "expected condition in the signature.",
     },
     "1-1-10-7": {
         "message": "Not found component {comp_name} on signature.",
         "description": "Raised when a component referenced in the call is not found in the "
-        "signature.",
+                       "signature.",
     },
     "1-1-10-8": {
         "message": "At op {op}: Measures involved have to be numerical, other types found {found}.",
         "description": "Occurs when operands involve non-numerical Measures "
-        "where numerical are required.",
+                       "where numerical are required.",
     },
     "1-1-10-9": {
         "message": "Invalid signature for the ruleset {ruleset}. On variables, condComp and "
-        "ruleComp must be the same",
+                   "ruleComp must be the same",
         "description": "Raised when condComp and ruleComp in a ruleset signature do not "
-        "match as required.",
+                       "match as required.",
     },
     # General Operators
     "2-1-12-1": {
         "message": "At op {op}: Create a null Measure without a Scalar type is not allowed. "
-        "Please use Cast operator.",
+                   "Please use Cast operator.",
         "description": "Raised when attempting to create a null Measure without specifying a "
-        "Scalar type; a Cast operator must be used.",
+                       "Scalar type; a Cast operator must be used.",
     },  # RunTimeError.
     # Join Operators
     "1-1-13-1": {
@@ -495,39 +495,39 @@ centralised_messages = {
     },
     "1-1-13-3": {
         "message": "At op {op}: Join conflict with duplicated names for "
-        "column {name} from original Datasets.",
+                   "column {name} from original Datasets.",
         "description": "Raised when a Join operation encounters column "
-        "name conflicts across input Datasets.",
+                       "name conflicts across input Datasets.",
     },
     "1-1-13-4": {
         "message": "At op {op}: Using clause, using={using_names}, does not define all the "
-        "Identifiers, of non reference Dataset {dataset}.",
+                   "Identifiers, of non reference Dataset {dataset}.",
         "description": "Occurs when a 'using' clause in a join does not cover all Identifiers of a "
-        "non-reference Dataset.",
+                       "non-reference Dataset.",
     },
     "1-1-13-5": {
         "message": "At op {op}: Invalid subcase B1, All the Datasets must share as "
-        "Identifiers the using ones.",
+                   "Identifiers the using ones.",
         "description": "Raised when not all Datasets in subcase B1 share the declared 'using' "
-        "Identifiers.",
+                       "Identifiers.",
     },
     "1-1-13-6": {
         "message": "At op {op}: Invalid subcase B2, All the declared using components "
-        "'{using_components}' must be present as components in the reference Dataset"
-        " '{reference}'.",
+                   "'{using_components}' must be present as components in the reference Dataset"
+                   " '{reference}'.",
         "description": "Occurs when components declared in 'using' are missing from the "
-        "reference Dataset in subcase B2.",
+                       "reference Dataset in subcase B2.",
     },
     "1-1-13-7": {
         "message": "At op {op}: Invalid subcase B2, All the non reference Datasets must "
-        "share as Identifiers the using ones.",
+                   "share as Identifiers the using ones.",
         "description": "Raised when non-reference Datasets in subcase B2 do not share "
-        "the declared 'using' Identifiers.",
+                       "the declared 'using' Identifiers.",
     },
     "1-1-13-8": {
         "message": "At op {op}: No available using clause.",
         "description": "Occurs when a join operation requires a 'using' clause but none "
-        "is provided.",
+                       "is provided.",
     },
     "1-1-13-9": {
         "message": "Ambiguity for this variable {comp_name} inside a Join clause.",
@@ -536,24 +536,24 @@ centralised_messages = {
     "1-1-13-10": {
         "message": "The join operator does not perform Scalar/component operations.",
         "description": "Occurs when attempting Scalar or component operations directly with "
-        "a Join operator.",
+                       "a Join operator.",
     },
     "1-1-13-11": {
         "message": "At op {op}: Invalid subcase A, {dataset_reference} should be a superset but "
-        "{component} not found.",
+                   "{component} not found.",
         "description": "Raised when a subcase A join expects a superset but a required component "
-        "is missing.",
+                       "is missing.",
     },
     "1-1-13-12": {
         "message": "At op {op}: Invalid subcase A. There are different Identifiers for the "
-        "provided Datasets",
+                   "provided Datasets",
         "description": "Occurs when Datasets involved in subcase A have differing Identifiers.",
     },
     "1-1-13-13": {
         "message": "At op {op}: Invalid subcase A. There are not same number of Identifiers "
-        "for the provided Datasets",
+                   "for the provided Datasets",
         "description": "Raised when Datasets in subcase A do not have the same number of "
-        "Identifiers.",
+                       "Identifiers.",
     },
     "1-1-13-14": {
         "message": "Cannot perform a join over a Dataset Without Identifiers: {name}.",
@@ -561,9 +561,9 @@ centralised_messages = {
     },
     "1-1-13-15": {
         "message": "At op {op}: {comp_name} has to be a Measure for all the provided Datasets "
-        "inside the Join clause",
+                   "inside the Join clause",
         "description": "Raised when a component is not a Measure in all Datasets required "
-        "for the Join clause.",
+                       "for the Join clause.",
     },
     "1-1-13-16": {
         "message": "At op {op}: Invalid use, please review : {msg}.",
@@ -571,9 +571,9 @@ centralised_messages = {
     },
     "1-1-13-17": {
         "message": "At op {op}: {comp_name} not present in the Dataset(result from join VDS) "
-        "at the time it is called",
+                   "at the time it is called",
         "description": "Raised when a component is missing from the join result Dataset "
-        "when it is referenced.",
+                       "when it is referenced.",
     },
     # Operators general errors
     "1-1-14-1": {
@@ -582,37 +582,37 @@ centralised_messages = {
     },
     "1-1-14-3": {
         "message": "At op {op}: Invalid Scalar types for Identifiers at Dataset {dataset}. "
-        "One {type} Identifier expected, {count} found.",
+                   "One {type} Identifier expected, {count} found.",
         "description": "Raised when the Dataset has an unexpected number or type of Identifiers.",
     },
     "1-1-14-5": {
         "message": "At op {op}: {names} with type/s {types} is not compatible with {op}",
         "description": "Occurs when the specified components/types are incompatible "
-        "with the operation.",
+                       "with the operation.",
     },
     "1-1-14-6": {
         "message": "At op {op}: {comp_name} with type {comp_type} and Scalar_set with "
-        "type {Scalar_type} is not compatible with {op}",
+                   "type {Scalar_type} is not compatible with {op}",
         "description": "Raised when a component and a Scalar set have incompatible "
-        "types for an operation.",
+                       "types for an operation.",
     },
     "1-1-14-9": {
         "message": "At op {op}: {names} with type/s {types} is not compatible with {op} on "
-        "Datasets {datasets}.",
+                   "Datasets {datasets}.",
         "description": "Occurs when components/types across multiple Datasets are incompatible "
-        "with the operation.",
+                       "with the operation.",
     },
     # Numeric Operators
     "1-1-15-8": {
         "message": "At op {op}: {op} operator cannot have a {comp_type} as parameter.",
         "description": "Raised when an operator receives a component type that "
-        "is not allowed as a parameter.",
+                       "is not allowed as a parameter.",
     },
     "2-1-15-1": {
         "message": "At op {op}: Component {comp_name} from Dataset {dataset_name} "
-        "contains negative values.",
+                   "contains negative values.",
         "description": "Runtime error raised when a Dataset component contains negative "
-        "values that are not allowed.",
+                       "values that are not allowed.",
     },  # RunTimeError.
     "2-1-15-2": {
         "message": "At op {op}: Value {value} could not be negative.",
@@ -621,7 +621,7 @@ centralised_messages = {
     "2-1-15-3": {
         "message": "At op {op}: Base value {value} could not be less or equal 0.",
         "description": "Runtime error when a base value is less than or equal to zero, "
-        "which is not allowed.",
+                       "which is not allowed.",
     },  # RunTimeError.
     "2-1-15-4": {
         "message": "At op {op}: Invalid values in Component {name}.",
@@ -638,14 +638,14 @@ centralised_messages = {
     "2-1-15-7": {
         "message": "At op {op}: {op} operator cannot be a Dataset.",
         "description": "Runtime error when an operator is incorrectly applied to a Dataset "
-        "instead of allowed types.",
+                       "instead of allowed types.",
     },  # RunTimeError.
     # Set Operators
     "1-1-17-1": {
         "message": "At op {op}: Datasets {dataset_1} and {dataset_2} have different number "
-        "of components",
+                   "of components",
         "description": "Raised when set operations are performed on Datasets with differing "
-        "numbers of components.",
+                       "numbers of components.",
     },
     # String Operators
     "1-1-18-1": {
@@ -655,7 +655,7 @@ centralised_messages = {
     "1-1-18-2": {
         "message": "At op {op}: Composition of Dataset and Component is not allowed.",
         "description": "Occurs when attempting to combine a Dataset and a component in an "
-        "unsupported way.",
+                       "unsupported way.",
     },
     "1-1-18-3": {
         "message": "At op {op}: Invalid parameter position: {pos}.",
@@ -668,7 +668,7 @@ centralised_messages = {
     "1-1-18-6": {
         "message": "At op {op}: Datasets have different Measures.",
         "description": "Raised when Datasets involved in a string operation "
-        "do not have matching Measures.",
+                       "do not have matching Measures.",
     },
     "1-1-18-7": {
         "message": "At op {op}: Invalid number of parameters {number}, {expected} expected.",
@@ -681,18 +681,18 @@ centralised_messages = {
     "1-1-18-10": {
         "message": "At op {op}: Cannot have a Dataset as parameter",
         "description": "Occurs when a Dataset is incorrectly used as a parameter in a "
-        "string operation.",
+                       "string operation.",
     },
     # Time operators
     "1-1-19-1": {
         "message": "At op {op}: {op} must have a {data_type} type on {comp}.",
         "description": "Raised when a Time operator is applied to a component "
-        "with an incorrect data type.",
+                       "with an incorrect data type.",
     },
     "1-1-19-2": {
         "message": "At op {op}: Unknown Date type for {op}.",
         "description": "Occurs when the Date type of a component is unknown or "
-        "unsupported for the operation.",
+                       "unsupported for the operation.",
     },
     "1-1-19-3": {
         "message": "At op {op}: Invalid {param} for {op}.",
@@ -700,26 +700,26 @@ centralised_messages = {
     },
     "1-1-19-4": {
         "message": "At op {op}: Invalid values {value_1} and {value_2}, periodIndTo parameter "
-        "must be a larger Duration value than periodIndFrom parameter.",
+                   "must be a larger Duration value than periodIndFrom parameter.",
         "description": "Occurs when periodIndTo is not greater than periodIndFrom "
-        "in a Time aggregation.",
+                       "in a Time aggregation.",
     },
     "1-1-19-5": {
         "message": "At op {op}: periodIndTo parameter must be a larger duration value than "
-        "the values to aggregate.",
+                   "the values to aggregate.",
         "description": "Raised when the periodIndTo parameter is too short compared "
-        "with the values to aggregate.",
+                       "with the values to aggregate.",
     },
     "1-1-19-6": {
         "message": "At op {op}: Time type used in the component {comp} is not supported.",
         "description": "Occurs when a component has a time type that is unsupported "
-        "for the operation.",
+                       "for the operation.",
     },
     "1-1-19-7": {
         "message": "At op {op}: can be applied only on Data Sets (of time series) and returns "
-        "a Data Set (of time series).",
+                   "a Data Set (of time series).",
         "description": "Raised when a time operation is applied to an unsupported type; only "
-        "Time series Datasets are allowed.",
+                       "Time series Datasets are allowed.",
     },
     "1-1-19-8": {
         "message": "At op {op}: {op} can only be applied to a {comp_type}",
@@ -728,34 +728,39 @@ centralised_messages = {
     "1-1-19-9": {
         "message": "At op {op}: {op} can only be applied to a {comp_type} with a {param}",
         "description": "Raised when a time operator requires a component with a specific "
-        "additional parameter type.",
+                       "additional parameter type.",
     },
     "1-1-19-10": {
         "message": "{op} can only be applied to operands with data type as Date or Time Period",
         "description": "Occurs when operands of a time operator are not of type Date or "
-        "Time Period.",
+                       "Time Period.",
     },
     "1-1-19-11": {
         "message": "The Time aggregation operand has to be defined if not used inside an "
-        "aggregation.",
+                   "aggregation.",
         "description": "Raised when a Time aggregation operator is missing the operand "
-        "definition outside an aggregation context.",
+                       "definition outside an aggregation context.",
+    },
+    "1-1-19-12": {
+        "message": "At op {op}: {ds} does not define any Time data type required by the operator",
+        "description": "Raised when a Time operator is applied to a component that has no "
+                       "time-based measures defined."
     },
     # ---------Semantic Analyzer Common----
     "1-2-1": {
         "message": "Please don't use twice {alias} like var_to.",
         "description": "Raised when the same alias is used more than once in a variable "
-        "assignment.",
+                       "assignment.",
     },
     "1-2-2": {
         "message": "Overwriting a Dataset/variable is not allowed, trying it with {varId_value}.",
         "description": "Occurs when an attempt is made to overwrite an existing "
-        "Dataset or variable.",
+                       "Dataset or variable.",
     },
     "1-2-3": {
         "message": "{node_op} not found or not valid for {op_type}.",
         "description": "Occurs when an operator node is not recognized or incompatible with the "
-        "operation type.",
+                       "operation type.",
     },
     "1-2-4": {
         "message": "Defined Operator {node_value} not previously defined.",
@@ -764,7 +769,7 @@ centralised_messages = {
     "1-2-5": {
         "message": "Operations without output assigned are not available.",
         "description": "Occurs when attempting to execute operations that require an assigned "
-        "output but none is provided.",
+                       "output but none is provided.",
     },
     "1-2-6": {
         "message": "No {node_type} {node_value} found.",
@@ -772,9 +777,9 @@ centralised_messages = {
     },
     "1-2-7": {
         "message": "RuleComp of Hierarchical Ruleset can only be an Identifier, "
-        "{name} is a {role}.",
+                   "{name} is a {role}.",
         "description": "Occurs when a rule component in a hierarchical ruleset "
-        "is not an Identifier.",
+                       "is not an Identifier.",
     },
     "1-2-8": {
         "message": "Missing value domain '{name}' definition, please provide an structure.",
@@ -790,25 +795,25 @@ centralised_messages = {
     },
     "1-2-11": {
         "message": "At op {op}: invalid number of parameters: received {received}, "
-        "expected at least: {expected}",
+                   "expected at least: {expected}",
         "description": "Raised when the number of parameters provided to an operation is "
-        "less than expected.",
+                       "less than expected.",
     },
     "1-2-12": {
         "message": "At op {op}: can not use user defined operator that returns a component outside "
-        "Clause operator or Rule",
+                   "Clause operator or Rule",
         "description": "Occurs when a user-defined operator returning a component is used outside "
-        "an allowed context.",
+                       "an allowed context.",
     },
     "1-2-13": {
         "message": "Having clause is not permitted if group by clause is not present.",
         "description": "Occurs when a HAVING clause is used without a corresponding "
-        "GROUP BY clause.",
+                       "GROUP BY clause.",
     },
     "1-2-14": {
         "message": "At op {op}: Cannot perform aggregation inside a Calc.",
         "description": "Occurs when an aggregation operation is attempted inside a "
-        "Calc expression.",
+                       "Calc expression.",
     },
     # AST Helpers
     "1-3-1-1": {
@@ -818,7 +823,7 @@ centralised_messages = {
     "1-3-1-2": {
         "message": "Using variable {value}, not defined at {op} definition.",
         "description": "Raised when a variable is used without being defined in "
-        "the operation's context.",
+                       "the operation's context.",
     },
     "1-3-1-3": {
         "message": "At op {op}: using variable {value}, not defined as an argument.",
@@ -830,35 +835,35 @@ centralised_messages = {
     },
     "1-3-1-5": {
         "message": "Found duplicates at rule naming: {names}. "
-        "Please review {type} {ruleset_name} definition.",
+                   "Please review {type} {ruleset_name} definition.",
         "description": "Occurs when multiple rules share the same name in a ruleset.",
     },
     "1-3-1-6": {
         "message": "At op {op}: Arguments incoherence, {defined} defined {passed} passed.",
         "description": "Raised when the number of defined arguments and passed arguments "
-        "do not match.",
+                       "do not match.",
     },
     "1-3-1-7": {
         "message": "All rules must be named or not named, but found mixed criteria at "
-        "{type} definition {name}.",
+                   "{type} definition {name}.",
         "description": "Occurs when some rules are named and others are not in the same ruleset.",
     },
     "1-3-1-8": {
         "message": "All rules must have different code items in the left side of '=' in "
-        "hierarchy operator at hierachical ruleset definition {name}.",
+                   "hierarchy operator at hierachical ruleset definition {name}.",
         "description": "Raised when duplicate left-hand side code items are found "
-        "in hierarchical ruleset definitions.",
+                       "in hierarchical ruleset definitions.",
     },
     "1-3-1-9": {
         "message": "At op check_datapoint: {name} has an invalid datatype expected Dataset, "
-        "found Scalar.",
+                   "found Scalar.",
         "description": "Occurs when a datapoint has an invalid datatype; a Dataset is expected "
-        "but a Scalar was found.",
+                       "but a Scalar was found.",
     },
     "1-3-12": {
         "message": "Default arguments cannot be followed by non-default arguments.",
         "description": "Occurs when a function definition places non-default parameters "
-        "after default ones.",
+                       "after default ones.",
     },
     # AST Creation
     "1-3-2-0": {
@@ -868,7 +873,7 @@ centralised_messages = {
     "1-3-2-1": {
         "message": "Eval could not be called without a {option} type definition.",
         "description": "Occurs when an evaluation is attempted without a necessary "
-        "type definition.",
+                       "type definition.",
     },
     "1-3-2-2": {
         "message": "At op {op}: User defined operator without returns is not implemented.",
@@ -876,27 +881,27 @@ centralised_messages = {
     },
     "1-3-2-3": {
         "message": "At op {op}: Vtl Script contains Cycles, no DAG established. "
-        "Nodes involved: {nodes}.",
+                   "Nodes involved: {nodes}.",
         "description": "Raised when cyclic dependencies are detected in a VTL script, "
-        "preventing DAG creation.",
+                       "preventing DAG creation.",
     },
     # ---------- Interpreter ----------
     "1-3-5": {
         "message": "{node_op} not found or not valid for {op_type}.",
         "description": "Occurs when an operator is undefined or incompatible with "
-        "the given operation type.",
+                       "the given operation type.",
     },
     "1-3-6": {
         "message": "Language {language} not supported on Eval operator. Only"
-        " SQL language is supported.",
+                   " SQL language is supported.",
         "description": "Raised when an unsupported language is specified in an Eval operation.",
     },
     # ---------- RunTimeErrors ----------
     "2-1-19-1": {
         "message": "At op {op}: Invalid values {value_1} and {value_2} for duration, periodIndTo "
-        "parameter must be a larger duration value than the values to aggregate.",
+                   "parameter must be a larger duration value than the values to aggregate.",
         "description": "Raised when the periodIndTo parameter is smaller than "
-        "the values being aggregated.",
+                       "the values being aggregated.",
     },
     "2-1-19-2": {
         "message": "Invalid period indicator {period}.",
@@ -904,18 +909,18 @@ centralised_messages = {
     },
     "2-1-19-3": {
         "message": "Only same period indicator allowed for both parameters "
-        "({period1} != {period2}).",
+                   "({period1} != {period2}).",
         "description": "Raised when two parameters have different period indicators where "
-        "the same indicator is required.",
+                       "the same indicator is required.",
     },
     "2-1-19-4": {
         "message": "Date setter, ({value} > {date}). Cannot set date1 with a "
-        "value higher than date2.",
+                   "value higher than date2.",
         "description": "Occurs when date1 is set to a value greater than date2, which is invalid.",
     },
     "2-1-19-5": {
         "message": "Date setter, ({value} < {date}). Cannot set date2 with a value lower "
-        "than date1.",
+                   "than date1.",
         "description": "Occurs when date2 is set to a value less than date1, which is invalid.",
     },
     "2-1-19-6": {
@@ -924,9 +929,9 @@ centralised_messages = {
     },
     "2-1-19-7": {
         "message": "Period Number must be between 1 and {periods} for "
-        "period indicator {period_indicator}.",
+                   "period indicator {period_indicator}.",
         "description": "Occurs when the period number is outside the valid range "
-        "for the given period indicator.",
+                       "for the given period indicator.",
     },
     "2-1-19-8": {
         "message": "Invalid date format, must be YYYY-MM-DD: {date}",
@@ -950,18 +955,18 @@ centralised_messages = {
     },
     "2-1-19-13": {
         "message": "At op {op}: Invalid param data_type {type} for param {name}, "
-        "expected {expected}.",
+                   "expected {expected}.",
         "description": "Occurs when a parameter has an invalid data type for the operation.",
     },
     "2-1-19-14": {
         "message": "At op {op}: Invalid Dataset {name}, requires at least one "
-        "Date/Time_Period Measure.",
+                   "Date/Time_Period Measure.",
         "description": "Raised when a Dataset lacks required Date/Time_Period Measures.",
     },
     "2-1-19-15": {
         "message": "{op} can only be applied according to the iso 8601 format mask",
         "description": "Occurs when the operator is applied to values not conforming to "
-        "ISO 8601 format.",
+                       "ISO 8601 format.",
     },
     "2-1-19-16": {
         "message": "{op} can only be positive numbers",
@@ -969,27 +974,27 @@ centralised_messages = {
     },
     "2-1-19-17": {
         "message": "At op {op}: Time operators comparison are only support = and <> comparison "
-        "operations",
+                   "operations",
         "description": "Occurs when a time operator comparison uses unsupported operators "
-        "like < or >.",
+                       "like < or >.",
     },
     "2-1-19-18": {
         "message": "At op {op}: Time operators do not support < and > comparison operations, "
-        "so its not possible to use get the max or min between two time operators",
+                   "so its not possible to use get the max or min between two time operators",
         "description": "Raised when attempting to compute max or min using unsupported "
-        "Time operator comparisons.",
+                       "Time operator comparisons.",
     },
     "2-1-19-19": {
         "message": "Time Period comparison (>, <, >=, <=) with different period indicator "
-        "is not supported, found {value1} {op} {value2}",
+                   "is not supported, found {value1} {op} {value2}",
         "description": "Occurs when comparing two time periods with different indicators "
-        "using unsupported Comparison operators.",
+                       "using unsupported Comparison operators.",
     },
     "2-1-19-20": {
         "message": "Time Period operands with different period indicators do not support < and > "
-        "Comparison operations, unable to get the {op}",
+                   "Comparison operations, unable to get the {op}",
         "description": "Raised when < or > comparisons are attempted between operands "
-        "with different period indicators.",
+                       "with different period indicators.",
     },
     # ----------- Interpreter Common ------
     "2-3-4": {
@@ -999,7 +1004,7 @@ centralised_messages = {
     "2-3-5": {
         "message": "Expected {param_type}, got {type_name} on UDO {op}, parameter {param_name}.",
         "description": "Raised when a user-defined operator receives a parameter of "
-        "an unexpected type.",
+                       "an unexpected type.",
     },
     "2-3-6": {
         "message": "Dataset or Scalar {dataset_name} not found, please check input datastructures.",
