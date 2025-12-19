@@ -6,7 +6,6 @@ from vtlengine.API import create_ast, prettify
 from vtlengine.AST import Comment
 from vtlengine.AST.ASTComment import create_ast_with_comments
 from vtlengine.AST.ASTString import ASTString
-from vtlengine.Exceptions import SemanticError
 
 base_path = Path(__file__).parent
 vtl_filepath = base_path / "data" / "vtl"
@@ -26,6 +25,7 @@ params = [
     "GH_352.vtl",
     "GH_358.vtl",
     "comments_end_line.vtl",
+    "time_agg.vtl",
 ]
 
 params_prettier = [
@@ -167,10 +167,3 @@ def test_syntax_validation_prettier(filename):
         create_ast_with_comments(script_generated)
     except Exception as e:
         pytest.fail(f"Syntax validation failed for generated script {filename}: {e}")
-
-
-def test_time_agg_non_operand():
-    script = """DS_A <- sum (DS_1 group all time_agg ("A"));"""
-    ast = create_ast(script)
-    with pytest.raises(SemanticError, match="1-3-1-10"):
-        ASTString().render(ast)

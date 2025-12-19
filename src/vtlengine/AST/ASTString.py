@@ -54,7 +54,6 @@ from vtlengine.AST.Grammar.tokens import (
     VIRAL_ATTRIBUTE,
 )
 from vtlengine.DataTypes import SCALAR_TYPES_CLASS_REVERSE
-from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset
 
 nl = "\n"
@@ -588,10 +587,7 @@ class ASTString(ASTTemplate):
         return f"{node.old_name} to {node.new_name}"
 
     def visit_TimeAggregation(self, node: AST.TimeAggregation) -> str:
-        try:
-            operand = self.visit(node.operand)
-        except Exception:
-            raise SemanticError(code="1-3-1-10")
+        operand = self.visit(node.operand) if node.operand is not None else None
         period_from = "_" if node.period_from is None else _handle_literal(node.period_from)
         period_to = _handle_literal(node.period_to)
         if self.pretty:
