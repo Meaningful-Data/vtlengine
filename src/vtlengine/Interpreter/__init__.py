@@ -1326,7 +1326,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 cond_components = []
             else:
                 children = [self.visit(x) for x in node.children]
-                dataset = children[0]
+                dataset = deepcopy(children[0])
                 component = children[1]
                 hr_name = children[2]
                 cond_components = children[3:]
