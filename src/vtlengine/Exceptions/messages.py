@@ -860,6 +860,10 @@ centralised_messages = {
         "description": "Occurs when a datapoint has an invalid datatype; a Dataset is expected "
                        "but a Scalar was found.",
     },
+    "1-3-1-10": {
+        "message": "TimeAggregation operand is missing",
+        "description": "Raised when a TimeAggregation operation is missing its required operand.",
+    },
     "1-3-12": {
         "message": "Default arguments cannot be followed by non-default arguments.",
         "description": "Occurs when a function definition places non-default parameters "
