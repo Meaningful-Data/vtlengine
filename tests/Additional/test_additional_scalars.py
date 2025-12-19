@@ -229,7 +229,6 @@ ds_param = [
     ("4-6", "DS_1[calc Me_4:= null * Me_1]"),
     ("7-27", "DS_1[calc Me_2:=current_date()]"),
     ("13-9", "DS_1[aggr attribute Me_2 := sum(Me_1) group by Id_1]"),
-
 ]
 
 params_scalar_operations = [
