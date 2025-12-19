@@ -166,4 +166,5 @@ OPERATOR = "operator"
 EVAL = "eval"
 # External.
 SQL = '"SQL"'
-EXTERNAL = [SQL]
+sql = '"sql"'
+EXTERNAL = [SQL, sql]
