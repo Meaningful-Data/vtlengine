@@ -888,7 +888,7 @@ centralised_messages = {
     },
     "1-3-6": {
         "message": "Language {language} not supported on Eval operator. Only"
-        "'SQL' language is supported.",
+        " SQL language is supported.",
         "description": "Raised when an unsupported language is specified in an Eval operation.",
     },
     # ---------- RunTimeErrors ----------
