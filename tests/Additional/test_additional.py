@@ -3725,7 +3725,7 @@ class TimeOperatorsTest(AdditionalHelper):
         """
         Basic behaviour for datasets with date type.
         """
-        text = """DS_r := sum (DS_1 group all time_agg("A", Id_1));"""
+        text = """DS_r := sum (DS_1 group all time_agg("A", Id_1, last));"""
         code = "7-19"
         number_inputs = 1
         references_names = ["DS_r"]
@@ -3987,6 +3987,28 @@ class TimeOperatorsTest(AdditionalHelper):
         code = "GH_292"
         number_inputs = 1
         exception_code = "1-1-19-1"
+
+        self.NewSemanticExceptionTest(
+            text=text, code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
+    def test_GH_425_1(self):
+        """Tests Semantic error 1-1-19-1 (missing conf parameter) over a Dataset with identifier of type Date"""
+        text = 'DS_r <- sum(DS_1 group all time_agg("M"));'
+        code = "GH_425_1"
+        number_inputs = 1
+        exception_code = "1-1-19-11"
+
+        self.NewSemanticExceptionTest(
+            text=text, code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
+    def test_GH_425_2(self):
+        """Tests Semantic error 1-1-19-1 (missing conf parameter) over a Dataset with measure of type Date"""
+        text = 'DS_r <- time_agg("M", DS_1);'
+        code = "GH_425_2"
+        number_inputs = 1
+        exception_code = "1-1-19-11"
 
         self.NewSemanticExceptionTest(
             text=text, code=code, number_inputs=number_inputs, exception_code=exception_code

@@ -1,6 +1,6 @@
-DS_r := time_agg("D", DS_1);
-DS_r1 := time_agg("W", DS_1);
-DS_r2 := time_agg("M", DS_1);
-DS_r3 := time_agg("Q", DS_1);
-DS_r4 := time_agg("S", DS_1);
-DS_r5 := time_agg("A", DS_1);
+DS_r := time_agg("D", DS_1, first);
+DS_r1 := time_agg("W", DS_1, last);
+DS_r2 := time_agg("M", DS_1, last);
+DS_r3 := time_agg("Q", DS_1, last);
+DS_r4 := time_agg("S", DS_1, last);
+DS_r5 := time_agg("A", DS_1, last);

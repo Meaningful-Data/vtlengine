@@ -288,7 +288,7 @@ class InterpreterAnalyzer(ASTTemplate):
             scalars_filtered = {
                 name: self.scalars[name]  # type: ignore[index]
                 for name in scalars_to_save
-                if (not self.return_only_persistent or name in self.ds_analysis.get(PERSISTENT, [])) # type: ignore[union-attr]
+                if (not self.return_only_persistent or name in self.ds_analysis.get(PERSISTENT, []))  # type: ignore[union-attr]
             }
             self._save_scalars_efficient(scalars_filtered)
 

@@ -735,6 +735,11 @@ centralised_messages = {
         "description": "Occurs when operands of a time operator are not of type Date or "
         "Time Period.",
     },
+    "1-1-19-11": {
+        "message": "At op time_agg: If used over a Date, first/last parameter must be declared.",
+        "description": "Raised when the first/last parameter is missing in a time aggregation "
+        "over a Date type.",
+    },
     # ---------Semantic Analyzer Common----
     "1-2-1": {
         "message": "Please don't use twice {alias} like var_to.",
