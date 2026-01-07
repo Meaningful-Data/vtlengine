@@ -2,10 +2,7 @@ from copy import copy
 from functools import reduce
 from typing import Any, Dict, List, Optional
 
-# if os.environ.get("SPARK"):
-#     import pyspark.pandas as pd
-# else:
-#     import pandas as pd
+
 import pandas as pd
 
 from vtlengine.AST import BinOp
