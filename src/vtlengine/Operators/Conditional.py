@@ -24,12 +24,14 @@ def component_assign(cond: Any, op: Union[DataComponent, Scalar]) -> Any:
     return pd.Series(op.value, index=idx)
 
 
-def dataset_assign(cond: pd.DataFrame, op: Union[Dataset, Scalar], ids: List[str], measures: List[str]) -> pd.DataFrame:
+def dataset_assign(
+    cond: pd.DataFrame, op: Union[Dataset, Scalar], ids: List[str], measures: List[str]
+) -> pd.DataFrame:
     if isinstance(op, Dataset):
         if op.data is None or cond.empty:
             return pd.DataFrame(columns=ids + measures + [COND_COL])
         return cond.merge(op.data, on=ids, how="inner")
-    return cond.assign(**{m: op.value for m in measures})
+    return cond.assign(**dict.fromkeys(measures, op.value))
 
 
 class If(Operator):
@@ -63,7 +65,10 @@ class If(Operator):
 
     @classmethod
     def component_level_evaluation(
-        cls, condition: DataComponent, true_branch: Union[DataComponent, Scalar], false_branch: Union[DataComponent, Scalar]
+        cls,
+        condition: DataComponent,
+        true_branch: Union[DataComponent, Scalar],
+        false_branch: Union[DataComponent, Scalar],
     ) -> Any:
         if condition.data is None:
             return pd.Series()
@@ -75,7 +80,11 @@ class If(Operator):
 
     @classmethod
     def dataset_level_evaluation(
-        cls, result: Dataset, condition: Dataset, true_branch: Union[Dataset, Scalar], false_branch: Union[Dataset, Scalar]
+        cls,
+        result: Dataset,
+        condition: Dataset,
+        true_branch: Union[Dataset, Scalar],
+        false_branch: Union[Dataset, Scalar],
     ) -> None:
         if condition.data is None:
             result.data = pd.DataFrame(columns=result.get_components_names())
@@ -286,7 +295,9 @@ class Case(Operator):
         return result
 
     @classmethod
-    def component_level_evaluation(cls, conditions: List[Any], thenOps: List[Any], elseOp: Any) -> Any:
+    def component_level_evaluation(
+        cls, conditions: List[Any], thenOps: List[Any], elseOp: Any
+    ) -> Any:
         if isinstance(elseOp, DataComponent):
             result = pd.Series(dtype=object) if elseOp.data is None else elseOp.data
         else:
@@ -309,14 +320,21 @@ class Case(Operator):
 
         else_cond = conditions[0].data[ids].copy()
         else_cond[COND_COL] = ~pd.concat(
-            [c.data[c.get_measures_names()[0]].fillna(False) for c in conditions], axis=1,
+            [c.data[c.get_measures_names()[0]].fillna(False) for c in conditions],
+            axis=1,
         ).any(axis=1)
         result.data = dataset_assign(else_cond[else_cond[COND_COL]], elseOp, ids, measures)
 
         for i in range(len(conditions)):
-            case = conditions[i].data.rename(columns={conditions[i].get_measures_names()[0]: COND_COL})
-            case_result = dataset_assign(case[case[COND_COL].fillna(False)], thenOps[i], ids, measures)
-            result.data = (case_result.set_index(ids).combine_first(result.data.set_index(ids)).reset_index())
+            case = conditions[i].data.rename(
+                columns={conditions[i].get_measures_names()[0]: COND_COL}
+            )
+            case_result = dataset_assign(
+                case[case[COND_COL].fillna(False)], thenOps[i], ids, measures
+            )
+            result.data = (
+                case_result.set_index(ids).combine_first(result.data.set_index(ids)).reset_index()
+            )
 
         result.data.drop(columns=COND_COL, inplace=True)
 

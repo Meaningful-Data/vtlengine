@@ -2,7 +2,6 @@ from copy import copy
 from typing import List, Optional
 
 import duckdb
-
 import pandas as pd
 
 import vtlengine.Operators as Operator

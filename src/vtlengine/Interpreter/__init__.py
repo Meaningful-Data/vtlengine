@@ -2,7 +2,7 @@ import csv
 from copy import copy, deepcopy
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Type, Union, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 import pandas as pd
 
@@ -1096,8 +1096,8 @@ class InterpreterAnalyzer(ASTTemplate):
         return Case.analyze(conditions, thenOps, elseOp)
 
     def generate_then_else_datasets(
-            self,
-            condition: Union[Dataset, DataComponent],
+        self,
+        condition: Union[Dataset, DataComponent],
     ) -> Tuple[Dataset, Dataset]:
         if isinstance(condition, Dataset):
             measures = condition.get_measures()
@@ -1145,8 +1145,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 ids = merge_dataset.get_identifiers_names()
                 if set(ids).issubset(operand.data.columns):
                     operand.data = (
-                        operand.data
-                        .assign(__idx__=operand.data.index)
+                        operand.data.assign(__idx__=operand.data.index)
                         .merge(merge_data[ids], on=ids, how="inner")
                         .set_index("__idx__")
                     )

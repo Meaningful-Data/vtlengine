@@ -56,7 +56,7 @@ ds_param = [
         "21",
         "DS_r <- DS_1[calc Me_2 := case when Me_1 <> 0 then 1 / Me_1 else 1];",
     ),
-    ("23", "DS_r <- DS_1[calc result := case when isnull(Me_1) then true else Me_2 >= Me_3];")
+    ("23", "DS_r <- DS_1[calc result := case when isnull(Me_1) then true else Me_2 >= Me_3];"),
 ]
 
 error_param = [
