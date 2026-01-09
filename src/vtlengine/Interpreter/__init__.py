@@ -1096,51 +1096,41 @@ class InterpreterAnalyzer(ASTTemplate):
         return Case.analyze(conditions, thenOps, elseOp)
 
     def generate_then_else_datasets(
-            self, condition: Union[Dataset, DataComponent]
-    ) -> Tuple[Union[Dataset, DataComponent], Union[Dataset, DataComponent]]:
-        data = None
-        comps: Dict[str, Component] = {}
-
+            self,
+            condition: Union[Dataset, DataComponent],
+    ) -> Tuple[Dataset, Dataset]:
         if isinstance(condition, Dataset):
-            if len(condition.get_measures()) != 1:
+            measures = condition.get_measures()
+            if len(measures) != 1:
                 raise SemanticError("1-1-1-4", op="condition")
-            measure = condition.get_measures()[0]
-            if measure.data_type != BASIC_TYPES[bool]:
+            elif measures[0].data_type != BASIC_TYPES[bool]:
                 raise SemanticError("2-1-9-5", op="condition", name=condition.name)
-
-            if condition.data is not None:
-                data = condition.data[condition.get_measures_names()[0]]
-                comps = condition.components
+            cond = condition.data[measures[0].name] if condition.data is not None else None
         else:
             if condition.data_type != BASIC_TYPES[bool]:
                 raise SemanticError("2-1-9-4", op="condition", name=condition.name)
-            if condition.data is not None:
-                data = condition.data
+            cond = condition.data
 
-        t_data = pd.DataFrame()
-        e_data = pd.DataFrame()
-        merge_df = self.condition_stack[-1] if self.condition_stack else None
+        components = getattr(condition, "components", {})
+        then_df = pd.DataFrame(columns=components.keys())
+        else_df = pd.DataFrame(columns=components.keys())
+        if cond is not None:
+            merge_ds = self.condition_stack[-1] if self.condition_stack else None
+            if isinstance(merge_ds, Dataset) and merge_ds.data is not None:
+                cond = cond.loc[merge_ds.data.index]
 
-        if data is not None:
-            if merge_df is not None and isinstance(merge_df, Dataset) and merge_df.data is not None:
-                filtered_data = data.loc[merge_df.data.index]
-            else:
-                filtered_data = data[data.notnull()]
-
-            then_indexes = filtered_data[filtered_data == True].index
-            all_indexes = filtered_data.index
-            else_indexes = all_indexes.difference(then_indexes)
-
+            valid = cond.dropna().astype(bool)
             if isinstance(condition, Dataset) and condition.data is not None:
-                t_data = condition.data.loc[then_indexes].copy()
-                e_data = condition.data.loc[else_indexes].copy()
+                then_df = condition.data.loc[valid.index[valid]]
+                else_df = condition.data.loc[valid.index[~valid]]
             else:
-                t_data = pd.DataFrame(index=then_indexes)
-                e_data = pd.DataFrame(index=else_indexes)
+                then_df = pd.DataFrame(index=valid.index[valid])
+                else_df = pd.DataFrame(index=valid.index[~valid])
 
-        t_dataset = Dataset(name="then", components=comps, data=t_data)
-        e_dataset = Dataset(name="else", components=comps, data=e_data)
-        return t_dataset, e_dataset
+        return (
+            Dataset(name="then", components=components, data=then_df),
+            Dataset(name="else", components=components, data=else_df),
+        )
 
     def merge_then_else_datasets(self, operand: Any) -> Any:
         if self.condition_stack:
