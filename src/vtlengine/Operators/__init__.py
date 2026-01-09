@@ -229,7 +229,7 @@ class Binary(Operator):
         return cls.py_op(x, y)
 
     @classmethod
-    def apply_operation_two_series(cls, left_series: pd.Series, right_series: pd.Series) -> pd.Series:
+    def apply_operation_two_series(cls, left_series: Any, right_series: Any) -> Any:
         result = list(map(cls.op_func, left_series.values, right_series.values))
         index = left_series.index if len(left_series) <= len(right_series) else right_series.index
         return pd.Series(result, index=index, dtype=object)
@@ -237,10 +237,10 @@ class Binary(Operator):
     @classmethod
     def apply_operation_series_scalar(
         cls,
-        series: pd.Series,
+        series: Any,
         scalar: Scalar,
         series_left: bool,
-    ) -> pd.Series:
+    ) -> Any:
         if scalar is None:
             return pd.Series(None, index=series.index)
         if series_left:

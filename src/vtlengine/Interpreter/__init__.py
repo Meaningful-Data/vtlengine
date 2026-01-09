@@ -127,7 +127,7 @@ class InterpreterAnalyzer(ASTTemplate):
     is_from_join: bool = False
     is_from_hr_val: bool = False
     is_from_hr_agg: bool = False
-    condition_stack: Optional[List[str]] = None
+    condition_stack: Optional[List[Dataset]] = None
     # Handlers for simplicity
     regular_aggregation_dataset: Optional[Dataset] = None
     aggregation_grouping: Optional[List[str]] = None
@@ -1072,7 +1072,7 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_Case(self, node: AST.Case) -> Any:
         conditions: List[Any] = []
         thenOps: List[Any] = []
-        else_ds = pd.DataFrame()
+        else_ds = Dataset(name="else", components={}, data=pd.DataFrame())
 
         if self.condition_stack is None:
             self.condition_stack = []
@@ -1112,8 +1112,8 @@ class InterpreterAnalyzer(ASTTemplate):
             cond = condition.data
 
         components = getattr(condition, "components", {})
-        then_df = pd.DataFrame(columns=components.keys())
-        else_df = pd.DataFrame(columns=components.keys())
+        then_df = pd.DataFrame(columns=list(components.keys()))
+        else_df = pd.DataFrame(columns=list(components.keys()))
         if cond is not None:
             merge_ds = self.condition_stack[-1] if self.condition_stack else None
             if isinstance(merge_ds, Dataset) and merge_ds.data is not None:
@@ -1135,7 +1135,7 @@ class InterpreterAnalyzer(ASTTemplate):
     def merge_then_else_datasets(self, operand: Any) -> Any:
         if self.condition_stack:
             merge_dataset = self.condition_stack[-1]
-            if not isinstance(merge_dataset, Dataset) or merge_dataset.data is None:
+            if merge_dataset.data is None:
                 return operand
 
             merge_data = merge_dataset.data

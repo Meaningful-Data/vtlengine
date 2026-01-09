@@ -2,7 +2,6 @@ from copy import copy
 from typing import Any, List, Union
 
 import pandas as pd
-from duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
 from vtlengine.DataTypes import (
     SCALAR_TYPES_CLASS_REVERSE,
@@ -18,26 +17,18 @@ from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 COND_COL = "__cond__"
 
 
-def component_assignment(
-    cond: pd.Series, op: Union[DataComponent, Scalar]
-) -> pd.Series:
+def component_assign(cond: Any, op: Union[DataComponent, Scalar]) -> Any:
     idx = cond.index[cond.fillna(False)]
     if isinstance(op, DataComponent):
         return pd.Series(dtype=object) if op.data is None else op.data.reindex(idx)
     return pd.Series(op.value, index=idx)
 
 
-def dataset_assignment(
-    cond: pd.DataFrame,
-    op: Union[Dataset, Scalar],
-    ids: List[str],
-    measures: List[str],
-) -> pd.DataFrame:
+def dataset_assign(cond: pd.DataFrame, op: Union[Dataset, Scalar], ids: List[str], measures: List[str]) -> pd.DataFrame:
     if isinstance(op, Dataset):
         if op.data is None or cond.empty:
             return pd.DataFrame(columns=ids + measures + [COND_COL])
-        else:
-            return cond.merge(op.data, on=ids, how="inner")
+        return cond.merge(op.data, on=ids, how="inner")
     return cond.assign(**{m: op.value for m in measures})
 
 
@@ -64,31 +55,32 @@ class If(Operator):
     @classmethod
     def evaluate(cls, condition: Any, true_branch: Any, false_branch: Any) -> Any:
         result = cls.validate(condition, true_branch, false_branch)
-        if not isinstance(result, Scalar):
-            if isinstance(condition, DataComponent):
-                result.data = cls.component_level_evaluation(
-                    condition, true_branch, false_branch
-                )
-            if isinstance(condition, Dataset):
-                cls.dataset_level_evaluation(result, condition, true_branch, false_branch)
+        if isinstance(result, DataComponent):
+            result.data = cls.component_level_evaluation(condition, true_branch, false_branch)
+        elif isinstance(result, Dataset):
+            cls.dataset_level_evaluation(result, condition, true_branch, false_branch)
         return result
 
     @classmethod
     def component_level_evaluation(
         cls, condition: DataComponent, true_branch: Union[DataComponent, Scalar], false_branch: Union[DataComponent, Scalar]
-    ) -> pd.Series:
+    ) -> Any:
         if condition.data is None:
             return pd.Series()
 
         cond = condition.data.fillna(False).astype(bool)
-        t_base = component_assignment(cond, true_branch)
-        f_base = component_assignment(~cond, false_branch)
+        t_base = component_assign(cond, true_branch)
+        f_base = component_assign(~cond, false_branch)
         return pd.concat([t_base, f_base])
 
     @classmethod
     def dataset_level_evaluation(
-        cls, result: Any, condition: pd.DataFrame, true_branch: Union[Dataset, Scalar], false_branch: Union[Dataset, Scalar]
-    ) -> pd.DataFrame:
+        cls, result: Dataset, condition: Dataset, true_branch: Union[Dataset, Scalar], false_branch: Union[Dataset, Scalar]
+    ) -> None:
+        if condition.data is None:
+            result.data = pd.DataFrame(columns=result.get_components_names())
+            return
+
         ids = result.get_identifiers_names()
         measures = result.get_measures_names()
 
@@ -96,8 +88,8 @@ class If(Operator):
         cond = condition.data
         cond[COND_COL] = cond.pop(cond_measure).fillna(False).astype(bool)
 
-        t_base = dataset_assignment(cond[cond[COND_COL]], true_branch, ids, measures)
-        f_base = dataset_assignment(cond[~cond[COND_COL]], false_branch, ids, measures)
+        t_base = dataset_assign(cond[cond[COND_COL]], true_branch, ids, measures)
+        f_base = dataset_assign(cond[~cond[COND_COL]], false_branch, ids, measures)
         result.data = t_base.merge(f_base, how="outer").drop(columns=COND_COL)
 
     @classmethod
@@ -294,16 +286,15 @@ class Case(Operator):
         return result
 
     @classmethod
-    def component_level_evaluation(
-        cls, conditions: List[Any], thenOps: List[Any], elseOp: Any
-    ) -> pd.Series:
-        result = elseOp.data if isinstance(elseOp, DataComponent) else pd.Series(
-            elseOp.value, index=conditions[0].data.index
-        )
+    def component_level_evaluation(cls, conditions: List[Any], thenOps: List[Any], elseOp: Any) -> Any:
+        if isinstance(elseOp, DataComponent):
+            result = pd.Series(dtype=object) if elseOp.data is None else elseOp.data
+        else:
+            result = pd.Series(elseOp.value, index=conditions[0].data.index)
 
         for i in range(len(conditions)):
             case = conditions[i].data[conditions[i].data.fillna(False).astype(bool)]
-            case_result = component_assignment(case, thenOps[i])
+            case_result = component_assign(case, thenOps[i])
             result = result.reindex(result.index.union(case.index))
             result.loc[case.index] = case_result
 
@@ -320,11 +311,11 @@ class Case(Operator):
         else_cond[COND_COL] = ~pd.concat(
             [c.data[c.get_measures_names()[0]].fillna(False) for c in conditions], axis=1,
         ).any(axis=1)
-        result.data = dataset_assignment(else_cond[else_cond[COND_COL]], elseOp, ids, measures)
+        result.data = dataset_assign(else_cond[else_cond[COND_COL]], elseOp, ids, measures)
 
         for i in range(len(conditions)):
             case = conditions[i].data.rename(columns={conditions[i].get_measures_names()[0]: COND_COL})
-            case_result = dataset_assignment(case[case[COND_COL].fillna(False)], thenOps[i], ids, measures)
+            case_result = dataset_assign(case[case[COND_COL].fillna(False)], thenOps[i], ids, measures)
             result.data = (case_result.set_index(ids).combine_first(result.data.set_index(ids)).reset_index())
 
         result.data.drop(columns=COND_COL, inplace=True)
