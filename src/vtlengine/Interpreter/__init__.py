@@ -1150,17 +1150,16 @@ class InterpreterAnalyzer(ASTTemplate):
 
             merge_data = merge_dataset.data
             if isinstance(operand, DataComponent) and operand.data is not None:
-                operand.data = operand.data[merge_data.index]
-                return operand
-
-            if isinstance(operand, Dataset) and operand.data is not None:
+                operand.data = operand.data.loc[merge_data.index]
+            elif isinstance(operand, Dataset) and operand.data is not None:
                 ids = merge_dataset.get_identifiers_names()
-                if not set(ids).issubset(operand.data.columns):
-                    return operand
-                bool_df = operand.data[ids].isin(merge_data[ids].to_dict(orient="list"))
-                mask = bool_df.all(axis=1)
-                operand.data = operand.data[mask]
-                return operand
+                if set(ids).issubset(operand.data.columns):
+                    operand.data = (
+                        operand.data
+                        .assign(__idx__=operand.data.index)
+                        .merge(merge_data[ids], on=ids, how="inner")
+                        .set_index("__idx__")
+                    )
 
         return operand
 
