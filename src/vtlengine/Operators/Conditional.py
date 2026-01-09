@@ -20,15 +20,11 @@ COND_COL = "__cond__"
 
 def component_assignment(
     cond: pd.Series, op: Union[DataComponent, Scalar]
-) -> Any:
+) -> pd.Series:
+    idx = cond.index[cond.fillna(False)]
     if isinstance(op, DataComponent):
-        if op.data is None:
-            return pd.Series(dtype=object)
-        idx = cond[cond].index.intersection(op.data.index)
-        result = op.data.loc[idx]
-    else:
-        result = pd.Series(op.value, index=cond[cond].index)
-    return result
+        return pd.Series(dtype=object) if op.data is None else op.data.reindex(idx)
+    return pd.Series(op.value, index=idx)
 
 
 def dataset_assignment(
@@ -39,12 +35,10 @@ def dataset_assignment(
 ) -> pd.DataFrame:
     if isinstance(op, Dataset):
         if op.data is None or cond.empty:
-            result = pd.DataFrame(columns=ids + measures + [COND_COL])
+            return pd.DataFrame(columns=ids + measures + [COND_COL])
         else:
-            result = cond.merge(op.data, on=ids, how="inner")
-    else:
-        result = cond.assign(**{m: op.value for m in measures})
-    return result
+            return cond.merge(op.data, on=ids, how="inner")
+    return cond.assign(**{m: op.value for m in measures})
 
 
 class If(Operator):
@@ -97,12 +91,11 @@ class If(Operator):
     ) -> pd.DataFrame:
         ids = result.get_identifiers_names()
         measures = result.get_measures_names()
+
         cond_measure = condition.get_measures_names()[0]
         cond = condition.data
-        if cond is None:
-            return pd.DataFrame()
-
         cond[COND_COL] = cond.pop(cond_measure).fillna(False).astype(bool)
+
         t_base = dataset_assignment(cond[cond[COND_COL]], true_branch, ids, measures)
         f_base = dataset_assignment(cond[~cond[COND_COL]], false_branch, ids, measures)
         result.data = t_base.merge(f_base, how="outer").drop(columns=COND_COL)
