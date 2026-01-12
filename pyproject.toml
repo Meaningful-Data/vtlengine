@@ -1,6 +1,6 @@
 [project]
 name = "vtlengine"
-version = "1.4.0rc1"
+version = "1.4.0"
 description = "Run and Validate VTL Scripts"
 license = "AGPL-3.0"
 readme = "README.md"
@@ -31,14 +31,12 @@ dependencies = [
     "sqlglot>=22.2.0,<23.0",
     "antlr4-python3-runtime>=4.9,<4.10",
     "pandas>=2.1.4,<3.0",
-    "networkx>=2.8,<3.0",
-    "numpy>=1.23.2,<2 ; python_version < '3.13'",
-    "numpy>=2.1.0; python_version >= '3.13'",
+    "networkx>=2.8,<3.0"
 ]
 
 [project.optional-dependencies]
-s3 = ["s3fs>=2022.11.0,<2023.0", "fsspec>=2022.11.0,<2023.0"]
-all = ["s3fs>=2022.11.0,<2023.0", "fsspec>=2022.11.0,<2023.0"]
+s3 = ["s3fs>=2022.11.0"]
+all = ["s3fs>=2022.11.0"]
 
 [project.urls]
 Repository = 'https://github.com/Meaningful-Data/vtlengine'

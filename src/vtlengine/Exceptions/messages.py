@@ -167,7 +167,8 @@ centralised_messages = {
         "description": "Occurs when a required component is missing from the Dataset datapoints.",
     },
     "0-3-1-6": {
-        "message": "On Dataset {name} loading: not possible to cast column {column} to {type}.",
+        "message": "On Dataset {name} loading: not possible to cast column {column} to {type}. "
+        'Error found: "{error}"',
         "description": "Raised when a Dataset column cannot be cast to the expected data type.",
     },
     "0-3-1-7": {
@@ -735,10 +736,9 @@ centralised_messages = {
         "Time Period.",
     },
     "1-1-19-11": {
-        "message": "The Time aggregation operand has to be defined if not used inside an "
-        "aggregation.",
-        "description": "Raised when a Time aggregation operator is missing the operand "
-        "definition outside an aggregation context.",
+        "message": "At op time_agg: If used over a Date, first/last parameter must be declared.",
+        "description": "Raised when the first/last parameter is missing in a time aggregation "
+        "over a Date type.",
     },
     # ---------Semantic Analyzer Common----
     "1-2-1": {
@@ -854,6 +854,11 @@ centralised_messages = {
         "description": "Occurs when a datapoint has an invalid datatype; a Dataset is expected "
         "but a Scalar was found.",
     },
+    "1-3-12": {
+        "message": "Default arguments cannot be followed by non-default arguments.",
+        "description": "Occurs when a function definition places non-default parameters "
+        "after default ones.",
+    },
     # AST Creation
     "1-3-2-0": {
         "message": "Error creating DAG.",
@@ -874,10 +879,28 @@ centralised_messages = {
         "description": "Raised when cyclic dependencies are detected in a VTL script, "
         "preventing DAG creation.",
     },
+    "1-3-2-4": {
+        "message": "The Time aggregation operand has to be defined if not used inside an "
+        "aggregation.",
+        "description": "Raised when a Time aggregation operator is missing the operand "
+        "definition outside an aggregation context.",
+    },
+    # ---------- Interpreter ----------
+    "1-3-5": {
+        "message": "{node_op} not found or not valid for {op_type}.",
+        "description": "Occurs when an operator is undefined or incompatible with "
+        "the given operation type.",
+    },
+    "1-3-6": {
+        "message": "Language {language} not supported on Eval operator. Only"
+        " SQL language is supported.",
+        "description": "Raised when an unsupported language is specified in an Eval operation.",
+    },
     # ---------- RunTimeErrors ----------
     "2-1-19-1": {
-        "message": "At op {op}: Invalid values {value_1} and {value_2} for duration, periodIndTo "
-        "parameter must be a larger duration value than the values to aggregate.",
+        "message": "At op time_agg: Invalid value {value} to aggregate to "
+        "periodIndTo {new_indicator} , "
+        "periodIndTo parameter must be a larger duration value than the values to aggregate.",
         "description": "Raised when the periodIndTo parameter is smaller than "
         "the values being aggregated.",
     },
@@ -1000,5 +1023,4 @@ centralised_messages = {
         "message": "{pos} operand must be a Dataset.",
         "description": "Raised when an operand expected to be a Dataset is not a Dataset.",
     },
-    "1-4-2-8": "{rule_name} rule is not defined in the given ruleset.",
 }

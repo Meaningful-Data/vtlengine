@@ -1,3 +1,4 @@
+import csv
 from copy import copy, deepcopy
 from dataclasses import dataclass
 from pathlib import Path
@@ -10,7 +11,6 @@ from pandas.core.dtypes.inference import is_re
 import vtlengine.AST as AST
 import vtlengine.Exceptions
 import vtlengine.Operators as Operators
-from vtlengine.AST import VarID
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.DAG import HRDAGAnalyzer
 from vtlengine.AST.DAG._words import DELETE, GLOBAL, INSERT, PERSISTENT
@@ -215,11 +215,16 @@ class InterpreterAnalyzer(ASTTemplate):
     def _save_scalars_efficient(self, scalars: Dict[str, Scalar]) -> None:
         output_path = Path(self.output_path)  # type: ignore[arg-type]
         output_path.mkdir(parents=True, exist_ok=True)
-
-        for name, scalar in scalars.items():
-            file_path = output_path / f"{name}.csv"
-            df = pd.DataFrame([[scalar.value]] if scalar.value is not None else [[]])
-            df.to_csv(file_path, header=False, index=False)
+        result_scalars = dict(scalars)
+        if result_scalars:
+            sorted(result_scalars.keys())
+            file_path = output_path / "_scalars.csv"
+            with open(file_path, "w", newline="", encoding="utf-8") as csv_file:
+                writer = csv.writer(csv_file)
+                writer.writerow(["name", "value"])
+                for name, scalar in sorted(result_scalars.items(), key=lambda item: item[0]):
+                    value_to_write = "" if scalar.value is None else scalar.value
+                    writer.writerow([name, str(value_to_write)])
 
     # **********************************
     # *                                *
@@ -865,6 +870,12 @@ class InterpreterAnalyzer(ASTTemplate):
                     data = copy(self.regular_aggregation_dataset.data[node.value])
                 else:
                     data = None
+                if node.value not in self.regular_aggregation_dataset.components:
+                    raise SemanticError(
+                        "1-1-1-10",
+                        comp_name=node.value,
+                        dataset_name=self.regular_aggregation_dataset.name,
+                    )
                 return DataComponent(
                     name=node.value,
                     data=data,
@@ -1576,7 +1587,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
         """
         if node.language not in EXTERNAL:
-            raise Exception(f"Language {node.language} not supported on Eval")
+            raise SemanticError(code="1-3-6", language=node.language)
 
         if self.external_routines is None:
             raise SemanticError("2-3-10", comp_type="External Routines")
@@ -1952,20 +1963,18 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_TimeAggregation(self, node: AST.TimeAggregation) -> None:
         if node.operand is not None:
             operand = self.visit(node.operand)
-        else:
-            if self.aggregation_dataset is None:
-                raise SemanticError("1-1-19-11")
-            component_name = Time_Aggregation._get_time_id(self.aggregation_dataset)
-            ast_operand = VarID(
-                value=component_name,
-                line_start=node.line_start,
-                line_stop=node.line_stop,
-                column_start=node.column_start,
-                column_stop=node.column_stop,
+            return Time_Aggregation.analyze(
+                operand=operand,
+                period_from=node.period_from,
+                period_to=node.period_to,
+                conf=node.conf,
             )
-            operand = self.visit(ast_operand)
-        return Time_Aggregation.analyze(
-            operand=operand,
+        # The aggregation dataset is mandatory here as is part of a group_all statement.
+        # If not, a 1-3-2-4 error is raised in AST creation
+        if self.aggregation_dataset is None:
+            raise SemanticError("1-3-2-4")
+        return Time_Aggregation._execute_without_operand(
+            aggregation_dataset=self.aggregation_dataset,
             period_from=node.period_from,
             period_to=node.period_to,
             conf=node.conf,

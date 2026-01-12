@@ -940,8 +940,7 @@ class Expr(VtlVisitor):
             operand_node = None
 
         if operand_node is None:
-            # AST_ASTCONSTRUCTOR.17
-            raise Exception("Optional as expression node is not allowed in Time Aggregation")
+            raise SemanticError("1-3-2-4")
         return TimeAggregation(
             op=op,
             operand=operand_node,

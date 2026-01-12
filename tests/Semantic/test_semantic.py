@@ -2871,3 +2871,28 @@ def test_bug_349():
         semantic_analysis(script_1, data_structures=data_structures_1)
     with pytest.raises(SemanticError, match="0-1-2-8"):
         semantic_analysis(script_2, data_structures=data_structures_2)
+
+
+def test_bug_411():
+    """
+    Github issue #411. Resolves a bug in semantic analysis where filtering with isnull on a non-existing
+    component does not raise an error.
+    """
+    script = """
+            DS_r := DS_1[filter isnull(Me_dummy)];
+        """
+
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+
+    with pytest.raises(SemanticError, match="1-1-1-10"):
+        semantic_analysis(script=script, data_structures=data_structures)

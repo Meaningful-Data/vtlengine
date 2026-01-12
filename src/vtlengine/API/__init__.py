@@ -507,18 +507,18 @@ def run_sdmx(  # noqa: C901
         if isinstance(datasets, (list, set)):
             object_typing = {type(o).__name__ for o in datasets}
             type_ = f"{type_}[{', '.join(object_typing)}]"
-        raise InputValidationException("0-1-3-7", type_=type_)
+        raise InputValidationException(code="0-1-3-7", type_=type_)
 
     # Mapping handling
     if mappings is None:
         if len(datasets) != 1:
-            raise InputValidationException("0-1-3-3")
+            raise InputValidationException(code="0-1-3-3")
         if len(datasets) == 1:
             if len(input_names) != 1:
-                raise InputValidationException("0-1-3-1", number_datasets=len(input_names))
+                raise InputValidationException(code="0-1-3-1", number_datasets=len(input_names))
             schema = datasets[0].structure
             if not isinstance(schema, Schema):
-                raise InputValidationException("0-1-3-2", schema=schema)
+                raise InputValidationException(code="0-1-3-2", schema=schema)
             mapping_dict = {schema.short_urn: input_names[0]}
     elif isinstance(mappings, Dict):
         mapping_dict = mappings
@@ -551,16 +551,16 @@ def run_sdmx(  # noqa: C901
 
     for vtl_name in mapping_dict.values():
         if vtl_name not in input_names:
-            raise InputValidationException("0-1-3-5", dataset_name=vtl_name)
+            raise InputValidationException(code="0-1-3-5", dataset_name=vtl_name)
 
     datapoints = {}
     data_structures = []
     for dataset in datasets:
         schema = dataset.structure
         if not isinstance(schema, Schema):
-            raise InputValidationException("0-1-3-2", schema=schema)
+            raise InputValidationException(code="0-1-3-2", schema=schema)
         if schema.short_urn not in mapping_dict:
-            raise InputValidationException("0-1-3-4", short_urn=schema.short_urn)
+            raise InputValidationException(code="0-1-3-4", short_urn=schema.short_urn)
         # Generating VTL Datastructure and Datapoints.
         dataset_name = mapping_dict[schema.short_urn]
         vtl_structure = to_vtl_json(schema, dataset_name)
@@ -572,7 +572,7 @@ def run_sdmx(  # noqa: C901
         if input_name not in mapping_dict.values():
             missing.append(input_name)
     if missing:
-        raise InputValidationException("0-1-3-6", missing=missing)
+        raise InputValidationException(code="0-1-3-6", missing=missing)
 
     result = run(
         script=script,

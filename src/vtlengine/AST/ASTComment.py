@@ -34,12 +34,10 @@ def create_ast_with_comments(text: str) -> Start:
     Returns:
         AST: The generated AST with comments.
     """
-    # Call the create_ast function to generate the AST from channel 0
-    ast = create_ast(text)
 
-    text = text if text.endswith("\n") else text + "\n"
     # Reading the script on channel 2 to get the comments
-    lexer_ = Lexer(InputStream(text))
+    # Adding \n at the end to ensure single line comments at the end of the script are captured
+    lexer_ = Lexer(InputStream(text + "\n"))
     stream = CommonTokenStream(lexer_, channel=2)
 
     # Fill the stream with tokens on the buffer
@@ -48,7 +46,19 @@ def create_ast_with_comments(text: str) -> Start:
     # Extract comments from the stream
     comments = [generate_ast_comment(token) for token in stream.tokens if token.channel == 2]
 
-    # Add comments to the AST
+    EOF = -1
+    only_comments = all(
+        token.type in (EOF, Lexer.WS, Lexer.EOL, Lexer.ML_COMMENT, Lexer.SL_COMMENT)
+        for token in stream.tokens
+    )
+
+    if not only_comments or not stream.tokens:
+        # Call the create_ast function to generate the AST from channel 0
+        ast = create_ast(text)
+    else:
+        # If there are only comments or empty lines, create an empty AST
+        ast = Start(line_start=1, line_stop=1, column_start=0, column_stop=0, children=[])
+
     ast.children.extend(comments)
 
     # Sort the ast children based on their start line and column

@@ -587,13 +587,14 @@ class ASTString(ASTTemplate):
         return f"{node.old_name} to {node.new_name}"
 
     def visit_TimeAggregation(self, node: AST.TimeAggregation) -> str:
-        operand = self.visit(node.operand)
-        period_from = "_" if node.period_from is None else _handle_literal(node.period_from)
         period_to = _handle_literal(node.period_to)
-        if self.pretty:
-            return f"{node.op}({period_to}, {period_from}, {operand})"
+        operand = "" if node.operand is None else f", {self.visit(node.operand)}"
+
+        if node.period_from is None:
+            period_from = ", _" if node.operand is not None else ""
         else:
-            return f"{node.op}({period_to}, {period_from}, {operand})"
+            period_from = f", {_handle_literal(node.period_from)}"
+        return f"{node.op}({period_to}{period_from}{operand})"
 
     def visit_UDOCall(self, node: AST.UDOCall) -> str:
         params_sep = ", " if len(node.params) > 1 else ""

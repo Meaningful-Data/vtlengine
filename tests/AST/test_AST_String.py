@@ -25,6 +25,7 @@ params = [
     "GH_352.vtl",
     "GH_358.vtl",
     "comments_end_line.vtl",
+    "time_agg.vtl",
 ]
 
 params_prettier = [
@@ -50,6 +51,7 @@ params_prettier = [
     ("GH_358.vtl", "reference_GH_358.vtl"),
     ("validation.vtl", "reference_validation.vtl"),
     ("unbounded.vtl", "reference_unbounded.vtl"),
+    ("time_agg.vtl", "reference_time_agg.vtl"),
 ]
 
 

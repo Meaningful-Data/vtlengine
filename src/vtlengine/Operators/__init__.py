@@ -1,4 +1,5 @@
 import os
+import re
 from copy import copy
 from typing import Any, Optional, Union
 
@@ -890,3 +891,24 @@ class Unary(Operator):
             operand.data.copy() if operand.data is not None else pd.Series()
         )
         return result_component
+
+    @classmethod
+    def to_days(cls, value: str) -> int:
+        iso8601_duration_pattern = r"^P((\d+Y)?(\d+M)?(\d+D)?)$"
+        match = re.match(iso8601_duration_pattern, value)
+
+        years = 0
+        months = 0
+        days = 0
+
+        years_str = match.group(2)  # type: ignore[union-attr]
+        months_str = match.group(3)  # type: ignore[union-attr]
+        days_str = match.group(4)  # type: ignore[union-attr]
+        if years_str:
+            years = int(years_str[:-1])
+        if months_str:
+            months = int(months_str[:-1])
+        if days_str:
+            days = int(days_str[:-1])
+        total_days = years * 365 + months * 30 + days
+        return int(total_days)

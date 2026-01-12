@@ -641,6 +641,42 @@ class Time_Aggregation(Time):
     op = TIME_AGG
 
     @classmethod
+    def _execute_without_operand(
+        cls,
+        aggregation_dataset: Dataset,
+        period_from: Optional[str],
+        period_to: str,
+        conf: Optional[str],
+    ) -> Any:
+        time_id_name = cls._get_time_id(aggregation_dataset)
+        time_id = aggregation_dataset.components[time_id_name]
+        if time_id.data_type == TimePeriod and period_to == "D":
+            raise SemanticError("1-1-19-5", op=cls.op)
+        if time_id.data_type == TimeInterval:
+            raise SemanticError("1-1-19-6", op=cls.op, comp=time_id.name)
+        if time_id.data_type == Date and conf is None:
+            raise SemanticError("1-1-19-11")
+
+        if aggregation_dataset.data is not None:
+            series_data = aggregation_dataset.data[time_id_name].map(
+                lambda x: cls._execute_time_aggregation(
+                    x, time_id.data_type, period_from, period_to, conf
+                ),
+                na_action="ignore",
+            )
+        else:
+            series_data = None  # For semantic
+        result = DataComponent(
+            name=time_id_name,
+            data=series_data,
+            data_type=TimePeriod,
+            role=Role.IDENTIFIER,
+            nullable=False,
+        )
+
+        return result
+
+    @classmethod
     def _check_duration(cls, value: str) -> None:
         if value not in PERIOD_IND_MAPPING:
             raise SemanticError("1-1-19-3", op=cls.op, param="duration")
@@ -656,7 +692,7 @@ class Time_Aggregation(Time):
 
     @classmethod
     def dataset_validation(
-        cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: str
+        cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: Optional[str]
     ) -> Dataset:
         # TODO: Review with VTL TF as this makes no sense
 
@@ -668,18 +704,8 @@ class Time_Aggregation(Time):
                     raise SemanticError("1-1-19-5", op=cls.op)
                 if measure.data_type == TimeInterval:
                     raise SemanticError("1-1-19-6", op=cls.op, comp=measure.name)
-
-        count_time_types = 0
-        for id_ in operand.get_identifiers():
-            if id_.data_type in cls.TIME_DATA_TYPES:
-                count_time_types += 1
-        if count_time_types != 1:
-            raise SemanticError(
-                "1-1-19-9",
-                op=cls.op,
-                comp_type="dataset",
-                param="single time identifier",
-            )
+                if measure.data_type == Date and conf is None:
+                    raise SemanticError("1-1-19-11")
 
         if count_time_types != 1:
             raise SemanticError(
@@ -700,7 +726,7 @@ class Time_Aggregation(Time):
         operand: DataComponent,
         period_from: Optional[str],
         period_to: str,
-        conf: str,
+        conf: Optional[str],
     ) -> DataComponent:
         if operand.data_type not in cls.TIME_DATA_TYPES:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time component")
@@ -708,6 +734,8 @@ class Time_Aggregation(Time):
             raise SemanticError("1-1-19-5", op=cls.op)
         if operand.data_type == TimeInterval:
             raise SemanticError("1-1-19-6", op=cls.op, comp=operand.name)
+        if operand.data_type == Date and conf is None:
+            raise SemanticError("1-1-19-11")
 
         return DataComponent(
             name=operand.name, data_type=operand.data_type, data=None, nullable=operand.nullable
@@ -715,10 +743,16 @@ class Time_Aggregation(Time):
 
     @classmethod
     def scalar_validation(
-        cls, operand: Scalar, period_from: Optional[str], period_to: str, conf: str
+        cls, operand: Scalar, period_from: Optional[str], period_to: str, conf: Optional[str]
     ) -> Scalar:
         if operand.data_type not in cls.TIME_DATA_TYPES:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time scalar")
+        if operand.data_type == TimePeriod and period_to == "D":
+            raise SemanticError("1-1-19-5", op=cls.op)
+        if operand.data_type == TimeInterval:
+            raise SemanticError("1-1-19-6", op=cls.op, comp=operand.name)
+        if operand.data_type == Date and conf is None:
+            raise SemanticError("1-1-19-11")
 
         return Scalar(name=operand.name, data_type=operand.data_type, value=None)
 
@@ -729,12 +763,14 @@ class Time_Aggregation(Time):
         data_type: Type[ScalarType],
         period_from: Optional[str],
         period_to: str,
-        conf: str,
+        conf: Optional[str],
     ) -> str:
         if data_type == TimePeriod:  # Time period
             return _time_period_access(value, period_to)
 
         elif data_type == Date:
+            if conf is None:
+                raise SemanticError("1-1-19-11")
             start = conf == "first"
             # Date
             if period_to == "D":
@@ -745,7 +781,7 @@ class Time_Aggregation(Time):
 
     @classmethod
     def dataset_evaluation(
-        cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: str
+        cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: Optional[str]
     ) -> Dataset:
         result = cls.dataset_validation(operand, period_from, period_to, conf)
         result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
@@ -765,7 +801,7 @@ class Time_Aggregation(Time):
         operand: DataComponent,
         period_from: Optional[str],
         period_to: str,
-        conf: str,
+        conf: Optional[str],
     ) -> DataComponent:
         result = cls.component_validation(operand, period_from, period_to, conf)
         if operand.data is not None:
@@ -779,7 +815,7 @@ class Time_Aggregation(Time):
 
     @classmethod
     def scalar_evaluation(
-        cls, operand: Scalar, period_from: Optional[str], period_to: str, conf: str
+        cls, operand: Scalar, period_from: Optional[str], period_to: str, conf: Optional[str]
     ) -> Scalar:
         result = cls.scalar_validation(operand, period_from, period_to, conf)
         result.value = cls._execute_time_aggregation(
@@ -793,7 +829,7 @@ class Time_Aggregation(Time):
         operand: Union[Dataset, DataComponent, Scalar],
         period_from: Optional[str],
         period_to: str,
-        conf: str,
+        conf: Optional[str],
     ) -> Union[Dataset, DataComponent, Scalar]:
         cls._check_params(period_from, period_to)
         if isinstance(operand, Dataset):
@@ -809,7 +845,7 @@ class Time_Aggregation(Time):
         operand: Union[Dataset, DataComponent, Scalar],
         period_from: Optional[str],
         period_to: str,
-        conf: str,
+        conf: Optional[str],
     ) -> Union[Dataset, DataComponent, Scalar]:
         cls._check_params(period_from, period_to)
         if isinstance(operand, Dataset):
@@ -1094,7 +1130,7 @@ class Day_of_Year(SimpleUnaryTime):
 
 class Day_to_Year(Operators.Unary):
     op = DAYTOYEAR
-    return_type = Duration
+    return_type = String
 
     @classmethod
     def py_op(cls, value: int) -> str:
@@ -1110,7 +1146,7 @@ class Day_to_Year(Operators.Unary):
 
 class Day_to_Month(Operators.Unary):
     op = DAYTOMONTH
-    return_type = Duration
+    return_type = String
 
     @classmethod
     def py_op(cls, value: int) -> str:
@@ -1130,7 +1166,7 @@ class Year_to_Day(Operators.Unary):
 
     @classmethod
     def py_op(cls, value: str) -> int:
-        days = Duration.to_days(value)
+        days = cls.to_days(value)
         return days
 
 
@@ -1140,5 +1176,5 @@ class Month_to_Day(Operators.Unary):
 
     @classmethod
     def py_op(cls, value: str) -> int:
-        days = Duration.to_days(value)
+        days = cls.to_days(value)
         return days

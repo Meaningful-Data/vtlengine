@@ -165,5 +165,6 @@ APPLY = "apply"
 OPERATOR = "operator"
 EVAL = "eval"
 # External.
-SQLITE = '"sqlite"'
-EXTERNAL = [SQLITE]
+SQL = '"SQL"'
+sql = '"sql"'
+EXTERNAL = [SQL, sql]
