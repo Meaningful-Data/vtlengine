@@ -594,7 +594,8 @@ class ASTString(ASTTemplate):
             period_from = ", _" if node.operand is not None else ""
         else:
             period_from = f", {_handle_literal(node.period_from)}"
-        return f"{node.op}({period_to}{period_from}{operand})"
+        config = "" if node.conf is None else f", {node.conf}"
+        return f"{node.op}({period_to}{period_from}{operand}{config})"
 
     def visit_UDOCall(self, node: AST.UDOCall) -> str:
         params_sep = ", " if len(node.params) > 1 else ""
