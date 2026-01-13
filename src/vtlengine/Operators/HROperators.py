@@ -32,7 +32,7 @@ class HRBinOp(Operators.Binary):
     def apply_operation_two_series(cls, left: pd.Series, right: pd.Series, op: Optional[Any] = None) -> pd.Series:
         op = op if op is not None else cls.op_func
         result = list(map(op, left.values, right.values))
-        return pd.Series(result, index=list(range(len(result))), dtype=object)
+        return pd.Series(result, index=left.index, dtype=object)
     
     @classmethod
     def align_series(cls, left: pd.Series, right: pd.Series, mode: str) -> Tuple[pd.Series, pd.Series]:
