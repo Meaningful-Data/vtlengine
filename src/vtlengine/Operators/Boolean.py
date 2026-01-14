@@ -1,7 +1,3 @@
-# if os.environ.get("SPARK", False):
-#     import pyspark.pandas as pd
-# else:
-#     import pandas as pd
 from typing import Any, Optional
 
 import pandas as pd
@@ -43,7 +39,6 @@ class And(Binary):
     comp_op = pd.Series.__and__
 
     @staticmethod
-    # @numba.njit
     def py_op(x: Optional[bool], y: Optional[bool]) -> Optional[bool]:
         if (x is None and y == False) or (x == False and y is None):
             return False
@@ -51,27 +46,18 @@ class And(Binary):
             return None
         return x and y
 
-    # @classmethod
-    # def spark_op(cls, x: pd.Series, y: pd.Series) -> pd.Series:
-    #     return x & y
-
 
 class Or(Binary):
     op = OR
     comp_op = pd.Series.__or__
 
     @staticmethod
-    # @numba.njit
     def py_op(x: Optional[bool], y: Optional[bool]) -> Optional[bool]:
         if (x is None and y == True) or (x == True and y is None):
             return True
         elif x is None or y is None:
             return None
         return x or y
-
-    # @classmethod
-    # def spark_op(cls, x: pd.Series, y: pd.Series) -> pd.Series:
-    #     return x | y
 
 
 class Xor(Binary):
@@ -84,22 +70,13 @@ class Xor(Binary):
             return None
         return (x and not y) or (not x and y)
 
-    # @classmethod
-    # def spark_op(cls, x: pd.Series, y: pd.Series) -> pd.Series:
-    #     return x ^ y
-
 
 class Not(Unary):
     op = NOT
 
     @staticmethod
-    # @numba.njit
     def py_op(x: Optional[bool]) -> Optional[bool]:
         return None if x is None else not x
-
-    # @classmethod
-    # def spark_op(cls, series: pd.Series) -> pd.Series:
-    #     return ~series
 
     @classmethod
     def apply_operation_component(cls, series: Any) -> Any:

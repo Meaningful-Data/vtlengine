@@ -16,8 +16,6 @@ from vtlengine.DataTypes import SCALAR_TYPES, ScalarType
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.Exceptions import InputValidationException, SemanticError
 
-# from pyspark.pandas import DataFrame as SparkDataFrame, Series as SparkSeries
-
 
 @dataclass
 class Scalar:
@@ -90,7 +88,6 @@ class DataComponent:
     """A component of a dataset with data"""
 
     name: str
-    # data: Optional[Union[PandasSeries, SparkSeries]]
     data: Optional[Any]
     data_type: Type[ScalarType]
     role: Role = Role.MEASURE
