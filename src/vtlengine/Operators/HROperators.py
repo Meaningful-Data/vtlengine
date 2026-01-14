@@ -44,9 +44,9 @@ class HRBinOp(Operators.Binary):
         left_aligned[left_new_mask] = REMOVE
         right_aligned[right_new_mask] = REMOVE
 
-        mask_remove = None
-        if mode in (PARTIAL_ZERO, PARTIAL_NULL):
-            mask_remove = (left_aligned == REMOVE) & (right_aligned == REMOVE) | (left_new_mask & right_aligned.isna()) | (left_aligned.isna() & right_new_mask)
+        mask_remove = (left_aligned == REMOVE) & (right_aligned == REMOVE)
+        if mode == PARTIAL_ZERO:
+            mask_remove |= (left_new_mask & right_aligned.isna()) | (left_aligned.isna() & right_new_mask)
 
         left_aligned = left_aligned.replace(REMOVE, value)
         right_aligned = right_aligned.replace(REMOVE, value)
@@ -54,11 +54,10 @@ class HRBinOp(Operators.Binary):
         if mode in (PARTIAL_ZERO, PARTIAL_NULL):
             mask_remove |= (left_aligned.isna() & right_aligned.isna())
         elif mode == NON_NULL:
-            mask_remove = left_aligned.isna() | right_aligned.isna()
+            mask_remove |= left_aligned.isna() | right_aligned.isna()
         elif mode == NON_ZERO:
-            mask_remove = (left_aligned == 0) & (right_aligned == 0)
-        else:
-            return left_aligned, right_aligned
+            mask_remove |= (left_aligned == 0) & (right_aligned == 0)
+
         return left_aligned[~mask_remove], right_aligned[~mask_remove]
 
     @classmethod
