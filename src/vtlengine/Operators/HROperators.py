@@ -38,11 +38,21 @@ class HRBinOp(Operators.Binary):
     def align_series(cls, left: pd.Series, right: pd.Series, mode: str) -> Tuple[pd.Series, pd.Series]:
         value = 0 if mode.endswith("zero") else None
         left_aligned, right_aligned = left.align(right, join="outer")
+
+        left_new_mask = ~left_aligned.index.isin(left.index)
+        right_new_mask = ~right_aligned.index.isin(right.index)
+        left_aligned[left_new_mask] = REMOVE
+        right_aligned[right_new_mask] = REMOVE
+
+        mask_remove = None
+        if mode in (PARTIAL_ZERO, PARTIAL_NULL):
+            mask_remove = (left_aligned == REMOVE) & (right_aligned == REMOVE) | (left_new_mask & right_aligned.isna()) | (left_aligned.isna() & right_new_mask)
+
         left_aligned = left_aligned.replace(REMOVE, value)
         right_aligned = right_aligned.replace(REMOVE, value)
 
         if mode in (PARTIAL_ZERO, PARTIAL_NULL):
-            mask_remove = left_aligned.isna() & right_aligned.isna()
+            mask_remove |= (left_aligned.isna() & right_aligned.isna())
         elif mode == NON_NULL:
             mask_remove = left_aligned.isna() | right_aligned.isna()
         elif mode == NON_ZERO:
