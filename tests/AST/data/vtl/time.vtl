@@ -21,3 +21,4 @@ date_add_ds := DS_1[calc Me_add := dateadd(Id_period, 2, "M")];
 
 time_agg_date_ds := sum(drop_identifier(DS_1, Id_period)#Me_int group all time_agg("A", _, Id_date));
 time_agg_period_ds := sum(drop_identifier(DS_1, Id_date)#Me_num group all time_agg("M", _, Id_period));
+DS_A := time_agg("A", DS_1, last);

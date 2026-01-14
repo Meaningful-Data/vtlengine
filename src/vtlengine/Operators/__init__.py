@@ -1,12 +1,7 @@
-import os
 import re
 from copy import copy
 from typing import Any, Optional, Union
 
-# if os.environ.get("SPARK", False):
-#     import pyspark.pandas as pd
-# else:
-#     import pandas as pd
 import pandas as pd
 
 from vtlengine.AST.Grammar.tokens import (
@@ -57,7 +52,6 @@ class Operator:
 
     op: Any = None
     py_op: Any = None
-    spark_op: Any = None
     type_to_check: Any = None
     return_type: Any = None
 
@@ -234,9 +228,10 @@ class Binary(Operator):
         return cls.py_op(x, y)
 
     @classmethod
-    def apply_operation_two_series(cls, left_series: pd.Series, right_series: pd.Series) -> pd.Series:
+    def apply_operation_two_series(cls, left_series: Any, right_series: Any) -> Any:
         result = list(map(cls.op_func, left_series.values, right_series.values))
-        return pd.Series(result, index=list(range(len(result))), dtype=object)
+        index = left_series.index if len(left_series) <= len(right_series) else right_series.index
+        return pd.Series(result, index=index, dtype=object)
 
     @classmethod
     def apply_operation_series_scalar(
