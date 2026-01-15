@@ -1644,10 +1644,9 @@ class InterpreterAnalyzer(ASTTemplate):
         result_components = {c.name: c for c in self.ruleset_dataset.get_components()}  # type: ignore[union-attr]
         hr_component = self.ruleset_signature["RULE_COMPONENT"]
         measure_name = self.ruleset_dataset.get_measures_names()[0]
-        name = node.value
 
         if self.rule_data is None:
-            return Dataset(name=name, components=result_components, data=None)
+            return Dataset(name=node.value, components=result_components, data=None)
 
         condition = None
         if hasattr(node, "_right_condition"):
@@ -1662,8 +1661,8 @@ class InterpreterAnalyzer(ASTTemplate):
         ):
             df = self.hr_agg_rules_computed[node.value].copy()
             if self.ruleset_mode in (PARTIAL_NULL, PARTIAL_ZERO):
-                self.compute_partial_data(df, measure_name, name)
-            return Dataset(name=name, components=result_components, data=df)
+                self.compute_partial_data(df, measure_name, node.value)
+            return Dataset(name=node.value, components=result_components, data=df)
 
         df = self.rule_data.copy()
         if condition is not None:
@@ -1681,13 +1680,13 @@ class InterpreterAnalyzer(ASTTemplate):
             df = merged.drop(columns=["_merge"])
         else:
             df = code_data.copy()
-            df[hr_component] = name
+            df[hr_component] = node.value
             df[measure_name] = REMOVE
 
         if self.ruleset_mode in (PARTIAL_NULL, PARTIAL_ZERO):
-            self.compute_partial_data(df, measure_name, name)
+            self.compute_partial_data(df, measure_name, node.value)
 
-        return Dataset(name=name, components=result_components, data=df)
+        return Dataset(name=node.value, components=result_components, data=df)
 
     def compute_partial_data(self, df: pd.DataFrame, measure: str, name: str) -> None:
         if self.partial_rule_data is None:
