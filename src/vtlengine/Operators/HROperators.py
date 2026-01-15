@@ -39,21 +39,14 @@ class HRBinOp(Operators.Binary):
         value = 0 if mode.endswith("zero") else None
         left_aligned, right_aligned = left.align(right, join="outer")
 
-        left_new_mask = ~left_aligned.index.isin(left.index)
-        right_new_mask = ~right_aligned.index.isin(right.index)
-        left_aligned[left_new_mask] = REMOVE
-        right_aligned[right_new_mask] = REMOVE
-
+        left_aligned[~left_aligned.index.isin(left.index)] = REMOVE
+        right_aligned[~right_aligned.index.isin(right.index)] = REMOVE
         mask_remove = (left_aligned == REMOVE) & (right_aligned == REMOVE)
-        if mode == PARTIAL_ZERO:
-            mask_remove |= (left_new_mask & right_aligned.isna()) | (left_aligned.isna() & right_new_mask)
 
         left_aligned = left_aligned.replace(REMOVE, value)
         right_aligned = right_aligned.replace(REMOVE, value)
 
-        if mode in (PARTIAL_ZERO, PARTIAL_NULL):
-            mask_remove |= (left_aligned.isna() & right_aligned.isna())
-        elif mode == NON_NULL:
+        if mode == NON_NULL:
             mask_remove |= left_aligned.isna() | right_aligned.isna()
         elif mode == NON_ZERO:
             mask_remove |= (left_aligned == 0) & (right_aligned == 0)
@@ -98,11 +91,11 @@ class HRComparison(HRBinOp):
 
         if left.data is not None and right.data is not None:
             left_data, right_data = cls.align_series(left.data[measure_name], right.data, mode)
-            result.data = result.data.iloc[left_data.index]
+            result.data = result.data.loc[left_data.index]
+            result.data[measure_name] = left_data
             result.data["bool_var"] = cls.apply_operation_two_series(left_data, right_data)
             result.data["imbalance"] = cls.apply_operation_two_series(left_data, right_data, cls.imbalance_op)
 
-        result.data.drop(measure_name, axis=1, inplace=True)
         return result
 
 

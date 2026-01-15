@@ -2,11 +2,9 @@ import csv
 from copy import copy, deepcopy
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, Union, Set
 
-import numpy as np
 import pandas as pd
-from pandas.core.dtypes.inference import is_re
 
 import vtlengine.AST as AST
 import vtlengine.Exceptions
@@ -42,7 +40,7 @@ from vtlengine.AST.Grammar.tokens import (
     ROUND,
     SUBSTR,
     TRUNC,
-    WHEN, NON_ZERO, NON_NULL,
+    WHEN, PARTIAL_NULL, PARTIAL_ZERO
 )
 from vtlengine.DataTypes import (
     BASIC_TYPES,
@@ -136,6 +134,8 @@ class InterpreterAnalyzer(ASTTemplate):
     aggregation_dataset: Optional[Dataset] = None
     ruleset_dataset: Optional[Dataset] = None
     rule_data: Optional[pd.DataFrame] = None
+    partial_rule_data: Optional[pd.Series] = None
+    partial_rule_elements: Optional[Set[str]] = None
     ruleset_signature: Optional[Dict[str, str]] = None
     udo_params: Optional[List[Dict[str, Any]]] = None
     hr_agg_rules_computed: Optional[Dict[str, pd.DataFrame]] = None
@@ -1486,6 +1486,10 @@ class InterpreterAnalyzer(ASTTemplate):
             self.rule_data = (
                 None if self.ruleset_dataset.data is None else self.ruleset_dataset.data.copy()
             )
+
+        if self.ruleset_mode in (PARTIAL_NULL, PARTIAL_ZERO):
+            self.partial_rule_data, self.partial_rule_elements = None, set()
+
         rule_result = self.visit(node.rule)
         if rule_result is None:
             self.is_from_rule = False
@@ -1538,24 +1542,20 @@ class InterpreterAnalyzer(ASTTemplate):
         if isinstance(right_operand, Dataset):
             right_operand = get_measure_from_dataset(right_operand, node.right.value)
 
+        if self.ruleset_mode in (PARTIAL_NULL, PARTIAL_ZERO):
+            if left_operand.data is not None:
+                left_operand.data = left_operand.data[self.partial_rule_data]
+            if right_operand.data is not None:
+                right_operand.data = right_operand.data[self.partial_rule_data]
+
         if node.op in HR_COMP_MAPPING:
             if self.is_from_hr_agg:
                 return HAAssignment.analyze(left_operand, right_operand, self.ruleset_mode)
             else:
-                result = HR_COMP_MAPPING[node.op].analyze(
-                    left_operand, right_operand, self.ruleset_mode
-                )
-                left_measure = left_operand.get_measures()[0]
-                if left_operand.data is None:
-                    result.data = None
-                else:
-                    result.data[left_measure.name] = left_operand.data[left_measure.name]
-                result.components[left_measure.name] = left_measure
-                return result
-        else:
-            if isinstance(left_operand, Dataset):
-                left_operand = get_measure_from_dataset(left_operand, node.left.value)
-            return HR_NUM_BINARY_MAPPING[node.op].analyze(left_operand, right_operand, self.ruleset_mode)
+                return HR_COMP_MAPPING[node.op].analyze(left_operand, right_operand, self.ruleset_mode)
+        if isinstance(left_operand, Dataset):
+            left_operand = get_measure_from_dataset(left_operand, node.left.value)
+        return HR_NUM_BINARY_MAPPING[node.op].analyze(left_operand, right_operand, self.ruleset_mode)
 
     def visit_HRUnOp(self, node: AST.HRUnOp) -> None:
         operand = self.visit(node.operand)
@@ -1643,6 +1643,7 @@ class InterpreterAnalyzer(ASTTemplate):
         # Getting Dataset elements
         result_components = {c.name: c for c in self.ruleset_dataset.get_components()}  # type: ignore[union-attr]
         hr_component = self.ruleset_signature["RULE_COMPONENT"]
+        measure_name = self.ruleset_dataset.get_measures_names()[0]
         name = node.value
 
         if self.rule_data is None:
@@ -1660,6 +1661,8 @@ class InterpreterAnalyzer(ASTTemplate):
             and node.value in self.hr_agg_rules_computed
         ):
             df = self.hr_agg_rules_computed[node.value].copy()
+            if self.ruleset_mode in (PARTIAL_NULL, PARTIAL_ZERO):
+                self.compute_partial_data(df, measure_name, name)
             return Dataset(name=name, components=result_components, data=df)
 
         df = self.rule_data.copy()
@@ -1669,7 +1672,6 @@ class InterpreterAnalyzer(ASTTemplate):
         rest_identifiers = list(
             set(self.ruleset_dataset.get_identifiers_names()) - {hr_component}
         )
-        measure_name = self.ruleset_dataset.get_measures_names()[0]
         code_data = df[rest_identifiers].drop_duplicates().reset_index(drop=True)
         if node.value in df[hr_component].values:
             value_data = df[df[hr_component] == node.value]
@@ -1679,10 +1681,20 @@ class InterpreterAnalyzer(ASTTemplate):
             df = merged.drop(columns=["_merge"])
         else:
             df = code_data.copy()
-            df[hr_component] = node.value
+            df[hr_component] = name
             df[measure_name] = REMOVE
 
+        if self.ruleset_mode in (PARTIAL_NULL, PARTIAL_ZERO):
+            self.compute_partial_data(df, measure_name, name)
+
         return Dataset(name=name, components=result_components, data=df)
+
+    def compute_partial_data(self, df: pd.DataFrame, measure: str, name: str) -> None:
+        if self.partial_rule_data is None:
+            self.partial_rule_data = (df[measure] != REMOVE) & df[measure].notna()
+        else:
+            self.partial_rule_data |= (df[measure] != REMOVE) & df[measure].notna()
+        self.partial_rule_elements.add(name)
 
     def visit_UDOCall(self, node: AST.UDOCall) -> None:  # noqa: C901
         if self.udos is None:
