@@ -192,11 +192,7 @@ class HAAssignment(Operators.Binary):
 
     @classmethod
     def handle_mode(cls, x: Any, hr_mode: str) -> Any:
-        if not pd.isnull(x) and x == REMOVE:
-            return REMOVE
-        if hr_mode == "non_null" and pd.isnull(x) or hr_mode == "non_zero" and x == 0:
-            return REMOVE
-        return x
+        return REMOVE if x == REMOVE or hr_mode == "non_null" and pd.isnull(x) or hr_mode == "non_zero" and x == 0 else x
 
 
 class Hierarchy(Operators.Operator):
