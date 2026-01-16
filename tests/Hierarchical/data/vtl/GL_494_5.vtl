@@ -1,0 +1,16 @@
+define hierarchical ruleset SUM_PAYMENT_CAT (  valuedomain rule payment_category   ) is
+     1100 = 1110 + 1120 + 1130 + 1140 + 1232 + 1150;
+     1200 = 1205 + 1210 + 1215 + 1220 + 1231;
+     1000 = 1100 + 1200;
+     6000 = 6100 + 6200;
+     24A0 = 244C;
+     5000 = 24A0 + 1110;
+     0000 = 1000 + 2000 + 3000 + 4000
+end hierarchical ruleset;
+
+
+result <-
+     hierarchy(
+        DS_UNEMPLOY_PAYMENT,
+        SUM_PAYMENT_CAT
+        rule PAYMENT_CATEGORY always_zero rule_priority);

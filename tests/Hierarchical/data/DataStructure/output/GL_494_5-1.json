@@ -1,0 +1,64 @@
+{
+    "datasets": [
+        {
+            "name": "result",
+            "DataStructure": [
+                {
+                    "name": "BE_REGION",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "DERIVATION",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "FREQ",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "GENDER",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "INDEX_TYPE",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "PAYMENT_CATEGORY",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "PAYMENT_UNIT",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "TIME_PERIOD",
+                    "role": "Identifier",
+                    "type": "Time_Period",
+                    "nullable": false
+                },
+                {
+                    "name": "OBS_VALUE",
+                    "role": "Measure",
+                    "type": "Number",
+                    "nullable": true
+                }
+            ],
+            "DataPoints": null
+        }
+    ]
+}
