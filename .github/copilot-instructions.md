@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-VTL Engine is a Python library for validating, formatting, and executing VTL (Validation and Transformation Language) 2.1 scripts. It's built around ANTLR-generated parsers and uses DuckDB for data manipulation.
+VTL Engine is a Python library for validating, formatting, and executing VTL (Validation and Transformation Language) 2.1 scripts. It's built around ANTLR-generated parsers and uses Pandas DataFrames for data manipulation.
 
 **VTL 2.1 Reference Manual**: https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf
 
@@ -117,7 +117,8 @@ class MyOperator:
     
     @classmethod  
     def compute(cls, left: Dataset, right: Any, **kwargs) -> Dataset:
-        # Use DuckDB via Dataset.data (Pandas DataFrame)
+        # Manipulate Dataset.data (Pandas DataFrame) directly
+        # DuckDB may be used for specific SQL operations when needed
         # Return Dataset with computed data
         pass
 ```
@@ -262,7 +263,8 @@ Handled by `VTL_DTYPES_MAPPING` in `src/vtlengine/Utils/__init__.py`:
 
 ## External Dependencies
 
-- **DuckDB** (1.4.x): In-memory SQL execution for data operations
+- **pandas** (2.x): Primary data manipulation tool (Dataset.data is a DataFrame)
+- **DuckDB** (1.4.x): Optional SQL execution engine for specific operations
 - **pysdmx** (≥1.5.2): SDMX 3.0 data handling (`run_sdmx`, `generate_sdmx`)
 - **sqlglot** (22.x): SQL parsing for external routines
 - **antlr4-python3-runtime** (4.9.x): Parser runtime - must match grammar generation version
