@@ -419,6 +419,57 @@ class ASTString(ASTTemplate):
                 return f"{node.op}({operand}, {shift_number}, {period_indicator})"
         return ""
 
+    def visit_HROperation(self, node: AST.HROperation) -> str:
+        operand = self.visit(node.dataset)
+        rule_name = node.ruleset_name
+
+        # Handle case with no rule component
+        if node.rule_component is None:
+            if self.pretty:
+                return f"{node.op}({nl}{tab * 2}{operand},{nl}{tab * 2}{rule_name}{nl})"
+            else:
+                return f"{node.op}({operand}, {rule_name})"
+
+        component_name = self.visit(node.rule_component)
+
+        # Build condition string
+        condition_str = ""
+        if node.conditions:
+            condition_str += "condition "
+            conditions = [self.visit(condition) for condition in node.conditions]
+            condition_str += ", ".join(conditions)
+            condition_str += f"{nl}{tab * 2}" if self.pretty else " "
+
+        # Determine defaults based on operator
+        default_input = "dataset" if node.op == CHECK_HIERARCHY else "rule"
+        default_output = "invalid" if node.op == CHECK_HIERARCHY else "computed"
+
+        # Build mode strings (only include if different from default)
+        param_mode = ""
+        if node.validation_mode is not None and node.validation_mode.value != "non_null":
+            param_mode = f" {node.validation_mode.value}"
+
+        param_input = ""
+        if node.input_mode is not None and node.input_mode.value != default_input:
+            param_input = f" {node.input_mode.value}"
+
+        param_output = ""
+        if node.output is not None and node.output.value != default_output:
+            param_output = f" {node.output.value}"
+
+        if self.pretty:
+            return (
+                f"{node.op}({nl}{tab * 2}{operand},"
+                f"{nl}{tab * 2}{rule_name}{nl}{tab * 2}{condition_str}rule "
+                f"{component_name}"
+                f"{param_mode}{param_input}{param_output})"
+            )
+        else:
+            return (
+                f"{node.op}({operand}, {rule_name} {condition_str}rule {component_name}"
+                f"{param_mode}{param_input}{param_output})"
+            )
+
     # ---------------------- Individual operators ----------------------
 
     def _handle_grouping_having(self, node: AST) -> Tuple[str, str]:
