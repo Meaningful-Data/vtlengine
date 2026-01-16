@@ -662,6 +662,32 @@ class HRuleset(AST):
 
 
 @dataclass
+class HROperation(AST):
+    """
+    HROperation: Hierarchical ruleset operations (hierarchy, check_hierarchy)
+
+    op: "hierarchy" or "check_hierarchy"
+    dataset: The input dataset expression
+    ruleset_name: Name of the hierarchical ruleset (HRuleset)
+    rule_component: Optional component ID for the RULE clause
+    conditions: List of condition components (from conditionClause)
+    validation_mode: Mode for validation (non_null, non_zero, etc.)
+    input_mode: Input mode - HRInputMode for hierarchy, CHInputMode for check_hierarchy
+    output: Output mode - HierarchyOutput for hierarchy, ValidationOutput for check_hierarchy
+    """
+    op: str
+    dataset: AST
+    ruleset_name: str
+    rule_component: Optional[AST] = None
+    conditions: List[AST] = field(default_factory=list)
+    validation_mode: Optional[ValidationMode] = None
+    input_mode: Optional[Union[HRInputMode, CHInputMode]] = None
+    output: Optional[Union[HierarchyOutput, ValidationOutput]] = None
+
+    __eq__ = AST.ast_equality
+
+
+@dataclass
 class DPRuleset(AST):
     """
     DPRuleset: (name, element, rules)
