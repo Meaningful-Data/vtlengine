@@ -1487,7 +1487,9 @@ class InterpreterAnalyzer(ASTTemplate):
             )
 
         if self.ruleset_mode in (PARTIAL_NULL, PARTIAL_ZERO):
-            self.partial_rule_data, self.partial_rule_elements = None, set()
+            self.compute_partial_data = True
+            self.partial_rule_data = None
+            self.partial_rule_elements = set()
 
         rule_result = self.visit(node.rule)
         if rule_result is None:
@@ -1536,9 +1538,9 @@ class InterpreterAnalyzer(ASTTemplate):
             original_data.loc[nan_indexes, "bool_var"] = None
             return original_data
 
-        self.compute_partial_data = not self.is_from_hr_agg or node.op not in HR_COMP_MAPPING
+        self.compute_partial_data &= not self.is_from_hr_agg or node.op not in HR_COMP_MAPPING
         left_operand = self.visit(node.left)
-        self.compute_partial_data = True
+        self.compute_partial_data = self.ruleset_mode in (PARTIAL_NULL, PARTIAL_ZERO)
         right_operand = self.visit(node.right)
         if isinstance(right_operand, Dataset):
             right_operand = get_measure_from_dataset(right_operand, node.right.value)
@@ -1550,10 +1552,8 @@ class InterpreterAnalyzer(ASTTemplate):
                 right_operand.data = right_operand.data[self.partial_rule_data]
 
         if node.op in HR_COMP_MAPPING:
-            if self.is_from_hr_agg:
-                return HAAssignment.analyze(left_operand, right_operand, self.ruleset_mode)
-            else:
-                return HR_COMP_MAPPING[node.op].analyze(left_operand, right_operand, self.ruleset_mode)
+            op = HAAssignment if self.is_from_hr_agg else HR_COMP_MAPPING[node.op]
+            return op.analyze(left_operand, right_operand, self.ruleset_mode)
         if isinstance(left_operand, Dataset):
             left_operand = get_measure_from_dataset(left_operand, node.left.value)
         return HR_NUM_BINARY_MAPPING[node.op].analyze(left_operand, right_operand, self.ruleset_mode)
@@ -1661,8 +1661,7 @@ class InterpreterAnalyzer(ASTTemplate):
             and node.value in self.hr_agg_rules_computed
         ):
             df = self.hr_agg_rules_computed[node.value].copy()
-            if self.ruleset_mode in (PARTIAL_NULL, PARTIAL_ZERO):
-                self.get_partial_data(df, measure_name, node.value)
+            self.update_partial_data(df, measure_name, node.value)
             return Dataset(name=node.value, components=result_components, data=df)
 
         rest_identifiers = list(
@@ -1677,11 +1676,6 @@ class InterpreterAnalyzer(ASTTemplate):
             code_data = code_data.loc[mask]
 
         if node.value in df[hr_component].values:
-            # idx = pd.MultiIndex.from_frame(code_data[rest_identifiers])
-            # aligned = df[df[hr_component] == node.value].set_index(rest_identifiers).reindex(idx)
-            # aligned[hr_component] = node.value
-            # aligned[measure_name] = aligned[measure_name].fillna(REMOVE)
-            # df = aligned.reset_index().set_index(code_data.index)
             value_data = df[df[hr_component] == node.value]
             merged = value_data.merge(code_data, how="right", on=rest_identifiers, indicator=True)
             merged[hr_component] = node.value
@@ -1692,11 +1686,10 @@ class InterpreterAnalyzer(ASTTemplate):
             df[hr_component] = node.value
             df[measure_name] = REMOVE
 
-        if self.ruleset_mode in (PARTIAL_NULL, PARTIAL_ZERO):
-            self.get_partial_data(df, measure_name, node.value)
+        self.update_partial_data(df, measure_name, node.value)
         return Dataset(name=node.value, components=result_components, data=df)
 
-    def get_partial_data(self, df: pd.DataFrame, measure: str, name: str) -> None:
+    def update_partial_data(self, df: pd.DataFrame, measure: str, name: str) -> None:
         if self.compute_partial_data:
             if self.partial_rule_data is None:
                 self.partial_rule_data = (df[measure] != REMOVE) & df[measure].notna()
