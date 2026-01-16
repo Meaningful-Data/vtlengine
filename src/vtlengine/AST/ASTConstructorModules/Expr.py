@@ -1197,7 +1197,6 @@ class Expr(VtlVisitor):
             **extract_token_info(ctx),
         )
 
-    # TODO Not fully implemented only basic usage available.
     def visitValidateHRruleset(self, ctx: Parser.ValidateHRrulesetContext):
         """
         CHECK_HIERARCHY LPAREN op=expr COMMA hrName=IDENTIFIER conditionClause? (RULE componentID)? validationMode? inputMode? validationOutput? RPAREN     # validateHRruleset
@@ -1209,17 +1208,12 @@ class Expr(VtlVisitor):
         op = c.getSymbol().text
 
         dataset_node = self.visitExpr(ctx_list[2])
-        rule_name_node = Identifier(
-            value=ctx_list[4].getSymbol().text,
-            kind="RuleID",
-            **extract_token_info(ctx_list[4].getSymbol()),
-        )
+        ruleset_name = ctx_list[4].getSymbol().text
 
         conditions = []
-        # Default values
-        modes = "non_null"
-        inputs = "dataset"
-        retains = "invalid"
+        validation_mode: Optional[ValidationMode] = None
+        input_mode: Optional[CHInputMode] = None
+        output: Optional[ValidationOutput] = None
         rule_comp = None
 
         for c in ctx_list:
@@ -1228,38 +1222,29 @@ class Expr(VtlVisitor):
             elif isinstance(c, Parser.ComponentIDContext):
                 rule_comp = Terminals().visitComponentID(c)
             elif isinstance(c, Parser.ValidationModeContext):
-                modes = Terminals().visitValidationMode(c)
+                mode_str = Terminals().visitValidationMode(c)
+                validation_mode = ValidationMode(mode_str)
             elif isinstance(c, Parser.InputModeContext):
-                inputs = Terminals().visitInputMode(c)
+                input_str = Terminals().visitInputMode(c)
+                if input_str == DATASET_PRIORITY:
+                    raise NotImplementedError("Dataset Priority input mode on HR is not implemented")
+                input_mode = CHInputMode(input_str)
             elif isinstance(c, Parser.ValidationOutputContext):
-                retains = Terminals().visitValidationOutput(c)
+                output_str = Terminals().visitValidationOutput(c)
+                output = ValidationOutput(output_str)
 
         if len(conditions) != 0:
             # AST_ASTCONSTRUCTOR.22
             conditions = conditions[0]
-
-        param_constant_node = []
-
-        if inputs == DATASET_PRIORITY:
-            raise NotImplementedError("Dataset Priority input mode on HR is not implemented")
-
-        param_constant_node.append(
-            ParamConstant(type_="PARAM_MODE", value=modes, **extract_token_info(ctx))
-        )
-        param_constant_node.append(
-            ParamConstant(type_="PARAM_INPUT", value=inputs, **extract_token_info(ctx))
-        )
-        param_constant_node.append(
-            ParamConstant(type_="PARAM_OUTPUT", value=retains, **extract_token_info(ctx))
-        )
+        else:
+            conditions = []
 
         if not rule_comp:
-            rule_name = rule_name_node.value
-            if rule_name in de_ruleset_elements:
-                if isinstance(de_ruleset_elements[rule_name], list):
-                    rule_element = de_ruleset_elements[rule_name][-1]
+            if ruleset_name in de_ruleset_elements:
+                if isinstance(de_ruleset_elements[ruleset_name], list):
+                    rule_element = de_ruleset_elements[ruleset_name][-1]
                 else:
-                    rule_element = de_ruleset_elements[rule_name]
+                    rule_element = de_ruleset_elements[ruleset_name]
 
                 if rule_element.kind == "DatasetID":
                     check_hierarchy_rule = rule_element.value
@@ -1270,12 +1255,16 @@ class Expr(VtlVisitor):
                     )
                 else:  # ValuedomainID
                     raise SemanticError("1-1-10-4", op=op)
-        children = [dataset_node, rule_comp, rule_name_node, *conditions]
-        children = [node for node in children if node is not None]
-        return ParamOp(
+
+        return HROperation(
             op=op,
-            children=children,
-            params=param_constant_node,
+            dataset=dataset_node,
+            ruleset_name=ruleset_name,
+            rule_component=rule_comp,
+            conditions=conditions if isinstance(conditions, list) else [conditions],
+            validation_mode=validation_mode,
+            input_mode=input_mode,
+            output=output,
             **extract_token_info(ctx),
         )
 
