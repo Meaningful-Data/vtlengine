@@ -127,8 +127,9 @@ class InterpreterAnalyzer(ASTTemplate):
     is_from_join: bool = False
     is_from_hr_val: bool = False
     is_from_hr_agg: bool = False
-    condition_stack: Optional[List[Dataset]] = None
+    compute_partial_data: bool = False
     # Handlers for simplicity
+    condition_stack: Optional[List[Dataset]] = None
     regular_aggregation_dataset: Optional[Dataset] = None
     aggregation_grouping: Optional[List[str]] = None
     aggregation_dataset: Optional[Dataset] = None
@@ -141,8 +142,6 @@ class InterpreterAnalyzer(ASTTemplate):
     hr_agg_rules_computed: Optional[Dict[str, pd.DataFrame]] = None
     ruleset_mode: Optional[str] = None
     hr_input: Optional[str] = None
-    hr_partial_is_valid: Optional[List[bool]] = None
-    hr_condition: Optional[Dict[str, str]] = None
     # DL
     dprs: Optional[Dict[str, Optional[Dict[str, Any]]]] = None
     udos: Optional[Dict[str, Optional[Dict[str, Any]]]] = None
@@ -1537,7 +1536,9 @@ class InterpreterAnalyzer(ASTTemplate):
             original_data.loc[nan_indexes, "bool_var"] = None
             return original_data
 
+        self.compute_partial_data = not self.is_from_hr_agg or node.op not in HR_COMP_MAPPING
         left_operand = self.visit(node.left)
+        self.compute_partial_data = True
         right_operand = self.visit(node.right)
         if isinstance(right_operand, Dataset):
             right_operand = get_measure_from_dataset(right_operand, node.right.value)
@@ -1661,39 +1662,47 @@ class InterpreterAnalyzer(ASTTemplate):
         ):
             df = self.hr_agg_rules_computed[node.value].copy()
             if self.ruleset_mode in (PARTIAL_NULL, PARTIAL_ZERO):
-                self.compute_partial_data(df, measure_name, node.value)
+                self.get_partial_data(df, measure_name, node.value)
             return Dataset(name=node.value, components=result_components, data=df)
-
-        df = self.rule_data.copy()
-        if condition is not None:
-            df = df.loc[condition]
 
         rest_identifiers = list(
             set(self.ruleset_dataset.get_identifiers_names()) - {hr_component}
         )
+        df = self.rule_data.copy()
         code_data = df[rest_identifiers].drop_duplicates().reset_index(drop=True)
+        if condition is not None:
+            df = df.loc[condition]
+            keys = pd.MultiIndex.from_frame(df[rest_identifiers].drop_duplicates())
+            mask = pd.MultiIndex.from_frame(code_data[rest_identifiers]).isin(keys)
+            code_data = code_data.loc[mask]
+
         if node.value in df[hr_component].values:
+            # idx = pd.MultiIndex.from_frame(code_data[rest_identifiers])
+            # aligned = df[df[hr_component] == node.value].set_index(rest_identifiers).reindex(idx)
+            # aligned[hr_component] = node.value
+            # aligned[measure_name] = aligned[measure_name].fillna(REMOVE)
+            # df = aligned.reset_index().set_index(code_data.index)
             value_data = df[df[hr_component] == node.value]
             merged = value_data.merge(code_data, how="right", on=rest_identifiers, indicator=True)
             merged[hr_component] = node.value
             merged.loc[merged["_merge"] == "right_only", measure_name] = REMOVE
-            df = merged.drop(columns=["_merge"])
+            df = merged.drop(columns=["_merge"]).set_index(code_data.index)
         else:
             df = code_data.copy()
             df[hr_component] = node.value
             df[measure_name] = REMOVE
 
         if self.ruleset_mode in (PARTIAL_NULL, PARTIAL_ZERO):
-            self.compute_partial_data(df, measure_name, node.value)
-
+            self.get_partial_data(df, measure_name, node.value)
         return Dataset(name=node.value, components=result_components, data=df)
 
-    def compute_partial_data(self, df: pd.DataFrame, measure: str, name: str) -> None:
-        if self.partial_rule_data is None:
-            self.partial_rule_data = (df[measure] != REMOVE) & df[measure].notna()
-        else:
-            self.partial_rule_data |= (df[measure] != REMOVE) & df[measure].notna()
-        self.partial_rule_elements.add(name)
+    def get_partial_data(self, df: pd.DataFrame, measure: str, name: str) -> None:
+        if self.compute_partial_data:
+            if self.partial_rule_data is None:
+                self.partial_rule_data = (df[measure] != REMOVE) & df[measure].notna()
+            else:
+                self.partial_rule_data |= (df[measure] != REMOVE) & df[measure].notna()
+            self.partial_rule_elements.add(name)
 
     def visit_UDOCall(self, node: AST.UDOCall) -> None:  # noqa: C901
         if self.udos is None:
