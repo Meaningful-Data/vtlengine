@@ -254,7 +254,7 @@ class Binary(Operator):
         can do a semantic check too.
         Returns an operand.
         """
-        left_operand, right_operand = args
+        left_operand, right_operand = args[0], args[1]
 
         if isinstance(left_operand, Dataset) and isinstance(right_operand, Dataset):
             return cls.dataset_validation(left_operand, right_operand)

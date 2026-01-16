@@ -2,7 +2,7 @@ import csv
 from copy import copy, deepcopy
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Type, Union
 
 import pandas as pd
 
@@ -24,6 +24,7 @@ from vtlengine.AST.Grammar.tokens import (
     CHECK_HIERARCHY,
     COUNT,
     CURRENT_DATE,
+    DATASET_PRIORITY,
     DATE_ADD,
     DROP,
     EQ,
@@ -36,8 +37,11 @@ from vtlengine.AST.Grammar.tokens import (
     INSTR,
     KEEP,
     MEMBERSHIP,
+    PARTIAL_NULL,
+    PARTIAL_ZERO,
     REPLACE,
     ROUND,
+    RULE_PRIORITY,
     SUBSTR,
     TRUNC,
     WHEN,
@@ -70,6 +74,7 @@ from vtlengine.Operators.Comparison import Between, ExistIn
 from vtlengine.Operators.Conditional import Case, If
 from vtlengine.Operators.General import Eval
 from vtlengine.Operators.HROperators import (
+    REMOVE,
     HAAssignment,
     Hierarchy,
     get_measure_from_dataset,
@@ -127,20 +132,21 @@ class InterpreterAnalyzer(ASTTemplate):
     is_from_join: bool = False
     is_from_hr_val: bool = False
     is_from_hr_agg: bool = False
-    condition_stack: Optional[List[Dataset]] = None
+    compute_partial_data: bool = False
     # Handlers for simplicity
+    condition_stack: Optional[List[Dataset]] = None
     regular_aggregation_dataset: Optional[Dataset] = None
     aggregation_grouping: Optional[List[str]] = None
     aggregation_dataset: Optional[Dataset] = None
     ruleset_dataset: Optional[Dataset] = None
     rule_data: Optional[pd.DataFrame] = None
+    partial_rule_data: Optional[Any] = None
+    partial_rule_elements: Optional[Set[str]] = None
     ruleset_signature: Optional[Dict[str, str]] = None
     udo_params: Optional[List[Dict[str, Any]]] = None
     hr_agg_rules_computed: Optional[Dict[str, pd.DataFrame]] = None
     ruleset_mode: Optional[str] = None
     hr_input: Optional[str] = None
-    hr_partial_is_valid: Optional[List[bool]] = None
-    hr_condition: Optional[Dict[str, str]] = None
     # DL
     dprs: Optional[Dict[str, Optional[Dict[str, Any]]]] = None
     udos: Optional[Dict[str, Optional[Dict[str, Any]]]] = None
@@ -1484,6 +1490,12 @@ class InterpreterAnalyzer(ASTTemplate):
             self.rule_data = (
                 None if self.ruleset_dataset.data is None else self.ruleset_dataset.data.copy()
             )
+
+        if self.ruleset_mode in (PARTIAL_NULL, PARTIAL_ZERO):
+            self.compute_partial_data = True
+            self.partial_rule_data = None
+            self.partial_rule_elements = set()
+
         rule_result = self.visit(node.rule)
         if rule_result is None:
             self.is_from_rule = False
@@ -1494,10 +1506,12 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.hr_agg_rules_computed is not None
                 and rule_result.data is not None
                 and len(rule_result.data[measure_name]) > 0
+                and not (self.hr_input == DATASET_PRIORITY and node.rule.op != EQ)
             ):
                 self.hr_agg_rules_computed[rule_result.name] = rule_result.data
         else:
             rule_result = rule_result.data
+
         self.rule_data = None
         self.is_from_rule = False
         return rule_result
@@ -1529,65 +1543,28 @@ class InterpreterAnalyzer(ASTTemplate):
             original_data.loc[non_filtering_indexes, "bool_var"] = True
             original_data.loc[nan_indexes, "bool_var"] = None
             return original_data
-        elif node.op in HR_COMP_MAPPING:
-            self.is_from_assignment = True
-            if self.ruleset_mode in ("partial_null", "partial_zero"):
-                self.hr_partial_is_valid = []
-            left_operand = self.visit(node.left)
-            self.is_from_assignment = False
-            right_operand = self.visit(node.right)
-            if isinstance(right_operand, Dataset):
-                right_operand = get_measure_from_dataset(right_operand, node.right.value)
 
-            if self.ruleset_mode in ("partial_null", "partial_zero"):
-                # Check all values were present in the dataset
-                if self.hr_partial_is_valid and not any(self.hr_partial_is_valid):
-                    right_operand.data = right_operand.data.map(lambda x: "REMOVE_VALUE")
-                self.hr_partial_is_valid = []
+        self.compute_partial_data &= not self.is_from_hr_agg or node.op not in HR_COMP_MAPPING
+        left_operand = self.visit(node.left)
+        self.compute_partial_data = self.ruleset_mode in (PARTIAL_NULL, PARTIAL_ZERO)
+        right_operand = self.visit(node.right)
+        if isinstance(right_operand, Dataset):
+            right_operand = get_measure_from_dataset(right_operand, node.right.value)
 
-            if self.is_from_hr_agg:
-                return HAAssignment.analyze(left_operand, right_operand, self.ruleset_mode)
-            else:
-                result = HR_COMP_MAPPING[node.op].analyze(
-                    left_operand, right_operand, self.ruleset_mode
-                )
-                left_measure = left_operand.get_measures()[0]
-                if left_operand.data is None:
-                    result.data = None
-                else:
-                    left_original_measure_data = left_operand.data[left_measure.name]
-                    result.data[left_measure.name] = left_original_measure_data
-                result.components[left_measure.name] = left_measure
-                return result
-        else:
-            left_operand = self.visit(node.left)
-            right_operand = self.visit(node.right)
-            if (
-                isinstance(left_operand, Dataset)
-                and isinstance(right_operand, Dataset)
-                and self.ruleset_mode in ("partial_null", "partial_zero")
-                and not self.only_semantic
-            ):
-                measure_name = left_operand.get_measures_names()[0]
-                if left_operand.data is None:
-                    left_operand.data = pd.DataFrame({measure_name: []})
-                if right_operand.data is None:
-                    right_operand.data = pd.DataFrame({measure_name: []})
-                left_null_indexes = set(
-                    left_operand.data[left_operand.data[measure_name].isnull()].index
-                )
-                right_null_indexes = set(
-                    right_operand.data[right_operand.data[measure_name].isnull()].index
-                )
-                # If no indexes are in common, then one datapoint is not null
-                invalid_indexes = list(left_null_indexes.intersection(right_null_indexes))
-                if len(invalid_indexes) > 0:
-                    left_operand.data.loc[invalid_indexes, measure_name] = "REMOVE_VALUE"
-            if isinstance(left_operand, Dataset):
-                left_operand = get_measure_from_dataset(left_operand, node.left.value)
-            if isinstance(right_operand, Dataset):
-                right_operand = get_measure_from_dataset(right_operand, node.right.value)
-            return HR_NUM_BINARY_MAPPING[node.op].analyze(left_operand, right_operand)
+        if self.ruleset_mode in (PARTIAL_NULL, PARTIAL_ZERO):
+            if left_operand.data is not None:
+                left_operand.data = left_operand.data[self.partial_rule_data]
+            if right_operand.data is not None:
+                right_operand.data = right_operand.data[self.partial_rule_data]
+
+        if node.op in HR_COMP_MAPPING:
+            op = HAAssignment if self.is_from_hr_agg else HR_COMP_MAPPING[node.op]
+            return op.analyze(left_operand, right_operand, self.ruleset_mode)
+        if isinstance(left_operand, Dataset):
+            left_operand = get_measure_from_dataset(left_operand, node.left.value)
+        return HR_NUM_BINARY_MAPPING[node.op].analyze(
+            left_operand, right_operand, self.ruleset_mode
+        )
 
     def visit_HRUnOp(self, node: AST.HRUnOp) -> None:
         operand = self.visit(node.operand)
@@ -1668,91 +1645,63 @@ class InterpreterAnalyzer(ASTTemplate):
 
             return node.value
         """
-        partial_is_valid = True
-        # Only for Hierarchical Rulesets
         if not (self.is_from_rule and node.kind == "CodeItemID"):
             return node.value
 
-        # Getting Dataset elements
-        result_components = {
-            comp_name: copy(comp)
-            for comp_name, comp in self.ruleset_dataset.components.items()  # type: ignore[union-attr]
-        }
-        if self.ruleset_signature is not None:
-            hr_component = self.ruleset_signature["RULE_COMPONENT"]
-        name = node.value
+        ruleset_ds = self.ruleset_dataset
+        if ruleset_ds is None:
+            raise SemanticError("2-3-7")
+        rule_data = self.rule_data
+        signature = self.ruleset_signature
 
-        if self.rule_data is None:
-            return Dataset(name=name, components=result_components, data=None)
+        result_components = {c.name: c for c in ruleset_ds.get_components()}
+        hr_component = signature["RULE_COMPONENT"]  # type: ignore[index]
+        me_name = ruleset_ds.get_measures_names()[0]
+        other_ids = list(set(ruleset_ds.get_identifiers_names()) - {hr_component})
 
-        condition = None
-        if hasattr(node, "_right_condition"):
-            condition: DataComponent = self.visit(node._right_condition)  # type: ignore[no-redef]
-            if condition is not None:
-                condition = condition.data[condition.data == True].index
+        if rule_data is None:
+            return Dataset(name=node.value, components=result_components, data=None)
 
-        if (
-            self.hr_agg_rules_computed is not None
-            and self.hr_input == "rule"
-            and node.value in self.hr_agg_rules_computed
-        ):
+        if self.hr_agg_rules_computed is not None and node.value in self.hr_agg_rules_computed:
             df = self.hr_agg_rules_computed[node.value].copy()
-            return Dataset(name=name, components=result_components, data=df)
+            if self.hr_input in (RULE_PRIORITY, DATASET_PRIORITY):
+                input_df = rule_data.copy().rename(columns={me_name: "__input_me__"})
+                merged = df.merge(input_df, on=ruleset_ds.get_identifiers_names(), how="inner")
+                df[me_name].where(df[me_name].notna(), merged["__input_me__"], inplace=True)
+            self.update_partial_data(df, me_name, node.value)
+            return Dataset(name=node.value, components=result_components, data=df)
 
-        df = self.rule_data.copy()
+        df = rule_data.copy()
+        code_data = df[other_ids].drop_duplicates().reset_index(drop=True)
+        condition = getattr(node, "_right_condition", None)
         if condition is not None:
-            df = df.loc[condition].reset_index(drop=True)
+            condition = self.visit(condition)
+            if condition is not None and condition.data is not None:
+                df = df.loc[condition.data]
+                keys = pd.MultiIndex.from_frame(df[other_ids].drop_duplicates())
+                mask = pd.MultiIndex.from_frame(code_data[other_ids]).isin(keys)
+                code_data = code_data.loc[mask]
 
-        measure_name = self.ruleset_dataset.get_measures_names()[0]  # type: ignore[union-attr]
         if node.value in df[hr_component].values:
-            rest_identifiers = [
-                comp.name
-                for comp in result_components.values()
-                if comp.role == Role.IDENTIFIER and comp.name != hr_component
-            ]
-            code_data = df[df[hr_component] == node.value].reset_index(drop=True)
-            code_data = code_data.merge(df[rest_identifiers], how="right", on=rest_identifiers)
-            code_data = code_data.drop_duplicates().reset_index(drop=True)
-
-            # If the value is in the dataset, we create a new row
-            # based on the hierarchy mode
-            # (Missing data points are considered,
-            # lines 6483-6510 of the reference manual)
-            if self.ruleset_mode in ("partial_null", "partial_zero"):
-                # We do not care about the presence of the leftCodeItem in Hierarchy Roll-up
-                if self.is_from_hr_agg and self.is_from_assignment:
-                    pass
-                elif code_data[hr_component].isnull().any():
-                    partial_is_valid = False
-
-            if self.ruleset_mode in ("non_zero", "partial_zero", "always_zero"):
-                fill_indexes = code_data[code_data[hr_component].isnull()].index
-                code_data.loc[fill_indexes, measure_name] = 0
-            code_data[hr_component] = node.value
-            df = code_data
+            value_data = df[df[hr_component] == node.value]
+            merged = value_data.merge(code_data, how="right", on=other_ids, indicator=True)
+            merged.loc[merged["_merge"] == "right_only", me_name] = REMOVE
+            df = merged.drop(columns=["_merge"]).set_index(code_data.index)
         else:
-            # If the value is not in the dataset, we create a new row
-            # based on the hierarchy mode
-            # (Missing data points are considered,
-            # lines 6483-6510 of the reference manual)
-            if self.ruleset_mode in ("partial_null", "partial_zero"):
-                # We do not care about the presence of the leftCodeItem in Hierarchy Roll-up
-                if self.is_from_hr_agg and self.is_from_assignment:
-                    pass
-                elif self.ruleset_mode == "partial_null":
-                    partial_is_valid = False
-            df = df.head(1)
-            df[hr_component] = node.value
-            if self.ruleset_mode in ("non_zero", "partial_zero", "always_zero"):
-                df[measure_name] = 0
-            else:  # For non_null, partial_null and always_null
-                df[measure_name] = None
-        if self.hr_partial_is_valid is not None and self.ruleset_mode in (
-            "partial_null",
-            "partial_zero",
-        ):
-            self.hr_partial_is_valid.append(partial_is_valid)
-        return Dataset(name=name, components=result_components, data=df)
+            df = code_data.copy()
+            df[me_name] = REMOVE
+        df[hr_component] = node.value
+
+        self.update_partial_data(df, me_name, node.value)
+        return Dataset(name=node.value, components=result_components, data=df)
+
+    def update_partial_data(self, df: pd.DataFrame, measure: str, name: str) -> None:
+        if self.compute_partial_data:
+            if self.partial_rule_data is None:
+                self.partial_rule_data = (df[measure] != REMOVE) & df[measure].notna()
+            else:
+                self.partial_rule_data |= (df[measure] != REMOVE) & df[measure].notna()
+            self.partial_rule_elements.add(name)  # type: ignore[union-attr]
 
     def visit_UDOCall(self, node: AST.UDOCall) -> None:  # noqa: C901
         if self.udos is None:
