@@ -46,6 +46,12 @@ Main functions in `src/vtlengine/API/__init__.py`:
 
 **Common Pattern**: Scripts can be strings, Paths, or `TransformationScheme` objects. DAG analysis (`AST/DAG.py`) validates dependency graph before execution.
 
+**Execution Lifecycle**:
+1. `load_datasets_with_data()` loads data structures and datapoints
+2. Data validation ensures datapoints match structures
+3. AST traversal via `InterpreterAnalyzer` generates results for each transformation (AST children on Start node)
+4. Each visit method returns evaluated result; inspect at return statements for debugging
+
 ## Testing Standards
 
 ### Test Organization (tests/)
@@ -89,6 +95,11 @@ Run tests: `pytest tests/` (uses `pytest-xdist` for parallelization)
 
 Run checks: `ruff check src/` and `mypy src/`
 
+### Error Handling
+- **SemanticError**: Data structure and data type compatibility issues within operators (e.g., incompatible types, missing components, invalid roles)
+- **RuntimeError**: Datapoints handling issues during execution (e.g., data conversion failures, computation errors)
+- Always raise appropriate error type based on whether issue is structural/semantic vs execution/runtime
+
 ## VTL-Specific Patterns
 
 ### Operator Implementation Template
@@ -109,11 +120,15 @@ class MyOperator:
         pass
 ```
 
+**Operator Organization**: Operators are grouped following the VTL Reference Manual structure (Aggregate, Join, String, Numeric, etc.). Refer to the VTL 2.1 spec for type promotion rules and component mutation semantics.
+
 ### DAG Analysis
 Before execution, `DAGAnalyzer.ds_structure(ast)` validates:
 - No circular dependencies
 - All referenced datasets exist
 - Input/output dataset structures
+- Determines computation order for transformations
+- Identifies when datasets can be freed from memory after writing data
 
 Access via: `dag_analysis = DAGAnalyzer.ds_structure(ast)` → `dag_analysis["global_inputs"]`
 
@@ -129,6 +144,8 @@ Access via: `dag_analysis = DAGAnalyzer.ds_structure(ast)` → `dag_analysis["gl
 3. **AST node equality** - Override `ast_equality()` when adding nodes, don't rely on `__eq__`
 4. **Nullable identifiers** - Will raise `SemanticError("0-1-1-13")` at data load time
 5. **Time period formats** - Three output modes: `"vtl"`, `"sdmx_gregorian"`, `"sdmx_reporting"` (controlled by `time_period_output_format`)
+6. **External routines scope** - Only executed in Eval operator, only on in-memory data (never external databases)
+7. **Debugging operators** - Inspect operator returns at each `visit_*` method's return statement in `InterpreterAnalyzer` for step-by-step debugging
 
 ## ANTLR Grammar Regeneration
 
