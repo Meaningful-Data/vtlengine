@@ -1506,6 +1506,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.hr_agg_rules_computed is not None
                 and rule_result.data is not None
                 and len(rule_result.data[measure_name]) > 0
+                and not (self.hr_input == DATASET_PRIORITY and node.rule.op != EQ)
             ):
                 self.hr_agg_rules_computed[rule_result.name] = rule_result.data
         else:
