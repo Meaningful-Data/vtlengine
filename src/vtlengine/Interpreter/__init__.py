@@ -40,7 +40,7 @@ from vtlengine.AST.Grammar.tokens import (
     ROUND,
     SUBSTR,
     TRUNC,
-    WHEN, PARTIAL_NULL, PARTIAL_ZERO
+    WHEN, PARTIAL_NULL, PARTIAL_ZERO, RULE_PRIORITY
 )
 from vtlengine.DataTypes import (
     BASIC_TYPES,
@@ -1643,21 +1643,21 @@ class InterpreterAnalyzer(ASTTemplate):
         ruleset_ds = self.ruleset_dataset
         rule_data = self.rule_data
         signature = self.ruleset_signature
-
         result_components = {c.name: c for c in ruleset_ds.get_components()}  # type: ignore[union-attr]
         hr_component = signature["RULE_COMPONENT"]
-        measure_name = ruleset_ds.get_measures_names()[0]
+        me_name = ruleset_ds.get_measures_names()[0]
         other_ids = list(set(ruleset_ds.get_identifiers_names()) - {hr_component})
 
         if rule_data is None:
             return Dataset(name=node.value, components=result_components, data=None)
-        if (
-                self.hr_agg_rules_computed is not None
-                and self.hr_input in ("rule", "rule_priority")
-                and node.value in self.hr_agg_rules_computed
-        ):
+
+        if self.hr_agg_rules_computed is not None and node.value in self.hr_agg_rules_computed:
             df = self.hr_agg_rules_computed[node.value].copy()
-            self.update_partial_data(df, measure_name, node.value)
+            if self.hr_input == RULE_PRIORITY:
+                input_df = rule_data.copy().rename(columns={me_name: "__input_me__"})
+                merged = df.merge(input_df, on=ruleset_ds.get_identifiers_names(), how="inner")
+                df[me_name].where(df[me_name].notna(), merged["__input_me__"], inplace=True)
+            self.update_partial_data(df, me_name, node.value)
             return Dataset(name=node.value, components=result_components, data=df)
 
         df = rule_data.copy()
@@ -1674,14 +1674,14 @@ class InterpreterAnalyzer(ASTTemplate):
         if node.value in df[hr_component].values:
             value_data = df[df[hr_component] == node.value]
             merged = value_data.merge(code_data, how="right", on=other_ids, indicator=True)
-            merged.loc[merged["_merge"] == "right_only", measure_name] = REMOVE
+            merged.loc[merged["_merge"] == "right_only", me_name] = REMOVE
             df = merged.drop(columns=["_merge"]).set_index(code_data.index)
         else:
             df = code_data.copy()
-            df[measure_name] = REMOVE
+            df[me_name] = REMOVE
         df[hr_component] = node.value
 
-        self.update_partial_data(df, measure_name, node.value)
+        self.update_partial_data(df, me_name, node.value)
         return Dataset(name=node.value, components=result_components, data=df)
 
     def update_partial_data(self, df: pd.DataFrame, measure: str, name: str) -> None:
