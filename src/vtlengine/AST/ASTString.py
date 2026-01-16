@@ -470,6 +470,25 @@ class ASTString(ASTTemplate):
                 f"{param_mode}{param_input}{param_output})"
             )
 
+    def visit_DPValidation(self, node: AST.DPValidation) -> str:
+        operand = self.visit(node.dataset)
+        rule_name = node.ruleset_name
+
+        # Build components string if present
+        components_str = ""
+        if node.components:
+            components_str = " components " + ", ".join(node.components)
+
+        # Output mode (only include if not default "invalid")
+        output_str = ""
+        if node.output is not None and node.output.value != "invalid":
+            output_str = f" {node.output.value}"
+
+        if self.pretty:
+            return f"{CHECK_DATAPOINT}({nl}{tab}{operand},{nl}{tab}{rule_name}{components_str}{output_str}{nl})"
+        else:
+            return f"{CHECK_DATAPOINT}({operand}, {rule_name}{components_str}{output_str})"
+
     # ---------------------- Individual operators ----------------------
 
     def _handle_grouping_having(self, node: AST) -> Tuple[str, str]:
