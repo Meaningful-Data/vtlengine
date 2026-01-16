@@ -4,6 +4,8 @@
 
 VTL Engine is a Python library for validating, formatting, and executing VTL (Validation and Transformation Language) 2.1 scripts. It's built around ANTLR-generated parsers and uses DuckDB for data manipulation.
 
+**VTL 2.1 Reference Manual**: https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf
+
 ## Core Architecture
 
 ### 1. Parser Pipeline (ANTLR → AST → Interpreter)
@@ -120,7 +122,7 @@ class MyOperator:
         pass
 ```
 
-**Operator Organization**: Operators are grouped following the VTL Reference Manual structure (Aggregate, Join, String, Numeric, etc.). Refer to the VTL 2.1 spec for type promotion rules and component mutation semantics.
+**Operator Organization**: Operators are grouped following the [VTL 2.1 Reference Manual](https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf) structure (Aggregate, Join, String, Numeric, etc.). Refer to the spec for type promotion rules and component mutation semantics.
 
 ### DAG Analysis
 Before execution, `DAGAnalyzer.ds_structure(ast)` validates:
