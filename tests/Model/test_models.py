@@ -163,3 +163,96 @@ type_params = [
 def test_str_representation(type_param):
     assert repr(type_param) == DataTypes.SCALAR_TYPES_CLASS_REVERSE[type_param]
     assert str(type_param) == DataTypes.SCALAR_TYPES_CLASS_REVERSE[type_param]
+
+
+def test_component_serialization_uses_type():
+    """Test that Component.to_dict() uses 'type' instead of 'data_type'"""
+    comp = Component(
+        name="test_comp", data_type=DataTypes.Integer, role=Role.MEASURE, nullable=True
+    )
+    comp_dict = comp.to_dict()
+
+    assert "type" in comp_dict
+    assert "data_type" not in comp_dict
+    assert comp_dict["type"] == "Integer"
+    assert comp_dict["name"] == "test_comp"
+    assert comp_dict["role"] == "Measure"
+    assert comp_dict["nullable"] is True
+
+
+def test_component_from_json_supports_type():
+    """Test that Component.from_json() accepts 'type' key"""
+    json_data = {"name": "test_comp", "type": "String", "role": "Identifier", "nullable": False}
+    comp = Component.from_json(json_data)
+
+    assert comp.name == "test_comp"
+    assert comp.data_type == DataTypes.String
+    assert comp.role == Role.IDENTIFIER
+    assert comp.nullable is False
+
+
+def test_component_from_json_backward_compatibility():
+    """Test that Component.from_json() still accepts 'data_type' key for backward compatibility"""
+    json_data = {"name": "test_comp", "data_type": "Number", "role": "Measure", "nullable": True}
+    comp = Component.from_json(json_data)
+
+    assert comp.name == "test_comp"
+    assert comp.data_type == DataTypes.Number
+    assert comp.role == Role.MEASURE
+    assert comp.nullable is True
+
+
+def test_datacomponent_serialization_uses_type():
+    """Test that DataComponent.to_dict() uses 'type' instead of 'data_type'"""
+    dc = DataComponent(
+        name="test_dc", data=None, data_type=DataTypes.Boolean, role=Role.ATTRIBUTE, nullable=True
+    )
+    dc_dict = dc.to_dict()
+
+    assert "type" in dc_dict
+    assert dc_dict["type"] == "Boolean"
+    assert dc_dict["name"] == "test_dc"
+    assert dc_dict["role"] == "Attribute"
+    assert dc_dict["nullable"] is True
+
+
+def test_datacomponent_from_json_supports_type():
+    """Test that DataComponent.from_json() accepts 'type' key"""
+    json_data = {"name": "test_dc", "type": "String", "role": "Measure", "nullable": False}
+    dc = DataComponent.from_json(json_data)
+
+    assert dc.name == "test_dc"
+    assert dc.data_type == DataTypes.String
+    assert dc.role == Role.MEASURE
+    assert dc.nullable is False
+
+
+def test_datacomponent_from_json_backward_compatibility():
+    """Test that DataComponent.from_json() still accepts 'data_type' key for backward compatibility"""
+    json_data = {"name": "test_dc", "data_type": "Integer", "role": "Identifier", "nullable": False}
+    dc = DataComponent.from_json(json_data)
+
+    assert dc.name == "test_dc"
+    assert dc.data_type == DataTypes.Integer
+    assert dc.role == Role.IDENTIFIER
+    assert dc.nullable is False
+
+
+def test_component_round_trip_serialization():
+    """Test that Component can be serialized and deserialized correctly"""
+    original = Component(
+        name="round_trip", data_type=DataTypes.TimePeriod, role=Role.IDENTIFIER, nullable=False
+    )
+
+    # Serialize to dict
+    comp_dict = original.to_dict()
+
+    # Deserialize from dict
+    restored = Component.from_json(comp_dict)
+
+    # Verify they're equal
+    assert original == restored
+    assert original.name == restored.name
+    assert original.data_type == restored.data_type
+    assert original.role == restored.role
+    assert original.nullable == restored.nullable
