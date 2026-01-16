@@ -35,15 +35,15 @@ class HRBinOp(Operators.Binary):
 
     @classmethod
     def align_series(cls, left: Any, right: Any, mode: str) -> Tuple[Any, Any]:
-        value = 0 if mode.endswith("zero") else None
+        fill_value = 0 if mode.endswith("zero") else None
         left_aligned, right_aligned = left.align(right, join="outer")
 
-        left_aligned[~left_aligned.index.isin(left.index)] = REMOVE
-        right_aligned[~right_aligned.index.isin(right.index)] = REMOVE
+        left_aligned[left_aligned.index.difference(left.index, sort=False)] = REMOVE
+        right_aligned[right_aligned.index.difference(right.index, sort=False)] = REMOVE
         mask_remove = (left_aligned == REMOVE) & (right_aligned == REMOVE)
 
-        left_aligned = left_aligned.replace(REMOVE, value)
-        right_aligned = right_aligned.replace(REMOVE, value)
+        left_aligned = left_aligned.where(left_aligned != REMOVE, fill_value)
+        right_aligned = right_aligned.where(right_aligned != REMOVE, fill_value)
 
         if mode == NON_NULL:
             mask_remove |= left_aligned.isna() | right_aligned.isna()
