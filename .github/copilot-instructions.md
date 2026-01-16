@@ -241,10 +241,6 @@ Handled by `VTL_DTYPES_MAPPING` in `src/vtlengine/Utils/__init__.py`:
 | `0-1-3-4` | Short URN not found in mapping |
 | `0-1-3-5` | Mapped dataset name not in script inputs |
 
-## Recent Changes
-
-See `docs/plans/2026-01-16-hr-ast-refactoring-design.md` for ongoing HR/DP operator refactoring introducing dedicated AST nodes (`HROperation`, `DPValidation`) and enums (`ValidationMode`, `HRInputMode`, etc.) to replace generic `ParamOp` usage.
-
 ## External Dependencies
 
 - **DuckDB** (1.4.x): In-memory SQL execution for data operations
