@@ -139,7 +139,7 @@ class InterpreterAnalyzer(ASTTemplate):
     aggregation_dataset: Optional[Dataset] = None
     ruleset_dataset: Optional[Dataset] = None
     rule_data: Optional[pd.DataFrame] = None
-    partial_rule_data: Optional[pd.Series] = None
+    partial_rule_data: Optional[Any] = None
     partial_rule_elements: Optional[Set[str]] = None
     ruleset_signature: Optional[Dict[str, str]] = None
     udo_params: Optional[List[Dict[str, Any]]] = None
@@ -1647,11 +1647,13 @@ class InterpreterAnalyzer(ASTTemplate):
             return node.value
 
         ruleset_ds = self.ruleset_dataset
+        if ruleset_ds is None:
+            raise SemanticError("2-3-7")
         rule_data = self.rule_data
         signature = self.ruleset_signature
 
-        result_components = {c.name: c for c in ruleset_ds.get_components()}  # type: ignore[union-attr]
-        hr_component = signature["RULE_COMPONENT"]
+        result_components = {c.name: c for c in ruleset_ds.get_components()}
+        hr_component = signature["RULE_COMPONENT"]  # type: ignore[index]
         me_name = ruleset_ds.get_measures_names()[0]
         other_ids = list(set(ruleset_ds.get_identifiers_names()) - {hr_component})
 
@@ -1697,7 +1699,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.partial_rule_data = (df[measure] != REMOVE) & df[measure].notna()
             else:
                 self.partial_rule_data |= (df[measure] != REMOVE) & df[measure].notna()
-            self.partial_rule_elements.add(name)
+            self.partial_rule_elements.add(name)  # type: ignore[union-attr]
 
     def visit_UDOCall(self, node: AST.UDOCall) -> None:  # noqa: C901
         if self.udos is None:

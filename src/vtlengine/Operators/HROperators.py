@@ -1,6 +1,6 @@
 import operator
 from copy import copy
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Tuple
 
 import pandas as pd
 from pandas import DataFrame
@@ -28,17 +28,13 @@ def get_measure_from_dataset(dataset: Dataset, code_item: str) -> DataComponent:
 
 class HRBinOp(Operators.Binary):
     @classmethod
-    def apply_operation_two_series(
-        cls, left: pd.Series, right: pd.Series, op: Optional[Any] = None
-    ) -> pd.Series:
+    def apply_operation_two_series(cls, left: Any, right: Any, op: Any = None) -> Any:
         op = op if op is not None else cls.op_func
         result = list(map(op, left.values, right.values))
         return pd.Series(result, index=left.index, dtype=object)
 
     @classmethod
-    def align_series(
-        cls, left: pd.Series, right: pd.Series, mode: str
-    ) -> Tuple[pd.Series, pd.Series]:
+    def align_series(cls, left: Any, right: Any, mode: str) -> Tuple[Any, Any]:
         value = 0 if mode.endswith("zero") else None
         left_aligned, right_aligned = left.align(right, join="outer")
 
@@ -57,7 +53,7 @@ class HRBinOp(Operators.Binary):
         return left_aligned[~mask_remove], right_aligned[~mask_remove]
 
     @classmethod
-    def hr_op(cls, left_series: pd.Series, right_series: pd.Series, hr_mode: str) -> Any:
+    def hr_op(cls, left_series: Any, right_series: Any, hr_mode: str) -> Any:
         left, right = cls.align_series(left_series, right_series, hr_mode)
         return cls.apply_operation_two_series(left, right)
 
@@ -131,7 +127,7 @@ class HRLessEqual(HRComparison):
 
 class HRBinNumeric(HRBinOp):
     @classmethod
-    def evaluate(cls, left: DataComponent, right: DataComponent, hr_mode: str) -> DataComponent:
+    def evaluate(cls, left: DataComponent, right: DataComponent, hr_mode: str) -> DataComponent:  # type: ignore[override]
         result_data = cls.hr_op(left.data, right.data, hr_mode)
         return DataComponent(
             name=f"{left.name}{cls.op}{right.name}",

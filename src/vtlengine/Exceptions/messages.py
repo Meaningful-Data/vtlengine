@@ -1011,6 +1011,10 @@ centralised_messages = {
         "message": "Dataset or Scalar {dataset_name} not found, please check input datastructures.",
         "description": "Occurs when an input Dataset or Scalar is missing.",
     },
+    "2-3-7": {
+        "message": "Ruleset Dataset not found, please check the ruleset definition.",
+        "description": "Occurs when the Ruleset Dataset.",
+    },
     "2-3-9": {
         "message": "{comp_type} {comp_name} not found in {param}.",
         "description": "Raised when a component is not found within a specified parameter.",
