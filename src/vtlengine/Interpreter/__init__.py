@@ -1589,6 +1589,71 @@ class InterpreterAnalyzer(ASTTemplate):
 
         raise SemanticError("1-3-5", op_type="HROperation", node_op=node.op)
 
+    def visit_DPValidation(self, node: AST.DPValidation) -> Dataset:
+        """Handle check_datapoint operator."""
+        if self.dprs is None:
+            raise SemanticError("1-2-6", node_type="Datapoint Rulesets", node_value="")
+
+        dpr_name = node.ruleset_name
+        if dpr_name not in self.dprs:
+            raise SemanticError("1-2-6", node_type="Datapoint Ruleset", node_value=dpr_name)
+        dpr_info = self.dprs[dpr_name]
+
+        # Extract dataset
+        dataset_element = self.visit(node.dataset)
+        if not isinstance(dataset_element, Dataset):
+            raise SemanticError("1-1-1-20", op=CHECK_DATAPOINT)
+
+        # Check component list validity
+        if node.components:
+            for comp_name in node.components:
+                if comp_name not in dataset_element.components:
+                    raise SemanticError(
+                        "1-1-1-10",
+                        comp_name=comp_name,
+                        dataset_name=dataset_element.name,
+                    )
+            if dpr_info is not None and dpr_info["signature_type"] == "variable":
+                for i, comp_name in enumerate(node.components):
+                    if comp_name != dpr_info["params"][i]:
+                        raise SemanticError(
+                            "1-1-10-3",
+                            op=CHECK_DATAPOINT,
+                            expected=dpr_info["params"][i],
+                            found=comp_name,
+                        )
+
+        # Get output mode with default
+        output = node.output.value if node.output else "invalid"
+
+        if dpr_info is None:
+            dpr_info = {}
+
+        rule_output_values = {}
+        self.ruleset_dataset = dataset_element
+        self.ruleset_signature = dpr_info.get("signature")
+        self.ruleset_mode = output
+
+        # Gather rule data
+        if dpr_info:
+            for rule in dpr_info["rules"]:
+                rule_output_values[rule.name] = {
+                    "errorcode": rule.erCode,
+                    "errorlevel": rule.erLevel,
+                    "output": self.visit(rule),
+                }
+
+        self.ruleset_mode = None
+        self.ruleset_signature = None
+        self.ruleset_dataset = None
+
+        # Final evaluation
+        return Check_Datapoint.analyze(
+            dataset_element=dataset_element,
+            rule_info=rule_output_values,
+            output=output,
+        )
+
     def visit_DPRule(self, node: AST.DPRule) -> None:
         self.is_from_rule = True
         if self.ruleset_dataset is not None:
