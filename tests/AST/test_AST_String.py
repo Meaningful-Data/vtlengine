@@ -21,6 +21,11 @@ params = [
     "time.vtl",
     "comments.vtl",
     "complete_grammar.vtl",
+    "GH_347.vtl",
+    "GH_352.vtl",
+    "GH_358.vtl",
+    "comments_end_line.vtl",
+    "time_agg.vtl",
 ]
 
 params_prettier = [
@@ -41,6 +46,12 @@ params_prettier = [
     ("fill_time_series.vtl", "reference_fill_time_series.vtl"),
     ("date_add.vtl", "reference_date_add.vtl"),
     ("complete_grammar.vtl", "reference_complete_grammar.vtl"),
+    ("HR_with_condition.vtl", "reference_HR_with_condition.vtl"),
+    ("GH_352.vtl", "reference_GH_352.vtl"),
+    ("GH_358.vtl", "reference_GH_358.vtl"),
+    ("validation.vtl", "reference_validation.vtl"),
+    ("unbounded.vtl", "reference_unbounded.vtl"),
+    ("time_agg.vtl", "reference_time_agg.vtl"),
 ]
 
 
@@ -85,6 +96,17 @@ def test_comments_parsing():
     assert ast.children[2].line_stop == 6
 
 
+def test_comments_end_line_parsing():
+    with open(vtl_filepath / "comments_end_line.vtl", "r") as file:
+        script = file.read()
+
+    ast = create_ast_with_comments(script)
+    assert len(ast.children) == 2
+    assert isinstance(ast.children[1], Comment)
+    assert ast.children[1].line_start == 2
+    assert ast.children[1].line_stop == 2
+
+
 def test_check_ast_string_output():
     with open(vtl_filepath / "comments.vtl", "r") as file:
         script = file.read()
@@ -106,8 +128,10 @@ def test_prettier(filename, expected):
     result_script = prettify(script)
     with open(prettier_path / expected, "r") as file:
         expected_script = file.read()
-
+    input_ast = create_ast(script)
+    expected_input_ast = create_ast(expected_script)
     assert normalize_lines_in_text(result_script) == normalize_lines_in_text(expected_script)
+    assert input_ast == expected_input_ast
 
 
 @pytest.mark.parametrize("filename", params)

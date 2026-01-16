@@ -39,7 +39,7 @@ var_samp_ds :=
 		);
 aggr_ds :=
 	DS_1
-		[aggr
+		[aggr 
 			Me_sum := sum(
 		Me_int
 		), Me_max := max(Me_int)
@@ -59,13 +59,13 @@ drop_ds :=
 		];
 filter_ds :=
 	DS_1
-		[filter
-				Id_1 = 1 and
+		[filter 
+				Id_1 = 1 and 
 					Me_int < 5
 		];
 group_by_ds :=
 	DS_1
-		[aggr
+		[aggr 
 			Me_sum := sum(
 		Me_int
 		)
@@ -276,33 +276,33 @@ DS_then :=
 DS_else :=
 	DS_1#Me_int;
 if_sc :=
-
-				if
-					true
-				then
+	
+				if 
+					true 
+				then 
 					1
 				else
 					2;
 nvl_sc :=
 	nvl(null, 3);
 case_sc :=
-	case
+	case 
 		when
 			if_sc = 1
 		then
-			10
+			10 
 		when
 			if_sc = 2
 		then
-			20
+			20 
 		else
 			0;
 if_ds_sc :=
 	DS_1
-		[calc Me_int_from_if :=
-				if
-					Me_int < 5
-				then
+		[calc Me_int_from_if := 
+				if 
+					Me_int < 5 
+				then 
 					Me_int
 				else
 					5];
@@ -310,70 +310,70 @@ nvl_ds_sc :=
 	nvl(DS_1#Me_str, "default");
 case_ds_sc :=
 	DS_1
-		[calc Me_int_from_case := case
+		[calc Me_int_from_case := case 
 		when
 			Me_int < 5
 		then
-			Me_int
+			Me_int 
 		when
 			Me_int > 5
 		then
-			5
+			5 
 		else
 			0];
 if_ds_ds :=
-
-				if
-					DS_cond#Id_2 = "A"
-				then
+	
+				if 
+					DS_cond#Id_2 = "A" 
+				then 
 					DS_then
 				else
 					DS_else;
 nvl_ds_ds :=
 	nvl(DS_1#Me_str, DS_1#Me_str);
 case_ds_ds :=
-	case
+	case 
 		when
 			DS_cond#Id_1 = 1
 		then
-			DS_then
+			DS_then 
 		when
 			DS_cond#Id_1 = 2
 		then
-			DS_else
+			DS_else 
 		else
 			null;
 /*************************************************
 DATAPOINT RULESET
 *************************************************/
-define datapoint ruleset dr_test(variable Me_int, Me_num, Me_str) is
-		DR_1:
+define datapoint ruleset dr_test(variable Me_int, Me_num, Me_str) is 
+		DR_1: 
 
-				if
-					Me_int = 1
-				then
+				if 
+					Me_int = 1 
+				then 
 					true
 				else
 					false
 			errorcode  "DR_1"
 			errorlevel 2;
 
-		DR_2:
+		DR_2: 
 
-				if
-					Me_num = 2
-				then
+				if 
+					Me_num = 2 
+				then 
 					true
 				else
 					false
 			errorcode  "DR_2"
 			errorlevel 2;
 
-		DR_3:
+		DR_3: 
 
-				if
-					Me_str = "3"
-				then
+				if 
+					Me_str = "3" 
+				then 
 					true
 				else
 					false
@@ -385,7 +385,7 @@ DR_ds :=
 	check_datapoint(
 	DS_1,
 	dr_test
-
+	
 );
 /*************************************************
 GENERAL
@@ -656,7 +656,13 @@ UDO_ds :=
 VALIDATION
 *************************************************/
 check_ds :=
-	check(DS_1#Me_num > DS_1#Me_num errorcode "errorcode" errorlevel 1 imbalance DS_1#Me_num - DS_1#Me_num invalid);
+	check(
+		DS_1#Me_num > DS_1#Me_num
+		errorcode "errorcode"
+		errorlevel 1
+		imbalance DS_1#Me_num - DS_1#Me_num
+		invalid
+	);
 /*************************************************
 VALUE DOMAIN
 *************************************************/

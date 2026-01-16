@@ -1,11 +1,7 @@
-import os
+import re
 from copy import copy
 from typing import Any, Optional, Union
 
-# if os.environ.get("SPARK", False):
-#     import pyspark.pandas as pd
-# else:
-#     import pandas as pd
 import pandas as pd
 
 from vtlengine.AST.Grammar.tokens import (
@@ -56,7 +52,6 @@ class Operator:
 
     op: Any = None
     py_op: Any = None
-    spark_op: Any = None
     type_to_check: Any = None
     return_type: Any = None
 
@@ -234,16 +229,9 @@ class Binary(Operator):
 
     @classmethod
     def apply_operation_two_series(cls, left_series: Any, right_series: Any) -> Any:
-        if os.getenv("SPARK", False):
-            if cls.spark_op is None:
-                cls.spark_op = cls.py_op
-
-            nulls = left_series.isnull() | right_series.isnull()
-            result = cls.spark_op(left_series, right_series)
-            result.loc[nulls] = None
-            return result
         result = list(map(cls.op_func, left_series.values, right_series.values))
-        return pd.Series(result, index=list(range(len(result))), dtype=object)
+        index = left_series.index if len(left_series) <= len(right_series) else right_series.index
+        return pd.Series(result, index=index, dtype=object)
 
     @classmethod
     def apply_operation_series_scalar(
@@ -266,7 +254,7 @@ class Binary(Operator):
         can do a semantic check too.
         Returns an operand.
         """
-        left_operand, right_operand = args
+        left_operand, right_operand = args[0], args[1]
 
         if isinstance(left_operand, Dataset) and isinstance(right_operand, Dataset):
             return cls.dataset_validation(left_operand, right_operand)
@@ -323,7 +311,7 @@ class Binary(Operator):
 
         join_keys = list(set(left_identifiers).intersection(right_identifiers))
         if len(join_keys) == 0:
-            raise SemanticError("1-3-27", op=cls.op)
+            raise SemanticError("1-2-10", op=cls.op)
 
         # Deleting extra identifiers that we do not need anymore
 
@@ -898,3 +886,24 @@ class Unary(Operator):
             operand.data.copy() if operand.data is not None else pd.Series()
         )
         return result_component
+
+    @classmethod
+    def to_days(cls, value: str) -> int:
+        iso8601_duration_pattern = r"^P((\d+Y)?(\d+M)?(\d+D)?)$"
+        match = re.match(iso8601_duration_pattern, value)
+
+        years = 0
+        months = 0
+        days = 0
+
+        years_str = match.group(2)  # type: ignore[union-attr]
+        months_str = match.group(3)  # type: ignore[union-attr]
+        days_str = match.group(4)  # type: ignore[union-attr]
+        if years_str:
+            years = int(years_str[:-1])
+        if months_str:
+            months = int(months_str[:-1])
+        if days_str:
+            days = int(days_str[:-1])
+        total_days = years * 365 + months * 30 + days
+        return int(total_days)

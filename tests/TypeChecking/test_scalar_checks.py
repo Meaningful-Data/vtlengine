@@ -76,9 +76,9 @@ from vtlengine.Model import Scalar, ScalarSet
         (TimePeriod, "2020-Q1"),
         (TimePeriod, None),
         # Duration
-        (Duration, "P3Y2M10D"),
-        (Duration, "P0D"),
-        (Duration, "P1Y"),
+        (Duration, "A"),
+        (Duration, "D"),
+        (Duration, "Q"),
         (Duration, None),
     ],
 )
@@ -146,7 +146,7 @@ def test_scalar_invalid_values(data_type, value):
         # TimePeriod
         (TimePeriod, ["2020", "2020-02", "2020-Q4"]),
         # Duration
-        (Duration, ["P1Y", "P2M", "P3D", "P1Y2M3D"]),
+        (Duration, ["M", "Q"]),
     ],
 )
 def test_scalarset_valid_values(data_type, values):

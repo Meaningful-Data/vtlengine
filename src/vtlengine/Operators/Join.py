@@ -2,10 +2,6 @@ from copy import copy
 from functools import reduce
 from typing import Any, Dict, List, Optional
 
-# if os.environ.get("SPARK"):
-#     import pyspark.pandas as pd
-# else:
-#     import pandas as pd
 import pandas as pd
 
 from vtlengine.AST import BinOp
@@ -207,7 +203,7 @@ class Join(Operator):
             return Dataset(name=dataset_name, components=operands[0].components, data=None)
         for op in operands:
             if len(op.get_identifiers()) == 0:
-                raise SemanticError("1-3-27", op=cls.op)
+                raise SemanticError("1-2-10", op=cls.op)
         cls.reference_dataset = (
             max(operands, key=lambda x: len(x.get_identifiers_names()))
             if cls.how not in ["cross", "left"]

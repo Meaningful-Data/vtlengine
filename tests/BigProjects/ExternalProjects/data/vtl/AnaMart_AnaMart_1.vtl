@@ -163,7 +163,7 @@ B01.INSTRMNT_FCT_2 := left_join ( B01.INSTRMNT_FCT_1 , B01.ANCRDT_RPRTNG_ENTTY u
 B01.INSTRMNT_FCT_3 := B01.INSTRMNT_FCT_2 [ filter ENTTY_RL in { "2" , "7" } or ( ENTTY_RL = "1" and ( isnull ( IS_ANCRDT_RPRTNG ) or ENTTY_RIAD_CD = OBSRVD_AGNT_CD ) ) ] [ drop IS_ANCRDT_RPRTNG ] ; 
 B01.INSTRMNT_FCT_CRDTR := B01.INSTRMNT_FCT_3 [ rename ENTTY_RIAD_CD to CRDTR_ID ] [ filter ENTTY_RL = "1" ] ; 
 B01.INSTRMNT_FCT_DBTR := B01.INSTRMNT_FCT_3 [ rename ENTTY_RIAD_CD to DBTR_ID ] [ filter ENTTY_RL = "2" ] ; 
-B01.INSTRMNT_FCT_4 := eval ( instrFctJn ( B01.INSTRMNT_FCT_CRDTR , B01.INSTRMNT_FCT_DBTR ) language "sqlite" returns dataset { identifier < string > CNTRCT_ID , identifier < date > DT_RFRNC , identifier < string > DBTR_ID , identifier < string > INSTRMNT_ID , identifier < string > OBSRVD_AGNT_CD , measure < number > JNT_LBLTY_AMNT , identifier < string > CRDTR_ID } ) ; 
+B01.INSTRMNT_FCT_4 := eval ( instrFctJn ( B01.INSTRMNT_FCT_CRDTR , B01.INSTRMNT_FCT_DBTR ) language "SQL" returns dataset { identifier < string > CNTRCT_ID , identifier < date > DT_RFRNC , identifier < string > DBTR_ID , identifier < string > INSTRMNT_ID , identifier < string > OBSRVD_AGNT_CD , measure < number > JNT_LBLTY_AMNT , identifier < string > CRDTR_ID } ) ;
 B01.INSTRMNT_SRVCR := B01.INSTRMNT_FCT_3 [ drop JNT_LBLTY_AMNT ] [ sub ENTTY_RL = "7" ] [ calc measure SRVCR_ID := ENTTY_RIAD_CD ] ; 
 B01.INSTRMNT_SRVCR_MX := max ( B01.INSTRMNT_SRVCR group except ENTTY_RIAD_CD ) ; 
 B01.ANAMART_INSTRMNT_JN := left_join ( B01.INSTRMNT_FCT_4 , ANCRDT_INSTRMNT_C , ANCRDT_FNNCL_C [ rename TRNSFRRD_AMNT to TRNSFRRD_AMNT_INSTRMNT ] as F , ANCRDT_ACCNTNG_C , B01.INSTRMNT_SRVCR_MX using OBSRVD_AGNT_CD , DT_RFRNC , CNTRCT_ID , INSTRMNT_ID keep ACCNTNG_CLSSFCTN , ANNLSD_AGRD_RT , CRRNCY_DNMNTN , DT_END_INTRST_ONLY , DT_FRBRNC_STTS , DT_INCPTN , DT_LGL_FNL_MTRTY , DT_NXT_INTRST_RT_RST , DT_PRFRMNG_STTS , DT_PST_D , DT_STTLMNT , FDCRY , FRBRNC_STTS , IMPRMNT_ASSSSMNT_MTHD , IMPRMNT_STTS , INTRST_RT_CP , INTRST_RT_FLR , INTRST_RT_RST_FRQNCY , INTRST_RT_SPRD , JNT_LBLTY_AMNT , PRDNTL_PRTFL , PRFRMNG_STTS , PRJCT_FNNC_LN , PRPS , PYMNT_FRQNCY , RCGNTN_STTS , RCRS , RFRNC_RT , RPYMNT_RGHTS , SBRDNTD_DBT , SRC_ENCMBRNC , SYNDCTD_CNTRCT_ID , TRNSFRRD_AMNT_INSTRMNT , TYP_AMRTSTN , TYP_INSTRMNT , TYP_INTRST_RT , TYP_SCRTSTN , SRVCR_ID ) ; 
@@ -254,7 +254,7 @@ B08.ANAMART_INSTRMNT_CRDT_QLTY := inner_join ( B08.ANAMART_INSTRMNT_CRDT_QLTY_IN
 *       Module B09
 *******************************************************************************/
 B09.ANAMART_INSTRMNT_DYS_P := B01.ANAMART_INSTRMNT_JN [ keep DT_END_INTRST_ONLY , DT_INCPTN , DT_PST_D , DT_LGL_FNL_MTRTY ] ; 
-B09.ANAMART_INSTRMNT_DYS := eval ( instDates ( B09.ANAMART_INSTRMNT_DYS_P ) language "sqlite" returns dataset { identifier < string > CNTRCT_ID , identifier < string > CRDTR_ID , identifier < string > DBTR_ID , identifier < date > DT_RFRNC , identifier < string > INSTRMNT_ID , identifier < string > OBSRVD_AGNT_CD , measure < integer > NXT_INTRST_RT_RST_DYS , measure < integer > ORGNL_MTRTY , measure < integer > RSDL_MTRTY , measure < integer > PST_D_DYS } ) ; 
+B09.ANAMART_INSTRMNT_DYS := eval ( instDates ( B09.ANAMART_INSTRMNT_DYS_P ) language "SQL" returns dataset { identifier < string > CNTRCT_ID , identifier < string > CRDTR_ID , identifier < string > DBTR_ID , identifier < date > DT_RFRNC , identifier < string > INSTRMNT_ID , identifier < string > OBSRVD_AGNT_CD , measure < integer > NXT_INTRST_RT_RST_DYS , measure < integer > ORGNL_MTRTY , measure < integer > RSDL_MTRTY , measure < integer > PST_D_DYS } ) ;
 /*******************************************************************************
 *       Module B10
 *******************************************************************************/
@@ -332,7 +332,7 @@ ANCRDT_INSTRMNT_FCT <- inner_join ( B13.ANAMART_INSTRMNT_SMPL_WGHT , B14.ANAMART
 /*******************************************************************************
 *       Module C01
 *******************************************************************************/
-C01.ANAMART_PRTCTN_JN := eval ( prtctnFctJn ( ANCRDT_INSTRMNT_PRTCTN_RCVD_C , ANCRDT_PRTCTN_RCVD_C ) language "sqlite" returns dataset { identifier < string > OBSRVD_AGNT_CD , identifier < string > CNTRCT_ID , identifier < date > DT_RFRNC , identifier < string > PRTCTN_ID , identifier < string > INSTRMNT_ID , measure < string > PRTCTN_PRVDR_CD , measure < number > PRTCTN_ALLCTD_VL , identifier < string > THRD_PRTY_PRRTY_CLMS } ) ; 
+C01.ANAMART_PRTCTN_JN := eval ( prtctnFctJn ( ANCRDT_INSTRMNT_PRTCTN_RCVD_C , ANCRDT_PRTCTN_RCVD_C ) language "SQL" returns dataset { identifier < string > OBSRVD_AGNT_CD , identifier < string > CNTRCT_ID , identifier < date > DT_RFRNC , identifier < string > PRTCTN_ID , identifier < string > INSTRMNT_ID , measure < string > PRTCTN_PRVDR_CD , measure < number > PRTCTN_ALLCTD_VL , identifier < string > THRD_PRTY_PRRTY_CLMS } ) ;
 /*******************************************************************************
 *       Module C02
 *******************************************************************************/
@@ -374,7 +374,7 @@ C06.ANAMART_PRTCTN_CRDT_QLTY := left_join ( C05.ANAMART_PRTCTN_ALLCTBL , C06.ENT
 
 C07.MTRSTS_DS := inner_join ( ANCRDT_INSTRMNT_C [ keep DT_LGL_FNL_MTRTY ] as A , ANCRDT_PRTCTN_RCVD_C [ keep DT_MTRTY_PRTCTN ] as B , ANCRDT_INSTRMNT_PRTCTN_RCVD_C ) ; 
 C07.MSMTCH_BL_DS := C07.MTRSTS_DS [ calc IS_PRTCTN_MTRTY_MSMTCH := if DT_LGL_FNL_MTRTY > DT_MTRTY_PRTCTN then "T" else "F" ] ; 
-C07.ANAMART_PRTCTN_MSMTCH := eval ( prtctnDts ( C07.MSMTCH_BL_DS ) language "sqlite" returns dataset { identifier < string > CNTRCT_ID , identifier < date > DT_RFRNC , identifier < string > OBSRVD_AGNT_CD , identifier < string > INSTRMNT_ID , identifier < string > PRTCTN_ID , measure < string > IS_PRTCTN_MTRTY_MSMTCH , measure < number > MTRTY_MSMTCH , measure < number > PRTCTN_RSDL_MTRTY_DYS } ) ; 
+C07.ANAMART_PRTCTN_MSMTCH := eval ( prtctnDts ( C07.MSMTCH_BL_DS ) language "SQL" returns dataset { identifier < string > CNTRCT_ID , identifier < date > DT_RFRNC , identifier < string > OBSRVD_AGNT_CD , identifier < string > INSTRMNT_ID , identifier < string > PRTCTN_ID , measure < string > IS_PRTCTN_MTRTY_MSMTCH , measure < number > MTRTY_MSMTCH , measure < number > PRTCTN_RSDL_MTRTY_DYS } ) ;
 /*******************************************************************************
 *       Module C08
 *******************************************************************************/

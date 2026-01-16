@@ -2140,7 +2140,7 @@ class AggregateOperatorsTest(AdditionalHelper):
                         [calc BNFCR_ID := BNFCRS_CNTRPRTY_ID,
                             TRNSFR_ID := TRNSFR_CNTRPRTY_ID];"""
         code = "10-7"
-        number_inputs = 2
+        number_inputs = 1
         references_names = ["DS_r1", "DS_r2"]
 
         self.BaseTest(
@@ -3725,7 +3725,7 @@ class TimeOperatorsTest(AdditionalHelper):
         """
         Basic behaviour for datasets with date type.
         """
-        text = """DS_r := sum (DS_1 group all time_agg("A", Id_1));"""
+        text = """DS_r := sum (DS_1 group all time_agg("A", Id_1, last));"""
         code = "7-19"
         number_inputs = 1
         references_names = ["DS_r"]
@@ -3826,11 +3826,12 @@ class TimeOperatorsTest(AdditionalHelper):
 
     def test_26(self):
         """
-        Runtime Error on time_agg if any row has lower or equal duration than periodIndTo
+        Runtime Error on time_agg if any row has lower or equal duration than periodIndTo.
+        periodIndTo is W while there is a value that has M as period indicator.
         """
         code = "7-26"
         number_inputs = 1
-        message = "1-1-19-9"
+        message = "2-1-19-1"
         self.NewSemanticExceptionTest(
             text=None, code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -3849,6 +3850,16 @@ class TimeOperatorsTest(AdditionalHelper):
             code=code,
             number_inputs=number_inputs,
             references_names=references_names,
+        )
+
+    def test_29(self):
+        text = """DS_r <- time_agg("A", DS_1);"""
+        code = "7-29"
+        number_inputs = 1
+        exception_code = "1-1-19-9"
+
+        self.NewSemanticExceptionTest(
+            text=text, code=code, number_inputs=number_inputs, exception_code=exception_code
         )
 
     def test_GH_261_1(self):
@@ -3976,6 +3987,54 @@ class TimeOperatorsTest(AdditionalHelper):
         code = "GH_292"
         number_inputs = 1
         exception_code = "1-1-19-1"
+
+        self.NewSemanticExceptionTest(
+            text=text, code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
+    def test_GH_425_1(self):
+        """Tests Semantic error 1-1-19-11 (missing conf parameter) over a Dataset with identifier of type Date"""
+        text = 'DS_r <- sum(DS_1 group all time_agg("M"));'
+        code = "GH_425_1"
+        number_inputs = 1
+        exception_code = "1-1-19-11"
+
+        self.NewSemanticExceptionTest(
+            text=text, code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
+    def test_GH_425_2(self):
+        """Tests Semantic error 1-1-19-11 (missing conf parameter) over a Dataset with measure of type Date
+        (dataset evaluation)
+        """
+        text = 'DS_r <- time_agg("M", DS_1);'
+        code = "GH_425_2"
+        number_inputs = 1
+        exception_code = "1-1-19-11"
+
+        self.NewSemanticExceptionTest(
+            text=text, code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
+    def test_GH_425_3(self):
+        """Tests Semantic error 1-1-19-11 (missing conf parameter) over a Dataset with measure of type Date
+        (component evaluation)
+        """
+        text = 'DS_r <- DS_1[calc Me_2 := time_agg("M", Me_1)];'
+        code = "GH_425_3"
+        number_inputs = 1
+        exception_code = "1-1-19-11"
+
+        self.NewSemanticExceptionTest(
+            text=text, code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
+    def test_GH_425_4(self):
+        """Tests Semantic error 1-1-19-11 (missing conf parameter) over a scalar of type Date"""
+        text = 'DS_r <- time_agg("D", cast("2025-01-01", date));'
+        code = "GH_425_4"
+        number_inputs = 0
+        exception_code = "1-1-19-11"
 
         self.NewSemanticExceptionTest(
             text=text, code=code, number_inputs=number_inputs, exception_code=exception_code

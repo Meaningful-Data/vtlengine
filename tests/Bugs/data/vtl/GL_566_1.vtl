@@ -1,0 +1,74 @@
+define hierarchical ruleset SUM_COUNTRIES(valuedomain condition TIME_PERIOD rule COUNTRY) is
+	GB = NBB_FT_N_IE[TIME_PERIOD >= cast("2020M12",time_period)] + NBB_FT_GB_N_IE[TIME_PERIOD >= cast("2020M12",time_period)] ;
+
+	NBB_FT_EMU = FR + LU + NL + DE + IT + IE + GR + PT + ES + FI + AT + SI + MT + CY + SK + EE + LV + LT + HR ;
+
+	NBB_D9_2 = DK + SE + PL + CZ + HU + RO + BG + NBB_D9_3 + NBB_FT_QW_MR ;
+
+	NBB_A6 = NBB_FT_EMU + NBB_D9_2 ;
+
+	NBB_G0 = IS + NO + NBB_FT_CH_LI + LI + CH + FO + AD + GI + GB + VA + SM + TR + AL + UA + BY + MD + RU + BA + NBB_FY + MK + XK + ME + RS ;
+
+	E1 = NBB_A6 + NBB_G0 ;
+
+	F4 = ES2 + ES1 + ES12 + MA + DZ + TN + LY + EG ;
+
+	NBB_AFR_OTH = SD + SS + MR + EH + ML + BF + NE + TD + CV + SN + GM + GW + GN + SL + LR + CI + GH + TG + BJ + NG + CM + NBB_FT_C_A + GQ + ST + GA + CG + CD + RW + BI + SH + AO + ET + ER + DJ + SO + KE + UG + TZ + SC + IO + MZ + MG + RE + MU + KM + YT + ZM + ZW + MW + ZA + NA + BW + SZ + LS ;
+
+	F1 = F4 + NBB_AFR_OTH ;
+
+	NBB_AME_N = US + CA + GL + PM ;
+
+	NBB_FT_CAA = MX + BM + GT + BZ + HN + SV + NI + CR + PA + AI + CU + KN + HT + BS + TC + DO + VI + GP + AG + DM + NBB_FT_VI_MS + MQ + KY + JM + LC + VC + VG + BB + MS + TT + GD + AW + AN + BL + BQ + CW + SX ;
+
+	NBB_AME_S = CO + VE + GY + SR + GF + EC + PE + BR + CL + BO + PY + UY + AR + FK ;
+
+	A1 = NBB_AME_N + NBB_FT_CAA + NBB_AME_S ;
+
+	NBB_FT_NME = GE + AM + AZ + LB + SY + IQ + IR + IL + NBB_FT_OCC_PS + JO + SA + KW + BH + QA + AE + OM + YE ;
+
+	S6 = KZ + TM + UZ + TJ + KG + AF + PK + IN + BD + MV + LK + NP + BT + MM + TH + LA + VN + KH + ID + TL + MY + BN + SG + PH + MN + CN + KP + KR + JP + TW + HK + MO ;
+
+	S1 = NBB_FT_NME + S6 ;
+
+	NBB_FT_ANZ = AU + O3A + CC + CX + HM + NF + NZ + NBB_XZ + CK + NU + TK ;
+
+	NBB_FT_OO = PG + NR + SB + TV + NC + NBB_FT_XA + AS + GU + UM + WF + KI + PN + FJ + VU + TO + NBB_FT_AS + MP + PF + FM + MH + PW + O1P + AQ + BV + GS + TF ;
+
+	NBB_F7 = NBB_FT_ANZ + NBB_FT_OO ;
+
+	NBB_FT_TO = NBB_XN + NBB_XO + NBB_XN_UEBL + NBB_XO_UEBL + NBB_QQ + NBB_QP + NBB_QR + NBB_FT_QV + NBB_FT_XQ_P + NBB_XR + NBB_QU + NBB_QW + NBB_II + NBB_FT_TUG + NBB_QX + NBB_QZ + NBB_XW ;
+
+	NBB_A1 = E1 + F1 + A1 + S1 + NBB_F7 + NBB_FT_TO ;
+
+	NBB_D9 = NBB_G0 + F1 + A1 + S1 + NBB_F7 + NBB_FT_TO
+end hierarchical ruleset;
+
+/*******************************************************************************
+*       Module DF_EXTT_PARTNERS_COM_ALL_SUM_COUNTRIES
+*******************************************************************************/
+filtered_ds :=
+	DS_EXTTRADE_COM
+		[filter FREQ = "M"]
+		[filter TERRITORY = "BE"]
+		[filter FLOW in { "I","X" }]
+		[filter CONCEPT = "COM"]
+		[filter INDEX_TYPE = "_Z"]
+		[filter DERIVATION = "_Z"]
+		[filter MOVEMENT = "M"]
+		[filter INDEX_BASE = "_Z"]
+		[filter EXTTRADE_UNIT = "VAL"]
+		[filter EXTTRADE_CLASS = "GEO"];
+
+hr_result :=
+	hierarchy(
+		filtered_ds,
+		SUM_COUNTRIES
+		condition 'TIME_PERIOD'
+		rule COUNTRY partial_zero rule_priority);
+
+sum_countries_result :=
+	hr_result
+		[calc attribute OBS_STATUS := "A",
+			attribute CONF_STATUS := "F"
+		];

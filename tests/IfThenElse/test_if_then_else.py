@@ -472,6 +472,23 @@ class IfThenElseTest(TestIfThenElse):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_397_1(self):
+        """
+        if-then-else: if
+        Dataset --> Dataset
+        Status: OK
+        Expression: DS_r <- DS_1[calc result := if isnull(Me_1) then true else Me_2 >= Me_3];
+
+        Description: Check component-scalar if-then-else op.
+        Git Branch: #cr-397
+        Goal: Check the result of if-then-else for component-scalar.
+        """
+        code = "GH_397_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GL_424_1(self):
         """
         if-then-else: if

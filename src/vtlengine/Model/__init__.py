@@ -16,8 +16,6 @@ from vtlengine.DataTypes import SCALAR_TYPES, ScalarType
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.Exceptions import InputValidationException, SemanticError
 
-# from pyspark.pandas import DataFrame as SparkDataFrame, Series as SparkSeries
-
 
 @dataclass
 class Scalar:
@@ -90,7 +88,6 @@ class DataComponent:
     """A component of a dataset with data"""
 
     name: str
-    # data: Optional[Union[PandasSeries, SparkSeries]]
     data: Optional[Any]
     data_type: Type[ScalarType]
     role: Role = Role.MEASURE
@@ -495,7 +492,7 @@ class ExternalRoutine:
 
     @classmethod
     def _extract_dataset_names(cls, query: str) -> List[str]:
-        expression = sqlglot.parse_one(query, read="sqlite")
+        expression = sqlglot.parse_one(query, dialect="duckdb")
         tables_info = list(expression.find_all(exp.Table))
         dataset_names = [t.name for t in tables_info]
         return dataset_names

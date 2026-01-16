@@ -26,6 +26,7 @@ from vtlengine.API import (
     run,
     run_sdmx,
     semantic_analysis,
+    validate_dataset,
     validate_external_routine,
     validate_value_domain,
 )
@@ -39,8 +40,8 @@ from vtlengine.API._InternalApi import (
     load_vtl,
     to_vtl_json,
 )
-from vtlengine.DataTypes import Integer, String
-from vtlengine.Exceptions import SemanticError
+from vtlengine.DataTypes import Integer, Null, String
+from vtlengine.Exceptions import DataLoadError, InputValidationException, SemanticError
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 
 # Path selection
@@ -74,11 +75,11 @@ input_vtl_params_OK = [
 ]
 
 input_vtl_error_params = [
-    (filepath_VTL, "Invalid vtl file. Must have .vtl extension"),
-    (filepath_csv / "DS_1.csv", "Invalid vtl file. Must have .vtl extension"),
-    (filepath_VTL / "3.vtl", "Invalid vtl file. Input does not exist"),
-    ({"DS": "dataset"}, "Invalid vtl file. Input is not a Path object"),
-    (2, "Invalid vtl file. Input is not a Path object"),
+    (filepath_VTL, "0-1-1-3"),
+    (filepath_csv / "DS_1.csv", "0-1-1-3"),
+    (filepath_VTL / "3.vtl", "0-3-1-1"),
+    ({"DS": "dataset"}, "0-1-1-2"),
+    (2, "0-1-1-2"),
 ]
 
 input_vd_OK = [
@@ -87,16 +88,16 @@ input_vd_OK = [
 ]
 
 input_vd_error_params = [
-    (filepath_VTL / "VD_1.json", "Invalid vd file. Input does not exist"),
-    (filepath_VTL / "1.vtl", "Invalid vd file. Must have .json extension"),
+    (filepath_VTL / "VD_1.json", "0-3-1-1"),
+    (filepath_VTL / "1.vtl", "0-1-1-3"),
     (
         filepath_json / "DS_1.json",
-        "The given json does not follow the schema.",
+        "0-2-1-1",
     ),
-    (2, "Invalid vd file. Input is not a Path object"),
+    (2, "0-1-1-2"),
     (
         {"setlist": ["AT", "BE", "CY"], "type": "String"},
-        "The given json does not follow the schema.",
+        "0-2-1-1",
     ),
 ]
 
@@ -140,8 +141,8 @@ load_datasets_input_params_OK = [
 ]
 
 load_datasets_wrong_input_params = [
-    (filepath_json / "VD_1.json", "Invalid datastructure. Input does not exist"),
-    (filepath_csv / "DS_1.csv", "Invalid datastructure. Must have .json extension"),
+    (filepath_json / "VD_1.json", "0-3-1-1"),
+    (filepath_csv / "DS_1.csv", "0-1-1-3"),
 ]
 
 load_datasets_with_data_without_dp_params_OK = [
@@ -209,7 +210,7 @@ load_datasets_with_data_path_params_OK = [
                             nullable=True,
                         ),
                     },
-                    data=None,
+                    data=pd.DataFrame(columns=["Id_1", "Id_2", "Me_1"]),
                 )
             },
             {"sc_1": Scalar(name="sc_1", data_type=Integer, value=None)},
@@ -243,7 +244,7 @@ load_datasets_with_data_path_params_OK = [
                             nullable=True,
                         ),
                     },
-                    data=None,
+                    data=pd.DataFrame(columns=["Id_1", "Id_2", "Me_1"]),
                 ),
                 "DS_2": Dataset(
                     name="DS_2",
@@ -267,7 +268,7 @@ load_datasets_with_data_path_params_OK = [
                             nullable=True,
                         ),
                     },
-                    data=None,
+                    data=pd.DataFrame(columns=["Id_1", "Id_2", "Me_1"]),
                 ),
             },
             {"sc_1": Scalar(name="sc_1", data_type=Integer, value=None)},
@@ -276,7 +277,7 @@ load_datasets_with_data_path_params_OK = [
     ),
     (
         filepath_json / "DS_1.json",
-        {"DS_1": filepath_csv / "custom_name.csv"},
+        {"DS_1": filepath_csv / "custom_name_DS_1.csv"},
         (
             {
                 "DS_1": Dataset(
@@ -301,11 +302,11 @@ load_datasets_with_data_path_params_OK = [
                             nullable=True,
                         ),
                     },
-                    data=None,
+                    data=pd.DataFrame(columns=["Id_1", "Id_2", "Me_1"]),
                 )
             },
             {"sc_1": Scalar(name="sc_1", data_type=Integer, value=None)},
-            {"DS_1": filepath_csv / "custom_name.csv"},
+            {"DS_1": filepath_csv / "custom_name_DS_1.csv"},
         ),
     ),
 ]
@@ -314,14 +315,14 @@ load_datasets_with_data_and_wrong_inputs = [
     (
         filepath_csv / "DS_1.csv",
         filepath_csv / "DS_1.csv",
-        "Invalid datastructure. Must have .json extension",
+        "0-1-1-3",
     ),
     (
         filepath_json / "DS_1.json",
         filepath_json / "DS_2.json",
         "Not found dataset DS_2.json",
     ),
-    (2, 2, "Invalid datastructure. Input must be a dict or Path object"),
+    (2, 2, "0-1-1-2"),
 ]
 
 ext_params_OK = [(filepath_sql / "1.json")]
@@ -329,10 +330,10 @@ ext_params_OK = [(filepath_sql / "1.json")]
 ext_params_wrong = [
     (
         filepath_json / "DS_1.json",
-        "The given json does not follow the schema.",
+        "0-2-1-1",
     ),
-    (5, "Input invalid. Input must be a json file."),
-    (filepath_sql / "6.sql", "Input invalid. Input does not exist"),
+    (5, "0-1-1-2"),
+    (filepath_sql / "6.sql", "0-3-1-1"),
 ]
 
 params_semantic = [
@@ -351,7 +352,14 @@ params_run = [
         [filepath_csv / "DS_1.csv", filepath_csv / "DS_2.csv"],
         filepath_ValueDomains / "VD_1.json",
         filepath_sql / "1.json",
-    )
+    ),
+    (
+        filepath_VTL / "2.vtl",
+        [filepath_json / "DS_1.json", filepath_json / "DS_2.json"],
+        {"DS_1": filepath_csv / "custom_name_DS_1.csv", "DS_2": filepath_csv / "DS_2.csv"},
+        filepath_ValueDomains / "VD_1.json",
+        filepath_sql / "1.json",
+    ),
 ]
 
 params_schema = [(filepath_json / "DS_Schema.json")]
@@ -450,7 +458,7 @@ params_run_sdmx_errors = [
             ),
         ],
         None,
-        SemanticError,
+        InputValidationException,
         "0-1-3-3",
     ),
     (
@@ -463,7 +471,7 @@ params_run_sdmx_errors = [
             )
         ],
         42,
-        TypeError,
+        InputValidationException,
         "Expected dict or VtlDataflowMapping type for mappings.",
     ),
     (
@@ -480,7 +488,7 @@ params_run_sdmx_errors = [
             dataflow_alias="ALIAS",
             id="Test",
         ),
-        TypeError,
+        InputValidationException,
         "Expected str, Reference, DataflowRef or Dataflow type for dataflow in VtlDataflowMapping.",
     ),
 ]
@@ -646,6 +654,82 @@ params_invalid_sql = [
 ]
 
 
+params_validate_ds = [
+    (
+        filepath_json / "DS_1.json",
+        {"DS_1": pd.DataFrame({"Id_1": [1, 2], "Id_2": ["A", "B"], "Me_1": [10, 20]})},
+        True,
+        None,
+    ),
+    (
+        filepath_json / "DS_1.json",
+        {"DS_1": pd.DataFrame({"wrong_col": [1, 2]})},
+        False,
+        "0-3-1-5",
+    ),
+    (filepath_json / "DS_1.json", None, True, None),
+    (
+        filepath_json / "DS_1.json",
+        {"DS_non_exist": pd.DataFrame({"Id_1": [1], "Me_1": [2]})},
+        False,
+        "Not found dataset DS_non_exist in datastructures.",
+    ),
+    (
+        [filepath_json / "DS_1.json"],
+        {"DS_1": pd.DataFrame({"Id_1": [1], "Id_2": ["A"], "Me_1": [10]})},
+        True,
+        None,
+    ),
+    (
+        filepath_json / "DS_1.json",
+        {"DS_1": pd.DataFrame({"Id_1": [1], "Id_2": ["A"], "Me_1": [10]})},
+        True,
+        None,
+    ),
+    (
+        [filepath_json / "DS_1.json", filepath_json / "DS_2.json"],
+        [filepath_csv / "DS_1.csv", filepath_csv / "DS_2.csv"],
+        True,
+        None,
+    ),
+    (
+        [filepath_json / "DS_1.json", filepath_json / "DS_2.json"],
+        {"DS_1": filepath_csv / "DS_1.csv", "DS_2": filepath_csv / "DS_2.csv"},
+        True,
+        None,
+    ),
+    (
+        [filepath_json / "DS_1.json"],
+        {"DS_1": pd.DataFrame({"wrong": [1]})},
+        False,
+        "0-3-1-5",
+    ),
+    (
+        [filepath_json / "DS_1.json", filepath_json / "DS_2.json"],
+        {"DS_1": filepath_csv / "custom_name_DS_1.csv", "DS_2": filepath_csv / "DS_2.csv"},
+        True,
+        None,
+    ),
+    (
+        [filepath_json / "DS_1.json"],
+        {"DS_1": filepath_csv / "DS_1_invalid.csv"},
+        False,
+        "On Dataset DS_1 loading: not possible to cast column Me_1 to Number.",
+    ),
+]
+
+params_validate_vd = [
+    (filepath_ValueDomains / "VD_1.json", True),
+    (filepath_ValueDomains / "VD_wrong_key.json", False),
+]
+
+params_validate_sql = [
+    (filepath_sql / "1.json", True),
+    (filepath_sql / "ext_routine_wrong_key.json", False),
+    (filepath_sql / "ext_routine_wrong_query.json", False),
+]
+
+
 @pytest.mark.parametrize("input", ext_params_OK)
 def test_load_external_routine(input):
     result = load_external_routines(input)
@@ -665,9 +749,9 @@ def test_load_external_routine(input):
     assert result == reference
 
 
-@pytest.mark.parametrize("input, error_message", ext_params_wrong)
-def test_load_external_routine_with_wrong_params(input, error_message):
-    with pytest.raises(Exception, match=error_message):
+@pytest.mark.parametrize("input, code", ext_params_wrong)
+def test_load_external_routine_with_wrong_params(input, code):
+    with pytest.raises(Exception, match=code):
         load_external_routines(input)
 
 
@@ -678,9 +762,9 @@ def test_load_input_vtl(input, expression):
     assert result == expression
 
 
-@pytest.mark.parametrize("input, error_message", input_vtl_error_params)
-def test_load_wrong_inputs_vtl(input, error_message):
-    with pytest.raises(Exception, match=error_message):
+@pytest.mark.parametrize("input, code", input_vtl_error_params)
+def test_load_wrong_inputs_vtl(input, code):
+    with pytest.raises(Exception, match=code):
         load_vtl(input)
 
 
@@ -692,9 +776,9 @@ def test_load_input_vd(input):
     assert result["AnaCreditCountries"] == reference
 
 
-@pytest.mark.parametrize("input, error_message", input_vd_error_params)
-def test_load_wrong_inputs_vd(input, error_message):
-    with pytest.raises(Exception, match=error_message):
+@pytest.mark.parametrize("input, code", input_vd_error_params)
+def test_load_wrong_inputs_vd(input, code):
+    with pytest.raises(Exception, match=code):
         load_value_domains(input)
 
 
@@ -738,9 +822,9 @@ def test_load_datastructures(datastructure):
     assert scalars["sc_1"] == reference_scalar
 
 
-@pytest.mark.parametrize("input, error_message", load_datasets_wrong_input_params)
-def test_load_wrong_inputs_datastructures(input, error_message):
-    with pytest.raises(Exception, match=error_message):
+@pytest.mark.parametrize("input, code", load_datasets_wrong_input_params)
+def test_load_wrong_inputs_datastructures(input, code):
+    with pytest.raises(Exception, match=code):
         load_datasets(input)
 
 
@@ -1333,7 +1417,7 @@ def test_non_mandatory_fill_me():
 
 
 def test_mandatory_at_error():
-    exception_code = "0-1-1-10"
+    exception_code = "0-3-1-5"
 
     script = """
         DS_r := DS_1;
@@ -1377,7 +1461,7 @@ def test_mandatory_at_error():
 
     datapoints = {"DS_1": data_df}
 
-    with pytest.raises(SemanticError) as context:
+    with pytest.raises(DataLoadError) as context:
         run(script=script, data_structures=data_structures, datapoints=datapoints)
     result = exception_code == str(context.value.args[1])
     if result is False:
@@ -1386,7 +1470,7 @@ def test_mandatory_at_error():
 
 
 def test_mandatory_me_error():
-    exception_code = "0-1-1-10"
+    exception_code = "0-3-1-5"
 
     script = """
         DS_r := DS_1;
@@ -1430,7 +1514,7 @@ def test_mandatory_me_error():
 
     datapoints = {"DS_1": data_df}
 
-    with pytest.raises(SemanticError) as context:
+    with pytest.raises(DataLoadError) as context:
         run(script=script, data_structures=data_structures, datapoints=datapoints)
     result = exception_code == str(context.value.args[1])
     if result is False:
@@ -1552,7 +1636,7 @@ def test_run_sdmx_2_1_gen_all(code, data, structure):
 @pytest.mark.parametrize("data, error_code", params_exception_vtl_to_json)
 def test_to_vtl_json_exception(data, error_code):
     datasets = get_datasets(data)
-    with pytest.raises(SemanticError, match=error_code):
+    with pytest.raises(InputValidationException, match=error_code):
         run_sdmx("DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", datasets)
 
 
@@ -1702,8 +1786,8 @@ def test_check_script_with_string_input():
 
 def test_check_script_invalid_input_type():
     with pytest.raises(
-        Exception,
-        match="invalid script format type: int. Input must be a string, TransformationScheme or Path object",
+        InputValidationException,
+        match="0-1-1-1",
     ):
         _check_script(12345)
 
@@ -1778,6 +1862,8 @@ def test_run_with_scalars(data_structures, datapoints, tmp_path):
         DS_r <- DS_3[filter Me_1 = sc_1];
         DS_r2 <- DS_3[sub Id_1 = sc_1];
         Sc_r <- sc_1 + sc_2 + 3 + sc_3;
+        Sc_r2 <- sc_1 - sc_2;
+        Sc_r3 <- null;
     """
     scalars = {"sc_1": 20, "sc_2": 5, "sc_3": 3}
     output_folder = tmp_path
@@ -1821,10 +1907,12 @@ def test_run_with_scalars(data_structures, datapoints, tmp_path):
             data=pd.DataFrame({"Me_1": []}),
         ),
         "Sc_r": Scalar(name="Sc_r", data_type=Integer, value=31),
+        "Sc_r2": Scalar(name="Sc_r2", data_type=Integer, value=15),
+        "Sc_r3": Scalar(name="Sc_r3", data_type=Null, value=None),
     }
     assert run_result == reference
     ds_csv = output_folder / "DS_r.csv"
-    sc_csv = output_folder / "Sc_r.csv"
+    sc_csv = output_folder / "_scalars.csv"
     assert ds_csv.exists()
     assert sc_csv.exists()
     df = pd.read_csv(ds_csv)
@@ -1834,8 +1922,11 @@ def test_run_with_scalars(data_structures, datapoints, tmp_path):
     with open(sc_csv, newline="") as f:
         reader = csv.reader(f)
         rows = list(reader)
-    assert len(rows) == 1
-    assert rows[0][0] == str(reference["Sc_r"].value)
+    assert len(rows) == 4
+    assert rows[0] == ["name", "value"]
+    assert rows[1] == ["Sc_r", "31"]
+    assert rows[2] == ["Sc_r2", "15"]
+    assert rows[3] == ["Sc_r3", ""]
     assert all(isinstance(v, (Dataset, Scalar)) for v in run_result.values())
 
 
@@ -1891,7 +1982,7 @@ def test_run_with_scalar_being_none(data_structures, datapoints, tmp_path):
     }
     assert run_result == reference
     ds_csv = output_folder / "DS_r.csv"
-    sc_csv = output_folder / "Sc_r.csv"
+    sc_csv = output_folder / "_scalars.csv"
     assert ds_csv.exists()
     assert sc_csv.exists()
     df = pd.read_csv(ds_csv)
@@ -1901,8 +1992,9 @@ def test_run_with_scalar_being_none(data_structures, datapoints, tmp_path):
     with open(sc_csv, newline="") as f:
         reader = csv.reader(f)
         rows = list(reader)
-    assert len(rows) == 1
-    assert rows[0] == [] or rows[0] == [""]
+    assert len(rows) == 2
+    assert rows[0] == ["name", "value"]
+    assert rows[1] == ["Sc_r", ""]
 
 
 def test_script_with_component_working_as_scalar_and_component():
@@ -2001,7 +2093,7 @@ def test_attempt_to_validate_invalid_vd(path_schema, path_vd):
         vd_data = json.load(f)
     with open(path_schema, "r") as f:
         vd_schema = json.load(f)
-    with pytest.raises(Exception, match="The given json does not follow the schema."):
+    with pytest.raises(InputValidationException, match="0-2-1-1"):
         _validate_json(vd_data, vd_schema)
 
 
@@ -2013,8 +2105,8 @@ def test_attempt_to_validate_invalid_sql(path_schema, path_sql):
         ext_routine_schema = json.load(f)
     try:
         _validate_json(ext_routine_data, ext_routine_schema)
-    except Exception:
-        with pytest.raises(Exception, match="The given json does not follow the schema."):
+    except InputValidationException:
+        with pytest.raises(InputValidationException, match="0-2-1-1"):
             _validate_json(ext_routine_data, ext_routine_schema)
         return
     query = ext_routine_data.get("query")
@@ -2028,8 +2120,8 @@ def test_with_multiple_vd_and_ext_routines():
     script = """
       DS_r <- DS_1 [ calc Me_2:= Me_1 in Countries];
       DS_r2 <- DS_1 [ calc Me_2:= Me_1 in Countries_EU_Sample];
-      DS_r3 <- eval(SQL_3(DS_1) language "sqlite" returns dataset {identifier<integer> Id_1, measure<number> Me_1});
-      DS_r4 <- eval(SQL_4(DS_1) language "sqlite" returns dataset {identifier<integer> Id_1, measure<number> Me_1});
+      DS_r3 <- eval(SQL_3(DS_1) language "SQL" returns dataset {identifier<integer> Id_1, measure<number> Me_1});
+      DS_r4 <- eval(SQL_4(DS_1) language "SQL" returns dataset {identifier<integer> Id_1, measure<number> Me_1});
     """
 
     data_structures = {
@@ -2156,8 +2248,8 @@ def test_semantic_analysis_list_vd_ext_routines():
     script = """
           DS_r <- DS_1 [ calc Me_2:= Me_1 in Countries];
           DS_r2 <- DS_1 [ calc Me_2:= Me_1 in Countries_EU_Sample];
-          DS_r3 <- eval(SQL_3(DS_1) language "sqlite" returns dataset {identifier<integer> Id_1, measure<number> Me_1});
-          DS_r4 <- eval(SQL_4(DS_1) language "sqlite" returns dataset {identifier<integer> Id_1, measure<number> Me_1});
+          DS_r3 <- eval(SQL_3(DS_1) language "SQL" returns dataset {identifier<integer> Id_1, measure<number> Me_1});
+          DS_r4 <- eval(SQL_4(DS_1) language "SQL" returns dataset {identifier<integer> Id_1, measure<number> Me_1});
         """
 
     data_structures = {
@@ -2239,18 +2331,6 @@ def test_loading_list_multiple_value_domains(value_domains_input):
     assert "AnaCreditCountries" in value_domains_loaded
 
 
-params_validate_vd = [
-    (filepath_ValueDomains / "VD_1.json", True),
-    (filepath_ValueDomains / "VD_wrong_key.json", False),
-]
-
-params_validate_sql = [
-    (filepath_sql / "1.json", True),
-    (filepath_sql / "ext_routine_wrong_key.json", False),
-    (filepath_sql / "ext_routine_wrong_query.json", False),
-]
-
-
 @pytest.mark.parametrize("path_vd, is_valid", params_validate_vd)
 def test_validate_vd(path_vd, is_valid):
     with open(path_vd, "r") as f:
@@ -2273,3 +2353,25 @@ def test_validate_sql(path_sql, is_valid):
         except Exception:
             with pytest.raises(Exception, match="The given json does not follow the schema."):
                 validate_external_routine(ext_routine_data)
+
+
+@pytest.mark.parametrize("ds_input, dp_input, is_valid, message", params_validate_ds)
+def test_validate_dataset(ds_input, dp_input, is_valid, message):
+    if isinstance(ds_input, list):
+        ds_data = []
+        for item in ds_input:
+            if isinstance(item, Path):
+                with open(item, "r", encoding="utf-8") as f:
+                    ds_data.append(json.load(f))
+            else:
+                ds_data.append(item)
+    elif isinstance(ds_input, Path):
+        with open(ds_input, "r", encoding="utf-8") as f:
+            ds_data = json.load(f)
+    else:
+        ds_data = ds_input
+    if is_valid:
+        validate_dataset(ds_data, dp_input)
+    else:
+        with pytest.raises(Exception, match=message):
+            validate_dataset(ds_data, dp_input)

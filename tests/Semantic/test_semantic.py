@@ -4,6 +4,7 @@ import pytest
 
 from tests.Helper import TestHelper
 from vtlengine import semantic_analysis
+from vtlengine.Exceptions import SemanticError
 
 
 class SemanticHelper(TestHelper):
@@ -1068,7 +1069,7 @@ class MembershipTests(SemanticHelper):
         """
         code = "Memb_5"
         number_inputs = 2
-        error_code = "1-4-1-1"
+        error_code = "1-3-1-1"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code
@@ -1480,7 +1481,7 @@ class AliasTests(SemanticHelper):
         """
         code = "Al_22"
         number_inputs = 1
-        error_code = "1-3-1"  # "1-1-6-8"
+        error_code = "1-2-1"  # "1-1-6-8"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code
@@ -1901,7 +1902,7 @@ class ScalarTests(SemanticHelper):
         """
         code = "Sc_1"
         number_inputs = 1
-        error_code = "1-3-3"
+        error_code = "1-2-2"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code
@@ -2120,7 +2121,7 @@ class ScalarTests(SemanticHelper):
         """
         Dataset --> Dataset
         Status:
-        Expression: DS_1 := DS_1[calc identifier Id_3 := Me_1 <> sc_2];
+        Expression: DS_r := DS_1[calc identifier Id_3 := Me_1 <> sc_2];
         Description:
 
         Git Branch:
@@ -2717,7 +2718,7 @@ class ScalarTests(SemanticHelper):
         """
         code = "Sc_43"
         number_inputs = 1
-        error_code = "1-4-1-1"
+        error_code = "1-3-1-1"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code
@@ -2745,7 +2746,7 @@ class ScalarTests(SemanticHelper):
         """
         code = "Sc_44"
         number_inputs = 1
-        error_code = "1-4-1-1"
+        error_code = "1-3-1-1"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code
@@ -2825,3 +2826,73 @@ def test_bug_297():
         semantic_analysis(script, data_structures=data_structures)
     except Exception as e:
         pytest.fail(f"semantic_analysis raised an exception: {e}")
+
+
+def test_bug_349():
+    """
+    Github issue #349. Resolves a bug in semantic analysis where input name is the same
+    as an output defined.
+    """
+    script_1 = """
+                sc_r <- sc_1;
+                sc_1 <- sc_2 + 10;
+            """
+
+    data_structures_1 = {
+        "scalars": [
+            {"name": "sc_1", "type": "Number"},
+            {"name": "sc_2", "type": "Number"},
+        ]
+    }
+    script_2 = """
+            DS_r <- DS_1;
+            DS_1 <- DS_2 + 10;
+        """
+
+    data_structures_2 = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            },
+            {
+                "name": "DS_2",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            },
+        ],
+    }
+    with pytest.raises(SemanticError, match="0-1-2-8"):
+        semantic_analysis(script_1, data_structures=data_structures_1)
+    with pytest.raises(SemanticError, match="0-1-2-8"):
+        semantic_analysis(script_2, data_structures=data_structures_2)
+
+
+def test_bug_411():
+    """
+    Github issue #411. Resolves a bug in semantic analysis where filtering with isnull on a non-existing
+    component does not raise an error.
+    """
+    script = """
+            DS_r := DS_1[filter isnull(Me_dummy)];
+        """
+
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+
+    with pytest.raises(SemanticError, match="1-1-1-10"):
+        semantic_analysis(script=script, data_structures=data_structures)
