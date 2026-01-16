@@ -688,6 +688,24 @@ class HROperation(AST):
 
 
 @dataclass
+class DPValidation(AST):
+    """
+    DPValidation: Datapoint ruleset validation (check_datapoint)
+
+    dataset: The input dataset expression
+    ruleset_name: Name of the datapoint ruleset (DPRuleset)
+    components: Optional list of component IDs (from COMPONENTS clause)
+    output: Output mode (invalid, all, all_measures)
+    """
+    dataset: AST
+    ruleset_name: str
+    components: List[str] = field(default_factory=list)
+    output: Optional[ValidationOutput] = None
+
+    __eq__ = AST.ast_equality
+
+
+@dataclass
 class DPRuleset(AST):
     """
     DPRuleset: (name, element, rules)
