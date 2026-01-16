@@ -7,11 +7,48 @@ Description
 Basic AST nodes.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from enum import Enum
 from typing import Any, Dict, List, Optional, Type, Union
 
 from vtlengine.DataTypes import ScalarType
 from vtlengine.Model import Dataset, Role
+
+
+class ValidationMode(Enum):
+    """Validation mode for hierarchy operations."""
+    NON_NULL = "non_null"
+    NON_ZERO = "non_zero"
+    PARTIAL_NULL = "partial_null"
+    PARTIAL_ZERO = "partial_zero"
+    ALWAYS_NULL = "always_null"
+    ALWAYS_ZERO = "always_zero"
+
+
+class HRInputMode(Enum):
+    """Input mode for hierarchy operator."""
+    RULE = "rule"
+    DATASET = "dataset"
+    RULE_PRIORITY = "rule_priority"
+
+
+class CHInputMode(Enum):
+    """Input mode for check_hierarchy operator."""
+    DATASET = "dataset"
+    DATASET_PRIORITY = "dataset_priority"
+
+
+class ValidationOutput(Enum):
+    """Output mode for check_datapoint and check_hierarchy."""
+    INVALID = "invalid"
+    ALL = "all"
+    ALL_MEASURES = "all_measures"
+
+
+class HierarchyOutput(Enum):
+    """Output mode for hierarchy operator."""
+    COMPUTED = "computed"
+    ALL = "all"
 
 
 @dataclass
