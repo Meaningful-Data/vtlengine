@@ -1013,7 +1013,7 @@ centralised_messages = {
     },
     "2-3-7": {
         "message": "Ruleset Dataset not found, please check the ruleset definition.",
-        "description": "Occurs when the Ruleset Dataset.",
+        "description": "Occurs when the Ruleset Dataset is missing.",
     },
     "2-3-9": {
         "message": "{comp_type} {comp_name} not found in {param}.",
