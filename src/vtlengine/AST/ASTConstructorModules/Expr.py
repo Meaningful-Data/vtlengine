@@ -1,6 +1,6 @@
 import re
 from copy import copy
-from typing import Any
+from typing import Any, Optional
 
 from antlr4.tree.Tree import TerminalNodeImpl
 
@@ -1088,16 +1088,12 @@ class Expr(VtlVisitor):
 
         op = c.getSymbol().text
         dataset_node = self.visitExpr(ctx_list[2])
-        rule_name_node = Identifier(
-            value=ctx_list[4].getSymbol().text,
-            kind="RuleID",
-            **extract_token_info(ctx_list[4].getSymbol()),
-        )
+        ruleset_name = ctx_list[4].getSymbol().text
 
         conditions = []
-        modes = "non_null"
-        inputs = "rule"
-        retains = "computed"
+        validation_mode: Optional[ValidationMode] = None
+        input_mode: Optional[HRInputMode] = None
+        output: Optional[HierarchyOutput] = None
         rule_comp = None
 
         for c in ctx_list:
@@ -1106,35 +1102,28 @@ class Expr(VtlVisitor):
             elif isinstance(c, Parser.ComponentIDContext):
                 rule_comp = Terminals().visitComponentID(c)
             elif isinstance(c, Parser.ValidationModeContext):
-                modes = Terminals().visitValidationMode(c)
+                mode_str = Terminals().visitValidationMode(c)
+                validation_mode = ValidationMode(mode_str)
             elif isinstance(c, Parser.InputModeHierarchyContext):
-                inputs = Terminals().visitInputModeHierarchy(c)
+                input_str = Terminals().visitInputModeHierarchy(c)
+                if input_str == DATASET_PRIORITY:
+                    raise NotImplementedError("Dataset Priority input mode on HR is not implemented")
+                input_mode = HRInputMode(input_str)
             elif isinstance(c, Parser.OutputModeHierarchyContext):
-                retains = Terminals().visitOutputModeHierarchy(c)
+                output_str = Terminals().visitOutputModeHierarchy(c)
+                output = HierarchyOutput(output_str)
 
         if len(conditions) != 0:
             # AST_ASTCONSTRUCTOR.22
             conditions = conditions[0]
+        else:
+            conditions = []
 
-        if inputs == DATASET_PRIORITY:
-            raise NotImplementedError("Dataset Priority input mode on HR is not implemented")
-        param_constant_node = []
-
-        param_constant_node.append(
-            ParamConstant(type_="PARAM_MODE", value=modes, **extract_token_info(ctx))
-        )
-        param_constant_node.append(
-            ParamConstant(type_="PARAM_INPUT", value=inputs, **extract_token_info(ctx))
-        )
-        param_constant_node.append(
-            ParamConstant(type_="PARAM_OUTPUT", value=retains, **extract_token_info(ctx))
-        )
-
-        if not rule_comp and rule_name_node.value in de_ruleset_elements:
-            if isinstance(de_ruleset_elements[rule_name_node.value], list):
-                rule_element = de_ruleset_elements[rule_name_node.value][-1]
+        if not rule_comp and ruleset_name in de_ruleset_elements:
+            if isinstance(de_ruleset_elements[ruleset_name], list):
+                rule_element = de_ruleset_elements[ruleset_name][-1]
             else:
-                rule_element = de_ruleset_elements[rule_name_node.value]
+                rule_element = de_ruleset_elements[ruleset_name]
             if rule_element.kind == "DatasetID":
                 check_hierarchy_rule = rule_element.value
                 rule_comp = Identifier(
@@ -1142,12 +1131,16 @@ class Expr(VtlVisitor):
                 )
             else:  # ValuedomainID
                 raise SemanticError("1-1-10-4", op=op)
-        children = [dataset_node, rule_comp, rule_name_node, *conditions]
-        children = [node for node in children if node is not None]
-        return ParamOp(
+
+        return HROperation(
             op=op,
-            children=children,
-            params=param_constant_node,
+            dataset=dataset_node,
+            ruleset_name=ruleset_name,
+            rule_component=rule_comp,
+            conditions=conditions if isinstance(conditions, list) else [conditions],
+            validation_mode=validation_mode,
+            input_mode=input_mode,
+            output=output,
             **extract_token_info(ctx),
         )
 
