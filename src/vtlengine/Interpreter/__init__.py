@@ -1637,54 +1637,49 @@ class InterpreterAnalyzer(ASTTemplate):
 
             return node.value
         """
-        # Only for Hierarchical Rulesets
         if not (self.is_from_rule and node.kind == "CodeItemID"):
             return node.value
 
-        # Getting Dataset elements
-        result_components = {c.name: c for c in self.ruleset_dataset.get_components()}  # type: ignore[union-attr]
-        hr_component = self.ruleset_signature["RULE_COMPONENT"]
-        measure_name = self.ruleset_dataset.get_measures_names()[0]
+        ruleset_ds = self.ruleset_dataset
+        rule_data = self.rule_data
+        signature = self.ruleset_signature
 
-        if self.rule_data is None:
+        result_components = {c.name: c for c in ruleset_ds.get_components()}  # type: ignore[union-attr]
+        hr_component = signature["RULE_COMPONENT"]
+        measure_name = ruleset_ds.get_measures_names()[0]
+        other_ids = list(set(ruleset_ds.get_identifiers_names()) - {hr_component})
+
+        if rule_data is None:
             return Dataset(name=node.value, components=result_components, data=None)
-
-        condition = None
-        if hasattr(node, "_right_condition"):
-            condition: DataComponent = self.visit(node._right_condition)  # type: ignore[no-redef]
-            if condition is not None:
-                condition = condition.data[condition.data == True].index
-
         if (
-            self.hr_agg_rules_computed is not None
-            and self.hr_input in ["rule", "rule_priority"]
-            and node.value in self.hr_agg_rules_computed
+                self.hr_agg_rules_computed is not None
+                and self.hr_input in ("rule", "rule_priority")
+                and node.value in self.hr_agg_rules_computed
         ):
             df = self.hr_agg_rules_computed[node.value].copy()
             self.update_partial_data(df, measure_name, node.value)
             return Dataset(name=node.value, components=result_components, data=df)
 
-        rest_identifiers = list(
-            set(self.ruleset_dataset.get_identifiers_names()) - {hr_component}
-        )
-        df = self.rule_data.copy()
-        code_data = df[rest_identifiers].drop_duplicates().reset_index(drop=True)
+        df = rule_data.copy()
+        code_data = df[other_ids].drop_duplicates().reset_index(drop=True)
+        condition = getattr(node, "_right_condition", None)
         if condition is not None:
-            df = df.loc[condition]
-            keys = pd.MultiIndex.from_frame(df[rest_identifiers].drop_duplicates())
-            mask = pd.MultiIndex.from_frame(code_data[rest_identifiers]).isin(keys)
-            code_data = code_data.loc[mask]
+            condition = self.visit(condition)
+            if condition is not None and condition.data is not None:
+                df = df.loc[condition.data]
+                keys = pd.MultiIndex.from_frame(df[other_ids].drop_duplicates())
+                mask = pd.MultiIndex.from_frame(code_data[other_ids]).isin(keys)
+                code_data = code_data.loc[mask]
 
         if node.value in df[hr_component].values:
             value_data = df[df[hr_component] == node.value]
-            merged = value_data.merge(code_data, how="right", on=rest_identifiers, indicator=True)
-            merged[hr_component] = node.value
+            merged = value_data.merge(code_data, how="right", on=other_ids, indicator=True)
             merged.loc[merged["_merge"] == "right_only", measure_name] = REMOVE
             df = merged.drop(columns=["_merge"]).set_index(code_data.index)
         else:
             df = code_data.copy()
-            df[hr_component] = node.value
             df[measure_name] = REMOVE
+        df[hr_component] = node.value
 
         self.update_partial_data(df, measure_name, node.value)
         return Dataset(name=node.value, components=result_components, data=df)
