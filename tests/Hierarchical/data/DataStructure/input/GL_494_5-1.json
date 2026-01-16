@@ -1,0 +1,105 @@
+{
+    "datasets": [
+      {
+        "name": "DS_UNEMPLOY_PAYMENT",
+        "DataStructure": [
+          {
+            "name": "BE_REGION",
+            "type": "String",
+            "nullable": false,
+            "role": "Identifier"
+          },
+          {
+            "name": "COMPILING_ORG",
+            "type": "String",
+            "nullable": true,
+            "role": "Attribute"
+          },
+          {
+            "name": "CONF_STATUS",
+            "type": "String",
+            "nullable": true,
+            "role": "Attribute"
+          },
+          {
+            "name": "DECIMALS",
+            "type": "String",
+            "nullable": true,
+            "role": "Attribute"
+          },
+          {
+            "name": "DERIVATION",
+            "type": "String",
+            "nullable": false,
+            "role": "Identifier"
+          },
+          {
+            "name": "EMBARGO_TIME",
+            "type": "Date",
+            "nullable": true,
+            "role": "Attribute"
+          },
+          {
+            "name": "FREQ",
+            "type": "String",
+            "nullable": false,
+            "role": "Identifier"
+          },
+          {
+            "name": "GENDER",
+            "type": "String",
+            "nullable": false,
+            "role": "Identifier"
+          },
+          {
+            "name": "INDEX_TYPE",
+            "type": "String",
+            "nullable": false,
+            "role": "Identifier"
+          },
+          {
+            "name": "OBS_STATUS",
+            "type": "String",
+            "nullable": true,
+            "role": "Attribute"
+          },
+          {
+            "name": "OBS_VALUE",
+            "type": "Number",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "PAYMENT_CATEGORY",
+            "type": "String",
+            "nullable": false,
+            "role": "Identifier"
+          },
+          {
+            "name": "PAYMENT_UNIT",
+            "type": "String",
+            "nullable": false,
+            "role": "Identifier"
+          },
+          {
+            "name": "TIME_PERIOD",
+            "type": "Time_Period",
+            "nullable": false,
+            "role": "Identifier"
+          },
+          {
+            "name": "UNIT_MEASURE",
+            "type": "String",
+            "nullable": true,
+            "role": "Attribute"
+          },
+          {
+            "name": "UNIT_MULT",
+            "type": "String",
+            "nullable": true,
+            "role": "Attribute"
+          }
+        ]
+      }
+    ]
+  }
