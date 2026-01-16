@@ -1,16 +1,15 @@
 import operator
 from copy import copy
-from typing import Any, Dict, Tuple, Optional
+from typing import Any, Dict, Optional, Tuple
 
 import pandas as pd
 from pandas import DataFrame
 
 import vtlengine.Operators as Operators
-from vtlengine.AST.Grammar.tokens import HIERARCHY, PARTIAL_NULL, PARTIAL_ZERO, NON_ZERO, NON_NULL
+from vtlengine.AST.Grammar.tokens import HIERARCHY, NON_NULL, NON_ZERO
 from vtlengine.DataTypes import Boolean, Number
 from vtlengine.Model import Component, DataComponent, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-
 
 REMOVE = "REMOVE_VALUE"
 
@@ -29,13 +28,17 @@ def get_measure_from_dataset(dataset: Dataset, code_item: str) -> DataComponent:
 
 class HRBinOp(Operators.Binary):
     @classmethod
-    def apply_operation_two_series(cls, left: pd.Series, right: pd.Series, op: Optional[Any] = None) -> pd.Series:
+    def apply_operation_two_series(
+        cls, left: pd.Series, right: pd.Series, op: Optional[Any] = None
+    ) -> pd.Series:
         op = op if op is not None else cls.op_func
         result = list(map(op, left.values, right.values))
         return pd.Series(result, index=left.index, dtype=object)
-    
+
     @classmethod
-    def align_series(cls, left: pd.Series, right: pd.Series, mode: str) -> Tuple[pd.Series, pd.Series]:
+    def align_series(
+        cls, left: pd.Series, right: pd.Series, mode: str
+    ) -> Tuple[pd.Series, pd.Series]:
         value = 0 if mode.endswith("zero") else None
         left_aligned, right_aligned = left.align(right, join="outer")
 
@@ -94,7 +97,9 @@ class HRComparison(HRBinOp):
             result.data = result.data.loc[left_data.index]
             result.data[measure_name] = left_data
             result.data["bool_var"] = cls.apply_operation_two_series(left_data, right_data)
-            result.data["imbalance"] = cls.apply_operation_two_series(left_data, right_data, cls.imbalance_op)
+            result.data["imbalance"] = cls.apply_operation_two_series(
+                left_data, right_data, cls.imbalance_op
+            )
 
         return result
 
@@ -185,14 +190,22 @@ class HAAssignment(Operators.Binary):
         result.data = left.data.copy() if left.data is not None else pd.DataFrame()
         if right.data is not None:
             result.data[measure_name] = right.data.map(lambda x: cls.handle_mode(x, hr_mode))
-            result.data = result.data.iloc[right.data.index[0:len(result.data)]]
+            result.data = result.data.iloc[right.data.index[0 : len(result.data)]]
 
         result.data = result.data[result.data[measure_name] != REMOVE]
         return result
 
     @classmethod
     def handle_mode(cls, x: Any, hr_mode: str) -> Any:
-        return REMOVE if x == REMOVE or hr_mode == "non_null" and pd.isnull(x) or hr_mode == "non_zero" and x == 0 else x
+        return (
+            REMOVE
+            if x == REMOVE
+            or hr_mode == "non_null"
+            and pd.isnull(x)
+            or hr_mode == "non_zero"
+            and x == 0
+            else x
+        )
 
 
 class Hierarchy(Operators.Operator):

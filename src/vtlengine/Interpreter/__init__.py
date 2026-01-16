@@ -2,7 +2,7 @@ import csv
 from copy import copy, deepcopy
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Type, Union, Set
+from typing import Any, Dict, List, Optional, Set, Tuple, Type, Union
 
 import pandas as pd
 
@@ -36,11 +36,14 @@ from vtlengine.AST.Grammar.tokens import (
     INSTR,
     KEEP,
     MEMBERSHIP,
+    PARTIAL_NULL,
+    PARTIAL_ZERO,
     REPLACE,
     ROUND,
+    RULE_PRIORITY,
     SUBSTR,
     TRUNC,
-    WHEN, PARTIAL_NULL, PARTIAL_ZERO, RULE_PRIORITY
+    WHEN,
 )
 from vtlengine.DataTypes import (
     BASIC_TYPES,
@@ -70,9 +73,10 @@ from vtlengine.Operators.Comparison import Between, ExistIn
 from vtlengine.Operators.Conditional import Case, If
 from vtlengine.Operators.General import Eval
 from vtlengine.Operators.HROperators import (
+    REMOVE,
     HAAssignment,
     Hierarchy,
-    get_measure_from_dataset, REMOVE,
+    get_measure_from_dataset,
 )
 from vtlengine.Operators.Numeric import Round, Trunc
 from vtlengine.Operators.String import Instr, Replace, Substr
@@ -1556,7 +1560,9 @@ class InterpreterAnalyzer(ASTTemplate):
             return op.analyze(left_operand, right_operand, self.ruleset_mode)
         if isinstance(left_operand, Dataset):
             left_operand = get_measure_from_dataset(left_operand, node.left.value)
-        return HR_NUM_BINARY_MAPPING[node.op].analyze(left_operand, right_operand, self.ruleset_mode)
+        return HR_NUM_BINARY_MAPPING[node.op].analyze(
+            left_operand, right_operand, self.ruleset_mode
+        )
 
     def visit_HRUnOp(self, node: AST.HRUnOp) -> None:
         operand = self.visit(node.operand)
@@ -1643,6 +1649,7 @@ class InterpreterAnalyzer(ASTTemplate):
         ruleset_ds = self.ruleset_dataset
         rule_data = self.rule_data
         signature = self.ruleset_signature
+
         result_components = {c.name: c for c in ruleset_ds.get_components()}  # type: ignore[union-attr]
         hr_component = signature["RULE_COMPONENT"]
         me_name = ruleset_ds.get_measures_names()[0]
