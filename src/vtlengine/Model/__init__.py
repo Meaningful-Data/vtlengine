@@ -101,11 +101,11 @@ class DataComponent:
     @classmethod
     def from_json(cls, json_str: Any) -> "DataComponent":
         # Support both 'type' and 'data_type' for backward compatibility
-        data_type_key = "type" if "type" in json_str else "data_type"
+        data_type_value = json_str.get("type") or json_str.get("data_type")
         return cls(
             json_str["name"],
             None,
-            SCALAR_TYPES[json_str[data_type_key]],
+            SCALAR_TYPES[data_type_value],
             Role(json_str["role"]),
             json_str["nullable"],
         )
@@ -150,10 +150,10 @@ class Component:
     @classmethod
     def from_json(cls, json_str: Any) -> "Component":
         # Support both 'type' and 'data_type' for backward compatibility
-        data_type_key = "type" if "type" in json_str else "data_type"
+        data_type_value = json_str.get("type") or json_str.get("data_type")
         return cls(
             json_str["name"],
-            SCALAR_TYPES[json_str[data_type_key]],
+            SCALAR_TYPES[data_type_value],
             Role(json_str["role"]),
             json_str["nullable"],
         )

@@ -846,104 +846,138 @@ def test_load_datasets_with_wrong_inputs(ds_r, dp, error_message):
         load_datasets_with_data(ds_r, dp)
 
 
-def test_load_datasets_with_type_key():
-    """Test that load_datasets accepts 'type' key in DataStructure"""
-    data_structure = {
-        "datasets": [
+@pytest.mark.parametrize(
+    "data_structure,expected_components",
+    [
+        # Test with 'type' key in DataStructure
+        (
             {
-                "name": "test_ds",
-                "DataStructure": [
-                    {"name": "id1", "type": "Integer", "role": "Identifier", "nullable": False},
-                    {"name": "measure1", "type": "Number", "role": "Measure", "nullable": True},
-                ],
-            }
-        ]
-    }
-    datasets, scalars = load_datasets(data_structure)
-
-    assert "test_ds" in datasets
-    assert "id1" in datasets["test_ds"].components
-    assert datasets["test_ds"].components["id1"].data_type == DataTypes.Integer
-    assert "measure1" in datasets["test_ds"].components
-    assert datasets["test_ds"].components["measure1"].data_type == DataTypes.Number
-
-
-def test_load_datasets_with_data_type_key_backward_compatibility():
-    """Test that load_datasets still accepts 'data_type' key for backward compatibility"""
-    data_structure = {
-        "datasets": [
-            {
-                "name": "test_ds",
-                "DataStructure": [
-                    {"name": "id1", "data_type": "String", "role": "Identifier", "nullable": False},
+                "datasets": [
                     {
-                        "name": "attr1",
-                        "data_type": "Boolean",
-                        "role": "Attribute",
-                        "nullable": True,
-                    },
-                ],
-            }
-        ]
-    }
-    datasets, scalars = load_datasets(data_structure)
-
-    assert "test_ds" in datasets
-    assert "id1" in datasets["test_ds"].components
-    assert datasets["test_ds"].components["id1"].data_type == DataTypes.String
-    assert "attr1" in datasets["test_ds"].components
-    assert datasets["test_ds"].components["attr1"].data_type == DataTypes.Boolean
-
-
-def test_load_datasets_with_structure_type_key():
-    """Test that load_datasets accepts 'type' key in structure components"""
-    data_structure = {
-        "structures": [
+                        "name": "test_ds",
+                        "DataStructure": [
+                            {
+                                "name": "id1",
+                                "type": "Integer",
+                                "role": "Identifier",
+                                "nullable": False,
+                            },
+                            {
+                                "name": "measure1",
+                                "type": "Number",
+                                "role": "Measure",
+                                "nullable": True,
+                            },
+                        ],
+                    }
+                ]
+            },
+            {"id1": DataTypes.Integer, "measure1": DataTypes.Number},
+        ),
+        # Test with 'data_type' key for backward compatibility
+        (
             {
-                "name": "test_structure",
-                "components": [
-                    {"name": "id1", "type": "Integer", "role": "Identifier", "nullable": False},
-                    {"name": "measure1", "type": "String", "role": "Measure", "nullable": True},
-                ],
-            }
-        ],
-        "datasets": [{"name": "test_ds", "structure": "test_structure"}],
-    }
-    datasets, scalars = load_datasets(data_structure)
-
-    assert "test_ds" in datasets
-    assert "id1" in datasets["test_ds"].components
-    assert datasets["test_ds"].components["id1"].data_type == DataTypes.Integer
-    assert "measure1" in datasets["test_ds"].components
-    assert datasets["test_ds"].components["measure1"].data_type == DataTypes.String
-
-
-def test_load_datasets_with_structure_data_type_key_backward_compatibility():
-    """Test that load_datasets still accepts 'data_type' key in structure components"""
-    data_structure = {
-        "structures": [
-            {
-                "name": "test_structure",
-                "components": [
-                    {"name": "id1", "data_type": "Number", "role": "Identifier", "nullable": False},
+                "datasets": [
                     {
-                        "name": "attr1",
-                        "data_type": "Boolean",
-                        "role": "Attribute",
-                        "nullable": True,
-                    },
-                ],
-            }
-        ],
-        "datasets": [{"name": "test_ds", "structure": "test_structure"}],
-    }
+                        "name": "test_ds",
+                        "DataStructure": [
+                            {
+                                "name": "id1",
+                                "data_type": "String",
+                                "role": "Identifier",
+                                "nullable": False,
+                            },
+                            {
+                                "name": "attr1",
+                                "data_type": "Boolean",
+                                "role": "Attribute",
+                                "nullable": True,
+                            },
+                        ],
+                    }
+                ]
+            },
+            {"id1": DataTypes.String, "attr1": DataTypes.Boolean},
+        ),
+    ],
+    ids=["type_key", "data_type_key_backward_compat"],
+)
+def test_load_datasets_datastructure_key_compatibility(data_structure, expected_components):
+    """Test that load_datasets accepts both 'type' and 'data_type' keys in DataStructure"""
     datasets, scalars = load_datasets(data_structure)
 
     assert "test_ds" in datasets
-    assert "id1" in datasets["test_ds"].components
-    assert datasets["test_ds"].components["id1"].data_type == DataTypes.Number
-    assert "attr1" in datasets["test_ds"].components
-    assert datasets["test_ds"].components["attr1"].data_type == DataTypes.Boolean
+    for comp_name, expected_type in expected_components.items():
+        assert comp_name in datasets["test_ds"].components
+        assert datasets["test_ds"].components[comp_name].data_type == expected_type
+
+
+@pytest.mark.parametrize(
+    "data_structure,expected_components",
+    [
+        # Test with 'type' key in structure components
+        (
+            {
+                "structures": [
+                    {
+                        "name": "test_structure",
+                        "components": [
+                            {
+                                "name": "id1",
+                                "type": "Integer",
+                                "role": "Identifier",
+                                "nullable": False,
+                            },
+                            {
+                                "name": "measure1",
+                                "type": "String",
+                                "role": "Measure",
+                                "nullable": True,
+                            },
+                        ],
+                    }
+                ],
+                "datasets": [{"name": "test_ds", "structure": "test_structure"}],
+            },
+            {"id1": DataTypes.Integer, "measure1": DataTypes.String},
+        ),
+        # Test with 'data_type' key for backward compatibility
+        (
+            {
+                "structures": [
+                    {
+                        "name": "test_structure",
+                        "components": [
+                            {
+                                "name": "id1",
+                                "data_type": "Number",
+                                "role": "Identifier",
+                                "nullable": False,
+                            },
+                            {
+                                "name": "attr1",
+                                "data_type": "Boolean",
+                                "role": "Attribute",
+                                "nullable": True,
+                            },
+                        ],
+                    }
+                ],
+                "datasets": [{"name": "test_ds", "structure": "test_structure"}],
+            },
+            {"id1": DataTypes.Number, "attr1": DataTypes.Boolean},
+        ),
+    ],
+    ids=["type_key", "data_type_key_backward_compat"],
+)
+def test_load_datasets_structure_key_compatibility(data_structure, expected_components):
+    """Test that load_datasets accepts both 'type' and 'data_type' keys in structure components"""
+    datasets, scalars = load_datasets(data_structure)
+
+    assert "test_ds" in datasets
+    for comp_name, expected_type in expected_components.items():
+        assert comp_name in datasets["test_ds"].components
+        assert datasets["test_ds"].components[comp_name].data_type == expected_type
 
 
 @pytest.mark.parametrize(

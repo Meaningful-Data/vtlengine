@@ -46,6 +46,9 @@ from vtlengine.Model import (
 )
 from vtlengine.Utils import VTL_DTYPES_MAPPING, VTL_ROLE_MAPPING
 
+# Cache SCALAR_TYPES keys for performance
+_SCALAR_TYPE_KEYS = SCALAR_TYPES.keys()
+
 base_path = Path(__file__).parent
 schema_path = base_path / "data" / "schema"
 sdmx_csv_path = base_path / "data" / "sdmx_csv"
@@ -55,6 +58,32 @@ with open(schema_path / "value_domain_schema.json", "r") as file:
     vd_schema = json.load(file)
 with open(schema_path / "external_routines_schema.json", "r") as file:
     external_routine_schema = json.load(file)
+
+
+def _extract_data_type(component: Dict[str, Any]) -> Tuple[str, Any]:
+    """
+    Extract and validate data type from component dictionary.
+
+    Supports both 'type' (preferred) and 'data_type' (backward compatibility) keys.
+
+    Args:
+        component: Component dictionary with either 'type' or 'data_type' key
+
+    Returns:
+        Tuple of (data_type_key, scalar_type_class)
+
+    Raises:
+        InputValidationException: If the data type key or value is invalid
+    """
+    if "type" in component:
+        key = "type"
+        value = component["type"]
+    else:
+        key = "data_type"
+        value = component["data_type"]
+
+    check_key(key, _SCALAR_TYPE_KEYS, value)
+    return key, SCALAR_TYPES[value]
 
 
 def _load_dataset_from_structure(
@@ -86,8 +115,7 @@ def _load_dataset_from_structure(
 
                 for component in structure_json["components"]:
                     # Support both 'type' and 'data_type' for backward compatibility
-                    data_type_key = "type" if "type" in component else "data_type"
-                    check_key(data_type_key, SCALAR_TYPES.keys(), component[data_type_key])
+                    _, scalar_type = _extract_data_type(component)
                     if component["role"] == "ViralAttribute":
                         component["role"] = "Attribute"
 
@@ -103,7 +131,7 @@ def _load_dataset_from_structure(
 
                     components[component["name"]] = VTL_Component(
                         name=component["name"],
-                        data_type=SCALAR_TYPES[component[data_type_key]],
+                        data_type=scalar_type,
                         role=Role(component["role"]),
                         nullable=component["nullable"],
                     )
@@ -111,12 +139,11 @@ def _load_dataset_from_structure(
             if "DataStructure" in dataset_json:
                 for component in dataset_json["DataStructure"]:
                     # Support both 'type' and 'data_type' for backward compatibility
-                    data_type_key = "type" if "type" in component else "data_type"
-                    check_key(data_type_key, SCALAR_TYPES.keys(), component[data_type_key])
+                    _, scalar_type = _extract_data_type(component)
                     check_key("role", Role_keys, component["role"])
                     components[component["name"]] = VTL_Component(
                         name=component["name"],
-                        data_type=SCALAR_TYPES[component[data_type_key]],
+                        data_type=scalar_type,
                         role=Role(component["role"]),
                         nullable=component["nullable"],
                     )
