@@ -85,7 +85,9 @@ def _load_dataset_from_structure(
                     raise InputValidationException(code="0-2-1-2", message=e.message)
 
                 for component in structure_json["components"]:
-                    check_key("data_type", SCALAR_TYPES.keys(), component["data_type"])
+                    # Support both 'type' and 'data_type' for backward compatibility
+                    data_type_key = "type" if "type" in component else "data_type"
+                    check_key(data_type_key, SCALAR_TYPES.keys(), component[data_type_key])
                     if component["role"] == "ViralAttribute":
                         component["role"] = "Attribute"
 
@@ -101,18 +103,20 @@ def _load_dataset_from_structure(
 
                     components[component["name"]] = VTL_Component(
                         name=component["name"],
-                        data_type=SCALAR_TYPES[component["data_type"]],
+                        data_type=SCALAR_TYPES[component[data_type_key]],
                         role=Role(component["role"]),
                         nullable=component["nullable"],
                     )
 
             if "DataStructure" in dataset_json:
                 for component in dataset_json["DataStructure"]:
-                    check_key("data_type", SCALAR_TYPES.keys(), component["type"])
+                    # Support both 'type' and 'data_type' for backward compatibility
+                    data_type_key = "type" if "type" in component else "data_type"
+                    check_key(data_type_key, SCALAR_TYPES.keys(), component[data_type_key])
                     check_key("role", Role_keys, component["role"])
                     components[component["name"]] = VTL_Component(
                         name=component["name"],
-                        data_type=SCALAR_TYPES[component["type"]],
+                        data_type=SCALAR_TYPES[component[data_type_key]],
                         role=Role(component["role"]),
                         nullable=component["nullable"],
                     )

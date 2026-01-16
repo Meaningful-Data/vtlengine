@@ -100,20 +100,26 @@ class DataComponent:
 
     @classmethod
     def from_json(cls, json_str: Any) -> "DataComponent":
+        # Support both 'type' and 'data_type' for backward compatibility
+        data_type_key = "type" if "type" in json_str else "data_type"
         return cls(
             json_str["name"],
             None,
-            SCALAR_TYPES[json_str["data_type"]],
+            SCALAR_TYPES[json_str[data_type_key]],
             Role(json_str["role"]),
             json_str["nullable"],
         )
 
     def to_dict(self) -> Dict[str, Any]:
+        data_type = self.data_type
+        if not inspect.isclass(self.data_type):
+            data_type = self.data_type.__class__  # type: ignore[assignment]
         return {
             "name": self.name,
             "data": self.data,
-            "data_type": self.data_type,
-            "role": self.role,
+            "type": DataTypes.SCALAR_TYPES_CLASS_REVERSE[data_type],
+            "role": self.role.value if self.role is not None else None,  # type: ignore[redundant-expr]
+            "nullable": self.nullable,
         }
 
     def to_json(self) -> str:
@@ -143,9 +149,11 @@ class Component:
 
     @classmethod
     def from_json(cls, json_str: Any) -> "Component":
+        # Support both 'type' and 'data_type' for backward compatibility
+        data_type_key = "type" if "type" in json_str else "data_type"
         return cls(
             json_str["name"],
-            SCALAR_TYPES[json_str["data_type"]],
+            SCALAR_TYPES[json_str[data_type_key]],
             Role(json_str["role"]),
             json_str["nullable"],
         )
@@ -156,7 +164,7 @@ class Component:
             data_type = self.data_type.__class__  # type: ignore[assignment]
         return {
             "name": self.name,
-            "data_type": DataTypes.SCALAR_TYPES_CLASS_REVERSE[data_type],
+            "type": DataTypes.SCALAR_TYPES_CLASS_REVERSE[data_type],
             # Need to check here for NoneType as UDO argument has it
             "role": self.role.value if self.role is not None else None,  # type: ignore[redundant-expr]
             "nullable": self.nullable,
