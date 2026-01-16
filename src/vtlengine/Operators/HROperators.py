@@ -83,13 +83,13 @@ class HRComparison(HRBinOp):
         )
 
     @classmethod
-    def evaluate(cls, left: Dataset, right: DataComponent, mode: str) -> Dataset:  # type: ignore[override]
-        result = cls.validate(left, right, mode)
+    def evaluate(cls, left: Dataset, right: DataComponent, hr_mode: str) -> Dataset:  # type: ignore[override]
+        result = cls.validate(left, right, hr_mode)
         result.data = left.data.copy() if left.data is not None else pd.DataFrame()
         measure_name = left.get_measures_names()[0]
 
         if left.data is not None and right.data is not None:
-            left_data, right_data = cls.align_series(left.data[measure_name], right.data, mode)
+            left_data, right_data = cls.align_series(left.data[measure_name], right.data, hr_mode)
             result.data = result.data.loc[left_data.index]
             result.data[measure_name] = left_data
             result.data["bool_var"] = cls.apply_operation_two_series(left_data, right_data)
@@ -193,15 +193,8 @@ class HAAssignment(Operators.Binary):
 
     @classmethod
     def handle_mode(cls, x: Any, hr_mode: str) -> Any:
-        return (
-            REMOVE
-            if x == REMOVE
-            or hr_mode == "non_null"
-            and pd.isnull(x)
-            or hr_mode == "non_zero"
-            and x == 0
-            else x
-        )
+        remove = (hr_mode == NON_NULL and pd.isnull(x)) or (hr_mode == NON_ZERO and x == 0)
+        return REMOVE if remove else x
 
 
 class Hierarchy(Operators.Operator):
