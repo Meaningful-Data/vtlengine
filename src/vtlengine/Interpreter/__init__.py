@@ -24,6 +24,7 @@ from vtlengine.AST.Grammar.tokens import (
     CHECK_HIERARCHY,
     COUNT,
     CURRENT_DATE,
+    DATASET_PRIORITY,
     DATE_ADD,
     DROP,
     EQ,
@@ -1662,7 +1663,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
         if self.hr_agg_rules_computed is not None and node.value in self.hr_agg_rules_computed:
             df = self.hr_agg_rules_computed[node.value].copy()
-            if self.hr_input == RULE_PRIORITY:
+            if self.hr_input in (RULE_PRIORITY, DATASET_PRIORITY):
                 input_df = rule_data.copy().rename(columns={me_name: "__input_me__"})
                 merged = df.merge(input_df, on=ruleset_ds.get_identifiers_names(), how="inner")
                 df[me_name].where(df[me_name].notna(), merged["__input_me__"], inplace=True)
