@@ -995,7 +995,25 @@ class TimeBugs(BugHelper):
     """ """
 
     classTest = "Bugs.TimeBugs"
-    pass
+
+    def test_GH_437(self):
+        """
+        Status: OK
+        Description: Referential integrity error with time_agg over Time_Period inside Aggregation.
+            The second operation was modifying the results of the first operation.
+        Git Branch: fix-issue-437
+        Goal: Check that time_agg in group all does not modify previous results.
+        """
+        code = "GH_437"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            scalars={"sc_tp": "1995D1"},
+        )
 
 
 class SetBugs(BugHelper):
