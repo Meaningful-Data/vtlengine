@@ -1286,13 +1286,12 @@ class InterpreterAnalyzer(ASTTemplate):
         """Handle hierarchy and check_hierarchy operators."""
         # Visit dataset and get component if present
         # Deep copy the dataset when there are conditions to avoid modifying the original
-        if node.conditions:
-            dataset = deepcopy(self.visit(node.dataset))
-        else:
-            dataset = self.visit(node.dataset)
+        conditions = node.conditions or []
+        has_conditions = len(conditions) > 0
+        dataset = deepcopy(self.visit(node.dataset)) if has_conditions else self.visit(node.dataset)
         component: Optional[str] = self.visit(node.rule_component) if node.rule_component else None
         hr_name = node.ruleset_name
-        cond_components = [self.visit(c) for c in node.conditions] if node.conditions else []
+        cond_components = [self.visit(c) for c in conditions] if has_conditions else []
 
         # Get mode values with defaults
         mode, input_, output = self._get_hr_mode_values(node)

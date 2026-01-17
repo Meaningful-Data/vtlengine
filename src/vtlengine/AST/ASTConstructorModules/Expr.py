@@ -1114,7 +1114,6 @@ class Expr(VtlVisitor):
                 output_str = Terminals().visitOutputModeHierarchy(c)
                 output = HierarchyOutput(output_str)
 
-        # AST_ASTCONSTRUCTOR.22
         conditions = conditions[0] if conditions else []
 
         if not rule_comp and ruleset_name in de_ruleset_elements:

@@ -700,12 +700,18 @@ class DPValidation(AST):
 
     dataset: The input dataset expression
     ruleset_name: Name of the datapoint ruleset (DPRuleset)
-    components: Optional list of component IDs (from COMPONENTS clause)
+    components: Optional list of component IDs (from COMPONENTS clause).
+                For datapoint validation, these are stored as plain string
+                identifiers extracted during parsing (see Expr.py), unlike
+                HROperation.conditions which keeps the corresponding
+                expressions as AST nodes.
     output: Output mode (invalid, all, all_measures)
     """
 
     dataset: AST
     ruleset_name: str
+    # List of component identifier names (strings), not AST nodes. The
+    # parser extracts the identifiers earlier for datapoint validation.
     components: List[str] = field(default_factory=list)
     output: Optional[ValidationOutput] = None
 

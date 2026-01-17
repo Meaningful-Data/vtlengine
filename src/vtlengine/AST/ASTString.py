@@ -486,8 +486,9 @@ class ASTString(ASTTemplate):
 
         if self.pretty:
             # In pretty mode, output line always present (empty if default invalid)
-            has_output = node.output and node.output.value != "invalid"
-            output_line = node.output.value if has_output else ""
+            output_line = (
+                node.output.value if (node.output and node.output.value != "invalid") else ""
+            )
             return (
                 f"{CHECK_DATAPOINT}({nl}{tab}{operand},{nl}{tab}{rule_name}"
                 f"{components_str}{nl}{tab}{output_line}{nl})"
