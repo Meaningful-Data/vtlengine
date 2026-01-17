@@ -1107,17 +1107,15 @@ class Expr(VtlVisitor):
             elif isinstance(c, Parser.InputModeHierarchyContext):
                 input_str = Terminals().visitInputModeHierarchy(c)
                 if input_str == DATASET_PRIORITY:
-                    raise NotImplementedError("Dataset Priority input mode on HR is not implemented")
+                    msg = "Dataset Priority input mode on HR is not implemented"
+                    raise NotImplementedError(msg)
                 input_mode = HRInputMode(input_str)
             elif isinstance(c, Parser.OutputModeHierarchyContext):
                 output_str = Terminals().visitOutputModeHierarchy(c)
                 output = HierarchyOutput(output_str)
 
-        if len(conditions) != 0:
-            # AST_ASTCONSTRUCTOR.22
-            conditions = conditions[0]
-        else:
-            conditions = []
+        # AST_ASTCONSTRUCTOR.22
+        conditions = conditions[0] if conditions else []
 
         if not rule_comp and ruleset_name in de_ruleset_elements:
             if isinstance(de_ruleset_elements[ruleset_name], list):
@@ -1224,34 +1222,31 @@ class Expr(VtlVisitor):
             elif isinstance(c, Parser.InputModeContext):
                 input_str = Terminals().visitInputMode(c)
                 if input_str == DATASET_PRIORITY:
-                    raise NotImplementedError("Dataset Priority input mode on HR is not implemented")
+                    msg = "Dataset Priority input mode on HR is not implemented"
+                    raise NotImplementedError(msg)
                 input_mode = CHInputMode(input_str)
             elif isinstance(c, Parser.ValidationOutputContext):
                 output_str = Terminals().visitValidationOutput(c)
                 output = ValidationOutput(output_str)
 
-        if len(conditions) != 0:
-            # AST_ASTCONSTRUCTOR.22
-            conditions = conditions[0]
-        else:
-            conditions = []
+        # AST_ASTCONSTRUCTOR.22
+        conditions = conditions[0] if conditions else []
 
-        if not rule_comp:
-            if ruleset_name in de_ruleset_elements:
-                if isinstance(de_ruleset_elements[ruleset_name], list):
-                    rule_element = de_ruleset_elements[ruleset_name][-1]
-                else:
-                    rule_element = de_ruleset_elements[ruleset_name]
+        if not rule_comp and ruleset_name in de_ruleset_elements:
+            if isinstance(de_ruleset_elements[ruleset_name], list):
+                rule_element = de_ruleset_elements[ruleset_name][-1]
+            else:
+                rule_element = de_ruleset_elements[ruleset_name]
 
-                if rule_element.kind == "DatasetID":
-                    check_hierarchy_rule = rule_element.value
-                    rule_comp = Identifier(
-                        value=check_hierarchy_rule,
-                        kind="ComponentID",
-                        **extract_token_info(ctx),
-                    )
-                else:  # ValuedomainID
-                    raise SemanticError("1-1-10-4", op=op)
+            if rule_element.kind == "DatasetID":
+                check_hierarchy_rule = rule_element.value
+                rule_comp = Identifier(
+                    value=check_hierarchy_rule,
+                    kind="ComponentID",
+                    **extract_token_info(ctx),
+                )
+            else:  # ValuedomainID
+                raise SemanticError("1-1-10-4", op=op)
 
         return HROperation(
             op=op,

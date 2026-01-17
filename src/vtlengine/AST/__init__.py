@@ -17,6 +17,7 @@ from vtlengine.Model import Dataset, Role
 
 class ValidationMode(Enum):
     """Validation mode for hierarchy operations."""
+
     NON_NULL = "non_null"
     NON_ZERO = "non_zero"
     PARTIAL_NULL = "partial_null"
@@ -27,6 +28,7 @@ class ValidationMode(Enum):
 
 class HRInputMode(Enum):
     """Input mode for hierarchy operator."""
+
     RULE = "rule"
     DATASET = "dataset"
     RULE_PRIORITY = "rule_priority"
@@ -34,12 +36,14 @@ class HRInputMode(Enum):
 
 class CHInputMode(Enum):
     """Input mode for check_hierarchy operator."""
+
     DATASET = "dataset"
     DATASET_PRIORITY = "dataset_priority"
 
 
 class ValidationOutput(Enum):
     """Output mode for check_datapoint and check_hierarchy."""
+
     INVALID = "invalid"
     ALL = "all"
     ALL_MEASURES = "all_measures"
@@ -47,6 +51,7 @@ class ValidationOutput(Enum):
 
 class HierarchyOutput(Enum):
     """Output mode for hierarchy operator."""
+
     COMPUTED = "computed"
     ALL = "all"
 
@@ -675,6 +680,7 @@ class HROperation(AST):
     input_mode: Input mode - HRInputMode for hierarchy, CHInputMode for check_hierarchy
     output: Output mode - HierarchyOutput for hierarchy, ValidationOutput for check_hierarchy
     """
+
     op: str
     dataset: AST
     ruleset_name: str
@@ -697,6 +703,7 @@ class DPValidation(AST):
     components: Optional list of component IDs (from COMPONENTS clause)
     output: Output mode (invalid, all, all_measures)
     """
+
     dataset: AST
     ruleset_name: str
     components: List[str] = field(default_factory=list)

@@ -1271,6 +1271,17 @@ class InterpreterAnalyzer(ASTTemplate):
 
         raise SemanticError("1-3-5", op_type="ParamOp", node_op=node.op)
 
+    def _get_hr_mode_values(self, node: AST.HROperation) -> Tuple[str, str, str]:
+        """Extract mode values with defaults for HROperation."""
+        mode = node.validation_mode.value if node.validation_mode else "non_null"
+        if node.op == HIERARCHY:
+            input_ = node.input_mode.value if node.input_mode else "rule"
+            output = node.output.value if node.output else "computed"
+        else:  # CHECK_HIERARCHY
+            input_ = node.input_mode.value if node.input_mode else "dataset"
+            output = node.output.value if node.output else "invalid"
+        return mode, input_, output
+
     def visit_HROperation(self, node: AST.HROperation) -> Dataset:
         """Handle hierarchy and check_hierarchy operators."""
         # Visit dataset and get component if present
@@ -1284,14 +1295,7 @@ class InterpreterAnalyzer(ASTTemplate):
         cond_components = [self.visit(c) for c in node.conditions] if node.conditions else []
 
         # Get mode values with defaults
-        if node.op == HIERARCHY:
-            mode = node.validation_mode.value if node.validation_mode else "non_null"
-            input_ = node.input_mode.value if node.input_mode else "rule"
-            output = node.output.value if node.output else "computed"
-        else:  # CHECK_HIERARCHY
-            mode = node.validation_mode.value if node.validation_mode else "non_null"
-            input_ = node.input_mode.value if node.input_mode else "dataset"
-            output = node.output.value if node.output else "invalid"
+        mode, input_, output = self._get_hr_mode_values(node)
 
         # Validate hierarchical ruleset exists
         if self.hrs is None:
