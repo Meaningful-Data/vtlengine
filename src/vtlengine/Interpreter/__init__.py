@@ -1274,7 +1274,11 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_HROperation(self, node: AST.HROperation) -> Dataset:
         """Handle hierarchy and check_hierarchy operators."""
         # Visit dataset and get component if present
-        dataset = self.visit(node.dataset)
+        # Deep copy the dataset when there are conditions to avoid modifying the original
+        if node.conditions:
+            dataset = deepcopy(self.visit(node.dataset))
+        else:
+            dataset = self.visit(node.dataset)
         component: Optional[str] = self.visit(node.rule_component) if node.rule_component else None
         hr_name = node.ruleset_name
         cond_components = [self.visit(c) for c in node.conditions] if node.conditions else []
