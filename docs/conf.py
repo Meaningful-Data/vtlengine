@@ -58,8 +58,46 @@ def setup_error_docs(app):
     try:
         generate_errors_rst(output_filepath, centralised_messages)
         logger.info(f"[DOCS] Generated error messages documentation at {output_filepath}")
+        # Validate the generated file
+        _validate_error_messages_rst(output_filepath)
+        logger.info("[DOCS] Error messages documentation validated successfully")
     except Exception as e:
-        logger.warning(f"[DOCS] Failed to generate error messages RST: {e}")
+        logger.error(f"[DOCS] Failed to generate error messages RST: {e}")
+        raise RuntimeError(f"Documentation build failed: {e}") from e
+
+
+def _validate_error_messages_rst(filepath: Path) -> None:
+    """
+    Validates that the generated error_messages.rst file contains expected content.
+
+    Raises:
+        ValueError: If validation fails.
+    """
+    if not filepath.exists():
+        raise ValueError(f"Error messages file does not exist: {filepath}")
+
+    content = filepath.read_text(encoding="utf-8")
+
+    # Check file is not empty
+    if not content.strip():
+        raise ValueError("Error messages file is empty")
+
+    # Check for required sections
+    required_sections = [
+        "Error Messages",
+        "The following table contains all available error codes:",
+    ]
+    for section in required_sections:
+        if section not in content:
+            raise ValueError(f"Missing required section: '{section}'")
+
+    # Check that at least some error codes are present (format: X-X-X or X-X-X-X)
+    import re
+
+    error_code_pattern = re.compile(r"\d+-\d+-\d+(?:-\d+)?")
+    error_codes = error_code_pattern.findall(content)
+    if len(error_codes) < 10:  # Expect at least 10 error codes
+        raise ValueError(f"Expected at least 10 error codes, found {len(error_codes)}")
 
 
 def setup(app):
