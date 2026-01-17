@@ -1004,75 +1004,15 @@ class TimeBugs(BugHelper):
         Git Branch: fix-issue-437
         Goal: Check that time_agg in group all does not modify previous results.
         """
-        import pandas as pd
+        code = "GH_437"
+        number_inputs = 1
+        references_names = ["1", "2"]
 
-        from vtlengine import run
-
-        script = """
-            DS_filtered <- DS_1[filter Id_2 >= sc_tp];
-            DS_r <- sum (DS_filtered group all time_agg("M") );
-        """
-
-        data_structures = {
-            "datasets": [
-                {
-                    "name": "DS_1",
-                    "DataStructure": [
-                        {
-                            "name": "Id_1",
-                            "type": "Integer",
-                            "role": "Identifier",
-                            "nullable": False,
-                        },
-                        {
-                            "name": "Id_2",
-                            "type": "Time_Period",
-                            "role": "Identifier",
-                            "nullable": False,
-                        },
-                        {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
-                    ],
-                }
-            ],
-            "scalars": [
-                {"name": "sc_tp", "type": "Time_Period"},
-            ],
-        }
-
-        data_df = pd.DataFrame(
-            {"Id_1": [1, 2, 2], "Id_2": ["2021D1", "2022D45", "2022D46"], "Me_1": [10, 20, 30]}
-        )
-        datapoints = {"DS_1": data_df}
-
-        scalar_values = {"sc_tp": "1995D1"}
-
-        run_result = run(
-            script=script,
-            data_structures=data_structures,
-            datapoints=datapoints,
-            scalar_values=scalar_values,
-            return_only_persistent=False,
-        )
-
-        # DS_filtered should retain original Time_Period values (not converted to months)
-        expected_ds_filtered_id2 = ["2021D001", "2022D045", "2022D046"]
-        actual_ds_filtered_id2 = run_result["DS_filtered"].data["Id_2"].tolist()
-        assert actual_ds_filtered_id2 == expected_ds_filtered_id2, (
-            f"DS_filtered Id_2 was modified. Expected {expected_ds_filtered_id2}, got {actual_ds_filtered_id2}"
-        )
-
-        # DS_r should have the aggregated monthly values
-        expected_ds_r_id2 = ["2021M01", "2022M02"]
-        actual_ds_r_id2 = run_result["DS_r"].data["Id_2"].tolist()
-        assert actual_ds_r_id2 == expected_ds_r_id2, (
-            f"DS_r Id_2 is incorrect. Expected {expected_ds_r_id2}, got {actual_ds_r_id2}"
-        )
-
-        # DS_r should have correctly summed values
-        expected_ds_r_me1 = [10.0, 50.0]
-        actual_ds_r_me1 = run_result["DS_r"].data["Me_1"].tolist()
-        assert actual_ds_r_me1 == expected_ds_r_me1, (
-            f"DS_r Me_1 is incorrect. Expected {expected_ds_r_me1}, got {actual_ds_r_me1}"
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            scalars={"sc_tp": "1995D1"},
         )
 
 
