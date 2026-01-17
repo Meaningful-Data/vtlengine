@@ -1,6 +1,6 @@
 import re
 from copy import copy
-from typing import Any
+from typing import Any, Optional
 
 from antlr4.tree.Tree import TerminalNodeImpl
 
@@ -12,8 +12,13 @@ from vtlengine.AST import (
     BinOp,
     Case,
     CaseObj,
+    CHInputMode,
     Constant,
+    DPValidation,
     EvalOp,
+    HierarchyOutput,
+    HRInputMode,
+    HROperation,
     Identifier,
     If,
     JoinOp,
@@ -27,6 +32,8 @@ from vtlengine.AST import (
     UDOCall,
     UnaryOp,
     Validation,
+    ValidationMode,
+    ValidationOutput,
     VarID,
     Windowing,
 )
@@ -1081,16 +1088,12 @@ class Expr(VtlVisitor):
 
         op = c.getSymbol().text
         dataset_node = self.visitExpr(ctx_list[2])
-        rule_name_node = Identifier(
-            value=ctx_list[4].getSymbol().text,
-            kind="RuleID",
-            **extract_token_info(ctx_list[4].getSymbol()),
-        )
+        ruleset_name = ctx_list[4].getSymbol().text
 
         conditions = []
-        modes = "non_null"
-        inputs = "rule"
-        retains = "computed"
+        validation_mode: Optional[ValidationMode] = None
+        input_mode: Optional[HRInputMode] = None
+        output: Optional[HierarchyOutput] = None
         rule_comp = None
 
         for c in ctx_list:
@@ -1099,35 +1102,25 @@ class Expr(VtlVisitor):
             elif isinstance(c, Parser.ComponentIDContext):
                 rule_comp = Terminals().visitComponentID(c)
             elif isinstance(c, Parser.ValidationModeContext):
-                modes = Terminals().visitValidationMode(c)
+                mode_str = Terminals().visitValidationMode(c)
+                validation_mode = ValidationMode(mode_str)
             elif isinstance(c, Parser.InputModeHierarchyContext):
-                inputs = Terminals().visitInputModeHierarchy(c)
+                input_str = Terminals().visitInputModeHierarchy(c)
+                if input_str == DATASET_PRIORITY:
+                    msg = "Dataset Priority input mode on HR is not implemented"
+                    raise NotImplementedError(msg)
+                input_mode = HRInputMode(input_str)
             elif isinstance(c, Parser.OutputModeHierarchyContext):
-                retains = Terminals().visitOutputModeHierarchy(c)
+                output_str = Terminals().visitOutputModeHierarchy(c)
+                output = HierarchyOutput(output_str)
 
-        if len(conditions) != 0:
-            # AST_ASTCONSTRUCTOR.22
-            conditions = conditions[0]
+        conditions = conditions[0] if conditions else []
 
-        if inputs == DATASET_PRIORITY:
-            raise NotImplementedError("Dataset Priority input mode on HR is not implemented")
-        param_constant_node = []
-
-        param_constant_node.append(
-            ParamConstant(type_="PARAM_MODE", value=modes, **extract_token_info(ctx))
-        )
-        param_constant_node.append(
-            ParamConstant(type_="PARAM_INPUT", value=inputs, **extract_token_info(ctx))
-        )
-        param_constant_node.append(
-            ParamConstant(type_="PARAM_OUTPUT", value=retains, **extract_token_info(ctx))
-        )
-
-        if not rule_comp and rule_name_node.value in de_ruleset_elements:
-            if isinstance(de_ruleset_elements[rule_name_node.value], list):
-                rule_element = de_ruleset_elements[rule_name_node.value][-1]
+        if not rule_comp and ruleset_name in de_ruleset_elements:
+            if isinstance(de_ruleset_elements[ruleset_name], list):
+                rule_element = de_ruleset_elements[ruleset_name][-1]
             else:
-                rule_element = de_ruleset_elements[rule_name_node.value]
+                rule_element = de_ruleset_elements[ruleset_name]
             if rule_element.kind == "DatasetID":
                 check_hierarchy_rule = rule_element.value
                 rule_comp = Identifier(
@@ -1135,12 +1128,16 @@ class Expr(VtlVisitor):
                 )
             else:  # ValuedomainID
                 raise SemanticError("1-1-10-4", op=op)
-        children = [dataset_node, rule_comp, rule_name_node, *conditions]
-        children = [node for node in children if node is not None]
-        return ParamOp(
+
+        return HROperation(
             op=op,
-            children=children,
-            params=param_constant_node,
+            dataset=dataset_node,
+            ruleset_name=ruleset_name,
+            rule_component=rule_comp,
+            conditions=conditions if isinstance(conditions, list) else [conditions],
+            validation_mode=validation_mode,
+            input_mode=input_mode,
+            output=output,
             **extract_token_info(ctx),
         )
 
@@ -1163,41 +1160,37 @@ class Expr(VtlVisitor):
         validationDatapoint: CHECK_DATAPOINT '(' expr ',' IDENTIFIER (COMPONENTS componentID (',' componentID)*)? (INVALID|ALL_MEASURES|ALL)? ')' ;
         """  # noqa E501
         ctx_list = list(ctx.getChildren())
-        c = ctx_list[0]
 
-        op = c.getSymbol().text
-
-        operand_node = self.visitExpr(ctx_list[2])
-        rule_name = ctx_list[4].getSymbol().text
+        dataset_node = self.visitExpr(ctx_list[2])
+        ruleset_name = ctx_list[4].getSymbol().text
 
         components = [
             Terminals().visitComponentID(comp)
             for comp in ctx_list
             if isinstance(comp, Parser.ComponentIDContext)
         ]
-        aux_components = []
+        component_names = []
         for x in components:
             if isinstance(x, BinOp):
-                aux_components.append(x.right.value)
+                component_names.append(x.right.value)
             else:
-                aux_components.append(x.value)
+                component_names.append(x.value)
 
-        components = aux_components
-
-        # Default value for output is invalid.
-        output = "invalid"
+        # Default value for output is invalid (None means use default at interpretation)
+        output: Optional[ValidationOutput] = None
 
         if isinstance(ctx_list[-2], Parser.ValidationOutputContext):
-            output = Terminals().visitValidationOutput(ctx_list[-2])
+            output_str = Terminals().visitValidationOutput(ctx_list[-2])
+            output = ValidationOutput(output_str)
 
-        return ParamOp(
-            op=op,
-            children=[operand_node, rule_name, *components],
-            params=[output],
+        return DPValidation(
+            dataset=dataset_node,
+            ruleset_name=ruleset_name,
+            components=component_names,
+            output=output,
             **extract_token_info(ctx),
         )
 
-    # TODO Not fully implemented only basic usage available.
     def visitValidateHRruleset(self, ctx: Parser.ValidateHRrulesetContext):
         """
         CHECK_HIERARCHY LPAREN op=expr COMMA hrName=IDENTIFIER conditionClause? (RULE componentID)? validationMode? inputMode? validationOutput? RPAREN     # validateHRruleset
@@ -1209,17 +1202,12 @@ class Expr(VtlVisitor):
         op = c.getSymbol().text
 
         dataset_node = self.visitExpr(ctx_list[2])
-        rule_name_node = Identifier(
-            value=ctx_list[4].getSymbol().text,
-            kind="RuleID",
-            **extract_token_info(ctx_list[4].getSymbol()),
-        )
+        ruleset_name = ctx_list[4].getSymbol().text
 
         conditions = []
-        # Default values
-        modes = "non_null"
-        inputs = "dataset"
-        retains = "invalid"
+        validation_mode: Optional[ValidationMode] = None
+        input_mode: Optional[CHInputMode] = None
+        output: Optional[ValidationOutput] = None
         rule_comp = None
 
         for c in ctx_list:
@@ -1228,54 +1216,46 @@ class Expr(VtlVisitor):
             elif isinstance(c, Parser.ComponentIDContext):
                 rule_comp = Terminals().visitComponentID(c)
             elif isinstance(c, Parser.ValidationModeContext):
-                modes = Terminals().visitValidationMode(c)
+                mode_str = Terminals().visitValidationMode(c)
+                validation_mode = ValidationMode(mode_str)
             elif isinstance(c, Parser.InputModeContext):
-                inputs = Terminals().visitInputMode(c)
+                input_str = Terminals().visitInputMode(c)
+                if input_str == DATASET_PRIORITY:
+                    msg = "Dataset Priority input mode on HR is not implemented"
+                    raise NotImplementedError(msg)
+                input_mode = CHInputMode(input_str)
             elif isinstance(c, Parser.ValidationOutputContext):
-                retains = Terminals().visitValidationOutput(c)
+                output_str = Terminals().visitValidationOutput(c)
+                output = ValidationOutput(output_str)
 
-        if len(conditions) != 0:
-            # AST_ASTCONSTRUCTOR.22
-            conditions = conditions[0]
+        # AST_ASTCONSTRUCTOR.22
+        conditions = conditions[0] if conditions else []
 
-        param_constant_node = []
+        if not rule_comp and ruleset_name in de_ruleset_elements:
+            if isinstance(de_ruleset_elements[ruleset_name], list):
+                rule_element = de_ruleset_elements[ruleset_name][-1]
+            else:
+                rule_element = de_ruleset_elements[ruleset_name]
 
-        if inputs == DATASET_PRIORITY:
-            raise NotImplementedError("Dataset Priority input mode on HR is not implemented")
+            if rule_element.kind == "DatasetID":
+                check_hierarchy_rule = rule_element.value
+                rule_comp = Identifier(
+                    value=check_hierarchy_rule,
+                    kind="ComponentID",
+                    **extract_token_info(ctx),
+                )
+            else:  # ValuedomainID
+                raise SemanticError("1-1-10-4", op=op)
 
-        param_constant_node.append(
-            ParamConstant(type_="PARAM_MODE", value=modes, **extract_token_info(ctx))
-        )
-        param_constant_node.append(
-            ParamConstant(type_="PARAM_INPUT", value=inputs, **extract_token_info(ctx))
-        )
-        param_constant_node.append(
-            ParamConstant(type_="PARAM_OUTPUT", value=retains, **extract_token_info(ctx))
-        )
-
-        if not rule_comp:
-            rule_name = rule_name_node.value
-            if rule_name in de_ruleset_elements:
-                if isinstance(de_ruleset_elements[rule_name], list):
-                    rule_element = de_ruleset_elements[rule_name][-1]
-                else:
-                    rule_element = de_ruleset_elements[rule_name]
-
-                if rule_element.kind == "DatasetID":
-                    check_hierarchy_rule = rule_element.value
-                    rule_comp = Identifier(
-                        value=check_hierarchy_rule,
-                        kind="ComponentID",
-                        **extract_token_info(ctx),
-                    )
-                else:  # ValuedomainID
-                    raise SemanticError("1-1-10-4", op=op)
-        children = [dataset_node, rule_comp, rule_name_node, *conditions]
-        children = [node for node in children if node is not None]
-        return ParamOp(
+        return HROperation(
             op=op,
-            children=children,
-            params=param_constant_node,
+            dataset=dataset_node,
+            ruleset_name=ruleset_name,
+            rule_component=rule_comp,
+            conditions=conditions if isinstance(conditions, list) else [conditions],
+            validation_mode=validation_mode,
+            input_mode=input_mode,
+            output=output,
             **extract_token_info(ctx),
         )
 
