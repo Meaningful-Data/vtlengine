@@ -1,0 +1,37 @@
+/* Custom styles for VTL Engine documentation */
+
+/* Error messages table - make it full width with proper text wrapping */
+.error-messages-table {
+    width: 100% !important;
+    table-layout: fixed !important;
+}
+
+.error-messages-table td,
+.error-messages-table th {
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    white-space: normal !important;
+}
+
+/* First column (Code) - fixed narrow width */
+.error-messages-table td:first-child,
+.error-messages-table th:first-child {
+    width: 10% !important;
+    min-width: 80px !important;
+}
+
+/* Make the table container not scroll horizontally */
+.wy-table-responsive {
+    overflow-x: visible !important;
+}
+
+/* Ensure the main content area can expand */
+.wy-nav-content {
+    max-width: none !important;
+}
+
+/* Code elements in table cells should wrap */
+.error-messages-table code {
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+}

@@ -6,7 +6,8 @@ output_filepath = Path(__file__).parent.parent.parent.parent / "Docs" / "error_m
 
 def generate_errors_rst(file_path: Path, messages: Dict[str, Any]) -> None:
     """
-    Generates an RST file with a grid of error codes, messages, and descriptions.
+    Generates an RST file with a list-table of error codes, messages, and descriptions.
+    Uses list-table format for better rendering and text wrapping in Sphinx.
     """
 
     def sort_key(code: str) -> Any:
@@ -59,25 +60,16 @@ def generate_errors_rst(file_path: Path, messages: Dict[str, Any]) -> None:
     lines.append("")
     lines.append("The following table contains all available error codes:")
     lines.append("")
-    headers = ["Code", "Message", "Description"]
-    max_lengths = [len(h) for h in headers]
 
-    for code, info in messages.items():
-        if isinstance(info, dict):
-            message = escape_for_sphinx(info.get("message", ""))
-            description = escape_for_sphinx(info.get("description", ""))
-        else:
-            message = escape_for_sphinx(str(info))
-            description = ""
-        max_lengths[0] = max(max_lengths[0], len(code))
-        max_lengths[1] = max(max_lengths[1], len(message))
-        max_lengths[2] = max(max_lengths[2], len(description))
-
-    sep = "  ".join("=" * length for length in max_lengths)
-    lines.append(sep)
-    header_line = "  ".join(h.ljust(max_lengths[i]) for i, h in enumerate(headers))
-    lines.append(header_line)
-    lines.append(sep)
+    # Use list-table for better text wrapping and responsive display
+    lines.append(".. list-table::")
+    lines.append("   :header-rows: 1")
+    lines.append("   :widths: 10 45 45")
+    lines.append("   :class: error-messages-table")
+    lines.append("")
+    lines.append("   * - Code")
+    lines.append("     - Message")
+    lines.append("     - Description")
 
     for code in sorted(messages.keys(), key=sort_key):
         info = messages[code]
@@ -87,10 +79,9 @@ def generate_errors_rst(file_path: Path, messages: Dict[str, Any]) -> None:
         else:
             message = escape_for_sphinx(str(info))
             description = ""
-        row = "  ".join(s.ljust(max_lengths[i]) for i, s in enumerate([code, message, description]))
-        lines.append(row)
-
-    lines.append(sep)
+        lines.append(f"   * - {code}")
+        lines.append(f"     - {message}")
+        lines.append(f"     - {description}")
 
     path.write_text("\n".join(lines), encoding="utf-8")
     print(f"RST generated in {path}")

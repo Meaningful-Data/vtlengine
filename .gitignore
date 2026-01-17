@@ -171,3 +171,4 @@ development/
 # Documentation
 _build/
 _site/
+docs/error_messages.rst
