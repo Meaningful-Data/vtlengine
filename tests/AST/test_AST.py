@@ -14,22 +14,31 @@ from vtlengine.AST import (
     Argument,
     Assignment,
     BinOp,
+    Case,
     CaseObj,
     DefIdentifier,
     DPRule,
     DPRuleset,
+    DPValidation,
+    EvalOp,
     HRBinOp,
+    HROperation,
     HRule,
     HRuleset,
     HRUnOp,
     Identifier,
+    If,
     JoinOp,
     Operator,
     OrderBy,
+    ParFunction,
     PersistentAssignment,
     RegularAggregation,
     Start,
     TimeAggregation,
+    UDOCall,
+    Validation,
+    ValidationOutput,
     VarID,
     Windowing,
 )
@@ -615,6 +624,303 @@ def test_visit_DPRIdentifier():
     node.value = "dpr_identifier_value"
     result = visitor.visit_DPRIdentifier(node)
     assert result == "dpr_identifier_value"
+
+
+def test_visit_HROperation():
+    visitor = ASTTemplate()
+    dataset_node = VarID(value="DS_1", line_start=1, column_start=1, line_stop=1, column_stop=1)
+    rule_component_node = Identifier(
+        value="comp1", kind="ComponentID", line_start=1, column_start=1, line_stop=1, column_stop=1
+    )
+    condition_node1 = Identifier(
+        value="cond1", kind="ComponentID", line_start=1, column_start=1, line_stop=1, column_stop=1
+    )
+    condition_node2 = Identifier(
+        value="cond2", kind="ComponentID", line_start=1, column_start=1, line_stop=1, column_stop=1
+    )
+    node = HROperation(
+        op="hierarchy",
+        dataset=dataset_node,
+        ruleset_name="hr_ruleset",
+        rule_component=rule_component_node,
+        conditions=[condition_node1, condition_node2],
+        line_start=1,
+        column_start=1,
+        line_stop=1,
+        column_stop=1,
+    )
+    with mock.patch.object(visitor, "visit", wraps=visitor.visit) as mock_visit:
+        visitor.visit_HROperation(node)
+        mock_visit.assert_any_call(dataset_node)
+        mock_visit.assert_any_call(rule_component_node)
+        mock_visit.assert_any_call(condition_node1)
+        mock_visit.assert_any_call(condition_node2)
+        assert mock_visit.call_count == 4
+
+
+def test_visit_HROperation_without_component():
+    visitor = ASTTemplate()
+    dataset_node = VarID(value="DS_1", line_start=1, column_start=1, line_stop=1, column_stop=1)
+    node = HROperation(
+        op="check_hierarchy",
+        dataset=dataset_node,
+        ruleset_name="hr_ruleset",
+        rule_component=None,
+        conditions=[],
+        line_start=1,
+        column_start=1,
+        line_stop=1,
+        column_stop=1,
+    )
+    with mock.patch.object(visitor, "visit", wraps=visitor.visit) as mock_visit:
+        visitor.visit_HROperation(node)
+        mock_visit.assert_any_call(dataset_node)
+        assert mock_visit.call_count == 1
+
+
+def test_visit_DPValidation():
+    visitor = ASTTemplate()
+    dataset_node = VarID(value="DS_1", line_start=1, column_start=1, line_stop=1, column_stop=1)
+    node = DPValidation(
+        dataset=dataset_node,
+        ruleset_name="dpr_ruleset",
+        components=["comp1", "comp2"],
+        output=ValidationOutput.ALL,
+        line_start=1,
+        column_start=1,
+        line_stop=1,
+        column_stop=1,
+    )
+    with mock.patch.object(visitor, "visit", wraps=visitor.visit) as mock_visit:
+        visitor.visit_DPValidation(node)
+        mock_visit.assert_any_call(dataset_node)
+        assert mock_visit.call_count == 1
+
+
+def test_visit_DPValidation_without_components():
+    visitor = ASTTemplate()
+    dataset_node = VarID(value="DS_1", line_start=1, column_start=1, line_stop=1, column_stop=1)
+    node = DPValidation(
+        dataset=dataset_node,
+        ruleset_name="dpr_ruleset",
+        components=[],
+        output=None,
+        line_start=1,
+        column_start=1,
+        line_stop=1,
+        column_stop=1,
+    )
+    with mock.patch.object(visitor, "visit", wraps=visitor.visit) as mock_visit:
+        visitor.visit_DPValidation(node)
+        mock_visit.assert_any_call(dataset_node)
+        assert mock_visit.call_count == 1
+
+
+def test_visit_Case():
+    visitor = ASTTemplate()
+    condition1 = VarID(value="cond1", line_start=1, column_start=1, line_stop=1, column_stop=1)
+    then1 = VarID(value="then1", line_start=1, column_start=1, line_stop=1, column_stop=1)
+    condition2 = VarID(value="cond2", line_start=1, column_start=1, line_stop=1, column_stop=1)
+    then2 = VarID(value="then2", line_start=1, column_start=1, line_stop=1, column_stop=1)
+    else_op = VarID(value="else_val", line_start=1, column_start=1, line_stop=1, column_stop=1)
+    case1 = CaseObj(
+        condition=condition1, thenOp=then1, line_start=1, column_start=1, line_stop=1, column_stop=1
+    )
+    case2 = CaseObj(
+        condition=condition2, thenOp=then2, line_start=1, column_start=1, line_stop=1, column_stop=1
+    )
+    node = Case(
+        cases=[case1, case2],
+        elseOp=else_op,
+        line_start=1,
+        column_start=1,
+        line_stop=1,
+        column_stop=1,
+    )
+    with mock.patch.object(visitor, "visit", wraps=visitor.visit) as mock_visit:
+        visitor.visit_Case(node)
+        mock_visit.assert_any_call(condition1)
+        mock_visit.assert_any_call(then1)
+        mock_visit.assert_any_call(condition2)
+        mock_visit.assert_any_call(then2)
+        mock_visit.assert_any_call(else_op)
+        assert mock_visit.call_count == 5
+
+
+def test_visit_If():
+    visitor = ASTTemplate()
+    condition_node = VarID(
+        value="condition", line_start=1, column_start=1, line_stop=1, column_stop=1
+    )
+    then_node = VarID(value="then", line_start=1, column_start=1, line_stop=1, column_stop=1)
+    else_node = VarID(value="else", line_start=1, column_start=1, line_stop=1, column_stop=1)
+    node = If(
+        condition=condition_node,
+        thenOp=then_node,
+        elseOp=else_node,
+        line_start=1,
+        column_start=1,
+        line_stop=1,
+        column_stop=1,
+    )
+    with mock.patch.object(visitor, "visit", wraps=visitor.visit) as mock_visit:
+        visitor.visit_If(node)
+        mock_visit.assert_any_call(condition_node)
+        mock_visit.assert_any_call(then_node)
+        mock_visit.assert_any_call(else_node)
+        assert mock_visit.call_count == 3
+
+
+def test_visit_Validation():
+    visitor = ASTTemplate()
+    imbalance_node = VarID(
+        value="imbalance", line_start=1, column_start=1, line_stop=1, column_stop=1
+    )
+    node = Validation(
+        op="check",
+        validation="val1",
+        error_code="E001",
+        error_level=1,
+        imbalance=imbalance_node,
+        invalid=False,
+        line_start=1,
+        column_start=1,
+        line_stop=1,
+        column_stop=1,
+    )
+    with mock.patch.object(visitor, "visit", wraps=visitor.visit) as mock_visit:
+        visitor.visit_Validation(node)
+        mock_visit.assert_any_call(imbalance_node)
+        assert mock_visit.call_count == 1
+
+
+def test_visit_Validation_no_imbalance():
+    visitor = ASTTemplate()
+    node = Validation(
+        op="check",
+        validation="val1",
+        error_code="E001",
+        error_level=1,
+        imbalance=None,
+        invalid=False,
+        line_start=1,
+        column_start=1,
+        line_stop=1,
+        column_stop=1,
+    )
+    with mock.patch.object(visitor, "visit", wraps=visitor.visit) as mock_visit:
+        visitor.visit_Validation(node)
+        # Should not visit anything since imbalance is None
+        assert mock_visit.call_count == 0
+
+
+def test_visit_HRule():
+    visitor = ASTTemplate()
+    left_node = DefIdentifier(
+        value="left", kind="Identifier", line_start=1, column_start=1, line_stop=1, column_stop=1
+    )
+    right_node = DefIdentifier(
+        value="right", kind="Identifier", line_start=1, column_start=1, line_stop=1, column_stop=1
+    )
+    rule_node = HRBinOp(
+        left=left_node,
+        op="=",
+        right=right_node,
+        line_start=1,
+        column_start=1,
+        line_stop=1,
+        column_stop=1,
+    )
+    node = HRule(
+        name="rule1",
+        rule=rule_node,
+        erCode="E001",
+        erLevel=1,
+        line_start=1,
+        column_start=1,
+        line_stop=1,
+        column_stop=1,
+    )
+    with mock.patch.object(visitor, "visit", wraps=visitor.visit) as mock_visit:
+        visitor.visit_HRule(node)
+        mock_visit.assert_any_call(rule_node)
+        assert mock_visit.call_count == 3
+
+
+def test_visit_HRBinOp():
+    visitor = ASTTemplate()
+    left_node = DefIdentifier(
+        value="left", kind="Identifier", line_start=1, column_start=1, line_stop=1, column_stop=1
+    )
+    right_node = DefIdentifier(
+        value="right", kind="Identifier", line_start=1, column_start=1, line_stop=1, column_stop=1
+    )
+    node = HRBinOp(
+        left=left_node,
+        op="+",
+        right=right_node,
+        line_start=1,
+        column_start=1,
+        line_stop=1,
+        column_stop=1,
+    )
+    with mock.patch.object(visitor, "visit", wraps=visitor.visit) as mock_visit:
+        visitor.visit_HRBinOp(node)
+        mock_visit.assert_any_call(left_node)
+        mock_visit.assert_any_call(right_node)
+        assert mock_visit.call_count == 2
+
+
+def test_visit_EvalOp():
+    visitor = ASTTemplate()
+    operand1 = VarID(value="op1", line_start=1, column_start=1, line_stop=1, column_stop=1)
+    operand2 = VarID(value="op2", line_start=1, column_start=1, line_stop=1, column_stop=1)
+    node = EvalOp(
+        name="eval_func",
+        operands=[operand1, operand2],
+        output=None,
+        language="Python",
+        line_start=1,
+        column_start=1,
+        line_stop=1,
+        column_stop=1,
+    )
+    with mock.patch.object(visitor, "visit", wraps=visitor.visit) as mock_visit:
+        visitor.visit_EvalOp(node)
+        mock_visit.assert_any_call(operand1)
+        mock_visit.assert_any_call(operand2)
+        assert mock_visit.call_count == 2
+
+
+def test_visit_ParFunction():
+    visitor = ASTTemplate()
+    operand_node = VarID(value="operand", line_start=1, column_start=1, line_stop=1, column_stop=1)
+    node = ParFunction(
+        operand=operand_node, line_start=1, column_start=1, line_stop=1, column_stop=1
+    )
+    with mock.patch.object(visitor, "visit", wraps=visitor.visit) as mock_visit:
+        visitor.visit_ParFunction(node)
+        mock_visit.assert_any_call(operand_node)
+        assert mock_visit.call_count == 1
+
+
+def test_visit_UDOCall():
+    visitor = ASTTemplate()
+    param1 = VarID(value="param1", line_start=1, column_start=1, line_stop=1, column_stop=1)
+    param2 = VarID(value="param2", line_start=1, column_start=1, line_stop=1, column_stop=1)
+    node = UDOCall(
+        op="my_udo",
+        params=[param1, param2],
+        line_start=1,
+        column_start=1,
+        line_stop=1,
+        column_stop=1,
+    )
+    with mock.patch.object(visitor, "visit", wraps=visitor.visit) as mock_visit:
+        visitor.visit_UDOCall(node)
+        mock_visit.assert_any_call(param1)
+        mock_visit.assert_any_call(param2)
+        assert mock_visit.call_count == 2
 
 
 @pytest.mark.parametrize("script, error", param_ast)

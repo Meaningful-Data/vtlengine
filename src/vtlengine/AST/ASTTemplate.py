@@ -362,20 +362,13 @@ class ASTTemplate(NodeVisitor):
 
     def visit_Validation(self, node: AST.Validation) -> Any:
         """
-        Validation: (op, validation, params, inbalance, invalid)
+        Validation: (op, validation, error_code, error_level, imbalance, invalid)
 
         Basic usage:
 
-            self.visit(node.validation)
-            for param in node.params:
-                self.visit(param)
-
-            if node.inbalance!=None:
-                self.visit(node.inbalance)
-
+            if node.imbalance != None:
+                self.visit(node.imbalance)
         """
-        self.visit(node.validation)
-
         if node.imbalance is not None:
             self.visit(node.imbalance)
 
