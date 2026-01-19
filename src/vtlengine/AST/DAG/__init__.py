@@ -22,6 +22,8 @@ from vtlengine.AST import (
     Constant,
     DefIdentifier,
     DPRuleset,
+    DPValidation,
+    HROperation,
     HRuleset,
     Identifier,
     JoinOp,
@@ -401,6 +403,14 @@ class DAGAnalyzer(ASTTemplate):
             for sig, param in zip(node_sig, node.params):
                 if not isinstance(param, Constant) and sig is not Component:
                     self.visit(param)
+
+    def visit_HROperation(self, node: HROperation) -> None:
+        """Visit HROperation node for dependency analysis."""
+        self.visit(node.dataset)
+
+    def visit_DPValidation(self, node: DPValidation) -> None:
+        """Visit DPValidation node for dependency analysis."""
+        self.visit(node.dataset)
 
 
 class HRDAGAnalyzer(DAGAnalyzer):
