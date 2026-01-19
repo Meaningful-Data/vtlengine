@@ -31,6 +31,7 @@ from vtlengine.AST import (
     Start,
     TimeAggregation,
     VarID,
+    Windowing,
 )
 from vtlengine.AST.ASTEncoders import ComplexDecoder, ComplexEncoder
 from vtlengine.AST.ASTTemplate import ASTTemplate
@@ -288,6 +289,17 @@ def test_visit_Analytic():
     visitor = ASTTemplate()
     operand_node = VarID(value="operand", line_start=1, column_start=1, line_stop=1, column_stop=1)
     partition_by = ["component1", "component2"]
+    window = Windowing(
+        type_="data",
+        start=-1,
+        start_mode="preceding",
+        stop=0,
+        stop_mode="current",
+        line_start=1,
+        column_start=1,
+        line_stop=1,
+        column_stop=1,
+    )
     order_by = [
         OrderBy(
             component="component1",
@@ -311,6 +323,7 @@ def test_visit_Analytic():
         operand=operand_node,
         partition_by=partition_by,
         order_by=order_by,
+        window=window,
         line_start=1,
         column_start=1,
         line_stop=1,
@@ -320,7 +333,10 @@ def test_visit_Analytic():
     with mock.patch.object(visitor, "visit", wraps=visitor.visit) as mock_visit:
         visitor.visit_Analytic(node)
         mock_visit.assert_any_call(operand_node)
-        assert mock_visit.call_count == 1
+        mock_visit.assert_any_call(window)
+        mock_visit.assert_any_call(order_by[0])
+        mock_visit.assert_any_call(order_by[1])
+        assert mock_visit.call_count == 4
 
 
 def test_visit_CaseObj():

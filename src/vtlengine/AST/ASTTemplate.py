@@ -275,9 +275,30 @@ class ASTTemplate(NodeVisitor):
                 self.visit(group)
 
     def visit_Analytic(self, node: AST.Analytic) -> None:
-        """ """
+        """
+        Analytic: (op, operand, window, params, partition_by, order_by)
+
+        op: SUM, AVG, COUNT, MEDIAN, MIN, MAX, STDDEV_POP, STDDEV_SAMP,
+            VAR_POP, VAR_SAMP, FIRST_VALUE, LAST_VALUE, LAG, LEAD,
+            RATIO_TO_REPORT
+
+        Basic usage:
+
+            if node.operand != None:
+                self.visit(node.operand)
+            if node.window != None:
+                self.visit(node.window)
+            if node.order_by != None:
+                for order in node.order_by:
+                    self.visit(order)
+        """
         if node.operand is not None:
             self.visit(node.operand)
+        if node.window is not None:
+            self.visit(node.window)
+        if node.order_by is not None:
+            for order in node.order_by:
+                self.visit(order)
 
     def visit_TimeAggregation(self, node: AST.TimeAggregation) -> None:
         """
@@ -434,6 +455,37 @@ class ASTTemplate(NodeVisitor):
         for rule in node.rules:
             self.visit(rule)
 
+    def visit_HROperation(self, node: AST.HROperation) -> None:
+        """
+        HROperation: (op, dataset, ruleset_name, rule_component, conditions,
+                      validation_mode, input_mode, output)
+
+        op: "hierarchy" or "check_hierarchy"
+
+        Basic usage:
+
+            self.visit(node.dataset)
+            if node.rule_component != None:
+                self.visit(node.rule_component)
+            for condition in node.conditions:
+                self.visit(condition)
+        """
+        self.visit(node.dataset)
+        if node.rule_component is not None:
+            self.visit(node.rule_component)
+        for condition in node.conditions:
+            self.visit(condition)
+
+    def visit_DPValidation(self, node: AST.DPValidation) -> None:
+        """
+        DPValidation: (dataset, ruleset_name, components, output)
+
+        Basic usage:
+
+            self.visit(node.dataset)
+        """
+        self.visit(node.dataset)
+
     def visit_HRule(self, node: AST.HRule) -> None:
         """
         HRule: (name, rule, erCode, erLevel)
@@ -550,6 +602,15 @@ class ASTTemplate(NodeVisitor):
     def visit_Windowing(self, node: AST.Windowing) -> None:
         """
         Windowing: (type_, start, start_mode, stop, stop_mode)
+
+        All fields are non-AST (strings/ints), no children to visit.
+        """
+
+    def visit_OrderBy(self, node: AST.OrderBy) -> None:
+        """
+        OrderBy: (component, order)
+
+        All fields are non-AST (strings), no children to visit.
         """
 
     def visit_Comment(self, node: AST.Comment) -> None:
