@@ -1269,199 +1269,205 @@ class InterpreterAnalyzer(ASTTemplate):
                 mask = self.visit(node.params[0])
             return Cast.analyze(operand, scalar_type, mask)
 
-        elif node.op == CHECK_DATAPOINT:
-            if self.dprs is None:
-                raise SemanticError("1-2-6", node_type="Datapoint Rulesets", node_value="")
-            # Checking if ruleset exists
-            dpr_name: Any = node.children[1]
-            if dpr_name not in self.dprs:
-                raise SemanticError("1-2-6", node_type="Datapoint Ruleset", node_value=dpr_name)
-            dpr_info = self.dprs[dpr_name]
+        raise SemanticError("1-3-5", op_type="ParamOp", node_op=node.op)
 
-            # Extracting dataset
-            dataset_element = self.visit(node.children[0])
-            if not isinstance(dataset_element, Dataset):
-                raise SemanticError("1-1-1-20", op=node.op)
-            # Checking if list of components supplied is valid
-            if len(node.children) > 2:
-                for comp_name in node.children[2:]:
-                    if comp_name.__str__() not in dataset_element.components:
-                        raise SemanticError(
-                            "1-1-1-10",
-                            comp_name=comp_name,
-                            dataset_name=dataset_element.name,
-                        )
-                if dpr_info is not None and dpr_info["signature_type"] == "variable":
-                    for i, comp_name in enumerate(node.children[2:]):
-                        if comp_name != dpr_info["params"][i]:
-                            raise SemanticError(
-                                "1-1-10-3",
-                                op=node.op,
-                                expected=dpr_info["params"][i],
-                                found=comp_name,
-                            )
+    def _get_hr_mode_values(self, node: AST.HROperation) -> Tuple[str, str, str]:
+        """Extract mode values with defaults for HROperation."""
+        mode = node.validation_mode.value if node.validation_mode else "non_null"
+        if node.op == HIERARCHY:
+            input_ = node.input_mode.value if node.input_mode else "rule"
+            output = node.output.value if node.output else "computed"
+        else:  # CHECK_HIERARCHY
+            input_ = node.input_mode.value if node.input_mode else "dataset"
+            output = node.output.value if node.output else "invalid"
+        return mode, input_, output
 
-            output: Any = node.params[0]  # invalid, all_measures, all
-            if dpr_info is None:
-                dpr_info = {}
+    def visit_HROperation(self, node: AST.HROperation) -> Dataset:
+        """Handle hierarchy and check_hierarchy operators."""
+        # Visit dataset and get component if present
+        # Deep copy the dataset when there are conditions to avoid modifying the original
+        conditions = node.conditions or []
+        has_conditions = len(conditions) > 0
+        dataset = deepcopy(self.visit(node.dataset)) if has_conditions else self.visit(node.dataset)
+        component: Optional[str] = self.visit(node.rule_component) if node.rule_component else None
+        hr_name = node.ruleset_name
+        cond_components = [self.visit(c) for c in conditions] if has_conditions else []
 
+        # Get mode values with defaults
+        mode, input_, output = self._get_hr_mode_values(node)
+
+        # Validate hierarchical ruleset exists
+        if self.hrs is None:
+            raise SemanticError("1-2-6", node_type="Hierarchical Rulesets", node_value="")
+        if hr_name not in self.hrs:
+            raise SemanticError("1-2-6", node_type="Hierarchical Ruleset", node_value=hr_name)
+
+        if not isinstance(dataset, Dataset):
+            raise SemanticError("1-1-1-20", op=node.op)
+
+        hr_info = self.hrs[hr_name]
+
+        if hr_info is not None:
+            if len(cond_components) != len(hr_info["condition"]):
+                raise SemanticError("1-1-10-2", op=node.op)
+
+            if hr_info["node"].signature_type == "variable" and hr_info["signature"] != component:
+                raise SemanticError(
+                    "1-1-10-3",
+                    op=node.op,
+                    found=component,
+                    expected=hr_info["signature"],
+                )
+            elif hr_info["node"].signature_type == "valuedomain" and component is None:
+                raise SemanticError("1-1-10-4", op=node.op)
+            elif component is None:
+                raise NotImplementedError(
+                    "Hierarchical Ruleset handling without component "
+                    "and signature type variable is not implemented yet."
+                )
+
+            cond_info = {}
+            for i, cond_comp in enumerate(hr_info["condition"]):
+                if hr_info["node"].signature_type == "variable" and cond_components[i] != cond_comp:
+                    raise SemanticError(
+                        "1-1-10-6",
+                        op=node.op,
+                        expected=cond_comp,
+                        found=cond_components[i],
+                    )
+                cond_info[cond_comp] = cond_components[i]
+
+            if node.op == HIERARCHY:
+                aux = []
+                for rule in hr_info["rules"]:
+                    if rule.rule.op == EQ or rule.rule.op == WHEN and rule.rule.right.op == EQ:
+                        aux.append(rule)
+                if len(aux) == 0:
+                    raise SemanticError("1-1-10-5")
+                hr_info["rules"] = aux
+
+                hierarchy_ast = AST.HRuleset(
+                    name=hr_name,
+                    signature_type=hr_info["node"].signature_type,
+                    element=hr_info["node"].element,
+                    rules=aux,
+                    line_start=node.line_start,
+                    line_stop=node.line_stop,
+                    column_start=node.column_start,
+                    column_stop=node.column_stop,
+                )
+                HRDAGAnalyzer().visit(hierarchy_ast)
+
+            Check_Hierarchy.validate_hr_dataset(dataset, component)
+
+            # Set up interpreter state for rule processing
+            self.ruleset_dataset = dataset
+            self.ruleset_signature = {**{"RULE_COMPONENT": component}, **cond_info}
+            self.ruleset_mode = mode
+            self.hr_input = input_
             rule_output_values = {}
-            self.ruleset_dataset = dataset_element
-            self.ruleset_signature = dpr_info["signature"]
-            self.ruleset_mode = output
-            # Gather rule data, adding the ruleset dataset to the interpreter
-            if dpr_info is not None:
-                for rule in dpr_info["rules"]:
+
+            if node.op == HIERARCHY:
+                self.is_from_hr_agg = True
+                self.hr_agg_rules_computed = {}
+                for rule in hr_info["rules"]:
+                    self.visit(rule)
+                self.is_from_hr_agg = False
+            else:
+                self.is_from_hr_val = True
+                for rule in hr_info["rules"]:
                     rule_output_values[rule.name] = {
                         "errorcode": rule.erCode,
                         "errorlevel": rule.erLevel,
                         "output": self.visit(rule),
                     }
-            self.ruleset_mode = None
+                self.is_from_hr_val = False
+
+            # Clean up interpreter state
             self.ruleset_signature = None
             self.ruleset_dataset = None
+            self.ruleset_mode = None
+            self.hr_input = None
 
-            # Datapoint Ruleset final evaluation
-            return Check_Datapoint.analyze(
-                dataset_element=dataset_element,
-                rule_info=rule_output_values,
-                output=output,
-            )
-        elif node.op in (CHECK_HIERARCHY, HIERARCHY):
-            component: Optional[str] = None
-            if len(node.children) == 2:
-                dataset, hr_name = (self.visit(x) for x in node.children)
-                cond_components: List[str] = []
-            elif len(node.children) == 3:
-                dataset, component, hr_name = (self.visit(x) for x in node.children)
-                cond_components = []
+            # Final evaluation
+            if node.op == CHECK_HIERARCHY:
+                result = Check_Hierarchy.analyze(
+                    dataset_element=dataset,
+                    rule_info=rule_output_values,
+                    output=output,
+                )
+                del rule_output_values
             else:
-                children = [self.visit(x) for x in node.children]
-                dataset = deepcopy(children[0])
-                component = children[1]
-                hr_name = children[2]
-                cond_components = children[3:]
+                result = Hierarchy.analyze(dataset, self.hr_agg_rules_computed, output)
+                self.hr_agg_rules_computed = None
+            return result
 
-            # Input is always dataset
-            mode, input_, output = (self.visit(param) for param in node.params)
+        raise SemanticError("1-3-5", op_type="HROperation", node_op=node.op)
 
-            # Sanitise the hierarchical ruleset and the call
+    def visit_DPValidation(self, node: AST.DPValidation) -> Dataset:
+        """Handle check_datapoint operator."""
+        if self.dprs is None:
+            raise SemanticError("1-2-6", node_type="Datapoint Rulesets", node_value="")
 
-            if self.hrs is None:
-                raise SemanticError("1-2-6", node_type="Hierarchical Rulesets", node_value="")
-            else:
-                if hr_name not in self.hrs:
+        dpr_name = node.ruleset_name
+        if dpr_name not in self.dprs:
+            raise SemanticError("1-2-6", node_type="Datapoint Ruleset", node_value=dpr_name)
+        dpr_info = self.dprs[dpr_name]
+
+        # Extract dataset
+        dataset_element = self.visit(node.dataset)
+        if not isinstance(dataset_element, Dataset):
+            raise SemanticError("1-1-1-20", op=CHECK_DATAPOINT)
+
+        # Check component list validity
+        if node.components:
+            for comp_name in node.components:
+                if comp_name not in dataset_element.components:
                     raise SemanticError(
-                        "1-2-6", node_type="Hierarchical Ruleset", node_value=hr_name
+                        "1-1-1-10",
+                        comp_name=comp_name,
+                        dataset_name=dataset_element.name,
                     )
-
-                if not isinstance(dataset, Dataset):
-                    raise SemanticError("1-1-1-20", op=node.op)
-
-                hr_info = self.hrs[hr_name]
-            if hr_info is not None:
-                if len(cond_components) != len(hr_info["condition"]):
-                    raise SemanticError("1-1-10-2", op=node.op)
-
-                if (
-                    hr_info["node"].signature_type == "variable"
-                    and hr_info["signature"] != component
-                ):
-                    raise SemanticError(
-                        "1-1-10-3",
-                        op=node.op,
-                        found=component,
-                        expected=hr_info["signature"],
-                    )
-                elif hr_info["node"].signature_type == "valuedomain" and component is None:
-                    raise SemanticError("1-1-10-4", op=node.op)
-                elif component is None:
-                    # TODO: Leaving this until refactor in Ruleset handling is done
-                    raise NotImplementedError(
-                        "Hierarchical Ruleset handling without component "
-                        "and signature type variable is not implemented yet."
-                    )
-
-                cond_info = {}
-                for i, cond_comp in enumerate(hr_info["condition"]):
-                    if (
-                        hr_info["node"].signature_type == "variable"
-                        and cond_components[i] != cond_comp
-                    ):
+            if dpr_info is not None and dpr_info["signature_type"] == "variable":
+                for i, comp_name in enumerate(node.components):
+                    if comp_name != dpr_info["params"][i]:
                         raise SemanticError(
-                            "1-1-10-6",
-                            op=node.op,
-                            expected=cond_comp,
-                            found=cond_components[i],
+                            "1-1-10-3",
+                            op=CHECK_DATAPOINT,
+                            expected=dpr_info["params"][i],
+                            found=comp_name,
                         )
-                    cond_info[cond_comp] = cond_components[i]
 
-                if node.op == HIERARCHY:
-                    aux = []
-                    for rule in hr_info["rules"]:
-                        if rule.rule.op == EQ or rule.rule.op == WHEN and rule.rule.right.op == EQ:
-                            aux.append(rule)
-                    # Filter only the rules with HRBinOP as =,
-                    # as they are the ones that will be computed
-                    if len(aux) == 0:
-                        raise SemanticError("1-1-10-5")
-                    hr_info["rules"] = aux
+        # Get output mode with default
+        output = node.output.value if node.output else "invalid"
 
-                    hierarchy_ast = AST.HRuleset(
-                        name=hr_name,
-                        signature_type=hr_info["node"].signature_type,
-                        element=hr_info["node"].element,
-                        rules=aux,
-                        line_start=node.line_start,
-                        line_stop=node.line_stop,
-                        column_start=node.column_start,
-                        column_stop=node.column_stop,
-                    )
-                    HRDAGAnalyzer().visit(hierarchy_ast)
+        if dpr_info is None:
+            dpr_info = {}
 
-                Check_Hierarchy.validate_hr_dataset(dataset, component)
+        rule_output_values = {}
+        self.ruleset_dataset = dataset_element
+        self.ruleset_signature = dpr_info.get("signature")
+        self.ruleset_mode = output
 
-                # Gather rule data, adding the necessary elements to the interpreter
-                # for simplicity
-                self.ruleset_dataset = dataset
-                self.ruleset_signature = {**{"RULE_COMPONENT": component}, **cond_info}
-                self.ruleset_mode = mode
-                self.hr_input = input_
-                rule_output_values = {}
-                if node.op == HIERARCHY:
-                    self.is_from_hr_agg = True
-                    self.hr_agg_rules_computed = {}
-                    for rule in hr_info["rules"]:
-                        self.visit(rule)
-                    self.is_from_hr_agg = False
-                else:
-                    self.is_from_hr_val = True
-                    for rule in hr_info["rules"]:
-                        rule_output_values[rule.name] = {
-                            "errorcode": rule.erCode,
-                            "errorlevel": rule.erLevel,
-                            "output": self.visit(rule),
-                        }
-                    self.is_from_hr_val = False
-                self.ruleset_signature = None
-                self.ruleset_dataset = None
-                self.ruleset_mode = None
-                self.hr_input = None
+        # Gather rule data
+        if dpr_info:
+            for rule in dpr_info["rules"]:
+                rule_output_values[rule.name] = {
+                    "errorcode": rule.erCode,
+                    "errorlevel": rule.erLevel,
+                    "output": self.visit(rule),
+                }
 
-                # Final evaluation
-                if node.op == CHECK_HIERARCHY:
-                    result = Check_Hierarchy.analyze(
-                        dataset_element=dataset,
-                        rule_info=rule_output_values,
-                        output=output,
-                    )
-                    del rule_output_values
-                else:
-                    result = Hierarchy.analyze(dataset, self.hr_agg_rules_computed, output)
-                    self.hr_agg_rules_computed = None
-                return result
+        self.ruleset_mode = None
+        self.ruleset_signature = None
+        self.ruleset_dataset = None
 
-        raise SemanticError("1-3-5", op_type="ParamOp", node_op=node.op)
+        # Final evaluation
+        return Check_Datapoint.analyze(
+            dataset_element=dataset_element,
+            rule_info=rule_output_values,
+            output=output,
+        )
 
     def visit_DPRule(self, node: AST.DPRule) -> None:
         self.is_from_rule = True

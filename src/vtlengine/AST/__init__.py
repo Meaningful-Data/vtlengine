@@ -7,11 +7,53 @@ Description
 Basic AST nodes.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from enum import Enum
 from typing import Any, Dict, List, Optional, Type, Union
 
 from vtlengine.DataTypes import ScalarType
 from vtlengine.Model import Dataset, Role
+
+
+class ValidationMode(Enum):
+    """Validation mode for hierarchy operations."""
+
+    NON_NULL = "non_null"
+    NON_ZERO = "non_zero"
+    PARTIAL_NULL = "partial_null"
+    PARTIAL_ZERO = "partial_zero"
+    ALWAYS_NULL = "always_null"
+    ALWAYS_ZERO = "always_zero"
+
+
+class HRInputMode(Enum):
+    """Input mode for hierarchy operator."""
+
+    RULE = "rule"
+    DATASET = "dataset"
+    RULE_PRIORITY = "rule_priority"
+
+
+class CHInputMode(Enum):
+    """Input mode for check_hierarchy operator."""
+
+    DATASET = "dataset"
+    DATASET_PRIORITY = "dataset_priority"
+
+
+class ValidationOutput(Enum):
+    """Output mode for check_datapoint and check_hierarchy."""
+
+    INVALID = "invalid"
+    ALL = "all"
+    ALL_MEASURES = "all_measures"
+
+
+class HierarchyOutput(Enum):
+    """Output mode for hierarchy operator."""
+
+    COMPUTED = "computed"
+    ALL = "all"
 
 
 @dataclass
@@ -620,6 +662,58 @@ class HRuleset(AST):
     signature_type: str
     element: Union[DefIdentifier, List[DefIdentifier]]
     rules: List[HRule]
+
+    __eq__ = AST.ast_equality
+
+
+@dataclass
+class HROperation(AST):
+    """
+    HROperation: Hierarchical ruleset operations (hierarchy, check_hierarchy)
+
+    op: "hierarchy" or "check_hierarchy"
+    dataset: The input dataset expression
+    ruleset_name: Name of the hierarchical ruleset (HRuleset)
+    rule_component: Optional component ID for the RULE clause
+    conditions: List of condition components (from conditionClause)
+    validation_mode: Mode for validation (non_null, non_zero, etc.)
+    input_mode: Input mode - HRInputMode for hierarchy, CHInputMode for check_hierarchy
+    output: Output mode - HierarchyOutput for hierarchy, ValidationOutput for check_hierarchy
+    """
+
+    op: str
+    dataset: AST
+    ruleset_name: str
+    rule_component: Optional[AST] = None
+    conditions: List[AST] = field(default_factory=list)
+    validation_mode: Optional[ValidationMode] = None
+    input_mode: Optional[Union[HRInputMode, CHInputMode]] = None
+    output: Optional[Union[HierarchyOutput, ValidationOutput]] = None
+
+    __eq__ = AST.ast_equality
+
+
+@dataclass
+class DPValidation(AST):
+    """
+    DPValidation: Datapoint ruleset validation (check_datapoint)
+
+    dataset: The input dataset expression
+    ruleset_name: Name of the datapoint ruleset (DPRuleset)
+    components: Optional list of component IDs (from COMPONENTS clause).
+                For datapoint validation, these are stored as plain string
+                identifiers extracted during parsing (see Expr.py), unlike
+                HROperation.conditions which keeps the corresponding
+                expressions as AST nodes.
+    output: Output mode (invalid, all, all_measures)
+    """
+
+    dataset: AST
+    ruleset_name: str
+    # List of component identifier names (strings), not AST nodes. The
+    # parser extracts the identifiers earlier for datapoint validation.
+    components: List[str] = field(default_factory=list)
+    output: Optional[ValidationOutput] = None
 
     __eq__ = AST.ast_equality
 
