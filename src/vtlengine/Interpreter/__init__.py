@@ -548,6 +548,8 @@ class InterpreterAnalyzer(ASTTemplate):
                     and comp_grouped.data is not None
                     and len(comp_grouped.data) > 0
                 ):
+                    # Deep copy the data to avoid modifying the original dataset
+                    operand.data = operand.data.copy()
                     operand.data[comp_grouped.name] = comp_grouped.data
                 groupings = [comp_grouped.name]
                 self.aggregation_dataset = None
