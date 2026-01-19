@@ -366,9 +366,11 @@ class ASTTemplate(NodeVisitor):
 
         Basic usage:
 
+            self.visit(node.validation)
             if node.imbalance != None:
                 self.visit(node.imbalance)
         """
+        self.visit(node.validation)
         if node.imbalance is not None:
             self.visit(node.imbalance)
 

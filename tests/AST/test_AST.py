@@ -773,12 +773,15 @@ def test_visit_If():
 
 def test_visit_Validation():
     visitor = ASTTemplate()
+    validation_node = VarID(
+        value="validation", line_start=1, column_start=1, line_stop=1, column_stop=1
+    )
     imbalance_node = VarID(
         value="imbalance", line_start=1, column_start=1, line_stop=1, column_stop=1
     )
     node = Validation(
         op="check",
-        validation="val1",
+        validation=validation_node,
         error_code="E001",
         error_level=1,
         imbalance=imbalance_node,
@@ -790,15 +793,19 @@ def test_visit_Validation():
     )
     with mock.patch.object(visitor, "visit", wraps=visitor.visit) as mock_visit:
         visitor.visit_Validation(node)
+        mock_visit.assert_any_call(validation_node)
         mock_visit.assert_any_call(imbalance_node)
-        assert mock_visit.call_count == 1
+        assert mock_visit.call_count == 2
 
 
 def test_visit_Validation_no_imbalance():
     visitor = ASTTemplate()
+    validation_node = VarID(
+        value="validation", line_start=1, column_start=1, line_stop=1, column_stop=1
+    )
     node = Validation(
         op="check",
-        validation="val1",
+        validation=validation_node,
         error_code="E001",
         error_level=1,
         imbalance=None,
@@ -810,8 +817,8 @@ def test_visit_Validation_no_imbalance():
     )
     with mock.patch.object(visitor, "visit", wraps=visitor.visit) as mock_visit:
         visitor.visit_Validation(node)
-        # Should not visit anything since imbalance is None
-        assert mock_visit.call_count == 0
+        mock_visit.assert_any_call(validation_node)
+        assert mock_visit.call_count == 1
 
 
 def test_visit_HRule():

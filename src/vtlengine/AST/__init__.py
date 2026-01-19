@@ -483,7 +483,7 @@ class Validation(AST):
     """
 
     op: str
-    validation: str
+    validation: AST
     error_code: Optional[str]
     error_level: Optional[Union[int, str]]
     imbalance: Optional[AST]
