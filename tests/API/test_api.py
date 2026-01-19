@@ -847,6 +847,140 @@ def test_load_datasets_with_wrong_inputs(ds_r, dp, error_message):
 
 
 @pytest.mark.parametrize(
+    "data_structure,expected_components",
+    [
+        # Test with 'type' key in DataStructure
+        (
+            {
+                "datasets": [
+                    {
+                        "name": "test_ds",
+                        "DataStructure": [
+                            {
+                                "name": "id1",
+                                "type": "Integer",
+                                "role": "Identifier",
+                                "nullable": False,
+                            },
+                            {
+                                "name": "measure1",
+                                "type": "Number",
+                                "role": "Measure",
+                                "nullable": True,
+                            },
+                        ],
+                    }
+                ]
+            },
+            {"id1": DataTypes.Integer, "measure1": DataTypes.Number},
+        ),
+        # Test with 'data_type' key for backward compatibility
+        (
+            {
+                "datasets": [
+                    {
+                        "name": "test_ds",
+                        "DataStructure": [
+                            {
+                                "name": "id1",
+                                "data_type": "String",
+                                "role": "Identifier",
+                                "nullable": False,
+                            },
+                            {
+                                "name": "attr1",
+                                "data_type": "Boolean",
+                                "role": "Attribute",
+                                "nullable": True,
+                            },
+                        ],
+                    }
+                ]
+            },
+            {"id1": DataTypes.String, "attr1": DataTypes.Boolean},
+        ),
+    ],
+    ids=["type_key", "data_type_key_backward_compat"],
+)
+def test_load_datasets_datastructure_key_compatibility(data_structure, expected_components):
+    """Test that load_datasets accepts both 'type' and 'data_type' keys in DataStructure"""
+    datasets, scalars = load_datasets(data_structure)
+
+    assert "test_ds" in datasets
+    for comp_name, expected_type in expected_components.items():
+        assert comp_name in datasets["test_ds"].components
+        assert datasets["test_ds"].components[comp_name].data_type == expected_type
+
+
+@pytest.mark.parametrize(
+    "data_structure,expected_components",
+    [
+        # Test with 'type' key in structure components
+        (
+            {
+                "structures": [
+                    {
+                        "name": "test_structure",
+                        "components": [
+                            {
+                                "name": "id1",
+                                "type": "Integer",
+                                "role": "Identifier",
+                                "nullable": False,
+                            },
+                            {
+                                "name": "measure1",
+                                "type": "String",
+                                "role": "Measure",
+                                "nullable": True,
+                            },
+                        ],
+                    }
+                ],
+                "datasets": [{"name": "test_ds", "structure": "test_structure"}],
+            },
+            {"id1": DataTypes.Integer, "measure1": DataTypes.String},
+        ),
+        # Test with 'data_type' key for backward compatibility
+        (
+            {
+                "structures": [
+                    {
+                        "name": "test_structure",
+                        "components": [
+                            {
+                                "name": "id1",
+                                "data_type": "Number",
+                                "role": "Identifier",
+                                "nullable": False,
+                            },
+                            {
+                                "name": "attr1",
+                                "data_type": "Boolean",
+                                "role": "Attribute",
+                                "nullable": True,
+                            },
+                        ],
+                    }
+                ],
+                "datasets": [{"name": "test_ds", "structure": "test_structure"}],
+            },
+            {"id1": DataTypes.Number, "attr1": DataTypes.Boolean},
+        ),
+    ],
+    ids=["type_key", "data_type_key_backward_compat"],
+)
+def test_load_datasets_structure_key_compatibility(data_structure, expected_components):
+    """Test that load_datasets accepts both 'type' and 'data_type' keys in structure components"""
+    datasets, scalars = load_datasets(data_structure)
+
+    assert "test_ds" in datasets
+    for comp_name, expected_type in expected_components.items():
+        assert comp_name in datasets["test_ds"].components
+        assert datasets["test_ds"].components[comp_name].data_type == expected_type
+
+
+@pytest.mark.parametrize(
     "script, data_structures, value_domains, external_routines", params_semantic
 )
 def test_semantic(script, data_structures, value_domains, external_routines):
