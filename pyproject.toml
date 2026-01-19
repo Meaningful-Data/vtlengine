@@ -31,7 +31,8 @@ dependencies = [
     "sqlglot>=22.2.0,<23.0",
     "antlr4-python3-runtime>=4.9,<4.10",
     "pandas>=2.1.4,<3.0",
-    "networkx>=2.8,<3.0"
+    "networkx>=2.8,<3.0",
+    "numpy (!=2.2.6)"
 ]
 
 [project.optional-dependencies]
