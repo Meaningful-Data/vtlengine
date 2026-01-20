@@ -256,3 +256,77 @@ def test_component_round_trip_serialization():
     assert original.data_type == restored.data_type
     assert original.role == restored.role
     assert original.nullable == restored.nullable
+
+
+def test_scalar_serialization_uses_type():
+    """Test that Scalar.to_dict() uses 'type' instead of 'data_type'"""
+    scalar = Scalar(name="test_scalar", data_type=DataTypes.Integer, value=42)
+    scalar_dict = scalar.to_dict()
+
+    assert "type" in scalar_dict
+    assert "data_type" not in scalar_dict
+    assert scalar_dict["type"] == "Integer"
+    assert scalar_dict["name"] == "test_scalar"
+    assert scalar_dict["value"] == 42
+
+
+def test_scalar_from_json_supports_type():
+    """Test that Scalar.from_json() accepts 'type' key"""
+    import json
+
+    json_str = json.dumps({"name": "test_scalar", "type": "String", "value": "hello"})
+    scalar = Scalar.from_json(json_str)
+
+    assert scalar.name == "test_scalar"
+    assert scalar.data_type == DataTypes.String
+    assert scalar.value == "hello"
+
+
+def test_scalar_from_json_backward_compatibility():
+    """Test that Scalar.from_json() still accepts 'data_type' key for backward compatibility"""
+    import json
+
+    json_str = json.dumps({"name": "test_scalar", "data_type": "Number", "value": 3.14})
+    scalar = Scalar.from_json(json_str)
+
+    assert scalar.name == "test_scalar"
+    assert scalar.data_type == DataTypes.Number
+    assert scalar.value == 3.14
+
+
+def test_scalar_round_trip_serialization():
+    """Test that Scalar can be serialized and deserialized correctly"""
+    original = Scalar(name="round_trip", data_type=DataTypes.Boolean, value=True)
+
+    # Serialize to JSON
+    json_str = original.to_json()
+
+    # Deserialize from JSON
+    restored = Scalar.from_json(json_str)
+
+    # Verify they're equal
+    assert original == restored
+    assert original.name == restored.name
+    assert original.data_type == restored.data_type
+    assert original.value == restored.value
+
+
+def test_scalar_to_json_format():
+    """Test that Scalar.to_json() produces valid JSON with correct format"""
+    import json
+
+    scalar = Scalar(name="json_test", data_type=DataTypes.TimePeriod, value="2025Q1")
+    json_str = scalar.to_json()
+
+    # Parse the JSON to verify it's valid
+    parsed = json.loads(json_str)
+
+    # Verify the structure
+    assert "name" in parsed
+    assert "type" in parsed
+    assert "value" in parsed
+    assert "data_type" not in parsed  # Should not use old key
+
+    assert parsed["name"] == "json_test"
+    assert parsed["type"] == "Time_Period"
+    assert parsed["value"] == "2025Q1"
