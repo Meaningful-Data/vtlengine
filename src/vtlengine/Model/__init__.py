@@ -55,7 +55,22 @@ class Scalar:
     @classmethod
     def from_json(cls, json_str: str) -> "Scalar":
         data = json.loads(json_str)
-        return cls(data["name"], SCALAR_TYPES[data["data_type"]], data["value"])
+        # Support both 'type' and 'data_type' for backward compatibility
+        data_type_value = data.get("type") or data.get("data_type")
+        return cls(data["name"], SCALAR_TYPES[data_type_value], data["value"])
+
+    def to_dict(self) -> Dict[str, Any]:
+        data_type = self.data_type
+        if not inspect.isclass(self.data_type):
+            data_type = self.data_type.__class__  # type: ignore[assignment]
+        return {
+            "name": self.name,
+            "type": DataTypes.SCALAR_TYPES_CLASS_REVERSE[data_type],
+            "value": self.value,
+        }
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict())
 
     def __eq__(self, other: Any) -> bool:
         same_name = self.name == other.name
