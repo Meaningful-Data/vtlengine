@@ -283,6 +283,43 @@ Before finishing an issue, run the full test suite (all tests must pass):
 poetry run pytest tests/
 ```
 
+## Git Workflow
+
+### Branch Naming Convention
+
+Always use the pattern `cr-{issue_number}` for feature branches:
+
+```bash
+# Example: Working on issue #457
+git checkout -b cr-457
+```
+
+**Pattern breakdown:**
+- `cr` = "change request" prefix
+- `{issue_number}` = GitHub issue number being addressed
+
+**Examples:**
+- `cr-457` - Feature for issue #457
+- `cr-123` - Bug fix for issue #123
+- `cr-42` - Enhancement for issue #42
+
+### Workflow Steps
+
+1. Create branch from the appropriate base (usually `main` or a release candidate):
+   ```bash
+   git checkout -b cr-{issue_number}
+   ```
+
+2. Make changes, commit frequently with descriptive messages
+
+3. Push and create a draft PR:
+   ```bash
+   git push -u origin cr-{issue_number}
+   gh pr create --draft --title "Fix #{issue_number}: Description"
+   ```
+
+4. When ready for review, mark PR as ready
+
 ## File Naming Conventions
 
 - AST nodes: PascalCase dataclasses in `AST/__init__.py`
