@@ -274,7 +274,7 @@ Handled by `VTL_DTYPES_MAPPING` in `src/vtlengine/Utils/__init__.py`:
 Code quality checks (run before every commit):
 ```bash
 poetry run ruff format src/
-poetry run ruff check --fix src/
+poetry run ruff check --fix --unsafe-fixes src/
 poetry run mypy src/
 ```
 
@@ -312,13 +312,22 @@ git checkout -b cr-457
 
 2. Make changes, commit frequently with descriptive messages
 
-3. Push and create a draft PR:
+3. **Before creating a PR, run ALL quality checks (mandatory):**
+   ```bash
+   poetry run ruff format src/
+   poetry run ruff check --fix --unsafe-fixes src/
+   poetry run mypy src/
+   poetry run pytest tests/
+   ```
+   All checks must pass before proceeding.
+
+4. Push and create a draft PR:
    ```bash
    git push -u origin cr-{issue_number}
    gh pr create --draft --title "Fix #{issue_number}: Description"
    ```
 
-4. When ready for review, mark PR as ready
+5. When ready for review, mark PR as ready
 
 ## File Naming Conventions
 
