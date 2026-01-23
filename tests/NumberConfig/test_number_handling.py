@@ -86,7 +86,7 @@ class TestEnvironmentVariableParsing(TestCase):
     def test_parse_env_value_invalid_too_high(self):
         """Test that values above maximum raise ValueError."""
         with (
-            mock.patch.dict(os.environ, {ENV_COMPARISON_THRESHOLD: "15"}),
+            mock.patch.dict(os.environ, {ENV_COMPARISON_THRESHOLD: "16"}),
             pytest.raises(ValueError, match="Invalid value"),
         ):
             _parse_env_value(ENV_COMPARISON_THRESHOLD)
@@ -246,7 +246,7 @@ class TestNumbersAreEqual(TestCase):
         """Test that default digits are used when not specified."""
         with mock.patch.dict(os.environ, {}, clear=True):
             os.environ.pop(ENV_COMPARISON_THRESHOLD, None)
-            # With default 14 significant digits, tolerance is 5e-14
+            # With default 15 significant digits, tolerance is 5e-15
             result = numbers_are_equal(1.0, 1.0 + 1e-15)
             assert result
 
