@@ -22,6 +22,90 @@ from vtlengine.DataTypes import COMP_NAME_MAPPING, Boolean, Null, Number, String
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.Utils._number_config import get_effective_comparison_digits
+
+
+def _get_number_tolerance(significant_digits: Optional[int]) -> Optional[float]:
+    """
+    Calculate the relative tolerance for number comparisons based on significant digits.
+
+    Args:
+        significant_digits: Number of significant digits, or None if disabled.
+
+    Returns:
+        Relative tolerance value, or None if feature is disabled.
+    """
+    if significant_digits is None:
+        return None
+    return 0.5 * (10 ** (-(significant_digits - 1)))
+
+
+def _numbers_equal(a: Any, b: Any, rel_tol: Optional[float]) -> bool:
+    """
+    Compare two numbers for equality using relative tolerance.
+
+    Args:
+        a: First number.
+        b: Second number.
+        rel_tol: Relative tolerance, or None for exact comparison.
+
+    Returns:
+        True if numbers are considered equal.
+    """
+    if rel_tol is None:
+        return a == b
+
+    if a == b:  # Handles exact matches, infinities
+        return True
+
+    max_abs = max(abs(a), abs(b))
+    if max_abs == 0:
+        return True
+
+    abs_tol = rel_tol * max_abs
+    return abs(a - b) <= abs_tol
+
+
+def _numbers_less_equal(a: Any, b: Any, rel_tol: Optional[float]) -> bool:
+    """
+    Compare a <= b using relative tolerance for equality.
+
+    Args:
+        a: First number.
+        b: Second number.
+        rel_tol: Relative tolerance for equality check, or None for exact comparison.
+
+    Returns:
+        True if a <= b (with tolerance for equality).
+    """
+    if rel_tol is None:
+        return a <= b
+
+    if a < b:
+        return True
+
+    return _numbers_equal(a, b, rel_tol)
+
+
+def _numbers_greater_equal(a: Any, b: Any, rel_tol: Optional[float]) -> bool:
+    """
+    Compare a >= b using relative tolerance for equality.
+
+    Args:
+        a: First number.
+        b: Second number.
+        rel_tol: Relative tolerance for equality check, or None for exact comparison.
+
+    Returns:
+        True if a >= b (with tolerance for equality).
+    """
+    if rel_tol is None:
+        return a >= b
+
+    if a > b:
+        return True
+
+    return _numbers_equal(a, b, rel_tol)
 
 
 class Unary(Operator.Unary):
@@ -118,7 +202,13 @@ class Binary(Operator.Binary):
                 elif isinstance(first_non_null, (int, float)):
                     series = series.astype(float)
 
-        op = cls.py_op if cls.py_op is not None else cls.op_func
+        # Use op_func if it's overridden (not from Binary base class)
+        # to support tolerance-based number comparisons
+        if cls.op_func is not Binary.op_func:
+            op = cls.op_func
+        else:
+            op = cls.py_op if cls.py_op is not None else cls.op_func
+
         if series_left:
             result = series.map(lambda x: op(x, scalar), na_action="ignore")
         else:
@@ -153,10 +243,40 @@ class Equal(Binary):
     op = EQ
     py_op = operator.eq
 
+    @classmethod
+    def op_func(cls, x: Any, y: Any) -> Any:
+        # Return None if any of the values are NaN
+        if pd.isnull(x) or pd.isnull(y):
+            return None
+        x, y = cls._cast_values(x, y)
+
+        # Use tolerance-based comparison for numeric types
+        if isinstance(x, (int, float)) and isinstance(y, (int, float)):
+            sig_digits = get_effective_comparison_digits()
+            rel_tol = _get_number_tolerance(sig_digits)
+            return _numbers_equal(x, y, rel_tol)
+
+        return cls.py_op(x, y)
+
 
 class NotEqual(Binary):
     op = NEQ
     py_op = operator.ne
+
+    @classmethod
+    def op_func(cls, x: Any, y: Any) -> Any:
+        # Return None if any of the values are NaN
+        if pd.isnull(x) or pd.isnull(y):
+            return None
+        x, y = cls._cast_values(x, y)
+
+        # Use tolerance-based comparison for numeric types
+        if isinstance(x, (int, float)) and isinstance(y, (int, float)):
+            sig_digits = get_effective_comparison_digits()
+            rel_tol = _get_number_tolerance(sig_digits)
+            return not _numbers_equal(x, y, rel_tol)
+
+        return cls.py_op(x, y)
 
 
 class Greater(Binary):
@@ -168,6 +288,21 @@ class GreaterEqual(Binary):
     op = GTE
     py_op = operator.ge
 
+    @classmethod
+    def op_func(cls, x: Any, y: Any) -> Any:
+        # Return None if any of the values are NaN
+        if pd.isnull(x) or pd.isnull(y):
+            return None
+        x, y = cls._cast_values(x, y)
+
+        # Use tolerance-based comparison for numeric types
+        if isinstance(x, (int, float)) and isinstance(y, (int, float)):
+            sig_digits = get_effective_comparison_digits()
+            rel_tol = _get_number_tolerance(sig_digits)
+            return _numbers_greater_equal(x, y, rel_tol)
+
+        return cls.py_op(x, y)
+
 
 class Less(Binary):
     op = LT
@@ -177,6 +312,21 @@ class Less(Binary):
 class LessEqual(Binary):
     op = LTE
     py_op = operator.le
+
+    @classmethod
+    def op_func(cls, x: Any, y: Any) -> Any:
+        # Return None if any of the values are NaN
+        if pd.isnull(x) or pd.isnull(y):
+            return None
+        x, y = cls._cast_values(x, y)
+
+        # Use tolerance-based comparison for numeric types
+        if isinstance(x, (int, float)) and isinstance(y, (int, float)):
+            sig_digits = get_effective_comparison_digits()
+            rel_tol = _get_number_tolerance(sig_digits)
+            return _numbers_less_equal(x, y, rel_tol)
+
+        return cls.py_op(x, y)
 
 
 class In(Binary):
@@ -244,9 +394,21 @@ class Between(Operator.Operator):
         y: Optional[Union[int, float, bool, str]],
         z: Optional[Union[int, float, bool, str]],
     ) -> Optional[bool]:
-        return (
-            None if (pd.isnull(x) or pd.isnull(y) or pd.isnull(z)) else y <= x <= z  # type: ignore[operator]
+        if pd.isnull(x) or pd.isnull(y) or pd.isnull(z):
+            return None
+
+        # Use tolerance-based comparison for numeric types
+        are_all_numeric = (
+            isinstance(x, (int, float))
+            and isinstance(y, (int, float))
+            and isinstance(z, (int, float))
         )
+        if are_all_numeric:
+            sig_digits = get_effective_comparison_digits()
+            rel_tol = _get_number_tolerance(sig_digits)
+            return _numbers_greater_equal(x, y, rel_tol) and _numbers_less_equal(x, z, rel_tol)
+
+        return y <= x <= z  # type: ignore[operator]
 
     @classmethod
     def apply_operation_component(cls, series: Any, from_data: Any, to_data: Any) -> Any:
