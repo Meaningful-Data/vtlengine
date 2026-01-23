@@ -246,8 +246,8 @@ class TestNumbersAreEqual(TestCase):
         """Test that default digits are used when not specified."""
         with mock.patch.dict(os.environ, {}, clear=True):
             os.environ.pop(ENV_COMPARISON_THRESHOLD, None)
-            # With default 10 significant digits
-            result = numbers_are_equal(1.0, 1.0 + 1e-11)
+            # With default 14 significant digits, tolerance is 5e-14
+            result = numbers_are_equal(1.0, 1.0 + 1e-15)
             assert result
 
     def test_uses_custom_digits(self):
