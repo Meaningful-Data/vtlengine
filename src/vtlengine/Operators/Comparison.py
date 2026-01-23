@@ -66,7 +66,9 @@ def _numbers_equal(a: Any, b: Any, rel_tol: Optional[float]) -> bool:
     return abs(a - b) <= abs_tol
 
 
-def _numbers_less_equal(a: Union[int, float], b: Union[int, float], rel_tol: Optional[float]) -> bool:
+def _numbers_less_equal(
+    a: Union[int, float], b: Union[int, float], rel_tol: Optional[float]
+) -> bool:
     """
     Compare a <= b using relative tolerance for equality.
 
@@ -87,7 +89,9 @@ def _numbers_less_equal(a: Union[int, float], b: Union[int, float], rel_tol: Opt
     return a < b
 
 
-def _numbers_greater_equal(a: Union[int, float], b: Union[int, float], rel_tol: Optional[float]) -> bool:
+def _numbers_greater_equal(
+    a: Union[int, float], b: Union[int, float], rel_tol: Optional[float]
+) -> bool:
     """
     Compare a >= b using relative tolerance for equality.
 
@@ -398,12 +402,11 @@ class Between(Operator.Operator):
             return None
 
         # Use tolerance-based comparison for numeric types
-        are_all_numeric = (
+        if (
             isinstance(x, (int, float))
             and isinstance(y, (int, float))
             and isinstance(z, (int, float))
-        )
-        if are_all_numeric:
+        ):
             sig_digits = get_effective_comparison_digits()
             rel_tol = _get_number_tolerance(sig_digits)
             return _numbers_greater_equal(x, y, rel_tol) and _numbers_less_equal(x, z, rel_tol)
