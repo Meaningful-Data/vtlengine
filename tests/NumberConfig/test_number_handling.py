@@ -3,14 +3,18 @@ Tests for Number type handling: environment variables, comparisons, and output f
 """
 
 import os
-from io import StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest import TestCase, mock
 
 import pandas as pd
+import pytest
 
 from vtlengine.API import run
+from vtlengine.Operators.Comparison import (
+    _get_number_tolerance,
+    _numbers_equal,
+)
 from vtlengine.Utils._number_config import (
     DEFAULT_SIGNIFICANT_DIGITS,
     DISABLED_VALUE,
@@ -19,16 +23,10 @@ from vtlengine.Utils._number_config import (
     MAX_SIGNIFICANT_DIGITS,
     MIN_SIGNIFICANT_DIGITS,
     _parse_env_value,
-    get_comparison_significant_digits,
     get_effective_comparison_digits,
     get_effective_output_digits,
     get_float_format,
-    get_output_significant_digits,
     numbers_are_equal,
-)
-from vtlengine.Operators.Comparison import (
-    _get_number_tolerance,
-    _numbers_equal,
 )
 
 
@@ -39,67 +37,75 @@ class TestEnvironmentVariableParsing(TestCase):
         """Test that None is returned when env var is not set."""
         with mock.patch.dict(os.environ, {}, clear=True):
             result = _parse_env_value("NONEXISTENT_VAR")
-            self.assertIsNone(result)
+            assert result is None
 
     def test_parse_env_value_empty_string(self):
         """Test that None is returned for empty string."""
         with mock.patch.dict(os.environ, {ENV_COMPARISON_THRESHOLD: ""}):
             result = _parse_env_value(ENV_COMPARISON_THRESHOLD)
-            self.assertIsNone(result)
+            assert result is None
 
     def test_parse_env_value_whitespace(self):
         """Test that None is returned for whitespace-only value."""
         with mock.patch.dict(os.environ, {ENV_COMPARISON_THRESHOLD: "   "}):
             result = _parse_env_value(ENV_COMPARISON_THRESHOLD)
-            self.assertIsNone(result)
+            assert result is None
 
     def test_parse_env_value_valid_disabled(self):
         """Test that -1 disables the feature."""
         with mock.patch.dict(os.environ, {ENV_COMPARISON_THRESHOLD: "-1"}):
             result = _parse_env_value(ENV_COMPARISON_THRESHOLD)
-            self.assertEqual(result, DISABLED_VALUE)
+            assert result == DISABLED_VALUE
 
     def test_parse_env_value_valid_min(self):
         """Test minimum valid value."""
         with mock.patch.dict(os.environ, {ENV_COMPARISON_THRESHOLD: str(MIN_SIGNIFICANT_DIGITS)}):
             result = _parse_env_value(ENV_COMPARISON_THRESHOLD)
-            self.assertEqual(result, MIN_SIGNIFICANT_DIGITS)
+            assert result == MIN_SIGNIFICANT_DIGITS
 
     def test_parse_env_value_valid_max(self):
         """Test maximum valid value."""
         with mock.patch.dict(os.environ, {ENV_COMPARISON_THRESHOLD: str(MAX_SIGNIFICANT_DIGITS)}):
             result = _parse_env_value(ENV_COMPARISON_THRESHOLD)
-            self.assertEqual(result, MAX_SIGNIFICANT_DIGITS)
+            assert result == MAX_SIGNIFICANT_DIGITS
 
     def test_parse_env_value_valid_middle(self):
         """Test a middle value."""
         with mock.patch.dict(os.environ, {ENV_COMPARISON_THRESHOLD: "10"}):
             result = _parse_env_value(ENV_COMPARISON_THRESHOLD)
-            self.assertEqual(result, 10)
+            assert result == 10
 
     def test_parse_env_value_invalid_too_low(self):
         """Test that values below minimum raise ValueError."""
-        with mock.patch.dict(os.environ, {ENV_COMPARISON_THRESHOLD: "5"}):
-            with self.assertRaises(ValueError):
-                _parse_env_value(ENV_COMPARISON_THRESHOLD)
+        with (
+            mock.patch.dict(os.environ, {ENV_COMPARISON_THRESHOLD: "5"}),
+            pytest.raises(ValueError, match="Invalid value"),
+        ):
+            _parse_env_value(ENV_COMPARISON_THRESHOLD)
 
     def test_parse_env_value_invalid_too_high(self):
         """Test that values above maximum raise ValueError."""
-        with mock.patch.dict(os.environ, {ENV_COMPARISON_THRESHOLD: "15"}):
-            with self.assertRaises(ValueError):
-                _parse_env_value(ENV_COMPARISON_THRESHOLD)
+        with (
+            mock.patch.dict(os.environ, {ENV_COMPARISON_THRESHOLD: "15"}),
+            pytest.raises(ValueError, match="Invalid value"),
+        ):
+            _parse_env_value(ENV_COMPARISON_THRESHOLD)
 
     def test_parse_env_value_invalid_non_integer(self):
         """Test that non-integer values raise ValueError."""
-        with mock.patch.dict(os.environ, {ENV_COMPARISON_THRESHOLD: "abc"}):
-            with self.assertRaises(ValueError):
-                _parse_env_value(ENV_COMPARISON_THRESHOLD)
+        with (
+            mock.patch.dict(os.environ, {ENV_COMPARISON_THRESHOLD: "abc"}),
+            pytest.raises(ValueError, match="Invalid value"),
+        ):
+            _parse_env_value(ENV_COMPARISON_THRESHOLD)
 
     def test_parse_env_value_invalid_float(self):
         """Test that float values raise ValueError."""
-        with mock.patch.dict(os.environ, {ENV_COMPARISON_THRESHOLD: "10.5"}):
-            with self.assertRaises(ValueError):
-                _parse_env_value(ENV_COMPARISON_THRESHOLD)
+        with (
+            mock.patch.dict(os.environ, {ENV_COMPARISON_THRESHOLD: "10.5"}),
+            pytest.raises(ValueError, match="Invalid value"),
+        ):
+            _parse_env_value(ENV_COMPARISON_THRESHOLD)
 
 
 class TestEffectiveDigits(TestCase):
@@ -111,38 +117,38 @@ class TestEffectiveDigits(TestCase):
             # Clear the specific env var
             os.environ.pop(ENV_COMPARISON_THRESHOLD, None)
             result = get_effective_comparison_digits()
-            self.assertEqual(result, DEFAULT_SIGNIFICANT_DIGITS)
+            assert result == DEFAULT_SIGNIFICANT_DIGITS
 
     def test_get_effective_comparison_digits_custom(self):
         """Test that custom value is used when set."""
         with mock.patch.dict(os.environ, {ENV_COMPARISON_THRESHOLD: "8"}):
             result = get_effective_comparison_digits()
-            self.assertEqual(result, 8)
+            assert result == 8
 
     def test_get_effective_comparison_digits_disabled(self):
         """Test that None is returned when disabled."""
         with mock.patch.dict(os.environ, {ENV_COMPARISON_THRESHOLD: "-1"}):
             result = get_effective_comparison_digits()
-            self.assertIsNone(result)
+            assert result is None
 
     def test_get_effective_output_digits_default(self):
         """Test that default is used when env var not set."""
         with mock.patch.dict(os.environ, {}, clear=True):
             os.environ.pop(ENV_OUTPUT_SIGNIFICANT_DIGITS, None)
             result = get_effective_output_digits()
-            self.assertEqual(result, DEFAULT_SIGNIFICANT_DIGITS)
+            assert result == DEFAULT_SIGNIFICANT_DIGITS
 
     def test_get_effective_output_digits_custom(self):
         """Test that custom value is used when set."""
         with mock.patch.dict(os.environ, {ENV_OUTPUT_SIGNIFICANT_DIGITS: "12"}):
             result = get_effective_output_digits()
-            self.assertEqual(result, 12)
+            assert result == 12
 
     def test_get_effective_output_digits_disabled(self):
         """Test that None is returned when disabled."""
         with mock.patch.dict(os.environ, {ENV_OUTPUT_SIGNIFICANT_DIGITS: "-1"}):
             result = get_effective_output_digits()
-            self.assertIsNone(result)
+            assert result is None
 
 
 class TestFloatFormat(TestCase):
@@ -153,19 +159,19 @@ class TestFloatFormat(TestCase):
         with mock.patch.dict(os.environ, {}, clear=True):
             os.environ.pop(ENV_OUTPUT_SIGNIFICANT_DIGITS, None)
             result = get_float_format()
-            self.assertEqual(result, f"%.{DEFAULT_SIGNIFICANT_DIGITS}g")
+            assert result == f"%.{DEFAULT_SIGNIFICANT_DIGITS}g"
 
     def test_get_float_format_custom(self):
         """Test custom float format."""
         with mock.patch.dict(os.environ, {ENV_OUTPUT_SIGNIFICANT_DIGITS: "8"}):
             result = get_float_format()
-            self.assertEqual(result, "%.8g")
+            assert result == "%.8g"
 
     def test_get_float_format_disabled(self):
         """Test disabled float format returns None."""
         with mock.patch.dict(os.environ, {ENV_OUTPUT_SIGNIFICANT_DIGITS: "-1"}):
             result = get_float_format()
-            self.assertIsNone(result)
+            assert result is None
 
 
 class TestNumberTolerance(TestCase):
@@ -174,19 +180,19 @@ class TestNumberTolerance(TestCase):
     def test_tolerance_none_when_disabled(self):
         """Test that None tolerance is returned when disabled."""
         result = _get_number_tolerance(None)
-        self.assertIsNone(result)
+        assert result is None
 
     def test_tolerance_10_significant_digits(self):
         """Test tolerance for 10 significant digits."""
         result = _get_number_tolerance(10)
         expected = 0.5 * (10 ** (-9))  # 0.5e-9
-        self.assertEqual(result, expected)
+        assert result == expected
 
     def test_tolerance_6_significant_digits(self):
         """Test tolerance for 6 significant digits."""
         result = _get_number_tolerance(6)
         expected = 0.5 * (10 ** (-5))  # 0.5e-5
-        self.assertEqual(result, expected)
+        assert result == expected
 
 
 class TestNumbersEqual(TestCase):
@@ -195,42 +201,42 @@ class TestNumbersEqual(TestCase):
     def test_exact_equality(self):
         """Test exact equality."""
         rel_tol = _get_number_tolerance(10)
-        self.assertTrue(_numbers_equal(1.0, 1.0, rel_tol))
+        assert _numbers_equal(1.0, 1.0, rel_tol)
 
     def test_within_tolerance(self):
         """Test numbers within tolerance are considered equal."""
         rel_tol = _get_number_tolerance(10)
         # With 10 significant digits, 1.0 and 1.0 + 1e-11 should be equal
-        self.assertTrue(_numbers_equal(1.0, 1.0 + 1e-11, rel_tol))
+        assert _numbers_equal(1.0, 1.0 + 1e-11, rel_tol)
 
     def test_outside_tolerance(self):
         """Test numbers outside tolerance are not equal."""
         rel_tol = _get_number_tolerance(10)
         # With 10 significant digits, 1.0 and 1.001 should not be equal
-        self.assertFalse(_numbers_equal(1.0, 1.001, rel_tol))
+        assert not _numbers_equal(1.0, 1.001, rel_tol)
 
     def test_disabled_exact_comparison(self):
         """Test exact comparison when disabled."""
-        self.assertTrue(_numbers_equal(1.0, 1.0, None))
-        self.assertFalse(_numbers_equal(1.0, 1.0 + 1e-15, None))
+        assert _numbers_equal(1.0, 1.0, None)
+        assert not _numbers_equal(1.0, 1.0 + 1e-15, None)
 
     def test_both_zero(self):
         """Test both zeros are equal."""
         rel_tol = _get_number_tolerance(10)
-        self.assertTrue(_numbers_equal(0.0, 0.0, rel_tol))
+        assert _numbers_equal(0.0, 0.0, rel_tol)
 
     def test_large_numbers(self):
         """Test tolerance works for large numbers."""
         rel_tol = _get_number_tolerance(10)
         # For 1e10, tolerance is approximately 5
-        self.assertTrue(_numbers_equal(1e10, 1e10 + 1, rel_tol))
-        self.assertFalse(_numbers_equal(1e10, 1e10 + 100, rel_tol))
+        assert _numbers_equal(10000000000.0, 10000000000.0 + 1, rel_tol)
+        assert not _numbers_equal(10000000000.0, 10000000000.0 + 100, rel_tol)
 
     def test_small_numbers(self):
         """Test tolerance works for small numbers."""
         rel_tol = _get_number_tolerance(10)
         # For 1e-10, tolerance is approximately 5e-20
-        self.assertTrue(_numbers_equal(1e-10, 1e-10 + 1e-21, rel_tol))
+        assert _numbers_equal(1e-10, 1e-10 + 1e-21, rel_tol)
 
 
 class TestNumbersAreEqual(TestCase):
@@ -242,17 +248,17 @@ class TestNumbersAreEqual(TestCase):
             os.environ.pop(ENV_COMPARISON_THRESHOLD, None)
             # With default 10 significant digits
             result = numbers_are_equal(1.0, 1.0 + 1e-11)
-            self.assertTrue(result)
+            assert result
 
     def test_uses_custom_digits(self):
         """Test that custom digits are used when specified."""
         # With 6 significant digits, tolerance is larger
         result = numbers_are_equal(1.0, 1.0 + 1e-7, significant_digits=6)
-        self.assertTrue(result)
+        assert result
 
         # But 1.0 and 1.001 should not be equal even with 6 digits
         result = numbers_are_equal(1.0, 1.001, significant_digits=6)
-        self.assertFalse(result)
+        assert not result
 
 
 class TestVTLComparisonOperators(TestCase):
@@ -297,7 +303,7 @@ class TestVTLComparisonOperators(TestCase):
             )
 
             # First two should be True (within tolerance), third should be False
-            self.assertEqual(result["DS_r"].data["bool_var"].tolist(), [True, True, False])
+            assert result["DS_r"].data["bool_var"].tolist() == [True, True, False]
 
     def test_equal_operator_disabled(self):
         """Test = operator with tolerance disabled uses exact comparison."""
@@ -319,7 +325,7 @@ class TestVTLComparisonOperators(TestCase):
 
             # With exact comparison, only the first should be True
             result_values = result["DS_r"].data["bool_var"].tolist()
-            self.assertTrue(result_values[0])
+            assert result_values[0]
             # The second may or may not be True due to floating point representation
 
     def test_greater_equal_operator_with_tolerance(self):
@@ -343,7 +349,7 @@ class TestVTLComparisonOperators(TestCase):
             # First should be True (equal within tolerance)
             # Second should be False (clearly less)
             # Third should be True (clearly greater)
-            self.assertEqual(result["DS_r"].data["bool_var"].tolist(), [True, False, True])
+            assert result["DS_r"].data["bool_var"].tolist() == [True, False, True]
 
     def test_less_equal_operator_with_tolerance(self):
         """Test <= operator uses tolerance for equality boundary."""
@@ -366,7 +372,7 @@ class TestVTLComparisonOperators(TestCase):
             # First should be True (equal within tolerance)
             # Second should be False (clearly greater)
             # Third should be True (clearly less)
-            self.assertEqual(result["DS_r"].data["bool_var"].tolist(), [True, False, True])
+            assert result["DS_r"].data["bool_var"].tolist() == [True, False, True]
 
     def test_between_operator_with_tolerance(self):
         """Test between operator uses tolerance for boundaries."""
@@ -393,7 +399,7 @@ class TestVTLComparisonOperators(TestCase):
             )
 
             expected = [True, True, True, False, False]
-            self.assertEqual(result["DS_r"].data["bool_var"].tolist(), expected)
+            assert result["DS_r"].data["bool_var"].tolist() == expected
 
 
 class TestOutputFormatting(TestCase):
@@ -430,7 +436,7 @@ class TestOutputFormatting(TestCase):
             )
 
             with TemporaryDirectory() as tmpdir:
-                result = run(
+                run(
                     script="DS_r <- DS_1;",
                     data_structures=ds_structure,
                     datapoints={"DS_1": datapoints},
@@ -444,7 +450,7 @@ class TestOutputFormatting(TestCase):
 
                 # The number should be formatted with 10 significant digits
                 # 1.23456789012345 with 10 sig digits is 1.234567890
-                self.assertIn("1.23456789", content)
+                assert "1.23456789" in content
 
     def test_output_formatting_disabled(self):
         """Test output formatting when disabled."""
@@ -474,7 +480,7 @@ class TestOutputFormatting(TestCase):
             )
 
             with TemporaryDirectory() as tmpdir:
-                result = run(
+                run(
                     script="DS_r <- DS_1;",
                     data_structures=ds_structure,
                     datapoints={"DS_1": datapoints},
@@ -488,4 +494,4 @@ class TestOutputFormatting(TestCase):
 
                 # With disabled formatting, pandas uses its default
                 # which typically shows more digits
-                self.assertIn("1.234567890123", content)
+                assert "1.234567890123" in content
