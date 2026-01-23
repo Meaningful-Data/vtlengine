@@ -273,14 +273,14 @@ Handled by `VTL_DTYPES_MAPPING` in `src/vtlengine/Utils/__init__.py`:
 
 Code quality checks (run before every commit):
 ```bash
-poetry run ruff format src/
-poetry run ruff check --fix --unsafe-fixes src/
-poetry run mypy src/
+poetry run ruff format
+poetry run ruff check --fix --unsafe-fixes
+poetry run mypy
 ```
 
 Before finishing an issue, run the full test suite (all tests must pass):
 ```bash
-poetry run pytest tests/
+poetry run pytest
 ```
 
 ## Git Workflow
@@ -314,10 +314,10 @@ git checkout -b cr-457
 
 3. **Before creating a PR, run ALL quality checks (mandatory):**
    ```bash
-   poetry run ruff format src/
-   poetry run ruff check --fix --unsafe-fixes src/
-   poetry run mypy src/
-   poetry run pytest tests/
+   poetry run ruff format
+   poetry run ruff check --fix --unsafe-fixes
+   poetry run mypy
+   poetry run pytest
    ```
    All checks must pass before proceeding.
 
