@@ -66,7 +66,7 @@ def _numbers_equal(a: Any, b: Any, rel_tol: Optional[float]) -> bool:
     return abs(a - b) <= abs_tol
 
 
-def _numbers_less_equal(a: Any, b: Any, rel_tol: Optional[float]) -> bool:
+def _numbers_less_equal(a: Union[int, float], b: Union[int, float], rel_tol: Optional[float]) -> bool:
     """
     Compare a <= b using relative tolerance for equality.
 
@@ -81,13 +81,13 @@ def _numbers_less_equal(a: Any, b: Any, rel_tol: Optional[float]) -> bool:
     if rel_tol is None:
         return a <= b
 
-    if a < b:
+    if _numbers_equal(a, b, rel_tol):
         return True
 
-    return _numbers_equal(a, b, rel_tol)
+    return a < b
 
 
-def _numbers_greater_equal(a: Any, b: Any, rel_tol: Optional[float]) -> bool:
+def _numbers_greater_equal(a: Union[int, float], b: Union[int, float], rel_tol: Optional[float]) -> bool:
     """
     Compare a >= b using relative tolerance for equality.
 
@@ -102,10 +102,10 @@ def _numbers_greater_equal(a: Any, b: Any, rel_tol: Optional[float]) -> bool:
     if rel_tol is None:
         return a >= b
 
-    if a > b:
+    if _numbers_equal(a, b, rel_tol):
         return True
 
-    return _numbers_equal(a, b, rel_tol)
+    return a > b
 
 
 class Unary(Operator.Unary):
