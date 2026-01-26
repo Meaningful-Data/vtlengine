@@ -174,4 +174,4 @@ _site/
 docs/error_messages.rst
 
 # dev files
-/src/duckdb_transpiler/data/
+/src/duckdb_transpiler/Dev/
