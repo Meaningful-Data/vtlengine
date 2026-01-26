@@ -11,10 +11,6 @@ import pandas as pd
 import pytest
 
 from vtlengine.API import run
-from vtlengine.Operators.Comparison import (
-    _get_number_tolerance,
-    _numbers_equal,
-)
 from vtlengine.Utils._number_config import (
     DEFAULT_SIGNIFICANT_DIGITS,
     DISABLED_VALUE,
@@ -22,6 +18,7 @@ from vtlengine.Utils._number_config import (
     ENV_OUTPUT_SIGNIFICANT_DIGITS,
     MAX_SIGNIFICANT_DIGITS,
     MIN_SIGNIFICANT_DIGITS,
+    _get_rel_tol,
     _parse_env_value,
     get_effective_comparison_digits,
     get_effective_output_digits,
@@ -141,22 +138,26 @@ def test_get_float_format(env_value: str, expected: str) -> None:
         assert get_float_format() == expected
 
 
-# --- Number Tolerance ---
+# --- Relative Tolerance Calculation ---
 
 
 @pytest.mark.parametrize(
     "sig_digits, expected",
     [
         pytest.param(None, None, id="disabled"),
-        pytest.param(10, 0.5e-9, id="10_digits"),
-        pytest.param(6, 0.5e-5, id="6_digits"),
+        pytest.param(10, 5e-10, id="10_digits"),
+        pytest.param(6, 5e-6, id="6_digits"),
     ],
 )
-def test_get_number_tolerance(sig_digits: int, expected: float) -> None:
-    assert _get_number_tolerance(sig_digits) == expected
+def test_get_rel_tol(sig_digits: int, expected: float) -> None:
+    result = _get_rel_tol(sig_digits)
+    if expected is None:
+        assert result is None
+    else:
+        assert result == pytest.approx(expected)
 
 
-# --- Numbers Equal ---
+# --- Numbers Are Equal ---
 
 
 @pytest.mark.parametrize(
@@ -165,20 +166,27 @@ def test_get_number_tolerance(sig_digits: int, expected: float) -> None:
         pytest.param(1.0, 1.0, 10, True, id="exact_equality"),
         pytest.param(1.0, 1.0 + 1e-11, 10, True, id="within_tolerance"),
         pytest.param(1.0, 1.001, 10, False, id="outside_tolerance"),
-        pytest.param(1.0, 1.0, None, True, id="disabled_equal"),
-        pytest.param(1.0, 1.0 + 1e-15, None, False, id="disabled_not_equal"),
         pytest.param(0.0, 0.0, 10, True, id="both_zero"),
         pytest.param(1e10, 1e10 + 1, 10, True, id="large_within_tolerance"),
         pytest.param(1e10, 1e10 + 100, 10, False, id="large_outside_tolerance"),
         pytest.param(1e-10, 1e-10 + 1e-21, 10, True, id="small_within_tolerance"),
+        pytest.param(1e-15, 1.0000001 * 1e-15, 15, False, id="small_outside_tolerance_15_digits"),
     ],
 )
-def test_numbers_equal(a: float, b: float, sig_digits: int, expected: bool) -> None:
-    rel_tol = _get_number_tolerance(sig_digits)
-    assert _numbers_equal(a, b, rel_tol) == expected
+def test_numbers_are_equal(a: float, b: float, sig_digits: int, expected: bool) -> None:
+    assert numbers_are_equal(a, b, sig_digits) == expected
 
 
-# --- Numbers Are Equal (wrapper) ---
+def test_numbers_are_equal_disabled() -> None:
+    """Test exact comparison when feature is disabled via environment variable."""
+    with mock.patch.dict(os.environ, {ENV_COMPARISON_THRESHOLD: "-1"}):
+        # Exact equality still works
+        assert numbers_are_equal(1.0, 1.0) is True
+        # Very small difference is NOT equal (exact comparison)
+        assert numbers_are_equal(1.0, 1.0 + 1e-15) is False
+
+
+# --- Numbers Are Equal (with environment variable) ---
 
 
 def test_numbers_are_equal_default() -> None:

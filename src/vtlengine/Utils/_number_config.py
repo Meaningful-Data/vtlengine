@@ -135,6 +135,25 @@ def get_float_format() -> Optional[str]:
     return f"%.{digits}g"
 
 
+def _get_rel_tol(significant_digits: Optional[int]) -> Optional[float]:
+    """
+    Calculate the relative tolerance for number comparisons based on significant digits.
+
+    For n significant digits, the last digit is in position 10^(-(n-1)) relative to the
+    leading digit. Rounding at that position gives uncertainty of ±0.5 in the last digit,
+    which translates to a relative tolerance of 0.5 * 10^(-(n-1)).
+
+    Args:
+        significant_digits: Number of significant digits, or None if disabled.
+
+    Returns:
+        Relative tolerance value, or None if feature is disabled.
+    """
+    if significant_digits is None:
+        return None
+    return 5 * (10 ** (-(significant_digits)))
+
+
 def numbers_are_equal(a: float, b: float, significant_digits: Optional[int] = None) -> bool:
     """
     Compare two numbers for equality using significant digits tolerance.
@@ -151,25 +170,74 @@ def numbers_are_equal(a: float, b: float, significant_digits: Optional[int] = No
     if significant_digits is None:
         significant_digits = get_effective_comparison_digits()
 
-    # If feature is disabled, use exact comparison
-    if significant_digits is None:
+    rel_tol = _get_rel_tol(significant_digits)
+
+    if rel_tol is None:
         return a == b
 
-    # Handle special cases
-    if a == b:  # Handles infinities and exact matches
+    if a == b:  # Handles exact matches, infinities
         return True
 
-    # Calculate relative tolerance based on significant digits
-    # For N significant digits, tolerance is 0.5 * 10^(-N+1) relative to magnitude
-    rel_tol = 0.5 * (10 ** (-(significant_digits - 1)))
-
-    # Use the larger absolute value as the reference for relative comparison
     max_abs = max(abs(a), abs(b))
-
     if max_abs == 0:
-        return True  # Both are zero
+        return True
 
     # Calculate absolute tolerance based on the magnitude
     abs_tol = rel_tol * max_abs
 
-    return abs(a - b) <= abs_tol
+    # Implementation of math.isclose function logic with relative tolerance and absolute tolerance
+    return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
+
+
+def numbers_are_less_equal(a: float, b: float, significant_digits: Optional[int] = None) -> bool:
+    """
+    Compare a <= b using significant digits tolerance for equality.
+
+    Args:
+        a: First number.
+        b: Second number.
+        significant_digits: Number of significant digits to use. If None,
+            uses get_effective_comparison_digits().
+
+    Returns:
+        True if a <= b (with tolerance for equality).
+    """
+    if significant_digits is None:
+        significant_digits = get_effective_comparison_digits()
+
+    rel_tol = _get_rel_tol(significant_digits)
+
+    if rel_tol is None:
+        return a <= b
+
+    if numbers_are_equal(a, b, significant_digits):
+        return True
+
+    return a < b
+
+
+def numbers_are_greater_equal(a: float, b: float, significant_digits: Optional[int] = None) -> bool:
+    """
+    Compare a >= b using significant digits tolerance for equality.
+
+    Args:
+        a: First number.
+        b: Second number.
+        significant_digits: Number of significant digits to use. If None,
+            uses get_effective_comparison_digits().
+
+    Returns:
+        True if a >= b (with tolerance for equality).
+    """
+    if significant_digits is None:
+        significant_digits = get_effective_comparison_digits()
+
+    rel_tol = _get_rel_tol(significant_digits)
+
+    if rel_tol is None:
+        return a >= b
+
+    if numbers_are_equal(a, b, significant_digits):
+        return True
+
+    return a > b

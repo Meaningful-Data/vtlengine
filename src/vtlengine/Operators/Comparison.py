@@ -22,94 +22,11 @@ from vtlengine.DataTypes import COMP_NAME_MAPPING, Boolean, Null, Number, String
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.Utils._number_config import get_effective_comparison_digits
-
-
-def _get_number_tolerance(significant_digits: Optional[int]) -> Optional[float]:
-    """
-    Calculate the relative tolerance for number comparisons based on significant digits.
-
-    Args:
-        significant_digits: Number of significant digits, or None if disabled.
-
-    Returns:
-        Relative tolerance value, or None if feature is disabled.
-    """
-    if significant_digits is None:
-        return None
-    return 0.5 * (10 ** (-(significant_digits - 1)))
-
-
-def _numbers_equal(a: Any, b: Any, rel_tol: Optional[float]) -> bool:
-    """
-    Compare two numbers for equality using relative tolerance.
-
-    Args:
-        a: First number.
-        b: Second number.
-        rel_tol: Relative tolerance, or None for exact comparison.
-
-    Returns:
-        True if numbers are considered equal.
-    """
-    if rel_tol is None:
-        return a == b
-
-    if a == b:  # Handles exact matches, infinities
-        return True
-
-    max_abs = max(abs(a), abs(b))
-    if max_abs == 0:
-        return True
-
-    abs_tol = rel_tol * max_abs
-    return abs(a - b) <= abs_tol
-
-
-def _numbers_less_equal(
-    a: Union[int, float], b: Union[int, float], rel_tol: Optional[float]
-) -> bool:
-    """
-    Compare a <= b using relative tolerance for equality.
-
-    Args:
-        a: First number.
-        b: Second number.
-        rel_tol: Relative tolerance for equality check, or None for exact comparison.
-
-    Returns:
-        True if a <= b (with tolerance for equality).
-    """
-    if rel_tol is None:
-        return a <= b
-
-    if _numbers_equal(a, b, rel_tol):
-        return True
-
-    return a < b
-
-
-def _numbers_greater_equal(
-    a: Union[int, float], b: Union[int, float], rel_tol: Optional[float]
-) -> bool:
-    """
-    Compare a >= b using relative tolerance for equality.
-
-    Args:
-        a: First number.
-        b: Second number.
-        rel_tol: Relative tolerance for equality check, or None for exact comparison.
-
-    Returns:
-        True if a >= b (with tolerance for equality).
-    """
-    if rel_tol is None:
-        return a >= b
-
-    if _numbers_equal(a, b, rel_tol):
-        return True
-
-    return a > b
+from vtlengine.Utils._number_config import (
+    numbers_are_equal,
+    numbers_are_greater_equal,
+    numbers_are_less_equal,
+)
 
 
 class Unary(Operator.Unary):
@@ -256,9 +173,7 @@ class Equal(Binary):
 
         # Use tolerance-based comparison for numeric types
         if isinstance(x, (int, float)) and isinstance(y, (int, float)):
-            sig_digits = get_effective_comparison_digits()
-            rel_tol = _get_number_tolerance(sig_digits)
-            return _numbers_equal(x, y, rel_tol)
+            return numbers_are_equal(x, y)
 
         return cls.py_op(x, y)
 
@@ -276,9 +191,7 @@ class NotEqual(Binary):
 
         # Use tolerance-based comparison for numeric types
         if isinstance(x, (int, float)) and isinstance(y, (int, float)):
-            sig_digits = get_effective_comparison_digits()
-            rel_tol = _get_number_tolerance(sig_digits)
-            return not _numbers_equal(x, y, rel_tol)
+            return not numbers_are_equal(x, y)
 
         return cls.py_op(x, y)
 
@@ -301,9 +214,7 @@ class GreaterEqual(Binary):
 
         # Use tolerance-based comparison for numeric types
         if isinstance(x, (int, float)) and isinstance(y, (int, float)):
-            sig_digits = get_effective_comparison_digits()
-            rel_tol = _get_number_tolerance(sig_digits)
-            return _numbers_greater_equal(x, y, rel_tol)
+            return numbers_are_greater_equal(x, y)
 
         return cls.py_op(x, y)
 
@@ -326,9 +237,7 @@ class LessEqual(Binary):
 
         # Use tolerance-based comparison for numeric types
         if isinstance(x, (int, float)) and isinstance(y, (int, float)):
-            sig_digits = get_effective_comparison_digits()
-            rel_tol = _get_number_tolerance(sig_digits)
-            return _numbers_less_equal(x, y, rel_tol)
+            return numbers_are_less_equal(x, y)
 
         return cls.py_op(x, y)
 
@@ -407,9 +316,7 @@ class Between(Operator.Operator):
             and isinstance(y, (int, float))
             and isinstance(z, (int, float))
         ):
-            sig_digits = get_effective_comparison_digits()
-            rel_tol = _get_number_tolerance(sig_digits)
-            return _numbers_greater_equal(x, y, rel_tol) and _numbers_less_equal(x, z, rel_tol)
+            return numbers_are_greater_equal(x, y) and numbers_are_less_equal(x, z)
 
         return y <= x <= z  # type: ignore[operator]
 

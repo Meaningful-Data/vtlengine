@@ -1,6 +1,6 @@
 import operator
 from copy import copy
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Tuple
 
 import pandas as pd
 from pandas import DataFrame
@@ -10,47 +10,13 @@ from vtlengine.AST.Grammar.tokens import HIERARCHY, NON_NULL, NON_ZERO
 from vtlengine.DataTypes import Boolean, Number
 from vtlengine.Model import Component, DataComponent, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.Utils._number_config import get_effective_comparison_digits
+from vtlengine.Utils._number_config import (
+    numbers_are_equal,
+    numbers_are_greater_equal,
+    numbers_are_less_equal,
+)
 
 REMOVE = "REMOVE_VALUE"
-
-
-def _get_number_tolerance(significant_digits: Optional[int]) -> Optional[float]:
-    """Calculate relative tolerance for number comparisons."""
-    if significant_digits is None:
-        return None
-    return 0.5 * (10 ** (-(significant_digits - 1)))
-
-
-def _numbers_equal(a: Any, b: Any, rel_tol: Optional[float]) -> bool:
-    """Compare two numbers for equality using relative tolerance."""
-    if rel_tol is None:
-        return a == b
-    if a == b:
-        return True
-    max_abs = max(abs(a), abs(b))
-    if max_abs == 0:
-        return True
-    abs_tol = rel_tol * max_abs
-    return abs(a - b) <= abs_tol
-
-
-def _numbers_greater_equal(a: Any, b: Any, rel_tol: Optional[float]) -> bool:
-    """Compare a >= b using relative tolerance for equality."""
-    if rel_tol is None:
-        return a >= b
-    if a > b:
-        return True
-    return _numbers_equal(a, b, rel_tol)
-
-
-def _numbers_less_equal(a: Any, b: Any, rel_tol: Optional[float]) -> bool:
-    """Compare a <= b using relative tolerance for equality."""
-    if rel_tol is None:
-        return a <= b
-    if a < b:
-        return True
-    return _numbers_equal(a, b, rel_tol)
 
 
 def get_measure_from_dataset(dataset: Dataset, code_item: str) -> DataComponent:
@@ -148,9 +114,7 @@ class HREqual(HRComparison):
         if pd.isnull(x) or pd.isnull(y):
             return None
         if isinstance(x, (int, float)) and isinstance(y, (int, float)):
-            sig_digits = get_effective_comparison_digits()
-            rel_tol = _get_number_tolerance(sig_digits)
-            return _numbers_equal(x, y, rel_tol)
+            return numbers_are_equal(x, y)
         return cls.py_op(x, y)
 
 
@@ -168,9 +132,7 @@ class HRGreaterEqual(HRComparison):
         if pd.isnull(x) or pd.isnull(y):
             return None
         if isinstance(x, (int, float)) and isinstance(y, (int, float)):
-            sig_digits = get_effective_comparison_digits()
-            rel_tol = _get_number_tolerance(sig_digits)
-            return _numbers_greater_equal(x, y, rel_tol)
+            return numbers_are_greater_equal(x, y)
         return cls.py_op(x, y)
 
 
@@ -188,9 +150,7 @@ class HRLessEqual(HRComparison):
         if pd.isnull(x) or pd.isnull(y):
             return None
         if isinstance(x, (int, float)) and isinstance(y, (int, float)):
-            sig_digits = get_effective_comparison_digits()
-            rel_tol = _get_number_tolerance(sig_digits)
-            return _numbers_less_equal(x, y, rel_tol)
+            return numbers_are_less_equal(x, y)
         return cls.py_op(x, y)
 
 
