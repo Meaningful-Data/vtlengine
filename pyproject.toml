@@ -60,6 +60,7 @@ mypy = ">=1.18,<2.0"
 pandas-stubs = ">=2.2.2,<3.0"
 ruff = ">=0.14,<1.0.0"
 types-jsonschema = ">=4.25.1,<5.0"
+psutil = "^7.2.1"
 
 [tool.poetry.group.docs.dependencies]
 sphinx = ">=7.4.7,<8.0"
@@ -86,7 +87,7 @@ lint.exclude = ["*/Grammar/*", "*/main.py", "*/dev.py"]
 
 [tool.mypy]
 files = "src"
-exclude = "src/vtlengine/AST/.*|src/dev.py"
+exclude = "src/vtlengine/AST/.*|src/dev.py|src/duckdb_transpiler/AST/.*|src/duckdb_transpiler/dev.py|src/duckdb_transpiler/Transpiler/.*"
 disallow_untyped_defs = true
 disallow_untyped_calls = true
 ignore_errors = false
