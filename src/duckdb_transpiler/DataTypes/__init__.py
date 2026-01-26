@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional, Set, Type, Union
 
 import pandas as pd
 
-from duckdb_transpiler.config import get_decimal_type
+from duckdb_transpiler.Config.config import get_decimal_type
 from vtlengine.DataTypes._time_checking import (
     check_date,
     check_time,

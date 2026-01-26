@@ -13,7 +13,7 @@ from typing import Dict, List, Optional, Union
 
 import duckdb
 
-from duckdb_transpiler.config import get_decimal_type
+from duckdb_transpiler.Config.config import get_decimal_type
 from vtlengine.DataTypes import (
     Boolean,
     Date,
