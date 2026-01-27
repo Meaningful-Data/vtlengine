@@ -54,7 +54,8 @@ html_theme = "sphinx_rtd_theme"
 
 def setup_error_docs(app):
     logger = logging.getLogger(__name__)
-    output_filepath = Path(__file__).parent / "error_messages.rst"
+    # Use app.srcdir to get the correct source directory for sphinx-multiversion
+    output_filepath = Path(app.srcdir) / "error_messages.rst"
     try:
         generate_errors_rst(output_filepath, centralised_messages)
         logger.info(f"[DOCS] Generated error messages documentation at {output_filepath}")
