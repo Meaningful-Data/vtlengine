@@ -1,0 +1,1 @@
+../../../docs/scripts/generate_error_docs.py
