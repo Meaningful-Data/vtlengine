@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Type, Union
 import pandas as pd
 import sqlglot
 import sqlglot.expressions as exp
-from duckdb import DuckdbPyRelation
+from duckdb import DuckDBPyRelation
 
 import vtlengine.DataTypes as DataTypes
 from vtlengine.DataTypes import SCALAR_TYPES, ScalarType
@@ -149,7 +149,7 @@ class Component:
 class Dataset:
     name: str
     components: Dict[str, Component]
-    data: Optional[DuckdbPyRelation] = None
+    data: Optional[DuckDBPyRelation] = None
     persistent: bool = False
 
     def __post_init__(self) -> None:
@@ -162,7 +162,7 @@ class Dataset:
                 if name not in self.data.columns:
                     raise ValueError(f"Component {name} not found in the data")
 
-    def __eq__(self, other: DuckdbPyRelation) -> bool:
+    def __eq__(self, other: DuckDBPyRelation) -> bool:
         if not isinstance(other, Dataset):
             return False
 
