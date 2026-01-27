@@ -1,4 +1,25 @@
 {% if versions %}
+{# Compute latest stable version from versions list AND current_version #}
+{# We need to find the highest version number among all stable versions #}
+{% set ns = namespace(latest_stable=None) %}
+
+{# Check current_version first #}
+{% if current_version.name.startswith('v') and 'rc' not in current_version.name and 'alpha' not in current_version.name and 'beta' not in current_version.name %}
+  {% set ns.latest_stable = current_version.name %}
+{% endif %}
+
+{# Then check all other versions - versions are sorted oldest first #}
+{% for version in versions %}
+  {% if version.name.startswith('v') and 'rc' not in version.name and 'alpha' not in version.name and 'beta' not in version.name %}
+    {# Compare version numbers: if this version is higher, update latest_stable #}
+    {% if ns.latest_stable is none %}
+      {% set ns.latest_stable = version.name %}
+    {% elif version.name > ns.latest_stable %}
+      {% set ns.latest_stable = version.name %}
+    {% endif %}
+  {% endif %}
+{% endfor %}
+{% set computed_latest = ns.latest_stable %}
 <div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
   <span class="rst-current-version" data-toggle="rst-current-version">
     <span class="fa fa-book"> VTL Engine Docs</span>
@@ -12,7 +33,7 @@
         {% set display_name = version.name.lstrip('v') %}
         {% if version.name == current_version.name %}
           <dd><strong>{{ display_name }}</strong>
-            {% if version.name == latest_version %}
+            {% if version.name == computed_latest %}
               <em style="color: #27ae60; font-size: 0.85em;">(latest)</em>
             {% elif "rc" in version.name %}
               <em style="color: #e67e22; font-size: 0.85em;">(pre-release)</em>
@@ -22,7 +43,7 @@
           </dd>
         {% else %}
           <dd><a href="{{ version.url }}">{{ display_name }}</a>
-            {% if version.name == latest_version %}
+            {% if version.name == computed_latest %}
               <em style="color: #27ae60; font-size: 0.85em;">(latest)</em>
             {% elif "rc" in version.name %}
               <em style="color: #e67e22; font-size: 0.85em;">(pre-release)</em>
