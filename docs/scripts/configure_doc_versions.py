@@ -210,7 +210,7 @@ def update_sphinx_config(tag_whitelist: str) -> None:
     Args:
         tag_whitelist: The regex pattern for tag whitelist
     """
-    conf_path = Path(__file__).parent.parent / "docs" / "conf.py"
+    conf_path = Path(__file__).parent.parent / "conf.py"
 
     if not conf_path.exists():
         print(f"Error: Configuration file not found: {conf_path}")

@@ -5,10 +5,14 @@ This module tests that the error messages documentation is properly generated
 and contains the expected content structure.
 """
 
+import sys
 import tempfile
 from pathlib import Path
 
-from vtlengine.Exceptions.__exception_file_generator import generate_errors_rst
+# Add docs/scripts to path for importing generate_error_docs
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "docs" / "scripts"))
+from generate_error_docs import generate_errors_rst
+
 from vtlengine.Exceptions.messages import centralised_messages
 
 

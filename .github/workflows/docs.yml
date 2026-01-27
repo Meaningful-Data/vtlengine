@@ -38,13 +38,13 @@ jobs:
         run: poetry install
       - name: Configure documentation versions
         run: |
-          poetry run python scripts/configure_doc_versions.py
+          poetry run python docs/scripts/configure_doc_versions.py
       - name: Build with Sphinx Multi-Version
         run: |
           poetry run sphinx-multiversion docs _site
       - name: Generate root redirect
         run: |
-          poetry run python scripts/generate_redirect.py _site
+          poetry run python docs/scripts/generate_redirect.py _site
       - name: Copy CNAME to root
         run: |
           cp docs/CNAME _site/CNAME
