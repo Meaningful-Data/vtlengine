@@ -459,8 +459,7 @@ def load_datasets_with_data_duckdb(
     # Handle case with no datapoints - create empty tables
     if datapoints is None:
         for dataset_name, dataset in datasets.items():
-            rel = _create_empty_duckdb_table(conn, dataset.components)
-            conn.register(dataset_name, rel)
+            _create_empty_duckdb_table_direct(conn, dataset_name, dataset.components)
         return conn, datasets, scalars
 
     # Handling dictionary of Pandas Dataframes
@@ -477,14 +476,14 @@ def load_datasets_with_data_duckdb(
                 raise InputValidationException(
                     f"Expected DataFrame for dataset {dataset_name}, got {type(data).__name__}"
                 )
-            validated_data = _validate_pandas(datasets[dataset_name].components, data, dataset_name)
-            conn.register(dataset_name, validated_data)
+            validated_data = _validate_pandas(datasets[dataset_name].components, data, dataset_name)  # noqa: F841
+            # Create table from DataFrame
+            conn.execute(f'CREATE TABLE "{dataset_name}" AS SELECT * FROM validated_data')
 
         # Create empty tables for datasets without datapoints
         for dataset_name, dataset in datasets.items():
             if dataset_name not in datapoints:
-                rel = _create_empty_duckdb_table(conn, dataset.components)
-                conn.register(dataset_name, rel)
+                _create_empty_duckdb_table_direct(conn, dataset_name, dataset.components)
 
         return conn, datasets, scalars
 
@@ -506,24 +505,45 @@ def load_datasets_with_data_duckdb(
             raise InputValidationException(f"Not found dataset {dataset_name} in datastructures.")
 
         # Load CSV directly into DuckDB with validation
-        rel = load_datapoints_duckdb(
+        load_datapoints_duckdb(
             conn=conn,
             components=datasets[dataset_name].components,
             dataset_name=dataset_name,
             csv_path=csv_path,
         )
-        # Register as table with dataset name
-        conn.register(dataset_name, rel)
 
     # Create empty tables for datasets without datapoints
     for dataset_name, dataset in datasets.items():
         if dataset_name not in datapoints_path:
-            rel = _create_empty_duckdb_table(conn, dataset.components)
-            conn.register(dataset_name, rel)
+            _create_empty_duckdb_table_direct(conn, dataset_name, dataset.components)
 
     gc.collect()
 
     return conn, datasets, scalars
+
+
+def _create_empty_duckdb_table_direct(
+    conn: duckdb.DuckDBPyConnection,
+    table_name: str,
+    components: Dict[str, VTL_Component],
+) -> None:
+    """
+    Create an empty table directly in DuckDB with proper column types.
+
+    Args:
+        conn: DuckDB connection
+        table_name: Name of the table to create
+        components: Component definitions
+    """
+    from duckdb_transpiler.DataTypes import get_duckdb_type
+
+    col_defs = []
+    for col_name, comp in components.items():
+        duckdb_type = get_duckdb_type(comp.data_type)
+        col_defs.append(f'"{col_name}" {duckdb_type}')
+
+    create_sql = f'CREATE TABLE "{table_name}" ({", ".join(col_defs)})'
+    conn.execute(create_sql)
 
 
 def _create_empty_duckdb_table(

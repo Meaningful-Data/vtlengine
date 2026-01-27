@@ -150,8 +150,8 @@ def run(
     # 6. Execute queries in DuckDB
     results: Dict[str, Union[Dataset, Scalar, pd.DataFrame, duckdb.DuckDBPyRelation]] = {}
 
-    for result_name, sql_query, is_persistent in queries:
-        # Skip non-persistent results if requested
+    for result_name, sql_query in queries.items():
+        is_persistent = result_name in output_datasets
         if return_only_persistent and not is_persistent:
             # Still execute to register intermediate results
             result_df = conn.execute(sql_query).fetchdf()
