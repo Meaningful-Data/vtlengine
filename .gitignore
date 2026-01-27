@@ -173,5 +173,8 @@ _build/
 _site/
 docs/error_messages.rst
 
+# Profilig data
+*.stats
+
 # dev files
 /src/duckdb_transpiler/Dev/
