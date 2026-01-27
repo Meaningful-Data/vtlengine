@@ -36,6 +36,9 @@ jobs:
         uses: actions/setup-python@v5
       - name: Install dependencies
         run: poetry install
+      - name: Configure documentation versions
+        run: |
+          poetry run python scripts/configure_doc_versions.py
       - name: Build with Sphinx Multi-Version
         run: |
           poetry run sphinx-multiversion docs _site
