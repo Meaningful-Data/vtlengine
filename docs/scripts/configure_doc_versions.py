@@ -224,14 +224,19 @@ def update_sphinx_config(tag_whitelist: str) -> None:
         return f'smv_tag_whitelist = r"{tag_whitelist}"'
 
     pattern = r'smv_tag_whitelist = r"[^"]*"'
+
+    # Check if pattern exists in content
+    if not re.search(pattern, content):
+        print("Error: Could not find smv_tag_whitelist in conf.py")
+        sys.exit(1)
+
     new_content = re.sub(pattern, replace_whitelist, content)
 
     if new_content == content:
-        print("Warning: Could not find smv_tag_whitelist in conf.py")
-        sys.exit(1)
-
-    conf_path.write_text(new_content, encoding="utf-8")
-    print(f"Updated smv_tag_whitelist to: {tag_whitelist}")
+        print(f"smv_tag_whitelist already set to: {tag_whitelist}")
+    else:
+        conf_path.write_text(new_content, encoding="utf-8")
+        print(f"Updated smv_tag_whitelist to: {tag_whitelist}")
 
 
 def main() -> int:
