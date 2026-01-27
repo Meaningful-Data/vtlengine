@@ -1,0 +1,37 @@
+{% if versions %}
+<div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    <span class="fa fa-book"> VTL Engine Docs</span>
+    v: {{ current_version }}
+    <span class="fa fa-caret-down"></span>
+  </span>
+  <div class="rst-other-versions">
+    <dl>
+      <dt>Versions</dt>
+      {% for version in versions %}
+        {% if version.name == current_version %}
+          <dd><strong>{{ version.name }}</strong>
+            {% if version.name == latest_version %}
+              <span class="label label-success">latest</span>
+            {% elif "rc" in version.name %}
+              <span class="label label-warning">pre-release</span>
+            {% elif version.name == "main" %}
+              <span class="label label-info">development</span>
+            {% endif %}
+          </dd>
+        {% else %}
+          <dd><a href="{{ version.url }}">{{ version.name }}</a>
+            {% if version.name == latest_version %}
+              <span class="label label-success">latest</span>
+            {% elif "rc" in version.name %}
+              <span class="label label-warning">pre-release</span>
+            {% elif version.name == "main" %}
+              <span class="label label-info">development</span>
+            {% endif %}
+          </dd>
+        {% endif %}
+      {% endfor %}
+    </dl>
+  </div>
+</div>
+{% endif %}

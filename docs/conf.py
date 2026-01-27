@@ -41,10 +41,24 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
     "sphinx_rtd_theme",
+    "sphinx_multiversion",
 ]
 
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+
+# -- Sphinx-multiversion configuration ----------------------------------------
+
+# Only build documentation for tags matching v* pattern and main branch
+smv_tag_whitelist = r"^v\d+\.\d+\.\d+.*$"  # Matches v1.5.0, v1.5.0rc6, etc.
+smv_branch_whitelist = r"^main$"  # Only main branch
+smv_remote_whitelist = r"^.*$"  # Allow all remotes
+
+# Output each version to its own directory
+smv_outputdir_format = "{ref.name}"
+
+# Prefer branch names over tags when both point to same commit
+smv_prefer_remote_refs = False
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
@@ -52,6 +66,18 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
 html_css_files = ["custom.css"]
+
+# Copy CNAME file to output for GitHub Pages custom domain
+html_extra_path = ["CNAME"]
+
+# Add version information to template context
+html_context = {
+    "display_github": True,
+    "github_user": "Meaningful-Data",
+    "github_repo": "vtlengine",
+    "github_version": "main",
+    "conf_py_path": "/docs/",
+}
 
 
 def setup_error_docs(app):
