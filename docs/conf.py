@@ -54,7 +54,7 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 # Only build documentation for tags matching v* pattern and main branch
 # Pattern dynamically updated by scripts/configure_doc_versions.py
-smv_tag_whitelist = r"^(v1\.4\.0$|v1\.3\.0$|v1\.2\.2$|v1\.1\.1$|v1\.0\.4$|v1\.5\.0rc6$)"
+smv_tag_whitelist = r"^(v1\.4\.0$|v1\.3\.0$|v1\.2\.2$|v1\.1\.1$|v1\.0\.4$|v1\.5\.0rc7$)"
 smv_branch_whitelist = r"^main$"  # Only main branch
 smv_remote_whitelist = r"^.*$"  # Allow all remotes
 
@@ -112,7 +112,8 @@ html_context = {
 
 def setup_error_docs(app):
     logger = logging.getLogger(__name__)
-    output_filepath = Path(__file__).parent / "error_messages.rst"
+    # Use app.srcdir to get the correct source directory for sphinx-multiversion
+    output_filepath = Path(app.srcdir) / "error_messages.rst"
     try:
         generate_errors_rst(output_filepath, centralised_messages)
         logger.info(f"[DOCS] Generated error messages documentation at {output_filepath}")
