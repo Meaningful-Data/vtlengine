@@ -10,8 +10,11 @@ from pathlib import Path
 
 from toml import load as toml_load
 
-from vtlengine.Exceptions.__exception_file_generator import generate_errors_rst
 from vtlengine.Exceptions.messages import centralised_messages
+
+# Import the error docs generator from scripts folder
+sys.path.insert(0, str(Path(__file__).parent / "scripts"))
+from generate_error_docs import generate_errors_rst
 
 if sys.version_info[0] == 3 and sys.version_info[1] >= 8 and sys.platform.startswith("win"):
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
