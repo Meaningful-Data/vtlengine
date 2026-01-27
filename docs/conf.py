@@ -50,7 +50,7 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # -- Sphinx-multiversion configuration ----------------------------------------
 
 # Only build documentation for tags matching v* pattern and main branch
-smv_tag_whitelist = r"^v\d+\.\d+\.\d+.*$"  # Matches v1.5.0, v1.5.0rc6, etc.
+smv_tag_whitelist = r"^(v1\.4\.0$|v1\.3\.0$|v1\.2\.2$|v1\.2\.1$|v1\.2\.0$|v1\.5\.0rc6$)"  # Matches v1.5.0, v1.5.0rc6, etc.
 smv_branch_whitelist = r"^main$"  # Only main branch
 smv_remote_whitelist = r"^.*$"  # Allow all remotes
 
@@ -70,6 +70,24 @@ html_css_files = ["custom.css"]
 # Copy CNAME file to output for GitHub Pages custom domain
 html_extra_path = ["CNAME"]
 
+# Determine latest stable version from whitelist
+def get_latest_stable_version():
+    """Extract latest stable version from smv_tag_whitelist."""
+    import re
+
+    # Extract all versions from the whitelist pattern
+    # Pattern is like: ^(v1\.4\.0$|v1\.3\.0$|...|v1\.5\.0rc6$)
+    whitelist = smv_tag_whitelist
+    # Remove the regex anchors and grouping
+    versions_str = whitelist.strip("^()").replace("$", "")
+    versions = [v.replace("\\.", ".") for v in versions_str.split("|")]
+
+    # Filter to stable versions (no rc/alpha/beta)
+    stable_versions = [v for v in versions if "rc" not in v.lower() and "alpha" not in v.lower() and "beta" not in v.lower()]
+
+    # Return the first one (should be latest due to how configure_doc_versions.py orders them)
+    return stable_versions[0] if stable_versions else None
+
 # Add version information to template context
 html_context = {
     "display_github": True,
@@ -77,6 +95,7 @@ html_context = {
     "github_repo": "vtlengine",
     "github_version": "main",
     "conf_py_path": "/docs/",
+    "latest_version": get_latest_stable_version(),
 }
 
 

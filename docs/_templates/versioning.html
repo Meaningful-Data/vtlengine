@@ -2,7 +2,7 @@
 <div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
   <span class="rst-current-version" data-toggle="rst-current-version">
     <span class="fa fa-book"> VTL Engine Docs</span>
-    v: {{ current_version.lstrip('v') }}
+    v: {{ current_version.name.lstrip('v') }}
     <span class="fa fa-caret-down"></span>
   </span>
   <div class="rst-other-versions">
@@ -10,7 +10,7 @@
       <dt>Versions</dt>
       {% for version in versions %}
         {% set display_name = version.name.lstrip('v') %}
-        {% if version.name == current_version %}
+        {% if version.name == current_version.name %}
           <dd><strong>{{ display_name }}</strong>
             {% if version.name == latest_version %}
               <em style="color: #27ae60; font-size: 0.85em;">(latest)</em>
