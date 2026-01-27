@@ -36,7 +36,11 @@ def parse_version(version_str: str) -> tuple[int, int, int, str]:
 def is_stable_version(version_str: str) -> bool:
     """Check if a version is stable (not pre-release)."""
     # Stable versions don't contain 'rc', 'alpha', 'beta', etc.
-    return "rc" not in version_str.lower() and "alpha" not in version_str.lower() and "beta" not in version_str.lower()
+    return (
+        "rc" not in version_str.lower()
+        and "alpha" not in version_str.lower()
+        and "beta" not in version_str.lower()
+    )
 
 
 def find_latest_stable_version(site_dir: Path) -> Optional[str]:
@@ -97,7 +101,8 @@ def generate_redirect_html(target_version: str) -> str:
     <title>Redirecting to VTL Engine Documentation</title>
     <style>
         body {{
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                         "Helvetica Neue", Arial, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
