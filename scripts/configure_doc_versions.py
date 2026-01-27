@@ -85,7 +85,10 @@ def find_latest_stable_tag(tags: list[str]) -> Optional[str]:
 
 def get_latest_stable_versions(tags: list[str], limit: int = 5) -> list[str]:
     """
-    Get the latest N stable versions.
+    Get the latest N stable versions following semantic versioning.
+
+    Only includes the highest patch version for each major.minor combination.
+    For example, if we have v1.2.0, v1.2.1, v1.2.2, only v1.2.2 is included.
 
     Args:
         tags: List of all version tags
@@ -98,8 +101,25 @@ def get_latest_stable_versions(tags: list[str], limit: int = 5) -> list[str]:
     if not stable_tags:
         return []
 
-    stable_tags.sort(key=parse_version, reverse=True)
-    return stable_tags[:limit]
+    # Group by major.minor version
+    version_groups: dict[tuple[int, int], list[str]] = {}
+    for tag in stable_tags:
+        parsed = parse_version(tag)
+        major, minor = parsed[0], parsed[1]
+        key = (major, minor)
+        if key not in version_groups:
+            version_groups[key] = []
+        version_groups[key].append(tag)
+
+    # For each major.minor group, keep only the latest patch version
+    latest_per_group = []
+    for versions in version_groups.values():
+        versions.sort(key=parse_version, reverse=True)
+        latest_per_group.append(versions[0])  # Highest patch version
+
+    # Sort all latest versions and return top N
+    latest_per_group.sort(key=parse_version, reverse=True)
+    return latest_per_group[:limit]
 
 
 def should_build_rc_tags(latest_stable_versions: list[str]) -> tuple[bool, Optional[str]]:
