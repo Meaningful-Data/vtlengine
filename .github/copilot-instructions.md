@@ -273,15 +273,61 @@ Handled by `VTL_DTYPES_MAPPING` in `src/vtlengine/Utils/__init__.py`:
 
 Code quality checks (run before every commit):
 ```bash
-poetry run ruff format src/
-poetry run ruff check --fix src/
-poetry run mypy src/
+poetry run ruff format
+poetry run ruff check --fix --unsafe-fixes
+poetry run mypy
 ```
 
 Before finishing an issue, run the full test suite (all tests must pass):
 ```bash
-poetry run pytest tests/
+poetry run pytest
 ```
+
+## Git Workflow
+
+### Branch Naming Convention
+
+Always use the pattern `cr-{issue_number}` for feature branches:
+
+```bash
+# Example: Working on issue #457
+git checkout -b cr-457
+```
+
+**Pattern breakdown:**
+- `cr` = "change request" prefix
+- `{issue_number}` = GitHub issue number being addressed
+
+**Examples:**
+- `cr-457` - Feature for issue #457
+- `cr-123` - Bug fix for issue #123
+- `cr-42` - Enhancement for issue #42
+
+### Workflow Steps
+
+1. Create branch from the appropriate base (usually `main` or a release candidate):
+   ```bash
+   git checkout -b cr-{issue_number}
+   ```
+
+2. Make changes, commit frequently with descriptive messages
+
+3. **Before creating a PR, run ALL quality checks (mandatory):**
+   ```bash
+   poetry run ruff format
+   poetry run ruff check --fix --unsafe-fixes
+   poetry run mypy
+   poetry run pytest
+   ```
+   All checks must pass before proceeding.
+
+4. Push and create a draft PR:
+   ```bash
+   git push -u origin cr-{issue_number}
+   gh pr create --draft --title "Fix #{issue_number}: Description"
+   ```
+
+5. When ready for review, mark PR as ready
 
 ## File Naming Conventions
 

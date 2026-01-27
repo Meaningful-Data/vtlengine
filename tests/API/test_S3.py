@@ -67,7 +67,7 @@ def test_save_datapoints_without_data_mock(mock_csv):
     save_datapoints(None, dataset, output_path)
 
     expected_path = "s3://path/to/output/test_dataset.csv"
-    mock_csv.assert_called_once_with(expected_path, index=False)
+    mock_csv.assert_called_once_with(expected_path, index=False, float_format="%.15g")
 
 
 @patch("pandas.DataFrame.to_csv")
@@ -96,7 +96,7 @@ def test_save_datapoints_with_data_mock(mock_csv):
     save_datapoints(None, dataset, output_path)
 
     expected_path = "s3://path/to/output/test_dataset.csv"
-    mock_csv.assert_called_once_with(expected_path, index=False)
+    mock_csv.assert_called_once_with(expected_path, index=False, float_format="%.15g")
 
 
 @patch("pandas.DataFrame.to_csv")
@@ -125,7 +125,7 @@ def test_save_datapoints_with_data_and_time_period_representation_mock(mock_csv)
     save_datapoints(TimePeriodRepresentation.VTL, dataset, output_path)
 
     expected_path = "s3://path/to/output/test_dataset.csv"
-    mock_csv.assert_called_once_with(expected_path, index=False)
+    mock_csv.assert_called_once_with(expected_path, index=False, float_format="%.15g")
 
 
 @pytest.mark.parametrize("dataset, reference", params)

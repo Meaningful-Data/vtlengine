@@ -53,6 +53,7 @@ The S3 extra is based on the pandas[aws] extra, which requires to set up some en
 
     walkthrough
     api
+    environment_variables
     error_messages
 
 
