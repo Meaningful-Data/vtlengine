@@ -12,9 +12,10 @@ from toml import load as toml_load
 
 from vtlengine.Exceptions.messages import centralised_messages
 
-# Import the error docs generator from scripts folder
+# Import utilities from scripts folder
 sys.path.insert(0, str(Path(__file__).parent / "scripts"))
 from generate_error_docs import generate_errors_rst
+from version_utils import is_stable_version
 
 if sys.version_info[0] == 3 and sys.version_info[1] >= 8 and sys.platform.startswith("win"):
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -74,6 +75,9 @@ html_css_files = ["custom.css"]
 # Copy CNAME file to output for GitHub Pages custom domain
 html_extra_path = ["CNAME"]
 
+# Favicon for browser tabs
+html_favicon = "_static/favicon.ico"
+
 
 # Determine latest stable version from whitelist
 def get_latest_stable_version():
@@ -82,20 +86,11 @@ def get_latest_stable_version():
 
     # Extract all versions from the whitelist pattern
     # Pattern is like: ^(v1\.4\.0$|v1\.3\.0$|...|v1\.5\.0rc6$)
-    whitelist = smv_tag_whitelist
-    # Remove the regex anchors and grouping
-    versions_str = whitelist.strip("^()").replace("$", "")
-    # Split by | and unescape the dots
+    versions_str = smv_tag_whitelist.strip("^()").replace("$", "")
     versions = [re.sub(r"\\(.)", r"\1", v) for v in versions_str.split("|")]
 
-    # Filter to stable versions (no rc/alpha/beta)
-    stable_versions = [
-        v
-        for v in versions
-        if "rc" not in v.lower() and "alpha" not in v.lower() and "beta" not in v.lower()
-    ]
-
-    # Return the first one (latest due to how configure_doc_versions.py orders them)
+    # Filter to stable versions and return the first (latest)
+    stable_versions = [v for v in versions if is_stable_version(v)]
     return stable_versions[0] if stable_versions else None
 
 

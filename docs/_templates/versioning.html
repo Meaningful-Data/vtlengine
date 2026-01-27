@@ -20,7 +20,16 @@
   {% endif %}
 {% endfor %}
 {% set computed_latest = ns.latest_stable %}
-<div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+{# Determine version type for styling #}
+{% set version_class = "" %}
+{% if current_version.name == computed_latest %}
+  {% set version_class = "version-latest" %}
+{% elif "rc" in current_version.name or "alpha" in current_version.name or "beta" in current_version.name %}
+  {% set version_class = "version-prerelease" %}
+{% elif current_version.name == "main" %}
+  {% set version_class = "version-development" %}
+{% endif %}
+<div class="rst-versions {{ version_class }}" data-toggle="rst-versions" role="note" aria-label="versions">
   <span class="rst-current-version" data-toggle="rst-current-version">
     <span class="fa fa-book"> VTL Engine Docs</span>
     v: {{ current_version.name.lstrip('v') }}
