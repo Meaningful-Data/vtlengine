@@ -2,31 +2,32 @@
 <div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
   <span class="rst-current-version" data-toggle="rst-current-version">
     <span class="fa fa-book"> VTL Engine Docs</span>
-    v: {{ current_version }}
+    v: {{ current_version.lstrip('v') }}
     <span class="fa fa-caret-down"></span>
   </span>
   <div class="rst-other-versions">
     <dl>
       <dt>Versions</dt>
       {% for version in versions %}
+        {% set display_name = version.name.lstrip('v') %}
         {% if version.name == current_version %}
-          <dd><strong>{{ version.name }}</strong>
+          <dd><strong>{{ display_name }}</strong>
             {% if version.name == latest_version %}
-              <span class="label label-success">latest</span>
+              <em style="color: #27ae60; font-size: 0.85em;">(latest)</em>
             {% elif "rc" in version.name %}
-              <span class="label label-warning">pre-release</span>
+              <em style="color: #e67e22; font-size: 0.85em;">(pre-release)</em>
             {% elif version.name == "main" %}
-              <span class="label label-info">development</span>
+              <em style="color: #3498db; font-size: 0.85em;">(development)</em>
             {% endif %}
           </dd>
         {% else %}
-          <dd><a href="{{ version.url }}">{{ version.name }}</a>
+          <dd><a href="{{ version.url }}">{{ display_name }}</a>
             {% if version.name == latest_version %}
-              <span class="label label-success">latest</span>
+              <em style="color: #27ae60; font-size: 0.85em;">(latest)</em>
             {% elif "rc" in version.name %}
-              <span class="label label-warning">pre-release</span>
+              <em style="color: #e67e22; font-size: 0.85em;">(pre-release)</em>
             {% elif version.name == "main" %}
-              <span class="label label-info">development</span>
+              <em style="color: #3498db; font-size: 0.85em;">(development)</em>
             {% endif %}
           </dd>
         {% endif %}
