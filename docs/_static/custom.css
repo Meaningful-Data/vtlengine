@@ -35,3 +35,25 @@
     white-space: pre-wrap !important;
     word-break: break-word !important;
 }
+
+/* Version selector styling based on version type */
+
+/* Default (older stable versions) - white text */
+.rst-versions .rst-current-version {
+    color: #ffffff !important;
+}
+
+/* Latest stable version - green text */
+.rst-versions.version-latest .rst-current-version {
+    color: #2ecc71 !important;
+}
+
+/* Pre-release versions (rc, alpha, beta) - orange text */
+.rst-versions.version-prerelease .rst-current-version {
+    color: #f39c12 !important;
+}
+
+/* Development/main branch - blue text */
+.rst-versions.version-development .rst-current-version {
+    color: #5dade2 !important;
+}

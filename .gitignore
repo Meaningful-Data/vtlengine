@@ -172,3 +172,4 @@ development/
 _build/
 _site/
 docs/error_messages.rst
+docs/plans/

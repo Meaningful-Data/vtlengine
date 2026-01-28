@@ -10,8 +10,12 @@ from pathlib import Path
 
 from toml import load as toml_load
 
-from vtlengine.Exceptions.__exception_file_generator import generate_errors_rst
 from vtlengine.Exceptions.messages import centralised_messages
+
+# Import utilities from scripts folder
+sys.path.insert(0, str(Path(__file__).parent / "scripts"))
+from generate_error_docs import generate_errors_rst
+from version_utils import is_stable_version
 
 if sys.version_info[0] == 3 and sys.version_info[1] >= 8 and sys.platform.startswith("win"):
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -41,10 +45,25 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
     "sphinx_rtd_theme",
+    "sphinx_multiversion",
 ]
 
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+
+# -- Sphinx-multiversion configuration ----------------------------------------
+
+# Only build documentation for tags matching v* pattern and main branch
+# Pattern dynamically updated by scripts/configure_doc_versions.py
+smv_tag_whitelist = r"^(v1\.4\.0$|v1\.3\.0$|v1\.2\.2$|v1\.1\.1$|v1\.0\.4$|v1\.5\.0rc7$)"
+smv_branch_whitelist = r"^main$"  # Only main branch
+smv_remote_whitelist = r"^.*$"  # Allow all remotes
+
+# Output each version to its own directory
+smv_outputdir_format = "{ref.name}"
+
+# Prefer branch names over tags when both point to same commit
+smv_prefer_remote_refs = False
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
@@ -53,10 +72,43 @@ html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
 html_css_files = ["custom.css"]
 
+# Copy CNAME file to output for GitHub Pages custom domain
+html_extra_path = ["CNAME"]
+
+# Favicon for browser tabs
+html_favicon = "_static/favicon.ico"
+
+
+# Determine latest stable version from whitelist
+def get_latest_stable_version():
+    """Extract latest stable version from smv_tag_whitelist."""
+    import re
+
+    # Extract all versions from the whitelist pattern
+    # Pattern is like: ^(v1\.4\.0$|v1\.3\.0$|...|v1\.5\.0rc6$)
+    versions_str = smv_tag_whitelist.strip("^()").replace("$", "")
+    versions = [re.sub(r"\\(.)", r"\1", v) for v in versions_str.split("|")]
+
+    # Filter to stable versions and return the first (latest)
+    stable_versions = [v for v in versions if is_stable_version(v)]
+    return stable_versions[0] if stable_versions else None
+
+
+# Add version information to template context
+html_context = {
+    "display_github": True,
+    "github_user": "Meaningful-Data",
+    "github_repo": "vtlengine",
+    "github_version": "main",
+    "conf_py_path": "/docs/",
+    "latest_version": get_latest_stable_version(),
+}
+
 
 def setup_error_docs(app):
     logger = logging.getLogger(__name__)
-    output_filepath = Path(__file__).parent / "error_messages.rst"
+    # Use app.srcdir to get the correct source directory for sphinx-multiversion
+    output_filepath = Path(app.srcdir) / "error_messages.rst"
     try:
         generate_errors_rst(output_filepath, centralised_messages)
         logger.info(f"[DOCS] Generated error messages documentation at {output_filepath}")
