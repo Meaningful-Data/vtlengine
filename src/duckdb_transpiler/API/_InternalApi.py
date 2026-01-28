@@ -361,11 +361,6 @@ def _handle_scalars_values(
 # Main Data Loading Functions
 # =============================================================================
 
-# Type alias for datapoints input
-DatapointsInput = Union[
-    Dict[str, Union[pd.DataFrame, Path, str]], List[Union[str, Path]], Path, str
-]
-
 
 def _validate_datapoints_dict(datapoints: Dict[str, Any]) -> bool:
     """Check if dict values are all DataFrames (True) or all Path/str (False)."""
@@ -391,7 +386,9 @@ def _check_dataset_exists(name: str, datasets: Dict[str, Dataset]) -> None:
 
 def load_datasets_with_data_duckdb(
     data_structures: Any,
-    datapoints: Optional[DatapointsInput] = None,
+    datapoints: Optional[
+        Union[Dict[str, Union[pd.DataFrame, Path, str]], List[Union[str, Path]], Path, str]
+    ] = None,
     scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
 ) -> Tuple[duckdb.DuckDBPyConnection, Dict[str, Dataset], Dict[str, Scalar]]:
     """
