@@ -21,7 +21,7 @@ from duckdb_transpiler.Parser import load_datapoints_duckdb
 from vtlengine.__extras_check import __check_s3_extra
 from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.Exceptions import DataLoadError, InputValidationException, check_key
-from vtlengine.files.parser import _fill_dataset_empty_data, _validate_pandas, load_datapoints
+from vtlengine.files.parser import _validate_pandas
 from vtlengine.Model import Component as VTL_Component
 from vtlengine.Model import Dataset, Role, Role_keys, Scalar
 

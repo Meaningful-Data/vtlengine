@@ -2,75 +2,16 @@
 DuckDB Transpiler Configuration.
 
 Configuration values can be set via environment variables:
-- VTL_DECIMAL_PRECISION: Total number of digits for DECIMAL type (default: 12)
-- VTL_DECIMAL_SCALE: Number of decimal places for DECIMAL type (default: 6)
 - VTL_MEMORY_LIMIT: Max memory for DuckDB (e.g., "8GB", "80%") (default: "80%")
 - VTL_THREADS: Number of threads for DuckDB (default: system cores)
 - VTL_TEMP_DIRECTORY: Directory for spill-to-disk (default: system temp)
-
-Example:
-    export VTL_DECIMAL_PRECISION=18
-    export VTL_DECIMAL_SCALE=8
-    export VTL_MEMORY_LIMIT=16GB
-    export VTL_THREADS=4
 """
 
 import os
 import tempfile
-from typing import Tuple
 
 import duckdb
 import psutil
-
-# =============================================================================
-# Decimal Configuration
-# =============================================================================
-
-DECIMAL_PRECISION: int = int(os.getenv("VTL_DECIMAL_PRECISION", "12"))
-DECIMAL_SCALE: int = int(os.getenv("VTL_DECIMAL_SCALE", "6"))
-
-
-def get_decimal_type() -> str:
-    """
-    Get the DuckDB DECIMAL type string with configured precision and scale.
-
-    Returns:
-        DECIMAL type string, e.g., "DECIMAL(12,6)"
-    """
-    return f"DECIMAL({DECIMAL_PRECISION},{DECIMAL_SCALE})"
-
-
-def get_decimal_config() -> Tuple[int, int]:
-    """
-    Get the current decimal precision and scale configuration.
-
-    Returns:
-        Tuple of (precision, scale)
-    """
-    return (DECIMAL_PRECISION, DECIMAL_SCALE)
-
-
-def set_decimal_config(precision: int, scale: int) -> None:
-    """
-    Set decimal precision and scale at runtime.
-
-    Args:
-        precision: Total number of digits
-        scale: Number of decimal places
-
-    Raises:
-        ValueError: If scale > precision or values are invalid
-    """
-    global DECIMAL_PRECISION, DECIMAL_SCALE
-
-    if precision < 1 or precision > 38:
-        raise ValueError("Precision must be between 1 and 38")
-    if scale < 0 or scale > precision:
-        raise ValueError("Scale must be between 0 and precision")
-
-    DECIMAL_PRECISION = precision
-    DECIMAL_SCALE = scale
-
 
 # =============================================================================
 # Memory & Performance Configuration
@@ -111,9 +52,7 @@ def get_memory_limit_bytes() -> int:
         return int(float(limit[:-2]) * 1024 * 1024)
     elif limit.endswith("KB"):
         return int(float(limit[:-2]) * 1024)
-    else:
-        # Assume bytes
-        return int(limit)
+    return int(limit)
 
 
 def get_memory_limit_str() -> str:
@@ -127,9 +66,8 @@ def get_memory_limit_str() -> str:
     gb = bytes_limit / (1024**3)
     if gb >= 1:
         return f"{gb:.1f}GB"
-    else:
-        mb = bytes_limit / (1024**2)
-        return f"{mb:.0f}MB"
+    mb = bytes_limit / (1024**2)
+    return f"{mb:.0f}MB"
 
 
 def configure_duckdb_connection(conn: duckdb.DuckDBPyConnection) -> None:
