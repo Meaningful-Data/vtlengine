@@ -209,7 +209,8 @@ Using pysdmx objects directly:
 
     # Load structure using pysdmx
     msg = read_sdmx(Path("path/to/structure.xml"))
-    dsd = msg.structures[0]  # Get the first DataStructureDefinition
+    dsds = msg.get_data_structure_definitions()  # Get all DataStructureDefinitions
+    dsd = dsds[0]  # Use the first one
 
     sa_result = semantic_analysis(script=script, data_structures=dsd)
 
