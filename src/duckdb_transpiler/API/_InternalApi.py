@@ -11,17 +11,14 @@ import jsonschema
 import pandas as pd
 
 from duckdb_transpiler.Parser import load_datapoints_duckdb
+from duckdb_transpiler.Utils import get_sql_type
 from vtlengine.__extras_check import __check_s3_extra
 from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.Exceptions import DataLoadError, InputValidationException, check_key
 from vtlengine.files.parser import _validate_pandas
 from vtlengine.Model import Component, Dataset, Role, Role_keys, Scalar
 
-# =============================================================================
-# Constants
-# =============================================================================
-
-_SCALAR_TYPE_KEYS = frozenset(SCALAR_TYPES.keys())
+_SCALAR_TYPE_KEYS = set(SCALAR_TYPES.keys())
 
 _SCHEMA_PATH = Path(__file__).parent / "data" / "schema"
 with open(_SCHEMA_PATH / "json_schema_2.1.json") as f:
@@ -290,7 +287,5 @@ def _create_empty_table(
     components: Dict[str, Component],
 ) -> None:
     """Create empty table with schema from VTL components."""
-    from duckdb_transpiler.DataTypes import get_duckdb_type
-
-    col_defs = [f'"{name}" {get_duckdb_type(comp.data_type)}' for name, comp in components.items()]
+    col_defs = [f'"{name}" {get_sql_type(comp.data_type)}' for name, comp in components.items()]
     conn.execute(f'CREATE TABLE "{table_name}" ({", ".join(col_defs)})')
