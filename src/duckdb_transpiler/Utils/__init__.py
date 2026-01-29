@@ -1,6 +1,6 @@
 from typing import Any, Dict, Optional
 
-from duckdb_transpiler.DataTypes import Boolean, Date, Integer, Number
+from vtlengine.DataTypes import Boolean, Date, Integer, Number
 
 SQL_OP_MAPPING: Dict[str, str] = {
     "mod": "%",
@@ -26,6 +26,18 @@ def get_sql_type(vtl_type: type) -> str:
     }
 
     return mapping.get(vtl_type, "VARCHAR")
+
+
+def get_pandas_type(vtl_type: type) -> str:
+    """Get the pandas dtype for a VTL scalar type."""
+    mapping = {
+        Integer: "int64",
+        Number: "float64",
+        Boolean: "bool",
+        Date: "datetime64[ns]",
+    }
+
+    return mapping.get(vtl_type, "object")
 
 
 def sql_literal(value: Any, type_: Optional[str] = None) -> str:
