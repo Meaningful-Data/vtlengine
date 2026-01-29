@@ -1,14 +1,7 @@
 """
-Internal API for loading VTL dataset structures and datapoints.
-
-Provides functions to:
-- Parse JSON data structures into VTL Dataset/Scalar objects
-- Load datapoints from CSV files, Pandas DataFrames, or S3 URIs
-- Validate data against structure definitions
-- Create DuckDB tables for out-of-core processing
+Internal API for loading VTL dataset structures and datapoints into DuckDB.
 """
 
-import gc
 import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -22,93 +15,62 @@ from vtlengine.__extras_check import __check_s3_extra
 from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.Exceptions import DataLoadError, InputValidationException, check_key
 from vtlengine.files.parser import _validate_pandas
-from vtlengine.Model import Component as VTL_Component
-from vtlengine.Model import Dataset, Role, Role_keys, Scalar
+from vtlengine.Model import Component, Dataset, Role, Role_keys, Scalar
 
 # =============================================================================
-# Module Constants
+# Constants
 # =============================================================================
 
 _SCALAR_TYPE_KEYS = frozenset(SCALAR_TYPES.keys())
 
-# Load JSON schemas at module import
 _SCHEMA_PATH = Path(__file__).parent / "data" / "schema"
 with open(_SCHEMA_PATH / "json_schema_2.1.json") as f:
     _STRUCTURE_SCHEMA = json.load(f)
-with open(_SCHEMA_PATH / "value_domain_schema.json") as f:
-    vd_schema = json.load(f)
-with open(_SCHEMA_PATH / "external_routines_schema.json") as f:
-    external_routine_schema = json.load(f)
 
 
 # =============================================================================
-# Structure Parsing Helpers
+# Structure Parsing
 # =============================================================================
 
 
-def _extract_data_type(component: Dict[str, Any]) -> Tuple[str, type]:
-    """
-    Extract VTL data type from component dict.
+def _build_component(comp_dict: Dict[str, Any]) -> Component:
+    """Build VTL Component from dictionary."""
+    # Extract type
+    type_key = "type" if "type" in comp_dict else "data_type"
+    type_value = comp_dict[type_key]
+    check_key(type_key, _SCALAR_TYPE_KEYS, type_value)
 
-    Supports 'type' (preferred) or 'data_type' (legacy) keys.
-
-    Raises:
-        InputValidationException: Unknown type value.
-    """
-    key = "type" if "type" in component else "data_type"
-    value = component[key]
-    check_key(key, _SCALAR_TYPE_KEYS, value)
-    return key, SCALAR_TYPES[value]
-
-
-def _build_component(comp_dict: Dict[str, Any]) -> VTL_Component:
-    """
-    Build VTL Component from dictionary definition.
-
-    Handles nullable defaults: Identifiers=False, Measures/Attributes=True.
-    """
-    _, scalar_type = _extract_data_type(comp_dict)
-
-    # ViralAttribute is treated as Attribute
+    # Extract role (ViralAttribute -> Attribute)
     role_str = comp_dict["role"]
     if role_str == "ViralAttribute":
         role_str = "Attribute"
     check_key("role", Role_keys, role_str)
     role = Role(role_str)
 
-    # Default nullable based on role (identifiers=False, measures/attributes=True)
+    # Nullable defaults: Identifiers=False, others=True
     nullable = comp_dict.get("nullable", role in (Role.MEASURE, Role.ATTRIBUTE))
 
-    return VTL_Component(
+    return Component(
         name=comp_dict["name"],
-        data_type=scalar_type,
+        data_type=SCALAR_TYPES[type_value],
         role=role,
         nullable=nullable,
     )
 
 
-def _load_dataset_from_structure(
+def _parse_structures(
     structures: Dict[str, Any],
 ) -> Tuple[Dict[str, Dataset], Dict[str, Scalar]]:
-    """
-    Parse JSON structure definition into Dataset and Scalar objects.
-
-    Supports two formats:
-    - Shared structures: datasets reference structures by name
-    - Inline DataStructure: components defined directly in dataset
-
-    Raises:
-        InputValidationException: Invalid structure format or missing reference.
-    """
+    """Parse JSON structure into Dataset and Scalar objects."""
     datasets: Dict[str, Dataset] = {}
     scalars: Dict[str, Scalar] = {}
 
-    # Build structure lookup for shared definitions
+    # Shared structures lookup
     structure_map = {s["name"]: s for s in structures.get("structures", [])}
 
     for ds_json in structures.get("datasets", []):
         name = ds_json["name"]
-        components: Dict[str, VTL_Component] = {}
+        components: Dict[str, Component] = {}
 
         # Shared structure reference
         if "structure" in ds_json:
@@ -119,7 +81,6 @@ def _load_dataset_from_structure(
                 jsonschema.validate(instance=struct, schema=_STRUCTURE_SCHEMA)
             except jsonschema.exceptions.ValidationError as e:
                 raise InputValidationException(code="0-2-1-2", message=e.message)
-
             for comp in struct["components"]:
                 components[comp["name"]] = _build_component(comp)
 
@@ -142,203 +103,105 @@ def _load_dataset_from_structure(
     return datasets, scalars
 
 
-# =============================================================================
-# Datapoint Path Resolution
-# =============================================================================
-
-
-def _path_to_dataset_name(path: Path) -> str:
-    """Extract dataset name from CSV filename (removes .csv extension)."""
-    return path.name.removesuffix(".csv")
-
-
-def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Union[str, Path]]:
-    """
-    Resolve a single datapoint reference to {dataset_name: path} mapping.
-
-    Handles:
-    - S3 URIs (s3://bucket/path/file.csv)
-    - Single CSV files
-    - Directories containing CSV files
-
-    Raises:
-        InputValidationException: Invalid input type.
-        DataLoadError: File/directory not found.
-    """
-    if not isinstance(datapoint, (str, Path)):
-        raise InputValidationException(
-            code="0-1-1-2", input=datapoint, message="Input must be a Path or S3 URI"
-        )
-
-    # S3 URI handling
-    if isinstance(datapoint, str) and datapoint.startswith("s3://"):
-        __check_s3_extra()
-        name = datapoint.rsplit("/", 1)[-1].removesuffix(".csv")
-        return {name: datapoint}
-
-    # Convert to Path if string
-    try:
-        path = Path(datapoint) if isinstance(datapoint, str) else datapoint
-    except Exception:
-        raise InputValidationException(
-            code="0-1-1-2", input=datapoint, message="Invalid path format"
-        )
-
-    if not path.exists():
-        raise DataLoadError(code="0-3-1-1", file=path)
-
-    # Directory: collect all CSVs
-    if path.is_dir():
-        return {_path_to_dataset_name(f): f for f in path.iterdir() if f.suffix == ".csv"}
-
-    return {_path_to_dataset_name(path): path}
-
-
-def _check_duplicate_names(new_names: List[str], existing: List[str]) -> None:
-    """Raise if any dataset name already exists."""
-    duplicates = set(new_names) & set(existing)
-    if duplicates:
-        raise InputValidationException(
-            f"Duplicate dataset names in datapoints: {', '.join(duplicates)}"
-        )
-
-
-def _load_datapoints_path(
-    datapoints: Union[Dict[str, Union[str, Path]], List[Union[str, Path]], str, Path],
-) -> Dict[str, Union[str, Path]]:
-    """
-    Normalize datapoints input to {dataset_name: path} mapping.
-
-    Args:
-        datapoints: Dict mapping names to paths, list of paths, or single path.
-
-    Raises:
-        InputValidationException: Invalid types or duplicate names.
-    """
-    result: Dict[str, Union[str, Path]] = {}
-
-    if isinstance(datapoints, dict):
-        for name, dp in datapoints.items():
-            if not isinstance(name, str):
-                raise InputValidationException(
-                    code="0-1-1-2", input=name, message="Dict keys must be strings"
-                )
-            if not isinstance(dp, (str, Path)):
-                raise InputValidationException(
-                    code="0-1-1-2", input=dp, message="Dict values must be Path or S3 URI"
-                )
-            resolved = _load_single_datapoint(dp)
-            _check_duplicate_names([name], list(result.keys()))
-            # Use provided name, not inferred from filename
-            result[name] = list(resolved.values())[0]
-        return result
-
-    if isinstance(datapoints, list):
-        for dp in datapoints:
-            resolved = _load_single_datapoint(dp)
-            _check_duplicate_names(list(resolved.keys()), list(result.keys()))
-            result.update(resolved)
-        return result
-
-    return _load_single_datapoint(datapoints)
-
-
-# =============================================================================
-# Structure Loading
-# =============================================================================
-
-
-def _load_datastructure_single(
-    data_structure: Union[Dict[str, Any], Path],
-) -> Tuple[Dict[str, Dataset], Dict[str, Scalar]]:
-    """
-    Load a single structure definition from dict or JSON file.
-
-    Recursively processes directories containing .json files.
-
-    Raises:
-        InputValidationException: Invalid input type or file extension.
-        DataLoadError: File not found.
-    """
-    if isinstance(data_structure, dict):
-        return _load_dataset_from_structure(data_structure)
-
-    if not isinstance(data_structure, Path):
-        raise InputValidationException(
-            code="0-1-1-2", input=data_structure, message="Must be dict or Path"
-        )
-    if not data_structure.exists():
-        raise DataLoadError(code="0-3-1-1", file=data_structure)
-
-    # Directory: merge all JSON files
-    if data_structure.is_dir():
-        datasets: Dict[str, Dataset] = {}
-        scalars: Dict[str, Scalar] = {}
-        for f in data_structure.iterdir():
-            if f.suffix == ".json":
-                ds, sc = _load_datastructure_single(f)
-                datasets.update(ds)
-                scalars.update(sc)
-        return datasets, scalars
-
-    # Single file
-    if data_structure.suffix != ".json":
-        raise InputValidationException(
-            code="0-1-1-3", expected_ext=".json", ext=data_structure.suffix
-        )
-    with open(data_structure) as file:
-        return _load_dataset_from_structure(json.load(file))
-
-
 def load_datasets(
     data_structure: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
 ) -> Tuple[Dict[str, Dataset], Dict[str, Scalar]]:
-    """
-    Load dataset structures from JSON definitions.
-
-    Args:
-        data_structure: Single dict/Path or list of dicts/Paths with structure definitions.
-
-    Returns:
-        Tuple of (datasets, scalars) dictionaries keyed by name.
-
-    Raises:
-        InputValidationException: Invalid structure format.
-        DataLoadError: File not found.
-    """
+    """Load dataset structures from JSON definitions."""
     if isinstance(data_structure, dict):
-        return _load_datastructure_single(data_structure)
-    if isinstance(data_structure, Path):
-        return _load_datastructure_single(data_structure)
+        return _parse_structures(data_structure)
 
-    # List of structures: merge all
-    datasets: Dict[str, Dataset] = {}
-    scalars: Dict[str, Scalar] = {}
+    if isinstance(data_structure, Path):
+        if not data_structure.exists():
+            raise DataLoadError(code="0-3-1-1", file=data_structure)
+
+        if data_structure.is_dir():
+            datasets, scalars = {}, {}
+            for f in data_structure.iterdir():
+                if f.suffix == ".json":
+                    ds, sc = load_datasets(f)
+                    datasets.update(ds)
+                    scalars.update(sc)
+            return datasets, scalars
+
+        if data_structure.suffix != ".json":
+            raise InputValidationException(
+                code="0-1-1-3", expected_ext=".json", ext=data_structure.suffix
+            )
+        with open(data_structure) as f:
+            return _parse_structures(json.load(f))
+
+    # List of structures
+    datasets, scalars = {}, {}
     for item in data_structure:
-        ds, sc = _load_datastructure_single(item)
+        ds, sc = load_datasets(item)
         datasets.update(ds)
         scalars.update(sc)
     return datasets, scalars
 
 
 # =============================================================================
-# Scalar and Dataset Helpers
+# Datapoint Resolution
 # =============================================================================
 
 
-def _handle_scalars_values(
+def _resolve_datapoints(
+    datapoints: Union[Dict[str, Union[str, Path]], List[Union[str, Path]], str, Path],
+) -> Dict[str, Union[str, Path]]:
+    """Normalize datapoints to {name: path} mapping."""
+    if isinstance(datapoints, dict):
+        result = {}
+        for name, dp in datapoints.items():
+            if isinstance(dp, pd.DataFrame):
+                result[name] = dp
+            else:
+                result[name] = _resolve_single_path(dp)
+        return result
+
+    if isinstance(datapoints, list):
+        result = {}
+        for dp in datapoints:
+            result.update(_resolve_single_path(dp, return_dict=True))
+        return result
+
+    return _resolve_single_path(datapoints, return_dict=True)
+
+
+def _resolve_single_path(
+    datapoint: Union[str, Path], return_dict: bool = False
+) -> Union[Path, str, Dict[str, Union[str, Path]]]:
+    """Resolve single path/S3 URI."""
+    # S3 URI
+    if isinstance(datapoint, str) and datapoint.startswith("s3://"):
+        __check_s3_extra()
+        if return_dict:
+            name = datapoint.rsplit("/", 1)[-1].removesuffix(".csv")
+            return {name: datapoint}
+        return datapoint
+
+    path = Path(datapoint) if isinstance(datapoint, str) else datapoint
+    if not path.exists():
+        raise DataLoadError(code="0-3-1-1", file=path)
+
+    # Directory: collect all CSVs
+    if path.is_dir():
+        return {f.stem: f for f in path.iterdir() if f.suffix == ".csv"}
+
+    if return_dict:
+        return {path.stem: path}
+    return path
+
+
+# =============================================================================
+# Scalar Handling
+# =============================================================================
+
+
+def _apply_scalar_values(
     scalars: Dict[str, Scalar],
     scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
 ) -> None:
-    """
-    Populate scalar objects with provided values.
-
-    Validates type compatibility and casts values.
-
-    Raises:
-        InputValidationException: Unknown scalar name (0-1-2-6) or type mismatch (0-1-2-7).
-    """
-    if scalar_values is None:
+    """Apply provided values to scalar objects with type validation."""
+    if not scalar_values:
         return
 
     for name, value in scalar_values.items():
@@ -358,29 +221,7 @@ def _handle_scalars_values(
 
 
 # =============================================================================
-# Main Data Loading Functions
-# =============================================================================
-
-
-def _validate_datapoints_dict(datapoints: Dict[str, Any]) -> bool:
-    """Check if dict values are all DataFrames (True) or all Path/str (False)."""
-    if all(isinstance(v, pd.DataFrame) for v in datapoints.values()):
-        return True
-    if all(isinstance(v, (str, Path)) for v in datapoints.values()):
-        return False
-    raise InputValidationException(
-        "Invalid datapoints: dict values must be all DataFrames or all Paths/S3 URIs."
-    )
-
-
-def _check_dataset_exists(name: str, datasets: Dict[str, Dataset]) -> None:
-    """Raise if dataset not in structures."""
-    if name not in datasets:
-        raise InputValidationException(f"Dataset '{name}' not found in data structures.")
-
-
-# =============================================================================
-# DuckDB-based Data Loading
+# DuckDB Loading
 # =============================================================================
 
 
@@ -392,29 +233,16 @@ def load_datasets_with_data_duckdb(
     scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
 ) -> Tuple[duckdb.DuckDBPyConnection, Dict[str, Dataset], Dict[str, Scalar]]:
     """
-    Load dataset structures and data into DuckDB for out-of-core processing.
-
-    Creates a DuckDB in-memory connection with all datasets as SQL tables.
-    Use this for large datasets that don't fit in memory.
-
-    Args:
-        data_structures: JSON structure definitions as dict, Path, or list thereof.
-        datapoints: Data source (same formats as load_datasets_with_data).
-        scalar_values: Values for declared scalars.
+    Load dataset structures and data into DuckDB.
 
     Returns:
-        Tuple of:
-            - conn: DuckDB connection with tables registered
-            - datasets: Dict[str, Dataset] (metadata only, no DataFrame)
-            - scalars: Dict[str, Scalar] with values
-
-    Raises:
-        InputValidationException: Invalid input or dataset not in structures.
-        DataLoadError: File not found or validation failure.
+        Tuple of (connection, datasets, scalars)
     """
     datasets, scalars = load_datasets(data_structures)
-    _handle_scalars_values(scalars, scalar_values)
     conn = duckdb.connect()
+
+    # Apply scalar values (they get inlined in SQL queries by the transpiler)
+    _apply_scalar_values(scalars, scalar_values)
 
     # No datapoints: create empty tables
     if datapoints is None:
@@ -422,49 +250,44 @@ def load_datasets_with_data_duckdb(
             _create_empty_table(conn, name, ds.components)
         return conn, datasets, scalars
 
-    # DataFrame dict: validate and create tables
-    if isinstance(datapoints, dict) and _validate_datapoints_dict(datapoints):
-        for name, data in datapoints.items():
-            _check_dataset_exists(name, datasets)
-            if isinstance(data, pd.DataFrame):
-                validated_data = _validate_pandas(datasets[name].components, data, name)  # noqa: F841
-                conn.execute(f'CREATE TABLE "{name}" AS SELECT * FROM validated_data')
+    # Handle DataFrame dict
+    if isinstance(datapoints, dict) and all(
+        isinstance(v, pd.DataFrame) for v in datapoints.values()
+    ):
+        for name, df in datapoints.items():
+            if name not in datasets:
+                raise InputValidationException(f"Dataset '{name}' not found in structures.")
+            validated = _validate_pandas(datasets[name].components, df, name)  # noqa: F841
+            conn.execute(f'CREATE TABLE "{name}" AS SELECT * FROM validated')
 
-        # Empty tables for missing datasets
         for name, ds in datasets.items():
             if name not in datapoints:
                 _create_empty_table(conn, name, ds.components)
         return conn, datasets, scalars
 
-    # Path-based: load CSVs directly into DuckDB
-    datapoints_path = _load_datapoints_path(datapoints)  # type: ignore[arg-type]
-    for name, csv_path in datapoints_path.items():
-        _check_dataset_exists(name, datasets)
+    # Handle path-based datapoints
+    resolved = _resolve_datapoints(datapoints)
+    for name, path in resolved.items():
+        if name not in datasets:
+            raise InputValidationException(f"Dataset '{name}' not found in structures.")
         load_datapoints_duckdb(
             conn=conn,
             components=datasets[name].components,
             dataset_name=name,
-            csv_path=csv_path,
+            csv_path=path,
         )
 
-    # Empty tables for missing datasets
     for name, ds in datasets.items():
-        if name not in datapoints_path:
+        if name not in resolved:
             _create_empty_table(conn, name, ds.components)
 
-    gc.collect()
     return conn, datasets, scalars
-
-
-# =============================================================================
-# DuckDB Table Creation Helpers
-# =============================================================================
 
 
 def _create_empty_table(
     conn: duckdb.DuckDBPyConnection,
     table_name: str,
-    components: Dict[str, VTL_Component],
+    components: Dict[str, Component],
 ) -> None:
     """Create empty table with schema from VTL components."""
     from duckdb_transpiler.DataTypes import get_duckdb_type
