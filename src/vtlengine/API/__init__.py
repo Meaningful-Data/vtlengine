@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, List, Optional, Sequence, Union, cast
 
 import pandas as pd
 from antlr4 import CommonTokenStream, InputStream  # type: ignore[import-untyped]
@@ -563,8 +563,11 @@ def run_sdmx(
 
     return run(
         script=script,
-        data_structures=data_structures_list,  # type: ignore[arg-type]
-        datapoints=datapoints_dict,  # type: ignore[arg-type]
+        data_structures=cast(
+            List[Union[Dict[str, Any], Path, Schema, DataStructureDefinition, Dataflow]],
+            data_structures_list,
+        ),
+        datapoints=cast(Dict[str, Union[pd.DataFrame, str, Path]], datapoints_dict),
         value_domains=value_domains,
         external_routines=external_routines,
         time_period_output_format=time_period_output_format,
