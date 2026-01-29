@@ -16,13 +16,13 @@ import pandas as pd
 import pytest
 from pysdmx.io import get_datasets
 from pysdmx.io.pd import PandasDataset
-from pysdmx.model import DataflowRef, Reference
+from pysdmx.model import DataflowRef, Reference, Ruleset, TransformationScheme, UserDefinedOperator
 from pysdmx.model.dataflow import Dataflow, Schema
 from pysdmx.model.vtl import VtlDataflowMapping
 
 from tests.Helper import TestHelper
-from vtlengine.API import run, run_sdmx
-from vtlengine.API._InternalApi import to_vtl_json
+from vtlengine.API import generate_sdmx, prettify, run, run_sdmx, semantic_analysis
+from vtlengine.API._InternalApi import _check_script, to_vtl_json
 from vtlengine.Exceptions import DataLoadError, InputValidationException
 from vtlengine.Model import Dataset
 
@@ -639,3 +639,685 @@ def test_run_sdmx_structure_error_invalid_file(sdmx_data_file):
             )
     finally:
         invalid_structure.unlink()
+
+
+# =============================================================================
+# Tests for semantic_analysis() with SDMX structures
+# =============================================================================
+
+
+def test_semantic_analysis_with_sdmx_structure_file(sdmx_structure_file):
+    """Test semantic_analysis() with SDMX structure file path."""
+    script = "DS_r <- BIS_DER;"
+    result = semantic_analysis(
+        script=script,
+        data_structures=sdmx_structure_file,
+    )
+
+    assert "DS_r" in result
+    assert isinstance(result["DS_r"], Dataset)
+
+
+def test_semantic_analysis_with_sdmx_structure_file_list(sdmx_structure_file):
+    """Test semantic_analysis() with list of SDMX structure files."""
+    script = "DS_r <- BIS_DER;"
+    result = semantic_analysis(
+        script=script,
+        data_structures=[sdmx_structure_file],
+    )
+
+    assert "DS_r" in result
+    assert isinstance(result["DS_r"], Dataset)
+
+
+def test_semantic_analysis_with_schema_object(sdmx_data_file, sdmx_structure_file):
+    """Test semantic_analysis() with pysdmx Schema object."""
+    from pysdmx.io import get_datasets as pysdmx_get_datasets
+
+    pandas_datasets = pysdmx_get_datasets(sdmx_data_file, sdmx_structure_file)
+    schema = pandas_datasets[0].structure
+
+    script = "DS_r <- BIS_DER;"
+    result = semantic_analysis(
+        script=script,
+        data_structures=schema,
+    )
+
+    assert "DS_r" in result
+    assert isinstance(result["DS_r"], Dataset)
+
+
+def test_semantic_analysis_with_dsd_object(sdmx_structure_file):
+    """Test semantic_analysis() with pysdmx DataStructureDefinition object."""
+    from pysdmx.io import read_sdmx
+
+    msg = read_sdmx(sdmx_structure_file)
+    dsd = [s for s in msg.structures if hasattr(s, "components")][0]
+
+    script = "DS_r <- BIS_DER;"
+    result = semantic_analysis(
+        script=script,
+        data_structures=dsd,
+    )
+
+    assert "DS_r" in result
+    assert isinstance(result["DS_r"], Dataset)
+
+
+def test_semantic_analysis_with_dataflow_object_error():
+    """Test semantic_analysis() error when Dataflow has no associated DSD."""
+    # A Dataflow without associated DSD should raise an error
+    dataflow = Dataflow(id="BIS_DER", agency="BIS", version="1.0")
+
+    script = "DS_r <- BIS_DER;"
+    with pytest.raises(InputValidationException, match="has no associated DataStructureDefinition"):
+        semantic_analysis(
+            script=script,
+            data_structures=dataflow,
+        )
+
+
+def test_semantic_analysis_with_list_of_pysdmx_objects(sdmx_data_file, sdmx_structure_file):
+    """Test semantic_analysis() with list of pysdmx objects."""
+    from pysdmx.io import get_datasets as pysdmx_get_datasets
+
+    pandas_datasets = pysdmx_get_datasets(sdmx_data_file, sdmx_structure_file)
+    schema = pandas_datasets[0].structure
+
+    script = "DS_r <- BIS_DER;"
+    result = semantic_analysis(
+        script=script,
+        data_structures=[schema],
+    )
+
+    assert "DS_r" in result
+    assert isinstance(result["DS_r"], Dataset)
+
+
+def test_semantic_analysis_error_invalid_sdmx_structure():
+    """Test semantic_analysis() error handling for invalid SDMX structure file."""
+    with tempfile.NamedTemporaryFile(suffix=".xml", delete=False, mode="w") as f:
+        f.write("<invalid>not sdmx structure</invalid>")
+        invalid_structure = Path(f.name)
+
+    try:
+        with pytest.raises(DataLoadError, match="0-3-1-11"):
+            semantic_analysis(
+                script="DS_r <- TEST;",
+                data_structures=invalid_structure,
+            )
+    finally:
+        invalid_structure.unlink()
+
+
+# =============================================================================
+# Tests for run() with sdmx_mappings parameter
+# =============================================================================
+
+
+def test_run_with_sdmx_mappings_dict(sdmx_data_file, sdmx_structure_file):
+    """Test run() with sdmx_mappings as dict."""
+    script = "DS_r <- DS_1;"
+    result = run(
+        script=script,
+        data_structures=sdmx_structure_file,
+        datapoints={"DS_1": sdmx_data_file},
+        sdmx_mappings={"DataStructure=BIS:BIS_DER(1.0)": "DS_1"},
+        return_only_persistent=False,
+    )
+
+    assert "DS_r" in result
+    assert result["DS_r"].data is not None
+
+
+def test_run_with_sdmx_mappings_vtl_dataflow_mapping(sdmx_data_file, sdmx_structure_file):
+    """Test run() with sdmx_mappings as VtlDataflowMapping object."""
+    from pysdmx.io import get_datasets as pysdmx_get_datasets
+
+    # Get the actual schema URN from the SDMX files
+    pandas_datasets = pysdmx_get_datasets(sdmx_data_file, sdmx_structure_file)
+    schema = pandas_datasets[0].structure
+
+    script = "DS_r <- DS_1;"
+    mapping = VtlDataflowMapping(
+        dataflow=schema.short_urn,
+        dataflow_alias="DS_1",
+        id="VTL_MAP_1",
+    )
+    result = run(
+        script=script,
+        data_structures=schema,
+        datapoints={"DS_1": sdmx_data_file},
+        sdmx_mappings=mapping,
+        return_only_persistent=False,
+    )
+
+    assert "DS_r" in result
+    assert result["DS_r"].data is not None
+
+
+def test_run_with_sdmx_mappings_and_schema_object(sdmx_data_file, sdmx_structure_file):
+    """Test run() with Schema object and sdmx_mappings."""
+    from pysdmx.io import get_datasets as pysdmx_get_datasets
+
+    pandas_datasets = pysdmx_get_datasets(sdmx_data_file, sdmx_structure_file)
+    schema = pandas_datasets[0].structure
+
+    script = "DS_r <- CUSTOM_NAME;"
+    result = run(
+        script=script,
+        data_structures=schema,
+        datapoints={"CUSTOM_NAME": sdmx_data_file},
+        sdmx_mappings={schema.short_urn: "CUSTOM_NAME"},
+        return_only_persistent=False,
+    )
+
+    assert "DS_r" in result
+    assert result["DS_r"].data is not None
+
+
+# =============================================================================
+# Tests for run() with additional datapoints variations
+# =============================================================================
+
+
+def test_run_with_sdmx_datapoints_directory(sdmx_data_file, sdmx_data_structure):
+    """Test run() with directory containing SDMX files as datapoints."""
+    # Create a temp directory with only the data file
+    with tempfile.TemporaryDirectory() as tmpdir:
+        import shutil
+
+        # Copy only the data file to the temp directory
+        dest_file = Path(tmpdir) / sdmx_data_file.name
+        shutil.copy(sdmx_data_file, dest_file)
+
+        script = "DS_r <- BIS_DER;"
+        result = run(
+            script=script,
+            data_structures=sdmx_data_structure,
+            datapoints=Path(tmpdir),
+            return_only_persistent=False,
+        )
+
+        assert "DS_r" in result
+        assert result["DS_r"].data is not None
+
+
+def test_run_with_sdmx_datapoints_list_paths(sdmx_data_file, sdmx_data_structure):
+    """Test run() with list of SDMX file paths as datapoints."""
+    script = "DS_r <- BIS_DER;"
+    result = run(
+        script=script,
+        data_structures=sdmx_data_structure,
+        datapoints=[sdmx_data_file],
+        return_only_persistent=False,
+    )
+
+    assert "DS_r" in result
+    assert result["DS_r"].data is not None
+
+
+def test_run_with_sdmx_datapoints_dataframe(sdmx_data_file, sdmx_structure_file):
+    """Test run() with DataFrame from SDMX file as datapoints."""
+    from pysdmx.io import get_datasets as pysdmx_get_datasets
+
+    pandas_datasets = pysdmx_get_datasets(sdmx_data_file, sdmx_structure_file)
+    schema = pandas_datasets[0].structure
+    df = pandas_datasets[0].data
+
+    script = "DS_r <- BIS_DER;"
+    result = run(
+        script=script,
+        data_structures=schema,
+        datapoints={"BIS_DER": df},
+        return_only_persistent=False,
+    )
+
+    assert "DS_r" in result
+    assert result["DS_r"].data is not None
+
+
+# =============================================================================
+# Tests for run_sdmx() with additional mapping types
+# =============================================================================
+
+
+def test_run_sdmx_with_dataflow_object_mapping():
+    """Test run_sdmx() with Dataflow object in VtlDataflowMapping."""
+    data_file = filepath_sdmx_input / "str_all_minimal_df.xml"
+    structure_file = filepath_sdmx_input / "metadata_minimal_df.xml"
+
+    datasets = get_datasets(data_file, structure_file)
+    mapping = VtlDataflowMapping(
+        dataflow=Dataflow(id="TEST_DF", agency="MD", version="1.0"),
+        dataflow_alias="DS_1",
+        id="VTL_MAP_DF",
+    )
+
+    script = "DS_r := DS_1 [calc Me_4 := OBS_VALUE];"
+    result = run_sdmx(script, datasets, mappings=mapping, return_only_persistent=False)
+
+    assert "DS_r" in result
+    assert isinstance(result["DS_r"].data, pd.DataFrame)
+
+
+def test_run_sdmx_with_reference_mapping():
+    """Test run_sdmx() with Reference object in VtlDataflowMapping."""
+    data_file = filepath_sdmx_input / "str_all_minimal_df.xml"
+    structure_file = filepath_sdmx_input / "metadata_minimal_df.xml"
+
+    datasets = get_datasets(data_file, structure_file)
+    mapping = VtlDataflowMapping(
+        dataflow=Reference(sdmx_type="Dataflow", agency="MD", id="TEST_DF", version="1.0"),
+        dataflow_alias="DS_1",
+        id="VTL_MAP_REF",
+    )
+
+    script = "DS_r := DS_1 [calc Me_4 := OBS_VALUE];"
+    result = run_sdmx(script, datasets, mappings=mapping, return_only_persistent=False)
+
+    assert "DS_r" in result
+    assert isinstance(result["DS_r"].data, pd.DataFrame)
+
+
+def test_run_sdmx_with_dataflow_ref_mapping():
+    """Test run_sdmx() with DataflowRef object in VtlDataflowMapping."""
+    data_file = filepath_sdmx_input / "str_all_minimal_df.xml"
+    structure_file = filepath_sdmx_input / "metadata_minimal_df.xml"
+
+    datasets = get_datasets(data_file, structure_file)
+    mapping = VtlDataflowMapping(
+        dataflow=DataflowRef(agency="MD", id="TEST_DF", version="1.0"),
+        dataflow_alias="DS_1",
+        id="VTL_MAP_DFREF",
+    )
+
+    script = "DS_r := DS_1 [calc Me_4 := OBS_VALUE];"
+    result = run_sdmx(script, datasets, mappings=mapping, return_only_persistent=False)
+
+    assert "DS_r" in result
+    assert isinstance(result["DS_r"].data, pd.DataFrame)
+
+
+# =============================================================================
+# Tests for run_sdmx() error cases with mappings
+# =============================================================================
+
+
+def test_run_sdmx_error_missing_mapping_for_multiple_datasets():
+    """Test run_sdmx() error when multiple datasets but no mapping provided."""
+    datasets = [
+        PandasDataset(
+            structure=Schema(id="DS1", components=[], agency="BIS", context="datastructure"),
+            data=pd.DataFrame(),
+        ),
+        PandasDataset(
+            structure=Schema(id="DS2", components=[], agency="BIS", context="datastructure"),
+            data=pd.DataFrame(),
+        ),
+    ]
+    with pytest.raises(InputValidationException, match="0-1-3-3"):
+        run_sdmx("DS_r := DS1;", datasets)
+
+
+def test_run_sdmx_error_invalid_mapping_type():
+    """Test run_sdmx() error when invalid mapping type provided."""
+    datasets = [
+        PandasDataset(
+            structure=Schema(id="BIS_DER", components=[], agency="BIS", context="datastructure"),
+            data=pd.DataFrame(),
+        )
+    ]
+    with pytest.raises(InputValidationException, match="Expected dict or VtlDataflowMapping"):
+        run_sdmx("DS_r := BIS_DER;", datasets, mappings="invalid_type")
+
+
+def test_run_sdmx_error_invalid_dataflow_type_in_mapping():
+    """Test run_sdmx() error when invalid dataflow type in VtlDataflowMapping."""
+    datasets = [
+        PandasDataset(
+            structure=Schema(id="BIS_DER", components=[], agency="BIS", context="datastructure"),
+            data=pd.DataFrame(),
+        )
+    ]
+    mapping = VtlDataflowMapping(dataflow=123, dataflow_alias="ALIAS", id="Test")
+    with pytest.raises(
+        InputValidationException,
+        match="Expected str, Reference, DataflowRef or Dataflow type for dataflow",
+    ):
+        run_sdmx("DS_r := BIS_DER;", datasets, mappings=mapping)
+
+
+def test_run_sdmx_error_dataset_not_in_script():
+    """Test run_sdmx() error when mapped dataset name not found in script."""
+    data_file = filepath_sdmx_input / "str_all_minimal_df.xml"
+    structure_file = filepath_sdmx_input / "metadata_minimal_df.xml"
+
+    datasets = get_datasets(data_file, structure_file)
+    mapping = {"Dataflow=MD:TEST_DF(1.0)": "NONEXISTENT_NAME"}
+
+    with pytest.raises(InputValidationException, match="0-1-3-5"):
+        run_sdmx("DS_r := DS_1;", datasets, mappings=mapping)
+
+
+def test_run_sdmx_error_invalid_datasets_type():
+    """Test run_sdmx() error when datasets is not a list of PandasDataset."""
+    with pytest.raises(InputValidationException, match="0-1-3-7"):
+        run_sdmx("DS_r := TEST;", "not_a_list")
+
+
+def test_run_sdmx_error_schema_not_in_mapping():
+    """Test run_sdmx() error when schema URN not found in mapping."""
+    datasets = [
+        PandasDataset(
+            structure=Schema(id="OTHER_DS", components=[], agency="BIS", context="datastructure"),
+            data=pd.DataFrame(),
+        )
+    ]
+    mapping = {"Dataflow=MD:DIFFERENT(1.0)": "DS_1"}
+
+    with pytest.raises(InputValidationException, match="0-1-3-4"):
+        run_sdmx("DS_r := DS_1;", datasets, mappings=mapping)
+
+
+# =============================================================================
+# Tests for semantic_analysis() error cases
+# =============================================================================
+
+
+def test_semantic_analysis_error_nonexistent_sdmx_file():
+    """Test semantic_analysis() error for nonexistent SDMX structure file."""
+    with pytest.raises(DataLoadError, match="0-3-1-1"):
+        semantic_analysis(
+            script="DS_r <- TEST;",
+            data_structures=Path("/nonexistent/structure.xml"),
+        )
+
+
+# =============================================================================
+# Tests for run() error cases with SDMX inputs
+# =============================================================================
+
+
+def test_run_error_nonexistent_sdmx_datapoint():
+    """Test run() error for nonexistent SDMX datapoint file."""
+    structure_file = filepath_json / "DS_1.json"
+    with open(structure_file) as f:
+        data_structure = json.load(f)
+
+    with pytest.raises(DataLoadError, match="0-3-1-1"):
+        run(
+            script="DS_r <- DS_1;",
+            data_structures=data_structure,
+            datapoints={"DS_1": Path("/nonexistent/data.xml")},
+        )
+
+
+def test_run_error_invalid_sdmx_datapoint():
+    """Test run() error for invalid SDMX datapoint file."""
+    structure_file = filepath_json / "DS_1.json"
+    with open(structure_file) as f:
+        data_structure = json.load(f)
+
+    with tempfile.NamedTemporaryFile(suffix=".xml", delete=False, mode="w") as f:
+        f.write("<invalid>not sdmx data</invalid>")
+        invalid_data = Path(f.name)
+
+    try:
+        with pytest.raises(DataLoadError, match="0-3-1-8"):
+            run(
+                script="DS_r <- DS_1;",
+                data_structures=data_structure,
+                datapoints={"DS_1": invalid_data},
+            )
+    finally:
+        invalid_data.unlink()
+
+
+# =============================================================================
+# Tests for combined SDMX structures and datapoints with mappings
+# =============================================================================
+
+
+def test_run_full_sdmx_workflow_with_mappings(sdmx_data_file, sdmx_structure_file):
+    """Test complete SDMX workflow with structure file, datapoints, and mappings."""
+    script = "DS_r <- CUSTOM_DS;"
+
+    result = run(
+        script=script,
+        data_structures=sdmx_structure_file,
+        datapoints={"CUSTOM_DS": sdmx_data_file},
+        sdmx_mappings={"DataStructure=BIS:BIS_DER(1.0)": "CUSTOM_DS"},
+        return_only_persistent=False,
+    )
+
+    assert "DS_r" in result
+    assert result["DS_r"].data is not None
+    assert len(result["DS_r"].data) > 0
+
+
+def test_run_with_dsd_and_sdmx_mappings(sdmx_data_file, sdmx_structure_file):
+    """Test run() with DSD object and sdmx_mappings."""
+    from pysdmx.io import read_sdmx
+
+    msg = read_sdmx(sdmx_structure_file)
+    dsd = [s for s in msg.structures if hasattr(s, "components")][0]
+
+    script = "DS_r <- MAPPED_NAME;"
+    result = run(
+        script=script,
+        data_structures=dsd,
+        datapoints={"MAPPED_NAME": sdmx_data_file},
+        sdmx_mappings={dsd.short_urn: "MAPPED_NAME"},
+        return_only_persistent=False,
+    )
+
+    assert "DS_r" in result
+    assert result["DS_r"].data is not None
+
+
+# =============================================================================
+# Tests for generate_sdmx() function
+# =============================================================================
+
+
+def test_generate_sdmx_without_udo_or_rs():
+    """Test generate_sdmx() with simple transformation (no UDO or Ruleset)."""
+    script = "DS_r := DS_1 + DS_2;"
+    ts = generate_sdmx(script, agency_id="MD", id="TestID")
+
+    assert isinstance(ts, TransformationScheme)
+    assert ts.id == "TS1"
+    assert ts.agency == "MD"
+    assert ts.version == "1.0"
+    assert ts.name == "TransformationScheme TestID"
+    assert len(ts.items) == 1
+    transformation = ts.items[0]
+    assert transformation.is_persistent is False
+
+
+def test_generate_sdmx_with_udo():
+    """Test generate_sdmx() with User Defined Operator."""
+    script = """
+    define operator suma (ds1 dataset, ds2 dataset)
+            returns dataset is
+            ds1 + ds2
+    end operator;
+    DS_r := suma(ds1, ds2);
+    """
+    ts = generate_sdmx(script, agency_id="MD", id="TestID")
+    assert isinstance(ts, TransformationScheme)
+    assert len(ts.items) == 1
+    udo_scheme = ts.user_defined_operator_schemes[0]
+    assert udo_scheme.id == "UDS1"
+    assert udo_scheme.name == "UserDefinedOperatorScheme TestID-UDS"
+    assert len(udo_scheme.items) == 1
+    udo = udo_scheme.items[0]
+    assert isinstance(udo, UserDefinedOperator)
+    assert udo.id == "UDO1"
+
+
+def test_generate_sdmx_with_dp_ruleset():
+    """Test generate_sdmx() with datapoint ruleset."""
+    script = """
+    define datapoint ruleset signValidation (variable ACCOUNTING_ENTRY as AE, INT_ACC_ITEM as IAI,
+        FUNCTIONAL_CAT as FC, INSTR_ASSET as IA, OBS_VALUE as O) is
+        sign1c: when AE = "C" and IAI = "G" then O > 0 errorcode "sign1c" errorlevel 1;
+        sign2c: when AE = "C" and IAI = "GA" then O > 0 errorcode "sign2c" errorlevel 1
+    end datapoint ruleset;
+    DS_r := check_datapoint (BOP, signValidation);
+    """
+    ts = generate_sdmx(script, agency_id="MD", id="TestID")
+    assert isinstance(ts, TransformationScheme)
+    assert hasattr(ts, "ruleset_schemes")
+    rs_scheme = ts.ruleset_schemes[0]
+    assert rs_scheme.id == "RS1"
+    assert rs_scheme.name == "RulesetScheme TestID-RS"
+    assert len(rs_scheme.items) == 1
+    ruleset = rs_scheme.items[0]
+    assert isinstance(ruleset, Ruleset)
+    assert ruleset.id == "R1"
+    assert ruleset.ruleset_type == "datapoint"
+
+
+def test_generate_sdmx_with_hierarchical_ruleset():
+    """Test generate_sdmx() with hierarchical ruleset."""
+    script = """
+        define hierarchical ruleset accountingEntry (variable rule ACCOUNTING_ENTRY) is
+                        B = C - D errorcode "Balance (credit-debit)" errorlevel 4;
+                        N = A - L errorcode "Net (assets-liabilities)" errorlevel 4
+                    end hierarchical ruleset;
+
+        DS_r := check_hierarchy(BOP, accountingEntry rule ACCOUNTING_ENTRY dataset);
+        """
+    ts = generate_sdmx(script, agency_id="MD", id="TestID")
+    assert isinstance(ts, TransformationScheme)
+    assert hasattr(ts, "ruleset_schemes")
+    rs_scheme = ts.ruleset_schemes[0]
+    assert rs_scheme.id == "RS1"
+    assert rs_scheme.name == "RulesetScheme TestID-RS"
+    assert len(rs_scheme.items) == 1
+    ruleset = rs_scheme.items[0]
+    assert isinstance(ruleset, Ruleset)
+    assert ruleset.id == "R1"
+    assert ruleset.ruleset_type == "hierarchical"
+    assert ruleset.ruleset_definition == (
+        "define hierarchical ruleset accountingEntry (variable rule ACCOUNTING_ENTRY) is "
+        'B = C - D errorcode "Balance (credit-debit)" errorlevel 4; N = A - L errorcode "Net (assets-liabilities)" errorlevel 4 end hierarchical ruleset;'
+    )
+
+
+def test_generate_sdmx_with_2_rulesets():
+    """Test generate_sdmx() with multiple rulesets."""
+    script = base_path / "data" / "vtl" / "validations.vtl"
+    ts = generate_sdmx(script, agency_id="MD", id="TestID")
+    assert isinstance(ts, TransformationScheme)
+    rs_scheme = ts.ruleset_schemes[0]
+    assert rs_scheme.id == "RS1"
+    assert len(rs_scheme.items) == 2
+    assert isinstance(rs_scheme.items[0], Ruleset)
+    assert rs_scheme.items[0].ruleset_type == "datapoint"
+
+
+def test_generate_sdmx_with_ruleset_and_udo():
+    """Test generate_sdmx() with both ruleset and UDO."""
+    script = """
+    define operator suma (ds1 dataset, ds2 dataset)
+            returns dataset is
+            ds1 + ds2
+    end operator;
+    DS_r := suma(ds1, ds2);
+
+    define hierarchical ruleset accountingEntry (variable rule ACCOUNTING_ENTRY) is
+                        B = C - D errorcode "Balance (credit-debit)" errorlevel 4;
+                        N = A - L errorcode "Net (assets-liabilities)" errorlevel 4
+                    end hierarchical ruleset;
+
+    DS_r2 := check_hierarchy(BOP, accountingEntry rule ACCOUNTING_ENTRY dataset);
+    """
+    ts = generate_sdmx(script, agency_id="MD", id="TestID")
+
+    # Validate TransformationScheme
+    assert isinstance(ts, TransformationScheme)
+
+    # Validate UDO scheme
+    assert hasattr(ts, "user_defined_operator_schemes")
+    assert len(ts.user_defined_operator_schemes) == 1
+    udo_scheme = ts.user_defined_operator_schemes[0]
+    assert udo_scheme.id == "UDS1"
+    assert len(udo_scheme.items) == 1
+    assert isinstance(udo_scheme.items[0], UserDefinedOperator)
+
+    # Validate Ruleset scheme
+    assert hasattr(ts, "ruleset_schemes")
+    rs_scheme = ts.ruleset_schemes[0]
+    assert rs_scheme.id == "RS1"
+    assert len(rs_scheme.items) == 1
+    assert isinstance(rs_scheme.items[0], Ruleset)
+    assert rs_scheme.items[0].ruleset_type == "hierarchical"
+    ruleset = rs_scheme.items[0]
+    assert isinstance(ruleset, Ruleset)
+    assert ruleset.id == "R1"
+    assert ruleset.ruleset_type == "hierarchical"
+    assert ruleset.ruleset_definition == (
+        "define hierarchical ruleset accountingEntry (variable rule ACCOUNTING_ENTRY) is "
+        'B = C - D errorcode "Balance (credit-debit)" errorlevel 4; N = A - L errorcode "Net (assets-liabilities)" errorlevel 4 end hierarchical ruleset;'
+    )
+
+
+def test_generate_sdmx_and_check_script():
+    """Test generate_sdmx() and verify script can be regenerated."""
+    script = """
+    define hierarchical ruleset accountingEntry (variable rule ACCOUNTING_ENTRY) is
+        B = C - D errorcode "Balance (credit-debit)" errorlevel 4;
+        N = A - L errorcode "Net (assets-liabilities)" errorlevel 4
+    end hierarchical ruleset;
+    define operator suma (ds1 dataset, ds2 dataset)
+            returns dataset is
+            ds1 + ds2
+    end operator;
+    DS_r := check_hierarchy(BOP, accountingEntry rule ACCOUNTING_ENTRY dataset);
+    DS_r2 := suma(ds1, ds2);
+    """
+    ts = generate_sdmx(script, agency_id="MD", id="TestID")
+    assert isinstance(ts, TransformationScheme)
+    assert hasattr(ts, "user_defined_operator_schemes")
+    assert len(ts.user_defined_operator_schemes) == 1
+    udo = ts.user_defined_operator_schemes[0]
+    assert isinstance(udo.items[0], UserDefinedOperator)
+    assert hasattr(ts, "ruleset_schemes")
+    rs = ts.ruleset_schemes[0]
+    assert isinstance(rs.items[0], Ruleset)
+    assert rs.items[0].ruleset_type == "hierarchical"
+    assert rs.items[0].ruleset_scope == "variable"
+    regenerated_script = _check_script(ts)
+    assert prettify(script) == prettify(regenerated_script)
+
+
+def test_generate_sdmx_and_check_script_with_valuedomain():
+    """Test generate_sdmx() with valuedomain ruleset and verify script regeneration."""
+    script = """
+    define hierarchical ruleset sectorsHierarchy (valuedomain rule abstract) is
+                        B = C - D errorcode "totalComparedToBanks" errorlevel 4;
+                        N >  A + L errorcode "totalGeUnal" errorlevel 3
+    end hierarchical ruleset;
+    define operator suma (ds1 dataset, ds2 dataset)
+            returns dataset is
+            ds1 + ds2
+    end operator;
+    sectors_hier_val_unf := check_hierarchy(DS_1, sectorsHierarchy rule Id_2 non_zero);
+    DS_r2 := suma(ds1, ds2);
+    """
+    ts = generate_sdmx(script, agency_id="MD", id="TestID")
+    assert isinstance(ts, TransformationScheme)
+    assert hasattr(ts, "user_defined_operator_schemes")
+    assert len(ts.user_defined_operator_schemes) == 1
+    udo = ts.user_defined_operator_schemes[0]
+    assert isinstance(udo.items[0], UserDefinedOperator)
+    assert hasattr(ts, "ruleset_schemes")
+    rs = ts.ruleset_schemes[0]
+    assert isinstance(rs.items[0], Ruleset)
+    assert rs.items[0].ruleset_type == "hierarchical"
+    assert rs.items[0].ruleset_scope == "valuedomain"
+    regenerated_script = _check_script(ts)
+    assert prettify(script) == prettify(regenerated_script)
