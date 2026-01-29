@@ -449,7 +449,7 @@ def run(
     return result
 
 
-def run_sdmx(  # noqa: C901
+def run_sdmx(
     script: Union[str, TransformationScheme, Path],
     datasets: Sequence[PandasDataset],
     mappings: Optional[Union[VtlDataflowMapping, Dict[str, str]]] = None,
