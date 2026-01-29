@@ -233,19 +233,30 @@ def _load_sdmx_file(file_path: Path, explicit_name: Optional[str] = None) -> Dic
 
 def _generate_single_path_dict(
     datapoint: Path,
-) -> Dict[str, Path]:
+) -> Union[Dict[str, Path], Dict[str, Dataset]]:
     """
-    Generates a dict with one dataset name and its path. The dataset name is extracted
-    from the filename without the .csv extension.
+    Generates a dict with dataset name(s) and path or loaded Dataset.
+
+    For CSV files: returns {dataset_name: path} for lazy loading.
+    For SDMX files (.xml, .json): returns {dataset_name: Dataset} with data loaded.
     """
+    if _is_sdmx_file(datapoint):
+        # SDMX files are loaded eagerly and return Dataset objects
+        return _load_sdmx_file(datapoint)
+
+    # CSV files return path for lazy loading
     dataset_name = datapoint.name.removesuffix(".csv")
-    dict_paths = {dataset_name: datapoint}
-    return dict_paths
+    return {dataset_name: datapoint}
 
 
-def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Union[str, Path]]:
+def _load_single_datapoint(
+    datapoint: Union[str, Path],
+) -> Dict[str, Union[str, Path, Dataset]]:
     """
     Returns a dict with the data given from one dataset.
+
+    For SDMX files (.xml, .json), returns loaded Dataset objects.
+    For CSV files, returns paths for lazy loading.
     """
     if not isinstance(datapoint, (str, Path)):
         raise InputValidationException(
@@ -268,16 +279,20 @@ def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Union[str, 
     if not datapoint.exists():
         raise DataLoadError(code="0-3-1-1", file=datapoint)
 
-    # Generation of datapoints dictionary with Path objects
-    dict_paths: Dict[str, Path] = {}
+    # Generation of datapoints dictionary
+    dict_results: Dict[str, Union[Path, Dataset]] = {}
     if datapoint.is_dir():
         for f in datapoint.iterdir():
-            if f.suffix != ".csv":
-                continue
-            dict_paths.update(_generate_single_path_dict(f))
+            # Handle SDMX files (.xml, .json)
+            if _is_sdmx_file(f):
+                dict_results.update(_generate_single_path_dict(f))
+            # Handle CSV files
+            elif f.suffix.lower() == ".csv":
+                dict_results.update(_generate_single_path_dict(f))
+            # Skip other files
     else:
-        dict_paths = _generate_single_path_dict(datapoint)
-    return dict_paths  # type: ignore[return-value]
+        dict_results = _generate_single_path_dict(datapoint)
+    return dict_results  # type: ignore[return-value]
 
 
 def _check_unique_datapoints(
