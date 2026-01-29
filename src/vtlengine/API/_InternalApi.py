@@ -9,7 +9,7 @@ import pandas as pd
 from pysdmx.io import get_datasets as sdmx_get_datasets
 from pysdmx.io.pd import PandasDataset
 from pysdmx.model.dataflow import Component as SDMXComponent
-from pysdmx.model.dataflow import DataStructureDefinition, Schema
+from pysdmx.model.dataflow import Dataflow, DataStructureDefinition, Schema
 from pysdmx.model.dataflow import Role as SDMX_Role
 from pysdmx.model.vtl import (
     Ruleset,
@@ -223,6 +223,44 @@ def _load_sdmx_structure_file(file_path: Path) -> Dict[str, Any]:
         all_datasets.extend(vtl_structure["datasets"])
 
     return {"datasets": all_datasets}
+
+
+def _convert_pysdmx_to_vtl_json(
+    obj: Union[Schema, DataStructureDefinition, Dataflow],
+) -> Dict[str, Any]:
+    """
+    Convert a pysdmx object to VTL JSON format.
+
+    Args:
+        obj: A pysdmx Schema, DataStructureDefinition, or Dataflow object.
+
+    Returns:
+        VTL JSON data structure dict with 'datasets' key.
+
+    Raises:
+        InputValidationException: If object type is not supported.
+    """
+    if isinstance(obj, (Schema, DataStructureDefinition)):
+        return to_vtl_json(obj, dataset_name=obj.id)
+    elif isinstance(obj, Dataflow):
+        # Dataflow references a DataStructureDefinition via structure attribute
+        if obj.structure is None:
+            raise InputValidationException(
+                f"Dataflow '{obj.id}' has no associated DataStructureDefinition."
+            )
+        # structure can be a reference or the actual DSD
+        if isinstance(obj.structure, DataStructureDefinition):
+            return to_vtl_json(obj.structure, dataset_name=obj.id)
+        else:
+            raise InputValidationException(
+                f"Dataflow '{obj.id}' structure is a reference, not resolved. "
+                "Please provide a resolved Dataflow with embedded DataStructureDefinition."
+            )
+    else:
+        raise InputValidationException(
+            f"Unsupported pysdmx object type: {type(obj).__name__}. "
+            "Expected Schema, DataStructureDefinition, or Dataflow."
+        )
 
 
 def _load_sdmx_file(
@@ -464,16 +502,22 @@ def _load_datapoints_path(
 
 
 def _load_datastructure_single(
-    data_structure: Union[Dict[str, Any], Path],
+    data_structure: Union[Dict[str, Any], Path, Schema, DataStructureDefinition, Dataflow],
 ) -> Tuple[Dict[str, Dataset], Dict[str, Scalar]]:
     """
     Loads a single data structure.
     """
+    # Handle pysdmx objects
+    if isinstance(data_structure, (Schema, DataStructureDefinition, Dataflow)):
+        vtl_json = _convert_pysdmx_to_vtl_json(data_structure)
+        return _load_dataset_from_structure(vtl_json)
     if isinstance(data_structure, dict):
         return _load_dataset_from_structure(data_structure)
     if not isinstance(data_structure, Path):
         raise InputValidationException(
-            code="0-1-1-2", input=data_structure, message="Input must be a dict or Path object"
+            code="0-1-1-2",
+            input=data_structure,
+            message="Input must be a dict, Path, or pysdmx object",
         )
     if not data_structure.exists():
         raise DataLoadError(code="0-3-1-1", file=data_structure)
@@ -509,7 +553,14 @@ def _load_datastructure_single(
 
 
 def load_datasets(
-    data_structure: Union[Dict[str, Any], Path, List[Dict[str, Any]], List[Path]],
+    data_structure: Union[
+        Dict[str, Any],
+        Path,
+        Schema,
+        DataStructureDefinition,
+        Dataflow,
+        List[Union[Dict[str, Any], Path, Schema, DataStructureDefinition, Dataflow]],
+    ],
 ) -> Tuple[Dict[str, Dataset], Dict[str, Scalar]]:
     """
     Loads multiple datasets.
