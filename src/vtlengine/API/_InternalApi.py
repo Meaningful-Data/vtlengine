@@ -225,44 +225,6 @@ def _load_sdmx_structure_file(file_path: Path) -> Dict[str, Any]:
     return {"datasets": all_datasets}
 
 
-def _convert_pysdmx_to_vtl_json(
-    obj: Union[Schema, DataStructureDefinition, Dataflow],
-) -> Dict[str, Any]:
-    """
-    Convert a pysdmx object to VTL JSON format.
-
-    Args:
-        obj: A pysdmx Schema, DataStructureDefinition, or Dataflow object.
-
-    Returns:
-        VTL JSON data structure dict with 'datasets' key.
-
-    Raises:
-        InputValidationException: If object type is not supported.
-    """
-    if isinstance(obj, (Schema, DataStructureDefinition)):
-        return to_vtl_json(obj, dataset_name=obj.id)
-    elif isinstance(obj, Dataflow):
-        # Dataflow references a DataStructureDefinition via structure attribute
-        if obj.structure is None:
-            raise InputValidationException(
-                f"Dataflow '{obj.id}' has no associated DataStructureDefinition."
-            )
-        # structure can be a reference or the actual DSD
-        if isinstance(obj.structure, DataStructureDefinition):
-            return to_vtl_json(obj.structure, dataset_name=obj.id)
-        else:
-            raise InputValidationException(
-                f"Dataflow '{obj.id}' structure is a reference, not resolved. "
-                "Please provide a resolved Dataflow with embedded DataStructureDefinition."
-            )
-    else:
-        raise InputValidationException(
-            f"Unsupported pysdmx object type: {type(obj).__name__}. "
-            "Expected Schema, DataStructureDefinition, or Dataflow."
-        )
-
-
 def _load_sdmx_file(
     file_path: Path, explicit_name: Optional[str] = None
 ) -> Dict[str, pd.DataFrame]:
@@ -509,7 +471,7 @@ def _load_datastructure_single(
     """
     # Handle pysdmx objects
     if isinstance(data_structure, (Schema, DataStructureDefinition, Dataflow)):
-        vtl_json = _convert_pysdmx_to_vtl_json(data_structure)
+        vtl_json = to_vtl_json(data_structure)
         return _load_dataset_from_structure(vtl_json)
     if isinstance(data_structure, dict):
         return _load_dataset_from_structure(data_structure)
@@ -891,23 +853,51 @@ def _check_output_folder(output_folder: Union[str, Path]) -> None:
         os.mkdir(output_folder)
 
 
-def to_vtl_json(dsd: Union[DataStructureDefinition, Schema], dataset_name: str) -> Dict[str, Any]:
+def to_vtl_json(
+    structure: Union[DataStructureDefinition, Schema, Dataflow],
+    dataset_name: Optional[str] = None,
+) -> Dict[str, Any]:
     """
-    Converts a pysdmx `DataStructureDefinition` or `Schema` into a VTL-compatible JSON
-    representation.
+    Converts a pysdmx `DataStructureDefinition`, `Schema`, or `Dataflow` into a VTL-compatible
+    JSON representation.
 
     This function extracts and transforms the components (dimensions, measures, and attributes)
     from the given SDMX data structure and maps them into a dictionary format that conforms
     to the expected VTL data structure json schema.
 
     Args:
-        dsd: An instance of `DataStructureDefinition` or `Schema` from the `pysdmx` model.
-        dataset_name: The name of the resulting VTL dataset.
+        structure: An instance of `DataStructureDefinition`, `Schema`, or `Dataflow` from pysdmx.
+        dataset_name: The name of the resulting VTL dataset. If not provided, uses the
+            structure's ID (or Dataflow's ID for Dataflow objects).
 
     Returns:
-            A dictionary representing the dataset in VTL format, with keys for dataset name and its
-            components, including their name, role, data type, and nullability.
+        A dictionary representing the dataset in VTL format, with keys for dataset name and its
+        components, including their name, role, data type, and nullability.
+
+    Raises:
+        InputValidationException: If a Dataflow has no associated DataStructureDefinition
+            or if its structure is an unresolved reference.
     """
+    # Handle Dataflow by extracting its DataStructureDefinition
+    if isinstance(structure, Dataflow):
+        if structure.structure is None:
+            raise InputValidationException(
+                f"Dataflow '{structure.id}' has no associated DataStructureDefinition."
+            )
+        if not isinstance(structure.structure, DataStructureDefinition):
+            raise InputValidationException(
+                f"Dataflow '{structure.id}' structure is a reference, not resolved. "
+                "Please provide a resolved Dataflow with embedded DataStructureDefinition."
+            )
+        # Use Dataflow ID as dataset name if not provided
+        if dataset_name is None:
+            dataset_name = structure.id
+        structure = structure.structure
+
+    # Use structure ID if dataset_name not provided
+    if dataset_name is None:
+        dataset_name = structure.id
+
     components = []
     NAME = "name"
     ROLE = "role"
@@ -915,9 +905,9 @@ def to_vtl_json(dsd: Union[DataStructureDefinition, Schema], dataset_name: str) 
     NULLABLE = "nullable"
 
     _components: List[SDMXComponent] = []
-    _components.extend(dsd.components.dimensions)
-    _components.extend(dsd.components.measures)
-    _components.extend(dsd.components.attributes)
+    _components.extend(structure.components.dimensions)
+    _components.extend(structure.components.measures)
+    _components.extend(structure.components.attributes)
 
     for c in _components:
         _type = VTL_DTYPES_MAPPING[c.dtype]

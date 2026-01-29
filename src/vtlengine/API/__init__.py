@@ -293,6 +293,7 @@ def run(
     return_only_persistent: bool = True,
     output_folder: Optional[Union[str, Path]] = None,
     scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
+    sdmx_mappings: Optional[Union[VtlDataflowMapping, Dict[str, str]]] = None,
 ) -> Dict[str, Union[Dataset, Scalar]]:
     """
     Run is the main function of the ``API``, which mission is to execute
@@ -377,8 +378,11 @@ def run(
 
         output_folder: Path or S3 URI to the output folder. (default: None)
 
-        scalar_values: Dict with the scalar values to be used in the VTL script. \
+        scalar_values: Dict with the scalar values to be used in the VTL script.
 
+        sdmx_mappings: A dictionary or VtlDataflowMapping object that maps SDMX URNs \
+        (e.g., "Dataflow=MD:TEST_DF(1.0)") to VTL dataset names. This parameter is \
+        primarily used when calling run() from run_sdmx() to pass mapping configuration.
 
     Returns:
        The datasets are produced without data if the output folder is defined.
@@ -388,6 +392,10 @@ def run(
         or their Paths are invalid.
 
     """
+
+    # Note: sdmx_mappings is passed through from run_sdmx() for API transparency.
+    # The actual mapping processing happens in run_sdmx() before calling run().
+    _ = sdmx_mappings  # Mark as intentionally unused
 
     # AST generation
     script = _check_script(script)
@@ -624,6 +632,7 @@ def run_sdmx(  # noqa: C901
         time_period_output_format=time_period_output_format,
         return_only_persistent=return_only_persistent,
         output_folder=output_folder,
+        sdmx_mappings=mappings,
     )
 
 
