@@ -1,15 +1,24 @@
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 
-import duckdb
 import pandas as pd
 from pysdmx.model import TransformationScheme
 
 from duckdb_transpiler.API._InternalApi import load_datasets_with_data_duckdb
 from duckdb_transpiler.Transpiler import SQLTranspiler
+from duckdb_transpiler.Utils import get_sql_type
 from vtlengine.API import create_ast, semantic_analysis
 from vtlengine.API._InternalApi import _check_script, load_datasets, load_vtl
+from vtlengine.AST.DAG import DAGAnalyzer
 from vtlengine.Model import Dataset, Scalar
+
+
+class Query:
+    def __init__(self, name: str, sql: str, inputs: List[str], structure: Union[Dataset, Scalar]):
+        self.name = name
+        self.sql = sql
+        self.inputs = inputs
+        self.structure = structure
 
 
 def transpile(
@@ -19,7 +28,7 @@ def transpile(
     external_routines: Optional[
         Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
     ] = None,
-) -> List[Tuple[str, str, bool]]:
+) -> List[Query]:
     """
     Transpile a VTL script to SQL queries.
 
@@ -37,6 +46,7 @@ def transpile(
     script = _check_script(script)
     vtl = load_vtl(script)
     ast = create_ast(vtl)
+    dag = DAGAnalyzer().createDAG(ast)
 
     # 2. Load input datasets and scalars from data structures
     input_datasets, input_scalars = load_datasets(data_structures)
@@ -59,10 +69,7 @@ def transpile(
         elif isinstance(result, Scalar):
             output_scalars[name] = result
 
-    # 5. Create the SQL transpiler with:
-    #    - input_datasets: Tables available for querying (inputs)
-    #    - output_datasets: Expected output structures (for validation)
-    #    - scalars: Both input and output scalars
+    # 5. Create the SQL transpiler
     transpiler = SQLTranspiler(
         input_datasets=input_datasets,
         output_datasets=output_datasets,
@@ -73,7 +80,16 @@ def transpile(
     # 6. Transpile AST to SQL queries
     queries = transpiler.transpile(ast)
 
-    return queries
+    # 7. Format queries
+    formatted_queries = []
+    output_structures = {**output_datasets, **output_scalars}
+    for query, dependencies in zip(queries.items(), dag.dependencies.values()):
+        name, sql = query
+        structure = output_structures[name]
+        inputs = dependencies.get("inputs", [])
+        formatted_queries.append(Query(name, sql, inputs, structure))
+
+    return formatted_queries
 
 
 def run(
@@ -88,8 +104,7 @@ def run(
     return_only_persistent: bool = True,
     output_folder: Optional[Union[str, Path]] = None,
     scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
-    output_format: str = "pandas",
-) -> Dict[str, Union[Dataset, Scalar, pd.DataFrame, duckdb.DuckDBPyRelation]]:
+) -> Dict[str, Union[Dataset, Scalar]]:
     """
     Run a VTL script using DuckDB as the execution engine.
 
@@ -109,9 +124,12 @@ def run(
         Dict mapping result names to Dataset, Scalar, or DataFrame objects.
     """
     # 1. Parse script and create AST
-    script_checked = _check_script(script)
-    vtl = load_vtl(script_checked)
-    ast = create_ast(vtl)
+    queries = transpile(
+        script=script,
+        data_structures=data_structures,
+        value_domains=value_domains,
+        external_routines=external_routines,
+    )
 
     # 2. Load data into DuckDB connection
     conn, input_datasets, input_scalars = load_datasets_with_data_duckdb(
@@ -120,69 +138,28 @@ def run(
         scalar_values=scalar_values,
     )
 
-    # 3. Run semantic analysis to get output structures
-    semantic_results = semantic_analysis(
-        script=vtl,
-        data_structures=data_structures,
-        value_domains=value_domains,
-        external_routines=external_routines,
-    )
-
-    # 4. Separate output datasets and scalars
-    output_datasets: Dict[str, Dataset] = {}
-    output_scalars: Dict[str, Scalar] = {}
-
-    for name, result in semantic_results.items():
-        if isinstance(result, Dataset):
-            output_datasets[name] = result
-        elif isinstance(result, Scalar):
-            output_scalars[name] = result
-
-    # 5. Create transpiler and generate SQL queries
-    transpiler = SQLTranspiler(
-        input_datasets=input_datasets,
-        output_datasets=output_datasets,
-        input_scalars=input_scalars,
-        output_scalars=output_scalars,
-    )
-    queries = transpiler.transpile(ast)
-
-    # 6. Execute queries in DuckDB
-    results: Dict[str, Union[Dataset, Scalar, pd.DataFrame, duckdb.DuckDBPyRelation]] = {}
-
-    for result_name, sql_query in queries.items():
-        is_persistent = result_name in output_datasets
-        if return_only_persistent and not is_persistent:
-            # Still execute to register intermediate results
-            result_df = conn.execute(sql_query).fetchdf()
-            conn.register(result_name, result_df)
-            continue
-
+    # 3. Execute queries in DuckDB
+    results = {}
+    for query in queries:
+        # TODO: Remove pandas dependency here (Used for fast debugging and testing)
         # Execute query
-        result_df = conn.execute(sql_query).fetchdf()
+        result_df = conn.execute(query.sql).fetchdf()
+
+        # Cast result columns to component types if needed
+        structure = query.structure
+        if isinstance(structure, Dataset):
+            _types = {comp.name: get_sql_type(comp.type) for comp in structure.data_structure}
+        else:
+            _types = {structure.name: get_sql_type(structure.type)}
+        result_df = result_df.astype(_types)
 
         # Register result for subsequent queries
-        conn.register(result_name, result_df)
+        conn.register(query.name, result_df)
 
-        # Check if this is a scalar result (single value, no identifiers)
-        if result_name in output_scalars:
-            # Extract scalar value
-            if len(result_df) == 1 and len(result_df.columns) == 1:
-                scalar = output_scalars[result_name]
-                scalar.value = result_df.iloc[0, 0]
-                results[result_name] = scalar
-            else:
-                results[result_name] = result_df
-        else:
-            # Dataset result
-            if output_format == "pandas":
-                results[result_name] = result_df
-            else:
-                # Return as DuckDB relation
-                results[result_name] = conn.from_df(result_df)
+        # Store result if needed
+        if not return_only_persistent or structure.persistent:
+            structure.data = result_df.iloc[0, 0] if isinstance(structure, Scalar) else result_df
+            results[query.name] = structure
 
-    # Close connection if returning pandas
-    if output_format == "pandas":
-        conn.close()
-
+    conn.close()
     return results

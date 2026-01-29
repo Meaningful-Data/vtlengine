@@ -1,7 +1,8 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
+from duckdb_transpiler.Utils import get_sql_op, sql_literal
 from vtlengine import AST
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.Model import Component, Dataset, Scalar
@@ -15,40 +16,6 @@ class OperandType(Enum):
     CONSTANT = "constant"
 
 
-SQL_OP_MAPPING: Dict[str, str] = {
-    "mod": "%",
-    "len": "LENGTH",
-    "ucase": "UPPER",
-    "lcase": "LOWER",
-    "isnull": "IS NULL",
-}
-
-
-def get_sql_op(op: str) -> str:
-    """Get the SQL equivalent of a given operator."""
-    return SQL_OP_MAPPING.get(op, op.upper())
-
-
-def _sql_literal(value: Any, type_: Optional[str] = None) -> str:
-    """Convert a value to SQL literal."""
-    if value is None:
-        return "NULL"
-
-    if type_ in ("STRING_CONSTANT", "String") or isinstance(value, str):
-        escaped = str(value).replace("'", "''")
-        return f"'{escaped}'"
-    elif type_ in ("INTEGER_CONSTANT", "Integer"):
-        return str(int(value))
-    elif type_ in ("FLOAT_CONSTANT", "Number"):
-        return str(float(value))
-    elif type_ in ("BOOLEAN_CONSTANT", "Boolean") or isinstance(value, bool):
-        return "TRUE" if value else "FALSE"
-    elif type_ == "NULL_CONSTANT":
-        return "NULL"
-
-    return str(value)
-
-
 @dataclass
 class SQLTranspiler(ASTTemplate):
     input_datasets: Dict[str, Dataset]
@@ -58,7 +25,6 @@ class SQLTranspiler(ASTTemplate):
 
     # Internal state
     _node_structures: Dict[int, Dataset] = field(default_factory=dict, init=False)
-    _alias_counter: int = field(default=0, init=False)
 
     def __post_init__(self) -> None:
         self.all_datasets: Dict[str, Dataset] = {**self.input_datasets, **self.output_datasets}
@@ -67,12 +33,6 @@ class SQLTranspiler(ASTTemplate):
     def transpile(self, ast: AST.Start) -> Dict[str, str]:
         """Transpile the AST to SQL queries."""
         return self.visit(ast)
-
-    def _next_alias(self) -> str:
-        """Generate a unique table alias."""
-        alias = f"t{self._alias_counter}"
-        self._alias_counter += 1
-        return alias
 
     def _get_operand_type(self, node: AST.AST) -> OperandType:
         """Determine the type of an operand node."""
@@ -319,12 +279,12 @@ class SQLTranspiler(ASTTemplate):
                 # Scalar
                 scalar = self.all_scalars[name]
                 if scalar.value is not None:
-                    return _sql_literal(scalar.value, scalar.data_type.__name__)
+                    return sql_literal(scalar.value, scalar.data_type.__name__)
                 return f"${name}"
             return f'"{name}"'
 
         if isinstance(node, AST.Constant):
-            return _sql_literal(node.value, node.type_)
+            return sql_literal(node.value, node.type_)
 
         if isinstance(node, AST.BinOp):
             left_sql = self._build_measure_expression(node.left, alias_map, measure_name)
@@ -395,15 +355,11 @@ class SQLTranspiler(ASTTemplate):
         queries: Dict[str, str] = {}
 
         for child in node.children:
-            # Reset alias counter for each assignment
-            self._alias_counter = 0
             self._node_structures.clear()
-
             result = self.visit(child)
             if result:
                 name = child.left.value
                 queries[name] = result
-
                 # Register output as available for subsequent queries
                 if name in self.output_datasets:
                     self.all_datasets[name] = self.output_datasets[name]
@@ -452,7 +408,7 @@ class SQLTranspiler(ASTTemplate):
         if name in self.all_scalars:
             scalar = self.all_scalars[name]
             if scalar.value is not None:
-                return _sql_literal(scalar.value, scalar.data_type.__name__)
+                return sql_literal(scalar.value, scalar.data_type.__name__)
             return f"${name}"
 
         return f'"{name}"'
@@ -469,7 +425,7 @@ class SQLTranspiler(ASTTemplate):
 
     def visit_Constant(self, node: AST.Constant) -> str:
         """Process a literal value."""
-        return _sql_literal(node.value, node.type_)
+        return sql_literal(node.value, node.type_)
 
     def visit_BinOp(self, node: AST.BinOp) -> str:
         """Process a binary operation."""
@@ -658,30 +614,6 @@ FROM {from_sql}"""
         return f"""SELECT {select_clause}
 FROM {from_sql}"""
 
-    def visit_If(self, node: AST.If) -> str:
-        """Process if-then-else."""
-        condition = self.visit(node.condition)
-        then_op = self.visit(node.thenOp)
-        else_op = self.visit(node.elseOp)
-        return f"CASE WHEN {condition} THEN {then_op} ELSE {else_op} END"
-
-    def visit_Case(self, node: AST.Case) -> str:
-        """Process case expression."""
-        cases = [self.visit(case_obj) for case_obj in node.cases]
-        cases_sql = " ".join(cases)
-        else_op = self.visit(node.elseOp)
-        return f"CASE {cases_sql} ELSE {else_op} END"
-
-    def visit_CaseObj(self, node: AST.CaseObj) -> str:
-        """Process a single case object."""
-        cond = self.visit(node.condition)
-        then = self.visit(node.thenOp)
-        return f"WHEN {cond} THEN {then}"
-
     def visit_ParFunction(self, node: AST.ParFunction) -> str:
         """Process parenthesized expression."""
         return self.visit(node.operand)
-
-    def visit_RegularAggregation(self, node: AST.RegularAggregation) -> str:
-        """Process clause operations (calc, filter, keep, drop, rename, etc.)."""
-        raise NotImplementedError("Clause operations not yet implemented")
