@@ -446,6 +446,40 @@ def test_plain_csv_still_works():
 
 
 # =============================================================================
+# Tests for run() with SDMX data_structures parameter
+# =============================================================================
+
+
+def test_run_with_sdmx_structure_file(sdmx_data_file, sdmx_structure_file):
+    """Test run() with SDMX structure file path instead of VTL JSON."""
+    script = "DS_r <- BIS_DER;"
+    result = run(
+        script=script,
+        data_structures=sdmx_structure_file,
+        datapoints={"BIS_DER": sdmx_data_file},
+        return_only_persistent=False,
+    )
+
+    assert "DS_r" in result
+    assert result["DS_r"].data is not None
+    assert len(result["DS_r"].data) > 0
+
+
+def test_run_with_sdmx_structure_file_list(sdmx_data_file, sdmx_structure_file):
+    """Test run() with list of SDMX structure files."""
+    script = "DS_r <- BIS_DER;"
+    result = run(
+        script=script,
+        data_structures=[sdmx_structure_file],
+        datapoints={"BIS_DER": sdmx_data_file},
+        return_only_persistent=False,
+    )
+
+    assert "DS_r" in result
+    assert result["DS_r"].data is not None
+
+
+# =============================================================================
 # Tests for SDMX-CSV format files
 # =============================================================================
 
