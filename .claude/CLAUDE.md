@@ -117,4 +117,4 @@ Pattern: `cr-{issue_number}` (e.g., `cr-457` for issue #457)
 - **DuckDB** (1.4.x): Optional SQL engine for specific operations
 - **pysdmx** (≥1.5.2): SDMX 3.0 data handling
 - **sqlglot** (22.x): SQL parsing for external routines
-- **antlr4-python3-runtime** (4.9.x): Parser runtime.
+- **antlr4-python3-runtime** (4.9.x): Parser runtime
