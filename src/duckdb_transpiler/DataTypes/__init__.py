@@ -3,7 +3,6 @@ from typing import Any, Dict, Optional, Set, Type, Union
 
 import pandas as pd
 
-from duckdb_transpiler.Config.config import get_decimal_type
 from vtlengine.DataTypes._time_checking import (
     check_date,
     check_time,
@@ -38,41 +37,6 @@ CAST_MAPPING: Dict[str, type] = {
     "Duration": str,
     "Boolean": bool,
 }
-
-
-# =============================================================================
-# DuckDB Type Mapping
-# =============================================================================
-
-
-def get_duckdb_type(vtl_type: Union[str, type]) -> str:
-    """
-    Get the DuckDB SQL type for a VTL scalar type.
-
-    Args:
-        vtl_type: VTL type as string name or ScalarType class (from vtlengine or duckdb_transpiler)
-
-    Returns:
-        DuckDB SQL type string (e.g., "BIGINT", "DECIMAL(12,6)", "DATE")
-    """
-    # Convert class to string name if needed
-    if not isinstance(vtl_type, str):
-        # Try local mapping first, then vtlengine mapping
-        vtl_type = SCALAR_TYPES_CLASS_REVERSE.get(vtl_type, getattr(vtl_type, "__name__", "String"))
-
-    mapping = {
-        "String": "VARCHAR",
-        "Number": get_decimal_type(),  # Uses configured precision
-        "Integer": "BIGINT",
-        "Boolean": "BOOLEAN",
-        "Date": "DATE",  # Native DuckDB DATE
-        "Time": "VARCHAR",  # TimeInterval - custom format
-        "Time_Period": "VARCHAR",  # TimePeriod - custom format (2024A, 2024M01)
-        "Duration": "VARCHAR",  # Duration indicator (A, S, Q, M, W, D)
-        "Null": "VARCHAR",
-    }
-
-    return mapping.get(vtl_type, "VARCHAR")
 
 
 class DataTypeSimpleRepr(type):
