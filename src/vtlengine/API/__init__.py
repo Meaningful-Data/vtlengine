@@ -7,7 +7,7 @@ from antlr4 import CommonTokenStream, InputStream  # type: ignore[import-untyped
 from antlr4.error.ErrorListener import ErrorListener  # type: ignore[import-untyped]
 from pysdmx.io.pd import PandasDataset
 from pysdmx.model import DataflowRef, Reference, TransformationScheme
-from pysdmx.model.dataflow import Dataflow, Schema
+from pysdmx.model.dataflow import Dataflow, DataStructureDefinition, Schema
 from pysdmx.model.vtl import VtlDataflowMapping
 from pysdmx.util import parse_urn
 
@@ -189,7 +189,14 @@ def validate_external_routine(
 
 def semantic_analysis(
     script: Union[str, TransformationScheme, Path],
-    data_structures: Union[Dict[str, Any], Path, List[Dict[str, Any]], List[Path]],
+    data_structures: Union[
+        Dict[str, Any],
+        Path,
+        Schema,
+        DataStructureDefinition,
+        Dataflow,
+        List[Union[Dict[str, Any], Path, Schema, DataStructureDefinition, Dataflow]],
+    ],
     value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
     external_routines: Optional[
         Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
@@ -269,7 +276,14 @@ def semantic_analysis(
 
 def run(
     script: Union[str, TransformationScheme, Path],
-    data_structures: Union[Dict[str, Any], Path, List[Dict[str, Any]], List[Path]],
+    data_structures: Union[
+        Dict[str, Any],
+        Path,
+        Schema,
+        DataStructureDefinition,
+        Dataflow,
+        List[Union[Dict[str, Any], Path, Schema, DataStructureDefinition, Dataflow]],
+    ],
     datapoints: Union[Dict[str, Union[pd.DataFrame, str, Path]], List[Union[str, Path]], str, Path],
     value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
     external_routines: Optional[
@@ -328,7 +342,9 @@ def run(
     Args:
         script: VTL script as a string, a Transformation Scheme object or Path with the VTL script.
 
-        data_structures: Dict, Path or a List of Dicts or Paths with the data structures.
+        data_structures: Dict, Path, pysdmx object, or a List of these with the data structures. \
+        Supports VTL JSON format (dict or .json file), SDMX structure files (.xml or SDMX-JSON), \
+        or pysdmx objects (Schema, DataStructureDefinition, Dataflow).
 
         datapoints: Dict, Path, S3 URI or List of S3 URIs or Paths with data. \
         Supports plain CSV files and SDMX files (.xml for SDMX-ML, .json for SDMX-JSON, \
@@ -558,7 +574,9 @@ def run_sdmx(  # noqa: C901
             raise InputValidationException(code="0-1-3-5", dataset_name=vtl_name)
 
     datapoints = {}
-    data_structures = []
+    data_structures: List[
+        Union[Dict[str, Any], Path, Schema, DataStructureDefinition, Dataflow]
+    ] = []
     for dataset in datasets:
         schema = dataset.structure
         if not isinstance(schema, Schema):
