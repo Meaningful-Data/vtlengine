@@ -394,35 +394,7 @@ def run(
     """
 
     # Convert sdmx_mappings to dict format for internal use
-    mapping_dict: Optional[Dict[str, str]] = None
-    if sdmx_mappings is not None:
-        if isinstance(sdmx_mappings, dict):
-            mapping_dict = sdmx_mappings
-        elif isinstance(sdmx_mappings, VtlDataflowMapping):
-            # Convert VtlDataflowMapping to dict format
-            if sdmx_mappings.to_vtl_mapping_method is not None:
-                warnings.warn(
-                    "To_vtl_mapping_method is not implemented yet, we will use the Basic "
-                    "method with old data."
-                )
-            if sdmx_mappings.from_vtl_mapping_method is not None:
-                warnings.warn(
-                    "From_vtl_mapping_method is not implemented yet, we will use the Basic "
-                    "method with old data."
-                )
-
-            if isinstance(sdmx_mappings.dataflow, str):
-                short_urn = str(parse_urn(sdmx_mappings.dataflow))
-            elif isinstance(sdmx_mappings.dataflow, (Reference, DataflowRef)):
-                short_urn = str(sdmx_mappings.dataflow)
-            elif isinstance(sdmx_mappings.dataflow, Dataflow):
-                short_urn = sdmx_mappings.dataflow.short_urn
-            else:
-                raise InputValidationException(
-                    "Expected str, Reference, DataflowRef or Dataflow type for dataflow in "
-                    "VtlDataflowMapping."
-                )
-            mapping_dict = {short_urn: sdmx_mappings.dataflow_alias}
+    mapping_dict = _convert_sdmx_mappings(sdmx_mappings)
 
     # AST generation
     script = _check_script(script)
@@ -478,6 +450,68 @@ def run(
     return result
 
 
+def _convert_vtl_dataflow_mapping(mapping: VtlDataflowMapping) -> Dict[str, str]:
+    """
+    Convert a VtlDataflowMapping object to a dict mapping SDMX URN to VTL dataset name.
+
+    Args:
+        mapping: VtlDataflowMapping object to convert.
+
+    Returns:
+        Dict with single entry mapping short_urn -> dataflow_alias.
+
+    Raises:
+        InputValidationException: If dataflow type is invalid.
+    """
+    if mapping.to_vtl_mapping_method is not None:
+        warnings.warn(
+            "To_vtl_mapping_method is not implemented yet, we will use the Basic "
+            "method with old data."
+        )
+    if mapping.from_vtl_mapping_method is not None:
+        warnings.warn(
+            "From_vtl_mapping_method is not implemented yet, we will use the Basic "
+            "method with old data."
+        )
+
+    if isinstance(mapping.dataflow, str):
+        short_urn = str(parse_urn(mapping.dataflow))
+    elif isinstance(mapping.dataflow, (Reference, DataflowRef)):
+        short_urn = str(mapping.dataflow)
+    elif isinstance(mapping.dataflow, Dataflow):
+        short_urn = mapping.dataflow.short_urn
+    else:
+        raise InputValidationException(
+            "Expected str, Reference, DataflowRef or Dataflow type for dataflow in "
+            "VtlDataflowMapping."
+        )
+    return {short_urn: mapping.dataflow_alias}
+
+
+def _convert_sdmx_mappings(
+    mappings: Optional[Union[VtlDataflowMapping, Dict[str, str]]],
+) -> Optional[Dict[str, str]]:
+    """
+    Convert sdmx_mappings parameter to dict format for internal use.
+
+    Args:
+        mappings: None, dict, or VtlDataflowMapping object.
+
+    Returns:
+        None if mappings is None, otherwise dict mapping SDMX URNs to VTL dataset names.
+
+    Raises:
+        InputValidationException: If mappings type is invalid.
+    """
+    if mappings is None:
+        return None
+    if isinstance(mappings, dict):
+        return mappings
+    if isinstance(mappings, VtlDataflowMapping):
+        return _convert_vtl_dataflow_mapping(mappings)
+    raise InputValidationException("Expected dict or VtlDataflowMapping type for mappings.")
+
+
 def _build_mapping_dict(
     datasets: Sequence[PandasDataset],
     mappings: Optional[Union[VtlDataflowMapping, Dict[str, str]]],
@@ -511,29 +545,7 @@ def _build_mapping_dict(
         return mappings
 
     if isinstance(mappings, VtlDataflowMapping):
-        if mappings.to_vtl_mapping_method is not None:
-            warnings.warn(
-                "To_vtl_mapping_method is not implemented yet, we will use the Basic "
-                "method with old data."
-            )
-        if mappings.from_vtl_mapping_method is not None:
-            warnings.warn(
-                "From_vtl_mapping_method is not implemented yet, we will use the Basic "
-                "method with old data."
-            )
-
-        if isinstance(mappings.dataflow, str):
-            short_urn = str(parse_urn(mappings.dataflow))
-        elif isinstance(mappings.dataflow, (Reference, DataflowRef)):
-            short_urn = str(mappings.dataflow)
-        elif isinstance(mappings.dataflow, Dataflow):
-            short_urn = mappings.dataflow.short_urn
-        else:
-            raise InputValidationException(
-                "Expected str, Reference, DataflowRef or Dataflow type for dataflow in "
-                "VtlDataflowMapping."
-            )
-        return {short_urn: mappings.dataflow_alias}
+        return _convert_vtl_dataflow_mapping(mappings)
 
     raise InputValidationException("Expected dict or VtlDataflowMapping type for mappings.")
 
