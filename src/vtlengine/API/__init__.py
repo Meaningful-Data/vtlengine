@@ -393,9 +393,36 @@ def run(
 
     """
 
-    # Note: sdmx_mappings is passed through from run_sdmx() for API transparency.
-    # The actual mapping processing happens in run_sdmx() before calling run().
-    _ = sdmx_mappings  # Mark as intentionally unused
+    # Convert sdmx_mappings to dict format for internal use
+    mapping_dict: Optional[Dict[str, str]] = None
+    if sdmx_mappings is not None:
+        if isinstance(sdmx_mappings, dict):
+            mapping_dict = sdmx_mappings
+        elif isinstance(sdmx_mappings, VtlDataflowMapping):
+            # Convert VtlDataflowMapping to dict format
+            if sdmx_mappings.to_vtl_mapping_method is not None:
+                warnings.warn(
+                    "To_vtl_mapping_method is not implemented yet, we will use the Basic "
+                    "method with old data."
+                )
+            if sdmx_mappings.from_vtl_mapping_method is not None:
+                warnings.warn(
+                    "From_vtl_mapping_method is not implemented yet, we will use the Basic "
+                    "method with old data."
+                )
+
+            if isinstance(sdmx_mappings.dataflow, str):
+                short_urn = str(parse_urn(sdmx_mappings.dataflow))
+            elif isinstance(sdmx_mappings.dataflow, (Reference, DataflowRef)):
+                short_urn = str(sdmx_mappings.dataflow)
+            elif isinstance(sdmx_mappings.dataflow, Dataflow):
+                short_urn = sdmx_mappings.dataflow.short_urn
+            else:
+                raise InputValidationException(
+                    "Expected str, Reference, DataflowRef or Dataflow type for dataflow in "
+                    "VtlDataflowMapping."
+                )
+            mapping_dict = {short_urn: sdmx_mappings.dataflow_alias}
 
     # AST generation
     script = _check_script(script)
@@ -404,7 +431,7 @@ def run(
 
     # Loading datasets and datapoints
     datasets, scalars, path_dict = load_datasets_with_data(
-        data_structures, datapoints, scalar_values
+        data_structures, datapoints, scalar_values, sdmx_mappings=mapping_dict
     )
 
     # Handling of library items
