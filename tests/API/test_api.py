@@ -79,9 +79,10 @@ def test_load_sdmx_ml_file_via_run():
         return_only_persistent=False,
     )
 
-    assert "BIS_DER" in result
-    assert result["BIS_DER"].data is not None
-    assert len(result["BIS_DER"].data) > 0
+    # DS_r is the persistent output (BIS_DER is the input)
+    assert "DS_r" in result
+    assert result["DS_r"].data is not None
+    assert len(result["DS_r"].data) > 0
 
 
 class SDMXTestsOutput(TestHelper):

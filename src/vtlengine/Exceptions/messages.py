@@ -185,6 +185,12 @@ centralised_messages = {
         "message": "No datasets found in SDMX file '{file}'",
         "description": "Raised when an SDMX file contains no datasets.",
     },
+    "0-3-1-10": {
+        "message": "SDMX file '{file}' requires external structure file: {error}. "
+        "Use run_sdmx() with a structure file for this format.",
+        "description": "Raised when an SDMX file lacks embedded structure and needs an external "
+        "structure file. Use run_sdmx() instead of run() for these files.",
+    },
     # ------------Operators-------------
     # General Semantic errors
     "1-1-1-1": {

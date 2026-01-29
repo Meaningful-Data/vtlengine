@@ -172,9 +172,14 @@ def _is_sdmx_file(file_path: Path) -> bool:
     return file_path.suffix.lower() in SDMX_EXTENSIONS
 
 
-def _load_sdmx_file(file_path: Path, explicit_name: Optional[str] = None) -> Dict[str, Dataset]:
+def _load_sdmx_file(
+    file_path: Path, explicit_name: Optional[str] = None
+) -> Dict[str, pd.DataFrame]:
     """
-    Load SDMX file and return dict of vtlengine Datasets.
+    Load SDMX file and return dict of DataFrames.
+
+    The user must provide matching data_structures via run(). The structure
+    from the SDMX file is used only for dataset naming (unless explicit_name is given).
 
     Args:
         file_path: Path to the SDMX file (.xml, .json, or .csv with SDMX structure)
@@ -182,14 +187,11 @@ def _load_sdmx_file(file_path: Path, explicit_name: Optional[str] = None) -> Dic
                       Only valid when file contains exactly one dataset.
 
     Returns:
-        Dict mapping dataset names to vtlengine Dataset objects with data loaded.
+        Dict mapping dataset names to pandas DataFrames with the data.
 
     Raises:
         DataLoadError: If the file cannot be parsed as SDMX or contains no datasets.
     """
-    # Import here to avoid circular import (pysdmx.toolkit.vtl imports from vtlengine.API)
-    from pysdmx.toolkit.vtl import convert_dataset_to_vtl
-
     try:
         # sdmx_get_datasets returns List[Dataset] but actual runtime type is List[PandasDataset]
         pandas_datasets = cast(Sequence[PandasDataset], sdmx_get_datasets(data=file_path))
@@ -206,7 +208,7 @@ def _load_sdmx_file(file_path: Path, explicit_name: Optional[str] = None) -> Dic
             file=str(file_path),
         )
 
-    result: Dict[str, Dataset] = {}
+    result: Dict[str, pd.DataFrame] = {}
 
     # If explicit name provided, only valid for single dataset files
     if explicit_name is not None and len(pandas_datasets) > 1:
@@ -222,26 +224,37 @@ def _load_sdmx_file(file_path: Path, explicit_name: Optional[str] = None) -> Dic
             vtl_name = explicit_name
         else:
             structure = pd_dataset.structure
-            vtl_name = structure if isinstance(structure, str) else structure.short_urn
+            # Structure can be a string URN or a Schema object
+            if isinstance(structure, str):
+                # Extract short name from URN like "DataStructure=BIS:BIS_DER(1.0)" -> "BIS_DER"
+                if "=" in structure and ":" in structure:
+                    # Format: DataStructure=AGENCY:ID(VERSION)
+                    parts = structure.split(":")
+                    if len(parts) >= 2:
+                        vtl_name = parts[-1].split("(")[0]
+                    else:
+                        vtl_name = structure
+                else:
+                    vtl_name = structure
+            else:
+                vtl_name = structure.short_urn
 
-        # Convert to vtlengine Dataset
-        vtl_dataset = convert_dataset_to_vtl(pd_dataset, vtl_name)
-        result[vtl_name] = vtl_dataset
+        result[vtl_name] = pd_dataset.data
 
     return result
 
 
 def _generate_single_path_dict(
     datapoint: Path,
-) -> Union[Dict[str, Path], Dict[str, Dataset]]:
+) -> Union[Dict[str, Path], Dict[str, pd.DataFrame]]:
     """
-    Generates a dict with dataset name(s) and path or loaded Dataset.
+    Generates a dict with dataset name(s) and path or DataFrame.
 
     For CSV files: returns {dataset_name: path} for lazy loading.
-    For SDMX files (.xml, .json): returns {dataset_name: Dataset} with data loaded.
+    For SDMX files (.xml, .json): returns {dataset_name: DataFrame} with data loaded.
     """
     if _is_sdmx_file(datapoint):
-        # SDMX files are loaded eagerly and return Dataset objects
+        # SDMX files are loaded eagerly and return DataFrames
         return _load_sdmx_file(datapoint)
 
     # CSV files return path for lazy loading
@@ -251,11 +264,11 @@ def _generate_single_path_dict(
 
 def _load_single_datapoint(
     datapoint: Union[str, Path],
-) -> Dict[str, Union[str, Path, Dataset]]:
+) -> Dict[str, Union[str, Path, pd.DataFrame]]:
     """
     Returns a dict with the data given from one dataset.
 
-    For SDMX files (.xml, .json), returns loaded Dataset objects.
+    For SDMX files (.xml, .json), returns DataFrames with data loaded.
     For CSV files, returns paths for lazy loading.
     """
     if not isinstance(datapoint, (str, Path)):
@@ -280,7 +293,7 @@ def _load_single_datapoint(
         raise DataLoadError(code="0-3-1-1", file=datapoint)
 
     # Generation of datapoints dictionary
-    dict_results: Dict[str, Union[Path, Dataset]] = {}
+    dict_results: Dict[str, Union[Path, pd.DataFrame]] = {}
     if datapoint.is_dir():
         for f in datapoint.iterdir():
             # Handle SDMX files (.xml, .json)
@@ -312,11 +325,15 @@ def _check_unique_datapoints(
 
 def _load_datapoints_path(
     datapoints: Union[Dict[str, Union[str, Path]], List[Union[str, Path]], str, Path],
-) -> Dict[str, Union[str, Path]]:
+) -> Tuple[Dict[str, Union[str, Path]], Dict[str, pd.DataFrame]]:
     """
-    Returns a dict with the data given from a Path.
+    Returns a tuple of:
+    - dict with CSV paths for lazy loading
+    - dict with pre-loaded SDMX DataFrames
     """
-    dict_datapoints: Dict[str, Union[str, Path]] = {}
+    dict_csv_paths: Dict[str, Union[str, Path]] = {}
+    dict_sdmx_dataframes: Dict[str, pd.DataFrame] = {}
+
     if isinstance(datapoints, dict):
         for dataset_name, datapoint in datapoints.items():
             if not isinstance(dataset_name, str):
@@ -331,18 +348,63 @@ def _load_datapoints_path(
                     input=datapoint,
                     message="Datapoints dictionary values must be Paths or S3 URIs.",
                 )
-            single_datapoint = _load_single_datapoint(datapoint)
-            first_datapoint = list(single_datapoint.values())[0]
-            _check_unique_datapoints([dataset_name], list(dict_datapoints.keys()))
-            dict_datapoints[dataset_name] = first_datapoint
-        return dict_datapoints
+
+            # Convert string to Path if not S3
+            if isinstance(datapoint, str) and "s3://" not in datapoint:
+                datapoint = Path(datapoint)
+
+            # Check for SDMX files with explicit name
+            if isinstance(datapoint, Path) and _is_sdmx_file(datapoint):
+                if not datapoint.exists():
+                    raise DataLoadError(code="0-3-1-1", file=datapoint)
+                sdmx_dataframes = _load_sdmx_file(datapoint, explicit_name=dataset_name)
+                _check_unique_datapoints(
+                    list(sdmx_dataframes.keys()),
+                    list(dict_csv_paths.keys()) + list(dict_sdmx_dataframes.keys()),
+                )
+                dict_sdmx_dataframes.update(sdmx_dataframes)
+            else:
+                # CSV or S3 path
+                single_datapoint = _load_single_datapoint(datapoint)
+                # Separate SDMX DataFrames from CSV paths
+                for name, value in single_datapoint.items():
+                    if isinstance(value, pd.DataFrame):
+                        _check_unique_datapoints(
+                            [name],
+                            list(dict_csv_paths.keys()) + list(dict_sdmx_dataframes.keys()),
+                        )
+                        dict_sdmx_dataframes[name] = value
+                    else:
+                        _check_unique_datapoints([dataset_name], list(dict_csv_paths.keys()))
+                        dict_csv_paths[dataset_name] = value
+        return dict_csv_paths, dict_sdmx_dataframes
+
     if isinstance(datapoints, list):
         for x in datapoints:
-            single_datapoint = _load_single_datapoint(x)
-            _check_unique_datapoints(list(single_datapoint.keys()), list(dict_datapoints.keys()))
-            dict_datapoints.update(single_datapoint)
-        return dict_datapoints
-    return _load_single_datapoint(datapoints)
+            single_result = _load_single_datapoint(x)
+            for name, value in single_result.items():
+                if isinstance(value, pd.DataFrame):
+                    _check_unique_datapoints(
+                        [name],
+                        list(dict_csv_paths.keys()) + list(dict_sdmx_dataframes.keys()),
+                    )
+                    dict_sdmx_dataframes[name] = value
+                else:
+                    _check_unique_datapoints(
+                        [name],
+                        list(dict_csv_paths.keys()) + list(dict_sdmx_dataframes.keys()),
+                    )
+                    dict_csv_paths[name] = value
+        return dict_csv_paths, dict_sdmx_dataframes
+
+    # Single datapoint
+    single_result = _load_single_datapoint(datapoints)
+    for name, value in single_result.items():
+        if isinstance(value, pd.DataFrame):
+            dict_sdmx_dataframes[name] = value
+        else:
+            dict_csv_paths[name] = value
+    return dict_csv_paths, dict_sdmx_dataframes
 
 
 def _load_datastructure_single(
@@ -499,20 +561,31 @@ def load_datasets_with_data(
 
     # Handling Individual, List or Dict of Paths or S3 URIs
     # NOTE: Adding type: ignore[arg-type] due to mypy issue with Union types
-    datapoints_path = _load_datapoints_path(datapoints)  # type: ignore[arg-type]
-    for dataset_name, csv_pointer in datapoints_path.items():
+    csv_paths, sdmx_dataframes = _load_datapoints_path(datapoints)  # type: ignore[arg-type]
+
+    # Merge pre-loaded SDMX DataFrames
+    for dataset_name, sdmx_df in sdmx_dataframes.items():
+        if dataset_name not in datasets:
+            raise InputValidationException(f"Not found dataset {dataset_name} in datastructures.")
+        # Validate and assign SDMX DataFrame to the structure-defined dataset
+        datasets[dataset_name].data = _validate_pandas(
+            datasets[dataset_name].components, sdmx_df, dataset_name
+        )
+
+    # Validate CSV paths
+    for dataset_name, csv_pointer in csv_paths.items():
         # Check if dataset exists in datastructures
         if dataset_name not in datasets:
             raise InputValidationException(f"Not found dataset {dataset_name} in datastructures.")
         # Validate csv path for this dataset
         components = datasets[dataset_name].components
         _ = load_datapoints(components=components, dataset_name=dataset_name, csv_path=csv_pointer)
-    gc.collect()  # Garbage collector to free memory after we loaded everything and discarded them
+    gc.collect()  # Garbage collector to free memory
 
     _handle_empty_datasets(datasets)
     _handle_scalars_values(scalars, scalar_values)
 
-    return datasets, scalars, datapoints_path
+    return datasets, scalars, csv_paths if csv_paths else None
 
 
 def load_vtl(input: Union[str, Path]) -> str:
