@@ -230,10 +230,7 @@ def _load_sdmx_file(
                 if "=" in structure and ":" in structure:
                     # Format: DataStructure=AGENCY:ID(VERSION)
                     parts = structure.split(":")
-                    if len(parts) >= 2:
-                        vtl_name = parts[-1].split("(")[0]
-                    else:
-                        vtl_name = structure
+                    vtl_name = parts[-1].split("(")[0] if len(parts) >= 2 else structure
                 else:
                     vtl_name = structure
             else:
@@ -307,14 +304,11 @@ def _load_single_datapoint(
     if datapoint.is_dir():
         for f in datapoint.iterdir():
             # Handle SDMX files (.xml, .json)
-            if _is_sdmx_file(f):
-                dict_results.update(_generate_single_path_dict(f))
-            # Handle CSV files
-            elif f.suffix.lower() == ".csv":
+            if _is_sdmx_file(f) or f.suffix.lower() == ".csv":
                 dict_results.update(_generate_single_path_dict(f))
             # Skip other files
     else:
-        dict_results = _generate_single_path_dict(datapoint)
+        dict_results = _generate_single_path_dict(datapoint)  # type: ignore[assignment]
     return dict_results  # type: ignore[return-value]
 
 
