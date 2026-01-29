@@ -2,7 +2,7 @@ import gc
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Sequence, Tuple, Union, cast
+from typing import Any, Dict, List, Literal, Mapping, Optional, Sequence, Tuple, Union, cast
 
 import jsonschema
 import pandas as pd
@@ -61,8 +61,11 @@ with open(schema_path / "value_domain_schema.json", "r") as file:
 with open(schema_path / "external_routines_schema.json", "r") as file:
     external_routine_schema = json.load(file)
 
-# SDMX file extensions that are always SDMX format
-SDMX_EXTENSIONS = {".xml", ".json"}
+# File extensions that trigger SDMX parsing attempt when loading datapoints.
+# .xml → SDMX-ML (strict: raises error if parsing fails)
+# .json → SDMX-JSON (permissive: falls back to plain file if parsing fails)
+# Note: .csv files are handled separately with SDMX-CSV detection and fallback.
+SDMX_DATAPOINT_EXTENSIONS = {".xml", ".json"}
 
 
 def _extract_data_type(component: Dict[str, Any]) -> Tuple[str, Any]:
@@ -167,9 +170,9 @@ def _load_dataset_from_structure(
     return datasets, scalars
 
 
-def _is_sdmx_file(file_path: Path) -> bool:
-    """Check if a file is an SDMX file based on extension."""
-    return file_path.suffix.lower() in SDMX_EXTENSIONS
+def _is_sdmx_datapoint_file(file_path: Path) -> bool:
+    """Check if a file should be treated as SDMX when loading datapoints."""
+    return file_path.suffix.lower() in SDMX_DATAPOINT_EXTENSIONS
 
 
 def _load_sdmx_file(
@@ -253,7 +256,7 @@ def _generate_single_path_dict(
     suffix = datapoint.suffix.lower()
 
     # Try SDMX parsing for known SDMX extensions and CSV files
-    if suffix in SDMX_EXTENSIONS or suffix == ".csv":
+    if suffix in SDMX_DATAPOINT_EXTENSIONS or suffix == ".csv":
         try:
             return _load_sdmx_file(datapoint)
         except DataLoadError:
@@ -304,7 +307,7 @@ def _load_single_datapoint(
     if datapoint.is_dir():
         for f in datapoint.iterdir():
             # Handle SDMX files (.xml, .json)
-            if _is_sdmx_file(f) or f.suffix.lower() == ".csv":
+            if _is_sdmx_datapoint_file(f) or f.suffix.lower() == ".csv":
                 dict_results.update(_generate_single_path_dict(f))
             # Skip other files
     else:
@@ -327,6 +330,33 @@ def _check_unique_datapoints(
             )
 
 
+def _add_loaded_datapoint(
+    loaded: Mapping[str, Union[str, Path, pd.DataFrame]],
+    csv_paths: Dict[str, Union[str, Path]],
+    sdmx_dfs: Dict[str, pd.DataFrame],
+    explicit_name: Optional[str] = None,
+) -> None:
+    """
+    Add loaded datapoint results to the appropriate dictionary.
+
+    Args:
+        loaded: Result from _load_single_datapoint or _load_sdmx_file
+        csv_paths: Dict to accumulate CSV paths
+        sdmx_dfs: Dict to accumulate SDMX DataFrames
+        explicit_name: If provided, use this name for CSV paths (from dict key)
+    """
+    existing_names = list(csv_paths.keys()) + list(sdmx_dfs.keys())
+    for name, value in loaded.items():
+        if isinstance(value, pd.DataFrame):
+            _check_unique_datapoints([name], existing_names)
+            sdmx_dfs[name] = value
+        else:
+            final_name = explicit_name if explicit_name is not None else name
+            _check_unique_datapoints([final_name], existing_names)
+            csv_paths[final_name] = value
+        existing_names.append(name if isinstance(value, pd.DataFrame) else final_name)
+
+
 def _load_datapoints_path(
     datapoints: Union[Dict[str, Union[str, Path]], List[Union[str, Path]], str, Path],
 ) -> Tuple[Dict[str, Union[str, Path]], Dict[str, pd.DataFrame]]:
@@ -335,8 +365,8 @@ def _load_datapoints_path(
     - dict with CSV paths for lazy loading
     - dict with pre-loaded SDMX DataFrames
     """
-    dict_csv_paths: Dict[str, Union[str, Path]] = {}
-    dict_sdmx_dataframes: Dict[str, pd.DataFrame] = {}
+    csv_paths: Dict[str, Union[str, Path]] = {}
+    sdmx_dfs: Dict[str, pd.DataFrame] = {}
 
     if isinstance(datapoints, dict):
         for dataset_name, datapoint in datapoints.items():
@@ -357,58 +387,28 @@ def _load_datapoints_path(
             if isinstance(datapoint, str) and "s3://" not in datapoint:
                 datapoint = Path(datapoint)
 
-            # Check for SDMX files with explicit name
-            if isinstance(datapoint, Path) and _is_sdmx_file(datapoint):
+            # SDMX files with explicit name
+            if isinstance(datapoint, Path) and _is_sdmx_datapoint_file(datapoint):
                 if not datapoint.exists():
                     raise DataLoadError(code="0-3-1-1", file=datapoint)
-                sdmx_dataframes = _load_sdmx_file(datapoint, explicit_name=dataset_name)
-                _check_unique_datapoints(
-                    list(sdmx_dataframes.keys()),
-                    list(dict_csv_paths.keys()) + list(dict_sdmx_dataframes.keys()),
-                )
-                dict_sdmx_dataframes.update(sdmx_dataframes)
+                sdmx_result = _load_sdmx_file(datapoint, explicit_name=dataset_name)
+                _add_loaded_datapoint(sdmx_result, csv_paths, sdmx_dfs)
             else:
                 # CSV or S3 path
-                single_datapoint = _load_single_datapoint(datapoint)
-                # Separate SDMX DataFrames from CSV paths
-                for name, value in single_datapoint.items():
-                    if isinstance(value, pd.DataFrame):
-                        _check_unique_datapoints(
-                            [name],
-                            list(dict_csv_paths.keys()) + list(dict_sdmx_dataframes.keys()),
-                        )
-                        dict_sdmx_dataframes[name] = value
-                    else:
-                        _check_unique_datapoints([dataset_name], list(dict_csv_paths.keys()))
-                        dict_csv_paths[dataset_name] = value
-        return dict_csv_paths, dict_sdmx_dataframes
+                single_result = _load_single_datapoint(datapoint)
+                _add_loaded_datapoint(single_result, csv_paths, sdmx_dfs, explicit_name=dataset_name)
+        return csv_paths, sdmx_dfs
 
     if isinstance(datapoints, list):
         for x in datapoints:
             single_result = _load_single_datapoint(x)
-            for name, value in single_result.items():
-                if isinstance(value, pd.DataFrame):
-                    _check_unique_datapoints(
-                        [name],
-                        list(dict_csv_paths.keys()) + list(dict_sdmx_dataframes.keys()),
-                    )
-                    dict_sdmx_dataframes[name] = value
-                else:
-                    _check_unique_datapoints(
-                        [name],
-                        list(dict_csv_paths.keys()) + list(dict_sdmx_dataframes.keys()),
-                    )
-                    dict_csv_paths[name] = value
-        return dict_csv_paths, dict_sdmx_dataframes
+            _add_loaded_datapoint(single_result, csv_paths, sdmx_dfs)
+        return csv_paths, sdmx_dfs
 
     # Single datapoint
     single_result = _load_single_datapoint(datapoints)
-    for name, value in single_result.items():
-        if isinstance(value, pd.DataFrame):
-            dict_sdmx_dataframes[name] = value
-        else:
-            dict_csv_paths[name] = value
-    return dict_csv_paths, dict_sdmx_dataframes
+    _add_loaded_datapoint(single_result, csv_paths, sdmx_dfs)
+    return csv_paths, sdmx_dfs
 
 
 def _load_datastructure_single(
