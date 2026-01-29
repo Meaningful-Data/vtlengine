@@ -250,14 +250,24 @@ def _generate_single_path_dict(
     """
     Generates a dict with dataset name(s) and path or DataFrame.
 
-    For CSV files: returns {dataset_name: path} for lazy loading.
-    For SDMX files (.xml, .json): returns {dataset_name: DataFrame} with data loaded.
+    For SDMX files (.xml, .json, .csv): attempts SDMX parsing first.
+    Falls back to plain file handling if SDMX parsing fails.
     """
-    if _is_sdmx_file(datapoint):
-        # SDMX files are loaded eagerly and return DataFrames
-        return _load_sdmx_file(datapoint)
+    suffix = datapoint.suffix.lower()
 
-    # CSV files return path for lazy loading
+    # Try SDMX parsing for known SDMX extensions and CSV files
+    if suffix in SDMX_EXTENSIONS or suffix == ".csv":
+        try:
+            return _load_sdmx_file(datapoint)
+        except DataLoadError:
+            # Not a valid SDMX file - fall through to plain file handling
+            # For .xml files, re-raise since we can't fall back
+            if suffix == ".xml":
+                raise
+            pass
+
+    # Plain file: return path for lazy loading (works for CSV, fails later for others)
+    # Use removesuffix to preserve backward compatibility (e.g., DS_2.json stays DS_2.json)
     dataset_name = datapoint.name.removesuffix(".csv")
     return {dataset_name: datapoint}
 
