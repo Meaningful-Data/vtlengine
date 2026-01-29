@@ -480,6 +480,83 @@ def test_run_with_sdmx_structure_file_list(sdmx_data_file, sdmx_structure_file):
 
 
 # =============================================================================
+# Tests for run() with pysdmx objects as data_structures
+# =============================================================================
+
+
+def test_run_with_schema_object(sdmx_data_file, sdmx_structure_file):
+    """Test run() with pysdmx Schema object."""
+    from pysdmx.io import get_datasets as pysdmx_get_datasets
+
+    # Get the Schema from SDMX files
+    pandas_datasets = pysdmx_get_datasets(sdmx_data_file, sdmx_structure_file)
+    schema = pandas_datasets[0].structure
+
+    script = "DS_r <- BIS_DER;"
+    result = run(
+        script=script,
+        data_structures=schema,
+        datapoints={"BIS_DER": sdmx_data_file},
+        return_only_persistent=False,
+    )
+
+    assert "DS_r" in result
+    assert result["DS_r"].data is not None
+
+
+def test_run_with_dsd_object(sdmx_structure_file):
+    """Test run() with pysdmx DataStructureDefinition object."""
+    from pysdmx.io import read_sdmx
+
+    # Get the DSD from structure file
+    msg = read_sdmx(sdmx_structure_file)
+    # msg.structures is a list of DataStructureDefinition objects
+    dsd = [s for s in msg.structures if hasattr(s, "components")][0]
+
+    # Create a simple CSV for testing
+    csv_content = "FREQ,DER_TYPE,DER_INSTR,DER_RISK,DER_REP_CTY,TIME_PERIOD,OBS_VALUE\n"
+    csv_content += "A,T,F,D,5J,2020-Q1,100\n"
+
+    import tempfile
+
+    with tempfile.NamedTemporaryFile(suffix=".csv", delete=False, mode="w") as f:
+        f.write(csv_content)
+        csv_path = Path(f.name)
+
+    try:
+        script = "DS_r <- BIS_DER;"
+        result = run(
+            script=script,
+            data_structures=dsd,
+            datapoints={"BIS_DER": csv_path},
+            return_only_persistent=False,
+        )
+
+        assert "DS_r" in result
+        assert result["DS_r"].data is not None
+    finally:
+        csv_path.unlink()
+
+
+def test_run_with_list_of_pysdmx_objects(sdmx_data_file, sdmx_structure_file):
+    """Test run() with list containing pysdmx objects."""
+    from pysdmx.io import get_datasets as pysdmx_get_datasets
+
+    pandas_datasets = pysdmx_get_datasets(sdmx_data_file, sdmx_structure_file)
+    schema = pandas_datasets[0].structure
+
+    script = "DS_r <- BIS_DER;"
+    result = run(
+        script=script,
+        data_structures=[schema],
+        datapoints={"BIS_DER": sdmx_data_file},
+        return_only_persistent=False,
+    )
+
+    assert "DS_r" in result
+
+
+# =============================================================================
 # Tests for SDMX-CSV format files
 # =============================================================================
 
