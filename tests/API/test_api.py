@@ -1,30 +1,18 @@
 import csv
 import json
-import warnings
 from pathlib import Path
 
 import pandas as pd
 import pytest
-from pysdmx.io import get_datasets
-from pysdmx.io.pd import PandasDataset
 from pysdmx.model import (
-    DataflowRef,
-    Reference,
-    Ruleset,
     Transformation,
     TransformationScheme,
-    UserDefinedOperator,
 )
-from pysdmx.model.dataflow import Dataflow, Schema
-from pysdmx.model.vtl import VtlDataflowMapping
 
 import vtlengine.DataTypes as DataTypes
-from tests.Helper import TestHelper
 from vtlengine.API import (
-    generate_sdmx,
     prettify,
     run,
-    run_sdmx,
     semantic_analysis,
     validate_dataset,
     validate_external_routine,
@@ -38,7 +26,6 @@ from vtlengine.API._InternalApi import (
     load_external_routines,
     load_value_domains,
     load_vtl,
-    to_vtl_json,
 )
 from vtlengine.DataTypes import Integer, Null, String
 from vtlengine.Exceptions import DataLoadError, InputValidationException, SemanticError
@@ -55,15 +42,6 @@ filepath_out_json = base_path / "data" / "DataStructure" / "output"
 filepath_out_csv = base_path / "data" / "DataSet" / "output"
 filepath_sdmx_input = base_path / "data" / "SDMX" / "input"
 filepath_sdmx_output = base_path / "data" / "SDMX" / "output"
-
-
-class SDMXTestsOutput(TestHelper):
-    filepath_out_json = base_path / "data" / "DataStructure" / "output"
-    filepath_out_csv = base_path / "data" / "DataSet" / "output"
-
-    ds_input_prefix = "DS_"
-
-    warnings.filterwarnings("ignore", category=FutureWarning)
 
 
 input_vtl_params_OK = [
@@ -371,152 +349,6 @@ param_wrong_role = [((filepath_json / "DS_Role_wrong.json"), "0-1-1-13")]
 param_wrong_data_type = [((filepath_json / "DS_wrong_datatype.json"), "0-1-1-13")]
 
 param_viral_attr = [((filepath_json / "DS_Viral_attr.json"), "0-1-1-13")]
-
-params_run_sdmx = [
-    (
-        (filepath_sdmx_input / "gen_all_minimal.xml"),
-        (filepath_sdmx_input / "metadata_minimal.xml"),
-    ),
-    (
-        (filepath_sdmx_input / "str_all_minimal.xml"),
-        (filepath_sdmx_input / "metadata_minimal.xml"),
-    ),
-]
-
-params_run_sdmx_with_mappings = [
-    (
-        (filepath_sdmx_input / "str_all_minimal_df.xml"),
-        (filepath_sdmx_input / "metadata_minimal_df.xml"),
-        None,
-    ),
-    (
-        (filepath_sdmx_input / "str_all_minimal_df.xml"),
-        (filepath_sdmx_input / "metadata_minimal_df.xml"),
-        {"Dataflow=MD:TEST_DF(1.0)": "DS_1"},
-    ),
-    (
-        (filepath_sdmx_input / "str_all_minimal_df.xml"),
-        (filepath_sdmx_input / "metadata_minimal_df.xml"),
-        VtlDataflowMapping(
-            dataflow="urn:sdmx:org.sdmx.infomodel.datastructure.Dataflow=MD:TEST_DF(1.0)",
-            dataflow_alias="DS_1",
-            id="VTL_MAP_1",
-        ),
-    ),
-    (
-        (filepath_sdmx_input / "str_all_minimal_df.xml"),
-        (filepath_sdmx_input / "metadata_minimal_df.xml"),
-        VtlDataflowMapping(
-            dataflow=Reference(
-                sdmx_type="Dataflow",
-                agency="MD",
-                id="TEST_DF",
-                version="1.0",
-            ),
-            dataflow_alias="DS_1",
-            id="VTL_MAP_2",
-        ),
-    ),
-    (
-        (filepath_sdmx_input / "str_all_minimal_df.xml"),
-        (filepath_sdmx_input / "metadata_minimal_df.xml"),
-        VtlDataflowMapping(
-            dataflow=DataflowRef(
-                agency="MD",
-                id="TEST_DF",
-                version="1.0",
-            ),
-            dataflow_alias="DS_1",
-            id="VTL_MAP_3",
-        ),
-    ),
-    (
-        (filepath_sdmx_input / "str_all_minimal_df.xml"),
-        (filepath_sdmx_input / "metadata_minimal_df.xml"),
-        VtlDataflowMapping(
-            dataflow=Dataflow(
-                id="TEST_DF",
-                agency="MD",
-                version="1.0",
-            ),
-            dataflow_alias="DS_1",
-            id="VTL_MAP_4",
-        ),
-    ),
-]
-
-params_run_sdmx_errors = [
-    (
-        [
-            PandasDataset(
-                structure=Schema(id="DS1", components=[], agency="BIS", context="datastructure"),
-                data=pd.DataFrame(),
-            ),
-            PandasDataset(
-                structure=Schema(id="DS2", components=[], agency="BIS", context="datastructure"),
-                data=pd.DataFrame(),
-            ),
-        ],
-        None,
-        InputValidationException,
-        "0-1-3-3",
-    ),
-    (
-        [
-            PandasDataset(
-                structure=Schema(
-                    id="BIS_DER", components=[], agency="BIS", context="datastructure"
-                ),
-                data=pd.DataFrame(),
-            )
-        ],
-        42,
-        InputValidationException,
-        "Expected dict or VtlDataflowMapping type for mappings.",
-    ),
-    (
-        [
-            PandasDataset(
-                structure=Schema(
-                    id="BIS_DER", components=[], agency="BIS", context="datastructure"
-                ),
-                data=pd.DataFrame(),
-            )
-        ],
-        VtlDataflowMapping(
-            dataflow=123,
-            dataflow_alias="ALIAS",
-            id="Test",
-        ),
-        InputValidationException,
-        "Expected str, Reference, DataflowRef or Dataflow type for dataflow in VtlDataflowMapping.",
-    ),
-]
-params_to_vtl_json = [
-    (
-        (filepath_sdmx_input / "str_all_minimal.xml"),
-        (filepath_sdmx_input / "metadata_minimal.xml"),
-        (filepath_sdmx_output / "vtl_datastructure_str_all.json"),
-    )
-]
-
-params_2_1_str_sp = [
-    (
-        "1-1",
-        (filepath_sdmx_input / "str_all_minimal.xml"),
-        (filepath_sdmx_input / "metadata_minimal.xml"),
-    )
-]
-
-params_2_1_gen_str = [
-    (
-        "1-2",
-        (filepath_sdmx_input / "str_all_minimal.xml"),
-        (filepath_sdmx_input / "metadata_minimal.xml"),
-    )
-]
-
-params_exception_vtl_to_json = [((filepath_sdmx_input / "str_all_minimal.xml"), "0-1-3-2")]
 
 params_check_script = [
     (
@@ -1711,207 +1543,6 @@ def test_load_data_structure_with_wrong_data_type(ds_r, error_code):
         load_datasets(ds_r)
 
 
-@pytest.mark.parametrize("data, structure", params_run_sdmx)
-def test_run_sdmx_function(data, structure):
-    script = "DS_r := BIS_DER [calc Me_4 := OBS_VALUE];"
-    datasets = get_datasets(data, structure)
-    result = run_sdmx(script, datasets, return_only_persistent=False)
-    assert isinstance(result, dict)
-    assert all(isinstance(k, str) and isinstance(v, Dataset) for k, v in result.items())
-    assert isinstance(result["DS_r"].data, pd.DataFrame)
-
-
-@pytest.mark.parametrize("data, structure, mappings", params_run_sdmx_with_mappings)
-def test_run_sdmx_function_with_mappings(data, structure, mappings):
-    script = "DS_r := DS_1 [calc Me_4 := OBS_VALUE];"
-    datasets = get_datasets(data, structure)
-    result = run_sdmx(script, datasets, mappings=mappings, return_only_persistent=False)
-    assert isinstance(result, dict)
-    assert all(isinstance(k, str) and isinstance(v, Dataset) for k, v in result.items())
-    assert isinstance(result["DS_r"].data, pd.DataFrame)
-
-
-@pytest.mark.parametrize("datasets, mappings, expected_exception, match", params_run_sdmx_errors)
-def test_run_sdmx_errors_with_mappings(datasets, mappings, expected_exception, match):
-    script = "DS_r := BIS_DER [calc Me_4 := OBS_VALUE];"
-    with pytest.raises(expected_exception, match=match):
-        run_sdmx(script, datasets, mappings=mappings)
-
-
-@pytest.mark.parametrize("data, structure, path_reference", params_to_vtl_json)
-def test_to_vtl_json_function(data, structure, path_reference):
-    datasets = get_datasets(data, structure)
-    result = to_vtl_json(datasets[0].structure, dataset_name="BIS_DER")
-    with open(path_reference, "r") as file:
-        reference = json.load(file)
-    assert result == reference
-
-
-@pytest.mark.parametrize("code, data, structure", params_2_1_str_sp)
-def test_run_sdmx_2_1_str_sp(code, data, structure):
-    datasets = get_datasets(data, structure)
-    result = run_sdmx(
-        "DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", datasets, return_only_persistent=False
-    )
-    reference = SDMXTestsOutput.LoadOutputs(code, ["DS_r"])
-    assert result == reference
-
-
-@pytest.mark.parametrize("code, data, structure", params_2_1_gen_str)
-def test_run_sdmx_2_1_gen_all(code, data, structure):
-    datasets = get_datasets(data, structure)
-    result = run_sdmx(
-        "DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", datasets, return_only_persistent=False
-    )
-    reference = SDMXTestsOutput.LoadOutputs(code, ["DS_r"])
-    assert result == reference
-
-
-@pytest.mark.parametrize("data, error_code", params_exception_vtl_to_json)
-def test_to_vtl_json_exception(data, error_code):
-    datasets = get_datasets(data)
-    with pytest.raises(InputValidationException, match=error_code):
-        run_sdmx("DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", datasets)
-
-
-def test_ts_without_udo_or_rs():
-    script = "DS_r := DS_1 + DS_2;"
-    ts = generate_sdmx(script, agency_id="MD", id="TestID")
-
-    assert isinstance(ts, TransformationScheme)
-    assert ts.id == "TS1"
-    assert ts.agency == "MD"
-    assert ts.version == "1.0"
-    assert ts.name == "TransformationScheme TestID"
-    assert len(ts.items) == 1
-    transformation = ts.items[0]
-    assert transformation.is_persistent is False
-
-
-def test_ts_with_udo():
-    script = """
-    define operator suma (ds1 dataset, ds2 dataset)
-            returns dataset is
-            ds1 + ds2
-    end operator;
-    DS_r := suma(ds1, ds2);
-    """
-    ts = generate_sdmx(script, agency_id="MD", id="TestID")
-    assert isinstance(ts, TransformationScheme)
-    assert len(ts.items) == 1
-    udo_scheme = ts.user_defined_operator_schemes[0]
-    assert udo_scheme.id == "UDS1"
-    assert udo_scheme.name == "UserDefinedOperatorScheme TestID-UDS"
-    assert len(udo_scheme.items) == 1
-    udo = udo_scheme.items[0]
-    assert isinstance(udo, UserDefinedOperator)
-    assert udo.id == "UDO1"
-
-
-def test_ts_with_dp_ruleset():
-    script = """
-    define datapoint ruleset signValidation (variable ACCOUNTING_ENTRY as AE, INT_ACC_ITEM as IAI,
-        FUNCTIONAL_CAT as FC, INSTR_ASSET as IA, OBS_VALUE as O) is
-        sign1c: when AE = "C" and IAI = "G" then O > 0 errorcode "sign1c" errorlevel 1;
-        sign2c: when AE = "C" and IAI = "GA" then O > 0 errorcode "sign2c" errorlevel 1
-    end datapoint ruleset;
-    DS_r := check_datapoint (BOP, signValidation);
-    """
-    ts = generate_sdmx(script, agency_id="MD", id="TestID")
-    assert isinstance(ts, TransformationScheme)
-    assert hasattr(ts, "ruleset_schemes")
-    rs_scheme = ts.ruleset_schemes[0]
-    assert rs_scheme.id == "RS1"
-    assert rs_scheme.name == "RulesetScheme TestID-RS"
-    assert len(rs_scheme.items) == 1
-    ruleset = rs_scheme.items[0]
-    assert isinstance(ruleset, Ruleset)
-    assert ruleset.id == "R1"
-    assert ruleset.ruleset_type == "datapoint"
-
-
-def test_ts_with_hierarchical_ruleset():
-    script = """
-        define hierarchical ruleset accountingEntry (variable rule ACCOUNTING_ENTRY) is
-                        B = C - D errorcode "Balance (credit-debit)" errorlevel 4;
-                        N = A - L errorcode "Net (assets-liabilities)" errorlevel 4
-                    end hierarchical ruleset;
-
-        DS_r := check_hierarchy(BOP, accountingEntry rule ACCOUNTING_ENTRY dataset);
-        """
-    ts = generate_sdmx(script, agency_id="MD", id="TestID")
-    assert isinstance(ts, TransformationScheme)
-    assert hasattr(ts, "ruleset_schemes")
-    rs_scheme = ts.ruleset_schemes[0]
-    assert rs_scheme.id == "RS1"
-    assert rs_scheme.name == "RulesetScheme TestID-RS"
-    assert len(rs_scheme.items) == 1
-    ruleset = rs_scheme.items[0]
-    assert isinstance(ruleset, Ruleset)
-    assert ruleset.id == "R1"
-    assert ruleset.ruleset_type == "hierarchical"
-    assert ruleset.ruleset_definition == (
-        "define hierarchical ruleset accountingEntry (variable rule ACCOUNTING_ENTRY) is "
-        'B = C - D errorcode "Balance (credit-debit)" errorlevel 4; N = A - L errorcode "Net (assets-liabilities)" errorlevel 4 end hierarchical ruleset;'
-    )
-
-
-def test_ts_with_2_rulesets():
-    script = filepath_VTL / "validations.vtl"
-    ts = generate_sdmx(script, agency_id="MD", id="TestID")
-    assert isinstance(ts, TransformationScheme)
-    rs_scheme = ts.ruleset_schemes[0]
-    assert rs_scheme.id == "RS1"
-    assert len(rs_scheme.items) == 2
-    assert isinstance(rs_scheme.items[0], Ruleset)
-    assert rs_scheme.items[0].ruleset_type == "datapoint"
-
-
-def test_ts_with_ruleset_and_udo():
-    script = """
-    define operator suma (ds1 dataset, ds2 dataset)
-            returns dataset is
-            ds1 + ds2
-    end operator;
-    DS_r := suma(ds1, ds2);
-
-    define hierarchical ruleset accountingEntry (variable rule ACCOUNTING_ENTRY) is
-                        B = C - D errorcode "Balance (credit-debit)" errorlevel 4;
-                        N = A - L errorcode "Net (assets-liabilities)" errorlevel 4
-                    end hierarchical ruleset;
-
-    DS_r2 := check_hierarchy(BOP, accountingEntry rule ACCOUNTING_ENTRY dataset);
-    """
-    ts = generate_sdmx(script, agency_id="MD", id="TestID")
-
-    # Validate TransformationScheme
-    assert isinstance(ts, TransformationScheme)
-
-    # Validate UDO scheme
-    assert hasattr(ts, "user_defined_operator_schemes")
-    assert len(ts.user_defined_operator_schemes) == 1
-    udo_scheme = ts.user_defined_operator_schemes[0]
-    assert udo_scheme.id == "UDS1"
-    assert len(udo_scheme.items) == 1
-    assert isinstance(udo_scheme.items[0], UserDefinedOperator)
-
-    # Validate Ruleset scheme
-    assert hasattr(ts, "ruleset_schemes")
-    rs_scheme = ts.ruleset_schemes[0]
-    assert rs_scheme.id == "RS1"
-    assert len(rs_scheme.items) == 1
-    assert isinstance(rs_scheme.items[0], Ruleset)
-    assert rs_scheme.items[0].ruleset_type == "hierarchical"
-    ruleset = rs_scheme.items[0]
-    assert isinstance(ruleset, Ruleset)
-    assert ruleset.id == "R1"
-    assert ruleset.ruleset_type == "hierarchical"
-    assert ruleset.ruleset_definition == (
-        "define hierarchical ruleset accountingEntry (variable rule ACCOUNTING_ENTRY) is "
-        'B = C - D errorcode "Balance (credit-debit)" errorlevel 4; N = A - L errorcode "Net (assets-liabilities)" errorlevel 4 end hierarchical ruleset;'
-    )
-
-
 def test_check_script_with_string_input():
     script = "DS_r := DS_1 + DS_2;"
     result = _check_script(script)
@@ -1924,62 +1555,6 @@ def test_check_script_invalid_input_type():
         match="0-1-1-1",
     ):
         _check_script(12345)
-
-
-def test_generate_sdmx_and_check_script():
-    script = """
-    define hierarchical ruleset accountingEntry (variable rule ACCOUNTING_ENTRY) is
-        B = C - D errorcode "Balance (credit-debit)" errorlevel 4;
-        N = A - L errorcode "Net (assets-liabilities)" errorlevel 4
-    end hierarchical ruleset;
-    define operator suma (ds1 dataset, ds2 dataset)
-            returns dataset is
-            ds1 + ds2
-    end operator;
-    DS_r := check_hierarchy(BOP, accountingEntry rule ACCOUNTING_ENTRY dataset);
-    DS_r2 := suma(ds1, ds2);
-    """
-    ts = generate_sdmx(script, agency_id="MD", id="TestID")
-    assert isinstance(ts, TransformationScheme)
-    assert hasattr(ts, "user_defined_operator_schemes")
-    assert len(ts.user_defined_operator_schemes) == 1
-    udo = ts.user_defined_operator_schemes[0]
-    assert isinstance(udo.items[0], UserDefinedOperator)
-    assert hasattr(ts, "ruleset_schemes")
-    rs = ts.ruleset_schemes[0]
-    assert isinstance(rs.items[0], Ruleset)
-    assert rs.items[0].ruleset_type == "hierarchical"
-    assert rs.items[0].ruleset_scope == "variable"
-    regenerated_script = _check_script(ts)
-    assert prettify(script) == prettify(regenerated_script)
-
-
-def test_generate_sdmx_and_check_script_with_valuedomain():
-    script = """
-    define hierarchical ruleset sectorsHierarchy (valuedomain rule abstract) is
-                        B = C - D errorcode "totalComparedToBanks" errorlevel 4;
-                        N >  A + L errorcode "totalGeUnal" errorlevel 3
-    end hierarchical ruleset;
-    define operator suma (ds1 dataset, ds2 dataset)
-            returns dataset is
-            ds1 + ds2
-    end operator;
-    sectors_hier_val_unf := check_hierarchy(DS_1, sectorsHierarchy rule Id_2 non_zero);
-    DS_r2 := suma(ds1, ds2);
-    """
-    ts = generate_sdmx(script, agency_id="MD", id="TestID")
-    assert isinstance(ts, TransformationScheme)
-    assert hasattr(ts, "user_defined_operator_schemes")
-    assert len(ts.user_defined_operator_schemes) == 1
-    udo = ts.user_defined_operator_schemes[0]
-    assert isinstance(udo.items[0], UserDefinedOperator)
-    assert hasattr(ts, "ruleset_schemes")
-    rs = ts.ruleset_schemes[0]
-    assert isinstance(rs.items[0], Ruleset)
-    assert rs.items[0].ruleset_type == "hierarchical"
-    assert rs.items[0].ruleset_scope == "valuedomain"
-    regenerated_script = _check_script(ts)
-    assert prettify(script) == prettify(regenerated_script)
 
 
 @pytest.mark.parametrize("transformation_scheme, result_script", params_check_script)
