@@ -331,6 +331,10 @@ def run(
         data_structures: Dict, Path or a List of Dicts or Paths with the data structures.
 
         datapoints: Dict, Path, S3 URI or List of S3 URIs or Paths with data. \
+        Supports plain CSV files and SDMX files (.xml for SDMX-ML, .json for SDMX-JSON, \
+        and .csv for SDMX-CSV with embedded structure). SDMX files are automatically \
+        detected by extension and loaded using pysdmx. For SDMX files requiring \
+        external structure files, use the :obj:`run_sdmx` function instead. \
         You can also use a custom name for the dataset by passing a dictionary with \
         the dataset name as key and the Path, S3 URI or DataFrame as value. \
         Check the following example: \
