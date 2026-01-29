@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from vtlengine import AST
 from vtlengine.AST.ASTTemplate import ASTTemplate
@@ -204,6 +204,192 @@ class SQLTranspiler(ASTTemplate):
             name="__intermediate__", components=result_components, data=None, persistent=False
         )
 
+    # =========================================================================
+    # Unified JOIN Optimization
+    # =========================================================================
+
+    def _collect_base_datasets(self, node: AST.AST) -> Set[str]:
+        """
+        Collect all base dataset names referenced in an expression.
+        Returns set of dataset names (not scalars/constants).
+        """
+        if isinstance(node, AST.VarID):
+            if node.value in self.all_datasets:
+                return {node.value}
+            return set()
+
+        if isinstance(node, AST.Constant):
+            return set()
+
+        if isinstance(node, AST.BinOp):
+            left = self._collect_base_datasets(node.left)
+            right = self._collect_base_datasets(node.right)
+            return left | right
+
+        if isinstance(node, AST.UnaryOp):
+            return self._collect_base_datasets(node.operand)
+
+        if isinstance(node, AST.ParFunction):
+            return self._collect_base_datasets(node.operand)
+
+        if isinstance(node, AST.ParamOp) and node.children:
+            return self._collect_base_datasets(node.children[0])
+
+        return set()
+
+    def _build_unified_from(self, dataset_names: Set[str]) -> Tuple[str, Dict[str, str], Dataset]:
+        """
+        Build a single FROM clause joining all datasets.
+
+        Returns:
+            - from_sql: The FROM clause with JOINs
+            - alias_map: Dict mapping dataset_name -> alias (op_0, op_1, op_2, ...)
+            - result_structure: The result Dataset structure
+        """
+        names_sorted = sorted(dataset_names)
+        datasets = [self.all_datasets[name] for name in names_sorted]
+        alias_map = {name: f"op_{i}" for i, name in enumerate(names_sorted)}
+
+        if len(datasets) == 1:
+            name = names_sorted[0]
+            alias = alias_map[name]
+            return f'"{name}" AS {alias}', alias_map, datasets[0]
+
+        # Find common identifiers across ALL datasets
+        all_ids = [set(ds.get_identifiers_names()) for ds in datasets]
+        common_ids = all_ids[0]
+        for ids in all_ids[1:]:
+            common_ids = common_ids & ids
+
+        if not common_ids:
+            raise ValueError("No common identifiers across all datasets")
+
+        common_ids_sorted = sorted(common_ids)
+        using_clause = ", ".join(f'"{id_}"' for id_ in common_ids_sorted)
+
+        # Build FROM with chained JOINs
+        first_name = names_sorted[0]
+        first_alias = alias_map[first_name]
+        from_parts = [f'"{first_name}" AS {first_alias}']
+
+        for name in names_sorted[1:]:
+            alias = alias_map[name]
+            from_parts.append(f'INNER JOIN "{name}" AS {alias} USING ({using_clause})')
+
+        from_sql = "\n".join(from_parts)
+
+        # Compute result structure (use dataset with most identifiers)
+        base_ds = max(datasets, key=lambda ds: len(ds.get_identifiers_names()))
+
+        # Common measures across all datasets
+        all_measures = [set(ds.get_measures_names()) for ds in datasets]
+        common_measures = all_measures[0]
+        for measures in all_measures[1:]:
+            common_measures = common_measures & measures
+
+        # Build result components
+        result_components: Dict[str, Component] = {}
+        for comp in base_ds.get_identifiers():
+            result_components[comp.name] = comp.copy()
+        for measure_name in common_measures:
+            comp = base_ds.get_component(measure_name)
+            result_components[measure_name] = comp.copy()
+
+        result_ds = Dataset(
+            name="__unified__", components=result_components, data=None, persistent=False
+        )
+
+        return from_sql, alias_map, result_ds
+
+    def _build_measure_expression(
+        self, node: AST.AST, alias_map: Dict[str, str], measure_name: str
+    ) -> str:
+        """
+        Build SQL expression for a single measure across the unified JOIN.
+
+        Instead of generating subqueries, builds arithmetic expression
+        using aliases: (a."Me_1" + b."Me_1") * (a."Me_1" - b."Me_1")
+        """
+        if isinstance(node, AST.VarID):
+            name = node.value
+            if name in alias_map:
+                # Dataset reference -> alias.measure
+                return f'{alias_map[name]}."{measure_name}"'
+            elif name in self.all_scalars:
+                # Scalar
+                scalar = self.all_scalars[name]
+                if scalar.value is not None:
+                    return _sql_literal(scalar.value, scalar.data_type.__name__)
+                return f"${name}"
+            return f'"{name}"'
+
+        if isinstance(node, AST.Constant):
+            return _sql_literal(node.value, node.type_)
+
+        if isinstance(node, AST.BinOp):
+            left_sql = self._build_measure_expression(node.left, alias_map, measure_name)
+            right_sql = self._build_measure_expression(node.right, alias_map, measure_name)
+            sql_op = get_sql_op(node.op)
+            return f"({left_sql} {sql_op} {right_sql})"
+
+        if isinstance(node, AST.UnaryOp):
+            operand_sql = self._build_measure_expression(node.operand, alias_map, measure_name)
+            op = node.op.lower() if isinstance(node.op, str) else str(node.op)
+            sql_op = get_sql_op(op)
+
+            if op in ("+", "-"):
+                return f"({sql_op}{operand_sql})"
+            elif op == "not":
+                return f"(NOT {operand_sql})"
+            else:
+                return f"{sql_op}({operand_sql})"
+
+        if isinstance(node, AST.ParFunction):
+            return self._build_measure_expression(node.operand, alias_map, measure_name)
+
+        if isinstance(node, AST.ParamOp) and node.children:
+            operand_sql = self._build_measure_expression(node.children[0], alias_map, measure_name)
+            op = node.op.lower() if isinstance(node.op, str) else str(node.op)
+            sql_op = get_sql_op(op)
+            params = [self.visit(p) for p in node.params] if node.params else []
+            all_args = [operand_sql] + params
+            return f"{sql_op}({', '.join(all_args)})"
+
+        return "NULL"
+
+    def _generate_unified_query(self, node: AST.AST) -> str:
+        """
+        Generate optimized SQL using a single unified JOIN.
+
+        This is the main optimization: instead of nested subqueries,
+        we do ONE join of all base datasets and compute expressions in SELECT.
+        """
+        # 1. Collect all base datasets
+        base_datasets = self._collect_base_datasets(node)
+
+        if not base_datasets:
+            # Pure scalar expression
+            return self.visit(node)
+
+        # 2. Build unified FROM clause
+        from_sql, alias_map, result_ds = self._build_unified_from(base_datasets)
+
+        # 3. Build SELECT clause
+        # Get identifiers from result structure - use first alias for qualification
+        first_alias = alias_map[sorted(base_datasets)[0]]
+        id_select = ", ".join(f'{first_alias}."{id_}"' for id_ in result_ds.get_identifiers_names())
+
+        # Build measure expressions
+        measure_exprs = []
+        for measure_name in result_ds.get_measures_names():
+            expr = self._build_measure_expression(node, alias_map, measure_name)
+            measure_exprs.append(f'{expr} AS "{measure_name}"')
+
+        measure_select = ", ".join(measure_exprs)
+        select_clause = f"{id_select}, {measure_select}" if measure_exprs else id_select
+
+        return f"SELECT {select_clause}\nFROM {from_sql}"
+
     def visit_Start(self, node: AST.Start) -> Dict[str, str]:
         """Visit the start node of the AST."""
         queries: Dict[str, str] = {}
@@ -225,22 +411,38 @@ class SQLTranspiler(ASTTemplate):
         return queries
 
     def visit_Assignment(self, node: AST.Assignment) -> str:
-        """Visit an assignment node."""
-        result_sql = self.visit(node.right)
-        # If the result is a scalar expression (not a SELECT), wrap it
+        """Visit an assignment node - uses unified JOIN optimization."""
         result_name = node.left.value
+
+        # Scalar output
         if result_name in self.output_scalars:
+            result_sql = self.visit(node.right)
             return f"SELECT {result_sql} AS value"
-        return result_sql
+
+        # Dataset output - use unified JOIN optimization
+        operand_type = self._get_operand_type(node.right)
+        if operand_type == OperandType.DATASET:
+            return self._generate_unified_query(node.right)
+
+        # Fallback for non-dataset expressions
+        return self.visit(node.right)
 
     def visit_PersistentAssignment(self, node: AST.PersistentAssignment) -> str:
-        """Visit a persistent assignment node."""
-        result_sql = self.visit(node.right)
-        # If the result is a scalar expression (not a SELECT), wrap it
+        """Visit a persistent assignment node - uses unified JOIN optimization."""
         result_name = node.left.value
+
+        # Scalar output
         if result_name in self.output_scalars:
+            result_sql = self.visit(node.right)
             return f"SELECT {result_sql} AS value"
-        return result_sql
+
+        # Dataset output - use unified JOIN optimization
+        operand_type = self._get_operand_type(node.right)
+        if operand_type == OperandType.DATASET:
+            return self._generate_unified_query(node.right)
+
+        # Fallback for non-dataset expressions
+        return self.visit(node.right)
 
     def visit_VarID(self, node: AST.VarID) -> str:
         """Process a variable identifier."""
