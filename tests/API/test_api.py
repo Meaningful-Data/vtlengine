@@ -57,6 +57,33 @@ filepath_sdmx_input = base_path / "data" / "SDMX" / "input"
 filepath_sdmx_output = base_path / "data" / "SDMX" / "output"
 
 
+# Test for SDMX file loading via run() function
+def test_load_sdmx_ml_file_via_run():
+    """Test loading SDMX-ML file directly via run() datapoints parameter."""
+    script = "DS_r <- BIS_DER;"
+    data_file = filepath_sdmx_input / "str_all_minimal.xml"
+    structure_file = filepath_sdmx_input / "metadata_minimal.xml"
+
+    # Load via pysdmx to get the structure for comparison
+    pandas_datasets = get_datasets(data=data_file, structure=structure_file)
+
+    # Create data structure from the schema
+    schema = pandas_datasets[0].structure
+    data_structure = to_vtl_json(schema, "BIS_DER")
+
+    # Run with SDMX file as datapoint
+    result = run(
+        script=script,
+        data_structures=data_structure,
+        datapoints={"BIS_DER": data_file},
+        return_only_persistent=False,
+    )
+
+    assert "BIS_DER" in result
+    assert result["BIS_DER"].data is not None
+    assert len(result["BIS_DER"].data) > 0
+
+
 class SDMXTestsOutput(TestHelper):
     filepath_out_json = base_path / "data" / "DataStructure" / "output"
     filepath_out_csv = base_path / "data" / "DataSet" / "output"

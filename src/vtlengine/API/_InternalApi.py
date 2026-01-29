@@ -2,10 +2,12 @@ import gc
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Tuple, Union
+from typing import Any, Dict, List, Literal, Optional, Sequence, Tuple, Union, cast
 
 import jsonschema
 import pandas as pd
+from pysdmx.io import get_datasets as sdmx_get_datasets
+from pysdmx.io.pd import PandasDataset
 from pysdmx.model.dataflow import Component as SDMXComponent
 from pysdmx.model.dataflow import DataStructureDefinition, Schema
 from pysdmx.model.dataflow import Role as SDMX_Role
@@ -58,6 +60,9 @@ with open(schema_path / "value_domain_schema.json", "r") as file:
     vd_schema = json.load(file)
 with open(schema_path / "external_routines_schema.json", "r") as file:
     external_routine_schema = json.load(file)
+
+# SDMX file extensions that are always SDMX format
+SDMX_EXTENSIONS = {".xml", ".json"}
 
 
 def _extract_data_type(component: Dict[str, Any]) -> Tuple[str, Any]:
@@ -160,6 +165,70 @@ def _load_dataset_from_structure(
             )
             scalars[scalar_name] = scalar
     return datasets, scalars
+
+
+def _is_sdmx_file(file_path: Path) -> bool:
+    """Check if a file is an SDMX file based on extension."""
+    return file_path.suffix.lower() in SDMX_EXTENSIONS
+
+
+def _load_sdmx_file(file_path: Path, explicit_name: Optional[str] = None) -> Dict[str, Dataset]:
+    """
+    Load SDMX file and return dict of vtlengine Datasets.
+
+    Args:
+        file_path: Path to the SDMX file (.xml, .json, or .csv with SDMX structure)
+        explicit_name: If provided, use this name instead of URN-derived name.
+                      Only valid when file contains exactly one dataset.
+
+    Returns:
+        Dict mapping dataset names to vtlengine Dataset objects with data loaded.
+
+    Raises:
+        DataLoadError: If the file cannot be parsed as SDMX or contains no datasets.
+    """
+    # Import here to avoid circular import (pysdmx.toolkit.vtl imports from vtlengine.API)
+    from pysdmx.toolkit.vtl import convert_dataset_to_vtl
+
+    try:
+        # sdmx_get_datasets returns List[Dataset] but actual runtime type is List[PandasDataset]
+        pandas_datasets = cast(Sequence[PandasDataset], sdmx_get_datasets(data=file_path))
+    except Exception as e:
+        raise DataLoadError(
+            code="0-3-1-8",
+            file=str(file_path),
+            error=str(e),
+        )
+
+    if not pandas_datasets:
+        raise DataLoadError(
+            code="0-3-1-9",
+            file=str(file_path),
+        )
+
+    result: Dict[str, Dataset] = {}
+
+    # If explicit name provided, only valid for single dataset files
+    if explicit_name is not None and len(pandas_datasets) > 1:
+        raise InputValidationException(
+            f"Cannot use explicit name '{explicit_name}' for SDMX file '{file_path}' "
+            f"containing {len(pandas_datasets)} datasets. "
+            "Use run_sdmx() with VtlDataflowMapping for multi-dataset files with explicit names."
+        )
+
+    for pd_dataset in pandas_datasets:
+        # Get dataset name from structure URN or use explicit name
+        if explicit_name is not None:
+            vtl_name = explicit_name
+        else:
+            structure = pd_dataset.structure
+            vtl_name = structure if isinstance(structure, str) else structure.short_urn
+
+        # Convert to vtlengine Dataset
+        vtl_dataset = convert_dataset_to_vtl(pd_dataset, vtl_name)
+        result[vtl_name] = vtl_dataset
+
+    return result
 
 
 def _generate_single_path_dict(
