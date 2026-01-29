@@ -197,8 +197,9 @@ Using pysdmx objects directly:
 
 .. code-block:: python
 
-    from pysdmx.io import get_structure
     from pathlib import Path
+
+    from pysdmx.io import read_sdmx
 
     from vtlengine import semantic_analysis
 
@@ -207,9 +208,10 @@ Using pysdmx objects directly:
     """
 
     # Load structure using pysdmx
-    schema = get_structure(Path("path/to/structure.xml"))
+    msg = read_sdmx(Path("path/to/structure.xml"))
+    dsd = msg.structures[0]  # Get the first DataStructureDefinition
 
-    sa_result = semantic_analysis(script=script, data_structures=schema)
+    sa_result = semantic_analysis(script=script, data_structures=dsd)
 
     print(sa_result)
 
@@ -340,8 +342,11 @@ If no mapping is provided, the VTL script must have a single input, and the data
 
 .. code-block:: python
 
+    from pathlib import Path
+
     from pysdmx.io import get_datasets
     from pysdmx.model.vtl import TransformationScheme, Transformation
+
     from vtlengine import run_sdmx
 
     data = Path("Docs/_static/data.xml")
@@ -382,13 +387,16 @@ If no mapping is provided, the VTL script must have a single input, and the data
 
 
 
-Finally, mapping information can be used to link an SDMX input dataset to a VTL input dataset via the `VTLDataflowMapping` object from `pysdmx` or a dictionary.
+Finally, mapping information can be used to link an SDMX input dataset to a VTL input dataset via the `VtlDataflowMapping` object from `pysdmx` or a dictionary.
 
 .. code-block:: python
 
+    from pathlib import Path
+
     from pysdmx.io import get_datasets
     from pysdmx.model.vtl import TransformationScheme, Transformation
-    from pysdmx.model.vtl import VTLDataflowMapping
+    from pysdmx.model.vtl import VtlDataflowMapping
+
     from vtlengine import run_sdmx
 
     data = Path("Docs/_static/data.xml")
@@ -413,7 +421,7 @@ Finally, mapping information can be used to link an SDMX input dataset to a VTL 
             ),
         ],
     )
-    # Mapping using VTLDataflowMapping object:
+    # Mapping using VtlDataflowMapping object:
     mapping = VtlDataflowMapping(
             dataflow="urn:sdmx:org.sdmx.infomodel.datastructure.Dataflow=MD:TEST_DF(1.0)",
             dataflow_alias="DS_1",
@@ -424,7 +432,7 @@ Finally, mapping information can be used to link an SDMX input dataset to a VTL 
     mapping = {
     "Dataflow=MD:TEST_DF(1.0)": "DS_1"
     }
-    run_sdmx(script, datasets, mapping=mapping)
+    run_sdmx(script, datasets, mappings=mapping)
 
 
 
@@ -456,6 +464,10 @@ Supported SDMX formats for **datapoints**:
 SDMX files are automatically detected by their extension. For CSV files, the engine first attempts to parse
 as SDMX-CSV, then falls back to plain CSV if SDMX parsing fails.
 
+When using SDMX files, the dataset name in the structure file (from the DataStructureDefinition ID) may differ
+from the name in the data file (from the Dataflow reference). Use the ``sdmx_mappings`` parameter to map
+the data file's URN to the VTL dataset name used in your script:
+
 .. code-block:: python
 
     from pathlib import Path
@@ -466,17 +478,19 @@ as SDMX-CSV, then falls back to plain CSV if SDMX parsing fails.
     structure_file = Path("path/to/structure.xml")  # SDMX-ML structure
     data_file = Path("path/to/data.xml")            # SDMX-ML data
 
-    script = "DS_r <- DS_1 [calc Me_2 := OBS_VALUE * 2];"
+    # Map the data file's Dataflow URN to the structure's DSD name
+    mapping = {"Dataflow=AGENCY:DATAFLOW_ID(1.0)": "DSD_NAME"}
 
-    # Dataset name is extracted from SDMX URN structure
+    script = "DS_r <- DSD_NAME [calc Me_2 := OBS_VALUE * 2];"
+
     result = run(
         script=script,
         data_structures=structure_file,
-        datapoints=data_file
+        datapoints=data_file,
+        sdmx_mappings=mapping
     )
 
-When using SDMX files, dataset names are extracted from the SDMX URN structure. You can also provide
-explicit mappings using the ``sdmx_mappings`` parameter:
+You can also use ``sdmx_mappings`` to give datasets custom names in your VTL script:
 
 .. code-block:: python
 
