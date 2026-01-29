@@ -573,3 +573,69 @@ def test_sdmx_csv_file_exists(csv_file, description):
     if not csv_file.exists():
         pytest.skip(f"{description} test file not available")
     assert csv_file.exists()
+
+
+# =============================================================================
+# Integration tests for mixed SDMX inputs
+# =============================================================================
+
+
+def test_run_sdmx_structure_with_sdmx_datapoints(sdmx_data_file, sdmx_structure_file):
+    """Test run() with both SDMX structure and SDMX datapoints."""
+    script = "DS_r <- BIS_DER;"
+    result = run(
+        script=script,
+        data_structures=sdmx_structure_file,
+        datapoints={"BIS_DER": sdmx_data_file},
+        return_only_persistent=False,
+    )
+
+    assert "DS_r" in result
+    assert result["DS_r"].data is not None
+
+
+def test_run_schema_with_csv_datapoints(sdmx_data_file, sdmx_structure_file):
+    """Test run() with pysdmx Schema and plain CSV datapoints."""
+    from pysdmx.io import get_datasets as pysdmx_get_datasets
+
+    pandas_datasets = pysdmx_get_datasets(sdmx_data_file, sdmx_structure_file)
+    schema = pandas_datasets[0].structure
+
+    # Create CSV with same structure
+    csv_content = "FREQ,DER_TYPE,DER_INSTR,DER_RISK,DER_REP_CTY,TIME_PERIOD,OBS_VALUE\n"
+    csv_content += "A,T,F,D,5J,2020-Q1,100\n"
+
+    with tempfile.NamedTemporaryFile(suffix=".csv", delete=False, mode="w") as f:
+        f.write(csv_content)
+        csv_path = Path(f.name)
+
+    try:
+        script = "DS_r <- BIS_DER;"
+        result = run(
+            script=script,
+            data_structures=schema,
+            datapoints={"BIS_DER": csv_path},
+            return_only_persistent=False,
+        )
+
+        assert "DS_r" in result
+        assert result["DS_r"].data is not None
+    finally:
+        csv_path.unlink()
+
+
+def test_run_sdmx_structure_error_invalid_file(sdmx_data_file):
+    """Test error handling for invalid SDMX structure file."""
+    with tempfile.NamedTemporaryFile(suffix=".xml", delete=False, mode="w") as f:
+        f.write("<invalid>not sdmx structure</invalid>")
+        invalid_structure = Path(f.name)
+
+    try:
+        with pytest.raises(DataLoadError, match="0-3-1-11"):
+            run(
+                script="DS_r <- TEST;",
+                data_structures=invalid_structure,
+                datapoints={"TEST": sdmx_data_file},
+            )
+    finally:
+        invalid_structure.unlink()
