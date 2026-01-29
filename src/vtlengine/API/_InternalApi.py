@@ -67,6 +67,11 @@ with open(schema_path / "external_routines_schema.json", "r") as file:
 # Note: .csv files are handled separately with SDMX-CSV detection and fallback.
 SDMX_DATAPOINT_EXTENSIONS = {".xml", ".json"}
 
+# File extensions that indicate SDMX structure files for data_structures parameter.
+# .xml → SDMX-ML structure (strict: raises error if parsing fails)
+# .json → SDMX-JSON structure (permissive: falls back to VTL JSON if parsing fails)
+SDMX_STRUCTURE_EXTENSIONS = {".xml", ".json"}
+
 
 def _extract_data_type(component: Dict[str, Any]) -> Tuple[str, Any]:
     """
@@ -173,6 +178,51 @@ def _load_dataset_from_structure(
 def _is_sdmx_datapoint_file(file_path: Path) -> bool:
     """Check if a file should be treated as SDMX when loading datapoints."""
     return file_path.suffix.lower() in SDMX_DATAPOINT_EXTENSIONS
+
+
+def _is_sdmx_structure_file(file_path: Path) -> bool:
+    """Check if a file should be treated as SDMX structure file."""
+    return file_path.suffix.lower() in SDMX_STRUCTURE_EXTENSIONS
+
+
+def _load_sdmx_structure_file(file_path: Path) -> Dict[str, Any]:
+    """
+    Load SDMX structure file and convert to VTL JSON format.
+
+    Args:
+        file_path: Path to SDMX structure file (.xml)
+
+    Returns:
+        VTL JSON data structure dict with 'datasets' key.
+
+    Raises:
+        DataLoadError: If file cannot be parsed or contains no structures.
+    """
+    from pysdmx.io import read_sdmx
+
+    try:
+        msg = read_sdmx(file_path)
+    except Exception as e:
+        raise DataLoadError(code="0-3-1-11", file=str(file_path), error=str(e))
+
+    # Extract DataStructureDefinitions from the message
+    # In pysdmx, msg.structures returns a list of DataStructureDefinition objects directly
+    structures = msg.structures if hasattr(msg, "structures") else None
+    if structures is None or not structures:
+        raise DataLoadError(code="0-3-1-12", file=str(file_path))
+
+    # Filter to only include DataStructureDefinition objects
+    dsds = [s for s in structures if isinstance(s, DataStructureDefinition)]
+    if not dsds:
+        raise DataLoadError(code="0-3-1-12", file=str(file_path))
+
+    # Convert each DSD to VTL JSON and merge
+    all_datasets: List[Dict[str, Any]] = []
+    for dsd in dsds:
+        vtl_structure = to_vtl_json(dsd, dataset_name=dsd.id)
+        all_datasets.extend(vtl_structure["datasets"])
+
+    return {"datasets": all_datasets}
 
 
 def _load_sdmx_file(
@@ -396,7 +446,9 @@ def _load_datapoints_path(
             else:
                 # CSV or S3 path
                 single_result = _load_single_datapoint(datapoint)
-                _add_loaded_datapoint(single_result, csv_paths, sdmx_dfs, explicit_name=dataset_name)
+                _add_loaded_datapoint(
+                    single_result, csv_paths, sdmx_dfs, explicit_name=dataset_name
+                )
         return csv_paths, sdmx_dfs
 
     if isinstance(datapoints, list):
@@ -429,20 +481,31 @@ def _load_datastructure_single(
         datasets: Dict[str, Dataset] = {}
         scalars: Dict[str, Scalar] = {}
         for f in data_structure.iterdir():
-            if f.suffix != ".json":
+            if f.suffix not in (".json", ".xml"):
                 continue
             ds, sc = _load_datastructure_single(f)
             datasets = {**datasets, **ds}
             scalars = {**scalars, **sc}
         return datasets, scalars
     else:
-        if data_structure.suffix != ".json":
-            raise InputValidationException(
-                code="0-1-1-3", expected_ext=".json", ext=data_structure.suffix
-            )
-        with open(data_structure, "r") as file:
-            structures = json.load(file)
-    return _load_dataset_from_structure(structures)
+        suffix = data_structure.suffix.lower()
+        # Handle SDMX-ML structure files (.xml) - strict, must be SDMX
+        if suffix == ".xml":
+            vtl_json = _load_sdmx_structure_file(data_structure)
+            return _load_dataset_from_structure(vtl_json)
+        # Handle .json files - try SDMX-JSON first, fall back to VTL JSON
+        if suffix == ".json":
+            try:
+                vtl_json = _load_sdmx_structure_file(data_structure)
+                return _load_dataset_from_structure(vtl_json)
+            except DataLoadError:
+                # Not SDMX-JSON, try as VTL JSON
+                pass
+            with open(data_structure, "r") as file:
+                structures = json.load(file)
+            return _load_dataset_from_structure(structures)
+        # Unsupported extension
+        raise InputValidationException(code="0-1-1-3", expected_ext=".json or .xml", ext=suffix)
 
 
 def load_datasets(
