@@ -191,6 +191,14 @@ centralised_messages = {
         "description": "Raised when an SDMX file lacks embedded structure and needs an external "
         "structure file. Use run_sdmx() instead of run() for these files.",
     },
+    "0-3-1-11": {
+        "message": "Failed to load SDMX structure file '{file}': {error}",
+        "description": "Raised when an SDMX structure file cannot be parsed by pysdmx.",
+    },
+    "0-3-1-12": {
+        "message": "No data structures found in SDMX structure file '{file}'",
+        "description": "Raised when an SDMX structure file contains no DataStructureDefinitions.",
+    },
     # ------------Operators-------------
     # General Semantic errors
     "1-1-1-1": {
