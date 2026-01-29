@@ -695,9 +695,9 @@ def load_datasets_with_data(
         )
 
     # Handling Individual, List or Dict of Paths or S3 URIs
-    # NOTE: Adding type: ignore[arg-type] due to mypy issue with Union types
+    # At this point, datapoints is narrowed to exclude None and Dict[str, DataFrame]
     csv_paths, sdmx_dataframes = _load_datapoints_path(
-        datapoints,  # type: ignore[arg-type]
+        cast(Union[Dict[str, Union[str, Path]], List[Union[str, Path]], str, Path], datapoints),
         sdmx_mappings=sdmx_mappings,
     )
 
