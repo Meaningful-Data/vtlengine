@@ -44,6 +44,8 @@ class SQLTranspiler(ASTTemplate):
     def visit_Start(self, node: AST.Start) -> List[Any]:
         """Visit start node - process each assignment."""
         for child, query in zip(node.children, self._queries):
+            input_ds = [name for name in query.inputs if name in self.datasets]
+            self.alias_map = {name: f"op_{i}" for i, name in enumerate(input_ds)}
             self._current_query = query
             query.sql = self.visit(child)
             # Register output for subsequent queries
@@ -153,9 +155,10 @@ class SQLTranspiler(ASTTemplate):
 
         # Get base source(s) - could be VarID, BinOp, or other expression
         base_node = current
-        base_source, alias, column_mapping = self._resolve_base_source(base_node, structure)
+        base_source, column_mapping = self._resolve_base_source(base_node, current)
 
         # Create clause context
+        alias = self.alias_map[current.value]
         self._clause_context = ClauseContext(
             base_source=base_source, alias=alias, column_mapping=column_mapping
         )
@@ -169,30 +172,22 @@ class SQLTranspiler(ASTTemplate):
         self._clause_context = None
         return sql
 
-    def _resolve_base_source(
-        self, node: AST.AST, structure: Dataset
-    ) -> Tuple[str, str, Dict[str, str]]:
+    def _resolve_base_source(self, node: AST.AST, structure: Dataset) -> Tuple[str, Dict[str, str]]:
         """Resolve base source for clause operations. Returns (source, alias, column_mapping)."""
+        alias = self.alias_map[structure.value]
+        components = self.datasets[structure.value].get_components_names()
+        column_mapping = {comp: f'{alias}."{comp}"' for comp in components}
         if isinstance(node, AST.VarID):
             # Simple dataset reference
             name = node.value
-            alias = "t0"
-            column_mapping = {
-                comp: f'{alias}."{comp}"' for comp in self.datasets[name].get_components_names()
-            }
-            return f'"{name}"', alias, column_mapping
+            return f'"{name}"', column_mapping
 
         if isinstance(node, AST.BinOp):
             # Binary operation on datasets - generate subquery
             subquery = self._generate_dataset_query(node, structure)
-            alias = "t0"
-            column_mapping = {
-                comp: f'{alias}."{comp}"' for comp in structure.get_components_names()
-            }
-            return f"({subquery})", alias, column_mapping
+            return f"({subquery})", column_mapping
 
-        # Fallback - shouldn't normally happen
-        return self.visit(node), "t0", {}
+        return self.visit(node), {}
 
     def _process_clause(self, clause: AST.RegularAggregation) -> None:
         """Process a single clause and update the clause context."""
@@ -290,14 +285,13 @@ class SQLTranspiler(ASTTemplate):
             return self.visit(node)
 
         # Build unified FROM clause with JOINs
-        from_sql, alias_map = self._build_from_clause(base_datasets)
+        from_sql = self._build_from_clause(base_datasets)
 
         # Build SELECT clause
-        first_alias = alias_map[sorted(base_datasets)[0]]
+        first_alias = self.alias_map[sorted(base_datasets)[0]]
         id_cols = [f'{first_alias}."{id_}"' for id_ in structure.get_identifiers_names()]
         measure_exprs = [
-            f'{self._build_expression(node, alias_map, m)} AS "{m}"'
-            for m in structure.get_measures_names()
+            f'{self._build_expression(node, m)} AS "{m}"' for m in structure.get_measures_names()
         ]
 
         select = ", ".join(id_cols + measure_exprs)
@@ -319,14 +313,12 @@ class SQLTranspiler(ASTTemplate):
             return self._collect_datasets(node.children[0])
         return set()
 
-    def _build_from_clause(self, dataset_names: Set[str]) -> Tuple[str, Dict[str, str]]:
+    def _build_from_clause(self, dataset_names: Set[str]) -> str:
         """Build FROM clause with JOINs for multiple datasets."""
         names = sorted(dataset_names)
-        alias_map = {name: f"op_{i}" for i, name in enumerate(names)}
-
         if len(names) == 1:
             name = names[0]
-            return f'"{name}" AS {alias_map[name]}', alias_map
+            return f'"{name}" AS {self.alias_map[name]}'
 
         # Find common identifiers for USING clause
         datasets = [self.datasets[n] for n in names]
@@ -340,18 +332,18 @@ class SQLTranspiler(ASTTemplate):
         using = ", ".join(f'"{id_}"' for id_ in sorted(common_ids))
 
         # Build chained JOINs
-        parts = [f'"{names[0]}" AS {alias_map[names[0]]}']
+        parts = [f'"{names[0]}" AS {self.alias_map[names[0]]}']
         for name in names[1:]:
-            parts.append(f'INNER JOIN "{name}" AS {alias_map[name]} USING ({using})')
+            parts.append(f'INNER JOIN "{name}" AS {self.alias_map[name]} USING ({using})')
 
-        return "\n".join(parts), alias_map
+        return "\n".join(parts)
 
-    def _build_expression(self, node: AST.AST, alias_map: Dict[str, str], measure: str) -> str:
+    def _build_expression(self, node: AST.AST, measure: str) -> str:
         """Build SQL expression for a measure in the unified JOIN context."""
         if isinstance(node, AST.VarID):
             name = node.value
-            if name in alias_map:
-                return f'{alias_map[name]}."{measure}"'
+            if name in self.alias_map:
+                return f'{self.alias_map[name]}."{measure}"'
             if name in self.scalars:
                 scalar = self.scalars[name]
                 if scalar.value is not None:
@@ -363,12 +355,12 @@ class SQLTranspiler(ASTTemplate):
             return sql_literal(node.value, node.type_)
 
         if isinstance(node, AST.BinOp):
-            left = self._build_expression(node.left, alias_map, measure)
-            right = self._build_expression(node.right, alias_map, measure)
+            left = self._build_expression(node.left, measure)
+            right = self._build_expression(node.right, measure)
             return f"({left} {get_sql_op(node.op)} {right})"
 
         if isinstance(node, AST.UnaryOp):
-            operand = self._build_expression(node.operand, alias_map, measure)
+            operand = self._build_expression(node.operand, measure)
             op = node.op.lower() if isinstance(node.op, str) else str(node.op)
             sql_op = get_sql_op(op)
             if op in ("+", "-"):
@@ -380,10 +372,10 @@ class SQLTranspiler(ASTTemplate):
             return f"{sql_op}({operand})"
 
         if isinstance(node, AST.ParFunction):
-            return self._build_expression(node.operand, alias_map, measure)
+            return self._build_expression(node.operand, measure)
 
         if isinstance(node, AST.ParamOp) and node.children:
-            operand = self._build_expression(node.children[0], alias_map, measure)
+            operand = self._build_expression(node.children[0], measure)
             params = [self.visit(p) for p in node.params] if node.params else []
             sql_op = get_sql_op(node.op.lower() if isinstance(node.op, str) else str(node.op))
             return f"{sql_op}({', '.join([operand] + params)})"
