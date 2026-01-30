@@ -44,8 +44,8 @@ class SQLTranspiler(ASTTemplate):
     def visit_Start(self, node: AST.Start) -> List[Any]:
         """Visit start node - process each assignment."""
         for child, query in zip(node.children, self._queries):
-            input_ds = [name for name in query.inputs if name in self.datasets]
-            self.alias_map = {name: f"op_{i}" for i, name in enumerate(input_ds)}
+            self.input_ds = [name for name in query.inputs if name in self.datasets]
+            self.alias_map = {name: f"op_{i}" for i, name in enumerate(self.input_ds)}
             self._current_query = query
             query.sql = self.visit(child)
             # Register output for subsequent queries
@@ -291,18 +291,15 @@ class SQLTranspiler(ASTTemplate):
 
     def _generate_dataset_query(self, node: AST.AST, structure: Dataset) -> str:
         """Generate optimized SQL for dataset expression using unified JOIN."""
-        # Collect all base datasets referenced
-        base_datasets = self._collect_datasets(node)
-
-        if not base_datasets:
+        if not self.input_ds:
             # Pure scalar expression applied to structure
             return self.visit(node)
 
         # Build unified FROM clause with JOINs
-        from_sql = self._build_from_clause(base_datasets)
+        from_sql = self._build_from_clause(self.input_ds)
 
         # Build SELECT clause
-        first_alias = self.alias_map[sorted(base_datasets)[0]]
+        first_alias = self.alias_map[sorted(self.input_ds)[0]]
         id_cols = [f'{first_alias}."{id_}"' for id_ in structure.get_identifiers_names()]
 
         # Handle special operators that produce bool_var from operand's measures
@@ -334,27 +331,6 @@ class SQLTranspiler(ASTTemplate):
 
         select = ", ".join(id_cols + measure_exprs)
         return f"SELECT {select}\nFROM {from_sql}"
-
-    def _collect_datasets(self, node: AST.AST) -> Set[str]:
-        """Collect all dataset names referenced in an expression."""
-        if isinstance(node, AST.VarID):
-            return {node.value} if node.value in self.datasets else set()
-        if isinstance(node, AST.Constant):
-            return set()
-        if isinstance(node, AST.BinOp):
-            return self._collect_datasets(node.left) | self._collect_datasets(node.right)
-        if isinstance(node, AST.UnaryOp):
-            return self._collect_datasets(node.operand)
-        if isinstance(node, AST.ParFunction):
-            return self._collect_datasets(node.operand)
-        if isinstance(node, AST.ParamOp) and node.children:
-            return self._collect_datasets(node.children[0])
-        if isinstance(node, AST.MulOp):
-            result: Set[str] = set()
-            for child in node.children:
-                result |= self._collect_datasets(child)
-            return result
-        return set()
 
     def _build_from_clause(self, dataset_names: Set[str]) -> str:
         """Build FROM clause with JOINs for multiple datasets."""
