@@ -124,6 +124,20 @@ class SQLTranspiler(ASTTemplate):
             return self._clause_context.column_mapping[name]
         return f'"{name}"'
 
+    def visit_MulOp(self, node: AST.MulOp) -> str:
+        """Visit multi-operand operation (between, etc.)."""
+        op = node.op.lower() if isinstance(node.op, str) else str(node.op)
+
+        if op == "between":
+            operand = self.visit(node.children[0])
+            from_val = self.visit(node.children[1])
+            to_val = self.visit(node.children[2])
+            return f"({operand} BETWEEN {from_val} AND {to_val})"
+
+        # Fallback: visit all children
+        children = [self.visit(c) for c in node.children]
+        return f"{op}({', '.join(children)})"
+
     # =========================================================================
     # Query Generation
     # =========================================================================
@@ -290,6 +304,30 @@ class SQLTranspiler(ASTTemplate):
         # Build SELECT clause
         first_alias = self.alias_map[sorted(base_datasets)[0]]
         id_cols = [f'{first_alias}."{id_}"' for id_ in structure.get_identifiers_names()]
+
+        # Handle special operators that produce bool_var from operand's measures
+        if isinstance(node, AST.MulOp) and node.op.lower() == "between":
+            # between produces a single bool_var column from the first operand's measures
+            first_operand = node.children[0]
+            if isinstance(first_operand, AST.VarID) and first_operand.value in self.datasets:
+                source_measures = self.datasets[first_operand.value].get_measures_names()
+                # Build expression for each source measure and combine with AND
+                between_parts = []
+                for m in source_measures:
+                    operand = f'{self.alias_map[first_operand.value]}."{m}"'
+                    from_val = self.visit(node.children[1])
+                    to_val = self.visit(node.children[2])
+                    between_parts.append(f"({operand} BETWEEN {from_val} AND {to_val})")
+                # Single bool_var result - combine all conditions
+                if len(between_parts) == 1:
+                    expr = between_parts[0]
+                else:
+                    expr = f"({' AND '.join(between_parts)})"
+                measure_exprs = [f'{expr} AS "bool_var"']
+                select = ", ".join(id_cols + measure_exprs)
+                return f"SELECT {select}\nFROM {from_sql}"
+
+        # Standard case: build expression for each measure
         measure_exprs = [
             f'{self._build_expression(node, m)} AS "{m}"' for m in structure.get_measures_names()
         ]
@@ -311,6 +349,11 @@ class SQLTranspiler(ASTTemplate):
             return self._collect_datasets(node.operand)
         if isinstance(node, AST.ParamOp) and node.children:
             return self._collect_datasets(node.children[0])
+        if isinstance(node, AST.MulOp):
+            result: Set[str] = set()
+            for child in node.children:
+                result |= self._collect_datasets(child)
+            return result
         return set()
 
     def _build_from_clause(self, dataset_names: Set[str]) -> str:
@@ -379,5 +422,16 @@ class SQLTranspiler(ASTTemplate):
             params = [self.visit(p) for p in node.params] if node.params else []
             sql_op = get_sql_op(node.op.lower() if isinstance(node.op, str) else str(node.op))
             return f"{sql_op}({', '.join([operand] + params)})"
+
+        if isinstance(node, AST.MulOp):
+            op = node.op.lower() if isinstance(node.op, str) else str(node.op)
+            if op == "between" and len(node.children) >= 3:
+                operand = self._build_expression(node.children[0], measure)
+                from_val = self._build_expression(node.children[1], measure)
+                to_val = self._build_expression(node.children[2], measure)
+                return f"({operand} BETWEEN {from_val} AND {to_val})"
+            # Fallback
+            children = [self._build_expression(c, measure) for c in node.children]
+            return f"{op}({', '.join(children)})"
 
         return "NULL"
