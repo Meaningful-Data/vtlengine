@@ -1,12 +1,10 @@
 import warnings
 from csv import DictReader
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Type, Union, cast
+from typing import Any, Dict, List, Optional, Type, Union
 
 import numpy as np
 import pandas as pd
-from pysdmx.io import get_datasets as sdmx_get_datasets
-from pysdmx.io.pd import PandasDataset
 
 from vtlengine.DataTypes import (
     SCALAR_TYPES_CLASS_REVERSE,
@@ -27,6 +25,7 @@ from vtlengine.DataTypes._time_checking import (
 from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING
 from vtlengine.Exceptions import DataLoadError, InputValidationException
 from vtlengine.files.parser._rfc_dialect import register_rfc
+from vtlengine.files.sdmx_handler import is_sdmx_datapoint_file, load_sdmx_datapoints
 from vtlengine.Model import Component, Dataset, Role
 
 TIME_CHECKS_MAPPING: Dict[Type[ScalarType], Any] = {
@@ -34,9 +33,6 @@ TIME_CHECKS_MAPPING: Dict[Type[ScalarType], Any] = {
     TimePeriod: check_time_period,
     TimeInterval: check_time,
 }
-
-# File extensions that trigger SDMX parsing in load_datapoints
-SDMX_DATAPOINT_EXTENSIONS = {".xml"}
 
 
 def _validate_csv_path(components: Dict[str, Component], csv_path: Path) -> None:
@@ -226,57 +222,6 @@ def check_identifiers_duplicity(data: pd.DataFrame, identifiers: List[str], name
         raise DataLoadError("0-3-1-7", name=name, row_index=row_index)
 
 
-def _is_sdmx_datapoint_file(file_path: Path) -> bool:
-    """Check if a file should be loaded as SDMX based on extension."""
-    return file_path.suffix.lower() in SDMX_DATAPOINT_EXTENSIONS
-
-
-def _load_sdmx_datapoints(
-    components: Dict[str, Component],
-    dataset_name: str,
-    file_path: Path,
-) -> pd.DataFrame:
-    """
-    Load SDMX-ML file (.xml) and return DataFrame.
-
-    Uses pysdmx to parse the file and extract data as a DataFrame.
-    The DataFrame is then validated and sanitized like plain CSV data.
-
-    Args:
-        components: Expected components for validation
-        dataset_name: Name of the dataset for error messages
-        file_path: Path to the SDMX file
-
-    Returns:
-        Validated pandas DataFrame
-
-    Raises:
-        DataLoadError: If file cannot be parsed or data is invalid
-    """
-    try:
-        pandas_datasets = cast(Sequence[PandasDataset], sdmx_get_datasets(data=file_path))
-    except Exception as e:
-        raise DataLoadError(
-            "0-3-1-8",
-            file=str(file_path),
-            error=str(e),
-        )
-
-    if not pandas_datasets:
-        raise DataLoadError(
-            "0-3-1-9",
-            file=str(file_path),
-        )
-
-    # Use the first dataset
-    pd_dataset: PandasDataset = pandas_datasets[0]
-    data = pd_dataset.data
-
-    # Sanitize and validate like CSV data
-    data = _sanitize_pandas_columns(components, file_path, data)
-    return data
-
-
 def load_datapoints(
     components: Dict[str, Component],
     dataset_name: str,
@@ -309,8 +254,8 @@ def load_datapoints(
         file_path = Path(csv_path) if isinstance(csv_path, str) else csv_path
 
         # Check if SDMX file by extension
-        if _is_sdmx_datapoint_file(file_path):
-            data = _load_sdmx_datapoints(components, dataset_name, file_path)
+        if is_sdmx_datapoint_file(file_path):
+            data = load_sdmx_datapoints(components, dataset_name, file_path)
         else:
             # CSV file (plain or SDMX-CSV)
             if isinstance(csv_path, Path):
