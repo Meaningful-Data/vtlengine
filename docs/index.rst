@@ -4,8 +4,14 @@ VTL Engine Documentation
 The VTL Engine is a Python library that allows you to validate, format and run VTL scripts.
 It is a Python-based library around the `VTL Language 2.1 <https://sdmx-twg.github.io/vtl/2.1/html/index.html>`_
 
-The vtlengine library is compatible with pysdmx, which is a Python library to handle SDMX data and metadata.
-Check the `pysdmx documentation <https://py.sdmx.io/>`_ for more information.
+The vtlengine library provides full SDMX compatibility:
+
+- **Direct SDMX file loading**: Load SDMX-ML, SDMX-JSON, and SDMX-CSV files directly in the ``run()`` and ``semantic_analysis()`` functions
+- **pysdmx integration**: Work with pysdmx objects (Schema, DataStructureDefinition, Dataflow, PandasDataset)
+- **Automatic format detection**: SDMX files are automatically detected by extension
+- **Flexible mappings**: Map SDMX URNs to VTL dataset names using the ``sdmx_mappings`` parameter
+
+Check the `pysdmx documentation <https://py.sdmx.io/>`_ for more information about working with SDMX data.
 
 Useful links
 ************
@@ -53,6 +59,7 @@ The S3 extra is based on the pandas[aws] extra, which requires to set up some en
 
     walkthrough
     api
+    environment_variables
     error_messages
 
 

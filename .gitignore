@@ -172,6 +172,4 @@ development/
 _build/
 _site/
 docs/error_messages.rst
-
-# dev files
-/src/duckdb_transpiler/Dev/
+docs/plans/

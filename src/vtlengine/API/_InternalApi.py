@@ -2,12 +2,14 @@ import gc
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Tuple, Union
+from typing import Any, Dict, List, Literal, Mapping, Optional, Sequence, Tuple, Union, cast
 
 import jsonschema
 import pandas as pd
+from pysdmx.io import get_datasets as sdmx_get_datasets
+from pysdmx.io.pd import PandasDataset
 from pysdmx.model.dataflow import Component as SDMXComponent
-from pysdmx.model.dataflow import DataStructureDefinition, Schema
+from pysdmx.model.dataflow import Dataflow, DataStructureDefinition, Schema
 from pysdmx.model.dataflow import Role as SDMX_Role
 from pysdmx.model.vtl import (
     Ruleset,
@@ -58,6 +60,17 @@ with open(schema_path / "value_domain_schema.json", "r") as file:
     vd_schema = json.load(file)
 with open(schema_path / "external_routines_schema.json", "r") as file:
     external_routine_schema = json.load(file)
+
+# File extensions that trigger SDMX parsing attempt when loading datapoints.
+# .xml → SDMX-ML (strict: raises error if parsing fails)
+# .json → SDMX-JSON (permissive: falls back to plain file if parsing fails)
+# Note: .csv files are handled separately with SDMX-CSV detection and fallback.
+SDMX_DATAPOINT_EXTENSIONS = {".xml", ".json"}
+
+# File extensions that indicate SDMX structure files for data_structures parameter.
+# .xml → SDMX-ML structure (strict: raises error if parsing fails)
+# .json → SDMX-JSON structure (permissive: falls back to VTL JSON if parsing fails)
+SDMX_STRUCTURE_EXTENSIONS = {".xml", ".json"}
 
 
 def _extract_data_type(component: Dict[str, Any]) -> Tuple[str, Any]:
@@ -162,21 +175,192 @@ def _load_dataset_from_structure(
     return datasets, scalars
 
 
+def _is_sdmx_datapoint_file(file_path: Path) -> bool:
+    """Check if a file should be treated as SDMX when loading datapoints."""
+    return file_path.suffix.lower() in SDMX_DATAPOINT_EXTENSIONS
+
+
+def _is_sdmx_structure_file(file_path: Path) -> bool:
+    """Check if a file should be treated as SDMX structure file."""
+    return file_path.suffix.lower() in SDMX_STRUCTURE_EXTENSIONS
+
+
+def _load_sdmx_structure_file(
+    file_path: Path,
+    sdmx_mappings: Optional[Dict[str, str]] = None,
+) -> Dict[str, Any]:
+    """
+    Load SDMX structure file and convert to VTL JSON format.
+
+    Args:
+        file_path: Path to SDMX structure file (.xml)
+        sdmx_mappings: Optional mapping from SDMX URNs to VTL dataset names.
+
+    Returns:
+        VTL JSON data structure dict with 'datasets' key.
+
+    Raises:
+        DataLoadError: If file cannot be parsed or contains no structures.
+    """
+    from pysdmx.io import read_sdmx
+
+    try:
+        msg = read_sdmx(file_path)
+    except Exception as e:
+        raise DataLoadError(code="0-3-1-11", file=str(file_path), error=str(e))
+
+    # Extract DataStructureDefinitions from the message
+    # In pysdmx, msg.structures returns a list of DataStructureDefinition objects directly
+    structures = msg.structures if hasattr(msg, "structures") else None
+    if structures is None or not structures:
+        raise DataLoadError(code="0-3-1-12", file=str(file_path))
+
+    # Filter to only include DataStructureDefinition objects
+    dsds = [s for s in structures if isinstance(s, DataStructureDefinition)]
+    if not dsds:
+        raise DataLoadError(code="0-3-1-12", file=str(file_path))
+
+    # Convert each DSD to VTL JSON and merge
+    all_datasets: List[Dict[str, Any]] = []
+    for dsd in dsds:
+        # Determine dataset name: use mapping if available, otherwise use DSD ID
+        dataset_name = dsd.id
+        if sdmx_mappings and hasattr(dsd, "short_urn") and dsd.short_urn in sdmx_mappings:
+            dataset_name = sdmx_mappings[dsd.short_urn]
+        vtl_structure = to_vtl_json(dsd, dataset_name=dataset_name)
+        all_datasets.extend(vtl_structure["datasets"])
+
+    return {"datasets": all_datasets}
+
+
+def _load_sdmx_file(
+    file_path: Path,
+    explicit_name: Optional[str] = None,
+    sdmx_mappings: Optional[Dict[str, str]] = None,
+) -> Dict[str, pd.DataFrame]:
+    """
+    Load SDMX file and return dict of DataFrames.
+
+    The user must provide matching data_structures via run(). The structure
+    from the SDMX file is used only for dataset naming (unless explicit_name is given).
+
+    Args:
+        file_path: Path to the SDMX file (.xml, .json, or .csv with SDMX structure)
+        explicit_name: If provided, use this name instead of URN-derived name.
+                      Only valid when file contains exactly one dataset.
+        sdmx_mappings: Optional mapping from SDMX URNs to VTL dataset names.
+
+    Returns:
+        Dict mapping dataset names to pandas DataFrames with the data.
+
+    Raises:
+        DataLoadError: If the file cannot be parsed as SDMX or contains no datasets.
+    """
+    try:
+        # sdmx_get_datasets returns List[Dataset] but actual runtime type is List[PandasDataset]
+        pandas_datasets = cast(Sequence[PandasDataset], sdmx_get_datasets(data=file_path))
+    except Exception as e:
+        raise DataLoadError(
+            code="0-3-1-8",
+            file=str(file_path),
+            error=str(e),
+        )
+
+    if not pandas_datasets:
+        raise DataLoadError(
+            code="0-3-1-9",
+            file=str(file_path),
+        )
+
+    result: Dict[str, pd.DataFrame] = {}
+
+    # If explicit name provided, only valid for single dataset files
+    if explicit_name is not None and len(pandas_datasets) > 1:
+        raise InputValidationException(
+            f"Cannot use explicit name '{explicit_name}' for SDMX file '{file_path}' "
+            f"containing {len(pandas_datasets)} datasets. "
+            "Use run_sdmx() with VtlDataflowMapping for multi-dataset files with explicit names."
+        )
+
+    for pd_dataset in pandas_datasets:
+        # Get dataset name from structure URN or use explicit name
+        if explicit_name is not None:
+            vtl_name = explicit_name
+        else:
+            structure = pd_dataset.structure
+            # Structure can be a string URN or a Schema object
+            if isinstance(structure, str):
+                # Check if mapping exists for this URN
+                if sdmx_mappings and structure in sdmx_mappings:
+                    vtl_name = sdmx_mappings[structure]
+                # Extract short name from URN like "DataStructure=BIS:BIS_DER(1.0)" -> "BIS_DER"
+                elif "=" in structure and ":" in structure:
+                    # Format: DataStructure=AGENCY:ID(VERSION)
+                    parts = structure.split(":")
+                    vtl_name = parts[-1].split("(")[0] if len(parts) >= 2 else structure
+                else:
+                    vtl_name = structure
+            else:
+                # Schema object - check mapping by short_urn first
+                if sdmx_mappings and hasattr(structure, "short_urn"):
+                    if structure.short_urn in sdmx_mappings:
+                        vtl_name = sdmx_mappings[structure.short_urn]
+                    else:
+                        vtl_name = structure.id
+                else:
+                    vtl_name = structure.id
+
+        result[vtl_name] = pd_dataset.data
+
+    return result
+
+
 def _generate_single_path_dict(
     datapoint: Path,
-) -> Dict[str, Path]:
+    sdmx_mappings: Optional[Dict[str, str]] = None,
+) -> Union[Dict[str, Path], Dict[str, pd.DataFrame]]:
     """
-    Generates a dict with one dataset name and its path. The dataset name is extracted
-    from the filename without the .csv extension.
+    Generates a dict with dataset name(s) and path or DataFrame.
+
+    For SDMX files (.xml, .json, .csv): attempts SDMX parsing first.
+    Falls back to plain file handling if SDMX parsing fails.
+
+    Args:
+        datapoint: Path to the datapoint file.
+        sdmx_mappings: Optional mapping from SDMX URNs to VTL dataset names.
     """
+    suffix = datapoint.suffix.lower()
+
+    # Try SDMX parsing for known SDMX extensions and CSV files
+    if suffix in SDMX_DATAPOINT_EXTENSIONS or suffix == ".csv":
+        try:
+            return _load_sdmx_file(datapoint, sdmx_mappings=sdmx_mappings)
+        except DataLoadError:
+            # Not a valid SDMX file - fall through to plain file handling
+            # For .xml files, re-raise since we can't fall back
+            if suffix == ".xml":
+                raise
+            pass
+
+    # Plain file: return path for lazy loading (works for CSV, fails later for others)
+    # Use removesuffix to preserve backward compatibility (e.g., DS_2.json stays DS_2.json)
     dataset_name = datapoint.name.removesuffix(".csv")
-    dict_paths = {dataset_name: datapoint}
-    return dict_paths
+    return {dataset_name: datapoint}
 
 
-def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Union[str, Path]]:
+def _load_single_datapoint(
+    datapoint: Union[str, Path],
+    sdmx_mappings: Optional[Dict[str, str]] = None,
+) -> Dict[str, Union[str, Path, pd.DataFrame]]:
     """
     Returns a dict with the data given from one dataset.
+
+    For SDMX files (.xml, .json), returns DataFrames with data loaded.
+    For CSV files, returns paths for lazy loading.
+
+    Args:
+        datapoint: Path or S3 URI to the datapoint file.
+        sdmx_mappings: Optional mapping from SDMX URNs to VTL dataset names.
     """
     if not isinstance(datapoint, (str, Path)):
         raise InputValidationException(
@@ -199,16 +383,17 @@ def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Union[str, 
     if not datapoint.exists():
         raise DataLoadError(code="0-3-1-1", file=datapoint)
 
-    # Generation of datapoints dictionary with Path objects
-    dict_paths: Dict[str, Path] = {}
+    # Generation of datapoints dictionary
+    dict_results: Dict[str, Union[Path, pd.DataFrame]] = {}
     if datapoint.is_dir():
         for f in datapoint.iterdir():
-            if f.suffix != ".csv":
-                continue
-            dict_paths.update(_generate_single_path_dict(f))
+            # Handle SDMX files (.xml, .json)
+            if _is_sdmx_datapoint_file(f) or f.suffix.lower() == ".csv":
+                dict_results.update(_generate_single_path_dict(f, sdmx_mappings=sdmx_mappings))
+            # Skip other files
     else:
-        dict_paths = _generate_single_path_dict(datapoint)
-    return dict_paths  # type: ignore[return-value]
+        dict_results = _generate_single_path_dict(datapoint, sdmx_mappings=sdmx_mappings)  # type: ignore[assignment]
+    return dict_results  # type: ignore[return-value]
 
 
 def _check_unique_datapoints(
@@ -226,13 +411,49 @@ def _check_unique_datapoints(
             )
 
 
+def _add_loaded_datapoint(
+    loaded: Mapping[str, Union[str, Path, pd.DataFrame]],
+    csv_paths: Dict[str, Union[str, Path]],
+    sdmx_dfs: Dict[str, pd.DataFrame],
+    explicit_name: Optional[str] = None,
+) -> None:
+    """
+    Add loaded datapoint results to the appropriate dictionary.
+
+    Args:
+        loaded: Result from _load_single_datapoint or _load_sdmx_file
+        csv_paths: Dict to accumulate CSV paths
+        sdmx_dfs: Dict to accumulate SDMX DataFrames
+        explicit_name: If provided, use this name for CSV paths (from dict key)
+    """
+    existing_names = list(csv_paths.keys()) + list(sdmx_dfs.keys())
+    for name, value in loaded.items():
+        if isinstance(value, pd.DataFrame):
+            _check_unique_datapoints([name], existing_names)
+            sdmx_dfs[name] = value
+        else:
+            final_name = explicit_name if explicit_name is not None else name
+            _check_unique_datapoints([final_name], existing_names)
+            csv_paths[final_name] = value
+        existing_names.append(name if isinstance(value, pd.DataFrame) else final_name)
+
+
 def _load_datapoints_path(
     datapoints: Union[Dict[str, Union[str, Path]], List[Union[str, Path]], str, Path],
-) -> Dict[str, Union[str, Path]]:
+    sdmx_mappings: Optional[Dict[str, str]] = None,
+) -> Tuple[Dict[str, Union[str, Path]], Dict[str, pd.DataFrame]]:
     """
-    Returns a dict with the data given from a Path.
+    Returns a tuple of:
+    - dict with CSV paths for lazy loading
+    - dict with pre-loaded SDMX DataFrames
+
+    Args:
+        datapoints: Dict, List, or single Path/S3 URI with datapoints.
+        sdmx_mappings: Optional mapping from SDMX URNs to VTL dataset names.
     """
-    dict_datapoints: Dict[str, Union[str, Path]] = {}
+    csv_paths: Dict[str, Union[str, Path]] = {}
+    sdmx_dfs: Dict[str, pd.DataFrame] = {}
+
     if isinstance(datapoints, dict):
         for dataset_name, datapoint in datapoints.items():
             if not isinstance(dataset_name, str):
@@ -247,31 +468,69 @@ def _load_datapoints_path(
                     input=datapoint,
                     message="Datapoints dictionary values must be Paths or S3 URIs.",
                 )
-            single_datapoint = _load_single_datapoint(datapoint)
-            first_datapoint = list(single_datapoint.values())[0]
-            _check_unique_datapoints([dataset_name], list(dict_datapoints.keys()))
-            dict_datapoints[dataset_name] = first_datapoint
-        return dict_datapoints
+
+            # Convert string to Path if not S3
+            if isinstance(datapoint, str) and "s3://" not in datapoint:
+                datapoint = Path(datapoint)
+
+            # SDMX files with explicit name
+            if isinstance(datapoint, Path) and _is_sdmx_datapoint_file(datapoint):
+                if not datapoint.exists():
+                    raise DataLoadError(code="0-3-1-1", file=datapoint)
+                sdmx_result = _load_sdmx_file(
+                    datapoint, explicit_name=dataset_name, sdmx_mappings=sdmx_mappings
+                )
+                _add_loaded_datapoint(sdmx_result, csv_paths, sdmx_dfs)
+            else:
+                # CSV or S3 path
+                single_result = _load_single_datapoint(datapoint, sdmx_mappings=sdmx_mappings)
+                _add_loaded_datapoint(
+                    single_result, csv_paths, sdmx_dfs, explicit_name=dataset_name
+                )
+        return csv_paths, sdmx_dfs
+
     if isinstance(datapoints, list):
         for x in datapoints:
-            single_datapoint = _load_single_datapoint(x)
-            _check_unique_datapoints(list(single_datapoint.keys()), list(dict_datapoints.keys()))
-            dict_datapoints.update(single_datapoint)
-        return dict_datapoints
-    return _load_single_datapoint(datapoints)
+            single_result = _load_single_datapoint(x, sdmx_mappings=sdmx_mappings)
+            _add_loaded_datapoint(single_result, csv_paths, sdmx_dfs)
+        return csv_paths, sdmx_dfs
+
+    # Single datapoint
+    single_result = _load_single_datapoint(datapoints, sdmx_mappings=sdmx_mappings)
+    _add_loaded_datapoint(single_result, csv_paths, sdmx_dfs)
+    return csv_paths, sdmx_dfs
 
 
 def _load_datastructure_single(
-    data_structure: Union[Dict[str, Any], Path],
+    data_structure: Union[Dict[str, Any], Path, Schema, DataStructureDefinition, Dataflow],
+    sdmx_mappings: Optional[Dict[str, str]] = None,
 ) -> Tuple[Dict[str, Dataset], Dict[str, Scalar]]:
     """
     Loads a single data structure.
+
+    Args:
+        data_structure: Dict, Path, or pysdmx object (Schema, DSD, Dataflow).
+        sdmx_mappings: Optional mapping from SDMX URNs to VTL dataset names.
     """
+    # Handle pysdmx objects
+    if isinstance(data_structure, (Schema, DataStructureDefinition, Dataflow)):
+        # Apply mapping if available
+        dataset_name = None
+        if (
+            sdmx_mappings
+            and hasattr(data_structure, "short_urn")
+            and data_structure.short_urn in sdmx_mappings
+        ):
+            dataset_name = sdmx_mappings[data_structure.short_urn]
+        vtl_json = to_vtl_json(data_structure, dataset_name=dataset_name)
+        return _load_dataset_from_structure(vtl_json)
     if isinstance(data_structure, dict):
         return _load_dataset_from_structure(data_structure)
     if not isinstance(data_structure, Path):
         raise InputValidationException(
-            code="0-1-1-2", input=data_structure, message="Input must be a dict or Path object"
+            code="0-1-1-2",
+            input=data_structure,
+            message="Input must be a dict, Path, or pysdmx object",
         )
     if not data_structure.exists():
         raise DataLoadError(code="0-3-1-1", file=data_structure)
@@ -279,30 +538,50 @@ def _load_datastructure_single(
         datasets: Dict[str, Dataset] = {}
         scalars: Dict[str, Scalar] = {}
         for f in data_structure.iterdir():
-            if f.suffix != ".json":
+            if f.suffix not in (".json", ".xml"):
                 continue
-            ds, sc = _load_datastructure_single(f)
+            ds, sc = _load_datastructure_single(f, sdmx_mappings=sdmx_mappings)
             datasets = {**datasets, **ds}
             scalars = {**scalars, **sc}
         return datasets, scalars
     else:
-        if data_structure.suffix != ".json":
-            raise InputValidationException(
-                code="0-1-1-3", expected_ext=".json", ext=data_structure.suffix
-            )
-        with open(data_structure, "r") as file:
-            structures = json.load(file)
-    return _load_dataset_from_structure(structures)
+        suffix = data_structure.suffix.lower()
+        # Handle SDMX-ML structure files (.xml) - strict, must be SDMX
+        if suffix == ".xml":
+            vtl_json = _load_sdmx_structure_file(data_structure, sdmx_mappings=sdmx_mappings)
+            return _load_dataset_from_structure(vtl_json)
+        # Handle .json files - try SDMX-JSON first, fall back to VTL JSON
+        if suffix == ".json":
+            try:
+                vtl_json = _load_sdmx_structure_file(data_structure, sdmx_mappings=sdmx_mappings)
+                return _load_dataset_from_structure(vtl_json)
+            except DataLoadError:
+                # Not SDMX-JSON, try as VTL JSON
+                pass
+            with open(data_structure, "r") as file:
+                structures = json.load(file)
+            return _load_dataset_from_structure(structures)
+        # Unsupported extension
+        raise InputValidationException(code="0-1-1-3", expected_ext=".json or .xml", ext=suffix)
 
 
 def load_datasets(
-    data_structure: Union[Dict[str, Any], Path, List[Dict[str, Any]], List[Path]],
+    data_structure: Union[
+        Dict[str, Any],
+        Path,
+        Schema,
+        DataStructureDefinition,
+        Dataflow,
+        List[Union[Dict[str, Any], Path, Schema, DataStructureDefinition, Dataflow]],
+    ],
+    sdmx_mappings: Optional[Dict[str, str]] = None,
 ) -> Tuple[Dict[str, Dataset], Dict[str, Scalar]]:
     """
     Loads multiple datasets.
 
     Args:
         data_structure: Dict, Path or a List of dicts or Paths.
+        sdmx_mappings: Optional mapping from SDMX URNs to VTL dataset names.
 
     Returns:
         The datastructure as a dict or a list of datastructures as dicts. \
@@ -313,16 +592,16 @@ def load_datasets(
         Exception: If the Path is invalid or datastructure has a wrong format.
     """
     if isinstance(data_structure, dict):
-        return _load_datastructure_single(data_structure)
+        return _load_datastructure_single(data_structure, sdmx_mappings=sdmx_mappings)
     if isinstance(data_structure, list):
         ds_structures: Dict[str, Dataset] = {}
         scalar_structures: Dict[str, Scalar] = {}
         for x in data_structure:
-            ds, sc = _load_datastructure_single(x)
+            ds, sc = _load_datastructure_single(x, sdmx_mappings=sdmx_mappings)
             ds_structures = {**ds_structures, **ds}  # Overwrite ds_structures dict.
             scalar_structures = {**scalar_structures, **sc}  # Overwrite scalar_structures dict.
         return ds_structures, scalar_structures
-    return _load_datastructure_single(data_structure)
+    return _load_datastructure_single(data_structure, sdmx_mappings=sdmx_mappings)
 
 
 def _handle_scalars_values(
@@ -359,6 +638,7 @@ def load_datasets_with_data(
         Union[Dict[str, Union[pd.DataFrame, Path, str]], List[Union[str, Path]], Path, str]
     ] = None,
     scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
+    sdmx_mappings: Optional[Dict[str, str]] = None,
 ) -> Any:
     """
     Loads the dataset structures and fills them with the data contained in the datapoints.
@@ -367,6 +647,7 @@ def load_datasets_with_data(
         data_structures: Dict, Path or a List of dicts or Paths.
         datapoints: Dict, Path or a List of Paths.
         scalar_values: Dict with the scalar values.
+        sdmx_mappings: Optional mapping from SDMX URNs to VTL dataset names.
 
     Returns:
         A dict with the structure and a pandas dataframe with the data.
@@ -375,7 +656,7 @@ def load_datasets_with_data(
         Exception: If the Path is wrong or the file is invalid.
     """
     # Load the datasets without data
-    datasets, scalars = load_datasets(data_structures)
+    datasets, scalars = load_datasets(data_structures, sdmx_mappings=sdmx_mappings)
     # Handle empty datasets and scalar values if no datapoints are given
     if datapoints is None:
         _handle_empty_datasets(datasets)
@@ -414,21 +695,35 @@ def load_datasets_with_data(
         )
 
     # Handling Individual, List or Dict of Paths or S3 URIs
-    # NOTE: Adding type: ignore[arg-type] due to mypy issue with Union types
-    datapoints_path = _load_datapoints_path(datapoints)  # type: ignore[arg-type]
-    for dataset_name, csv_pointer in datapoints_path.items():
+    # At this point, datapoints is narrowed to exclude None and Dict[str, DataFrame]
+    csv_paths, sdmx_dataframes = _load_datapoints_path(
+        cast(Union[Dict[str, Union[str, Path]], List[Union[str, Path]], str, Path], datapoints),
+        sdmx_mappings=sdmx_mappings,
+    )
+
+    # Merge pre-loaded SDMX DataFrames
+    for dataset_name, sdmx_df in sdmx_dataframes.items():
+        if dataset_name not in datasets:
+            raise InputValidationException(f"Not found dataset {dataset_name} in datastructures.")
+        # Validate and assign SDMX DataFrame to the structure-defined dataset
+        datasets[dataset_name].data = _validate_pandas(
+            datasets[dataset_name].components, sdmx_df, dataset_name
+        )
+
+    # Validate CSV paths
+    for dataset_name, csv_pointer in csv_paths.items():
         # Check if dataset exists in datastructures
         if dataset_name not in datasets:
             raise InputValidationException(f"Not found dataset {dataset_name} in datastructures.")
         # Validate csv path for this dataset
         components = datasets[dataset_name].components
         _ = load_datapoints(components=components, dataset_name=dataset_name, csv_path=csv_pointer)
-    gc.collect()  # Garbage collector to free memory after we loaded everything and discarded them
+    gc.collect()  # Garbage collector to free memory
 
     _handle_empty_datasets(datasets)
     _handle_scalars_values(scalars, scalar_values)
 
-    return datasets, scalars, datapoints_path
+    return datasets, scalars, csv_paths if csv_paths else None
 
 
 def load_vtl(input: Union[str, Path]) -> str:
@@ -616,23 +911,51 @@ def _check_output_folder(output_folder: Union[str, Path]) -> None:
         os.mkdir(output_folder)
 
 
-def to_vtl_json(dsd: Union[DataStructureDefinition, Schema], dataset_name: str) -> Dict[str, Any]:
+def to_vtl_json(
+    structure: Union[DataStructureDefinition, Schema, Dataflow],
+    dataset_name: Optional[str] = None,
+) -> Dict[str, Any]:
     """
-    Converts a pysdmx `DataStructureDefinition` or `Schema` into a VTL-compatible JSON
-    representation.
+    Converts a pysdmx `DataStructureDefinition`, `Schema`, or `Dataflow` into a VTL-compatible
+    JSON representation.
 
     This function extracts and transforms the components (dimensions, measures, and attributes)
     from the given SDMX data structure and maps them into a dictionary format that conforms
     to the expected VTL data structure json schema.
 
     Args:
-        dsd: An instance of `DataStructureDefinition` or `Schema` from the `pysdmx` model.
-        dataset_name: The name of the resulting VTL dataset.
+        structure: An instance of `DataStructureDefinition`, `Schema`, or `Dataflow` from pysdmx.
+        dataset_name: The name of the resulting VTL dataset. If not provided, uses the
+            structure's ID (or Dataflow's ID for Dataflow objects).
 
     Returns:
-            A dictionary representing the dataset in VTL format, with keys for dataset name and its
-            components, including their name, role, data type, and nullability.
+        A dictionary representing the dataset in VTL format, with keys for dataset name and its
+        components, including their name, role, data type, and nullability.
+
+    Raises:
+        InputValidationException: If a Dataflow has no associated DataStructureDefinition
+            or if its structure is an unresolved reference.
     """
+    # Handle Dataflow by extracting its DataStructureDefinition
+    if isinstance(structure, Dataflow):
+        if structure.structure is None:
+            raise InputValidationException(
+                f"Dataflow '{structure.id}' has no associated DataStructureDefinition."
+            )
+        if not isinstance(structure.structure, DataStructureDefinition):
+            raise InputValidationException(
+                f"Dataflow '{structure.id}' structure is a reference, not resolved. "
+                "Please provide a resolved Dataflow with embedded DataStructureDefinition."
+            )
+        # Use Dataflow ID as dataset name if not provided
+        if dataset_name is None:
+            dataset_name = structure.id
+        structure = structure.structure
+
+    # Use structure ID if dataset_name not provided
+    if dataset_name is None:
+        dataset_name = structure.id
+
     components = []
     NAME = "name"
     ROLE = "role"
@@ -640,9 +963,9 @@ def to_vtl_json(dsd: Union[DataStructureDefinition, Schema], dataset_name: str) 
     NULLABLE = "nullable"
 
     _components: List[SDMXComponent] = []
-    _components.extend(dsd.components.dimensions)
-    _components.extend(dsd.components.measures)
-    _components.extend(dsd.components.attributes)
+    _components.extend(structure.components.dimensions)
+    _components.extend(structure.components.measures)
+    _components.extend(structure.components.attributes)
 
     for c in _components:
         _type = VTL_DTYPES_MAPPING[c.dtype]
