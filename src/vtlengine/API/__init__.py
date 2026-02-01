@@ -273,6 +273,121 @@ def semantic_analysis(
     return result
 
 
+def _run_with_duckdb(
+    script: Union[str, TransformationScheme, Path],
+    data_structures: Union[
+        Dict[str, Any],
+        Path,
+        Schema,
+        DataStructureDefinition,
+        Dataflow,
+        List[Union[Dict[str, Any], Path, Schema, DataStructureDefinition, Dataflow]],
+    ],
+    datapoints: Union[Dict[str, Union[pd.DataFrame, str, Path]], List[Union[str, Path]], str, Path],
+    value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
+    external_routines: Optional[
+        Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
+    ] = None,
+    return_only_persistent: bool = True,
+    scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
+) -> Dict[str, Union[Dataset, Scalar]]:
+    """
+    Run VTL script using DuckDB as the execution engine.
+
+    This function transpiles VTL to SQL and executes it using DuckDB.
+    """
+    import duckdb
+
+    from vtlengine.duckdb_transpiler import SQLTranspiler
+
+    # AST generation
+    script = _check_script(script)
+    vtl = load_vtl(script)
+    ast = create_ast(vtl)
+
+    # Load datasets structure (without data)
+    input_datasets, input_scalars = load_datasets(data_structures)
+
+    # Apply scalar values if provided
+    if scalar_values:
+        for name, value in scalar_values.items():
+            if name in input_scalars:
+                input_scalars[name].value = value
+
+    # Run semantic analysis to get output structures
+    interpreter = InterpreterAnalyzer(
+        datasets=input_datasets,
+        value_domains=load_value_domains(value_domains) if value_domains else None,
+        external_routines=load_external_routines(external_routines) if external_routines else None,
+        scalars=input_scalars,
+        only_semantic=True,
+    )
+    semantic_results = interpreter.visit(ast)
+
+    # Separate output datasets and scalars
+    output_datasets: Dict[str, Dataset] = {}
+    output_scalars: Dict[str, Scalar] = {}
+    for name, result in semantic_results.items():
+        if isinstance(result, Dataset):
+            output_datasets[name] = result
+        elif isinstance(result, Scalar):
+            output_scalars[name] = result
+
+    # Create DuckDB connection and load data
+    conn = duckdb.connect()
+
+    # Load datapoints into DuckDB
+    _, _, path_dict = load_datasets_with_data(data_structures, datapoints, scalar_values)
+
+    for ds_name, ds in input_datasets.items():
+        if ds.data is not None:
+            conn.register(ds_name, ds.data)
+        elif ds_name in path_dict:
+            # Load from CSV path
+            path = path_dict[ds_name]
+            df = pd.read_csv(path)
+            conn.register(ds_name, df)
+
+    # Create transpiler and generate SQL
+    transpiler = SQLTranspiler(
+        input_datasets=input_datasets,
+        output_datasets=output_datasets,
+        input_scalars=input_scalars,
+        output_scalars=output_scalars,
+    )
+    queries = transpiler.transpile(ast)
+
+    # Execute queries
+    results: Dict[str, Union[Dataset, Scalar]] = {}
+    for result_name, sql_query, is_persistent in queries:
+        # Execute query
+        result_df = conn.execute(sql_query).fetchdf()
+
+        # Register result for subsequent queries
+        conn.register(result_name, result_df)
+
+        # Skip non-persistent results if requested
+        if return_only_persistent and not is_persistent:
+            continue
+
+        # Check if this is a scalar result
+        if result_name in output_scalars:
+            if len(result_df) == 1 and len(result_df.columns) == 1:
+                scalar = output_scalars[result_name]
+                scalar.value = result_df.iloc[0, 0]
+                results[result_name] = scalar
+            else:
+                results[result_name] = Dataset(name=result_name, components={}, data=result_df)
+        else:
+            # Dataset result
+            ds = output_datasets.get(result_name, Dataset(name=result_name, components={}, data=None))
+            ds.data = result_df
+            results[result_name] = ds
+
+    conn.close()
+    return results
+
+
 def run(
     script: Union[str, TransformationScheme, Path],
     data_structures: Union[
@@ -293,6 +408,7 @@ def run(
     output_folder: Optional[Union[str, Path]] = None,
     scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
     sdmx_mappings: Optional[Union[VtlDataflowMapping, Dict[str, str]]] = None,
+    use_duckdb: bool = False,
 ) -> Dict[str, Union[Dataset, Scalar]]:
     """
     Run is the main function of the ``API``, which mission is to execute
@@ -383,6 +499,10 @@ def run(
         (e.g., "Dataflow=MD:TEST_DF(1.0)") to VTL dataset names. This parameter is \
         primarily used when calling run() from run_sdmx() to pass mapping configuration.
 
+        use_duckdb: If True, use DuckDB as the execution engine instead of pandas. \
+        This transpiles VTL to SQL and executes it using DuckDB, which can be more \
+        efficient for large datasets. (default: False)
+
     Returns:
        The datasets are produced without data if the output folder is defined.
 
@@ -391,6 +511,17 @@ def run(
         or their Paths are invalid.
 
     """
+    # Use DuckDB execution engine if requested (check early to avoid unnecessary processing)
+    if use_duckdb:
+        return _run_with_duckdb(
+            script=script,
+            data_structures=data_structures,
+            datapoints=datapoints,
+            value_domains=value_domains,
+            external_routines=external_routines,
+            return_only_persistent=return_only_persistent,
+            scalar_values=scalar_values,
+        )
 
     # Convert sdmx_mappings to dict format for internal use
     mapping_dict = _convert_sdmx_mappings(sdmx_mappings)
