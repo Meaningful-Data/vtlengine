@@ -17,7 +17,6 @@ import pytest
 
 from vtlengine.duckdb_transpiler import transpile
 
-
 # =============================================================================
 # Test Utilities
 # =============================================================================
@@ -69,7 +68,7 @@ def execute_vtl_with_duckdb(
 
     # Execute queries and collect results
     results = {}
-    for result_name, sql, is_persistent in queries:
+    for result_name, sql, _is_persistent in queries:
         result_df = conn.execute(sql).fetchdf()
         conn.register(result_name, result_df)
         results[result_name] = result_df

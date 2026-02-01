@@ -28,7 +28,6 @@ from vtlengine.DataTypes import Boolean, Number, String
 from vtlengine.duckdb_transpiler.Transpiler import SQLTranspiler
 from vtlengine.Model import Component, Dataset, Role
 
-
 # =============================================================================
 # Test Utilities
 # =============================================================================
@@ -190,7 +189,8 @@ class TestBetweenOperator:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = f'''SELECT * FROM (SELECT * FROM "DS_1") AS t WHERE ("Me_1" BETWEEN {low_value} AND {high_value})'''
+        # Optimized SQL with predicate pushdown (no unnecessary nesting)
+        expected_sql = f'''SELECT * FROM "DS_1" WHERE ("Me_1" BETWEEN {low_value} AND {high_value})'''
         assert_sql_equal(sql, expected_sql)
 
 
@@ -692,7 +692,8 @@ class TestClauseOperations:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = '''SELECT * FROM (SELECT * FROM "DS_1") AS t WHERE ("Me_1" > 10)'''
+        # Optimized SQL with predicate pushdown (no unnecessary nesting)
+        expected_sql = '''SELECT * FROM "DS_1" WHERE ("Me_1" > 10)'''
         assert_sql_equal(sql, expected_sql)
 
     def test_calc_clause_new_column(self):

@@ -1239,11 +1239,17 @@ FROM ({dataset_sql}) AS t"""
                 """
 
     def _clause_filter(self, base_sql: str, children: List[AST.AST]) -> str:
-        """Generate SQL for filter clause."""
+        """
+        Generate SQL for filter clause with predicate pushdown.
+
+        Optimization: If base_sql is a simple SELECT * FROM "table",
+        we push the WHERE directly onto that query instead of nesting.
+        """
         conditions = [self.visit(child) for child in children]
         where_clause = " AND ".join(conditions)
 
-        return f"SELECT * FROM ({base_sql}) AS t WHERE {where_clause}"
+        # Try to push predicate down
+        return self._optimize_filter_pushdown(base_sql, where_clause)
 
     def _clause_keep(self, base_sql: str, children: List[AST.AST]) -> str:
         """Generate SQL for keep clause (select specific components)."""
@@ -1964,6 +1970,41 @@ FROM ({dataset_sql}) AS t"""
         if table_ref:
             return f"{table_ref}"
         return f"({subquery_sql})"
+
+    def _optimize_filter_pushdown(self, base_sql: str, filter_condition: str) -> str:
+        """
+        Push filter conditions into subqueries when possible.
+
+        This optimization avoids unnecessary nesting of subqueries by:
+        1. If base_sql is a simple SELECT * FROM "table", add WHERE directly
+        2. If base_sql is SELECT * FROM "table" with existing WHERE, combine
+        3. Otherwise, wrap in subquery
+
+        Args:
+            base_sql: The base SQL query to filter.
+            filter_condition: The WHERE condition to apply.
+
+        Returns:
+            Optimized SQL with filter applied.
+        """
+        sql_stripped = base_sql.strip()
+        sql_upper = sql_stripped.upper()
+
+        # Case 1: Simple SELECT * FROM "table" without WHERE
+        table_ref = self._extract_table_from_select(sql_stripped)
+        if table_ref and "WHERE" not in sql_upper:
+            return f"SELECT * FROM {table_ref} WHERE {filter_condition}"
+
+        # Case 2: SELECT * FROM "table" with existing WHERE - combine conditions
+        if table_ref and " WHERE " in sql_upper:
+            # Insert the new condition at the end of the existing WHERE
+            # Find the WHERE position in original SQL (preserve case)
+            where_pos = sql_upper.find(" WHERE ")
+            if where_pos != -1:
+                return f"{sql_stripped} AND {filter_condition}"
+
+        # Case 3: Default - wrap in subquery
+        return f"SELECT * FROM ({sql_stripped}) AS t WHERE {filter_condition}"
 
     def _scalar_to_sql(self, scalar: Scalar) -> str:
         """Convert a Scalar to SQL literal."""

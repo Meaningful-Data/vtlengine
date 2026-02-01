@@ -17,7 +17,7 @@ Example:
 
 import os
 import tempfile
-from typing import Any, Optional, Tuple, Union
+from typing import Tuple, Union
 
 import duckdb
 import psutil  # type: ignore[import-untyped]

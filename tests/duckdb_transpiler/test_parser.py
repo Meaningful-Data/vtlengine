@@ -15,7 +15,6 @@ import pytest
 from vtlengine.DataTypes import Boolean, Date, Integer, Number, String
 from vtlengine.Model import Component, Role
 
-
 # =============================================================================
 # Test Fixtures
 # =============================================================================
@@ -119,7 +118,7 @@ class TestCSVLoading:
         expected_count,
     ):
         """Test loading CSV files with basic data types."""
-        components = create_components(column_specs)
+        create_components(column_specs)
         csv_path = create_csv_file(temp_csv_dir, "test_data", csv_content)
 
         # Load data using DuckDB
@@ -199,7 +198,7 @@ class TestTypeValidation:
         csv_path = create_csv_file(temp_csv_dir, "test_invalid", invalid_csv_content)
 
         # DuckDB should fail when trying to cast invalid values to BIGINT
-        with pytest.raises(Exception):
+        with pytest.raises(duckdb.ConversionException):
             duckdb_connection.execute(
                 f"SELECT CAST(Me_1 AS BIGINT) FROM read_csv('{csv_path}')"
             ).fetchall()
