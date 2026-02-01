@@ -1072,8 +1072,8 @@ class TestEvalOperator:
 
         result = transpiler.visit_EvalOp(eval_op)
         # The query should be returned as-is since DS_1 is a direct table reference
-        assert '"Me_1" * 2' in result
-        assert 'FROM "DS_1"' in result
+        expected_sql = 'SELECT "Id_1", "Me_1" * 2 AS "Me_1" FROM "DS_1"'
+        assert_sql_equal(result, expected_sql)
 
     def test_eval_op_routine_not_found(self):
         """Test error when external routine is not found."""
@@ -1153,8 +1153,8 @@ class TestEvalOperator:
 
         result = transpiler.visit_EvalOp(eval_op)
         # Should contain aggregate function
-        assert 'SUM("Me_1")' in result
-        assert 'GROUP BY "Id_1"' in result
+        expected_sql = 'SELECT "Id_1", SUM("Me_1") AS "total" FROM DS_1 GROUP BY "Id_1"'
+        assert_sql_equal(result, expected_sql)
 
 
 # =============================================================================
@@ -1204,8 +1204,8 @@ class TestTimeOperators:
         )
 
         result = transpiler.visit_UnaryOp(unary_op)
-        assert expected_func in result
-        assert "date_col" in result
+        expected_sql = f'{expected_func}("date_col")'
+        assert_sql_equal(result, expected_sql)
 
     def test_datediff_scalar(self):
         """Test datediff on scalar operands."""
@@ -1225,9 +1225,8 @@ class TestTimeOperators:
         )
 
         result = transpiler.visit_BinOp(binop)
-        assert "DATE_DIFF" in result
-        assert "'day'" in result
-        assert "ABS" in result
+        expected_sql = "ABS(DATE_DIFF('day', '2024-01-15', '2024-01-01'))"
+        assert_sql_equal(result, expected_sql)
 
     def test_period_indicator_scalar(self):
         """Test period_indicator on scalar operand."""
@@ -1246,8 +1245,8 @@ class TestTimeOperators:
         )
 
         result = transpiler.visit_UnaryOp(unary_op)
-        assert "REGEXP_EXTRACT" in result
-        assert "time_period_col" in result
+        expected_sql = "REGEXP_EXTRACT(\"time_period_col\", '-([ASQMWD])', 1)"
+        assert_sql_equal(result, expected_sql)
 
     def test_flow_to_stock_requires_dataset(self):
         """Test flow_to_stock raises error for non-dataset operand."""
@@ -1288,13 +1287,13 @@ class TestTimeOperators:
             transpiler.visit_UnaryOp(unary_op)
 
     @pytest.mark.parametrize(
-        "op_token,expected_parts",
+        "op_token,expected_sql",
         [
-            ("daytoyear", ["'P'", "'Y'", "'D'", "365"]),
-            ("daytomonth", ["'P'", "'M'", "'D'", "30"]),
+            ("daytoyear", "'P' || CAST(FLOOR(400 / 365) AS VARCHAR) || 'Y' || CAST(400 % 365 AS VARCHAR) || 'D'"),
+            ("daytomonth", "'P' || CAST(FLOOR(400 / 30) AS VARCHAR) || 'M' || CAST(400 % 30 AS VARCHAR) || 'D'"),
         ],
     )
-    def test_duration_conversion_daytox(self, op_token, expected_parts):
+    def test_duration_conversion_daytox(self, op_token, expected_sql):
         """Test duration conversion operators (daytoyear, daytomonth)."""
         transpiler = SQLTranspiler(
             input_datasets={},
@@ -1311,17 +1310,16 @@ class TestTimeOperators:
         )
 
         result = transpiler.visit_UnaryOp(unary_op)
-        for part in expected_parts:
-            assert part in result
+        assert_sql_equal(result, expected_sql)
 
     @pytest.mark.parametrize(
-        "op_token,expected_parts",
+        "op_token,expected_sql",
         [
-            ("yeartoday", ["REGEXP_EXTRACT", "365"]),
-            ("monthtoday", ["REGEXP_EXTRACT", "30"]),
+            ("yeartoday", r"( CAST(REGEXP_EXTRACT('P1Y100D', 'P(\d+)Y', 1) AS INTEGER) * 365 + CAST(REGEXP_EXTRACT('P1Y100D', '(\d+)D', 1) AS INTEGER) )"),
+            ("monthtoday", r"( CAST(REGEXP_EXTRACT('P1Y100D', 'P(\d+)M', 1) AS INTEGER) * 30 + CAST(REGEXP_EXTRACT('P1Y100D', '(\d+)D', 1) AS INTEGER) )"),
         ],
     )
-    def test_duration_conversion_xtoday(self, op_token, expected_parts):
+    def test_duration_conversion_xtoday(self, op_token, expected_sql):
         """Test duration conversion operators (yeartoday, monthtoday)."""
         transpiler = SQLTranspiler(
             input_datasets={},
@@ -1338,8 +1336,7 @@ class TestTimeOperators:
         )
 
         result = transpiler.visit_UnaryOp(unary_op)
-        for part in expected_parts:
-            assert part in result
+        assert_sql_equal(result, expected_sql)
 
     def test_flow_to_stock_dataset(self):
         """Test flow_to_stock on dataset generates window function SQL."""
@@ -1370,11 +1367,8 @@ class TestTimeOperators:
         )
 
         result = transpiler.visit_UnaryOp(unary_op)
-        # Should generate window function for cumulative sum
-        assert "SUM" in result
-        assert "OVER" in result
-        assert "ORDER BY" in result
-        assert "PARTITION BY" in result  # Should partition by non-time identifiers
+        expected_sql = 'SELECT "time_id", "region", SUM("value") OVER (PARTITION BY "region" ORDER BY "time_id") AS "value" FROM "DS_1"'
+        assert_sql_equal(result, expected_sql)
 
     def test_stock_to_flow_dataset(self):
         """Test stock_to_flow on dataset generates window function SQL."""
@@ -1405,8 +1399,5 @@ class TestTimeOperators:
         )
 
         result = transpiler.visit_UnaryOp(unary_op)
-        # Should generate window function for difference
-        assert "LAG" in result
-        assert "OVER" in result
-        assert "ORDER BY" in result
-        assert "COALESCE" in result  # Handles first row NULL
+        expected_sql = 'SELECT "time_id", "region", COALESCE("value" - LAG("value") OVER (PARTITION BY "region" ORDER BY "time_id"), "value") AS "value" FROM "DS_1"'
+        assert_sql_equal(result, expected_sql)
