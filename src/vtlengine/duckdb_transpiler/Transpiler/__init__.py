@@ -30,6 +30,13 @@ from vtlengine.AST.Grammar.tokens import (
     CONCAT,
     COUNT,
     CROSS_JOIN,
+    CURRENT_DATE,
+    DATE_ADD,
+    DATEDIFF,
+    DAYOFMONTH,
+    DAYOFYEAR,
+    DAYTOMONTH,
+    DAYTOYEAR,
     DIV,
     DROP,
     EQ,
@@ -38,6 +45,7 @@ from vtlengine.AST.Grammar.tokens import (
     FILTER,
     FIRST_VALUE,
     FLOOR,
+    FLOW_TO_STOCK,
     FULL_JOIN,
     GT,
     GTE,
@@ -64,12 +72,15 @@ from vtlengine.AST.Grammar.tokens import (
     MIN,
     MINUS,
     MOD,
+    MONTH,
+    MONTHTODAY,
     MULT,
     NEQ,
     NOT,
     NOT_IN,
     NVL,
     OR,
+    PERIOD_INDICATOR,
     PIVOT,
     PLUS,
     POWER,
@@ -83,10 +94,12 @@ from vtlengine.AST.Grammar.tokens import (
     SQRT,
     STDDEV_POP,
     STDDEV_SAMP,
+    STOCK_TO_FLOW,
     SUBSPACE,
     SUBSTR,
     SUM,
     SYMDIFF,
+    TIMESHIFT,
     TRIM,
     TRUNC,
     UCASE,
@@ -95,6 +108,8 @@ from vtlengine.AST.Grammar.tokens import (
     VAR_POP,
     VAR_SAMP,
     XOR,
+    YEAR,
+    YEARTODAY,
 )
 from vtlengine.Model import Dataset, ExternalRoutine, Scalar, ValueDomain
 
@@ -164,6 +179,24 @@ SQL_UNARY_OPS: Dict[str, str] = {
     RTRIM: "RTRIM",
     UCASE: "UPPER",
     LCASE: "LOWER",
+    # Time extraction (simple functions)
+    YEAR: "YEAR",
+    MONTH: "MONTH",
+    DAYOFMONTH: "DAY",
+    DAYOFYEAR: "DAYOFYEAR",
+}
+
+# Time operators that need special handling
+SQL_TIME_OPS: Dict[str, str] = {
+    CURRENT_DATE: "CURRENT_DATE",
+    DATEDIFF: "DATE_DIFF",  # DATE_DIFF('day', d1, d2) in DuckDB
+    DATE_ADD: "DATE_ADD",  # date + INTERVAL 'n period'
+    TIMESHIFT: "TIMESHIFT",  # Custom handling for time shift
+    # Duration conversions
+    DAYTOYEAR: "DAYTOYEAR",  # days -> 'PxYxD' format
+    DAYTOMONTH: "DAYTOMONTH",  # days -> 'PxMxD' format
+    YEARTODAY: "YEARTODAY",  # 'PxYxD' -> days
+    MONTHTODAY: "MONTHTODAY",  # 'PxMxD' -> days
 }
 
 SQL_AGGREGATE_OPS: Dict[str, str] = {
@@ -484,6 +517,14 @@ class SQLTranspiler(ASTTemplate):
         if op == MEMBERSHIP:
             return self._visit_membership(node)
 
+        # Special handling for DATEDIFF (date difference)
+        if op == DATEDIFF:
+            return self._visit_datediff(node, left_type, right_type)
+
+        # Special handling for TIMESHIFT
+        if op == TIMESHIFT:
+            return self._visit_timeshift(node, left_type, right_type)
+
         sql_op = SQL_BINARY_OPS.get(op, op.upper())
 
         # Dataset-Dataset
@@ -749,6 +790,79 @@ class SQLTranspiler(ASTTemplate):
 
         return f"SELECT {id_select}, {measure_select} FROM ({dataset_sql}) AS t"
 
+    def _visit_datediff(self, node: AST.BinOp, left_type: str, right_type: str) -> str:
+        """
+        Generate SQL for DATEDIFF operator.
+
+        VTL: datediff(date1, date2) returns the absolute number of days between two dates
+        DuckDB: ABS(DATE_DIFF('day', date1, date2))
+        """
+        left_sql = self.visit(node.left)
+        right_sql = self.visit(node.right)
+
+        # For scalar operands, use direct DATE_DIFF
+        return f"ABS(DATE_DIFF('day', {left_sql}, {right_sql}))"
+
+    def _visit_timeshift(self, node: AST.BinOp, left_type: str, right_type: str) -> str:
+        """
+        Generate SQL for TIMESHIFT operator.
+
+        VTL: timeshift(ds, n) shifts dates by n periods
+        The right operand is the shift value (scalar).
+
+        For DuckDB, this depends on the data type:
+        - Date: date + INTERVAL 'n days' (or use detected frequency)
+        - TimePeriod: Complex string manipulation
+        """
+        if left_type != OperandType.DATASET:
+            raise ValueError("timeshift requires a dataset as first operand")
+
+        ds_name = self._get_dataset_name(node.left)
+        ds = self.available_tables[ds_name]
+        shift_val = self.visit(node.right)
+
+        # Find time identifier
+        time_id, other_ids = self._get_time_and_other_ids(ds)
+
+        id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
+        measure_select = ", ".join([f'"{m}"' for m in ds.get_measures_names()])
+
+        # For Date type, use INTERVAL
+        # For TimePeriod, we'd need complex string manipulation (not fully supported)
+        time_comp = ds.components.get(time_id)
+        from vtlengine.DataTypes import Date, TimePeriod
+
+        dataset_sql = self._get_dataset_sql(node.left)
+
+        # Prepare other identifiers for select
+        other_id_select = ", ".join([f'"{k}"' for k in other_ids])
+        if other_id_select:
+            other_id_select += ", "
+
+        if time_comp and time_comp.data_type == Date:
+            # Simple date shift using INTERVAL days
+            # Note: VTL timeshift uses the frequency of the data
+            time_expr = f'("{time_id}" + INTERVAL ({shift_val}) DAY) AS "{time_id}"'
+            return f"""
+                SELECT {other_id_select}{time_expr}, {measure_select}
+                FROM ({dataset_sql}) AS t
+            """
+        elif time_comp and time_comp.data_type == TimePeriod:
+            # TimePeriod shifting is complex - use a simplified approach
+            # This shifts the year component only for annual periods
+            time_case = f"""CASE
+                        WHEN "{time_id}" ~ '^\\d{{4}}$'
+                        THEN CAST(CAST("{time_id}" AS INTEGER) + {shift_val} AS VARCHAR)
+                        ELSE "{time_id}"
+                    END AS "{time_id}\""""
+            return f"""
+                SELECT {other_id_select}{time_case}, {measure_select}
+                FROM ({dataset_sql}) AS t
+            """
+        else:
+            # Fallback: return as-is (shift not applied)
+            return f"SELECT {id_select}, {measure_select} FROM ({dataset_sql}) AS t"
+
     # =========================================================================
     # Unary Operations
     # =========================================================================
@@ -764,6 +878,26 @@ class SQLTranspiler(ASTTemplate):
                 return self._unary_dataset_isnull(node.operand)
             operand_sql = self.visit(node.operand)
             return f"({operand_sql} IS NULL)"
+
+        # Special case: flow_to_stock (cumulative sum over time)
+        if op == FLOW_TO_STOCK:
+            return self._visit_flow_to_stock(node.operand, operand_type)
+
+        # Special case: stock_to_flow (difference over time)
+        if op == STOCK_TO_FLOW:
+            return self._visit_stock_to_flow(node.operand, operand_type)
+
+        # Special case: period_indicator (extracts period indicator from TimePeriod)
+        if op == PERIOD_INDICATOR:
+            return self._visit_period_indicator(node.operand, operand_type)
+
+        # Time extraction operators (year, month, day, dayofyear)
+        if op in (YEAR, MONTH, DAYOFMONTH, DAYOFYEAR):
+            return self._visit_time_extraction(node.operand, operand_type, op)
+
+        # Duration conversion operators
+        if op in (DAYTOYEAR, DAYTOMONTH, YEARTODAY, MONTHTODAY):
+            return self._visit_duration_conversion(node.operand, operand_type, op)
 
         sql_op = SQL_UNARY_OPS.get(op, op.upper())
 
@@ -814,6 +948,202 @@ class SQLTranspiler(ASTTemplate):
         return f"""
         SELECT {id_select}, {measure_select}
 FROM ({dataset_sql}) AS t"""
+
+    # =========================================================================
+    # Time Operators
+    # =========================================================================
+
+    def _visit_time_extraction(self, operand: AST.AST, operand_type: str, op: str) -> str:
+        """
+        Generate SQL for time extraction operators (year, month, dayofmonth, dayofyear).
+
+        DuckDB has built-in functions for these:
+        - YEAR(date) or EXTRACT(YEAR FROM date)
+        - MONTH(date) or EXTRACT(MONTH FROM date)
+        - DAY(date) or EXTRACT(DAY FROM date)
+        - DAYOFYEAR(date) or EXTRACT(DOY FROM date)
+        """
+        sql_func = SQL_UNARY_OPS.get(op, op.upper())
+
+        if operand_type == OperandType.DATASET:
+            return self._time_extraction_dataset(operand, sql_func)
+
+        operand_sql = self.visit(operand)
+        return f"{sql_func}({operand_sql})"
+
+    def _time_extraction_dataset(self, dataset_node: AST.AST, sql_func: str) -> str:
+        """Generate SQL for dataset time extraction operation."""
+        ds_name = self._get_dataset_name(dataset_node)
+        ds = self.available_tables[ds_name]
+
+        id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
+        # Apply time extraction to time-typed measures
+        measure_select = ", ".join([f'{sql_func}("{m}") AS "{m}"' for m in ds.get_measures_names()])
+
+        dataset_sql = self._get_dataset_sql(dataset_node)
+        return f"SELECT {id_select}, {measure_select} FROM ({dataset_sql}) AS t"
+
+    def _visit_flow_to_stock(self, operand: AST.AST, operand_type: str) -> str:
+        """
+        Generate SQL for flow_to_stock (cumulative sum over time).
+
+        This uses a window function: SUM(measure) OVER (PARTITION BY other_ids ORDER BY time_id)
+        """
+        if operand_type != OperandType.DATASET:
+            raise ValueError("flow_to_stock requires a dataset operand")
+
+        ds_name = self._get_dataset_name(operand)
+        ds = self.available_tables[ds_name]
+        dataset_sql = self._get_dataset_sql(operand)
+
+        # Find time identifier and other identifiers
+        time_id, other_ids = self._get_time_and_other_ids(ds)
+
+        id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
+
+        # Create cumulative sum for each measure
+        quoted_ids = ['"' + i + '"' for i in other_ids]
+        partition_clause = f"PARTITION BY {', '.join(quoted_ids)}" if other_ids else ""
+        order_clause = f'ORDER BY "{time_id}"'
+
+        measure_selects = []
+        for m in ds.get_measures_names():
+            window = f"OVER ({partition_clause} {order_clause})"
+            measure_selects.append(f'SUM("{m}") {window} AS "{m}"')
+
+        measure_select = ", ".join(measure_selects)
+        return f"SELECT {id_select}, {measure_select} FROM ({dataset_sql}) AS t"
+
+    def _visit_stock_to_flow(self, operand: AST.AST, operand_type: str) -> str:
+        """
+        Generate SQL for stock_to_flow (difference over time).
+
+        This uses: measure - LAG(measure) OVER (PARTITION BY other_ids ORDER BY time_id)
+        """
+        if operand_type != OperandType.DATASET:
+            raise ValueError("stock_to_flow requires a dataset operand")
+
+        ds_name = self._get_dataset_name(operand)
+        ds = self.available_tables[ds_name]
+        dataset_sql = self._get_dataset_sql(operand)
+
+        # Find time identifier and other identifiers
+        time_id, other_ids = self._get_time_and_other_ids(ds)
+
+        id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
+
+        # Create difference from previous for each measure
+        quoted_ids = ['"' + i + '"' for i in other_ids]
+        partition_clause = f"PARTITION BY {', '.join(quoted_ids)}" if other_ids else ""
+        order_clause = f'ORDER BY "{time_id}"'
+
+        measure_selects = []
+        for m in ds.get_measures_names():
+            window = f"OVER ({partition_clause} {order_clause})"
+            # COALESCE handles first row where LAG returns NULL
+            measure_selects.append(f'COALESCE("{m}" - LAG("{m}") {window}, "{m}") AS "{m}"')
+
+        measure_select = ", ".join(measure_selects)
+        return f"SELECT {id_select}, {measure_select} FROM ({dataset_sql}) AS t"
+
+    def _get_time_and_other_ids(self, ds: Dataset) -> Tuple[str, List[str]]:
+        """
+        Get the time identifier and other identifiers from a dataset.
+
+        Returns (time_id_name, other_id_names).
+        Time identifier is detected by data type (Date, TimePeriod, TimeInterval).
+        """
+        from vtlengine.DataTypes import Date, TimeInterval, TimePeriod
+
+        time_id = None
+        other_ids = []
+
+        for id_comp in ds.get_identifiers():
+            if id_comp.data_type in (Date, TimePeriod, TimeInterval):
+                time_id = id_comp.name
+            else:
+                other_ids.append(id_comp.name)
+
+        # If no time identifier found, use the last identifier
+        if time_id is None:
+            id_names = ds.get_identifiers_names()
+            if id_names:
+                time_id = id_names[-1]
+                other_ids = id_names[:-1]
+            else:
+                time_id = ""
+
+        return time_id, other_ids
+
+    def _visit_period_indicator(self, operand: AST.AST, operand_type: str) -> str:
+        """
+        Generate SQL for period_indicator (extracts period indicator from TimePeriod).
+
+        TimePeriod format: "YYYY-Pn" where P is the period indicator (A, S, Q, M, W, D)
+        We need to extract the period indicator character.
+
+        DuckDB: REGEXP_EXTRACT(value, '-([ASQMWD])', 1)
+        """
+        if operand_type == OperandType.DATASET:
+            ds_name = self._get_dataset_name(operand)
+            ds = self.available_tables[ds_name]
+            dataset_sql = self._get_dataset_sql(operand)
+
+            # Find the time identifier
+            time_id, _ = self._get_time_and_other_ids(ds)
+            id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
+
+            # Extract period indicator and return as duration_var measure
+            period_extract = f"REGEXP_EXTRACT(\"{time_id}\", '-([ASQMWD])', 1)"
+            return (
+                f'SELECT {id_select}, {period_extract} AS "duration_var" FROM ({dataset_sql}) AS t'
+            )
+
+        operand_sql = self.visit(operand)
+        return f"REGEXP_EXTRACT({operand_sql}, '-([ASQMWD])', 1)"
+
+    def _visit_duration_conversion(self, operand: AST.AST, operand_type: str, op: str) -> str:
+        """
+        Generate SQL for duration conversion operators.
+
+        - daytoyear: days -> 'PxYxD' format
+        - daytomonth: days -> 'PxMxD' format
+        - yeartoday: 'PxYxD' -> days
+        - monthtoday: 'PxMxD' -> days
+        """
+        operand_sql = self.visit(operand)
+
+        if op == DAYTOYEAR:
+            # Convert days to 'PxYxD' format
+            # years = days / 365, remaining_days = days % 365
+            years_expr = f"CAST(FLOOR({operand_sql} / 365) AS VARCHAR)"
+            days_expr = f"CAST({operand_sql} % 365 AS VARCHAR)"
+            return f"'P' || {years_expr} || 'Y' || {days_expr} || 'D'"
+
+        elif op == DAYTOMONTH:
+            # Convert days to 'PxMxD' format
+            # months = days / 30, remaining_days = days % 30
+            months_expr = f"CAST(FLOOR({operand_sql} / 30) AS VARCHAR)"
+            days_expr = f"CAST({operand_sql} % 30 AS VARCHAR)"
+            return f"'P' || {months_expr} || 'M' || {days_expr} || 'D'"
+
+        elif op == YEARTODAY:
+            # Convert 'PxYxD' to days
+            # Extract years and days, compute total days
+            return f"""(
+                CAST(REGEXP_EXTRACT({operand_sql}, 'P(\\d+)Y', 1) AS INTEGER) * 365 +
+                CAST(REGEXP_EXTRACT({operand_sql}, '(\\d+)D', 1) AS INTEGER)
+            )"""
+
+        elif op == MONTHTODAY:
+            # Convert 'PxMxD' to days
+            # Extract months and days, compute total days
+            return f"""(
+                CAST(REGEXP_EXTRACT({operand_sql}, 'P(\\d+)M', 1) AS INTEGER) * 30 +
+                CAST(REGEXP_EXTRACT({operand_sql}, '(\\d+)D', 1) AS INTEGER)
+            )"""
+
+        return operand_sql
 
     # =========================================================================
     # Parameterized Operations (round, trunc, substr, etc.)
@@ -1006,6 +1336,10 @@ FROM ({dataset_sql}) AS t"""
     def visit_MulOp(self, node: AST.MulOp) -> str:
         """Process multiple-operand operations (between, group by, set ops, etc.)."""
         op = node.op.lower() if isinstance(node.op, str) else str(node.op)
+
+        # Time operator: current_date (nullary)
+        if op == CURRENT_DATE:
+            return "CURRENT_DATE"
 
         if op == BETWEEN and len(node.children) >= 3:
             operand = self.visit(node.children[0])

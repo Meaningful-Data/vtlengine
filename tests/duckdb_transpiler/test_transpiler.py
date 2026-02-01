@@ -1180,3 +1180,287 @@ class TestEvalOperator:
         # Should contain aggregate function
         assert 'SUM("Me_1")' in result
         assert 'GROUP BY "Id_1"' in result
+
+
+# =============================================================================
+# Time Operators Tests (Sprint 5)
+# =============================================================================
+
+
+class TestTimeOperators:
+    """Tests for time operators in transpiler."""
+
+    def test_current_date(self):
+        """Test current_date nullary operator."""
+        from vtlengine.AST import MulOp
+        from vtlengine.AST.Grammar.tokens import CURRENT_DATE
+
+        transpiler = SQLTranspiler(
+            input_datasets={},
+            output_datasets={},
+            input_scalars={},
+            output_scalars={},
+        )
+
+        mul_op = MulOp(**make_ast_node(op=CURRENT_DATE, children=[]))
+        result = transpiler.visit_MulOp(mul_op)
+        assert result == "CURRENT_DATE"
+
+    @pytest.mark.parametrize(
+        "op_token,expected_func",
+        [
+            ("year", "YEAR"),
+            ("month", "MONTH"),
+            ("dayofmonth", "DAY"),
+            ("dayofyear", "DAYOFYEAR"),
+        ],
+    )
+    def test_time_extraction_scalar(self, op_token, expected_func):
+        """Test time extraction operators on scalar operands."""
+        from vtlengine.AST import UnaryOp
+
+        transpiler = SQLTranspiler(
+            input_datasets={},
+            output_datasets={},
+            input_scalars={},
+            output_scalars={},
+        )
+
+        unary_op = UnaryOp(
+            **make_ast_node(
+                op=op_token,
+                operand=VarID(**make_ast_node(value="date_col")),
+            )
+        )
+
+        result = transpiler.visit_UnaryOp(unary_op)
+        assert expected_func in result
+        assert "date_col" in result
+
+    def test_datediff_scalar(self):
+        """Test datediff on scalar operands."""
+        from vtlengine.AST import BinOp
+        from vtlengine.AST.Grammar.tokens import DATEDIFF
+
+        transpiler = SQLTranspiler(
+            input_datasets={},
+            output_datasets={},
+            input_scalars={},
+            output_scalars={},
+        )
+
+        binop = BinOp(
+            **make_ast_node(
+                left=Constant(**make_ast_node(type_="STRING_CONSTANT", value="2024-01-15")),
+                op=DATEDIFF,
+                right=Constant(**make_ast_node(type_="STRING_CONSTANT", value="2024-01-01")),
+            )
+        )
+
+        result = transpiler.visit_BinOp(binop)
+        assert "DATE_DIFF" in result
+        assert "'day'" in result
+        assert "ABS" in result
+
+    def test_period_indicator_scalar(self):
+        """Test period_indicator on scalar operand."""
+        from vtlengine.AST import UnaryOp
+        from vtlengine.AST.Grammar.tokens import PERIOD_INDICATOR
+
+        transpiler = SQLTranspiler(
+            input_datasets={},
+            output_datasets={},
+            input_scalars={},
+            output_scalars={},
+        )
+
+        unary_op = UnaryOp(
+            **make_ast_node(
+                op=PERIOD_INDICATOR,
+                operand=VarID(**make_ast_node(value="time_period_col")),
+            )
+        )
+
+        result = transpiler.visit_UnaryOp(unary_op)
+        assert "REGEXP_EXTRACT" in result
+        assert "time_period_col" in result
+
+    def test_flow_to_stock_requires_dataset(self):
+        """Test flow_to_stock raises error for non-dataset operand."""
+        from vtlengine.AST import UnaryOp
+        from vtlengine.AST.Grammar.tokens import FLOW_TO_STOCK
+
+        transpiler = SQLTranspiler(
+            input_datasets={},
+            output_datasets={},
+            input_scalars={},
+            output_scalars={},
+        )
+
+        unary_op = UnaryOp(
+            **make_ast_node(
+                op=FLOW_TO_STOCK,
+                operand=Constant(**make_ast_node(type_="INTEGER_CONSTANT", value=10)),
+            )
+        )
+
+        with pytest.raises(ValueError, match="requires a dataset"):
+            transpiler.visit_UnaryOp(unary_op)
+
+    def test_stock_to_flow_requires_dataset(self):
+        """Test stock_to_flow raises error for non-dataset operand."""
+        from vtlengine.AST import UnaryOp
+        from vtlengine.AST.Grammar.tokens import STOCK_TO_FLOW
+
+        transpiler = SQLTranspiler(
+            input_datasets={},
+            output_datasets={},
+            input_scalars={},
+            output_scalars={},
+        )
+
+        unary_op = UnaryOp(
+            **make_ast_node(
+                op=STOCK_TO_FLOW,
+                operand=Constant(**make_ast_node(type_="INTEGER_CONSTANT", value=10)),
+            )
+        )
+
+        with pytest.raises(ValueError, match="requires a dataset"):
+            transpiler.visit_UnaryOp(unary_op)
+
+    @pytest.mark.parametrize(
+        "op_token,expected_parts",
+        [
+            ("daytoyear", ["'P'", "'Y'", "'D'", "365"]),
+            ("daytomonth", ["'P'", "'M'", "'D'", "30"]),
+        ],
+    )
+    def test_duration_conversion_daytox(self, op_token, expected_parts):
+        """Test duration conversion operators (daytoyear, daytomonth)."""
+        from vtlengine.AST import UnaryOp
+
+        transpiler = SQLTranspiler(
+            input_datasets={},
+            output_datasets={},
+            input_scalars={},
+            output_scalars={},
+        )
+
+        unary_op = UnaryOp(
+            **make_ast_node(
+                op=op_token,
+                operand=Constant(**make_ast_node(type_="INTEGER_CONSTANT", value=400)),
+            )
+        )
+
+        result = transpiler.visit_UnaryOp(unary_op)
+        for part in expected_parts:
+            assert part in result
+
+    @pytest.mark.parametrize(
+        "op_token,expected_parts",
+        [
+            ("yeartoday", ["REGEXP_EXTRACT", "365"]),
+            ("monthtoday", ["REGEXP_EXTRACT", "30"]),
+        ],
+    )
+    def test_duration_conversion_xtoday(self, op_token, expected_parts):
+        """Test duration conversion operators (yeartoday, monthtoday)."""
+        from vtlengine.AST import UnaryOp
+
+        transpiler = SQLTranspiler(
+            input_datasets={},
+            output_datasets={},
+            input_scalars={},
+            output_scalars={},
+        )
+
+        unary_op = UnaryOp(
+            **make_ast_node(
+                op=op_token,
+                operand=Constant(**make_ast_node(type_="STRING_CONSTANT", value="P1Y100D")),
+            )
+        )
+
+        result = transpiler.visit_UnaryOp(unary_op)
+        for part in expected_parts:
+            assert part in result
+
+    def test_flow_to_stock_dataset(self):
+        """Test flow_to_stock on dataset generates window function SQL."""
+        from vtlengine.AST import UnaryOp
+        from vtlengine.AST.Grammar.tokens import FLOW_TO_STOCK
+        from vtlengine.DataTypes import Date
+
+        # Create dataset with time identifier
+        components = {
+            "time_id": Component(
+                name="time_id", data_type=Date, role=Role.IDENTIFIER, nullable=False
+            ),
+            "region": Component(
+                name="region", data_type=String, role=Role.IDENTIFIER, nullable=False
+            ),
+            "value": Component(name="value", data_type=Number, role=Role.MEASURE, nullable=True),
+        }
+        ds = Dataset(name="DS_1", components=components, data=None)
+
+        transpiler = SQLTranspiler(
+            input_datasets={"DS_1": ds},
+            output_datasets={"DS_r": ds},
+            input_scalars={},
+            output_scalars={},
+        )
+
+        unary_op = UnaryOp(
+            **make_ast_node(
+                op=FLOW_TO_STOCK,
+                operand=VarID(**make_ast_node(value="DS_1")),
+            )
+        )
+
+        result = transpiler.visit_UnaryOp(unary_op)
+        # Should generate window function for cumulative sum
+        assert "SUM" in result
+        assert "OVER" in result
+        assert "ORDER BY" in result
+        assert "PARTITION BY" in result  # Should partition by non-time identifiers
+
+    def test_stock_to_flow_dataset(self):
+        """Test stock_to_flow on dataset generates window function SQL."""
+        from vtlengine.AST import UnaryOp
+        from vtlengine.AST.Grammar.tokens import STOCK_TO_FLOW
+        from vtlengine.DataTypes import Date
+
+        # Create dataset with time identifier
+        components = {
+            "time_id": Component(
+                name="time_id", data_type=Date, role=Role.IDENTIFIER, nullable=False
+            ),
+            "region": Component(
+                name="region", data_type=String, role=Role.IDENTIFIER, nullable=False
+            ),
+            "value": Component(name="value", data_type=Number, role=Role.MEASURE, nullable=True),
+        }
+        ds = Dataset(name="DS_1", components=components, data=None)
+
+        transpiler = SQLTranspiler(
+            input_datasets={"DS_1": ds},
+            output_datasets={"DS_r": ds},
+            input_scalars={},
+            output_scalars={},
+        )
+
+        unary_op = UnaryOp(
+            **make_ast_node(
+                op=STOCK_TO_FLOW,
+                operand=VarID(**make_ast_node(value="DS_1")),
+            )
+        )
+
+        result = transpiler.visit_UnaryOp(unary_op)
+        # Should generate window function for difference
+        assert "LAG" in result
+        assert "OVER" in result
+        assert "ORDER BY" in result
+        assert "COALESCE" in result  # Handles first row NULL
