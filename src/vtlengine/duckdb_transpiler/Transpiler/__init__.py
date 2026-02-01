@@ -96,7 +96,7 @@ from vtlengine.AST.Grammar.tokens import (
     VAR_SAMP,
     XOR,
 )
-from vtlengine.Model import Dataset, Scalar
+from vtlengine.Model import Dataset, ExternalRoutine, Scalar, ValueDomain
 
 # =============================================================================
 # SQL Operator Mappings
@@ -233,6 +233,10 @@ class SQLTranspiler(ASTTemplate):
     # Output structures from semantic analysis
     output_datasets: Dict[str, Dataset] = field(default_factory=dict)
     output_scalars: Dict[str, Scalar] = field(default_factory=dict)
+
+    # Value domains and external routines
+    value_domains: Dict[str, ValueDomain] = field(default_factory=dict)
+    external_routines: Dict[str, ExternalRoutine] = field(default_factory=dict)
 
     # Runtime state
     available_tables: Dict[str, Dataset] = field(default_factory=dict)
@@ -399,9 +403,48 @@ class SQLTranspiler(ASTTemplate):
         return f'"{node.value}"'
 
     def visit_Collection(self, node: AST.Collection) -> str:
-        """Process a collection (set of values)."""
+        """
+        Process a collection (set of values or value domain reference).
+
+        For Set kind: returns SQL literal list like (1, 2, 3)
+        For ValueDomain kind: looks up the value domain and returns its values as SQL literal list
+        """
+        if node.kind == "ValueDomain":
+            # Look up the value domain by name
+            vd_name = node.name
+            if not self.value_domains:
+                raise ValueError(
+                    f"Value domain '{vd_name}' referenced but no value domains provided"
+                )
+            if vd_name not in self.value_domains:
+                raise ValueError(f"Value domain '{vd_name}' not found")
+
+            vd = self.value_domains[vd_name]
+            # Convert value domain setlist to SQL literals
+            sql_values = [self._value_to_sql_literal(v, vd.type.__name__) for v in vd.setlist]
+            return f"({', '.join(sql_values)})"
+
+        # Default: Set kind - process children as values
         values = [self.visit(child) for child in node.children]
         return f"({', '.join(values)})"
+
+    def _value_to_sql_literal(self, value: Any, type_name: str) -> str:
+        """Convert a Python value to SQL literal based on its type."""
+        if value is None:
+            return "NULL"
+        if type_name == "String":
+            escaped = str(value).replace("'", "''")
+            return f"'{escaped}'"
+        elif type_name in ("Integer", "Number"):
+            return str(value)
+        elif type_name == "Boolean":
+            return "TRUE" if value else "FALSE"
+        elif type_name == "Date":
+            return f"DATE '{value}'"
+        else:
+            # Default: treat as string
+            escaped = str(value).replace("'", "''")
+            return f"'{escaped}'"
 
     # =========================================================================
     # Binary Operations
@@ -1833,6 +1876,81 @@ FROM ({dataset_sql}) AS t"""
                     SELECT {id_select}, {measure_select}
                     FROM ({dataset_sql}) AS t
                 """
+
+    # =========================================================================
+    # Eval Operator (External Routines)
+    # =========================================================================
+
+    def visit_EvalOp(self, node: AST.EvalOp) -> str:
+        """
+        Process EVAL operator for external routines.
+
+        VTL: eval(routine_name(DS_1, ...) language "SQL" returns dataset_spec)
+
+        The external routine contains a SQL query that is executed directly.
+        The transpiler replaces dataset references in the query with the
+        appropriate SQL for those datasets.
+        """
+        routine_name = node.name
+
+        # Check that external routines are provided
+        if not self.external_routines:
+            raise ValueError(
+                f"External routine '{routine_name}' referenced but no external routines provided"
+            )
+
+        if routine_name not in self.external_routines:
+            raise ValueError(f"External routine '{routine_name}' not found")
+
+        external_routine = self.external_routines[routine_name]
+
+        # Get SQL for each operand dataset
+        operand_sql_map: Dict[str, str] = {}
+        for operand in node.operands:
+            if isinstance(operand, AST.VarID):
+                ds_name = operand.value
+                operand_sql_map[ds_name] = self._get_dataset_sql(operand)
+            elif isinstance(operand, AST.Constant):
+                # Constants are passed directly (not common in EVAL)
+                pass
+
+        # The external routine query is the SQL to execute
+        # We need to replace table references with the appropriate SQL
+        query = external_routine.query
+
+        # Replace dataset references in the query with subqueries
+        # The external routine has dataset_names extracted from the query
+        for ds_name in external_routine.dataset_names:
+            if ds_name in operand_sql_map:
+                # Replace table reference with subquery
+                # Be careful with quoting - DuckDB uses double quotes for identifiers
+                subquery_sql = operand_sql_map[ds_name]
+
+                # If it's a simple SELECT * FROM "table", we can use the table directly
+                table_ref = self._extract_table_from_select(subquery_sql)
+                if table_ref:
+                    # Just use the table name as-is (it's already in the query)
+                    continue
+                else:
+                    # Replace the table reference with a subquery
+                    # Pattern: FROM ds_name or FROM "ds_name"
+                    import re
+
+                    # Replace unquoted or quoted references
+                    query = re.sub(
+                        rf'\bFROM\s+"{ds_name}"',
+                        f"FROM ({subquery_sql}) AS {ds_name}",
+                        query,
+                        flags=re.IGNORECASE,
+                    )
+                    query = re.sub(
+                        rf"\bFROM\s+{ds_name}\b",
+                        f"FROM ({subquery_sql}) AS {ds_name}",
+                        query,
+                        flags=re.IGNORECASE,
+                    )
+
+        return query
 
     # =========================================================================
     # Helper Methods

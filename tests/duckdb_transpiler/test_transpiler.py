@@ -60,9 +60,7 @@ def create_simple_dataset(name: str, id_cols: list, measure_cols: list) -> Datas
             name=col, data_type=String, role=Role.IDENTIFIER, nullable=False
         )
     for col in measure_cols:
-        components[col] = Component(
-            name=col, data_type=Number, role=Role.MEASURE, nullable=True
-        )
+        components[col] = Component(name=col, data_type=Number, role=Role.MEASURE, nullable=True)
     return Dataset(name=name, components=components, data=None)
 
 
@@ -91,9 +89,7 @@ def create_start_with_assignment(result_name: str, expression) -> Start:
     return Start(**make_ast_node(children=[assignment]))
 
 
-def transpile_and_get_sql(
-    transpiler: SQLTranspiler, ast: Start
-) -> List[Tuple[str, str, bool]]:
+def transpile_and_get_sql(transpiler: SQLTranspiler, ast: Start) -> List[Tuple[str, str, bool]]:
     """Transpile AST and return list of (name, sql, is_persistent) tuples."""
     return transpiler.transpile(ast)
 
@@ -143,7 +139,7 @@ class TestInOperator:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = f'''SELECT "Id_1", ("Me_1" {sql_op} (1, 2)) AS "Me_1", ("Me_2" {sql_op} (1, 2)) AS "Me_2" FROM (SELECT * FROM "DS_1") AS t'''
+        expected_sql = f"""SELECT "Id_1", ("Me_1" {sql_op} (1, 2)) AS "Me_1", ("Me_2" {sql_op} (1, 2)) AS "Me_2" FROM (SELECT * FROM "DS_1") AS t"""
         assert_sql_equal(sql, expected_sql)
 
 
@@ -190,7 +186,9 @@ class TestBetweenOperator:
         assert name == "DS_r"
 
         # Optimized SQL with predicate pushdown (no unnecessary nesting)
-        expected_sql = f'''SELECT * FROM "DS_1" WHERE ("Me_1" BETWEEN {low_value} AND {high_value})'''
+        expected_sql = (
+            f"""SELECT * FROM "DS_1" WHERE ("Me_1" BETWEEN {low_value} AND {high_value})"""
+        )
         assert_sql_equal(sql, expected_sql)
 
 
@@ -224,7 +222,7 @@ class TestMatchOperator:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = '''SELECT "Id_1", regexp_full_match("Me_1", '[A-Z]+') AS "Me_1", regexp_full_match("Me_2", '[A-Z]+') AS "Me_2" FROM (SELECT * FROM "DS_1") AS t'''
+        expected_sql = """SELECT "Id_1", regexp_full_match("Me_1", '[A-Z]+') AS "Me_1", regexp_full_match("Me_2", '[A-Z]+') AS "Me_2" FROM (SELECT * FROM "DS_1") AS t"""
         assert_sql_equal(sql, expected_sql)
 
 
@@ -258,13 +256,16 @@ class TestExistInOperator:
         assert name == "DS_r"
 
         # Verify complete SELECT structure
-        assert_sql_contains(sql, [
-            'SELECT l."Id_1", l."Id_2"',
-            'EXISTS(SELECT 1 FROM (SELECT * FROM "DS_2") AS r',
-            'WHERE l."Id_1" = r."Id_1" AND l."Id_2" = r."Id_2"',
-            'AS "bool_var"',
-            'FROM (SELECT * FROM "DS_1") AS l',
-        ])
+        assert_sql_contains(
+            sql,
+            [
+                'SELECT l."Id_1", l."Id_2"',
+                'EXISTS(SELECT 1 FROM (SELECT * FROM "DS_2") AS r',
+                'WHERE l."Id_1" = r."Id_1" AND l."Id_2" = r."Id_2"',
+                'AS "bool_var"',
+                'FROM (SELECT * FROM "DS_1") AS l',
+            ],
+        )
 
 
 # =============================================================================
@@ -351,13 +352,16 @@ class TestSetOperations:
         assert name == "DS_r"
 
         # Verify union structure with dedup
-        assert_sql_contains(sql, [
-            "SELECT DISTINCT ON",
-            '"Id_1"',
-            "UNION ALL",
-            '"DS_1"',
-            '"DS_2"',
-        ])
+        assert_sql_contains(
+            sql,
+            [
+                "SELECT DISTINCT ON",
+                '"Id_1"',
+                "UNION ALL",
+                '"DS_1"',
+                '"DS_2"',
+            ],
+        )
 
 
 # =============================================================================
@@ -397,7 +401,7 @@ class TestCastOperator:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = f'''SELECT "Id_1", CAST("Me_1" AS {expected_duckdb_type}) AS "Me_1", CAST("Me_2" AS {expected_duckdb_type}) AS "Me_2" FROM (SELECT * FROM "DS_1") AS t'''
+        expected_sql = f"""SELECT "Id_1", CAST("Me_1" AS {expected_duckdb_type}) AS "Me_1", CAST("Me_2" AS {expected_duckdb_type}) AS "Me_2" FROM (SELECT * FROM "DS_1") AS t"""
         assert_sql_equal(sql, expected_sql)
 
     def test_cast_with_date_mask(self):
@@ -421,7 +425,7 @@ class TestCastOperator:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = '''SELECT "Id_1", STRPTIME("Me_1", '%Y-%m-%d')::DATE AS "Me_1" FROM (SELECT * FROM "DS_1") AS t'''
+        expected_sql = """SELECT "Id_1", STRPTIME("Me_1", '%Y-%m-%d')::DATE AS "Me_1" FROM (SELECT * FROM "DS_1") AS t"""
         assert_sql_equal(sql, expected_sql)
 
 
@@ -463,13 +467,16 @@ class TestCheckOperator:
         assert name == "DS_r"
 
         # Verify complete SELECT structure for invalid output
-        assert_sql_contains(sql, [
-            "SELECT *",
-            "'E001' AS errorcode",
-            "1 AS errorlevel",
-            "WHERE",
-            '"Me_1" = FALSE',
-        ])
+        assert_sql_contains(
+            sql,
+            [
+                "SELECT *",
+                "'E001' AS errorcode",
+                "1 AS errorlevel",
+                "WHERE",
+                '"Me_1" = FALSE',
+            ],
+        )
 
 
 # =============================================================================
@@ -533,7 +540,7 @@ class TestBinaryOperations:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = f'''SELECT "Id_1", ("Me_1" {sql_op} 10) AS "Me_1", ("Me_2" {sql_op} 10) AS "Me_2" FROM (SELECT * FROM "DS_1") AS t'''
+        expected_sql = f"""SELECT "Id_1", ("Me_1" {sql_op} 10) AS "Me_1", ("Me_2" {sql_op} 10) AS "Me_2" FROM (SELECT * FROM "DS_1") AS t"""
         assert_sql_equal(sql, expected_sql)
 
 
@@ -575,7 +582,7 @@ class TestUnaryOperations:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = f'''SELECT "Id_1", {expected_sql_func}("Me_1") AS "Me_1", {expected_sql_func}("Me_2") AS "Me_2" FROM (SELECT * FROM "DS_1") AS t'''
+        expected_sql = f"""SELECT "Id_1", {expected_sql_func}("Me_1") AS "Me_1", {expected_sql_func}("Me_2") AS "Me_2" FROM (SELECT * FROM "DS_1") AS t"""
         assert_sql_equal(sql, expected_sql)
 
     def test_isnull_dataset_op(self):
@@ -597,7 +604,9 @@ class TestUnaryOperations:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = '''SELECT "Id_1", ("Me_1" IS NULL) AS "Me_1" FROM (SELECT * FROM "DS_1") AS t'''
+        expected_sql = (
+            """SELECT "Id_1", ("Me_1" IS NULL) AS "Me_1" FROM (SELECT * FROM "DS_1") AS t"""
+        )
         assert_sql_equal(sql, expected_sql)
 
 
@@ -629,7 +638,7 @@ class TestParameterizedOperations:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = '''SELECT "Id_1", ROUND("Me_1", 2) AS "Me_1", ROUND("Me_2", 2) AS "Me_2" FROM (SELECT * FROM "DS_1") AS t'''
+        expected_sql = """SELECT "Id_1", ROUND("Me_1", 2) AS "Me_1", ROUND("Me_2", 2) AS "Me_2" FROM (SELECT * FROM "DS_1") AS t"""
         assert_sql_equal(sql, expected_sql)
 
     def test_nvl_dataset_operation(self):
@@ -652,7 +661,9 @@ class TestParameterizedOperations:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = '''SELECT "Id_1", COALESCE("Me_1", 0) AS "Me_1" FROM (SELECT * FROM "DS_1") AS t'''
+        expected_sql = (
+            """SELECT "Id_1", COALESCE("Me_1", 0) AS "Me_1" FROM (SELECT * FROM "DS_1") AS t"""
+        )
         assert_sql_equal(sql, expected_sql)
 
 
@@ -693,7 +704,7 @@ class TestClauseOperations:
         assert name == "DS_r"
 
         # Optimized SQL with predicate pushdown (no unnecessary nesting)
-        expected_sql = '''SELECT * FROM "DS_1" WHERE ("Me_1" > 10)'''
+        expected_sql = """SELECT * FROM "DS_1" WHERE ("Me_1" > 10)"""
         assert_sql_equal(sql, expected_sql)
 
     def test_calc_clause_new_column(self):
@@ -732,13 +743,16 @@ class TestClauseOperations:
         assert name == "DS_r"
 
         # Verify SELECT contains original columns and new calculated column
-        assert_sql_contains(sql, [
-            "SELECT",
-            '"Id_1"',
-            '"Me_1"',
-            '("Me_1" * 2) AS "Me_2"',
-            'FROM (SELECT * FROM "DS_1") AS t',
-        ])
+        assert_sql_contains(
+            sql,
+            [
+                "SELECT",
+                '"Id_1"',
+                '"Me_1"',
+                '("Me_1" * 2) AS "Me_2"',
+                'FROM (SELECT * FROM "DS_1") AS t',
+            ],
+        )
 
 
 # =============================================================================
@@ -789,13 +803,16 @@ class TestConditionalOperations:
         assert name == "DS_r"
 
         # Verify CASE WHEN structure
-        assert_sql_contains(sql, [
-            "SELECT",
-            "CASE WHEN",
-            '("Me_1" > 5)',
-            "THEN 1 ELSE 0 END",
-            'AS "Me_2"',
-        ])
+        assert_sql_contains(
+            sql,
+            [
+                "SELECT",
+                "CASE WHEN",
+                '("Me_1" > 5)',
+                "THEN 1 ELSE 0 END",
+                'AS "Me_2"',
+            ],
+        )
 
 
 # =============================================================================
@@ -857,11 +874,309 @@ class TestMultipleAssignments:
         # First assignment
         name1, sql1, _ = results[0]
         assert name1 == "DS_2"
-        expected_sql1 = '''SELECT "Id_1", ("Me_1" * 2) AS "Me_1" FROM (SELECT * FROM "DS_1") AS t'''
+        expected_sql1 = """SELECT "Id_1", ("Me_1" * 2) AS "Me_1" FROM (SELECT * FROM "DS_1") AS t"""
         assert_sql_equal(sql1, expected_sql1)
 
         # Second assignment (now DS_2 is available)
         name2, sql2, _ = results[1]
         assert name2 == "DS_3"
-        expected_sql2 = '''SELECT "Id_1", ("Me_1" + 10) AS "Me_1" FROM (SELECT * FROM "DS_2") AS t'''
+        expected_sql2 = (
+            """SELECT "Id_1", ("Me_1" + 10) AS "Me_1" FROM (SELECT * FROM "DS_2") AS t"""
+        )
         assert_sql_equal(sql2, expected_sql2)
+
+
+# =============================================================================
+# Value Domain Tests (Sprint 4)
+# =============================================================================
+
+
+class TestValueDomains:
+    """Tests for value domain handling in transpiler."""
+
+    def test_value_domain_in_collection_string_type(self):
+        """Test value domain reference resolves to string literals."""
+        from vtlengine.AST import Collection
+        from vtlengine.DataTypes import String
+        from vtlengine.Model import ValueDomain
+
+        # Create value domain with string values
+        vd = ValueDomain(name="COUNTRIES", type=String, setlist=["US", "UK", "DE"])
+
+        transpiler = SQLTranspiler(
+            input_datasets={},
+            output_datasets={},
+            input_scalars={},
+            output_scalars={},
+            value_domains={"COUNTRIES": vd},
+        )
+
+        # Create a Collection node referencing the value domain
+        collection = Collection(
+            **make_ast_node(name="COUNTRIES", type="String", children=[], kind="ValueDomain")
+        )
+
+        result = transpiler.visit_Collection(collection)
+        assert result == "('US', 'UK', 'DE')"
+
+    def test_value_domain_in_collection_integer_type(self):
+        """Test value domain reference resolves to integer literals."""
+        from vtlengine.AST import Collection
+        from vtlengine.DataTypes import Integer
+        from vtlengine.Model import ValueDomain
+
+        # Create value domain with integer values
+        vd = ValueDomain(name="VALID_CODES", type=Integer, setlist=[1, 2, 3, 4, 5])
+
+        transpiler = SQLTranspiler(
+            input_datasets={},
+            output_datasets={},
+            input_scalars={},
+            output_scalars={},
+            value_domains={"VALID_CODES": vd},
+        )
+
+        collection = Collection(
+            **make_ast_node(name="VALID_CODES", type="Integer", children=[], kind="ValueDomain")
+        )
+
+        result = transpiler.visit_Collection(collection)
+        assert result == "(1, 2, 3, 4, 5)"
+
+    def test_value_domain_not_found_error(self):
+        """Test error when value domain is not found."""
+        from vtlengine.AST import Collection
+
+        transpiler = SQLTranspiler(
+            input_datasets={},
+            output_datasets={},
+            input_scalars={},
+            output_scalars={},
+            value_domains={},
+        )
+
+        collection = Collection(
+            **make_ast_node(name="UNKNOWN_VD", type="String", children=[], kind="ValueDomain")
+        )
+
+        with pytest.raises(ValueError, match="no value domains provided"):
+            transpiler.visit_Collection(collection)
+
+    def test_value_domain_missing_from_provided(self):
+        """Test error when specific value domain is not in provided dict."""
+        from vtlengine.AST import Collection
+        from vtlengine.DataTypes import String
+        from vtlengine.Model import ValueDomain
+
+        vd = ValueDomain(name="OTHER_VD", type=String, setlist=["A", "B"])
+
+        transpiler = SQLTranspiler(
+            input_datasets={},
+            output_datasets={},
+            input_scalars={},
+            output_scalars={},
+            value_domains={"OTHER_VD": vd},
+        )
+
+        collection = Collection(
+            **make_ast_node(name="UNKNOWN_VD", type="String", children=[], kind="ValueDomain")
+        )
+
+        with pytest.raises(ValueError, match="'UNKNOWN_VD' not found"):
+            transpiler.visit_Collection(collection)
+
+    def test_collection_set_kind(self):
+        """Test normal Set collection still works."""
+        from vtlengine.AST import Collection
+
+        transpiler = SQLTranspiler(
+            input_datasets={},
+            output_datasets={},
+            input_scalars={},
+            output_scalars={},
+        )
+
+        # Create a Set collection with literal constants
+        collection = Collection(
+            **make_ast_node(
+                name="",
+                type="Integer",
+                children=[
+                    Constant(**make_ast_node(type_="INTEGER_CONSTANT", value=1)),
+                    Constant(**make_ast_node(type_="INTEGER_CONSTANT", value=2)),
+                    Constant(**make_ast_node(type_="INTEGER_CONSTANT", value=3)),
+                ],
+                kind="Set",
+            )
+        )
+
+        result = transpiler.visit_Collection(collection)
+        assert result == "(1, 2, 3)"
+
+    @pytest.mark.parametrize(
+        "type_name,value,expected",
+        [
+            ("String", "hello", "'hello'"),
+            ("String", "it's", "'it''s'"),  # Escaped single quote
+            ("Integer", 42, "42"),
+            ("Number", 3.14, "3.14"),
+            ("Boolean", True, "TRUE"),
+            ("Boolean", False, "FALSE"),
+            ("Date", "2024-01-15", "DATE '2024-01-15'"),
+        ],
+    )
+    def test_value_to_sql_literal(self, type_name, value, expected):
+        """Test _value_to_sql_literal helper method."""
+        transpiler = SQLTranspiler(
+            input_datasets={},
+            output_datasets={},
+            input_scalars={},
+            output_scalars={},
+        )
+
+        result = transpiler._value_to_sql_literal(value, type_name)
+        assert result == expected
+
+    def test_value_to_sql_literal_null(self):
+        """Test NULL handling in _value_to_sql_literal."""
+        transpiler = SQLTranspiler(
+            input_datasets={},
+            output_datasets={},
+            input_scalars={},
+            output_scalars={},
+        )
+
+        result = transpiler._value_to_sql_literal(None, "String")
+        assert result == "NULL"
+
+
+# =============================================================================
+# External Routines / Eval Operator Tests (Sprint 4)
+# =============================================================================
+
+
+class TestEvalOperator:
+    """Tests for EVAL operator and external routines."""
+
+    def test_eval_op_simple_query(self):
+        """Test EVAL operator with simple external routine."""
+        from vtlengine.AST import EvalOp
+        from vtlengine.Model import ExternalRoutine
+
+        ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
+        external_routine = ExternalRoutine(
+            dataset_names=["DS_1"],
+            query='SELECT "Id_1", "Me_1" * 2 AS "Me_1" FROM "DS_1"',
+            name="double_measure",
+        )
+
+        transpiler = SQLTranspiler(
+            input_datasets={"DS_1": ds},
+            output_datasets={"DS_r": ds},
+            input_scalars={},
+            output_scalars={},
+            external_routines={"double_measure": external_routine},
+        )
+
+        eval_op = EvalOp(
+            **make_ast_node(
+                name="double_measure",
+                operands=[VarID(**make_ast_node(value="DS_1"))],
+                output=None,
+                language="SQL",
+            )
+        )
+
+        result = transpiler.visit_EvalOp(eval_op)
+        # The query should be returned as-is since DS_1 is a direct table reference
+        assert '"Me_1" * 2' in result
+        assert 'FROM "DS_1"' in result
+
+    def test_eval_op_routine_not_found(self):
+        """Test error when external routine is not found."""
+        from vtlengine.AST import EvalOp
+
+        transpiler = SQLTranspiler(
+            input_datasets={},
+            output_datasets={},
+            input_scalars={},
+            output_scalars={},
+            external_routines={},
+        )
+
+        eval_op = EvalOp(
+            **make_ast_node(
+                name="unknown_routine",
+                operands=[],
+                output=None,
+                language="SQL",
+            )
+        )
+
+        with pytest.raises(ValueError, match="no external routines provided"):
+            transpiler.visit_EvalOp(eval_op)
+
+    def test_eval_op_routine_missing_from_provided(self):
+        """Test error when specific routine is not in provided dict."""
+        from vtlengine.AST import EvalOp
+        from vtlengine.Model import ExternalRoutine
+
+        external_routine = ExternalRoutine(
+            dataset_names=["DS_1"],
+            query='SELECT * FROM "DS_1"',
+            name="other_routine",
+        )
+
+        transpiler = SQLTranspiler(
+            input_datasets={},
+            output_datasets={},
+            input_scalars={},
+            output_scalars={},
+            external_routines={"other_routine": external_routine},
+        )
+
+        eval_op = EvalOp(
+            **make_ast_node(
+                name="unknown_routine",
+                operands=[],
+                output=None,
+                language="SQL",
+            )
+        )
+
+        with pytest.raises(ValueError, match="'unknown_routine' not found"):
+            transpiler.visit_EvalOp(eval_op)
+
+    def test_eval_op_with_subquery_replacement(self):
+        """Test EVAL operator replaces table references with subqueries when needed."""
+        from vtlengine.AST import EvalOp
+        from vtlengine.Model import ExternalRoutine
+
+        ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
+        external_routine = ExternalRoutine(
+            dataset_names=["DS_1"],
+            query='SELECT "Id_1", SUM("Me_1") AS "total" FROM DS_1 GROUP BY "Id_1"',
+            name="aggregate_routine",
+        )
+
+        transpiler = SQLTranspiler(
+            input_datasets={"DS_1": ds},
+            output_datasets={"DS_r": ds},
+            input_scalars={},
+            output_scalars={},
+            external_routines={"aggregate_routine": external_routine},
+        )
+
+        eval_op = EvalOp(
+            **make_ast_node(
+                name="aggregate_routine",
+                operands=[VarID(**make_ast_node(value="DS_1"))],
+                output=None,
+                language="SQL",
+            )
+        )
+
+        result = transpiler.visit_EvalOp(eval_op)
+        # Should contain aggregate function
+        assert 'SUM("Me_1")' in result
+        assert 'GROUP BY "Id_1"' in result
