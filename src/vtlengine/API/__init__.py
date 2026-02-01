@@ -303,7 +303,7 @@ def _run_with_duckdb(
 
     from vtlengine.AST.DAG._words import DELETE, GLOBAL, INSERT, PERSISTENT
     from vtlengine.duckdb_transpiler import SQLTranspiler
-    from vtlengine.duckdb_transpiler.io import execute_queries
+    from vtlengine.duckdb_transpiler.io import execute_queries, extract_datapoint_paths
 
     # AST generation
     script = _check_script(script)
@@ -344,8 +344,9 @@ def _run_with_duckdb(
     # Get DAG analysis for efficient load/save scheduling
     ds_analysis = DAGAnalyzer.ds_structure(ast)
 
-    # Get path mappings for datapoints
-    _, _, path_dict = load_datasets_with_data(data_structures, datapoints, scalar_values)
+    # Extract paths without pandas validation (DuckDB-optimized)
+    # This avoids the double CSV read that load_datasets_with_data causes
+    path_dict, dataframe_dict = extract_datapoint_paths(datapoints, input_datasets)
 
     # Create transpiler and generate SQL
     transpiler = SQLTranspiler(
@@ -369,6 +370,7 @@ def _run_with_duckdb(
             queries=queries,
             ds_analysis=ds_analysis,
             path_dict=path_dict,
+            dataframe_dict=dataframe_dict,
             input_datasets=input_datasets,
             output_datasets=output_datasets,
             output_scalars=output_scalars,

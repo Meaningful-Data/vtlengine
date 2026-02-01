@@ -9,10 +9,11 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import duckdb
+import pandas as pd
 
 from vtlengine.Model import Dataset, Scalar
 
-from ._io import load_datapoints_duckdb, save_datapoints_duckdb
+from ._io import load_datapoints_duckdb, register_dataframes, save_datapoints_duckdb
 
 
 def load_scheduled_datasets(
@@ -20,6 +21,7 @@ def load_scheduled_datasets(
     statement_num: int,
     ds_analysis: Dict[str, Any],
     path_dict: Optional[Dict[str, Path]],
+    dataframe_dict: Dict[str, pd.DataFrame],
     input_datasets: Dict[str, Dataset],
     insert_key: str,
 ) -> None:
@@ -31,6 +33,7 @@ def load_scheduled_datasets(
         statement_num: Current statement number (1-indexed)
         ds_analysis: DAG analysis dict with insertion schedule
         path_dict: Dict mapping dataset names to CSV paths
+        dataframe_dict: Dict mapping dataset names to DataFrames
         input_datasets: Dict of input dataset structures
         insert_key: Key in ds_analysis for insertion schedule (e.g., 'insertion')
     """
@@ -49,9 +52,9 @@ def load_scheduled_datasets(
                 dataset_name=ds_name,
                 csv_path=path_dict[ds_name],
             )
-        elif input_datasets[ds_name].data is not None:
-            # Register DataFrame directly if data is already loaded
-            conn.register(ds_name, input_datasets[ds_name].data)
+        elif ds_name in dataframe_dict:
+            # Register DataFrame directly with proper schema
+            register_dataframes(conn, {ds_name: dataframe_dict[ds_name]}, input_datasets)
 
 
 def cleanup_scheduled_datasets(
@@ -154,6 +157,7 @@ def execute_queries(
     queries: List[Tuple[str, str, bool]],
     ds_analysis: Dict[str, Any],
     path_dict: Optional[Dict[str, Path]],
+    dataframe_dict: Dict[str, pd.DataFrame],
     input_datasets: Dict[str, Dataset],
     output_datasets: Dict[str, Dataset],
     output_scalars: Dict[str, Scalar],
@@ -172,6 +176,7 @@ def execute_queries(
         queries: List of (result_name, sql_query, is_persistent) tuples
         ds_analysis: DAG analysis dict
         path_dict: Dict mapping dataset names to CSV paths
+        dataframe_dict: Dict mapping dataset names to DataFrames
         input_datasets: Dict of input dataset structures
         output_datasets: Dict of output dataset structures
         output_scalars: Dict of output scalar structures
@@ -199,6 +204,7 @@ def execute_queries(
             statement_num=statement_num,
             ds_analysis=ds_analysis,
             path_dict=path_dict,
+            dataframe_dict=dataframe_dict,
             input_datasets=input_datasets,
             insert_key=insert_key,
         )

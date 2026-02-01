@@ -5,12 +5,13 @@ This module contains the core load/save implementations to avoid circular import
 """
 
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import duckdb
+import pandas as pd
 
-from vtlengine.Exceptions import DataLoadError
-from vtlengine.Model import Component, Role
+from vtlengine.Exceptions import DataLoadError, InputValidationException
+from vtlengine.Model import Component, Dataset, Role
 
 from ._validation import (
     build_create_table_sql,
@@ -176,3 +177,100 @@ def save_datapoints_duckdb(
 
     if delete_after_save:
         conn.execute(f'DROP TABLE IF EXISTS "{dataset_name}"')
+
+
+def extract_datapoint_paths(
+    datapoints: Optional[
+        Union[Dict[str, Union[pd.DataFrame, str, Path]], List[Union[str, Path]], str, Path]
+    ],
+    input_datasets: Dict[str, Dataset],
+) -> Tuple[Optional[Dict[str, Path]], Dict[str, pd.DataFrame]]:
+    """
+    Extract CSV paths and DataFrames from datapoints without pandas validation.
+
+    This function is optimized for DuckDB execution - it only extracts paths
+    without loading or validating data. DuckDB will validate during its native CSV load.
+
+    Args:
+        datapoints: Dict of DataFrames/paths, list of paths, or single path
+        input_datasets: Dict of input dataset structures (for validation)
+
+    Returns:
+        Tuple of (path_dict, dataframe_dict):
+        - path_dict: Dict mapping dataset names to CSV Paths (None if no paths)
+        - dataframe_dict: Dict mapping dataset names to DataFrames (for direct registration)
+
+    Raises:
+        InputValidationException: If dataset name not found in structures
+    """
+    if datapoints is None:
+        return None, {}
+
+    path_dict: Dict[str, Path] = {}
+    df_dict: Dict[str, pd.DataFrame] = {}
+
+    # Handle dictionary input
+    if isinstance(datapoints, dict):
+        for name, value in datapoints.items():
+            if name not in input_datasets:
+                raise InputValidationException(f"Not found dataset {name} in datastructures.")
+
+            if isinstance(value, pd.DataFrame):
+                # Store DataFrame for direct DuckDB registration
+                df_dict[name] = value
+            elif isinstance(value, (str, Path)):
+                # Convert to Path and store
+                path_dict[name] = Path(value) if isinstance(value, str) else value
+            else:
+                raise InputValidationException(
+                    f"Invalid datapoint for {name}. Must be DataFrame, Path, or string."
+                )
+        return path_dict if path_dict else None, df_dict
+
+    # Handle list of paths
+    if isinstance(datapoints, list):
+        for item in datapoints:
+            path = Path(item) if isinstance(item, str) else item
+            # Extract dataset name from filename (without extension)
+            name = path.stem
+            if name in input_datasets:
+                path_dict[name] = path
+        return path_dict if path_dict else None, df_dict
+
+    # Handle single path
+    path = Path(datapoints) if isinstance(datapoints, str) else datapoints
+    name = path.stem
+    if name in input_datasets:
+        path_dict[name] = path
+    return path_dict if path_dict else None, df_dict
+
+
+def register_dataframes(
+    conn: duckdb.DuckDBPyConnection,
+    dataframes: Dict[str, pd.DataFrame],
+    input_datasets: Dict[str, Dataset],
+) -> None:
+    """
+    Register DataFrames directly with DuckDB connection.
+
+    Creates tables from DataFrames with proper schema based on dataset components.
+
+    Args:
+        conn: DuckDB connection
+        dataframes: Dict mapping dataset names to DataFrames
+        input_datasets: Dict of input dataset structures
+    """
+    for name, df in dataframes.items():
+        if name not in input_datasets:
+            continue
+
+        components = input_datasets[name].components
+
+        # Create table with proper schema
+        conn.execute(build_create_table_sql(name, components))
+
+        # Register DataFrame and insert data
+        temp_view = f"_temp_{name}"
+        conn.register(temp_view, df)
+        conn.execute(f'INSERT INTO "{name}" SELECT * FROM "{temp_view}"')
+        conn.unregister(temp_view)
