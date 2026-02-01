@@ -15,6 +15,7 @@ from vtlengine.AST import (
     BinOp,
     Collection,
     Constant,
+    EvalOp,
     If,
     MulOp,
     ParamOp,
@@ -24,9 +25,16 @@ from vtlengine.AST import (
     Validation,
     VarID,
 )
-from vtlengine.DataTypes import Boolean, Number, String
+from vtlengine.AST.Grammar.tokens import (
+    CURRENT_DATE,
+    DATEDIFF,
+    FLOW_TO_STOCK,
+    PERIOD_INDICATOR,
+    STOCK_TO_FLOW,
+)
+from vtlengine.DataTypes import Boolean, Date, Integer, Number, String
 from vtlengine.duckdb_transpiler.Transpiler import SQLTranspiler
-from vtlengine.Model import Component, Dataset, Role
+from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, ValueDomain
 
 # =============================================================================
 # Test Utilities
@@ -139,7 +147,7 @@ class TestInOperator:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = f"""SELECT "Id_1", ("Me_1" {sql_op} (1, 2)) AS "Me_1", ("Me_2" {sql_op} (1, 2)) AS "Me_2" FROM (SELECT * FROM "DS_1") AS t"""
+        expected_sql = f'SELECT "Id_1", ("Me_1" {sql_op} (1, 2)) AS "Me_1", ("Me_2" {sql_op} (1, 2)) AS "Me_2" FROM "DS_1"'
         assert_sql_equal(sql, expected_sql)
 
 
@@ -222,7 +230,7 @@ class TestMatchOperator:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = """SELECT "Id_1", regexp_full_match("Me_1", '[A-Z]+') AS "Me_1", regexp_full_match("Me_2", '[A-Z]+') AS "Me_2" FROM (SELECT * FROM "DS_1") AS t"""
+        expected_sql = 'SELECT "Id_1", regexp_full_match("Me_1", \'[A-Z]+\') AS "Me_1", regexp_full_match("Me_2", \'[A-Z]+\') AS "Me_2" FROM "DS_1"'
         assert_sql_equal(sql, expected_sql)
 
 
@@ -401,7 +409,7 @@ class TestCastOperator:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = f"""SELECT "Id_1", CAST("Me_1" AS {expected_duckdb_type}) AS "Me_1", CAST("Me_2" AS {expected_duckdb_type}) AS "Me_2" FROM (SELECT * FROM "DS_1") AS t"""
+        expected_sql = f'SELECT "Id_1", CAST("Me_1" AS {expected_duckdb_type}) AS "Me_1", CAST("Me_2" AS {expected_duckdb_type}) AS "Me_2" FROM "DS_1"'
         assert_sql_equal(sql, expected_sql)
 
     def test_cast_with_date_mask(self):
@@ -425,7 +433,7 @@ class TestCastOperator:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = """SELECT "Id_1", STRPTIME("Me_1", '%Y-%m-%d')::DATE AS "Me_1" FROM (SELECT * FROM "DS_1") AS t"""
+        expected_sql = 'SELECT "Id_1", STRPTIME("Me_1", \'%Y-%m-%d\')::DATE AS "Me_1" FROM "DS_1"'
         assert_sql_equal(sql, expected_sql)
 
 
@@ -540,7 +548,7 @@ class TestBinaryOperations:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = f"""SELECT "Id_1", ("Me_1" {sql_op} 10) AS "Me_1", ("Me_2" {sql_op} 10) AS "Me_2" FROM (SELECT * FROM "DS_1") AS t"""
+        expected_sql = f'SELECT "Id_1", ("Me_1" {sql_op} 10) AS "Me_1", ("Me_2" {sql_op} 10) AS "Me_2" FROM "DS_1"'
         assert_sql_equal(sql, expected_sql)
 
 
@@ -582,7 +590,7 @@ class TestUnaryOperations:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = f"""SELECT "Id_1", {expected_sql_func}("Me_1") AS "Me_1", {expected_sql_func}("Me_2") AS "Me_2" FROM (SELECT * FROM "DS_1") AS t"""
+        expected_sql = f'SELECT "Id_1", {expected_sql_func}("Me_1") AS "Me_1", {expected_sql_func}("Me_2") AS "Me_2" FROM "DS_1"'
         assert_sql_equal(sql, expected_sql)
 
     def test_isnull_dataset_op(self):
@@ -604,9 +612,7 @@ class TestUnaryOperations:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = (
-            """SELECT "Id_1", ("Me_1" IS NULL) AS "Me_1" FROM (SELECT * FROM "DS_1") AS t"""
-        )
+        expected_sql = 'SELECT "Id_1", ("Me_1" IS NULL) AS "Me_1" FROM "DS_1"'
         assert_sql_equal(sql, expected_sql)
 
 
@@ -638,7 +644,7 @@ class TestParameterizedOperations:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = """SELECT "Id_1", ROUND("Me_1", 2) AS "Me_1", ROUND("Me_2", 2) AS "Me_2" FROM (SELECT * FROM "DS_1") AS t"""
+        expected_sql = 'SELECT "Id_1", ROUND("Me_1", 2) AS "Me_1", ROUND("Me_2", 2) AS "Me_2" FROM "DS_1"'
         assert_sql_equal(sql, expected_sql)
 
     def test_nvl_dataset_operation(self):
@@ -661,9 +667,7 @@ class TestParameterizedOperations:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = (
-            """SELECT "Id_1", COALESCE("Me_1", 0) AS "Me_1" FROM (SELECT * FROM "DS_1") AS t"""
-        )
+        expected_sql = 'SELECT "Id_1", COALESCE("Me_1", 0) AS "Me_1" FROM "DS_1"'
         assert_sql_equal(sql, expected_sql)
 
 
@@ -874,15 +878,13 @@ class TestMultipleAssignments:
         # First assignment
         name1, sql1, _ = results[0]
         assert name1 == "DS_2"
-        expected_sql1 = """SELECT "Id_1", ("Me_1" * 2) AS "Me_1" FROM (SELECT * FROM "DS_1") AS t"""
+        expected_sql1 = 'SELECT "Id_1", ("Me_1" * 2) AS "Me_1" FROM "DS_1"'
         assert_sql_equal(sql1, expected_sql1)
 
         # Second assignment (now DS_2 is available)
         name2, sql2, _ = results[1]
         assert name2 == "DS_3"
-        expected_sql2 = (
-            """SELECT "Id_1", ("Me_1" + 10) AS "Me_1" FROM (SELECT * FROM "DS_2") AS t"""
-        )
+        expected_sql2 = 'SELECT "Id_1", ("Me_1" + 10) AS "Me_1" FROM "DS_2"'
         assert_sql_equal(sql2, expected_sql2)
 
 
@@ -896,10 +898,6 @@ class TestValueDomains:
 
     def test_value_domain_in_collection_string_type(self):
         """Test value domain reference resolves to string literals."""
-        from vtlengine.AST import Collection
-        from vtlengine.DataTypes import String
-        from vtlengine.Model import ValueDomain
-
         # Create value domain with string values
         vd = ValueDomain(name="COUNTRIES", type=String, setlist=["US", "UK", "DE"])
 
@@ -921,10 +919,6 @@ class TestValueDomains:
 
     def test_value_domain_in_collection_integer_type(self):
         """Test value domain reference resolves to integer literals."""
-        from vtlengine.AST import Collection
-        from vtlengine.DataTypes import Integer
-        from vtlengine.Model import ValueDomain
-
         # Create value domain with integer values
         vd = ValueDomain(name="VALID_CODES", type=Integer, setlist=[1, 2, 3, 4, 5])
 
@@ -945,8 +939,6 @@ class TestValueDomains:
 
     def test_value_domain_not_found_error(self):
         """Test error when value domain is not found."""
-        from vtlengine.AST import Collection
-
         transpiler = SQLTranspiler(
             input_datasets={},
             output_datasets={},
@@ -964,10 +956,6 @@ class TestValueDomains:
 
     def test_value_domain_missing_from_provided(self):
         """Test error when specific value domain is not in provided dict."""
-        from vtlengine.AST import Collection
-        from vtlengine.DataTypes import String
-        from vtlengine.Model import ValueDomain
-
         vd = ValueDomain(name="OTHER_VD", type=String, setlist=["A", "B"])
 
         transpiler = SQLTranspiler(
@@ -987,8 +975,6 @@ class TestValueDomains:
 
     def test_collection_set_kind(self):
         """Test normal Set collection still works."""
-        from vtlengine.AST import Collection
-
         transpiler = SQLTranspiler(
             input_datasets={},
             output_datasets={},
@@ -1060,9 +1046,6 @@ class TestEvalOperator:
 
     def test_eval_op_simple_query(self):
         """Test EVAL operator with simple external routine."""
-        from vtlengine.AST import EvalOp
-        from vtlengine.Model import ExternalRoutine
-
         ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
         external_routine = ExternalRoutine(
             dataset_names=["DS_1"],
@@ -1094,8 +1077,6 @@ class TestEvalOperator:
 
     def test_eval_op_routine_not_found(self):
         """Test error when external routine is not found."""
-        from vtlengine.AST import EvalOp
-
         transpiler = SQLTranspiler(
             input_datasets={},
             output_datasets={},
@@ -1118,9 +1099,6 @@ class TestEvalOperator:
 
     def test_eval_op_routine_missing_from_provided(self):
         """Test error when specific routine is not in provided dict."""
-        from vtlengine.AST import EvalOp
-        from vtlengine.Model import ExternalRoutine
-
         external_routine = ExternalRoutine(
             dataset_names=["DS_1"],
             query='SELECT * FROM "DS_1"',
@@ -1149,9 +1127,6 @@ class TestEvalOperator:
 
     def test_eval_op_with_subquery_replacement(self):
         """Test EVAL operator replaces table references with subqueries when needed."""
-        from vtlengine.AST import EvalOp
-        from vtlengine.Model import ExternalRoutine
-
         ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
         external_routine = ExternalRoutine(
             dataset_names=["DS_1"],
@@ -1192,9 +1167,6 @@ class TestTimeOperators:
 
     def test_current_date(self):
         """Test current_date nullary operator."""
-        from vtlengine.AST import MulOp
-        from vtlengine.AST.Grammar.tokens import CURRENT_DATE
-
         transpiler = SQLTranspiler(
             input_datasets={},
             output_datasets={},
@@ -1217,8 +1189,6 @@ class TestTimeOperators:
     )
     def test_time_extraction_scalar(self, op_token, expected_func):
         """Test time extraction operators on scalar operands."""
-        from vtlengine.AST import UnaryOp
-
         transpiler = SQLTranspiler(
             input_datasets={},
             output_datasets={},
@@ -1239,9 +1209,6 @@ class TestTimeOperators:
 
     def test_datediff_scalar(self):
         """Test datediff on scalar operands."""
-        from vtlengine.AST import BinOp
-        from vtlengine.AST.Grammar.tokens import DATEDIFF
-
         transpiler = SQLTranspiler(
             input_datasets={},
             output_datasets={},
@@ -1264,9 +1231,6 @@ class TestTimeOperators:
 
     def test_period_indicator_scalar(self):
         """Test period_indicator on scalar operand."""
-        from vtlengine.AST import UnaryOp
-        from vtlengine.AST.Grammar.tokens import PERIOD_INDICATOR
-
         transpiler = SQLTranspiler(
             input_datasets={},
             output_datasets={},
@@ -1287,9 +1251,6 @@ class TestTimeOperators:
 
     def test_flow_to_stock_requires_dataset(self):
         """Test flow_to_stock raises error for non-dataset operand."""
-        from vtlengine.AST import UnaryOp
-        from vtlengine.AST.Grammar.tokens import FLOW_TO_STOCK
-
         transpiler = SQLTranspiler(
             input_datasets={},
             output_datasets={},
@@ -1309,9 +1270,6 @@ class TestTimeOperators:
 
     def test_stock_to_flow_requires_dataset(self):
         """Test stock_to_flow raises error for non-dataset operand."""
-        from vtlengine.AST import UnaryOp
-        from vtlengine.AST.Grammar.tokens import STOCK_TO_FLOW
-
         transpiler = SQLTranspiler(
             input_datasets={},
             output_datasets={},
@@ -1338,8 +1296,6 @@ class TestTimeOperators:
     )
     def test_duration_conversion_daytox(self, op_token, expected_parts):
         """Test duration conversion operators (daytoyear, daytomonth)."""
-        from vtlengine.AST import UnaryOp
-
         transpiler = SQLTranspiler(
             input_datasets={},
             output_datasets={},
@@ -1367,8 +1323,6 @@ class TestTimeOperators:
     )
     def test_duration_conversion_xtoday(self, op_token, expected_parts):
         """Test duration conversion operators (yeartoday, monthtoday)."""
-        from vtlengine.AST import UnaryOp
-
         transpiler = SQLTranspiler(
             input_datasets={},
             output_datasets={},
@@ -1389,10 +1343,6 @@ class TestTimeOperators:
 
     def test_flow_to_stock_dataset(self):
         """Test flow_to_stock on dataset generates window function SQL."""
-        from vtlengine.AST import UnaryOp
-        from vtlengine.AST.Grammar.tokens import FLOW_TO_STOCK
-        from vtlengine.DataTypes import Date
-
         # Create dataset with time identifier
         components = {
             "time_id": Component(
@@ -1428,10 +1378,6 @@ class TestTimeOperators:
 
     def test_stock_to_flow_dataset(self):
         """Test stock_to_flow on dataset generates window function SQL."""
-        from vtlengine.AST import UnaryOp
-        from vtlengine.AST.Grammar.tokens import STOCK_TO_FLOW
-        from vtlengine.DataTypes import Date
-
         # Create dataset with time identifier
         components = {
             "time_id": Component(

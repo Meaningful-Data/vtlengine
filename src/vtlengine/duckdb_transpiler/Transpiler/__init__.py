@@ -575,8 +575,9 @@ class SQLTranspiler(ASTTemplate):
         )
 
         dataset_sql = self._get_dataset_sql(dataset_node)
+        from_clause = self._simplify_from_clause(dataset_sql)
 
-        return f"SELECT {id_select}, {measure_select} FROM ({dataset_sql}) AS t"
+        return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
 
     def _visit_match_op(self, node: AST.BinOp) -> str:
         """
@@ -607,8 +608,9 @@ class SQLTranspiler(ASTTemplate):
         )
 
         dataset_sql = self._get_dataset_sql(dataset_node)
+        from_clause = self._simplify_from_clause(dataset_sql)
 
-        return f"SELECT {id_select}, {measure_select} FROM ({dataset_sql}) AS t"
+        return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
 
     def _visit_exist_in(self, node: AST.BinOp) -> str:
         """
@@ -669,11 +671,9 @@ class SQLTranspiler(ASTTemplate):
             measure_select = ", ".join(measure_parts)
 
             dataset_sql = self._get_dataset_sql(node.left)
+            from_clause = self._simplify_from_clause(dataset_sql)
 
-            return f"""
-                SELECT {id_select}, {measure_select}
-                FROM ({dataset_sql}) AS t
-            """
+            return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
 
         # Scalar/Component level
         left_sql = self.visit(node.left)
@@ -706,11 +706,12 @@ class SQLTranspiler(ASTTemplate):
         id_select = ", ".join([f'"{k}"' for k in id_cols])
 
         dataset_sql = self._get_dataset_sql(node.left)
+        from_clause = self._simplify_from_clause(dataset_sql)
 
         if id_select:
-            return f'SELECT {id_select}, "{comp_name}" FROM ({dataset_sql}) AS t'
+            return f'SELECT {id_select}, "{comp_name}" FROM {from_clause}'
         else:
-            return f'SELECT "{comp_name}" FROM ({dataset_sql}) AS t'
+            return f'SELECT "{comp_name}" FROM {from_clause}'
 
     def _binop_dataset_dataset(self, left_node: AST.AST, right_node: AST.AST, sql_op: str) -> str:
         """
@@ -787,8 +788,9 @@ class SQLTranspiler(ASTTemplate):
             )
 
         dataset_sql = self._get_dataset_sql(dataset_node)
+        from_clause = self._simplify_from_clause(dataset_sql)
 
-        return f"SELECT {id_select}, {measure_select} FROM ({dataset_sql}) AS t"
+        return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
 
     def _visit_datediff(self, node: AST.BinOp, left_type: str, right_type: str) -> str:
         """
@@ -855,13 +857,15 @@ class SQLTranspiler(ASTTemplate):
                         THEN CAST(CAST("{time_id}" AS INTEGER) + {shift_val} AS VARCHAR)
                         ELSE "{time_id}"
                     END AS "{time_id}\""""
+            from_clause = self._simplify_from_clause(dataset_sql)
             return f"""
                 SELECT {other_id_select}{time_case}, {measure_select}
-                FROM ({dataset_sql}) AS t
+                FROM {from_clause}
             """
         else:
             # Fallback: return as-is (shift not applied)
-            return f"SELECT {id_select}, {measure_select} FROM ({dataset_sql}) AS t"
+            from_clause = self._simplify_from_clause(dataset_sql)
+            return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
 
     # =========================================================================
     # Unary Operations
@@ -932,8 +936,9 @@ class SQLTranspiler(ASTTemplate):
             )
 
         dataset_sql = self._get_dataset_sql(dataset_node)
+        from_clause = self._simplify_from_clause(dataset_sql)
 
-        return f"SELECT {id_select}, {measure_select} FROM ({dataset_sql}) AS t"
+        return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
 
     def _unary_dataset_isnull(self, dataset_node: AST.AST) -> str:
         """Generate SQL for dataset isnull operation."""
@@ -944,10 +949,9 @@ class SQLTranspiler(ASTTemplate):
         measure_select = ", ".join([f'("{m}" IS NULL) AS "{m}"' for m in ds.get_measures_names()])
 
         dataset_sql = self._get_dataset_sql(dataset_node)
+        from_clause = self._simplify_from_clause(dataset_sql)
 
-        return f"""
-        SELECT {id_select}, {measure_select}
-FROM ({dataset_sql}) AS t"""
+        return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
 
     # =========================================================================
     # Time Operators
@@ -981,7 +985,8 @@ FROM ({dataset_sql}) AS t"""
         measure_select = ", ".join([f'{sql_func}("{m}") AS "{m}"' for m in ds.get_measures_names()])
 
         dataset_sql = self._get_dataset_sql(dataset_node)
-        return f"SELECT {id_select}, {measure_select} FROM ({dataset_sql}) AS t"
+        from_clause = self._simplify_from_clause(dataset_sql)
+        return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
 
     def _visit_flow_to_stock(self, operand: AST.AST, operand_type: str) -> str:
         """
@@ -1012,7 +1017,8 @@ FROM ({dataset_sql}) AS t"""
             measure_selects.append(f'SUM("{m}") {window} AS "{m}"')
 
         measure_select = ", ".join(measure_selects)
-        return f"SELECT {id_select}, {measure_select} FROM ({dataset_sql}) AS t"
+        from_clause = self._simplify_from_clause(dataset_sql)
+        return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
 
     def _visit_stock_to_flow(self, operand: AST.AST, operand_type: str) -> str:
         """
@@ -1044,7 +1050,8 @@ FROM ({dataset_sql}) AS t"""
             measure_selects.append(f'COALESCE("{m}" - LAG("{m}") {window}, "{m}") AS "{m}"')
 
         measure_select = ", ".join(measure_selects)
-        return f"SELECT {id_select}, {measure_select} FROM ({dataset_sql}) AS t"
+        from_clause = self._simplify_from_clause(dataset_sql)
+        return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
 
     def _get_time_and_other_ids(self, ds: Dataset) -> Tuple[str, List[str]]:
         """
@@ -1095,9 +1102,8 @@ FROM ({dataset_sql}) AS t"""
 
             # Extract period indicator and return as duration_var measure
             period_extract = f"REGEXP_EXTRACT(\"{time_id}\", '-([ASQMWD])', 1)"
-            return (
-                f'SELECT {id_select}, {period_extract} AS "duration_var" FROM ({dataset_sql}) AS t'
-            )
+            from_clause = self._simplify_from_clause(dataset_sql)
+            return f'SELECT {id_select}, {period_extract} AS "duration_var" FROM {from_clause}'
 
         operand_sql = self.visit(operand)
         return f"REGEXP_EXTRACT({operand_sql}, '-([ASQMWD])', 1)"
@@ -1234,11 +1240,9 @@ FROM ({dataset_sql}) AS t"""
         measure_select = ", ".join(measure_parts)
 
         dataset_sql = self._get_dataset_sql(dataset_node)
+        from_clause = self._simplify_from_clause(dataset_sql)
 
-        return f"""
-                    SELECT {id_select}, {measure_select}
-                    FROM ({dataset_sql}) AS t
-                """
+        return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
 
     def _visit_cast(self, node: AST.ParamOp) -> str:
         """
@@ -1326,8 +1330,9 @@ FROM ({dataset_sql}) AS t"""
 
         measure_select = ", ".join(measure_parts)
         dataset_sql = self._get_dataset_sql(dataset_node)
+        from_clause = self._simplify_from_clause(dataset_sql)
 
-        return f"SELECT {id_select}, {measure_select} FROM ({dataset_sql}) AS t"
+        return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
 
     # =========================================================================
     # Multiple-operand Operations

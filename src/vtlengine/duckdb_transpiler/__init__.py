@@ -12,7 +12,13 @@ from pysdmx.model import TransformationScheme
 from pysdmx.model.dataflow import Dataflow, DataStructureDefinition, Schema
 
 from vtlengine.API import create_ast, semantic_analysis
-from vtlengine.API._InternalApi import _check_script, load_datasets, load_vtl
+from vtlengine.API._InternalApi import (
+    _check_script,
+    load_datasets,
+    load_external_routines,
+    load_value_domains,
+    load_vtl,
+)
 from vtlengine.duckdb_transpiler.Transpiler import SQLTranspiler
 from vtlengine.Model import Dataset, Scalar
 
@@ -73,18 +79,26 @@ def transpile(
         elif isinstance(result, Scalar):
             output_scalars[name] = result
 
-    # 5. Create the SQL transpiler with:
+    # 5. Load value domains and external routines
+    loaded_vds = load_value_domains(value_domains) if value_domains else {}
+    loaded_routines = load_external_routines(external_routines) if external_routines else {}
+
+    # 6. Create the SQL transpiler with:
     #    - input_datasets: Tables available for querying (inputs)
     #    - output_datasets: Expected output structures (for validation)
     #    - scalars: Both input and output scalars
+    #    - value_domains: Loaded value domains
+    #    - external_routines: Loaded external routines
     transpiler = SQLTranspiler(
         input_datasets=input_datasets,
         output_datasets=output_datasets,
         input_scalars=input_scalars,
         output_scalars=output_scalars,
+        value_domains=loaded_vds,
+        external_routines=loaded_routines,
     )
 
-    # 6. Transpile AST to SQL queries
+    # 7. Transpile AST to SQL queries
     queries = transpiler.transpile(ast)
 
     return queries

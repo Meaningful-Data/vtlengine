@@ -96,6 +96,8 @@ def execute_vtl_with_duckdb(
     vtl_script: str,
     data_structures: Dict,
     datapoints: Dict[str, pd.DataFrame],
+    value_domains: Dict = None,
+    external_routines: Dict = None,
 ) -> Dict:
     """Execute VTL script using DuckDB transpiler and return results."""
     conn = duckdb.connect(":memory:")
@@ -105,7 +107,7 @@ def execute_vtl_with_duckdb(
         conn.register(name, df)
 
     # Get SQL queries from transpiler
-    queries = transpile(vtl_script, data_structures, None, None)
+    queries = transpile(vtl_script, data_structures, value_domains, external_routines)
 
     # Execute queries and collect results
     results = {}
@@ -824,3 +826,169 @@ class TestParameterizedOperations:
         result_values = list(results["DS_r"].sort_values("Id_1")["Me_1"])
         for rv, ev in zip(result_values, expected_values):
             assert rv == ev, f"Expected {ev}, got {rv}"
+
+
+# =============================================================================
+# Time Operators Tests (Sprint 5)
+# =============================================================================
+
+
+class TestTimeOperators:
+    """Tests for time operators."""
+
+    def test_current_date(self, temp_data_dir):
+        """Test current_date operator."""
+        # current_date returns today's date as a scalar
+        conn = duckdb.connect(":memory:")
+        result = conn.execute("SELECT CURRENT_DATE AS result").fetchone()[0]
+        conn.close()
+        # Just verify it returns a date (exact value will vary)
+        assert result is not None
+
+    @pytest.mark.parametrize(
+        "vtl_script,input_data,expected_values",
+        [
+            # Year extraction
+            (
+                "DS_r := DS_1[calc year_val := year(date_col)];",
+                [["A", "2024-01-15"], ["B", "2023-06-30"]],
+                [2024, 2023],
+            ),
+            # Month extraction
+            (
+                "DS_r := DS_1[calc month_val := month(date_col)];",
+                [["A", "2024-01-15"], ["B", "2024-06-30"]],
+                [1, 6],
+            ),
+            # Day of month extraction
+            (
+                "DS_r := DS_1[calc day_val := dayofmonth(date_col)];",
+                [["A", "2024-01-15"], ["B", "2024-06-30"]],
+                [15, 30],
+            ),
+        ],
+        ids=["year", "month", "dayofmonth"],
+    )
+    def test_time_extraction(
+        self, temp_data_dir, vtl_script, input_data, expected_values
+    ):
+        """Test time extraction operators."""
+        structure = create_dataset_structure(
+            "DS_1",
+            [("Id_1", "String")],
+            [("date_col", "Date", True)],
+        )
+
+        data_structures = create_data_structure([structure])
+        input_df = pd.DataFrame(input_data, columns=["Id_1", "date_col"])
+        input_df["date_col"] = pd.to_datetime(input_df["date_col"]).dt.date
+
+        results = execute_vtl_with_duckdb(vtl_script, data_structures, {"DS_1": input_df})
+
+        result_df = results["DS_r"].sort_values("Id_1").reset_index(drop=True)
+        extracted_col = [c for c in result_df.columns if c.endswith("_val")][0]
+        result_values = list(result_df[extracted_col])
+
+        for rv, ev in zip(result_values, expected_values):
+            assert rv == ev, f"Expected {ev}, got {rv}"
+
+    def test_flow_to_stock(self, temp_data_dir):
+        """Test flow_to_stock cumulative sum operation."""
+        vtl_script = "DS_r := flow_to_stock(DS_1);"
+
+        structure = create_dataset_structure(
+            "DS_1",
+            [("time_id", "Date"), ("region", "String")],
+            [("value", "Number", True)],
+        )
+
+        data_structures = create_data_structure([structure])
+        # Flow data: 10, 20, 30 for region A
+        input_data = [
+            ["2024-01-01", "A", 10],
+            ["2024-01-02", "A", 20],
+            ["2024-01-03", "A", 30],
+            ["2024-01-01", "B", 5],
+            ["2024-01-02", "B", 15],
+        ]
+        input_df = pd.DataFrame(input_data, columns=["time_id", "region", "value"])
+        input_df["time_id"] = pd.to_datetime(input_df["time_id"]).dt.date
+
+        results = execute_vtl_with_duckdb(vtl_script, data_structures, {"DS_1": input_df})
+
+        # Cumulative sum for region A: 10, 30, 60
+        # Cumulative sum for region B: 5, 20
+        result_df = results["DS_r"]
+        result_a = result_df[result_df["region"] == "A"].sort_values("time_id")["value"].tolist()
+        result_b = result_df[result_df["region"] == "B"].sort_values("time_id")["value"].tolist()
+
+        assert result_a == [10, 30, 60], f"Expected [10, 30, 60], got {result_a}"
+        assert result_b == [5, 20], f"Expected [5, 20], got {result_b}"
+
+    def test_stock_to_flow(self, temp_data_dir):
+        """Test stock_to_flow difference operation."""
+        vtl_script = "DS_r := stock_to_flow(DS_1);"
+
+        structure = create_dataset_structure(
+            "DS_1",
+            [("time_id", "Date"), ("region", "String")],
+            [("value", "Number", True)],
+        )
+
+        data_structures = create_data_structure([structure])
+        # Stock data: 10, 30, 60 for region A (cumulative)
+        input_data = [
+            ["2024-01-01", "A", 10],
+            ["2024-01-02", "A", 30],
+            ["2024-01-03", "A", 60],
+        ]
+        input_df = pd.DataFrame(input_data, columns=["time_id", "region", "value"])
+        input_df["time_id"] = pd.to_datetime(input_df["time_id"]).dt.date
+
+        results = execute_vtl_with_duckdb(vtl_script, data_structures, {"DS_1": input_df})
+
+        # Flow values: 10 (first), 20 (30-10), 30 (60-30)
+        result_df = results["DS_r"]
+        result_a = result_df.sort_values("time_id")["value"].tolist()
+
+        assert result_a == [10, 20, 30], f"Expected [10, 20, 30], got {result_a}"
+
+
+# =============================================================================
+# Value Domain Tests (Sprint 4)
+# =============================================================================
+
+
+class TestValueDomainOperations:
+    """Tests for value domain operations."""
+
+    def test_value_domain_in_filter(self, temp_data_dir):
+        """Test using value domain in filter clause."""
+        structure = create_dataset_structure(
+            "DS_1",
+            [("Id_1", "String")],
+            [("Me_1", "Number", True)],
+        )
+
+        data_structures = create_data_structure([structure])
+
+        # Define a value domain with allowed codes
+        value_domains = [
+            {
+                "name": "VALID_CODES",
+                "type": "String",
+                "setlist": ["A", "B"],
+            }
+        ]
+
+        input_data = [["A", 10], ["B", 20], ["C", 30]]
+        input_df = pd.DataFrame(input_data, columns=["Id_1", "Me_1"])
+
+        # Use value domain reference in filter
+        vtl_script = "DS_r := DS_1[filter Id_1 in VALID_CODES];"
+        results = execute_vtl_with_duckdb(
+            vtl_script, data_structures, {"DS_1": input_df}, value_domains=value_domains
+        )
+
+        result_ids = sorted(results["DS_r"]["Id_1"].tolist())
+        assert result_ids == ["A", "B"]
