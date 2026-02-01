@@ -1,3 +1,4 @@
+import gc
 import json
 import os
 from pathlib import Path
@@ -525,14 +526,16 @@ def load_datasets_with_data(
         if dataset_name not in datasets:
             raise InputValidationException(f"Not found dataset {dataset_name} in datastructures.")
 
-    # If validate=True, load and validate data immediately (used by validate_dataset API)
-    # Otherwise, defer validation to interpretation time (used by run API for lazy loading)
+    # If validate=True, load and validate data immediately but don't store it
+    # (used by validate_dataset API in memory-constrained scenarios).
+    # gc.collect() ensures memory is reclaimed after each large DataFrame is validated.
     if validate:
         for dataset_name, file_path in datapoints_paths.items():
             components = datasets[dataset_name].components
             _ = load_datapoints(
                 components=components, dataset_name=dataset_name, csv_path=file_path
             )
+            gc.collect()
 
     _handle_empty_datasets(datasets)
     _handle_scalars_values(scalars, scalar_values)
