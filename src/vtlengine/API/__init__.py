@@ -382,7 +382,9 @@ def _run_with_duckdb(
                 results[result_name] = Dataset(name=result_name, components={}, data=result_df)
         else:
             # Dataset result
-            ds = output_datasets.get(result_name, Dataset(name=result_name, components={}, data=None))
+            ds = output_datasets.get(
+                result_name, Dataset(name=result_name, components={}, data=None)
+            )
             ds.data = result_df
             results[result_name] = ds
 

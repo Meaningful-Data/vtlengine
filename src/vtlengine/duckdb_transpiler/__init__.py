@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from pysdmx.model import TransformationScheme
+from pysdmx.model.dataflow import Dataflow, DataStructureDefinition, Schema
 
 from vtlengine.API import create_ast, semantic_analysis
 from vtlengine.API._InternalApi import _check_script, load_datasets, load_vtl
@@ -20,7 +21,14 @@ __all__ = ["SQLTranspiler", "transpile"]
 
 def transpile(
     script: Union[str, TransformationScheme, Path],
-    data_structures: Union[Dict[str, Any], Path, List[Dict[str, Any]], List[Path]],
+    data_structures: Union[
+        Dict[str, Any],
+        Path,
+        Schema,
+        DataStructureDefinition,
+        Dataflow,
+        List[Union[Dict[str, Any], Path, Schema, DataStructureDefinition, Dataflow]],
+    ],
     value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
     external_routines: Optional[
         Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]

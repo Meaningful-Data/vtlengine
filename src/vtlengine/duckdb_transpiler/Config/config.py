@@ -17,10 +17,10 @@ Example:
 
 import os
 import tempfile
-from typing import Tuple
+from typing import Any, Optional, Tuple, Union
 
 import duckdb
-import psutil
+import psutil  # type: ignore[import-untyped]
 
 # =============================================================================
 # Decimal Configuration
@@ -177,7 +177,7 @@ def create_configured_connection(database: str = ":memory:") -> duckdb.DuckDBPyC
     return conn
 
 
-def get_system_info() -> dict:
+def get_system_info() -> dict[str, Union[float, int, str, None]]:
     """
     Get system memory information.
 

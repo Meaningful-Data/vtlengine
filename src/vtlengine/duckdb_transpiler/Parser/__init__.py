@@ -13,7 +13,6 @@ from typing import Dict, List, Optional, Union
 
 import duckdb
 
-from vtlengine.duckdb_transpiler.Config.config import get_decimal_type
 from vtlengine.DataTypes import (
     Boolean,
     Date,
@@ -24,6 +23,7 @@ from vtlengine.DataTypes import (
     TimePeriod,
 )
 from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING
+from vtlengine.duckdb_transpiler.Config.config import get_decimal_type
 from vtlengine.Exceptions import DataLoadError, InputValidationException
 from vtlengine.Model import Component, Role
 
