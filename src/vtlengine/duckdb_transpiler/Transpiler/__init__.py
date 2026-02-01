@@ -179,6 +179,44 @@ class SQLTranspiler(ASTTemplate):
         """
         return self.visit(ast)
 
+    def transpile_with_cte(self, ast: AST.Start) -> str:
+        """
+        Transpile the AST to a single SQL query using CTEs.
+
+        Instead of generating multiple queries where each intermediate result
+        is registered as a table, this generates a single query with CTEs
+        for all intermediate results.
+
+        Args:
+            ast: The root AST node (Start).
+
+        Returns:
+            A single SQL query string with CTEs.
+        """
+        queries = self.visit(ast)
+
+        if len(queries) == 0:
+            return ""
+
+        if len(queries) == 1:
+            # Single query, no CTEs needed
+            return queries[0][1]
+
+        # Build CTEs for all intermediate queries
+        cte_parts = []
+        for name, sql, _is_persistent in queries[:-1]:
+            # Normalize the SQL (remove extra whitespace)
+            normalized_sql = " ".join(sql.split())
+            cte_parts.append(f'"{name}" AS ({normalized_sql})')
+
+        # Final query is the main SELECT
+        final_name, final_sql, _ = queries[-1]
+        normalized_final = " ".join(final_sql.split())
+
+        # Combine CTEs with final query
+        cte_clause = ",\n    ".join(cte_parts)
+        return f"WITH {cte_clause}\n{normalized_final}"
+
     # =========================================================================
     # Root and Assignment Nodes
     # =========================================================================
@@ -320,6 +358,10 @@ class SQLTranspiler(ASTTemplate):
         # Special handling for NVL (coalesce)
         if op == "nvl":
             return self._visit_nvl_binop(node)
+
+        # Special handling for MEMBERSHIP (#) operator
+        if op == "#":
+            return self._visit_membership(node)
 
         sql_op = SQL_BINARY_OPS.get(op, op.upper())
 
@@ -474,6 +516,39 @@ class SQLTranspiler(ASTTemplate):
         # Scalar/Component level
         left_sql = self.visit(node.left)
         return f"COALESCE({left_sql}, {replacement})"
+
+    def _visit_membership(self, node: AST.BinOp) -> str:
+        """
+        Handle MEMBERSHIP (#) operation.
+
+        VTL: DS#comp - extracts component 'comp' from dataset 'DS'
+        Returns a dataset with identifiers and the specified component as measure.
+
+        SQL: SELECT identifiers, "comp" FROM "DS"
+        """
+        # Get dataset from left operand
+        ds_name = self._get_dataset_name(node.left)
+        ds = self.available_tables.get(ds_name)
+
+        if not ds:
+            # Fallback: just reference the component
+            left_sql = self.visit(node.left)
+            right_sql = self.visit(node.right)
+            return f'{left_sql}."{right_sql}"'
+
+        # Get component name from right operand
+        comp_name = node.right.value if hasattr(node.right, "value") else str(node.right)
+
+        # Build SELECT with identifiers and the specified component
+        id_cols = ds.get_identifiers_names()
+        id_select = ", ".join([f'"{k}"' for k in id_cols])
+
+        dataset_sql = self._get_dataset_sql(node.left)
+
+        if id_select:
+            return f'SELECT {id_select}, "{comp_name}" FROM ({dataset_sql}) AS t'
+        else:
+            return f'SELECT "{comp_name}" FROM ({dataset_sql}) AS t'
 
     def _binop_dataset_dataset(self, left_node: AST.AST, right_node: AST.AST, sql_op: str) -> str:
         """
@@ -637,68 +712,62 @@ FROM ({dataset_sql}) AS t"""
         operand = node.children[0]
         operand_sql = self.visit(operand)
         operand_type = self._get_operand_type(operand)
-
-        # Get parameters
         params = [self.visit(p) for p in node.params]
 
-        # Handle specific operations
-        if op == "round":
-            decimals = params[0] if params else "0"
-            if operand_type == OperandType.DATASET:
-                return self._param_dataset(operand, f"ROUND({{m}}, {decimals})")
-            return f"ROUND({operand_sql}, {decimals})"
+        # Handle substr specially (variable params)
+        if op == "substr":
+            return self._visit_substr(operand, operand_sql, operand_type, params)
 
-        elif op == "trunc":
-            decimals = params[0] if params else "0"
-            if operand_type == OperandType.DATASET:
-                return self._param_dataset(operand, f"TRUNC({{m}}, {decimals})")
-            return f"TRUNC({operand_sql}, {decimals})"
+        # Handle replace specially (two params)
+        if op == "replace":
+            return self._visit_replace(operand, operand_sql, operand_type, params)
 
-        elif op == "substr":
-            start = params[0] if len(params) > 0 else "1"
-            length = params[1] if len(params) > 1 else None
-            if operand_type == OperandType.DATASET:
-                if length:
-                    return self._param_dataset(operand, f"SUBSTR({{m}}, {start}, {length})")
-                return self._param_dataset(operand, f"SUBSTR({{m}}, {start})")
-            if length:
-                return f"SUBSTR({operand_sql}, {start}, {length})"
-            return f"SUBSTR({operand_sql}, {start})"
+        # Single-param operations mapping: op -> (sql_func, default_param, template_format)
+        single_param_ops = {
+            "round": ("ROUND", "0", "{func}({{m}}, {p})"),
+            "trunc": ("TRUNC", "0", "{func}({{m}}, {p})"),
+            "instr": ("INSTR", "''", "{func}({{m}}, {p})"),
+            "log": ("LOG", "10", "{func}({p}, {{m}})"),
+            "power": ("POWER", "2", "{func}({{m}}, {p})"),
+            "nvl": ("COALESCE", "NULL", "{func}({{m}}, {p})"),
+        }
 
-        elif op == "instr":
-            pattern = params[0] if params else "''"
+        if op in single_param_ops:
+            sql_func, default_p, template_fmt = single_param_ops[op]
+            param_val = params[0] if params else default_p
+            template = template_fmt.format(func=sql_func, p=param_val)
             if operand_type == OperandType.DATASET:
-                return self._param_dataset(operand, f"INSTR({{m}}, {pattern})")
-            return f"INSTR({operand_sql}, {pattern})"
-
-        elif op == "replace":
-            pattern = params[0] if len(params) > 0 else "''"
-            replacement = params[1] if len(params) > 1 else "''"
-            if operand_type == OperandType.DATASET:
-                return self._param_dataset(operand, f"REPLACE({{m}}, {pattern}, {replacement})")
-            return f"REPLACE({operand_sql}, {pattern}, {replacement})"
-
-        elif op == "log":
-            base = params[0] if params else "10"
-            if operand_type == OperandType.DATASET:
-                return self._param_dataset(operand, f"LOG({base}, {{m}})")
-            return f"LOG({base}, {operand_sql})"
-
-        elif op == "power":
-            exponent = params[0] if params else "2"
-            if operand_type == OperandType.DATASET:
-                return self._param_dataset(operand, f"POWER({{m}}, {exponent})")
-            return f"POWER({operand_sql}, {exponent})"
-
-        elif op == "nvl":
-            replacement = params[0] if params else "NULL"
-            if operand_type == OperandType.DATASET:
-                return self._param_dataset(operand, f"COALESCE({{m}}, {replacement})")
-            return f"COALESCE({operand_sql}, {replacement})"
+                return self._param_dataset(operand, template)
+            # For scalar: replace {m} with operand_sql
+            return template.replace("{m}", operand_sql)
 
         # Default function call
         all_params = [operand_sql] + params
         return f"{op.upper()}({', '.join(all_params)})"
+
+    def _visit_substr(
+        self, operand: AST.AST, operand_sql: str, operand_type: str, params: List[str]
+    ) -> str:
+        """Handle SUBSTR operation."""
+        start = params[0] if len(params) > 0 else "1"
+        length = params[1] if len(params) > 1 else None
+        if operand_type == OperandType.DATASET:
+            if length:
+                return self._param_dataset(operand, f"SUBSTR({{m}}, {start}, {length})")
+            return self._param_dataset(operand, f"SUBSTR({{m}}, {start})")
+        if length:
+            return f"SUBSTR({operand_sql}, {start}, {length})"
+        return f"SUBSTR({operand_sql}, {start})"
+
+    def _visit_replace(
+        self, operand: AST.AST, operand_sql: str, operand_type: str, params: List[str]
+    ) -> str:
+        """Handle REPLACE operation."""
+        pattern = params[0] if len(params) > 0 else "''"
+        replacement = params[1] if len(params) > 1 else "''"
+        if operand_type == OperandType.DATASET:
+            return self._param_dataset(operand, f"REPLACE({{m}}, {pattern}, {replacement})")
+        return f"REPLACE({operand_sql}, {pattern}, {replacement})"
 
     def _param_dataset(self, dataset_node: AST.AST, template: str) -> str:
         """Generate SQL for dataset parameterized operation."""
@@ -1019,6 +1088,12 @@ FROM ({dataset_sql}) AS t"""
                     result = self._clause_rename(base_sql, node.children)
                 elif op == "aggregate":
                     result = self._clause_aggregate(base_sql, node.children)
+                elif op == "unpivot":
+                    result = self._clause_unpivot(base_sql, node.children)
+                elif op == "pivot":
+                    result = self._clause_pivot(base_sql, node.children)
+                elif op == "sub":
+                    result = self._clause_subspace(base_sql, node.children)
                 else:
                     result = base_sql
             finally:
@@ -1163,6 +1238,126 @@ FROM ({dataset_sql}) AS t"""
             agg_exprs.append(self.visit(child))
 
         return f"SELECT {', '.join(agg_exprs)} FROM ({base_sql}) AS t"
+
+    def _clause_unpivot(self, base_sql: str, children: List[AST.AST]) -> str:
+        """
+        Generate SQL for unpivot clause.
+
+        VTL: DS_r := DS_1 [unpivot Id_3, Me_3];
+        - Id_3 is the new identifier column (contains original measure names)
+        - Me_3 is the new measure column (contains the values)
+
+        DuckDB: UNPIVOT (subquery) ON col1, col2, ... INTO NAME id_col VALUE measure_col
+        """
+        if not self.current_dataset or len(children) < 2:
+            return base_sql
+
+        # Get the new column names from children
+        # children[0] = new identifier column name (will hold measure names)
+        # children[1] = new measure column name (will hold values)
+        id_col_name = children[0].value if hasattr(children[0], "value") else str(children[0])
+        measure_col_name = children[1].value if hasattr(children[1], "value") else str(children[1])
+
+        # Get original measure columns (to unpivot)
+        measure_cols = list(self.current_dataset.get_measures_names())
+
+        if not measure_cols:
+            return base_sql
+
+        # Build list of columns to unpivot (the original measures)
+        unpivot_cols = ", ".join([f'"{m}"' for m in measure_cols])
+
+        # DuckDB UNPIVOT syntax
+        return f"""
+            SELECT * FROM (
+                UNPIVOT ({base_sql})
+                ON {unpivot_cols}
+                INTO NAME "{id_col_name}" VALUE "{measure_col_name}"
+            )
+        """
+
+    def _clause_pivot(self, base_sql: str, children: List[AST.AST]) -> str:
+        """
+        Generate SQL for pivot clause.
+
+        VTL: DS_r := DS_1 [pivot Id_2, Me_1];
+        - Id_2 is the identifier column whose values become new columns
+        - Me_1 is the measure whose values fill those columns
+
+        DuckDB: PIVOT (subquery) ON id_col USING FIRST(measure_col)
+        """
+        if not self.current_dataset or len(children) < 2:
+            return base_sql
+
+        # Get the column names from children
+        # children[0] = identifier column to pivot on (values become columns)
+        # children[1] = measure column to aggregate
+        pivot_id = children[0].value if hasattr(children[0], "value") else str(children[0])
+        pivot_measure = children[1].value if hasattr(children[1], "value") else str(children[1])
+
+        # Get remaining identifier columns (those that stay as identifiers)
+        id_cols = [c for c in self.current_dataset.get_identifiers_names() if c != pivot_id]
+
+        if not id_cols:
+            # If no remaining identifiers, use just the pivot
+            return f"""
+                SELECT * FROM (
+                    PIVOT ({base_sql})
+                    ON "{pivot_id}"
+                    USING FIRST("{pivot_measure}")
+                )
+            """
+        else:
+            # Group by remaining identifiers
+            group_cols = ", ".join([f'"{c}"' for c in id_cols])
+            return f"""
+                SELECT * FROM (
+                    PIVOT ({base_sql})
+                    ON "{pivot_id}"
+                    USING FIRST("{pivot_measure}")
+                    GROUP BY {group_cols}
+                )
+            """
+
+    def _clause_subspace(self, base_sql: str, children: List[AST.AST]) -> str:
+        """
+        Generate SQL for subspace clause.
+
+        VTL: DS_r := DS_1 [sub Id_1 = "A"];
+        Filters the dataset to rows where the specified identifier equals the value,
+        then removes that identifier from the result.
+
+        Children are BinOp nodes with: left = column, op = "=", right = value
+        """
+        if not self.current_dataset or not children:
+            return base_sql
+
+        conditions = []
+        remove_cols = []
+
+        for child in children:
+            if isinstance(child, AST.BinOp):
+                col_name = child.left.value if hasattr(child.left, "value") else str(child.left)
+                col_value = self.visit(child.right)
+                conditions.append(f'"{col_name}" = {col_value}')
+                remove_cols.append(col_name)
+
+        if not conditions:
+            return base_sql
+
+        # First filter by conditions
+        where_clause = " AND ".join(conditions)
+
+        # Then select all columns except the subspace identifiers
+        keep_cols = [f'"{c}"' for c in self.current_dataset.components if c not in remove_cols]
+
+        if not keep_cols:
+            # If all columns would be removed, return just the filter
+            return f"SELECT * FROM ({base_sql}) AS t WHERE {where_clause}"
+
+        select_cols = ", ".join(keep_cols)
+
+        return f"SELECT {select_cols} FROM ({base_sql}) AS t WHERE {where_clause}"
 
     # =========================================================================
     # Aggregation Operations
@@ -1323,22 +1518,42 @@ FROM ({dataset_sql}) AS t"""
         if len(node.clauses) < 2:
             return ""
 
-        # First clause is the base
+        # First clause is the base - use _get_dataset_sql to ensure proper SELECT
         base = node.clauses[0]
-        base_sql = self.visit(base)
+        base_sql = self._get_dataset_sql(base)
+        base_name = self._get_dataset_name(base)
+        base_ds = self.available_tables.get(base_name)
 
         # Join with remaining clauses
         result_sql = f"({base_sql}) AS t0"
 
         for i, clause in enumerate(node.clauses[1:], 1):
-            clause_sql = self.visit(clause)
+            clause_sql = self._get_dataset_sql(clause)
+            clause_name = self._get_dataset_name(clause)
+            clause_ds = self.available_tables.get(clause_name)
 
             if node.using and op != "cross_join":
+                # Explicit USING clause provided
                 using_cols = ", ".join([f'"{c}"' for c in node.using])
                 result_sql += f"\n{join_type} ({clause_sql}) AS t{i} USING ({using_cols})"
             elif op == "cross_join":
+                # CROSS JOIN doesn't need ON clause
                 result_sql += f"\n{join_type} ({clause_sql}) AS t{i}"
+            elif base_ds and clause_ds:
+                # Find common identifiers for implicit join
+                base_ids = set(base_ds.get_identifiers_names())
+                clause_ids = set(clause_ds.get_identifiers_names())
+                common_ids = sorted(base_ids.intersection(clause_ids))
+
+                if common_ids:
+                    # Use USING for common identifiers
+                    using_cols = ", ".join([f'"{c}"' for c in common_ids])
+                    result_sql += f"\n{join_type} ({clause_sql}) AS t{i} USING ({using_cols})"
+                else:
+                    # No common identifiers - should be a cross join
+                    result_sql += f"\nCROSS JOIN ({clause_sql}) AS t{i}"
             else:
+                # Fallback: no ON clause (will fail for most joins)
                 result_sql += f"\n{join_type} ({clause_sql}) AS t{i}"
 
         return f"SELECT * FROM {result_sql}"
@@ -1611,6 +1826,66 @@ FROM ({dataset_sql}) AS t"""
 
         # Otherwise, transpile the node
         return self.visit(node)
+
+    def _get_table_reference(self, node: AST.AST) -> str:
+        """
+        Get a simple table reference if the node is a direct VarID reference.
+        Returns just '"table_name"' for simple references.
+        """
+        if isinstance(node, AST.VarID):
+            return f'"{node.value}"'
+        return None
+
+    def _is_simple_table_ref(self, sql: str) -> bool:
+        """
+        Check if SQL is a simple quoted table reference (e.g., '"table_name"').
+        Used to avoid unnecessary nesting of subqueries.
+        """
+        sql = sql.strip()
+        return sql.startswith('"') and sql.endswith('"') and sql.count('"') == 2
+
+    def _is_simple_select_from(self, sql: str) -> bool:
+        """
+        Check if SQL is a simple SELECT * FROM "table" pattern.
+        Returns True if we can simplify by using just the table name.
+        """
+        sql = sql.strip().upper()
+        # Pattern: SELECT * FROM "tablename"
+        if sql.startswith("SELECT * FROM "):
+            remainder = sql[14:].strip()
+            # Check if it's just a quoted identifier
+            if remainder.startswith('"') and remainder.count('"') == 2:
+                return True
+        return False
+
+    def _extract_table_from_select(self, sql: str) -> Optional[str]:
+        """
+        Extract the table name from a simple SELECT * FROM "table" statement.
+        Returns the quoted table name or None if not a simple select.
+        """
+        sql_stripped = sql.strip()
+        sql_upper = sql_stripped.upper()
+        if sql_upper.startswith("SELECT * FROM "):
+            remainder = sql_stripped[14:].strip()
+            if remainder.startswith('"') and '"' in remainder[1:]:
+                end_quote = remainder.index('"', 1) + 1
+                table_name = remainder[:end_quote]
+                # Make sure there's nothing else after the table name
+                rest = remainder[end_quote:].strip()
+                if not rest or rest.upper().startswith("AS "):
+                    return table_name
+        return None
+
+    def _simplify_from_clause(self, subquery_sql: str) -> str:
+        """
+        Simplify FROM clause by avoiding unnecessary nesting.
+        If the subquery is just SELECT * FROM "table", return just the table name.
+        Otherwise, return the subquery wrapped in parentheses.
+        """
+        table_ref = self._extract_table_from_select(subquery_sql)
+        if table_ref:
+            return f"{table_ref}"
+        return f"({subquery_sql})"
 
     def _scalar_to_sql(self, scalar: Scalar) -> str:
         """Convert a Scalar to SQL literal."""
