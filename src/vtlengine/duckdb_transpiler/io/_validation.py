@@ -143,9 +143,12 @@ def get_csv_read_type(comp: Component) -> str:
 
     For temporal strings (TimePeriod, etc.) we read as VARCHAR.
     For numerics, we let DuckDB parse directly.
+
+    Note: Integer columns are read as DOUBLE to enable strict validation
+    that rejects non-integer values (e.g., 1.5) instead of silently rounding.
     """
     if comp.data_type == Integer:
-        return "BIGINT"
+        return "DOUBLE"  # Read as DOUBLE to validate no decimal component
     elif comp.data_type == Number:
         return "DOUBLE"  # Read as DOUBLE, then cast to DECIMAL in table
     elif comp.data_type == Boolean:
@@ -332,7 +335,7 @@ def build_select_columns(
     csv_dtypes: Dict[str, str],
     dataset_name: str,
 ) -> List[str]:
-    """Build SELECT column expressions with type casting."""
+    """Build SELECT column expressions with type casting and validation."""
     select_cols = []
 
     for comp_name, comp in components.items():
@@ -340,8 +343,18 @@ def build_select_columns(
             csv_type = csv_dtypes.get(comp_name, "VARCHAR")
             table_type = get_column_sql_type(comp)
 
+            # Strict Integer validation: reject non-integer values (e.g., 1.5)
+            # Read as DOUBLE, validate no decimal component, then cast to BIGINT
+            if csv_type == "DOUBLE" and table_type == "BIGINT":
+                select_cols.append(
+                    f"""CASE
+                        WHEN "{comp_name}" IS NOT NULL AND "{comp_name}" <> FLOOR("{comp_name}")
+                        THEN error('Column {comp_name}: value ' || "{comp_name}" || ' has non-zero decimal component for Integer type')
+                        ELSE CAST("{comp_name}" AS BIGINT)
+                    END AS "{comp_name}\""""
+                )
             # Cast DOUBLE → DECIMAL for Number type
-            if csv_type == "DOUBLE" and "DECIMAL" in table_type:
+            elif csv_type == "DOUBLE" and "DECIMAL" in table_type:
                 select_cols.append(f'CAST("{comp_name}" AS {table_type}) AS "{comp_name}"')
             else:
                 select_cols.append(f'"{comp_name}"')
