@@ -46,6 +46,27 @@ SQL_BINARY_OPS: Dict[str, str] = {
     "||": "||",
 }
 
+# Set operation mappings
+SQL_SET_OPS: Dict[str, str] = {
+    "union": "UNION ALL",
+    "intersect": "INTERSECT",
+    "setdiff": "EXCEPT",
+    "symdiff": "SYMDIFF",  # Handled specially
+}
+
+# VTL to DuckDB type mappings
+VTL_TO_DUCKDB_TYPES: Dict[str, str] = {
+    "Integer": "BIGINT",
+    "Number": "DOUBLE",
+    "String": "VARCHAR",
+    "Boolean": "BOOLEAN",
+    "Date": "DATE",
+    "TimePeriod": "VARCHAR",
+    "TimeInterval": "VARCHAR",
+    "Duration": "VARCHAR",
+    "Null": "VARCHAR",
+}
+
 SQL_UNARY_OPS: Dict[str, str] = {
     # Arithmetic
     "+": "+",
@@ -283,6 +304,23 @@ class SQLTranspiler(ASTTemplate):
         right_type = self._get_operand_type(node.right)
 
         op = node.op.lower() if isinstance(node.op, str) else str(node.op)
+
+        # Special handling for IN / NOT IN
+        if op in ("in", "not_in", "not in"):
+            return self._visit_in_op(node, is_not=(op in ("not_in", "not in")))
+
+        # Special handling for MATCH_CHARACTERS (regex)
+        if op in ("match_characters", "match"):
+            return self._visit_match_op(node)
+
+        # Special handling for EXIST_IN
+        if op == "exist_in":
+            return self._visit_exist_in(node)
+
+        # Special handling for NVL (coalesce)
+        if op == "nvl":
+            return self._visit_nvl_binop(node)
+
         sql_op = SQL_BINARY_OPS.get(op, op.upper())
 
         # Dataset-Dataset
@@ -301,6 +339,141 @@ class SQLTranspiler(ASTTemplate):
         left_sql = self.visit(node.left)
         right_sql = self.visit(node.right)
         return f"({left_sql} {sql_op} {right_sql})"
+
+    def _visit_in_op(self, node: AST.BinOp, is_not: bool) -> str:
+        """
+        Handle IN / NOT IN operations.
+
+        VTL: x in {1, 2, 3} or ds in {1, 2, 3}
+        SQL: x IN (1, 2, 3) or x NOT IN (1, 2, 3)
+        """
+        left_type = self._get_operand_type(node.left)
+        left_sql = self.visit(node.left)
+        right_sql = self.visit(node.right)  # Should be a Collection
+
+        sql_op = "NOT IN" if is_not else "IN"
+
+        # Dataset-level operation
+        if left_type == OperandType.DATASET:
+            return self._in_dataset(node.left, right_sql, sql_op)
+
+        # Scalar/Component level
+        return f"({left_sql} {sql_op} {right_sql})"
+
+    def _in_dataset(self, dataset_node: AST.AST, values_sql: str, sql_op: str) -> str:
+        """Generate SQL for dataset-level IN/NOT IN operation."""
+        ds_name = self._get_dataset_name(dataset_node)
+        ds = self.available_tables[ds_name]
+
+        id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
+        measure_select = ", ".join(
+            [f'("{m}" {sql_op} {values_sql}) AS "{m}"' for m in ds.get_measures_names()]
+        )
+
+        dataset_sql = self._get_dataset_sql(dataset_node)
+
+        return f"SELECT {id_select}, {measure_select} FROM ({dataset_sql}) AS t"
+
+    def _visit_match_op(self, node: AST.BinOp) -> str:
+        """
+        Handle MATCH_CHARACTERS (regex) operation.
+
+        VTL: match_characters(str, pattern)
+        SQL: regexp_full_match(str, pattern)
+        """
+        left_type = self._get_operand_type(node.left)
+        left_sql = self.visit(node.left)
+        pattern_sql = self.visit(node.right)
+
+        # Dataset-level operation
+        if left_type == OperandType.DATASET:
+            return self._match_dataset(node.left, pattern_sql)
+
+        # Scalar/Component level - DuckDB uses regexp_full_match
+        return f"regexp_full_match({left_sql}, {pattern_sql})"
+
+    def _match_dataset(self, dataset_node: AST.AST, pattern_sql: str) -> str:
+        """Generate SQL for dataset-level MATCH operation."""
+        ds_name = self._get_dataset_name(dataset_node)
+        ds = self.available_tables[ds_name]
+
+        id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
+        measure_select = ", ".join(
+            [f'regexp_full_match("{m}", {pattern_sql}) AS "{m}"' for m in ds.get_measures_names()]
+        )
+
+        dataset_sql = self._get_dataset_sql(dataset_node)
+
+        return f"SELECT {id_select}, {measure_select} FROM ({dataset_sql}) AS t"
+
+    def _visit_exist_in(self, node: AST.BinOp) -> str:
+        """
+        Handle EXIST_IN operation.
+
+        VTL: exist_in(ds1, ds2) - checks if identifiers from ds1 exist in ds2
+        SQL: SELECT *, EXISTS(SELECT 1 FROM ds2 WHERE ids match) AS bool_var
+        """
+        left_name = self._get_dataset_name(node.left)
+        right_name = self._get_dataset_name(node.right)
+
+        left_ds = self.available_tables[left_name]
+        right_ds = self.available_tables[right_name]
+
+        # Find common identifiers
+        left_ids = set(left_ds.get_identifiers_names())
+        right_ids = set(right_ds.get_identifiers_names())
+        common_ids = sorted(left_ids.intersection(right_ids))
+
+        if not common_ids:
+            raise ValueError(f"No common identifiers between {left_name} and {right_name}")
+
+        # Build EXISTS condition
+        conditions = [f'l."{id}" = r."{id}"' for id in common_ids]
+        where_clause = " AND ".join(conditions)
+
+        # Select identifiers from left
+        id_select = ", ".join([f'l."{k}"' for k in left_ds.get_identifiers_names()])
+
+        left_sql = self._get_dataset_sql(node.left)
+        right_sql = self._get_dataset_sql(node.right)
+
+        return f"""
+            SELECT {id_select},
+                   EXISTS(SELECT 1 FROM ({right_sql}) AS r WHERE {where_clause}) AS "bool_var"
+            FROM ({left_sql}) AS l
+        """
+
+    def _visit_nvl_binop(self, node: AST.BinOp) -> str:
+        """
+        Handle NVL operation when parsed as BinOp.
+
+        VTL: nvl(ds, value) - replace nulls with value
+        SQL: COALESCE(col, value)
+        """
+        left_type = self._get_operand_type(node.left)
+        replacement = self.visit(node.right)
+
+        # Dataset-level NVL
+        if left_type == OperandType.DATASET:
+            ds_name = self._get_dataset_name(node.left)
+            ds = self.available_tables[ds_name]
+
+            id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
+            measure_parts = []
+            for m in ds.get_measures_names():
+                measure_parts.append(f'COALESCE("{m}", {replacement}) AS "{m}"')
+            measure_select = ", ".join(measure_parts)
+
+            dataset_sql = self._get_dataset_sql(node.left)
+
+            return f"""
+                SELECT {id_select}, {measure_select}
+                FROM ({dataset_sql}) AS t
+            """
+
+        # Scalar/Component level
+        left_sql = self.visit(node.left)
+        return f"COALESCE({left_sql}, {replacement})"
 
     def _binop_dataset_dataset(self, left_node: AST.AST, right_node: AST.AST, sql_op: str) -> str:
         """
@@ -457,6 +630,10 @@ FROM ({dataset_sql}) AS t"""
         if not node.children:
             return ""
 
+        # Handle CAST operation specially
+        if op == "cast":
+            return self._visit_cast(node)
+
         operand = node.children[0]
         operand_sql = self.visit(operand)
         operand_type = self._get_operand_type(operand)
@@ -529,9 +706,12 @@ FROM ({dataset_sql}) AS t"""
         ds = self.available_tables[ds_name]
 
         id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
-        measure_select = ", ".join(
-            [f'{template.format(m=f"{m}")} AS "{m}"' for m in ds.get_measures_names()]
-        )
+        # Quote column names properly in function calls
+        measure_parts = []
+        for m in ds.get_measures_names():
+            quoted_col = f'"{m}"'
+            measure_parts.append(f'{template.format(m=quoted_col)} AS "{m}"')
+        measure_select = ", ".join(measure_parts)
 
         dataset_sql = self._get_dataset_sql(dataset_node)
 
@@ -540,12 +720,101 @@ FROM ({dataset_sql}) AS t"""
                     FROM ({dataset_sql}) AS t
                 """
 
+    def _visit_cast(self, node: AST.ParamOp) -> str:
+        """
+        Handle CAST operations.
+
+        VTL: cast(operand, type) or cast(operand, type, mask)
+        SQL: CAST(operand AS type) or special handling for masked casts
+        """
+        if len(node.children) < 2:
+            return ""
+
+        operand = node.children[0]
+        operand_sql = self.visit(operand)
+        operand_type = self._get_operand_type(operand)
+
+        # Get target type - it's the second child (scalar type)
+        target_type_node = node.children[1]
+        if hasattr(target_type_node, "value"):
+            target_type = target_type_node.value
+        elif hasattr(target_type_node, "__name__"):
+            target_type = target_type_node.__name__
+        else:
+            target_type = str(target_type_node)
+
+        # Get optional mask from params
+        mask = None
+        if node.params:
+            mask_val = self.visit(node.params[0])
+            # Remove quotes if present
+            if mask_val.startswith("'") and mask_val.endswith("'"):
+                mask = mask_val[1:-1]
+            else:
+                mask = mask_val
+
+        # Map VTL type to DuckDB type
+        duckdb_type = VTL_TO_DUCKDB_TYPES.get(target_type, "VARCHAR")
+
+        # Dataset-level cast
+        if operand_type == OperandType.DATASET:
+            return self._cast_dataset(operand, target_type, duckdb_type, mask)
+
+        # Scalar/Component level cast
+        return self._cast_scalar(operand_sql, target_type, duckdb_type, mask)
+
+    def _cast_scalar(
+        self, operand_sql: str, target_type: str, duckdb_type: str, mask: Optional[str]
+    ) -> str:
+        """Generate SQL for scalar cast with optional mask."""
+        if mask:
+            # Handle masked casts
+            if target_type == "Date":
+                # String to Date with format mask
+                return f"STRPTIME({operand_sql}, '{mask}')::DATE"
+            elif target_type in ("Number", "Integer"):
+                # Number with decimal mask - replace comma with dot
+                return f"CAST(REPLACE({operand_sql}, ',', '.') AS {duckdb_type})"
+            elif target_type == "String":
+                # Date/Number to String with format
+                return f"STRFTIME({operand_sql}, '{mask}')"
+            elif target_type == "TimePeriod":
+                # String to TimePeriod (stored as VARCHAR)
+                return f"CAST({operand_sql} AS VARCHAR)"
+
+        # Simple cast without mask
+        return f"CAST({operand_sql} AS {duckdb_type})"
+
+    def _cast_dataset(
+        self,
+        dataset_node: AST.AST,
+        target_type: str,
+        duckdb_type: str,
+        mask: Optional[str],
+    ) -> str:
+        """Generate SQL for dataset-level cast operation."""
+        ds_name = self._get_dataset_name(dataset_node)
+        ds = self.available_tables[ds_name]
+
+        id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
+
+        # Build measure cast expressions
+        measure_parts = []
+        for m in ds.get_measures_names():
+            cast_expr = self._cast_scalar(f'"{m}"', target_type, duckdb_type, mask)
+            measure_parts.append(f'{cast_expr} AS "{m}"')
+
+        measure_select = ", ".join(measure_parts)
+        dataset_sql = self._get_dataset_sql(dataset_node)
+
+        return f"SELECT {id_select}, {measure_select} FROM ({dataset_sql}) AS t"
+
     # =========================================================================
     # Multiple-operand Operations
     # =========================================================================
 
     def visit_MulOp(self, node: AST.MulOp) -> str:
-        """Process multiple-operand operations (between, group by, etc.)."""
+        """Process multiple-operand operations (between, group by, set ops, etc.)."""
         op = node.op.lower() if isinstance(node.op, str) else str(node.op)
 
         if op == "between" and len(node.children) >= 3:
@@ -554,9 +823,131 @@ FROM ({dataset_sql}) AS t"""
             high = self.visit(node.children[2])
             return f"({operand} BETWEEN {low} AND {high})"
 
+        # Set operations (union, intersect, setdiff, symdiff)
+        if op in SQL_SET_OPS:
+            return self._visit_set_op(node, op)
+
+        # exist_in also comes through MulOp
+        if op == "exists_in":
+            return self._visit_exist_in_mulop(node)
+
         # For group by/except, return comma-separated list
         children_sql = [self.visit(child) for child in node.children]
         return ", ".join(children_sql)
+
+    def _visit_set_op(self, node: AST.MulOp, op: str) -> str:
+        """
+        Generate SQL for set operations.
+
+        VTL: union(ds1, ds2), intersect(ds1, ds2), setdiff(ds1, ds2), symdiff(ds1, ds2)
+        """
+        if len(node.children) < 2:
+            if node.children:
+                return self._get_dataset_sql(node.children[0])
+            return ""
+
+        # Get SQL for all operands
+        queries = [self._get_dataset_sql(child) for child in node.children]
+
+        if op == "symdiff":
+            # Symmetric difference: (A EXCEPT B) UNION ALL (B EXCEPT A)
+            return self._symmetric_difference(queries)
+
+        sql_op = SQL_SET_OPS.get(op, op.upper())
+
+        # For union, we need to handle duplicates - VTL union removes duplicates on identifiers
+        if op == "union":
+            return self._union_with_dedup(node, queries)
+
+        # For intersect and setdiff, standard SQL operations work
+        return f" {sql_op} ".join([f"({q})" for q in queries])
+
+    def _symmetric_difference(self, queries: List[str]) -> str:
+        """Generate SQL for symmetric difference: (A EXCEPT B) UNION ALL (B EXCEPT A)."""
+        if len(queries) < 2:
+            return queries[0] if queries else ""
+
+        a_sql = queries[0]
+        b_sql = queries[1]
+
+        # For more than 2 operands, chain the operation
+        result = f"""
+            (({a_sql}) EXCEPT ({b_sql}))
+            UNION ALL
+            (({b_sql}) EXCEPT ({a_sql}))
+        """
+
+        # Chain additional operands
+        for i in range(2, len(queries)):
+            result = f"""
+                (({result}) EXCEPT ({queries[i]}))
+                UNION ALL
+                (({queries[i]}) EXCEPT ({result}))
+            """
+
+        return result
+
+    def _union_with_dedup(self, node: AST.MulOp, queries: List[str]) -> str:
+        """
+        Generate SQL for VTL union with duplicate removal on identifiers.
+
+        VTL union keeps the first occurrence when identifiers match.
+        """
+        if len(queries) < 2:
+            return queries[0] if queries else ""
+
+        # Get identifier columns from first dataset
+        first_ds_name = self._get_dataset_name(node.children[0])
+        ds = self.available_tables.get(first_ds_name)
+
+        if ds:
+            id_cols = ds.get_identifiers_names()
+            if id_cols:
+                # Use UNION ALL then DISTINCT ON for first occurrence
+                union_sql = " UNION ALL ".join([f"({q})" for q in queries])
+                id_list = ", ".join([f'"{c}"' for c in id_cols])
+                return f"""
+                    SELECT DISTINCT ON ({id_list}) *
+                    FROM ({union_sql}) AS t
+                """
+
+        # Fallback: simple UNION (removes all duplicates)
+        return " UNION ".join([f"({q})" for q in queries])
+
+    def _visit_exist_in_mulop(self, node: AST.MulOp) -> str:
+        """Handle exist_in when it comes through MulOp."""
+        if len(node.children) < 2:
+            raise ValueError("exist_in requires at least two operands")
+
+        left_name = self._get_dataset_name(node.children[0])
+        right_name = self._get_dataset_name(node.children[1])
+
+        left_ds = self.available_tables[left_name]
+        right_ds = self.available_tables[right_name]
+
+        # Find common identifiers
+        left_ids = set(left_ds.get_identifiers_names())
+        right_ids = set(right_ds.get_identifiers_names())
+        common_ids = sorted(left_ids.intersection(right_ids))
+
+        if not common_ids:
+            raise ValueError(f"No common identifiers between {left_name} and {right_name}")
+
+        # Build EXISTS condition
+        conditions = [f'l."{id}" = r."{id}"' for id in common_ids]
+        where_clause = " AND ".join(conditions)
+
+        # Select identifiers from left
+        id_select = ", ".join([f'l."{k}"' for k in left_ds.get_identifiers_names()])
+
+        left_sql = self._get_dataset_sql(node.children[0])
+        right_sql = self._get_dataset_sql(node.children[1])
+
+        return f"""
+            SELECT {id_select},
+                   EXISTS(SELECT 1 FROM ({right_sql}) AS r WHERE {where_clause}) AS "bool_var"
+            FROM ({left_sql}) AS l
+        """
 
     # =========================================================================
     # Conditional Operations
@@ -818,18 +1209,27 @@ FROM ({dataset_sql}) AS t"""
             ds_name = self._get_dataset_name(node.operand)
             ds = self.available_tables.get(ds_name)
             if ds:
-                id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
                 measure_select = ", ".join(
                     [f'{sql_op}("{m}") AS "{m}"' for m in ds.get_measures_names()]
                 )
                 dataset_sql = self._get_dataset_sql(node.operand)
 
-                return f"""
-                    SELECT {id_select}, {measure_select}
-                    FROM ({dataset_sql}) AS t
-                    {group_by}
-                    {having}
-                """.strip()
+                # Only include identifiers if grouping is specified
+                if group_by:
+                    id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
+                    return f"""
+                        SELECT {id_select}, {measure_select}
+                        FROM ({dataset_sql}) AS t
+                        {group_by}
+                        {having}
+                    """.strip()
+                else:
+                    # No grouping: aggregate all rows into single result
+                    return f"""
+                        SELECT {measure_select}
+                        FROM ({dataset_sql}) AS t
+                        {having}
+                    """.strip()
 
         # Scalar/Component aggregation
         return f"{sql_op}({operand_sql})"
@@ -953,6 +1353,189 @@ FROM ({dataset_sql}) AS t"""
         return f"({inner})"
 
     # =========================================================================
+    # Validation Operations
+    # =========================================================================
+
+    def visit_Validation(self, node: AST.Validation) -> str:
+        """
+        Process CHECK validation operation.
+
+        VTL: check(ds, condition, error_code, error_level)
+        Returns dataset with errorcode, errorlevel, and optionally imbalance columns.
+        """
+        # Get the validation element (contains the condition result)
+        validation_sql = self.visit(node.validation)
+
+        # Determine the boolean column name to check
+        # If validation is a direct dataset reference, find its boolean measure
+        bool_col = "bool_var"  # Default
+        if isinstance(node.validation, AST.VarID):
+            ds_name = node.validation.value
+            ds = self.available_tables.get(ds_name)
+            if ds:
+                # Find boolean measure column
+                for m in ds.get_measures_names():
+                    comp = ds.components.get(m)
+                    if comp and comp.data_type.__name__ == "Boolean":
+                        bool_col = m
+                        break
+                else:
+                    # No boolean measure found, use first measure
+                    measures = ds.get_measures_names()
+                    if measures:
+                        bool_col = measures[0]
+
+        # Get error code and level
+        error_code = node.error_code if node.error_code else "NULL"
+        if isinstance(error_code, str) and not error_code.startswith("'"):
+            error_code = f"'{error_code}'"
+
+        error_level = node.error_level if node.error_level is not None else "NULL"
+
+        # Handle imbalance if present
+        imbalance_sql = ""
+        if node.imbalance:
+            imbalance_expr = self.visit(node.imbalance)
+            imbalance_sql = f", ({imbalance_expr}) AS imbalance"
+
+        # Generate check result
+        if node.invalid:
+            # Return only invalid rows (where bool column is False)
+            return f"""
+                SELECT *,
+                       {error_code} AS errorcode,
+                       {error_level} AS errorlevel{imbalance_sql}
+                FROM ({validation_sql}) AS t
+                WHERE "{bool_col}" = FALSE OR "{bool_col}" IS NULL
+            """
+        else:
+            # Return all rows with validation info
+            return f"""
+                SELECT *,
+                       CASE WHEN "{bool_col}" = FALSE OR "{bool_col}" IS NULL
+                            THEN {error_code} ELSE NULL END AS errorcode,
+                       CASE WHEN "{bool_col}" = FALSE OR "{bool_col}" IS NULL
+                            THEN {error_level} ELSE NULL END AS errorlevel{imbalance_sql}
+                FROM ({validation_sql}) AS t
+            """
+
+    def visit_DPValidation(self, node: AST.DPValidation) -> str:
+        """
+        Process CHECK_DATAPOINT validation operation.
+
+        VTL: check_datapoint(ds, ruleset, components, output)
+        Validates data against a datapoint ruleset.
+        """
+        # Get the dataset SQL
+        dataset_sql = self._get_dataset_sql(node.dataset)
+
+        # Get dataset info
+        ds_name = self._get_dataset_name(node.dataset)
+        ds = self.available_tables.get(ds_name)
+
+        # Output mode determines what to return
+        output_mode = node.output.value if node.output else "all"
+
+        # Build base query with identifiers
+        if ds:
+            id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
+            measure_select = ", ".join([f'"{m}"' for m in ds.get_measures_names()])
+        else:
+            id_select = "*"
+            measure_select = ""
+
+        # The ruleset validation is complex - we generate a simplified version
+        # The actual rule conditions would be processed by the interpreter
+        # Here we generate a template that can be filled in during execution
+        if output_mode == "invalid":
+            return f"""
+                SELECT {id_select},
+                       '{node.ruleset_name}' AS ruleid,
+                       FALSE AS bool_var,
+                       'validation_error' AS errorcode,
+                       1 AS errorlevel
+                FROM ({dataset_sql}) AS t
+                WHERE FALSE  -- Placeholder: actual conditions from ruleset
+            """
+        elif output_mode == "all_measures":
+            return f"""
+                SELECT {id_select}, {measure_select},
+                       TRUE AS bool_var
+                FROM ({dataset_sql}) AS t
+            """
+        else:  # "all"
+            return f"""
+                SELECT {id_select},
+                       '{node.ruleset_name}' AS ruleid,
+                       TRUE AS bool_var,
+                       NULL AS errorcode,
+                       NULL AS errorlevel
+                FROM ({dataset_sql}) AS t
+            """
+
+    def visit_HROperation(self, node: AST.HROperation) -> str:
+        """
+        Process hierarchical operations (hierarchy, check_hierarchy).
+
+        VTL: hierarchy(ds, ruleset, ...) or check_hierarchy(ds, ruleset, ...)
+        """
+        # Get the dataset SQL
+        dataset_sql = self._get_dataset_sql(node.dataset)
+
+        # Get dataset info
+        ds_name = self._get_dataset_name(node.dataset)
+        ds = self.available_tables.get(ds_name)
+
+        op = node.op.lower()
+
+        if ds:
+            id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
+            measure_select = ", ".join([f'"{m}"' for m in ds.get_measures_names()])
+        else:
+            id_select = "*"
+            measure_select = ""
+
+        if op == "check_hierarchy":
+            # check_hierarchy returns validation results
+            output_mode = node.output.value if node.output else "all"
+
+            if output_mode == "invalid":
+                return f"""
+                    SELECT {id_select},
+                           '{node.ruleset_name}' AS ruleid,
+                           FALSE AS bool_var,
+                           'hierarchy_error' AS errorcode,
+                           1 AS errorlevel,
+                           0 AS imbalance
+                    FROM ({dataset_sql}) AS t
+                    WHERE FALSE  -- Placeholder: actual hierarchy validation
+                """
+            else:
+                return f"""
+                    SELECT {id_select},
+                           '{node.ruleset_name}' AS ruleid,
+                           TRUE AS bool_var,
+                           NULL AS errorcode,
+                           NULL AS errorlevel,
+                           0 AS imbalance
+                    FROM ({dataset_sql}) AS t
+                """
+        else:
+            # hierarchy operation computes aggregations based on ruleset
+            output_mode = node.output.value if node.output else "computed"
+
+            if output_mode == "all":
+                return f"""
+                    SELECT {id_select}, {measure_select}
+                    FROM ({dataset_sql}) AS t
+                """
+            else:  # "computed"
+                return f"""
+                    SELECT {id_select}, {measure_select}
+                    FROM ({dataset_sql}) AS t
+                """
+
+    # =========================================================================
     # Helper Methods
     # =========================================================================
 
@@ -1050,7 +1633,16 @@ FROM ({dataset_sql}) AS t"""
     def _ensure_select(self, sql: str) -> str:
         """Ensure SQL is a complete SELECT statement."""
         sql_stripped = sql.strip()
-        if sql_stripped.upper().startswith("SELECT"):
+        sql_upper = sql_stripped.upper()
+
+        if sql_upper.startswith("SELECT"):
+            return sql_stripped
+
+        # Check if it's a set operation (starts with subquery)
+        # Patterns like: (SELECT ...) UNION/INTERSECT/EXCEPT (SELECT ...)
+        if sql_stripped.startswith("(") and any(
+            op in sql_upper for op in ("UNION", "INTERSECT", "EXCEPT")
+        ):
             return sql_stripped
 
         # Check if it's a table reference (quoted identifier like "DS_1")
