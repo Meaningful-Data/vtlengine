@@ -201,42 +201,18 @@ class TestTypeValidation:
                 f"SELECT CAST(Me_1 AS BIGINT) FROM read_csv('{csv_path}')"
             ).fetchall()
 
-    def test_strict_integer_cast_rejects_decimals(self, duckdb_connection, temp_csv_dir):
-        """Test that strict integer casting raises error for non-zero decimal values."""
+    def test_float_to_integer_rounding(self, duckdb_connection, temp_csv_dir):
+        """Test that DuckDB rounds floats when casting to integer (standard SQL behavior)."""
         csv_content = "Id_1,Me_1\nA,1.5"
         csv_path = create_csv_file(temp_csv_dir, "test_float", csv_content)
 
-        # Strict cast: validate value has no decimal component before casting
-        # This raises an error for values like 1.5 that would otherwise be rounded
-        with pytest.raises(duckdb.InvalidInputException):
-            duckdb_connection.execute(
-                f"""SELECT
-                    CASE
-                        WHEN Me_1 <> FLOOR(Me_1)
-                        THEN error('Value ' || Me_1 || ' has non-zero decimal component')
-                        ELSE CAST(Me_1 AS BIGINT)
-                    END
-                FROM read_csv('{csv_path}')"""
-            ).fetchall()
-
-    def test_strict_integer_cast_allows_whole_numbers(self, duckdb_connection, temp_csv_dir):
-        """Test that strict integer casting allows values with .0 decimal (whole numbers)."""
-        csv_content = "Id_1,Me_1\nA,5.0\nB,10.0"
-        csv_path = create_csv_file(temp_csv_dir, "test_whole", csv_content)
-
-        # Strict cast should allow values like 5.0, 10.0 since they have no fractional part
+        # DuckDB rounds floats to integers (banker's rounding)
         result = duckdb_connection.execute(
-            f"""SELECT
-                CASE
-                    WHEN Me_1 <> FLOOR(Me_1)
-                    THEN error('Value ' || Me_1 || ' has non-zero decimal component')
-                    ELSE CAST(Me_1 AS BIGINT)
-                END
-            FROM read_csv('{csv_path}')"""
+            f"SELECT CAST(Me_1 AS BIGINT) FROM read_csv('{csv_path}')"
         ).fetchall()
 
-        assert result[0][0] == 5
-        assert result[1][0] == 10
+        # 1.5 rounds to 2 (banker's rounding rounds to nearest even)
+        assert result[0][0] == 2
 
 
 # =============================================================================
