@@ -1,15 +1,15 @@
 """
-DuckDB-based CSV parser optimized for out-of-core processing.
+Internal validation helpers for DuckDB CSV loading.
 
-Validation Strategy (optimized for large datasets):
-1. CREATE TABLE with NOT NULL constraints (no PRIMARY KEY)
-2. Load CSV with explicit types → DuckDB validates types on load
-3. Post-hoc duplicate validation via GROUP BY HAVING COUNT > 1
-4. Explicit validation: temporal types (TimePeriod, TimeInterval, Duration)
+This module contains:
+- Regex patterns for VTL temporal types
+- Error mapping from DuckDB to VTL error codes
+- Column type mapping functions
+- Table creation and validation helpers
 """
 
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Dict, List
 
 import duckdb
 
@@ -22,7 +22,6 @@ from vtlengine.DataTypes import (
     TimeInterval,
     TimePeriod,
 )
-from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING
 from vtlengine.duckdb_transpiler.Config.config import get_decimal_type
 from vtlengine.Exceptions import DataLoadError, InputValidationException
 from vtlengine.Model import Component, Role
@@ -45,13 +44,15 @@ TIME_INTERVAL_PATTERN = (
     r"\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2})?$"
 )
 
+DURATION_PATTERN = r"^(A|S|Q|M|W|D)$"  # Year, Semester, Quarter, Month, Week, Day
+
 
 # =============================================================================
 # Error Mapping
 # =============================================================================
 
 
-def _map_duckdb_error(
+def map_duckdb_error(
     error: duckdb.Error,
     dataset_name: str,
     components: Dict[str, Component],
@@ -113,7 +114,7 @@ def _map_duckdb_error(
 # =============================================================================
 
 
-def _get_column_sql_type(comp: Component) -> str:
+def get_column_sql_type(comp: Component) -> str:
     """
     Get SQL type for a component with special handling for VTL types.
 
@@ -136,7 +137,7 @@ def _get_column_sql_type(comp: Component) -> str:
         return "VARCHAR"
 
 
-def _get_csv_read_type(comp: Component) -> str:
+def get_csv_read_type(comp: Component) -> str:
     """
     Get type for CSV reading. DuckDB read_csv needs slightly different types.
 
@@ -160,7 +161,7 @@ def _get_csv_read_type(comp: Component) -> str:
 # =============================================================================
 
 
-def _build_create_table_sql(table_name: str, components: Dict[str, Component]) -> str:
+def build_create_table_sql(table_name: str, components: Dict[str, Component]) -> str:
     """
     Build CREATE TABLE statement with NOT NULL constraints only.
 
@@ -170,7 +171,7 @@ def _build_create_table_sql(table_name: str, components: Dict[str, Component]) -
     col_defs: List[str] = []
 
     for comp_name, comp in components.items():
-        sql_type = _get_column_sql_type(comp)
+        sql_type = get_column_sql_type(comp)
 
         if comp.role == Role.IDENTIFIER or not comp.nullable:
             col_defs.append(f'"{comp_name}" {sql_type} NOT NULL')
@@ -180,7 +181,7 @@ def _build_create_table_sql(table_name: str, components: Dict[str, Component]) -
     return f'CREATE TABLE "{table_name}" ({", ".join(col_defs)})'
 
 
-def _validate_no_duplicates(
+def validate_no_duplicates(
     conn: duckdb.DuckDBPyConnection,
     table_name: str,
     id_columns: List[str],
@@ -212,13 +213,13 @@ def _validate_no_duplicates(
 # =============================================================================
 
 
-def _validate_csv_path(csv_path: Path) -> None:
+def validate_csv_path(csv_path: Path) -> None:
     """Validate CSV file exists."""
     if not csv_path.exists() or not csv_path.is_file():
         raise DataLoadError(code="0-3-1-1", file=csv_path)
 
 
-def _build_csv_column_types(
+def build_csv_column_types(
     components: Dict[str, Component],
     csv_columns: List[str],
 ) -> Dict[str, str]:
@@ -229,11 +230,11 @@ def _build_csv_column_types(
     dtypes = {}
     for col in csv_columns:
         if col in components:
-            dtypes[col] = _get_csv_read_type(components[col])
+            dtypes[col] = get_csv_read_type(components[col])
     return dtypes
 
 
-def _handle_sdmx_columns(columns: List[str], components: Dict[str, Component]) -> List[str]:
+def handle_sdmx_columns(columns: List[str], components: Dict[str, Component]) -> List[str]:
     """
     Identify SDMX-CSV special columns to exclude.
     Returns list of columns to keep.
@@ -262,7 +263,7 @@ def _handle_sdmx_columns(columns: List[str], components: Dict[str, Component]) -
 # =============================================================================
 
 
-def _validate_temporal_columns(
+def validate_temporal_columns(
     conn: duckdb.DuckDBPyConnection,
     table_name: str,
     components: Dict[str, Component],
@@ -286,10 +287,7 @@ def _validate_temporal_columns(
         elif comp.data_type == TimeInterval:
             temporal_checks.append((comp_name, TIME_INTERVAL_PATTERN, "Time"))
         elif comp.data_type == Duration:
-            # Duration must be one of: A, S, Q, M, W, D
-            valid_durations = "|".join(PERIOD_IND_MAPPING.keys())
-            pattern = f"^({valid_durations})$"
-            temporal_checks.append((comp_name, pattern, "Duration"))
+            temporal_checks.append((comp_name, DURATION_PATTERN, "Duration"))
 
     if not temporal_checks:
         return
@@ -328,127 +326,7 @@ def _validate_temporal_columns(
         )
 
 
-# =============================================================================
-# Main Loading Function
-# =============================================================================
-
-
-def load_datapoints_duckdb(
-    conn: duckdb.DuckDBPyConnection,
-    components: Dict[str, Component],
-    dataset_name: str,
-    csv_path: Optional[Union[Path, str]] = None,
-) -> duckdb.DuckDBPyRelation:
-    """
-    Load CSV data into DuckDB table with optimized validation.
-
-    Validation Strategy:
-    1. CREATE TABLE with NOT NULL constraints (no PRIMARY KEY for memory efficiency)
-    2. Load CSV with explicit types → DuckDB validates types on load
-    3. Post-hoc duplicate check via GROUP BY HAVING COUNT > 1
-    4. Temporal types validated via regex (TimePeriod, TimeInterval, Duration)
-    5. DWI check (no identifiers → max 1 row)
-
-    Args:
-        conn: DuckDB connection
-        components: Dataset component definitions
-        dataset_name: Name for the table
-        csv_path: Path to CSV file (None for empty table)
-
-    Returns:
-        DuckDB relation pointing to the created table
-
-    Raises:
-        DataLoadError: If validation fails
-    """
-    # Handle empty dataset
-    if csv_path is None:
-        return _create_empty_table(conn, components, dataset_name)
-
-    csv_path = Path(csv_path) if isinstance(csv_path, str) else csv_path
-    if not csv_path.exists():
-        return _create_empty_table(conn, components, dataset_name)
-
-    _validate_csv_path(csv_path)
-
-    # Get identifier columns (needed for duplicate validation)
-    id_columns = [n for n, c in components.items() if c.role == Role.IDENTIFIER]
-
-    # 1. Create table (NOT NULL only, no PRIMARY KEY)
-    conn.execute(_build_create_table_sql(dataset_name, components))
-
-    try:
-        # 2. Read CSV header
-        header_rel = conn.sql(
-            f"SELECT * FROM read_csv('{csv_path}', header=true, auto_detect=true) LIMIT 0"
-        )
-        csv_columns = header_rel.columns
-
-        # 3. Handle SDMX-CSV special columns
-        keep_columns = _handle_sdmx_columns(csv_columns, components)
-
-        # Check required identifier columns exist
-        missing_ids = set(id_columns) - set(keep_columns)
-        if missing_ids:
-            raise InputValidationException(
-                code="0-1-1-8",
-                ids=", ".join(missing_ids),
-                file=str(csv_path.name),
-            )
-
-        # 4. Build column type mapping and SELECT expressions
-        csv_dtypes = _build_csv_column_types(components, keep_columns)
-        select_cols = _build_select_columns(components, keep_columns, csv_dtypes, dataset_name)
-
-        # 5. Build type string for read_csv
-        type_str = ", ".join(f"'{k}': '{v}'" for k, v in csv_dtypes.items())
-
-        # 6. Build filter for SDMX ACTION column
-        action_filter = ""
-        if "ACTION" in csv_columns and "ACTION" not in components:
-            action_filter = 'WHERE "ACTION" != \'D\' OR "ACTION" IS NULL'
-
-        # 7. Execute INSERT
-        insert_sql = f"""
-            INSERT INTO "{dataset_name}"
-            SELECT {", ".join(select_cols)}
-            FROM read_csv(
-                '{csv_path}',
-                header=true,
-                columns={{{type_str}}},
-                parallel=true,
-                ignore_errors=false
-            )
-            {action_filter}
-        """
-        conn.execute(insert_sql)
-
-    except duckdb.Error as e:
-        conn.execute(f'DROP TABLE IF EXISTS "{dataset_name}"')
-        raise _map_duckdb_error(e, dataset_name, components)
-
-    # 8. Validate constraints
-    try:
-        # DWI: no identifiers → max 1 row
-        if not id_columns:
-            result = conn.execute(f'SELECT COUNT(*) FROM "{dataset_name}"').fetchone()
-            if result and result[0] > 1:
-                raise DataLoadError("0-3-1-4", name=dataset_name)
-
-        # Duplicate check (GROUP BY HAVING)
-        _validate_no_duplicates(conn, dataset_name, id_columns)
-
-        # Temporal type validation
-        _validate_temporal_columns(conn, dataset_name, components)
-
-    except DataLoadError:
-        conn.execute(f'DROP TABLE IF EXISTS "{dataset_name}"')
-        raise
-
-    return conn.table(dataset_name)
-
-
-def _build_select_columns(
+def build_select_columns(
     components: Dict[str, Component],
     keep_columns: List[str],
     csv_dtypes: Dict[str, str],
@@ -460,7 +338,7 @@ def _build_select_columns(
     for comp_name, comp in components.items():
         if comp_name in keep_columns:
             csv_type = csv_dtypes.get(comp_name, "VARCHAR")
-            table_type = _get_column_sql_type(comp)
+            table_type = get_column_sql_type(comp)
 
             # Cast DOUBLE → DECIMAL for Number type
             if csv_type == "DOUBLE" and "DECIMAL" in table_type:
@@ -470,7 +348,7 @@ def _build_select_columns(
         else:
             # Missing column → NULL (only allowed for nullable)
             if comp.nullable:
-                table_type = _get_column_sql_type(comp)
+                table_type = get_column_sql_type(comp)
                 select_cols.append(f'NULL::{table_type} AS "{comp_name}"')
             else:
                 raise DataLoadError("0-3-1-5", name=dataset_name, comp_name=comp_name)
@@ -478,20 +356,16 @@ def _build_select_columns(
     return select_cols
 
 
-def _create_empty_table(
-    conn: duckdb.DuckDBPyConnection,
-    components: Dict[str, Component],
-    table_name: str,
-) -> duckdb.DuckDBPyRelation:
-    """Create empty table with proper schema."""
-    conn.execute(_build_create_table_sql(table_name, components))
-    return conn.table(table_name)
-
-
-# =============================================================================
-# Exports
-# =============================================================================
-
-__all__ = [
-    "load_datapoints_duckdb",
-]
+def check_missing_identifiers(
+    id_columns: List[str],
+    keep_columns: List[str],
+    csv_path: Path,
+) -> None:
+    """Check if required identifier columns are present in CSV."""
+    missing_ids = set(id_columns) - set(keep_columns)
+    if missing_ids:
+        raise InputValidationException(
+            code="0-1-1-8",
+            ids=", ".join(missing_ids),
+            file=str(csv_path.name),
+        )

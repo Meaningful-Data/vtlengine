@@ -290,15 +290,20 @@ def _run_with_duckdb(
     ] = None,
     return_only_persistent: bool = True,
     scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
+    output_folder: Optional[Union[str, Path]] = None,
 ) -> Dict[str, Union[Dataset, Scalar]]:
     """
     Run VTL script using DuckDB as the execution engine.
 
     This function transpiles VTL to SQL and executes it using DuckDB.
+    When output_folder is provided, uses efficient CSV IO with DuckDB's
+    native read_csv and COPY TO for memory-efficient processing.
     """
     import duckdb
 
+    from vtlengine.AST.DAG._words import DELETE, GLOBAL, INSERT, PERSISTENT
     from vtlengine.duckdb_transpiler import SQLTranspiler
+    from vtlengine.duckdb_transpiler.io import load_datapoints_duckdb, save_datapoints_duckdb
 
     # AST generation
     script = _check_script(script)
@@ -333,22 +338,34 @@ def _run_with_duckdb(
         elif isinstance(result, Scalar):
             output_scalars[name] = result
 
-    # Create DuckDB connection and load data
+    # Get DAG analysis for efficient load/save scheduling
+    ds_analysis = DAGAnalyzer.ds_structure(ast)
+
+    # Create DuckDB connection
     conn = duckdb.connect()
 
-    # Load datapoints into DuckDB
-    datasets_with_data, _, path_dict = load_datasets_with_data(
-        data_structures, datapoints, scalar_values
-    )
+    # Normalize output folder path
+    output_folder_path = Path(output_folder) if output_folder else None
 
-    for ds_name, ds in datasets_with_data.items():
-        if ds.data is not None:
-            conn.register(ds_name, ds.data)
-        elif path_dict and ds_name in path_dict:
-            # Load from CSV path
-            path = path_dict[ds_name]
-            df = pd.read_csv(path)
-            conn.register(ds_name, df)
+    # Load datapoints - get path mappings
+    _, _, path_dict = load_datasets_with_data(data_structures, datapoints, scalar_values)
+
+    # If output_folder is provided, use efficient CSV IO with DAG scheduling
+    if output_folder_path:
+        # Ensure output folder exists
+        output_folder_path.mkdir(parents=True, exist_ok=True)
+    else:
+        # Without output_folder, load all data upfront via pandas (original behavior)
+        datasets_with_data, _, _ = load_datasets_with_data(
+            data_structures, datapoints, scalar_values
+        )
+        for ds_name, ds in datasets_with_data.items():
+            # Prioritize loading from CSV path if available
+            if path_dict and ds_name in path_dict:
+                df = pd.read_csv(path_dict[ds_name])
+                conn.register(ds_name, df)
+            elif ds.data is not None and len(ds.data) > 0:
+                conn.register(ds_name, ds.data)
 
     # Create transpiler and generate SQL
     transpiler = SQLTranspiler(
@@ -356,37 +373,83 @@ def _run_with_duckdb(
         output_datasets=output_datasets,
         input_scalars=input_scalars,
         output_scalars=output_scalars,
+        value_domains=load_value_domains(value_domains) if value_domains else {},
+        external_routines=load_external_routines(external_routines) if external_routines else {},
     )
     queries = transpiler.transpile(ast)
 
-    # Execute queries
+    # Get persistent and global datasets from DAG analysis
+    persistent_datasets = ds_analysis.get(PERSISTENT, [])
+    global_inputs = ds_analysis.get(GLOBAL, [])
+
+    # Execute queries with efficient IO
     results: Dict[str, Union[Dataset, Scalar]] = {}
-    for result_name, sql_query, is_persistent in queries:
-        # Execute query
-        result_df = conn.execute(sql_query).fetchdf()
 
-        # Register result for subsequent queries
-        conn.register(result_name, result_df)
+    for statement_num, (result_name, sql_query, _) in enumerate(queries, start=1):
+        # Load datasets scheduled for this statement (efficient mode with output_folder)
+        if output_folder_path and statement_num in ds_analysis.get(INSERT, {}):
+            for ds_name in ds_analysis[INSERT][statement_num]:
+                if path_dict and ds_name in path_dict and ds_name in input_datasets:
+                    load_datapoints_duckdb(
+                        conn=conn,
+                        components=input_datasets[ds_name].components,
+                        dataset_name=ds_name,
+                        csv_path=path_dict[ds_name],
+                    )
 
-        # Skip non-persistent results if requested
-        if return_only_persistent and not is_persistent:
+        # Execute query and create table
+        conn.execute(f'CREATE TABLE "{result_name}" AS {sql_query}')
+
+        # Save/delete datasets scheduled for deletion (efficient mode)
+        if output_folder_path and statement_num in ds_analysis.get(DELETE, {}):
+            for ds_name in ds_analysis[DELETE][statement_num]:
+                if ds_name in global_inputs:
+                    # Drop global inputs without saving
+                    conn.execute(f'DROP TABLE IF EXISTS "{ds_name}"')
+                elif not return_only_persistent or ds_name in persistent_datasets:
+                    # Save to CSV and drop table
+                    save_datapoints_duckdb(conn, ds_name, output_folder_path)
+                    ds = output_datasets.get(
+                        ds_name, Dataset(name=ds_name, components={}, data=None)
+                    )
+                    results[ds_name] = ds
+                else:
+                    # Drop non-persistent intermediate results
+                    conn.execute(f'DROP TABLE IF EXISTS "{ds_name}"')
+
+    # Handle final results
+    for result_name, _, is_persistent in queries:
+        if result_name in results:
             continue
 
-        # Check if this is a scalar result
-        if result_name in output_scalars:
-            if len(result_df) == 1 and len(result_df.columns) == 1:
-                scalar = output_scalars[result_name]
-                scalar.value = result_df.iloc[0, 0]
-                results[result_name] = scalar
-            else:
-                results[result_name] = Dataset(name=result_name, components={}, data=result_df)
-        else:
-            # Dataset result
+        should_include = not return_only_persistent or is_persistent
+        if not should_include:
+            continue
+
+        if output_folder_path:
+            # Save to CSV
+            save_datapoints_duckdb(conn, result_name, output_folder_path)
             ds = output_datasets.get(
                 result_name, Dataset(name=result_name, components={}, data=None)
             )
-            ds.data = result_df
             results[result_name] = ds
+        else:
+            # Return as DataFrame
+            result_df = conn.execute(f'SELECT * FROM "{result_name}"').fetchdf()
+
+            if result_name in output_scalars:
+                if len(result_df) == 1 and len(result_df.columns) == 1:
+                    scalar = output_scalars[result_name]
+                    scalar.value = result_df.iloc[0, 0]
+                    results[result_name] = scalar
+                else:
+                    results[result_name] = Dataset(name=result_name, components={}, data=result_df)
+            else:
+                ds = output_datasets.get(
+                    result_name, Dataset(name=result_name, components={}, data=None)
+                )
+                ds.data = result_df
+                results[result_name] = ds
 
     conn.close()
     return results
@@ -525,6 +588,7 @@ def run(
             external_routines=external_routines,
             return_only_persistent=return_only_persistent,
             scalar_values=scalar_values,
+            output_folder=output_folder,
         )
 
     # Convert sdmx_mappings to dict format for internal use
