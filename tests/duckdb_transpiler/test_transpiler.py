@@ -1340,15 +1340,15 @@ class TestTimeOperators:
 
     def test_flow_to_stock_dataset(self):
         """Test flow_to_stock on dataset generates window function SQL."""
-        # Create dataset with time identifier
+        # Create dataset with time identifier (Id_1 as Date, Id_2 as String)
         components = {
-            "time_id": Component(
-                name="time_id", data_type=Date, role=Role.IDENTIFIER, nullable=False
+            "Id_1": Component(
+                name="Id_1", data_type=Date, role=Role.IDENTIFIER, nullable=False
             ),
-            "region": Component(
-                name="region", data_type=String, role=Role.IDENTIFIER, nullable=False
+            "Id_2": Component(
+                name="Id_2", data_type=String, role=Role.IDENTIFIER, nullable=False
             ),
-            "value": Component(name="value", data_type=Number, role=Role.MEASURE, nullable=True),
+            "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
         }
         ds = Dataset(name="DS_1", components=components, data=None)
 
@@ -1367,20 +1367,20 @@ class TestTimeOperators:
         )
 
         result = transpiler.visit_UnaryOp(unary_op)
-        expected_sql = 'SELECT "time_id", "region", SUM("value") OVER (PARTITION BY "region" ORDER BY "time_id") AS "value" FROM "DS_1"'
+        expected_sql = 'SELECT "Id_1", "Id_2", SUM("Me_1") OVER (PARTITION BY "Id_2" ORDER BY "Id_1") AS "Me_1" FROM "DS_1"'
         assert_sql_equal(result, expected_sql)
 
     def test_stock_to_flow_dataset(self):
         """Test stock_to_flow on dataset generates window function SQL."""
-        # Create dataset with time identifier
+        # Create dataset with time identifier (Id_1 as Date, Id_2 as String)
         components = {
-            "time_id": Component(
-                name="time_id", data_type=Date, role=Role.IDENTIFIER, nullable=False
+            "Id_1": Component(
+                name="Id_1", data_type=Date, role=Role.IDENTIFIER, nullable=False
             ),
-            "region": Component(
-                name="region", data_type=String, role=Role.IDENTIFIER, nullable=False
+            "Id_2": Component(
+                name="Id_2", data_type=String, role=Role.IDENTIFIER, nullable=False
             ),
-            "value": Component(name="value", data_type=Number, role=Role.MEASURE, nullable=True),
+            "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
         }
         ds = Dataset(name="DS_1", components=components, data=None)
 
@@ -1399,5 +1399,5 @@ class TestTimeOperators:
         )
 
         result = transpiler.visit_UnaryOp(unary_op)
-        expected_sql = 'SELECT "time_id", "region", COALESCE("value" - LAG("value") OVER (PARTITION BY "region" ORDER BY "time_id"), "value") AS "value" FROM "DS_1"'
+        expected_sql = 'SELECT "Id_1", "Id_2", COALESCE("Me_1" - LAG("Me_1") OVER (PARTITION BY "Id_2" ORDER BY "Id_1"), "Me_1") AS "Me_1" FROM "DS_1"'
         assert_sql_equal(result, expected_sql)
