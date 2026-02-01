@@ -245,10 +245,10 @@ class TestExistInOperator:
             output_datasets={"DS_r": ds1},
         )
 
-        # Create AST: DS_r := exist_in(DS_1, DS_2)
+        # Create AST: DS_r := exists_in(DS_1, DS_2)
         left = VarID(**make_ast_node(value="DS_1"))
         right = VarID(**make_ast_node(value="DS_2"))
-        expr = BinOp(**make_ast_node(left=left, op="exist_in", right=right))
+        expr = BinOp(**make_ast_node(left=left, op="exists_in", right=right))
         ast = create_start_with_assignment("DS_r", expr)
 
         results = transpile_and_get_sql(transpiler, ast)

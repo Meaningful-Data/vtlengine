@@ -1,4 +1,3 @@
-# mypy: ignore-errors
 """
 SQL Transpiler for VTL AST.
 
@@ -18,6 +17,85 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import vtlengine.AST as AST
 from vtlengine.AST.ASTTemplate import ASTTemplate
+from vtlengine.AST.Grammar.tokens import (
+    ABS,
+    AGGREGATE,
+    AND,
+    AVG,
+    BETWEEN,
+    CALC,
+    CAST,
+    CEIL,
+    CHARSET_MATCH,
+    CONCAT,
+    COUNT,
+    CROSS_JOIN,
+    DIV,
+    DROP,
+    EQ,
+    EXISTS_IN,
+    EXP,
+    FILTER,
+    FIRST_VALUE,
+    FLOOR,
+    FULL_JOIN,
+    GT,
+    GTE,
+    IN,
+    INNER_JOIN,
+    INSTR,
+    INTERSECT,
+    ISNULL,
+    KEEP,
+    LAG,
+    LAST_VALUE,
+    LCASE,
+    LEAD,
+    LEFT_JOIN,
+    LEN,
+    LN,
+    LOG,
+    LT,
+    LTE,
+    LTRIM,
+    MAX,
+    MEDIAN,
+    MEMBERSHIP,
+    MIN,
+    MINUS,
+    MOD,
+    MULT,
+    NEQ,
+    NOT,
+    NOT_IN,
+    NVL,
+    OR,
+    PIVOT,
+    PLUS,
+    POWER,
+    RANK,
+    RATIO_TO_REPORT,
+    RENAME,
+    REPLACE,
+    ROUND,
+    RTRIM,
+    SETDIFF,
+    SQRT,
+    STDDEV_POP,
+    STDDEV_SAMP,
+    SUBSPACE,
+    SUBSTR,
+    SUM,
+    SYMDIFF,
+    TRIM,
+    TRUNC,
+    UCASE,
+    UNION,
+    UNPIVOT,
+    VAR_POP,
+    VAR_SAMP,
+    XOR,
+)
 from vtlengine.Model import Dataset, Scalar
 
 # =============================================================================
@@ -26,32 +104,32 @@ from vtlengine.Model import Dataset, Scalar
 
 SQL_BINARY_OPS: Dict[str, str] = {
     # Arithmetic
-    "+": "+",
-    "-": "-",
-    "*": "*",
-    "/": "/",
-    "mod": "%",
+    PLUS: "+",
+    MINUS: "-",
+    MULT: "*",
+    DIV: "/",
+    MOD: "%",
     # Comparison
-    "=": "=",
-    "<>": "<>",
-    ">": ">",
-    "<": "<",
-    ">=": ">=",
-    "<=": "<=",
+    EQ: "=",
+    NEQ: "<>",
+    GT: ">",
+    LT: "<",
+    GTE: ">=",
+    LTE: "<=",
     # Logical
-    "and": "AND",
-    "or": "OR",
-    "xor": "XOR",
+    AND: "AND",
+    OR: "OR",
+    XOR: "XOR",
     # String
-    "||": "||",
+    CONCAT: "||",
 }
 
 # Set operation mappings
 SQL_SET_OPS: Dict[str, str] = {
-    "union": "UNION ALL",
-    "intersect": "INTERSECT",
-    "setdiff": "EXCEPT",
-    "symdiff": "SYMDIFF",  # Handled specially
+    UNION: "UNION ALL",
+    INTERSECT: "INTERSECT",
+    SETDIFF: "EXCEPT",
+    SYMDIFF: "SYMDIFF",  # Handled specially
 }
 
 # VTL to DuckDB type mappings
@@ -69,55 +147,55 @@ VTL_TO_DUCKDB_TYPES: Dict[str, str] = {
 
 SQL_UNARY_OPS: Dict[str, str] = {
     # Arithmetic
-    "+": "+",
-    "-": "-",
-    "ceil": "CEIL",
-    "floor": "FLOOR",
-    "abs": "ABS",
-    "exp": "EXP",
-    "ln": "LN",
-    "sqrt": "SQRT",
+    PLUS: "+",
+    MINUS: "-",
+    CEIL: "CEIL",
+    FLOOR: "FLOOR",
+    ABS: "ABS",
+    EXP: "EXP",
+    LN: "LN",
+    SQRT: "SQRT",
     # Logical
-    "not": "NOT",
+    NOT: "NOT",
     # String
-    "len": "LENGTH",
-    "trim": "TRIM",
-    "ltrim": "LTRIM",
-    "rtrim": "RTRIM",
-    "ucase": "UPPER",
-    "lcase": "LOWER",
+    LEN: "LENGTH",
+    TRIM: "TRIM",
+    LTRIM: "LTRIM",
+    RTRIM: "RTRIM",
+    UCASE: "UPPER",
+    LCASE: "LOWER",
 }
 
 SQL_AGGREGATE_OPS: Dict[str, str] = {
-    "sum": "SUM",
-    "avg": "AVG",
-    "count": "COUNT",
-    "min": "MIN",
-    "max": "MAX",
-    "median": "MEDIAN",
-    "stddev_pop": "STDDEV_POP",
-    "stddev_samp": "STDDEV_SAMP",
-    "var_pop": "VAR_POP",
-    "var_samp": "VAR_SAMP",
+    SUM: "SUM",
+    AVG: "AVG",
+    COUNT: "COUNT",
+    MIN: "MIN",
+    MAX: "MAX",
+    MEDIAN: "MEDIAN",
+    STDDEV_POP: "STDDEV_POP",
+    STDDEV_SAMP: "STDDEV_SAMP",
+    VAR_POP: "VAR_POP",
+    VAR_SAMP: "VAR_SAMP",
 }
 
 SQL_ANALYTIC_OPS: Dict[str, str] = {
-    "sum": "SUM",
-    "avg": "AVG",
-    "count": "COUNT",
-    "min": "MIN",
-    "max": "MAX",
-    "median": "MEDIAN",
-    "stddev_pop": "STDDEV_POP",
-    "stddev_samp": "STDDEV_SAMP",
-    "var_pop": "VAR_POP",
-    "var_samp": "VAR_SAMP",
-    "first_value": "FIRST_VALUE",
-    "last_value": "LAST_VALUE",
-    "lag": "LAG",
-    "lead": "LEAD",
-    "rank": "RANK",
-    "ratio_to_report": "RATIO_TO_REPORT",
+    SUM: "SUM",
+    AVG: "AVG",
+    COUNT: "COUNT",
+    MIN: "MIN",
+    MAX: "MAX",
+    MEDIAN: "MEDIAN",
+    STDDEV_POP: "STDDEV_POP",
+    STDDEV_SAMP: "STDDEV_SAMP",
+    VAR_POP: "VAR_POP",
+    VAR_SAMP: "VAR_SAMP",
+    FIRST_VALUE: "FIRST_VALUE",
+    LAST_VALUE: "LAST_VALUE",
+    LAG: "LAG",
+    LEAD: "LEAD",
+    RANK: "RANK",
+    RATIO_TO_REPORT: "RATIO_TO_REPORT",
 }
 
 
@@ -344,23 +422,23 @@ class SQLTranspiler(ASTTemplate):
         op = node.op.lower() if isinstance(node.op, str) else str(node.op)
 
         # Special handling for IN / NOT IN
-        if op in ("in", "not_in", "not in"):
-            return self._visit_in_op(node, is_not=(op in ("not_in", "not in")))
+        if op in (IN, NOT_IN, "not in"):
+            return self._visit_in_op(node, is_not=(op in (NOT_IN, "not in")))
 
         # Special handling for MATCH_CHARACTERS (regex)
-        if op in ("match_characters", "match"):
+        if op in (CHARSET_MATCH, "match"):
             return self._visit_match_op(node)
 
         # Special handling for EXIST_IN
-        if op == "exist_in":
+        if op == EXISTS_IN:
             return self._visit_exist_in(node)
 
         # Special handling for NVL (coalesce)
-        if op == "nvl":
+        if op == NVL:
             return self._visit_nvl_binop(node)
 
         # Special handling for MEMBERSHIP (#) operator
-        if op == "#":
+        if op == MEMBERSHIP:
             return self._visit_membership(node)
 
         sql_op = SQL_BINARY_OPS.get(op, op.upper())
@@ -638,7 +716,7 @@ class SQLTranspiler(ASTTemplate):
         operand_type = self._get_operand_type(node.operand)
 
         # Special case: isnull
-        if op == "isnull":
+        if op == ISNULL:
             if operand_type == OperandType.DATASET:
                 return self._unary_dataset_isnull(node.operand)
             operand_sql = self.visit(node.operand)
@@ -653,9 +731,9 @@ class SQLTranspiler(ASTTemplate):
         # Scalar/Component level
         operand_sql = self.visit(node.operand)
 
-        if op in ("+", "-"):
+        if op in (PLUS, MINUS):
             return f"({sql_op}{operand_sql})"
-        elif op == "not":
+        elif op == NOT:
             return f"(NOT {operand_sql})"
         else:
             return f"{sql_op}({operand_sql})"
@@ -667,7 +745,7 @@ class SQLTranspiler(ASTTemplate):
 
         id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
 
-        if op in ("+", "-"):
+        if op in (PLUS, MINUS):
             measure_select = ", ".join(
                 [f'({sql_op}"{m}") AS "{m}"' for m in ds.get_measures_names()]
             )
@@ -706,7 +784,7 @@ FROM ({dataset_sql}) AS t"""
             return ""
 
         # Handle CAST operation specially
-        if op == "cast":
+        if op == CAST:
             return self._visit_cast(node)
 
         operand = node.children[0]
@@ -715,21 +793,21 @@ FROM ({dataset_sql}) AS t"""
         params = [self.visit(p) for p in node.params]
 
         # Handle substr specially (variable params)
-        if op == "substr":
+        if op == SUBSTR:
             return self._visit_substr(operand, operand_sql, operand_type, params)
 
         # Handle replace specially (two params)
-        if op == "replace":
+        if op == REPLACE:
             return self._visit_replace(operand, operand_sql, operand_type, params)
 
         # Single-param operations mapping: op -> (sql_func, default_param, template_format)
         single_param_ops = {
-            "round": ("ROUND", "0", "{func}({{m}}, {p})"),
-            "trunc": ("TRUNC", "0", "{func}({{m}}, {p})"),
-            "instr": ("INSTR", "''", "{func}({{m}}, {p})"),
-            "log": ("LOG", "10", "{func}({p}, {{m}})"),
-            "power": ("POWER", "2", "{func}({{m}}, {p})"),
-            "nvl": ("COALESCE", "NULL", "{func}({{m}}, {p})"),
+            ROUND: ("ROUND", "0", "{func}({{m}}, {p})"),
+            TRUNC: ("TRUNC", "0", "{func}({{m}}, {p})"),
+            INSTR: ("INSTR", "''", "{func}({{m}}, {p})"),
+            LOG: ("LOG", "10", "{func}({p}, {{m}})"),
+            POWER: ("POWER", "2", "{func}({{m}}, {p})"),
+            NVL: ("COALESCE", "NULL", "{func}({{m}}, {p})"),
         }
 
         if op in single_param_ops:
@@ -886,7 +964,7 @@ FROM ({dataset_sql}) AS t"""
         """Process multiple-operand operations (between, group by, set ops, etc.)."""
         op = node.op.lower() if isinstance(node.op, str) else str(node.op)
 
-        if op == "between" and len(node.children) >= 3:
+        if op == BETWEEN and len(node.children) >= 3:
             operand = self.visit(node.children[0])
             low = self.visit(node.children[1])
             high = self.visit(node.children[2])
@@ -897,7 +975,7 @@ FROM ({dataset_sql}) AS t"""
             return self._visit_set_op(node, op)
 
         # exist_in also comes through MulOp
-        if op == "exists_in":
+        if op == EXISTS_IN:
             return self._visit_exist_in_mulop(node)
 
         # For group by/except, return comma-separated list
@@ -918,14 +996,14 @@ FROM ({dataset_sql}) AS t"""
         # Get SQL for all operands
         queries = [self._get_dataset_sql(child) for child in node.children]
 
-        if op == "symdiff":
+        if op == SYMDIFF:
             # Symmetric difference: (A EXCEPT B) UNION ALL (B EXCEPT A)
             return self._symmetric_difference(queries)
 
         sql_op = SQL_SET_OPS.get(op, op.upper())
 
         # For union, we need to handle duplicates - VTL union removes duplicates on identifiers
-        if op == "union":
+        if op == UNION:
             return self._union_with_dedup(node, queries)
 
         # For intersect and setdiff, standard SQL operations work
@@ -1076,23 +1154,23 @@ FROM ({dataset_sql}) AS t"""
             self.in_clause = True
 
             try:
-                if op == "calc":
+                if op == CALC:
                     result = self._clause_calc(base_sql, node.children)
-                elif op == "filter":
+                elif op == FILTER:
                     result = self._clause_filter(base_sql, node.children)
-                elif op == "keep":
+                elif op == KEEP:
                     result = self._clause_keep(base_sql, node.children)
-                elif op == "drop":
+                elif op == DROP:
                     result = self._clause_drop(base_sql, node.children)
-                elif op == "rename":
+                elif op == RENAME:
                     result = self._clause_rename(base_sql, node.children)
-                elif op == "aggregate":
+                elif op == AGGREGATE:
                     result = self._clause_aggregate(base_sql, node.children)
-                elif op == "unpivot":
+                elif op == UNPIVOT:
                     result = self._clause_unpivot(base_sql, node.children)
-                elif op == "pivot":
+                elif op == PIVOT:
                     result = self._clause_pivot(base_sql, node.children)
-                elif op == "sub":
+                elif op == SUBSPACE:
                     result = self._clause_subspace(base_sql, node.children)
                 else:
                     result = base_sql
@@ -1466,7 +1544,7 @@ FROM ({dataset_sql}) AS t"""
 
         # Handle lag/lead parameters
         params_sql = ""
-        if op in ("lag", "lead") and node.params:
+        if op in (LAG, LEAD) and node.params:
             params_sql = f", {node.params[0]}"
             if len(node.params) > 1:
                 params_sql += f", {node.params[1]}"
@@ -1509,10 +1587,10 @@ FROM ({dataset_sql}) AS t"""
 
         # Map VTL join types to SQL
         join_type = {
-            "inner_join": "INNER JOIN",
-            "left_join": "LEFT JOIN",
-            "full_join": "FULL OUTER JOIN",
-            "cross_join": "CROSS JOIN",
+            INNER_JOIN: "INNER JOIN",
+            LEFT_JOIN: "LEFT JOIN",
+            FULL_JOIN: "FULL OUTER JOIN",
+            CROSS_JOIN: "CROSS JOIN",
         }.get(op, "INNER JOIN")
 
         if len(node.clauses) < 2:
@@ -1532,11 +1610,11 @@ FROM ({dataset_sql}) AS t"""
             clause_name = self._get_dataset_name(clause)
             clause_ds = self.available_tables.get(clause_name)
 
-            if node.using and op != "cross_join":
+            if node.using and op != CROSS_JOIN:
                 # Explicit USING clause provided
                 using_cols = ", ".join([f'"{c}"' for c in node.using])
                 result_sql += f"\n{join_type} ({clause_sql}) AS t{i} USING ({using_cols})"
-            elif op == "cross_join":
+            elif op == CROSS_JOIN:
                 # CROSS JOIN doesn't need ON clause
                 result_sql += f"\n{join_type} ({clause_sql}) AS t{i}"
             elif base_ds and clause_ds:
