@@ -337,12 +337,14 @@ def _run_with_duckdb(
     conn = duckdb.connect()
 
     # Load datapoints into DuckDB
-    _, _, path_dict = load_datasets_with_data(data_structures, datapoints, scalar_values)
+    datasets_with_data, _, path_dict = load_datasets_with_data(
+        data_structures, datapoints, scalar_values
+    )
 
-    for ds_name, ds in input_datasets.items():
+    for ds_name, ds in datasets_with_data.items():
         if ds.data is not None:
             conn.register(ds_name, ds.data)
-        elif ds_name in path_dict:
+        elif path_dict and ds_name in path_dict:
             # Load from CSV path
             path = path_dict[ds_name]
             df = pd.read_csv(path)
