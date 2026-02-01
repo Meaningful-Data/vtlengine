@@ -111,7 +111,7 @@ from vtlengine.AST.Grammar.tokens import (
     YEAR,
     YEARTODAY,
 )
-from vtlengine.Model import Dataset, ExternalRoutine, Scalar, ValueDomain
+from vtlengine.Model import Component, Dataset, ExternalRoutine, Scalar, ValueDomain
 
 # =============================================================================
 # SQL Operator Mappings
@@ -1513,6 +1513,77 @@ class SQLTranspiler(ASTTemplate):
     # Clause Operations (calc, filter, keep, drop, rename)
     # =========================================================================
 
+    def _get_transformed_dataset(self, base_dataset: Dataset, clause_node: AST.AST) -> Dataset:
+        """
+        Compute a transformed dataset structure after applying nested clause operations.
+
+        This handles chained clauses like [rename Me_1 to Me_1A][drop Me_2] by tracking
+        how each clause modifies the dataset structure.
+        """
+        if not isinstance(clause_node, AST.RegularAggregation):
+            return base_dataset
+
+        # Start with the base dataset or recursively get transformed dataset
+        if clause_node.dataset:
+            current_ds = self._get_transformed_dataset(base_dataset, clause_node.dataset)
+        else:
+            current_ds = base_dataset
+
+        op = clause_node.op.lower() if isinstance(clause_node.op, str) else str(clause_node.op)
+
+        # Apply transformation based on clause type
+        if op == RENAME:
+            # Build rename mapping and apply to components
+            new_components: Dict[str, Component] = {}
+            renames: Dict[str, str] = {}
+            for child in clause_node.children:
+                if isinstance(child, AST.RenameNode):
+                    renames[child.old_name] = child.new_name
+
+            for name, comp in current_ds.components.items():
+                if name in renames:
+                    new_name = renames[name]
+                    # Create new component with renamed name
+                    new_comp = Component(
+                        name=new_name,
+                        data_type=comp.data_type,
+                        role=comp.role,
+                        nullable=comp.nullable,
+                    )
+                    new_components[new_name] = new_comp
+                else:
+                    new_components[name] = comp
+
+            return Dataset(name=current_ds.name, components=new_components, data=None)
+
+        elif op == DROP:
+            # Remove dropped columns
+            drop_cols = set()
+            for child in clause_node.children:
+                if isinstance(child, (AST.VarID, AST.Identifier)):
+                    drop_cols.add(child.value)
+
+            new_components = {
+                name: comp for name, comp in current_ds.components.items() if name not in drop_cols
+            }
+            return Dataset(name=current_ds.name, components=new_components, data=None)
+
+        elif op == KEEP:
+            # Keep only identifiers and specified columns
+            keep_cols = set(current_ds.get_identifiers_names())
+            for child in clause_node.children:
+                if isinstance(child, (AST.VarID, AST.Identifier)):
+                    keep_cols.add(child.value)
+
+            new_components = {
+                name: comp for name, comp in current_ds.components.items() if name in keep_cols
+            }
+            return Dataset(name=current_ds.name, components=new_components, data=None)
+
+        # For other clauses (filter, calc, etc.), return as-is for now
+        # These don't change the column structure in ways that affect subsequent clauses
+        return current_ds
+
     def visit_RegularAggregation(self, node: AST.RegularAggregation) -> str:
         """
         Process clause operations (calc, filter, keep, drop, rename, etc.).
@@ -1532,7 +1603,13 @@ class SQLTranspiler(ASTTemplate):
             prev_dataset = self.current_dataset
             prev_in_clause = self.in_clause
 
-            self.current_dataset = self.available_tables[ds_name]
+            # Get the transformed dataset structure after applying nested clauses
+            base_dataset = self.available_tables[ds_name]
+            if isinstance(node.dataset, AST.RegularAggregation):
+                # Apply transformations from nested clauses
+                self.current_dataset = self._get_transformed_dataset(base_dataset, node.dataset)
+            else:
+                self.current_dataset = base_dataset
             self.in_clause = True
 
             try:
@@ -1696,14 +1773,94 @@ class SQLTranspiler(ASTTemplate):
         return f"SELECT {select_str} FROM ({base_sql}) AS t"
 
     def _clause_aggregate(self, base_sql: str, children: List[AST.AST]) -> str:
-        """Generate SQL for aggregate clause."""
-        # This handles the aggregate keyword with group by
-        # Children contain the aggregation expressions
-        agg_exprs = []
-        for child in children:
-            agg_exprs.append(self.visit(child))
+        """
+        Generate SQL for aggregate clause.
 
-        return f"SELECT {', '.join(agg_exprs)} FROM ({base_sql}) AS t"
+        VTL: DS_1[aggr Me_sum := sum(Me_1), Me_max := max(Me_1) group by Id_1 having avg(Me_1) > 10]
+
+        Children may include:
+        - Assignment nodes for aggregation expressions (Me_sum := sum(Me_1))
+        - MulOp nodes for grouping (group by, group except)
+        - BinOp nodes for having clause
+        """
+        if not self.current_dataset:
+            return base_sql
+
+        agg_exprs = []
+        group_by_cols = []
+        having_clause = ""
+        group_op = None
+
+        for child in children:
+            if isinstance(child, AST.Assignment):
+                # Aggregation assignment: Me_sum := sum(Me_1)
+                col_name = child.left.value
+                expr = self.visit(child.right)
+                agg_exprs.append(f'{expr} AS "{col_name}"')
+            elif isinstance(child, AST.MulOp):
+                # Group by/except clause
+                group_op = child.op.lower() if isinstance(child.op, str) else str(child.op)
+                for g in child.children:
+                    if isinstance(g, AST.VarID):
+                        group_by_cols.append(g.value)
+                    else:
+                        group_by_cols.append(self.visit(g))
+            elif isinstance(child, AST.BinOp):
+                # Having clause condition
+                having_clause = self.visit(child)
+            elif isinstance(child, AST.UnaryOp) and hasattr(child, "operand"):
+                # Wrapped assignment (with role like measure/identifier)
+                assignment = child.operand
+                if isinstance(assignment, AST.Assignment):
+                    col_name = assignment.left.value
+                    expr = self.visit(assignment.right)
+                    agg_exprs.append(f'{expr} AS "{col_name}"')
+
+        if not agg_exprs:
+            return base_sql
+
+        # Build GROUP BY clause
+        group_by_sql = ""
+        if group_by_cols:
+            if group_op == "group by":
+                quoted_cols = [f'"{c}"' for c in group_by_cols]
+                group_by_sql = f"GROUP BY {', '.join(quoted_cols)}"
+            elif group_op == "group except":
+                # Group by all identifiers except the specified ones
+                except_set = set(group_by_cols)
+                actual_group_cols = [
+                    c for c in self.current_dataset.get_identifiers_names() if c not in except_set
+                ]
+                if actual_group_cols:
+                    quoted_cols = [f'"{c}"' for c in actual_group_cols]
+                    group_by_sql = f"GROUP BY {', '.join(quoted_cols)}"
+
+        # Build HAVING clause
+        having_sql = f"HAVING {having_clause}" if having_clause else ""
+
+        # Build SELECT - include group by columns first, then aggregations
+        select_parts = []
+        if group_by_cols and group_op == "group by":
+            select_parts.extend([f'"{c}"' for c in group_by_cols])
+        elif group_op == "group except":
+            except_set = set(group_by_cols)
+            select_parts.extend(
+                [
+                    f'"{c}"'
+                    for c in self.current_dataset.get_identifiers_names()
+                    if c not in except_set
+                ]
+            )
+        select_parts.extend(agg_exprs)
+
+        select_sql = ", ".join(select_parts)
+
+        return f"""
+            SELECT {select_sql}
+            FROM ({base_sql}) AS t
+            {group_by_sql}
+            {having_sql}
+        """
 
     def _clause_unpivot(self, base_sql: str, children: List[AST.AST]) -> str:
         """
@@ -2356,6 +2513,9 @@ class SQLTranspiler(ASTTemplate):
             return self._get_dataset_name(node.children[0])
         if isinstance(node, AST.ParFunction) or isinstance(node, AST.Aggregation) and node.operand:
             return self._get_dataset_name(node.operand)
+        if isinstance(node, AST.JoinOp) and node.clauses:
+            # For joins, return the first dataset name (used as the primary dataset context)
+            return self._get_dataset_name(node.clauses[0])
 
         raise ValueError(f"Cannot extract dataset name from {type(node).__name__}")
 
