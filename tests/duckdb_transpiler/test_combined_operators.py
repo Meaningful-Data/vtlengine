@@ -454,7 +454,9 @@ class TestUnaryBinaryCombinations:
         results = execute_vtl_with_duckdb(vtl_script, data_structures, {"DS_1": input_df})
 
         result_df = results["DS_r"].sort_values("Id_1").reset_index(drop=True)
-        assert list(result_df["Me_1"]) == expected_values
+        # Get the measure column (may be renamed by VTL semantic analysis based on result type)
+        measure_col = [c for c in result_df.columns if c != "Id_1"][0]
+        assert list(result_df[measure_col]) == expected_values
 
 
 # =============================================================================

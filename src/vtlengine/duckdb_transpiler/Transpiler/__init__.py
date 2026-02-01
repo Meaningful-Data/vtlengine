@@ -276,6 +276,7 @@ class SQLTranspiler(ASTTemplate):
     current_dataset: Optional[Dataset] = None
     current_dataset_alias: str = ""
     in_clause: bool = False
+    current_result_name: str = ""  # Target name of current assignment
 
     def __post_init__(self) -> None:
         """Initialize available tables with input datasets."""
@@ -357,7 +358,14 @@ class SQLTranspiler(ASTTemplate):
     def visit_Assignment(self, node: AST.Assignment) -> Tuple[str, str, bool]:
         """Process a temporary assignment (:=)."""
         result_name = node.left.value
-        right_sql = self.visit(node.right)
+
+        # Track current result name for output column resolution
+        prev_result_name = self.current_result_name
+        self.current_result_name = result_name
+        try:
+            right_sql = self.visit(node.right)
+        finally:
+            self.current_result_name = prev_result_name
 
         # Ensure it's a complete SELECT statement
         sql = self._ensure_select(right_sql)
@@ -367,7 +375,14 @@ class SQLTranspiler(ASTTemplate):
     def visit_PersistentAssignment(self, node: AST.PersistentAssignment) -> Tuple[str, str, bool]:
         """Process a persistent assignment (<-)."""
         result_name = node.left.value
-        right_sql = self.visit(node.right)
+
+        # Track current result name for output column resolution
+        prev_result_name = self.current_result_name
+        self.current_result_name = result_name
+        try:
+            right_sql = self.visit(node.right)
+        finally:
+            self.current_result_name = prev_result_name
 
         sql = self._ensure_select(right_sql)
 
@@ -926,14 +941,23 @@ class SQLTranspiler(ASTTemplate):
 
         id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
 
-        if op in (PLUS, MINUS):
-            measure_select = ", ".join(
-                [f'({sql_op}"{m}") AS "{m}"' for m in ds.get_measures_names()]
-            )
+        # Get output measure names from semantic analysis if available
+        input_measures = ds.get_measures_names()
+        if self.current_result_name and self.current_result_name in self.output_datasets:
+            output_ds = self.output_datasets[self.current_result_name]
+            output_measures = output_ds.get_measures_names()
         else:
-            measure_select = ", ".join(
-                [f'{sql_op}("{m}") AS "{m}"' for m in ds.get_measures_names()]
-            )
+            output_measures = input_measures
+
+        # Build measure select with correct input/output names
+        measure_parts = []
+        for i, input_m in enumerate(input_measures):
+            output_m = output_measures[i] if i < len(output_measures) else input_m
+            if op in (PLUS, MINUS):
+                measure_parts.append(f'({sql_op}"{input_m}") AS "{output_m}"')
+            else:
+                measure_parts.append(f'{sql_op}("{input_m}") AS "{output_m}"')
+        measure_select = ", ".join(measure_parts)
 
         dataset_sql = self._get_dataset_sql(dataset_node)
         from_clause = self._simplify_from_clause(dataset_sql)
@@ -1780,16 +1804,41 @@ class SQLTranspiler(ASTTemplate):
 
         Children may include:
         - Assignment nodes for aggregation expressions (Me_sum := sum(Me_1))
-        - MulOp nodes for grouping (group by, group except)
-        - BinOp nodes for having clause
+        - MulOp nodes for grouping (group by, group except) - legacy format
+        - BinOp nodes for having clause - legacy format
+
+        Note: In the current AST, group by and having info is stored on the Aggregation nodes
+        inside the Assignment nodes, not as separate children.
         """
         if not self.current_dataset:
             return base_sql
 
         agg_exprs = []
-        group_by_cols = []
+        group_by_cols: List[str] = []
         having_clause = ""
-        group_op = None
+        group_op: Optional[str] = None
+
+        def extract_grouping_from_aggregation(agg_node: AST.Aggregation) -> None:
+            """Extract grouping and having info from an Aggregation node."""
+            nonlocal group_by_cols, group_op, having_clause
+
+            # Extract grouping if present
+            if hasattr(agg_node, "grouping_op") and agg_node.grouping_op:
+                group_op = agg_node.grouping_op.lower()
+            if hasattr(agg_node, "grouping") and agg_node.grouping:
+                for g in agg_node.grouping:
+                    if isinstance(g, (AST.VarID, AST.Identifier)):
+                        if g.value not in group_by_cols:
+                            group_by_cols.append(g.value)
+
+            # Extract having clause if present
+            if hasattr(agg_node, "having_clause") and agg_node.having_clause and not having_clause:
+                if isinstance(agg_node.having_clause, AST.ParamOp):
+                    # Having is wrapped in ParamOp with params containing the condition
+                    if hasattr(agg_node.having_clause, "params") and agg_node.having_clause.params:
+                        having_clause = self.visit(agg_node.having_clause.params)
+                else:
+                    having_clause = self.visit(agg_node.having_clause)
 
         for child in children:
             if isinstance(child, AST.Assignment):
@@ -1797,8 +1846,13 @@ class SQLTranspiler(ASTTemplate):
                 col_name = child.left.value
                 expr = self.visit(child.right)
                 agg_exprs.append(f'{expr} AS "{col_name}"')
+
+                # Check if the right side is an Aggregation with grouping info
+                if isinstance(child.right, AST.Aggregation):
+                    extract_grouping_from_aggregation(child.right)
+
             elif isinstance(child, AST.MulOp):
-                # Group by/except clause
+                # Group by/except clause (legacy format)
                 group_op = child.op.lower() if isinstance(child.op, str) else str(child.op)
                 for g in child.children:
                     if isinstance(g, AST.VarID):
@@ -1806,7 +1860,7 @@ class SQLTranspiler(ASTTemplate):
                     else:
                         group_by_cols.append(self.visit(g))
             elif isinstance(child, AST.BinOp):
-                # Having clause condition
+                # Having clause condition (legacy format)
                 having_clause = self.visit(child)
             elif isinstance(child, AST.UnaryOp) and hasattr(child, "operand"):
                 # Wrapped assignment (with role like measure/identifier)
@@ -1815,6 +1869,10 @@ class SQLTranspiler(ASTTemplate):
                     col_name = assignment.left.value
                     expr = self.visit(assignment.right)
                     agg_exprs.append(f'{expr} AS "{col_name}"')
+
+                    # Check for grouping info on wrapped aggregations
+                    if isinstance(assignment.right, AST.Aggregation):
+                        extract_grouping_from_aggregation(assignment.right)
 
         if not agg_exprs:
             return base_sql
@@ -2488,7 +2546,15 @@ class SQLTranspiler(ASTTemplate):
             if node.children:
                 return self._get_operand_type(node.children[0])
 
-        elif isinstance(node, (AST.RegularAggregation, AST.JoinOp, AST.Aggregation)):
+        elif isinstance(node, (AST.RegularAggregation, AST.JoinOp)):
+            return OperandType.DATASET
+
+        elif isinstance(node, AST.Aggregation):
+            # In clause context, aggregation on a component is a scalar SQL aggregate
+            if self.in_clause and node.operand:
+                operand_type = self._get_operand_type(node.operand)
+                if operand_type in (OperandType.COMPONENT, OperandType.SCALAR):
+                    return OperandType.SCALAR
             return OperandType.DATASET
 
         elif isinstance(node, AST.If):

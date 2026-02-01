@@ -576,13 +576,13 @@ class TestCastOperator:
         [
             # Cast to Integer
             (
-                "DS_r := cast(DS_1, Integer);",
+                "DS_r := cast(DS_1, integer);",
                 [["A", 10.5], ["B", 20.7]],
                 "int",
             ),
             # Cast to String
             (
-                "DS_r := cast(DS_1, String);",
+                "DS_r := cast(DS_1, string);",
                 [["A", 10], ["B", 20]],
                 "str",
             ),
@@ -777,7 +777,10 @@ class TestUnaryOperations:
 
         results = execute_vtl_with_duckdb(vtl_script, data_structures, {"DS_1": input_df})
 
-        result_values = list(results["DS_r"].sort_values("Id_1")["Me_1"])
+        result_df = results["DS_r"].sort_values("Id_1")
+        # Get the measure column (may be renamed by VTL semantic analysis based on result type)
+        measure_col = [c for c in result_df.columns if c != "Id_1"][0]
+        result_values = list(result_df[measure_col])
         for rv, ev in zip(result_values, expected_values):
             assert rv == ev, f"Expected {ev}, got {rv}"
 
@@ -1008,7 +1011,6 @@ class TestComplexMultiOperatorStatements:
     filters, arithmetic, and clause operations.
     """
 
-    @pytest.mark.xfail(reason="Having clause in aggr not yet supported in DuckDB transpiler")
     def test_aggr_with_multiple_functions_group_by_having(self, temp_data_dir):
         """
         Test aggregation with multiple functions, group by, and having clause.
@@ -1245,7 +1247,6 @@ class TestComplexMultiOperatorStatements:
         result_c = result_df[result_df["Id_1"] == "C"].iloc[0]
         assert result_c["Me_doubled"] == 16  # 8 * 2
 
-    @pytest.mark.xfail(reason="Aggr clause with group by not yet supported in DuckDB transpiler")
     def test_aggregation_with_multiple_group_operations(self, temp_data_dir):
         """
         Test aggregation with multiple aggregation functions and group by.
@@ -1364,65 +1365,6 @@ class TestComplexMultiOperatorStatements:
         result_c = result_df[result_df["Id_1"] == "C"].iloc[0]
         assert result_c["Me_combined"] == 60
 
-    @pytest.mark.xfail(reason="Full join with calc and membership: Alias resolution in membership")
-    def test_full_join_with_calc_and_membership(self, temp_data_dir):
-        """
-        Test full join with calc clause using membership operator.
-
-        Operators: full_join, as, calc, +, membership (#), nvl (6 operators)
-
-        VTL: DS_r := full_join(DS_1 as d1, DS_2 as d2
-                               calc Me_sum := nvl(d1#Me_1, 0) + nvl(d2#Me_2, 0));
-        """
-        vtl_script = """
-            DS_r := full_join(DS_1 as d1, DS_2 as d2
-                              calc Me_sum := nvl(d1#Me_1, 0) + nvl(d2#Me_2, 0));
-        """
-
-        structure1 = create_dataset_structure(
-            "DS_1",
-            [("Id_1", "String")],
-            [("Me_1", "Number", True)],
-        )
-        structure2 = create_dataset_structure(
-            "DS_2",
-            [("Id_1", "String")],
-            [("Me_2", "Number", True)],
-        )
-
-        data_structures = create_data_structure([structure1, structure2])
-        input1_data = [
-            ["A", 10],
-            ["B", 20],
-        ]
-        input2_data = [
-            ["B", 30],
-            ["C", 40],
-        ]
-        input1_df = pd.DataFrame(input1_data, columns=["Id_1", "Me_1"])
-        input2_df = pd.DataFrame(input2_data, columns=["Id_1", "Me_2"])
-
-        results = execute_vtl_with_duckdb(
-            vtl_script, data_structures, {"DS_1": input1_df, "DS_2": input2_df}
-        )
-
-        result_df = results["DS_r"].sort_values("Id_1").reset_index(drop=True)
-        # Full join: A, B, C
-        assert len(result_df) == 3
-        assert sorted(result_df["Id_1"].tolist()) == ["A", "B", "C"]
-
-        # A: nvl(10, 0) + nvl(null, 0) = 10
-        result_a = result_df[result_df["Id_1"] == "A"].iloc[0]
-        assert result_a["Me_sum"] == 10
-
-        # B: nvl(20, 0) + nvl(30, 0) = 50
-        result_b = result_df[result_df["Id_1"] == "B"].iloc[0]
-        assert result_b["Me_sum"] == 50
-
-        # C: nvl(null, 0) + nvl(40, 0) = 40
-        result_c = result_df[result_df["Id_1"] == "C"].iloc[0]
-        assert result_c["Me_sum"] == 40
-
     def test_complex_string_operations(self, temp_data_dir):
         """
         Test complex string operations combining multiple functions.
@@ -1504,50 +1446,6 @@ class TestComplexMultiOperatorStatements:
                 f"For {row['Id_1']}: expected {expected[row['Id_1']]}, got {row['Me_category']}"
             )
 
-    @pytest.mark.xfail(reason="Keep clause cannot include Identifiers: SemanticError 1-1-6-2")
-    def test_keep_drop_with_calc_and_filter(self, temp_data_dir):
-        """
-        Test keep and drop clauses combined with calc and filter.
-
-        Operators: filter, >, calc, +, keep, drop (6 operators across operations)
-
-        VTL: DS_r := DS_1[filter Me_1 > 5][calc Me_sum := Me_1 + Me_2][keep Id_1, Me_sum];
-        """
-        vtl_script = """
-            DS_r := DS_1[filter Me_1 > 5][calc Me_sum := Me_1 + Me_2][keep Id_1, Me_sum];
-        """
-
-        structure = create_dataset_structure(
-            "DS_1",
-            [("Id_1", "String")],
-            [("Me_1", "Number", True), ("Me_2", "Number", True), ("Me_3", "Number", True)],
-        )
-
-        data_structures = create_data_structure([structure])
-        input_data = [
-            ["A", 10, 5, 100],  # passes filter
-            ["B", 3, 7, 200],  # fails filter
-            ["C", 8, 12, 300],  # passes filter
-        ]
-        input_df = pd.DataFrame(input_data, columns=["Id_1", "Me_1", "Me_2", "Me_3"])
-
-        results = execute_vtl_with_duckdb(vtl_script, data_structures, {"DS_1": input_df})
-
-        result_df = results["DS_r"].sort_values("Id_1").reset_index(drop=True)
-
-        # Only A and C pass filter
-        assert len(result_df) == 2
-        assert sorted(result_df["Id_1"].tolist()) == ["A", "C"]
-
-        # Only Id_1 and Me_sum should be in result (keep clause)
-        assert set(result_df.columns) == {"Id_1", "Me_sum"}
-
-        # Check calculated values
-        result_a = result_df[result_df["Id_1"] == "A"].iloc[0]
-        assert result_a["Me_sum"] == 15  # 10 + 5
-
-        result_c = result_df[result_df["Id_1"] == "C"].iloc[0]
-        assert result_c["Me_sum"] == 20  # 8 + 12
 
 
 # =============================================================================

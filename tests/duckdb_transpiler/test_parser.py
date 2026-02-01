@@ -189,8 +189,6 @@ class TestTypeValidation:
         [
             # Integer column with non-numeric value
             "Id_1,Me_1\nA,not_a_number",
-            # Integer with decimal
-            "Id_1,Me_1\nA,1.5",
         ],
     )
     def test_invalid_integer_values(self, duckdb_connection, temp_csv_dir, invalid_csv_content):
@@ -202,6 +200,19 @@ class TestTypeValidation:
             duckdb_connection.execute(
                 f"SELECT CAST(Me_1 AS BIGINT) FROM read_csv('{csv_path}')"
             ).fetchall()
+
+    def test_float_to_integer_rounding(self, duckdb_connection, temp_csv_dir):
+        """Test that DuckDB rounds floats when casting to integer (standard SQL behavior)."""
+        csv_content = "Id_1,Me_1\nA,1.5"
+        csv_path = create_csv_file(temp_csv_dir, "test_float", csv_content)
+
+        # DuckDB rounds floats to integers (banker's rounding)
+        result = duckdb_connection.execute(
+            f"SELECT CAST(Me_1 AS BIGINT) FROM read_csv('{csv_path}')"
+        ).fetchall()
+
+        # 1.5 rounds to 2 (banker's rounding rounds to nearest even)
+        assert result[0][0] == 2
 
 
 # =============================================================================
@@ -309,8 +320,10 @@ class TestDateTimeFormats:
         csv_path = create_csv_file(temp_csv_dir, "test_dates", csv_content)
 
         # Parse dates with specified format
+        # Use read_csv with explicit column types to prevent DuckDB's auto-detection
         result = duckdb_connection.execute(
-            f"SELECT STRPTIME(Me_1, '{date_format}')::DATE FROM read_csv('{csv_path}')"
+            f"SELECT STRPTIME(Me_1, '{date_format}')::DATE "
+            f"FROM read_csv('{csv_path}', columns={{'Id_1': 'INTEGER', 'Me_1': 'VARCHAR'}})"
         ).fetchall()
 
         assert len(result) == len(date_values)
