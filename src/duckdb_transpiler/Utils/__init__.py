@@ -29,11 +29,14 @@ def get_sql_type(vtl_type: type) -> str:
 
 
 def get_pandas_type(vtl_type: type) -> str:
-    """Get the pandas dtype for a VTL scalar type."""
+    """Get the pandas dtype for a VTL scalar type.
+
+    Uses nullable dtypes (Int64, Float64, boolean) to handle NULL values.
+    """
     mapping = {
-        Integer: "int64",
-        Number: "float64",
-        Boolean: "bool",
+        Integer: "Int64",  # Nullable integer
+        Number: "Float64",  # Nullable float
+        Boolean: "boolean",  # Nullable boolean
         Date: "datetime64[ns]",
     }
 
