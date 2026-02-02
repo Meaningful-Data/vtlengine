@@ -69,3 +69,58 @@ CREATE OR REPLACE MACRO vtl_period_diff(a, b) AS (
         ELSE ABS(DATE_DIFF('day', a.end_date, b.end_date))
     END
 );
+
+-- Period indicator order (higher = coarser)
+CREATE OR REPLACE MACRO vtl_period_order(indicator) AS (
+    CASE indicator
+        WHEN 'D' THEN 1
+        WHEN 'W' THEN 2
+        WHEN 'M' THEN 3
+        WHEN 'Q' THEN 4
+        WHEN 'S' THEN 5
+        WHEN 'A' THEN 6
+    END
+);
+
+-- Time aggregation to coarser granularity
+-- Optimized: directly constructs STRUCT instead of parsing strings
+CREATE OR REPLACE MACRO vtl_time_agg(p, target_indicator) AS (
+    CASE
+        WHEN p IS NULL THEN NULL
+        WHEN vtl_period_order(p.period_indicator) >= vtl_period_order(target_indicator) THEN
+            error('VTL Error: Cannot aggregate TimePeriod from ' || p.period_indicator ||
+                  ' to ' || target_indicator || '. Target must be coarser granularity.')
+        WHEN target_indicator = 'A' THEN
+            {
+                'start_date': MAKE_DATE(YEAR(p.start_date), 1, 1),
+                'end_date': MAKE_DATE(YEAR(p.start_date), 12, 31),
+                'period_indicator': 'A'
+            }::vtl_time_period
+        WHEN target_indicator = 'S' THEN
+            {
+                'start_date': MAKE_DATE(YEAR(p.start_date), CASE WHEN MONTH(p.start_date) <= 6 THEN 1 ELSE 7 END, 1),
+                'end_date': CASE WHEN MONTH(p.start_date) <= 6
+                    THEN MAKE_DATE(YEAR(p.start_date), 6, 30)
+                    ELSE MAKE_DATE(YEAR(p.start_date), 12, 31) END,
+                'period_indicator': 'S'
+            }::vtl_time_period
+        WHEN target_indicator = 'Q' THEN
+            {
+                'start_date': MAKE_DATE(YEAR(p.start_date), (QUARTER(p.start_date) - 1) * 3 + 1, 1),
+                'end_date': LAST_DAY(MAKE_DATE(YEAR(p.start_date), QUARTER(p.start_date) * 3, 1)),
+                'period_indicator': 'Q'
+            }::vtl_time_period
+        WHEN target_indicator = 'M' THEN
+            {
+                'start_date': MAKE_DATE(YEAR(p.start_date), MONTH(p.start_date), 1),
+                'end_date': LAST_DAY(MAKE_DATE(YEAR(p.start_date), MONTH(p.start_date), 1)),
+                'period_indicator': 'M'
+            }::vtl_time_period
+        WHEN target_indicator = 'W' THEN
+            {
+                'start_date': DATE_TRUNC('week', p.start_date)::DATE,
+                'end_date': (DATE_TRUNC('week', p.start_date) + INTERVAL 6 DAY)::DATE,
+                'period_indicator': 'W'
+            }::vtl_time_period
+    END
+);

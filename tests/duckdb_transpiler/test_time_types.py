@@ -390,3 +390,44 @@ class TestIntervalFunctions:
             "SELECT vtl_interval_days(vtl_interval_parse('2022-01-01/2022-01-31'))"
         ).fetchone()[0]
         assert result == 30
+
+
+class TestTimeAgg:
+    """Tests for vtl_time_agg function."""
+
+    @pytest.mark.parametrize(
+        "input_str,target,expected_output",
+        [
+            # Month to Quarter
+            ("2022-M01", "Q", "2022-Q1"),
+            ("2022-M06", "Q", "2022-Q2"),
+            ("2022-M07", "Q", "2022-Q3"),
+            ("2022-M12", "Q", "2022-Q4"),
+            # Month to Semester
+            ("2022-M03", "S", "2022-S1"),
+            ("2022-M09", "S", "2022-S2"),
+            # Month to Annual
+            ("2022-M06", "A", "2022"),
+            # Quarter to Semester
+            ("2022-Q1", "S", "2022-S1"),
+            ("2022-Q3", "S", "2022-S2"),
+            # Quarter to Annual
+            ("2022-Q3", "A", "2022"),
+            # Day to Month
+            ("2022-D045", "M", "2022-M02"),
+            ("2022-D100", "M", "2022-M04"),
+        ],
+    )
+    def test_time_agg(self, conn_with_ops, input_str, target, expected_output):
+        """Test time aggregation to coarser granularity."""
+        result = conn_with_ops.execute(f"""
+            SELECT vtl_period_to_string(vtl_time_agg(vtl_period_parse('{input_str}'), '{target}'))
+        """).fetchone()[0]
+        assert result == expected_output
+
+    def test_time_agg_invalid_direction(self, conn_with_ops):
+        """Test time_agg raises error when aggregating to finer granularity."""
+        with pytest.raises(duckdb.InvalidInputException, match="Cannot aggregate"):
+            conn_with_ops.execute(
+                "SELECT vtl_time_agg(vtl_period_parse('2022-Q1'), 'M')"
+            ).fetchone()
