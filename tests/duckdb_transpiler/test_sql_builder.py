@@ -11,7 +11,6 @@ from vtlengine.duckdb_transpiler.Transpiler.sql_builder import (
     quote_identifiers,
 )
 
-
 # =============================================================================
 # SQLBuilder Tests
 # =============================================================================
@@ -42,13 +41,7 @@ class TestSQLBuilderSelect:
 
     def test_select_distinct_on(self):
         """Test SELECT DISTINCT ON (DuckDB)."""
-        sql = (
-            SQLBuilder()
-            .distinct_on('"Id_1"', '"Id_2"')
-            .select_all()
-            .from_table('"DS_1"')
-            .build()
-        )
+        sql = SQLBuilder().distinct_on('"Id_1"', '"Id_2"').select_all().from_table('"DS_1"').build()
         assert sql == 'SELECT DISTINCT ON ("Id_1", "Id_2") * FROM "DS_1"'
 
 
@@ -67,12 +60,7 @@ class TestSQLBuilderFrom:
 
     def test_from_subquery(self):
         """Test FROM with subquery."""
-        sql = (
-            SQLBuilder()
-            .select('"Id_1"')
-            .from_subquery('SELECT * FROM "DS_1"', "t")
-            .build()
-        )
+        sql = SQLBuilder().select('"Id_1"').from_subquery('SELECT * FROM "DS_1"', "t").build()
         assert sql == 'SELECT "Id_1" FROM (SELECT * FROM "DS_1") AS t'
 
 
@@ -81,13 +69,7 @@ class TestSQLBuilderWhere:
 
     def test_where_single(self):
         """Test single WHERE condition."""
-        sql = (
-            SQLBuilder()
-            .select_all()
-            .from_table('"DS_1"')
-            .where('"Me_1" > 10')
-            .build()
-        )
+        sql = SQLBuilder().select_all().from_table('"DS_1"').where('"Me_1" > 10').build()
         assert sql == 'SELECT * FROM "DS_1" WHERE "Me_1" > 10'
 
     def test_where_multiple(self):
@@ -129,7 +111,9 @@ class TestSQLBuilderJoins:
         builder = SQLBuilder().select_all().from_table('"DS_1"', "a")
         join_func = getattr(builder, join_method)
         sql = join_func('"DS_2"', "b", 'a."Id_1" = b."Id_1"').build()
-        expected = f'SELECT * FROM "DS_1" AS a {expected_join_type} "DS_2" AS b ON a."Id_1" = b."Id_1"'
+        expected = (
+            f'SELECT * FROM "DS_1" AS a {expected_join_type} "DS_2" AS b ON a."Id_1" = b."Id_1"'
+        )
         assert sql == expected
 
     def test_inner_join_using(self):
@@ -141,10 +125,7 @@ class TestSQLBuilderJoins:
             .inner_join('"DS_2"', "b", using=["Id_1", "Id_2"])
             .build()
         )
-        assert (
-            sql
-            == 'SELECT * FROM "DS_1" AS a INNER JOIN "DS_2" AS b USING ("Id_1", "Id_2")'
-        )
+        assert sql == 'SELECT * FROM "DS_1" AS a INNER JOIN "DS_2" AS b USING ("Id_1", "Id_2")'
 
     def test_left_join_using(self):
         """Test LEFT JOIN with USING clause."""
@@ -159,13 +140,7 @@ class TestSQLBuilderJoins:
 
     def test_cross_join(self):
         """Test CROSS JOIN."""
-        sql = (
-            SQLBuilder()
-            .select_all()
-            .from_table('"DS_1"', "a")
-            .cross_join('"DS_2"', "b")
-            .build()
-        )
+        sql = SQLBuilder().select_all().from_table('"DS_1"', "a").cross_join('"DS_2"', "b").build()
         assert sql == 'SELECT * FROM "DS_1" AS a CROSS JOIN "DS_2" AS b'
 
 

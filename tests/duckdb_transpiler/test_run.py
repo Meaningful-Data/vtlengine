@@ -47,19 +47,23 @@ def create_dataset_structure(
     """Create a dataset structure definition."""
     components = []
     for col_name, col_type in id_cols:
-        components.append({
-            "name": col_name,
-            "type": col_type,
-            "role": "Identifier",
-            "nullable": False,
-        })
+        components.append(
+            {
+                "name": col_name,
+                "type": col_type,
+                "role": "Identifier",
+                "nullable": False,
+            }
+        )
     for col_name, col_type, nullable in measure_cols:
-        components.append({
-            "name": col_name,
-            "type": col_type,
-            "role": "Measure",
-            "nullable": nullable,
-        })
+        components.append(
+            {
+                "name": col_name,
+                "type": col_type,
+                "role": "Measure",
+                "nullable": nullable,
+            }
+        )
     return {"name": name, "DataStructure": components}
 
 
@@ -102,9 +106,20 @@ def execute_vtl_with_duckdb(
     """Execute VTL script using DuckDB transpiler and return results."""
     conn = duckdb.connect(":memory:")
 
-    # Register input datasets
+    # Get column types from data structures
+    ds_types = {}
+    for ds in data_structures.get("datasets", []):
+        ds_types[ds["name"]] = {c["name"]: c["type"] for c in ds["DataStructure"]}
+
+    # Register input datasets with proper type conversion
     for name, df in datapoints.items():
-        conn.register(name, df)
+        df_copy = df.copy()
+        # Convert Date columns to datetime
+        if name in ds_types:
+            for col, dtype in ds_types[name].items():
+                if dtype == "Date" and col in df_copy.columns:
+                    df_copy[col] = pd.to_datetime(df_copy[col])
+        conn.register(name, df_copy)
 
     # Get SQL queries from transpiler
     queries = transpile(vtl_script, data_structures, value_domains, external_routines)
@@ -299,9 +314,7 @@ class TestDatasetClauseOperations:
         ],
         ids=["calc_multiply", "calc_add"],
     )
-    def test_calc_clause(
-        self, temp_data_dir, vtl_script, input_data, expected_new_col_values
-    ):
+    def test_calc_clause(self, temp_data_dir, vtl_script, input_data, expected_new_col_values):
         """Test calc clause operations."""
         structure = create_dataset_structure(
             "DS_1",
@@ -589,9 +602,7 @@ class TestCastOperator:
         ],
         ids=["to_integer", "to_string"],
     )
-    def test_cast_type_conversion(
-        self, temp_data_dir, vtl_script, input_data, expected_type
-    ):
+    def test_cast_type_conversion(self, temp_data_dir, vtl_script, input_data, expected_type):
         """Test CAST type conversion."""
         structure = create_dataset_structure(
             "DS_1",
@@ -656,9 +667,7 @@ class TestAggregationOperations:
         ],
         ids=["sum", "count", "avg", "min", "max"],
     )
-    def test_aggregation_functions(
-        self, temp_data_dir, vtl_script, input_data, expected_value
-    ):
+    def test_aggregation_functions(self, temp_data_dir, vtl_script, input_data, expected_value):
         """Test aggregation function operations."""
         structure = create_dataset_structure(
             "DS_1",
@@ -762,9 +771,7 @@ class TestUnaryOperations:
         ],
         ids=["abs", "ceil", "floor"],
     )
-    def test_unary_operations(
-        self, temp_data_dir, vtl_script, input_data, expected_values
-    ):
+    def test_unary_operations(self, temp_data_dir, vtl_script, input_data, expected_values):
         """Test unary operations."""
         structure = create_dataset_structure(
             "DS_1",
@@ -811,9 +818,7 @@ class TestParameterizedOperations:
         ],
         ids=["round", "trunc"],
     )
-    def test_parameterized_operations(
-        self, temp_data_dir, vtl_script, input_data, expected_values
-    ):
+    def test_parameterized_operations(self, temp_data_dir, vtl_script, input_data, expected_values):
         """Test parameterized operations."""
         structure = create_dataset_structure(
             "DS_1",
@@ -872,9 +877,7 @@ class TestTimeOperators:
         ],
         ids=["year", "month", "dayofmonth"],
     )
-    def test_time_extraction(
-        self, temp_data_dir, vtl_script, input_data, expected_values
-    ):
+    def test_time_extraction(self, temp_data_dir, vtl_script, input_data, expected_values):
         """Test time extraction operators."""
         structure = create_dataset_structure(
             "DS_1",
@@ -1447,7 +1450,6 @@ class TestComplexMultiOperatorStatements:
             )
 
 
-
 # =============================================================================
 # Complex Multi-Operator Tests (from existing test suite - verified with pandas)
 # =============================================================================
@@ -1679,3 +1681,317 @@ class TestVerifiedComplexOperators:
         assert row_b["Me_diff"] == 16
         assert row_b["Me_prod"] == 80
         assert row_b["Me_ratio"] == 5.0
+
+
+# =============================================================================
+# RANDOM Operator Tests
+# =============================================================================
+
+
+class TestRandomOperator:
+    """Tests for RANDOM operator - deterministic pseudo-random number generation."""
+
+    def test_random_in_calc(self, temp_data_dir):
+        """
+        Test RANDOM operator in calc clause.
+
+        VTL: DS_r := DS_1[calc Me_rand := random(Me_1, 1)];
+
+        RANDOM(seed, index) returns a deterministic pseudo-random number between 0 and 1.
+        Same seed + index always produces the same result.
+        """
+        vtl_script = """
+            DS_r := DS_1[calc Me_rand := random(Me_1, 1)];
+        """
+
+        structure = create_dataset_structure(
+            "DS_1",
+            [("Id_1", "String")],
+            [("Me_1", "Integer", True)],
+        )
+
+        data_structures = create_data_structure([structure])
+        input_data = [
+            ["A", 42],
+            ["B", 42],  # Same seed as A -> same random value
+            ["C", 100],  # Different seed -> different random value
+        ]
+        input_df = pd.DataFrame(input_data, columns=["Id_1", "Me_1"])
+
+        results = execute_vtl_with_duckdb(vtl_script, data_structures, {"DS_1": input_df})
+
+        result_df = results["DS_r"].sort_values("Id_1").reset_index(drop=True)
+        assert len(result_df) == 3
+
+        # Random values should be between 0 and 1
+        assert all(0 <= v <= 1 for v in result_df["Me_rand"])
+
+        # Same seed (42) should produce same random value
+        row_a = result_df[result_df["Id_1"] == "A"].iloc[0]
+        row_b = result_df[result_df["Id_1"] == "B"].iloc[0]
+        assert row_a["Me_rand"] == row_b["Me_rand"], "Same seed should produce same random"
+
+        # Different seed (100) should produce different random value
+        row_c = result_df[result_df["Id_1"] == "C"].iloc[0]
+        assert row_a["Me_rand"] != row_c["Me_rand"], (
+            "Different seed should produce different random"
+        )
+
+    def test_random_with_different_indices(self, temp_data_dir):
+        """
+        Test RANDOM with different index values produces different results.
+
+        VTL: DS_r := DS_1[calc Me_r1 := random(Me_1, 1), Me_r2 := random(Me_1, 2)];
+        """
+        vtl_script = """
+            DS_r := DS_1[calc Me_r1 := random(Me_1, 1), Me_r2 := random(Me_1, 2)];
+        """
+
+        structure = create_dataset_structure(
+            "DS_1",
+            [("Id_1", "String")],
+            [("Me_1", "Integer", True)],
+        )
+
+        data_structures = create_data_structure([structure])
+        input_data = [["A", 42]]
+        input_df = pd.DataFrame(input_data, columns=["Id_1", "Me_1"])
+
+        results = execute_vtl_with_duckdb(vtl_script, data_structures, {"DS_1": input_df})
+
+        result_df = results["DS_r"]
+        row = result_df.iloc[0]
+
+        # Different indices should produce different random values
+        assert row["Me_r1"] != row["Me_r2"], "Different index should produce different random"
+
+
+# =============================================================================
+# MEMBERSHIP Operator Tests
+# =============================================================================
+
+
+class TestMembershipOperator:
+    """Tests for MEMBERSHIP (#) operator - component extraction from datasets."""
+
+    def test_membership_extract_measure(self, temp_data_dir):
+        """
+        Test extracting a measure from a dataset using #.
+
+        VTL: DS_r := DS_1#Me_1;
+
+        Extracts component Me_1 from DS_1, keeping identifiers.
+        """
+        vtl_script = """
+            DS_r := DS_1#Me_1;
+        """
+
+        structure = create_dataset_structure(
+            "DS_1",
+            [("Id_1", "String")],
+            [("Me_1", "Number", True), ("Me_2", "Number", True)],
+        )
+
+        data_structures = create_data_structure([structure])
+        input_data = [
+            ["A", 10.0, 20.0],
+            ["B", 30.0, 40.0],
+        ]
+        input_df = pd.DataFrame(input_data, columns=["Id_1", "Me_1", "Me_2"])
+
+        results = execute_vtl_with_duckdb(vtl_script, data_structures, {"DS_1": input_df})
+
+        result_df = results["DS_r"].sort_values("Id_1").reset_index(drop=True)
+
+        # Result should have Id_1 and Me_1 only
+        assert "Id_1" in result_df.columns
+        assert "Me_1" in result_df.columns
+        assert "Me_2" not in result_df.columns
+
+        # Check values
+        assert result_df[result_df["Id_1"] == "A"]["Me_1"].iloc[0] == 10.0
+        assert result_df[result_df["Id_1"] == "B"]["Me_1"].iloc[0] == 30.0
+
+    def test_membership_with_calc(self, temp_data_dir):
+        """
+        Test combining membership extraction with calc.
+
+        VTL: DS_temp := DS_1#Me_1;
+             DS_r := DS_temp[calc Me_doubled := Me_1 * 2];
+
+        First extract Me_1 from DS_1, then calculate on it.
+        """
+        vtl_script = """
+            DS_temp := DS_1#Me_1;
+            DS_r := DS_temp[calc Me_doubled := Me_1 * 2];
+        """
+
+        structure = create_dataset_structure(
+            "DS_1",
+            [("Id_1", "String")],
+            [("Me_1", "Number", True), ("Me_2", "Number", True)],
+        )
+
+        data_structures = create_data_structure([structure])
+        input_data = [
+            ["A", 10.0, 20.0],
+            ["B", 20.0, 40.0],
+            ["C", 30.0, 50.0],
+        ]
+        input_df = pd.DataFrame(input_data, columns=["Id_1", "Me_1", "Me_2"])
+
+        results = execute_vtl_with_duckdb(vtl_script, data_structures, {"DS_1": input_df})
+
+        result_df = results["DS_r"].sort_values("Id_1").reset_index(drop=True)
+
+        # Check doubled values
+        assert result_df[result_df["Id_1"] == "A"]["Me_doubled"].iloc[0] == 20.0
+        assert result_df[result_df["Id_1"] == "B"]["Me_doubled"].iloc[0] == 40.0
+        assert result_df[result_df["Id_1"] == "C"]["Me_doubled"].iloc[0] == 60.0
+
+
+# =============================================================================
+# TIME_AGG Operator Tests
+# =============================================================================
+
+
+class TestTimeAggOperator:
+    """Tests for TIME_AGG operator - time period aggregation."""
+
+    def test_time_agg_to_year(self, temp_data_dir):
+        """
+        Test TIME_AGG converting dates to annual periods.
+
+        VTL: DS_r := DS_1[calc Me_year := time_agg("A", Me_date, first)];
+
+        Note: VTL uses "A" for Annual (not "Y"), and requires "first" or "last" for Date inputs.
+        """
+        vtl_script = """
+            DS_r := DS_1[calc Me_year := time_agg("A", Me_date, first)];
+        """
+
+        structure = create_dataset_structure(
+            "DS_1",
+            [("Id_1", "String")],
+            [("Me_date", "Date", True)],
+        )
+
+        data_structures = create_data_structure([structure])
+        input_data = [
+            ["A", "2024-03-15"],
+            ["B", "2023-07-20"],
+            ["C", "2024-12-01"],
+        ]
+        input_df = pd.DataFrame(input_data, columns=["Id_1", "Me_date"])
+
+        results = execute_vtl_with_duckdb(vtl_script, data_structures, {"DS_1": input_df})
+
+        result_df = results["DS_r"].sort_values("Id_1").reset_index(drop=True)
+
+        # Check year extraction
+        assert result_df[result_df["Id_1"] == "A"]["Me_year"].iloc[0] == "2024"
+        assert result_df[result_df["Id_1"] == "B"]["Me_year"].iloc[0] == "2023"
+        assert result_df[result_df["Id_1"] == "C"]["Me_year"].iloc[0] == "2024"
+
+    def test_time_agg_to_quarter(self, temp_data_dir):
+        """
+        Test TIME_AGG converting dates to quarter periods.
+
+        VTL: DS_r := DS_1[calc Me_quarter := time_agg("Q", Me_date, first)];
+        """
+        vtl_script = """
+            DS_r := DS_1[calc Me_quarter := time_agg("Q", Me_date, first)];
+        """
+
+        structure = create_dataset_structure(
+            "DS_1",
+            [("Id_1", "String")],
+            [("Me_date", "Date", True)],
+        )
+
+        data_structures = create_data_structure([structure])
+        input_data = [
+            ["A", "2024-01-15"],  # Q1
+            ["B", "2024-04-20"],  # Q2
+            ["C", "2024-09-01"],  # Q3
+            ["D", "2024-12-25"],  # Q4
+        ]
+        input_df = pd.DataFrame(input_data, columns=["Id_1", "Me_date"])
+
+        results = execute_vtl_with_duckdb(vtl_script, data_structures, {"DS_1": input_df})
+
+        result_df = results["DS_r"].sort_values("Id_1").reset_index(drop=True)
+
+        # Check quarter extraction
+        assert result_df[result_df["Id_1"] == "A"]["Me_quarter"].iloc[0] == "2024Q1"
+        assert result_df[result_df["Id_1"] == "B"]["Me_quarter"].iloc[0] == "2024Q2"
+        assert result_df[result_df["Id_1"] == "C"]["Me_quarter"].iloc[0] == "2024Q3"
+        assert result_df[result_df["Id_1"] == "D"]["Me_quarter"].iloc[0] == "2024Q4"
+
+    def test_time_agg_to_month(self, temp_data_dir):
+        """
+        Test TIME_AGG converting dates to month periods.
+
+        VTL: DS_r := DS_1[calc Me_month := time_agg("M", Me_date, first)];
+        """
+        vtl_script = """
+            DS_r := DS_1[calc Me_month := time_agg("M", Me_date, first)];
+        """
+
+        structure = create_dataset_structure(
+            "DS_1",
+            [("Id_1", "String")],
+            [("Me_date", "Date", True)],
+        )
+
+        data_structures = create_data_structure([structure])
+        input_data = [
+            ["A", "2024-01-15"],
+            ["B", "2024-06-20"],
+            ["C", "2024-12-01"],
+        ]
+        input_df = pd.DataFrame(input_data, columns=["Id_1", "Me_date"])
+
+        results = execute_vtl_with_duckdb(vtl_script, data_structures, {"DS_1": input_df})
+
+        result_df = results["DS_r"].sort_values("Id_1").reset_index(drop=True)
+
+        # Check month extraction (format: YYYYM##)
+        assert result_df[result_df["Id_1"] == "A"]["Me_month"].iloc[0] == "2024M01"
+        assert result_df[result_df["Id_1"] == "B"]["Me_month"].iloc[0] == "2024M06"
+        assert result_df[result_df["Id_1"] == "C"]["Me_month"].iloc[0] == "2024M12"
+
+    def test_time_agg_to_semester(self, temp_data_dir):
+        """
+        Test TIME_AGG converting dates to semester periods.
+
+        VTL: DS_r := DS_1[calc Me_semester := time_agg("S", Me_date, first)];
+        """
+        vtl_script = """
+            DS_r := DS_1[calc Me_semester := time_agg("S", Me_date, first)];
+        """
+
+        structure = create_dataset_structure(
+            "DS_1",
+            [("Id_1", "String")],
+            [("Me_date", "Date", True)],
+        )
+
+        data_structures = create_data_structure([structure])
+        input_data = [
+            ["A", "2024-03-15"],  # S1 (Jan-Jun)
+            ["B", "2024-06-30"],  # S1
+            ["C", "2024-07-01"],  # S2 (Jul-Dec)
+            ["D", "2024-12-25"],  # S2
+        ]
+        input_df = pd.DataFrame(input_data, columns=["Id_1", "Me_date"])
+
+        results = execute_vtl_with_duckdb(vtl_script, data_structures, {"DS_1": input_df})
+
+        result_df = results["DS_r"].sort_values("Id_1").reset_index(drop=True)
+
+        # Check semester extraction
+        assert result_df[result_df["Id_1"] == "A"]["Me_semester"].iloc[0] == "2024S1"
+        assert result_df[result_df["Id_1"] == "B"]["Me_semester"].iloc[0] == "2024S1"
+        assert result_df[result_df["Id_1"] == "C"]["Me_semester"].iloc[0] == "2024S2"
+        assert result_df[result_df["Id_1"] == "D"]["Me_semester"].iloc[0] == "2024S2"

@@ -35,19 +35,23 @@ def create_dataset_structure(
     """Create a dataset structure definition."""
     components = []
     for col_name, col_type in id_cols:
-        components.append({
-            "name": col_name,
-            "type": col_type,
-            "role": "Identifier",
-            "nullable": False,
-        })
+        components.append(
+            {
+                "name": col_name,
+                "type": col_type,
+                "role": "Identifier",
+                "nullable": False,
+            }
+        )
     for col_name, col_type, nullable in measure_cols:
-        components.append({
-            "name": col_name,
-            "type": col_type,
-            "role": "Measure",
-            "nullable": nullable,
-        })
+        components.append(
+            {
+                "name": col_name,
+                "type": col_type,
+                "role": "Measure",
+                "nullable": nullable,
+            }
+        )
     return {"name": name, "DataStructure": components}
 
 
@@ -291,9 +295,7 @@ class TestJoinWithAggregation:
         ],
         ids=["join_then_sum"],
     )
-    def test_join_with_aggregation(
-        self, vtl_script, input1_data, input2_data, expected_value
-    ):
+    def test_join_with_aggregation(self, vtl_script, input1_data, input2_data, expected_value):
         """Test join operations combined with aggregations."""
         structure1 = create_dataset_structure(
             "DS_1",
@@ -364,9 +366,7 @@ class TestMultipleClauseOperations:
         ],
         ids=["filter_then_calc", "calc_then_filter", "filter_calc_filter_chain"],
     )
-    def test_multiple_clauses(
-        self, vtl_script, input_data, expected_ids, expected_new_col
-    ):
+    def test_multiple_clauses(self, vtl_script, input_data, expected_ids, expected_new_col):
         """Test multiple clause operations combined."""
         structure = create_dataset_structure(
             "DS_1",
@@ -438,9 +438,7 @@ class TestUnaryBinaryCombinations:
         ],
         ids=["abs_then_add", "round_then_multiply", "ceil_then_subtract", "floor_then_abs"],
     )
-    def test_unary_binary_combinations(
-        self, vtl_script, input_data, expected_values
-    ):
+    def test_unary_binary_combinations(self, vtl_script, input_data, expected_values):
         """Test unary operations combined with binary operations."""
         structure = create_dataset_structure(
             "DS_1",
@@ -568,12 +566,15 @@ class TestComplexMultiStepTransformations:
         )
 
         data_structures = create_data_structure([structure])
-        input_df = pd.DataFrame([
-            ["A", -5],
-            ["B", 5],
-            ["C", 10],
-            ["D", 15],
-        ], columns=["Id_1", "Me_1"])
+        input_df = pd.DataFrame(
+            [
+                ["A", -5],
+                ["B", 5],
+                ["C", 10],
+                ["D", 15],
+            ],
+            columns=["Id_1", "Me_1"],
+        )
 
         results = execute_vtl_with_duckdb(vtl_script, data_structures, {"DS_raw": input_df})
 
@@ -603,11 +604,14 @@ class TestComplexMultiStepTransformations:
         )
 
         data_structures = create_data_structure([structure])
-        input_df = pd.DataFrame([
-            ["A", 3],   # Filtered out
-            ["B", 10],  # 10 * 10 = 100
-            ["C", 20],  # 20 * 10 = 200
-        ], columns=["Id_1", "Me_1"])
+        input_df = pd.DataFrame(
+            [
+                ["A", 3],  # Filtered out
+                ["B", 10],  # 10 * 10 = 100
+                ["C", 20],  # 20 * 10 = 200
+            ],
+            columns=["Id_1", "Me_1"],
+        )
 
         results = execute_vtl_with_duckdb(vtl_script, data_structures, {"DS_1": input_df})
 
@@ -676,11 +680,14 @@ class TestConditionalInComplexScenarios:
         )
 
         data_structures = create_data_structure([structure])
-        input_df = pd.DataFrame([
-            ["A", 30],
-            ["B", 60],
-            ["C", 80],
-        ], columns=["Id_1", "Me_1"])
+        input_df = pd.DataFrame(
+            [
+                ["A", 30],
+                ["B", 60],
+                ["C", 80],
+            ],
+            columns=["Id_1", "Me_1"],
+        )
 
         results = execute_vtl_with_duckdb(vtl_script, data_structures, {"DS_1": input_df})
 
@@ -702,11 +709,14 @@ class TestConditionalInComplexScenarios:
         )
 
         data_structures = create_data_structure([structure])
-        input_df = pd.DataFrame([
-            ["A", 30, 2],    # No discount: 30 * 1.0 * 2 = 60
-            ["B", 75, 2],    # 10% discount: 75 * 0.9 * 2 = 135
-            ["C", 150, 2],   # 20% discount: 150 * 0.8 * 2 = 240
-        ], columns=["Id_1", "Me_1", "Me_2"])
+        input_df = pd.DataFrame(
+            [
+                ["A", 30, 2],  # No discount: 30 * 1.0 * 2 = 60
+                ["B", 75, 2],  # 10% discount: 75 * 0.9 * 2 = 135
+                ["C", 150, 2],  # 20% discount: 150 * 0.8 * 2 = 240
+            ],
+            columns=["Id_1", "Me_1", "Me_2"],
+        )
 
         results = execute_vtl_with_duckdb(vtl_script, data_structures, {"DS_1": input_df})
 
@@ -761,9 +771,7 @@ class TestBetweenWithOtherOperators:
         ],
         ids=["between_then_multiply", "multiply_then_between", "calc_then_between"],
     )
-    def test_between_with_operations(
-        self, vtl_script, input_data, expected_ids, expected_values
-    ):
+    def test_between_with_operations(self, vtl_script, input_data, expected_ids, expected_values):
         """Test BETWEEN operator combined with other operations."""
         structure = create_dataset_structure(
             "DS_1",

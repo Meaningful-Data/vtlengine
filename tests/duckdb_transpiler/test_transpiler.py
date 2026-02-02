@@ -645,7 +645,9 @@ class TestParameterizedOperations:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = 'SELECT "Id_1", ROUND("Me_1", 2) AS "Me_1", ROUND("Me_2", 2) AS "Me_2" FROM "DS_1"'
+        expected_sql = (
+            'SELECT "Id_1", ROUND("Me_1", 2) AS "Me_1", ROUND("Me_2", 2) AS "Me_2" FROM "DS_1"'
+        )
         assert_sql_equal(sql, expected_sql)
 
     def test_nvl_dataset_operation(self):
@@ -1290,8 +1292,14 @@ class TestTimeOperators:
     @pytest.mark.parametrize(
         "op_token,expected_sql",
         [
-            ("daytoyear", "'P' || CAST(FLOOR(400 / 365) AS VARCHAR) || 'Y' || CAST(400 % 365 AS VARCHAR) || 'D'"),
-            ("daytomonth", "'P' || CAST(FLOOR(400 / 30) AS VARCHAR) || 'M' || CAST(400 % 30 AS VARCHAR) || 'D'"),
+            (
+                "daytoyear",
+                "'P' || CAST(FLOOR(400 / 365) AS VARCHAR) || 'Y' || CAST(400 % 365 AS VARCHAR) || 'D'",
+            ),
+            (
+                "daytomonth",
+                "'P' || CAST(FLOOR(400 / 30) AS VARCHAR) || 'M' || CAST(400 % 30 AS VARCHAR) || 'D'",
+            ),
         ],
     )
     def test_duration_conversion_daytox(self, op_token, expected_sql):
@@ -1316,8 +1324,14 @@ class TestTimeOperators:
     @pytest.mark.parametrize(
         "op_token,expected_sql",
         [
-            ("yeartoday", r"( CAST(REGEXP_EXTRACT('P1Y100D', 'P(\d+)Y', 1) AS INTEGER) * 365 + CAST(REGEXP_EXTRACT('P1Y100D', '(\d+)D', 1) AS INTEGER) )"),
-            ("monthtoday", r"( CAST(REGEXP_EXTRACT('P1Y100D', 'P(\d+)M', 1) AS INTEGER) * 30 + CAST(REGEXP_EXTRACT('P1Y100D', '(\d+)D', 1) AS INTEGER) )"),
+            (
+                "yeartoday",
+                r"( CAST(REGEXP_EXTRACT('P1Y100D', 'P(\d+)Y', 1) AS INTEGER) * 365 + CAST(REGEXP_EXTRACT('P1Y100D', '(\d+)D', 1) AS INTEGER) )",
+            ),
+            (
+                "monthtoday",
+                r"( CAST(REGEXP_EXTRACT('P1Y100D', 'P(\d+)M', 1) AS INTEGER) * 30 + CAST(REGEXP_EXTRACT('P1Y100D', '(\d+)D', 1) AS INTEGER) )",
+            ),
         ],
     )
     def test_duration_conversion_xtoday(self, op_token, expected_sql):
@@ -1343,12 +1357,8 @@ class TestTimeOperators:
         """Test flow_to_stock on dataset generates window function SQL."""
         # Create dataset with time identifier (Id_1 as Date, Id_2 as String)
         components = {
-            "Id_1": Component(
-                name="Id_1", data_type=Date, role=Role.IDENTIFIER, nullable=False
-            ),
-            "Id_2": Component(
-                name="Id_2", data_type=String, role=Role.IDENTIFIER, nullable=False
-            ),
+            "Id_1": Component(name="Id_1", data_type=Date, role=Role.IDENTIFIER, nullable=False),
+            "Id_2": Component(name="Id_2", data_type=String, role=Role.IDENTIFIER, nullable=False),
             "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
         }
         ds = Dataset(name="DS_1", components=components, data=None)
@@ -1375,12 +1385,8 @@ class TestTimeOperators:
         """Test stock_to_flow on dataset generates window function SQL."""
         # Create dataset with time identifier (Id_1 as Date, Id_2 as String)
         components = {
-            "Id_1": Component(
-                name="Id_1", data_type=Date, role=Role.IDENTIFIER, nullable=False
-            ),
-            "Id_2": Component(
-                name="Id_2", data_type=String, role=Role.IDENTIFIER, nullable=False
-            ),
+            "Id_1": Component(name="Id_1", data_type=Date, role=Role.IDENTIFIER, nullable=False),
+            "Id_2": Component(name="Id_2", data_type=String, role=Role.IDENTIFIER, nullable=False),
             "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
         }
         ds = Dataset(name="DS_1", components=components, data=None)
@@ -1444,7 +1450,7 @@ class TestRandomOperator:
         # Full SQL: applies random to each measure
         expected_sql = (
             'SELECT "Id_1", '
-            '(ABS(hash(CAST("Me_1" AS VARCHAR) || \'_\' || CAST(3 AS VARCHAR))) % 1000000) '
+            "(ABS(hash(CAST(\"Me_1\" AS VARCHAR) || '_' || CAST(3 AS VARCHAR))) % 1000000) "
             '/ 1000000.0 AS "Me_1" '
             'FROM "DS_1"'
         )
@@ -1503,17 +1509,18 @@ class TestTimeAggOperator:
     @pytest.mark.parametrize(
         "period,expected_sql",
         [
-            ("Y", """STRFTIME("date_col", '%Y')"""),
+            ("Y", """STRFTIME(CAST("date_col" AS DATE), '%Y')"""),
             (
                 "Q",
-                """(STRFTIME("date_col", '%Y') || 'Q' || CAST(QUARTER("date_col") AS VARCHAR))""",
+                """(STRFTIME(CAST("date_col" AS DATE), '%Y') || 'Q' || """
+                """CAST(QUARTER(CAST("date_col" AS DATE)) AS VARCHAR))""",
             ),
             (
                 "M",
-                """(STRFTIME("date_col", '%Y') || 'M' || """
-                """LPAD(CAST(MONTH("date_col") AS VARCHAR), 2, '0'))""",
+                """(STRFTIME(CAST("date_col" AS DATE), '%Y') || 'M' || """
+                """LPAD(CAST(MONTH(CAST("date_col" AS DATE)) AS VARCHAR), 2, '0'))""",
             ),
-            ("D", """STRFTIME("date_col", '%Y-%m-%d')"""),
+            ("D", """STRFTIME(CAST("date_col" AS DATE), '%Y-%m-%d')"""),
         ],
     )
     def test_time_agg_scalar(self, period: str, expected_sql: str):
@@ -1542,7 +1549,7 @@ class TestTimeAggOperator:
 
         result = transpiler.visit_TimeAggregation(time_agg_op)
 
-        expected_sql = """STRFTIME("my_date", '%Y')"""
+        expected_sql = """STRFTIME(CAST("my_date" AS DATE), '%Y')"""
         assert_sql_equal(result, expected_sql)
 
     def test_time_agg_quarter(self):
@@ -1557,7 +1564,8 @@ class TestTimeAggOperator:
         result = transpiler.visit_TimeAggregation(time_agg_op)
 
         expected_sql = (
-            """(STRFTIME("my_date", '%Y') || 'Q' || CAST(QUARTER("my_date") AS VARCHAR))"""
+            """(STRFTIME(CAST("my_date" AS DATE), '%Y') || 'Q' || """
+            """CAST(QUARTER(CAST("my_date" AS DATE)) AS VARCHAR))"""
         )
         assert_sql_equal(result, expected_sql)
 
@@ -1573,8 +1581,8 @@ class TestTimeAggOperator:
         result = transpiler.visit_TimeAggregation(time_agg_op)
 
         expected_sql = (
-            """(STRFTIME("my_date", '%Y') || 'M' || """
-            """LPAD(CAST(MONTH("my_date") AS VARCHAR), 2, '0'))"""
+            """(STRFTIME(CAST("my_date" AS DATE), '%Y') || 'M' || """
+            """LPAD(CAST(MONTH(CAST("my_date" AS DATE)) AS VARCHAR), 2, '0'))"""
         )
         assert_sql_equal(result, expected_sql)
 
@@ -1590,7 +1598,7 @@ class TestTimeAggOperator:
         result = transpiler.visit_TimeAggregation(time_agg_op)
 
         expected_sql = (
-            """(STRFTIME("my_date", '%Y') || 'S' || """
-            """CAST(CEIL(MONTH("my_date") / 6.0) AS INTEGER))"""
+            """(STRFTIME(CAST("my_date" AS DATE), '%Y') || 'S' || """
+            """CAST(CEIL(MONTH(CAST("my_date" AS DATE)) / 6.0) AS INTEGER))"""
         )
         assert_sql_equal(result, expected_sql)

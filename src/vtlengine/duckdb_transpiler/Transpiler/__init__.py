@@ -100,7 +100,6 @@ from vtlengine.AST.Grammar.tokens import (
     SUBSTR,
     SUM,
     SYMDIFF,
-    TIME_AGG,
     TIMESHIFT,
     TRIM,
     TRUNC,
@@ -542,6 +541,10 @@ class SQLTranspiler(ASTTemplate):
         if op == TIMESHIFT:
             return self._visit_timeshift(node, left_type, right_type)
 
+        # Special handling for RANDOM (parsed as BinOp in VTL grammar)
+        if op == RANDOM:
+            return self._visit_random_binop(node, left_type, right_type)
+
         sql_op = SQL_BINARY_OPS.get(op, op.upper())
 
         # Dataset-Dataset
@@ -883,6 +886,46 @@ class SQLTranspiler(ASTTemplate):
             # Fallback: return as-is (shift not applied)
             from_clause = self._simplify_from_clause(dataset_sql)
             return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
+
+    def _visit_random_binop(self, node: AST.BinOp, left_type: str, right_type: str) -> str:
+        """
+        Generate SQL for RANDOM operator (parsed as BinOp in VTL grammar).
+
+        VTL: random(seed, index) -> deterministic pseudo-random Number between 0 and 1.
+
+        Uses hash-based approach for determinism: same seed + index = same result.
+        DuckDB: (ABS(hash(seed || '_' || index)) % 1000000) / 1000000.0
+        """
+        seed_sql = self.visit(node.left)
+        index_sql = self.visit(node.right)
+
+        # Template for random generation
+        random_expr = (
+            f"(ABS(hash(CAST({seed_sql} AS VARCHAR) || '_' || "
+            f"CAST({index_sql} AS VARCHAR))) % 1000000) / 1000000.0"
+        )
+
+        # Dataset-level operation
+        if left_type == OperandType.DATASET:
+            ds_name = self._get_dataset_name(node.left)
+            ds = self.available_tables.get(ds_name)
+            if ds:
+                id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
+                measure_parts = []
+                for m in ds.get_measures_names():
+                    m_random = (
+                        f"(ABS(hash(CAST(\"{m}\" AS VARCHAR) || '_' || "
+                        f'CAST({index_sql} AS VARCHAR))) % 1000000) / 1000000.0 AS "{m}"'
+                    )
+                    measure_parts.append(m_random)
+                measure_select = ", ".join(measure_parts)
+                from_clause = f'"{ds_name}"'
+                if id_select:
+                    return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
+                return f"SELECT {measure_select} FROM {from_clause}"
+
+        # Scalar-level: return the expression directly
+        return random_expr
 
     # =========================================================================
     # Unary Operations
@@ -2162,16 +2205,20 @@ class SQLTranspiler(ASTTemplate):
         period_to = node.period_to.upper() if node.period_to else "Y"
 
         # Build SQL expression template for each period type
+        # VTL period codes: A=Annual, S=Semester, Q=Quarter, M=Month, W=Week, D=Day
+        # Use CAST to DATE to handle dates read as VARCHAR from CSV
+        dc = "CAST({col} AS DATE)"  # date cast placeholder
+        yf = "STRFTIME(" + dc + ", '%Y')"  # year format
         period_templates = {
-            "Y": "STRFTIME({col}, '%Y')",
-            "S": "(STRFTIME({col}, '%Y') || 'S' || CAST(CEIL(MONTH({col}) / 6.0) AS INTEGER))",
-            "Q": "(STRFTIME({col}, '%Y') || 'Q' || CAST(QUARTER({col}) AS VARCHAR))",
-            "M": "(STRFTIME({col}, '%Y') || 'M' || LPAD(CAST(MONTH({col}) AS VARCHAR), 2, '0'))",
-            "W": "(STRFTIME({col}, '%Y') || 'W' || LPAD(CAST(WEEKOFYEAR({col}) AS VARCHAR), 2, '0'))",
-            "D": "STRFTIME({col}, '%Y-%m-%d')",
+            "A": "STRFTIME(" + dc + ", '%Y')",
+            "S": "(" + yf + " || 'S' || CAST(CEIL(MONTH(" + dc + ") / 6.0) AS INTEGER))",
+            "Q": "(" + yf + " || 'Q' || CAST(QUARTER(" + dc + ") AS VARCHAR))",
+            "M": "(" + yf + " || 'M' || LPAD(CAST(MONTH(" + dc + ") AS VARCHAR), 2, '0'))",
+            "W": "(" + yf + " || 'W' || LPAD(CAST(WEEKOFYEAR(" + dc + ") AS VARCHAR), 2, '0'))",
+            "D": "STRFTIME(" + dc + ", '%Y-%m-%d')",
         }
 
-        template = period_templates.get(period_to, "STRFTIME({col}, '%Y')")
+        template = period_templates.get(period_to, "STRFTIME(CAST({col} AS DATE), '%Y')")
 
         if node.operand is None:
             raise ValueError("TIME_AGG requires an operand")
