@@ -3033,11 +3033,20 @@ class SQLTranspiler(ASTTemplate):
 
         raise ValueError(f"Cannot extract dataset name from {type(node).__name__}")
 
-    def _get_dataset_sql(self, node: AST.AST) -> str:
-        """Get SQL for a dataset node."""
+    def _get_dataset_sql(self, node: AST.AST, wrap_simple: bool = True) -> str:
+        """
+        Get SQL for a dataset node.
+
+        Args:
+            node: AST node representing a dataset
+            wrap_simple: If False, return just table name for VarID nodes
+                        If True, return SELECT * FROM for compatibility
+        """
         if isinstance(node, AST.VarID):
             name = node.value
-            return f'SELECT * FROM "{name}"'
+            if wrap_simple:
+                return f'SELECT * FROM "{name}"'
+            return f'"{name}"'
 
         # Otherwise, transpile the node
         return self.visit(node)

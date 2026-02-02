@@ -2341,3 +2341,46 @@ class TestCheckValidationOperations:
         assert result_df[result_df["Id_1"] == "A"]["bool_var"].iloc[0] == True  # noqa: E712
         assert result_df[result_df["Id_1"] == "B"]["bool_var"].iloc[0] == False  # noqa: E712
         assert result_df[result_df["Id_1"] == "C"]["bool_var"].iloc[0] == True  # noqa: E712
+
+
+# =============================================================================
+# SQL Generation Optimization Tests
+# =============================================================================
+
+
+class TestDirectTableReferences:
+    """Tests for direct table reference optimization in SQL generation."""
+
+    def test_simple_dataset_reference_uses_direct_table(self, temp_data_dir):
+        """
+        Test that simple dataset references use direct table names in joins.
+
+        VTL: DS_r := inner_join(DS_1, DS_2 using Id_1);
+        Expected SQL should reference tables directly, not (SELECT * FROM "table")
+        """
+        vtl_script = "DS_r := inner_join(DS_1, DS_2 using Id_1);"
+
+        structure1 = create_dataset_structure(
+            "DS_1",
+            [("Id_1", "String")],
+            [("Me_1", "Number", True)],
+        )
+        structure2 = create_dataset_structure(
+            "DS_2",
+            [("Id_1", "String")],
+            [("Me_2", "Number", True)],
+        )
+
+        data_structures = create_data_structure([structure1, structure2])
+
+        queries = transpile(vtl_script, data_structures)
+
+        # Get the SQL for DS_r
+        ds_r_sql = queries[0][1]
+
+        # Should NOT contain (SELECT * FROM "DS_1") or (SELECT * FROM "DS_2")
+        assert '(SELECT * FROM "DS_1")' not in ds_r_sql
+        assert '(SELECT * FROM "DS_2")' not in ds_r_sql
+        # Should contain direct table references
+        assert '"DS_1"' in ds_r_sql
+        assert '"DS_2"' in ds_r_sql
