@@ -128,3 +128,61 @@ class TestPeriodFormat:
             "SELECT vtl_period_to_string(NULL::vtl_time_period)"
         ).fetchone()[0]
         assert result is None
+
+
+@pytest.fixture
+def conn_with_compare():
+    """Create DuckDB connection with comparison functions loaded."""
+    connection = duckdb.connect(":memory:")
+    load_sql_files(
+        connection,
+        "types.sql",
+        "functions_period_parse.sql",
+        "functions_period_compare.sql",
+    )
+    return connection
+
+
+class TestPeriodCompare:
+    """Tests for TimePeriod comparison functions."""
+
+    @pytest.mark.parametrize(
+        "a,b,expected_lt,expected_eq",
+        [
+            # Same quarter
+            ("2022-Q1", "2022-Q2", True, False),
+            ("2022-Q2", "2022-Q1", False, False),
+            ("2022-Q2", "2022-Q2", False, True),
+            # Different years
+            ("2021-Q4", "2022-Q1", True, False),
+            ("2023-M01", "2022-M12", False, False),
+            # Annual
+            ("2021", "2022", True, False),
+            ("2022", "2022", False, True),
+        ],
+    )
+    def test_period_compare_same_indicator(self, conn_with_compare, a, b, expected_lt, expected_eq):
+        """Test comparison of periods with same indicator."""
+        lt_result = conn_with_compare.execute(
+            f"SELECT vtl_period_lt(vtl_period_parse('{a}'), vtl_period_parse('{b}'))"
+        ).fetchone()[0]
+        eq_result = conn_with_compare.execute(
+            f"SELECT vtl_period_eq(vtl_period_parse('{a}'), vtl_period_parse('{b}'))"
+        ).fetchone()[0]
+
+        assert lt_result == expected_lt
+        assert eq_result == expected_eq
+
+    def test_period_compare_different_indicator_raises(self, conn_with_compare):
+        """Test comparison of periods with different indicators raises error."""
+        with pytest.raises(duckdb.InvalidInputException, match="same period indicator"):
+            conn_with_compare.execute(
+                "SELECT vtl_period_lt(vtl_period_parse('2022-Q1'), vtl_period_parse('2022-M06'))"
+            ).fetchone()
+
+    def test_period_compare_null(self, conn_with_compare):
+        """Test comparison with NULL returns NULL."""
+        result = conn_with_compare.execute(
+            "SELECT vtl_period_lt(vtl_period_parse('2022-Q1'), NULL)"
+        ).fetchone()[0]
+        assert result is None
