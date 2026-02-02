@@ -328,3 +328,65 @@ class TestPeriodDiff:
             "SELECT vtl_period_diff(vtl_period_parse('2022-Q1'), NULL)"
         ).fetchone()[0]
         assert result is None
+
+
+@pytest.fixture
+def conn_with_interval():
+    """Create DuckDB connection with interval functions loaded."""
+    connection = duckdb.connect(":memory:")
+    load_sql_files(
+        connection,
+        "types.sql",
+        "functions_interval.sql",
+    )
+    return connection
+
+
+class TestIntervalFunctions:
+    """Tests for TimeInterval functions."""
+
+    @pytest.mark.parametrize(
+        "input_str,expected_start,expected_end",
+        [
+            ("2021-01-01/2022-01-01", "2021-01-01", "2022-01-01"),
+            ("2022-06-15/2022-12-31", "2022-06-15", "2022-12-31"),
+        ],
+    )
+    def test_interval_parse(self, conn_with_interval, input_str, expected_start, expected_end):
+        """Test parsing TimeInterval strings."""
+        result = conn_with_interval.execute(f"SELECT vtl_interval_parse('{input_str}')").fetchone()[
+            0
+        ]
+
+        assert result["start_date"].isoformat() == expected_start
+        assert result["end_date"].isoformat() == expected_end
+
+    def test_interval_to_string(self, conn_with_interval):
+        """Test formatting TimeInterval to string."""
+        result = conn_with_interval.execute(
+            "SELECT vtl_interval_to_string(vtl_interval_parse('2021-01-01/2022-01-01'))"
+        ).fetchone()[0]
+        assert result == "2021-01-01/2022-01-01"
+
+    def test_interval_eq(self, conn_with_interval):
+        """Test TimeInterval equality."""
+        result = conn_with_interval.execute("""
+            SELECT
+                vtl_interval_eq(
+                    vtl_interval_parse('2021-01-01/2022-01-01'),
+                    vtl_interval_parse('2021-01-01/2022-01-01')
+                ),
+                vtl_interval_eq(
+                    vtl_interval_parse('2021-01-01/2022-01-01'),
+                    vtl_interval_parse('2021-01-01/2022-06-30')
+                )
+        """).fetchone()
+        assert result[0] is True
+        assert result[1] is False
+
+    def test_interval_days(self, conn_with_interval):
+        """Test TimeInterval days calculation."""
+        result = conn_with_interval.execute(
+            "SELECT vtl_interval_days(vtl_interval_parse('2022-01-01/2022-01-31'))"
+        ).fetchone()[0]
+        assert result == 30
