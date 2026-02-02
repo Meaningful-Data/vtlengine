@@ -13,64 +13,52 @@ CREATE OR REPLACE MACRO vtl_period_limit(indicator) AS (
 );
 
 -- Shift TimePeriod by N periods
--- Uses inline calculations to avoid subquery issues with MACRO parameters
+-- Optimized: directly constructs STRUCT using date arithmetic instead of parsing strings
 CREATE OR REPLACE MACRO vtl_period_shift(p, n) AS (
     CASE
         WHEN p IS NULL THEN NULL
         WHEN p.period_indicator = 'A' THEN
-            -- Annual: just add years
-            vtl_period_parse(CAST(YEAR(p.start_date) + n AS VARCHAR))
+            -- Annual: add years directly
+            {
+                'start_date': MAKE_DATE(YEAR(p.start_date) + n, 1, 1),
+                'end_date': MAKE_DATE(YEAR(p.start_date) + n, 12, 31),
+                'period_indicator': 'A'
+            }::vtl_time_period
         WHEN p.period_indicator = 'S' THEN
-            -- Semester: 2 per year
-            -- year = base_year + floor((semester + shift - 1) / 2)
-            -- new_semester = ((semester + shift - 1) % 2 + 2) % 2 + 1
-            vtl_period_parse(
-                CAST(
-                    YEAR(p.start_date) +
-                    CAST(FLOOR((CAST(CEIL(MONTH(p.start_date) / 6.0) AS INTEGER) + n - 1) / 2.0) AS INTEGER)
-                AS VARCHAR) || '-S' ||
-                CAST(
-                    ((CAST(CEIL(MONTH(p.start_date) / 6.0) AS INTEGER) + n - 1) % 2 + 2) % 2 + 1
-                AS VARCHAR)
-            )
+            -- Semester: use month arithmetic (6 months per semester)
+            {
+                'start_date': CAST(p.start_date + INTERVAL (n * 6) MONTH AS DATE),
+                'end_date': LAST_DAY(CAST(p.start_date + INTERVAL (n * 6 + 5) MONTH AS DATE)),
+                'period_indicator': 'S'
+            }::vtl_time_period
         WHEN p.period_indicator = 'Q' THEN
-            -- Quarter: 4 per year
-            -- year = base_year + floor((quarter + shift - 1) / 4)
-            -- new_quarter = ((quarter + shift - 1) % 4 + 4) % 4 + 1
-            vtl_period_parse(
-                CAST(
-                    YEAR(p.start_date) +
-                    CAST(FLOOR((QUARTER(p.start_date) + n - 1) / 4.0) AS INTEGER)
-                AS VARCHAR) || '-Q' ||
-                CAST(
-                    ((QUARTER(p.start_date) + n - 1) % 4 + 4) % 4 + 1
-                AS VARCHAR)
-            )
+            -- Quarter: use month arithmetic (3 months per quarter)
+            {
+                'start_date': CAST(p.start_date + INTERVAL (n * 3) MONTH AS DATE),
+                'end_date': LAST_DAY(CAST(p.start_date + INTERVAL (n * 3 + 2) MONTH AS DATE)),
+                'period_indicator': 'Q'
+            }::vtl_time_period
         WHEN p.period_indicator = 'M' THEN
-            -- Month: 12 per year
-            -- year = base_year + floor((month + shift - 1) / 12)
-            -- new_month = ((month + shift - 1) % 12 + 12) % 12 + 1
-            vtl_period_parse(
-                CAST(
-                    YEAR(p.start_date) +
-                    CAST(FLOOR((MONTH(p.start_date) + n - 1) / 12.0) AS INTEGER)
-                AS VARCHAR) || '-M' ||
-                LPAD(CAST(
-                    ((MONTH(p.start_date) + n - 1) % 12 + 12) % 12 + 1
-                AS VARCHAR), 2, '0')
-            )
+            -- Month: use month arithmetic directly
+            {
+                'start_date': CAST(p.start_date + INTERVAL (n) MONTH AS DATE),
+                'end_date': LAST_DAY(CAST(p.start_date + INTERVAL (n) MONTH AS DATE)),
+                'period_indicator': 'M'
+            }::vtl_time_period
         WHEN p.period_indicator = 'W' THEN
-            -- Week: use date arithmetic
-            vtl_period_parse(
-                CAST(YEAR(p.start_date + INTERVAL (n * 7) DAY) AS VARCHAR) || '-W' ||
-                LPAD(CAST(WEEKOFYEAR(p.start_date + INTERVAL (n * 7) DAY) AS VARCHAR), 2, '0')
-            )
+            -- Week: use day arithmetic (7 days per week)
+            {
+                'start_date': CAST(p.start_date + INTERVAL (n * 7) DAY AS DATE),
+                'end_date': CAST(p.end_date + INTERVAL (n * 7) DAY AS DATE),
+                'period_indicator': 'W'
+            }::vtl_time_period
         WHEN p.period_indicator = 'D' THEN
-            -- Day: use date arithmetic
-            vtl_period_parse(
-                CAST(YEAR(p.start_date + INTERVAL (n) DAY) AS VARCHAR) || '-D' ||
-                LPAD(CAST(DAYOFYEAR(p.start_date + INTERVAL (n) DAY) AS VARCHAR), 3, '0')
-            )
+            -- Day: use day arithmetic directly
+            {
+                'start_date': CAST(p.start_date + INTERVAL (n) DAY AS DATE),
+                'end_date': CAST(p.start_date + INTERVAL (n) DAY AS DATE),
+                'period_indicator': 'D'
+            }::vtl_time_period
     END
 );
 
