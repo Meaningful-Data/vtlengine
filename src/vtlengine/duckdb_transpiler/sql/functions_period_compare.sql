@@ -69,6 +69,6 @@ CREATE OR REPLACE MACRO vtl_period_ne(a, b) AS (
 CREATE OR REPLACE MACRO vtl_period_sort_key(p) AS (
     CASE
         WHEN p IS NULL THEN NULL
-        ELSE EPOCH_DAYS(p.start_date)
+        ELSE (p.start_date - DATE '1970-01-01')::INTEGER
     END
 );

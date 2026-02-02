@@ -50,10 +50,14 @@ CREATE OR REPLACE MACRO vtl_interval_days(i) AS (
 );
 
 -- Sort key for TimeInterval (for ORDER BY and aggregations)
+-- Returns days since epoch for both start and end dates
 CREATE OR REPLACE MACRO vtl_interval_sort_key(i) AS (
     CASE
         WHEN i IS NULL THEN NULL
-        ELSE [EPOCH_DAYS(i.start_date), EPOCH_DAYS(i.end_date)]
+        ELSE [
+            (i.start_date - DATE '1970-01-01')::INTEGER,
+            (i.end_date - DATE '1970-01-01')::INTEGER
+        ]
     END
 );
 
