@@ -1423,11 +1423,11 @@ class TestRandomOperator:
 
         result = transpiler.visit_ParamOp(random_op)
 
-        # Should use hash-based deterministic random
-        assert "hash" in result.lower()
-        assert "42" in result
-        assert "5" in result
-        assert "1000000" in result  # modulo value
+        # Full SQL: hash-based deterministic random
+        expected_sql = (
+            "(ABS(hash(CAST(42 AS VARCHAR) || '_' || CAST(5 AS VARCHAR))) % 1000000) / 1000000.0"
+        )
+        assert_sql_equal(result, expected_sql)
 
     def test_random_dataset(self):
         """Test RANDOM on dataset measures."""
@@ -1441,9 +1441,14 @@ class TestRandomOperator:
 
         result = transpiler.visit_ParamOp(random_op)
 
-        # Should apply to measures
-        assert "Me_1" in result
-        assert "hash" in result.lower()
+        # Full SQL: applies random to each measure
+        expected_sql = (
+            'SELECT "Id_1", '
+            '(ABS(hash(CAST("Me_1" AS VARCHAR) || \'_\' || CAST(3 AS VARCHAR))) % 1000000) '
+            '/ 1000000.0 AS "Me_1" '
+            'FROM "DS_1"'
+        )
+        assert_sql_equal(result, expected_sql)
 
 
 # =============================================================================
@@ -1466,12 +1471,9 @@ class TestMembershipOperator:
 
         result = transpiler.visit_BinOp(membership_op)
 
-        # Should select identifiers and the specified component
-        assert '"Id_1"' in result
-        assert '"Id_2"' in result
-        assert '"Me_1"' in result
-        assert "SELECT" in result
-        assert "FROM" in result
+        # Full SQL: select identifiers and the specified component
+        expected_sql = 'SELECT "Id_1", "Id_2", "Me_1" FROM "DS_1"'
+        assert_sql_equal(result, expected_sql)
 
     def test_membership_extract_identifier(self):
         """Test extracting an identifier component."""
@@ -1485,9 +1487,9 @@ class TestMembershipOperator:
 
         result = transpiler.visit_BinOp(membership_op)
 
-        # Should include identifiers and the extracted component
-        assert '"Id_2"' in result
-        assert "SELECT" in result
+        # Full SQL: select identifiers and the extracted component
+        expected_sql = 'SELECT "Id_1", "Id_2", "Id_2" FROM "DS_1"'
+        assert_sql_equal(result, expected_sql)
 
 
 # =============================================================================
@@ -1499,15 +1501,22 @@ class TestTimeAggOperator:
     """Tests for TIME_AGG operator."""
 
     @pytest.mark.parametrize(
-        "period,expected_func",
+        "period,expected_sql",
         [
-            ("Y", "STRFTIME"),
-            ("Q", "QUARTER"),
-            ("M", "MONTH"),
-            ("D", "STRFTIME"),
+            ("Y", """STRFTIME("date_col", '%Y')"""),
+            (
+                "Q",
+                """(STRFTIME("date_col", '%Y') || 'Q' || CAST(QUARTER("date_col") AS VARCHAR))""",
+            ),
+            (
+                "M",
+                """(STRFTIME("date_col", '%Y') || 'M' || """
+                """LPAD(CAST(MONTH("date_col") AS VARCHAR), 2, '0'))""",
+            ),
+            ("D", """STRFTIME("date_col", '%Y-%m-%d')"""),
         ],
     )
-    def test_time_agg_scalar(self, period: str, expected_func: str):
+    def test_time_agg_scalar(self, period: str, expected_sql: str):
         """Test TIME_AGG with scalar date."""
         transpiler = create_transpiler()
 
@@ -1519,12 +1528,11 @@ class TestTimeAggOperator:
 
         result = transpiler.visit_TimeAggregation(time_agg_op)
 
-        # Should use appropriate DuckDB function
-        assert expected_func in result.upper()
-        assert "date_col" in result
+        # Full SQL verification
+        assert_sql_equal(result, expected_sql)
 
     def test_time_agg_year(self):
-        """Test TIME_AGG to year period."""
+        """Test TIME_AGG to year period with full SQL."""
         transpiler = create_transpiler()
 
         date_col = VarID(**make_ast_node(value="my_date"))
@@ -1534,13 +1542,11 @@ class TestTimeAggOperator:
 
         result = transpiler.visit_TimeAggregation(time_agg_op)
 
-        # Year extraction: STRFTIME(col, '%Y')
-        assert "STRFTIME" in result
-        assert "'%Y'" in result
-        assert "my_date" in result
+        expected_sql = """STRFTIME("my_date", '%Y')"""
+        assert_sql_equal(result, expected_sql)
 
     def test_time_agg_quarter(self):
-        """Test TIME_AGG to quarter period."""
+        """Test TIME_AGG to quarter period with full SQL."""
         transpiler = create_transpiler()
 
         date_col = VarID(**make_ast_node(value="my_date"))
@@ -1550,12 +1556,13 @@ class TestTimeAggOperator:
 
         result = transpiler.visit_TimeAggregation(time_agg_op)
 
-        # Quarter: year || 'Q' || quarter
-        assert "QUARTER" in result
-        assert "'Q'" in result
+        expected_sql = (
+            """(STRFTIME("my_date", '%Y') || 'Q' || CAST(QUARTER("my_date") AS VARCHAR))"""
+        )
+        assert_sql_equal(result, expected_sql)
 
     def test_time_agg_month(self):
-        """Test TIME_AGG to month period."""
+        """Test TIME_AGG to month period with full SQL."""
         transpiler = create_transpiler()
 
         date_col = VarID(**make_ast_node(value="my_date"))
@@ -1565,13 +1572,14 @@ class TestTimeAggOperator:
 
         result = transpiler.visit_TimeAggregation(time_agg_op)
 
-        # Month: year || 'M' || month (padded)
-        assert "MONTH" in result
-        assert "'M'" in result
-        assert "LPAD" in result
+        expected_sql = (
+            """(STRFTIME("my_date", '%Y') || 'M' || """
+            """LPAD(CAST(MONTH("my_date") AS VARCHAR), 2, '0'))"""
+        )
+        assert_sql_equal(result, expected_sql)
 
     def test_time_agg_semester(self):
-        """Test TIME_AGG to semester period."""
+        """Test TIME_AGG to semester period with full SQL."""
         transpiler = create_transpiler()
 
         date_col = VarID(**make_ast_node(value="my_date"))
@@ -1581,7 +1589,8 @@ class TestTimeAggOperator:
 
         result = transpiler.visit_TimeAggregation(time_agg_op)
 
-        # Semester: year || 'S' || ceil(month/6)
-        assert "'S'" in result
-        assert "CEIL" in result
-        assert "6" in result
+        expected_sql = (
+            """(STRFTIME("my_date", '%Y') || 'S' || """
+            """CAST(CEIL(MONTH("my_date") / 6.0) AS INTEGER))"""
+        )
+        assert_sql_equal(result, expected_sql)
