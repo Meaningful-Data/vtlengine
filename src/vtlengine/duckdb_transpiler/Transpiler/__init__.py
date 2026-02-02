@@ -844,10 +844,9 @@ class SQLTranspiler(ASTTemplate):
                     [f'({scalar_sql} {sql_op} "{m}") AS "{m}"' for m in measure_names]
                 )
 
-        dataset_sql = self._get_dataset_sql(dataset_node)
-        from_clause = self._simplify_from_clause(dataset_sql)
+        ds_sql = self._get_dataset_sql(dataset_node, wrap_simple=False)
 
-        return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
+        return f"SELECT {id_select}, {measure_select} FROM {ds_sql}"
 
     def _visit_datediff(self, node: AST.BinOp, left_type: str, right_type: str) -> str:
         """
