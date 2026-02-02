@@ -201,6 +201,20 @@ def conn_with_extract():
     return connection
 
 
+@pytest.fixture
+def conn_with_ops():
+    """Create DuckDB connection with operation functions loaded."""
+    connection = duckdb.connect(":memory:")
+    load_sql_files(
+        connection,
+        "types.sql",
+        "functions_period_parse.sql",
+        "functions_period_format.sql",
+        "functions_period_ops.sql",
+    )
+    return connection
+
+
 class TestPeriodExtract:
     """Tests for TimePeriod extraction functions."""
 
@@ -242,3 +256,75 @@ class TestPeriodExtract:
         assert result[0] is None
         assert result[1] is None
         assert result[2] is None
+
+
+class TestPeriodShift:
+    """Tests for vtl_period_shift function."""
+
+    @pytest.mark.parametrize(
+        "input_str,shift,expected_output",
+        [
+            # Forward shifts
+            ("2022-Q1", 1, "2022-Q2"),
+            ("2022-Q4", 1, "2023-Q1"),
+            ("2022-M06", 3, "2022-M09"),
+            ("2022-M11", 2, "2023-M01"),
+            ("2022", 1, "2023"),
+            # Backward shifts
+            ("2022-Q2", -1, "2022-Q1"),
+            ("2022-Q1", -1, "2021-Q4"),
+            ("2022-M03", -3, "2021-M12"),
+            ("2022", -2, "2020"),
+            # Zero shift
+            ("2022-Q3", 0, "2022-Q3"),
+        ],
+    )
+    def test_period_shift(self, conn_with_ops, input_str, shift, expected_output):
+        """Test shifting TimePeriod by N periods."""
+        result = conn_with_ops.execute(f"""
+            SELECT vtl_period_to_string(vtl_period_shift(vtl_period_parse('{input_str}'), {shift}))
+        """).fetchone()[0]
+        assert result == expected_output
+
+    def test_period_shift_null(self, conn_with_ops):
+        """Test shifting NULL returns NULL."""
+        # Use table-based approach to test NULL handling, as literal NULLs in macros
+        # have different expansion behavior
+        conn_with_ops.execute(
+            "CREATE TEMP TABLE null_period AS SELECT NULL::vtl_time_period AS period"
+        )
+        result = conn_with_ops.execute(
+            "SELECT vtl_period_shift(period, 1) FROM null_period"
+        ).fetchone()[0]
+        assert result is None
+
+
+class TestPeriodDiff:
+    """Tests for vtl_period_diff function."""
+
+    @pytest.mark.parametrize(
+        "a,b,expected_diff",
+        [
+            # Same period
+            ("2022-Q1", "2022-Q1", 0),
+            # Adjacent quarters
+            ("2022-Q1", "2022-Q2", 91),  # Q1 ends March 31, Q2 ends June 30
+            # Different years
+            ("2021", "2022", 365),  # Full year difference
+            # Months
+            ("2022-M01", "2022-M02", 28),  # Jan 31 to Feb 28
+        ],
+    )
+    def test_period_diff(self, conn_with_ops, a, b, expected_diff):
+        """Test difference in days between two TimePeriods."""
+        result = conn_with_ops.execute(f"""
+            SELECT vtl_period_diff(vtl_period_parse('{a}'), vtl_period_parse('{b}'))
+        """).fetchone()[0]
+        assert result == expected_diff
+
+    def test_period_diff_null(self, conn_with_ops):
+        """Test diff with NULL returns NULL."""
+        result = conn_with_ops.execute(
+            "SELECT vtl_period_diff(vtl_period_parse('2022-Q1'), NULL)"
+        ).fetchone()[0]
+        assert result is None
