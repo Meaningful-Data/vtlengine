@@ -420,6 +420,46 @@ CREATE OR REPLACE MACRO vtl_interval_ne(a, b) AS (
     END
 );
 
+-- TimeInterval less than (compares by start_date, then end_date)
+CREATE OR REPLACE MACRO vtl_interval_lt(a, b) AS (
+    CASE
+        WHEN a IS NULL OR b IS NULL THEN NULL
+        WHEN a.start_date < b.start_date THEN TRUE
+        WHEN a.start_date > b.start_date THEN FALSE
+        ELSE a.end_date < b.end_date
+    END
+);
+
+-- TimeInterval less than or equal
+CREATE OR REPLACE MACRO vtl_interval_le(a, b) AS (
+    CASE
+        WHEN a IS NULL OR b IS NULL THEN NULL
+        WHEN a.start_date < b.start_date THEN TRUE
+        WHEN a.start_date > b.start_date THEN FALSE
+        ELSE a.end_date <= b.end_date
+    END
+);
+
+-- TimeInterval greater than (compares by start_date, then end_date)
+CREATE OR REPLACE MACRO vtl_interval_gt(a, b) AS (
+    CASE
+        WHEN a IS NULL OR b IS NULL THEN NULL
+        WHEN a.start_date > b.start_date THEN TRUE
+        WHEN a.start_date < b.start_date THEN FALSE
+        ELSE a.end_date > b.end_date
+    END
+);
+
+-- TimeInterval greater than or equal
+CREATE OR REPLACE MACRO vtl_interval_ge(a, b) AS (
+    CASE
+        WHEN a IS NULL OR b IS NULL THEN NULL
+        WHEN a.start_date > b.start_date THEN TRUE
+        WHEN a.start_date < b.start_date THEN FALSE
+        ELSE a.end_date >= b.end_date
+    END
+);
+
 -- Get interval length in days
 CREATE OR REPLACE MACRO vtl_interval_days(i) AS (
     CASE
