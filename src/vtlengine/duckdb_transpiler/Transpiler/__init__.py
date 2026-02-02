@@ -3068,37 +3068,6 @@ class SQLTranspiler(ASTTemplate):
         # Otherwise, transpile the node
         return self.visit(node)
 
-    def _get_table_reference(self, node: AST.AST) -> str:
-        """
-        Get a simple table reference if the node is a direct VarID reference.
-        Returns just '"table_name"' for simple references.
-        """
-        if isinstance(node, AST.VarID):
-            return f'"{node.value}"'
-        return None
-
-    def _is_simple_table_ref(self, sql: str) -> bool:
-        """
-        Check if SQL is a simple quoted table reference (e.g., '"table_name"').
-        Used to avoid unnecessary nesting of subqueries.
-        """
-        sql = sql.strip()
-        return sql.startswith('"') and sql.endswith('"') and sql.count('"') == 2
-
-    def _is_simple_select_from(self, sql: str) -> bool:
-        """
-        Check if SQL is a simple SELECT * FROM "table" pattern.
-        Returns True if we can simplify by using just the table name.
-        """
-        sql = sql.strip().upper()
-        # Pattern: SELECT * FROM "tablename"
-        if sql.startswith("SELECT * FROM "):
-            remainder = sql[14:].strip()
-            # Check if it's just a quoted identifier
-            if remainder.startswith('"') and remainder.count('"') == 2:
-                return True
-        return False
-
     def _extract_table_from_select(self, sql: str) -> Optional[str]:
         """
         Extract the table name from a simple SELECT * FROM "table" statement.
