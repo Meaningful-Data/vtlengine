@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import duckdb
 import pandas as pd
 
+from vtlengine.duckdb_transpiler.sql import initialize_time_types
 from vtlengine.Model import Dataset, Scalar
 
 from ._io import load_datapoints_duckdb, register_dataframes, save_datapoints_duckdb
@@ -191,6 +192,9 @@ def execute_queries(
         Dict of result_name -> Dataset or Scalar
     """
     results: Dict[str, Union[Dataset, Scalar]] = {}
+
+    # Initialize VTL time type functions (idempotent - safe to call multiple times)
+    initialize_time_types(conn)
 
     # Ensure output folder exists if provided
     if output_folder:
