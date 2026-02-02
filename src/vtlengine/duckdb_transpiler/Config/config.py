@@ -2,7 +2,7 @@
 DuckDB Transpiler Configuration.
 
 Configuration values can be set via environment variables:
-- VTL_DECIMAL_PRECISION: Total number of digits for DECIMAL type (default: 12)
+- VTL_DECIMAL_PRECISION: Total number of digits for DECIMAL type (default: 18)
 - VTL_DECIMAL_SCALE: Number of decimal places for DECIMAL type (default: 6)
 - VTL_MEMORY_LIMIT: Max memory for DuckDB (e.g., "8GB", "80%") (default: "80%")
 - VTL_THREADS: Number of threads for DuckDB (default: system cores)
@@ -26,7 +26,7 @@ import psutil  # type: ignore[import-untyped]
 # Decimal Configuration
 # =============================================================================
 
-DECIMAL_PRECISION: int = int(os.getenv("VTL_DECIMAL_PRECISION", "12"))
+DECIMAL_PRECISION: int = int(os.getenv("VTL_DECIMAL_PRECISION", "18"))
 DECIMAL_SCALE: int = int(os.getenv("VTL_DECIMAL_SCALE", "6"))
 
 
