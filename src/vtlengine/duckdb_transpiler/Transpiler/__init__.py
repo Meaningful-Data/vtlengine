@@ -791,14 +791,21 @@ class SQLTranspiler(ASTTemplate):
                 [f'(a."{m}" {sql_op} b."{m}") AS "{m}"' for m in common_measures]
             )
 
-        # Get SQL for operands (may be subqueries)
-        left_sql = self._get_dataset_sql(left_node)
-        right_sql = self._get_dataset_sql(right_node)
+        # Get SQL for operands - use direct table refs for VarID, wrapped subqueries otherwise
+        if isinstance(left_node, AST.VarID):
+            left_sql = f'"{left_node.value}"'
+        else:
+            left_sql = f"({self.visit(left_node)})"
+
+        if isinstance(right_node, AST.VarID):
+            right_sql = f'"{right_node.value}"'
+        else:
+            right_sql = f"({self.visit(right_node)})"
 
         return f"""
                     SELECT {id_select}, {measure_select}
-                    FROM ({left_sql}) AS a
-                    INNER JOIN ({right_sql}) AS b ON {join_cond}
+                    FROM {left_sql} AS a
+                    INNER JOIN {right_sql} AS b ON {join_cond}
                 """
 
     def _binop_dataset_scalar(
@@ -844,7 +851,11 @@ class SQLTranspiler(ASTTemplate):
                     [f'({scalar_sql} {sql_op} "{m}") AS "{m}"' for m in measure_names]
                 )
 
-        ds_sql = self._get_dataset_sql(dataset_node, wrap_simple=False)
+        # Get SQL for dataset - use direct table ref for VarID, wrapped subquery otherwise
+        if isinstance(dataset_node, AST.VarID):
+            ds_sql = f'"{dataset_node.value}"'
+        else:
+            ds_sql = f"({self.visit(dataset_node)})"
 
         return f"SELECT {id_select}, {measure_select} FROM {ds_sql}"
 
@@ -2539,27 +2550,34 @@ class SQLTranspiler(ASTTemplate):
         if len(node.clauses) < 2:
             return ""
 
-        # First clause is the base - use _get_dataset_sql to ensure proper SELECT
+        def get_clause_sql(clause: AST.AST) -> str:
+            """Get SQL for a join clause - direct ref for VarID, wrapped subquery otherwise."""
+            if isinstance(clause, AST.VarID):
+                return f'"{clause.value}"'
+            else:
+                return f"({self.visit(clause)})"
+
+        # First clause is the base
         base = node.clauses[0]
-        base_sql = self._get_dataset_sql(base)
+        base_sql = get_clause_sql(base)
         base_name = self._get_dataset_name(base)
         base_ds = self.available_tables.get(base_name)
 
         # Join with remaining clauses
-        result_sql = f"({base_sql}) AS t0"
+        result_sql = f"{base_sql} AS t0"
 
         for i, clause in enumerate(node.clauses[1:], 1):
-            clause_sql = self._get_dataset_sql(clause)
+            clause_sql = get_clause_sql(clause)
             clause_name = self._get_dataset_name(clause)
             clause_ds = self.available_tables.get(clause_name)
 
             if node.using and op != CROSS_JOIN:
                 # Explicit USING clause provided
                 using_cols = ", ".join([f'"{c}"' for c in node.using])
-                result_sql += f"\n{join_type} ({clause_sql}) AS t{i} USING ({using_cols})"
+                result_sql += f"\n{join_type} {clause_sql} AS t{i} USING ({using_cols})"
             elif op == CROSS_JOIN:
                 # CROSS JOIN doesn't need ON clause
-                result_sql += f"\n{join_type} ({clause_sql}) AS t{i}"
+                result_sql += f"\n{join_type} {clause_sql} AS t{i}"
             elif base_ds and clause_ds:
                 # Find common identifiers for implicit join
                 base_ids = set(base_ds.get_identifiers_names())
@@ -2569,13 +2587,13 @@ class SQLTranspiler(ASTTemplate):
                 if common_ids:
                     # Use USING for common identifiers
                     using_cols = ", ".join([f'"{c}"' for c in common_ids])
-                    result_sql += f"\n{join_type} ({clause_sql}) AS t{i} USING ({using_cols})"
+                    result_sql += f"\n{join_type} {clause_sql} AS t{i} USING ({using_cols})"
                 else:
                     # No common identifiers - should be a cross join
-                    result_sql += f"\nCROSS JOIN ({clause_sql}) AS t{i}"
+                    result_sql += f"\nCROSS JOIN {clause_sql} AS t{i}"
             else:
                 # Fallback: no ON clause (will fail for most joins)
-                result_sql += f"\n{join_type} ({clause_sql}) AS t{i}"
+                result_sql += f"\n{join_type} {clause_sql} AS t{i}"
 
         return f"SELECT * FROM {result_sql}"
 
@@ -3085,6 +3103,8 @@ class SQLTranspiler(ASTTemplate):
         """
         Extract the table name from a simple SELECT * FROM "table" statement.
         Returns the quoted table name or None if not a simple select.
+
+        This only matches truly simple selects - not JOINs, WHERE, or other clauses.
         """
         sql_stripped = sql.strip()
         sql_upper = sql_stripped.upper()
@@ -3093,10 +3113,55 @@ class SQLTranspiler(ASTTemplate):
             if remainder.startswith('"') and '"' in remainder[1:]:
                 end_quote = remainder.index('"', 1) + 1
                 table_name = remainder[:end_quote]
-                # Make sure there's nothing else after the table name
+                # Make sure there's nothing else after the table name (or just an alias)
                 rest = remainder[end_quote:].strip()
-                if not rest or rest.upper().startswith("AS "):
+                rest_upper = rest.upper()
+
+                # Accept empty rest (no alias)
+                if not rest:
                     return table_name
+
+                # Accept AS alias, but only if there's nothing complex after it
+                if rest_upper.startswith("AS "):
+                    # Skip past the alias
+                    after_as = rest[3:].strip()
+                    # Skip the alias identifier (may be quoted or unquoted)
+                    if after_as.startswith('"'):
+                        # Quoted alias
+                        if '"' in after_as[1:]:
+                            alias_end = after_as.index('"', 1) + 1
+                            after_alias = after_as[alias_end:].strip().upper()
+                        else:
+                            return None  # Malformed
+                    else:
+                        # Unquoted alias - ends at whitespace or end
+                        alias_parts = after_as.split()
+                        after_alias = (
+                            " ".join(alias_parts[1:]).upper() if len(alias_parts) > 1 else ""
+                        )
+
+                    # Reject if there's a JOIN or other complex clause after alias
+                    complex_keywords = [
+                        "JOIN",
+                        "INNER",
+                        "LEFT",
+                        "RIGHT",
+                        "FULL",
+                        "CROSS",
+                        "WHERE",
+                        "GROUP",
+                        "ORDER",
+                        "HAVING",
+                        "UNION",
+                        "INTERSECT",
+                    ]
+                    if any(kw in after_alias for kw in complex_keywords):
+                        return None
+
+                    # Accept if nothing after alias or non-complex content
+                    if not after_alias:
+                        return table_name
+
         return None
 
     def _simplify_from_clause(self, subquery_sql: str) -> str:

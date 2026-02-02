@@ -479,7 +479,7 @@ class TestCheckOperator:
         assert_sql_contains(
             sql,
             [
-                "SELECT *",
+                "SELECT t.*",
                 "'E001' AS errorcode",
                 "1 AS errorlevel",
                 "WHERE",
@@ -517,7 +517,7 @@ class TestBinaryOperations:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = '''SELECT a."Id_1", (a."Me_1" + b."Me_1") AS "Me_1" FROM (SELECT * FROM "DS_1") AS a INNER JOIN (SELECT * FROM "DS_2") AS b ON a."Id_1" = b."Id_1"'''
+        expected_sql = '''SELECT a."Id_1", (a."Me_1" + b."Me_1") AS "Me_1" FROM "DS_1" AS a INNER JOIN "DS_2" AS b ON a."Id_1" = b."Id_1"'''
         assert_sql_equal(sql, expected_sql)
 
     @pytest.mark.parametrize(
