@@ -562,6 +562,19 @@ class SQLTranspiler(ASTTemplate):
         # Scalar-Scalar or Component-Component
         left_sql = self.visit(node.left)
         right_sql = self.visit(node.right)
+
+        # Check if this is a TimePeriod comparison (requires special handling)
+        if op in (EQ, NEQ, GT, LT, GTE, LTE) and self._is_time_period_comparison(
+            node.left, node.right
+        ):
+            return self._visit_time_period_comparison(left_sql, right_sql, sql_op)
+
+        # Check if this is a TimeInterval comparison (requires special handling)
+        if op in (EQ, NEQ, GT, LT, GTE, LTE) and self._is_time_interval_comparison(
+            node.left, node.right
+        ):
+            return self._visit_time_interval_comparison(left_sql, right_sql, sql_op)
+
         return f"({left_sql} {sql_op} {right_sql})"
 
     def _visit_in_op(self, node: AST.BinOp, is_not: bool) -> str:
@@ -870,16 +883,15 @@ class SQLTranspiler(ASTTemplate):
                 FROM ({dataset_sql}) AS t
             """
         elif time_comp and time_comp.data_type == TimePeriod:
-            # TimePeriod shifting is complex - use a simplified approach
-            # This shifts the year component only for annual periods
-            time_case = f"""CASE
-                        WHEN "{time_id}" ~ '^\\d{{4}}$'
-                        THEN CAST(CAST("{time_id}" AS INTEGER) + {shift_val} AS VARCHAR)
-                        ELSE "{time_id}"
-                    END AS "{time_id}\""""
+            # Use vtl_period_shift for proper period arithmetic on all period types
+            # Parse VARCHAR → STRUCT, shift, format back → VARCHAR
+            time_expr = (
+                f"vtl_period_to_string(vtl_period_shift("
+                f'vtl_period_parse("{time_id}"), {shift_val})) AS "{time_id}"'
+            )
             from_clause = self._simplify_from_clause(dataset_sql)
             return f"""
-                SELECT {other_id_select}{time_case}, {measure_select}
+                SELECT {other_id_select}{time_expr}, {measure_select}
                 FROM {from_clause}
             """
         else:
@@ -1030,29 +1042,43 @@ class SQLTranspiler(ASTTemplate):
         """
         Generate SQL for time extraction operators (year, month, dayofmonth, dayofyear).
 
-        DuckDB has built-in functions for these:
-        - YEAR(date) or EXTRACT(YEAR FROM date)
-        - MONTH(date) or EXTRACT(MONTH FROM date)
-        - DAY(date) or EXTRACT(DAY FROM date)
-        - DAYOFYEAR(date) or EXTRACT(DOY FROM date)
+        For Date type, uses DuckDB built-in functions: YEAR(), MONTH(), DAY(), DAYOFYEAR()
+        For TimePeriod type, uses vtl_period_year() for YEAR extraction.
         """
         sql_func = SQL_UNARY_OPS.get(op, op.upper())
 
         if operand_type == OperandType.DATASET:
-            return self._time_extraction_dataset(operand, sql_func)
+            return self._time_extraction_dataset(operand, sql_func, op)
+
+        # Check if this is a TimePeriod component - use vtl_period_year
+        if op == YEAR and self._is_time_period_operand(operand):
+            operand_sql = self.visit(operand)
+            return f"vtl_period_year(vtl_period_parse({operand_sql}))"
 
         operand_sql = self.visit(operand)
         return f"{sql_func}({operand_sql})"
 
-    def _time_extraction_dataset(self, dataset_node: AST.AST, sql_func: str) -> str:
+    def _time_extraction_dataset(self, dataset_node: AST.AST, sql_func: str, op: str) -> str:
         """Generate SQL for dataset time extraction operation."""
+        from vtlengine.DataTypes import TimePeriod
+
         ds_name = self._get_dataset_name(dataset_node)
         ds = self.available_tables[ds_name]
 
         id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
-        # Apply time extraction to time-typed measures
-        measure_select = ", ".join([f'{sql_func}("{m}") AS "{m}"' for m in ds.get_measures_names()])
 
+        # Apply time extraction to time-typed measures
+        # Use vtl_period_year for TimePeriod columns when extracting YEAR
+        measure_parts = []
+        for m_name in ds.get_measures_names():
+            comp = ds.components.get(m_name)
+            if comp and comp.data_type == TimePeriod and op == YEAR:
+                # Use vtl_period_year for TimePeriod YEAR extraction
+                measure_parts.append(f'vtl_period_year(vtl_period_parse("{m_name}")) AS "{m_name}"')
+            else:
+                measure_parts.append(f'{sql_func}("{m_name}") AS "{m_name}"')
+
+        measure_select = ", ".join(measure_parts)
         dataset_sql = self._get_dataset_sql(dataset_node)
         from_clause = self._simplify_from_clause(dataset_sql)
         return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
@@ -1151,14 +1177,117 @@ class SQLTranspiler(ASTTemplate):
 
         return time_id, other_ids
 
+    def _is_time_period_operand(self, node: AST.AST) -> bool:
+        """
+        Check if a node represents a TimePeriod component.
+
+        Only works when in_clause is True and current_dataset is set.
+        """
+        from vtlengine.DataTypes import TimePeriod
+
+        if not self.in_clause or not self.current_dataset:
+            return False
+
+        # Check if it's a VarID pointing to a TimePeriod component
+        if isinstance(node, AST.VarID):
+            comp = self.current_dataset.components.get(node.value)
+            return comp is not None and comp.data_type == TimePeriod
+
+        return False
+
+    def _is_time_interval_operand(self, node: AST.AST) -> bool:
+        """
+        Check if a node represents a TimeInterval component.
+
+        Only works when in_clause is True and current_dataset is set.
+        """
+        from vtlengine.DataTypes import TimeInterval
+
+        if not self.in_clause or not self.current_dataset:
+            return False
+
+        # Check if it's a VarID pointing to a TimeInterval component
+        if isinstance(node, AST.VarID):
+            comp = self.current_dataset.components.get(node.value)
+            return comp is not None and comp.data_type == TimeInterval
+
+        return False
+
+    def _is_time_period_comparison(self, left: AST.AST, right: AST.AST) -> bool:
+        """
+        Check if this is a comparison between TimePeriod operands.
+
+        Returns True if at least one operand is a TimePeriod component
+        and the other is either a TimePeriod component or a string constant.
+        """
+        left_is_tp = self._is_time_period_operand(left)
+        right_is_tp = self._is_time_period_operand(right)
+
+        # If one is TimePeriod, the comparison should use TimePeriod logic
+        return left_is_tp or right_is_tp
+
+    def _visit_time_period_comparison(self, left_sql: str, right_sql: str, sql_op: str) -> str:
+        """
+        Generate SQL for TimePeriod comparison.
+
+        Uses vtl_period_* functions to compare based on date boundaries.
+        """
+        comparison_funcs = {
+            "<": "vtl_period_lt",
+            "<=": "vtl_period_le",
+            ">": "vtl_period_gt",
+            ">=": "vtl_period_ge",
+            "=": "vtl_period_eq",
+            "<>": "vtl_period_ne",
+        }
+
+        func = comparison_funcs.get(sql_op)
+        if func:
+            return f"{func}(vtl_period_parse({left_sql}), vtl_period_parse({right_sql}))"
+
+        # Fallback to standard comparison
+        return f"({left_sql} {sql_op} {right_sql})"
+
+    def _is_time_interval_comparison(self, left: AST.AST, right: AST.AST) -> bool:
+        """
+        Check if this is a comparison between TimeInterval operands.
+
+        Returns True if at least one operand is a TimeInterval component.
+        """
+        left_is_ti = self._is_time_interval_operand(left)
+        right_is_ti = self._is_time_interval_operand(right)
+
+        # If one is TimeInterval, the comparison should use TimeInterval logic
+        return left_is_ti or right_is_ti
+
+    def _visit_time_interval_comparison(self, left_sql: str, right_sql: str, sql_op: str) -> str:
+        """
+        Generate SQL for TimeInterval comparison.
+
+        Uses vtl_interval_* functions to compare based on start dates.
+        """
+        comparison_funcs = {
+            "<": "vtl_interval_lt",
+            "<=": "vtl_interval_le",
+            ">": "vtl_interval_gt",
+            ">=": "vtl_interval_ge",
+            "=": "vtl_interval_eq",
+            "<>": "vtl_interval_ne",
+        }
+
+        func = comparison_funcs.get(sql_op)
+        if func:
+            return f"{func}(vtl_interval_parse({left_sql}), vtl_interval_parse({right_sql}))"
+
+        # Fallback to standard comparison
+        return f"({left_sql} {sql_op} {right_sql})"
+
     def _visit_period_indicator(self, operand: AST.AST, operand_type: str) -> str:
         """
         Generate SQL for period_indicator (extracts period indicator from TimePeriod).
 
-        TimePeriod format: "YYYY-Pn" where P is the period indicator (A, S, Q, M, W, D)
-        We need to extract the period indicator character.
-
-        DuckDB: REGEXP_EXTRACT(value, '-([ASQMWD])', 1)
+        Uses vtl_period_indicator for proper extraction from any TimePeriod format.
+        Handles formats: YYYY, YYYYA, YYYYQ1, YYYY-Q1, YYYYM01, YYYY-M01, etc.
         """
         if operand_type == OperandType.DATASET:
             ds_name = self._get_dataset_name(operand)
@@ -1169,13 +1298,13 @@ class SQLTranspiler(ASTTemplate):
             time_id, _ = self._get_time_and_other_ids(ds)
             id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
 
-            # Extract period indicator and return as duration_var measure
-            period_extract = f"REGEXP_EXTRACT(\"{time_id}\", '-([ASQMWD])', 1)"
+            # Extract period indicator using vtl_period_indicator function
+            period_extract = f'vtl_period_indicator(vtl_period_parse("{time_id}"))'
             from_clause = self._simplify_from_clause(dataset_sql)
             return f'SELECT {id_select}, {period_extract} AS "duration_var" FROM {from_clause}'
 
         operand_sql = self.visit(operand)
-        return f"REGEXP_EXTRACT({operand_sql}, '-([ASQMWD])', 1)"
+        return f"vtl_period_indicator(vtl_period_parse({operand_sql}))"
 
     def _visit_duration_conversion(self, operand: AST.AST, operand_type: str, op: str) -> str:
         """
@@ -2256,15 +2385,18 @@ class SQLTranspiler(ASTTemplate):
         for m_name in ds.get_measures_names():
             comp = ds.components.get(m_name)
             if comp and comp.data_type.__name__ in time_types:
-                # Check for TimePeriod - not supported
+                # TimePeriod: use vtl_time_agg for proper period aggregation
                 if comp.data_type.__name__ == "TimePeriod":
-                    raise NotImplementedError(
-                        f"TIME_AGG with TimePeriod input is not supported in DuckDB transpiler. "
-                        f"Component: {m_name}"
+                    # Parse VARCHAR → STRUCT, aggregate to target, format back → VARCHAR
+                    col_expr = (
+                        f"vtl_period_to_string(vtl_time_agg("
+                        f"vtl_period_parse(\"{m_name}\"), '{period_to}'))"
                     )
-                # Apply time aggregation template
-                col_expr = template.format(col=f'"{m_name}"')
-                measure_parts.append(f'{col_expr} AS "{m_name}"')
+                    measure_parts.append(f'{col_expr} AS "{m_name}"')
+                else:
+                    # Date/TimeInterval: use template-based conversion
+                    col_expr = template.format(col=f'"{m_name}"')
+                    measure_parts.append(f'{col_expr} AS "{m_name}"')
             else:
                 # Non-time measures pass through unchanged
                 measure_parts.append(f'"{m_name}"')
