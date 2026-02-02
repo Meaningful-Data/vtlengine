@@ -777,9 +777,19 @@ class SQLTranspiler(ASTTemplate):
         right_measures = set(right_ds.get_measures_names())
         common_measures = sorted(left_measures.intersection(right_measures))
 
-        measure_select = ", ".join(
-            [f'(a."{m}" {sql_op} b."{m}") AS "{m}"' for m in common_measures]
-        )
+        # Check if this is a comparison operation that should rename to bool_var
+        comparison_ops = {"=", "<>", ">", "<", ">=", "<="}
+        is_comparison = sql_op in comparison_ops
+        is_mono_measure = len(common_measures) == 1
+
+        if is_comparison and is_mono_measure:
+            # Rename single measure to bool_var for comparisons
+            m = common_measures[0]
+            measure_select = f'(a."{m}" {sql_op} b."{m}") AS "bool_var"'
+        else:
+            measure_select = ", ".join(
+                [f'(a."{m}" {sql_op} b."{m}") AS "{m}"' for m in common_measures]
+            )
 
         # Get SQL for operands (may be subqueries)
         left_sql = self._get_dataset_sql(left_node)
@@ -810,15 +820,29 @@ class SQLTranspiler(ASTTemplate):
         # SELECT identifiers
         id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
 
+        # Check if this is a comparison operation that should rename to bool_var
+        comparison_ops = {"=", "<>", ">", "<", ">=", "<="}
+        is_comparison = sql_op in comparison_ops
+        is_mono_measure = len(list(ds.get_measures_names())) == 1
+
         # SELECT measures with operation
+        measure_names = list(ds.get_measures_names())
         if left:
-            measure_select = ", ".join(
-                [f'("{m}" {sql_op} {scalar_sql}) AS "{m}"' for m in ds.get_measures_names()]
-            )
+            if is_comparison and is_mono_measure:
+                # Rename single measure to bool_var for comparisons
+                measure_select = f'("{measure_names[0]}" {sql_op} {scalar_sql}) AS "bool_var"'
+            else:
+                measure_select = ", ".join(
+                    [f'("{m}" {sql_op} {scalar_sql}) AS "{m}"' for m in measure_names]
+                )
         else:
-            measure_select = ", ".join(
-                [f'({scalar_sql} {sql_op} "{m}") AS "{m}"' for m in ds.get_measures_names()]
-            )
+            if is_comparison and is_mono_measure:
+                # Rename single measure to bool_var for comparisons
+                measure_select = f'({scalar_sql} {sql_op} "{measure_names[0]}") AS "bool_var"'
+            else:
+                measure_select = ", ".join(
+                    [f'({scalar_sql} {sql_op} "{m}") AS "{m}"' for m in measure_names]
+                )
 
         dataset_sql = self._get_dataset_sql(dataset_node)
         from_clause = self._simplify_from_clause(dataset_sql)
@@ -2032,9 +2056,8 @@ class SQLTranspiler(ASTTemplate):
                 group_op = agg_node.grouping_op.lower()
             if hasattr(agg_node, "grouping") and agg_node.grouping:
                 for g in agg_node.grouping:
-                    if isinstance(g, (AST.VarID, AST.Identifier)):
-                        if g.value not in group_by_cols:
-                            group_by_cols.append(g.value)
+                    if isinstance(g, (AST.VarID, AST.Identifier)) and g.value not in group_by_cols:
+                        group_by_cols.append(g.value)
 
             # Extract having clause if present
             if hasattr(agg_node, "having_clause") and agg_node.having_clause and not having_clause:
@@ -2297,7 +2320,23 @@ class SQLTranspiler(ASTTemplate):
 
                 # Only include identifiers if grouping is specified
                 if group_by:
-                    id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
+                    # Use only the columns specified in GROUP BY, not all identifiers
+                    if node.grouping_op == "group by":
+                        # Extract column names from grouping nodes
+                        group_col_names = [
+                            g.value if isinstance(g, (AST.VarID, AST.Identifier)) else str(g)
+                            for g in node.grouping
+                        ]
+                        id_select = ", ".join([f'"{k}"' for k in group_col_names])
+                    else:
+                        # For "group except", use all identifiers except the excluded ones
+                        except_cols = {
+                            g.value if isinstance(g, (AST.VarID, AST.Identifier)) else str(g)
+                            for g in node.grouping
+                        }
+                        id_select = ", ".join(
+                            [f'"{k}"' for k in ds.get_identifiers_names() if k not in except_cols]
+                        )
                     return f"""
                         SELECT {id_select}, {measure_select}
                         FROM ({dataset_sql}) AS t
@@ -2554,6 +2593,74 @@ class SQLTranspiler(ASTTemplate):
     # Validation Operations
     # =========================================================================
 
+    def _get_measure_name_from_expression(self, expr: AST.AST) -> Optional[str]:
+        """
+        Extract the measure column name from an expression for use in check operations.
+
+        When a validation expression like `agg1 + agg2 < 1000` is evaluated,
+        comparison operations rename single measures to 'bool_var'.
+        This helper traces through the expression to find that measure name.
+        """
+        if isinstance(expr, AST.VarID):
+            # Direct dataset reference
+            ds = self.available_tables.get(expr.value)
+            if ds:
+                measures = list(ds.get_measures_names())
+                if measures:
+                    return measures[0]
+        elif isinstance(expr, AST.BinOp):
+            # Check if this is a comparison operation
+            op = expr.op.lower() if isinstance(expr.op, str) else str(expr.op)
+            comparison_ops = {EQ, NEQ, GT, GTE, LT, LTE, "=", "<>", ">", ">=", "<", "<="}
+            if op in comparison_ops:
+                # Comparisons on mono-measure datasets produce bool_var
+                return "bool_var"
+            # For non-comparison binary operations, get measure from operands
+            left_measure = self._get_measure_name_from_expression(expr.left)
+            if left_measure:
+                return left_measure
+            return self._get_measure_name_from_expression(expr.right)
+        elif isinstance(expr, AST.ParFunction):
+            # Parenthesized expression - look inside
+            return self._get_measure_name_from_expression(expr.operand)
+        elif isinstance(expr, AST.Aggregation):
+            # Aggregation - get measure from operand
+            if expr.operand:
+                return self._get_measure_name_from_expression(expr.operand)
+        return None
+
+    def _get_identifiers_from_expression(self, expr: AST.AST) -> List[str]:
+        """
+        Extract identifier column names from an expression.
+
+        Traces through the expression to find the underlying dataset
+        and returns its identifier column names.
+        """
+        if isinstance(expr, AST.VarID):
+            # Direct dataset reference
+            ds = self.available_tables.get(expr.value)
+            if ds:
+                return list(ds.get_identifiers_names())
+        elif isinstance(expr, AST.BinOp):
+            # For binary operations, get identifiers from left operand
+            left_ids = self._get_identifiers_from_expression(expr.left)
+            if left_ids:
+                return left_ids
+            return self._get_identifiers_from_expression(expr.right)
+        elif isinstance(expr, AST.ParFunction):
+            # Parenthesized expression - look inside
+            return self._get_identifiers_from_expression(expr.operand)
+        elif isinstance(expr, AST.Aggregation):
+            # Aggregation - identifiers come from grouping, not operand
+            if expr.grouping and expr.grouping_op == "group by":
+                return [
+                    g.value if isinstance(g, (AST.VarID, AST.Identifier)) else str(g)
+                    for g in expr.grouping
+                ]
+            elif expr.operand:
+                return self._get_identifiers_from_expression(expr.operand)
+        return []
+
     def visit_Validation(self, node: AST.Validation) -> str:
         """
         Process CHECK validation operation.
@@ -2582,6 +2689,11 @@ class SQLTranspiler(ASTTemplate):
                     measures = ds.get_measures_names()
                     if measures:
                         bool_col = measures[0]
+        else:
+            # For complex expressions (like comparisons), extract measure name
+            measure_name = self._get_measure_name_from_expression(node.validation)
+            if measure_name:
+                bool_col = measure_name
 
         # Get error code and level
         error_code = node.error_code if node.error_code else "NULL"
@@ -2591,30 +2703,64 @@ class SQLTranspiler(ASTTemplate):
         error_level = node.error_level if node.error_level is not None else "NULL"
 
         # Handle imbalance if present
-        imbalance_sql = ""
+        # Imbalance can be a dataset expression - we need to join it properly
+        imbalance_join = ""
+        imbalance_select = ""
         if node.imbalance:
             imbalance_expr = self.visit(node.imbalance)
-            imbalance_sql = f", ({imbalance_expr}) AS imbalance"
+            imbalance_type = self._get_operand_type(node.imbalance)
+
+            if imbalance_type == OperandType.DATASET:
+                # Imbalance is a dataset - we need to JOIN it
+                # Get the measure name from the imbalance expression
+                imbalance_measure = self._get_measure_name_from_expression(node.imbalance)
+                if not imbalance_measure:
+                    imbalance_measure = "IMPORTO"  # Default fallback
+
+                # Get identifiers from the validation expression for JOIN
+                id_cols = self._get_identifiers_from_expression(node.validation)
+                if id_cols:
+                    join_cond = " AND ".join([f't."{c}" = imb."{c}"' for c in id_cols])
+                    # Check if imbalance is a simple table reference (VarID) vs subquery
+                    if isinstance(node.imbalance, AST.VarID):
+                        # Simple table reference - don't wrap in parentheses
+                        imbalance_join = f"""
+                            LEFT JOIN "{node.imbalance.value}" AS imb ON {join_cond}
+                        """
+                    else:
+                        # Complex expression - wrap in parentheses as subquery
+                        imbalance_join = f"""
+                            LEFT JOIN ({imbalance_expr}) AS imb ON {join_cond}
+                        """
+                    imbalance_select = f', imb."{imbalance_measure}" AS imbalance'
+                else:
+                    # No identifiers found - use a cross join with scalar result
+                    imbalance_select = f", ({imbalance_expr}) AS imbalance"
+            else:
+                # Scalar imbalance - embed directly
+                imbalance_select = f", ({imbalance_expr}) AS imbalance"
 
         # Generate check result
         if node.invalid:
             # Return only invalid rows (where bool column is False)
             return f"""
-                SELECT *,
+                SELECT t.*,
                        {error_code} AS errorcode,
-                       {error_level} AS errorlevel{imbalance_sql}
+                       {error_level} AS errorlevel{imbalance_select}
                 FROM ({validation_sql}) AS t
-                WHERE "{bool_col}" = FALSE OR "{bool_col}" IS NULL
+                {imbalance_join}
+                WHERE t."{bool_col}" = FALSE OR t."{bool_col}" IS NULL
             """
         else:
             # Return all rows with validation info
             return f"""
-                SELECT *,
-                       CASE WHEN "{bool_col}" = FALSE OR "{bool_col}" IS NULL
+                SELECT t.*,
+                       CASE WHEN t."{bool_col}" = FALSE OR t."{bool_col}" IS NULL
                             THEN {error_code} ELSE NULL END AS errorcode,
-                       CASE WHEN "{bool_col}" = FALSE OR "{bool_col}" IS NULL
-                            THEN {error_level} ELSE NULL END AS errorlevel{imbalance_sql}
+                       CASE WHEN t."{bool_col}" = FALSE OR t."{bool_col}" IS NULL
+                            THEN {error_level} ELSE NULL END AS errorlevel{imbalance_select}
                 FROM ({validation_sql}) AS t
+                {imbalance_join}
             """
 
     def visit_DPValidation(self, node: AST.DPValidation) -> str:

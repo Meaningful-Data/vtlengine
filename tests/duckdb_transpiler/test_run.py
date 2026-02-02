@@ -1995,3 +1995,349 @@ class TestTimeAggOperator:
         assert result_df[result_df["Id_1"] == "B"]["Me_semester"].iloc[0] == "2024S1"
         assert result_df[result_df["Id_1"] == "C"]["Me_semester"].iloc[0] == "2024S2"
         assert result_df[result_df["Id_1"] == "D"]["Me_semester"].iloc[0] == "2024S2"
+
+
+# =============================================================================
+# Aggregation with GROUP BY Tests
+# =============================================================================
+
+
+class TestAggregationWithGroupBy:
+    """
+    Tests for aggregation operations with explicit GROUP BY clause.
+
+    These tests verify that when using aggregation with group by, only the specified
+    columns appear in the SELECT clause (not all identifiers from the original dataset).
+    This tests the fix for the "column must appear in GROUP BY clause" error.
+    """
+
+    def test_sum_with_single_group_by(self, temp_data_dir):
+        """
+        Test SUM aggregation grouped by a single column.
+
+        VTL: DS_r := sum(DS_1 group by Id_1);
+        """
+        vtl_script = "DS_r := sum(DS_1 group by Id_1);"
+
+        structure = create_dataset_structure(
+            "DS_1",
+            [("Id_1", "String"), ("Id_2", "String")],
+            [("Me_1", "Number", True)],
+        )
+
+        data_structures = create_data_structure([structure])
+        input_data = [
+            ["A", "X", 10],
+            ["A", "Y", 20],
+            ["B", "X", 30],
+            ["B", "Y", 40],
+        ]
+        input_df = pd.DataFrame(input_data, columns=["Id_1", "Id_2", "Me_1"])
+
+        results = execute_vtl_with_duckdb(vtl_script, data_structures, {"DS_1": input_df})
+
+        result_df = results["DS_r"].sort_values("Id_1").reset_index(drop=True)
+
+        # Verify structure: should have Id_1 and Me_1 only (Id_2 not in group by)
+        assert "Id_1" in result_df.columns
+        assert "Me_1" in result_df.columns
+        assert "Id_2" not in result_df.columns
+
+        # Verify values: A -> 10+20=30, B -> 30+40=70
+        assert len(result_df) == 2
+        assert result_df[result_df["Id_1"] == "A"]["Me_1"].iloc[0] == 30
+        assert result_df[result_df["Id_1"] == "B"]["Me_1"].iloc[0] == 70
+
+    def test_sum_with_multiple_group_by(self, temp_data_dir):
+        """
+        Test SUM aggregation grouped by multiple columns.
+
+        VTL: DS_r := sum(DS_1 group by Id_1, Id_3);
+        """
+        vtl_script = "DS_r := sum(DS_1 group by Id_1, Id_3);"
+
+        structure = create_dataset_structure(
+            "DS_1",
+            [("Id_1", "String"), ("Id_2", "String"), ("Id_3", "String")],
+            [("Me_1", "Number", True)],
+        )
+
+        data_structures = create_data_structure([structure])
+        input_data = [
+            ["A", "X", "P", 10],
+            ["A", "Y", "P", 20],
+            ["A", "X", "Q", 5],
+            ["B", "X", "P", 30],
+        ]
+        input_df = pd.DataFrame(input_data, columns=["Id_1", "Id_2", "Id_3", "Me_1"])
+
+        results = execute_vtl_with_duckdb(vtl_script, data_structures, {"DS_1": input_df})
+
+        result_df = results["DS_r"].sort_values(["Id_1", "Id_3"]).reset_index(drop=True)
+
+        # Verify structure: should have Id_1, Id_3, and Me_1 only (Id_2 not in group by)
+        assert "Id_1" in result_df.columns
+        assert "Id_3" in result_df.columns
+        assert "Me_1" in result_df.columns
+        assert "Id_2" not in result_df.columns
+
+        # Verify values
+        assert len(result_df) == 3
+        # A, P -> 10+20=30
+        assert (
+            result_df[(result_df["Id_1"] == "A") & (result_df["Id_3"] == "P")]["Me_1"].iloc[0] == 30
+        )
+        # A, Q -> 5
+        assert (
+            result_df[(result_df["Id_1"] == "A") & (result_df["Id_3"] == "Q")]["Me_1"].iloc[0] == 5
+        )
+        # B, P -> 30
+        assert (
+            result_df[(result_df["Id_1"] == "B") & (result_df["Id_3"] == "P")]["Me_1"].iloc[0] == 30
+        )
+
+    def test_count_with_group_by(self, temp_data_dir):
+        """
+        Test COUNT aggregation with GROUP BY.
+
+        VTL: DS_r := count(DS_1 group by Id_1);
+        """
+        vtl_script = "DS_r := count(DS_1 group by Id_1);"
+
+        structure = create_dataset_structure(
+            "DS_1",
+            [("Id_1", "String"), ("Id_2", "String")],
+            [("Me_1", "Number", True)],
+        )
+
+        data_structures = create_data_structure([structure])
+        input_data = [
+            ["A", "X", 10],
+            ["A", "Y", 20],
+            ["A", "Z", 30],
+            ["B", "X", 40],
+        ]
+        input_df = pd.DataFrame(input_data, columns=["Id_1", "Id_2", "Me_1"])
+
+        results = execute_vtl_with_duckdb(vtl_script, data_structures, {"DS_1": input_df})
+
+        result_df = results["DS_r"].sort_values("Id_1").reset_index(drop=True)
+
+        # Verify structure
+        assert "Id_1" in result_df.columns
+        assert "Id_2" not in result_df.columns
+
+        # Verify counts: A has 3 rows, B has 1 row
+        assert len(result_df) == 2
+        # Count result is in int_var column
+        count_col = [c for c in result_df.columns if c not in ["Id_1"]][0]
+        assert result_df[result_df["Id_1"] == "A"][count_col].iloc[0] == 3
+        assert result_df[result_df["Id_1"] == "B"][count_col].iloc[0] == 1
+
+    def test_avg_with_group_by(self, temp_data_dir):
+        """
+        Test AVG aggregation with GROUP BY.
+
+        VTL: DS_r := avg(DS_1 group by Id_1);
+        """
+        vtl_script = "DS_r := avg(DS_1 group by Id_1);"
+
+        structure = create_dataset_structure(
+            "DS_1",
+            [("Id_1", "String"), ("Id_2", "String")],
+            [("Me_1", "Number", True)],
+        )
+
+        data_structures = create_data_structure([structure])
+        input_data = [
+            ["A", "X", 10],
+            ["A", "Y", 20],
+            ["B", "X", 100],
+            ["B", "Y", 200],
+        ]
+        input_df = pd.DataFrame(input_data, columns=["Id_1", "Id_2", "Me_1"])
+
+        results = execute_vtl_with_duckdb(vtl_script, data_structures, {"DS_1": input_df})
+
+        result_df = results["DS_r"].sort_values("Id_1").reset_index(drop=True)
+
+        # Verify structure
+        assert "Id_1" in result_df.columns
+        assert "Id_2" not in result_df.columns
+
+        # Verify averages: A -> (10+20)/2=15, B -> (100+200)/2=150
+        assert len(result_df) == 2
+        assert result_df[result_df["Id_1"] == "A"]["Me_1"].iloc[0] == 15.0
+        assert result_df[result_df["Id_1"] == "B"]["Me_1"].iloc[0] == 150.0
+
+
+# =============================================================================
+# CHECK Validation Tests
+# =============================================================================
+
+
+class TestCheckValidationOperations:
+    """
+    Tests for CHECK validation operations.
+
+    These tests verify that CHECK operations:
+    1. Properly evaluate comparison expressions and produce bool_var column
+    2. Handle imbalance expressions correctly
+    """
+
+    def test_check_simple_comparison(self, temp_data_dir):
+        """
+        Test CHECK with simple comparison expression.
+
+        VTL: DS_r := check(DS_1 > 0);
+        """
+        vtl_script = "DS_r := check(DS_1 > 0);"
+
+        structure = create_dataset_structure(
+            "DS_1",
+            [("Id_1", "String")],
+            [("Me_1", "Number", True)],
+        )
+
+        data_structures = create_data_structure([structure])
+        input_data = [
+            ["A", 10],
+            ["B", -5],
+            ["C", 0],
+        ]
+        input_df = pd.DataFrame(input_data, columns=["Id_1", "Me_1"])
+
+        results = execute_vtl_with_duckdb(vtl_script, data_structures, {"DS_1": input_df})
+
+        result_df = results["DS_r"].sort_values("Id_1").reset_index(drop=True)
+
+        # Verify bool_var column exists
+        assert "bool_var" in result_df.columns
+
+        # Verify results: A (10>0) -> True, B (-5>0) -> False, C (0>0) -> False
+        assert result_df[result_df["Id_1"] == "A"]["bool_var"].iloc[0] == True  # noqa: E712
+        assert result_df[result_df["Id_1"] == "B"]["bool_var"].iloc[0] == False  # noqa: E712
+        assert result_df[result_df["Id_1"] == "C"]["bool_var"].iloc[0] == False  # noqa: E712
+
+    def test_check_dataset_scalar_comparison(self, temp_data_dir):
+        """
+        Test CHECK with dataset-scalar comparison.
+
+        VTL: DS_r := check(DS_1 >= 100);
+        """
+        vtl_script = "DS_r := check(DS_1 >= 100);"
+
+        structure = create_dataset_structure(
+            "DS_1",
+            [("Id_1", "String")],
+            [("Me_1", "Number", True)],
+        )
+
+        data_structures = create_data_structure([structure])
+        input_data = [
+            ["A", 100],
+            ["B", 50],
+            ["C", 200],
+        ]
+        input_df = pd.DataFrame(input_data, columns=["Id_1", "Me_1"])
+
+        results = execute_vtl_with_duckdb(vtl_script, data_structures, {"DS_1": input_df})
+
+        result_df = results["DS_r"].sort_values("Id_1").reset_index(drop=True)
+
+        # Verify bool_var column exists
+        assert "bool_var" in result_df.columns
+
+        # Verify results
+        assert result_df[result_df["Id_1"] == "A"]["bool_var"].iloc[0] == True  # noqa: E712
+        assert result_df[result_df["Id_1"] == "B"]["bool_var"].iloc[0] == False  # noqa: E712
+        assert result_df[result_df["Id_1"] == "C"]["bool_var"].iloc[0] == True  # noqa: E712
+
+    def test_check_with_imbalance(self, temp_data_dir):
+        """
+        Test CHECK with imbalance expression.
+
+        VTL: DS_r := check(DS_1 >= 0 imbalance DS_1);
+        """
+        vtl_script = "DS_r := check(DS_1 >= 0 imbalance DS_1);"
+
+        structure = create_dataset_structure(
+            "DS_1",
+            [("Id_1", "String")],
+            [("Me_1", "Number", True)],
+        )
+
+        data_structures = create_data_structure([structure])
+        input_data = [
+            ["A", 10],
+            ["B", -5],
+            ["C", 0],
+        ]
+        input_df = pd.DataFrame(input_data, columns=["Id_1", "Me_1"])
+
+        results = execute_vtl_with_duckdb(vtl_script, data_structures, {"DS_1": input_df})
+
+        result_df = results["DS_r"].sort_values("Id_1").reset_index(drop=True)
+
+        # Verify bool_var column exists
+        assert "bool_var" in result_df.columns
+
+        # Verify imbalance column exists
+        assert "imbalance" in result_df.columns
+
+        # Verify bool_var results
+        assert result_df[result_df["Id_1"] == "A"]["bool_var"].iloc[0] == True  # noqa: E712
+        assert result_df[result_df["Id_1"] == "B"]["bool_var"].iloc[0] == False  # noqa: E712
+        assert result_df[result_df["Id_1"] == "C"]["bool_var"].iloc[0] == True  # noqa: E712
+
+        # Verify imbalance values (contains the measure value from the imbalance expression)
+        assert result_df[result_df["Id_1"] == "A"]["imbalance"].iloc[0] == 10
+        assert result_df[result_df["Id_1"] == "B"]["imbalance"].iloc[0] == -5
+        assert result_df[result_df["Id_1"] == "C"]["imbalance"].iloc[0] == 0
+
+    def test_check_dataset_dataset_comparison(self, temp_data_dir):
+        """
+        Test CHECK with dataset-dataset comparison.
+
+        VTL: DS_r := check(DS_1 = DS_2);
+        """
+        vtl_script = "DS_r := check(DS_1 = DS_2);"
+
+        structure1 = create_dataset_structure(
+            "DS_1",
+            [("Id_1", "String")],
+            [("Me_1", "Number", True)],
+        )
+        structure2 = create_dataset_structure(
+            "DS_2",
+            [("Id_1", "String")],
+            [("Me_1", "Number", True)],
+        )
+
+        data_structures = create_data_structure([structure1, structure2])
+        input1_data = [
+            ["A", 10],
+            ["B", 20],
+            ["C", 30],
+        ]
+        input2_data = [
+            ["A", 10],
+            ["B", 25],
+            ["C", 30],
+        ]
+        input1_df = pd.DataFrame(input1_data, columns=["Id_1", "Me_1"])
+        input2_df = pd.DataFrame(input2_data, columns=["Id_1", "Me_1"])
+
+        results = execute_vtl_with_duckdb(
+            vtl_script, data_structures, {"DS_1": input1_df, "DS_2": input2_df}
+        )
+
+        result_df = results["DS_r"].sort_values("Id_1").reset_index(drop=True)
+
+        # Verify bool_var column exists
+        assert "bool_var" in result_df.columns
+
+        # Verify results: A (10=10) -> True, B (20=25) -> False, C (30=30) -> True
+        assert result_df[result_df["Id_1"] == "A"]["bool_var"].iloc[0] == True  # noqa: E712
+        assert result_df[result_df["Id_1"] == "B"]["bool_var"].iloc[0] == False  # noqa: E712
+        assert result_df[result_df["Id_1"] == "C"]["bool_var"].iloc[0] == True  # noqa: E712

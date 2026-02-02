@@ -14,22 +14,18 @@ from vtlengine.AST import (
     Assignment,
     BinOp,
     Constant,
-    RegularAggregation,
     Start,
-    TimeAggregation,
     UnaryOp,
     VarID,
 )
 from vtlengine.AST.Grammar.tokens import (
     PERIOD_INDICATOR,
     TIMESHIFT,
-    YEAR,
 )
-from vtlengine.DataTypes import Integer, Number, String, TimePeriod, TimeInterval
+from vtlengine.DataTypes import Number, TimeInterval, TimePeriod
 from vtlengine.duckdb_transpiler.sql import initialize_time_types
 from vtlengine.duckdb_transpiler.Transpiler import SQLTranspiler
 from vtlengine.Model import Component, Dataset, Role
-
 
 # =============================================================================
 # Test Utilities
