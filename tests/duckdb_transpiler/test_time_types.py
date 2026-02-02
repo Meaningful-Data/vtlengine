@@ -186,3 +186,59 @@ class TestPeriodCompare:
             "SELECT vtl_period_lt(vtl_period_parse('2022-Q1'), NULL)"
         ).fetchone()[0]
         assert result is None
+
+
+@pytest.fixture
+def conn_with_extract():
+    """Create DuckDB connection with extraction functions loaded."""
+    connection = duckdb.connect(":memory:")
+    load_sql_files(
+        connection,
+        "types.sql",
+        "functions_period_parse.sql",
+        "functions_period_extract.sql",
+    )
+    return connection
+
+
+class TestPeriodExtract:
+    """Tests for TimePeriod extraction functions."""
+
+    @pytest.mark.parametrize(
+        "input_str,expected_year,expected_indicator,expected_number",
+        [
+            ("2022", 2022, "A", 1),
+            ("2022-Q3", 2022, "Q", 3),
+            ("2022-M06", 2022, "M", 6),
+            ("2022-S2", 2022, "S", 2),
+            ("2022-W15", 2022, "W", 15),
+            ("2022-D100", 2022, "D", 100),
+        ],
+    )
+    def test_period_extract(
+        self, conn_with_extract, input_str, expected_year, expected_indicator, expected_number
+    ):
+        """Test extracting components from TimePeriod."""
+        result = conn_with_extract.execute(f"""
+            SELECT
+                vtl_period_year(vtl_period_parse('{input_str}')),
+                vtl_period_indicator(vtl_period_parse('{input_str}')),
+                vtl_period_number(vtl_period_parse('{input_str}'))
+        """).fetchone()
+
+        assert result[0] == expected_year
+        assert result[1] == expected_indicator
+        assert result[2] == expected_number
+
+    def test_period_extract_null(self, conn_with_extract):
+        """Test extracting from NULL returns NULL."""
+        result = conn_with_extract.execute("""
+            SELECT
+                vtl_period_year(NULL::vtl_time_period),
+                vtl_period_indicator(NULL::vtl_time_period),
+                vtl_period_number(NULL::vtl_time_period)
+        """).fetchone()
+
+        assert result[0] is None
+        assert result[1] is None
+        assert result[2] is None
