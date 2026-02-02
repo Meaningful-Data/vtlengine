@@ -84,6 +84,7 @@ from vtlengine.AST.Grammar.tokens import (
     PIVOT,
     PLUS,
     POWER,
+    RANDOM,
     RANK,
     RATIO_TO_REPORT,
     RENAME,
@@ -99,6 +100,7 @@ from vtlengine.AST.Grammar.tokens import (
     SUBSTR,
     SUM,
     SYMDIFF,
+    TIME_AGG,
     TIMESHIFT,
     TRIM,
     TRUNC,
@@ -1203,6 +1205,11 @@ class SQLTranspiler(ASTTemplate):
         if op == REPLACE:
             return self._visit_replace(operand, operand_sql, operand_type, params)
 
+        # Handle RANDOM: deterministic pseudo-random using hash
+        # VTL: random(seed, index) -> Number between 0 and 1
+        if op == RANDOM:
+            return self._visit_random(operand, operand_sql, operand_type, params)
+
         # Single-param operations mapping: op -> (sql_func, default_param, template_format)
         single_param_ops = {
             ROUND: ("ROUND", "0", "{func}({{m}}, {p})"),
@@ -1249,6 +1256,32 @@ class SQLTranspiler(ASTTemplate):
         if operand_type == OperandType.DATASET:
             return self._param_dataset(operand, f"REPLACE({{m}}, {pattern}, {replacement})")
         return f"REPLACE({operand_sql}, {pattern}, {replacement})"
+
+    def _visit_random(
+        self, operand: AST.AST, operand_sql: str, operand_type: str, params: List[str]
+    ) -> str:
+        """
+        Handle RANDOM operation.
+
+        VTL: random(seed, index) -> deterministic pseudo-random Number between 0 and 1.
+
+        Uses hash-based approach for determinism: same seed + index = same result.
+        DuckDB: (ABS(hash(seed || '_' || index)) % 1000000) / 1000000.0
+        """
+        index_val = params[0] if params else "0"
+
+        # Template for random: uses seed (operand) and index (param)
+        random_template = (
+            "(ABS(hash(CAST({m} AS VARCHAR) || '_' || CAST("
+            + index_val
+            + " AS VARCHAR))) % 1000000) / 1000000.0"
+        )
+
+        if operand_type == OperandType.DATASET:
+            return self._param_dataset(operand, random_template)
+
+        # Scalar: replace {m} with operand_sql
+        return random_template.replace("{m}", operand_sql)
 
     def _param_dataset(self, dataset_node: AST.AST, template: str) -> str:
         """Generate SQL for dataset parameterized operation."""
@@ -2109,6 +2142,96 @@ class SQLTranspiler(ASTTemplate):
 
         # Scalar/Component aggregation
         return f"{sql_op}({operand_sql})"
+
+    def visit_TimeAggregation(self, node: AST.TimeAggregation) -> str:
+        """
+        Process TIME_AGG operation.
+
+        VTL: time_agg(period_to, operand) or time_agg(period_to, operand, conf)
+
+        Converts Date to TimePeriod string at specified granularity.
+        Note: TimePeriod inputs are not supported - raises NotImplementedError.
+
+        DuckDB SQL mappings:
+        - "Y" -> STRFTIME(col, '%Y')
+        - "S" -> STRFTIME(col, '%Y') || 'S' || CEIL(MONTH(col) / 6.0)
+        - "Q" -> STRFTIME(col, '%Y') || 'Q' || QUARTER(col)
+        - "M" -> STRFTIME(col, '%Y') || 'M' || LPAD(CAST(MONTH(col) AS VARCHAR), 2, '0')
+        - "D" -> STRFTIME(col, '%Y-%m-%d')
+        """
+        period_to = node.period_to.upper() if node.period_to else "Y"
+
+        # Build SQL expression template for each period type
+        period_templates = {
+            "Y": "STRFTIME({col}, '%Y')",
+            "S": "(STRFTIME({col}, '%Y') || 'S' || CAST(CEIL(MONTH({col}) / 6.0) AS INTEGER))",
+            "Q": "(STRFTIME({col}, '%Y') || 'Q' || CAST(QUARTER({col}) AS VARCHAR))",
+            "M": "(STRFTIME({col}, '%Y') || 'M' || LPAD(CAST(MONTH({col}) AS VARCHAR), 2, '0'))",
+            "W": "(STRFTIME({col}, '%Y') || 'W' || LPAD(CAST(WEEKOFYEAR({col}) AS VARCHAR), 2, '0'))",
+            "D": "STRFTIME({col}, '%Y-%m-%d')",
+        }
+
+        template = period_templates.get(period_to, "STRFTIME({col}, '%Y')")
+
+        if node.operand is None:
+            raise ValueError("TIME_AGG requires an operand")
+
+        operand_type = self._get_operand_type(node.operand)
+
+        if operand_type == OperandType.DATASET:
+            return self._time_agg_dataset(node.operand, template, period_to)
+
+        # Scalar/Component: just apply the template
+        operand_sql = self.visit(node.operand)
+        return template.format(col=operand_sql)
+
+    def _time_agg_dataset(self, dataset_node: AST.AST, template: str, period_to: str) -> str:
+        """
+        Generate SQL for dataset-level TIME_AGG operation.
+
+        Applies time aggregation to time-type measures.
+        """
+        ds_name = self._get_dataset_name(dataset_node)
+        ds = self.available_tables.get(ds_name)
+
+        if not ds:
+            operand_sql = self.visit(dataset_node)
+            return template.format(col=operand_sql)
+
+        # Build SELECT with identifiers and transformed time measures
+        id_cols = ds.get_identifiers_names()
+        id_select = ", ".join([f'"{k}"' for k in id_cols])
+
+        # Find time-type measures (Date, TimePeriod, TimeInterval)
+        time_types = {"Date", "TimePeriod", "TimeInterval"}
+        measure_parts = []
+
+        for m_name in ds.get_measures_names():
+            comp = ds.components.get(m_name)
+            if comp and comp.data_type.__name__ in time_types:
+                # Check for TimePeriod - not supported
+                if comp.data_type.__name__ == "TimePeriod":
+                    raise NotImplementedError(
+                        f"TIME_AGG with TimePeriod input is not supported in DuckDB transpiler. "
+                        f"Component: {m_name}"
+                    )
+                # Apply time aggregation template
+                col_expr = template.format(col=f'"{m_name}"')
+                measure_parts.append(f'{col_expr} AS "{m_name}"')
+            else:
+                # Non-time measures pass through unchanged
+                measure_parts.append(f'"{m_name}"')
+
+        measure_select = ", ".join(measure_parts)
+        dataset_sql = self._get_dataset_sql(dataset_node)
+        from_clause = self._simplify_from_clause(dataset_sql)
+
+        if id_select and measure_select:
+            return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
+        elif measure_select:
+            return f"SELECT {measure_select} FROM {from_clause}"
+        else:
+            return f"SELECT * FROM {from_clause}"
 
     # =========================================================================
     # Analytic Operations (window functions)

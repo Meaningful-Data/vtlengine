@@ -21,6 +21,7 @@ from vtlengine.AST import (
     ParamOp,
     RegularAggregation,
     Start,
+    TimeAggregation,
     UnaryOp,
     Validation,
     VarID,
@@ -1401,3 +1402,186 @@ class TestTimeOperators:
         result = transpiler.visit_UnaryOp(unary_op)
         expected_sql = 'SELECT "Id_1", "Id_2", COALESCE("Me_1" - LAG("Me_1") OVER (PARTITION BY "Id_2" ORDER BY "Id_1"), "Me_1") AS "Me_1" FROM "DS_1"'
         assert_sql_equal(result, expected_sql)
+
+
+# =============================================================================
+# RANDOM Operator Tests
+# =============================================================================
+
+
+class TestRandomOperator:
+    """Tests for RANDOM operator."""
+
+    def test_random_scalar(self):
+        """Test RANDOM with scalar seed and index."""
+        transpiler = create_transpiler()
+
+        # Create AST: random(42, 5)
+        seed = Constant(**make_ast_node(type_="INTEGER_CONSTANT", value=42))
+        index = Constant(**make_ast_node(type_="INTEGER_CONSTANT", value=5))
+        random_op = ParamOp(**make_ast_node(op="random", children=[seed], params=[index]))
+
+        result = transpiler.visit_ParamOp(random_op)
+
+        # Should use hash-based deterministic random
+        assert "hash" in result.lower()
+        assert "42" in result
+        assert "5" in result
+        assert "1000000" in result  # modulo value
+
+    def test_random_dataset(self):
+        """Test RANDOM on dataset measures."""
+        ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
+        transpiler = create_transpiler(input_datasets={"DS_1": ds})
+
+        # Create AST: DS_r := random(DS_1, 3)
+        dataset_ref = VarID(**make_ast_node(value="DS_1"))
+        index = Constant(**make_ast_node(type_="INTEGER_CONSTANT", value=3))
+        random_op = ParamOp(**make_ast_node(op="random", children=[dataset_ref], params=[index]))
+
+        result = transpiler.visit_ParamOp(random_op)
+
+        # Should apply to measures
+        assert "Me_1" in result
+        assert "hash" in result.lower()
+
+
+# =============================================================================
+# MEMBERSHIP Operator Tests
+# =============================================================================
+
+
+class TestMembershipOperator:
+    """Tests for MEMBERSHIP (#) operator."""
+
+    def test_membership_extract_measure(self):
+        """Test extracting a measure from dataset."""
+        ds = create_simple_dataset("DS_1", ["Id_1", "Id_2"], ["Me_1", "Me_2"])
+        transpiler = create_transpiler(input_datasets={"DS_1": ds})
+
+        # Create AST: DS_1#Me_1
+        dataset_ref = VarID(**make_ast_node(value="DS_1"))
+        comp_name = VarID(**make_ast_node(value="Me_1"))
+        membership_op = BinOp(**make_ast_node(left=dataset_ref, op="#", right=comp_name))
+
+        result = transpiler.visit_BinOp(membership_op)
+
+        # Should select identifiers and the specified component
+        assert '"Id_1"' in result
+        assert '"Id_2"' in result
+        assert '"Me_1"' in result
+        assert "SELECT" in result
+        assert "FROM" in result
+
+    def test_membership_extract_identifier(self):
+        """Test extracting an identifier component."""
+        ds = create_simple_dataset("DS_1", ["Id_1", "Id_2"], ["Me_1"])
+        transpiler = create_transpiler(input_datasets={"DS_1": ds})
+
+        # Create AST: DS_1#Id_2
+        dataset_ref = VarID(**make_ast_node(value="DS_1"))
+        comp_name = VarID(**make_ast_node(value="Id_2"))
+        membership_op = BinOp(**make_ast_node(left=dataset_ref, op="#", right=comp_name))
+
+        result = transpiler.visit_BinOp(membership_op)
+
+        # Should include identifiers and the extracted component
+        assert '"Id_2"' in result
+        assert "SELECT" in result
+
+
+# =============================================================================
+# TIME_AGG Operator Tests
+# =============================================================================
+
+
+class TestTimeAggOperator:
+    """Tests for TIME_AGG operator."""
+
+    @pytest.mark.parametrize(
+        "period,expected_func",
+        [
+            ("Y", "STRFTIME"),
+            ("Q", "QUARTER"),
+            ("M", "MONTH"),
+            ("D", "STRFTIME"),
+        ],
+    )
+    def test_time_agg_scalar(self, period: str, expected_func: str):
+        """Test TIME_AGG with scalar date."""
+        transpiler = create_transpiler()
+
+        # Create AST: time_agg(period, date_col)
+        date_col = VarID(**make_ast_node(value="date_col"))
+        time_agg_op = TimeAggregation(
+            **make_ast_node(op="time_agg", period_to=period, operand=date_col)
+        )
+
+        result = transpiler.visit_TimeAggregation(time_agg_op)
+
+        # Should use appropriate DuckDB function
+        assert expected_func in result.upper()
+        assert "date_col" in result
+
+    def test_time_agg_year(self):
+        """Test TIME_AGG to year period."""
+        transpiler = create_transpiler()
+
+        date_col = VarID(**make_ast_node(value="my_date"))
+        time_agg_op = TimeAggregation(
+            **make_ast_node(op="time_agg", period_to="Y", operand=date_col)
+        )
+
+        result = transpiler.visit_TimeAggregation(time_agg_op)
+
+        # Year extraction: STRFTIME(col, '%Y')
+        assert "STRFTIME" in result
+        assert "'%Y'" in result
+        assert "my_date" in result
+
+    def test_time_agg_quarter(self):
+        """Test TIME_AGG to quarter period."""
+        transpiler = create_transpiler()
+
+        date_col = VarID(**make_ast_node(value="my_date"))
+        time_agg_op = TimeAggregation(
+            **make_ast_node(op="time_agg", period_to="Q", operand=date_col)
+        )
+
+        result = transpiler.visit_TimeAggregation(time_agg_op)
+
+        # Quarter: year || 'Q' || quarter
+        assert "QUARTER" in result
+        assert "'Q'" in result
+
+    def test_time_agg_month(self):
+        """Test TIME_AGG to month period."""
+        transpiler = create_transpiler()
+
+        date_col = VarID(**make_ast_node(value="my_date"))
+        time_agg_op = TimeAggregation(
+            **make_ast_node(op="time_agg", period_to="M", operand=date_col)
+        )
+
+        result = transpiler.visit_TimeAggregation(time_agg_op)
+
+        # Month: year || 'M' || month (padded)
+        assert "MONTH" in result
+        assert "'M'" in result
+        assert "LPAD" in result
+
+    def test_time_agg_semester(self):
+        """Test TIME_AGG to semester period."""
+        transpiler = create_transpiler()
+
+        date_col = VarID(**make_ast_node(value="my_date"))
+        time_agg_op = TimeAggregation(
+            **make_ast_node(op="time_agg", period_to="S", operand=date_col)
+        )
+
+        result = transpiler.visit_TimeAggregation(time_agg_op)
+
+        # Semester: year || 'S' || ceil(month/6)
+        assert "'S'" in result
+        assert "CEIL" in result
+        assert "6" in result
