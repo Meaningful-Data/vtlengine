@@ -1248,7 +1248,8 @@ class TestTimeOperators:
         )
 
         result = transpiler.visit_UnaryOp(unary_op)
-        expected_sql = "REGEXP_EXTRACT(\"time_period_col\", '-([ASQMWD])', 1)"
+        # Updated to use vtl_period_indicator function for proper TimePeriod handling
+        expected_sql = 'vtl_period_indicator(vtl_period_parse("time_period_col"))'
         assert_sql_equal(result, expected_sql)
 
     def test_flow_to_stock_requires_dataset(self):
