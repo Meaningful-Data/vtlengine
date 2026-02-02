@@ -73,3 +73,58 @@ class TestPeriodParse:
         """Test parsing NULL returns NULL."""
         result = conn.execute("SELECT vtl_period_parse(NULL)").fetchone()[0]
         assert result is None
+
+
+@pytest.fixture
+def conn_with_format():
+    """Create DuckDB connection with format functions loaded."""
+    connection = duckdb.connect(":memory:")
+    load_sql_files(
+        connection,
+        "types.sql",
+        "functions_period_parse.sql",
+        "functions_period_format.sql",
+    )
+    return connection
+
+
+class TestPeriodFormat:
+    """Tests for vtl_period_to_string function."""
+
+    @pytest.mark.parametrize(
+        "input_str,expected_output",
+        [
+            # Annual - outputs just year
+            ("2022", "2022"),
+            ("2022A", "2022"),
+            # Semester
+            ("2022-S1", "2022-S1"),
+            ("2022-S2", "2022-S2"),
+            # Quarter
+            ("2022-Q1", "2022-Q1"),
+            ("2022-Q3", "2022-Q3"),
+            # Month - with leading zero
+            ("2022-M01", "2022-M01"),
+            ("2022-M06", "2022-M06"),
+            ("2022-M12", "2022-M12"),
+            # Week - with leading zero
+            ("2022-W01", "2022-W01"),
+            ("2022-W15", "2022-W15"),
+            # Day - with leading zeros
+            ("2022-D001", "2022-D001"),
+            ("2022-D100", "2022-D100"),
+        ],
+    )
+    def test_period_format_roundtrip(self, conn_with_format, input_str, expected_output):
+        """Test formatting TimePeriod back to string."""
+        result = conn_with_format.execute(
+            f"SELECT vtl_period_to_string(vtl_period_parse('{input_str}'))"
+        ).fetchone()[0]
+        assert result == expected_output
+
+    def test_period_format_null(self, conn_with_format):
+        """Test formatting NULL returns NULL."""
+        result = conn_with_format.execute(
+            "SELECT vtl_period_to_string(NULL::vtl_time_period)"
+        ).fetchone()[0]
+        assert result is None
