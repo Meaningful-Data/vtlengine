@@ -422,136 +422,32 @@ class ValidationOperatorsTests(ValidationHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-
-class CheckOperatorErrorLevelTests(ValidationHelper):
-    """
-    Tests for issue #472: CHECK operator should return NULL errorcode/errorlevel
-    when validation passes (bool_var = True).
-
-    VTL 2.1 spec: When a CHECK validation passes, both errorcode and errorlevel
-    should be NULL, not the specified values.
-    """
-
-    classTest = "validation.CheckOperatorErrorLevelTests"
-
-    def test_check_errorlevel_null_when_passing(self):
+    def test_GH_427_1(self):
         """
         Issue #472: CHECK operator incorrectly returns errorlevel when check passes.
 
         When all rows pass the check (Me_1 < 100), errorcode and errorlevel
         should be NULL for all rows, not the specified values.
+
+        Git Branch: cr-472.
+        Goal: Verify errorcode/errorlevel are NULL when all rows pass validation.
         """
-        import pandas as pd
+        code = "GH_427_1"
+        number_inputs = 1
+        references_names = ["1"]
 
-        from vtlengine import run
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-        script = """
-            chk101 <- check(
-                DS_1#Me_1 < 100
-                errorcode "ERR001"
-                errorlevel 8
-                imbalance DS_1#Me_1 - 100
-            );
+    def test_GH_427_2(self):
         """
+        Verify errorcode/errorlevel ARE set when check fails (bool_var = False)
+        and NULL when check passes (bool_var = True).
 
-        data_structures = {
-            "datasets": [
-                {
-                    "name": "DS_1",
-                    "DataStructure": [
-                        {
-                            "name": "Id_1",
-                            "type": "Integer",
-                            "role": "Identifier",
-                            "nullable": False,
-                        },
-                        {
-                            "name": "Me_1",
-                            "type": "Number",
-                            "role": "Measure",
-                            "nullable": True,
-                        },
-                    ],
-                }
-            ]
-        }
-
-        # All values pass the check (Me_1 < 100)
-        data_df = pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [10.0, 20.0, 30.0]})
-        datapoints = {"DS_1": data_df}
-
-        result = run(script=script, data_structures=data_structures, datapoints=datapoints)
-
-        chk_result = result["chk101"]
-        assert chk_result is not None
-        assert chk_result.data is not None
-
-        # All rows pass the check, so bool_var should be True
-        assert all(chk_result.data["bool_var"] == True)  # noqa: E712
-
-        # When check passes, errorcode and errorlevel should be NULL
-        assert all(chk_result.data["errorcode"].isna())
-        assert all(chk_result.data["errorlevel"].isna())
-
-    def test_check_errorlevel_set_when_failing(self):
+        Git Branch: cr-472.
+        Goal: Verify errorcode/errorlevel are set only for failing rows.
         """
-        Verify errorcode/errorlevel ARE set when check fails (bool_var = False).
-        """
-        import pandas as pd
+        code = "GH_427_2"
+        number_inputs = 1
+        references_names = ["1"]
 
-        from vtlengine import run
-
-        script = """
-            chk102 <- check(
-                DS_1#Me_1 < 50
-                errorcode "ERR002"
-                errorlevel 5
-                imbalance DS_1#Me_1 - 50
-            );
-        """
-
-        data_structures = {
-            "datasets": [
-                {
-                    "name": "DS_1",
-                    "DataStructure": [
-                        {
-                            "name": "Id_1",
-                            "type": "Integer",
-                            "role": "Identifier",
-                            "nullable": False,
-                        },
-                        {
-                            "name": "Me_1",
-                            "type": "Number",
-                            "role": "Measure",
-                            "nullable": True,
-                        },
-                    ],
-                }
-            ]
-        }
-
-        # Mix of passing and failing: 10 < 50 (pass), 60 >= 50 (fail), 30 < 50 (pass)
-        data_df = pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [10.0, 60.0, 30.0]})
-        datapoints = {"DS_1": data_df}
-
-        result = run(script=script, data_structures=data_structures, datapoints=datapoints)
-
-        chk_result = result["chk102"]
-        df = chk_result.data
-
-        # Row 0: Me_1=10 < 50, passes -> errorcode/errorlevel should be NULL
-        assert df.loc[0, "bool_var"] == True  # noqa: E712
-        assert pd.isna(df.loc[0, "errorcode"])
-        assert pd.isna(df.loc[0, "errorlevel"])
-
-        # Row 1: Me_1=60 >= 50, fails -> errorcode/errorlevel should be set
-        assert df.loc[1, "bool_var"] == False  # noqa: E712
-        assert df.loc[1, "errorcode"] == "ERR002"
-        assert df.loc[1, "errorlevel"] == 5
-
-        # Row 2: Me_1=30 < 50, passes -> errorcode/errorlevel should be NULL
-        assert df.loc[2, "bool_var"] == True  # noqa: E712
-        assert pd.isna(df.loc[2, "errorcode"])
-        assert pd.isna(df.loc[2, "errorlevel"])
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
