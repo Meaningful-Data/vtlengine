@@ -8,6 +8,7 @@ performance metrics (time and memory usage).
 """
 
 import argparse
+import contextlib
 import gc
 import os
 import shutil
@@ -124,13 +125,11 @@ class MemoryMonitor:
 
 def cleanup_duckdb() -> None:
     """Clean up DuckDB connections and release memory."""
-    try:
+    with contextlib.suppress(Exception):
         # Clear vtlengine's DuckDB connection tracking
         from vtlengine.duckdb_transpiler import sql
 
         sql._initialized_connections.clear()
-    except Exception:
-        pass
 
     # Force garbage collection to release connections
     gc.collect()

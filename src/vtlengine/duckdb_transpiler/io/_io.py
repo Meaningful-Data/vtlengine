@@ -11,17 +11,7 @@ from typing import Dict, List, Optional, Tuple, Union
 import duckdb
 import pandas as pd
 
-from vtlengine.Exceptions import DataLoadError, InputValidationException
-from vtlengine.Model import Component, Dataset, Role
-
-# Environment variable to skip post-load validations (for benchmarking)
-SKIP_LOAD_VALIDATION = os.environ.get("VTL_SKIP_LOAD_VALIDATION", "").lower() in (
-    "1",
-    "true",
-    "yes",
-)
-
-from ._validation import (
+from vtlengine.duckdb_transpiler.io._validation import (
     build_create_table_sql,
     build_csv_column_types,
     build_select_columns,
@@ -31,6 +21,15 @@ from ._validation import (
     validate_csv_path,
     validate_no_duplicates,
     validate_temporal_columns,
+)
+from vtlengine.Exceptions import DataLoadError, InputValidationException
+from vtlengine.Model import Component, Dataset, Role
+
+# Environment variable to skip post-load validations (for benchmarking)
+SKIP_LOAD_VALIDATION = os.environ.get("VTL_SKIP_LOAD_VALIDATION", "").lower() in (
+    "1",
+    "true",
+    "yes",
 )
 
 

@@ -349,10 +349,14 @@ def build_select_columns(
             # Strict Integer validation: reject non-integer values (e.g., 1.5)
             # Read as DOUBLE, validate no decimal component, then cast to BIGINT
             if csv_type == "DOUBLE" and table_type == "BIGINT":
+                error_msg = (
+                    f"'Column {comp_name}: value ' || \"{comp_name}\" || "
+                    f"' has non-zero decimal component for Integer type'"
+                )
                 select_cols.append(
                     f"""CASE
                         WHEN "{comp_name}" IS NOT NULL AND "{comp_name}" <> FLOOR("{comp_name}")
-                        THEN error('Column {comp_name}: value ' || "{comp_name}" || ' has non-zero decimal component for Integer type')
+                        THEN error({error_msg})
                         ELSE CAST("{comp_name}" AS BIGINT)
                     END AS "{comp_name}\""""
                 )

@@ -358,6 +358,8 @@ class SQLTranspiler(ASTTemplate):
 
     def visit_Assignment(self, node: AST.Assignment) -> Tuple[str, str, bool]:
         """Process a temporary assignment (:=)."""
+        if not isinstance(node.left, AST.VarID):
+            raise ValueError(f"Expected VarID for assignment left, got {type(node.left).__name__}")
         result_name = node.left.value
 
         # Track current result name for output column resolution
@@ -375,6 +377,8 @@ class SQLTranspiler(ASTTemplate):
 
     def visit_PersistentAssignment(self, node: AST.PersistentAssignment) -> Tuple[str, str, bool]:
         """Process a persistent assignment (<-)."""
+        if not isinstance(node.left, AST.VarID):
+            raise ValueError(f"Expected VarID for assignment left, got {type(node.left).__name__}")
         result_name = node.left.value
 
         # Track current result name for output column resolution
@@ -422,7 +426,7 @@ class SQLTranspiler(ASTTemplate):
         # Default: treat as column reference (for component operations)
         return f'"{name}"'
 
-    def visit_Constant(self, node: AST.Constant) -> str:
+    def visit_Constant(self, node: AST.Constant) -> str:  # type: ignore[override]
         """Convert a constant to SQL literal."""
         if node.value is None:
             return "NULL"
@@ -451,7 +455,7 @@ class SQLTranspiler(ASTTemplate):
         """Process an identifier."""
         return f'"{node.value}"'
 
-    def visit_Collection(self, node: AST.Collection) -> str:
+    def visit_Collection(self, node: AST.Collection) -> str:  # type: ignore[override]
         """
         Process a collection (set of values or value domain reference).
 
@@ -499,7 +503,7 @@ class SQLTranspiler(ASTTemplate):
     # Binary Operations
     # =========================================================================
 
-    def visit_BinOp(self, node: AST.BinOp) -> str:
+    def visit_BinOp(self, node: AST.BinOp) -> str:  # type: ignore[override]
         """
         Process a binary operation.
 
@@ -511,7 +515,7 @@ class SQLTranspiler(ASTTemplate):
         left_type = self._get_operand_type(node.left)
         right_type = self._get_operand_type(node.right)
 
-        op = node.op.lower() if isinstance(node.op, str) else str(node.op)
+        op = str(node.op).lower()
 
         # Special handling for IN / NOT IN
         if op in (IN, NOT_IN, "not in"):
@@ -979,7 +983,7 @@ class SQLTranspiler(ASTTemplate):
 
     def visit_UnaryOp(self, node: AST.UnaryOp) -> str:
         """Process a unary operation."""
-        op = node.op.lower() if isinstance(node.op, str) else str(node.op)
+        op = str(node.op).lower()
         operand_type = self._get_operand_type(node.operand)
 
         # Special case: isnull
@@ -1387,9 +1391,9 @@ class SQLTranspiler(ASTTemplate):
     # Parameterized Operations (round, trunc, substr, etc.)
     # =========================================================================
 
-    def visit_ParamOp(self, node: AST.ParamOp) -> str:
+    def visit_ParamOp(self, node: AST.ParamOp) -> str:  # type: ignore[override]
         """Process parameterized operations."""
-        op = node.op.lower() if isinstance(node.op, str) else str(node.op)
+        op = str(node.op).lower()
 
         if not node.children:
             return ""
@@ -1601,9 +1605,9 @@ class SQLTranspiler(ASTTemplate):
     # Multiple-operand Operations
     # =========================================================================
 
-    def visit_MulOp(self, node: AST.MulOp) -> str:
+    def visit_MulOp(self, node: AST.MulOp) -> str:  # type: ignore[override]
         """Process multiple-operand operations (between, group by, set ops, etc.)."""
-        op = node.op.lower() if isinstance(node.op, str) else str(node.op)
+        op = str(node.op).lower()
 
         # Time operator: current_date (nullary)
         if op == CURRENT_DATE:
@@ -1792,7 +1796,7 @@ class SQLTranspiler(ASTTemplate):
         else:
             current_ds = base_dataset
 
-        op = clause_node.op.lower() if isinstance(clause_node.op, str) else str(clause_node.op)
+        op = str(clause_node.op).lower()
 
         # Apply transformation based on clause type
         if op == RENAME:
@@ -1847,18 +1851,20 @@ class SQLTranspiler(ASTTemplate):
         # These don't change the column structure in ways that affect subsequent clauses
         return current_ds
 
-    def visit_RegularAggregation(self, node: AST.RegularAggregation) -> str:
+    def visit_RegularAggregation(  # type: ignore[override]
+        self, node: AST.RegularAggregation
+    ) -> str:
         """
         Process clause operations (calc, filter, keep, drop, rename, etc.).
 
         These operate on a single dataset and modify its structure or data.
         """
-        op = node.op.lower() if isinstance(node.op, str) else str(node.op)
+        op = str(node.op).lower()
 
         # Get dataset name first
         ds_name = self._get_dataset_name(node.dataset) if node.dataset else None
 
-        if ds_name and ds_name in self.available_tables:
+        if ds_name and ds_name in self.available_tables and node.dataset:
             # Get base SQL using _get_dataset_sql (returns SELECT * FROM "table")
             base_sql = self._get_dataset_sql(node.dataset)
 
@@ -1932,6 +1938,8 @@ class SQLTranspiler(ASTTemplate):
 
             if isinstance(assignment, AST.Assignment):
                 # Left is Identifier (column name), right is expression
+                if not isinstance(assignment.left, (AST.VarID, AST.Identifier)):
+                    continue
                 col_name = assignment.left.value
                 expr = self.visit(assignment.right)
                 calc_cols[col_name] = expr
@@ -2035,6 +2043,127 @@ class SQLTranspiler(ASTTemplate):
 
         return f"SELECT {select_str} FROM ({base_sql}) AS t"
 
+    def _extract_grouping_from_aggregation(
+        self,
+        agg_node: AST.Aggregation,
+        group_by_cols: List[str],
+        group_op: Optional[str],
+        having_clause: str,
+    ) -> Tuple[List[str], Optional[str], str]:
+        """Extract grouping and having info from an Aggregation node."""
+        # Extract grouping if present
+        if hasattr(agg_node, "grouping_op") and agg_node.grouping_op:
+            group_op = agg_node.grouping_op.lower()
+        if hasattr(agg_node, "grouping") and agg_node.grouping:
+            for g in agg_node.grouping:
+                if isinstance(g, (AST.VarID, AST.Identifier)) and g.value not in group_by_cols:
+                    group_by_cols.append(g.value)
+
+        # Extract having clause if present
+        if hasattr(agg_node, "having_clause") and agg_node.having_clause and not having_clause:
+            if isinstance(agg_node.having_clause, AST.ParamOp):
+                # Having is wrapped in ParamOp with params containing the condition
+                if hasattr(agg_node.having_clause, "params") and agg_node.having_clause.params:
+                    having_clause = self.visit(agg_node.having_clause.params)
+            else:
+                having_clause = self.visit(agg_node.having_clause)
+
+        return group_by_cols, group_op, having_clause
+
+    def _process_aggregate_child(
+        self,
+        child: AST.AST,
+        agg_exprs: List[str],
+        group_by_cols: List[str],
+        group_op: Optional[str],
+        having_clause: str,
+    ) -> Tuple[List[str], List[str], Optional[str], str]:
+        """Process a single child node in aggregate clause."""
+        if isinstance(child, AST.Assignment):
+            # Aggregation assignment: Me_sum := sum(Me_1)
+            if not isinstance(child.left, (AST.VarID, AST.Identifier)):
+                return agg_exprs, group_by_cols, group_op, having_clause
+            col_name = child.left.value
+            expr = self.visit(child.right)
+            agg_exprs.append(f'{expr} AS "{col_name}"')
+
+            # Check if the right side is an Aggregation with grouping info
+            if isinstance(child.right, AST.Aggregation):
+                group_by_cols, group_op, having_clause = self._extract_grouping_from_aggregation(
+                    child.right, group_by_cols, group_op, having_clause
+                )
+
+        elif isinstance(child, AST.MulOp):
+            # Group by/except clause (legacy format)
+            group_op = str(child.op).lower()
+            for g in child.children:
+                if isinstance(g, AST.VarID):
+                    group_by_cols.append(g.value)
+                else:
+                    group_by_cols.append(self.visit(g))
+        elif isinstance(child, AST.BinOp):
+            # Having clause condition (legacy format)
+            having_clause = self.visit(child)
+        elif isinstance(child, AST.UnaryOp) and hasattr(child, "operand"):
+            # Wrapped assignment (with role like measure/identifier)
+            assignment = child.operand
+            if isinstance(assignment, AST.Assignment):
+                if not isinstance(assignment.left, (AST.VarID, AST.Identifier)):
+                    return agg_exprs, group_by_cols, group_op, having_clause
+                col_name = assignment.left.value
+                expr = self.visit(assignment.right)
+                agg_exprs.append(f'{expr} AS "{col_name}"')
+
+                # Check for grouping info on wrapped aggregations
+                if isinstance(assignment.right, AST.Aggregation):
+                    group_by_cols, group_op, having_clause = (
+                        self._extract_grouping_from_aggregation(
+                            assignment.right, group_by_cols, group_op, having_clause
+                        )
+                    )
+
+        return agg_exprs, group_by_cols, group_op, having_clause
+
+    def _build_aggregate_group_by_sql(
+        self, group_by_cols: List[str], group_op: Optional[str]
+    ) -> str:
+        """Build the GROUP BY SQL clause."""
+        if not group_by_cols or not self.current_dataset:
+            return ""
+
+        if group_op == "group by":
+            quoted_cols = [f'"{c}"' for c in group_by_cols]
+            return f"GROUP BY {', '.join(quoted_cols)}"
+        elif group_op == "group except":
+            # Group by all identifiers except the specified ones
+            except_set = set(group_by_cols)
+            actual_group_cols = [
+                c for c in self.current_dataset.get_identifiers_names() if c not in except_set
+            ]
+            if actual_group_cols:
+                quoted_cols = [f'"{c}"' for c in actual_group_cols]
+                return f"GROUP BY {', '.join(quoted_cols)}"
+        return ""
+
+    def _build_aggregate_select_parts(
+        self, group_by_cols: List[str], group_op: Optional[str], agg_exprs: List[str]
+    ) -> List[str]:
+        """Build SELECT parts for aggregate clause."""
+        select_parts: List[str] = []
+        if group_by_cols and group_op == "group by":
+            select_parts.extend([f'"{c}"' for c in group_by_cols])
+        elif group_op == "group except" and self.current_dataset:
+            except_set = set(group_by_cols)
+            select_parts.extend(
+                [
+                    f'"{c}"'
+                    for c in self.current_dataset.get_identifiers_names()
+                    if c not in except_set
+                ]
+            )
+        select_parts.extend(agg_exprs)
+        return select_parts
+
     def _clause_aggregate(self, base_sql: str, children: List[AST.AST]) -> str:
         """
         Generate SQL for aggregate clause.
@@ -2052,103 +2181,22 @@ class SQLTranspiler(ASTTemplate):
         if not self.current_dataset:
             return base_sql
 
-        agg_exprs = []
+        agg_exprs: List[str] = []
         group_by_cols: List[str] = []
         having_clause = ""
         group_op: Optional[str] = None
 
-        def extract_grouping_from_aggregation(agg_node: AST.Aggregation) -> None:
-            """Extract grouping and having info from an Aggregation node."""
-            nonlocal group_by_cols, group_op, having_clause
-
-            # Extract grouping if present
-            if hasattr(agg_node, "grouping_op") and agg_node.grouping_op:
-                group_op = agg_node.grouping_op.lower()
-            if hasattr(agg_node, "grouping") and agg_node.grouping:
-                for g in agg_node.grouping:
-                    if isinstance(g, (AST.VarID, AST.Identifier)) and g.value not in group_by_cols:
-                        group_by_cols.append(g.value)
-
-            # Extract having clause if present
-            if hasattr(agg_node, "having_clause") and agg_node.having_clause and not having_clause:
-                if isinstance(agg_node.having_clause, AST.ParamOp):
-                    # Having is wrapped in ParamOp with params containing the condition
-                    if hasattr(agg_node.having_clause, "params") and agg_node.having_clause.params:
-                        having_clause = self.visit(agg_node.having_clause.params)
-                else:
-                    having_clause = self.visit(agg_node.having_clause)
-
         for child in children:
-            if isinstance(child, AST.Assignment):
-                # Aggregation assignment: Me_sum := sum(Me_1)
-                col_name = child.left.value
-                expr = self.visit(child.right)
-                agg_exprs.append(f'{expr} AS "{col_name}"')
-
-                # Check if the right side is an Aggregation with grouping info
-                if isinstance(child.right, AST.Aggregation):
-                    extract_grouping_from_aggregation(child.right)
-
-            elif isinstance(child, AST.MulOp):
-                # Group by/except clause (legacy format)
-                group_op = child.op.lower() if isinstance(child.op, str) else str(child.op)
-                for g in child.children:
-                    if isinstance(g, AST.VarID):
-                        group_by_cols.append(g.value)
-                    else:
-                        group_by_cols.append(self.visit(g))
-            elif isinstance(child, AST.BinOp):
-                # Having clause condition (legacy format)
-                having_clause = self.visit(child)
-            elif isinstance(child, AST.UnaryOp) and hasattr(child, "operand"):
-                # Wrapped assignment (with role like measure/identifier)
-                assignment = child.operand
-                if isinstance(assignment, AST.Assignment):
-                    col_name = assignment.left.value
-                    expr = self.visit(assignment.right)
-                    agg_exprs.append(f'{expr} AS "{col_name}"')
-
-                    # Check for grouping info on wrapped aggregations
-                    if isinstance(assignment.right, AST.Aggregation):
-                        extract_grouping_from_aggregation(assignment.right)
+            agg_exprs, group_by_cols, group_op, having_clause = self._process_aggregate_child(
+                child, agg_exprs, group_by_cols, group_op, having_clause
+            )
 
         if not agg_exprs:
             return base_sql
 
-        # Build GROUP BY clause
-        group_by_sql = ""
-        if group_by_cols:
-            if group_op == "group by":
-                quoted_cols = [f'"{c}"' for c in group_by_cols]
-                group_by_sql = f"GROUP BY {', '.join(quoted_cols)}"
-            elif group_op == "group except":
-                # Group by all identifiers except the specified ones
-                except_set = set(group_by_cols)
-                actual_group_cols = [
-                    c for c in self.current_dataset.get_identifiers_names() if c not in except_set
-                ]
-                if actual_group_cols:
-                    quoted_cols = [f'"{c}"' for c in actual_group_cols]
-                    group_by_sql = f"GROUP BY {', '.join(quoted_cols)}"
-
-        # Build HAVING clause
+        group_by_sql = self._build_aggregate_group_by_sql(group_by_cols, group_op)
         having_sql = f"HAVING {having_clause}" if having_clause else ""
-
-        # Build SELECT - include group by columns first, then aggregations
-        select_parts = []
-        if group_by_cols and group_op == "group by":
-            select_parts.extend([f'"{c}"' for c in group_by_cols])
-        elif group_op == "group except":
-            except_set = set(group_by_cols)
-            select_parts.extend(
-                [
-                    f'"{c}"'
-                    for c in self.current_dataset.get_identifiers_names()
-                    if c not in except_set
-                ]
-            )
-        select_parts.extend(agg_exprs)
-
+        select_parts = self._build_aggregate_select_parts(group_by_cols, group_op, agg_exprs)
         select_sql = ", ".join(select_parts)
 
         return f"""
@@ -2282,9 +2330,9 @@ class SQLTranspiler(ASTTemplate):
     # Aggregation Operations
     # =========================================================================
 
-    def visit_Aggregation(self, node: AST.Aggregation) -> str:
+    def visit_Aggregation(self, node: AST.Aggregation) -> str:  # type: ignore[override]
         """Process aggregation operations (sum, avg, count, etc.)."""
-        op = node.op.lower() if isinstance(node.op, str) else str(node.op)
+        op = str(node.op).lower()
         sql_op = SQL_AGGREGATE_OPS.get(op, op.upper())
 
         # Get operand
@@ -2301,7 +2349,11 @@ class SQLTranspiler(ASTTemplate):
             group_cols = [self.visit(g) for g in node.grouping]
             if node.grouping_op == "group by":
                 group_by = f"GROUP BY {', '.join(group_cols)}"
-            elif node.grouping_op == "group except" and operand_type == OperandType.DATASET:
+            elif (
+                node.grouping_op == "group except"
+                and operand_type == OperandType.DATASET
+                and node.operand
+            ):
                 # Group by all except specified
                 ds_name = self._get_dataset_name(node.operand)
                 ds = self.available_tables.get(ds_name)
@@ -2319,7 +2371,7 @@ class SQLTranspiler(ASTTemplate):
             having = f"HAVING {having_sql}"
 
         # Dataset-level aggregation
-        if operand_type == OperandType.DATASET:
+        if operand_type == OperandType.DATASET and node.operand:
             ds_name = self._get_dataset_name(node.operand)
             ds = self.available_tables.get(ds_name)
             if ds:
@@ -2329,7 +2381,7 @@ class SQLTranspiler(ASTTemplate):
                 dataset_sql = self._get_dataset_sql(node.operand)
 
                 # Only include identifiers if grouping is specified
-                if group_by:
+                if group_by and node.grouping:
                     # Use only the columns specified in GROUP BY, not all identifiers
                     if node.grouping_op == "group by":
                         # Extract column names from grouping nodes
@@ -2364,7 +2416,7 @@ class SQLTranspiler(ASTTemplate):
         # Scalar/Component aggregation
         return f"{sql_op}({operand_sql})"
 
-    def visit_TimeAggregation(self, node: AST.TimeAggregation) -> str:
+    def visit_TimeAggregation(self, node: AST.TimeAggregation) -> str:  # type: ignore[override]
         """
         Process TIME_AGG operation.
 
@@ -2465,9 +2517,9 @@ class SQLTranspiler(ASTTemplate):
     # Analytic Operations (window functions)
     # =========================================================================
 
-    def visit_Analytic(self, node: AST.Analytic) -> str:
+    def visit_Analytic(self, node: AST.Analytic) -> str:  # type: ignore[override]
         """Process analytic (window) functions."""
-        op = node.op.lower() if isinstance(node.op, str) else str(node.op)
+        op = str(node.op).lower()
         sql_op = SQL_ANALYTIC_OPS.get(op, op.upper())
 
         # Operand
@@ -2505,7 +2557,7 @@ class SQLTranspiler(ASTTemplate):
 
         return f"{sql_op}({operand}{params_sql}) {over_clause}"
 
-    def visit_Windowing(self, node: AST.Windowing) -> str:
+    def visit_Windowing(self, node: AST.Windowing) -> str:  # type: ignore[override]
         """Process windowing specification."""
         type_ = node.type_.upper()
 
@@ -2527,7 +2579,7 @@ class SQLTranspiler(ASTTemplate):
                 return f"{abs(value)} FOLLOWING"
         return "CURRENT ROW"
 
-    def visit_OrderBy(self, node: AST.OrderBy) -> str:
+    def visit_OrderBy(self, node: AST.OrderBy) -> str:  # type: ignore[override]
         """Process order by specification."""
         return f'"{node.component}" {node.order.upper()}'
 
@@ -2535,9 +2587,9 @@ class SQLTranspiler(ASTTemplate):
     # Join Operations
     # =========================================================================
 
-    def visit_JoinOp(self, node: AST.JoinOp) -> str:
+    def visit_JoinOp(self, node: AST.JoinOp) -> str:  # type: ignore[override]
         """Process join operations."""
-        op = node.op.lower() if isinstance(node.op, str) else str(node.op)
+        op = str(node.op).lower()
 
         # Map VTL join types to SQL
         join_type = {
@@ -2601,7 +2653,7 @@ class SQLTranspiler(ASTTemplate):
     # Parenthesized Expression
     # =========================================================================
 
-    def visit_ParFunction(self, node: AST.ParFunction) -> str:
+    def visit_ParFunction(self, node: AST.ParFunction) -> str:  # type: ignore[override]
         """Process parenthesized expression."""
         inner = self.visit(node.operand)
         return f"({inner})"
@@ -2627,7 +2679,7 @@ class SQLTranspiler(ASTTemplate):
                     return measures[0]
         elif isinstance(expr, AST.BinOp):
             # Check if this is a comparison operation
-            op = expr.op.lower() if isinstance(expr.op, str) else str(expr.op)
+            op = str(expr.op).lower()
             comparison_ops = {EQ, NEQ, GT, GTE, LT, LTE, "=", "<>", ">", ">=", "<", "<="}
             if op in comparison_ops:
                 # Comparisons on mono-measure datasets produce bool_var
@@ -2714,7 +2766,7 @@ class SQLTranspiler(ASTTemplate):
 
         # Get error code and level
         error_code = node.error_code if node.error_code else "NULL"
-        if isinstance(error_code, str) and not error_code.startswith("'"):
+        if error_code != "NULL" and not error_code.startswith("'"):
             error_code = f"'{error_code}'"
 
         error_level = node.error_level if node.error_level is not None else "NULL"
@@ -2780,7 +2832,7 @@ class SQLTranspiler(ASTTemplate):
                 {imbalance_join}
             """
 
-    def visit_DPValidation(self, node: AST.DPValidation) -> str:
+    def visit_DPValidation(self, node: AST.DPValidation) -> str:  # type: ignore[override]
         """
         Process CHECK_DATAPOINT validation operation.
 
@@ -2834,7 +2886,7 @@ class SQLTranspiler(ASTTemplate):
                 FROM ({dataset_sql}) AS t
             """
 
-    def visit_HROperation(self, node: AST.HROperation) -> str:
+    def visit_HROperation(self, node: AST.HROperation) -> str:  # type: ignore[override]
         """
         Process hierarchical operations (hierarchy, check_hierarchy).
 
@@ -3042,7 +3094,9 @@ class SQLTranspiler(ASTTemplate):
             return self._get_dataset_name(node.operand)
         if isinstance(node, AST.ParamOp) and node.children:
             return self._get_dataset_name(node.children[0])
-        if isinstance(node, AST.ParFunction) or isinstance(node, AST.Aggregation) and node.operand:
+        if isinstance(node, AST.ParFunction):
+            return self._get_dataset_name(node.operand)
+        if isinstance(node, AST.Aggregation) and node.operand:
             return self._get_dataset_name(node.operand)
         if isinstance(node, AST.JoinOp) and node.clauses:
             # For joins, return the first dataset name (used as the primary dataset context)
