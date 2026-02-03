@@ -421,3 +421,33 @@ class ValidationOperatorsTests(ValidationHelper):
         references_names = ["1", "2", "3", "4", "5", "6", "7"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_427_1(self):
+        """
+        Issue #472: CHECK operator incorrectly returns errorlevel when check passes.
+
+        When all rows pass the check (Me_1 < 100), errorcode and errorlevel
+        should be NULL for all rows, not the specified values.
+
+        Git Branch: cr-472.
+        Goal: Verify errorcode/errorlevel are NULL when all rows pass validation.
+        """
+        code = "GH_427_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_427_2(self):
+        """
+        Verify errorcode/errorlevel ARE set when check fails (bool_var = False)
+        and NULL when check passes (bool_var = True).
+
+        Git Branch: cr-472.
+        Goal: Verify errorcode/errorlevel are set only for failing rows.
+        """
+        code = "GH_427_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
