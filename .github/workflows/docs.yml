@@ -25,6 +25,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for all tags and branches
       - name: Setup Pages
         id: pages
         uses: actions/configure-pages@v4
@@ -32,24 +34,38 @@ jobs:
         run: pipx install poetry
       - name: Setup Python
         uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - name: Install dependencies
         run: poetry install
-      - name: Build with Sphinx
+      - name: Configure documentation versions
         run: |
-          poetry run sphinx-build docs _site
+          poetry run python docs/scripts/configure_doc_versions.py
+      - name: Build with Sphinx Multi-Version
+        run: |
+          poetry run sphinx-multiversion docs _site
+      - name: Generate root redirect
+        run: |
+          poetry run python docs/scripts/generate_redirect.py _site
+      - name: Copy CNAME to root
+        run: |
+          cp docs/CNAME _site/CNAME
       - name: Validate error messages documentation
         run: |
-          # Verify error_messages.rst was generated in the output
-          if [ ! -f "_site/error_messages.html" ]; then
-            echo "ERROR: error_messages.html was not generated"
+          # Verify error_messages.html was generated in at least one version
+          if ! find _site/v* -name "error_messages.html" -type f 2>/dev/null | grep -q .; then
+            echo "ERROR: No error_messages.html found in any version directory"
             exit 1
           fi
-          # Check the file has content
-          if [ ! -s "_site/error_messages.html" ]; then
-            echo "ERROR: error_messages.html is empty"
-            exit 1
-          fi
-          echo "Error messages documentation validated successfully"
+          # Check at least one file has content
+          for file in _site/v*/error_messages.html; do
+            if [ -f "$file" ] && [ -s "$file" ]; then
+              echo "Error messages documentation validated successfully"
+              exit 0
+            fi
+          done
+          echo "ERROR: All error_messages.html files are empty"
+          exit 1
       - name: Upload artifact
         # Automatically uploads an artifact from the './_site' directory by default
         uses: actions/upload-pages-artifact@v3

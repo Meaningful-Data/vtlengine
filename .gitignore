@@ -172,3 +172,12 @@ development/
 _build/
 _site/
 docs/error_messages.rst
+docs/plans/
+
+# Claude Code settings (keep CLAUDE.md tracked)
+.claude/settings.json
+
+/*.csv
+/*.json
+/*.vtl
+/*.md

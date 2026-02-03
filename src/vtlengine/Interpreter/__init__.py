@@ -1284,7 +1284,7 @@ class InterpreterAnalyzer(ASTTemplate):
             output = node.output.value if node.output else "invalid"
         return mode, input_, output
 
-    def visit_HROperation(self, node: AST.HROperation) -> Dataset:
+    def visit_HROperation(self, node: AST.HROperation) -> None:
         """Handle hierarchy and check_hierarchy operators."""
         # Visit dataset and get component if present
         # Deep copy the dataset when there are conditions to avoid modifying the original
@@ -1406,7 +1406,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
         raise SemanticError("1-3-5", op_type="HROperation", node_op=node.op)
 
-    def visit_DPValidation(self, node: AST.DPValidation) -> Dataset:
+    def visit_DPValidation(self, node: AST.DPValidation) -> None:
         """Handle check_datapoint operator."""
         if self.dprs is None:
             raise SemanticError("1-2-6", node_type="Datapoint Rulesets", node_value="")

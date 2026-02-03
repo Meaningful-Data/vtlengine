@@ -22,6 +22,11 @@ from vtlengine.DataTypes import COMP_NAME_MAPPING, Boolean, Null, Number, String
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.Utils._number_config import (
+    numbers_are_equal,
+    numbers_are_greater_equal,
+    numbers_are_less_equal,
+)
 
 
 class Unary(Operator.Unary):
@@ -118,7 +123,13 @@ class Binary(Operator.Binary):
                 elif isinstance(first_non_null, (int, float)):
                     series = series.astype(float)
 
-        op = cls.py_op if cls.py_op is not None else cls.op_func
+        # Use op_func if it's overridden (not from Binary base class)
+        # to support tolerance-based number comparisons
+        if cls.op_func is not Binary.op_func:
+            op = cls.op_func
+        else:
+            op = cls.py_op if cls.py_op is not None else cls.op_func
+
         if series_left:
             result = series.map(lambda x: op(x, scalar), na_action="ignore")
         else:
@@ -153,10 +164,36 @@ class Equal(Binary):
     op = EQ
     py_op = operator.eq
 
+    @classmethod
+    def op_func(cls, x: Any, y: Any) -> Any:
+        # Return None if any of the values are NaN
+        if pd.isnull(x) or pd.isnull(y):
+            return None
+        x, y = cls._cast_values(x, y)
+
+        # Use tolerance-based comparison for numeric types
+        if isinstance(x, (int, float)) and isinstance(y, (int, float)):
+            return numbers_are_equal(x, y)
+
+        return cls.py_op(x, y)
+
 
 class NotEqual(Binary):
     op = NEQ
     py_op = operator.ne
+
+    @classmethod
+    def op_func(cls, x: Any, y: Any) -> Any:
+        # Return None if any of the values are NaN
+        if pd.isnull(x) or pd.isnull(y):
+            return None
+        x, y = cls._cast_values(x, y)
+
+        # Use tolerance-based comparison for numeric types
+        if isinstance(x, (int, float)) and isinstance(y, (int, float)):
+            return not numbers_are_equal(x, y)
+
+        return cls.py_op(x, y)
 
 
 class Greater(Binary):
@@ -168,6 +205,19 @@ class GreaterEqual(Binary):
     op = GTE
     py_op = operator.ge
 
+    @classmethod
+    def op_func(cls, x: Any, y: Any) -> Any:
+        # Return None if any of the values are NaN
+        if pd.isnull(x) or pd.isnull(y):
+            return None
+        x, y = cls._cast_values(x, y)
+
+        # Use tolerance-based comparison for numeric types
+        if isinstance(x, (int, float)) and isinstance(y, (int, float)):
+            return numbers_are_greater_equal(x, y)
+
+        return cls.py_op(x, y)
+
 
 class Less(Binary):
     op = LT
@@ -177,6 +227,19 @@ class Less(Binary):
 class LessEqual(Binary):
     op = LTE
     py_op = operator.le
+
+    @classmethod
+    def op_func(cls, x: Any, y: Any) -> Any:
+        # Return None if any of the values are NaN
+        if pd.isnull(x) or pd.isnull(y):
+            return None
+        x, y = cls._cast_values(x, y)
+
+        # Use tolerance-based comparison for numeric types
+        if isinstance(x, (int, float)) and isinstance(y, (int, float)):
+            return numbers_are_less_equal(x, y)
+
+        return cls.py_op(x, y)
 
 
 class In(Binary):
@@ -244,9 +307,18 @@ class Between(Operator.Operator):
         y: Optional[Union[int, float, bool, str]],
         z: Optional[Union[int, float, bool, str]],
     ) -> Optional[bool]:
-        return (
-            None if (pd.isnull(x) or pd.isnull(y) or pd.isnull(z)) else y <= x <= z  # type: ignore[operator]
-        )
+        if pd.isnull(x) or pd.isnull(y) or pd.isnull(z):
+            return None
+
+        # Use tolerance-based comparison for numeric types
+        if (
+            isinstance(x, (int, float))
+            and isinstance(y, (int, float))
+            and isinstance(z, (int, float))
+        ):
+            return numbers_are_greater_equal(x, y) and numbers_are_less_equal(x, z)
+
+        return y <= x <= z  # type: ignore[operator]
 
     @classmethod
     def apply_operation_component(cls, series: Any, from_data: Any, to_data: Any) -> Any:

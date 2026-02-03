@@ -10,6 +10,11 @@ from vtlengine.AST.Grammar.tokens import HIERARCHY, NON_NULL, NON_ZERO
 from vtlengine.DataTypes import Boolean, Number
 from vtlengine.Model import Component, DataComponent, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.Utils._number_config import (
+    numbers_are_equal,
+    numbers_are_greater_equal,
+    numbers_are_less_equal,
+)
 
 REMOVE = "REMOVE_VALUE"
 
@@ -104,6 +109,14 @@ class HREqual(HRComparison):
     op = "="
     py_op = operator.eq
 
+    @classmethod
+    def op_func(cls, x: Any, y: Any) -> Any:
+        if pd.isnull(x) or pd.isnull(y):
+            return None
+        if isinstance(x, (int, float)) and isinstance(y, (int, float)):
+            return numbers_are_equal(x, y)
+        return cls.py_op(x, y)
+
 
 class HRGreater(HRComparison):
     op = ">"
@@ -114,6 +127,14 @@ class HRGreaterEqual(HRComparison):
     op = ">="
     py_op = operator.ge
 
+    @classmethod
+    def op_func(cls, x: Any, y: Any) -> Any:
+        if pd.isnull(x) or pd.isnull(y):
+            return None
+        if isinstance(x, (int, float)) and isinstance(y, (int, float)):
+            return numbers_are_greater_equal(x, y)
+        return cls.py_op(x, y)
+
 
 class HRLess(HRComparison):
     op = "<"
@@ -123,6 +144,14 @@ class HRLess(HRComparison):
 class HRLessEqual(HRComparison):
     op = "<="
     py_op = operator.le
+
+    @classmethod
+    def op_func(cls, x: Any, y: Any) -> Any:
+        if pd.isnull(x) or pd.isnull(y):
+            return None
+        if isinstance(x, (int, float)) and isinstance(y, (int, float)):
+            return numbers_are_less_equal(x, y)
+        return cls.py_op(x, y)
 
 
 class HRBinNumeric(HRBinOp):

@@ -1,6 +1,6 @@
 [project]
 name = "vtlengine"
-version = "1.5.0rc2"
+version = "1.5.0rc7"
 description = "Run and Validate VTL Scripts"
 license = "AGPL-3.0"
 readme = "README.md"
@@ -33,7 +33,8 @@ dependencies = [
     "pandas>=2.1.4,<3.0",
     "networkx>=2.8,<3.0",
     "numpy>=2.0.2,<2.1; python_version < '3.10'",
-    "numpy>=2.2.0,<2.3; python_version >= '3.10'"
+    "numpy>=2.2.0,<2.3; python_version >= '3.10'",
+    "psutil (>=7.2.2,<8.0.0)"
 ]
 
 [project.optional-dependencies]
@@ -60,10 +61,12 @@ mypy = ">=1.18,<2.0"
 pandas-stubs = ">=2.2.2,<3.0"
 ruff = ">=0.14,<1.0.0"
 types-jsonschema = ">=4.25.1,<5.0"
+psutil = "^7.2.1"
 
 [tool.poetry.group.docs.dependencies]
 sphinx = ">=7.4.7,<8.0"
 sphinx-rtd-theme = ">=3.0.2,<4.0"
+sphinx-multiversion = ">=0.2.4,<0.3.0"
 toml = ">=0.10.2,<0.11.0"
 
 
@@ -86,7 +89,7 @@ lint.exclude = ["*/Grammar/*", "*/main.py", "*/dev.py"]
 
 [tool.mypy]
 files = "src"
-exclude = "src/vtlengine/AST/.*|src/dev.py"
+exclude = "src/vtlengine/AST/.*|src/dev.py|src/duckdb_transpiler/AST/.*|src/duckdb_transpiler/dev.py|src/duckdb_transpiler/Transpiler/.*"
 disallow_untyped_defs = true
 disallow_untyped_calls = true
 ignore_errors = false
