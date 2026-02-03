@@ -110,11 +110,13 @@ class Check(Operator):
         else:
             result.data["imbalance"] = None
 
-        result.data["errorcode"] = error_code
-        result.data["errorlevel"] = error_level
+        # Set errorcode/errorlevel only when validation fails (bool_var != True)
+        validation_measure_name = validation_element.get_measures_names()[0]
+        bool_col = result.data[validation_measure_name]
+        result.data["errorcode"] = bool_col.map(lambda x: None if x is True else error_code)
+        result.data["errorlevel"] = bool_col.map(lambda x: None if x is True else error_level)
+
         if invalid:
-            # TODO: Is this always bool_var?? In any case this does the trick for more use cases
-            validation_measure_name = validation_element.get_measures_names()[0]
             result.data = result.data[result.data[validation_measure_name] == False]
             result.data.reset_index(drop=True, inplace=True)
         return result
@@ -230,8 +232,13 @@ class Check_Hierarchy(Validation):
         for rule_name, rule_data in rule_info.items():
             rule_df = rule_data["output"]
             rule_df["ruleid"] = rule_name
-            rule_df["errorcode"] = rule_data["errorcode"]
-            rule_df["errorlevel"] = rule_data["errorlevel"]
+            # Set errorcode/errorlevel only when validation fails (bool_var != True)
+            rule_df["errorcode"] = rule_df["bool_var"].map(
+                lambda x: None if x is True else rule_data["errorcode"]
+            )
+            rule_df["errorlevel"] = rule_df["bool_var"].map(
+                lambda x: None if x is True else rule_data["errorlevel"]
+            )
             df = pd.concat([df, rule_df], ignore_index=True)
         if df is None:
             df = pd.DataFrame()

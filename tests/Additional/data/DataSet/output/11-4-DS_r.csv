@@ -1,6 +1,6 @@
 Id_1,Id_2,bool_var,imbalance,ruleid,errorcode,errorlevel
-2010,B,True,0.0,R020,,5.0
-2010,C,True,0.0,R030,XX,5.0
+2010,B,True,0.0,R020,,
+2010,C,True,0.0,R030,,
 2010,G,False,8.0,R070,,
 2010,M,False,-3.0,R100,,5.0
-2010,M,True,-17.0,R110,,5.0
+2010,M,True,-17.0,R110,,
