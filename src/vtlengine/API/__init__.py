@@ -303,6 +303,7 @@ def _run_with_duckdb(
 
     from vtlengine.AST.DAG._words import DELETE, GLOBAL, INSERT, PERSISTENT
     from vtlengine.duckdb_transpiler import SQLTranspiler
+    from vtlengine.duckdb_transpiler.Config.config import configure_duckdb_connection
     from vtlengine.duckdb_transpiler.io import execute_queries, extract_datapoint_paths
 
     # AST generation
@@ -364,6 +365,7 @@ def _run_with_duckdb(
 
     # Create DuckDB connection and execute queries with DAG scheduling
     conn = duckdb.connect()
+    configure_duckdb_connection(conn)
     try:
         results = execute_queries(
             conn=conn,

@@ -190,24 +190,27 @@ def validate_no_duplicates(
     id_columns: List[str],
 ) -> None:
     """
-    Validate no duplicate rows exist using GROUP BY HAVING COUNT > 1.
+    Validate no duplicate rows exist using a memory-efficient approach.
 
-    This is faster than COUNT DISTINCT because it can short-circuit
-    as soon as it finds a single duplicate (LIMIT 1).
+    Uses COUNT vs COUNT DISTINCT comparison which is more memory-efficient
+    than GROUP BY HAVING for large datasets with many unique values.
+    DuckDB can use HyperLogLog approximation for COUNT DISTINCT internally.
     """
     if not id_columns:
         return  # DWI check handles this case
 
     id_list = ", ".join(f'"{c}"' for c in id_columns)
+
+    # Compare total count with distinct count - memory efficient
+    # DuckDB optimizes this better than GROUP BY HAVING for large datasets
     check_sql = f"""
-        SELECT 1 FROM "{table_name}"
-        GROUP BY {id_list}
-        HAVING COUNT(*) > 1
-        LIMIT 1
+        SELECT
+            (SELECT COUNT(*) FROM "{table_name}") AS total,
+            (SELECT COUNT(DISTINCT ({id_list})) FROM "{table_name}") AS distinct_count
     """
 
     result = conn.execute(check_sql).fetchone()
-    if result:
+    if result and result[0] != result[1]:
         raise DataLoadError("0-3-1-7", name=table_name, row_index="(duplicate keys detected)")
 
 

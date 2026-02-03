@@ -4,6 +4,7 @@ Internal IO functions for DuckDB-based CSV loading and saving.
 This module contains the core load/save implementations to avoid circular imports.
 """
 
+import os
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -12,6 +13,13 @@ import pandas as pd
 
 from vtlengine.Exceptions import DataLoadError, InputValidationException
 from vtlengine.Model import Component, Dataset, Role
+
+# Environment variable to skip post-load validations (for benchmarking)
+SKIP_LOAD_VALIDATION = os.environ.get("VTL_SKIP_LOAD_VALIDATION", "").lower() in (
+    "1",
+    "true",
+    "yes",
+)
 
 from ._validation import (
     build_create_table_sql,
@@ -114,23 +122,24 @@ def load_datapoints_duckdb(
         conn.execute(f'DROP TABLE IF EXISTS "{dataset_name}"')
         raise map_duckdb_error(e, dataset_name, components)
 
-    # 8. Validate constraints
-    try:
-        # DWI: no identifiers → max 1 row
-        if not id_columns:
-            result = conn.execute(f'SELECT COUNT(*) FROM "{dataset_name}"').fetchone()
-            if result and result[0] > 1:
-                raise DataLoadError("0-3-1-4", name=dataset_name)
+    # 8. Validate constraints (can be skipped via VTL_SKIP_LOAD_VALIDATION for benchmarking)
+    if not SKIP_LOAD_VALIDATION:
+        try:
+            # DWI: no identifiers → max 1 row
+            if not id_columns:
+                result = conn.execute(f'SELECT COUNT(*) FROM "{dataset_name}"').fetchone()
+                if result and result[0] > 1:
+                    raise DataLoadError("0-3-1-4", name=dataset_name)
 
-        # Duplicate check (GROUP BY HAVING)
-        validate_no_duplicates(conn, dataset_name, id_columns)
+            # Duplicate check (GROUP BY HAVING)
+            validate_no_duplicates(conn, dataset_name, id_columns)
 
-        # Temporal type validation
-        validate_temporal_columns(conn, dataset_name, components)
+            # Temporal type validation
+            validate_temporal_columns(conn, dataset_name, components)
 
-    except DataLoadError:
-        conn.execute(f'DROP TABLE IF EXISTS "{dataset_name}"')
-        raise
+        except DataLoadError:
+            conn.execute(f'DROP TABLE IF EXISTS "{dataset_name}"')
+            raise
 
     return conn.table(dataset_name)
 

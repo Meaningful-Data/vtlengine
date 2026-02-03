@@ -85,6 +85,9 @@ THREADS: int = int(os.getenv("VTL_THREADS", "1"))
 # Temp directory for spill-to-disk
 TEMP_DIRECTORY: str = os.getenv("VTL_TEMP_DIRECTORY", tempfile.gettempdir())
 
+# Use file-backed database instead of in-memory (better for large datasets)
+USE_FILE_DATABASE: bool = os.getenv("VTL_USE_FILE_DATABASE", "").lower() in ("1", "true", "yes")
+
 
 def get_memory_limit_bytes() -> int:
     """
