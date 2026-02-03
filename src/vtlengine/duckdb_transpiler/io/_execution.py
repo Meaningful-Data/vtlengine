@@ -14,7 +14,11 @@ import pandas as pd
 from vtlengine.duckdb_transpiler.sql import initialize_time_types
 from vtlengine.Model import Dataset, Scalar
 
-from ._io import load_datapoints_duckdb, register_dataframes, save_datapoints_duckdb
+from vtlengine.duckdb_transpiler.io._io import (
+    load_datapoints_duckdb,
+    register_dataframes,
+    save_datapoints_duckdb,
+)
 
 
 def load_scheduled_datasets(
