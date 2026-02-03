@@ -163,7 +163,7 @@ def run(
     return_only_persistent: bool = True,
     output_folder: Optional[Union[str, Path]] = None,
     scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
-) -> Dict[str, Union[Dataset, Scalar]]:
+) -> List[Query]:
     """
     Run a VTL script using DuckDB as the execution engine.
 
@@ -220,6 +220,4 @@ def run(
 
     conn.close()
 
-    # 6. Convert List[Query] to Dict[str, Dataset/Scalar] for backward compatibility
-    results = {query.name: query.structure for query in result_queries}
-    return results
+    return result_queries
