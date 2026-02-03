@@ -1,10 +1,10 @@
 ACCOUNTING_ENTRY,FUNCTIONAL_CAT,INSTR_ASSET,INT_ACC_ITEM,REF_AREA,REF_SECTOR,bool_var,imbalance,ruleid,errorcode,errorlevel
 B,D,F,G,IT,S1,False,10.0,1,Balance(credit-debit),4.0
-B,P,F,G,IT,S1,,,1,Balance(credit-debit),4.0
+B,P,F,G,IT,S1,,,1,,
 B,P,F,G,AT,S1,False,400.0,1,Balance(credit-debit),4.0
-N,D,F,G,IT,S1,,,2,Net(assets-liabilities),4.0
-N,P,F,G,IT,S1,,,2,Net(assets-liabilities),4.0
-N,P,F,G,PT,S1,,,2,Net(assets-liabilities),4.0
+N,D,F,G,IT,S1,,,2,,
+N,P,F,G,IT,S1,,,2,,
+N,P,F,G,PT,S1,,,2,,
 N,P,F,G,FR,S1,True,1.0,2,,
-N,P,F,G,AT,S1,,,2,Net(assets-liabilities),4.0
-B,P,F,G,PT,S1,,,1,Balance(credit-debit),4.0
+N,P,F,G,AT,S1,,,2,,
+B,P,F,G,PT,S1,,,1,,
