@@ -3423,6 +3423,33 @@ class DataValidationOperatorsTest(AdditionalHelper):
             references_names=references_names,
         )
 
+    def test_31(self):
+        """
+        Issue #472: CHECK operator should return NULL errorcode/errorlevel
+        when validation passes (bool_var = True).
+
+        Tests check() with mixed pass/fail rows to verify:
+        - Passing rows (Me_1 < 50): errorcode and errorlevel are NULL
+        - Failing rows (Me_1 >= 50): errorcode and errorlevel are set
+        """
+        text = """DS_r := check(
+            DS_1#Me_1 < 50
+            errorcode "ERR_LIMIT"
+            errorlevel 5
+            imbalance DS_1#Me_1 - 50
+        );"""
+
+        code = "11-31"
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
+
 
 class TimeOperatorsTest(AdditionalHelper):
     """
