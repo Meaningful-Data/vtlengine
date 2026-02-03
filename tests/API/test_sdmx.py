@@ -149,20 +149,21 @@ def test_run_sdmx_file_errors(
             f.write(file_or_content)
             test_file = Path(f.name)
         try:
+            # Use BIS_DER which matches the structure from sdmx_data_structure fixture
             with pytest.raises(DataLoadError, match=error_match):
                 run(
-                    script="DS_r <- TEST;",
+                    script="DS_r <- BIS_DER;",
                     data_structures=sdmx_data_structure,
-                    datapoints={"TEST": test_file},
+                    datapoints={"BIS_DER": test_file},
                 )
         finally:
             test_file.unlink()
     elif error_type == "nonexistent":
         with pytest.raises(DataLoadError, match=error_match):
             run(
-                script="DS_r <- TEST;",
+                script="DS_r <- BIS_DER;",
                 data_structures=sdmx_data_structure,
-                datapoints={"TEST": Path(file_or_content)},
+                datapoints={"BIS_DER": Path(file_or_content)},
             )
 
 
@@ -1321,3 +1322,142 @@ def test_generate_sdmx_and_check_script_with_valuedomain():
     assert rs.items[0].ruleset_scope == "valuedomain"
     regenerated_script = _check_script(ts)
     assert prettify(script) == prettify(regenerated_script)
+
+
+# =============================================================================
+# Tests for Memory-Efficient Pattern with SDMX Files (Issue #470)
+# =============================================================================
+
+
+def test_sdmx_memory_efficient_with_output_folder(sdmx_data_file, sdmx_data_structure):
+    """
+    Test that SDMX-ML files work with memory-efficient pattern (output_folder).
+
+    When output_folder is provided:
+    1. SDMX-ML file paths are stored for lazy loading (not loaded upfront)
+    2. Data is loaded on-demand during execution via load_datapoints
+    3. Results are written to disk
+
+    This test verifies Issue #470 - QA for SDMX memory-efficient loading.
+    """
+    script = "DS_r <- BIS_DER;"
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        result = run(
+            script=script,
+            data_structures=sdmx_data_structure,
+            datapoints={"BIS_DER": sdmx_data_file},
+            output_folder=tmpdir,
+            return_only_persistent=False,
+        )
+
+        # Result should contain DS_r
+        assert "DS_r" in result
+        assert isinstance(result["DS_r"], Dataset)
+
+        # Output file should exist and have correct content
+        output_file = Path(tmpdir) / "DS_r.csv"
+        assert output_file.exists(), "Output file DS_r.csv should be created"
+        df = pd.read_csv(output_file)
+        assert len(df) == 10, "Should have 10 rows from SDMX data"
+
+
+def test_sdmx_memory_efficient_with_persistent_assignment(sdmx_data_file, sdmx_data_structure):
+    """
+    Test SDMX-ML with persistent assignment and output_folder.
+
+    Persistent assignments (using <-) should have their results saved to disk.
+    """
+    script = "DS_r <- BIS_DER [calc Me_4 := OBS_VALUE];"
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        result = run(
+            script=script,
+            data_structures=sdmx_data_structure,
+            datapoints={"BIS_DER": sdmx_data_file},
+            output_folder=tmpdir,
+            return_only_persistent=True,
+        )
+
+        # Should only return persistent dataset
+        assert "DS_r" in result
+
+        # Verify output file exists and has content
+        output_file = Path(tmpdir) / "DS_r.csv"
+        assert output_file.exists(), "Output file DS_r.csv should exist"
+        df = pd.read_csv(output_file)
+        assert len(df) == 10, "Should have 10 rows"
+        assert "Me_4" in df.columns, "Should have calculated measure Me_4"
+
+
+def test_sdmx_memory_efficient_multi_step_transformation(sdmx_data_file, sdmx_data_structure):
+    """
+    Test SDMX-ML with multi-step transformation and memory-efficient pattern.
+
+    This tests that intermediate results are properly managed and SDMX-ML data
+    is loaded via load_datapoints during execution.
+    """
+    # Use a filter on FREQ which is a String identifier
+    script = """
+    DS_temp := BIS_DER [filter FREQ = "A"];
+    DS_r <- DS_temp [calc Me_4 := OBS_VALUE || "_transformed"];
+    """
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        result = run(
+            script=script,
+            data_structures=sdmx_data_structure,
+            datapoints={"BIS_DER": sdmx_data_file},
+            output_folder=tmpdir,
+            return_only_persistent=True,
+        )
+
+        # Only persistent assignment should be in result
+        assert "DS_r" in result
+        assert "DS_temp" not in result  # Non-persistent, not returned
+
+        # Output file should exist with transformed data
+        output_file = Path(tmpdir) / "DS_r.csv"
+        assert output_file.exists()
+        df = pd.read_csv(output_file)
+        assert len(df) > 0, "Should have data after transformation"
+        assert "Me_4" in df.columns, "Should have calculated measure Me_4"
+
+
+def test_mixed_sdmx_csv_memory_efficient(sdmx_data_file, sdmx_data_structure):
+    """
+    Test memory-efficient pattern with mixed SDMX-ML and plain CSV files.
+
+    Both SDMX-ML and plain CSV files should be loaded on-demand during execution
+    via load_datapoints which supports both formats.
+    """
+    # Get CSV structure
+    csv_structure_path = filepath_json / "DS_1.json"
+    with open(csv_structure_path) as f:
+        csv_structure = json.load(f)
+
+    # Combine structures
+    combined_structure = {"datasets": sdmx_data_structure["datasets"] + csv_structure["datasets"]}
+
+    script = "DS_r <- BIS_DER; DS_r2 <- DS_1;"
+    csv_file = filepath_csv / "DS_1.csv"
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        result = run(
+            script=script,
+            data_structures=combined_structure,
+            datapoints={
+                "BIS_DER": sdmx_data_file,
+                "DS_1": csv_file,
+            },
+            output_folder=tmpdir,
+            return_only_persistent=False,
+        )
+
+        # Both results should be present
+        assert "DS_r" in result
+        assert "DS_r2" in result
+
+        # Both output files should exist
+        assert (Path(tmpdir) / "DS_r.csv").exists()
+        assert (Path(tmpdir) / "DS_r2.csv").exists()

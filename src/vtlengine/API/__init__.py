@@ -19,7 +19,6 @@ from vtlengine.API._InternalApi import (
     load_external_routines,
     load_value_domains,
     load_vtl,
-    to_vtl_json,
 )
 from vtlengine.API._sdmx_utils import _build_mapping_dict, _convert_sdmx_mappings
 from vtlengine.AST import Start
@@ -33,6 +32,7 @@ from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
     format_time_period_external_representation,
 )
+from vtlengine.files.sdmx_handler import to_vtl_json
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Dataset, Scalar
 
@@ -151,7 +151,7 @@ def validate_dataset(
     Raises:
         Exception: If the data structures or datapoints are invalid or cannot be loaded.
     """
-    load_datasets_with_data(data_structures, datapoints, scalar_values)
+    load_datasets_with_data(data_structures, datapoints, scalar_values, validate=True)
 
 
 def validate_value_domain(
