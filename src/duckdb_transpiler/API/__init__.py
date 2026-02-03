@@ -1,11 +1,12 @@
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import pandas as pd
 from pysdmx.model import TransformationScheme
 
 from duckdb_transpiler.Config.config import create_configured_connection
 from duckdb_transpiler.IO._execution import execute_queries
+from duckdb_transpiler.IO._io import extract_datapoint_paths
 from duckdb_transpiler.IO._model import Query
 from duckdb_transpiler.Transpiler import SQLTranspiler
 from vtlengine.API import create_ast, semantic_analysis
@@ -14,7 +15,7 @@ from vtlengine.AST.DAG import DAGAnalyzer
 from vtlengine.Model import Dataset, Scalar
 
 
-def transpile(
+def _prepare_and_transpile(
     script: Union[str, TransformationScheme, Path],
     data_structures: Union[Dict[str, Any], Path, List[Dict[str, Any]], List[Path]],
     value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
@@ -22,25 +23,29 @@ def transpile(
         Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
     ] = None,
     scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
-) -> List[Query]:
+) -> Tuple[
+    List[Query],
+    Dict[str, Any],
+    Dict[str, Dataset],
+    Dict[str, Scalar],
+    Dict[str, Dataset],
+    Dict[str, Scalar],
+]:
     """
-    Transpile a VTL script to SQL queries.
-
-    Args:
-        script: VTL script as string, TransformationScheme object, or Path.
-        data_structures: Dict or Path with data structure definitions.
-        value_domains: Optional value domains.
-        external_routines: Optional external routines.
-        scalar_values: Optional dict of scalar values to inline in queries.
+    Internal function to prepare and transpile VTL script without redundancy.
 
     Returns:
-        List of Query objects with name, inputs, structure and SQL.
+        Tuple of (formatted_queries, dag_analysis, input_datasets, input_scalars,
+                  output_datasets, output_scalars)
     """
-    # 1. Parse script and create AST
+    # 1. Parse script and create AST (done once)
     script = _check_script(script)
     vtl = load_vtl(script)
     ast = create_ast(vtl)
     dag = DAGAnalyzer().createDAG(ast)
+
+    # Get dataset structure analysis for execution scheduling
+    ds_structure = DAGAnalyzer.ds_structure(ast)
 
     # 2. Load input datasets and scalars from data structures
     input_datasets, input_scalars = load_datasets(data_structures)
@@ -80,17 +85,70 @@ def transpile(
     # 7. Transpile AST to SQL queries
     queries = transpiler.transpile(ast)
 
-    # 6. Format queries structures
-    fomatted_queries = []
+    # 8. Prepare persistent dataset set
+    persistent_set = set()
+    for deps in dag.dependencies.values():
+        persistent_set.update(deps.get("persistent", []))
+
+    # 9. Format queries with dependencies and structures
+    formatted_queries = []
     output_structures = {**output_datasets, **output_scalars}
     for dependencies in dag.dependencies.values():
         name = (dependencies.get("persistent") or dependencies.get("outputs"))[0]
         inputs = dependencies.get("inputs", [])
         structure = output_structures[name]
         sql = next((query[1] for query in queries if query[0] == name))
-        fomatted_queries.append(Query(name, sql, inputs, structure))
+        is_persistent = name in persistent_set
+        formatted_queries.append(Query(name, sql, inputs, structure, is_persistent))
 
-    return fomatted_queries
+    # 10. Prepare DAG analysis for execution
+    dag_analysis = {
+        "insertion": ds_structure.get("insertion", {}),
+        "deletion": ds_structure.get("deletion", {}),
+        "global": ds_structure.get("global_inputs", []),
+        "persistent": list(persistent_set),
+    }
+
+    return (
+        formatted_queries,
+        dag_analysis,
+        input_datasets,
+        input_scalars,
+        output_datasets,
+        output_scalars,
+    )
+
+
+def transpile(
+    script: Union[str, TransformationScheme, Path],
+    data_structures: Union[Dict[str, Any], Path, List[Dict[str, Any]], List[Path]],
+    value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
+    external_routines: Optional[
+        Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
+    ] = None,
+    scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
+) -> List[Query]:
+    """
+    Transpile a VTL script to SQL queries.
+
+    Args:
+        script: VTL script as string, TransformationScheme object, or Path.
+        data_structures: Dict or Path with data structure definitions.
+        value_domains: Optional value domains.
+        external_routines: Optional external routines.
+        scalar_values: Optional dict of scalar values to inline in queries.
+
+    Returns:
+        List of Query objects with name, inputs, structure and SQL.
+    """
+    queries, _, _, _, _, _ = _prepare_and_transpile(
+        script=script,
+        data_structures=data_structures,
+        value_domains=value_domains,
+        external_routines=external_routines,
+        scalar_values=scalar_values,
+    )
+    return queries
 
 
 def run(
@@ -119,13 +177,19 @@ def run(
         return_only_persistent: If True, only return persistent assignments.
         output_folder: Optional folder to write output files.
         scalar_values: Optional dict of scalar values.
-        output_format: Output format ("pandas" or "duckdb").
 
     Returns:
-        Dict mapping result names to Dataset, Scalar, or DataFrame objects.
+        Dict mapping result names to Dataset or Scalar objects.
     """
-    # 1. Transpile script to SQL queries (with scalar values inlined)
-    queries = transpile(
+    # 1. Prepare and transpile script (done once without redundancy)
+    (
+        queries,
+        dag_analysis,
+        input_datasets,
+        input_scalars,
+        output_datasets,
+        output_scalars,
+    ) = _prepare_and_transpile(
         script=script,
         data_structures=data_structures,
         value_domains=value_domains,
@@ -133,32 +197,29 @@ def run(
         scalar_values=scalar_values,
     )
 
-    # 2. DAG analysis for execution scheduling
-    script = _check_script(script)
-    vtl = load_vtl(script)
-    ast = create_ast(vtl)
-    dag = DAGAnalyzer().createDAG(ast)
+    # 2. Extract paths and dataframes from datapoints
+    path_dict, dataframe_dict = extract_datapoint_paths(datapoints, input_datasets)
 
-    # 3. Create DuckDB connection
+    # 3. Prepare output folder path
+    output_folder_path = Path(output_folder) if output_folder else None
+
+    # 4. Create DuckDB connection
     conn = create_configured_connection()
 
-    # 4. Execute queries in DuckDB
-    results = execute_queries(
+    # 5. Execute queries in DuckDB
+    result_queries = execute_queries(
         conn=conn,
         queries=queries,
-        ds_analysis=dag.dependencies,
-        path_dict=None,
-        dataframe_dict={},
-        input_datasets={},
-        output_datasets={},
-        output_scalars={},
-        output_folder=output_folder,
+        ds_analysis=dag_analysis,
+        path_dict=path_dict,
+        dataframe_dict=dataframe_dict,
+        input_datasets=input_datasets,
+        output_folder=output_folder_path,
         return_only_persistent=return_only_persistent,
-        insert_key="insertion",
-        delete_key="deletion",
-        global_key="global_inputs",
-        persistent_key="persistent_outputs",
     )
 
     conn.close()
+
+    # 6. Convert List[Query] to Dict[str, Dataset/Scalar] for backward compatibility
+    results = {query.name: query.structure for query in result_queries}
     return results

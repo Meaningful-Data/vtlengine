@@ -6,11 +6,12 @@ handling dataset loading/saving with DAG scheduling for memory efficiency.
 """
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 import duckdb
 import pandas as pd
 
+from duckdb_transpiler.AST.DAG._words import DELETE, GLOBAL, INSERT, PERSISTENT
 from duckdb_transpiler.IO._model import Query
 from duckdb_transpiler.Utils.sql import initialize_time_types
 from vtlengine.Model import Dataset, Scalar
@@ -25,7 +26,6 @@ def load_scheduled_datasets(
     path_dict: Optional[Dict[str, Path]],
     dataframe_dict: Dict[str, pd.DataFrame],
     input_datasets: Dict[str, Dataset],
-    insert_key: str,
 ) -> None:
     """
     Load datasets scheduled for a given statement using DAG analysis.
@@ -37,12 +37,11 @@ def load_scheduled_datasets(
         path_dict: Dict mapping dataset names to CSV paths
         dataframe_dict: Dict mapping dataset names to DataFrames
         input_datasets: Dict of input dataset structures
-        insert_key: Key in ds_analysis for insertion schedule (e.g., 'insertion')
     """
-    if statement_num not in ds_analysis.get(insert_key, {}):
+    if statement_num not in ds_analysis.get(INSERT, {}):
         return
 
-    for ds_name in ds_analysis[insert_key][statement_num]:
+    for ds_name in ds_analysis[INSERT][statement_num]:
         if ds_name not in input_datasets:
             continue
 
@@ -64,12 +63,9 @@ def cleanup_scheduled_datasets(
     statement_num: int,
     ds_analysis: Dict[str, Any],
     output_folder: Optional[Path],
-    output_datasets: Dict[str, Dataset],
-    results: Dict[str, Union[Dataset, Scalar]],
+    queries: List[Query],
+    results: List[Query],
     return_only_persistent: bool,
-    delete_key: str,
-    global_key: str,
-    persistent_key: str,
 ) -> None:
     """
     Clean up datasets scheduled for deletion at a given statement.
@@ -79,36 +75,37 @@ def cleanup_scheduled_datasets(
         statement_num: Current statement number (1-indexed)
         ds_analysis: DAG analysis dict with deletion schedule
         output_folder: Path to save CSVs (None for in-memory mode)
-        output_datasets: Dict of output dataset structures
-        results: Dict to store results
+        queries: List of all Query objects
+        results: List to store completed Query results
         return_only_persistent: Only return persistent assignments
-        delete_key: Key in ds_analysis for deletion schedule
-        global_key: Key in ds_analysis for global inputs
-        persistent_key: Key in ds_analysis for persistent outputs
     """
-    if statement_num not in ds_analysis.get(delete_key, {}):
+    if statement_num not in ds_analysis.get(DELETE, {}):
         return
 
-    global_inputs = ds_analysis.get(global_key, [])
-    persistent_datasets = ds_analysis.get(persistent_key, [])
+    global_inputs = ds_analysis.get(GLOBAL, [])
+    persistent_datasets = ds_analysis.get(PERSISTENT, [])
 
-    for ds_name in ds_analysis[delete_key][statement_num]:
+    # Create a mapping of query names to Query objects
+    query_map = {q.name: q for q in queries}
+
+    for ds_name in ds_analysis[DELETE][statement_num]:
         if ds_name in global_inputs:
             # Drop global inputs without saving
             conn.execute(f'DROP TABLE IF EXISTS "{ds_name}"')
         elif not return_only_persistent or ds_name in persistent_datasets:
-            if output_folder:
-                # Save to CSV and drop table
-                save_datapoints_duckdb(conn, ds_name, output_folder)
-                ds = output_datasets.get(ds_name, Dataset(name=ds_name, components={}, data=None))
-                results[ds_name] = ds
-            else:
-                # Fetch data before dropping table
-                result_df = conn.execute(f'SELECT * FROM "{ds_name}"').fetchdf()
-                ds = output_datasets.get(ds_name, Dataset(name=ds_name, components={}, data=None))
-                ds.data = result_df
-                results[ds_name] = ds
-                conn.execute(f'DROP TABLE IF EXISTS "{ds_name}"')
+            # Find the corresponding query
+            query = query_map.get(ds_name)
+            if query:
+                if output_folder:
+                    # Save to CSV and drop table
+                    save_datapoints_duckdb(conn, ds_name, output_folder)
+                    results.append(query)
+                else:
+                    # Fetch data before dropping table
+                    result_df = conn.execute(f'SELECT * FROM "{ds_name}"').fetchdf()
+                    query.structure.data = result_df
+                    results.append(query)
+                    conn.execute(f'DROP TABLE IF EXISTS "{ds_name}"')
         else:
             # Drop non-persistent intermediate results
             conn.execute(f'DROP TABLE IF EXISTS "{ds_name}"')
@@ -116,42 +113,41 @@ def cleanup_scheduled_datasets(
 
 def fetch_result(
     conn: duckdb.DuckDBPyConnection,
-    result_name: str,
+    query: Query,
     output_folder: Optional[Path],
-    output_datasets: Dict[str, Dataset],
-    output_scalars: Dict[str, Scalar],
-) -> Union[Dataset, Scalar]:
+) -> Query:
     """
-    Fetch a result from DuckDB and return as Dataset or Scalar.
+    Fetch a result from DuckDB and populate the Query's structure data field.
 
     Args:
         conn: DuckDB connection
-        result_name: Name of the result table
+        query: Query object to populate with result data
         output_folder: Path to save CSV (None for in-memory mode)
-        output_datasets: Dict of output dataset structures
-        output_scalars: Dict of output scalar structures
 
     Returns:
-        Dataset or Scalar with result data
+        Query object with structure.data populated
     """
     if output_folder:
         # Save to CSV
-        save_datapoints_duckdb(conn, result_name, output_folder)
-        return output_datasets.get(result_name, Dataset(name=result_name, components={}, data=None))
+        save_datapoints_duckdb(conn, query.name, output_folder)
+        # Structure data remains None when saved to file
+        return query
 
     # Fetch as DataFrame
-    result_df = conn.execute(f'SELECT * FROM "{result_name}"').fetchdf()
+    result_df = conn.execute(f'SELECT * FROM "{query.name}"').fetchdf()
 
-    if result_name in output_scalars:
+    # Populate the structure's data field
+    if isinstance(query.structure, Scalar):
         if len(result_df) == 1 and len(result_df.columns) == 1:
-            scalar = output_scalars[result_name]
-            scalar.value = result_df.iloc[0, 0]
-            return scalar
-        return Dataset(name=result_name, components={}, data=result_df)
+            query.structure.value = result_df.iloc[0, 0]
+        else:
+            # If scalar query returned multiple rows/cols, treat as dataset
+            query.structure.data = result_df
+    else:
+        # Dataset
+        query.structure.data = result_df
 
-    ds = output_datasets.get(result_name, Dataset(name=result_name, components={}, data=None))
-    ds.data = result_df
-    return ds
+    return query
 
 
 def execute_queries(
@@ -161,38 +157,27 @@ def execute_queries(
     path_dict: Optional[Dict[str, Path]],
     dataframe_dict: Dict[str, pd.DataFrame],
     input_datasets: Dict[str, Dataset],
-    output_datasets: Dict[str, Dataset],
-    output_scalars: Dict[str, Scalar],
     output_folder: Optional[Path],
     return_only_persistent: bool,
-    insert_key: str,
-    delete_key: str,
-    global_key: str,
-    persistent_key: str,
-) -> Dict[str, Union[Dataset, Scalar]]:
+) -> List[Query]:
     """
     Execute transpiled SQL queries with DAG-scheduled dataset loading/saving.
 
     Args:
         conn: DuckDB connection
-        queries: List of (result_name, sql_query, is_persistent) tuples
+        queries: List of Query objects with name, sql, structure, and is_persistent
         ds_analysis: DAG analysis dict
         path_dict: Dict mapping dataset names to CSV paths
         dataframe_dict: Dict mapping dataset names to DataFrames
         input_datasets: Dict of input dataset structures
-        output_datasets: Dict of output dataset structures
-        output_scalars: Dict of output scalar structures
         output_folder: Path to save CSVs (None for in-memory mode)
         return_only_persistent: Only return persistent assignments
-        insert_key: Key in ds_analysis for insertion schedule
-        delete_key: Key in ds_analysis for deletion schedule
-        global_key: Key in ds_analysis for global inputs
-        persistent_key: Key in ds_analysis for persistent outputs
 
     Returns:
-        Dict of result_name -> Dataset or Scalar
+        List of Query objects with structure.data populated
     """
-    results: Dict[str, Union[Dataset, Scalar]] = {}
+    results: List[Query] = []
+    result_names: set = set()
 
     # Initialize VTL time type functions (idempotent - safe to call multiple times)
     initialize_time_types(conn)
@@ -202,7 +187,7 @@ def execute_queries(
         output_folder.mkdir(parents=True, exist_ok=True)
 
     # Execute each query with DAG scheduling
-    for statement_num, (result_name, sql_query, _) in enumerate(queries, start=1):
+    for statement_num, query in enumerate(queries, start=1):
         # Load datasets scheduled for this statement
         load_scheduled_datasets(
             conn=conn,
@@ -211,11 +196,10 @@ def execute_queries(
             path_dict=path_dict,
             dataframe_dict=dataframe_dict,
             input_datasets=input_datasets,
-            insert_key=insert_key,
         )
 
         # Execute query and create table
-        conn.execute(f'CREATE TABLE "{result_name}" AS {sql_query}')
+        conn.execute(f'CREATE TABLE "{query.name}" AS {query.sql}')
 
         # Clean up datasets scheduled for deletion
         cleanup_scheduled_datasets(
@@ -223,29 +207,23 @@ def execute_queries(
             statement_num=statement_num,
             ds_analysis=ds_analysis,
             output_folder=output_folder,
-            output_datasets=output_datasets,
+            queries=queries,
             results=results,
             return_only_persistent=return_only_persistent,
-            delete_key=delete_key,
-            global_key=global_key,
-            persistent_key=persistent_key,
         )
 
+        # Track which results were added
+        result_names.update(q.name for q in results)
+
     # Handle final results not yet processed
-    for result_name, _, is_persistent in queries:
-        if result_name in results:
+    for query in queries:
+        if query.name in result_names:
             continue
 
-        should_include = not return_only_persistent or is_persistent
+        should_include = not return_only_persistent or query.is_persistent
         if not should_include:
             continue
 
-        results[result_name] = fetch_result(
-            conn=conn,
-            result_name=result_name,
-            output_folder=output_folder,
-            output_datasets=output_datasets,
-            output_scalars=output_scalars,
-        )
+        results.append(fetch_result(conn=conn, query=query, output_folder=output_folder))
 
     return results

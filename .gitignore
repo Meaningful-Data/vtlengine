@@ -178,3 +178,6 @@ docs/error_messages.rst
 
 # dev files
 /src/duckdb_transpiler/Dev/
+
+# Claude files
+/.claude/
