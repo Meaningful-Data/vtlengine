@@ -25,6 +25,7 @@ from vtlengine.DataTypes._time_checking import (
 from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING
 from vtlengine.Exceptions import DataLoadError, InputValidationException
 from vtlengine.files.parser._rfc_dialect import register_rfc
+from vtlengine.files.sdmx_handler import is_sdmx_datapoint_file, load_sdmx_datapoints
 from vtlengine.Model import Component, Dataset, Role
 
 TIME_CHECKS_MAPPING: Dict[Type[ScalarType], Any] = {
@@ -226,12 +227,40 @@ def load_datapoints(
     dataset_name: str,
     csv_path: Optional[Union[Path, str]] = None,
 ) -> pd.DataFrame:
+    """
+    Load datapoints from a file into a pandas DataFrame.
+
+    Supports multiple file formats:
+    - Plain CSV: Standard comma-separated values
+    - SDMX-CSV: CSV with SDMX structure columns (DATAFLOW, STRUCTURE, etc.)
+    - SDMX-ML: XML files in SDMX format (.xml extension)
+
+    Args:
+        components: Expected components for validation.
+        dataset_name: Name of the dataset for error messages.
+        csv_path: Path to the data file (CSV or SDMX-ML).
+
+    Returns:
+        Validated pandas DataFrame with the loaded data.
+
+    Raises:
+        DataLoadError: If file cannot be read or parsed.
+        InputValidationException: If csv_path is invalid type.
+    """
     if csv_path is None or (isinstance(csv_path, Path) and not csv_path.exists()):
         return pd.DataFrame(columns=list(components.keys()))
     elif isinstance(csv_path, (str, Path)):
-        if isinstance(csv_path, Path):
-            _validate_csv_path(components, csv_path)
-        data = _pandas_load_csv(components, csv_path)
+        # Convert string to Path for extension checking
+        file_path = Path(csv_path) if isinstance(csv_path, str) else csv_path
+
+        # Check if SDMX file by extension
+        if is_sdmx_datapoint_file(file_path):
+            data = load_sdmx_datapoints(components, dataset_name, file_path)
+        else:
+            # CSV file (plain or SDMX-CSV)
+            if isinstance(csv_path, Path):
+                _validate_csv_path(components, csv_path)
+            data = _pandas_load_csv(components, csv_path)
     else:
         raise InputValidationException(code="0-1-1-2", input=csv_path)
     data = _validate_pandas(components, data, dataset_name)

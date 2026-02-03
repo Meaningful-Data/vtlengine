@@ -26,16 +26,18 @@ def save_datapoints(
     float_format = get_float_format()
 
     if isinstance(output_path, str):
-        __check_s3_extra()
-        if output_path.endswith("/"):
-            s3_file_output = output_path + f"{dataset.name}.csv"
+        if "s3://" in output_path:
+            # S3 URI - requires fsspec extra
+            __check_s3_extra()
+            if output_path.endswith("/"):
+                s3_file_output = output_path + f"{dataset.name}.csv"
+            else:
+                s3_file_output = output_path + f"/{dataset.name}.csv"
+            dataset.data.to_csv(s3_file_output, index=False, float_format=float_format)
         else:
-            s3_file_output = output_path + f"/{dataset.name}.csv"
-        # start = time()
-        dataset.data.to_csv(s3_file_output, index=False, float_format=float_format)
-        # end = time()
-        # print(f"Dataset {dataset.name} saved to {s3_file_output}")
-        # print(f"Time to save data on s3 URI: {end - start}")
+            # Local path as string - convert to Path and use local logic
+            output_file = Path(output_path) / f"{dataset.name}.csv"
+            dataset.data.to_csv(output_file, index=False, float_format=float_format)
     else:
         output_file = output_path / f"{dataset.name}.csv"
         dataset.data.to_csv(output_file, index=False, float_format=float_format)
