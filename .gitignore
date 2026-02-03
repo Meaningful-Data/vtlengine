@@ -189,3 +189,10 @@ docs/plans/
 # Claude Code settings
 .claude/*
 !.claude/CLAUDE.md
+
+# AnaVal test data zip files
+/*.zip
+
+# Benchmark outputs
+benchmark_graphs/
+scripts/

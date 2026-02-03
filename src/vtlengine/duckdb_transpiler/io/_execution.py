@@ -217,7 +217,14 @@ def execute_queries(
         )
 
         # Execute query and create table
-        conn.execute(f'CREATE TABLE "{result_name}" AS {sql_query}')
+        try:
+            conn.execute(f'CREATE TABLE "{result_name}" AS {sql_query}')
+        except Exception:
+            import sys
+
+            print(f"FAILED at query {statement_num}: {result_name}", file=sys.stderr)
+            print(f"SQL: {sql_query[:2000]}", file=sys.stderr)
+            raise
 
         # Clean up datasets scheduled for deletion
         cleanup_scheduled_datasets(
