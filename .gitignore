@@ -185,3 +185,7 @@ docs/plans/
 !/CODE_OF_CONDUCT.md
 !/CONTRIBUTING.md
 !/SECURITY.md
+
+# Claude Code settings
+.claude/*
+!.claude/CLAUDE.md
