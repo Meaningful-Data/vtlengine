@@ -235,3 +235,44 @@ class StructureVisitor(ASTTemplate):
                 return udo_value
             return str(udo_value)
         return name
+
+    def visit_UnaryOp(self, node: AST.UnaryOp) -> Optional[Dataset]:
+        """
+        Get structure for a unary operation.
+
+        Handles:
+        - ISNULL: Returns structure with bool_var as measure
+        - Other ops: Returns operand structure unchanged
+
+        Args:
+            node: The UnaryOp node.
+
+        Returns:
+            The Dataset structure if computable, None otherwise.
+        """
+        from vtlengine.AST.Grammar.tokens import ISNULL
+        from vtlengine.DataTypes import Boolean
+
+        op = str(node.op).lower()
+        base_ds = self.visit(node.operand)
+
+        if base_ds is None:
+            return None
+
+        if op == ISNULL:
+            # isnull produces bool_var as output measure
+            new_components: Dict[str, Component] = {}
+            for name, comp in base_ds.components.items():
+                if comp.role == Role.IDENTIFIER:
+                    new_components[name] = comp
+            # Add bool_var as the output measure
+            new_components["bool_var"] = Component(
+                name="bool_var",
+                data_type=Boolean,
+                role=Role.MEASURE,
+                nullable=False,
+            )
+            return Dataset(name=base_ds.name, components=new_components, data=None)
+
+        # For other unary ops, return the base structure
+        return base_ds

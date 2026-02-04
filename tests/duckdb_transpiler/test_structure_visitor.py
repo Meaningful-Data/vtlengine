@@ -2,9 +2,9 @@
 
 from typing import Any, Dict, List
 
-from vtlengine.AST import BinOp, Identifier, VarID
+from vtlengine.AST import BinOp, Identifier, UnaryOp, VarID
 from vtlengine.AST.Grammar.tokens import MEMBERSHIP
-from vtlengine.DataTypes import Number, String
+from vtlengine.DataTypes import Boolean, Number, String
 from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import StructureVisitor
 from vtlengine.Model import Component, Dataset, Role
 
@@ -227,6 +227,48 @@ class TestStructureVisitorBinOp:
         )
 
         result = visitor.visit(binop)
+
+        assert result is not None
+        assert "Id_1" in result.components
+        assert "Me_1" in result.components
+
+
+class TestStructureVisitorUnaryOp:
+    """Test UnaryOp structure computation."""
+
+    def test_visit_unaryop_isnull_returns_bool_var(self):
+        """Test that isnull returns structure with bool_var measure."""
+        ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
+        visitor = StructureVisitor(available_tables={"DS_1": ds}, output_datasets={})
+
+        isnull = UnaryOp(
+            **make_ast_node(
+                op="isnull",
+                operand=VarID(**make_ast_node(value="DS_1")),
+            )
+        )
+
+        result = visitor.visit(isnull)
+
+        assert result is not None
+        assert "Id_1" in result.components
+        assert "bool_var" in result.components
+        assert "Me_1" not in result.components
+        assert result.components["bool_var"].data_type == Boolean
+
+    def test_visit_unaryop_other_returns_operand_structure(self):
+        """Test that other unary ops return operand structure unchanged."""
+        ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
+        visitor = StructureVisitor(available_tables={"DS_1": ds}, output_datasets={})
+
+        abs_op = UnaryOp(
+            **make_ast_node(
+                op="abs",
+                operand=VarID(**make_ast_node(value="DS_1")),
+            )
+        )
+
+        result = visitor.visit(abs_op)
 
         assert result is not None
         assert "Id_1" in result.components
