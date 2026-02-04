@@ -596,3 +596,33 @@ class StructureVisitor(ASTTemplate):
             if comp.role != Role.IDENTIFIER or name in keep_ids
         }
         return Dataset(name=base_ds.name, components=result_components, data=None)
+
+    def visit_JoinOp(self, node: AST.JoinOp) -> Optional[Dataset]:
+        """
+        Get structure for a join operation.
+
+        Combines components from all clauses in the join.
+
+        Args:
+            node: The JoinOp node.
+
+        Returns:
+            The combined Dataset structure.
+        """
+        from copy import deepcopy
+
+        all_components: Dict[str, Component] = {}
+        result_name = "join_result"
+
+        for clause in node.clauses:
+            clause_ds = self.visit(clause)
+            if clause_ds:
+                result_name = clause_ds.name
+                for comp_name, comp in clause_ds.components.items():
+                    if comp_name not in all_components:
+                        all_components[comp_name] = deepcopy(comp)
+
+        if not all_components:
+            return None
+
+        return Dataset(name=result_name, components=all_components, data=None)

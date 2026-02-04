@@ -6,6 +6,7 @@ from vtlengine.AST import (
     Aggregation,
     BinOp,
     Identifier,
+    JoinOp,
     ParamOp,
     RegularAggregation,
     RenameNode,
@@ -519,3 +520,91 @@ class TestStructureVisitorAggregation:
         assert result is not None
         assert "Id_1" not in result.components
         assert "Me_1" in result.components
+
+
+class TestStructureVisitorJoinOp:
+    """Test JoinOp structure computation."""
+
+    def test_visit_join_combines_components(self):
+        """Test that join combines components from all datasets."""
+        ds1 = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        ds2 = Dataset(
+            name="DS_2",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_2": Component(name="Me_2", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        visitor = StructureVisitor(
+            available_tables={"DS_1": ds1, "DS_2": ds2},
+            output_datasets={},
+        )
+
+        join = JoinOp(
+            **make_ast_node(
+                op="inner_join",
+                clauses=[
+                    VarID(**make_ast_node(value="DS_1")),
+                    VarID(**make_ast_node(value="DS_2")),
+                ],
+                using=None,
+            )
+        )
+
+        result = visitor.visit(join)
+
+        assert result is not None
+        assert "Id_1" in result.components
+        assert "Me_1" in result.components
+        assert "Me_2" in result.components
+
+    def test_visit_join_with_clause_transformation(self):
+        """Test that join respects clause transformations."""
+        ds1 = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+                "Me_2": Component(name="Me_2", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        visitor = StructureVisitor(available_tables={"DS_1": ds1}, output_datasets={})
+
+        # Join with keep clause
+        join = JoinOp(
+            **make_ast_node(
+                op="inner_join",
+                clauses=[
+                    RegularAggregation(
+                        **make_ast_node(
+                            op="keep",
+                            dataset=VarID(**make_ast_node(value="DS_1")),
+                            children=[VarID(**make_ast_node(value="Me_1"))],
+                        )
+                    ),
+                ],
+                using=None,
+            )
+        )
+
+        result = visitor.visit(join)
+
+        assert result is not None
+        assert "Id_1" in result.components
+        assert "Me_1" in result.components
+        assert "Me_2" not in result.components
