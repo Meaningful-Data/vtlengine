@@ -330,6 +330,7 @@ def _run_with_duckdb(
         external_routines=loaded_routines,
         scalars=input_scalars,
         only_semantic=True,
+        return_only_persistent=False,
     )
     semantic_results = interpreter.visit(ast)
 

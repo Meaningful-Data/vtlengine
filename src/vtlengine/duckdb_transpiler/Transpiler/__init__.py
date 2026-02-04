@@ -301,7 +301,7 @@ class SQLTranspiler(ASTTemplate):
 
     def get_structure(self, node: AST.AST) -> Optional[Dataset]:
         """
-        Get computed structure for a node, or look up in available_tables.
+        Get computed structure for a node, or look up in available_tables/output_datasets.
 
         Args:
             node: The AST node to get structure for.
@@ -311,8 +311,92 @@ class SQLTranspiler(ASTTemplate):
         """
         if id(node) in self.structure_context:
             return self.structure_context[id(node)]
-        if isinstance(node, AST.VarID) and node.value in self.available_tables:
-            return self.available_tables[node.value]
+        if isinstance(node, AST.VarID):
+            # First check available_tables directly
+            if node.value in self.available_tables:
+                return self.available_tables[node.value]
+            # Then check output_datasets (for intermediate results)
+            if node.value in self.output_datasets:
+                return self.output_datasets[node.value]
+            # Then check if it's a UDO parameter reference
+            udo_value = self.get_udo_param(node.value)
+            if udo_value is not None:
+                if isinstance(udo_value, AST.AST):
+                    return self.get_structure(udo_value)
+                if isinstance(udo_value, Dataset):
+                    return udo_value
+        elif isinstance(node, AST.Aggregation):
+            # For aggregations, get the operand's structure
+            if node.operand:
+                return self.get_structure(node.operand)
+        elif isinstance(node, AST.RegularAggregation):
+            # For regular aggregations (clauses), compute the transformed structure
+            # First get the base dataset structure
+            base_ds = None
+            if node.dataset:
+                base_ds = self.get_structure(node.dataset)
+            if base_ds:
+                # Apply the clause transformation to get the output structure
+                return self._get_transformed_dataset(base_ds, node)
+            return None
+        elif isinstance(node, AST.BinOp):
+            # For binary operations, handle different cases
+            from vtlengine.AST.Grammar.tokens import MEMBERSHIP
+
+            if str(node.op).lower() == MEMBERSHIP:
+                # For membership (#), return a dataset with only the extracted component
+                base_ds = self.get_structure(node.left)
+                if base_ds:
+                    comp_name = (
+                        node.right.value if hasattr(node.right, "value") else str(node.right)
+                    )
+                    # Build a new dataset with only identifiers and the extracted component
+                    new_components = {}
+                    for name, comp in base_ds.components.items():
+                        if comp.role == Role.IDENTIFIER:
+                            new_components[name] = comp
+                    # Add the extracted component as a measure
+                    if comp_name in base_ds.components:
+                        orig_comp = base_ds.components[comp_name]
+                        new_components[comp_name] = Component(
+                            name=comp_name,
+                            data_type=orig_comp.data_type,
+                            role=Role.MEASURE,
+                            nullable=orig_comp.nullable,
+                        )
+                    return Dataset(name=base_ds.name, components=new_components, data=None)
+                return None
+            # For other binary operations, get the left operand's structure
+            if node.left:
+                return self.get_structure(node.left)
+        elif isinstance(node, AST.UnaryOp):
+            # For unary operations, handle output structure transformations
+            from vtlengine.AST.Grammar.tokens import ISNULL
+            from vtlengine.DataTypes import Boolean
+
+            op = str(node.op).lower()
+            base_ds = self.get_structure(node.operand) if node.operand else None
+
+            if base_ds is None:
+                return None
+
+            if op == ISNULL:
+                # isnull produces bool_var as output (single measure)
+                new_components = {}
+                for name, comp in base_ds.components.items():
+                    if comp.role == Role.IDENTIFIER:
+                        new_components[name] = comp
+                # Add bool_var as the output measure
+                new_components["bool_var"] = Component(
+                    name="bool_var",
+                    data_type=Boolean,
+                    role=Role.MEASURE,
+                    nullable=False,
+                )
+                return Dataset(name=base_ds.name, components=new_components, data=None)
+
+            # For other unary ops, return the base structure
+            return base_ds
         return None
 
     def set_structure(self, node: AST.AST, dataset: Dataset) -> None:
@@ -435,6 +519,12 @@ class SQLTranspiler(ASTTemplate):
     def visit_Start(self, node: AST.Start) -> List[Tuple[str, str, bool]]:
         """Process the root node containing all top-level assignments."""
         queries: List[Tuple[str, str, bool]] = []
+
+        # Pre-populate available_tables with all output structures from semantic analysis
+        # This handles forward references where a dataset is used before it's defined
+        for name, ds in self.output_datasets.items():
+            if name not in self.available_tables:
+                self.available_tables[name] = ds
 
         for child in node.children:
             # Process UDO definitions (these don't generate SQL, just store the definition)
@@ -694,6 +784,13 @@ class SQLTranspiler(ASTTemplate):
                     node.clauses[i] = deepcopy(bindings[clause.value])
                 else:
                     self._substitute_udo_params(clause, bindings)
+        elif isinstance(node, AST.MulOp):
+            # Handle multi-operand operations (exist_in, between, set ops, etc.)
+            for i, child in enumerate(node.children):
+                if isinstance(child, AST.VarID) and child.value in bindings:
+                    node.children[i] = deepcopy(bindings[child.value])
+                else:
+                    self._substitute_udo_params(child, bindings)
 
     # =========================================================================
     # Variable and Constant Nodes
@@ -1139,8 +1236,16 @@ class SQLTranspiler(ASTTemplate):
         # Build JOIN condition
         join_cond = " AND ".join([f'a."{k}" = b."{k}"' for k in join_keys])
 
-        # SELECT identifiers (from left)
-        id_select = ", ".join([f'a."{k}"' for k in left_ds.get_identifiers_names()])
+        # SELECT identifiers - include all from both datasets
+        # Common identifiers come from 'a', non-common from their respective tables
+        all_ids = sorted(left_ids.union(right_ids))
+        id_parts = []
+        for k in all_ids:
+            if k in left_ids:
+                id_parts.append(f'a."{k}"')
+            else:
+                id_parts.append(f'b."{k}"')
+        id_select = ", ".join(id_parts)
 
         # Find source measures (what we're operating on)
         left_measures = set(left_ds.get_measures_names())
@@ -1152,15 +1257,30 @@ class SQLTranspiler(ASTTemplate):
         output_measures = list(output_ds.get_measures_names()) if output_ds else []
         has_bool_var = "bool_var" in output_measures
 
-        if has_bool_var and common_measures:
-            # Single measure comparison -> bool_var
-            m = common_measures[0]
-            measure_select = f'(a."{m}" {sql_op} b."{m}") AS "bool_var"'
-        else:
+        # For comparisons, extract the actual measure name from the transformed operands
+        # The SQL subqueries already handle keep/rename, so we need to know the final name
+        if has_bool_var:
+            # Extract the final measure name from each operand after transformations
+            left_measure = self._get_transformed_measure_name(left_node)
+            right_measure = self._get_transformed_measure_name(right_node)
+
+            if left_measure and right_measure:
+                # Both sides should have the same measure name after rename
+                # Use the left measure name (they should match)
+                measure_select = f'(a."{left_measure}" {sql_op} b."{right_measure}") AS "bool_var"'
+            elif common_measures:
+                # Fallback to common measures
+                m = common_measures[0]
+                measure_select = f'(a."{m}" {sql_op} b."{m}") AS "bool_var"'
+            else:
+                measure_select = ""
+        elif common_measures:
             # Regular operation on measures
             measure_select = ", ".join(
                 [f'(a."{m}" {sql_op} b."{m}") AS "{m}"' for m in common_measures]
             )
+        else:
+            measure_select = ""
 
         return f"""
                     SELECT {id_select}, {measure_select}
@@ -1331,10 +1451,9 @@ class SQLTranspiler(ASTTemplate):
             f"CAST({index_sql} AS VARCHAR))) % 1000000) / 1000000.0"
         )
 
-        # Dataset-level operation
+        # Dataset-level operation - uses structure tracking
         if left_type == OperandType.DATASET:
-            ds_name = self._get_dataset_name(node.left)
-            ds = self.available_tables.get(ds_name)
+            ds = self.get_structure(node.left)
             if ds:
                 id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
                 measure_parts = []
@@ -1345,7 +1464,8 @@ class SQLTranspiler(ASTTemplate):
                     )
                     measure_parts.append(m_random)
                 measure_select = ", ".join(measure_parts)
-                from_clause = f'"{ds_name}"'
+                dataset_sql = self._get_dataset_sql(node.left)
+                from_clause = self._simplify_from_clause(dataset_sql)
                 if id_select:
                     return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
                 return f"SELECT {measure_select} FROM {from_clause}"
@@ -2171,35 +2291,25 @@ class SQLTranspiler(ASTTemplate):
         left_name = self._get_dataset_name(left_node)
         right_name = self._get_dataset_name(right_node)
 
-        left_base_ds = self.available_tables.get(left_name)
-        right_base_ds = self.available_tables.get(right_name)
+        # Use get_structure() for unified structure lookup (handles UDO params too)
+        left_ds = self.get_structure(left_node)
+        right_ds = self.get_structure(right_node)
 
-        # For complex left expressions (e.g., with aggregation/group except),
-        # compute the transformed structure
-        if not isinstance(left_node, AST.VarID) and left_base_ds:
+        # For complex expressions, compute transformed structures
+        if left_ds and not isinstance(left_node, AST.VarID):
             if isinstance(left_node, AST.Aggregation):
-                # Handle aggregation with group by/except
-                left_ds = self._get_aggregation_output_structure(left_node, left_base_ds)
+                left_ds = self._get_aggregation_output_structure(left_node, left_ds)
             elif isinstance(left_node, AST.RegularAggregation):
-                left_ds = self._get_transformed_dataset(left_base_ds, left_node)
-            else:
-                left_ds = left_base_ds
-        else:
-            left_ds = left_base_ds
+                left_ds = self._get_transformed_dataset(left_ds, left_node)
 
-        # For complex right expressions
-        if not isinstance(right_node, AST.VarID) and right_base_ds:
+        if right_ds and not isinstance(right_node, AST.VarID):
             if isinstance(right_node, AST.Aggregation):
-                right_ds = self._get_aggregation_output_structure(right_node, right_base_ds)
+                right_ds = self._get_aggregation_output_structure(right_node, right_ds)
             elif isinstance(right_node, AST.RegularAggregation):
-                right_ds = self._get_transformed_dataset(right_base_ds, right_node)
-            else:
-                right_ds = right_base_ds
-        else:
-            right_ds = right_base_ds
+                right_ds = self._get_transformed_dataset(right_ds, right_node)
 
         if not left_ds or not right_ds:
-            raise ValueError("Cannot resolve dataset structures for exist_in")
+            raise ValueError(f"Cannot resolve dataset structures for {left_name} and {right_name}")
 
         # Find common identifiers
         left_ids = set(left_ds.get_identifiers_names())
@@ -4130,6 +4240,81 @@ class SQLTranspiler(ASTTemplate):
             return OperandType.DATASET
 
         return OperandType.SCALAR
+
+    def _get_transformed_measure_name(self, node: AST.AST) -> Optional[str]:
+        """
+        Extract the final measure name from a node after all transformations.
+
+        For expressions like `DS [ keep X ] [ rename X to Y ]`, this returns 'Y'.
+        """
+        if isinstance(node, AST.VarID):
+            # Direct dataset reference - get the first measure from structure
+            ds = self.get_structure(node)
+            if ds:
+                measures = list(ds.get_measures_names())
+                return measures[0] if measures else None
+            return None
+
+        if isinstance(node, AST.RegularAggregation):
+            from vtlengine.AST.Grammar.tokens import CALC, KEEP, RENAME
+
+            # Check the operation type
+            op = str(node.op).lower()
+
+            if op == RENAME:
+                # For rename, the final measure name is in the RenameNode
+                for child in node.children:
+                    if isinstance(child, AST.RenameNode):
+                        return child.new_name
+                # Fallback to inner dataset
+                if node.dataset:
+                    return self._get_transformed_measure_name(node.dataset)
+
+            elif op == CALC:
+                # For calc, the measure name is in Assignment.left
+                # Children can be UnaryOp (with role) wrapping Assignment, or Assignment directly
+                for child in node.children:
+                    if isinstance(child, AST.UnaryOp) and hasattr(child, "operand"):
+                        assignment = child.operand
+                    elif isinstance(child, AST.Assignment):
+                        assignment = child
+                    else:
+                        continue
+                    if isinstance(assignment, AST.Assignment):
+                        if isinstance(assignment.left, (AST.VarID, AST.Identifier)):
+                            return assignment.left.value
+                # Fallback to inner dataset
+                if node.dataset:
+                    return self._get_transformed_measure_name(node.dataset)
+
+            elif op == KEEP:
+                # For keep, the kept measure is the final name
+                # Look for the measure in children (excluding identifiers)
+                if node.dataset:
+                    inner_ds = self.get_structure(node.dataset)
+                    if inner_ds:
+                        inner_ids = set(inner_ds.get_identifiers_names())
+                        # Find the kept measure (not an identifier)
+                        for child in node.children:
+                            if isinstance(child, (AST.VarID, AST.Identifier)):
+                                if child.value not in inner_ids:
+                                    return child.value
+                # If inner RegularAggregation, recurse
+                if node.dataset:
+                    return self._get_transformed_measure_name(node.dataset)
+
+            else:
+                # Other clauses (filter, subspace, etc.) - recurse to inner dataset
+                if node.dataset:
+                    return self._get_transformed_measure_name(node.dataset)
+
+        if isinstance(node, AST.BinOp):
+            return self._get_transformed_measure_name(node.left)
+
+        if isinstance(node, AST.UnaryOp):
+            return self._get_transformed_measure_name(node.operand)
+
+        return None
 
     def _get_dataset_name(self, node: AST.AST) -> str:
         """Extract dataset name from a node."""
