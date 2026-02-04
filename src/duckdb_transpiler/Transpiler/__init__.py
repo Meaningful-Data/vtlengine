@@ -629,6 +629,41 @@ class SQLTranspiler(ASTTemplate):
 
         return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
 
+    def _between_dataset(self, dataset_node: AST.AST, low: str, high: str) -> str:
+        """Generate SQL for dataset-level BETWEEN operation."""
+        ds_name = self._get_dataset_name(dataset_node)
+        ds = self.available_tables[ds_name]
+
+        id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
+
+        # For single-measure datasets, rename to bool_var per VTL semantics
+        measures = ds.get_measures_names()
+        is_mono_measure = len(measures) == 1
+
+        # VTL: between returns NULL if any bound is NULL
+        null_check = f"({low}) IS NULL OR ({high}) IS NULL"
+
+        if is_mono_measure:
+            m = measures[0]
+            between_expr = f'("{m}" BETWEEN {low} AND {high})'
+            case_expr = f"CASE WHEN {null_check} THEN NULL ELSE {between_expr} END"
+            measure_select = f'{case_expr} AS "bool_var"'
+        else:
+            measure_parts = []
+            for m in measures:
+                between_expr = f'("{m}" BETWEEN {low} AND {high})'
+                measure_parts.append(
+                    f'CASE WHEN {null_check} THEN NULL ELSE {between_expr} END AS "{m}"'
+                )
+            measure_select = ", ".join(measure_parts)
+
+        dataset_sql = self._get_dataset_sql(dataset_node)
+        from_clause = self._simplify_from_clause(dataset_sql)
+
+        if id_select:
+            return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
+        return f"SELECT {measure_select} FROM {from_clause}"
+
     def _visit_match_op(self, node: AST.BinOp) -> str:
         """
         Handle MATCH_CHARACTERS (regex) operation.
@@ -1706,10 +1741,20 @@ class SQLTranspiler(ASTTemplate):
             return "CURRENT_DATE"
 
         if op == BETWEEN and len(node.children) >= 3:
-            operand = self.visit(node.children[0])
+            operand_type = self._get_operand_type(node.children[0])
             low = self.visit(node.children[1])
             high = self.visit(node.children[2])
-            return f"({operand} BETWEEN {low} AND {high})"
+
+            # Dataset-level operation
+            if operand_type == OperandType.DATASET:
+                return self._between_dataset(node.children[0], low, high)
+
+            # Scalar/Component level
+            # VTL: between returns NULL if any operand is NULL
+            operand = self.visit(node.children[0])
+            null_check = f"({low}) IS NULL OR ({high}) IS NULL"
+            between_expr = f"({operand} BETWEEN {low} AND {high})"
+            return f"CASE WHEN {null_check} THEN NULL ELSE {between_expr} END"
 
         # Set operations (union, intersect, setdiff, symdiff)
         if op in SQL_SET_OPS:
@@ -1803,7 +1848,14 @@ class SQLTranspiler(ASTTemplate):
         return " UNION ".join([f"({q})" for q in queries])
 
     def _visit_exist_in_mulop(self, node: AST.MulOp) -> str:
-        """Handle exist_in when it comes through MulOp."""
+        """
+        Handle exist_in when it comes through MulOp.
+
+        VTL: exist_in(ds1, ds2, retain) where retain is:
+        - all: returns all rows with bool_var column
+        - true: returns only rows that exist in ds2
+        - false: returns only rows that don't exist in ds2
+        """
         if len(node.children) < 2:
             raise ValueError("exist_in requires at least two operands")
 
@@ -1812,6 +1864,25 @@ class SQLTranspiler(ASTTemplate):
 
         left_ds = self.available_tables[left_name]
         right_ds = self.available_tables[right_name]
+
+        # Get retain mode (default is "all")
+        retain_mode = "all"
+        if len(node.children) >= 3:
+            retain_node = node.children[2]
+            if isinstance(retain_node, AST.Constant):
+                # Boolean constant (true/false)
+                if retain_node.value is True:
+                    retain_mode = "true"
+                elif retain_node.value is False:
+                    retain_mode = "false"
+                else:
+                    retain_mode = str(retain_node.value).lower()
+            elif isinstance(retain_node, AST.VarID):
+                # Keyword 'all' comes as VarID
+                retain_mode = retain_node.value.lower()
+            else:
+                retain_sql = self.visit(retain_node)
+                retain_mode = retain_sql.lower().strip("'\"")
 
         # Find common identifiers
         left_ids = set(left_ds.get_identifiers_names())
@@ -1831,11 +1902,28 @@ class SQLTranspiler(ASTTemplate):
         left_sql = self._get_dataset_sql(node.children[0])
         right_sql = self._get_dataset_sql(node.children[1])
 
-        return f"""
-            SELECT {id_select},
-                   EXISTS(SELECT 1 FROM ({right_sql}) AS r WHERE {where_clause}) AS "bool_var"
-            FROM ({left_sql}) AS l
-        """
+        exists_expr = f"EXISTS(SELECT 1 FROM ({right_sql}) AS r WHERE {where_clause})"
+
+        if retain_mode == "all":
+            # Return all rows with bool_var column indicating existence
+            return f"""
+                SELECT {id_select}, {exists_expr} AS "bool_var"
+                FROM ({left_sql}) AS l
+            """
+        elif retain_mode == "true":
+            # Return only rows that exist in ds2, bool_var = true
+            return f"""
+                SELECT {id_select}, TRUE AS "bool_var"
+                FROM ({left_sql}) AS l
+                WHERE {exists_expr}
+            """
+        else:  # retain_mode == "false"
+            # Return only rows that don't exist in ds2, bool_var = false
+            return f"""
+                SELECT {id_select}, FALSE AS "bool_var"
+                FROM ({left_sql}) AS l
+                WHERE NOT {exists_expr}
+            """
 
     # =========================================================================
     # Conditional Operations
