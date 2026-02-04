@@ -7,11 +7,20 @@ to track structure transformations through expressions.
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 import vtlengine.AST as AST
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.Model import Component, Dataset, Role
+
+
+class OperandType:
+    """Types of operands in VTL expressions."""
+
+    DATASET = "Dataset"
+    COMPONENT = "Component"
+    SCALAR = "Scalar"
+    CONSTANT = "Constant"
 
 
 @dataclass
@@ -28,6 +37,10 @@ class StructureVisitor(ASTTemplate):
         output_datasets: Dict of output Dataset structures from semantic analysis.
         _structure_context: Internal cache mapping AST node id -> computed Dataset.
         _udo_params: Stack of UDO parameter bindings for nested UDO calls.
+        input_scalars: Set of input scalar names (for operand type determination).
+        output_scalars: Set of output scalar names (for operand type determination).
+        in_clause: Whether we're inside a clause operation (for operand type context).
+        current_dataset: Current dataset being operated on in clause context.
     """
 
     available_tables: Dict[str, Dataset] = field(default_factory=dict)
@@ -35,6 +48,12 @@ class StructureVisitor(ASTTemplate):
     _structure_context: Dict[int, Dataset] = field(default_factory=dict)
     _udo_params: Optional[List[Dict[str, Any]]] = None
     udos: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+
+    # Context for operand type determination (synced from transpiler)
+    input_scalars: Set[str] = field(default_factory=set)
+    output_scalars: Set[str] = field(default_factory=set)
+    in_clause: bool = False
+    current_dataset: Optional[Dataset] = None
 
     def clear_context(self) -> None:
         """
@@ -147,7 +166,7 @@ class StructureVisitor(ASTTemplate):
 
         return None
 
-    def visit_BinOp(self, node: AST.BinOp) -> Optional[Dataset]:
+    def visit_BinOp(self, node: AST.BinOp) -> Optional[Dataset]:  # type: ignore[override]
         """
         Get structure for a binary operation.
 
@@ -278,7 +297,7 @@ class StructureVisitor(ASTTemplate):
         # For other unary ops, return the base structure
         return base_ds
 
-    def visit_ParamOp(self, node: AST.ParamOp) -> Optional[Dataset]:
+    def visit_ParamOp(self, node: AST.ParamOp) -> Optional[Dataset]:  # type: ignore[override]
         """
         Get structure for a parameterized operation.
 
@@ -353,7 +372,9 @@ class StructureVisitor(ASTTemplate):
 
         return None
 
-    def visit_RegularAggregation(self, node: AST.RegularAggregation) -> Optional[Dataset]:
+    def visit_RegularAggregation(  # type: ignore[override]
+        self, node: AST.RegularAggregation
+    ) -> Optional[Dataset]:
         """
         Get structure for a clause operation (calc, filter, keep, drop, rename, etc.).
 
@@ -519,7 +540,7 @@ class StructureVisitor(ASTTemplate):
 
         return Dataset(name=base_ds.name, components=new_components, data=None)
 
-    def visit_Aggregation(self, node: AST.Aggregation) -> Optional[Dataset]:
+    def visit_Aggregation(self, node: AST.Aggregation) -> Optional[Dataset]:  # type: ignore[override]
         """
         Get structure for an aggregation operation.
 
@@ -598,7 +619,7 @@ class StructureVisitor(ASTTemplate):
         }
         return Dataset(name=base_ds.name, components=result_components, data=None)
 
-    def visit_JoinOp(self, node: AST.JoinOp) -> Optional[Dataset]:
+    def visit_JoinOp(self, node: AST.JoinOp) -> Optional[Dataset]:  # type: ignore[override]
         """
         Get structure for a join operation.
 
@@ -628,7 +649,7 @@ class StructureVisitor(ASTTemplate):
 
         return Dataset(name=result_name, components=all_components, data=None)
 
-    def visit_UDOCall(self, node: AST.UDOCall) -> Optional[Dataset]:
+    def visit_UDOCall(self, node: AST.UDOCall) -> Optional[Dataset]:  # type: ignore[override]
         """
         Get structure for a UDO call.
 
@@ -665,3 +686,260 @@ class StructureVisitor(ASTTemplate):
             self.pop_udo_params()
 
         return result
+
+    # =========================================================================
+    # Operand Type Determination
+    # =========================================================================
+
+    def get_operand_type(self, node: AST.AST) -> str:
+        """
+        Determine the type of an operand.
+
+        Args:
+            node: The AST node to determine type for.
+
+        Returns:
+            One of OperandType.DATASET, OperandType.COMPONENT, OperandType.SCALAR.
+        """
+        return self._get_operand_type_varid(node)
+
+    def _get_operand_type_varid(self, node: AST.AST) -> str:
+        """Handle VarID operand type determination."""
+        if isinstance(node, AST.VarID):
+            name = node.value
+
+            # Check if this is a UDO parameter - if so, get type of bound value
+            udo_value = self.get_udo_param(name)
+            if udo_value is not None:
+                if isinstance(udo_value, AST.AST):
+                    return self.get_operand_type(udo_value)
+                # String values are typically component names
+                if isinstance(udo_value, str):
+                    return OperandType.COMPONENT
+                # Scalar objects
+                return OperandType.SCALAR
+
+            # In clause context: component
+            if (
+                self.in_clause
+                and self.current_dataset
+                and name in self.current_dataset.components
+            ):
+                return OperandType.COMPONENT
+
+            # Known dataset
+            if name in self.available_tables:
+                return OperandType.DATASET
+
+            # Known scalar (from input or output)
+            if name in self.input_scalars or name in self.output_scalars:
+                return OperandType.SCALAR
+
+            # Default in clause: component
+            if self.in_clause:
+                return OperandType.COMPONENT
+
+            return OperandType.SCALAR
+
+        return self._get_operand_type_other(node)
+
+    def _get_operand_type_other(self, node: AST.AST) -> str:
+        """Handle non-VarID operand type determination."""
+        if isinstance(node, AST.Constant):
+            return OperandType.SCALAR
+
+        if isinstance(node, AST.BinOp):
+            return self.get_operand_type(node.left)
+
+        if isinstance(node, AST.UnaryOp):
+            return self.get_operand_type(node.operand)
+
+        if isinstance(node, AST.ParamOp) and node.children:
+            return self.get_operand_type(node.children[0])
+
+        if isinstance(node, (AST.RegularAggregation, AST.JoinOp)):
+            return OperandType.DATASET
+
+        if isinstance(node, AST.Aggregation):
+            return self._get_operand_type_aggregation(node)
+
+        if isinstance(node, AST.If):
+            return self.get_operand_type(node.thenOp)
+
+        if isinstance(node, AST.ParFunction):
+            return self.get_operand_type(node.operand)
+
+        if isinstance(node, AST.UDOCall):
+            return self._get_operand_type_udo(node)
+
+        return OperandType.SCALAR
+
+    def _get_operand_type_aggregation(self, node: AST.Aggregation) -> str:
+        """Handle Aggregation operand type determination."""
+        # In clause context, aggregation on a component is a scalar SQL aggregate
+        if self.in_clause and node.operand:
+            operand_type = self.get_operand_type(node.operand)
+            if operand_type in (OperandType.COMPONENT, OperandType.SCALAR):
+                return OperandType.SCALAR
+        return OperandType.DATASET
+
+    def _get_operand_type_udo(self, node: AST.UDOCall) -> str:
+        """Handle UDOCall operand type determination."""
+        # UDOCall returns what its output type specifies
+        if node.op in self.udos:
+            output_type = self.udos[node.op].get("output", "Dataset")
+            type_mapping = {
+                "Dataset": OperandType.DATASET,
+                "Scalar": OperandType.SCALAR,
+                "Component": OperandType.COMPONENT,
+            }
+            return type_mapping.get(output_type, OperandType.DATASET)
+        # Default to dataset if we don't know
+        return OperandType.DATASET
+
+    # =========================================================================
+    # Measure Name Extraction
+    # =========================================================================
+
+    def get_transformed_measure_name(self, node: AST.AST) -> Optional[str]:
+        """
+        Extract the final measure name from a node after all transformations.
+
+        For expressions like `DS [ keep X ] [ rename X to Y ]`, this returns 'Y'.
+
+        Args:
+            node: The AST node to extract measure name from.
+
+        Returns:
+            The measure name if found, None otherwise.
+        """
+        if isinstance(node, AST.VarID):
+            # Direct dataset reference - get the first measure from structure
+            ds = self.visit(node)
+            if ds:
+                measures = list(ds.get_measures_names())
+                return measures[0] if measures else None
+            return None
+
+        if isinstance(node, AST.RegularAggregation):
+            return self._get_measure_name_regular_aggregation(node)
+
+        if isinstance(node, AST.BinOp):
+            return self.get_transformed_measure_name(node.left)
+
+        if isinstance(node, AST.UnaryOp):
+            return self.get_transformed_measure_name(node.operand)
+
+        return None
+
+    def _get_measure_name_regular_aggregation(
+        self, node: AST.RegularAggregation
+    ) -> Optional[str]:
+        """Extract measure name from RegularAggregation node."""
+        from vtlengine.AST.Grammar.tokens import CALC, KEEP, RENAME
+
+        op = str(node.op).lower()
+
+        if op == RENAME:
+            return self._get_measure_name_rename(node)
+        elif op == CALC:
+            return self._get_measure_name_calc(node)
+        elif op == KEEP:
+            return self._get_measure_name_keep(node)
+        else:
+            # Other clauses (filter, subspace, etc.) - recurse to inner dataset
+            if node.dataset:
+                return self.get_transformed_measure_name(node.dataset)
+
+        return None
+
+    def _get_measure_name_rename(self, node: AST.RegularAggregation) -> Optional[str]:
+        """Extract measure name from rename clause."""
+        for child in node.children:
+            if isinstance(child, AST.RenameNode):
+                return child.new_name
+        # Fallback to inner dataset
+        if node.dataset:
+            return self.get_transformed_measure_name(node.dataset)
+        return None
+
+    def _get_measure_name_calc(self, node: AST.RegularAggregation) -> Optional[str]:
+        """Extract measure name from calc clause."""
+        for child in node.children:
+            if isinstance(child, AST.UnaryOp) and hasattr(child, "operand"):
+                assignment = child.operand
+            elif isinstance(child, AST.Assignment):
+                assignment = child
+            else:
+                continue
+            if isinstance(assignment, AST.Assignment) and isinstance(
+                assignment.left, (AST.VarID, AST.Identifier)
+            ):
+                return assignment.left.value
+        # Fallback to inner dataset
+        if node.dataset:
+            return self.get_transformed_measure_name(node.dataset)
+        return None
+
+    def _get_measure_name_keep(self, node: AST.RegularAggregation) -> Optional[str]:
+        """Extract measure name from keep clause."""
+        if node.dataset:
+            inner_ds = self.visit(node.dataset)
+            if inner_ds:
+                inner_ids = set(inner_ds.get_identifiers_names())
+                # Find the kept measure (not an identifier)
+                for child in node.children:
+                    if (
+                        isinstance(child, (AST.VarID, AST.Identifier))
+                        and child.value not in inner_ids
+                    ):
+                        return child.value
+            # Recurse to inner dataset
+            return self.get_transformed_measure_name(node.dataset)
+        return None
+
+    # =========================================================================
+    # Identifier Extraction
+    # =========================================================================
+
+    def get_identifiers_from_expression(self, expr: AST.AST) -> List[str]:
+        """
+        Extract identifier column names from an expression.
+
+        Traces through the expression to find the underlying dataset
+        and returns its identifier column names.
+
+        Args:
+            expr: The AST expression node.
+
+        Returns:
+            List of identifier column names.
+        """
+        if isinstance(expr, AST.VarID):
+            # Direct dataset reference
+            ds = self.available_tables.get(expr.value)
+            if ds:
+                return list(ds.get_identifiers_names())
+
+        if isinstance(expr, AST.BinOp):
+            # For binary operations, get identifiers from left operand
+            left_ids = self.get_identifiers_from_expression(expr.left)
+            if left_ids:
+                return left_ids
+            return self.get_identifiers_from_expression(expr.right)
+
+        if isinstance(expr, AST.ParFunction):
+            # Parenthesized expression - look inside
+            return self.get_identifiers_from_expression(expr.operand)
+
+        if isinstance(expr, AST.Aggregation):
+            # Aggregation - identifiers come from grouping, not operand
+            if expr.grouping and expr.grouping_op == "group by":
+                return [
+                    g.value if isinstance(g, (AST.VarID, AST.Identifier)) else str(g)
+                    for g in expr.grouping
+                ]
+            elif expr.operand:
+                return self.get_identifiers_from_expression(expr.operand)
+
+        return []

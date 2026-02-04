@@ -113,8 +113,11 @@ from vtlengine.AST.Grammar.tokens import (
     YEAR,
     YEARTODAY,
 )
-from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import StructureVisitor
-from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
+from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
+    OperandType,
+    StructureVisitor,
+)
+from vtlengine.Model import Dataset, ExternalRoutine, Scalar, ValueDomain
 
 # =============================================================================
 # SQL Operator Mappings
@@ -235,15 +238,6 @@ SQL_ANALYTIC_OPS: Dict[str, str] = {
 }
 
 
-class OperandType:
-    """Types of operands in VTL expressions."""
-
-    DATASET = "Dataset"
-    COMPONENT = "Component"
-    SCALAR = "Scalar"
-    CONSTANT = "Constant"
-
-
 @dataclass
 class SQLTranspiler(ASTTemplate):
     """
@@ -308,50 +302,6 @@ class SQLTranspiler(ASTTemplate):
     def get_structure(self, node: AST.AST) -> Optional[Dataset]:
         """Delegate structure computation to StructureVisitor."""
         return self.structure_visitor.visit(node)
-
-    def set_structure(self, node: AST.AST, dataset: Dataset) -> None:
-        """
-        Store computed structure for a node.
-
-        Args:
-            node: The AST node to store structure for.
-            dataset: The computed Dataset structure.
-        """
-        self.structure_visitor.set_structure(node, dataset)
-
-    def _validate_structure(
-        self,
-        computed: Dataset,
-        expected: Dataset,
-        operator_name: str,
-    ) -> None:
-        """
-        Validate computed structure matches semantic analysis.
-
-        Args:
-            computed: The structure computed by the transpiler.
-            expected: The structure from semantic analysis.
-            operator_name: Name of the operator for error messages.
-
-        Raises:
-            ValueError: If structures don't match.
-        """
-        computed_ids = set(computed.get_identifiers_names())
-        expected_ids = set(expected.get_identifiers_names())
-        computed_measures = set(computed.get_measures_names())
-        expected_measures = set(expected.get_measures_names())
-
-        if computed_ids != expected_ids:
-            raise ValueError(
-                f"{operator_name}: identifier mismatch. "
-                f"Computed: {computed_ids}, Expected: {expected_ids}"
-            )
-
-        if computed_measures != expected_measures:
-            raise ValueError(
-                f"{operator_name}: measure mismatch. "
-                f"Computed: {computed_measures}, Expected: {expected_measures}"
-            )
 
     def get_udo_param(self, name: str) -> Optional[Any]:
         """
@@ -2199,274 +2149,6 @@ class SQLTranspiler(ASTTemplate):
     # Clause Operations (calc, filter, keep, drop, rename)
     # =========================================================================
 
-    def _get_transformed_dataset(self, base_dataset: Dataset, clause_node: AST.AST) -> Dataset:
-        """
-        Compute a transformed dataset structure after applying nested clause operations.
-
-        This handles chained clauses like [rename Me_1 to Me_1A][drop Me_2] by tracking
-        how each clause modifies the dataset structure.
-        """
-        # Handle UDOCall nodes
-        if isinstance(clause_node, AST.UDOCall):
-            return self._get_udo_output_structure(clause_node, base_dataset)
-
-        # Handle Aggregation nodes (like max, min, etc.)
-        if isinstance(clause_node, AST.Aggregation):
-            return self._get_aggregation_output_structure(clause_node, base_dataset)
-
-        if not isinstance(clause_node, AST.RegularAggregation):
-            return base_dataset
-
-        # Start with the base dataset or recursively get transformed dataset
-        if clause_node.dataset:
-            current_ds = self._get_transformed_dataset(base_dataset, clause_node.dataset)
-        else:
-            current_ds = base_dataset
-
-        op = str(clause_node.op).lower()
-
-        # Apply transformation based on clause type
-        if op == RENAME:
-            # Build rename mapping and apply to components
-            new_components: Dict[str, Component] = {}
-            renames: Dict[str, str] = {}
-            for child in clause_node.children:
-                if isinstance(child, AST.RenameNode):
-                    renames[child.old_name] = child.new_name
-
-            for name, comp in current_ds.components.items():
-                if name in renames:
-                    new_name = renames[name]
-                    # Create new component with renamed name
-                    new_comp = Component(
-                        name=new_name,
-                        data_type=comp.data_type,
-                        role=comp.role,
-                        nullable=comp.nullable,
-                    )
-                    new_components[new_name] = new_comp
-                else:
-                    new_components[name] = comp
-
-            return Dataset(name=current_ds.name, components=new_components, data=None)
-
-        elif op == DROP:
-            # Remove dropped columns
-            drop_cols = set()
-            for child in clause_node.children:
-                if isinstance(child, (AST.VarID, AST.Identifier)):
-                    drop_cols.add(child.value)
-
-            new_components = {
-                name: comp for name, comp in current_ds.components.items() if name not in drop_cols
-            }
-            return Dataset(name=current_ds.name, components=new_components, data=None)
-
-        elif op == KEEP:
-            # Keep only identifiers and specified columns
-            keep_cols = set(current_ds.get_identifiers_names())
-            for child in clause_node.children:
-                if isinstance(child, (AST.VarID, AST.Identifier)):
-                    keep_cols.add(child.value)
-
-            new_components = {
-                name: comp for name, comp in current_ds.components.items() if name in keep_cols
-            }
-            return Dataset(name=current_ds.name, components=new_components, data=None)
-
-        elif op == SUBSPACE:
-            # Subspace removes the identifiers used for filtering
-            remove_cols = set()
-            for child in clause_node.children:
-                if isinstance(child, AST.BinOp):
-                    col_name = child.left.value if hasattr(child.left, "value") else str(child.left)
-                    remove_cols.add(col_name)
-
-            new_components = {
-                name: comp
-                for name, comp in current_ds.components.items()
-                if name not in remove_cols
-            }
-            return Dataset(name=current_ds.name, components=new_components, data=None)
-
-        elif op == CALC:
-            # Calc can add new measures or overwrite existing ones
-            from vtlengine.DataTypes import String
-            from vtlengine.Model import Role
-
-            new_components = dict(current_ds.components)
-            for child in clause_node.children:
-                # Calc children are wrapped in UnaryOp with role (measure, identifier, attribute)
-                if isinstance(child, AST.UnaryOp) and hasattr(child, "operand"):
-                    assignment = child.operand
-                    role_str = str(child.op).lower()
-                    if role_str == "measure":
-                        role = Role.MEASURE
-                    elif role_str == "identifier":
-                        role = Role.IDENTIFIER
-                    elif role_str == "attribute":
-                        role = Role.ATTRIBUTE
-                    else:
-                        role = Role.MEASURE  # Default to measure
-                elif isinstance(child, AST.Assignment):
-                    assignment = child
-                    role = Role.MEASURE  # Default to measure
-                else:
-                    continue
-
-                if isinstance(assignment, AST.Assignment):
-                    if not isinstance(assignment.left, (AST.VarID, AST.Identifier)):
-                        continue
-                    col_name = assignment.left.value
-                    if col_name not in new_components:
-                        # Add new component (assume String type for simplicity)
-                        # Identifiers cannot be nullable
-                        is_nullable = role != Role.IDENTIFIER
-                        new_components[col_name] = Component(
-                            name=col_name,
-                            data_type=String,
-                            role=role,
-                            nullable=is_nullable,
-                        )
-
-            return Dataset(name=current_ds.name, components=new_components, data=None)
-
-        # For other clauses (filter, etc.), return as-is for now
-        # These don't change the column structure in ways that affect subsequent clauses
-        return current_ds
-
-    def _get_aggregation_output_structure(
-        self, agg_node: AST.Aggregation, base_dataset: Dataset
-    ) -> Dataset:
-        """
-        Compute the output structure after an aggregation operation.
-
-        Handles:
-        - group by: only specified identifiers remain
-        - group except: all identifiers except specified ones remain
-        """
-        if not agg_node.grouping:
-            # No grouping - all identifiers are removed, only aggregated measures remain
-            new_components = {
-                name: comp
-                for name, comp in base_dataset.components.items()
-                if comp.role != Role.IDENTIFIER
-            }
-            return Dataset(name=base_dataset.name, components=new_components, data=None)
-
-        # Get identifiers to keep based on grouping operation
-        # Use _resolve_varid_value to handle UDO parameters
-        if agg_node.grouping_op == "group by":
-            # Only keep specified identifiers
-            keep_ids = {
-                self._resolve_varid_value(g)
-                if isinstance(g, (AST.VarID, AST.Identifier))
-                else str(g)
-                for g in agg_node.grouping
-            }
-        elif agg_node.grouping_op == "group except":
-            # Keep all identifiers except specified ones
-            except_ids = {
-                self._resolve_varid_value(g)
-                if isinstance(g, (AST.VarID, AST.Identifier))
-                else str(g)
-                for g in agg_node.grouping
-            }
-            keep_ids = {
-                name
-                for name, comp in base_dataset.components.items()
-                if comp.role == Role.IDENTIFIER and name not in except_ids
-            }
-        else:
-            keep_ids = set(base_dataset.get_identifiers_names())
-
-        # Build new components: keep specified identifiers + all measures
-        new_components = {}
-        for name, comp in base_dataset.components.items():
-            if comp.role == Role.IDENTIFIER:
-                if name in keep_ids:
-                    new_components[name] = comp
-            else:
-                # Keep all measures (and attributes)
-                new_components[name] = comp
-
-        return Dataset(name=base_dataset.name, components=new_components, data=None)
-
-    def _get_join_output_structure(self, join_node: AST.JoinOp) -> Optional[Dataset]:
-        """
-        Compute the output structure after a join operation.
-
-        A join result contains:
-        - All identifiers from all datasets (union)
-        - All measures from all datasets (union)
-        """
-
-        def get_clause_structure(clause: AST.AST) -> Optional[Dataset]:
-            """Get the transformed structure for a join clause."""
-            # Use unified get_structure() which handles all node types
-            # including alias (as), RegularAggregation, UDOCall, Aggregation
-            return self.get_structure(clause)
-
-        # Collect components from all clauses
-        all_components: Dict[str, Component] = {}
-        result_name = "join_result"
-
-        for clause in join_node.clauses:
-            clause_ds = get_clause_structure(clause)
-            if clause_ds:
-                result_name = clause_ds.name  # Use last dataset name
-                for comp_name, comp in clause_ds.components.items():
-                    if comp_name not in all_components:
-                        all_components[comp_name] = deepcopy(comp)
-
-        if not all_components:
-            return None
-
-        return Dataset(name=result_name, components=all_components, data=None)
-
-    def _get_udo_output_structure(self, udo_node: AST.UDOCall, base_dataset: Dataset) -> Dataset:
-        """
-        Compute the output structure after a UDO call.
-
-        Expands the UDO and computes the structure based on its expression.
-        """
-        if udo_node.op not in self.udos:
-            return base_dataset
-
-        operator = self.udos[udo_node.op]
-        expression = operator["expression"]
-
-        # Build parameter bindings and push to stack
-        param_bindings: Dict[str, Any] = {}
-        for i, param in enumerate(operator["params"]):
-            if i < len(udo_node.params):
-                param_bindings[param["name"]] = udo_node.params[i]
-
-        # Push bindings so _resolve_varid_value and get_udo_param work
-        if self.udo_params is None:
-            self.udo_params = []
-        self.udo_params.append(param_bindings)
-
-        try:
-            # Analyze the expression to determine output structure
-            # Use a copy to avoid modifying the original
-            expression_copy = deepcopy(expression)
-
-            if isinstance(expression_copy, AST.Aggregation):
-                result = self._get_aggregation_output_structure(expression_copy, base_dataset)
-            elif isinstance(expression_copy, AST.RegularAggregation):
-                result = self._get_transformed_dataset(base_dataset, expression_copy)
-            else:
-                # Fallback to base dataset
-                result = base_dataset
-        finally:
-            # Pop bindings
-            self.udo_params.pop()
-            if len(self.udo_params) == 0:
-                self.udo_params = None
-
-        return result
-
     def visit_RegularAggregation(  # type: ignore[override]
         self, node: AST.RegularAggregation
     ) -> str:
@@ -3408,34 +3090,9 @@ class SQLTranspiler(ASTTemplate):
     def _get_identifiers_from_expression(self, expr: AST.AST) -> List[str]:
         """
         Extract identifier column names from an expression.
-
-        Traces through the expression to find the underlying dataset
-        and returns its identifier column names.
+        Delegates to structure visitor.
         """
-        if isinstance(expr, AST.VarID):
-            # Direct dataset reference
-            ds = self.available_tables.get(expr.value)
-            if ds:
-                return list(ds.get_identifiers_names())
-        elif isinstance(expr, AST.BinOp):
-            # For binary operations, get identifiers from left operand
-            left_ids = self._get_identifiers_from_expression(expr.left)
-            if left_ids:
-                return left_ids
-            return self._get_identifiers_from_expression(expr.right)
-        elif isinstance(expr, AST.ParFunction):
-            # Parenthesized expression - look inside
-            return self._get_identifiers_from_expression(expr.operand)
-        elif isinstance(expr, AST.Aggregation):
-            # Aggregation - identifiers come from grouping, not operand
-            if expr.grouping and expr.grouping_op == "group by":
-                return [
-                    g.value if isinstance(g, (AST.VarID, AST.Identifier)) else str(g)
-                    for g in expr.grouping
-                ]
-            elif expr.operand:
-                return self._get_identifiers_from_expression(expr.operand)
-        return []
+        return self.structure_visitor.get_identifiers_from_expression(expr)
 
     def visit_Validation(self, node: AST.Validation) -> str:
         """
@@ -3971,162 +3628,24 @@ class SQLTranspiler(ASTTemplate):
     # Helper Methods
     # =========================================================================
 
+    def _sync_visitor_context(self) -> None:
+        """Sync transpiler context to structure visitor for operand type determination."""
+        self.structure_visitor.in_clause = self.in_clause
+        self.structure_visitor.current_dataset = self.current_dataset
+        self.structure_visitor.input_scalars = self.input_scalars
+        self.structure_visitor.output_scalars = self.output_scalars
+
     def _get_operand_type(self, node: AST.AST) -> str:
-        """Determine the type of an operand."""
-        if isinstance(node, AST.VarID):
-            name = node.value
-
-            # Check if this is a UDO parameter - if so, get type of bound value
-            udo_value = self.get_udo_param(name)
-            if udo_value is not None:
-                if isinstance(udo_value, AST.AST):
-                    return self._get_operand_type(udo_value)
-                # String values are typically component names
-                if isinstance(udo_value, str):
-                    return OperandType.COMPONENT
-                # Scalar objects
-                return OperandType.SCALAR
-
-            # In clause context: component
-            if self.in_clause and self.current_dataset and name in self.current_dataset.components:
-                return OperandType.COMPONENT
-
-            # Known dataset
-            if name in self.available_tables:
-                return OperandType.DATASET
-
-            # Known scalar (from input or output)
-            if name in self.input_scalars or name in self.output_scalars:
-                return OperandType.SCALAR
-
-            # Default in clause: component
-            if self.in_clause:
-                return OperandType.COMPONENT
-
-            return OperandType.SCALAR
-
-        elif isinstance(node, AST.Constant):
-            return OperandType.SCALAR
-
-        elif isinstance(node, AST.BinOp):
-            return self._get_operand_type(node.left)
-
-        elif isinstance(node, AST.UnaryOp):
-            return self._get_operand_type(node.operand)
-
-        elif isinstance(node, AST.ParamOp):
-            if node.children:
-                return self._get_operand_type(node.children[0])
-
-        elif isinstance(node, (AST.RegularAggregation, AST.JoinOp)):
-            return OperandType.DATASET
-
-        elif isinstance(node, AST.Aggregation):
-            # In clause context, aggregation on a component is a scalar SQL aggregate
-            if self.in_clause and node.operand:
-                operand_type = self._get_operand_type(node.operand)
-                if operand_type in (OperandType.COMPONENT, OperandType.SCALAR):
-                    return OperandType.SCALAR
-            return OperandType.DATASET
-
-        elif isinstance(node, AST.If):
-            return self._get_operand_type(node.thenOp)
-
-        elif isinstance(node, AST.ParFunction):
-            return self._get_operand_type(node.operand)
-
-        elif isinstance(node, AST.UDOCall):
-            # UDOCall returns what its output type specifies
-            if node.op in self.udos:
-                output_type = self.udos[node.op]["output"]
-                type_mapping = {
-                    "Dataset": OperandType.DATASET,
-                    "Scalar": OperandType.SCALAR,
-                    "Component": OperandType.COMPONENT,
-                }
-                return type_mapping.get(output_type, OperandType.DATASET)
-            # Default to dataset if we don't know
-            return OperandType.DATASET
-
-        return OperandType.SCALAR
+        """Determine the type of an operand. Delegates to structure visitor."""
+        self._sync_visitor_context()
+        return self.structure_visitor.get_operand_type(node)
 
     def _get_transformed_measure_name(self, node: AST.AST) -> Optional[str]:
         """
         Extract the final measure name from a node after all transformations.
-
-        For expressions like `DS [ keep X ] [ rename X to Y ]`, this returns 'Y'.
+        Delegates to structure visitor.
         """
-        if isinstance(node, AST.VarID):
-            # Direct dataset reference - get the first measure from structure
-            ds = self.get_structure(node)
-            if ds:
-                measures = list(ds.get_measures_names())
-                return measures[0] if measures else None
-            return None
-
-        if isinstance(node, AST.RegularAggregation):
-            from vtlengine.AST.Grammar.tokens import CALC, KEEP, RENAME
-
-            # Check the operation type
-            op = str(node.op).lower()
-
-            if op == RENAME:
-                # For rename, the final measure name is in the RenameNode
-                for child in node.children:
-                    if isinstance(child, AST.RenameNode):
-                        return child.new_name
-                # Fallback to inner dataset
-                if node.dataset:
-                    return self._get_transformed_measure_name(node.dataset)
-
-            elif op == CALC:
-                # For calc, the measure name is in Assignment.left
-                # Children can be UnaryOp (with role) wrapping Assignment, or Assignment directly
-                for child in node.children:
-                    if isinstance(child, AST.UnaryOp) and hasattr(child, "operand"):
-                        assignment = child.operand
-                    elif isinstance(child, AST.Assignment):
-                        assignment = child
-                    else:
-                        continue
-                    if isinstance(assignment, AST.Assignment) and isinstance(
-                        assignment.left, (AST.VarID, AST.Identifier)
-                    ):
-                        return assignment.left.value
-                # Fallback to inner dataset
-                if node.dataset:
-                    return self._get_transformed_measure_name(node.dataset)
-
-            elif op == KEEP:
-                # For keep, the kept measure is the final name
-                # Look for the measure in children (excluding identifiers)
-                if node.dataset:
-                    inner_ds = self.get_structure(node.dataset)
-                    if inner_ds:
-                        inner_ids = set(inner_ds.get_identifiers_names())
-                        # Find the kept measure (not an identifier)
-                        for child in node.children:
-                            if (
-                                isinstance(child, (AST.VarID, AST.Identifier))
-                                and child.value not in inner_ids
-                            ):
-                                return child.value
-                # If inner RegularAggregation, recurse
-                if node.dataset:
-                    return self._get_transformed_measure_name(node.dataset)
-
-            else:
-                # Other clauses (filter, subspace, etc.) - recurse to inner dataset
-                if node.dataset:
-                    return self._get_transformed_measure_name(node.dataset)
-
-        if isinstance(node, AST.BinOp):
-            return self._get_transformed_measure_name(node.left)
-
-        if isinstance(node, AST.UnaryOp):
-            return self._get_transformed_measure_name(node.operand)
-
-        return None
+        return self.structure_visitor.get_transformed_measure_name(node)
 
     def _get_dataset_name(self, node: AST.AST) -> str:
         """Extract dataset name from a node, resolving UDO parameters."""
