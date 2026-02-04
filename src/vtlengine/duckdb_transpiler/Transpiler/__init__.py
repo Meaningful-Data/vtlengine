@@ -343,7 +343,9 @@ class SQLTranspiler(ASTTemplate):
             # For binary operations, handle different cases
             from vtlengine.AST.Grammar.tokens import MEMBERSHIP
 
-            if str(node.op).lower() == MEMBERSHIP:
+            op_lower = str(node.op).lower()
+
+            if op_lower == MEMBERSHIP:
                 # For membership (#), return a dataset with only the extracted component
                 base_ds = self.get_structure(node.left)
                 if base_ds:
@@ -366,6 +368,9 @@ class SQLTranspiler(ASTTemplate):
                         )
                     return Dataset(name=base_ds.name, components=new_components, data=None)
                 return None
+            if op_lower == "as":
+                # Alias operator: same structure as left operand, just different name
+                return self.get_structure(node.left)
             # For other binary operations, get the left operand's structure
             if node.left:
                 return self.get_structure(node.left)
@@ -397,6 +402,63 @@ class SQLTranspiler(ASTTemplate):
 
             # For other unary ops, return the base structure
             return base_ds
+        elif isinstance(node, AST.ParamOp):
+            # For parameterized operations like cast
+            from vtlengine.AST.Grammar.tokens import CAST
+            from vtlengine.DataTypes import (
+                Boolean,
+                Date,
+                Duration,
+                Integer,
+                Number,
+                String,
+                TimeInterval,
+                TimePeriod,
+            )
+
+            op_lower = str(node.op).lower()
+            if op_lower == CAST and node.children:
+                # Cast: same structure, but measures have target data type
+                base_ds = self.get_structure(node.children[0])
+                if base_ds and len(node.children) >= 2:
+                    # Get target type from second child
+                    target_type_node = node.children[1]
+                    if hasattr(target_type_node, "value"):
+                        target_type = target_type_node.value
+                    elif hasattr(target_type_node, "__name__"):
+                        target_type = target_type_node.__name__
+                    else:
+                        target_type = str(target_type_node)
+
+                    # Map VTL type name to DataType class
+                    type_map = {
+                        "Integer": Integer,
+                        "Number": Number,
+                        "String": String,
+                        "Boolean": Boolean,
+                        "Date": Date,
+                        "TimePeriod": TimePeriod,
+                        "TimeInterval": TimeInterval,
+                        "Duration": Duration,
+                    }
+                    new_data_type = type_map.get(target_type)
+
+                    if new_data_type:
+                        # Build new structure with updated measure types
+                        new_components = {}
+                        for name, comp in base_ds.components.items():
+                            if comp.role == Role.IDENTIFIER:
+                                new_components[name] = comp
+                            else:
+                                # Update measure data type
+                                new_components[name] = Component(
+                                    name=name,
+                                    data_type=new_data_type,
+                                    role=comp.role,
+                                    nullable=comp.nullable,
+                                )
+                        return Dataset(name=base_ds.name, components=new_components, data=None)
+                return base_ds
         return None
 
     def set_structure(self, node: AST.AST, dataset: Dataset) -> None:
@@ -3450,7 +3512,8 @@ class SQLTranspiler(ASTTemplate):
             """
             Extract the actual dataset node and its alias from a join clause.
 
-            VTL join clauses like `ds as A` are represented as BinOp(left=ds, op='as', right=Identifier)
+            VTL join clauses like `ds as A` are represented as:
+            BinOp(left=ds, op='as', right=Identifier)
             """
             if isinstance(clause, AST.BinOp) and str(clause.op).lower() == "as":
                 # Clause has an explicit alias

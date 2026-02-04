@@ -16,8 +16,10 @@ from vtlengine.AST import (
     Collection,
     Constant,
     EvalOp,
+    Identifier,
     If,
     MulOp,
+    ParamConstant,
     ParamOp,
     RegularAggregation,
     Start,
@@ -1847,9 +1849,7 @@ def create_boolean_dataset(name: str, id_cols: list, measure_cols: list) -> Data
             name=col, data_type=String, role=Role.IDENTIFIER, nullable=False
         )
     for col in measure_cols:
-        components[col] = Component(
-            name=col, data_type=Boolean, role=Role.MEASURE, nullable=True
-        )
+        components[col] = Component(name=col, data_type=Boolean, role=Role.MEASURE, nullable=True)
     return Dataset(name=name, components=components, data=None)
 
 
@@ -2014,9 +2014,7 @@ class TestExistInOperations:
                 "Id_2": Component(
                     name="Id_2", data_type=String, role=Role.IDENTIFIER, nullable=False
                 ),
-                "Me_1": Component(
-                    name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True
-                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
             },
             data=None,
         )
@@ -2029,9 +2027,7 @@ class TestExistInOperations:
                 "Id_2": Component(
                     name="Id_2", data_type=String, role=Role.IDENTIFIER, nullable=False
                 ),
-                "Me_2": Component(
-                    name="Me_2", data_type=Number, role=Role.MEASURE, nullable=True
-                ),
+                "Me_2": Component(name="Me_2", data_type=Number, role=Role.MEASURE, nullable=True),
             },
             data=None,
         )
@@ -2081,9 +2077,7 @@ class TestExistInOperations:
                 "Id_1": Component(
                     name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
                 ),
-                "Me_1": Component(
-                    name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True
-                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
             },
             data=None,
         )
@@ -2093,9 +2087,7 @@ class TestExistInOperations:
                 "Id_1": Component(
                     name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
                 ),
-                "Me_1": Component(
-                    name="Me_1", data_type=String, role=Role.MEASURE, nullable=True
-                ),
+                "Me_1": Component(name="Me_1", data_type=String, role=Role.MEASURE, nullable=True),
             },
             data=None,
         )
@@ -2179,9 +2171,7 @@ class TestIntermediateResultsInExistIn:
                 "Id_1": Component(
                     name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
                 ),
-                "Me_1": Component(
-                    name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True
-                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
             },
             data=None,
         )
@@ -2191,9 +2181,7 @@ class TestIntermediateResultsInExistIn:
                 "Id_1": Component(
                     name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
                 ),
-                "Me_2": Component(
-                    name="Me_2", data_type=Number, role=Role.MEASURE, nullable=True
-                ),
+                "Me_2": Component(name="Me_2", data_type=Number, role=Role.MEASURE, nullable=True),
             },
             data=None,
         )
@@ -2204,9 +2192,7 @@ class TestIntermediateResultsInExistIn:
                 "Id_1": Component(
                     name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
                 ),
-                "Me_1": Component(
-                    name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True
-                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
             },
             data=None,
         )
@@ -2279,12 +2265,8 @@ class TestGetStructure:
                 "Id_1": Component(
                     name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
                 ),
-                "Me_1": Component(
-                    name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True
-                ),
-                "Me_2": Component(
-                    name="Me_2", data_type=Number, role=Role.MEASURE, nullable=True
-                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+                "Me_2": Component(name="Me_2", data_type=Number, role=Role.MEASURE, nullable=True),
             },
             data=None,
         )
@@ -2318,9 +2300,7 @@ class TestGetStructure:
                 "Id_1": Component(
                     name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
                 ),
-                "Me_1": Component(
-                    name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True
-                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
             },
             data=None,
         )
@@ -2353,12 +2333,8 @@ class TestGetStructure:
                 "Id_1": Component(
                     name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
                 ),
-                "Me_1": Component(
-                    name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True
-                ),
-                "Me_2": Component(
-                    name="Me_2", data_type=Number, role=Role.MEASURE, nullable=True
-                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+                "Me_2": Component(name="Me_2", data_type=Number, role=Role.MEASURE, nullable=True),
             },
             data=None,
         )
@@ -2394,9 +2370,7 @@ class TestGetStructure:
                 "Id_2": Component(
                     name="Id_2", data_type=String, role=Role.IDENTIFIER, nullable=False
                 ),
-                "Me_1": Component(
-                    name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True
-                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
             },
             data=None,
         )
@@ -2440,9 +2414,7 @@ class TestGetStructure:
                 "Id_2": Component(
                     name="Id_2", data_type=String, role=Role.IDENTIFIER, nullable=False
                 ),
-                "Me_1": Component(
-                    name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True
-                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
             },
             data=None,
         )
@@ -2455,9 +2427,7 @@ class TestGetStructure:
                 "Id_3": Component(
                     name="Id_3", data_type=String, role=Role.IDENTIFIER, nullable=False
                 ),
-                "Me_1": Component(
-                    name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True
-                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
             },
             data=None,
         )
@@ -2473,9 +2443,7 @@ class TestGetStructure:
                 "Id_3": Component(
                     name="Id_3", data_type=String, role=Role.IDENTIFIER, nullable=False
                 ),
-                "Me_1": Component(
-                    name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True
-                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
             },
             data=None,
         )
@@ -2501,3 +2469,115 @@ class TestGetStructure:
         assert '"Id_1"' in sql
         assert '"Id_2"' in sql
         assert '"Id_3"' in sql
+
+    def test_alias_returns_same_structure(self):
+        """Test that get_structure for alias (as) returns the same structure as the operand."""
+        ds = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(input_datasets={"DS_1": ds})
+        transpiler.available_tables["DS_1"] = ds
+
+        # Create alias node: DS_1 as A
+        alias_node = BinOp(
+            **make_ast_node(
+                left=VarID(**make_ast_node(value="DS_1")),
+                op="as",
+                right=Identifier(**make_ast_node(value="A", kind="DatasetID")),
+            )
+        )
+
+        structure = transpiler.get_structure(alias_node)
+
+        # Should have same structure as DS_1
+        assert structure is not None
+        assert "Id_1" in structure.components
+        assert "Me_1" in structure.components
+        assert structure.components["Id_1"].role == Role.IDENTIFIER
+        assert structure.components["Me_1"].role == Role.MEASURE
+
+    def test_cast_updates_measure_data_types(self):
+        """Test that get_structure for cast returns structure with updated measure types."""
+        ds = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(input_datasets={"DS_1": ds})
+        transpiler.available_tables["DS_1"] = ds
+
+        # Create cast node: cast(DS_1, Integer)
+        cast_node = ParamOp(
+            **make_ast_node(
+                op="cast",
+                children=[
+                    VarID(**make_ast_node(value="DS_1")),
+                    Identifier(**make_ast_node(value="Integer", kind="ScalarTypeID")),
+                ],
+                params=[],
+            )
+        )
+
+        structure = transpiler.get_structure(cast_node)
+
+        # Should have same structure but measures have Integer type
+        assert structure is not None
+        assert "Id_1" in structure.components
+        assert "Me_1" in structure.components
+        # Identifier type should remain unchanged
+        assert structure.components["Id_1"].data_type == String
+        # Measure type should be updated to Integer
+        assert structure.components["Me_1"].data_type == Integer
+
+    def test_cast_with_mask_updates_measure_data_types(self):
+        """Test that get_structure for cast with mask returns structure with updated types."""
+        ds = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=String, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(input_datasets={"DS_1": ds})
+        transpiler.available_tables["DS_1"] = ds
+
+        # Create cast node with mask: cast(DS_1, Date, "YYYY-MM-DD")
+        cast_node = ParamOp(
+            **make_ast_node(
+                op="cast",
+                children=[
+                    VarID(**make_ast_node(value="DS_1")),
+                    Identifier(**make_ast_node(value="Date", kind="ScalarTypeID")),
+                ],
+                params=[ParamConstant(**make_ast_node(value="YYYY-MM-DD", type_="PARAM_CAST"))],
+            )
+        )
+
+        structure = transpiler.get_structure(cast_node)
+
+        # Should have same structure but measures have Date type
+        assert structure is not None
+        assert "Id_1" in structure.components
+        assert "Me_1" in structure.components
+        # Identifier type should remain unchanged
+        assert structure.components["Id_1"].data_type == String
+        # Measure type should be updated to Date
+        assert structure.components["Me_1"].data_type == Date
