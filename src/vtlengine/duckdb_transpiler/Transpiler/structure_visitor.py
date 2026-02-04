@@ -517,3 +517,82 @@ class StructureVisitor(ASTTemplate):
                     )
 
         return Dataset(name=base_ds.name, components=new_components, data=None)
+
+    def visit_Aggregation(self, node: AST.Aggregation) -> Optional[Dataset]:
+        """
+        Get structure for an aggregation operation.
+
+        Handles:
+        - group by: keeps only specified identifiers
+        - group except: keeps all identifiers except specified ones
+        - no grouping: removes all identifiers
+
+        Args:
+            node: The Aggregation node.
+
+        Returns:
+            The transformed Dataset structure.
+        """
+        if node.operand is None:
+            return None
+
+        base_ds = self.visit(node.operand)
+        if base_ds is None:
+            return None
+
+        return self._compute_aggregation_structure(node, base_ds)
+
+    def _compute_aggregation_structure(
+        self, agg_node: AST.Aggregation, base_ds: Dataset
+    ) -> Dataset:
+        """
+        Compute output structure after an aggregation operation.
+
+        Args:
+            agg_node: The Aggregation AST node.
+            base_ds: The base Dataset structure.
+
+        Returns:
+            The transformed Dataset structure.
+        """
+        if not agg_node.grouping:
+            # No grouping - remove all identifiers
+            new_components = {
+                name: comp
+                for name, comp in base_ds.components.items()
+                if comp.role != Role.IDENTIFIER
+            }
+            return Dataset(name=base_ds.name, components=new_components, data=None)
+
+        # Get identifiers to keep based on grouping operation
+        if agg_node.grouping_op == "group by":
+            keep_ids = {
+                self._resolve_varid_value(g)
+                if isinstance(g, (AST.VarID, AST.Identifier))
+                else str(g)
+                for g in agg_node.grouping
+            }
+        elif agg_node.grouping_op == "group except":
+            except_ids = {
+                self._resolve_varid_value(g)
+                if isinstance(g, (AST.VarID, AST.Identifier))
+                else str(g)
+                for g in agg_node.grouping
+            }
+            keep_ids = {
+                name
+                for name, comp in base_ds.components.items()
+                if comp.role == Role.IDENTIFIER and name not in except_ids
+            }
+        else:
+            keep_ids = {
+                name for name, comp in base_ds.components.items() if comp.role == Role.IDENTIFIER
+            }
+
+        # Build new components: keep specified identifiers + all non-identifiers
+        result_components = {
+            name: comp
+            for name, comp in base_ds.components.items()
+            if comp.role != Role.IDENTIFIER or name in keep_ids
+        }
+        return Dataset(name=base_ds.name, components=result_components, data=None)

@@ -2,7 +2,16 @@
 
 from typing import Any, Dict, List
 
-from vtlengine.AST import BinOp, Identifier, ParamOp, RegularAggregation, RenameNode, UnaryOp, VarID
+from vtlengine.AST import (
+    Aggregation,
+    BinOp,
+    Identifier,
+    ParamOp,
+    RegularAggregation,
+    RenameNode,
+    UnaryOp,
+    VarID,
+)
 from vtlengine.AST.Grammar.tokens import MEMBERSHIP
 from vtlengine.DataTypes import Boolean, Integer, Number, String
 from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import StructureVisitor
@@ -410,4 +419,103 @@ class TestStructureVisitorRegularAggregation:
 
         assert result is not None
         assert "Id_1" in result.components
+        assert "Me_1" in result.components
+
+
+class TestStructureVisitorAggregation:
+    """Test Aggregation structure computation."""
+
+    def test_visit_aggregation_group_by_keeps_specified_ids(self):
+        """Test that group by keeps only specified identifiers."""
+        ds = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Id_2": Component(
+                    name="Id_2", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        visitor = StructureVisitor(available_tables={"DS_1": ds}, output_datasets={})
+
+        agg = Aggregation(
+            **make_ast_node(
+                op="sum",
+                operand=VarID(**make_ast_node(value="DS_1")),
+                grouping_op="group by",
+                grouping=[VarID(**make_ast_node(value="Id_1"))],
+            )
+        )
+
+        result = visitor.visit(agg)
+
+        assert result is not None
+        assert "Id_1" in result.components
+        assert "Id_2" not in result.components
+        assert "Me_1" in result.components
+
+    def test_visit_aggregation_group_except_removes_specified_ids(self):
+        """Test that group except removes specified identifiers."""
+        ds = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Id_2": Component(
+                    name="Id_2", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        visitor = StructureVisitor(available_tables={"DS_1": ds}, output_datasets={})
+
+        agg = Aggregation(
+            **make_ast_node(
+                op="max",
+                operand=VarID(**make_ast_node(value="DS_1")),
+                grouping_op="group except",
+                grouping=[VarID(**make_ast_node(value="Id_2"))],
+            )
+        )
+
+        result = visitor.visit(agg)
+
+        assert result is not None
+        assert "Id_1" in result.components
+        assert "Id_2" not in result.components
+        assert "Me_1" in result.components
+
+    def test_visit_aggregation_no_grouping_removes_all_ids(self):
+        """Test that aggregation without grouping removes all identifiers."""
+        ds = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        visitor = StructureVisitor(available_tables={"DS_1": ds}, output_datasets={})
+
+        agg = Aggregation(
+            **make_ast_node(
+                op="count",
+                operand=VarID(**make_ast_node(value="DS_1")),
+                grouping_op=None,
+                grouping=None,
+            )
+        )
+
+        result = visitor.visit(agg)
+
+        assert result is not None
+        assert "Id_1" not in result.components
         assert "Me_1" in result.components
