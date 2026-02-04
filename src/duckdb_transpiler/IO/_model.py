@@ -1,7 +1,6 @@
 from typing import List, Union
 
-from duckdb_transpiler.Model import Scalar
-from vtlengine.Model import Dataset
+from vtlengine.Model import Dataset, Scalar
 
 
 class Query:
