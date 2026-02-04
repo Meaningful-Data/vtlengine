@@ -75,3 +75,42 @@ class StructureVisitor(ASTTemplate):
             dataset: The computed Dataset structure.
         """
         self._structure_context[id(node)] = dataset
+
+    def get_udo_param(self, name: str) -> Optional[Any]:
+        """
+        Look up a UDO parameter by name from the current scope.
+
+        Searches from innermost scope outward through the UDO parameter stack.
+
+        Args:
+            name: The parameter name to look up.
+
+        Returns:
+            The bound value if found, None otherwise.
+        """
+        if self._udo_params is None:
+            return None
+        for scope in reversed(self._udo_params):
+            if name in scope:
+                return scope[name]
+        return None
+
+    def push_udo_params(self, params: Dict[str, Any]) -> None:
+        """
+        Push a new UDO parameter scope onto the stack.
+
+        Args:
+            params: Dict mapping parameter names to their bound values.
+        """
+        if self._udo_params is None:
+            self._udo_params = []
+        self._udo_params.append(params)
+
+    def pop_udo_params(self) -> None:
+        """
+        Pop the innermost UDO parameter scope from the stack.
+        """
+        if self._udo_params:
+            self._udo_params.pop()
+            if len(self._udo_params) == 0:
+                self._udo_params = None
