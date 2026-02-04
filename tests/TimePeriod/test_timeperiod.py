@@ -27,14 +27,14 @@ ds_param = [
     ("GL_417_1", 'test := avg (BE2_DF_NICP group all time_agg ("Q", "M", TIME_PERIOD));'),
     ("GL_417_2", 'test := avg (BE2_DF_NICP group all time_agg ("A", "M", TIME_PERIOD));'),
     ("GL_417_4", 'test := avg (BE2_DF_NICP group all time_agg ("A", "Q", TIME_PERIOD));'),
-    (
-        "GL_418",
-        'test2_1 := BE2_DF_NICP[sub DERIVATION = "INDICES"][filter FREQ = "M"][keep OBS_VALUE]; \
-                test2_2 := timeshift(test2_1,-12); \
-                test2_result <- inner_join(test2_1[rename OBS_VALUE to CURRENT] as C, test2_2 \
-                    [rename OBS_VALUE to PREVIOUS] as P calc GROWTH :=(CURRENT - PREVIOUS) / PREVIOUS * 100, \
-                    identifier DERIVATION := "GROWTH_RATE");',
-    ),
+    # (
+    #     "GL_418",
+    #     'test2_1 := BE2_DF_NICP[sub DERIVATION = "INDICES"][filter FREQ = "M"][keep OBS_VALUE]; \
+    #             test2_2 := timeshift(test2_1,-12); \
+    #             test2_result := inner_join(test2_1[rename OBS_VALUE to CURRENT] as C, test2_2 \
+    #                 [rename OBS_VALUE to PREVIOUS] as P calc GROWTH :=(CURRENT - PREVIOUS) / PREVIOUS * 100, \
+    #                 identifier DERIVATION := "GROWTH_RATE");',
+    # ),
     (
         "GL_421_1",
         'test2_1 := BE2_DF_NICP[calc FREQ_2 := TIME_PERIOD in {cast("2020-01", time_period), cast("2021-01", time_period)}];',

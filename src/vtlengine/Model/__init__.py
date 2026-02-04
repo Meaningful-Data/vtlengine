@@ -218,111 +218,62 @@ class Dataset:
         if not isinstance(other, Dataset):
             return False
 
-        same_name = self.name == other.name
-        if not same_name:
-            print("\nName mismatch")
-            print("result:", self.name)
-            print("reference:", other.name)
-        same_components = self.components == other.components
-        if not same_components:
-            print("\nComponents mismatch")
-            result_comps = self.to_dict()["components"]
-            reference_comps = other.to_dict()["components"]
-            if len(result_comps) != len(reference_comps):
-                print(
-                    f"Shape mismatch: result:{len(result_comps)} "
-                    f"!= reference:{len(reference_comps)}"
-                )
-                if len(result_comps) < len(reference_comps):
-                    print(
-                        "Missing components in result:",
-                        set(reference_comps.keys()) - set(result_comps.keys()),
-                    )
-                else:
-                    print(
-                        "Additional components in result:",
-                        set(result_comps.keys()) - set(reference_comps.keys()),
-                    )
-                return False
-
-            diff_comps = {
-                k: v
-                for k, v in result_comps.items()
-                if (k in reference_comps and v != reference_comps[k]) or k not in reference_comps
-            }
-            ref_diff_comps = {k: v for k, v in reference_comps.items() if k in diff_comps}
-            print(f"Differences in components {self.name}: ")
-            print("result:", json.dumps(diff_comps, indent=4))
-            print("reference:", json.dumps(ref_diff_comps, indent=4))
+        if self.name != other.name or self.components != other.components:
             return False
 
         if self.data is None and other.data is None:
             return True
-        elif self.data is None or other.data is None:
+        if self.data is None or other.data is None:
             return False
-        if len(self.data) == len(other.data) == 0 and self.data.shape != other.data.shape:
-            raise SemanticError("0-1-1-14", dataset1=self.name, dataset2=other.name)
+        if self.data.shape != other.data.shape:
+            if len(self.data) == len(other.data) == 0:
+                raise SemanticError("0-1-1-14", dataset1=self.name, dataset2=other.name)
+            return False
 
-        self.data.fillna("", inplace=True)
-        other.data.fillna("", inplace=True)
-        sorted_identifiers = sorted(self.get_identifiers_names())
-        self.data = self.data.sort_values(by=sorted_identifiers).reset_index(drop=True)
-        other.data = other.data.sort_values(by=sorted_identifiers).reset_index(drop=True)
-        self.data = self.data.reindex(sorted(self.data.columns), axis=1)
-        other.data = other.data.reindex(sorted(other.data.columns), axis=1)
+        # Work on copies to avoid side effects
+        df1 = self.data.copy()
+        df2 = other.data.copy()
+
+        # Normalize and sort
+        sorted_ids = sorted(self.get_identifiers_names())
+        sorted_cols = sorted(df1.columns)
+        df1 = df1.sort_values(by=sorted_ids).reset_index(drop=True)[sorted_cols]
+        df2 = df2.sort_values(by=sorted_ids).reset_index(drop=True)[sorted_cols]
+
+        # Normalize types per component
         for comp in self.components.values():
-            type_name: str = comp.data_type.__name__.__str__()
-            if type_name in ["String", "Date"]:
-                self.data[comp.name] = self.data[comp.name].astype(str)
-                other.data[comp.name] = other.data[comp.name].astype(str)
-            elif type_name == "TimePeriod":
-                self.data[comp.name] = self.data[comp.name].astype(str)
-                other.data[comp.name] = other.data[comp.name].astype(str)
-                self.data[comp.name] = self.data[comp.name].map(
-                    lambda x: str(TimePeriodHandler(str(x))) if x != "" else "",
-                    na_action="ignore",
-                )
-                other.data[comp.name] = other.data[comp.name].map(
-                    lambda x: str(TimePeriodHandler(str(x))) if x != "" else "",
-                    na_action="ignore",
-                )
-            elif type_name in ["Integer", "Number"]:
-                type_ = "int64" if type_name == "Integer" else "float32"
-                # We use here a number to avoid errors on equality on empty strings
-                self.data[comp.name] = (
-                    self.data[comp.name].replace("", -1234997).astype(type_)  # type: ignore[call-overload]
-                )
-                other.data[comp.name] = (
-                    other.data[comp.name].replace("", -1234997).astype(type_)  # type: ignore[call-overload]
-                )
+            col = comp.name
+            type_name = comp.data_type.__name__
+            if type_name == "TimePeriod":
+                for df in (df1, df2):
+                    df[col] = df[col].apply(
+                        lambda x: str(TimePeriodHandler(str(x))) if pd.notna(x) else None
+                    )
+            elif type_name in ("Integer", "Number"):
+                df1[col] = pd.to_numeric(df1[col], errors="coerce")
+                df2[col] = pd.to_numeric(df2[col], errors="coerce")
+            elif type_name == "Date":
+                for df in (df1, df2):
+                    df[col] = pd.to_datetime(df[col], errors="coerce").dt.strftime("%Y-%m-%d")
+                    df[col] = df[col].replace("NaT", None)
+            elif type_name == "String":
+                for df in (df1, df2):
+                    df[col] = df[col].apply(lambda x: str(x) if pd.notna(x) else None)
+                    df[col] = df[col].replace({"": None, "None": None, "nan": None})
+
         try:
             assert_frame_equal(
-                self.data,
-                other.data,
+                df1,
+                df2,
                 check_dtype=False,
-                check_index_type=False,
-                check_datetimelike_compat=True,
+                check_names=False,
                 check_exact=False,
                 rtol=0.01,
                 atol=0.01,
             )
-        except AssertionError as e:
-            if "DataFrame shape" in str(e):
-                print(f"\nDataFrame shape mismatch {self.name}:")
-                print("result:", self.data.shape)
-                print("reference:", other.data.shape)
-            # Differences between the dataframes
-            diff = pd.concat([self.data, other.data]).drop_duplicates(keep=False)
-            if len(diff) == 0:
-                return True
-            # To display actual null values instead of -1234997
-            for comp in self.components.values():
-                if comp.data_type.__name__.__str__() in ["Integer", "Number"]:
-                    diff[comp.name] = diff[comp.name].replace(-1234997, "")
-            print("\n Differences between the dataframes in", self.name)
-            print(diff)
-            raise e
-        return True
+            return True
+        except AssertionError:
+            return False
 
     def get_component(self, component_name: str) -> Component:
         return self.components[component_name]
