@@ -351,3 +351,169 @@ class StructureVisitor(ASTTemplate):
             return self.visit(node.children[0])
 
         return None
+
+    def visit_RegularAggregation(self, node: AST.RegularAggregation) -> Optional[Dataset]:
+        """
+        Get structure for a clause operation (calc, filter, keep, drop, rename, etc.).
+
+        Args:
+            node: The RegularAggregation node.
+
+        Returns:
+            The transformed Dataset structure.
+        """
+        # Get base dataset structure
+        base_ds = self.visit(node.dataset) if node.dataset else None
+        if base_ds is None:
+            return None
+
+        return self._transform_dataset(base_ds, node)
+
+    def _transform_dataset(self, base_ds: Dataset, clause_node: AST.AST) -> Dataset:
+        """
+        Compute transformed dataset structure after applying clause operations.
+
+        Handles chained clauses by recursively transforming.
+
+        Args:
+            base_ds: The base Dataset structure.
+            clause_node: The clause AST node.
+
+        Returns:
+            The transformed Dataset structure.
+        """
+        from vtlengine.AST.Grammar.tokens import (
+            CALC,
+            DROP,
+            KEEP,
+            RENAME,
+            SUBSPACE,
+        )
+
+        if not isinstance(clause_node, AST.RegularAggregation):
+            return base_ds
+
+        # Handle nested clauses
+        if clause_node.dataset:
+            nested_structure = self.visit(clause_node.dataset)
+            if nested_structure:
+                base_ds = nested_structure
+
+        op = str(clause_node.op).lower()
+
+        if op == RENAME:
+            return self._transform_rename(base_ds, clause_node.children)
+        elif op == DROP:
+            return self._transform_drop(base_ds, clause_node.children)
+        elif op == KEEP:
+            return self._transform_keep(base_ds, clause_node.children)
+        elif op == SUBSPACE:
+            return self._transform_subspace(base_ds, clause_node.children)
+        elif op == CALC:
+            return self._transform_calc(base_ds, clause_node.children)
+
+        # For filter and other clauses, return as-is
+        return base_ds
+
+    def _transform_rename(self, base_ds: Dataset, children: List[AST.AST]) -> Dataset:
+        """Transform structure for rename clause."""
+        new_components: Dict[str, Component] = {}
+        renames: Dict[str, str] = {}
+
+        for child in children:
+            if isinstance(child, AST.RenameNode):
+                renames[child.old_name] = child.new_name
+
+        for name, comp in base_ds.components.items():
+            if name in renames:
+                new_name = renames[name]
+                new_components[new_name] = Component(
+                    name=new_name,
+                    data_type=comp.data_type,
+                    role=comp.role,
+                    nullable=comp.nullable,
+                )
+            else:
+                new_components[name] = comp
+
+        return Dataset(name=base_ds.name, components=new_components, data=None)
+
+    def _transform_drop(self, base_ds: Dataset, children: List[AST.AST]) -> Dataset:
+        """Transform structure for drop clause."""
+        drop_cols: set[str] = set()
+        for child in children:
+            if isinstance(child, (AST.VarID, AST.Identifier)):
+                drop_cols.add(self._resolve_varid_value(child))
+
+        new_components = {
+            name: comp for name, comp in base_ds.components.items() if name not in drop_cols
+        }
+        return Dataset(name=base_ds.name, components=new_components, data=None)
+
+    def _transform_keep(self, base_ds: Dataset, children: List[AST.AST]) -> Dataset:
+        """Transform structure for keep clause."""
+        # Identifiers are always kept
+        keep_cols: set[str] = {
+            name for name, comp in base_ds.components.items() if comp.role == Role.IDENTIFIER
+        }
+        for child in children:
+            if isinstance(child, (AST.VarID, AST.Identifier)):
+                keep_cols.add(self._resolve_varid_value(child))
+
+        new_components = {
+            name: comp for name, comp in base_ds.components.items() if name in keep_cols
+        }
+        return Dataset(name=base_ds.name, components=new_components, data=None)
+
+    def _transform_subspace(self, base_ds: Dataset, children: List[AST.AST]) -> Dataset:
+        """Transform structure for subspace clause."""
+        remove_cols: set[str] = set()
+        for child in children:
+            if isinstance(child, AST.BinOp):
+                col_name = child.left.value if hasattr(child.left, "value") else str(child.left)
+                remove_cols.add(col_name)
+
+        new_components = {
+            name: comp for name, comp in base_ds.components.items() if name not in remove_cols
+        }
+        return Dataset(name=base_ds.name, components=new_components, data=None)
+
+    def _transform_calc(self, base_ds: Dataset, children: List[AST.AST]) -> Dataset:
+        """Transform structure for calc clause."""
+        from vtlengine.DataTypes import String
+
+        new_components = dict(base_ds.components)
+
+        for child in children:
+            # Calc children are wrapped in UnaryOp with role
+            if isinstance(child, AST.UnaryOp) and hasattr(child, "operand"):
+                assignment = child.operand
+                role_str = str(child.op).lower()
+                if role_str == "measure":
+                    role = Role.MEASURE
+                elif role_str == "identifier":
+                    role = Role.IDENTIFIER
+                elif role_str == "attribute":
+                    role = Role.ATTRIBUTE
+                else:
+                    role = Role.MEASURE
+            elif isinstance(child, AST.Assignment):
+                assignment = child
+                role = Role.MEASURE
+            else:
+                continue
+
+            if isinstance(assignment, AST.Assignment):
+                if not isinstance(assignment.left, (AST.VarID, AST.Identifier)):
+                    continue
+                col_name = assignment.left.value
+                if col_name not in new_components:
+                    is_nullable = role != Role.IDENTIFIER
+                    new_components[col_name] = Component(
+                        name=col_name,
+                        data_type=String,
+                        role=role,
+                        nullable=is_nullable,
+                    )
+
+        return Dataset(name=base_ds.name, components=new_components, data=None)

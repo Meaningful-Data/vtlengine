@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, List
 
-from vtlengine.AST import BinOp, Identifier, ParamOp, UnaryOp, VarID
+from vtlengine.AST import BinOp, Identifier, ParamOp, RegularAggregation, RenameNode, UnaryOp, VarID
 from vtlengine.AST.Grammar.tokens import MEMBERSHIP
 from vtlengine.DataTypes import Boolean, Integer, Number, String
 from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import StructureVisitor
@@ -300,3 +300,114 @@ class TestStructureVisitorParamOp:
         assert "Id_1" in result.components
         assert "Me_1" in result.components
         assert result.components["Me_1"].data_type == Integer
+
+
+class TestStructureVisitorRegularAggregation:
+    """Test RegularAggregation (clause) structure computation."""
+
+    def test_visit_keep_filters_components(self):
+        """Test that keep clause removes unlisted components."""
+        ds = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+                "Me_2": Component(name="Me_2", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        visitor = StructureVisitor(available_tables={"DS_1": ds}, output_datasets={})
+
+        keep = RegularAggregation(
+            **make_ast_node(
+                op="keep",
+                dataset=VarID(**make_ast_node(value="DS_1")),
+                children=[VarID(**make_ast_node(value="Me_1"))],
+            )
+        )
+
+        result = visitor.visit(keep)
+
+        assert result is not None
+        assert "Id_1" in result.components  # Identifiers always kept
+        assert "Me_1" in result.components
+        assert "Me_2" not in result.components
+
+    def test_visit_drop_removes_components(self):
+        """Test that drop clause removes listed components."""
+        ds = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+                "Me_2": Component(name="Me_2", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        visitor = StructureVisitor(available_tables={"DS_1": ds}, output_datasets={})
+
+        drop = RegularAggregation(
+            **make_ast_node(
+                op="drop",
+                dataset=VarID(**make_ast_node(value="DS_1")),
+                children=[VarID(**make_ast_node(value="Me_2"))],
+            )
+        )
+
+        result = visitor.visit(drop)
+
+        assert result is not None
+        assert "Id_1" in result.components
+        assert "Me_1" in result.components
+        assert "Me_2" not in result.components
+
+    def test_visit_rename_changes_component_names(self):
+        """Test that rename clause changes component names."""
+        ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
+        visitor = StructureVisitor(available_tables={"DS_1": ds}, output_datasets={})
+
+        rename = RegularAggregation(
+            **make_ast_node(
+                op="rename",
+                dataset=VarID(**make_ast_node(value="DS_1")),
+                children=[RenameNode(**make_ast_node(old_name="Me_1", new_name="Me_1A"))],
+            )
+        )
+
+        result = visitor.visit(rename)
+
+        assert result is not None
+        assert "Id_1" in result.components
+        assert "Me_1" not in result.components
+        assert "Me_1A" in result.components
+
+    def test_visit_filter_preserves_structure(self):
+        """Test that filter clause preserves structure."""
+        ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
+        visitor = StructureVisitor(available_tables={"DS_1": ds}, output_datasets={})
+
+        filter_op = RegularAggregation(
+            **make_ast_node(
+                op="filter",
+                dataset=VarID(**make_ast_node(value="DS_1")),
+                children=[
+                    BinOp(
+                        **make_ast_node(
+                            left=VarID(**make_ast_node(value="Me_1")),
+                            op=">",
+                            right=VarID(**make_ast_node(value="0")),
+                        )
+                    )
+                ],
+            )
+        )
+
+        result = visitor.visit(filter_op)
+
+        assert result is not None
+        assert "Id_1" in result.components
+        assert "Me_1" in result.components
