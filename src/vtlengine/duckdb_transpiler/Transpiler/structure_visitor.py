@@ -114,3 +114,34 @@ class StructureVisitor(ASTTemplate):
             self._udo_params.pop()
             if len(self._udo_params) == 0:
                 self._udo_params = None
+
+    def visit_VarID(self, node: AST.VarID) -> Optional[Dataset]:
+        """
+        Get structure for a VarID (dataset reference).
+
+        Checks for UDO parameter bindings first, then looks up in
+        available_tables and output_datasets.
+
+        Args:
+            node: The VarID node.
+
+        Returns:
+            The Dataset structure if found, None otherwise.
+        """
+        # Check for UDO parameter binding
+        udo_value = self.get_udo_param(node.value)
+        if udo_value is not None:
+            if isinstance(udo_value, AST.AST):
+                return self.visit(udo_value)
+            if isinstance(udo_value, Dataset):
+                return udo_value
+
+        # Look up in available tables
+        if node.value in self.available_tables:
+            return self.available_tables[node.value]
+
+        # Look up in output datasets (for intermediate results)
+        if node.value in self.output_datasets:
+            return self.output_datasets[node.value]
+
+        return None

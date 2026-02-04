@@ -1,11 +1,19 @@
 """Tests for StructureVisitor class."""
 
+from typing import Any, Dict, List
+
+from vtlengine.AST import VarID
 from vtlengine.DataTypes import Number, String
 from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import StructureVisitor
 from vtlengine.Model import Component, Dataset, Role
 
 
-def create_simple_dataset(name: str, id_cols: list, measure_cols: list) -> Dataset:
+def make_ast_node(**kwargs: Any) -> Dict[str, Any]:
+    """Create common AST node parameters."""
+    return {"line_start": 1, "column_start": 1, "line_stop": 1, "column_stop": 10, **kwargs}
+
+
+def create_simple_dataset(name: str, id_cols: List[str], measure_cols: List[str]) -> Dataset:
     """Helper to create a simple Dataset for testing."""
     components = {}
     for col in id_cols:
@@ -88,3 +96,64 @@ class TestStructureVisitorUDOParams:
         visitor.pop_udo_params()
 
         assert visitor.get_udo_param("a") is None
+
+
+class TestStructureVisitorVarID:
+    """Test VarID structure computation."""
+
+    def test_visit_varid_returns_structure_from_available_tables(self):
+        """Test that visiting a VarID returns structure from available_tables."""
+        ds1 = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
+        visitor = StructureVisitor(
+            available_tables={"DS_1": ds1},
+            output_datasets={},
+        )
+
+        varid = VarID(**make_ast_node(value="DS_1"))
+        result = visitor.visit(varid)
+
+        assert result is not None
+        assert result.name == "DS_1"
+        assert "Id_1" in result.components
+        assert "Me_1" in result.components
+
+    def test_visit_varid_returns_structure_from_output_datasets(self):
+        """Test that visiting a VarID returns structure from output_datasets."""
+        ds_r = create_simple_dataset("DS_r", ["Id_1"], ["Me_1"])
+        visitor = StructureVisitor(
+            available_tables={},
+            output_datasets={"DS_r": ds_r},
+        )
+
+        varid = VarID(**make_ast_node(value="DS_r"))
+        result = visitor.visit(varid)
+
+        assert result is not None
+        assert result.name == "DS_r"
+
+    def test_visit_varid_with_udo_param_resolves_binding(self):
+        """Test that VarID resolves UDO parameter bindings."""
+        ds1 = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
+        visitor = StructureVisitor(
+            available_tables={"DS_1": ds1},
+            output_datasets={},
+        )
+        # Simulate UDO call: define myop(ds) = ds + 1
+        # When called as myop(DS_1), ds is bound to VarID("DS_1")
+        ds_param = VarID(**make_ast_node(value="DS_1"))
+        visitor.push_udo_params({"ds": ds_param})
+
+        varid = VarID(**make_ast_node(value="ds"))
+        result = visitor.visit(varid)
+
+        assert result is not None
+        assert result.name == "DS_1"
+
+    def test_visit_varid_returns_none_for_unknown(self):
+        """Test that visiting unknown VarID returns None."""
+        visitor = StructureVisitor(available_tables={}, output_datasets={})
+
+        varid = VarID(**make_ast_node(value="UNKNOWN"))
+        result = visitor.visit(varid)
+
+        assert result is None
