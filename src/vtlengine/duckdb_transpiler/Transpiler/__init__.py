@@ -918,9 +918,16 @@ class SQLTranspiler(ASTTemplate):
         return f"({left_sql} {sql_op} {right_sql})"
 
     def _in_dataset(self, dataset_node: AST.AST, values_sql: str, sql_op: str) -> str:
-        """Generate SQL for dataset-level IN/NOT IN operation."""
-        ds_name = self._get_dataset_name(dataset_node)
-        ds = self.available_tables[ds_name]
+        """
+        Generate SQL for dataset-level IN/NOT IN operation.
+
+        Uses structure tracking to get dataset structure.
+        """
+        ds = self.get_structure(dataset_node)
+
+        if ds is None:
+            ds_name = self._get_dataset_name(dataset_node)
+            raise ValueError(f"Cannot resolve dataset structure for {ds_name}")
 
         id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
         measure_select = ", ".join(
@@ -951,9 +958,16 @@ class SQLTranspiler(ASTTemplate):
         return f"regexp_full_match({left_sql}, {pattern_sql})"
 
     def _match_dataset(self, dataset_node: AST.AST, pattern_sql: str) -> str:
-        """Generate SQL for dataset-level MATCH operation."""
-        ds_name = self._get_dataset_name(dataset_node)
-        ds = self.available_tables[ds_name]
+        """
+        Generate SQL for dataset-level MATCH operation.
+
+        Uses structure tracking to get dataset structure.
+        """
+        ds = self.get_structure(dataset_node)
+
+        if ds is None:
+            ds_name = self._get_dataset_name(dataset_node)
+            raise ValueError(f"Cannot resolve dataset structure for {ds_name}")
 
         id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
         measure_select = ", ".join(
@@ -971,12 +985,16 @@ class SQLTranspiler(ASTTemplate):
 
         VTL: exist_in(ds1, ds2) - checks if identifiers from ds1 exist in ds2
         SQL: SELECT *, EXISTS(SELECT 1 FROM ds2 WHERE ids match) AS bool_var
-        """
-        left_name = self._get_dataset_name(node.left)
-        right_name = self._get_dataset_name(node.right)
 
-        left_ds = self.available_tables[left_name]
-        right_ds = self.available_tables[right_name]
+        Uses structure tracking to get dataset structures.
+        """
+        left_ds = self.get_structure(node.left)
+        right_ds = self.get_structure(node.right)
+
+        if left_ds is None or right_ds is None:
+            left_name = self._get_dataset_name(node.left)
+            right_name = self._get_dataset_name(node.right)
+            raise ValueError(f"Cannot resolve dataset structures for {left_name} and {right_name}")
 
         # Find common identifiers
         left_ids = set(left_ds.get_identifiers_names())
@@ -1008,27 +1026,20 @@ class SQLTranspiler(ASTTemplate):
 
         VTL: nvl(ds, value) - replace nulls with value
         SQL: COALESCE(col, value)
+
+        Uses structure tracking to get dataset structure.
         """
         left_type = self._get_operand_type(node.left)
         replacement = self.visit(node.right)
 
         # Dataset-level NVL
         if left_type == OperandType.DATASET:
-            ds_name = self._get_dataset_name(node.left)
-            base_ds = self.available_tables[ds_name]
+            # Use structure tracking - get_structure handles all expression types
+            ds = self.get_structure(node.left)
 
-            # Get transformed structure if left operand is a complex expression
-            if isinstance(node.left, AST.RegularAggregation):
-                ds = self._get_transformed_dataset(base_ds, node.left)
-            elif isinstance(node.left, AST.UDOCall):
-                ds = self._get_udo_output_structure(node.left, base_ds)
-            elif isinstance(node.left, AST.Aggregation):
-                ds = self._get_aggregation_output_structure(node.left, base_ds)
-            elif isinstance(node.left, AST.JoinOp):
-                join_ds = self._get_join_output_structure(node.left)
-                ds = join_ds if join_ds else base_ds
-            else:
-                ds = base_ds
+            if ds is None:
+                ds_name = self._get_dataset_name(node.left)
+                raise ValueError(f"Cannot resolve dataset structure for {ds_name}")
 
             id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
             measure_parts = []
@@ -1246,12 +1257,17 @@ class SQLTranspiler(ASTTemplate):
         For DuckDB, this depends on the data type:
         - Date: date + INTERVAL 'n days' (or use detected frequency)
         - TimePeriod: Complex string manipulation
+
+        Uses structure tracking to get dataset structure.
         """
         if left_type != OperandType.DATASET:
             raise ValueError("timeshift requires a dataset as first operand")
 
-        ds_name = self._get_dataset_name(node.left)
-        ds = self.available_tables[ds_name]
+        ds = self.get_structure(node.left)
+        if ds is None:
+            ds_name = self._get_dataset_name(node.left)
+            raise ValueError(f"Cannot resolve dataset structure for {ds_name}")
+
         shift_val = self.visit(node.right)
 
         # Find time identifier
@@ -1484,11 +1500,17 @@ class SQLTranspiler(ASTTemplate):
         return f"{sql_func}({operand_sql})"
 
     def _time_extraction_dataset(self, dataset_node: AST.AST, sql_func: str, op: str) -> str:
-        """Generate SQL for dataset time extraction operation."""
+        """
+        Generate SQL for dataset time extraction operation.
+
+        Uses structure tracking to get dataset structure.
+        """
         from vtlengine.DataTypes import TimePeriod
 
-        ds_name = self._get_dataset_name(dataset_node)
-        ds = self.available_tables[ds_name]
+        ds = self.get_structure(dataset_node)
+        if ds is None:
+            ds_name = self._get_dataset_name(dataset_node)
+            raise ValueError(f"Cannot resolve dataset structure for {ds_name}")
 
         id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
 
@@ -1513,12 +1535,17 @@ class SQLTranspiler(ASTTemplate):
         Generate SQL for flow_to_stock (cumulative sum over time).
 
         This uses a window function: SUM(measure) OVER (PARTITION BY other_ids ORDER BY time_id)
+
+        Uses structure tracking to get dataset structure.
         """
         if operand_type != OperandType.DATASET:
             raise ValueError("flow_to_stock requires a dataset operand")
 
-        ds_name = self._get_dataset_name(operand)
-        ds = self.available_tables[ds_name]
+        ds = self.get_structure(operand)
+        if ds is None:
+            ds_name = self._get_dataset_name(operand)
+            raise ValueError(f"Cannot resolve dataset structure for {ds_name}")
+
         dataset_sql = self._get_dataset_sql(operand)
 
         # Find time identifier and other identifiers
@@ -1545,12 +1572,17 @@ class SQLTranspiler(ASTTemplate):
         Generate SQL for stock_to_flow (difference over time).
 
         This uses: measure - LAG(measure) OVER (PARTITION BY other_ids ORDER BY time_id)
+
+        Uses structure tracking to get dataset structure.
         """
         if operand_type != OperandType.DATASET:
             raise ValueError("stock_to_flow requires a dataset operand")
 
-        ds_name = self._get_dataset_name(operand)
-        ds = self.available_tables[ds_name]
+        ds = self.get_structure(operand)
+        if ds is None:
+            ds_name = self._get_dataset_name(operand)
+            raise ValueError(f"Cannot resolve dataset structure for {ds_name}")
+
         dataset_sql = self._get_dataset_sql(operand)
 
         # Find time identifier and other identifiers
@@ -1713,10 +1745,15 @@ class SQLTranspiler(ASTTemplate):
 
         Uses vtl_period_indicator for proper extraction from any TimePeriod format.
         Handles formats: YYYY, YYYYA, YYYYQ1, YYYY-Q1, YYYYM01, YYYY-M01, etc.
+
+        Uses structure tracking to get dataset structure.
         """
         if operand_type == OperandType.DATASET:
-            ds_name = self._get_dataset_name(operand)
-            ds = self.available_tables[ds_name]
+            ds = self.get_structure(operand)
+            if ds is None:
+                ds_name = self._get_dataset_name(operand)
+                raise ValueError(f"Cannot resolve dataset structure for {ds_name}")
+
             dataset_sql = self._get_dataset_sql(operand)
 
             # Find the time identifier
@@ -1881,9 +1918,15 @@ class SQLTranspiler(ASTTemplate):
         return random_template.replace("{m}", operand_sql)
 
     def _param_dataset(self, dataset_node: AST.AST, template: str) -> str:
-        """Generate SQL for dataset parameterized operation."""
-        ds_name = self._get_dataset_name(dataset_node)
-        ds = self.available_tables[ds_name]
+        """
+        Generate SQL for dataset parameterized operation.
+
+        Uses structure tracking to get dataset structure.
+        """
+        ds = self.get_structure(dataset_node)
+        if ds is None:
+            ds_name = self._get_dataset_name(dataset_node)
+            raise ValueError(f"Cannot resolve dataset structure for {ds_name}")
 
         id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
         # Quote column names properly in function calls
@@ -1970,9 +2013,16 @@ class SQLTranspiler(ASTTemplate):
         duckdb_type: str,
         mask: Optional[str],
     ) -> str:
-        """Generate SQL for dataset-level cast operation."""
-        ds_name = self._get_dataset_name(dataset_node)
-        ds = self.available_tables[ds_name]
+        """
+        Generate SQL for dataset-level cast operation.
+
+        Uses structure tracking to get dataset structure.
+        """
+        ds = self.get_structure(dataset_node)
+
+        if ds is None:
+            ds_name = self._get_dataset_name(dataset_node)
+            raise ValueError(f"Cannot resolve dataset structure for {ds_name}")
 
         id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
 
