@@ -545,6 +545,23 @@ class SQLTranspiler(ASTTemplate):
         if op == RANDOM:
             return self._visit_random_binop(node, left_type, right_type)
 
+        # Special handling for POWER (needs function syntax, not infix)
+        if op == POWER:
+            return self._visit_func_binop(node, left_type, right_type, "POWER", False)
+
+        # Special handling for LOG (needs function syntax with swapped args)
+        # VTL: log(value, base) -> SQL: LOG(base, value)
+        if op == LOG:
+            return self._visit_func_binop(node, left_type, right_type, "LOG", True)
+
+        # Special handling for ROUND (needs function syntax, second param cast to INTEGER)
+        if op == ROUND:
+            return self._visit_round_trunc_binop(node, left_type, right_type, "ROUND")
+
+        # Special handling for TRUNC (needs function syntax, second param cast to INTEGER)
+        if op == TRUNC:
+            return self._visit_round_trunc_binop(node, left_type, right_type, "TRUNC")
+
         sql_op = SQL_BINARY_OPS.get(op, op.upper())
 
         # Dataset-Dataset
@@ -932,6 +949,81 @@ class SQLTranspiler(ASTTemplate):
             # Fallback: return as-is (shift not applied)
             from_clause = self._simplify_from_clause(dataset_sql)
             return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
+
+    def _visit_func_binop(
+        self, node: AST.BinOp, left_type: str, right_type: str, func_name: str, swap_args: bool
+    ) -> str:
+        """
+        Generate SQL for binary operations that need function syntax (POWER, LOG).
+
+        Args:
+            func_name: SQL function name (POWER, LOG)
+            swap_args: If True, swap left and right args (for LOG: VTL log(val, base) -> SQL LOG(base, val))
+        """
+        left_sql = self.visit(node.left)
+        right_sql = self.visit(node.right)
+
+        if swap_args:
+            arg1, arg2 = right_sql, left_sql
+        else:
+            arg1, arg2 = left_sql, right_sql
+
+        # Dataset-level operation
+        if left_type == OperandType.DATASET:
+            ds_name = self._get_dataset_name(node.left)
+            ds = self.available_tables.get(ds_name)
+            if ds:
+                id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
+                measure_parts = []
+                for m in ds.get_measures_names():
+                    if swap_args:
+                        expr = f'{func_name}({right_sql}, "{m}") AS "{m}"'
+                    else:
+                        expr = f'{func_name}("{m}", {right_sql}) AS "{m}"'
+                    measure_parts.append(expr)
+                measure_select = ", ".join(measure_parts)
+                dataset_sql = self._get_dataset_sql(node.left)
+                from_clause = self._simplify_from_clause(dataset_sql)
+                if id_select:
+                    return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
+                return f"SELECT {measure_select} FROM {from_clause}"
+
+        # Scalar/Component-level: return function call
+        return f"{func_name}({arg1}, {arg2})"
+
+    def _visit_round_trunc_binop(
+        self, node: AST.BinOp, left_type: str, right_type: str, func_name: str
+    ) -> str:
+        """
+        Generate SQL for ROUND/TRUNC binary operations.
+
+        DuckDB requires the second parameter to be INTEGER (not BIGINT).
+        """
+        left_sql = self.visit(node.left)
+        right_sql = self.visit(node.right)
+
+        # Cast second parameter to INTEGER for DuckDB compatibility
+        right_cast = f"CAST({right_sql} AS INTEGER)"
+
+        # Dataset-level operation
+        if left_type == OperandType.DATASET:
+            ds_name = self._get_dataset_name(node.left)
+            ds = self.available_tables.get(ds_name)
+            if ds:
+                id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
+                measure_parts = []
+                for m in ds.get_measures_names():
+                    expr = f'{func_name}("{m}", {right_cast}) AS "{m}"'
+                    measure_parts.append(expr)
+                measure_select = ", ".join(measure_parts)
+                dataset_sql = self._get_dataset_sql(node.left)
+                from_clause = self._simplify_from_clause(dataset_sql)
+                if id_select:
+                    return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
+                return f"SELECT {measure_select} FROM {from_clause}"
+
+        # Scalar/Component-level: return function call with cast
+        return f"{func_name}({left_sql}, {right_cast})"
 
     def _visit_random_binop(self, node: AST.BinOp, left_type: str, right_type: str) -> str:
         """
@@ -1416,19 +1508,23 @@ class SQLTranspiler(ASTTemplate):
         if op == RANDOM:
             return self._visit_random(operand, operand_sql, operand_type, params)
 
-        # Single-param operations mapping: op -> (sql_func, default_param, template_format)
+        # Single-param operations mapping: op -> (sql_func, default_param, template_format, needs_int_cast)
         single_param_ops = {
-            ROUND: ("ROUND", "0", "{func}({{m}}, {p})"),
-            TRUNC: ("TRUNC", "0", "{func}({{m}}, {p})"),
-            INSTR: ("INSTR", "''", "{func}({{m}}, {p})"),
-            LOG: ("LOG", "10", "{func}({p}, {{m}})"),
-            POWER: ("POWER", "2", "{func}({{m}}, {p})"),
-            NVL: ("COALESCE", "NULL", "{func}({{m}}, {p})"),
+            ROUND: ("ROUND", "0", "{func}({{m}}, {p})", True),
+            TRUNC: ("TRUNC", "0", "{func}({{m}}, {p})", True),
+            INSTR: ("INSTR", "''", "{func}({{m}}, {p})", False),
+            LOG: ("LOG", "10", "{func}({p}, {{m}})", False),
+            POWER: ("POWER", "2", "{func}({{m}}, {p})", False),
+            NVL: ("COALESCE", "NULL", "{func}({{m}}, {p})", False),
         }
 
         if op in single_param_ops:
-            sql_func, default_p, template_fmt = single_param_ops[op]
+            sql_func, default_p, template_fmt, needs_int_cast = single_param_ops[op]
             param_val = params[0] if params else default_p
+            # Cast to INTEGER if needed (DuckDB requires INTEGER for ROUND/TRUNC second param)
+            # Use COALESCE to handle NULL values with the default
+            if needs_int_cast and param_val != default_p:
+                param_val = f"COALESCE(CAST({param_val} AS INTEGER), {default_p})"
             template = template_fmt.format(func=sql_func, p=param_val)
             if operand_type == OperandType.DATASET:
                 return self._param_dataset(operand, template)
