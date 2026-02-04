@@ -2665,8 +2665,8 @@ class SQLTranspiler(ASTTemplate):
                 and node.operand
             ):
                 # Group by all except specified
-                ds_name = self._get_dataset_name(node.operand)
-                ds = self.available_tables.get(ds_name)
+                # Use get_structure to handle complex operands (filtered datasets, etc.)
+                ds = self.get_structure(node.operand)
                 if ds:
                     # Resolve UDO parameters to get actual column names
                     except_cols = {
@@ -3650,6 +3650,11 @@ class SQLTranspiler(ASTTemplate):
     def _get_dataset_name(self, node: AST.AST) -> str:
         """Extract dataset name from a node, resolving UDO parameters."""
         if isinstance(node, AST.VarID):
+            # Check if this is a UDO parameter bound to a complex AST node
+            udo_value = self.get_udo_param(node.value)
+            if udo_value is not None and isinstance(udo_value, AST.AST):
+                # Recursively get the dataset name from the bound AST node
+                return self._get_dataset_name(udo_value)
             return self._resolve_varid_value(node)
         if isinstance(node, AST.RegularAggregation) and node.dataset:
             return self._get_dataset_name(node.dataset)
