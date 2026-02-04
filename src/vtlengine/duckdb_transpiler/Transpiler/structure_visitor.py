@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional
 
 import vtlengine.AST as AST
 from vtlengine.AST.ASTTemplate import ASTTemplate
-from vtlengine.Model import Dataset
+from vtlengine.Model import Component, Dataset, Role
 
 
 @dataclass
@@ -145,3 +145,93 @@ class StructureVisitor(ASTTemplate):
             return self.output_datasets[node.value]
 
         return None
+
+    def visit_BinOp(self, node: AST.BinOp) -> Optional[Dataset]:
+        """
+        Get structure for a binary operation.
+
+        Handles:
+        - MEMBERSHIP (#): Returns structure with only extracted component
+        - Alias (as): Returns same structure as left operand
+        - Other ops: Returns left operand structure
+
+        Args:
+            node: The BinOp node.
+
+        Returns:
+            The Dataset structure if computable, None otherwise.
+        """
+        from vtlengine.AST.Grammar.tokens import MEMBERSHIP
+
+        op_lower = str(node.op).lower()
+
+        if op_lower == MEMBERSHIP:
+            return self._visit_binop_membership(node)
+
+        if op_lower == "as":
+            # Alias: same structure as left operand
+            return self.visit(node.left)
+
+        # For other binary operations, return left operand structure
+        return self.visit(node.left)
+
+    def _visit_binop_membership(self, node: AST.BinOp) -> Optional[Dataset]:
+        """
+        Compute structure for membership (#) operator.
+
+        Membership extracts a single component from a dataset, returning
+        a structure with identifiers plus the extracted component as measure.
+
+        Args:
+            node: The BinOp node with MEMBERSHIP operator.
+
+        Returns:
+            Dataset with identifiers + extracted component, or None.
+        """
+        base_ds = self.visit(node.left)
+        if base_ds is None:
+            return None
+
+        # Get component name and resolve through UDO params if needed
+        comp_name = self._resolve_varid_value(node.right)
+
+        # Build new dataset with only identifiers and the extracted component
+        new_components: Dict[str, Component] = {}
+        for name, comp in base_ds.components.items():
+            if comp.role == Role.IDENTIFIER:
+                new_components[name] = comp
+
+        # Add the extracted component as a measure
+        if comp_name in base_ds.components:
+            orig_comp = base_ds.components[comp_name]
+            new_components[comp_name] = Component(
+                name=comp_name,
+                data_type=orig_comp.data_type,
+                role=Role.MEASURE,
+                nullable=orig_comp.nullable,
+            )
+
+        return Dataset(name=base_ds.name, components=new_components, data=None)
+
+    def _resolve_varid_value(self, node: AST.AST) -> str:
+        """
+        Resolve a VarID value, checking for UDO parameter bindings.
+
+        Args:
+            node: The AST node to resolve.
+
+        Returns:
+            The resolved string value.
+        """
+        if not isinstance(node, (AST.VarID, AST.Identifier)):
+            return str(node)
+
+        name = node.value
+        udo_value = self.get_udo_param(name)
+        if udo_value is not None:
+            if isinstance(udo_value, (AST.VarID, AST.Identifier)):
+                return self._resolve_varid_value(udo_value)
+            if isinstance(udo_value, str):
+                return udo_value
+            return str(udo_value)
+        return name

@@ -2,7 +2,8 @@
 
 from typing import Any, Dict, List
 
-from vtlengine.AST import VarID
+from vtlengine.AST import BinOp, Identifier, VarID
+from vtlengine.AST.Grammar.tokens import MEMBERSHIP
 from vtlengine.DataTypes import Number, String
 from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import StructureVisitor
 from vtlengine.Model import Component, Dataset, Role
@@ -157,3 +158,76 @@ class TestStructureVisitorVarID:
         result = visitor.visit(varid)
 
         assert result is None
+
+
+class TestStructureVisitorBinOp:
+    """Test BinOp structure computation."""
+
+    def test_visit_binop_membership_extracts_single_measure(self):
+        """Test that membership (#) returns structure with only extracted component."""
+        ds = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+                "Me_2": Component(name="Me_2", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        visitor = StructureVisitor(available_tables={"DS_1": ds}, output_datasets={})
+
+        membership = BinOp(
+            **make_ast_node(
+                left=VarID(**make_ast_node(value="DS_1")),
+                op=MEMBERSHIP,
+                right=VarID(**make_ast_node(value="Me_1")),
+            )
+        )
+
+        result = visitor.visit(membership)
+
+        assert result is not None
+        assert "Id_1" in result.components
+        assert "Me_1" in result.components
+        assert "Me_2" not in result.components
+        assert result.components["Me_1"].role == Role.MEASURE
+
+    def test_visit_binop_alias_returns_operand_structure(self):
+        """Test that alias (as) returns same structure as operand."""
+        ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
+        visitor = StructureVisitor(available_tables={"DS_1": ds}, output_datasets={})
+
+        alias = BinOp(
+            **make_ast_node(
+                left=VarID(**make_ast_node(value="DS_1")),
+                op="as",
+                right=Identifier(**make_ast_node(value="A", kind="DatasetID")),
+            )
+        )
+
+        result = visitor.visit(alias)
+
+        assert result is not None
+        assert "Id_1" in result.components
+        assert "Me_1" in result.components
+
+    def test_visit_binop_arithmetic_returns_left_structure(self):
+        """Test that arithmetic BinOp returns left operand structure."""
+        ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
+        visitor = StructureVisitor(available_tables={"DS_1": ds}, output_datasets={})
+
+        binop = BinOp(
+            **make_ast_node(
+                left=VarID(**make_ast_node(value="DS_1")),
+                op="+",
+                right=VarID(**make_ast_node(value="DS_1")),
+            )
+        )
+
+        result = visitor.visit(binop)
+
+        assert result is not None
+        assert "Id_1" in result.components
+        assert "Me_1" in result.components
