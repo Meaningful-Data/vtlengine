@@ -10,6 +10,7 @@ from vtlengine.AST import (
     ParamOp,
     RegularAggregation,
     RenameNode,
+    UDOCall,
     UnaryOp,
     VarID,
 )
@@ -608,3 +609,60 @@ class TestStructureVisitorJoinOp:
         assert "Id_1" in result.components
         assert "Me_1" in result.components
         assert "Me_2" not in result.components
+
+
+class TestStructureVisitorUDOCall:
+    """Test UDOCall structure computation."""
+
+    def test_visit_udo_with_aggregation(self):
+        """Test that UDO with aggregation computes correct structure."""
+        ds = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Id_2": Component(
+                    name="Id_2", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+
+        # Define UDO: drop_id(ds, comp) = max(ds group except comp)
+        udo_definition = {
+            "params": [{"name": "ds"}, {"name": "comp"}],
+            "expression": Aggregation(
+                **make_ast_node(
+                    op="max",
+                    operand=VarID(**make_ast_node(value="ds")),
+                    grouping_op="group except",
+                    grouping=[VarID(**make_ast_node(value="comp"))],
+                )
+            ),
+        }
+
+        visitor = StructureVisitor(
+            available_tables={"DS_1": ds},
+            output_datasets={},
+        )
+        visitor.udos = {"drop_id": udo_definition}
+
+        # Call: drop_id(DS_1, Id_2)
+        udo_call = UDOCall(
+            **make_ast_node(
+                op="drop_id",
+                params=[
+                    VarID(**make_ast_node(value="DS_1")),
+                    VarID(**make_ast_node(value="Id_2")),
+                ],
+            )
+        )
+
+        result = visitor.visit(udo_call)
+
+        assert result is not None
+        assert "Id_1" in result.components
+        assert "Id_2" not in result.components  # Removed by group except
+        assert "Me_1" in result.components

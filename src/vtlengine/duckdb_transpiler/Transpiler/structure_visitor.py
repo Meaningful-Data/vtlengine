@@ -34,6 +34,7 @@ class StructureVisitor(ASTTemplate):
     output_datasets: Dict[str, Dataset] = field(default_factory=dict)
     _structure_context: Dict[int, Dataset] = field(default_factory=dict)
     _udo_params: Optional[List[Dict[str, Any]]] = None
+    udos: Dict[str, Dict[str, Any]] = field(default_factory=dict)
 
     def clear_context(self) -> None:
         """
@@ -626,3 +627,41 @@ class StructureVisitor(ASTTemplate):
             return None
 
         return Dataset(name=result_name, components=all_components, data=None)
+
+    def visit_UDOCall(self, node: AST.UDOCall) -> Optional[Dataset]:
+        """
+        Get structure for a UDO call.
+
+        Expands the UDO definition with parameter bindings and computes
+        the output structure.
+
+        Args:
+            node: The UDOCall node.
+
+        Returns:
+            The computed Dataset structure.
+        """
+        if node.op not in self.udos:
+            return None
+
+        operator = self.udos[node.op]
+        expression = operator.get("expression")
+        if expression is None:
+            return None
+
+        # Build parameter bindings
+        param_bindings: Dict[str, Any] = {}
+        params = operator.get("params", [])
+        for i, param in enumerate(params):
+            param_name: Optional[str] = param.get("name") if isinstance(param, dict) else param
+            if param_name is not None and i < len(node.params):
+                param_bindings[param_name] = node.params[i]
+
+        # Push bindings and compute structure
+        self.push_udo_params(param_bindings)
+        try:
+            result = self.visit(expression)
+        finally:
+            self.pop_udo_params()
+
+        return result
