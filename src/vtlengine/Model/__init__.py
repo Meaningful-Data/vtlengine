@@ -244,33 +244,23 @@ class Dataset:
         for comp in self.components.values():
             col = comp.name
             type_name = comp.data_type.__name__
-            if type_name == "TimePeriod":
-                for df in (df1, df2):
+            for df in (df1, df2):
+                if type_name == "TimePeriod":
                     df[col] = df[col].apply(
                         lambda x: str(TimePeriodHandler(str(x))) if pd.notna(x) else None
                     )
-            elif type_name in ("Integer", "Number"):
-                df1[col] = pd.to_numeric(df1[col], errors="coerce")
-                df2[col] = pd.to_numeric(df2[col], errors="coerce")
-            elif type_name == "Date":
-                for df in (df1, df2):
-                    df[col] = pd.to_datetime(df[col], errors="coerce").dt.strftime("%Y-%m-%d")
-                    df[col] = df[col].replace("NaT", None)
-            elif type_name == "String":
-                for df in (df1, df2):
+                elif type_name in ("Integer", "Number"):
+                    df[col] = pd.to_numeric(df[col], errors="coerce")
+                elif type_name == "Date":
+                    df[col] = pd.to_datetime(df[col], errors="coerce").apply(
+                        lambda x: x.strftime("%Y-%m-%d") if pd.notna(x) else None
+                    )
+                elif type_name == "String":
                     df[col] = df[col].apply(lambda x: str(x) if pd.notna(x) else None)
                     df[col] = df[col].replace({"": None, "None": None, "nan": None})
 
         try:
-            assert_frame_equal(
-                df1,
-                df2,
-                check_dtype=False,
-                check_names=False,
-                check_exact=False,
-                rtol=0.01,
-                atol=0.01,
-            )
+            assert_frame_equal(df1, df2, check_dtype=False, check_exact=False, rtol=0.01, atol=0.01)
             return True
         except AssertionError:
             return False
