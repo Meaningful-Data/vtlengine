@@ -326,9 +326,12 @@ class SQLTranspiler(ASTTemplate):
                 if isinstance(udo_value, Dataset):
                     return udo_value
         elif isinstance(node, AST.Aggregation):
-            # For aggregations, get the operand's structure
+            # For aggregations, compute output structure accounting for grouping
             if node.operand:
-                return self.get_structure(node.operand)
+                base_ds = self.get_structure(node.operand)
+                if base_ds:
+                    return self._get_aggregation_output_structure(node, base_ds)
+            return None
         elif isinstance(node, AST.RegularAggregation):
             # For regular aggregations (clauses), compute the transformed structure
             # First get the base dataset structure
@@ -459,6 +462,16 @@ class SQLTranspiler(ASTTemplate):
                                 )
                         return Dataset(name=base_ds.name, components=new_components, data=None)
                 return base_ds
+        elif isinstance(node, AST.JoinOp):
+            # For joins, compute the combined structure from all clauses
+            return self._get_join_output_structure(node)
+        elif isinstance(node, AST.UDOCall):
+            # For UDO calls, get the base dataset and compute output structure
+            ds_name = self._get_dataset_name(node)
+            base_ds = self.available_tables.get(ds_name)
+            if base_ds:
+                return self._get_udo_output_structure(node, base_ds)
+            return None
         return None
 
     def set_structure(self, node: AST.AST, dataset: Dataset) -> None:
@@ -523,6 +536,35 @@ class SQLTranspiler(ASTTemplate):
             if name in scope:
                 return scope[name]
         return None
+
+    def _resolve_varid_value(self, node: AST.AST) -> str:
+        """
+        Resolve a VarID value, checking for UDO parameter bindings.
+
+        If the node is a VarID and its value is a UDO parameter name,
+        recursively resolves the bound value. For non-VarID nodes or
+        non-parameter VarIDs, returns the value directly.
+
+        Args:
+            node: The AST node to resolve.
+
+        Returns:
+            The resolved string value.
+        """
+        if not isinstance(node, (AST.VarID, AST.Identifier)):
+            return str(node)
+
+        name = node.value
+        udo_value = self.get_udo_param(name)
+        if udo_value is not None:
+            # Recursively resolve if bound to another AST node
+            if isinstance(udo_value, (AST.VarID, AST.Identifier)):
+                return self._resolve_varid_value(udo_value)
+            # String value is the final resolved name
+            if isinstance(udo_value, str):
+                return udo_value
+            return str(udo_value)
+        return name
 
     def transpile(self, ast: AST.Start) -> List[Tuple[str, str, bool]]:
         """
@@ -732,12 +774,10 @@ class SQLTranspiler(ASTTemplate):
         self.udo_params.append(param_bindings)
 
         # Visit the UDO expression with a deep copy to avoid modifying the original
+        # Parameter resolution happens via get_udo_param() in visit_VarID and _get_operand_type
         expression_copy = deepcopy(operator["expression"])
 
-        # Substitute parameters in the expression
-        self._substitute_udo_params(expression_copy, param_bindings)
-
-        # Visit the substituted expression
+        # Visit the expression - parameters are resolved via mapping lookup
         result = self.visit(expression_copy)
 
         # Pop parameter bindings
@@ -746,113 +786,6 @@ class SQLTranspiler(ASTTemplate):
             self.udo_params = None
 
         return result
-
-    def _substitute_udo_params(self, node: AST.AST, bindings: Dict[str, Any]) -> None:
-        """
-        Recursively substitute UDO parameters in an AST node.
-
-        Modifies the node in place by replacing references that match
-        parameter names with the actual parameter AST nodes.
-        """
-        if node is None:
-            return
-
-        # Handle different node types that contain children
-        if isinstance(node, AST.RegularAggregation):
-            if node.dataset and isinstance(node.dataset, AST.VarID):
-                if node.dataset.value in bindings:
-                    # Replace the VarID with the actual parameter node
-                    node.dataset = deepcopy(bindings[node.dataset.value])
-            elif node.dataset:
-                self._substitute_udo_params(node.dataset, bindings)
-            # Handle group_by components
-            if node.group_by:
-                new_group_by = []
-                for comp in node.group_by:
-                    if comp in bindings:
-                        bound = bindings[comp]
-                        # If bound to a VarID, extract the value
-                        if isinstance(bound, AST.VarID):
-                            new_group_by.append(bound.value)
-                        else:
-                            new_group_by.append(comp)
-                    else:
-                        new_group_by.append(comp)
-                node.group_by = new_group_by
-            # Handle except_by components
-            if node.except_by:
-                new_except_by = []
-                for comp in node.except_by:
-                    if comp in bindings:
-                        bound = bindings[comp]
-                        # If bound to a VarID, extract the value
-                        if isinstance(bound, AST.VarID):
-                            new_except_by.append(bound.value)
-                        else:
-                            new_except_by.append(comp)
-                    else:
-                        new_except_by.append(comp)
-                node.except_by = new_except_by
-        elif isinstance(node, AST.Aggregation):
-            if node.operand and isinstance(node.operand, AST.VarID):
-                if node.operand.value in bindings:
-                    # Replace the VarID with the actual parameter node
-                    node.operand = deepcopy(bindings[node.operand.value])
-            elif node.operand:
-                self._substitute_udo_params(node.operand, bindings)
-            # Handle grouping (group by/except)
-            if node.grouping:
-                new_grouping = []
-                for g in node.grouping:
-                    # Check both VarID and Identifier nodes
-                    if isinstance(g, (AST.VarID, AST.Identifier)) and g.value in bindings:
-                        bound = bindings[g.value]
-                        if isinstance(bound, (AST.VarID, AST.Identifier)):
-                            new_grouping.append(deepcopy(bound))
-                        else:
-                            new_grouping.append(g)
-                    else:
-                        new_grouping.append(g)
-                node.grouping = new_grouping
-        elif isinstance(node, AST.BinOp):
-            if isinstance(node.left, AST.VarID) and node.left.value in bindings:
-                node.left = deepcopy(bindings[node.left.value])
-            else:
-                self._substitute_udo_params(node.left, bindings)
-            if isinstance(node.right, AST.VarID) and node.right.value in bindings:
-                node.right = deepcopy(bindings[node.right.value])
-            else:
-                self._substitute_udo_params(node.right, bindings)
-        elif isinstance(node, AST.UnaryOp):
-            if isinstance(node.operand, AST.VarID) and node.operand.value in bindings:
-                node.operand = deepcopy(bindings[node.operand.value])
-            else:
-                self._substitute_udo_params(node.operand, bindings)
-        elif isinstance(node, AST.ParamOp):
-            if node.children:
-                for i, child in enumerate(node.children):
-                    if isinstance(child, AST.VarID) and child.value in bindings:
-                        node.children[i] = deepcopy(bindings[child.value])
-                    else:
-                        self._substitute_udo_params(child, bindings)
-        elif isinstance(node, AST.ParFunction):
-            if isinstance(node.operand, AST.VarID) and node.operand.value in bindings:
-                node.operand = deepcopy(bindings[node.operand.value])
-            else:
-                self._substitute_udo_params(node.operand, bindings)
-        elif isinstance(node, AST.JoinOp):
-            for i, clause in enumerate(node.clauses):
-                if isinstance(clause, AST.VarID) and clause.value in bindings:
-                    node.clauses[i] = deepcopy(bindings[clause.value])
-                else:
-                    self._substitute_udo_params(clause, bindings)
-        elif isinstance(node, AST.MulOp):
-            # Handle multi-operand operations (exist_in, between, set ops, etc.)
-            for i, child in enumerate(node.children):
-                if isinstance(child, AST.VarID) and child.value in bindings:
-                    node.children[i] = deepcopy(bindings[child.value])
-                else:
-                    self._substitute_udo_params(child, bindings)
 
     # =========================================================================
     # Variable and Constant Nodes
@@ -1235,8 +1168,8 @@ class SQLTranspiler(ASTTemplate):
             right_sql = self.visit(node.right)
             return f'{left_sql}."{right_sql}"'
 
-        # Get component name from right operand
-        comp_name = node.right.value if hasattr(node.right, "value") else str(node.right)
+        # Get component name from right operand, resolving UDO parameters
+        comp_name = self._resolve_varid_value(node.right)
 
         # Build SELECT with identifiers and the specified component
         id_cols = ds.get_identifiers_names()
@@ -2311,25 +2244,12 @@ class SQLTranspiler(ASTTemplate):
         if len(queries) < 2:
             return queries[0] if queries else ""
 
-        # Get identifier columns from first dataset, accounting for transformations
+        # Get identifier columns from first dataset using unified structure lookup
         first_child = node.children[0]
-        first_ds_name = self._get_dataset_name(first_child)
-        base_ds = self.available_tables.get(first_ds_name)
+        first_ds = self.get_structure(first_child)
 
-        if base_ds:
-            # Get transformed structure if the child is a complex expression
-            if isinstance(first_child, AST.Aggregation):
-                transformed_ds = self._get_aggregation_output_structure(first_child, base_ds)
-                id_cols = list(transformed_ds.get_identifiers_names())
-            elif isinstance(first_child, AST.RegularAggregation):
-                transformed_ds = self._get_transformed_dataset(base_ds, first_child)
-                id_cols = list(transformed_ds.get_identifiers_names())
-            elif isinstance(first_child, AST.UDOCall):
-                transformed_ds = self._get_udo_output_structure(first_child, base_ds)
-                id_cols = list(transformed_ds.get_identifiers_names())
-            else:
-                id_cols = list(base_ds.get_identifiers_names())
-
+        if first_ds:
+            id_cols = list(first_ds.get_identifiers_names())
             if id_cols:
                 # Use UNION ALL then DISTINCT ON for first occurrence
                 union_sql = " UNION ALL ".join([f"({q})" for q in queries])
@@ -2353,22 +2273,10 @@ class SQLTranspiler(ASTTemplate):
         left_name = self._get_dataset_name(left_node)
         right_name = self._get_dataset_name(right_node)
 
-        # Use get_structure() for unified structure lookup (handles UDO params too)
+        # Use get_structure() for unified structure lookup
+        # (handles VarID, Aggregation, RegularAggregation, UDOCall, etc.)
         left_ds = self.get_structure(left_node)
         right_ds = self.get_structure(right_node)
-
-        # For complex expressions, compute transformed structures
-        if left_ds and not isinstance(left_node, AST.VarID):
-            if isinstance(left_node, AST.Aggregation):
-                left_ds = self._get_aggregation_output_structure(left_node, left_ds)
-            elif isinstance(left_node, AST.RegularAggregation):
-                left_ds = self._get_transformed_dataset(left_ds, left_node)
-
-        if right_ds and not isinstance(right_node, AST.VarID):
-            if isinstance(right_node, AST.Aggregation):
-                right_ds = self._get_aggregation_output_structure(right_node, right_ds)
-            elif isinstance(right_node, AST.RegularAggregation):
-                right_ds = self._get_transformed_dataset(right_ds, right_node)
 
         if not left_ds or not right_ds:
             raise ValueError(f"Cannot resolve dataset structures for {left_name} and {right_name}")
@@ -2606,16 +2514,21 @@ class SQLTranspiler(ASTTemplate):
             return Dataset(name=base_dataset.name, components=new_components, data=None)
 
         # Get identifiers to keep based on grouping operation
+        # Use _resolve_varid_value to handle UDO parameters
         if agg_node.grouping_op == "group by":
             # Only keep specified identifiers
             keep_ids = {
-                g.value if isinstance(g, (AST.VarID, AST.Identifier)) else str(g)
+                self._resolve_varid_value(g)
+                if isinstance(g, (AST.VarID, AST.Identifier))
+                else str(g)
                 for g in agg_node.grouping
             }
         elif agg_node.grouping_op == "group except":
             # Keep all identifiers except specified ones
             except_ids = {
-                g.value if isinstance(g, (AST.VarID, AST.Identifier)) else str(g)
+                self._resolve_varid_value(g)
+                if isinstance(g, (AST.VarID, AST.Identifier))
+                else str(g)
                 for g in agg_node.grouping
             }
             keep_ids = {
@@ -2649,24 +2562,9 @@ class SQLTranspiler(ASTTemplate):
 
         def get_clause_structure(clause: AST.AST) -> Optional[Dataset]:
             """Get the transformed structure for a join clause."""
-            # Handle alias nodes (ds as A)
-            if isinstance(clause, AST.BinOp) and str(clause.op).lower() == "as":
-                clause = clause.left
-
-            clause_name = self._get_dataset_name(clause)
-            base_ds = self.available_tables.get(clause_name)
-            if not base_ds:
-                return None
-
-            # Apply transformations for complex clauses
-            if isinstance(clause, AST.RegularAggregation):
-                return self._get_transformed_dataset(base_ds, clause)
-            elif isinstance(clause, AST.UDOCall):
-                return self._get_udo_output_structure(clause, base_ds)
-            elif isinstance(clause, AST.Aggregation):
-                return self._get_aggregation_output_structure(clause, base_ds)
-            else:
-                return base_ds
+            # Use unified get_structure() which handles all node types
+            # including alias (as), RegularAggregation, UDOCall, Aggregation
+            return self.get_structure(clause)
 
         # Collect components from all clauses
         all_components: Dict[str, Component] = {}
@@ -2697,24 +2595,36 @@ class SQLTranspiler(ASTTemplate):
         operator = self.udos[udo_node.op]
         expression = operator["expression"]
 
-        # Build parameter bindings
+        # Build parameter bindings and push to stack
         param_bindings: Dict[str, Any] = {}
         for i, param in enumerate(operator["params"]):
             if i < len(udo_node.params):
                 param_bindings[param["name"]] = udo_node.params[i]
 
-        # Create a copy of the expression and substitute parameters
-        expression_copy = deepcopy(expression)
-        self._substitute_udo_params(expression_copy, param_bindings)
+        # Push bindings so _resolve_varid_value and get_udo_param work
+        if self.udo_params is None:
+            self.udo_params = []
+        self.udo_params.append(param_bindings)
 
-        # Analyze the expression to determine output structure
-        if isinstance(expression_copy, AST.Aggregation):
-            return self._get_aggregation_output_structure(expression_copy, base_dataset)
-        elif isinstance(expression_copy, AST.RegularAggregation):
-            return self._get_transformed_dataset(base_dataset, expression_copy)
-        else:
-            # Fallback to base dataset
-            return base_dataset
+        try:
+            # Analyze the expression to determine output structure
+            # Use a copy to avoid modifying the original
+            expression_copy = deepcopy(expression)
+
+            if isinstance(expression_copy, AST.Aggregation):
+                result = self._get_aggregation_output_structure(expression_copy, base_dataset)
+            elif isinstance(expression_copy, AST.RegularAggregation):
+                result = self._get_transformed_dataset(base_dataset, expression_copy)
+            else:
+                # Fallback to base dataset
+                result = base_dataset
+        finally:
+            # Pop bindings
+            self.udo_params.pop()
+            if len(self.udo_params) == 0:
+                self.udo_params = None
+
+        return result
 
     def visit_RegularAggregation(  # type: ignore[override]
         self, node: AST.RegularAggregation
@@ -2737,25 +2647,10 @@ class SQLTranspiler(ASTTemplate):
             prev_dataset = self.current_dataset
             prev_in_clause = self.in_clause
 
-            # Get the transformed dataset structure after applying nested clauses
+            # Get the transformed dataset structure using unified get_structure()
             base_dataset = self.available_tables[ds_name]
-            if isinstance(node.dataset, AST.JoinOp):
-                # For joins, compute the combined structure from all clauses
-                join_structure = self._get_join_output_structure(node.dataset)
-                self.current_dataset = join_structure if join_structure else base_dataset
-            elif isinstance(node.dataset, AST.RegularAggregation):
-                # Apply transformations from nested clauses
-                self.current_dataset = self._get_transformed_dataset(base_dataset, node.dataset)
-            elif isinstance(node.dataset, AST.UDOCall):
-                # For UDO calls, compute the output structure
-                self.current_dataset = self._get_udo_output_structure(node.dataset, base_dataset)
-            elif isinstance(node.dataset, AST.Aggregation):
-                # For aggregation (like max group except), compute output structure
-                self.current_dataset = self._get_aggregation_output_structure(
-                    node.dataset, base_dataset
-                )
-            else:
-                self.current_dataset = base_dataset
+            dataset_structure = self.get_structure(node.dataset)
+            self.current_dataset = dataset_structure if dataset_structure else base_dataset
             self.in_clause = True
 
             try:
@@ -3190,10 +3085,13 @@ class SQLTranspiler(ASTTemplate):
                 if comp:
                     from vtlengine.DataTypes import String
 
-                    if comp.data_type == String and isinstance(child.right, AST.Constant):
+                    if (
+                        comp.data_type == String
+                        and isinstance(child.right, AST.Constant)
+                        and child.right.type_ in ("INTEGER_CONSTANT", "FLOAT_CONSTANT")
+                    ):
                         # Cast numeric constant to string for string column comparison
-                        if child.right.type_ in ("INTEGER_CONSTANT", "FLOAT_CONSTANT"):
-                            col_value = f"'{child.right.value}'"
+                        col_value = f"'{child.right.value}'"
 
                 conditions.append(f'"{col_name}" = {col_value}')
                 remove_cols.append(col_name)
@@ -3247,7 +3145,12 @@ class SQLTranspiler(ASTTemplate):
                 ds_name = self._get_dataset_name(node.operand)
                 ds = self.available_tables.get(ds_name)
                 if ds:
-                    except_cols = {g.value for g in node.grouping if isinstance(g, AST.VarID)}
+                    # Resolve UDO parameters to get actual column names
+                    except_cols = {
+                        self._resolve_varid_value(g)
+                        for g in node.grouping
+                        if isinstance(g, (AST.VarID, AST.Identifier))
+                    }
                     group_cols = [
                         f'"{c}"' for c in ds.get_identifiers_names() if c not in except_cols
                     ]
@@ -3262,7 +3165,8 @@ class SQLTranspiler(ASTTemplate):
         # Dataset-level aggregation
         if operand_type == OperandType.DATASET and node.operand:
             ds_name = self._get_dataset_name(node.operand)
-            ds = self.available_tables.get(ds_name)
+            # Try available_tables first, then fall back to get_structure for complex operands
+            ds = self.available_tables.get(ds_name) or self.get_structure(node.operand)
             if ds:
                 measures = list(ds.get_measures_names())
                 dataset_sql = self._get_dataset_sql(node.operand)
@@ -3288,9 +3192,11 @@ class SQLTranspiler(ASTTemplate):
                         id_select = ", ".join([f'"{k}"' for k in group_col_names])
                     else:
                         # For "group except", use all identifiers except the excluded ones
+                        # Resolve UDO parameters to get actual column names
                         except_cols = {
-                            g.value if isinstance(g, (AST.VarID, AST.Identifier)) else str(g)
+                            self._resolve_varid_value(g)
                             for g in node.grouping
+                            if isinstance(g, (AST.VarID, AST.Identifier))
                         }
                         id_select = ", ".join(
                             [f'"{k}"' for k in ds.get_identifiers_names() if k not in except_cols]
@@ -3531,20 +3437,8 @@ class SQLTranspiler(ASTTemplate):
 
         def get_clause_transformed_ds(clause: AST.AST) -> Optional[Dataset]:
             """Get the transformed dataset structure for a join clause."""
-            clause_name = self._get_dataset_name(clause)
-            base_ds = self.available_tables.get(clause_name)
-            if not base_ds:
-                return None
-
-            # For complex expressions, compute transformed structure
-            if isinstance(clause, AST.RegularAggregation):
-                return self._get_transformed_dataset(base_ds, clause)
-            elif isinstance(clause, AST.UDOCall):
-                return self._get_udo_output_structure(clause, base_ds)
-            elif isinstance(clause, AST.Aggregation):
-                return self._get_aggregation_output_structure(clause, base_ds)
-            else:
-                return base_ds
+            # Use unified get_structure() which handles all node types
+            return self.get_structure(clause)
 
         # First clause is the base
         base_actual, base_alias = extract_clause_and_alias(node.clauses[0])
@@ -4241,6 +4135,17 @@ class SQLTranspiler(ASTTemplate):
         if isinstance(node, AST.VarID):
             name = node.value
 
+            # Check if this is a UDO parameter - if so, get type of bound value
+            udo_value = self.get_udo_param(name)
+            if udo_value is not None:
+                if isinstance(udo_value, AST.AST):
+                    return self._get_operand_type(udo_value)
+                # String values are typically component names
+                if isinstance(udo_value, str):
+                    return OperandType.COMPONENT
+                # Scalar objects
+                return OperandType.SCALAR
+
             # In clause context: component
             if self.in_clause and self.current_dataset and name in self.current_dataset.components:
                 return OperandType.COMPONENT
@@ -4293,12 +4198,12 @@ class SQLTranspiler(ASTTemplate):
             # UDOCall returns what its output type specifies
             if node.op in self.udos:
                 output_type = self.udos[node.op]["output"]
-                if output_type == "Dataset":
-                    return OperandType.DATASET
-                elif output_type == "Scalar":
-                    return OperandType.SCALAR
-                elif output_type == "Component":
-                    return OperandType.COMPONENT
+                type_mapping = {
+                    "Dataset": OperandType.DATASET,
+                    "Scalar": OperandType.SCALAR,
+                    "Component": OperandType.COMPONENT,
+                }
+                return type_mapping.get(output_type, OperandType.DATASET)
             # Default to dataset if we don't know
             return OperandType.DATASET
 
@@ -4343,9 +4248,10 @@ class SQLTranspiler(ASTTemplate):
                         assignment = child
                     else:
                         continue
-                    if isinstance(assignment, AST.Assignment):
-                        if isinstance(assignment.left, (AST.VarID, AST.Identifier)):
-                            return assignment.left.value
+                    if isinstance(assignment, AST.Assignment) and isinstance(
+                        assignment.left, (AST.VarID, AST.Identifier)
+                    ):
+                        return assignment.left.value
                 # Fallback to inner dataset
                 if node.dataset:
                     return self._get_transformed_measure_name(node.dataset)
@@ -4359,9 +4265,11 @@ class SQLTranspiler(ASTTemplate):
                         inner_ids = set(inner_ds.get_identifiers_names())
                         # Find the kept measure (not an identifier)
                         for child in node.children:
-                            if isinstance(child, (AST.VarID, AST.Identifier)):
-                                if child.value not in inner_ids:
-                                    return child.value
+                            if (
+                                isinstance(child, (AST.VarID, AST.Identifier))
+                                and child.value not in inner_ids
+                            ):
+                                return child.value
                 # If inner RegularAggregation, recurse
                 if node.dataset:
                     return self._get_transformed_measure_name(node.dataset)
@@ -4380,9 +4288,9 @@ class SQLTranspiler(ASTTemplate):
         return None
 
     def _get_dataset_name(self, node: AST.AST) -> str:
-        """Extract dataset name from a node."""
+        """Extract dataset name from a node, resolving UDO parameters."""
         if isinstance(node, AST.VarID):
-            return node.value
+            return self._resolve_varid_value(node)
         if isinstance(node, AST.RegularAggregation) and node.dataset:
             return self._get_dataset_name(node.dataset)
         if isinstance(node, AST.BinOp):
@@ -4418,7 +4326,14 @@ class SQLTranspiler(ASTTemplate):
                         If True, return SELECT * FROM for compatibility
         """
         if isinstance(node, AST.VarID):
-            name = node.value
+            # Check if this is a UDO parameter bound to an AST node
+            udo_value = self.get_udo_param(node.value)
+            if udo_value is not None and isinstance(udo_value, AST.AST):
+                # Recursively get SQL for the bound AST node
+                return self._get_dataset_sql(udo_value, wrap_simple)
+
+            # Resolve UDO parameter bindings to get actual dataset name
+            name = self._resolve_varid_value(node)
             if wrap_simple:
                 return f'SELECT * FROM "{name}"'
             return f'"{name}"'

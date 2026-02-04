@@ -11,6 +11,8 @@ from typing import Any, Dict, List, Tuple
 import pytest
 
 from vtlengine.AST import (
+    Aggregation,
+    Argument,
     Assignment,
     BinOp,
     Collection,
@@ -18,12 +20,16 @@ from vtlengine.AST import (
     EvalOp,
     Identifier,
     If,
+    JoinOp,
     MulOp,
+    Operator,
     ParamConstant,
     ParamOp,
     RegularAggregation,
+    RenameNode,
     Start,
     TimeAggregation,
+    UDOCall,
     UnaryOp,
     Validation,
     VarID,
@@ -2138,21 +2144,577 @@ class TestExistInOperations:
 
 
 class TestUDOOperations:
-    """Tests for User-Defined Operator operations.
+    """Tests for User-Defined Operator operations."""
 
-    Note: Complex UDO tests require full AST construction which is better
-    done through integration tests using the full parser pipeline.
-    """
+    def test_udo_simple_dataset_sum(self):
+        """Test UDO that adds two datasets: suma(ds1, ds2) returns ds1 + ds2."""
+        ds1 = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        ds2 = Dataset(
+            name="DS_2",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        output_ds = Dataset(
+            name="DS_r",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
 
-    @pytest.mark.skip(reason="UDO AST construction is complex - use integration tests")
-    def test_udo_drop_identifier_pattern(self):
-        """Test UDO that drops an identifier using max with group except.
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds1, "DS_2": ds2},
+            output_datasets={"DS_r": output_ds},
+        )
 
-        This test is skipped because constructing the full UDO AST programmatically
-        is complex. Instead, UDO functionality should be tested through integration
-        tests that use the VTL parser.
+        # Define UDO: suma(ds1 dataset, ds2 dataset) returns ds1 + ds2
+        udo_definition = Operator(
+            **make_ast_node(
+                op="suma",
+                parameters=[
+                    Argument(**make_ast_node(name="ds1", type_=Number, default=None)),
+                    Argument(**make_ast_node(name="ds2", type_=Number, default=None)),
+                ],
+                output_type="Dataset",
+                expression=BinOp(
+                    **make_ast_node(
+                        left=VarID(**make_ast_node(value="ds1")),
+                        op="+",
+                        right=VarID(**make_ast_node(value="ds2")),
+                    )
+                ),
+            )
+        )
+
+        # Create UDO call: suma(DS_1, DS_2)
+        udo_call = UDOCall(
+            **make_ast_node(
+                op="suma",
+                params=[
+                    VarID(**make_ast_node(value="DS_1")),
+                    VarID(**make_ast_node(value="DS_2")),
+                ],
+            )
+        )
+
+        # Register the UDO definition
+        transpiler.visit(udo_definition)
+
+        # Create full AST: DS_r := suma(DS_1, DS_2)
+        ast = create_start_with_assignment("DS_r", udo_call)
+        results = transpile_and_get_sql(transpiler, ast)
+
+        assert len(results) == 1
+        name, sql, _ = results[0]
+        assert name == "DS_r"
+        # Should produce a join with addition of measures
+        assert_sql_contains(sql, ['"Id_1"', '"Me_1"', "+", "JOIN"])
+
+    def test_udo_aggregation_group_except(self):
+        """Test UDO that drops an identifier: drop_id(ds, comp) returns max(ds group except comp)."""
+        ds = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Id_2": Component(
+                    name="Id_2", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        output_ds = Dataset(
+            name="DS_r",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds},
+            output_datasets={"DS_r": output_ds},
+        )
+
+        # Define UDO: drop_id(ds dataset, comp component) returns max(ds group except comp)
+        udo_definition = Operator(
+            **make_ast_node(
+                op="drop_id",
+                parameters=[
+                    Argument(**make_ast_node(name="ds", type_=Number, default=None)),
+                    Argument(**make_ast_node(name="comp", type_=String, default=None)),
+                ],
+                output_type="Dataset",
+                expression=Aggregation(
+                    **make_ast_node(
+                        op="max",
+                        operand=VarID(**make_ast_node(value="ds")),
+                        grouping_op="group except",
+                        grouping=[VarID(**make_ast_node(value="comp"))],
+                    )
+                ),
+            )
+        )
+
+        # Create UDO call: drop_id(DS_1, Id_2)
+        udo_call = UDOCall(
+            **make_ast_node(
+                op="drop_id",
+                params=[
+                    VarID(**make_ast_node(value="DS_1")),
+                    VarID(**make_ast_node(value="Id_2")),
+                ],
+            )
+        )
+
+        # Register the UDO definition
+        transpiler.visit(udo_definition)
+
+        # Create full AST: DS_r := drop_id(DS_1, Id_2)
+        ast = create_start_with_assignment("DS_r", udo_call)
+        results = transpile_and_get_sql(transpiler, ast)
+
+        assert len(results) == 1
+        name, sql, _ = results[0]
+        assert name == "DS_r"
+        # Should produce MAX aggregation grouped by Id_1 (all except Id_2)
+        assert_sql_contains(sql, ["MAX", '"Id_1"', "GROUP BY"])
+        # Id_2 should be excluded from result (group except removes it)
+        assert '"Id_2"' not in sql or "GROUP BY" in sql
+
+    def test_udo_with_membership(self):
+        """Test UDO with membership operator: extract_measure(ds, comp) returns ds#comp."""
+        ds = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+                "Me_2": Component(name="Me_2", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        output_ds = Dataset(
+            name="DS_r",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds},
+            output_datasets={"DS_r": output_ds},
+        )
+
+        # Define UDO: extract_measure(ds dataset, comp component) returns ds#comp
+        udo_definition = Operator(
+            **make_ast_node(
+                op="extract_measure",
+                parameters=[
+                    Argument(**make_ast_node(name="ds", type_=Number, default=None)),
+                    Argument(**make_ast_node(name="comp", type_=String, default=None)),
+                ],
+                output_type="Dataset",
+                expression=BinOp(
+                    **make_ast_node(
+                        left=VarID(**make_ast_node(value="ds")),
+                        op="#",
+                        right=VarID(**make_ast_node(value="comp")),
+                    )
+                ),
+            )
+        )
+
+        # Create UDO call: extract_measure(DS_1, Me_1)
+        udo_call = UDOCall(
+            **make_ast_node(
+                op="extract_measure",
+                params=[
+                    VarID(**make_ast_node(value="DS_1")),
+                    VarID(**make_ast_node(value="Me_1")),
+                ],
+            )
+        )
+
+        # Register the UDO definition
+        transpiler.visit(udo_definition)
+
+        # Create full AST: DS_r := extract_measure(DS_1, Me_1)
+        ast = create_start_with_assignment("DS_r", udo_call)
+        results = transpile_and_get_sql(transpiler, ast)
+
+        assert len(results) == 1
+        name, sql, _ = results[0]
+        assert name == "DS_r"
+        # Should select only Id_1 and Me_1
+        assert_sql_contains(sql, ['"Id_1"', '"Me_1"'])
+        # Me_2 should not be selected
+        assert '"Me_2"' not in sql
+
+    def test_udo_get_structure(self):
+        """Test that get_structure correctly computes UDO output structure."""
+        ds = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Id_2": Component(
+                    name="Id_2", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(input_datasets={"DS_1": ds})
+        transpiler.available_tables["DS_1"] = ds
+
+        # Define UDO: drop_id(ds dataset, comp component) returns max(ds group except comp)
+        udo_definition = Operator(
+            **make_ast_node(
+                op="drop_id",
+                parameters=[
+                    Argument(**make_ast_node(name="ds", type_=Number, default=None)),
+                    Argument(**make_ast_node(name="comp", type_=String, default=None)),
+                ],
+                output_type="Dataset",
+                expression=Aggregation(
+                    **make_ast_node(
+                        op="max",
+                        operand=VarID(**make_ast_node(value="ds")),
+                        grouping_op="group except",
+                        grouping=[VarID(**make_ast_node(value="comp"))],
+                    )
+                ),
+            )
+        )
+
+        # Register the UDO
+        transpiler.visit(udo_definition)
+
+        # Create UDO call: drop_id(DS_1, Id_2)
+        udo_call = UDOCall(
+            **make_ast_node(
+                op="drop_id",
+                params=[
+                    VarID(**make_ast_node(value="DS_1")),
+                    VarID(**make_ast_node(value="Id_2")),
+                ],
+            )
+        )
+
+        structure = transpiler.get_structure(udo_call)
+
+        # Should have Id_1 and Me_1, but NOT Id_2 (removed by group except)
+        assert structure is not None
+        assert "Id_1" in structure.components
+        assert "Me_1" in structure.components
+        assert "Id_2" not in structure.components
+
+    def test_udo_nested_call(self):
+        """Test nested UDO calls: outer(inner(DS))."""
+        ds = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+                "Me_2": Component(name="Me_2", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        output_ds = Dataset(
+            name="DS_r",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds},
+            output_datasets={"DS_r": output_ds},
+        )
+
+        # Define inner UDO: keep_one(ds dataset) returns ds[keep Me_1]
+        inner_udo = Operator(
+            **make_ast_node(
+                op="keep_one",
+                parameters=[
+                    Argument(**make_ast_node(name="ds", type_=Number, default=None)),
+                ],
+                output_type="Dataset",
+                expression=RegularAggregation(
+                    **make_ast_node(
+                        op="keep",
+                        dataset=VarID(**make_ast_node(value="ds")),
+                        children=[VarID(**make_ast_node(value="Me_1"))],
+                    )
+                ),
+            )
+        )
+
+        # Define outer UDO: double_it(ds dataset) returns ds * 2
+        outer_udo = Operator(
+            **make_ast_node(
+                op="double_it",
+                parameters=[
+                    Argument(**make_ast_node(name="ds", type_=Number, default=None)),
+                ],
+                output_type="Dataset",
+                expression=BinOp(
+                    **make_ast_node(
+                        left=VarID(**make_ast_node(value="ds")),
+                        op="*",
+                        right=Constant(**make_ast_node(value=2, type_="INTEGER_CONSTANT")),
+                    )
+                ),
+            )
+        )
+
+        # Register UDOs
+        transpiler.visit(inner_udo)
+        transpiler.visit(outer_udo)
+
+        # Create nested call: double_it(keep_one(DS_1))
+        inner_call = UDOCall(
+            **make_ast_node(
+                op="keep_one",
+                params=[VarID(**make_ast_node(value="DS_1"))],
+            )
+        )
+        outer_call = UDOCall(
+            **make_ast_node(
+                op="double_it",
+                params=[inner_call],
+            )
+        )
+
+        # Create full AST
+        ast = create_start_with_assignment("DS_r", outer_call)
+        results = transpile_and_get_sql(transpiler, ast)
+
+        assert len(results) == 1
+        name, sql, _ = results[0]
+        assert name == "DS_r"
+        # Should have multiplication by 2 and only Me_1
+        assert_sql_contains(sql, ['"Me_1"', "* 2"])
+        # Me_2 should be dropped by inner UDO
+        assert '"Me_2"' not in sql
+
+    def test_udo_with_filtered_dataset_param(self):
+        """Test UDO where the parameter is a filtered dataset expression.
+
+        VTL pattern: drop_identifier ( DS_1 [ filter Me_1 > 0 ] , Id_2 )
+        Bug: When UDO param 'ds' is bound to a RegularAggregation (filter),
+        the SQL was generating FROM "<RegularAggregation...>" instead of
+        properly visiting the expression.
         """
-        pass
+        ds = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Id_2": Component(
+                    name="Id_2", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        output_ds = Dataset(
+            name="DS_r",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds},
+            output_datasets={"DS_r": output_ds},
+        )
+
+        # Define UDO: drop_identifier(ds dataset, comp component) returns max(ds group except comp)
+        udo_definition = Operator(
+            **make_ast_node(
+                op="drop_identifier",
+                parameters=[
+                    Argument(**make_ast_node(name="ds", type_=Number, default=None)),
+                    Argument(**make_ast_node(name="comp", type_=String, default=None)),
+                ],
+                output_type="Dataset",
+                expression=Aggregation(
+                    **make_ast_node(
+                        op="max",
+                        operand=VarID(**make_ast_node(value="ds")),
+                        grouping_op="group except",
+                        grouping=[VarID(**make_ast_node(value="comp"))],
+                    )
+                ),
+            )
+        )
+
+        # Register the UDO
+        transpiler.visit(udo_definition)
+
+        # Create filtered dataset: DS_1 [ filter Me_1 > 0 ]
+        filtered_ds = RegularAggregation(
+            **make_ast_node(
+                op="filter",
+                dataset=VarID(**make_ast_node(value="DS_1")),
+                children=[
+                    BinOp(
+                        **make_ast_node(
+                            left=VarID(**make_ast_node(value="Me_1")),
+                            op=">",
+                            right=Constant(**make_ast_node(value=0, type_="INTEGER_CONSTANT")),
+                        )
+                    )
+                ],
+            )
+        )
+
+        # Create UDO call: drop_identifier(DS_1 [ filter Me_1 > 0 ], Id_2)
+        udo_call = UDOCall(
+            **make_ast_node(
+                op="drop_identifier",
+                params=[
+                    filtered_ds,
+                    VarID(**make_ast_node(value="Id_2")),
+                ],
+            )
+        )
+
+        # Create full AST: DS_r := drop_identifier(DS_1 [ filter Me_1 > 0 ], Id_2)
+        ast = create_start_with_assignment("DS_r", udo_call)
+        results = transpile_and_get_sql(transpiler, ast)
+
+        assert len(results) == 1
+        name, sql, _ = results[0]
+        assert name == "DS_r"
+        # The SQL should contain proper filter clause, NOT "<RegularAggregation...>"
+        assert "RegularAggregation" not in sql
+        assert '"DS_1"' in sql
+        # Should have the filter condition
+        assert '"Me_1"' in sql
+        assert "> 0" in sql or ">0" in sql
+
+    def test_udo_dataset_sql_resolves_param(self):
+        """Test that _get_dataset_sql resolves UDO parameter to actual dataset name.
+
+        Bug: When UDO parameter 'ds' is used inside aggregation, the SQL was
+        generating FROM "ds" instead of FROM "ACTUAL_DATASET_NAME".
+        """
+        ds = Dataset(
+            name="ACTUAL_DS",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Id_2": Component(
+                    name="Id_2", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        output_ds = Dataset(
+            name="DS_r",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(
+            input_datasets={"ACTUAL_DS": ds},
+            output_datasets={"DS_r": output_ds},
+        )
+
+        # Define UDO: drop_identifier(ds dataset, comp component) returns max(ds group except comp)
+        udo_definition = Operator(
+            **make_ast_node(
+                op="drop_identifier",
+                parameters=[
+                    Argument(**make_ast_node(name="ds", type_=Number, default=None)),
+                    Argument(**make_ast_node(name="comp", type_=String, default=None)),
+                ],
+                output_type="Dataset",
+                expression=Aggregation(
+                    **make_ast_node(
+                        op="max",
+                        operand=VarID(**make_ast_node(value="ds")),
+                        grouping_op="group except",
+                        grouping=[VarID(**make_ast_node(value="comp"))],
+                    )
+                ),
+            )
+        )
+
+        # Register the UDO
+        transpiler.visit(udo_definition)
+
+        # Create UDO call: drop_identifier(ACTUAL_DS, Id_2)
+        udo_call = UDOCall(
+            **make_ast_node(
+                op="drop_identifier",
+                params=[
+                    VarID(**make_ast_node(value="ACTUAL_DS")),
+                    VarID(**make_ast_node(value="Id_2")),
+                ],
+            )
+        )
+
+        # Create full AST: DS_r := drop_identifier(ACTUAL_DS, Id_2)
+        ast = create_start_with_assignment("DS_r", udo_call)
+        results = transpile_and_get_sql(transpiler, ast)
+
+        assert len(results) == 1
+        name, sql, _ = results[0]
+        assert name == "DS_r"
+        # The SQL should reference "ACTUAL_DS", NOT "ds" (the UDO parameter name)
+        assert '"ACTUAL_DS"' in sql
+        assert '"ds"' not in sql or "ds" not in sql.split("FROM")[1]
 
 
 class TestIntermediateResultsInExistIn:
@@ -2581,3 +3143,345 @@ class TestGetStructure:
         assert structure.components["Id_1"].data_type == String
         # Measure type should be updated to Date
         assert structure.components["Me_1"].data_type == Date
+
+    def test_join_simple_two_datasets(self):
+        """Test that get_structure for simple join returns combined structure."""
+        ds1 = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        ds2 = Dataset(
+            name="DS_2",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_2": Component(name="Me_2", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(input_datasets={"DS_1": ds1, "DS_2": ds2})
+        transpiler.available_tables["DS_1"] = ds1
+        transpiler.available_tables["DS_2"] = ds2
+
+        # Create join: inner_join(DS_1, DS_2)
+        join_node = JoinOp(
+            **make_ast_node(
+                op="inner_join",
+                clauses=[
+                    VarID(**make_ast_node(value="DS_1")),
+                    VarID(**make_ast_node(value="DS_2")),
+                ],
+                using=None,
+            )
+        )
+
+        structure = transpiler.get_structure(join_node)
+
+        # Should have combined structure: Id_1, Me_1, Me_2
+        assert structure is not None
+        assert "Id_1" in structure.components
+        assert "Me_1" in structure.components
+        assert "Me_2" in structure.components
+        assert structure.components["Id_1"].role == Role.IDENTIFIER
+        assert structure.components["Me_1"].role == Role.MEASURE
+        assert structure.components["Me_2"].role == Role.MEASURE
+
+    def test_join_with_alias_clause(self):
+        """Test that get_structure for join with alias correctly handles aliased datasets."""
+        ds1 = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        ds2 = Dataset(
+            name="DS_2",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_2": Component(name="Me_2", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(input_datasets={"DS_1": ds1, "DS_2": ds2})
+        transpiler.available_tables["DS_1"] = ds1
+        transpiler.available_tables["DS_2"] = ds2
+
+        # Create join: inner_join(DS_1 as A, DS_2 as B)
+        alias_clause_1 = BinOp(
+            **make_ast_node(
+                left=VarID(**make_ast_node(value="DS_1")),
+                op="as",
+                right=Identifier(**make_ast_node(value="A", kind="DatasetID")),
+            )
+        )
+        alias_clause_2 = BinOp(
+            **make_ast_node(
+                left=VarID(**make_ast_node(value="DS_2")),
+                op="as",
+                right=Identifier(**make_ast_node(value="B", kind="DatasetID")),
+            )
+        )
+        join_node = JoinOp(
+            **make_ast_node(
+                op="inner_join",
+                clauses=[alias_clause_1, alias_clause_2],
+                using=None,
+            )
+        )
+
+        structure = transpiler.get_structure(join_node)
+
+        # Should have combined structure: Id_1, Me_1, Me_2
+        assert structure is not None
+        assert "Id_1" in structure.components
+        assert "Me_1" in structure.components
+        assert "Me_2" in structure.components
+
+    def test_join_with_keep_clause(self):
+        """Test that get_structure for join with keep clause applies transformation."""
+        ds1 = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+                "Me_2": Component(name="Me_2", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        ds2 = Dataset(
+            name="DS_2",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_3": Component(name="Me_3", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(input_datasets={"DS_1": ds1, "DS_2": ds2})
+        transpiler.available_tables["DS_1"] = ds1
+        transpiler.available_tables["DS_2"] = ds2
+
+        # Create join: inner_join(DS_1[keep Me_1], DS_2)
+        keep_clause = RegularAggregation(
+            **make_ast_node(
+                op="keep",
+                dataset=VarID(**make_ast_node(value="DS_1")),
+                children=[VarID(**make_ast_node(value="Me_1"))],
+            )
+        )
+        join_node = JoinOp(
+            **make_ast_node(
+                op="inner_join",
+                clauses=[
+                    keep_clause,
+                    VarID(**make_ast_node(value="DS_2")),
+                ],
+                using=None,
+            )
+        )
+
+        structure = transpiler.get_structure(join_node)
+
+        # Should have: Id_1, Me_1 (from keep), Me_3 (from DS_2)
+        # Me_2 should NOT be present (dropped by keep)
+        assert structure is not None
+        assert "Id_1" in structure.components
+        assert "Me_1" in structure.components
+        assert "Me_3" in structure.components
+        assert "Me_2" not in structure.components
+
+    def test_join_with_rename_clause(self):
+        """Test that get_structure for join with rename clause applies transformation."""
+        ds1 = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        ds2 = Dataset(
+            name="DS_2",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_2": Component(name="Me_2", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(input_datasets={"DS_1": ds1, "DS_2": ds2})
+        transpiler.available_tables["DS_1"] = ds1
+        transpiler.available_tables["DS_2"] = ds2
+
+        # Create join: inner_join(DS_1[rename Me_1 to Me_X], DS_2)
+        rename_clause = RegularAggregation(
+            **make_ast_node(
+                op="rename",
+                dataset=VarID(**make_ast_node(value="DS_1")),
+                children=[RenameNode(**make_ast_node(old_name="Me_1", new_name="Me_X"))],
+            )
+        )
+        join_node = JoinOp(
+            **make_ast_node(
+                op="inner_join",
+                clauses=[
+                    rename_clause,
+                    VarID(**make_ast_node(value="DS_2")),
+                ],
+                using=None,
+            )
+        )
+
+        structure = transpiler.get_structure(join_node)
+
+        # Should have: Id_1, Me_X (renamed from Me_1), Me_2
+        # Me_1 should NOT be present (renamed to Me_X)
+        assert structure is not None
+        assert "Id_1" in structure.components
+        assert "Me_X" in structure.components
+        assert "Me_2" in structure.components
+        assert "Me_1" not in structure.components
+
+    def test_join_with_aggregation_group_by(self):
+        """Test that get_structure for join with aggregation group_by applies structure change."""
+        ds1 = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Id_2": Component(
+                    name="Id_2", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        ds2 = Dataset(
+            name="DS_2",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_2": Component(name="Me_2", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(input_datasets={"DS_1": ds1, "DS_2": ds2})
+        transpiler.available_tables["DS_1"] = ds1
+        transpiler.available_tables["DS_2"] = ds2
+
+        # Create join: inner_join(sum(DS_1 group by Id_1), DS_2)
+        # This aggregates DS_1 to only have Id_1 as identifier
+        aggregation_clause = Aggregation(
+            **make_ast_node(
+                op="sum",
+                operand=VarID(**make_ast_node(value="DS_1")),
+                grouping_op="group by",
+                grouping=[VarID(**make_ast_node(value="Id_1"))],
+            )
+        )
+        join_node = JoinOp(
+            **make_ast_node(
+                op="inner_join",
+                clauses=[
+                    aggregation_clause,
+                    VarID(**make_ast_node(value="DS_2")),
+                ],
+                using=None,
+            )
+        )
+
+        structure = transpiler.get_structure(join_node)
+
+        # Should have: Id_1 (from both), Me_1 (from aggregated DS_1), Me_2 (from DS_2)
+        # Id_2 should NOT be present (removed by group by)
+        assert structure is not None
+        assert "Id_1" in structure.components
+        assert "Me_1" in structure.components
+        assert "Me_2" in structure.components
+        assert "Id_2" not in structure.components
+        assert structure.components["Id_1"].role == Role.IDENTIFIER
+
+    def test_join_multiple_identifiers_union(self):
+        """Test that join combines identifiers from all datasets."""
+        ds1 = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Id_A": Component(
+                    name="Id_A", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        ds2 = Dataset(
+            name="DS_2",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Id_B": Component(
+                    name="Id_B", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_2": Component(name="Me_2", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(input_datasets={"DS_1": ds1, "DS_2": ds2})
+        transpiler.available_tables["DS_1"] = ds1
+        transpiler.available_tables["DS_2"] = ds2
+
+        # Create join: inner_join(DS_1, DS_2)
+        join_node = JoinOp(
+            **make_ast_node(
+                op="inner_join",
+                clauses=[
+                    VarID(**make_ast_node(value="DS_1")),
+                    VarID(**make_ast_node(value="DS_2")),
+                ],
+                using=None,
+            )
+        )
+
+        structure = transpiler.get_structure(join_node)
+
+        # Should have all identifiers from both: Id_1, Id_A, Id_B
+        assert structure is not None
+        assert "Id_1" in structure.components
+        assert "Id_A" in structure.components
+        assert "Id_B" in structure.components
+        assert "Me_1" in structure.components
+        assert "Me_2" in structure.components
+        # All identifiers should maintain IDENTIFIER role
+        assert structure.components["Id_1"].role == Role.IDENTIFIER
+        assert structure.components["Id_A"].role == Role.IDENTIFIER
+        assert structure.components["Id_B"].role == Role.IDENTIFIER
