@@ -422,6 +422,16 @@ class SQLTranspiler(ASTTemplate):
         # Default: treat as column reference (for component operations)
         return f'"{name}"'
 
+    def visit_ID(self, node: AST.ID) -> str:
+        """
+        Handle ID nodes, particularly OPTIONAL placeholders (_).
+
+        VTL uses _ as a placeholder for omitted/optional parameters.
+        """
+        if node.value == "_" or node.type_ == "OPTIONAL":
+            return "NULL"
+        return f'"{node.value}"'
+
     def visit_Constant(self, node: AST.Constant) -> str:
         """Convert a constant to SQL literal."""
         if node.value is None:
@@ -561,6 +571,11 @@ class SQLTranspiler(ASTTemplate):
         # Special handling for TRUNC (needs function syntax, second param cast to INTEGER)
         if op == TRUNC:
             return self._visit_round_trunc_binop(node, left_type, right_type, "TRUNC")
+
+        # Special handling for CONCAT (|| with NULL coalescing)
+        # VTL: "hello" || NULL = "hello", NULL || "world" = "world"
+        if op == CONCAT:
+            return self._visit_concat(node, left_type, right_type)
 
         sql_op = SQL_BINARY_OPS.get(op, op.upper())
 
@@ -924,6 +939,113 @@ class SQLTranspiler(ASTTemplate):
         # For scalar operands, use direct DATE_DIFF
         return f"ABS(DATE_DIFF('day', {left_sql}, {right_sql}))"
 
+    def _visit_concat(self, node: AST.BinOp, left_type: str, right_type: str) -> str:
+        """
+        Generate SQL for string concatenation with VTL NULL semantics.
+
+        VTL: "hello" || NULL = "hello", NULL || "world" = "world", NULL || NULL = NULL
+        SQL: COALESCE(left, '') || COALESCE(right, '')
+        """
+        # Dataset-Dataset
+        if left_type == OperandType.DATASET and right_type == OperandType.DATASET:
+            return self._binop_dataset_dataset_concat(node.left, node.right)
+
+        # Dataset-Scalar
+        if left_type == OperandType.DATASET and right_type == OperandType.SCALAR:
+            return self._binop_dataset_scalar_concat(node.left, node.right, left=True)
+
+        # Scalar-Dataset
+        if left_type == OperandType.SCALAR and right_type == OperandType.DATASET:
+            return self._binop_dataset_scalar_concat(node.right, node.left, left=False)
+
+        # Scalar-Scalar or Component-Component
+        left_sql = self.visit(node.left)
+        right_sql = self.visit(node.right)
+        return f"(COALESCE({left_sql}, '') || COALESCE({right_sql}, ''))"
+
+    def _binop_dataset_dataset_concat(self, left_node: AST.AST, right_node: AST.AST) -> str:
+        """Generate SQL for Dataset-Dataset concatenation with NULL handling."""
+        left_name = self._get_dataset_name(left_node)
+        right_name = self._get_dataset_name(right_node)
+
+        left_ds = self.available_tables[left_name]
+        right_ds = self.available_tables[right_name]
+
+        # Find common identifiers for JOIN
+        left_ids = set(left_ds.get_identifiers_names())
+        right_ids = set(right_ds.get_identifiers_names())
+        join_keys = sorted(left_ids.intersection(right_ids))
+
+        if not join_keys:
+            raise ValueError(f"No common identifiers between {left_name} and {right_name}")
+
+        # Build JOIN condition
+        join_cond = " AND ".join([f'a."{k}" = b."{k}"' for k in join_keys])
+
+        # SELECT identifiers (from left)
+        id_select = ", ".join([f'a."{k}"' for k in left_ds.get_identifiers_names()])
+
+        # SELECT measures with concat and NULL handling
+        left_measures = set(left_ds.get_measures_names())
+        right_measures = set(right_ds.get_measures_names())
+        common_measures = sorted(left_measures.intersection(right_measures))
+
+        measure_select = ", ".join(
+            [
+                f'(COALESCE(a."{m}", \'\') || COALESCE(b."{m}", \'\')) AS "{m}"'
+                for m in common_measures
+            ]
+        )
+
+        # Get SQL for operands
+        if isinstance(left_node, AST.VarID):
+            left_sql = f'"{left_node.value}"'
+        else:
+            left_sql = f"({self.visit(left_node)})"
+
+        if isinstance(right_node, AST.VarID):
+            right_sql = f'"{right_node.value}"'
+        else:
+            right_sql = f"({self.visit(right_node)})"
+
+        return f"""
+            SELECT {id_select}, {measure_select}
+            FROM {left_sql} AS a
+            INNER JOIN {right_sql} AS b ON {join_cond}
+        """
+
+    def _binop_dataset_scalar_concat(
+        self, dataset_node: AST.AST, scalar_node: AST.AST, left: bool
+    ) -> str:
+        """Generate SQL for Dataset-Scalar concatenation with NULL handling."""
+        ds_name = self._get_dataset_name(dataset_node)
+        ds = self.available_tables[ds_name]
+        scalar_sql = self.visit(scalar_node)
+
+        id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
+
+        if left:
+            # Dataset || Scalar
+            measure_select = ", ".join(
+                [
+                    f"(COALESCE(\"{m}\", '') || COALESCE({scalar_sql}, '')) AS \"{m}\""
+                    for m in ds.get_measures_names()
+                ]
+            )
+        else:
+            # Scalar || Dataset
+            measure_select = ", ".join(
+                [
+                    f"(COALESCE({scalar_sql}, '') || COALESCE(\"{m}\", '')) AS \"{m}\""
+                    for m in ds.get_measures_names()
+                ]
+            )
+
+        dataset_sql = self._get_dataset_sql(dataset_node)
+        from_clause = self._simplify_from_clause(dataset_sql)
+
+        return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
+
     def _visit_timeshift(self, node: AST.BinOp, left_type: str, right_type: str) -> str:
         """
         Generate SQL for TIMESHIFT operator.
@@ -993,7 +1115,8 @@ class SQLTranspiler(ASTTemplate):
 
         Args:
             func_name: SQL function name (POWER, LOG)
-            swap_args: If True, swap left and right args (for LOG: VTL log(val, base) -> SQL LOG(base, val))
+            swap_args: If True, swap left and right args
+            (for LOG: VTL log(val, base) -> SQL LOG(base, val))
         """
         left_sql = self.visit(node.left)
         right_sql = self.visit(node.right)
@@ -1543,7 +1666,8 @@ class SQLTranspiler(ASTTemplate):
         if op == RANDOM:
             return self._visit_random(operand, operand_sql, operand_type, params)
 
-        # Single-param operations mapping: op -> (sql_func, default_param, template_format, needs_int_cast)
+        # Single-param operations mapping: op -> (sql_func, default_param,
+        # template_format, needs_int_cast)
         single_param_ops = {
             ROUND: ("ROUND", "0", "{func}({{m}}, {p})", True),
             TRUNC: ("TRUNC", "0", "{func}({{m}}, {p})", True),
@@ -1573,23 +1697,50 @@ class SQLTranspiler(ASTTemplate):
     def _visit_substr(
         self, operand: AST.AST, operand_sql: str, operand_type: str, params: List[str]
     ) -> str:
-        """Handle SUBSTR operation."""
+        """
+        Handle SUBSTR operation.
+
+        VTL: substr(operand, start, length)
+        - start defaults to 1 if omitted (_) or NULL
+        - length is optional (if omitted/NULL, returns rest of string)
+        """
+        # Get start parameter with NULL handling
         start = params[0] if len(params) > 0 else "1"
+        # If start is literal NULL or _, use default 1
+        # Otherwise wrap in COALESCE for runtime NULL handling
+        start_sql = "1" if start in ("NULL", "1") else f"COALESCE({start}, 1)"
+
+        # Get length parameter with NULL handling
         length = params[1] if len(params) > 1 else None
+        # If length is literal NULL or _, omit it
+        if length == "NULL":
+            length = None
+
         if operand_type == OperandType.DATASET:
             if length:
-                return self._param_dataset(operand, f"SUBSTR({{m}}, {start}, {length})")
-            return self._param_dataset(operand, f"SUBSTR({{m}}, {start})")
+                # Use COALESCE for runtime NULL in length, default to rest of string
+                len_sql = f"COALESCE({length}, LENGTH({{m}}))"
+                return self._param_dataset(operand, f"SUBSTR({{m}}, {start_sql}, {len_sql})")
+            return self._param_dataset(operand, f"SUBSTR({{m}}, {start_sql})")
         if length:
-            return f"SUBSTR({operand_sql}, {start}, {length})"
-        return f"SUBSTR({operand_sql}, {start})"
+            # Use COALESCE for runtime NULL in length
+            len_sql = f"COALESCE({length}, LENGTH({operand_sql}))"
+            return f"SUBSTR({operand_sql}, {start_sql}, {len_sql})"
+        return f"SUBSTR({operand_sql}, {start_sql})"
 
     def _visit_replace(
         self, operand: AST.AST, operand_sql: str, operand_type: str, params: List[str]
     ) -> str:
-        """Handle REPLACE operation."""
+        """
+        Handle REPLACE operation.
+
+        VTL: replace(str, pattern, replacement)
+        - If replacement is NULL, replace with empty string
+        """
         pattern = params[0] if len(params) > 0 else "''"
         replacement = params[1] if len(params) > 1 else "''"
+        # VTL: null replacement means replace with empty string
+        replacement = "''" if replacement == "NULL" else f"COALESCE({replacement}, '')"
         if operand_type == OperandType.DATASET:
             return self._param_dataset(operand, f"REPLACE({{m}}, {pattern}, {replacement})")
         return f"REPLACE({operand_sql}, {pattern}, {replacement})"
