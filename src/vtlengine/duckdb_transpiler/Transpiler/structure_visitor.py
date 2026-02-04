@@ -276,3 +276,78 @@ class StructureVisitor(ASTTemplate):
 
         # For other unary ops, return the base structure
         return base_ds
+
+    def visit_ParamOp(self, node: AST.ParamOp) -> Optional[Dataset]:
+        """
+        Get structure for a parameterized operation.
+
+        Handles:
+        - CAST: Returns structure with updated measure data types
+
+        Args:
+            node: The ParamOp node.
+
+        Returns:
+            The Dataset structure if computable, None otherwise.
+        """
+        from vtlengine.AST.Grammar.tokens import CAST
+        from vtlengine.DataTypes import (
+            Boolean,
+            Date,
+            Duration,
+            Integer,
+            Number,
+            String,
+            TimeInterval,
+            TimePeriod,
+        )
+
+        op_lower = str(node.op).lower()
+
+        if op_lower == CAST and node.children:
+            base_ds = self.visit(node.children[0])
+            if base_ds and len(node.children) >= 2:
+                # Get target type from second child
+                target_type_node = node.children[1]
+                if hasattr(target_type_node, "value"):
+                    target_type = target_type_node.value
+                elif hasattr(target_type_node, "__name__"):
+                    target_type = target_type_node.__name__
+                else:
+                    target_type = str(target_type_node)
+
+                # Map VTL type name to DataType class
+                type_map = {
+                    "Integer": Integer,
+                    "Number": Number,
+                    "String": String,
+                    "Boolean": Boolean,
+                    "Date": Date,
+                    "TimePeriod": TimePeriod,
+                    "TimeInterval": TimeInterval,
+                    "Duration": Duration,
+                }
+                new_data_type = type_map.get(target_type)
+
+                if new_data_type:
+                    # Build new structure with updated measure types
+                    new_components: Dict[str, Component] = {}
+                    for name, comp in base_ds.components.items():
+                        if comp.role == Role.IDENTIFIER:
+                            new_components[name] = comp
+                        else:
+                            # Update measure data type
+                            new_components[name] = Component(
+                                name=name,
+                                data_type=new_data_type,
+                                role=comp.role,
+                                nullable=comp.nullable,
+                            )
+                    return Dataset(name=base_ds.name, components=new_components, data=None)
+            return base_ds
+
+        # For other ParamOps, return first child's structure if available
+        if node.children:
+            return self.visit(node.children[0])
+
+        return None

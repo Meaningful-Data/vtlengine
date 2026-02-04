@@ -2,9 +2,9 @@
 
 from typing import Any, Dict, List
 
-from vtlengine.AST import BinOp, Identifier, UnaryOp, VarID
+from vtlengine.AST import BinOp, Identifier, ParamOp, UnaryOp, VarID
 from vtlengine.AST.Grammar.tokens import MEMBERSHIP
-from vtlengine.DataTypes import Boolean, Number, String
+from vtlengine.DataTypes import Boolean, Integer, Number, String
 from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import StructureVisitor
 from vtlengine.Model import Component, Dataset, Role
 
@@ -273,3 +273,30 @@ class TestStructureVisitorUnaryOp:
         assert result is not None
         assert "Id_1" in result.components
         assert "Me_1" in result.components
+
+
+class TestStructureVisitorParamOp:
+    """Test ParamOp structure computation."""
+
+    def test_visit_paramop_cast_updates_measure_types(self):
+        """Test that cast updates measure data types."""
+        ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
+        visitor = StructureVisitor(available_tables={"DS_1": ds}, output_datasets={})
+
+        cast_op = ParamOp(
+            **make_ast_node(
+                op="cast",
+                children=[
+                    VarID(**make_ast_node(value="DS_1")),
+                    Identifier(**make_ast_node(value="Integer", kind="ScalarTypeConstraint")),
+                ],
+                params=[],
+            )
+        )
+
+        result = visitor.visit(cast_op)
+
+        assert result is not None
+        assert "Id_1" in result.components
+        assert "Me_1" in result.components
+        assert result.components["Me_1"].data_type == Integer
