@@ -113,6 +113,7 @@ from vtlengine.AST.Grammar.tokens import (
     YEAR,
     YEARTODAY,
 )
+from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import StructureVisitor
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 
 # =============================================================================
@@ -287,192 +288,26 @@ class SQLTranspiler(ASTTemplate):
     # Datapoint rulesets
     dprs: Dict[str, Dict[str, Any]] = field(default_factory=dict)
 
-    # Structure tracking: maps AST node id -> computed Dataset structure
-    structure_context: Dict[int, Dataset] = field(default_factory=dict)
+    # Structure visitor for computing Dataset structures (initialized in __post_init__)
+    structure_visitor: StructureVisitor = field(init=False)
 
     def __post_init__(self) -> None:
-        """Initialize available tables with input datasets."""
+        """Initialize available tables and structure visitor."""
         # Start with input datasets as available tables
         self.available_tables = dict(self.input_datasets)
+        self.structure_visitor = StructureVisitor(
+            available_tables=self.available_tables,
+            output_datasets=self.output_datasets,
+            udos=self.udos,
+        )
 
     # =========================================================================
     # Structure Tracking Methods
     # =========================================================================
 
     def get_structure(self, node: AST.AST) -> Optional[Dataset]:
-        """
-        Get computed structure for a node, or look up in available_tables/output_datasets.
-
-        Args:
-            node: The AST node to get structure for.
-
-        Returns:
-            The Dataset structure if found, None otherwise.
-        """
-        if id(node) in self.structure_context:
-            return self.structure_context[id(node)]
-        if isinstance(node, AST.VarID):
-            # First check available_tables directly
-            if node.value in self.available_tables:
-                return self.available_tables[node.value]
-            # Then check output_datasets (for intermediate results)
-            if node.value in self.output_datasets:
-                return self.output_datasets[node.value]
-            # Then check if it's a UDO parameter reference
-            udo_value = self.get_udo_param(node.value)
-            if udo_value is not None:
-                if isinstance(udo_value, AST.AST):
-                    return self.get_structure(udo_value)
-                if isinstance(udo_value, Dataset):
-                    return udo_value
-        elif isinstance(node, AST.Aggregation):
-            # For aggregations, compute output structure accounting for grouping
-            if node.operand:
-                base_ds = self.get_structure(node.operand)
-                if base_ds:
-                    return self._get_aggregation_output_structure(node, base_ds)
-            return None
-        elif isinstance(node, AST.RegularAggregation):
-            # For regular aggregations (clauses), compute the transformed structure
-            # First get the base dataset structure
-            base_ds = None
-            if node.dataset:
-                base_ds = self.get_structure(node.dataset)
-            if base_ds:
-                # Apply the clause transformation to get the output structure
-                return self._get_transformed_dataset(base_ds, node)
-            return None
-        elif isinstance(node, AST.BinOp):
-            # For binary operations, handle different cases
-            from vtlengine.AST.Grammar.tokens import MEMBERSHIP
-
-            op_lower = str(node.op).lower()
-
-            if op_lower == MEMBERSHIP:
-                # For membership (#), return a dataset with only the extracted component
-                base_ds = self.get_structure(node.left)
-                if base_ds:
-                    comp_name = (
-                        node.right.value if hasattr(node.right, "value") else str(node.right)
-                    )
-                    # Build a new dataset with only identifiers and the extracted component
-                    new_components = {}
-                    for name, comp in base_ds.components.items():
-                        if comp.role == Role.IDENTIFIER:
-                            new_components[name] = comp
-                    # Add the extracted component as a measure
-                    if comp_name in base_ds.components:
-                        orig_comp = base_ds.components[comp_name]
-                        new_components[comp_name] = Component(
-                            name=comp_name,
-                            data_type=orig_comp.data_type,
-                            role=Role.MEASURE,
-                            nullable=orig_comp.nullable,
-                        )
-                    return Dataset(name=base_ds.name, components=new_components, data=None)
-                return None
-            if op_lower == "as":
-                # Alias operator: same structure as left operand, just different name
-                return self.get_structure(node.left)
-            # For other binary operations, get the left operand's structure
-            if node.left:
-                return self.get_structure(node.left)
-        elif isinstance(node, AST.UnaryOp):
-            # For unary operations, handle output structure transformations
-            from vtlengine.AST.Grammar.tokens import ISNULL
-            from vtlengine.DataTypes import Boolean
-
-            op = str(node.op).lower()
-            base_ds = self.get_structure(node.operand) if node.operand else None
-
-            if base_ds is None:
-                return None
-
-            if op == ISNULL:
-                # isnull produces bool_var as output (single measure)
-                new_components = {}
-                for name, comp in base_ds.components.items():
-                    if comp.role == Role.IDENTIFIER:
-                        new_components[name] = comp
-                # Add bool_var as the output measure
-                new_components["bool_var"] = Component(
-                    name="bool_var",
-                    data_type=Boolean,
-                    role=Role.MEASURE,
-                    nullable=False,
-                )
-                return Dataset(name=base_ds.name, components=new_components, data=None)
-
-            # For other unary ops, return the base structure
-            return base_ds
-        elif isinstance(node, AST.ParamOp):
-            # For parameterized operations like cast
-            from vtlengine.AST.Grammar.tokens import CAST
-            from vtlengine.DataTypes import (
-                Boolean,
-                Date,
-                Duration,
-                Integer,
-                Number,
-                String,
-                TimeInterval,
-                TimePeriod,
-            )
-
-            op_lower = str(node.op).lower()
-            if op_lower == CAST and node.children:
-                # Cast: same structure, but measures have target data type
-                base_ds = self.get_structure(node.children[0])
-                if base_ds and len(node.children) >= 2:
-                    # Get target type from second child
-                    target_type_node = node.children[1]
-                    if hasattr(target_type_node, "value"):
-                        target_type = target_type_node.value
-                    elif hasattr(target_type_node, "__name__"):
-                        target_type = target_type_node.__name__
-                    else:
-                        target_type = str(target_type_node)
-
-                    # Map VTL type name to DataType class
-                    type_map = {
-                        "Integer": Integer,
-                        "Number": Number,
-                        "String": String,
-                        "Boolean": Boolean,
-                        "Date": Date,
-                        "TimePeriod": TimePeriod,
-                        "TimeInterval": TimeInterval,
-                        "Duration": Duration,
-                    }
-                    new_data_type = type_map.get(target_type)
-
-                    if new_data_type:
-                        # Build new structure with updated measure types
-                        new_components = {}
-                        for name, comp in base_ds.components.items():
-                            if comp.role == Role.IDENTIFIER:
-                                new_components[name] = comp
-                            else:
-                                # Update measure data type
-                                new_components[name] = Component(
-                                    name=name,
-                                    data_type=new_data_type,
-                                    role=comp.role,
-                                    nullable=comp.nullable,
-                                )
-                        return Dataset(name=base_ds.name, components=new_components, data=None)
-                return base_ds
-        elif isinstance(node, AST.JoinOp):
-            # For joins, compute the combined structure from all clauses
-            return self._get_join_output_structure(node)
-        elif isinstance(node, AST.UDOCall):
-            # For UDO calls, get the base dataset and compute output structure
-            ds_name = self._get_dataset_name(node)
-            base_ds = self.available_tables.get(ds_name)
-            if base_ds:
-                return self._get_udo_output_structure(node, base_ds)
-            return None
-        return None
+        """Delegate structure computation to StructureVisitor."""
+        return self.structure_visitor.visit(node)
 
     def set_structure(self, node: AST.AST, dataset: Dataset) -> None:
         """
@@ -482,7 +317,7 @@ class SQLTranspiler(ASTTemplate):
             node: The AST node to store structure for.
             dataset: The computed Dataset structure.
         """
-        self.structure_context[id(node)] = dataset
+        self.structure_visitor.set_structure(node, dataset)
 
     def _validate_structure(
         self,
@@ -631,6 +466,9 @@ class SQLTranspiler(ASTTemplate):
                 self.available_tables[name] = ds
 
         for child in node.children:
+            # Clear structure context before each transformation
+            self.structure_visitor.clear_context()
+
             # Process UDO definitions (these don't generate SQL, just store the definition)
             if isinstance(child, (AST.Operator, AST.DPRuleset)):
                 self.visit(child)
@@ -770,20 +608,23 @@ class SQLTranspiler(ASTTemplate):
                 # Store the AST node directly for proper substitution
                 param_bindings[param["name"]] = param_node
 
-        # Push parameter bindings onto stack
+        # Push parameter bindings onto stack (both transpiler and structure_visitor)
         self.udo_params.append(param_bindings)
+        self.structure_visitor.push_udo_params(param_bindings)
 
         # Visit the UDO expression with a deep copy to avoid modifying the original
         # Parameter resolution happens via get_udo_param() in visit_VarID and _get_operand_type
         expression_copy = deepcopy(operator["expression"])
 
-        # Visit the expression - parameters are resolved via mapping lookup
-        result = self.visit(expression_copy)
-
-        # Pop parameter bindings
-        self.udo_params.pop()
-        if len(self.udo_params) == 0:
-            self.udo_params = None
+        try:
+            # Visit the expression - parameters are resolved via mapping lookup
+            result = self.visit(expression_copy)
+        finally:
+            # Pop parameter bindings (both transpiler and structure_visitor)
+            self.udo_params.pop()
+            if len(self.udo_params) == 0:
+                self.udo_params = None
+            self.structure_visitor.pop_udo_params()
 
         return result
 

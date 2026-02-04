@@ -3485,3 +3485,59 @@ class TestGetStructure:
         assert structure.components["Id_1"].role == Role.IDENTIFIER
         assert structure.components["Id_A"].role == Role.IDENTIFIER
         assert structure.components["Id_B"].role == Role.IDENTIFIER
+
+
+# =============================================================================
+# StructureVisitor Integration Tests
+# =============================================================================
+
+
+class TestStructureVisitorIntegration:
+    """Test StructureVisitor integration with SQLTranspiler."""
+
+    def test_transpiler_uses_structure_visitor(self):
+        """Test that transpiler delegates structure computation to StructureVisitor."""
+        ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
+        transpiler = create_transpiler(input_datasets={"DS_1": ds})
+
+        # Access structure visitor
+        assert transpiler.structure_visitor is not None
+        assert transpiler.structure_visitor.available_tables == transpiler.available_tables
+
+    def test_transpiler_clears_context_between_transformations(self):
+        """Test that transpiler clears structure context after each assignment."""
+        ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
+        output_ds = create_simple_dataset("DS_r", ["Id_1"], ["Me_1"])
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds},
+            output_datasets={"DS_r": output_ds, "DS_r2": output_ds},
+        )
+
+        # Create AST with two assignments
+        ast = Start(
+            **make_ast_node(
+                children=[
+                    Assignment(
+                        **make_ast_node(
+                            left=VarID(**make_ast_node(value="DS_r")),
+                            op=":=",
+                            right=VarID(**make_ast_node(value="DS_1")),
+                        )
+                    ),
+                    Assignment(
+                        **make_ast_node(
+                            left=VarID(**make_ast_node(value="DS_r2")),
+                            op=":=",
+                            right=VarID(**make_ast_node(value="DS_1")),
+                        )
+                    ),
+                ]
+            )
+        )
+
+        # Process - context should be cleared between assignments
+        results = transpiler.transpile(ast)
+        assert len(results) == 2
+
+        # Structure context should be empty after processing
+        assert len(transpiler.structure_visitor._structure_context) == 0
