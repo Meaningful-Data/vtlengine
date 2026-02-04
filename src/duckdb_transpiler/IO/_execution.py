@@ -11,9 +11,9 @@ from typing import Any, Dict, List, Optional
 import duckdb
 import pandas as pd
 
-from duckdb_transpiler.AST.DAG._words import DELETE, GLOBAL, INSERT, PERSISTENT
 from duckdb_transpiler.IO._model import Query
 from duckdb_transpiler.Utils.sql import initialize_time_types
+from vtlengine.AST.DAG._words import DELETE, GLOBAL, INSERT, PERSISTENT
 from vtlengine.Model import Dataset, Scalar
 
 from ._io import load_datapoints_duckdb, register_dataframes, save_datapoints_duckdb
