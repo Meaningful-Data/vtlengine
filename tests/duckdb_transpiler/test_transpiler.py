@@ -613,7 +613,8 @@ class TestUnaryOperations:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = 'SELECT "Id_1", ("Me_1" IS NULL) AS "Me_1" FROM "DS_1"'
+        # For mono-measure datasets, isnull output is renamed to bool_var (VTL semantics)
+        expected_sql = 'SELECT "Id_1", ("Me_1" IS NULL) AS "bool_var" FROM "DS_1"'
         assert_sql_equal(sql, expected_sql)
 
 
@@ -1603,3 +1604,391 @@ class TestTimeAggOperator:
             """CAST(CEIL(MONTH(CAST("my_date" AS DATE)) / 6.0) AS INTEGER))"""
         )
         assert_sql_equal(result, expected_sql)
+
+
+# =============================================================================
+# Structure Computation Tests
+# =============================================================================
+
+
+def create_bool_output_dataset(name: str, id_cols: list) -> Dataset:
+    """Helper to create a Dataset with bool_var measure (comparison result)."""
+    components = {}
+    for col in id_cols:
+        components[col] = Component(
+            name=col, data_type=String, role=Role.IDENTIFIER, nullable=False
+        )
+    components["bool_var"] = Component(
+        name="bool_var", data_type=Boolean, role=Role.MEASURE, nullable=True
+    )
+    return Dataset(name=name, components=components, data=None)
+
+
+class TestStructureComputation:
+    """Tests for structure computation using output_datasets from semantic analysis."""
+
+    @pytest.mark.parametrize(
+        "op,sql_op",
+        [
+            ("=", "="),
+            ("<>", "<>"),
+            (">", ">"),
+            ("<", "<"),
+            (">=", ">="),
+            ("<=", "<="),
+        ],
+    )
+    def test_dataset_dataset_comparison_mono_measure(self, op: str, sql_op: str):
+        """
+        Test dataset-dataset comparison with mono-measure produces bool_var.
+
+        When comparing two datasets with a single measure, the output should have
+        bool_var as the measure name instead of the original measure name.
+        This is determined by the output_datasets from semantic analysis.
+        """
+        ds1 = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
+        ds2 = create_simple_dataset("DS_2", ["Id_1"], ["Me_1"])
+        output_ds = create_bool_output_dataset("DS_r", ["Id_1"])
+
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds1, "DS_2": ds2},
+            output_datasets={"DS_r": output_ds},
+        )
+
+        # Create AST: DS_r := DS_1 op DS_2
+        left = VarID(**make_ast_node(value="DS_1"))
+        right = VarID(**make_ast_node(value="DS_2"))
+        expr = BinOp(**make_ast_node(left=left, op=op, right=right))
+        ast = create_start_with_assignment("DS_r", expr)
+
+        results = transpile_and_get_sql(transpiler, ast)
+
+        assert len(results) == 1
+        name, sql, _ = results[0]
+        assert name == "DS_r"
+
+        # Should output bool_var for mono-measure comparison
+        expected_sql = f'''SELECT a."Id_1", (a."Me_1" {sql_op} b."Me_1") AS "bool_var"
+                          FROM "DS_1" AS a INNER JOIN "DS_2" AS b ON a."Id_1" = b."Id_1"'''
+        assert_sql_equal(sql, expected_sql)
+
+    @pytest.mark.parametrize(
+        "op,sql_op",
+        [
+            ("=", "="),
+            (">", ">"),
+        ],
+    )
+    def test_dataset_dataset_comparison_multi_measure(self, op: str, sql_op: str):
+        """
+        Test dataset-dataset comparison with multiple measures keeps measure names.
+
+        When comparing datasets with multiple measures, each measure produces
+        a boolean result with the same measure name.
+        """
+        ds1 = create_simple_dataset("DS_1", ["Id_1"], ["Me_1", "Me_2"])
+        ds2 = create_simple_dataset("DS_2", ["Id_1"], ["Me_1", "Me_2"])
+        # Multi-measure comparison keeps original measure names
+        output_ds = create_simple_dataset("DS_r", ["Id_1"], ["Me_1", "Me_2"])
+
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds1, "DS_2": ds2},
+            output_datasets={"DS_r": output_ds},
+        )
+
+        # Create AST: DS_r := DS_1 op DS_2
+        left = VarID(**make_ast_node(value="DS_1"))
+        right = VarID(**make_ast_node(value="DS_2"))
+        expr = BinOp(**make_ast_node(left=left, op=op, right=right))
+        ast = create_start_with_assignment("DS_r", expr)
+
+        results = transpile_and_get_sql(transpiler, ast)
+
+        assert len(results) == 1
+        name, sql, _ = results[0]
+        assert name == "DS_r"
+
+        # Should keep original measure names for multi-measure comparison
+        expected_sql = f'''SELECT a."Id_1", (a."Me_1" {sql_op} b."Me_1") AS "Me_1",
+                          (a."Me_2" {sql_op} b."Me_2") AS "Me_2"
+                          FROM "DS_1" AS a INNER JOIN "DS_2" AS b ON a."Id_1" = b."Id_1"'''
+        assert_sql_equal(sql, expected_sql)
+
+    @pytest.mark.parametrize(
+        "op,sql_op",
+        [
+            ("=", "="),
+            ("<>", "<>"),
+            (">", ">"),
+            ("<", "<"),
+        ],
+    )
+    def test_dataset_scalar_comparison_mono_measure(self, op: str, sql_op: str):
+        """
+        Test dataset-scalar comparison with mono-measure produces bool_var.
+        """
+        ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
+        output_ds = create_bool_output_dataset("DS_r", ["Id_1"])
+
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds},
+            output_datasets={"DS_r": output_ds},
+        )
+
+        # Create AST: DS_r := DS_1 op 10
+        left = VarID(**make_ast_node(value="DS_1"))
+        right = Constant(**make_ast_node(type_="INTEGER_CONSTANT", value=10))
+        expr = BinOp(**make_ast_node(left=left, op=op, right=right))
+        ast = create_start_with_assignment("DS_r", expr)
+
+        results = transpile_and_get_sql(transpiler, ast)
+
+        assert len(results) == 1
+        name, sql, _ = results[0]
+        assert name == "DS_r"
+
+        # Should output bool_var for mono-measure comparison
+        expected_sql = f'SELECT "Id_1", ("Me_1" {sql_op} 10) AS "bool_var" FROM "DS_1"'
+        assert_sql_equal(sql, expected_sql)
+
+    def test_dataset_scalar_comparison_multi_measure(self):
+        """
+        Test dataset-scalar comparison with multi-measure keeps measure names.
+        """
+        ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1", "Me_2"])
+        output_ds = create_simple_dataset("DS_r", ["Id_1"], ["Me_1", "Me_2"])
+
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds},
+            output_datasets={"DS_r": output_ds},
+        )
+
+        # Create AST: DS_r := DS_1 > 5
+        left = VarID(**make_ast_node(value="DS_1"))
+        right = Constant(**make_ast_node(type_="INTEGER_CONSTANT", value=5))
+        expr = BinOp(**make_ast_node(left=left, op=">", right=right))
+        ast = create_start_with_assignment("DS_r", expr)
+
+        results = transpile_and_get_sql(transpiler, ast)
+
+        assert len(results) == 1
+        name, sql, _ = results[0]
+        assert name == "DS_r"
+
+        # Should keep original measure names for multi-measure comparison
+        expected_sql = 'SELECT "Id_1", ("Me_1" > 5) AS "Me_1", ("Me_2" > 5) AS "Me_2" FROM "DS_1"'
+        assert_sql_equal(sql, expected_sql)
+
+    def test_scalar_dataset_comparison_mono_measure(self):
+        """
+        Test scalar-dataset comparison with mono-measure produces bool_var.
+        """
+        ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
+        output_ds = create_bool_output_dataset("DS_r", ["Id_1"])
+
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds},
+            output_datasets={"DS_r": output_ds},
+        )
+
+        # Create AST: DS_r := 10 > DS_1 (scalar on left)
+        left = Constant(**make_ast_node(type_="INTEGER_CONSTANT", value=10))
+        right = VarID(**make_ast_node(value="DS_1"))
+        expr = BinOp(**make_ast_node(left=left, op=">", right=right))
+        ast = create_start_with_assignment("DS_r", expr)
+
+        results = transpile_and_get_sql(transpiler, ast)
+
+        assert len(results) == 1
+        name, sql, _ = results[0]
+        assert name == "DS_r"
+
+        # Should output bool_var for mono-measure comparison (scalar on left)
+        expected_sql = 'SELECT "Id_1", (10 > "Me_1") AS "bool_var" FROM "DS_1"'
+        assert_sql_equal(sql, expected_sql)
+
+    def test_arithmetic_operation_keeps_measure_names(self):
+        """
+        Test that arithmetic operations keep original measure names.
+
+        Arithmetic operations (+, -, *, /) should preserve the input measure names
+        regardless of whether there's one or multiple measures.
+        """
+        ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
+        output_ds = create_simple_dataset("DS_r", ["Id_1"], ["Me_1"])
+
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds},
+            output_datasets={"DS_r": output_ds},
+        )
+
+        # Create AST: DS_r := DS_1 + 10
+        left = VarID(**make_ast_node(value="DS_1"))
+        right = Constant(**make_ast_node(type_="INTEGER_CONSTANT", value=10))
+        expr = BinOp(**make_ast_node(left=left, op="+", right=right))
+        ast = create_start_with_assignment("DS_r", expr)
+
+        results = transpile_and_get_sql(transpiler, ast)
+
+        assert len(results) == 1
+        name, sql, _ = results[0]
+        assert name == "DS_r"
+
+        # Arithmetic should keep Me_1, not convert to bool_var
+        expected_sql = 'SELECT "Id_1", ("Me_1" + 10) AS "Me_1" FROM "DS_1"'
+        assert_sql_equal(sql, expected_sql)
+
+
+def create_boolean_dataset(name: str, id_cols: list, measure_cols: list) -> Dataset:
+    """Helper to create a Dataset with boolean measures."""
+    components = {}
+    for col in id_cols:
+        components[col] = Component(
+            name=col, data_type=String, role=Role.IDENTIFIER, nullable=False
+        )
+    for col in measure_cols:
+        components[col] = Component(
+            name=col, data_type=Boolean, role=Role.MEASURE, nullable=True
+        )
+    return Dataset(name=name, components=components, data=None)
+
+
+class TestBooleanOperations:
+    """Tests for Boolean operations on datasets."""
+
+    @pytest.mark.parametrize(
+        "op,sql_op",
+        [
+            ("and", "AND"),
+            ("or", "OR"),
+            ("xor", "XOR"),
+        ],
+    )
+    def test_boolean_dataset_dataset_operation(self, op: str, sql_op: str):
+        """
+        Test Boolean operations between two datasets.
+
+        Boolean operations (and, or, xor) between datasets should apply to
+        common measures and preserve measure names.
+        """
+        ds1 = create_boolean_dataset("DS_1", ["Id_1"], ["Me_1"])
+        ds2 = create_boolean_dataset("DS_2", ["Id_1"], ["Me_1"])
+        output_ds = create_boolean_dataset("DS_r", ["Id_1"], ["Me_1"])
+
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds1, "DS_2": ds2},
+            output_datasets={"DS_r": output_ds},
+        )
+
+        # Create AST: DS_r := DS_1 op DS_2
+        left = VarID(**make_ast_node(value="DS_1"))
+        right = VarID(**make_ast_node(value="DS_2"))
+        expr = BinOp(**make_ast_node(left=left, op=op, right=right))
+        ast = create_start_with_assignment("DS_r", expr)
+
+        results = transpile_and_get_sql(transpiler, ast)
+
+        assert len(results) == 1
+        name, sql, _ = results[0]
+        assert name == "DS_r"
+
+        expected_sql = f'''SELECT a."Id_1", (a."Me_1" {sql_op} b."Me_1") AS "Me_1"
+                          FROM "DS_1" AS a INNER JOIN "DS_2" AS b ON a."Id_1" = b."Id_1"'''
+        assert_sql_equal(sql, expected_sql)
+
+    @pytest.mark.parametrize(
+        "op,sql_op",
+        [
+            ("and", "AND"),
+            ("or", "OR"),
+        ],
+    )
+    def test_boolean_dataset_scalar_operation(self, op: str, sql_op: str):
+        """
+        Test Boolean operations between dataset and scalar.
+
+        Boolean operations between a dataset and a boolean scalar should
+        apply to all measures.
+        """
+        ds = create_boolean_dataset("DS_1", ["Id_1"], ["Me_1", "Me_2"])
+        output_ds = create_boolean_dataset("DS_r", ["Id_1"], ["Me_1", "Me_2"])
+
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds},
+            output_datasets={"DS_r": output_ds},
+        )
+
+        # Create AST: DS_r := DS_1 op true
+        left = VarID(**make_ast_node(value="DS_1"))
+        right = Constant(**make_ast_node(type_="BOOLEAN_CONSTANT", value=True))
+        expr = BinOp(**make_ast_node(left=left, op=op, right=right))
+        ast = create_start_with_assignment("DS_r", expr)
+
+        results = transpile_and_get_sql(transpiler, ast)
+
+        assert len(results) == 1
+        name, sql, _ = results[0]
+        assert name == "DS_r"
+
+        expected_sql = f'SELECT "Id_1", ("Me_1" {sql_op} TRUE) AS "Me_1", ("Me_2" {sql_op} TRUE) AS "Me_2" FROM "DS_1"'
+        assert_sql_equal(sql, expected_sql)
+
+    def test_not_dataset_operation(self):
+        """
+        Test NOT unary operation on dataset.
+
+        NOT on a dataset should negate all boolean measures.
+        """
+        ds = create_boolean_dataset("DS_1", ["Id_1"], ["Me_1", "Me_2"])
+        output_ds = create_boolean_dataset("DS_r", ["Id_1"], ["Me_1", "Me_2"])
+
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds},
+            output_datasets={"DS_r": output_ds},
+        )
+
+        # Create AST: DS_r := not DS_1
+        operand = VarID(**make_ast_node(value="DS_1"))
+        expr = UnaryOp(**make_ast_node(op="not", operand=operand))
+        ast = create_start_with_assignment("DS_r", expr)
+
+        results = transpile_and_get_sql(transpiler, ast)
+
+        assert len(results) == 1
+        name, sql, _ = results[0]
+        assert name == "DS_r"
+
+        expected_sql = 'SELECT "Id_1", NOT("Me_1") AS "Me_1", NOT("Me_2") AS "Me_2" FROM "DS_1"'
+        assert_sql_equal(sql, expected_sql)
+
+    def test_boolean_dataset_multi_measure(self):
+        """
+        Test Boolean operation on dataset with multiple measures.
+
+        Boolean operation should apply to all common measures.
+        """
+        ds1 = create_boolean_dataset("DS_1", ["Id_1"], ["Me_1", "Me_2"])
+        ds2 = create_boolean_dataset("DS_2", ["Id_1"], ["Me_1", "Me_2"])
+        output_ds = create_boolean_dataset("DS_r", ["Id_1"], ["Me_1", "Me_2"])
+
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds1, "DS_2": ds2},
+            output_datasets={"DS_r": output_ds},
+        )
+
+        # Create AST: DS_r := DS_1 and DS_2
+        left = VarID(**make_ast_node(value="DS_1"))
+        right = VarID(**make_ast_node(value="DS_2"))
+        expr = BinOp(**make_ast_node(left=left, op="and", right=right))
+        ast = create_start_with_assignment("DS_r", expr)
+
+        results = transpile_and_get_sql(transpiler, ast)
+
+        assert len(results) == 1
+        name, sql, _ = results[0]
+        assert name == "DS_r"
+
+        expected_sql = '''SELECT a."Id_1", (a."Me_1" AND b."Me_1") AS "Me_1",
+                          (a."Me_2" AND b."Me_2") AS "Me_2"
+                          FROM "DS_1" AS a INNER JOIN "DS_2" AS b ON a."Id_1" = b."Id_1"'''
+        assert_sql_equal(sql, expected_sql)

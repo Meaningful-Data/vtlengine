@@ -287,10 +287,96 @@ class SQLTranspiler(ASTTemplate):
     # Datapoint rulesets
     dprs: Dict[str, Dict[str, Any]] = field(default_factory=dict)
 
+    # Structure tracking: maps AST node id -> computed Dataset structure
+    structure_context: Dict[int, Dataset] = field(default_factory=dict)
+
     def __post_init__(self) -> None:
         """Initialize available tables with input datasets."""
         # Start with input datasets as available tables
         self.available_tables = dict(self.input_datasets)
+
+    # =========================================================================
+    # Structure Tracking Methods
+    # =========================================================================
+
+    def get_structure(self, node: AST.AST) -> Optional[Dataset]:
+        """
+        Get computed structure for a node, or look up in available_tables.
+
+        Args:
+            node: The AST node to get structure for.
+
+        Returns:
+            The Dataset structure if found, None otherwise.
+        """
+        if id(node) in self.structure_context:
+            return self.structure_context[id(node)]
+        if isinstance(node, AST.VarID) and node.value in self.available_tables:
+            return self.available_tables[node.value]
+        return None
+
+    def set_structure(self, node: AST.AST, dataset: Dataset) -> None:
+        """
+        Store computed structure for a node.
+
+        Args:
+            node: The AST node to store structure for.
+            dataset: The computed Dataset structure.
+        """
+        self.structure_context[id(node)] = dataset
+
+    def _validate_structure(
+        self,
+        computed: Dataset,
+        expected: Dataset,
+        operator_name: str,
+    ) -> None:
+        """
+        Validate computed structure matches semantic analysis.
+
+        Args:
+            computed: The structure computed by the transpiler.
+            expected: The structure from semantic analysis.
+            operator_name: Name of the operator for error messages.
+
+        Raises:
+            ValueError: If structures don't match.
+        """
+        computed_ids = set(computed.get_identifiers_names())
+        expected_ids = set(expected.get_identifiers_names())
+        computed_measures = set(computed.get_measures_names())
+        expected_measures = set(expected.get_measures_names())
+
+        if computed_ids != expected_ids:
+            raise ValueError(
+                f"{operator_name}: identifier mismatch. "
+                f"Computed: {computed_ids}, Expected: {expected_ids}"
+            )
+
+        if computed_measures != expected_measures:
+            raise ValueError(
+                f"{operator_name}: measure mismatch. "
+                f"Computed: {computed_measures}, Expected: {expected_measures}"
+            )
+
+    def get_udo_param(self, name: str) -> Optional[Any]:
+        """
+        Look up a UDO parameter by name from the current scope.
+
+        Searches from innermost scope outward through the UDO parameter stack.
+
+        Args:
+            name: The parameter name to look up.
+
+        Returns:
+            The bound value (AST node, string, or Scalar) if found, None otherwise.
+        """
+        if self.udo_params is None:
+            return None
+        for scope in reversed(self.udo_params):
+            if name in scope:
+                return scope[name]
+        return None
 
     def transpile(self, ast: AST.Start) -> List[Tuple[str, str, bool]]:
         """
@@ -620,6 +706,20 @@ class SQLTranspiler(ASTTemplate):
         Returns table reference, column reference, or scalar value depending on context.
         """
         name = node.value
+
+        # Check if this is a UDO parameter reference (mapping lookup approach)
+        udo_value = self.get_udo_param(name)
+        if udo_value is not None:
+            # If bound to another AST node, visit it
+            if isinstance(udo_value, AST.AST):
+                return self.visit(udo_value)
+            # If bound to a string (dataset/component name), return it quoted
+            if isinstance(udo_value, str):
+                return f'"{udo_value}"'
+            # If bound to a Scalar, return its SQL representation
+            if isinstance(udo_value, Scalar):
+                return self._scalar_to_sql(udo_value)
+            return str(udo_value)
 
         # In clause context: it's a component (column) reference
         if self.in_clause and self.current_dataset and name in self.current_dataset.components:
@@ -952,11 +1052,12 @@ class SQLTranspiler(ASTTemplate):
         VTL: DS#comp - extracts component 'comp' from dataset 'DS'
         Returns a dataset with identifiers and the specified component as measure.
 
+        Uses structure tracking to get dataset structure.
+
         SQL: SELECT identifiers, "comp" FROM "DS"
         """
-        # Get dataset from left operand
-        ds_name = self._get_dataset_name(node.left)
-        ds = self.available_tables.get(ds_name)
+        # Get structure using structure tracking
+        ds = self.get_structure(node.left)
 
         if not ds:
             # Fallback: just reference the component
@@ -983,15 +1084,12 @@ class SQLTranspiler(ASTTemplate):
         """
         Generate SQL for Dataset-Dataset binary operation.
 
+        Uses structure tracking: visits children first (storing their structures),
+        then uses get_structure() to retrieve them for SQL generation.
+
         Joins on common identifiers, applies operation to common measures.
         """
-        left_name = self._get_dataset_name(left_node)
-        right_name = self._get_dataset_name(right_node)
-
-        left_ds = self.available_tables.get(left_name)
-        right_ds = self.available_tables.get(right_name)
-
-        # Get SQL for operands - use direct table refs for VarID, wrapped subqueries otherwise
+        # Step 1: Generate SQL for operands (this also stores their structures)
         if isinstance(left_node, AST.VarID):
             left_sql = f'"{left_node.value}"'
         else:
@@ -1002,147 +1100,62 @@ class SQLTranspiler(ASTTemplate):
         else:
             right_sql = f"({self.visit(right_node)})"
 
-        # For complex expressions (not simple VarIDs), we need to infer the structure
-        # from the current result's output structure or use a fallback
-        is_complex_left = not isinstance(left_node, AST.VarID)
-        is_complex_right = not isinstance(right_node, AST.VarID)
+        # Step 2: Get structures using structure tracking
+        # (get_structure already handles VarID -> available_tables fallback)
+        left_ds = self.get_structure(left_node)
+        right_ds = self.get_structure(right_node)
 
-        # Try to get expected output structure from semantic analysis
-        if (is_complex_left or is_complex_right) and self.current_result_name:
-            output_ds = self.output_datasets.get(self.current_result_name)
-            if output_ds:
-                # For complex expressions (e.g., with subspace, calc), compute the actual
-                # transformed structure to get the correct identifiers and measures
-                left_transformed = None
-                right_transformed = None
+        if left_ds is None or right_ds is None:
+            left_name = self._get_dataset_name(left_node)
+            right_name = self._get_dataset_name(right_node)
+            raise ValueError(f"Cannot resolve dataset structures for {left_name} and {right_name}")
 
-                if is_complex_left and left_ds and isinstance(left_node, AST.RegularAggregation):
-                    left_transformed = self._get_transformed_dataset(left_ds, left_node)
-                    left_base_ids = set(left_transformed.get_identifiers_names())
-                    left_measures = set(left_transformed.get_measures_names())
-                else:
-                    left_base_ids = set(left_ds.get_identifiers_names()) if left_ds else set()
-                    left_measures = set(left_ds.get_measures_names()) if left_ds else set()
+        # Step 3: Get output structure from semantic analysis
+        output_ds = None
+        if self.current_result_name and self.current_result_name in self.output_datasets:
+            output_ds = self.output_datasets[self.current_result_name]
 
-                if is_complex_right and right_ds and isinstance(right_node, AST.RegularAggregation):
-                    right_transformed = self._get_transformed_dataset(right_ds, right_node)
-                    right_base_ids = set(right_transformed.get_identifiers_names())
-                    right_measures = set(right_transformed.get_measures_names())
-                else:
-                    right_base_ids = set(right_ds.get_identifiers_names()) if right_ds else set()
-                    right_measures = set(right_ds.get_measures_names()) if right_ds else set()
+        # Step 4: Generate SQL using the structures
+        left_ids = set(left_ds.get_identifiers_names())
+        right_ids = set(right_ds.get_identifiers_names())
+        join_keys = sorted(left_ids.intersection(right_ids))
 
-                common_ids = sorted(left_base_ids.intersection(right_base_ids))
-                common_measures = sorted(left_measures.intersection(right_measures))
+        if not join_keys:
+            left_name = self._get_dataset_name(left_node)
+            right_name = self._get_dataset_name(right_node)
+            raise ValueError(f"No common identifiers between {left_name} and {right_name}")
 
-                # Use output structure to infer measures
-                output_ids = list(output_ds.get_identifiers_names())
-                output_measures = list(output_ds.get_measures_names())
+        # Build JOIN condition
+        join_cond = " AND ".join([f'a."{k}" = b."{k}"' for k in join_keys])
 
-                # Filter out system columns added by check operations
-                output_measures = [
-                    m
-                    for m in output_measures
-                    if m not in ("bool_var", "errorcode", "errorlevel", "imbalance", "ruleid")
-                ]
+        # SELECT identifiers (from left)
+        id_select = ", ".join([f'a."{k}"' for k in left_ds.get_identifiers_names()])
 
-                # If we couldn't determine common identifiers from base datasets,
-                # use only identifiers that exist in both after transformations
-                # For simplicity, use all common base identifiers for the join condition
-                if common_ids:
-                    join_cond = " AND ".join([f'a."{k}" = b."{k}"' for k in common_ids])
-                    # Select identifiers from left subquery
-                    id_select = ", ".join([f'a."{k}"' for k in common_ids])
-                    # Also select any additional identifiers from right that aren't in left
-                    extra_right_ids = sorted(right_base_ids - left_base_ids)
-                    if extra_right_ids:
-                        extra_select = ", ".join([f'b."{k}"' for k in extra_right_ids])
-                        id_select = f"{id_select}, {extra_select}"
-                else:
-                    # Fallback to using output identifiers (may fail for some cases)
-                    join_cond = " AND ".join([f'a."{k}" = b."{k}"' for k in output_ids])
-                    id_select = ", ".join([f'a."{k}"' for k in output_ids])
+        # Find source measures (what we're operating on)
+        left_measures = set(left_ds.get_measures_names())
+        right_measures = set(right_ds.get_measures_names())
+        common_measures = sorted(left_measures.intersection(right_measures))
 
-                # Check if this is a comparison operation
-                comparison_ops = {"=", "<>", ">", "<", ">=", "<="}
-                is_comparison = sql_op in comparison_ops
+        # Check if output has bool_var (comparison result)
+        # Use output_datasets from semantic analysis to determine output measure names
+        output_measures = list(output_ds.get_measures_names()) if output_ds else []
+        has_bool_var = "bool_var" in output_measures
 
-                # Use common measures from transformed datasets if output_measures is empty
-                measures_to_use = output_measures if output_measures else common_measures
+        if has_bool_var and common_measures:
+            # Single measure comparison -> bool_var
+            m = common_measures[0]
+            measure_select = f'(a."{m}" {sql_op} b."{m}") AS "bool_var"'
+        else:
+            # Regular operation on measures
+            measure_select = ", ".join(
+                [f'(a."{m}" {sql_op} b."{m}") AS "{m}"' for m in common_measures]
+            )
 
-                # For complex expressions with a single measure, use that measure
-                if len(measures_to_use) == 1 and is_comparison:
-                    m = measures_to_use[0]
-                    measure_select = f'(a."{m}" {sql_op} b."{m}") AS "bool_var"'
-                elif measures_to_use:
-                    if is_comparison:
-                        # For comparison with multiple measures, compare each and name as bool_var
-                        # (typically there's only one measure in this case)
-                        measure_select = ", ".join(
-                            [
-                                f'(a."{m}" {sql_op} b."{m}") AS "bool_var"'
-                                for m in measures_to_use[:1]
-                            ]
-                        )
-                    else:
-                        measure_select = ", ".join(
-                            [f'(a."{m}" {sql_op} b."{m}") AS "{m}"' for m in measures_to_use]
-                        )
-                else:
-                    # Last resort: assume 'obs' if no measures found
-                    if is_comparison:
-                        measure_select = '(a."obs" <> b."obs") AS "bool_var"'
-                    else:
-                        measure_select = '(a."obs" <> b."obs") AS "obs"'
-
-                return f"""
+        return f"""
                     SELECT {id_select}, {measure_select}
                     FROM {left_sql} AS a
                     INNER JOIN {right_sql} AS b ON {join_cond}
                 """
-
-        # Simple case: both operands are direct table references
-        if left_ds and right_ds:
-            # Find common identifiers for JOIN
-            left_ids = set(left_ds.get_identifiers_names())
-            right_ids = set(right_ds.get_identifiers_names())
-            join_keys = sorted(left_ids.intersection(right_ids))
-
-            if not join_keys:
-                raise ValueError(f"No common identifiers between {left_name} and {right_name}")
-
-            # Build JOIN condition
-            join_cond = " AND ".join([f'a."{k}" = b."{k}"' for k in join_keys])
-
-            # SELECT identifiers (from left)
-            id_select = ", ".join([f'a."{k}"' for k in left_ds.get_identifiers_names()])
-
-            # SELECT measures with operation
-            left_measures = set(left_ds.get_measures_names())
-            right_measures = set(right_ds.get_measures_names())
-            common_measures = sorted(left_measures.intersection(right_measures))
-
-            # Check if this is a comparison operation that should rename to bool_var
-            comparison_ops = {"=", "<>", ">", "<", ">=", "<="}
-            is_comparison = sql_op in comparison_ops
-            is_mono_measure = len(common_measures) == 1
-
-            if is_comparison and is_mono_measure:
-                # Rename single measure to bool_var for comparisons
-                m = common_measures[0]
-                measure_select = f'(a."{m}" {sql_op} b."{m}") AS "bool_var"'
-            else:
-                measure_select = ", ".join(
-                    [f'(a."{m}" {sql_op} b."{m}") AS "{m}"' for m in common_measures]
-                )
-
-            return f"""
-                    SELECT {id_select}, {measure_select}
-                    FROM {left_sql} AS a
-                    INNER JOIN {right_sql} AS b ON {join_cond}
-                """
-
-        raise ValueError(f"Cannot resolve dataset structures for {left_name} and {right_name}")
 
     def _binop_dataset_scalar(
         self,
@@ -1154,69 +1167,59 @@ class SQLTranspiler(ASTTemplate):
         """
         Generate SQL for Dataset-Scalar binary operation.
 
+        Uses structure tracking to get dataset structure.
         Applies scalar to all measures.
         """
-        ds_name = self._get_dataset_name(dataset_node)
-        base_ds = self.available_tables[ds_name]
         scalar_sql = self.visit(scalar_node)
 
-        # Get transformed structure for complex expressions
-        if isinstance(dataset_node, AST.BinOp) and str(dataset_node.op).lower() == MEMBERSHIP:
-            # Membership extracts single component
-            comp_name = (
-                dataset_node.right.value
-                if hasattr(dataset_node.right, "value")
-                else str(dataset_node.right)
-            )
-            id_cols = list(base_ds.get_identifiers_names())
-            measure_names = [comp_name]
-        elif isinstance(dataset_node, AST.RegularAggregation):
-            transformed = self._get_transformed_dataset(base_ds, dataset_node)
-            id_cols = list(transformed.get_identifiers_names())
-            measure_names = list(transformed.get_measures_names())
-        elif isinstance(dataset_node, AST.JoinOp):
-            join_ds = self._get_join_output_structure(dataset_node)
-            if join_ds:
-                id_cols = list(join_ds.get_identifiers_names())
-                measure_names = list(join_ds.get_measures_names())
-            else:
-                id_cols = list(base_ds.get_identifiers_names())
-                measure_names = list(base_ds.get_measures_names())
+        # Step 1: Generate SQL for dataset (this also stores its structure)
+        if isinstance(dataset_node, AST.VarID):
+            ds_sql = f'"{dataset_node.value}"'
         else:
-            id_cols = list(base_ds.get_identifiers_names())
-            measure_names = list(base_ds.get_measures_names())
+            ds_sql = f"({self.visit(dataset_node)})"
+
+        # Step 2: Get structure using structure tracking
+        # (get_structure already handles VarID -> available_tables fallback)
+        ds = self.get_structure(dataset_node)
+
+        if ds is None:
+            ds_name = self._get_dataset_name(dataset_node)
+            raise ValueError(f"Cannot resolve dataset structure for {ds_name}")
+
+        # Step 3: Get output structure from semantic analysis
+        output_ds = None
+        if self.current_result_name and self.current_result_name in self.output_datasets:
+            output_ds = self.output_datasets[self.current_result_name]
+
+        # Step 4: Generate SQL using the structures
+        id_cols = list(ds.get_identifiers_names())
+        measure_names = list(ds.get_measures_names())
 
         # SELECT identifiers
         id_select = ", ".join([f'"{k}"' for k in id_cols])
 
-        # Check if this is a comparison operation that should rename to bool_var
-        comparison_ops = {"=", "<>", ">", "<", ">=", "<="}
-        is_comparison = sql_op in comparison_ops
-        is_mono_measure = len(measure_names) == 1
+        # Check if output has bool_var (comparison result)
+        # Use output_datasets from semantic analysis to determine output measure names
+        output_measures = list(output_ds.get_measures_names()) if output_ds else []
+        has_bool_var = "bool_var" in output_measures
 
         # SELECT measures with operation
         if left:
-            if is_comparison and is_mono_measure:
-                # Rename single measure to bool_var for comparisons
+            if has_bool_var and measure_names:
+                # Single measure comparison -> bool_var
                 measure_select = f'("{measure_names[0]}" {sql_op} {scalar_sql}) AS "bool_var"'
             else:
                 measure_select = ", ".join(
                     [f'("{m}" {sql_op} {scalar_sql}) AS "{m}"' for m in measure_names]
                 )
         else:
-            if is_comparison and is_mono_measure:
-                # Rename single measure to bool_var for comparisons
+            if has_bool_var and measure_names:
+                # Single measure comparison -> bool_var
                 measure_select = f'({scalar_sql} {sql_op} "{measure_names[0]}") AS "bool_var"'
             else:
                 measure_select = ", ".join(
                     [f'({scalar_sql} {sql_op} "{m}") AS "{m}"' for m in measure_names]
                 )
-
-        # Get SQL for dataset - use direct table ref for VarID, wrapped subquery otherwise
-        if isinstance(dataset_node, AST.VarID):
-            ds_sql = f'"{dataset_node.value}"'
-        else:
-            ds_sql = f"({self.visit(dataset_node)})"
 
         return f"SELECT {id_select}, {measure_select} FROM {ds_sql}"
 
@@ -1387,60 +1390,21 @@ class SQLTranspiler(ASTTemplate):
             return f"{sql_op}({operand_sql})"
 
     def _unary_dataset(self, dataset_node: AST.AST, sql_op: str, op: str) -> str:
-        """Generate SQL for dataset unary operation."""
-        ds_name = self._get_dataset_name(dataset_node)
-        base_ds = self.available_tables[ds_name]
+        """
+        Generate SQL for dataset unary operation.
 
-        # Get transformed structure for complex expressions
-        if isinstance(dataset_node, AST.UnaryOp):
-            # For nested unary ops (like NOT(isnull(...))), the inner operation
-            # may have transformed the structure - use the inner operand's measures
-            inner_op = str(dataset_node.op).lower()
-            inner_operand = dataset_node.operand
-            # If inner operation is ISNULL, it produces bool_var as output
-            if inner_op == ISNULL:
-                id_cols = list(base_ds.get_identifiers_names())
-                input_measures = ["bool_var"]
-            elif (
-                isinstance(inner_operand, AST.BinOp) and str(inner_operand.op).lower() == MEMBERSHIP
-            ):
-                comp_name = (
-                    inner_operand.right.value
-                    if hasattr(inner_operand.right, "value")
-                    else str(inner_operand.right)
-                )
-                id_cols = list(base_ds.get_identifiers_names())
-                input_measures = [comp_name]
-            elif isinstance(inner_operand, AST.RegularAggregation):
-                transformed = self._get_transformed_dataset(base_ds, inner_operand)
-                id_cols = list(transformed.get_identifiers_names())
-                input_measures = list(transformed.get_measures_names())
-            else:
-                id_cols = list(base_ds.get_identifiers_names())
-                input_measures = list(base_ds.get_measures_names())
-        elif isinstance(dataset_node, AST.BinOp) and str(dataset_node.op).lower() == MEMBERSHIP:
-            comp_name = (
-                dataset_node.right.value
-                if hasattr(dataset_node.right, "value")
-                else str(dataset_node.right)
-            )
-            id_cols = list(base_ds.get_identifiers_names())
-            input_measures = [comp_name]
-        elif isinstance(dataset_node, AST.RegularAggregation):
-            transformed = self._get_transformed_dataset(base_ds, dataset_node)
-            id_cols = list(transformed.get_identifiers_names())
-            input_measures = list(transformed.get_measures_names())
-        elif isinstance(dataset_node, AST.JoinOp):
-            join_ds = self._get_join_output_structure(dataset_node)
-            if join_ds:
-                id_cols = list(join_ds.get_identifiers_names())
-                input_measures = list(join_ds.get_measures_names())
-            else:
-                id_cols = list(base_ds.get_identifiers_names())
-                input_measures = list(base_ds.get_measures_names())
-        else:
-            id_cols = list(base_ds.get_identifiers_names())
-            input_measures = list(base_ds.get_measures_names())
+        Uses structure tracking to get dataset structure.
+        """
+        # Step 1: Get structure using structure tracking
+        # (get_structure already handles VarID -> available_tables fallback)
+        ds = self.get_structure(dataset_node)
+
+        if ds is None:
+            ds_name = self._get_dataset_name(dataset_node)
+            raise ValueError(f"Cannot resolve dataset structure for {ds_name}")
+
+        id_cols = list(ds.get_identifiers_names())
+        input_measures = list(ds.get_measures_names())
 
         id_select = ", ".join([f'"{k}"' for k in id_cols])
 
@@ -1467,35 +1431,21 @@ class SQLTranspiler(ASTTemplate):
         return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
 
     def _unary_dataset_isnull(self, dataset_node: AST.AST) -> str:
-        """Generate SQL for dataset isnull operation."""
-        ds_name = self._get_dataset_name(dataset_node)
-        base_ds = self.available_tables[ds_name]
+        """
+        Generate SQL for dataset isnull operation.
 
-        # Get transformed structure for complex expressions
-        if isinstance(dataset_node, AST.BinOp) and str(dataset_node.op).lower() == MEMBERSHIP:
-            # Membership extracts a single component - use that as the only measure
-            comp_name = (
-                dataset_node.right.value
-                if hasattr(dataset_node.right, "value")
-                else str(dataset_node.right)
-            )
-            id_cols = list(base_ds.get_identifiers_names())
-            measures = [comp_name]
-        elif isinstance(dataset_node, AST.RegularAggregation):
-            transformed = self._get_transformed_dataset(base_ds, dataset_node)
-            id_cols = list(transformed.get_identifiers_names())
-            measures = list(transformed.get_measures_names())
-        elif isinstance(dataset_node, AST.JoinOp):
-            join_ds = self._get_join_output_structure(dataset_node)
-            if join_ds:
-                id_cols = list(join_ds.get_identifiers_names())
-                measures = list(join_ds.get_measures_names())
-            else:
-                id_cols = list(base_ds.get_identifiers_names())
-                measures = list(base_ds.get_measures_names())
-        else:
-            id_cols = list(base_ds.get_identifiers_names())
-            measures = list(base_ds.get_measures_names())
+        Uses structure tracking to get dataset structure.
+        """
+        # Step 1: Get structure using structure tracking
+        # (get_structure already handles VarID -> available_tables fallback)
+        ds = self.get_structure(dataset_node)
+
+        if ds is None:
+            ds_name = self._get_dataset_name(dataset_node)
+            raise ValueError(f"Cannot resolve dataset structure for {ds_name}")
+
+        id_cols = list(ds.get_identifiers_names())
+        measures = list(ds.get_measures_names())
 
         id_select = ", ".join([f'"{k}"' for k in id_cols])
         # isnull produces boolean output named bool_var
