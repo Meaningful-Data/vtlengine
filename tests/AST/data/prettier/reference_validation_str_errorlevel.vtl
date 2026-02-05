@@ -1,0 +1,14 @@
+DMI012713 :=
+	EXP_FNF
+		[sub AREA_OPERATION = "DOM_OP", CURRENCY = "INR", FNF_TY = "FOCR_FCI", INV_ADV_TY = "FAOUT"];
+DMI012708 :=
+	EXP_FNF
+		[sub AREA_OPERATION = "DOM_OP", CURRENCY = "INR", FNF_TY = "FOCR_FCI", INV_ADV_TY = "TFCEXP"];
+WhiteCell_0_DMI012713 <-
+	check(
+		DMI012713 > round((DMI012708), 2)
+		errorcode "ERF0547451"
+		errorlevel "Warning"
+		imbalance DMI012713 - (DMI012708)
+		all
+	);
