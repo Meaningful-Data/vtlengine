@@ -89,6 +89,68 @@ poetry run mypy
 - **SemanticError**: Data structure/type compatibility issues (incompatible types, missing components, invalid roles)
 - **RuntimeError**: Datapoints handling issues during execution (data conversion, computation errors)
 
+## GitHub Project
+
+**Open Source Initiatives**: <https://github.com/orgs/Meaningful-Data/projects/2>
+
+Project ID: `PVT_kwDOA9gk5M4Aurey`
+
+### Project Fields
+
+Each issue in the project tracks the following fields:
+
+| Field | Type | Values |
+| ----- | ---- | ------ |
+| Status | Single Select | Todo, In Progress, In Review, Awaiting for BIS Review, Done |
+| Priority | Single Select | P0, P1, P2 |
+| Size | Single Select | XS, S, M, L, XL |
+| Estimate | Number | Hours estimate for the task |
+| Iteration | Iteration | Current iterations (e.g., Iteration 28, 29) |
+| Start date | Date | When work begins |
+| End date | Date | Target completion |
+
+### Querying the Project
+
+```bash
+# List all projects
+gh api graphql -f query='
+{
+  organization(login: "Meaningful-Data") {
+    projectsV2(first: 10) {
+      nodes { id title number url }
+    }
+  }
+}'
+
+# Get project items with field values
+gh api graphql -f query='
+{
+  organization(login: "Meaningful-Data") {
+    projectV2(number: 2) {
+      items(first: 20) {
+        nodes {
+          content {
+            ... on Issue { number title state }
+          }
+          fieldValues(first: 10) {
+            nodes {
+              ... on ProjectV2ItemFieldSingleSelectValue {
+                name
+                field { ... on ProjectV2SingleSelectField { name } }
+              }
+              ... on ProjectV2ItemFieldNumberValue {
+                number
+                field { ... on ProjectV2Field { name } }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}'
+```
+
 ## Git Workflow
 
 ### Branch Naming
