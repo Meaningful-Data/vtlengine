@@ -7,7 +7,7 @@ These variables are optional and have sensible defaults.
 Number Handling
 ***************
 
-These variables control how VTL Engine handles floating-point precision in comparison operators and output formatting.
+These variables control how VTL Engine handles floating-point precision in numeric operations, comparison operators, and output formatting.
 
 .. important::
     IEEE 754 float64 guarantees **15 significant decimal digits** (DBL_DIG = 15).
@@ -39,7 +39,10 @@ arithmetic artifacts while preserving meaningful differences.
 ``OUTPUT_NUMBER_SIGNIFICANT_DIGITS``
 ====================================
 
-Controls the significant digits used when formatting Number values in CSV output.
+Controls the significant digits used for:
+
+1. **Numeric operations**: Precision of arithmetic operations (``+``, ``-``, ``*``, ``/``, ``mod``, ``power``, etc.) by setting the Decimal context precision.
+2. **CSV output**: Formatting Number values when writing to CSV files.
 
 .. list-table::
    :header-rows: 1
@@ -52,10 +55,11 @@ Controls the significant digits used when formatting Number values in CSV output
    * - ``6`` to ``15``
      - Uses the specified number of significant digits
    * - ``-1``
-     - Disables formatting (uses pandas default behavior)
+     - Disables precision limiting (uses Python/pandas defaults)
 
-This variable controls the ``float_format`` parameter in pandas ``to_csv``, using the general format
-specifier (e.g., ``%.15g``) which automatically switches between fixed and exponential notation.
+For output formatting, this variable controls the ``float_format`` parameter in pandas ``to_csv``,
+using the general format specifier (e.g., ``%.15g``) which automatically switches between fixed
+and exponential notation.
 
 S3 Configuration
 ****************
@@ -112,15 +116,18 @@ Setting comparison threshold
     # Disable tolerance-based comparison (exact floating-point comparison)
     export COMPARISON_ABSOLUTE_THRESHOLD=-1
 
-Controlling output precision
+Controlling numeric precision
 =============================
 
 .. code-block:: bash
 
-    # Format output with 10 significant digits
+    # Use 10 significant digits for arithmetic and output
     export OUTPUT_NUMBER_SIGNIFICANT_DIGITS=10
 
-    # Disable output formatting (use pandas defaults)
+    # Use maximum precision (default)
+    export OUTPUT_NUMBER_SIGNIFICANT_DIGITS=15
+
+    # Disable precision limiting (use Python/pandas defaults)
     export OUTPUT_NUMBER_SIGNIFICANT_DIGITS=-1
 
 Using S3 with environment variables

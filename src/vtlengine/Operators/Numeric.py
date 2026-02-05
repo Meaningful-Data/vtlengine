@@ -30,6 +30,7 @@ from vtlengine.DataTypes import Integer, Number, binary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Scalar
 from vtlengine.Operators import ALL_MODEL_DATA_TYPES
+from vtlengine.Utils._number_config import get_effective_numeric_digits
 
 
 class Unary(Operator.Unary):
@@ -62,8 +63,10 @@ class Binary(Operator.Binary):
         if cls.op == DIV and y == 0:
             raise SemanticError("2-1-15-6", op=cls.op, value=y)
 
+        precision = get_effective_numeric_digits()
+        if precision is not None:
+            getcontext().prec = precision
         decimal_value = cls.py_op(Decimal(x), Decimal(y))
-        getcontext().prec = 10
         result = float(decimal_value)
         if result.is_integer():
             return int(result)
