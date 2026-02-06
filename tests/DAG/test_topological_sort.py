@@ -10,7 +10,7 @@ def _build_dag_and_sort(vertices: dict, edges: list) -> list:
     """Helper: build a DAGAnalyzer with given vertices/edges and return sort order."""
     dag = DAGAnalyzer()
     dag.vertex = dict(vertices)
-    dag.edges = {i: e for i, e in enumerate(edges)}
+    dag.edges = dict(enumerate(edges))
     dag.nx_topologicalSort()
     return dag.sorting
 
