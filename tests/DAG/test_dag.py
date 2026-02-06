@@ -19,10 +19,10 @@ def _normalize_ds_structure(ds_structure):
     return json.loads(
         json.dumps(
             {
-                "insertion": {k: sorted(v) for k, v in ds_structure["insertion"].items()},
-                "deletion": {k: sorted(v) for k, v in ds_structure["deletion"].items()},
-                "global_inputs": sorted(ds_structure["global_inputs"]),
-                "persistent": sorted(ds_structure["persistent"]),
+                "insertion": {k: sorted(v) for k, v in ds_structure.insertion.items()},
+                "deletion": {k: sorted(v) for k, v in ds_structure.deletion.items()},
+                "global_inputs": sorted(ds_structure.global_inputs),
+                "persistent": sorted(ds_structure.persistent),
             }
         )
     )
