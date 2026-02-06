@@ -198,6 +198,11 @@ result = run(script=script, data_structures=data_structures, datapoints=datapoin
 print(result)
 ```
 
+### Pull Request Descriptions
+
+- Never include code quality check results (ruff, mypy, pytest) in PR descriptions
+- Focus on what changed, why, impact/risk, and notes
+
 ## Common Pitfalls
 
 1. **Never edit Grammar files** - They're ANTLR-generated. Change `.g4` and regenerate if needed.

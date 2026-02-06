@@ -49,6 +49,12 @@ ds_param = [
         "GL_563_1",
         """ds_with_year  := DSD_AN_HOUSE_PRICES[calc identifier year_id  := cast(time_agg("A", TIME_PERIOD), string)]; ds_with_year2 := ds_with_year[calc identifier year_id2 := cast(time_agg("A", TIME_PERIOD), string)];""",
     ),
+    (
+        "GH_487",
+        """
+        DS_r <- timeshift(DS_1, 12);
+        """,
+    ),
 ]
 
 error_param = [
