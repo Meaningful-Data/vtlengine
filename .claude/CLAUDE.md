@@ -205,7 +205,7 @@ print(result)
 3. **AST node equality** - Override `ast_equality()` when adding nodes
 4. **Nullable identifiers** - Will raise `SemanticError("0-1-1-13")`
 5. **ANTLR version** - Must use 4.9.x to match `antlr4-python3-runtime` dependency
-6. **Version updates** - When bumping version, update BOTH `pyproject.toml` AND `src/vtlengine/__init__.py`
+6. **Version updates** - When bumping version, update BOTH `pyproject.toml` AND `src/vtlengine/__init__.py`. Always create a new branch from `origin/main` for version bumps
 
 ## External Dependencies
 
