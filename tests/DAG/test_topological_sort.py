@@ -22,18 +22,22 @@ def _is_valid_topological_order(sorting: list, edges: list) -> bool:
 
 
 def _peak_live_set(sorting: list, edges: list) -> int:
-    """Compute the peak number of intermediate results alive at any point.
+    """Compute the peak number of intermediate datasets alive at any point.
 
-    A node is 'alive' from production until its last consumer is produced.
+    Only counts nodes with successors (producers/intermediates), not leaf nodes
+    (final outputs). A producer is 'alive' from when it's scheduled until its
+    last consumer is scheduled.
     """
     G = nx.DiGraph()
     G.add_nodes_from(sorting)
     G.add_edges_from(edges)
     remaining_consumers = {n: G.out_degree(n) for n in sorting}
+    intermediates = {n for n in sorting if G.out_degree(n) > 0}
     alive = set()
     peak = 0
     for node in sorting:
-        alive.add(node)
+        if node in intermediates:
+            alive.add(node)
         for pred in G.predecessors(node):
             remaining_consumers[pred] -= 1
             if remaining_consumers[pred] == 0:
