@@ -4,6 +4,7 @@ import networkx as nx
 import pytest
 
 from vtlengine.AST.DAG import DAGAnalyzer
+from vtlengine.AST.DAG._models import StatementDeps
 from vtlengine.Exceptions import SemanticError
 
 
@@ -13,10 +14,7 @@ def _build_dag_and_sort(vertices: dict, edges: list) -> list:
     dag.vertex = dict(vertices)
     dag.edges = dict(enumerate(edges))
     # Populate dependencies so cycle detection can access them
-    dag.dependencies = {
-        k: {"inputs": [], "outputs": [], "persistent": [], "unknown_variables": []}
-        for k in vertices
-    }
+    dag.dependencies = {k: StatementDeps() for k in vertices}
     dag._build_and_sort_graph("test")
     return dag.sorting
 

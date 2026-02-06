@@ -37,22 +37,17 @@ from vtlengine.AST import (
     VarID,
 )
 from vtlengine.AST.ASTTemplate import ASTTemplate
-from vtlengine.AST.DAG._models import DatasetSchedule
+from vtlengine.AST.DAG._models import DatasetSchedule, StatementDeps
 from vtlengine.AST.Grammar.tokens import AS, DROP, KEEP, MEMBERSHIP, RENAME, TO
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component
-
-INPUTS = "inputs"
-OUTPUTS = "outputs"
-PERSISTENT = "persistent"
-UNKNOWN = "unknown_variables"
 
 
 @dataclass
 class DAGAnalyzer(ASTTemplate):
     udos: Optional[Dict[str, Any]] = None
     number_of_statements: int = 1
-    dependencies: Dict[int, Dict[str, Any]] = field(default_factory=dict)
+    dependencies: Dict[int, StatementDeps] = field(default_factory=dict)
     vertex: Dict[int, str] = field(default_factory=dict)
     edges: Dict[int, tuple] = field(default_factory=dict)  # type: ignore[type-arg]
     sorting: Optional[List[int]] = None
@@ -63,12 +58,10 @@ class DAGAnalyzer(ASTTemplate):
     is_dataset: bool = False
     alias: Set[str] = field(default_factory=set)
 
-    # Statement Structure
-    inputs: Set[str] = field(default_factory=set)
-    outputs: Set[str] = field(default_factory=set)
-    persistent: Set[str] = field(default_factory=set)
+    # Per-statement accumulator (reset between statements)
+    current_deps: StatementDeps = field(default_factory=StatementDeps)
+    # Cross-statement unknown variable tracking
     unknown_variables: Set[str] = field(default_factory=set)
-    unknown_variables_statement: Set[str] = field(default_factory=set)
 
     @classmethod
     def ds_structure(cls, ast: AST) -> DatasetSchedule:
@@ -86,17 +79,17 @@ class DAGAnalyzer(ASTTemplate):
         # Reverse index: dataset_name -> last statement that uses it as input
         last_consumer: Dict[str, int] = {}
         for key, statement in self.dependencies.items():
-            for input_name in statement[INPUTS]:
+            for input_name in statement.inputs:
                 last_consumer[input_name] = key
 
         # Schedule deletion for statement outputs at their last consumer
         for key, statement in self.dependencies.items():
-            reference = statement[OUTPUTS] + statement[PERSISTENT]
+            reference = statement.outputs + statement.persistent
             if (
-                len(statement[PERSISTENT]) == 1
-                and statement[PERSISTENT][0] not in persistent_datasets
+                len(statement.persistent) == 1
+                and statement.persistent[0] not in persistent_datasets
             ):
-                persistent_datasets.append(statement[PERSISTENT][0])
+                persistent_datasets.append(statement.persistent[0])
             ds_name = reference[0]
             all_outputs.add(ds_name)
             deletion[last_consumer.get(ds_name, key)].append(ds_name)
@@ -105,7 +98,7 @@ class DAGAnalyzer(ASTTemplate):
         global_inputs: List[str] = []
         global_set: Set[str] = set()
         for key, statement in self.dependencies.items():
-            for element in statement[INPUTS]:
+            for element in statement.inputs:
                 if element not in all_outputs and element not in global_set:
                     global_set.add(element)
                     global_inputs.append(element)
@@ -166,7 +159,7 @@ class DAGAnalyzer(ASTTemplate):
 
     def load_vertex(self) -> None:
         for key, statement in self.dependencies.items():
-            output = statement[OUTPUTS] + statement[PERSISTENT] + statement[UNKNOWN]
+            output = statement.outputs + statement.persistent + statement.unknown_variables
             if len(output) != 0:
                 self.vertex[key] = output[0]
 
@@ -175,12 +168,12 @@ class DAGAnalyzer(ASTTemplate):
             count_edges = 0
             ref_to_keys: Dict[str, int] = {}
             for key, statement in self.dependencies.items():
-                reference = statement[OUTPUTS] + statement[PERSISTENT]
+                reference = statement.outputs + statement.persistent
                 if reference:
                     ref_to_keys[reference[0]] = key
 
             for sub_key, sub_statement in self.dependencies.items():
-                for input_val in sub_statement[INPUTS]:
+                for input_val in sub_statement.inputs:
                     if input_val in ref_to_keys:
                         key = ref_to_keys[input_val]
                         self.edges[count_edges] = (key, sub_key)
@@ -211,22 +204,16 @@ class DAGAnalyzer(ASTTemplate):
         self.check_overwriting(intermediate)
         ast.children = hr_statements + dp_statements + do_statements + intermediate
 
-    def statement_structure(self) -> dict:
-        inputs = list(self.inputs)
-        outputs = list(self.outputs)
-        persistent = list(self.persistent)
-        unknown = list(self.unknown_variables_statement)
-
-        # Remove inputs that are also outputs of this statement.
-        inputs_filtered = [inp for inp in inputs if inp not in self.outputs]
-
-        result = {
-            INPUTS: inputs_filtered,
-            OUTPUTS: outputs,
-            PERSISTENT: persistent,
-            UNKNOWN: unknown,
-        }
-        self.unknown_variables.update(self.unknown_variables_statement)
+    def statement_structure(self) -> StatementDeps:
+        result = StatementDeps(
+            inputs=[
+                inp for inp in self.current_deps.inputs if inp not in self.current_deps.outputs
+            ],
+            outputs=list(self.current_deps.outputs),
+            persistent=list(self.current_deps.persistent),
+            unknown_variables=list(self.current_deps.unknown_variables),
+        )
+        self.unknown_variables.update(self.current_deps.unknown_variables)
         return result
 
     """______________________________________________________________________________________
@@ -255,43 +242,31 @@ class DAGAnalyzer(ASTTemplate):
                 self.is_first_assignment = True
                 self.visit(child)
 
-                # Analyze inputs and outputs per each statement.
-                self.dependencies[self.number_of_statements] = copy.deepcopy(
-                    self.statement_structure()
-                )
-
-                # Count the number of statements in order to name the scope symbol table for
-                # each one.
+                self.dependencies[self.number_of_statements] = self.statement_structure()
                 self.number_of_statements += 1
-
                 self.alias = set()
-                self.inputs = set()
-                self.outputs = set()
-                self.persistent = set()
-                self.unknown_variables_statement = set()
+                self.current_deps = StatementDeps()
 
         aux = copy.copy(self.unknown_variables)
         for variable in aux:
             for _number_of_statement, dependency in self.dependencies.items():
-                if variable in dependency[OUTPUTS]:
+                if variable in dependency.outputs:
                     self.unknown_variables.discard(variable)
                     for _ns2, dep2 in self.dependencies.items():
-                        if variable in dep2[UNKNOWN]:
-                            dep2[UNKNOWN].remove(variable)
-                            dep2[INPUTS].append(variable)
-                        if variable not in self.inputs:
-                            self.inputs.add(variable)
+                        if variable in dep2.unknown_variables:
+                            dep2.unknown_variables.remove(variable)
+                            dep2.inputs.append(variable)
 
     def visit_Assignment(self, node: Assignment) -> None:
         if self.is_first_assignment:
-            self.outputs.add(node.left.value)
+            self.current_deps.outputs.append(node.left.value)
             self.is_first_assignment = False
 
         self.visit(node.right)
 
     def visit_PersistentAssignment(self, node: PersistentAssignment) -> None:
         if self.is_first_assignment:
-            self.persistent.add(node.left.value)
+            self.current_deps.persistent.append(node.left.value)
             self.is_first_assignment = False
 
         self.visit(node.right)
@@ -322,18 +297,23 @@ class DAGAnalyzer(ASTTemplate):
         if (
             not self.is_from_regular_aggregation or self.is_dataset
         ) and node.value not in self.alias:
-            self.inputs.add(node.value)
+            if node.value not in self.current_deps.inputs:
+                self.current_deps.inputs.append(node.value)
         elif (
             self.is_from_regular_aggregation
             and node.value not in self.alias
             and not self.is_dataset
-            and node.value not in self.unknown_variables_statement
+            and node.value not in self.current_deps.unknown_variables
         ):
-            self.unknown_variables_statement.add(node.value)
+            self.current_deps.unknown_variables.append(node.value)
 
     def visit_Identifier(self, node: Identifier) -> None:
-        if node.kind == "DatasetID" and node.value not in self.alias:
-            self.inputs.add(node.value)
+        if (
+            node.kind == "DatasetID"
+            and node.value not in self.alias
+            and node.value not in self.current_deps.inputs
+        ):
+            self.current_deps.inputs.append(node.value)
 
     def visit_ParamOp(self, node: ParamOp) -> None:
         if self.udos and node.op in self.udos:
@@ -397,13 +377,11 @@ class HRDAGAnalyzer(DAGAnalyzer):
         for rule in node.rules:
             self.is_first_assignment = True
             self.visit(rule)
-            self.dependencies[self.number_of_statements] = copy.deepcopy(self.statement_structure())
+            self.dependencies[self.number_of_statements] = self.statement_structure()
 
             self.number_of_statements += 1
             self.alias = set()
-            self.inputs = set()
-            self.outputs = set()
-            self.persistent = set()
+            self.current_deps = StatementDeps()
 
     def visit_DefIdentifier(self, node: DefIdentifier) -> None:  # type: ignore[override]
         """
@@ -416,6 +394,6 @@ class HRDAGAnalyzer(DAGAnalyzer):
         if node.kind == "CodeItemID":
             if self.is_first_assignment:
                 self.is_first_assignment = False
-                self.outputs.add(node.value)
-            else:
-                self.inputs.add(node.value)
+                self.current_deps.outputs.append(node.value)
+            elif node.value not in self.current_deps.inputs:
+                self.current_deps.inputs.append(node.value)
