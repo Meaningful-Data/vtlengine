@@ -174,10 +174,25 @@ _site/
 docs/error_messages.rst
 docs/plans/
 
-# Claude Code settings (keep CLAUDE.md tracked)
-.claude/settings.json
-
+# Root level temp files
 /*.csv
 /*.json
 /*.vtl
 /*.md
+# Keep important markdown files
+!/README.md
+!/LICENSE.md
+!/CODE_OF_CONDUCT.md
+!/CONTRIBUTING.md
+!/SECURITY.md
+
+# Claude Code settings
+.claude/*
+!.claude/CLAUDE.md
+
+# AnaVal test data zip files
+/*.zip
+
+# Benchmark outputs
+benchmark_graphs/
+scripts/

@@ -11,17 +11,25 @@ from typing import Any, Dict, List, Tuple
 import pytest
 
 from vtlengine.AST import (
+    Aggregation,
+    Argument,
     Assignment,
     BinOp,
     Collection,
     Constant,
     EvalOp,
+    Identifier,
     If,
+    JoinOp,
     MulOp,
+    Operator,
+    ParamConstant,
     ParamOp,
     RegularAggregation,
+    RenameNode,
     Start,
     TimeAggregation,
+    UDOCall,
     UnaryOp,
     Validation,
     VarID,
@@ -613,7 +621,8 @@ class TestUnaryOperations:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = 'SELECT "Id_1", ("Me_1" IS NULL) AS "Me_1" FROM "DS_1"'
+        # For mono-measure datasets, isnull output is renamed to bool_var (VTL semantics)
+        expected_sql = 'SELECT "Id_1", ("Me_1" IS NULL) AS "bool_var" FROM "DS_1"'
         assert_sql_equal(sql, expected_sql)
 
 
@@ -1603,3 +1612,1932 @@ class TestTimeAggOperator:
             """CAST(CEIL(MONTH(CAST("my_date" AS DATE)) / 6.0) AS INTEGER))"""
         )
         assert_sql_equal(result, expected_sql)
+
+
+# =============================================================================
+# Structure Computation Tests
+# =============================================================================
+
+
+def create_bool_output_dataset(name: str, id_cols: list) -> Dataset:
+    """Helper to create a Dataset with bool_var measure (comparison result)."""
+    components = {}
+    for col in id_cols:
+        components[col] = Component(
+            name=col, data_type=String, role=Role.IDENTIFIER, nullable=False
+        )
+    components["bool_var"] = Component(
+        name="bool_var", data_type=Boolean, role=Role.MEASURE, nullable=True
+    )
+    return Dataset(name=name, components=components, data=None)
+
+
+class TestStructureComputation:
+    """Tests for structure computation using output_datasets from semantic analysis."""
+
+    @pytest.mark.parametrize(
+        "op,sql_op",
+        [
+            ("=", "="),
+            ("<>", "<>"),
+            (">", ">"),
+            ("<", "<"),
+            (">=", ">="),
+            ("<=", "<="),
+        ],
+    )
+    def test_dataset_dataset_comparison_mono_measure(self, op: str, sql_op: str):
+        """
+        Test dataset-dataset comparison with mono-measure produces bool_var.
+
+        When comparing two datasets with a single measure, the output should have
+        bool_var as the measure name instead of the original measure name.
+        This is determined by the output_datasets from semantic analysis.
+        """
+        ds1 = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
+        ds2 = create_simple_dataset("DS_2", ["Id_1"], ["Me_1"])
+        output_ds = create_bool_output_dataset("DS_r", ["Id_1"])
+
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds1, "DS_2": ds2},
+            output_datasets={"DS_r": output_ds},
+        )
+
+        # Create AST: DS_r := DS_1 op DS_2
+        left = VarID(**make_ast_node(value="DS_1"))
+        right = VarID(**make_ast_node(value="DS_2"))
+        expr = BinOp(**make_ast_node(left=left, op=op, right=right))
+        ast = create_start_with_assignment("DS_r", expr)
+
+        results = transpile_and_get_sql(transpiler, ast)
+
+        assert len(results) == 1
+        name, sql, _ = results[0]
+        assert name == "DS_r"
+
+        # Should output bool_var for mono-measure comparison
+        expected_sql = f'''SELECT a."Id_1", (a."Me_1" {sql_op} b."Me_1") AS "bool_var"
+                          FROM "DS_1" AS a INNER JOIN "DS_2" AS b ON a."Id_1" = b."Id_1"'''
+        assert_sql_equal(sql, expected_sql)
+
+    @pytest.mark.parametrize(
+        "op,sql_op",
+        [
+            ("=", "="),
+            (">", ">"),
+        ],
+    )
+    def test_dataset_dataset_comparison_multi_measure(self, op: str, sql_op: str):
+        """
+        Test dataset-dataset comparison with multiple measures keeps measure names.
+
+        When comparing datasets with multiple measures, each measure produces
+        a boolean result with the same measure name.
+        """
+        ds1 = create_simple_dataset("DS_1", ["Id_1"], ["Me_1", "Me_2"])
+        ds2 = create_simple_dataset("DS_2", ["Id_1"], ["Me_1", "Me_2"])
+        # Multi-measure comparison keeps original measure names
+        output_ds = create_simple_dataset("DS_r", ["Id_1"], ["Me_1", "Me_2"])
+
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds1, "DS_2": ds2},
+            output_datasets={"DS_r": output_ds},
+        )
+
+        # Create AST: DS_r := DS_1 op DS_2
+        left = VarID(**make_ast_node(value="DS_1"))
+        right = VarID(**make_ast_node(value="DS_2"))
+        expr = BinOp(**make_ast_node(left=left, op=op, right=right))
+        ast = create_start_with_assignment("DS_r", expr)
+
+        results = transpile_and_get_sql(transpiler, ast)
+
+        assert len(results) == 1
+        name, sql, _ = results[0]
+        assert name == "DS_r"
+
+        # Should keep original measure names for multi-measure comparison
+        expected_sql = f'''SELECT a."Id_1", (a."Me_1" {sql_op} b."Me_1") AS "Me_1",
+                          (a."Me_2" {sql_op} b."Me_2") AS "Me_2"
+                          FROM "DS_1" AS a INNER JOIN "DS_2" AS b ON a."Id_1" = b."Id_1"'''
+        assert_sql_equal(sql, expected_sql)
+
+    @pytest.mark.parametrize(
+        "op,sql_op",
+        [
+            ("=", "="),
+            ("<>", "<>"),
+            (">", ">"),
+            ("<", "<"),
+        ],
+    )
+    def test_dataset_scalar_comparison_mono_measure(self, op: str, sql_op: str):
+        """
+        Test dataset-scalar comparison with mono-measure produces bool_var.
+        """
+        ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
+        output_ds = create_bool_output_dataset("DS_r", ["Id_1"])
+
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds},
+            output_datasets={"DS_r": output_ds},
+        )
+
+        # Create AST: DS_r := DS_1 op 10
+        left = VarID(**make_ast_node(value="DS_1"))
+        right = Constant(**make_ast_node(type_="INTEGER_CONSTANT", value=10))
+        expr = BinOp(**make_ast_node(left=left, op=op, right=right))
+        ast = create_start_with_assignment("DS_r", expr)
+
+        results = transpile_and_get_sql(transpiler, ast)
+
+        assert len(results) == 1
+        name, sql, _ = results[0]
+        assert name == "DS_r"
+
+        # Should output bool_var for mono-measure comparison
+        expected_sql = f'SELECT "Id_1", ("Me_1" {sql_op} 10) AS "bool_var" FROM "DS_1"'
+        assert_sql_equal(sql, expected_sql)
+
+    def test_dataset_scalar_comparison_multi_measure(self):
+        """
+        Test dataset-scalar comparison with multi-measure keeps measure names.
+        """
+        ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1", "Me_2"])
+        output_ds = create_simple_dataset("DS_r", ["Id_1"], ["Me_1", "Me_2"])
+
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds},
+            output_datasets={"DS_r": output_ds},
+        )
+
+        # Create AST: DS_r := DS_1 > 5
+        left = VarID(**make_ast_node(value="DS_1"))
+        right = Constant(**make_ast_node(type_="INTEGER_CONSTANT", value=5))
+        expr = BinOp(**make_ast_node(left=left, op=">", right=right))
+        ast = create_start_with_assignment("DS_r", expr)
+
+        results = transpile_and_get_sql(transpiler, ast)
+
+        assert len(results) == 1
+        name, sql, _ = results[0]
+        assert name == "DS_r"
+
+        # Should keep original measure names for multi-measure comparison
+        expected_sql = 'SELECT "Id_1", ("Me_1" > 5) AS "Me_1", ("Me_2" > 5) AS "Me_2" FROM "DS_1"'
+        assert_sql_equal(sql, expected_sql)
+
+    def test_scalar_dataset_comparison_mono_measure(self):
+        """
+        Test scalar-dataset comparison with mono-measure produces bool_var.
+        """
+        ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
+        output_ds = create_bool_output_dataset("DS_r", ["Id_1"])
+
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds},
+            output_datasets={"DS_r": output_ds},
+        )
+
+        # Create AST: DS_r := 10 > DS_1 (scalar on left)
+        left = Constant(**make_ast_node(type_="INTEGER_CONSTANT", value=10))
+        right = VarID(**make_ast_node(value="DS_1"))
+        expr = BinOp(**make_ast_node(left=left, op=">", right=right))
+        ast = create_start_with_assignment("DS_r", expr)
+
+        results = transpile_and_get_sql(transpiler, ast)
+
+        assert len(results) == 1
+        name, sql, _ = results[0]
+        assert name == "DS_r"
+
+        # Should output bool_var for mono-measure comparison (scalar on left)
+        expected_sql = 'SELECT "Id_1", (10 > "Me_1") AS "bool_var" FROM "DS_1"'
+        assert_sql_equal(sql, expected_sql)
+
+    def test_arithmetic_operation_keeps_measure_names(self):
+        """
+        Test that arithmetic operations keep original measure names.
+
+        Arithmetic operations (+, -, *, /) should preserve the input measure names
+        regardless of whether there's one or multiple measures.
+        """
+        ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
+        output_ds = create_simple_dataset("DS_r", ["Id_1"], ["Me_1"])
+
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds},
+            output_datasets={"DS_r": output_ds},
+        )
+
+        # Create AST: DS_r := DS_1 + 10
+        left = VarID(**make_ast_node(value="DS_1"))
+        right = Constant(**make_ast_node(type_="INTEGER_CONSTANT", value=10))
+        expr = BinOp(**make_ast_node(left=left, op="+", right=right))
+        ast = create_start_with_assignment("DS_r", expr)
+
+        results = transpile_and_get_sql(transpiler, ast)
+
+        assert len(results) == 1
+        name, sql, _ = results[0]
+        assert name == "DS_r"
+
+        # Arithmetic should keep Me_1, not convert to bool_var
+        expected_sql = 'SELECT "Id_1", ("Me_1" + 10) AS "Me_1" FROM "DS_1"'
+        assert_sql_equal(sql, expected_sql)
+
+
+def create_boolean_dataset(name: str, id_cols: list, measure_cols: list) -> Dataset:
+    """Helper to create a Dataset with boolean measures."""
+    components = {}
+    for col in id_cols:
+        components[col] = Component(
+            name=col, data_type=String, role=Role.IDENTIFIER, nullable=False
+        )
+    for col in measure_cols:
+        components[col] = Component(name=col, data_type=Boolean, role=Role.MEASURE, nullable=True)
+    return Dataset(name=name, components=components, data=None)
+
+
+class TestBooleanOperations:
+    """Tests for Boolean operations on datasets."""
+
+    @pytest.mark.parametrize(
+        "op,sql_op",
+        [
+            ("and", "AND"),
+            ("or", "OR"),
+            ("xor", "XOR"),
+        ],
+    )
+    def test_boolean_dataset_dataset_operation(self, op: str, sql_op: str):
+        """
+        Test Boolean operations between two datasets.
+
+        Boolean operations (and, or, xor) between datasets should apply to
+        common measures and preserve measure names.
+        """
+        ds1 = create_boolean_dataset("DS_1", ["Id_1"], ["Me_1"])
+        ds2 = create_boolean_dataset("DS_2", ["Id_1"], ["Me_1"])
+        output_ds = create_boolean_dataset("DS_r", ["Id_1"], ["Me_1"])
+
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds1, "DS_2": ds2},
+            output_datasets={"DS_r": output_ds},
+        )
+
+        # Create AST: DS_r := DS_1 op DS_2
+        left = VarID(**make_ast_node(value="DS_1"))
+        right = VarID(**make_ast_node(value="DS_2"))
+        expr = BinOp(**make_ast_node(left=left, op=op, right=right))
+        ast = create_start_with_assignment("DS_r", expr)
+
+        results = transpile_and_get_sql(transpiler, ast)
+
+        assert len(results) == 1
+        name, sql, _ = results[0]
+        assert name == "DS_r"
+
+        expected_sql = f'''SELECT a."Id_1", (a."Me_1" {sql_op} b."Me_1") AS "Me_1"
+                          FROM "DS_1" AS a INNER JOIN "DS_2" AS b ON a."Id_1" = b."Id_1"'''
+        assert_sql_equal(sql, expected_sql)
+
+    @pytest.mark.parametrize(
+        "op,sql_op",
+        [
+            ("and", "AND"),
+            ("or", "OR"),
+        ],
+    )
+    def test_boolean_dataset_scalar_operation(self, op: str, sql_op: str):
+        """
+        Test Boolean operations between dataset and scalar.
+
+        Boolean operations between a dataset and a boolean scalar should
+        apply to all measures.
+        """
+        ds = create_boolean_dataset("DS_1", ["Id_1"], ["Me_1", "Me_2"])
+        output_ds = create_boolean_dataset("DS_r", ["Id_1"], ["Me_1", "Me_2"])
+
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds},
+            output_datasets={"DS_r": output_ds},
+        )
+
+        # Create AST: DS_r := DS_1 op true
+        left = VarID(**make_ast_node(value="DS_1"))
+        right = Constant(**make_ast_node(type_="BOOLEAN_CONSTANT", value=True))
+        expr = BinOp(**make_ast_node(left=left, op=op, right=right))
+        ast = create_start_with_assignment("DS_r", expr)
+
+        results = transpile_and_get_sql(transpiler, ast)
+
+        assert len(results) == 1
+        name, sql, _ = results[0]
+        assert name == "DS_r"
+
+        expected_sql = f'SELECT "Id_1", ("Me_1" {sql_op} TRUE) AS "Me_1", ("Me_2" {sql_op} TRUE) AS "Me_2" FROM "DS_1"'
+        assert_sql_equal(sql, expected_sql)
+
+    def test_not_dataset_operation(self):
+        """
+        Test NOT unary operation on dataset.
+
+        NOT on a dataset should negate all boolean measures.
+        """
+        ds = create_boolean_dataset("DS_1", ["Id_1"], ["Me_1", "Me_2"])
+        output_ds = create_boolean_dataset("DS_r", ["Id_1"], ["Me_1", "Me_2"])
+
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds},
+            output_datasets={"DS_r": output_ds},
+        )
+
+        # Create AST: DS_r := not DS_1
+        operand = VarID(**make_ast_node(value="DS_1"))
+        expr = UnaryOp(**make_ast_node(op="not", operand=operand))
+        ast = create_start_with_assignment("DS_r", expr)
+
+        results = transpile_and_get_sql(transpiler, ast)
+
+        assert len(results) == 1
+        name, sql, _ = results[0]
+        assert name == "DS_r"
+
+        expected_sql = 'SELECT "Id_1", NOT("Me_1") AS "Me_1", NOT("Me_2") AS "Me_2" FROM "DS_1"'
+        assert_sql_equal(sql, expected_sql)
+
+    def test_boolean_dataset_multi_measure(self):
+        """
+        Test Boolean operation on dataset with multiple measures.
+
+        Boolean operation should apply to all common measures.
+        """
+        ds1 = create_boolean_dataset("DS_1", ["Id_1"], ["Me_1", "Me_2"])
+        ds2 = create_boolean_dataset("DS_2", ["Id_1"], ["Me_1", "Me_2"])
+        output_ds = create_boolean_dataset("DS_r", ["Id_1"], ["Me_1", "Me_2"])
+
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds1, "DS_2": ds2},
+            output_datasets={"DS_r": output_ds},
+        )
+
+        # Create AST: DS_r := DS_1 and DS_2
+        left = VarID(**make_ast_node(value="DS_1"))
+        right = VarID(**make_ast_node(value="DS_2"))
+        expr = BinOp(**make_ast_node(left=left, op="and", right=right))
+        ast = create_start_with_assignment("DS_r", expr)
+
+        results = transpile_and_get_sql(transpiler, ast)
+
+        assert len(results) == 1
+        name, sql, _ = results[0]
+        assert name == "DS_r"
+
+        expected_sql = '''SELECT a."Id_1", (a."Me_1" AND b."Me_1") AS "Me_1",
+                          (a."Me_2" AND b."Me_2") AS "Me_2"
+                          FROM "DS_1" AS a INNER JOIN "DS_2" AS b ON a."Id_1" = b."Id_1"'''
+        assert_sql_equal(sql, expected_sql)
+
+
+# =============================================================================
+# exist_in and UDO Tests (AnaVal patterns)
+# =============================================================================
+
+
+class TestExistInOperations:
+    """Tests for exist_in operations."""
+
+    def test_exist_in_simple_datasets(self):
+        """Test exist_in between two simple datasets."""
+        # Create datasets with common identifiers
+        ds1 = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Id_2": Component(
+                    name="Id_2", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        ds2 = Dataset(
+            name="DS_2",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Id_2": Component(
+                    name="Id_2", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_2": Component(name="Me_2", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        # Output has identifiers from left + bool_var
+        output_ds = Dataset(
+            name="DS_r",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Id_2": Component(
+                    name="Id_2", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "bool_var": Component(
+                    name="bool_var", data_type=Boolean, role=Role.MEASURE, nullable=True
+                ),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds1, "DS_2": ds2},
+            output_datasets={"DS_r": output_ds},
+        )
+
+        # Create AST: DS_r := exists_in(DS_1, DS_2, false)
+        left = VarID(**make_ast_node(value="DS_1"))
+        right = VarID(**make_ast_node(value="DS_2"))
+        retain = Constant(**make_ast_node(value=False, type_="BOOLEAN_CONSTANT"))
+        expr = MulOp(**make_ast_node(op="exists_in", children=[left, right, retain]))
+        ast = create_start_with_assignment("DS_r", expr)
+
+        results = transpile_and_get_sql(transpiler, ast)
+
+        assert len(results) == 1
+        name, sql, _ = results[0]
+        assert name == "DS_r"
+
+        # Should generate EXISTS subquery with identifier match
+        assert_sql_contains(sql, ["EXISTS", "SELECT 1", "l.", "r.", "bool_var"])
+
+    def test_exist_in_with_filtered_dataset(self):
+        """Test exist_in with filtered dataset."""
+        ds1 = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        ds2 = Dataset(
+            name="DS_2",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=String, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        output_ds = Dataset(
+            name="DS_r",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "bool_var": Component(
+                    name="bool_var", data_type=Boolean, role=Role.MEASURE, nullable=True
+                ),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds1, "DS_2": ds2},
+            output_datasets={"DS_r": output_ds},
+        )
+
+        # Create AST: DS_r := exists_in(DS_1, DS_2[filter Me_1 = "1"], false)
+        left = VarID(**make_ast_node(value="DS_1"))
+        # Right side with filter - RegularAggregation has op and children
+        ds2_var = VarID(**make_ast_node(value="DS_2"))
+        filter_cond = BinOp(
+            **make_ast_node(
+                left=VarID(**make_ast_node(value="Me_1")),
+                op="=",
+                right=Constant(**make_ast_node(value="1", type_="STRING_CONSTANT")),
+            )
+        )
+        right = RegularAggregation(
+            **make_ast_node(dataset=ds2_var, op="filter", children=[filter_cond])
+        )
+        retain = Constant(**make_ast_node(value=False, type_="BOOLEAN_CONSTANT"))
+        expr = MulOp(**make_ast_node(op="exists_in", children=[left, right, retain]))
+        ast = create_start_with_assignment("DS_r", expr)
+
+        results = transpile_and_get_sql(transpiler, ast)
+
+        assert len(results) == 1
+        name, sql, _ = results[0]
+        assert name == "DS_r"
+
+        # Should generate EXISTS with filter in the subquery
+        assert_sql_contains(sql, ["EXISTS", "WHERE", "bool_var"])
+
+
+class TestUDOOperations:
+    """Tests for User-Defined Operator operations."""
+
+    def test_udo_simple_dataset_sum(self):
+        """Test UDO that adds two datasets: suma(ds1, ds2) returns ds1 + ds2."""
+        ds1 = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        ds2 = Dataset(
+            name="DS_2",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        output_ds = Dataset(
+            name="DS_r",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds1, "DS_2": ds2},
+            output_datasets={"DS_r": output_ds},
+        )
+
+        # Define UDO: suma(ds1 dataset, ds2 dataset) returns ds1 + ds2
+        udo_definition = Operator(
+            **make_ast_node(
+                op="suma",
+                parameters=[
+                    Argument(**make_ast_node(name="ds1", type_=Number, default=None)),
+                    Argument(**make_ast_node(name="ds2", type_=Number, default=None)),
+                ],
+                output_type="Dataset",
+                expression=BinOp(
+                    **make_ast_node(
+                        left=VarID(**make_ast_node(value="ds1")),
+                        op="+",
+                        right=VarID(**make_ast_node(value="ds2")),
+                    )
+                ),
+            )
+        )
+
+        # Create UDO call: suma(DS_1, DS_2)
+        udo_call = UDOCall(
+            **make_ast_node(
+                op="suma",
+                params=[
+                    VarID(**make_ast_node(value="DS_1")),
+                    VarID(**make_ast_node(value="DS_2")),
+                ],
+            )
+        )
+
+        # Register the UDO definition
+        transpiler.visit(udo_definition)
+
+        # Create full AST: DS_r := suma(DS_1, DS_2)
+        ast = create_start_with_assignment("DS_r", udo_call)
+        results = transpile_and_get_sql(transpiler, ast)
+
+        assert len(results) == 1
+        name, sql, _ = results[0]
+        assert name == "DS_r"
+        # Should produce a join with addition of measures
+        assert_sql_contains(sql, ['"Id_1"', '"Me_1"', "+", "JOIN"])
+
+    def test_udo_aggregation_group_except(self):
+        """Test UDO that drops an identifier: drop_id(ds, comp) returns max(ds group except comp)."""
+        ds = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Id_2": Component(
+                    name="Id_2", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        output_ds = Dataset(
+            name="DS_r",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds},
+            output_datasets={"DS_r": output_ds},
+        )
+
+        # Define UDO: drop_id(ds dataset, comp component) returns max(ds group except comp)
+        udo_definition = Operator(
+            **make_ast_node(
+                op="drop_id",
+                parameters=[
+                    Argument(**make_ast_node(name="ds", type_=Number, default=None)),
+                    Argument(**make_ast_node(name="comp", type_=String, default=None)),
+                ],
+                output_type="Dataset",
+                expression=Aggregation(
+                    **make_ast_node(
+                        op="max",
+                        operand=VarID(**make_ast_node(value="ds")),
+                        grouping_op="group except",
+                        grouping=[VarID(**make_ast_node(value="comp"))],
+                    )
+                ),
+            )
+        )
+
+        # Create UDO call: drop_id(DS_1, Id_2)
+        udo_call = UDOCall(
+            **make_ast_node(
+                op="drop_id",
+                params=[
+                    VarID(**make_ast_node(value="DS_1")),
+                    VarID(**make_ast_node(value="Id_2")),
+                ],
+            )
+        )
+
+        # Register the UDO definition
+        transpiler.visit(udo_definition)
+
+        # Create full AST: DS_r := drop_id(DS_1, Id_2)
+        ast = create_start_with_assignment("DS_r", udo_call)
+        results = transpile_and_get_sql(transpiler, ast)
+
+        assert len(results) == 1
+        name, sql, _ = results[0]
+        assert name == "DS_r"
+        # Should produce MAX aggregation grouped by Id_1 (all except Id_2)
+        assert_sql_contains(sql, ["MAX", '"Id_1"', "GROUP BY"])
+        # Id_2 should be excluded from result (group except removes it)
+        assert '"Id_2"' not in sql or "GROUP BY" in sql
+
+    def test_udo_with_membership(self):
+        """Test UDO with membership operator: extract_measure(ds, comp) returns ds#comp."""
+        ds = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+                "Me_2": Component(name="Me_2", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        output_ds = Dataset(
+            name="DS_r",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds},
+            output_datasets={"DS_r": output_ds},
+        )
+
+        # Define UDO: extract_measure(ds dataset, comp component) returns ds#comp
+        udo_definition = Operator(
+            **make_ast_node(
+                op="extract_measure",
+                parameters=[
+                    Argument(**make_ast_node(name="ds", type_=Number, default=None)),
+                    Argument(**make_ast_node(name="comp", type_=String, default=None)),
+                ],
+                output_type="Dataset",
+                expression=BinOp(
+                    **make_ast_node(
+                        left=VarID(**make_ast_node(value="ds")),
+                        op="#",
+                        right=VarID(**make_ast_node(value="comp")),
+                    )
+                ),
+            )
+        )
+
+        # Create UDO call: extract_measure(DS_1, Me_1)
+        udo_call = UDOCall(
+            **make_ast_node(
+                op="extract_measure",
+                params=[
+                    VarID(**make_ast_node(value="DS_1")),
+                    VarID(**make_ast_node(value="Me_1")),
+                ],
+            )
+        )
+
+        # Register the UDO definition
+        transpiler.visit(udo_definition)
+
+        # Create full AST: DS_r := extract_measure(DS_1, Me_1)
+        ast = create_start_with_assignment("DS_r", udo_call)
+        results = transpile_and_get_sql(transpiler, ast)
+
+        assert len(results) == 1
+        name, sql, _ = results[0]
+        assert name == "DS_r"
+        # Should select only Id_1 and Me_1
+        assert_sql_contains(sql, ['"Id_1"', '"Me_1"'])
+        # Me_2 should not be selected
+        assert '"Me_2"' not in sql
+
+    def test_udo_get_structure(self):
+        """Test that get_structure correctly computes UDO output structure."""
+        ds = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Id_2": Component(
+                    name="Id_2", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(input_datasets={"DS_1": ds})
+        transpiler.available_tables["DS_1"] = ds
+
+        # Define UDO: drop_id(ds dataset, comp component) returns max(ds group except comp)
+        udo_definition = Operator(
+            **make_ast_node(
+                op="drop_id",
+                parameters=[
+                    Argument(**make_ast_node(name="ds", type_=Number, default=None)),
+                    Argument(**make_ast_node(name="comp", type_=String, default=None)),
+                ],
+                output_type="Dataset",
+                expression=Aggregation(
+                    **make_ast_node(
+                        op="max",
+                        operand=VarID(**make_ast_node(value="ds")),
+                        grouping_op="group except",
+                        grouping=[VarID(**make_ast_node(value="comp"))],
+                    )
+                ),
+            )
+        )
+
+        # Register the UDO
+        transpiler.visit(udo_definition)
+
+        # Create UDO call: drop_id(DS_1, Id_2)
+        udo_call = UDOCall(
+            **make_ast_node(
+                op="drop_id",
+                params=[
+                    VarID(**make_ast_node(value="DS_1")),
+                    VarID(**make_ast_node(value="Id_2")),
+                ],
+            )
+        )
+
+        structure = transpiler.get_structure(udo_call)
+
+        # Should have Id_1 and Me_1, but NOT Id_2 (removed by group except)
+        assert structure is not None
+        assert "Id_1" in structure.components
+        assert "Me_1" in structure.components
+        assert "Id_2" not in structure.components
+
+    def test_udo_nested_call(self):
+        """Test nested UDO calls: outer(inner(DS))."""
+        ds = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+                "Me_2": Component(name="Me_2", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        output_ds = Dataset(
+            name="DS_r",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds},
+            output_datasets={"DS_r": output_ds},
+        )
+
+        # Define inner UDO: keep_one(ds dataset) returns ds[keep Me_1]
+        inner_udo = Operator(
+            **make_ast_node(
+                op="keep_one",
+                parameters=[
+                    Argument(**make_ast_node(name="ds", type_=Number, default=None)),
+                ],
+                output_type="Dataset",
+                expression=RegularAggregation(
+                    **make_ast_node(
+                        op="keep",
+                        dataset=VarID(**make_ast_node(value="ds")),
+                        children=[VarID(**make_ast_node(value="Me_1"))],
+                    )
+                ),
+            )
+        )
+
+        # Define outer UDO: double_it(ds dataset) returns ds * 2
+        outer_udo = Operator(
+            **make_ast_node(
+                op="double_it",
+                parameters=[
+                    Argument(**make_ast_node(name="ds", type_=Number, default=None)),
+                ],
+                output_type="Dataset",
+                expression=BinOp(
+                    **make_ast_node(
+                        left=VarID(**make_ast_node(value="ds")),
+                        op="*",
+                        right=Constant(**make_ast_node(value=2, type_="INTEGER_CONSTANT")),
+                    )
+                ),
+            )
+        )
+
+        # Register UDOs
+        transpiler.visit(inner_udo)
+        transpiler.visit(outer_udo)
+
+        # Create nested call: double_it(keep_one(DS_1))
+        inner_call = UDOCall(
+            **make_ast_node(
+                op="keep_one",
+                params=[VarID(**make_ast_node(value="DS_1"))],
+            )
+        )
+        outer_call = UDOCall(
+            **make_ast_node(
+                op="double_it",
+                params=[inner_call],
+            )
+        )
+
+        # Create full AST
+        ast = create_start_with_assignment("DS_r", outer_call)
+        results = transpile_and_get_sql(transpiler, ast)
+
+        assert len(results) == 1
+        name, sql, _ = results[0]
+        assert name == "DS_r"
+        # Should have multiplication by 2 and only Me_1
+        assert_sql_contains(sql, ['"Me_1"', "* 2"])
+        # Me_2 should be dropped by inner UDO
+        assert '"Me_2"' not in sql
+
+    def test_udo_with_filtered_dataset_param(self):
+        """Test UDO where the parameter is a filtered dataset expression.
+
+        VTL pattern: drop_identifier ( DS_1 [ filter Me_1 > 0 ] , Id_2 )
+        Bug: When UDO param 'ds' is bound to a RegularAggregation (filter),
+        the SQL was generating FROM "<RegularAggregation...>" instead of
+        properly visiting the expression.
+        """
+        ds = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Id_2": Component(
+                    name="Id_2", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        output_ds = Dataset(
+            name="DS_r",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds},
+            output_datasets={"DS_r": output_ds},
+        )
+
+        # Define UDO: drop_identifier(ds dataset, comp component) returns max(ds group except comp)
+        udo_definition = Operator(
+            **make_ast_node(
+                op="drop_identifier",
+                parameters=[
+                    Argument(**make_ast_node(name="ds", type_=Number, default=None)),
+                    Argument(**make_ast_node(name="comp", type_=String, default=None)),
+                ],
+                output_type="Dataset",
+                expression=Aggregation(
+                    **make_ast_node(
+                        op="max",
+                        operand=VarID(**make_ast_node(value="ds")),
+                        grouping_op="group except",
+                        grouping=[VarID(**make_ast_node(value="comp"))],
+                    )
+                ),
+            )
+        )
+
+        # Register the UDO
+        transpiler.visit(udo_definition)
+
+        # Create filtered dataset: DS_1 [ filter Me_1 > 0 ]
+        filtered_ds = RegularAggregation(
+            **make_ast_node(
+                op="filter",
+                dataset=VarID(**make_ast_node(value="DS_1")),
+                children=[
+                    BinOp(
+                        **make_ast_node(
+                            left=VarID(**make_ast_node(value="Me_1")),
+                            op=">",
+                            right=Constant(**make_ast_node(value=0, type_="INTEGER_CONSTANT")),
+                        )
+                    )
+                ],
+            )
+        )
+
+        # Create UDO call: drop_identifier(DS_1 [ filter Me_1 > 0 ], Id_2)
+        udo_call = UDOCall(
+            **make_ast_node(
+                op="drop_identifier",
+                params=[
+                    filtered_ds,
+                    VarID(**make_ast_node(value="Id_2")),
+                ],
+            )
+        )
+
+        # Create full AST: DS_r := drop_identifier(DS_1 [ filter Me_1 > 0 ], Id_2)
+        ast = create_start_with_assignment("DS_r", udo_call)
+        results = transpile_and_get_sql(transpiler, ast)
+
+        assert len(results) == 1
+        name, sql, _ = results[0]
+        assert name == "DS_r"
+        # The SQL should contain proper filter clause, NOT "<RegularAggregation...>"
+        assert "RegularAggregation" not in sql
+        assert '"DS_1"' in sql
+        # Should have the filter condition
+        assert '"Me_1"' in sql
+        assert "> 0" in sql or ">0" in sql
+
+    def test_udo_dataset_sql_resolves_param(self):
+        """Test that _get_dataset_sql resolves UDO parameter to actual dataset name.
+
+        Bug: When UDO parameter 'ds' is used inside aggregation, the SQL was
+        generating FROM "ds" instead of FROM "ACTUAL_DATASET_NAME".
+        """
+        ds = Dataset(
+            name="ACTUAL_DS",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Id_2": Component(
+                    name="Id_2", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        output_ds = Dataset(
+            name="DS_r",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(
+            input_datasets={"ACTUAL_DS": ds},
+            output_datasets={"DS_r": output_ds},
+        )
+
+        # Define UDO: drop_identifier(ds dataset, comp component) returns max(ds group except comp)
+        udo_definition = Operator(
+            **make_ast_node(
+                op="drop_identifier",
+                parameters=[
+                    Argument(**make_ast_node(name="ds", type_=Number, default=None)),
+                    Argument(**make_ast_node(name="comp", type_=String, default=None)),
+                ],
+                output_type="Dataset",
+                expression=Aggregation(
+                    **make_ast_node(
+                        op="max",
+                        operand=VarID(**make_ast_node(value="ds")),
+                        grouping_op="group except",
+                        grouping=[VarID(**make_ast_node(value="comp"))],
+                    )
+                ),
+            )
+        )
+
+        # Register the UDO
+        transpiler.visit(udo_definition)
+
+        # Create UDO call: drop_identifier(ACTUAL_DS, Id_2)
+        udo_call = UDOCall(
+            **make_ast_node(
+                op="drop_identifier",
+                params=[
+                    VarID(**make_ast_node(value="ACTUAL_DS")),
+                    VarID(**make_ast_node(value="Id_2")),
+                ],
+            )
+        )
+
+        # Create full AST: DS_r := drop_identifier(ACTUAL_DS, Id_2)
+        ast = create_start_with_assignment("DS_r", udo_call)
+        results = transpile_and_get_sql(transpiler, ast)
+
+        assert len(results) == 1
+        name, sql, _ = results[0]
+        assert name == "DS_r"
+        # The SQL should reference "ACTUAL_DS", NOT "ds" (the UDO parameter name)
+        assert '"ACTUAL_DS"' in sql
+        assert '"ds"' not in sql or "ds" not in sql.split("FROM")[1]
+
+
+class TestIntermediateResultsInExistIn:
+    """Tests for exist_in with intermediate results."""
+
+    def test_exist_in_with_intermediate_result(self):
+        """Test exist_in where operand is a previously computed result.
+
+        Pattern:
+        intermediate := DS_1
+        DS_r := exists_in ( intermediate , DS_2 , false )
+        """
+        ds1 = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        ds2 = Dataset(
+            name="DS_2",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_2": Component(name="Me_2", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        # Intermediate result
+        intermediate_ds = Dataset(
+            name="intermediate",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        # Final output
+        output_ds = Dataset(
+            name="DS_r",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "bool_var": Component(
+                    name="bool_var", data_type=Boolean, role=Role.MEASURE, nullable=True
+                ),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds1, "DS_2": ds2},
+            output_datasets={
+                "intermediate": intermediate_ds,
+                "DS_r": output_ds,
+            },
+        )
+
+        # Create AST:
+        # intermediate := DS_1
+        # DS_r := exists_in(intermediate, DS_2, false)
+        assignment1 = Assignment(
+            **make_ast_node(
+                left=VarID(**make_ast_node(value="intermediate")),
+                op=":=",
+                right=VarID(**make_ast_node(value="DS_1")),
+            )
+        )
+
+        left = VarID(**make_ast_node(value="intermediate"))
+        right = VarID(**make_ast_node(value="DS_2"))
+        retain = Constant(**make_ast_node(value=False, type_="BOOLEAN_CONSTANT"))
+        expr = MulOp(**make_ast_node(op="exists_in", children=[left, right, retain]))
+        assignment2 = Assignment(
+            **make_ast_node(
+                left=VarID(**make_ast_node(value="DS_r")),
+                op=":=",
+                right=expr,
+            )
+        )
+
+        ast = Start(**make_ast_node(children=[assignment1, assignment2]))
+
+        results = transpile_and_get_sql(transpiler, ast)
+
+        # Should have two results
+        assert len(results) == 2
+
+        # Second result should be the exist_in
+        name, sql, _ = results[1]
+        assert name == "DS_r"
+        assert_sql_contains(sql, ["EXISTS", "bool_var"])
+
+
+class TestGetStructure:
+    """Tests for get_structure method and structure transformations."""
+
+    def test_membership_returns_single_measure_structure(self):
+        """Test that get_structure for membership (#) returns only the extracted component."""
+        ds = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+                "Me_2": Component(name="Me_2", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(input_datasets={"DS_1": ds})
+        transpiler.available_tables["DS_1"] = ds
+
+        # Create membership node: DS_1 # Me_1
+        membership = BinOp(
+            **make_ast_node(
+                left=VarID(**make_ast_node(value="DS_1")),
+                op="#",  # MEMBERSHIP token
+                right=VarID(**make_ast_node(value="Me_1")),
+            )
+        )
+
+        structure = transpiler.get_structure(membership)
+
+        # Should only have Id_1 and Me_1, not Me_2
+        assert structure is not None
+        assert "Id_1" in structure.components
+        assert "Me_1" in structure.components
+        assert "Me_2" not in structure.components
+        assert structure.components["Me_1"].role == Role.MEASURE
+
+    def test_isnull_returns_bool_var_structure(self):
+        """Test that get_structure for isnull returns bool_var as output measure."""
+        ds = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(input_datasets={"DS_1": ds})
+        transpiler.available_tables["DS_1"] = ds
+
+        # Create isnull node
+        isnull_node = UnaryOp(
+            **make_ast_node(
+                op="isnull",
+                operand=VarID(**make_ast_node(value="DS_1")),
+            )
+        )
+
+        structure = transpiler.get_structure(isnull_node)
+
+        # Should have Id_1 and bool_var
+        assert structure is not None
+        assert "Id_1" in structure.components
+        assert "bool_var" in structure.components
+        assert "Me_1" not in structure.components  # Original measure replaced
+        assert structure.components["bool_var"].data_type == Boolean
+
+    def test_regular_aggregation_keep_transforms_structure(self):
+        """Test that get_structure for keep clause returns filtered structure."""
+        ds = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+                "Me_2": Component(name="Me_2", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(input_datasets={"DS_1": ds})
+        transpiler.available_tables["DS_1"] = ds
+
+        # Create: DS_1 [ keep Me_1 ]
+        keep_node = RegularAggregation(
+            **make_ast_node(
+                op="keep",
+                dataset=VarID(**make_ast_node(value="DS_1")),
+                children=[VarID(**make_ast_node(value="Me_1"))],
+            )
+        )
+
+        structure = transpiler.get_structure(keep_node)
+
+        # Should have Id_1 and Me_1, not Me_2
+        assert structure is not None
+        assert "Id_1" in structure.components
+        assert "Me_1" in structure.components
+        assert "Me_2" not in structure.components
+
+    def test_regular_aggregation_subspace_removes_identifier(self):
+        """Test that get_structure for subspace removes the fixed identifier."""
+        ds = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Id_2": Component(
+                    name="Id_2", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(input_datasets={"DS_1": ds})
+        transpiler.available_tables["DS_1"] = ds
+
+        # Create: DS_1 [ sub Id_1 = "A" ]
+        subspace_node = RegularAggregation(
+            **make_ast_node(
+                op="sub",
+                dataset=VarID(**make_ast_node(value="DS_1")),
+                children=[
+                    BinOp(
+                        **make_ast_node(
+                            left=VarID(**make_ast_node(value="Id_1")),
+                            op="=",
+                            right=Constant(**make_ast_node(value="A", type_="STRING_CONSTANT")),
+                        )
+                    )
+                ],
+            )
+        )
+
+        structure = transpiler.get_structure(subspace_node)
+
+        # Should have Id_2 and Me_1, not Id_1 (fixed by subspace)
+        assert structure is not None
+        assert "Id_1" not in structure.components
+        assert "Id_2" in structure.components
+        assert "Me_1" in structure.components
+
+    def test_binop_dataset_dataset_includes_all_identifiers(self):
+        """Test that dataset-dataset binary ops include all identifiers from both sides."""
+        ds1 = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Id_2": Component(
+                    name="Id_2", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        ds2 = Dataset(
+            name="DS_2",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Id_3": Component(
+                    name="Id_3", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        output_ds = Dataset(
+            name="DS_r",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Id_2": Component(
+                    name="Id_2", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Id_3": Component(
+                    name="Id_3", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds1, "DS_2": ds2},
+            output_datasets={"DS_r": output_ds},
+        )
+
+        # Create: DS_r := DS_1 + DS_2
+        left = VarID(**make_ast_node(value="DS_1"))
+        right = VarID(**make_ast_node(value="DS_2"))
+        expr = BinOp(**make_ast_node(left=left, op="+", right=right))
+        ast = create_start_with_assignment("DS_r", expr)
+
+        results = transpile_and_get_sql(transpiler, ast)
+
+        assert len(results) == 1
+        name, sql, _ = results[0]
+        assert name == "DS_r"
+
+        # Should include all identifiers
+        assert '"Id_1"' in sql
+        assert '"Id_2"' in sql
+        assert '"Id_3"' in sql
+
+    def test_alias_returns_same_structure(self):
+        """Test that get_structure for alias (as) returns the same structure as the operand."""
+        ds = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(input_datasets={"DS_1": ds})
+        transpiler.available_tables["DS_1"] = ds
+
+        # Create alias node: DS_1 as A
+        alias_node = BinOp(
+            **make_ast_node(
+                left=VarID(**make_ast_node(value="DS_1")),
+                op="as",
+                right=Identifier(**make_ast_node(value="A", kind="DatasetID")),
+            )
+        )
+
+        structure = transpiler.get_structure(alias_node)
+
+        # Should have same structure as DS_1
+        assert structure is not None
+        assert "Id_1" in structure.components
+        assert "Me_1" in structure.components
+        assert structure.components["Id_1"].role == Role.IDENTIFIER
+        assert structure.components["Me_1"].role == Role.MEASURE
+
+    def test_cast_updates_measure_data_types(self):
+        """Test that get_structure for cast returns structure with updated measure types."""
+        ds = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(input_datasets={"DS_1": ds})
+        transpiler.available_tables["DS_1"] = ds
+
+        # Create cast node: cast(DS_1, Integer)
+        cast_node = ParamOp(
+            **make_ast_node(
+                op="cast",
+                children=[
+                    VarID(**make_ast_node(value="DS_1")),
+                    Identifier(**make_ast_node(value="Integer", kind="ScalarTypeID")),
+                ],
+                params=[],
+            )
+        )
+
+        structure = transpiler.get_structure(cast_node)
+
+        # Should have same structure but measures have Integer type
+        assert structure is not None
+        assert "Id_1" in structure.components
+        assert "Me_1" in structure.components
+        # Identifier type should remain unchanged
+        assert structure.components["Id_1"].data_type == String
+        # Measure type should be updated to Integer
+        assert structure.components["Me_1"].data_type == Integer
+
+    def test_cast_with_mask_updates_measure_data_types(self):
+        """Test that get_structure for cast with mask returns structure with updated types."""
+        ds = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=String, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(input_datasets={"DS_1": ds})
+        transpiler.available_tables["DS_1"] = ds
+
+        # Create cast node with mask: cast(DS_1, Date, "YYYY-MM-DD")
+        cast_node = ParamOp(
+            **make_ast_node(
+                op="cast",
+                children=[
+                    VarID(**make_ast_node(value="DS_1")),
+                    Identifier(**make_ast_node(value="Date", kind="ScalarTypeID")),
+                ],
+                params=[ParamConstant(**make_ast_node(value="YYYY-MM-DD", type_="PARAM_CAST"))],
+            )
+        )
+
+        structure = transpiler.get_structure(cast_node)
+
+        # Should have same structure but measures have Date type
+        assert structure is not None
+        assert "Id_1" in structure.components
+        assert "Me_1" in structure.components
+        # Identifier type should remain unchanged
+        assert structure.components["Id_1"].data_type == String
+        # Measure type should be updated to Date
+        assert structure.components["Me_1"].data_type == Date
+
+    def test_join_simple_two_datasets(self):
+        """Test that get_structure for simple join returns combined structure."""
+        ds1 = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        ds2 = Dataset(
+            name="DS_2",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_2": Component(name="Me_2", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(input_datasets={"DS_1": ds1, "DS_2": ds2})
+        transpiler.available_tables["DS_1"] = ds1
+        transpiler.available_tables["DS_2"] = ds2
+
+        # Create join: inner_join(DS_1, DS_2)
+        join_node = JoinOp(
+            **make_ast_node(
+                op="inner_join",
+                clauses=[
+                    VarID(**make_ast_node(value="DS_1")),
+                    VarID(**make_ast_node(value="DS_2")),
+                ],
+                using=None,
+            )
+        )
+
+        structure = transpiler.get_structure(join_node)
+
+        # Should have combined structure: Id_1, Me_1, Me_2
+        assert structure is not None
+        assert "Id_1" in structure.components
+        assert "Me_1" in structure.components
+        assert "Me_2" in structure.components
+        assert structure.components["Id_1"].role == Role.IDENTIFIER
+        assert structure.components["Me_1"].role == Role.MEASURE
+        assert structure.components["Me_2"].role == Role.MEASURE
+
+    def test_join_with_alias_clause(self):
+        """Test that get_structure for join with alias correctly handles aliased datasets."""
+        ds1 = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        ds2 = Dataset(
+            name="DS_2",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_2": Component(name="Me_2", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(input_datasets={"DS_1": ds1, "DS_2": ds2})
+        transpiler.available_tables["DS_1"] = ds1
+        transpiler.available_tables["DS_2"] = ds2
+
+        # Create join: inner_join(DS_1 as A, DS_2 as B)
+        alias_clause_1 = BinOp(
+            **make_ast_node(
+                left=VarID(**make_ast_node(value="DS_1")),
+                op="as",
+                right=Identifier(**make_ast_node(value="A", kind="DatasetID")),
+            )
+        )
+        alias_clause_2 = BinOp(
+            **make_ast_node(
+                left=VarID(**make_ast_node(value="DS_2")),
+                op="as",
+                right=Identifier(**make_ast_node(value="B", kind="DatasetID")),
+            )
+        )
+        join_node = JoinOp(
+            **make_ast_node(
+                op="inner_join",
+                clauses=[alias_clause_1, alias_clause_2],
+                using=None,
+            )
+        )
+
+        structure = transpiler.get_structure(join_node)
+
+        # Should have combined structure: Id_1, Me_1, Me_2
+        assert structure is not None
+        assert "Id_1" in structure.components
+        assert "Me_1" in structure.components
+        assert "Me_2" in structure.components
+
+    def test_join_with_keep_clause(self):
+        """Test that get_structure for join with keep clause applies transformation."""
+        ds1 = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+                "Me_2": Component(name="Me_2", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        ds2 = Dataset(
+            name="DS_2",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_3": Component(name="Me_3", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(input_datasets={"DS_1": ds1, "DS_2": ds2})
+        transpiler.available_tables["DS_1"] = ds1
+        transpiler.available_tables["DS_2"] = ds2
+
+        # Create join: inner_join(DS_1[keep Me_1], DS_2)
+        keep_clause = RegularAggregation(
+            **make_ast_node(
+                op="keep",
+                dataset=VarID(**make_ast_node(value="DS_1")),
+                children=[VarID(**make_ast_node(value="Me_1"))],
+            )
+        )
+        join_node = JoinOp(
+            **make_ast_node(
+                op="inner_join",
+                clauses=[
+                    keep_clause,
+                    VarID(**make_ast_node(value="DS_2")),
+                ],
+                using=None,
+            )
+        )
+
+        structure = transpiler.get_structure(join_node)
+
+        # Should have: Id_1, Me_1 (from keep), Me_3 (from DS_2)
+        # Me_2 should NOT be present (dropped by keep)
+        assert structure is not None
+        assert "Id_1" in structure.components
+        assert "Me_1" in structure.components
+        assert "Me_3" in structure.components
+        assert "Me_2" not in structure.components
+
+    def test_join_with_rename_clause(self):
+        """Test that get_structure for join with rename clause applies transformation."""
+        ds1 = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        ds2 = Dataset(
+            name="DS_2",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_2": Component(name="Me_2", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(input_datasets={"DS_1": ds1, "DS_2": ds2})
+        transpiler.available_tables["DS_1"] = ds1
+        transpiler.available_tables["DS_2"] = ds2
+
+        # Create join: inner_join(DS_1[rename Me_1 to Me_X], DS_2)
+        rename_clause = RegularAggregation(
+            **make_ast_node(
+                op="rename",
+                dataset=VarID(**make_ast_node(value="DS_1")),
+                children=[RenameNode(**make_ast_node(old_name="Me_1", new_name="Me_X"))],
+            )
+        )
+        join_node = JoinOp(
+            **make_ast_node(
+                op="inner_join",
+                clauses=[
+                    rename_clause,
+                    VarID(**make_ast_node(value="DS_2")),
+                ],
+                using=None,
+            )
+        )
+
+        structure = transpiler.get_structure(join_node)
+
+        # Should have: Id_1, Me_X (renamed from Me_1), Me_2
+        # Me_1 should NOT be present (renamed to Me_X)
+        assert structure is not None
+        assert "Id_1" in structure.components
+        assert "Me_X" in structure.components
+        assert "Me_2" in structure.components
+        assert "Me_1" not in structure.components
+
+    def test_join_with_aggregation_group_by(self):
+        """Test that get_structure for join with aggregation group_by applies structure change."""
+        ds1 = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Id_2": Component(
+                    name="Id_2", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        ds2 = Dataset(
+            name="DS_2",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_2": Component(name="Me_2", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(input_datasets={"DS_1": ds1, "DS_2": ds2})
+        transpiler.available_tables["DS_1"] = ds1
+        transpiler.available_tables["DS_2"] = ds2
+
+        # Create join: inner_join(sum(DS_1 group by Id_1), DS_2)
+        # This aggregates DS_1 to only have Id_1 as identifier
+        aggregation_clause = Aggregation(
+            **make_ast_node(
+                op="sum",
+                operand=VarID(**make_ast_node(value="DS_1")),
+                grouping_op="group by",
+                grouping=[VarID(**make_ast_node(value="Id_1"))],
+            )
+        )
+        join_node = JoinOp(
+            **make_ast_node(
+                op="inner_join",
+                clauses=[
+                    aggregation_clause,
+                    VarID(**make_ast_node(value="DS_2")),
+                ],
+                using=None,
+            )
+        )
+
+        structure = transpiler.get_structure(join_node)
+
+        # Should have: Id_1 (from both), Me_1 (from aggregated DS_1), Me_2 (from DS_2)
+        # Id_2 should NOT be present (removed by group by)
+        assert structure is not None
+        assert "Id_1" in structure.components
+        assert "Me_1" in structure.components
+        assert "Me_2" in structure.components
+        assert "Id_2" not in structure.components
+        assert structure.components["Id_1"].role == Role.IDENTIFIER
+
+    def test_join_multiple_identifiers_union(self):
+        """Test that join combines identifiers from all datasets."""
+        ds1 = Dataset(
+            name="DS_1",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Id_A": Component(
+                    name="Id_A", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(name="Me_1", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+        ds2 = Dataset(
+            name="DS_2",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Id_B": Component(
+                    name="Id_B", data_type=String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_2": Component(name="Me_2", data_type=Number, role=Role.MEASURE, nullable=True),
+            },
+            data=None,
+        )
+
+        transpiler = create_transpiler(input_datasets={"DS_1": ds1, "DS_2": ds2})
+        transpiler.available_tables["DS_1"] = ds1
+        transpiler.available_tables["DS_2"] = ds2
+
+        # Create join: inner_join(DS_1, DS_2)
+        join_node = JoinOp(
+            **make_ast_node(
+                op="inner_join",
+                clauses=[
+                    VarID(**make_ast_node(value="DS_1")),
+                    VarID(**make_ast_node(value="DS_2")),
+                ],
+                using=None,
+            )
+        )
+
+        structure = transpiler.get_structure(join_node)
+
+        # Should have all identifiers from both: Id_1, Id_A, Id_B
+        assert structure is not None
+        assert "Id_1" in structure.components
+        assert "Id_A" in structure.components
+        assert "Id_B" in structure.components
+        assert "Me_1" in structure.components
+        assert "Me_2" in structure.components
+        # All identifiers should maintain IDENTIFIER role
+        assert structure.components["Id_1"].role == Role.IDENTIFIER
+        assert structure.components["Id_A"].role == Role.IDENTIFIER
+        assert structure.components["Id_B"].role == Role.IDENTIFIER
+
+
+# =============================================================================
+# StructureVisitor Integration Tests
+# =============================================================================
+
+
+class TestStructureVisitorIntegration:
+    """Test StructureVisitor integration with SQLTranspiler."""
+
+    def test_transpiler_uses_structure_visitor(self):
+        """Test that transpiler delegates structure computation to StructureVisitor."""
+        ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
+        transpiler = create_transpiler(input_datasets={"DS_1": ds})
+
+        # Access structure visitor
+        assert transpiler.structure_visitor is not None
+        assert transpiler.structure_visitor.available_tables == transpiler.available_tables
+
+    def test_transpiler_clears_context_between_transformations(self):
+        """Test that transpiler clears structure context after each assignment."""
+        ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
+        output_ds = create_simple_dataset("DS_r", ["Id_1"], ["Me_1"])
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds},
+            output_datasets={"DS_r": output_ds, "DS_r2": output_ds},
+        )
+
+        # Create AST with two assignments
+        ast = Start(
+            **make_ast_node(
+                children=[
+                    Assignment(
+                        **make_ast_node(
+                            left=VarID(**make_ast_node(value="DS_r")),
+                            op=":=",
+                            right=VarID(**make_ast_node(value="DS_1")),
+                        )
+                    ),
+                    Assignment(
+                        **make_ast_node(
+                            left=VarID(**make_ast_node(value="DS_r2")),
+                            op=":=",
+                            right=VarID(**make_ast_node(value="DS_1")),
+                        )
+                    ),
+                ]
+            )
+        )
+
+        # Process - context should be cleared between assignments
+        results = transpiler.transpile(ast)
+        assert len(results) == 2
+
+        # Structure context should be empty after processing
+        assert len(transpiler.structure_visitor._structure_context) == 0
