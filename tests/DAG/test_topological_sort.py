@@ -4,6 +4,7 @@ import networkx as nx
 import pytest
 
 from vtlengine.AST.DAG import DAGAnalyzer
+from vtlengine.Exceptions import SemanticError
 
 
 def _build_dag_and_sort(vertices: dict, edges: list) -> list:
@@ -11,7 +12,12 @@ def _build_dag_and_sort(vertices: dict, edges: list) -> list:
     dag = DAGAnalyzer()
     dag.vertex = dict(vertices)
     dag.edges = dict(enumerate(edges))
-    dag.nx_topologicalSort()
+    # Populate dependencies so cycle detection can access them
+    dag.dependencies = {
+        k: {"inputs": [], "outputs": [], "persistent": [], "unknown_variables": []}
+        for k in vertices
+    }
+    dag._build_and_sort_graph("test")
     return dag.sorting
 
 
@@ -124,7 +130,7 @@ class TestMemoryOptimalSort:
     def test_cycle_detection(self):
         vertices = {1: "a", 2: "b"}
         edges = [(1, 2), (2, 1)]
-        with pytest.raises(nx.NetworkXUnfeasible):
+        with pytest.raises(SemanticError):
             _build_dag_and_sort(vertices, edges)
 
     def test_wide_fan_in(self):

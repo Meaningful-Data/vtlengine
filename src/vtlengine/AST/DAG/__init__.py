@@ -8,8 +8,9 @@ Direct Acyclic Graph.
 """
 
 import copy
-from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from collections import defaultdict
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Set
 
 import networkx as nx
 
@@ -36,245 +37,197 @@ from vtlengine.AST import (
     VarID,
 )
 from vtlengine.AST.ASTTemplate import ASTTemplate
-from vtlengine.AST.DAG._words import DELETE, GLOBAL, INPUTS, INSERT, OUTPUTS, PERSISTENT, UNKNOWN
+from vtlengine.AST.DAG._models import DatasetSchedule
 from vtlengine.AST.Grammar.tokens import AS, DROP, KEEP, MEMBERSHIP, RENAME, TO
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component
+
+INPUTS = "inputs"
+OUTPUTS = "outputs"
+PERSISTENT = "persistent"
+UNKNOWN = "unknown_variables"
 
 
 @dataclass
 class DAGAnalyzer(ASTTemplate):
     udos: Optional[Dict[str, Any]] = None
-    numberOfStatements: int = 1
-    dependencies: Optional[Dict[str, Any]] = None
-    vertex: Optional[Dict[str, Any]] = None
-    extVertex: Optional[Dict[str, Any]] = None
-    persVertex: Optional[list] = None
-    edges: Optional[Dict[str, Any]] = None
-    nov: int = 0
-    dot: Optional[str] = None
-    sorting: Optional[list] = None
-    output: Optional[Dict[str, Any]] = None
+    number_of_statements: int = 1
+    dependencies: Dict[int, Dict[str, Any]] = field(default_factory=dict)
+    vertex: Dict[int, str] = field(default_factory=dict)
+    edges: Dict[int, tuple] = field(default_factory=dict)  # type: ignore[type-arg]
+    sorting: Optional[List[int]] = None
 
     # Handlers
-    isFirstAssignment: bool = False
-    isFromRegularAggregation: bool = False
-    isDataset: bool = False
-    alias: Optional[list] = None
+    is_first_assignment: bool = False
+    is_from_regular_aggregation: bool = False
+    is_dataset: bool = False
+    alias: Set[str] = field(default_factory=set)
 
     # Statement Structure
-    inputs: Optional[list] = None
-    outputs: Optional[list] = None
-    persistent: Optional[list] = None
-    unknown_variables: Optional[list] = None
-    unknown_variables_statement: Optional[list] = None
-
-    def __post_init__(self):
-        self.dependencies = {}
-        self.vertex = {}
-        self.extVertex = {}
-        self.persVertex = []
-        self.edges = {}
-        self.inputs = []
-        self.outputs = []
-        self.persistent = []
-        self.alias = []
-        self.unknown_variables = []
-        self.unknown_variables_statement = []
+    inputs: Set[str] = field(default_factory=set)
+    outputs: Set[str] = field(default_factory=set)
+    persistent: Set[str] = field(default_factory=set)
+    unknown_variables: Set[str] = field(default_factory=set)
+    unknown_variables_statement: Set[str] = field(default_factory=set)
 
     @classmethod
-    def ds_structure(cls, ast: AST):
-        # Visit AST.
+    def ds_structure(cls, ast: AST) -> DatasetSchedule:
         dag = cls()
         dag.visit(ast)
         return dag._ds_usage_analysis()
 
-    def _ds_usage_analysis(self):
-        statements = {INSERT: {}, DELETE: {}}
-        all_output = []
-        global_inputs = []
-        inserted = []
-        persistent_datasets = []
-        for key, statement in self.dependencies.items():
-            outputs = statement[OUTPUTS]
-            persistent = statement[PERSISTENT]
-            reference = outputs + persistent
-            if len(persistent) == 1 and persistent[0] not in persistent_datasets:
-                persistent_datasets.append(persistent[0])
-            deletion_key = key
-            all_output.append(reference[0])
-            for subKey, subStatement in self.dependencies.items():
-                candidates = subStatement[INPUTS]
-                if candidates and reference[0] in candidates:
-                    deletion_key = subKey
-            if deletion_key in statements[DELETE]:
-                statements[DELETE][deletion_key].append(reference[0])
-            else:
-                statements[DELETE][deletion_key] = reference
+    def _ds_usage_analysis(self) -> DatasetSchedule:
+        """Analyze dataset dependencies to build insertion/deletion schedules."""
+        deletion: Dict[int, List[str]] = defaultdict(list)
+        insertion: Dict[int, List[str]] = defaultdict(list)
+        all_outputs: Set[str] = set()
+        persistent_datasets: List[str] = []
 
-        # Deletion of gloabl inputs
+        # Reverse index: dataset_name -> last statement that uses it as input
+        last_consumer: Dict[str, int] = {}
         for key, statement in self.dependencies.items():
-            inputs = statement[INPUTS]
-            for element in inputs:
-                if element not in all_output and element not in global_inputs:
-                    deletion_key = key
-                    global_inputs.append(element)
-                    for subKey, subStatement in self.dependencies.items():
-                        candidates = subStatement[INPUTS]
-                        if candidates and element in candidates:
-                            deletion_key = subKey
-                    if deletion_key in statements[DELETE]:
-                        statements[DELETE][deletion_key].append(element)
-                    else:
-                        statements[DELETE][deletion_key] = [element]
+            for input_name in statement[INPUTS]:
+                last_consumer[input_name] = key
 
-        # Insertion of global inputs
+        # Schedule deletion for statement outputs at their last consumer
+        for key, statement in self.dependencies.items():
+            reference = statement[OUTPUTS] + statement[PERSISTENT]
+            if (
+                len(statement[PERSISTENT]) == 1
+                and statement[PERSISTENT][0] not in persistent_datasets
+            ):
+                persistent_datasets.append(statement[PERSISTENT][0])
+            ds_name = reference[0]
+            all_outputs.add(ds_name)
+            deletion[last_consumer.get(ds_name, key)].append(ds_name)
+
+        # Schedule insertion (first use) and deletion (last use) for global inputs
+        global_inputs: List[str] = []
+        global_set: Set[str] = set()
         for key, statement in self.dependencies.items():
             for element in statement[INPUTS]:
-                if element not in inserted and element in global_inputs:
-                    inserted.append(element)
-                    if key in statements[INSERT]:
-                        statements[INSERT][key].append(element)
-                    else:
-                        statements[INSERT][key] = [element]
+                if element not in all_outputs and element not in global_set:
+                    global_set.add(element)
+                    global_inputs.append(element)
+                    deletion[last_consumer.get(element, key)].append(element)
+                    insertion[key].append(element)
 
-        statements[GLOBAL] = global_inputs
-        statements[PERSISTENT] = persistent_datasets
-        return statements
+        return DatasetSchedule(
+            insertion=dict(insertion),
+            deletion=dict(deletion),
+            global_inputs=global_inputs,
+            persistent=persistent_datasets,
+        )
 
     @classmethod
-    def createDAG(cls, ast: Start):
-        """ """
-        # Visit AST.
+    def create_dag(cls, ast: Start) -> "DAGAnalyzer":
         dag = cls()
         dag.visit(ast)
-        # Create graph.
-        dag.loadVertex()
-        dag.loadEdges()
+        dag.load_vertex()
+        dag.load_edges()
         try:
-            dag.nx_topologicalSort()
-            # Create output dict.
+            dag._build_and_sort_graph("createDAG")
             if len(dag.edges) != 0:
-                dag.sortAST(ast)
+                dag.sort_ast(ast)
             else:
-                MLStatements: list = [
-                    ML for ML in ast.children if not isinstance(ML, (HRuleset, DPRuleset, Operator))
+                ml_statements: list = [
+                    ml for ml in ast.children if not isinstance(ml, (HRuleset, DPRuleset, Operator))
                 ]
-                dag.check_overwriting(MLStatements)
+                dag.check_overwriting(ml_statements)
             return dag
-
-        except nx.NetworkXUnfeasible:
-            error_keys = {}
-            for v in dag.edges.values():
-                aux_v0, aux_v1 = v[1], v[0]
-                for iv in dag.edges.values():
-                    if aux_v0 == iv[0] and aux_v1 == iv[1]:
-                        error_keys[aux_v0] = dag.dependencies[aux_v0]
-                        error_keys[aux_v1] = dag.dependencies[aux_v1]
-                        break
-            raise SemanticError("1-3-2-3", op="createDAG", nodes=error_keys) from None
-        except SemanticError as error:
-            raise error
+        except SemanticError:
+            raise
         except Exception as error:
             raise SemanticError(code="1-3-2-0") from error
 
-    def loadVertex(self):
-        """ """
-        # For each vertex
+    def _build_and_sort_graph(self, error_op: str) -> None:
+        """Build networkx DAG, perform topological sort, detect cycles."""
+        edges = list(self.edges.values())
+        graph = nx.DiGraph()
+        graph.add_nodes_from(self.vertex)
+        graph.add_edges_from(edges)
+
+        try:
+            result: list = []
+            components = sorted(nx.weakly_connected_components(graph), key=min)
+            for component in components:
+                result.extend(nx.topological_sort(graph.subgraph(component)))
+            self.sorting = result
+        except nx.NetworkXUnfeasible:
+            error_keys: Dict[int, Any] = {}
+            for v in self.edges.values():
+                aux_v0, aux_v1 = v[1], v[0]
+                for iv in self.edges.values():
+                    if aux_v0 == iv[0] and aux_v1 == iv[1]:
+                        error_keys[aux_v0] = self.dependencies[aux_v0]
+                        error_keys[aux_v1] = self.dependencies[aux_v1]
+                        break
+            raise SemanticError("1-3-2-3", op=error_op, nodes=error_keys) from None
+
+    def load_vertex(self) -> None:
         for key, statement in self.dependencies.items():
             output = statement[OUTPUTS] + statement[PERSISTENT] + statement[UNKNOWN]
-            # If the statement has no := or -> symbol there is no vertex to add.
             if len(output) != 0:
                 self.vertex[key] = output[0]
 
-        # Set the number of vertex.
-        self.nov = len(self.vertex)
-
-    def loadEdges(self):
-        """ """
+    def load_edges(self) -> None:
         if len(self.vertex) != 0:
             count_edges = 0
-            # Build a mapping of datasets to their statement keys
-            ref_to_keys = {}
+            ref_to_keys: Dict[str, int] = {}
             for key, statement in self.dependencies.items():
                 reference = statement[OUTPUTS] + statement[PERSISTENT]
                 if reference:
-                    ref_value = reference[0]
-                    ref_to_keys[ref_value] = key
+                    ref_to_keys[reference[0]] = key
 
-            # Create edges by checking inputs against the mapping
-            for subKey, subStatement in self.dependencies.items():
-                for input_val in subStatement[INPUTS]:
+            for sub_key, sub_statement in self.dependencies.items():
+                for input_val in sub_statement[INPUTS]:
                     if input_val in ref_to_keys:
                         key = ref_to_keys[input_val]
-                        self.edges[count_edges] = (key, subKey)
+                        self.edges[count_edges] = (key, sub_key)
                         count_edges += 1
 
-    def nx_topologicalSort(self) -> None:
-        """Memory-optimized topological sort using weakly connected components.
+    def sort_elements(self, statements: list) -> list:
+        return [statements[x - 1] for x in self.sorting]  # type: ignore[union-attr]
 
-        Processes each independent branch of the DAG completely before starting
-        the next, so intermediate results can be freed as early as possible.
-        """
-        edges = list(self.edges.values())
-        G = nx.DiGraph()
-        G.add_nodes_from(self.vertex)
-        G.add_edges_from(edges)
-
-        result: list = []
-        components = sorted(nx.weakly_connected_components(G), key=min)
-        for component in components:
-            result.extend(nx.topological_sort(G.subgraph(component)))
-
-        self.sorting = result
-
-    def sort_elements(self, MLStatements):
-        inter = []
-        for x in self.sorting:
-            for i in range(len(MLStatements)):
-                if i == x - 1:
-                    inter.append(MLStatements[i])
-        return inter
-
-    def check_overwriting(self, statements):
-        non_repeated_outputs = []
+    def check_overwriting(self, statements: list) -> None:
+        seen: Set[str] = set()
         for statement in statements:
-            if statement.left.value in non_repeated_outputs:
+            if statement.left.value in seen:
                 raise SemanticError("1-2-2", varId_value=statement.left.value)
-            else:
-                non_repeated_outputs.append(statement.left.value)
+            seen.add(statement.left.value)
 
-    def sortAST(self, ast: AST):
-        """ """
+    def sort_ast(self, ast: AST) -> None:
         statements_nodes = ast.children
-        HRuleStatements: list = [HRule for HRule in statements_nodes if isinstance(HRule, HRuleset)]
-        DPRuleStatement: list = [
-            DPRule for DPRule in statements_nodes if isinstance(DPRule, DPRuleset)
-        ]
-        DOStatement: list = [DO for DO in statements_nodes if isinstance(DO, Operator)]
-        MLStatements: list = [
-            ML for ML in statements_nodes if not isinstance(ML, (HRuleset, DPRuleset, Operator))
+        hr_statements: list = [node for node in statements_nodes if isinstance(node, HRuleset)]
+        dp_statements: list = [node for node in statements_nodes if isinstance(node, DPRuleset)]
+        do_statements: list = [node for node in statements_nodes if isinstance(node, Operator)]
+        ml_statements: list = [
+            node
+            for node in statements_nodes
+            if not isinstance(node, (HRuleset, DPRuleset, Operator))
         ]
 
-        intermediate = self.sort_elements(MLStatements)
+        intermediate = self.sort_elements(ml_statements)
         self.check_overwriting(intermediate)
-        ast.children = HRuleStatements + DPRuleStatement + DOStatement + intermediate
+        ast.children = hr_statements + dp_statements + do_statements + intermediate
 
-    def statementStructure(self) -> dict:
-        """ """
-        inputs = list(set(self.inputs))
-        outputs = list(set(self.outputs))
-        persistent = list(set(self.persistent))
-        unknown = list(set(self.unknown_variables_statement))
+    def statement_structure(self) -> dict:
+        inputs = list(self.inputs)
+        outputs = list(self.outputs)
+        persistent = list(self.persistent)
+        unknown = list(self.unknown_variables_statement)
 
-        # Remove inputs that are outputs of some statement.
-        inputsF = [inputf for inputf in inputs if inputf not in outputs]
+        # Remove inputs that are also outputs of this statement.
+        inputs_filtered = [inp for inp in inputs if inp not in self.outputs]
 
-        dict_ = {INPUTS: inputsF, OUTPUTS: outputs, PERSISTENT: persistent, UNKNOWN: unknown}
-        for variable in self.unknown_variables_statement:
-            if variable not in self.unknown_variables:
-                self.unknown_variables.append(variable)
-        return dict_
+        result = {
+            INPUTS: inputs_filtered,
+            OUTPUTS: outputs,
+            PERSISTENT: persistent,
+            UNKNOWN: unknown,
+        }
+        self.unknown_variables.update(self.unknown_variables_statement)
+        return result
 
     """______________________________________________________________________________________
 
@@ -299,48 +252,47 @@ class DAGAnalyzer(ASTTemplate):
         self.udos = udos
         for child in node.children:
             if isinstance(child, (Assignment, PersistentAssignment)):
-                self.isFirstAssignment = True
+                self.is_first_assignment = True
                 self.visit(child)
 
                 # Analyze inputs and outputs per each statement.
-                self.dependencies[self.numberOfStatements] = copy.deepcopy(
-                    self.statementStructure()
+                self.dependencies[self.number_of_statements] = copy.deepcopy(
+                    self.statement_structure()
                 )
 
                 # Count the number of statements in order to name the scope symbol table for
                 # each one.
-                self.numberOfStatements += 1
+                self.number_of_statements += 1
 
-                self.alias = []
+                self.alias = set()
+                self.inputs = set()
+                self.outputs = set()
+                self.persistent = set()
+                self.unknown_variables_statement = set()
 
-                self.inputs = []
-                self.outputs = []
-                self.persistent = []
-                self.unknown_variables_statement = []
         aux = copy.copy(self.unknown_variables)
         for variable in aux:
             for _number_of_statement, dependency in self.dependencies.items():
                 if variable in dependency[OUTPUTS]:
-                    if variable in self.unknown_variables:
-                        self.unknown_variables.remove(variable)
-                    for _number_of_statement, dependency in self.dependencies.items():
-                        if variable in dependency[UNKNOWN]:
-                            dependency[UNKNOWN].remove(variable)
-                            dependency[INPUTS].append(variable)
+                    self.unknown_variables.discard(variable)
+                    for _ns2, dep2 in self.dependencies.items():
+                        if variable in dep2[UNKNOWN]:
+                            dep2[UNKNOWN].remove(variable)
+                            dep2[INPUTS].append(variable)
                         if variable not in self.inputs:
-                            self.inputs.append(variable)
+                            self.inputs.add(variable)
 
     def visit_Assignment(self, node: Assignment) -> None:
-        if self.isFirstAssignment:
-            self.outputs.append(node.left.value)
-            self.isFirstAssignment = False
+        if self.is_first_assignment:
+            self.outputs.add(node.left.value)
+            self.is_first_assignment = False
 
         self.visit(node.right)
 
     def visit_PersistentAssignment(self, node: PersistentAssignment) -> None:
-        if self.isFirstAssignment:
-            self.persistent.append(node.left.value)
-            self.isFirstAssignment = False
+        if self.is_first_assignment:
+            self.persistent.add(node.left.value)
+            self.is_first_assignment = False
 
         self.visit(node.right)
 
@@ -349,45 +301,47 @@ class DAGAnalyzer(ASTTemplate):
         if node.op in [KEEP, DROP, RENAME]:
             return
         for child in node.children:
-            self.isFromRegularAggregation = True
+            self.is_from_regular_aggregation = True
             self.visit(child)
-            self.isFromRegularAggregation = False
+            self.is_from_regular_aggregation = False
 
     def visit_BinOp(self, node: BinOp) -> None:
         if node.op == MEMBERSHIP:
-            self.isDataset = True
+            self.is_dataset = True
             self.visit(node.left)
-            self.isDataset = False
+            self.is_dataset = False
             self.visit(node.right)
         elif node.op == AS or node.op == TO:
             self.visit(node.left)
-            self.alias.append(node.right.value)
+            self.alias.add(node.right.value)
         else:
             self.visit(node.left)
             self.visit(node.right)
 
     def visit_VarID(self, node: VarID) -> None:
-        if (not self.isFromRegularAggregation or self.isDataset) and node.value not in self.alias:
-            self.inputs.append(node.value)
+        if (
+            not self.is_from_regular_aggregation or self.is_dataset
+        ) and node.value not in self.alias:
+            self.inputs.add(node.value)
         elif (
-            self.isFromRegularAggregation
+            self.is_from_regular_aggregation
             and node.value not in self.alias
-            and not self.isDataset
+            and not self.is_dataset
             and node.value not in self.unknown_variables_statement
         ):
-            self.unknown_variables_statement.append(node.value)
+            self.unknown_variables_statement.add(node.value)
 
     def visit_Identifier(self, node: Identifier) -> None:
         if node.kind == "DatasetID" and node.value not in self.alias:
-            self.inputs.append(node.value)
+            self.inputs.add(node.value)
 
     def visit_ParamOp(self, node: ParamOp) -> None:
         if self.udos and node.op in self.udos:
-            DO_AST: Operator = self.udos[node.op]
+            do_ast: Operator = self.udos[node.op]
 
             for arg in node.params:
                 index_arg = node.params.index(arg)
-                if DO_AST.parameters[index_arg].type_.kind == "DataSet":
+                if do_ast.parameters[index_arg].type_.kind == "DataSet":
                     self.visit(arg)
         else:
             super(DAGAnalyzer, self).visit_ParamOp(node)
@@ -424,33 +378,6 @@ class DAGAnalyzer(ASTTemplate):
 
 
 class HRDAGAnalyzer(DAGAnalyzer):
-    @classmethod
-    def createDAG(cls, ast: HRuleset):
-        # Visit AST.
-        dag = cls()
-        dag.visit(ast)
-        # Create graph.
-        dag.loadVertex()
-        dag.loadEdges()
-        try:
-            dag.nx_topologicalSort()
-            # Create output dict.
-            if len(dag.edges) != 0:
-                dag.rules_ast = dag.sort_elements(dag.rules_ast)
-                ast.rules = dag.rules_ast
-            return dag
-
-        except nx.NetworkXUnfeasible:
-            error_keys = {}
-            for v in dag.edges.values():
-                aux_v0, aux_v1 = v[1], v[0]
-                for iv in dag.edges.values():
-                    if aux_v0 == iv[0] and aux_v1 == iv[1]:
-                        error_keys[aux_v0] = dag.dependencies[aux_v0]
-                        error_keys[aux_v1] = dag.dependencies[aux_v1]
-                        break
-            raise SemanticError(code="1-3-2-3", op="createHRDAG", nodes=error_keys)
-
     def visit_HRuleset(self, node: HRuleset) -> None:
         """
         HRuleset: (name, element, rules)
@@ -461,28 +388,24 @@ class HRDAGAnalyzer(DAGAnalyzer):
             for rule in node.rules:
                 self.visit(rule)
         """
-        self.hierarchy_ruleset_name = node.name
         if isinstance(node.element, list):
             for element in node.element:
                 self.visit(element)
         else:
             self.visit(node.element)
-        # self.visit(node.element)
         self.rules_ast = node.rules
         for rule in node.rules:
-            self.isFirstAssignment = True
+            self.is_first_assignment = True
             self.visit(rule)
-            self.dependencies[self.numberOfStatements] = copy.deepcopy(self.statementStructure())
+            self.dependencies[self.number_of_statements] = copy.deepcopy(self.statement_structure())
 
-            # Count the number of statements in order to name the scope symbol table for each one.
-            self.numberOfStatements += 1
-            self.alias = []
+            self.number_of_statements += 1
+            self.alias = set()
+            self.inputs = set()
+            self.outputs = set()
+            self.persistent = set()
 
-            self.inputs = []
-            self.outputs = []
-            self.persistent = []
-
-    def visit_DefIdentifier(self, node: DefIdentifier):
+    def visit_DefIdentifier(self, node: DefIdentifier) -> None:  # type: ignore[override]
         """
         DefIdentifier: (value, kind)
 
@@ -490,10 +413,9 @@ class HRDAGAnalyzer(DAGAnalyzer):
 
             return node.value
         """
-        # def visit_Identifier(self, node: Identifier) -> None:
-        if node.kind == "CodeItemID":  # and node.value not in self.alias:
-            if self.isFirstAssignment:
-                self.isFirstAssignment = False
-                self.outputs.append(node.value)
+        if node.kind == "CodeItemID":
+            if self.is_first_assignment:
+                self.is_first_assignment = False
+                self.outputs.add(node.value)
             else:
-                self.inputs.append(node.value)
+                self.inputs.add(node.value)
