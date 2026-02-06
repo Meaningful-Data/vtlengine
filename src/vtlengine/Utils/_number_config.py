@@ -2,7 +2,7 @@
 Configuration utilities for VTL Number type handling.
 
 This module provides functions to read and validate environment variables
-that control Number type behavior in comparisons and output formatting.
+that control Number type behavior in numeric operations, comparisons, and output formatting.
 """
 
 import os
@@ -110,6 +110,25 @@ def get_effective_comparison_digits() -> Optional[int]:
 def get_effective_output_digits() -> Optional[int]:
     """
     Get the effective number of significant digits for output.
+
+    Returns:
+        - None if the feature is disabled (DISABLED_VALUE was set)
+        - The configured value, or DEFAULT_SIGNIFICANT_DIGITS if not set
+    """
+    value = get_output_significant_digits()
+    if value == DISABLED_VALUE:
+        return None
+    return value if value is not None else DEFAULT_SIGNIFICANT_DIGITS
+
+
+def get_effective_numeric_digits() -> Optional[int]:
+    """
+    Get the effective number of significant digits for numeric operations.
+
+    This affects the precision of arithmetic operations (division, multiplication, etc.)
+    by setting the Decimal context precision.
+
+    Uses the OUTPUT_NUMBER_SIGNIFICANT_DIGITS environment variable.
 
     Returns:
         - None if the feature is disabled (DISABLED_VALUE was set)

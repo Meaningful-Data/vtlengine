@@ -84,6 +84,10 @@ centralised_messages = {
         "message": "File {file} must be encoded in utf-8 (without BOM).",
         "description": "Raised when the file encoding is not UTF-8 without BOM.",
     },
+    "0-1-2-6": {
+        "message": "Not found scalar {name} in datastructures",
+        "description": "Occurs when a scalar value expected in the data structures is missing.",
+    },
     "0-1-2-7": {
         "message": "Invalid value '{value}' for type {type_} {op_type} {name}.",
         "description": "Occurs when a value does not match the expected type or operation "

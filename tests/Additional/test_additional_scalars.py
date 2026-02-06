@@ -98,6 +98,7 @@ numeric_params = [
     ("3.3 * 2", 6.6),
     ("2 / 1.0", 2),
     ("1.0 / 2", 0.5),
+    ("33998.0 / 6.329830373", 5371.07599992238),  # Issue #483: precision test
     ("round(null, 0)", None),
     ("round(null)", None),
     ("round(null, 3)", None),
