@@ -169,7 +169,7 @@ Pattern: `cr-{issue_number}` (e.g., `cr-457` for issue #457)
 - Never include links to gitlab in issue descriptions
 - Use issue types instead of labels: `Bug`, `Feature`, or `Task`
 - Use standard dataset/component naming: `DS_1`, `DS_2` for datasets; `Id_1`, `Id_2` for identifiers; `Me_1`, `Me_2` for measures; `At_1`, `At_2` for attributes
-- Always include the actual output of the script and what the expected output should be. If the output is data, format it as a markdown table for clarity
+- Always run the reproduction script to get the actual output — never guess or manually write it. If the output is data, format it as a markdown table for clarity
 - Include a self-contained Python reproduction script using `run()` instead of separate VTL/JSON/CSV files:
 
 ```python
