@@ -164,6 +164,11 @@ Pattern: `cr-{issue_number}` (e.g., `cr-457` for issue #457)
 3. Run all quality checks (ruff format, ruff check, mypy, pytest)
 4. Push and create draft PR: `gh pr create --draft --title "Fix #{issue_number}: Description"`
 
+### Pull Request Descriptions
+
+- Never include code quality check results (ruff, mypy, pytest) in PR descriptions
+- Focus on what changed, why, impact/risk, and notes
+
 ## Common Pitfalls
 
 1. **Never edit Grammar files** - They're ANTLR-generated. Change `.g4` and regenerate if needed.

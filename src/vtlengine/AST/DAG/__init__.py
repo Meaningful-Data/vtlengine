@@ -210,13 +210,23 @@ class DAGAnalyzer(ASTTemplate):
                         self.edges[count_edges] = (key, subKey)
                         count_edges += 1
 
-    def nx_topologicalSort(self):
-        """ """
+    def nx_topologicalSort(self) -> None:
+        """Memory-optimized topological sort using weakly connected components.
+
+        Processes each independent branch of the DAG completely before starting
+        the next, so intermediate results can be freed as early as possible.
+        """
         edges = list(self.edges.values())
-        DAG = nx.DiGraph()
-        DAG.add_nodes_from(self.vertex)
-        DAG.add_edges_from(edges)
-        self.sorting = list(nx.topological_sort(DAG))
+        G = nx.DiGraph()
+        G.add_nodes_from(self.vertex)
+        G.add_edges_from(edges)
+
+        result: list = []
+        components = sorted(nx.weakly_connected_components(G), key=min)
+        for component in components:
+            result.extend(nx.topological_sort(G.subgraph(component)))
+
+        self.sorting = result
 
     def sort_elements(self, MLStatements):
         inter = []
