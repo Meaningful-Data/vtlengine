@@ -164,6 +164,38 @@ Pattern: `cr-{issue_number}` (e.g., `cr-457` for issue #457)
 3. Run all quality checks (ruff format, ruff check, mypy, pytest)
 4. Push and create draft PR: `gh pr create --draft --title "Fix #{issue_number}: Description"`
 
+### Issue Conventions
+
+- Never include links to gitlab in issue descriptions
+- Use standard dataset/component naming: `DS_1`, `DS_2` for datasets; `Id_1`, `Id_2` for identifiers; `Me_1`, `Me_2` for measures; `At_1`, `At_2` for attributes
+- Always include the actual output of the script and what the expected output should be. If the output is data, format it as a markdown table for clarity
+- Include a self-contained Python reproduction script using `run()` instead of separate VTL/JSON/CSV files:
+
+```python
+import pandas as pd
+from vtlengine import run
+
+script = """DS_r <- DS_1 * 10;"""
+
+data_structures = {
+    "datasets": [
+        {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+            ],
+        }
+    ]
+}
+
+data_df = pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [10, 20, 30]})
+datapoints = {"DS_1": data_df}
+
+result = run(script=script, data_structures=data_structures, datapoints=datapoints)
+print(result)
+```
+
 ## Common Pitfalls
 
 1. **Never edit Grammar files** - They're ANTLR-generated. Change `.g4` and regenerate if needed.
