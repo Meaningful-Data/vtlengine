@@ -49,6 +49,25 @@ ds_param = [
         "GL_563_1",
         """ds_with_year  := DSD_AN_HOUSE_PRICES[calc identifier year_id  := cast(time_agg("A", TIME_PERIOD), string)]; ds_with_year2 := ds_with_year[calc identifier year_id2 := cast(time_agg("A", TIME_PERIOD), string)];""",
     ),
+    (
+        "GH_487",
+        """
+        define operator growth_rate (ds dataset)
+        returns dataset is
+            inner_join(
+                DS_1
+                    [filter FREQ = "M"]
+                    [keep OBS_VALUE]
+                    [rename OBS_VALUE to CURRENT] as C,
+                timeshift(DS_1[filter FREQ = "M"], 12)
+                    [keep OBS_VALUE]
+                    [rename OBS_VALUE to PREVIOUS] as P
+                calc GROWTH := if PREVIOUS <> 0 then (CURRENT - PREVIOUS) / PREVIOUS * 100 else 0)
+        end operator;
+
+        DS_r <- growth_rate(DS_1);
+        """,
+    ),
 ]
 
 error_param = [

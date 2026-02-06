@@ -1,0 +1,81 @@
+{
+    "datasets": [
+        {
+            "name": "DS_r",
+            "DataStructure": [
+                {
+                    "name": "ADJUSTMENT",
+                    "type": "String",
+                    "nullable": false,
+                    "role": "Identifier"
+                },
+                {
+                    "name": "DERIVATION",
+                    "type": "String",
+                    "nullable": false,
+                    "role": "Identifier"
+                },
+                {
+                    "name": "FREQ",
+                    "type": "String",
+                    "nullable": false,
+                    "role": "Identifier"
+                },
+                {
+                    "name": "INDEX_BASE",
+                    "type": "String",
+                    "nullable": false,
+                    "role": "Identifier"
+                },
+                {
+                    "name": "INDEX_TYPE",
+                    "type": "String",
+                    "nullable": false,
+                    "role": "Identifier"
+                },
+                {
+                    "name": "INSTITUTION",
+                    "type": "String",
+                    "nullable": false,
+                    "role": "Identifier"
+                },
+                {
+                    "name": "NBB_COICOP",
+                    "type": "String",
+                    "nullable": false,
+                    "role": "Identifier"
+                },
+                {
+                    "name": "GROWTH",
+                    "type": "Number",
+                    "nullable": true,
+                    "role": "Measure"
+                },
+                {
+                    "name": "CURRENT",
+                    "type": "Number",
+                    "nullable": true,
+                    "role": "Measure"
+                },
+                {
+                    "name": "PREVIOUS",
+                    "type": "Number",
+                    "nullable": true,
+                    "role": "Measure"
+                },
+                {
+                    "name": "REF_AREA",
+                    "type": "String",
+                    "nullable": false,
+                    "role": "Identifier"
+                },
+                {
+                    "name": "TIME_PERIOD",
+                    "type": "Time_Period",
+                    "nullable": false,
+                    "role": "Identifier"
+                }
+            ]
+        }
+    ]
+}
