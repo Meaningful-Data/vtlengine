@@ -163,6 +163,7 @@ Pattern: `cr-{issue_number}` (e.g., `cr-457` for issue #457)
 2. Make changes with descriptive commits
 3. Run all quality checks (ruff format, ruff check, mypy, pytest)
 4. Push and create draft PR: `gh pr create --draft --title "Fix #{issue_number}: Description"`
+5. Never add the PR to a milestone
 
 ### Issue Conventions
 
