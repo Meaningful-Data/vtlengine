@@ -627,7 +627,7 @@ class Time_Shift(Binary):
             year += (value - 1) // period_limit
             value = (value - 1) % period_limit + 1
 
-        return f"{year}-{period}{value}"
+        return str(TimePeriodHandler(f"{year}-{period}{value}"))
 
     @classmethod
     def shift_interval(cls, interval: str, shift_value: Any, frequency: str) -> str:
