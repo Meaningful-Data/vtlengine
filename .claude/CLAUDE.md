@@ -163,6 +163,45 @@ Pattern: `cr-{issue_number}` (e.g., `cr-457` for issue #457)
 2. Make changes with descriptive commits
 3. Run all quality checks (ruff format, ruff check, mypy, pytest)
 4. Push and create draft PR: `gh pr create --draft --title "Fix #{issue_number}: Description"`
+5. Never add the PR to a milestone
+
+### Issue Conventions
+
+- Never include links to gitlab in issue descriptions
+- Use issue types instead of labels: `Bug`, `Feature`, or `Task`
+- Use standard dataset/component naming: `DS_1`, `DS_2` for datasets; `Id_1`, `Id_2` for identifiers; `Me_1`, `Me_2` for measures; `At_1`, `At_2` for attributes
+- Always run the reproduction script to get the actual output — never guess or manually write it. If the output is data, format it as a markdown table for clarity
+- Include a self-contained Python reproduction script using `run()` instead of separate VTL/JSON/CSV files:
+
+```python
+import pandas as pd
+from vtlengine import run
+
+script = """DS_r <- DS_1 * 10;"""
+
+data_structures = {
+    "datasets": [
+        {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+            ],
+        }
+    ]
+}
+
+data_df = pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [10, 20, 30]})
+datapoints = {"DS_1": data_df}
+
+result = run(script=script, data_structures=data_structures, datapoints=datapoints)
+print(result)
+```
+
+### Pull Request Descriptions
+
+- Never include code quality check results (ruff, mypy, pytest) in PR descriptions
+- Focus on what changed, why, impact/risk, and notes
 
 ## Common Pitfalls
 
@@ -171,7 +210,7 @@ Pattern: `cr-{issue_number}` (e.g., `cr-457` for issue #457)
 3. **AST node equality** - Override `ast_equality()` when adding nodes
 4. **Nullable identifiers** - Will raise `SemanticError("0-1-1-13")`
 5. **ANTLR version** - Must use 4.9.x to match `antlr4-python3-runtime` dependency
-6. **Version updates** - When bumping version, update BOTH `pyproject.toml` AND `src/vtlengine/__init__.py`
+6. **Version updates** - When bumping version, update BOTH `pyproject.toml` AND `src/vtlengine/__init__.py`. Always create a new branch from `origin/main` for version bumps and create a PR with no body
 
 ## External Dependencies
 
