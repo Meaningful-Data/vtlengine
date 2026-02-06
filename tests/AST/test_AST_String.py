@@ -50,6 +50,7 @@ params_prettier = [
     ("GH_352.vtl", "reference_GH_352.vtl"),
     ("GH_358.vtl", "reference_GH_358.vtl"),
     ("validation.vtl", "reference_validation.vtl"),
+    ("validation_str_errorlevel.vtl", "reference_validation_str_errorlevel.vtl"),
     ("unbounded.vtl", "reference_unbounded.vtl"),
     ("time_agg.vtl", "reference_time_agg.vtl"),
 ]
