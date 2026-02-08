@@ -870,6 +870,94 @@ def ast_to_sdmx(ast: AST.Start, agency_id: str, id: str, version: str) -> Transf
     return transformation_scheme
 
 
+def _is_url(value: Any) -> bool:
+    """
+    Check if a value is an HTTP/HTTPS URL.
+
+    Args:
+        value: Any value to check.
+
+    Returns:
+        True if the value is a string starting with http:// or https://.
+    """
+    return isinstance(value, str) and (value.startswith("http://") or value.startswith("https://"))
+
+
+def _handle_url_structure(
+    url: str,
+    sdmx_mappings: Optional[Dict[str, str]] = None,
+) -> Tuple[Dict[str, Dataset], Dict[str, Scalar]]:
+    """
+    Fetch SDMX structure from URL using pysdmx and return datasets.
+
+    Uses pysdmx's read_sdmx to fetch structure messages from HTTP/HTTPS URLs.
+
+    Args:
+        url: HTTP/HTTPS URL to an SDMX structure file.
+        sdmx_mappings: Optional mapping from SDMX URNs to VTL dataset names.
+
+    Returns:
+        Tuple of (datasets, scalars) from the fetched structure.
+
+    Raises:
+        DataLoadError: If fetching from URL fails.
+    """
+    vtl_json = load_sdmx_structure(url, sdmx_mappings=sdmx_mappings)  # type: ignore[arg-type]
+    return _load_dataset_from_structure(vtl_json)
+
+
+def _handle_url_datapoints(
+    url_datapoints: Dict[str, str],
+    sdmx_structure: Union[str, Path],
+    sdmx_mappings: Optional[Dict[str, str]] = None,
+) -> Tuple[Dict[str, Dataset], Dict[str, Scalar], Dict[str, pd.DataFrame]]:
+    """
+    Fetch SDMX data from URLs using pysdmx and return datasets.
+
+    Args:
+        url_datapoints: Dict mapping dataset names to HTTP/HTTPS URLs.
+        sdmx_structure: Path to SDMX structure file (required for URL fetching).
+        sdmx_mappings: Optional mapping from SDMX URNs to VTL dataset names.
+
+    Returns:
+        Tuple of (datasets, scalars, dataframes) for merging with other datapoints.
+
+    Raises:
+        DataLoadError: If fetching from URL fails.
+    """
+    from pysdmx.io import get_datasets
+
+    datasets: Dict[str, Dataset] = {}
+    dataframes: Dict[str, pd.DataFrame] = {}
+
+    for dataset_name, url in url_datapoints.items():
+        try:
+            sdmx_datasets = get_datasets(data=url, structure=sdmx_structure)
+        except Exception as e:
+            raise DataLoadError(code="0-3-1-13", url=url, error=str(e))
+
+        if not sdmx_datasets:
+            raise DataLoadError(code="0-3-1-13", url=url, error="No data returned")
+
+        sdmx_dataset = sdmx_datasets[0]
+        schema = sdmx_dataset.structure
+
+        if isinstance(schema, Schema):
+            vtl_json = to_vtl_json(schema, dataset_name=dataset_name)
+            ds_dict, _ = _load_dataset_from_structure(vtl_json)
+            datasets.update(ds_dict)
+        else:
+            raise DataLoadError(
+                code="0-3-1-13",
+                url=url,
+                error=f"Expected Schema object, got {type(schema).__name__}",
+            )
+
+        dataframes[dataset_name] = sdmx_dataset.data  # type: ignore[attr-defined]
+
+    return datasets, {}, dataframes
+
+
 def _check_script(script: Union[str, TransformationScheme, Path]) -> str:
     """
     Check if the TransformationScheme object is valid to generate a vtl script.

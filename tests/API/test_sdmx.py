@@ -1461,3 +1461,105 @@ def test_mixed_sdmx_csv_memory_efficient(sdmx_data_file, sdmx_data_structure):
         # Both output files should exist
         assert (Path(tmpdir) / "DS_r.csv").exists()
         assert (Path(tmpdir) / "DS_r2.csv").exists()
+
+
+# =============================================================================
+# Tests for run() with URL datapoints (Issue #482)
+# =============================================================================
+
+
+def test_run_url_missing_structure_error():
+    """Test run() error when URL datapoints provided without sdmx_structure."""
+    with pytest.raises(InputValidationException, match="0-1-3-8"):
+        run(
+            script="DS_r <- DS_1;",
+            data_structures={"datasets": [{"name": "DS_1", "DataStructure": []}]},
+            datapoints={"DS_1": "https://example.com/data.xml"},
+        )
+
+
+def test_is_url_detection():
+    """Test URL detection helper function."""
+    from vtlengine.API._InternalApi import _is_url
+
+    # Valid URLs
+    assert _is_url("https://example.com/data.xml") is True
+    assert _is_url("http://example.com/data.xml") is True
+    assert _is_url("https://stats.bis.org/api/v2/data/dataflow/BIS/WS_DEBT_SEC2_PUB/1.0") is True
+
+    # Not URLs
+    assert _is_url("/path/to/file.xml") is False
+    assert _is_url("file.xml") is False
+    assert _is_url(Path("/path/to/file.xml")) is False
+    assert _is_url(None) is False
+    assert _is_url(123) is False
+    assert _is_url(pd.DataFrame()) is False
+
+
+@pytest.mark.skip(reason="Integration test requiring network access - run manually")
+def test_run_with_url_datapoints_and_local_structure(sdmx_structure_file):
+    """
+    Integration test: run() with URL datapoints and local structure file.
+
+    This test requires network access to the BIS API.
+    Run manually with: pytest tests/API/test_sdmx.py::test_run_with_url_datapoints_and_local_structure -v
+
+    Note: Requires a valid SDMX structure file that matches the BIS API response.
+    """
+    data_url = (
+        "https://stats.bis.org/api/v2/data/dataflow/BIS/WS_DEBT_SEC2_PUB/1.0/"
+        "Q.3P.3P.1.1.C.A.A.TO1.A.A.A.A.A.I"
+    )
+    script = "DS_r <- DS_1;"
+
+    result = run(
+        script=script,
+        data_structures=sdmx_structure_file,
+        datapoints={"DS_1": data_url},
+        sdmx_structure=sdmx_structure_file,
+        sdmx_mappings={"Dataflow=BIS:WS_DEBT_SEC2_PUB(1.0)": "DS_1"},
+        return_only_persistent=False,
+    )
+
+    assert "DS_r" in result
+    assert result["DS_r"].data is not None
+    assert len(result["DS_r"].data) > 0
+
+
+# =============================================================================
+# Tests for semantic_analysis() with URL data_structures (Issue #482)
+# =============================================================================
+
+
+def test_semantic_analysis_url_structure_detection():
+    """Test that semantic_analysis() correctly detects URL data_structures."""
+    from vtlengine.API._InternalApi import _is_url
+
+    # URL should be detected
+    assert _is_url("https://example.com/structure.xml") is True
+    assert _is_url("http://example.com/structure.xml") is True
+
+    # Non-URL should not be detected
+    assert _is_url("/path/to/structure.xml") is False
+    assert _is_url(Path("/path/to/structure.xml")) is False
+
+
+@pytest.mark.skip(reason="Integration test requiring network access - run manually")
+def test_semantic_analysis_with_url_structure():
+    """
+    Integration test: semantic_analysis() with URL data_structures.
+
+    This test requires network access to an SDMX structure endpoint.
+    Run manually with: pytest tests/API/test_sdmx.py::test_semantic_analysis_with_url_structure -v
+    """
+    # Example BIS structure URL (replace with valid URL for testing)
+    structure_url = "https://stats.bis.org/api/v2/structure/datastructure/BIS/BIS_DER"
+    script = "DS_r <- BIS_DER;"
+
+    result = semantic_analysis(
+        script=script,
+        data_structures=structure_url,
+    )
+
+    assert "DS_r" in result
+    assert isinstance(result["DS_r"], Dataset)

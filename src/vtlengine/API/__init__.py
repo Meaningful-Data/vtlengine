@@ -12,6 +12,9 @@ from pysdmx.model.vtl import VtlDataflowMapping
 from vtlengine.API._InternalApi import (
     _check_output_folder,
     _check_script,
+    _handle_url_datapoints,
+    _handle_url_structure,
+    _is_url,
     _return_only_persistent_datasets,
     ast_to_sdmx,
     load_datasets,
@@ -191,15 +194,17 @@ def semantic_analysis(
     data_structures: Union[
         Dict[str, Any],
         Path,
+        str,
         Schema,
         DataStructureDefinition,
         Dataflow,
-        List[Union[Dict[str, Any], Path, Schema, DataStructureDefinition, Dataflow]],
+        List[Union[Dict[str, Any], Path, str, Schema, DataStructureDefinition, Dataflow]],
     ],
     value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
     external_routines: Optional[
         Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
     ] = None,
+    sdmx_mappings: Optional[Union[VtlDataflowMapping, Dict[str, str]]] = None,
 ) -> Dict[str, Dataset]:
     """
     Checks if the vtl scripts and its related datastructures are valid. As part of the compatibility
@@ -237,6 +242,9 @@ def semantic_analysis(
         Check the following example: \
         :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
 
+        sdmx_mappings: A dictionary or VtlDataflowMapping object that maps SDMX URNs \
+        (e.g., "Dataflow=MD:TEST_DF(1.0)") to VTL dataset names. (default: None)
+
     Returns:
         The computed datasets.
 
@@ -245,13 +253,36 @@ def semantic_analysis(
         or their Paths are invalid.
     """
 
+    # Convert sdmx_mappings to dict format for internal use
+    mapping_dict = _convert_sdmx_mappings(sdmx_mappings)
+
     # AST generation
     checking = _check_script(script)
     vtl = load_vtl(checking)
     ast = create_ast(vtl)
 
-    # Loading datasets
-    datasets, scalars = load_datasets(data_structures)
+    # Handle URL data_structures
+    if _is_url(data_structures):
+        datasets, scalars = _handle_url_structure(
+            cast(str, data_structures), sdmx_mappings=mapping_dict
+        )
+    else:
+        # Loading datasets from file/dict/pysdmx objects
+        # Cast to exclude str (URLs are handled above)
+        datasets, scalars = load_datasets(
+            cast(
+                Union[
+                    Dict[str, Any],
+                    Path,
+                    Schema,
+                    DataStructureDefinition,
+                    Dataflow,
+                    List[Union[Dict[str, Any], Path, Schema, DataStructureDefinition, Dataflow]],
+                ],
+                data_structures,
+            ),
+            sdmx_mappings=mapping_dict,
+        )
 
     # Handling of library items
     vd = None
@@ -293,6 +324,7 @@ def run(
     output_folder: Optional[Union[str, Path]] = None,
     scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
     sdmx_mappings: Optional[Union[VtlDataflowMapping, Dict[str, str]]] = None,
+    sdmx_structure: Optional[Union[str, Path]] = None,
 ) -> Dict[str, Union[Dataset, Scalar]]:
     """
     Run is the main function of the ``API``, which mission is to execute
@@ -383,6 +415,10 @@ def run(
         (e.g., "Dataflow=MD:TEST_DF(1.0)") to VTL dataset names. This parameter is \
         primarily used when calling run() from run_sdmx() to pass mapping configuration.
 
+        sdmx_structure: Path to an SDMX structure file (XML or JSON). Required when \
+        datapoints contains HTTP/HTTPS URLs. The structure file provides the schema \
+        needed to parse remote SDMX data. (default: None)
+
     Returns:
        The datasets are produced without data if the output folder is defined.
 
@@ -395,15 +431,57 @@ def run(
     # Convert sdmx_mappings to dict format for internal use
     mapping_dict = _convert_sdmx_mappings(sdmx_mappings)
 
+    # Detect URL datapoints and separate them from file/DataFrame datapoints
+    url_datapoints: Dict[str, str] = {}
+    non_url_datapoints: Dict[str, Union[pd.DataFrame, str, Path]] = {}
+
+    if isinstance(datapoints, dict):
+        for name, value in datapoints.items():
+            if _is_url(value):
+                url_datapoints[name] = cast(str, value)
+            else:
+                non_url_datapoints[name] = value
+    else:
+        # For list/Path inputs, no URL detection needed
+        non_url_datapoints = cast(Dict[str, Union[pd.DataFrame, str, Path]], datapoints)
+
+    # Handle URL datapoints via pysdmx
+    url_datasets: Dict[str, Dataset] = {}
+    url_dataframes: Dict[str, pd.DataFrame] = {}
+    if url_datapoints:
+        if sdmx_structure is None:
+            raise InputValidationException(code="0-1-3-8")
+        url_datasets, _, url_dataframes = _handle_url_datapoints(
+            url_datapoints, sdmx_structure, mapping_dict
+        )
+
     # AST generation
     script = _check_script(script)
     vtl = load_vtl(script)
     ast = create_ast(vtl)
 
-    # Loading datasets and datapoints
-    datasets, scalars, path_dict = load_datasets_with_data(
-        data_structures, datapoints, scalar_values, sdmx_mappings=mapping_dict
-    )
+    # Loading datasets and datapoints (non-URL)
+    if non_url_datapoints or not url_datapoints:
+        datasets, scalars, path_dict = load_datasets_with_data(
+            data_structures,
+            non_url_datapoints if non_url_datapoints else None,
+            scalar_values,
+            sdmx_mappings=mapping_dict,
+        )
+    else:
+        # All datapoints are URLs, load only structures
+        datasets, scalars = load_datasets(data_structures, sdmx_mappings=mapping_dict)
+        path_dict = None
+
+    # Merge URL datasets with file-based datasets
+    if url_datapoints:
+        datasets.update(url_datasets)
+        # Add URL dataframes to datasets
+        for ds_name, df in url_dataframes.items():
+            if ds_name in datasets:
+                from vtlengine.files.parser import _validate_pandas
+
+                datasets[ds_name].data = _validate_pandas(datasets[ds_name].components, df, ds_name)
 
     # Handling of library items
     vd = None
