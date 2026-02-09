@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Literal, Optional, Tuple, Union, cast
 
 import jsonschema
 import pandas as pd
+from pysdmx.io import get_datasets
 from pysdmx.model.dataflow import Dataflow, DataStructureDefinition, Schema
 from pysdmx.model.vtl import (
     Ruleset,
@@ -925,7 +926,6 @@ def _handle_url_datapoints(
     Raises:
         DataLoadError: If fetching from URL fails.
     """
-    from pysdmx.io import get_datasets
 
     datasets: Dict[str, Dataset] = {}
     dataframes: Dict[str, pd.DataFrame] = {}

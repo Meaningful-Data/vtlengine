@@ -1508,7 +1508,7 @@ def test_run_with_url_datapoints_and_local_structure(sdmx_data_file, sdmx_struct
     data_url = "https://stats.bis.org/api/v2/data/dataflow/BIS/WS_DEBT_SEC2_PUB/1.0/Q.3P"
     script = "DS_r <- BIS_DER;"
 
-    with patch("pysdmx.io.get_datasets", return_value=real_datasets):
+    with patch("vtlengine.API._InternalApi.get_datasets", return_value=real_datasets):
         result = run(
             script=script,
             data_structures=sdmx_structure_file,
@@ -1563,7 +1563,7 @@ def test_run_with_url_data_structures_and_url_datapoints(sdmx_data_file, sdmx_st
 
     with (
         patch("vtlengine.files.sdmx_handler.read_sdmx", return_value=real_msg),
-        patch("pysdmx.io.get_datasets", return_value=real_datasets),
+        patch("vtlengine.API._InternalApi.get_datasets", return_value=real_datasets),
     ):
         result = run(
             script=script,

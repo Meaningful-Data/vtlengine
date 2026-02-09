@@ -35,6 +35,7 @@ from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
     format_time_period_external_representation,
 )
+from vtlengine.files.parser import _validate_pandas
 from vtlengine.files.sdmx_handler import load_sdmx_structure, to_vtl_json
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Dataset, Scalar
@@ -486,8 +487,6 @@ def run(
         # Add URL dataframes to datasets
         for ds_name, df in url_dataframes.items():
             if ds_name in datasets:
-                from vtlengine.files.parser import _validate_pandas
-
                 datasets[ds_name].data = _validate_pandas(datasets[ds_name].components, df, ds_name)
 
     # Handling of library items
