@@ -463,7 +463,8 @@ def run(
     resolved_structures: Any = data_structures
     if _is_url(data_structures):
         resolved_structures = load_sdmx_structure(
-            cast(str, data_structures), sdmx_mappings=mapping_dict  # type: ignore[arg-type]
+            cast(str, data_structures),  # type: ignore[arg-type]
+            sdmx_mappings=mapping_dict,
         )
 
     # Loading datasets and datapoints (non-URL)
