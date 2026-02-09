@@ -1485,7 +1485,7 @@ def test_is_url_detection():
     # Valid URLs
     assert _is_url("https://example.com/data.xml") is True
     assert _is_url("http://example.com/data.xml") is True
-    assert _is_url("https://stats.bis.org/api/v2/data/dataflow/BIS/WS_DEBT_SEC2_PUB/1.0") is True
+    assert _is_url("https://example.com/api/v2/data") is True
 
     # Not URLs
     assert _is_url("/path/to/file.xml") is False
@@ -1505,14 +1505,15 @@ def test_run_with_url_datapoints_and_local_structure(sdmx_data_file, sdmx_struct
     # Pre-load real SDMX data to use as mock return value
     real_datasets = real_get_datasets(data=sdmx_data_file, structure=sdmx_structure_file)
 
-    data_url = "https://example.com/datastructure.xml"
-    script = "DS_r <- BIS_DER;"
+    data_url = "https://example.com/data.xml"
+    script = "DS_r <- DS_1;"
 
-    with patch("vtlengine.API._InternalApi.get_datasets", return_value=real_datasets):
+    with patch("pysdmx.io.get_datasets", return_value=real_datasets):
         result = run(
             script=script,
             data_structures=sdmx_structure_file,
-            datapoints={"BIS_DER": data_url},
+            datapoints={"DS_1": data_url},
+            sdmx_mappings={"DataStructure=BIS:BIS_DER(1.0)": "DS_1"},
             return_only_persistent=False,
         )
 
@@ -1531,13 +1532,14 @@ def test_run_with_url_data_structures(sdmx_data_file, sdmx_structure_file):
     real_msg = real_read_sdmx(sdmx_structure_file)
 
     structure_url = "https://example.com/datastructure.xml"
-    script = "DS_r <- BIS_DER;"
+    script = "DS_r <- DS_1;"
 
-    with patch("vtlengine.files.sdmx_handler.read_sdmx", return_value=real_msg):
+    with patch("pysdmx.io.read_sdmx", return_value=real_msg):
         result = run(
             script=script,
             data_structures=structure_url,
-            datapoints={"BIS_DER": sdmx_data_file},
+            datapoints={"DS_1": sdmx_data_file},
+            sdmx_mappings={"DataStructure=BIS:BIS_DER(1.0)": "DS_1"},
             return_only_persistent=False,
         )
 
@@ -1558,17 +1560,18 @@ def test_run_with_url_data_structures_and_url_datapoints(sdmx_data_file, sdmx_st
     real_datasets = real_get_datasets(data=sdmx_data_file, structure=sdmx_structure_file)
 
     structure_url = "https://example.com/datastructure.xml"
-    data_url = "https://stats.bis.org/api/v2/data/dataflow/BIS/WS_DEBT_SEC2_PUB/1.0/Q.3P"
-    script = "DS_r <- BIS_DER;"
+    data_url = "https://example.com/data.xml"
+    script = "DS_r <- DS_1;"
 
     with (
-        patch("vtlengine.files.sdmx_handler.read_sdmx", return_value=real_msg),
-        patch("vtlengine.API._InternalApi.get_datasets", return_value=real_datasets),
+        patch("pysdmx.io.read_sdmx", return_value=real_msg),
+        patch("pysdmx.io.get_datasets", return_value=real_datasets),
     ):
         result = run(
             script=script,
             data_structures=structure_url,
-            datapoints={"BIS_DER": data_url},
+            datapoints={"DS_1": data_url},
+            sdmx_mappings={"DataStructure=BIS:BIS_DER(1.0)": "DS_1"},
             return_only_persistent=False,
         )
 
@@ -1605,12 +1608,13 @@ def test_semantic_analysis_with_url_structure(sdmx_structure_file):
     real_msg = real_read_sdmx(sdmx_structure_file)
 
     structure_url = "https://example.com/datastructure.xml"
-    script = "DS_r <- BIS_DER;"
+    script = "DS_r <- DS_1;"
 
-    with patch("vtlengine.files.sdmx_handler.read_sdmx", return_value=real_msg):
+    with patch("pysdmx.io.read_sdmx", return_value=real_msg):
         result = semantic_analysis(
             script=script,
             data_structures=structure_url,
+            sdmx_mappings={"DataStructure=BIS:BIS_DER(1.0)": "DS_1"},
         )
 
     assert "DS_r" in result

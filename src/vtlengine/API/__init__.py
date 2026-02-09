@@ -12,9 +12,6 @@ from pysdmx.model.vtl import VtlDataflowMapping
 from vtlengine.API._InternalApi import (
     _check_output_folder,
     _check_script,
-    _handle_url_datapoints,
-    _handle_url_structure,
-    _is_url,
     _return_only_persistent_datasets,
     ast_to_sdmx,
     load_datasets,
@@ -35,8 +32,7 @@ from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
     format_time_period_external_representation,
 )
-from vtlengine.files.parser import _validate_pandas
-from vtlengine.files.sdmx_handler import load_sdmx_structure, to_vtl_json
+from vtlengine.files.sdmx_handler import to_vtl_json
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Dataset, Scalar
 
@@ -262,28 +258,8 @@ def semantic_analysis(
     vtl = load_vtl(checking)
     ast = create_ast(vtl)
 
-    # Handle URL data_structures
-    if _is_url(data_structures):
-        datasets, scalars = _handle_url_structure(
-            cast(str, data_structures), sdmx_mappings=mapping_dict
-        )
-    else:
-        # Loading datasets from file/dict/pysdmx objects
-        # Cast to exclude str (URLs are handled above)
-        datasets, scalars = load_datasets(
-            cast(
-                Union[
-                    Dict[str, Any],
-                    Path,
-                    Schema,
-                    DataStructureDefinition,
-                    Dataflow,
-                    List[Union[Dict[str, Any], Path, Schema, DataStructureDefinition, Dataflow]],
-                ],
-                data_structures,
-            ),
-            sdmx_mappings=mapping_dict,
-        )
+    # Loading datasets from file/dict/pysdmx objects/URLs
+    datasets, scalars = load_datasets(data_structures, sdmx_mappings=mapping_dict)
 
     # Handling of library items
     vd = None
@@ -431,63 +407,18 @@ def run(
     # Convert sdmx_mappings to dict format for internal use
     mapping_dict = _convert_sdmx_mappings(sdmx_mappings)
 
-    # Detect URL datapoints and separate them from file/DataFrame datapoints
-    url_datapoints: Dict[str, str] = {}
-    non_url_datapoints: Dict[str, Union[pd.DataFrame, str, Path]] = {}
-
-    if isinstance(datapoints, dict):
-        for name, value in datapoints.items():
-            if _is_url(value):
-                url_datapoints[name] = cast(str, value)
-            else:
-                non_url_datapoints[name] = value
-    else:
-        # For list/Path inputs, no URL detection needed
-        non_url_datapoints = cast(Dict[str, Union[pd.DataFrame, str, Path]], datapoints)
-
-    # Handle URL datapoints via pysdmx
-    url_datasets: Dict[str, Dataset] = {}
-    url_dataframes: Dict[str, pd.DataFrame] = {}
-    if url_datapoints:
-        if not isinstance(data_structures, (str, Path)):
-            raise InputValidationException(code="0-1-3-8")
-        url_datasets, _, url_dataframes = _handle_url_datapoints(
-            url_datapoints, data_structures, mapping_dict
-        )
-
     # AST generation
     script = _check_script(script)
     vtl = load_vtl(script)
     ast = create_ast(vtl)
 
-    # Resolve URL data_structures to VTL JSON dict for structure loading
-    resolved_structures: Any = data_structures
-    if _is_url(data_structures):
-        resolved_structures = load_sdmx_structure(
-            cast(str, data_structures),  # type: ignore[arg-type]
-            sdmx_mappings=mapping_dict,
-        )
-
-    # Loading datasets and datapoints (non-URL)
-    if non_url_datapoints or not url_datapoints:
-        datasets, scalars, path_dict = load_datasets_with_data(
-            resolved_structures,
-            non_url_datapoints if non_url_datapoints else None,
-            scalar_values,
-            sdmx_mappings=mapping_dict,
-        )
-    else:
-        # All datapoints are URLs, load only structures
-        datasets, scalars = load_datasets(resolved_structures, sdmx_mappings=mapping_dict)
-        path_dict = None
-
-    # Merge URL datasets with file-based datasets
-    if url_datapoints:
-        datasets.update(url_datasets)
-        # Add URL dataframes to datasets
-        for ds_name, df in url_dataframes.items():
-            if ds_name in datasets:
-                datasets[ds_name].data = _validate_pandas(datasets[ds_name].components, df, ds_name)
+    # Loading datasets and datapoints (handles URLs, S3 URIs, file paths, DataFrames)
+    datasets, scalars, path_dict = load_datasets_with_data(
+        data_structures,
+        datapoints,
+        scalar_values,
+        sdmx_mappings=mapping_dict,
+    )
 
     # Handling of library items
     vd = None
