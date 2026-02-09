@@ -1505,7 +1505,7 @@ def test_run_with_url_datapoints_and_local_structure(sdmx_data_file, sdmx_struct
     # Pre-load real SDMX data to use as mock return value
     real_datasets = real_get_datasets(data=sdmx_data_file, structure=sdmx_structure_file)
 
-    data_url = "https://stats.bis.org/api/v2/data/dataflow/BIS/WS_DEBT_SEC2_PUB/1.0/Q.3P"
+    data_url = "https://example.com/datastructure.xml"
     script = "DS_r <- BIS_DER;"
 
     with patch("vtlengine.API._InternalApi.get_datasets", return_value=real_datasets):
@@ -1530,7 +1530,7 @@ def test_run_with_url_data_structures(sdmx_data_file, sdmx_structure_file):
     # Pre-load real structure to use as mock return value
     real_msg = real_read_sdmx(sdmx_structure_file)
 
-    structure_url = "https://stats.bis.org/api/v2/structure/datastructure/BIS/BIS_DER"
+    structure_url = "https://example.com/datastructure.xml"
     script = "DS_r <- BIS_DER;"
 
     with patch("vtlengine.files.sdmx_handler.read_sdmx", return_value=real_msg):
@@ -1557,7 +1557,7 @@ def test_run_with_url_data_structures_and_url_datapoints(sdmx_data_file, sdmx_st
     real_msg = real_read_sdmx(sdmx_structure_file)
     real_datasets = real_get_datasets(data=sdmx_data_file, structure=sdmx_structure_file)
 
-    structure_url = "https://stats.bis.org/api/v2/structure/datastructure/BIS/BIS_DER"
+    structure_url = "https://example.com/datastructure.xml"
     data_url = "https://stats.bis.org/api/v2/data/dataflow/BIS/WS_DEBT_SEC2_PUB/1.0/Q.3P"
     script = "DS_r <- BIS_DER;"
 
@@ -1604,7 +1604,7 @@ def test_semantic_analysis_with_url_structure(sdmx_structure_file):
     # Pre-load real structure to use as mock return value
     real_msg = real_read_sdmx(sdmx_structure_file)
 
-    structure_url = "https://stats.bis.org/api/v2/structure/datastructure/BIS/BIS_DER"
+    structure_url = "https://example.com/datastructure.xml"
     script = "DS_r <- BIS_DER;"
 
     with patch("vtlengine.files.sdmx_handler.read_sdmx", return_value=real_msg):
