@@ -35,7 +35,7 @@ from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
     format_time_period_external_representation,
 )
-from vtlengine.files.sdmx_handler import to_vtl_json
+from vtlengine.files.sdmx_handler import load_sdmx_structure, to_vtl_json
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Dataset, Scalar
 
@@ -309,10 +309,11 @@ def run(
     data_structures: Union[
         Dict[str, Any],
         Path,
+        str,
         Schema,
         DataStructureDefinition,
         Dataflow,
-        List[Union[Dict[str, Any], Path, Schema, DataStructureDefinition, Dataflow]],
+        List[Union[Dict[str, Any], Path, str, Schema, DataStructureDefinition, Dataflow]],
     ],
     datapoints: Union[Dict[str, Union[pd.DataFrame, str, Path]], List[Union[str, Path]], str, Path],
     value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
@@ -324,7 +325,6 @@ def run(
     output_folder: Optional[Union[str, Path]] = None,
     scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
     sdmx_mappings: Optional[Union[VtlDataflowMapping, Dict[str, str]]] = None,
-    sdmx_structure: Optional[Union[str, Path]] = None,
 ) -> Dict[str, Union[Dataset, Scalar]]:
     """
     Run is the main function of the ``API``, which mission is to execute
@@ -374,9 +374,12 @@ def run(
     Args:
         script: VTL script as a string, a Transformation Scheme object or Path with the VTL script.
 
-        data_structures: Dict, Path, pysdmx object, or a List of these with the data structures. \
-        Supports VTL JSON format (dict or .json file), SDMX structure files (.xml or SDMX-JSON), \
-        or pysdmx objects (Schema, DataStructureDefinition, Dataflow).
+        data_structures: Dict, Path, URL string, pysdmx object, or a List of these with the \
+        data structures. Supports VTL JSON format (dict or .json file), SDMX structure files \
+        (.xml or SDMX-JSON), HTTP/HTTPS URLs to SDMX structure endpoints, \
+        or pysdmx objects (Schema, DataStructureDefinition, Dataflow). \
+        When datapoints contains HTTP/HTTPS URLs, data_structures must be a file path or URL \
+        pointing to an SDMX structure file.
 
         datapoints: Dict, Path, S3 URI or List of S3 URIs or Paths with data. \
         Supports plain CSV files and SDMX files (.xml for SDMX-ML, .json for SDMX-JSON, \
@@ -415,10 +418,6 @@ def run(
         (e.g., "Dataflow=MD:TEST_DF(1.0)") to VTL dataset names. This parameter is \
         primarily used when calling run() from run_sdmx() to pass mapping configuration.
 
-        sdmx_structure: Path to an SDMX structure file (XML or JSON). Required when \
-        datapoints contains HTTP/HTTPS URLs. The structure file provides the schema \
-        needed to parse remote SDMX data. (default: None)
-
     Returns:
        The datasets are produced without data if the output folder is defined.
 
@@ -449,10 +448,10 @@ def run(
     url_datasets: Dict[str, Dataset] = {}
     url_dataframes: Dict[str, pd.DataFrame] = {}
     if url_datapoints:
-        if sdmx_structure is None:
+        if not isinstance(data_structures, (str, Path)):
             raise InputValidationException(code="0-1-3-8")
         url_datasets, _, url_dataframes = _handle_url_datapoints(
-            url_datapoints, sdmx_structure, mapping_dict
+            url_datapoints, data_structures, mapping_dict
         )
 
     # AST generation
@@ -460,17 +459,24 @@ def run(
     vtl = load_vtl(script)
     ast = create_ast(vtl)
 
+    # Resolve URL data_structures to VTL JSON dict for structure loading
+    resolved_structures: Any = data_structures
+    if _is_url(data_structures):
+        resolved_structures = load_sdmx_structure(
+            cast(str, data_structures), sdmx_mappings=mapping_dict  # type: ignore[arg-type]
+        )
+
     # Loading datasets and datapoints (non-URL)
     if non_url_datapoints or not url_datapoints:
         datasets, scalars, path_dict = load_datasets_with_data(
-            data_structures,
+            resolved_structures,
             non_url_datapoints if non_url_datapoints else None,
             scalar_values,
             sdmx_mappings=mapping_dict,
         )
     else:
         # All datapoints are URLs, load only structures
-        datasets, scalars = load_datasets(data_structures, sdmx_mappings=mapping_dict)
+        datasets, scalars = load_datasets(resolved_structures, sdmx_mappings=mapping_dict)
         path_dict = None
 
     # Merge URL datasets with file-based datasets
@@ -642,7 +648,7 @@ def run_sdmx(
     return run(
         script=script,
         data_structures=cast(
-            List[Union[Dict[str, Any], Path, Schema, DataStructureDefinition, Dataflow]],
+            List[Union[Dict[str, Any], Path, str, Schema, DataStructureDefinition, Dataflow]],
             data_structures_list,
         ),
         datapoints=cast(Dict[str, Union[pd.DataFrame, str, Path]], datapoints_dict),

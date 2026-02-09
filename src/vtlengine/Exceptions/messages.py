@@ -213,9 +213,10 @@ centralised_messages = {
     },
     # Input validation errors for URL datapoints
     "0-1-3-8": {
-        "message": "sdmx_structure parameter is required when datapoints contains HTTP/HTTPS URLs.",
-        "description": "Raised when URL datapoints are provided but no sdmx_structure is specified "
-        "for fetching the SDMX structure definition.",
+        "message": "data_structures must be a file path or URL "
+        "when datapoints contains HTTP/HTTPS URLs.",
+        "description": "Raised when URL datapoints are provided but data_structures is not a "
+        "file path or URL for fetching the SDMX structure definition.",
     },
     # ------------Operators-------------
     # General Semantic errors

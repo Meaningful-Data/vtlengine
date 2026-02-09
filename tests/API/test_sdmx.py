@@ -1468,8 +1468,8 @@ def test_mixed_sdmx_csv_memory_efficient(sdmx_data_file, sdmx_data_structure):
 # =============================================================================
 
 
-def test_run_url_missing_structure_error():
-    """Test run() error when URL datapoints provided without sdmx_structure."""
+def test_run_url_datapoints_require_path_or_url_structure():
+    """Test run() error when URL datapoints provided but data_structures is not a path or URL."""
     with pytest.raises(InputValidationException, match="0-1-3-8"):
         run(
             script="DS_r <- DS_1;",
@@ -1496,30 +1496,81 @@ def test_is_url_detection():
     assert _is_url(pd.DataFrame()) is False
 
 
-@pytest.mark.skip(reason="Integration test requiring network access - run manually")
-def test_run_with_url_datapoints_and_local_structure(sdmx_structure_file):
-    """
-    Integration test: run() with URL datapoints and local structure file.
+def test_run_with_url_datapoints_and_local_structure(sdmx_data_file, sdmx_structure_file):
+    """Test run() with URL datapoints using mocked pysdmx.io.get_datasets."""
+    from unittest.mock import patch
 
-    This test requires network access to the BIS API.
-    Run manually with: pytest tests/API/test_sdmx.py::test_run_with_url_datapoints_and_local_structure -v
+    from pysdmx.io import get_datasets as real_get_datasets
 
-    Note: Requires a valid SDMX structure file that matches the BIS API response.
-    """
-    data_url = (
-        "https://stats.bis.org/api/v2/data/dataflow/BIS/WS_DEBT_SEC2_PUB/1.0/"
-        "Q.3P.3P.1.1.C.A.A.TO1.A.A.A.A.A.I"
-    )
-    script = "DS_r <- DS_1;"
+    # Pre-load real SDMX data to use as mock return value
+    real_datasets = real_get_datasets(data=sdmx_data_file, structure=sdmx_structure_file)
 
-    result = run(
-        script=script,
-        data_structures=sdmx_structure_file,
-        datapoints={"DS_1": data_url},
-        sdmx_structure=sdmx_structure_file,
-        sdmx_mappings={"Dataflow=BIS:WS_DEBT_SEC2_PUB(1.0)": "DS_1"},
-        return_only_persistent=False,
-    )
+    data_url = "https://stats.bis.org/api/v2/data/dataflow/BIS/WS_DEBT_SEC2_PUB/1.0/Q.3P"
+    script = "DS_r <- BIS_DER;"
+
+    with patch("pysdmx.io.get_datasets", return_value=real_datasets):
+        result = run(
+            script=script,
+            data_structures=sdmx_structure_file,
+            datapoints={"BIS_DER": data_url},
+            return_only_persistent=False,
+        )
+
+    assert "DS_r" in result
+    assert result["DS_r"].data is not None
+    assert len(result["DS_r"].data) > 0
+
+
+def test_run_with_url_data_structures(sdmx_data_file, sdmx_structure_file):
+    """Test run() with URL data_structures using mocked pysdmx.io.read_sdmx."""
+    from unittest.mock import patch
+
+    from pysdmx.io import read_sdmx as real_read_sdmx
+
+    # Pre-load real structure to use as mock return value
+    real_msg = real_read_sdmx(sdmx_structure_file)
+
+    structure_url = "https://stats.bis.org/api/v2/structure/datastructure/BIS/BIS_DER"
+    script = "DS_r <- BIS_DER;"
+
+    with patch("vtlengine.files.sdmx_handler.read_sdmx", return_value=real_msg):
+        result = run(
+            script=script,
+            data_structures=structure_url,
+            datapoints={"BIS_DER": sdmx_data_file},
+            return_only_persistent=False,
+        )
+
+    assert "DS_r" in result
+    assert result["DS_r"].data is not None
+    assert len(result["DS_r"].data) > 0
+
+
+def test_run_with_url_data_structures_and_url_datapoints(sdmx_data_file, sdmx_structure_file):
+    """Test run() with both URL data_structures and URL datapoints using mocks."""
+    from unittest.mock import patch
+
+    from pysdmx.io import get_datasets as real_get_datasets
+    from pysdmx.io import read_sdmx as real_read_sdmx
+
+    # Pre-load real data for mocks
+    real_msg = real_read_sdmx(sdmx_structure_file)
+    real_datasets = real_get_datasets(data=sdmx_data_file, structure=sdmx_structure_file)
+
+    structure_url = "https://stats.bis.org/api/v2/structure/datastructure/BIS/BIS_DER"
+    data_url = "https://stats.bis.org/api/v2/data/dataflow/BIS/WS_DEBT_SEC2_PUB/1.0/Q.3P"
+    script = "DS_r <- BIS_DER;"
+
+    with (
+        patch("vtlengine.files.sdmx_handler.read_sdmx", return_value=real_msg),
+        patch("pysdmx.io.get_datasets", return_value=real_datasets),
+    ):
+        result = run(
+            script=script,
+            data_structures=structure_url,
+            datapoints={"BIS_DER": data_url},
+            return_only_persistent=False,
+        )
 
     assert "DS_r" in result
     assert result["DS_r"].data is not None
@@ -1544,22 +1595,23 @@ def test_semantic_analysis_url_structure_detection():
     assert _is_url(Path("/path/to/structure.xml")) is False
 
 
-@pytest.mark.skip(reason="Integration test requiring network access - run manually")
-def test_semantic_analysis_with_url_structure():
-    """
-    Integration test: semantic_analysis() with URL data_structures.
+def test_semantic_analysis_with_url_structure(sdmx_structure_file):
+    """Test semantic_analysis() with URL data_structures using mocked pysdmx.io.read_sdmx."""
+    from unittest.mock import patch
 
-    This test requires network access to an SDMX structure endpoint.
-    Run manually with: pytest tests/API/test_sdmx.py::test_semantic_analysis_with_url_structure -v
-    """
-    # Example BIS structure URL (replace with valid URL for testing)
+    from pysdmx.io import read_sdmx as real_read_sdmx
+
+    # Pre-load real structure to use as mock return value
+    real_msg = real_read_sdmx(sdmx_structure_file)
+
     structure_url = "https://stats.bis.org/api/v2/structure/datastructure/BIS/BIS_DER"
     script = "DS_r <- BIS_DER;"
 
-    result = semantic_analysis(
-        script=script,
-        data_structures=structure_url,
-    )
+    with patch("vtlengine.files.sdmx_handler.read_sdmx", return_value=real_msg):
+        result = semantic_analysis(
+            script=script,
+            data_structures=structure_url,
+        )
 
     assert "DS_r" in result
     assert isinstance(result["DS_r"], Dataset)
