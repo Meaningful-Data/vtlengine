@@ -273,6 +273,123 @@ def semantic_analysis(
     return result
 
 
+def _run_with_duckdb(
+    script: Union[str, TransformationScheme, Path],
+    data_structures: Union[
+        Dict[str, Any],
+        Path,
+        Schema,
+        DataStructureDefinition,
+        Dataflow,
+        List[Union[Dict[str, Any], Path, Schema, DataStructureDefinition, Dataflow]],
+    ],
+    datapoints: Union[Dict[str, Union[pd.DataFrame, str, Path]], List[Union[str, Path]], str, Path],
+    value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
+    external_routines: Optional[
+        Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
+    ] = None,
+    return_only_persistent: bool = True,
+    scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
+    output_folder: Optional[Union[str, Path]] = None,
+) -> Dict[str, Union[Dataset, Scalar]]:
+    """
+    Run VTL script using DuckDB as the execution engine.
+
+    This function transpiles VTL to SQL and executes it using DuckDB.
+    Always uses DAG analysis for efficient dataset loading/saving scheduling.
+    When output_folder is provided, saves results as CSV files.
+    """
+    import duckdb
+
+    from vtlengine.AST.DAG._words import DELETE, GLOBAL, INSERT, PERSISTENT
+    from vtlengine.duckdb_transpiler import SQLTranspiler
+    from vtlengine.duckdb_transpiler.Config.config import configure_duckdb_connection
+    from vtlengine.duckdb_transpiler.io import execute_queries, extract_datapoint_paths
+
+    # AST generation
+    script = _check_script(script)
+    vtl = load_vtl(script)
+    ast = create_ast(vtl)
+
+    # Load datasets structure (without data)
+    input_datasets, input_scalars = load_datasets(data_structures)
+
+    # Apply scalar values if provided
+    if scalar_values:
+        for name, value in scalar_values.items():
+            if name in input_scalars:
+                input_scalars[name].value = value
+
+    # Run semantic analysis to get output structures
+    loaded_vds = load_value_domains(value_domains) if value_domains else None
+    loaded_routines = load_external_routines(external_routines) if external_routines else None
+
+    interpreter = InterpreterAnalyzer(
+        datasets=input_datasets,
+        value_domains=loaded_vds,
+        external_routines=loaded_routines,
+        scalars=input_scalars,
+        only_semantic=True,
+        return_only_persistent=False,
+    )
+    semantic_results = interpreter.visit(ast)
+
+    # Separate output datasets and scalars
+    output_datasets: Dict[str, Dataset] = {}
+    output_scalars: Dict[str, Scalar] = {}
+    for name, result in semantic_results.items():
+        if isinstance(result, Dataset):
+            output_datasets[name] = result
+        elif isinstance(result, Scalar):
+            output_scalars[name] = result
+
+    # Get DAG analysis for efficient load/save scheduling
+    ds_analysis = DAGAnalyzer.ds_structure(ast)
+
+    # Extract paths without pandas validation (DuckDB-optimized)
+    # This avoids the double CSV read that load_datasets_with_data causes
+    path_dict, dataframe_dict = extract_datapoint_paths(datapoints, input_datasets)
+
+    # Create transpiler and generate SQL
+    transpiler = SQLTranspiler(
+        input_datasets=input_datasets,
+        output_datasets=output_datasets,
+        input_scalars=input_scalars,
+        output_scalars=output_scalars,
+        value_domains=loaded_vds or {},
+        external_routines=loaded_routines or {},
+    )
+    queries = transpiler.transpile(ast)
+
+    # Normalize output folder path
+    output_folder_path = Path(output_folder) if output_folder else None
+
+    # Create DuckDB connection and execute queries with DAG scheduling
+    conn = duckdb.connect()
+    configure_duckdb_connection(conn)
+    try:
+        results = execute_queries(
+            conn=conn,
+            queries=queries,
+            ds_analysis=ds_analysis,
+            path_dict=path_dict,
+            dataframe_dict=dataframe_dict,
+            input_datasets=input_datasets,
+            output_datasets=output_datasets,
+            output_scalars=output_scalars,
+            output_folder=output_folder_path,
+            return_only_persistent=return_only_persistent,
+            insert_key=INSERT,
+            delete_key=DELETE,
+            global_key=GLOBAL,
+            persistent_key=PERSISTENT,
+        )
+    finally:
+        conn.close()
+
+    return results
+
+
 def run(
     script: Union[str, TransformationScheme, Path],
     data_structures: Union[
@@ -293,6 +410,7 @@ def run(
     output_folder: Optional[Union[str, Path]] = None,
     scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
     sdmx_mappings: Optional[Union[VtlDataflowMapping, Dict[str, str]]] = None,
+    use_duckdb: bool = False,
 ) -> Dict[str, Union[Dataset, Scalar]]:
     """
     Run is the main function of the ``API``, which mission is to execute
@@ -383,6 +501,10 @@ def run(
         (e.g., "Dataflow=MD:TEST_DF(1.0)") to VTL dataset names. This parameter is \
         primarily used when calling run() from run_sdmx() to pass mapping configuration.
 
+        use_duckdb: If True, use DuckDB as the execution engine instead of pandas. \
+        This transpiles VTL to SQL and executes it using DuckDB, which can be more \
+        efficient for large datasets. (default: False)
+
     Returns:
        The datasets are produced without data if the output folder is defined.
 
@@ -391,6 +513,18 @@ def run(
         or their Paths are invalid.
 
     """
+    # Use DuckDB execution engine if requested (check early to avoid unnecessary processing)
+    if use_duckdb:
+        return _run_with_duckdb(
+            script=script,
+            data_structures=data_structures,
+            datapoints=datapoints,
+            value_domains=value_domains,
+            external_routines=external_routines,
+            return_only_persistent=return_only_persistent,
+            scalar_values=scalar_values,
+            output_folder=output_folder,
+        )
 
     # Convert sdmx_mappings to dict format for internal use
     mapping_dict = _convert_sdmx_mappings(sdmx_mappings)
