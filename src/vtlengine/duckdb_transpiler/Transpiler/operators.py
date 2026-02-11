@@ -35,6 +35,8 @@ from vtlengine.AST.Grammar.tokens import (
     CEIL,
     CONCAT,
     COUNT,
+    DAYOFMONTH,
+    DAYOFYEAR,
     DIV,
     EQ,
     EXP,
@@ -59,6 +61,7 @@ from vtlengine.AST.Grammar.tokens import (
     MIN,
     MINUS,
     MOD,
+    MONTH,
     MULT,
     NEQ,
     NOT,
@@ -85,6 +88,7 @@ from vtlengine.AST.Grammar.tokens import (
     VAR_POP,
     VAR_SAMP,
     XOR,
+    YEAR,
 )
 
 
@@ -273,15 +277,22 @@ class OperatorRegistry:
 
         # For binary operators like "({0} + {1})", extract "+"
         if operator.category == OperatorCategory.BINARY:
-            # Remove placeholders and parentheses to get the operator
             cleaned = (
                 template.replace("{0}", "").replace("{1}", "").replace("(", "").replace(")", "")
             )
             return cleaned.strip()
 
-        # For unary/aggregate like "CEIL({0})", extract "CEIL"
+        # For prefix unary operators like "+{0}", "-{0}", "NOT {0}"
+        if operator.is_prefix:
+            return template.replace("{0}", "").strip()
+
+        # For function-style like "CEIL({0})", "SUM({0})", extract "CEIL", "SUM"
         if "({" in template:
             return template.split("(")[0]
+
+        # For templates like "RANK()" (no placeholder), extract "RANK"
+        if template.endswith("()"):
+            return template[:-2]
 
         return template
 
@@ -414,6 +425,12 @@ def _create_default_registries() -> SQLOperatorRegistries:
     registries.unary.register_simple(RTRIM, "RTRIM({0})")
     registries.unary.register_simple(UCASE, "UPPER({0})")
     registries.unary.register_simple(LCASE, "LOWER({0})")
+
+    # Time extraction functions
+    registries.unary.register_simple(YEAR, "YEAR({0})")
+    registries.unary.register_simple(MONTH, "MONTH({0})")
+    registries.unary.register_simple(DAYOFMONTH, "DAY({0})")
+    registries.unary.register_simple(DAYOFYEAR, "DAYOFYEAR({0})")
 
     # =========================================================================
     # Aggregate Operators
