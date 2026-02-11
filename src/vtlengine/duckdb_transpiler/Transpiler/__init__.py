@@ -14,7 +14,7 @@ Key concepts:
 
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import vtlengine.AST as AST
 from vtlengine.AST.ASTTemplate import ASTTemplate
@@ -113,129 +113,15 @@ from vtlengine.AST.Grammar.tokens import (
     YEAR,
     YEARTODAY,
 )
+from vtlengine.duckdb_transpiler.Transpiler.operators import (
+    VTL_TO_DUCKDB_TYPES,
+    registry,
+)
 from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
     OperandType,
     StructureVisitor,
 )
 from vtlengine.Model import Dataset, ExternalRoutine, Scalar, ValueDomain
-
-# =============================================================================
-# SQL Operator Mappings
-# =============================================================================
-
-SQL_BINARY_OPS: Dict[str, str] = {
-    # Arithmetic
-    PLUS: "+",
-    MINUS: "-",
-    MULT: "*",
-    DIV: "/",
-    MOD: "%",
-    # Comparison
-    EQ: "=",
-    NEQ: "<>",
-    GT: ">",
-    LT: "<",
-    GTE: ">=",
-    LTE: "<=",
-    # Logical
-    AND: "AND",
-    OR: "OR",
-    XOR: "XOR",
-    # String
-    CONCAT: "||",
-}
-
-# Set operation mappings
-SQL_SET_OPS: Dict[str, str] = {
-    UNION: "UNION ALL",
-    INTERSECT: "INTERSECT",
-    SETDIFF: "EXCEPT",
-    SYMDIFF: "SYMDIFF",  # Handled specially
-}
-
-# VTL to DuckDB type mappings
-VTL_TO_DUCKDB_TYPES: Dict[str, str] = {
-    "Integer": "BIGINT",
-    "Number": "DOUBLE",
-    "String": "VARCHAR",
-    "Boolean": "BOOLEAN",
-    "Date": "DATE",
-    "TimePeriod": "VARCHAR",
-    "TimeInterval": "VARCHAR",
-    "Duration": "VARCHAR",
-    "Null": "VARCHAR",
-}
-
-SQL_UNARY_OPS: Dict[str, str] = {
-    # Arithmetic
-    PLUS: "+",
-    MINUS: "-",
-    CEIL: "CEIL",
-    FLOOR: "FLOOR",
-    ABS: "ABS",
-    EXP: "EXP",
-    LN: "LN",
-    SQRT: "SQRT",
-    # Logical
-    NOT: "NOT",
-    # String
-    LEN: "LENGTH",
-    TRIM: "TRIM",
-    LTRIM: "LTRIM",
-    RTRIM: "RTRIM",
-    UCASE: "UPPER",
-    LCASE: "LOWER",
-    # Time extraction (simple functions)
-    YEAR: "YEAR",
-    MONTH: "MONTH",
-    DAYOFMONTH: "DAY",
-    DAYOFYEAR: "DAYOFYEAR",
-}
-
-# Time operators that need special handling
-SQL_TIME_OPS: Dict[str, str] = {
-    CURRENT_DATE: "CURRENT_DATE",
-    DATEDIFF: "DATE_DIFF",  # DATE_DIFF('day', d1, d2) in DuckDB
-    DATE_ADD: "DATE_ADD",  # date + INTERVAL 'n period'
-    TIMESHIFT: "TIMESHIFT",  # Custom handling for time shift
-    # Duration conversions
-    DAYTOYEAR: "DAYTOYEAR",  # days -> 'PxYxD' format
-    DAYTOMONTH: "DAYTOMONTH",  # days -> 'PxMxD' format
-    YEARTODAY: "YEARTODAY",  # 'PxYxD' -> days
-    MONTHTODAY: "MONTHTODAY",  # 'PxMxD' -> days
-}
-
-SQL_AGGREGATE_OPS: Dict[str, str] = {
-    SUM: "SUM",
-    AVG: "AVG",
-    COUNT: "COUNT",
-    MIN: "MIN",
-    MAX: "MAX",
-    MEDIAN: "MEDIAN",
-    STDDEV_POP: "STDDEV_POP",
-    STDDEV_SAMP: "STDDEV_SAMP",
-    VAR_POP: "VAR_POP",
-    VAR_SAMP: "VAR_SAMP",
-}
-
-SQL_ANALYTIC_OPS: Dict[str, str] = {
-    SUM: "SUM",
-    AVG: "AVG",
-    COUNT: "COUNT",
-    MIN: "MIN",
-    MAX: "MAX",
-    MEDIAN: "MEDIAN",
-    STDDEV_POP: "STDDEV_POP",
-    STDDEV_SAMP: "STDDEV_SAMP",
-    VAR_POP: "VAR_POP",
-    VAR_SAMP: "VAR_SAMP",
-    FIRST_VALUE: "FIRST_VALUE",
-    LAST_VALUE: "LAST_VALUE",
-    LAG: "LAG",
-    LEAD: "LEAD",
-    RANK: "RANK",
-    RATIO_TO_REPORT: "RATIO_TO_REPORT",
-}
 
 
 @dataclass
@@ -400,6 +286,57 @@ class SQLTranspiler(ASTTemplate):
         # Combine CTEs with final query
         cte_clause = ",\n    ".join(cte_parts)
         return f"WITH {cte_clause}\n{normalized_final}"
+
+    # =========================================================================
+    # Dataset-Level Operation Helper
+    # =========================================================================
+
+    def _apply_to_dataset(
+        self,
+        dataset_node: AST.AST,
+        measure_expr_fn: Callable[[str, str], str],
+        output_col_fn: Optional[Callable[[str, int], str]] = None,
+    ) -> str:
+        """
+        Apply an operation to all measures of a dataset, preserving identifiers.
+
+        This is the central helper for dataset-level operations. It handles:
+        - Getting the dataset structure
+        - Building the identifier SELECT
+        - Applying the expression function to each measure
+        - Building the FROM clause
+
+        Args:
+            dataset_node: AST node for the dataset.
+            measure_expr_fn: Function(quoted_measure, raw_name) -> SQL expression.
+                Example: lambda qm, m: f"CEIL({qm})" for unary CEIL.
+            output_col_fn: Function(raw_name, index) -> output column name.
+                Default: same name as input measure.
+
+        Returns:
+            SQL SELECT statement with transformed measures.
+        """
+        ds = self.get_structure(dataset_node)
+        if ds is None:
+            ds_name = self._get_dataset_name(dataset_node)
+            raise ValueError(f"Cannot resolve dataset structure for {ds_name}")
+
+        id_names = list(ds.get_identifiers_names())
+        id_select = ", ".join([f'"{k}"' for k in id_names])
+
+        measure_parts = []
+        for i, m in enumerate(ds.get_measures_names()):
+            qm = f'"{m}"'
+            expr = measure_expr_fn(qm, m)
+            out_name = output_col_fn(m, i) if output_col_fn else m
+            measure_parts.append(f'{expr} AS "{out_name}"')
+        measure_select = ", ".join(measure_parts)
+
+        dataset_sql = self._get_dataset_sql(dataset_node)
+        from_clause = self._simplify_from_clause(dataset_sql)
+
+        parts = [p for p in [id_select, measure_select] if p]
+        return f"SELECT {', '.join(parts)} FROM {from_clause}"
 
     # =========================================================================
     # Root and Assignment Nodes
@@ -748,7 +685,7 @@ class SQLTranspiler(ASTTemplate):
         if op == RANDOM:
             return self._visit_random_binop(node, left_type, right_type)
 
-        sql_op = SQL_BINARY_OPS.get(op, op.upper())
+        sql_op = registry.binary.get_sql_symbol(op) or op.upper()
 
         # Dataset-Dataset
         if left_type == OperandType.DATASET and right_type == OperandType.DATASET:
@@ -801,26 +738,10 @@ class SQLTranspiler(ASTTemplate):
         return f"({left_sql} {sql_op} {right_sql})"
 
     def _in_dataset(self, dataset_node: AST.AST, values_sql: str, sql_op: str) -> str:
-        """
-        Generate SQL for dataset-level IN/NOT IN operation.
-
-        Uses structure tracking to get dataset structure.
-        """
-        ds = self.get_structure(dataset_node)
-
-        if ds is None:
-            ds_name = self._get_dataset_name(dataset_node)
-            raise ValueError(f"Cannot resolve dataset structure for {ds_name}")
-
-        id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
-        measure_select = ", ".join(
-            [f'("{m}" {sql_op} {values_sql}) AS "{m}"' for m in ds.get_measures_names()]
+        """Generate SQL for dataset-level IN/NOT IN operation."""
+        return self._apply_to_dataset(
+            dataset_node, lambda qm, m: f"({qm} {sql_op} {values_sql})"
         )
-
-        dataset_sql = self._get_dataset_sql(dataset_node)
-        from_clause = self._simplify_from_clause(dataset_sql)
-
-        return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
 
     def _visit_match_op(self, node: AST.BinOp) -> str:
         """
@@ -841,26 +762,10 @@ class SQLTranspiler(ASTTemplate):
         return f"regexp_full_match({left_sql}, {pattern_sql})"
 
     def _match_dataset(self, dataset_node: AST.AST, pattern_sql: str) -> str:
-        """
-        Generate SQL for dataset-level MATCH operation.
-
-        Uses structure tracking to get dataset structure.
-        """
-        ds = self.get_structure(dataset_node)
-
-        if ds is None:
-            ds_name = self._get_dataset_name(dataset_node)
-            raise ValueError(f"Cannot resolve dataset structure for {ds_name}")
-
-        id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
-        measure_select = ", ".join(
-            [f'regexp_full_match("{m}", {pattern_sql}) AS "{m}"' for m in ds.get_measures_names()]
+        """Generate SQL for dataset-level MATCH operation."""
+        return self._apply_to_dataset(
+            dataset_node, lambda qm, m: f"regexp_full_match({qm}, {pattern_sql})"
         )
-
-        dataset_sql = self._get_dataset_sql(dataset_node)
-        from_clause = self._simplify_from_clause(dataset_sql)
-
-        return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
 
     def _visit_exist_in(self, node: AST.BinOp) -> str:
         """
@@ -917,23 +822,9 @@ class SQLTranspiler(ASTTemplate):
 
         # Dataset-level NVL
         if left_type == OperandType.DATASET:
-            # Use structure tracking - get_structure handles all expression types
-            ds = self.get_structure(node.left)
-
-            if ds is None:
-                ds_name = self._get_dataset_name(node.left)
-                raise ValueError(f"Cannot resolve dataset structure for {ds_name}")
-
-            id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
-            measure_parts = []
-            for m in ds.get_measures_names():
-                measure_parts.append(f'COALESCE("{m}", {replacement}) AS "{m}"')
-            measure_select = ", ".join(measure_parts)
-
-            dataset_sql = self._get_dataset_sql(node.left)
-            from_clause = self._simplify_from_clause(dataset_sql)
-
-            return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
+            return self._apply_to_dataset(
+                node.left, lambda qm, m: f"COALESCE({qm}, {replacement})"
+            )
 
         # Scalar/Component level
         left_sql = self.visit(node.left)
@@ -1081,64 +972,25 @@ class SQLTranspiler(ASTTemplate):
         sql_op: str,
         left: bool,
     ) -> str:
-        """
-        Generate SQL for Dataset-Scalar binary operation.
-
-        Uses structure tracking to get dataset structure.
-        Applies scalar to all measures.
-        """
+        """Generate SQL for Dataset-Scalar binary operation."""
         scalar_sql = self.visit(scalar_node)
 
-        # Step 1: Generate SQL for dataset (this also stores its structure)
-        if isinstance(dataset_node, AST.VarID):
-            ds_sql = f'"{dataset_node.value}"'
-        else:
-            ds_sql = f"({self.visit(dataset_node)})"
-
-        # Step 2: Get structure using structure tracking
-        # (get_structure already handles VarID -> available_tables fallback)
-        ds = self.get_structure(dataset_node)
-
-        if ds is None:
-            ds_name = self._get_dataset_name(dataset_node)
-            raise ValueError(f"Cannot resolve dataset structure for {ds_name}")
-
-        # Step 3: Get output structure from semantic analysis
-        output_ds = None
+        # Check if output has bool_var (comparison result)
+        has_bool_var = False
         if self.current_result_name and self.current_result_name in self.output_datasets:
             output_ds = self.output_datasets[self.current_result_name]
+            has_bool_var = "bool_var" in list(output_ds.get_measures_names())
 
-        # Step 4: Generate SQL using the structures
-        id_cols = list(ds.get_identifiers_names())
-        measure_names = list(ds.get_measures_names())
+        def expr_fn(qm: str, m: str) -> str:
+            if left:
+                return f"({qm} {sql_op} {scalar_sql})"
+            return f"({scalar_sql} {sql_op} {qm})"
 
-        # SELECT identifiers
-        id_select = ", ".join([f'"{k}"' for k in id_cols])
-
-        # Check if output has bool_var (comparison result)
-        # Use output_datasets from semantic analysis to determine output measure names
-        output_measures = list(output_ds.get_measures_names()) if output_ds else []
-        has_bool_var = "bool_var" in output_measures
-
-        # SELECT measures with operation
-        if left:
-            if has_bool_var and measure_names:
-                # Single measure comparison -> bool_var
-                measure_select = f'("{measure_names[0]}" {sql_op} {scalar_sql}) AS "bool_var"'
-            else:
-                measure_select = ", ".join(
-                    [f'("{m}" {sql_op} {scalar_sql}) AS "{m}"' for m in measure_names]
-                )
-        else:
-            if has_bool_var and measure_names:
-                # Single measure comparison -> bool_var
-                measure_select = f'({scalar_sql} {sql_op} "{measure_names[0]}") AS "bool_var"'
-            else:
-                measure_select = ", ".join(
-                    [f'({scalar_sql} {sql_op} "{m}") AS "{m}"' for m in measure_names]
-                )
-
-        return f"SELECT {id_select}, {measure_select} FROM {ds_sql}"
+        return self._apply_to_dataset(
+            dataset_node,
+            expr_fn,
+            (lambda m, i: "bool_var") if has_bool_var else None,
+        )
 
     def _visit_datediff(self, node: AST.BinOp, left_type: str, right_type: str) -> str:
         """
@@ -1220,44 +1072,24 @@ class SQLTranspiler(ASTTemplate):
             return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
 
     def _visit_random_binop(self, node: AST.BinOp, left_type: str, right_type: str) -> str:
-        """
-        Generate SQL for RANDOM operator (parsed as BinOp in VTL grammar).
-
-        VTL: random(seed, index) -> deterministic pseudo-random Number between 0 and 1.
-
-        Uses hash-based approach for determinism: same seed + index = same result.
-        DuckDB: (ABS(hash(seed || '_' || index)) % 1000000) / 1000000.0
-        """
+        """Generate SQL for RANDOM operator (hash-based deterministic pseudo-random)."""
         seed_sql = self.visit(node.left)
         index_sql = self.visit(node.right)
 
-        # Template for random generation
-        random_expr = (
-            f"(ABS(hash(CAST({seed_sql} AS VARCHAR) || '_' || "
-            f"CAST({index_sql} AS VARCHAR))) % 1000000) / 1000000.0"
-        )
+        def random_expr(seed: str) -> str:
+            return (
+                f"(ABS(hash(CAST({seed} AS VARCHAR) || '_' || "
+                f"CAST({index_sql} AS VARCHAR))) % 1000000) / 1000000.0"
+            )
 
-        # Dataset-level operation - uses structure tracking
         if left_type == OperandType.DATASET:
             ds = self.get_structure(node.left)
             if ds:
-                id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
-                measure_parts = []
-                for m in ds.get_measures_names():
-                    m_random = (
-                        f"(ABS(hash(CAST(\"{m}\" AS VARCHAR) || '_' || "
-                        f'CAST({index_sql} AS VARCHAR))) % 1000000) / 1000000.0 AS "{m}"'
-                    )
-                    measure_parts.append(m_random)
-                measure_select = ", ".join(measure_parts)
-                dataset_sql = self._get_dataset_sql(node.left)
-                from_clause = self._simplify_from_clause(dataset_sql)
-                if id_select:
-                    return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
-                return f"SELECT {measure_select} FROM {from_clause}"
+                return self._apply_to_dataset(
+                    node.left, lambda qm, m: random_expr(qm)
+                )
 
-        # Scalar-level: return the expression directly
-        return random_expr
+        return random_expr(seed_sql)
 
     # =========================================================================
     # Unary Operations
@@ -1295,91 +1127,48 @@ class SQLTranspiler(ASTTemplate):
         if op in (DAYTOYEAR, DAYTOMONTH, YEARTODAY, MONTHTODAY):
             return self._visit_duration_conversion(node.operand, operand_type, op)
 
-        sql_op = SQL_UNARY_OPS.get(op, op.upper())
-
         # Dataset-level unary
         if operand_type == OperandType.DATASET:
+            sql_op = registry.unary.get_sql_symbol(op) or op.upper()
             return self._unary_dataset(node.operand, sql_op, op)
 
         # Scalar/Component level
         operand_sql = self.visit(node.operand)
-
-        if op in (PLUS, MINUS):
-            return f"({sql_op}{operand_sql})"
-        elif op == NOT:
-            return f"(NOT {operand_sql})"
-        else:
-            return f"{sql_op}({operand_sql})"
+        if registry.unary.is_registered(op):
+            return registry.unary.generate(op, operand_sql)
+        return f"{op.upper()}({operand_sql})"
 
     def _unary_dataset(self, dataset_node: AST.AST, sql_op: str, op: str) -> str:
-        """
-        Generate SQL for dataset unary operation.
-
-        Uses structure tracking to get dataset structure.
-        """
-        # Step 1: Get structure using structure tracking
-        # (get_structure already handles VarID -> available_tables fallback)
-        ds = self.get_structure(dataset_node)
-
-        if ds is None:
-            ds_name = self._get_dataset_name(dataset_node)
-            raise ValueError(f"Cannot resolve dataset structure for {ds_name}")
-
-        id_cols = list(ds.get_identifiers_names())
-        input_measures = list(ds.get_measures_names())
-
-        id_select = ", ".join([f'"{k}"' for k in id_cols])
-
+        """Generate SQL for dataset unary operation."""
         # Get output measure names from semantic analysis if available
+        output_measures: Optional[List[str]] = None
         if self.current_result_name and self.current_result_name in self.output_datasets:
             output_ds = self.output_datasets[self.current_result_name]
             output_measures = list(output_ds.get_measures_names())
-        else:
-            output_measures = input_measures
 
-        # Build measure select with correct input/output names
-        measure_parts = []
-        for i, input_m in enumerate(input_measures):
-            output_m = output_measures[i] if i < len(output_measures) else input_m
+        def expr_fn(qm: str, m: str) -> str:
             if op in (PLUS, MINUS):
-                measure_parts.append(f'({sql_op}"{input_m}") AS "{output_m}"')
-            else:
-                measure_parts.append(f'{sql_op}("{input_m}") AS "{output_m}"')
-        measure_select = ", ".join(measure_parts)
+                return f"({sql_op}{qm})"
+            return f"{sql_op}({qm})"
 
-        dataset_sql = self._get_dataset_sql(dataset_node)
-        from_clause = self._simplify_from_clause(dataset_sql)
+        def out_col(m: str, i: int) -> str:
+            if output_measures and i < len(output_measures):
+                return output_measures[i]
+            return m
 
-        return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
+        return self._apply_to_dataset(dataset_node, expr_fn, out_col)
 
     def _unary_dataset_isnull(self, dataset_node: AST.AST) -> str:
-        """
-        Generate SQL for dataset isnull operation.
-
-        Uses structure tracking to get dataset structure.
-        """
-        # Step 1: Get structure using structure tracking
-        # (get_structure already handles VarID -> available_tables fallback)
+        """Generate SQL for dataset isnull operation."""
         ds = self.get_structure(dataset_node)
+        measures = list(ds.get_measures_names()) if ds else []
+        single = len(measures) == 1
 
-        if ds is None:
-            ds_name = self._get_dataset_name(dataset_node)
-            raise ValueError(f"Cannot resolve dataset structure for {ds_name}")
-
-        id_cols = list(ds.get_identifiers_names())
-        measures = list(ds.get_measures_names())
-
-        id_select = ", ".join([f'"{k}"' for k in id_cols])
-        # isnull produces boolean output named bool_var
-        if len(measures) == 1:
-            measure_select = f'("{measures[0]}" IS NULL) AS "bool_var"'
-        else:
-            measure_select = ", ".join([f'("{m}" IS NULL) AS "{m}"' for m in measures])
-
-        dataset_sql = self._get_dataset_sql(dataset_node)
-        from_clause = self._simplify_from_clause(dataset_sql)
-
-        return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
+        return self._apply_to_dataset(
+            dataset_node,
+            lambda qm, m: f"({qm} IS NULL)",
+            (lambda m, i: "bool_var") if single else None,
+        )
 
     # =========================================================================
     # Time Operators
@@ -1392,7 +1181,7 @@ class SQLTranspiler(ASTTemplate):
         For Date type, uses DuckDB built-in functions: YEAR(), MONTH(), DAY(), DAYOFYEAR()
         For TimePeriod type, uses vtl_period_year() for YEAR extraction.
         """
-        sql_func = SQL_UNARY_OPS.get(op, op.upper())
+        sql_func = registry.unary.get_sql_symbol(op) or op.upper()
 
         if operand_type == OperandType.DATASET:
             return self._time_extraction_dataset(operand, sql_func, op)
@@ -1406,44 +1195,21 @@ class SQLTranspiler(ASTTemplate):
         return f"{sql_func}({operand_sql})"
 
     def _time_extraction_dataset(self, dataset_node: AST.AST, sql_func: str, op: str) -> str:
-        """
-        Generate SQL for dataset time extraction operation.
-
-        Uses structure tracking to get dataset structure.
-        """
+        """Generate SQL for dataset time extraction operation."""
         from vtlengine.DataTypes import TimePeriod
 
         ds = self.get_structure(dataset_node)
-        if ds is None:
-            ds_name = self._get_dataset_name(dataset_node)
-            raise ValueError(f"Cannot resolve dataset structure for {ds_name}")
 
-        id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
-
-        # Apply time extraction to time-typed measures
-        # Use vtl_period_year for TimePeriod columns when extracting YEAR
-        measure_parts = []
-        for m_name in ds.get_measures_names():
-            comp = ds.components.get(m_name)
+        def expr_fn(qm: str, m: str) -> str:
+            comp = ds.components.get(m) if ds else None
             if comp and comp.data_type == TimePeriod and op == YEAR:
-                # Use vtl_period_year for TimePeriod YEAR extraction
-                measure_parts.append(f'vtl_period_year(vtl_period_parse("{m_name}")) AS "{m_name}"')
-            else:
-                measure_parts.append(f'{sql_func}("{m_name}") AS "{m_name}"')
+                return f"vtl_period_year(vtl_period_parse({qm}))"
+            return f"{sql_func}({qm})"
 
-        measure_select = ", ".join(measure_parts)
-        dataset_sql = self._get_dataset_sql(dataset_node)
-        from_clause = self._simplify_from_clause(dataset_sql)
-        return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
+        return self._apply_to_dataset(dataset_node, expr_fn)
 
     def _visit_flow_to_stock(self, operand: AST.AST, operand_type: str) -> str:
-        """
-        Generate SQL for flow_to_stock (cumulative sum over time).
-
-        This uses a window function: SUM(measure) OVER (PARTITION BY other_ids ORDER BY time_id)
-
-        Uses structure tracking to get dataset structure.
-        """
+        """Generate SQL for flow_to_stock (cumulative sum over time)."""
         if operand_type != OperandType.DATASET:
             raise ValueError("flow_to_stock requires a dataset operand")
 
@@ -1452,35 +1218,17 @@ class SQLTranspiler(ASTTemplate):
             ds_name = self._get_dataset_name(operand)
             raise ValueError(f"Cannot resolve dataset structure for {ds_name}")
 
-        dataset_sql = self._get_dataset_sql(operand)
-
-        # Find time identifier and other identifiers
         time_id, other_ids = self._get_time_and_other_ids(ds)
+        quoted_ids = [f'"{i}"' for i in other_ids]
+        partition = f"PARTITION BY {', '.join(quoted_ids)}" if other_ids else ""
+        window = f"OVER ({partition} ORDER BY \"{time_id}\")"
 
-        id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
-
-        # Create cumulative sum for each measure
-        quoted_ids = ['"' + i + '"' for i in other_ids]
-        partition_clause = f"PARTITION BY {', '.join(quoted_ids)}" if other_ids else ""
-        order_clause = f'ORDER BY "{time_id}"'
-
-        measure_selects = []
-        for m in ds.get_measures_names():
-            window = f"OVER ({partition_clause} {order_clause})"
-            measure_selects.append(f'SUM("{m}") {window} AS "{m}"')
-
-        measure_select = ", ".join(measure_selects)
-        from_clause = self._simplify_from_clause(dataset_sql)
-        return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
+        return self._apply_to_dataset(
+            operand, lambda qm, m: f"SUM({qm}) {window}"
+        )
 
     def _visit_stock_to_flow(self, operand: AST.AST, operand_type: str) -> str:
-        """
-        Generate SQL for stock_to_flow (difference over time).
-
-        This uses: measure - LAG(measure) OVER (PARTITION BY other_ids ORDER BY time_id)
-
-        Uses structure tracking to get dataset structure.
-        """
+        """Generate SQL for stock_to_flow (difference over time)."""
         if operand_type != OperandType.DATASET:
             raise ValueError("stock_to_flow requires a dataset operand")
 
@@ -1489,27 +1237,15 @@ class SQLTranspiler(ASTTemplate):
             ds_name = self._get_dataset_name(operand)
             raise ValueError(f"Cannot resolve dataset structure for {ds_name}")
 
-        dataset_sql = self._get_dataset_sql(operand)
-
-        # Find time identifier and other identifiers
         time_id, other_ids = self._get_time_and_other_ids(ds)
+        quoted_ids = [f'"{i}"' for i in other_ids]
+        partition = f"PARTITION BY {', '.join(quoted_ids)}" if other_ids else ""
+        window = f"OVER ({partition} ORDER BY \"{time_id}\")"
 
-        id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
-
-        # Create difference from previous for each measure
-        quoted_ids = ['"' + i + '"' for i in other_ids]
-        partition_clause = f"PARTITION BY {', '.join(quoted_ids)}" if other_ids else ""
-        order_clause = f'ORDER BY "{time_id}"'
-
-        measure_selects = []
-        for m in ds.get_measures_names():
-            window = f"OVER ({partition_clause} {order_clause})"
-            # COALESCE handles first row where LAG returns NULL
-            measure_selects.append(f'COALESCE("{m}" - LAG("{m}") {window}, "{m}") AS "{m}"')
-
-        measure_select = ", ".join(measure_selects)
-        from_clause = self._simplify_from_clause(dataset_sql)
-        return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
+        return self._apply_to_dataset(
+            operand,
+            lambda qm, m: f"COALESCE({qm} - LAG({qm}) {window}, {qm})",
+        )
 
     def _get_time_and_other_ids(self, ds: Dataset) -> Tuple[str, List[str]]:
         """
@@ -1824,28 +1560,10 @@ class SQLTranspiler(ASTTemplate):
         return random_template.replace("{m}", operand_sql)
 
     def _param_dataset(self, dataset_node: AST.AST, template: str) -> str:
-        """
-        Generate SQL for dataset parameterized operation.
-
-        Uses structure tracking to get dataset structure.
-        """
-        ds = self.get_structure(dataset_node)
-        if ds is None:
-            ds_name = self._get_dataset_name(dataset_node)
-            raise ValueError(f"Cannot resolve dataset structure for {ds_name}")
-
-        id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
-        # Quote column names properly in function calls
-        measure_parts = []
-        for m in ds.get_measures_names():
-            quoted_col = f'"{m}"'
-            measure_parts.append(f'{template.format(m=quoted_col)} AS "{m}"')
-        measure_select = ", ".join(measure_parts)
-
-        dataset_sql = self._get_dataset_sql(dataset_node)
-        from_clause = self._simplify_from_clause(dataset_sql)
-
-        return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
+        """Generate SQL for dataset parameterized operation."""
+        return self._apply_to_dataset(
+            dataset_node, lambda qm, m: template.format(m=qm)
+        )
 
     def _visit_cast(self, node: AST.ParamOp) -> str:
         """
@@ -1919,30 +1637,11 @@ class SQLTranspiler(ASTTemplate):
         duckdb_type: str,
         mask: Optional[str],
     ) -> str:
-        """
-        Generate SQL for dataset-level cast operation.
-
-        Uses structure tracking to get dataset structure.
-        """
-        ds = self.get_structure(dataset_node)
-
-        if ds is None:
-            ds_name = self._get_dataset_name(dataset_node)
-            raise ValueError(f"Cannot resolve dataset structure for {ds_name}")
-
-        id_select = ", ".join([f'"{k}"' for k in ds.get_identifiers_names()])
-
-        # Build measure cast expressions
-        measure_parts = []
-        for m in ds.get_measures_names():
-            cast_expr = self._cast_scalar(f'"{m}"', target_type, duckdb_type, mask)
-            measure_parts.append(f'{cast_expr} AS "{m}"')
-
-        measure_select = ", ".join(measure_parts)
-        dataset_sql = self._get_dataset_sql(dataset_node)
-        from_clause = self._simplify_from_clause(dataset_sql)
-
-        return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
+        """Generate SQL for dataset-level cast operation."""
+        return self._apply_to_dataset(
+            dataset_node,
+            lambda qm, m: self._cast_scalar(qm, target_type, duckdb_type, mask),
+        )
 
     # =========================================================================
     # Multiple-operand Operations
@@ -1963,7 +1662,7 @@ class SQLTranspiler(ASTTemplate):
             return f"({operand} BETWEEN {low} AND {high})"
 
         # Set operations (union, intersect, setdiff, symdiff)
-        if op in SQL_SET_OPS:
+        if registry.set_ops.is_registered(op):
             return self._visit_set_op(node, op)
 
         # exist_in also comes through MulOp
@@ -1992,7 +1691,7 @@ class SQLTranspiler(ASTTemplate):
             # Symmetric difference: (A EXCEPT B) UNION ALL (B EXCEPT A)
             return self._symmetric_difference(queries)
 
-        sql_op = SQL_SET_OPS.get(op, op.upper())
+        sql_op = registry.set_ops.get_sql_symbol(op) or op.upper()
 
         # For union, we need to handle duplicates - VTL union removes duplicates on identifiers
         if op == UNION:
@@ -2643,7 +2342,7 @@ class SQLTranspiler(ASTTemplate):
     def visit_Aggregation(self, node: AST.Aggregation) -> str:  # type: ignore[override]
         """Process aggregation operations (sum, avg, count, etc.)."""
         op = str(node.op).lower()
-        sql_op = SQL_AGGREGATE_OPS.get(op, op.upper())
+        sql_op = registry.aggregate.get_sql_symbol(op) or op.upper()
 
         # Get operand
         if node.operand:
@@ -2798,11 +2497,7 @@ class SQLTranspiler(ASTTemplate):
         return template.format(col=operand_sql)
 
     def _time_agg_dataset(self, dataset_node: AST.AST, template: str, period_to: str) -> str:
-        """
-        Generate SQL for dataset-level TIME_AGG operation.
-
-        Applies time aggregation to time-type measures.
-        """
+        """Generate SQL for dataset-level TIME_AGG operation."""
         ds_name = self._get_dataset_name(dataset_node)
         ds = self.available_tables.get(ds_name)
 
@@ -2810,43 +2505,21 @@ class SQLTranspiler(ASTTemplate):
             operand_sql = self.visit(dataset_node)
             return template.format(col=operand_sql)
 
-        # Build SELECT with identifiers and transformed time measures
-        id_cols = ds.get_identifiers_names()
-        id_select = ", ".join([f'"{k}"' for k in id_cols])
-
-        # Find time-type measures (Date, TimePeriod, TimeInterval)
         time_types = {"Date", "TimePeriod", "TimeInterval"}
-        measure_parts = []
 
-        for m_name in ds.get_measures_names():
-            comp = ds.components.get(m_name)
+        def expr_fn(qm: str, m: str) -> str:
+            comp = ds.components.get(m) if ds else None
             if comp and comp.data_type.__name__ in time_types:
-                # TimePeriod: use vtl_time_agg for proper period aggregation
                 if comp.data_type.__name__ == "TimePeriod":
-                    # Parse VARCHAR → STRUCT, aggregate to target, format back → VARCHAR
-                    col_expr = (
+                    return (
                         f"vtl_period_to_string(vtl_time_agg("
-                        f"vtl_period_parse(\"{m_name}\"), '{period_to}'))"
+                        f"vtl_period_parse({qm}), '{period_to}'))"
                     )
-                    measure_parts.append(f'{col_expr} AS "{m_name}"')
-                else:
-                    # Date/TimeInterval: use template-based conversion
-                    col_expr = template.format(col=f'"{m_name}"')
-                    measure_parts.append(f'{col_expr} AS "{m_name}"')
-            else:
-                # Non-time measures pass through unchanged
-                measure_parts.append(f'"{m_name}"')
+                return template.format(col=qm)
+            # Non-time measures pass through unchanged
+            return qm
 
-        measure_select = ", ".join(measure_parts)
-        dataset_sql = self._get_dataset_sql(dataset_node)
-        from_clause = self._simplify_from_clause(dataset_sql)
-
-        if id_select and measure_select:
-            return f"SELECT {id_select}, {measure_select} FROM {from_clause}"
-        elif measure_select:
-            return f"SELECT {measure_select} FROM {from_clause}"
-        else:
-            return f"SELECT * FROM {from_clause}"
+        return self._apply_to_dataset(dataset_node, expr_fn)
 
     # =========================================================================
     # Analytic Operations (window functions)
@@ -2855,7 +2528,7 @@ class SQLTranspiler(ASTTemplate):
     def visit_Analytic(self, node: AST.Analytic) -> str:  # type: ignore[override]
         """Process analytic (window) functions."""
         op = str(node.op).lower()
-        sql_op = SQL_ANALYTIC_OPS.get(op, op.upper())
+        sql_op = registry.analytic.get_sql_symbol(op) or op.upper()
 
         # Operand
         operand = self.visit(node.operand) if node.operand else ""
@@ -3422,7 +3095,7 @@ class SQLTranspiler(ASTTemplate):
                 # Binary operation (comparison, logical)
                 left = self._visit_dp_rule_condition(node.left)
                 right = self._visit_dp_rule_condition(node.right)
-                sql_op = SQL_BINARY_OPS.get(node.op, str(node.op))
+                sql_op = registry.binary.get_sql_symbol(node.op) or str(node.op)
                 return f"({left}) {sql_op} ({right})"
         elif isinstance(node, AST.BinOp):
             op_str = str(node.op).lower() if node.op else ""
@@ -3439,7 +3112,7 @@ class SQLTranspiler(ASTTemplate):
                 left = self._visit_dp_rule_condition(node.left)
                 right = self._visit_dp_rule_condition(node.right)
                 # Map VTL operator to SQL
-                sql_op = SQL_BINARY_OPS.get(node.op, node.op)
+                sql_op = registry.binary.get_sql_symbol(node.op) or node.op
                 return f"({left}) {sql_op} ({right})"
         elif isinstance(node, AST.UnaryOp):
             operand = self._visit_dp_rule_condition(node.operand)
@@ -3471,7 +3144,7 @@ class SQLTranspiler(ASTTemplate):
                 return f"({left}) {op} ({', '.join(values)})"
             # Other MulOp - process children with operator
             parts = [self._visit_dp_rule_condition(c) for c in node.children]
-            sql_op = SQL_BINARY_OPS.get(node.op, str(node.op))
+            sql_op = registry.binary.get_sql_symbol(node.op) or str(node.op)
             return f" {sql_op} ".join([f"({p})" for p in parts])
         elif isinstance(node, AST.Collection):
             # Value domain reference - return the values
