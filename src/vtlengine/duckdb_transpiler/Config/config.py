@@ -7,6 +7,8 @@ Configuration values can be set via environment variables:
 - VTL_MEMORY_LIMIT: Max memory for DuckDB (e.g., "8GB", "80%") (default: "80%")
 - VTL_THREADS: Number of threads for DuckDB (default: system cores)
 - VTL_TEMP_DIRECTORY: Directory for spill-to-disk (default: system temp)
+- VTL_MAX_TEMP_DIRECTORY_SIZE: Max size for temp directory spill
+  (e.g., "100GB") (default: available disk space)
 
 Example:
     export VTL_DECIMAL_PRECISION=18
@@ -85,6 +87,9 @@ THREADS: int = int(os.getenv("VTL_THREADS", "1"))
 # Temp directory for spill-to-disk
 TEMP_DIRECTORY: str = os.getenv("VTL_TEMP_DIRECTORY", tempfile.gettempdir())
 
+# Max temp directory size for spill-to-disk (empty = use available disk space)
+MAX_TEMP_DIRECTORY_SIZE: str = os.getenv("VTL_MAX_TEMP_DIRECTORY_SIZE", "")
+
 # Use file-backed database instead of in-memory (better for large datasets)
 USE_FILE_DATABASE: bool = os.getenv("VTL_USE_FILE_DATABASE", "").lower() in ("1", "true", "yes")
 
@@ -149,6 +154,12 @@ def configure_duckdb_connection(conn: duckdb.DuckDBPyConnection) -> None:
 
     # Set temp directory for spill-to-disk
     conn.execute(f"SET temp_directory = '{TEMP_DIRECTORY}'")
+
+    # Set max temp directory size if explicitly configured
+    if MAX_TEMP_DIRECTORY_SIZE:
+        conn.execute(
+            f"SET max_temp_directory_size = '{MAX_TEMP_DIRECTORY_SIZE}'"
+        )
 
     # Set thread count if specified
     if THREADS is not None:
