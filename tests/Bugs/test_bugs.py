@@ -1015,6 +1015,21 @@ class TimeBugs(BugHelper):
             scalars={"sc_tp": "1995D1"},
         )
 
+    def test_GH_497(self):
+        """
+        Status: OK
+        Description: TimeShift converts annual time periods to int, breaking inner_join.
+            After timeshift on annual periods, the join keys became int instead of str,
+            causing pd.merge to produce empty results.
+        Git Branch: cr-497
+        Goal: Check that timeshift on annual periods preserves string format and inner_join works.
+        """
+        code = "GH_497"
+        number_inputs = 2
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class SetBugs(BugHelper):
     """ """
