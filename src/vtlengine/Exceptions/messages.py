@@ -203,6 +203,21 @@ centralised_messages = {
         "message": "No data structures found in SDMX structure file '{file}'",
         "description": "Raised when an SDMX structure file contains no DataStructureDefinitions.",
     },
+    "0-3-1-13": {
+        "message": "Failed to fetch SDMX data from URL '{url}': {error}",
+        "description": "Raised when fetching SDMX data from an HTTP/HTTPS URL fails.",
+    },
+    "0-3-1-14": {
+        "message": "Failed to fetch SDMX structure from URL '{url}': {error}",
+        "description": "Raised when fetching SDMX structure from an HTTP/HTTPS URL fails.",
+    },
+    # Input validation errors for URL datapoints
+    "0-1-3-8": {
+        "message": "data_structures must be a file path or URL "
+        "when datapoints contains HTTP/HTTPS URLs.",
+        "description": "Raised when URL datapoints are provided but data_structures is not a "
+        "file path or URL for fetching the SDMX structure definition.",
+    },
     # ------------Operators-------------
     # General Semantic errors
     "1-1-1-1": {

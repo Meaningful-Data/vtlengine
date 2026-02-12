@@ -13,7 +13,6 @@ from typing import Any, Dict, List, Optional, Sequence, Union, cast
 
 import pandas as pd
 from pysdmx.io import get_datasets as sdmx_get_datasets
-from pysdmx.io import read_sdmx
 from pysdmx.io.pd import PandasDataset
 from pysdmx.model.dataflow import Component as SDMXComponent
 from pysdmx.model.dataflow import Dataflow, DataStructureDefinition, Schema
@@ -244,6 +243,8 @@ def load_sdmx_structure(
     Raises:
         DataLoadError: If file cannot be parsed or contains no structures.
     """
+    from pysdmx.io import read_sdmx
+
     try:
         msg = read_sdmx(file_path)
     except Exception as e:
