@@ -5,7 +5,28 @@ import subprocess
 from typing import Optional
 
 
-def parse_version(version_str: str) -> tuple[int, int, int, str]:
+def _parse_suffix(suffix: str) -> tuple[int, int]:
+    """
+    Parse a version suffix into a sortable tuple.
+
+    Stable versions (empty suffix) sort higher than pre-releases.
+    Pre-release numbers are compared numerically (rc10 > rc9).
+
+    Args:
+        suffix: Version suffix like '', 'rc6', 'alpha1', 'beta2'
+
+    Returns:
+        Tuple of (is_stable, pre_release_number) for sorting.
+        Stable: (1, 0), Pre-release: (0, N)
+    """
+    if not suffix:
+        return (1, 0)
+    match = re.search(r"(\d+)$", suffix)
+    pre_num = int(match.group(1)) if match else 0
+    return (0, pre_num)
+
+
+def parse_version(version_str: str) -> tuple[int, int, int, int, int]:
     """
     Parse a version string into a sortable tuple.
 
@@ -13,7 +34,9 @@ def parse_version(version_str: str) -> tuple[int, int, int, str]:
         version_str: Version string like 'v1.5.0', 'v1.5.0rc6', or 'v1.1'
 
     Returns:
-        Tuple of (major, minor, patch, suffix) for sorting
+        Tuple of (major, minor, patch, is_stable, pre_release_num) for sorting.
+        Stable versions sort higher than pre-releases (e.g., 1.5.0 > 1.5.0rc10).
+        Pre-release numbers are compared numerically (rc10 > rc9).
 
     Raises:
         ValueError: If the version string doesn't match expected format
@@ -28,7 +51,7 @@ def parse_version(version_str: str) -> tuple[int, int, int, str]:
             int(match.group(1)),
             int(match.group(2)),
             int(match.group(3)),
-            match.group(4),
+            *_parse_suffix(match.group(4)),
         )
 
     # Try to match version without patch (e.g., "1.1")
@@ -38,7 +61,7 @@ def parse_version(version_str: str) -> tuple[int, int, int, str]:
             int(match.group(1)),
             int(match.group(2)),
             0,  # Default to 0 if no patch version
-            match.group(3),
+            *_parse_suffix(match.group(3)),
         )
 
     raise ValueError(f"Invalid version format: {version_str}")
