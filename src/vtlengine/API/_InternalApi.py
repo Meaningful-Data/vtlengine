@@ -291,8 +291,8 @@ def _load_datapoints_path(
                     message="Datapoints dictionary values must be Paths or S3 URIs.",
                 )
 
-            # Convert string to Path if not S3
-            if isinstance(datapoint, str) and "s3://" not in datapoint:
+            # Convert string to Path if not S3 or URL
+            if isinstance(datapoint, str) and "s3://" not in datapoint and not _is_url(datapoint):
                 datapoint = Path(datapoint)
 
             # Validate file exists
@@ -318,14 +318,15 @@ def _load_datapoints_path(
 
 
 def _load_datastructure_single(
-    data_structure: Union[Dict[str, Any], Path, Schema, DataStructureDefinition, Dataflow],
+    data_structure: Union[str, Dict[str, Any], Path, Schema, DataStructureDefinition, Dataflow],
     sdmx_mappings: Optional[Dict[str, str]] = None,
 ) -> Tuple[Dict[str, Dataset], Dict[str, Scalar]]:
     """
     Loads a single data structure.
 
     Args:
-        data_structure: Dict, Path, or pysdmx object (Schema, DSD, Dataflow).
+        data_structure: str (URL or file path), Dict, Path, or pysdmx object
+            (Schema, DSD, Dataflow).
         sdmx_mappings: Optional mapping from SDMX URNs to VTL dataset names.
     """
     # Handle pysdmx objects
@@ -342,6 +343,11 @@ def _load_datastructure_single(
         return _load_dataset_from_structure(vtl_json)
     if isinstance(data_structure, dict):
         return _load_dataset_from_structure(data_structure)
+    # Handle string: URL or file path
+    if isinstance(data_structure, str):
+        if _is_url(data_structure):
+            return _handle_url_structure(data_structure, sdmx_mappings)
+        data_structure = Path(data_structure)
     if not isinstance(data_structure, Path):
         raise InputValidationException(
             code="0-1-1-2",
@@ -383,12 +389,13 @@ def _load_datastructure_single(
 
 def load_datasets(
     data_structure: Union[
+        str,
         Dict[str, Any],
         Path,
         Schema,
         DataStructureDefinition,
         Dataflow,
-        List[Union[Dict[str, Any], Path, Schema, DataStructureDefinition, Dataflow]],
+        List[Union[str, Dict[str, Any], Path, Schema, DataStructureDefinition, Dataflow]],
     ],
     sdmx_mappings: Optional[Dict[str, str]] = None,
 ) -> Tuple[Dict[str, Dataset], Dict[str, Scalar]]:
@@ -513,16 +520,33 @@ def load_datasets_with_data(
             "or all values must be Pandas Dataframes."
         )
 
-    # Handling Individual, List or Dict of Paths or S3 URIs
+    # Handling Individual, List or Dict of Paths, S3 URIs, or URLs
     # At this point, datapoints is narrowed to exclude None and Dict[str, DataFrame]
     # All file types (CSV, SDMX) are returned as paths for lazy loading
+    # URLs are preserved as strings (like S3 URIs)
     datapoints_paths = _load_datapoints_path(
         cast(Union[Dict[str, Union[str, Path]], List[Union[str, Path]], str, Path], datapoints),
         sdmx_mappings=sdmx_mappings,
     )
 
-    # Validate that all datapoint dataset names exist in structures
-    for dataset_name in datapoints_paths:
+    # Separate URL datapoints from file-based datapoints
+    url_datapoints = {k: cast(str, v) for k, v in datapoints_paths.items() if _is_url(v)}
+    file_paths: Dict[str, Union[str, Path]] = {
+        k: v for k, v in datapoints_paths.items() if not _is_url(v)
+    }
+
+    # Handle URL datapoints via pysdmx
+    if url_datapoints:
+        if not isinstance(data_structures, (str, Path)):
+            raise InputValidationException(code="0-1-3-8")
+        url_ds, _, url_dfs = _handle_url_datapoints(url_datapoints, data_structures, sdmx_mappings)
+        datasets.update(url_ds)
+        for ds_name, df in url_dfs.items():
+            if ds_name in datasets:
+                datasets[ds_name].data = _validate_pandas(datasets[ds_name].components, df, ds_name)
+
+    # Validate that all file-based datapoint dataset names exist in structures
+    for dataset_name in file_paths:
         if dataset_name not in datasets:
             raise InputValidationException(f"Not found dataset {dataset_name} in datastructures.")
 
@@ -530,7 +554,7 @@ def load_datasets_with_data(
     # (used by validate_dataset API in memory-constrained scenarios).
     # gc.collect() ensures memory is reclaimed after each large DataFrame is validated.
     if validate:
-        for dataset_name, file_path in datapoints_paths.items():
+        for dataset_name, file_path in file_paths.items():
             components = datasets[dataset_name].components
             _ = load_datapoints(
                 components=components, dataset_name=dataset_name, csv_path=file_path
@@ -540,7 +564,7 @@ def load_datasets_with_data(
     _handle_empty_datasets(datasets)
     _handle_scalars_values(scalars, scalar_values)
 
-    return datasets, scalars, datapoints_paths if datapoints_paths else None
+    return datasets, scalars, file_paths if file_paths else None
 
 
 def load_vtl(input: Union[str, Path]) -> str:
@@ -868,6 +892,95 @@ def ast_to_sdmx(ast: AST.Start, agency_id: str, id: str, version: str) -> Transf
     )
 
     return transformation_scheme
+
+
+def _is_url(value: Any) -> bool:
+    """
+    Check if a value is an HTTP/HTTPS URL.
+
+    Args:
+        value: Any value to check.
+
+    Returns:
+        True if the value is a string starting with http:// or https://.
+    """
+    return isinstance(value, str) and (value.startswith("http://") or value.startswith("https://"))
+
+
+def _handle_url_structure(
+    url: str,
+    sdmx_mappings: Optional[Dict[str, str]] = None,
+) -> Tuple[Dict[str, Dataset], Dict[str, Scalar]]:
+    """
+    Fetch SDMX structure from URL using pysdmx and return datasets.
+
+    Uses pysdmx's read_sdmx to fetch structure messages from HTTP/HTTPS URLs.
+
+    Args:
+        url: HTTP/HTTPS URL to an SDMX structure file.
+        sdmx_mappings: Optional mapping from SDMX URNs to VTL dataset names.
+
+    Returns:
+        Tuple of (datasets, scalars) from the fetched structure.
+
+    Raises:
+        DataLoadError: If fetching from URL fails.
+    """
+    vtl_json = load_sdmx_structure(url, sdmx_mappings=sdmx_mappings)  # type: ignore[arg-type]
+    return _load_dataset_from_structure(vtl_json)
+
+
+def _handle_url_datapoints(
+    url_datapoints: Dict[str, str],
+    sdmx_structure: Union[str, Path],
+    sdmx_mappings: Optional[Dict[str, str]] = None,
+) -> Tuple[Dict[str, Dataset], Dict[str, Scalar], Dict[str, pd.DataFrame]]:
+    """
+    Fetch SDMX data from URLs using pysdmx and return datasets.
+
+    Args:
+        url_datapoints: Dict mapping dataset names to HTTP/HTTPS URLs.
+        sdmx_structure: Path to SDMX structure file (required for URL fetching).
+        sdmx_mappings: Optional mapping from SDMX URNs to VTL dataset names.
+
+    Returns:
+        Tuple of (datasets, scalars, dataframes) for merging with other datapoints.
+
+    Raises:
+        DataLoadError: If fetching from URL fails.
+    """
+
+    from pysdmx.io import get_datasets
+
+    datasets: Dict[str, Dataset] = {}
+    dataframes: Dict[str, pd.DataFrame] = {}
+
+    for dataset_name, url in url_datapoints.items():
+        try:
+            sdmx_datasets = get_datasets(data=url, structure=sdmx_structure)
+        except Exception as e:
+            raise DataLoadError(code="0-3-1-13", url=url, error=str(e))
+
+        if not sdmx_datasets:
+            raise DataLoadError(code="0-3-1-13", url=url, error="No data returned")
+
+        sdmx_dataset = sdmx_datasets[0]
+        schema = sdmx_dataset.structure
+
+        if isinstance(schema, Schema):
+            vtl_json = to_vtl_json(schema, dataset_name=dataset_name)
+            ds_dict, _ = _load_dataset_from_structure(vtl_json)
+            datasets.update(ds_dict)
+        else:
+            raise DataLoadError(
+                code="0-3-1-13",
+                url=url,
+                error=f"Expected Schema object, got {type(schema).__name__}",
+            )
+
+        dataframes[dataset_name] = sdmx_dataset.data  # type: ignore[attr-defined]
+
+    return datasets, {}, dataframes
 
 
 def _check_script(script: Union[str, TransformationScheme, Path]) -> str:

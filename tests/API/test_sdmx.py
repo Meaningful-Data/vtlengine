@@ -1461,3 +1461,161 @@ def test_mixed_sdmx_csv_memory_efficient(sdmx_data_file, sdmx_data_structure):
         # Both output files should exist
         assert (Path(tmpdir) / "DS_r.csv").exists()
         assert (Path(tmpdir) / "DS_r2.csv").exists()
+
+
+# =============================================================================
+# Tests for run() with URL datapoints (Issue #482)
+# =============================================================================
+
+
+def test_run_url_datapoints_require_path_or_url_structure():
+    """Test run() error when URL datapoints provided but data_structures is not a path or URL."""
+    with pytest.raises(InputValidationException, match="0-1-3-8"):
+        run(
+            script="DS_r <- DS_1;",
+            data_structures={"datasets": [{"name": "DS_1", "DataStructure": []}]},
+            datapoints={"DS_1": "https://example.com/data.xml"},
+        )
+
+
+def test_is_url_detection():
+    """Test URL detection helper function."""
+    from vtlengine.API._InternalApi import _is_url
+
+    # Valid URLs
+    assert _is_url("https://example.com/data.xml") is True
+    assert _is_url("http://example.com/data.xml") is True
+    assert _is_url("https://example.com/api/v2/data") is True
+
+    # Not URLs
+    assert _is_url("/path/to/file.xml") is False
+    assert _is_url("file.xml") is False
+    assert _is_url(Path("/path/to/file.xml")) is False
+    assert _is_url(None) is False
+    assert _is_url(123) is False
+    assert _is_url(pd.DataFrame()) is False
+
+
+def test_run_with_url_datapoints_and_local_structure(sdmx_data_file, sdmx_structure_file):
+    """Test run() with URL datapoints using mocked pysdmx.io.get_datasets."""
+    from unittest.mock import patch
+
+    from pysdmx.io import get_datasets as real_get_datasets
+
+    # Pre-load real SDMX data to use as mock return value
+    real_datasets = real_get_datasets(data=sdmx_data_file, structure=sdmx_structure_file)
+
+    data_url = "https://example.com/data.xml"
+    script = "DS_r <- DS_1;"
+
+    with patch("pysdmx.io.get_datasets", return_value=real_datasets):
+        result = run(
+            script=script,
+            data_structures=sdmx_structure_file,
+            datapoints={"DS_1": data_url},
+            sdmx_mappings={"DataStructure=BIS:BIS_DER(1.0)": "DS_1"},
+            return_only_persistent=False,
+        )
+
+    assert "DS_r" in result
+    assert result["DS_r"].data is not None
+    assert len(result["DS_r"].data) > 0
+
+
+def test_run_with_url_data_structures(sdmx_data_file, sdmx_structure_file):
+    """Test run() with URL data_structures using mocked pysdmx.io.read_sdmx."""
+    from unittest.mock import patch
+
+    from pysdmx.io import read_sdmx as real_read_sdmx
+
+    # Pre-load real structure to use as mock return value
+    real_msg = real_read_sdmx(sdmx_structure_file)
+
+    structure_url = "https://example.com/datastructure.xml"
+    script = "DS_r <- DS_1;"
+
+    with patch("pysdmx.io.read_sdmx", return_value=real_msg):
+        result = run(
+            script=script,
+            data_structures=structure_url,
+            datapoints={"DS_1": sdmx_data_file},
+            sdmx_mappings={"DataStructure=BIS:BIS_DER(1.0)": "DS_1"},
+            return_only_persistent=False,
+        )
+
+    assert "DS_r" in result
+    assert result["DS_r"].data is not None
+    assert len(result["DS_r"].data) > 0
+
+
+def test_run_with_url_data_structures_and_url_datapoints(sdmx_data_file, sdmx_structure_file):
+    """Test run() with both URL data_structures and URL datapoints using mocks."""
+    from unittest.mock import patch
+
+    from pysdmx.io import get_datasets as real_get_datasets
+    from pysdmx.io import read_sdmx as real_read_sdmx
+
+    # Pre-load real data for mocks
+    real_msg = real_read_sdmx(sdmx_structure_file)
+    real_datasets = real_get_datasets(data=sdmx_data_file, structure=sdmx_structure_file)
+
+    structure_url = "https://example.com/datastructure.xml"
+    data_url = "https://example.com/data.xml"
+    script = "DS_r <- DS_1;"
+
+    with (
+        patch("pysdmx.io.read_sdmx", return_value=real_msg),
+        patch("pysdmx.io.get_datasets", return_value=real_datasets),
+    ):
+        result = run(
+            script=script,
+            data_structures=structure_url,
+            datapoints={"DS_1": data_url},
+            sdmx_mappings={"DataStructure=BIS:BIS_DER(1.0)": "DS_1"},
+            return_only_persistent=False,
+        )
+
+    assert "DS_r" in result
+    assert result["DS_r"].data is not None
+    assert len(result["DS_r"].data) > 0
+
+
+# =============================================================================
+# Tests for semantic_analysis() with URL data_structures (Issue #482)
+# =============================================================================
+
+
+def test_semantic_analysis_url_structure_detection():
+    """Test that semantic_analysis() correctly detects URL data_structures."""
+    from vtlengine.API._InternalApi import _is_url
+
+    # URL should be detected
+    assert _is_url("https://example.com/structure.xml") is True
+    assert _is_url("http://example.com/structure.xml") is True
+
+    # Non-URL should not be detected
+    assert _is_url("/path/to/structure.xml") is False
+    assert _is_url(Path("/path/to/structure.xml")) is False
+
+
+def test_semantic_analysis_with_url_structure(sdmx_structure_file):
+    """Test semantic_analysis() with URL data_structures using mocked pysdmx.io.read_sdmx."""
+    from unittest.mock import patch
+
+    from pysdmx.io import read_sdmx as real_read_sdmx
+
+    # Pre-load real structure to use as mock return value
+    real_msg = real_read_sdmx(sdmx_structure_file)
+
+    structure_url = "https://example.com/datastructure.xml"
+    script = "DS_r <- DS_1;"
+
+    with patch("pysdmx.io.read_sdmx", return_value=real_msg):
+        result = semantic_analysis(
+            script=script,
+            data_structures=structure_url,
+            sdmx_mappings={"DataStructure=BIS:BIS_DER(1.0)": "DS_1"},
+        )
+
+    assert "DS_r" in result
+    assert isinstance(result["DS_r"], Dataset)
