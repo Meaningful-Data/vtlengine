@@ -649,11 +649,9 @@ COMP_NAME_MAPPING: Dict[Type[ScalarType], str] = {
 }
 
 IMPLICIT_TYPE_PROMOTION_MAPPING: Dict[Type[ScalarType], Any] = {
-    # TODO: Remove Time types, only for compatibility with previous engine
-    String: {String, Boolean, TimePeriod},
+    String: {String, Boolean},
     Number: {String, Number, Integer},
     Integer: {String, Number, Integer},
-    # TODO: Remove String, only for compatibility with previous engine
     TimeInterval: {TimeInterval},
     Date: {TimeInterval, Date},
     TimePeriod: {TimeInterval, TimePeriod},
