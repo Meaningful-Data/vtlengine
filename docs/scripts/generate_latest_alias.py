@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate a 'latest' alias directory that copies the latest stable documentation version."""
+"""Rename the latest stable version directory to 'latest' and leave a redirect behind."""
 
 import shutil
 import sys
@@ -41,6 +41,14 @@ def find_latest_stable_version(site_dir: Path) -> Optional[str]:
     return stable_versions[0]
 
 
+def generate_redirect_html(target: str) -> str:
+    """Generate a minimal HTML redirect page."""
+    return f"""<!DOCTYPE html>
+<html><head><meta http-equiv="refresh" content="0; url=../{target}/"></head>
+<body><a href="../{target}/">Redirect</a></body></html>
+"""
+
+
 def main() -> int:
     """Main entry point for the script."""
     site_dir = Path(sys.argv[1] if len(sys.argv) > 1 else "_site")
@@ -61,8 +69,14 @@ def main() -> int:
     if latest_dir.exists():
         shutil.rmtree(latest_dir)
 
-    shutil.copytree(source_dir, latest_dir)
-    print(f"Created 'latest' alias: {latest_dir} -> {latest_version}")
+    # Move instead of copy — no duplication
+    source_dir.rename(latest_dir)
+
+    # Leave a redirect at the old version path so existing links still work
+    source_dir.mkdir()
+    (source_dir / "index.html").write_text(generate_redirect_html("latest"), encoding="utf-8")
+
+    print(f"Moved {latest_version} -> latest (redirect left at {source_dir})")
 
     return 0
 

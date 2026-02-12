@@ -55,7 +55,7 @@ class TestFindLatestStableVersion:
 
 
 class TestMain:
-    def test_creates_latest_directory(
+    def test_moves_latest_and_leaves_redirect(
         self, site_dir: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         _create_version_dir(site_dir, "v1.3.0")
@@ -65,10 +65,16 @@ class TestMain:
         result = main()
 
         assert result == 0
+        # Content moved to latest/
         latest_dir = site_dir / "latest"
         assert latest_dir.exists()
         assert (latest_dir / "index.html").read_text() == "<html>v1.4.0</html>"
         assert (latest_dir / "api.html").read_text() == "<html>API v1.4.0</html>"
+        # Old path has a redirect, not the original content
+        old_dir = site_dir / "v1.4.0"
+        assert old_dir.exists()
+        assert "latest" in (old_dir / "index.html").read_text()
+        assert not (old_dir / "api.html").exists()
 
     def test_replaces_existing_latest(
         self, site_dir: Path, monkeypatch: pytest.MonkeyPatch
