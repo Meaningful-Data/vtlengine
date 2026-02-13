@@ -685,7 +685,11 @@ class ASTString(ASTTemplate):
         error_code = (
             f" errorcode {_handle_literal(node.error_code)}" if node.error_code is not None else ""
         )
-        error_level = f" errorlevel {node.error_level}" if node.error_level is not None else ""
+        error_level = (
+            f" errorlevel {_handle_literal(node.error_level)}"
+            if node.error_level is not None
+            else ""
+        )
         invalid = " invalid" if node.invalid else " all"
         if self.pretty:
             error_code = f"{nl}{tab * 2}{error_code.strip()}" if error_code else ""

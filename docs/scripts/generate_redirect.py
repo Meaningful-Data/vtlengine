@@ -111,11 +111,11 @@ def main() -> int:
 
     print(f"Latest stable version: {latest_version}")
 
-    redirect_html = generate_redirect_html(latest_version)
+    redirect_html = generate_redirect_html("latest")
     index_path = site_dir / "index.html"
     index_path.write_text(redirect_html, encoding="utf-8")
 
-    print(f"Generated redirect at {index_path}")
+    print(f"Generated redirect to 'latest' (currently {latest_version}) at {index_path}")
     return 0
 
 

@@ -3,52 +3,54 @@
         "1": [
             "BIS_LOC_STATS"
         ],
-        "3": [
+        "7": [
             "DS3"
         ],
-        "4": [
+        "8": [
             "DS1"
         ],
-        "5": [
+        "12": [
             "DS2"
         ]
     },
     "deletion": {
-        "7": [
+        "3": [
             "Aggregation.numDPCouYear",
             "numYearCou"
         ],
-        "9": [
+        "2": [
+            "numCouYear"
+        ],
+        "6": [
             "Validation.valResult_nonFiltered",
             "valResult"
         ],
-        "11": [
-            "DS1",
+        "5": [
+            "Validation.valResult_filtered"
+        ],
+        "9": [
             "Other.DS1_conv",
             "Other.exRate"
         ],
-        "12": [
+        "10": [
+            "Other.DS1_enr",
+            "Other.DS1_fin"
+        ],
+        "13": [
             "Other.DS1_tim",
             "Other.DS2_tim",
             "Other.val"
         ],
-        "6": [
-            "numCouYear"
-        ],
-        "8": [
-            "Validation.valResult_filtered"
-        ],
-        "13": [
-            "Other.DS1_enr",
-            "Other.DS1_fin"
-        ],
-        "2": [
+        "4": [
             "BIS_LOC_STATS"
         ],
-        "3": [
+        "7": [
             "DS3"
         ],
-        "5": [
+        "11": [
+            "DS1"
+        ],
+        "12": [
             "DS2"
         ]
     },

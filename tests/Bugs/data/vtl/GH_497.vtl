@@ -1,0 +1,2 @@
+ds_shifted <- timeshift(DS_1, -1);
+ds_result <- inner_join(ds_shifted as a, DS_2 as b using TIME_PERIOD, geo);

@@ -316,7 +316,7 @@ class Fill_time_series(Binary):
             Periods_values_col=data[cls.time_id].apply(
                 lambda x: int(re.sub(r"[^\d]", "", x.split("-")[-1]))
             ),
-            Year_values_col=data[cls.time_id].apply(lambda x: int(x.split("-")[0])),
+            Year_values_col=data[cls.time_id].apply(lambda x: int(x[:4])),
         ).sort_values(by=["Year_values_col", "Periods_col", "Periods_values_col"])
 
         if mode == "all":
@@ -390,10 +390,7 @@ class Fill_time_series(Binary):
 
         filled_data = pd.concat(filled_data, ignore_index=True)
         combined_data = pd.concat([filled_data, data], ignore_index=True)
-        if len(cls.periods) == 1 and cls.periods[0] == "A":
-            combined_data[cls.time_id] = combined_data[cls.time_id].astype(int)
-        else:
-            combined_data[cls.time_id] = combined_data[cls.time_id].astype(str)
+        combined_data[cls.time_id] = combined_data[cls.time_id].astype(str)
         return combined_data.sort_values(by=cls.other_ids + [cls.time_id])
 
     @classmethod
@@ -418,7 +415,7 @@ class Fill_time_series(Binary):
         cls, group_df: Any, period: str, year: int, val: Optional[int] = None
     ) -> Any:
         row = group_df.iloc[0].copy()
-        row[cls.time_id] = f"{year}" if period == "A" else f"{year}-{period}{val:d}"
+        row[cls.time_id] = f"{year}A" if period == "A" else f"{year}-{period}{val:d}"
         row[cls.measures] = None
         return row.to_frame().T
 
@@ -570,12 +567,9 @@ class Time_Shift(Binary):
                 lambda x: cls.shift_interval(x, shift_value, freq)
             )
         elif data_type == TimePeriod:
-            periods = result.data[cls.time_id].apply(cls._get_period).unique()
             result.data[cls.time_id] = result.data[cls.time_id].apply(
                 lambda x: cls.shift_period(x, shift_value)
             )
-            if len(periods) == 1 and periods[0] == "A":
-                result.data[cls.time_id] = result.data[cls.time_id].astype(int)
         else:
             raise SemanticError("1-1-19-2", op=cls.op)
         return result
@@ -607,7 +601,9 @@ class Time_Shift(Binary):
         period_type = cls._get_period(period_str)
 
         if period_type == "A":
-            return str(int(period_str) + shift_value)
+            tp = TimePeriodHandler(period_str)
+            tp.year += shift_value
+            return str(tp)
 
         if frequency:
             shift_value *= frequency
@@ -627,7 +623,7 @@ class Time_Shift(Binary):
             year += (value - 1) // period_limit
             value = (value - 1) % period_limit + 1
 
-        return f"{year}-{period}{value}"
+        return str(TimePeriodHandler(f"{year}-{period}{value}"))
 
     @classmethod
     def shift_interval(cls, interval: str, shift_value: Any, frequency: str) -> str:

@@ -114,10 +114,8 @@ def check_time_period(value: str) -> str:
 
     year_result = re.fullmatch(year_period_pattern, value)
     if year_result is not None:
-        year = datetime.strptime(value, "%Y")
-        year_period_wo_A = str(year.year)
-        return year_period_wo_A
-        # return year_period
+        result = TimePeriodHandler(f"{value}A")
+        return str(result)
 
     month_result = re.fullmatch(month_period_pattern, value)
     if month_result is not None:

@@ -84,6 +84,10 @@ centralised_messages = {
         "message": "File {file} must be encoded in utf-8 (without BOM).",
         "description": "Raised when the file encoding is not UTF-8 without BOM.",
     },
+    "0-1-2-6": {
+        "message": "Not found scalar {name} in datastructures",
+        "description": "Occurs when a scalar value expected in the data structures is missing.",
+    },
     "0-1-2-7": {
         "message": "Invalid value '{value}' for type {type_} {op_type} {name}.",
         "description": "Occurs when a value does not match the expected type or operation "
@@ -198,6 +202,21 @@ centralised_messages = {
     "0-3-1-12": {
         "message": "No data structures found in SDMX structure file '{file}'",
         "description": "Raised when an SDMX structure file contains no DataStructureDefinitions.",
+    },
+    "0-3-1-13": {
+        "message": "Failed to fetch SDMX data from URL '{url}': {error}",
+        "description": "Raised when fetching SDMX data from an HTTP/HTTPS URL fails.",
+    },
+    "0-3-1-14": {
+        "message": "Failed to fetch SDMX structure from URL '{url}': {error}",
+        "description": "Raised when fetching SDMX structure from an HTTP/HTTPS URL fails.",
+    },
+    # Input validation errors for URL datapoints
+    "0-1-3-8": {
+        "message": "data_structures must be a file path or URL "
+        "when datapoints contains HTTP/HTTPS URLs.",
+        "description": "Raised when URL datapoints are provided but data_structures is not a "
+        "file path or URL for fetching the SDMX structure definition.",
     },
     # ------------Operators-------------
     # General Semantic errors
@@ -596,6 +615,12 @@ centralised_messages = {
         "at the time it is called",
         "description": "Raised when a component is missing from the join result Dataset "
         "when it is referenced.",
+    },
+    "1-1-13-18": {
+        "message": "At op {op}: Incompatible types for common identifier {id_name}: "
+        "{type_1} and {type_2}.",
+        "description": "Raised when datasets in a join operation have a common identifier "
+        "with incompatible types.",
     },
     # Operators general errors
     "1-1-14-1": {

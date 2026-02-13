@@ -44,6 +44,9 @@ jobs:
       - name: Build with Sphinx Multi-Version
         run: |
           poetry run sphinx-multiversion docs _site
+      - name: Generate latest alias
+        run: |
+          poetry run python docs/scripts/generate_latest_alias.py _site
       - name: Generate root redirect
         run: |
           poetry run python docs/scripts/generate_redirect.py _site
