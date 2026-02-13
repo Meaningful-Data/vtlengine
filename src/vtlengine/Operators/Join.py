@@ -6,7 +6,7 @@ import pandas as pd
 
 from vtlengine.AST import BinOp
 from vtlengine.AST.Grammar.tokens import CROSS_JOIN, FULL_JOIN, INNER_JOIN, LEFT_JOIN
-from vtlengine.DataTypes import binary_implicit_promotion
+from vtlengine.DataTypes import SCALAR_TYPES_CLASS_REVERSE, binary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators import Operator, _id_type_promotion_join_keys
@@ -217,6 +217,30 @@ class Join(Operator):
         return Dataset(name=dataset_name, components=components, data=None)
 
     @classmethod
+    def _validate_join_key_types(cls, operands: List[Dataset], join_keys: List[str]) -> None:
+        ref = cls.reference_dataset
+        for op in operands:
+            if op is ref:
+                continue
+            for key in join_keys:
+                if key not in ref.components or key not in op.components:
+                    continue
+                left_type = ref.get_component(key).data_type
+                right_type = op.get_component(key).data_type
+                if left_type == right_type:
+                    continue
+                try:
+                    binary_implicit_promotion(left_type, right_type)
+                except SemanticError:
+                    raise SemanticError(
+                        "1-1-13-18",
+                        op=cls.op,
+                        id_name=key,
+                        type_1=SCALAR_TYPES_CLASS_REVERSE[left_type],
+                        type_2=SCALAR_TYPES_CLASS_REVERSE[right_type],
+                    )
+
+    @classmethod
     def identifiers_validation(cls, operands: List[Dataset], using: Optional[List[str]]) -> None:
         # (Case A)
         info = {op.name: op.get_identifiers_names() for op in operands}
@@ -238,6 +262,9 @@ class Join(Operator):
                     component=missing_components[0],
                 )
         if using is None:
+            id_sets = [set(ids) for ids in info.values()]
+            common_ids = list(set.intersection(*id_sets))
+            cls._validate_join_key_types(operands, common_ids)
             return
 
         # (Case B1)
@@ -270,6 +297,7 @@ class Join(Operator):
                                         comp_name=component,
                                         dataset_name=op.name,
                                     )
+            cls._validate_join_key_types(operands, using)
 
 
 class InnerJoin(Join):

@@ -909,12 +909,16 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_Collection(self, node: AST.Collection) -> Any:
         if node.kind == "Set":
             elements = []
+            scalar_data_type = None
             duplicates = []
             for child in node.children:
                 ref_element = child.children[1] if isinstance(child, AST.ParamOp) else child
                 if ref_element in elements:
                     duplicates.append(ref_element)
-                elements.append(self.visit(child).value)
+                scalar = self.visit(child)
+                elements.append(scalar.value)
+                if scalar_data_type is None:
+                    scalar_data_type = scalar.data_type
             if len(duplicates) > 0:
                 raise SemanticError("1-2-5", duplicates=duplicates)
             for element in elements:
@@ -924,7 +928,8 @@ class InterpreterAnalyzer(ASTTemplate):
                 raise Exception("A set must contain at least one element")
             if len(elements) != len(set(elements)):
                 raise Exception("A set must not contain duplicates")
-            return ScalarSet(data_type=BASIC_TYPES[type(elements[0])], values=elements)
+            set_type = scalar_data_type or BASIC_TYPES[type(elements[0])]
+            return ScalarSet(data_type=set_type, values=elements)
         elif node.kind == "ValueDomain":
             if self.value_domains is None:
                 raise SemanticError("2-3-10", comp_type="Value Domains")
