@@ -616,6 +616,12 @@ centralised_messages = {
         "description": "Raised when a component is missing from the join result Dataset "
         "when it is referenced.",
     },
+    "1-1-13-18": {
+        "message": "At op {op}: Incompatible types for common identifier {id_name}: "
+        "{type_1} and {type_2}.",
+        "description": "Raised when datasets in a join operation have a common identifier "
+        "with incompatible types.",
+    },
     # Operators general errors
     "1-1-14-1": {
         "message": "At op {op}: Measure names don't match: {left} - {right}.",
