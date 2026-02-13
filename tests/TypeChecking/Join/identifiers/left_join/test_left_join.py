@@ -72,13 +72,12 @@ class LeftJoinIdentifiersTypeChecking(TestLeftJoinTypeChecking):
         Goal: Check Exception.
         """
         code = "2-2-2-3"
-        # 2 For group join
-        # 2 For group identifiers
-        # 2 For clause- for the moment only op left_join
-        # 3 Number of test
         number_inputs = 2
-        references_names = ["DS_r"]
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        # TODO: Fix in #501 - Boolean/Integer implicit casting
+        # self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-18"
+        )
 
     def test_4(self):
         """

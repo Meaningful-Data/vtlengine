@@ -191,15 +191,17 @@ def semantic_analysis(
     data_structures: Union[
         Dict[str, Any],
         Path,
+        str,
         Schema,
         DataStructureDefinition,
         Dataflow,
-        List[Union[Dict[str, Any], Path, Schema, DataStructureDefinition, Dataflow]],
+        List[Union[Dict[str, Any], Path, str, Schema, DataStructureDefinition, Dataflow]],
     ],
     value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
     external_routines: Optional[
         Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
     ] = None,
+    sdmx_mappings: Optional[Union[VtlDataflowMapping, Dict[str, str]]] = None,
 ) -> Dict[str, Dataset]:
     """
     Checks if the vtl scripts and its related datastructures are valid. As part of the compatibility
@@ -237,6 +239,9 @@ def semantic_analysis(
         Check the following example: \
         :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
 
+        sdmx_mappings: A dictionary or VtlDataflowMapping object that maps SDMX URNs \
+        (e.g., "Dataflow=MD:TEST_DF(1.0)") to VTL dataset names. (default: None)
+
     Returns:
         The computed datasets.
 
@@ -245,13 +250,16 @@ def semantic_analysis(
         or their Paths are invalid.
     """
 
+    # Convert sdmx_mappings to dict format for internal use
+    mapping_dict = _convert_sdmx_mappings(sdmx_mappings)
+
     # AST generation
     checking = _check_script(script)
     vtl = load_vtl(checking)
     ast = create_ast(vtl)
 
-    # Loading datasets
-    datasets, scalars = load_datasets(data_structures)
+    # Loading datasets from file/dict/pysdmx objects/URLs
+    datasets, scalars = load_datasets(data_structures, sdmx_mappings=mapping_dict)
 
     # Handling of library items
     vd = None
@@ -278,10 +286,11 @@ def run(
     data_structures: Union[
         Dict[str, Any],
         Path,
+        str,
         Schema,
         DataStructureDefinition,
         Dataflow,
-        List[Union[Dict[str, Any], Path, Schema, DataStructureDefinition, Dataflow]],
+        List[Union[Dict[str, Any], Path, str, Schema, DataStructureDefinition, Dataflow]],
     ],
     datapoints: Union[Dict[str, Union[pd.DataFrame, str, Path]], List[Union[str, Path]], str, Path],
     value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
@@ -342,9 +351,12 @@ def run(
     Args:
         script: VTL script as a string, a Transformation Scheme object or Path with the VTL script.
 
-        data_structures: Dict, Path, pysdmx object, or a List of these with the data structures. \
-        Supports VTL JSON format (dict or .json file), SDMX structure files (.xml or SDMX-JSON), \
-        or pysdmx objects (Schema, DataStructureDefinition, Dataflow).
+        data_structures: Dict, Path, URL string, pysdmx object, or a List of these with the \
+        data structures. Supports VTL JSON format (dict or .json file), SDMX structure files \
+        (.xml or SDMX-JSON), HTTP/HTTPS URLs to SDMX structure endpoints, \
+        or pysdmx objects (Schema, DataStructureDefinition, Dataflow). \
+        When datapoints contains HTTP/HTTPS URLs, data_structures must be a file path or URL \
+        pointing to an SDMX structure file.
 
         datapoints: Dict, Path, S3 URI or List of S3 URIs or Paths with data. \
         Supports plain CSV files and SDMX files (.xml for SDMX-ML, .json for SDMX-JSON, \
@@ -400,9 +412,12 @@ def run(
     vtl = load_vtl(script)
     ast = create_ast(vtl)
 
-    # Loading datasets and datapoints
+    # Loading datasets and datapoints (handles URLs, S3 URIs, file paths, DataFrames)
     datasets, scalars, path_dict = load_datasets_with_data(
-        data_structures, datapoints, scalar_values, sdmx_mappings=mapping_dict
+        data_structures,
+        datapoints,
+        scalar_values,
+        sdmx_mappings=mapping_dict,
     )
 
     # Handling of library items
@@ -564,7 +579,7 @@ def run_sdmx(
     return run(
         script=script,
         data_structures=cast(
-            List[Union[Dict[str, Any], Path, Schema, DataStructureDefinition, Dataflow]],
+            List[Union[Dict[str, Any], Path, str, Schema, DataStructureDefinition, Dataflow]],
             data_structures_list,
         ),
         datapoints=cast(Dict[str, Union[pd.DataFrame, str, Path]], datapoints_dict),
