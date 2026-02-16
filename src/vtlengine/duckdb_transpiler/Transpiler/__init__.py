@@ -223,7 +223,7 @@ class SQLTranspiler(ASTTemplate):
         inner_sql = self.visit(node)
         return f"({inner_sql})"
 
-    def _get_dataset_structure(self, node: AST.AST) -> Optional[Dataset]:
+    def _get_dataset_structure(self, node: AST.AST) -> Optional[Dataset]:  # noqa: C901
         """Get dataset structure for a node, tracing to the source dataset."""
         if isinstance(node, AST.VarID):
             udo_val = self._get_udo_param(node.value)
@@ -240,11 +240,21 @@ class SQLTranspiler(ASTTemplate):
                 result = self._build_unpivot_structure(node)
                 if result is not None:
                     return result
+            if op == tokens.AGGREGATE:
+                return self._build_aggregate_clause_structure(node)
+            if op == tokens.RENAME:
+                return self._build_rename_structure(node)
+            if op == tokens.DROP:
+                return self._build_drop_structure(node)
+            if op == tokens.KEEP:
+                return self._build_keep_structure(node)
             return self._get_dataset_structure(node.dataset)
 
         if isinstance(node, AST.BinOp):
             op = str(node.op).lower()
-            if op in (tokens.MEMBERSHIP, "as"):
+            if op == tokens.MEMBERSHIP:
+                return self._build_membership_structure(node)
+            if op == "as":
                 return self._get_dataset_structure(node.left)
             if self._get_operand_type(node.left) == _DATASET:
                 return self._get_dataset_structure(node.left)
@@ -263,7 +273,10 @@ class SQLTranspiler(ASTTemplate):
         if isinstance(node, AST.Aggregation) and node.operand:
             return self._get_dataset_structure(node.operand)
 
-        if isinstance(node, (AST.JoinOp, AST.UDOCall)):
+        if isinstance(node, AST.JoinOp):
+            return self._build_join_structure(node)
+
+        if isinstance(node, AST.UDOCall):
             return self._get_output_dataset()
 
         if isinstance(node, AST.MulOp) and node.children:
@@ -302,6 +315,164 @@ class SQLTranspiler(ASTTemplate):
             name=new_measure, data_type=m_type, role=Role.MEASURE, nullable=True
         )
         return Dataset(name="_unpivot", components=comps, data=None)
+
+    def _build_aggregate_clause_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:
+        """Build the output dataset structure for an aggregate clause.
+
+        After ``[aggr Me := func() group by Id]``, the result contains only
+        the group-by identifiers and the computed measures.
+        """
+        input_ds = self._get_dataset_structure(node.dataset)
+        if input_ds is None:
+            return None
+
+        from vtlengine.DataTypes import Number as NumberType
+
+        comps: Dict[str, Component] = {}
+
+        # Determine group-by identifiers from children or default to all
+        group_ids: set = set()
+        for child in node.children:
+            assignment = child
+            if isinstance(child, AST.UnaryOp) and isinstance(child.operand, AST.Assignment):
+                assignment = child.operand
+            if isinstance(assignment, AST.Assignment):
+                agg_node = assignment.right
+                if (
+                    isinstance(agg_node, AST.Aggregation)
+                    and agg_node.grouping
+                    and agg_node.grouping_op == "group by"
+                ):
+                    for g in agg_node.grouping:
+                        if isinstance(g, (AST.VarID, AST.Identifier)):
+                            group_ids.add(g.value)
+
+        # Add group-by identifiers
+        for name, comp in input_ds.components.items():
+            if comp.role == Role.IDENTIFIER and name in group_ids:
+                comps[name] = comp
+
+        # Add computed measures
+        for child in node.children:
+            assignment = child
+            if isinstance(child, AST.UnaryOp) and isinstance(child.operand, AST.Assignment):
+                assignment = child.operand
+            if isinstance(assignment, AST.Assignment):
+                col_name = assignment.left.value if hasattr(assignment.left, "value") else ""
+                comps[col_name] = Component(
+                    name=col_name, data_type=NumberType, role=Role.MEASURE, nullable=True
+                )
+
+        return Dataset(name=input_ds.name, components=comps, data=None)
+
+    def _build_membership_structure(self, node: AST.BinOp) -> Optional[Dataset]:
+        """Build the output structure for a membership (#) operation.
+
+        ``DS#comp`` returns identifiers + the single extracted component.
+        """
+        parent_ds = self._get_dataset_structure(node.left)
+        if parent_ds is None:
+            return None
+
+        comp_name = node.right.value if hasattr(node.right, "value") else str(node.right)
+
+        comps: Dict[str, Component] = {}
+        for name, comp in parent_ds.components.items():
+            if comp.role == Role.IDENTIFIER:
+                comps[name] = comp
+
+        # Add the extracted component as a measure
+        if comp_name in parent_ds.components:
+            orig = parent_ds.components[comp_name]
+            comps[comp_name] = Component(
+                name=comp_name, data_type=orig.data_type, role=Role.MEASURE, nullable=True
+            )
+        else:
+            from vtlengine.DataTypes import Number as NumberType
+
+            comps[comp_name] = Component(
+                name=comp_name, data_type=NumberType, role=Role.MEASURE, nullable=True
+            )
+        return Dataset(name=parent_ds.name, components=comps, data=None)
+
+    def _build_rename_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:
+        """Build the output structure for a rename clause."""
+        input_ds = self._get_dataset_structure(node.dataset)
+        if input_ds is None:
+            return None
+
+        renames: Dict[str, str] = {}
+        for child in node.children:
+            if isinstance(child, AST.RenameNode):
+                renames[child.old_name] = child.new_name
+
+        comps: Dict[str, Component] = {}
+        for name, comp in input_ds.components.items():
+            if name in renames:
+                new_name = renames[name]
+                comps[new_name] = Component(
+                    name=new_name,
+                    data_type=comp.data_type,
+                    role=comp.role,
+                    nullable=comp.nullable,
+                )
+            else:
+                comps[name] = comp
+
+        return Dataset(name=input_ds.name, components=comps, data=None)
+
+    def _build_drop_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:
+        """Build the output structure for a drop clause."""
+        input_ds = self._get_dataset_structure(node.dataset)
+        if input_ds is None:
+            return None
+
+        drop_names: set = set()
+        for child in node.children:
+            if isinstance(child, (AST.VarID, AST.Identifier)):
+                drop_names.add(child.value)
+
+        comps = {name: comp for name, comp in input_ds.components.items() if name not in drop_names}
+        return Dataset(name=input_ds.name, components=comps, data=None)
+
+    def _build_keep_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:
+        """Build the output structure for a keep clause."""
+        input_ds = self._get_dataset_structure(node.dataset)
+        if input_ds is None:
+            return None
+
+        keep_names: set = set()
+        # Identifiers are always kept
+        for name, comp in input_ds.components.items():
+            if comp.role == Role.IDENTIFIER:
+                keep_names.add(name)
+        for child in node.children:
+            if isinstance(child, (AST.VarID, AST.Identifier)):
+                keep_names.add(child.value)
+
+        comps = {name: comp for name, comp in input_ds.components.items() if name in keep_names}
+        return Dataset(name=input_ds.name, components=comps, data=None)
+
+    def _build_join_structure(self, node: AST.JoinOp) -> Optional[Dataset]:
+        """Build the output structure for a join operation from its clauses.
+
+        Merges all components from all joined datasets so that the structure
+        reflects the actual columns present in the join result (before any
+        wrapping clauses like rename/drop).
+        """
+        comps: Dict[str, Component] = {}
+        for clause in node.clauses:
+            actual_node = clause
+            if isinstance(clause, AST.BinOp) and str(clause.op).lower() == "as":
+                actual_node = clause.left
+            ds = self._get_dataset_structure(actual_node)
+            if ds:
+                for name, comp in ds.components.items():
+                    if name not in comps:
+                        comps[name] = comp
+        if not comps:
+            return self._get_output_dataset()
+        return Dataset(name="_join", components=comps, data=None)
 
     def _resolve_dataset_name(self, node: AST.AST) -> str:
         """Resolve a VarID to its actual dataset name (handles UDO params)."""
@@ -367,9 +538,19 @@ class SQLTranspiler(ASTTemplate):
                 self.current_assignment = name
                 self.inputs = self._get_assignment_inputs(name)
 
-                is_persistent = isinstance(child, AST.PersistentAssignment)
-                query = self.visit(child)
-                queries.append((name, query, is_persistent))
+                # Check if this is a scalar assignment
+                if name in self.output_scalars:
+                    # Scalar assignments produce a literal value, wrap in SELECT
+                    is_persistent = isinstance(child, AST.PersistentAssignment)
+                    value_sql = self.visit(child)
+                    # Ensure it's a valid SQL query
+                    if not value_sql.strip().upper().startswith("SELECT"):
+                        value_sql = f"SELECT {value_sql} AS value"
+                    queries.append((name, value_sql, is_persistent))
+                else:
+                    is_persistent = isinstance(child, AST.PersistentAssignment)
+                    query = self.visit(child)
+                    queries.append((name, query, is_persistent))
 
         return queries
 
@@ -567,8 +748,14 @@ class SQLTranspiler(ASTTemplate):
     ) -> str:
         """Build SQL for dataset-scalar binary operation."""
         ds = self._get_dataset_structure(ds_node)
-        if ds is None:
-            raise ValueError("Cannot resolve dataset structure")
+        if ds is None or not isinstance(ds, Dataset):
+            # Fallback: both sides are scalar-like (e.g. filter with scalar variables)
+            left_sql = self.visit(ds_node)
+            right_sql = self.visit(scalar_node)
+            if ds_on_left:
+                return registry.binary.generate(op, left_sql, right_sql)
+            else:
+                return registry.binary.generate(op, right_sql, left_sql)
 
         scalar_sql = self.visit(scalar_node)
         table_src = self._get_dataset_sql(ds_node)
@@ -1337,15 +1524,11 @@ class SQLTranspiler(ASTTemplate):
         if ds is None:
             return f"SELECT * FROM {table_src}"
 
-        # Identifiers are always kept (use output dataset if available for
-        # correct names after preceding renames in a chain).
-        output_ds = self._get_output_dataset()
-        if output_ds is not None:
-            id_names: List[str] = list(output_ds.get_identifiers_names())
-        else:
-            id_names = [
-                name for name, comp in ds.components.items() if comp.role == Role.IDENTIFIER
-            ]
+        # Identifiers are always kept — use the input dataset's names so that
+        # we reference columns that actually exist in the source table.
+        id_names: List[str] = [
+            name for name, comp in ds.components.items() if comp.role == Role.IDENTIFIER
+        ]
 
         keep_names: List[str] = list(id_names)
         for child in node.children:
@@ -1470,8 +1653,30 @@ class SQLTranspiler(ASTTemplate):
         self._in_clause = False
         self._current_dataset = None
 
-        output_ds = self._get_output_dataset()
-        group_ids = output_ds.get_identifiers_names() if output_ds else ds.get_identifiers_names()
+        # Extract group-by identifiers from AST nodes to avoid using the
+        # overall output dataset (which may represent a join result).
+        group_ids: List[str] = []
+        for child in node.children:
+            assignment = child
+            if isinstance(child, AST.UnaryOp) and isinstance(child.operand, AST.Assignment):
+                assignment = child.operand
+            if isinstance(assignment, AST.Assignment):
+                agg_node = assignment.right
+                if (
+                    isinstance(agg_node, AST.Aggregation)
+                    and agg_node.grouping
+                    and agg_node.grouping_op == "group by"
+                ):
+                    for g in agg_node.grouping:
+                        if isinstance(g, (AST.VarID, AST.Identifier)) and g.value not in group_ids:
+                            group_ids.append(g.value)
+
+        # Fall back to output/input dataset identifiers when no explicit grouping
+        if not group_ids:
+            output_ds = self._get_output_dataset()
+            group_ids = list(
+                output_ds.get_identifiers_names() if output_ds else ds.get_identifiers_names()
+            )
 
         cols: List[str] = [quote_identifier(id_) for id_ in group_ids]
         for col_name, expr_sql in calc_exprs.items():
@@ -1593,7 +1798,20 @@ class SQLTranspiler(ASTTemplate):
                     return registry.aggregate.generate(op, operand_sql)
                 return f"{op.upper()}({operand_sql})"
 
+        # count() with no operand -> COUNT excluding all-null measure rows
         if node.operand is None:
+            if op == tokens.COUNT:
+                # VTL count() without operand counts data points where at least
+                # one measure is not null.  Build a CASE expression to skip rows
+                # where all measures are null.
+                if self._in_clause and self._current_dataset:
+                    measures = self._current_dataset.get_measures_names()
+                    if measures:
+                        or_parts = " OR ".join(
+                            f"{quote_identifier(m)} IS NOT NULL" for m in measures
+                        )
+                        return f"COUNT(CASE WHEN {or_parts} THEN 1 END)"
+                return "COUNT(*)"
             return ""
 
         ds = self._get_dataset_structure(node.operand)
@@ -1616,11 +1834,19 @@ class SQLTranspiler(ASTTemplate):
         cols: List[str] = [quote_identifier(g) for g in group_cols]
 
         # count replaces all measures with a single int_var column.
-        # Use COUNT(*) since we don't need specific column references.
+        # VTL count() excludes rows where all measures are null.
         if op == tokens.COUNT:
             output_measures = effective_ds.get_measures_names()
             alias = output_measures[0] if output_measures else "int_var"
-            cols.append(f"COUNT(*) AS {quote_identifier(alias)}")
+            # Build conditional count excluding all-null measure rows
+            source_measures = ds.get_measures_names()
+            if source_measures:
+                or_parts = " OR ".join(
+                    f"{quote_identifier(m)} IS NOT NULL" for m in source_measures
+                )
+                cols.append(f"COUNT(CASE WHEN {or_parts} THEN 1 END) AS {quote_identifier(alias)}")
+            else:
+                cols.append(f"COUNT(*) AS {quote_identifier(alias)}")
         else:
             measures = effective_ds.get_measures_names()
             for measure in measures:
