@@ -13,7 +13,8 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import vtlengine.AST as AST
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.Grammar import tokens
-from vtlengine.DataTypes import Date, String as StringType, TimePeriod
+from vtlengine.DataTypes import Date, TimePeriod
+from vtlengine.DataTypes import String as StringType
 from vtlengine.duckdb_transpiler.Transpiler.operators import (
     get_duckdb_type,
     registry,
@@ -282,19 +283,13 @@ class SQLTranspiler(ASTTemplate):
         if input_ds is None:
             return None
         new_id = (
-            node.children[0].value
-            if hasattr(node.children[0], "value")
-            else str(node.children[0])
+            node.children[0].value if hasattr(node.children[0], "value") else str(node.children[0])
         )
         new_measure = (
-            node.children[1].value
-            if hasattr(node.children[1], "value")
-            else str(node.children[1])
+            node.children[1].value if hasattr(node.children[1], "value") else str(node.children[1])
         )
         comps = {
-            name: comp
-            for name, comp in input_ds.components.items()
-            if comp.role == Role.IDENTIFIER
+            name: comp for name, comp in input_ds.components.items() if comp.role == Role.IDENTIFIER
         }
         comps[new_id] = Component(
             name=new_id, data_type=StringType, role=Role.IDENTIFIER, nullable=False
@@ -1829,13 +1824,9 @@ class SQLTranspiler(ASTTemplate):
         if len(node.children) >= 3:
             retain_node = node.children[2]
             if isinstance(retain_node, AST.Constant) and retain_node.value is True:
-                return (
-                    f'SELECT * FROM ({base_sql}) AS _ei WHERE "bool_var" = TRUE'
-                )
+                return f'SELECT * FROM ({base_sql}) AS _ei WHERE "bool_var" = TRUE'
             if isinstance(retain_node, AST.Constant) and retain_node.value is False:
-                return (
-                    f'SELECT * FROM ({base_sql}) AS _ei WHERE "bool_var" = FALSE'
-                )
+                return f'SELECT * FROM ({base_sql}) AS _ei WHERE "bool_var" = FALSE'
             # "all" or any other value → return all rows (default behaviour)
 
         return base_sql
@@ -1879,9 +1870,7 @@ class SQLTranspiler(ASTTemplate):
         a_sql = child_sqls[0]
         b_sql = child_sqls[1]
 
-        on_parts = [
-            f"a.{quote_identifier(id_)} = b.{quote_identifier(id_)}" for id_ in id_names
-        ]
+        on_parts = [f"a.{quote_identifier(id_)} = b.{quote_identifier(id_)}" for id_ in id_names]
         on_clause = " AND ".join(on_parts) if on_parts else "1=1"
 
         if op == tokens.INTERSECT:
@@ -1900,8 +1889,7 @@ class SQLTranspiler(ASTTemplate):
             second_ds = self._get_dataset_structure(node.children[1])
             second_ids = second_ds.get_identifiers_names() if second_ds else id_names
             on_parts_rev = [
-                f"c.{quote_identifier(id_)} = d.{quote_identifier(id_)}"
-                for id_ in second_ids
+                f"c.{quote_identifier(id_)} = d.{quote_identifier(id_)}" for id_ in second_ids
             ]
             on_clause_rev = " AND ".join(on_parts_rev) if on_parts_rev else "1=1"
             return (
