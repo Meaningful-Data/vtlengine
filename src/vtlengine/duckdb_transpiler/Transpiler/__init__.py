@@ -539,9 +539,7 @@ class SQLTranspiler(ASTTemplate):
             alias: Optional[str] = None
             if isinstance(clause, AST.BinOp) and str(clause.op).lower() == "as":
                 actual_node = clause.left
-                alias = (
-                    clause.right.value if hasattr(clause.right, "value") else str(clause.right)
-                )
+                alias = clause.right.value if hasattr(clause.right, "value") else str(clause.right)
             ds = self._get_dataset_structure(actual_node)
             if alias is None:
                 # Use the dataset name as alias (same convention as interpreter)
@@ -580,12 +578,8 @@ class SQLTranspiler(ASTTemplate):
         comps: Dict[str, Component] = {}
         for alias, ds in clause_datasets:
             for comp_name, comp in ds.components.items():
-                is_join_id = (
-                    comp.role == Role.IDENTIFIER or comp_name in all_join_ids
-                )
-                if comp_name in duplicate_comps and (
-                    not is_join_id or is_cross
-                ):
+                is_join_id = comp.role == Role.IDENTIFIER or comp_name in all_join_ids
+                if comp_name in duplicate_comps and (not is_join_id or is_cross):
                     qualified = f"{alias}#{comp_name}"
                     new_comp = Component(
                         name=qualified,
@@ -735,9 +729,7 @@ class SQLTranspiler(ASTTemplate):
             reverse_found = False
             for qual, unqual in renames.items():
                 if unqual == comp_name:
-                    cols.append(
-                        f"{quote_identifier(qual)} AS {quote_identifier(comp_name)}"
-                    )
+                    cols.append(f"{quote_identifier(qual)} AS {quote_identifier(comp_name)}")
                     reverse_found = True
                     break
             if not reverse_found:
@@ -816,7 +808,11 @@ class SQLTranspiler(ASTTemplate):
 
         # In clause context, check if the variable matches a qualified column
         # (e.g., "Me_2" → "d1#Me_2" when datasets share that column name).
-        if self._in_clause and self._current_dataset and name not in self._current_dataset.components:
+        if (
+            self._in_clause
+            and self._current_dataset
+            and name not in self._current_dataset.components
+        ):
             matches = [
                 comp_name
                 for comp_name in self._current_dataset.components
@@ -2143,10 +2139,7 @@ class SQLTranspiler(ASTTemplate):
         """
         if op == tokens.RATIO_TO_REPORT:
             over_clause = self._build_over_clause(node)
-            return (
-                f"CAST({operand_sql} AS DOUBLE) / "
-                f"SUM({operand_sql}) OVER ({over_clause})"
-            )
+            return f"CAST({operand_sql} AS DOUBLE) / SUM({operand_sql}) OVER ({over_clause})"
         if op == tokens.RANK:
             return "RANK()"
         if op in (tokens.LAG, tokens.LEAD) and node.params:
@@ -2215,9 +2208,7 @@ class SQLTranspiler(ASTTemplate):
                     continue
                 if comp.role == Role.MEASURE:
                     func_sql = self._build_analytic_expr(op, quote_identifier(name), node)
-                    cols.append(
-                        f"{func_sql} OVER ({over_clause}) AS {quote_identifier(out_name)}"
-                    )
+                    cols.append(f"{func_sql} OVER ({over_clause}) AS {quote_identifier(out_name)}")
                     break  # count produces a single measure
 
         return SQLBuilder().select(*cols).from_table(table_src).build()
@@ -2627,9 +2618,8 @@ class SQLTranspiler(ASTTemplate):
             sa = info["sql_alias"]
             for comp_name, comp in info["ds"].components.items():
                 is_join_id = (
-                    (comp.role == Role.IDENTIFIER and not is_cross)
-                    or comp_name in all_join_ids
-                )
+                    comp.role == Role.IDENTIFIER and not is_cross
+                ) or comp_name in all_join_ids
                 if is_join_id:
                     if comp_name not in seen_identifiers:
                         seen_identifiers.add(comp_name)
@@ -2646,21 +2636,16 @@ class SQLTranspiler(ASTTemplate):
                                 f" AS {quote_identifier(comp_name)}"
                             )
                         else:
-                            cols.append(
-                                f"{sa}.{quote_identifier(comp_name)}"
-                            )
+                            cols.append(f"{sa}.{quote_identifier(comp_name)}")
                 elif comp_name in duplicate_comps:
                     # Duplicate non-identifier: alias with "alias#comp" convention
                     qualified_name = f"{info['alias']}#{comp_name}"
                     cols.append(
-                        f"{sa}.{quote_identifier(comp_name)}"
-                        f" AS {quote_identifier(qualified_name)}"
+                        f"{sa}.{quote_identifier(comp_name)} AS {quote_identifier(qualified_name)}"
                     )
                     self._join_alias_map[qualified_name] = qualified_name
                 else:
-                    cols.append(
-                        f"{sa}.{quote_identifier(comp_name)}"
-                    )
+                    cols.append(f"{sa}.{quote_identifier(comp_name)}")
 
         if not cols:
             builder.select_all()
@@ -2682,7 +2667,7 @@ class SQLTranspiler(ASTTemplate):
                     # (for multi-dataset joins where identifiers come from
                     # different source datasets)
                     left_alias = first_sql_alias
-                    for prev_info in clause_info[:idx + 1]:
+                    for prev_info in clause_info[: idx + 1]:
                         if prev_info["ds"] and id_ in prev_info["ds"].components:
                             left_alias = prev_info["sql_alias"]
                             break
