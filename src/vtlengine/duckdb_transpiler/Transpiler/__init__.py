@@ -1676,6 +1676,19 @@ class SQLTranspiler(ASTTemplate):
         child_sqls = [self.visit(c) for c in node.children]
         return ", ".join(child_sqls)
 
+    @staticmethod
+    def _between_expr(operand: str, low: str, high: str) -> str:
+        """Build a VTL-compliant BETWEEN expression with NULL propagation.
+
+        VTL requires that if ANY operand of between is NULL, the result is NULL.
+        SQL's three-valued logic differs: FALSE AND NULL = FALSE.  To match VTL
+        semantics we wrap the expression with an explicit NULL check.
+        """
+        return (
+            f"CASE WHEN {operand} IS NULL OR {low} IS NULL OR {high} IS NULL "
+            f"THEN NULL ELSE ({operand} BETWEEN {low} AND {high}) END"
+        )
+
     def _visit_between(self, node: AST.MulOp) -> str:
         """Visit BETWEEN: expr BETWEEN low AND high. Handles dataset operand."""
         if len(node.children) < 3:
@@ -1689,7 +1702,7 @@ class SQLTranspiler(ASTTemplate):
         operand_sql = self.visit(node.children[0])
         low_sql = self.visit(node.children[1])
         high_sql = self.visit(node.children[2])
-        return f"({operand_sql} BETWEEN {low_sql} AND {high_sql})"
+        return self._between_expr(operand_sql, low_sql, high_sql)
 
     def _visit_between_dataset(self, node: AST.MulOp) -> str:
         """Visit dataset-level BETWEEN: applies BETWEEN to each measure."""
@@ -1711,7 +1724,7 @@ class SQLTranspiler(ASTTemplate):
             if comp.role == Role.IDENTIFIER:
                 cols.append(quote_identifier(name))
             elif comp.role == Role.MEASURE:
-                expr = f"({quote_identifier(name)} BETWEEN {low_sql} AND {high_sql})"
+                expr = self._between_expr(quote_identifier(name), low_sql, high_sql)
                 out_name = name
                 if output_measure_names and len(measures) == 1 and len(output_measure_names) == 1:
                     out_name = output_measure_names[0]
@@ -1720,10 +1733,26 @@ class SQLTranspiler(ASTTemplate):
         return SQLBuilder().select(*cols).from_table(table_src).build()
 
     def _visit_exists_in_mul(self, node: AST.MulOp) -> str:
-        """Visit EXISTS_IN in MulOp form."""
+        """Visit EXISTS_IN in MulOp form, handling the optional retain parameter."""
         if len(node.children) < 2:
             raise ValueError("exists_in requires at least 2 operands")
-        return self._build_exists_in_sql(node.children[0], node.children[1])
+
+        base_sql = self._build_exists_in_sql(node.children[0], node.children[1])
+
+        # Check for retain parameter (true / false / all)
+        if len(node.children) >= 3:
+            retain_node = node.children[2]
+            if isinstance(retain_node, AST.Constant) and retain_node.value is True:
+                return (
+                    f'SELECT * FROM ({base_sql}) AS _ei WHERE "bool_var" = TRUE'
+                )
+            if isinstance(retain_node, AST.Constant) and retain_node.value is False:
+                return (
+                    f'SELECT * FROM ({base_sql}) AS _ei WHERE "bool_var" = FALSE'
+                )
+            # "all" or any other value → return all rows (default behaviour)
+
+        return base_sql
 
     def _visit_set_operation(self, node: AST.MulOp, op: str) -> str:
         """Visit set operations: UNION, INTERSECT, SETDIFF, SYMDIFF."""
