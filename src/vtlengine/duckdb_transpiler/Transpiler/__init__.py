@@ -240,6 +240,10 @@ class SQLTranspiler(ASTTemplate):
                 result = self._build_unpivot_structure(node)
                 if result is not None:
                     return result
+            if op == tokens.CALC:
+                result = self._build_calc_structure(node)
+                if result is not None:
+                    return result
             if op == tokens.AGGREGATE:
                 return self._build_aggregate_clause_structure(node)
             if op == tokens.RENAME:
@@ -315,6 +319,35 @@ class SQLTranspiler(ASTTemplate):
             name=new_measure, data_type=m_type, role=Role.MEASURE, nullable=True
         )
         return Dataset(name="_unpivot", components=comps, data=None)
+
+    def _build_calc_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:
+        """Build the output dataset structure for a calc clause.
+
+        The result contains all input columns plus any new columns defined
+        by the calc assignments.  This is needed when a calc is used as an
+        intermediate result (e.g. chained ``[calc A][calc B]``).
+        """
+        input_ds = self._get_dataset_structure(node.dataset)
+        if input_ds is None:
+            return None
+
+        output_ds = self._get_output_dataset()
+        comps = dict(input_ds.components)
+        for child in node.children:
+            assignment = child
+            if isinstance(child, AST.UnaryOp) and isinstance(child.operand, AST.Assignment):
+                assignment = child.operand
+            if isinstance(assignment, AST.Assignment):
+                col_name = assignment.left.value if hasattr(assignment.left, "value") else ""
+                if col_name not in comps and output_ds and col_name in output_ds.components:
+                    comps[col_name] = output_ds.components[col_name]
+                elif col_name not in comps:
+                    from vtlengine.DataTypes import Number as NumberType
+
+                    comps[col_name] = Component(
+                        name=col_name, data_type=NumberType, role=Role.MEASURE, nullable=True
+                    )
+        return Dataset(name=input_ds.name, components=comps, data=None)
 
     def _build_aggregate_clause_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:
         """Build the output dataset structure for an aggregate clause.
@@ -1462,14 +1495,8 @@ class SQLTranspiler(ASTTemplate):
         if ds is None:
             return f"SELECT * FROM {table_src}"
 
-        # Use the output dataset when available – it reflects the correct
-        # column set after preceding clauses (e.g. an aggregate that changes
-        # the available identifiers/measures).
-        output_ds = self._get_output_dataset()
-        effective_ds = output_ds if output_ds is not None else ds
-
         self._in_clause = True
-        self._current_dataset = effective_ds
+        self._current_dataset = ds
 
         calc_exprs: Dict[str, str] = {}
         for child in node.children:
@@ -1489,19 +1516,18 @@ class SQLTranspiler(ASTTemplate):
         self._in_clause = False
         self._current_dataset = None
 
-        # Build SELECT using the effective dataset's columns.  Columns being
-        # calculated are replaced with their expression; others are passed
-        # through.
+        # Build SELECT: keep original columns that are NOT being overwritten,
+        # then add the calc expressions (possibly replacing originals).
         select_cols: List[str] = []
-        for name in effective_ds.components:
+        for name in ds.components:
             if name in calc_exprs:
                 select_cols.append(f"{calc_exprs[name]} AS {quote_identifier(name)}")
             else:
                 select_cols.append(quote_identifier(name))
 
-        # Add any new columns not already present in the effective structure
+        # Add any new columns (not in original dataset)
         for col_name, expr_sql in calc_exprs.items():
-            if col_name not in effective_ds.components:
+            if col_name not in ds.components:
                 select_cols.append(f"{expr_sql} AS {quote_identifier(col_name)}")
 
         # Wrap inner query as subquery: if it's already a SELECT, wrap in parens;
@@ -1892,7 +1918,17 @@ class SQLTranspiler(ASTTemplate):
         return " ".join(over_parts)
 
     def _build_analytic_expr(self, op: str, operand_sql: str, node: AST.Analytic) -> str:
-        """Build the analytic function expression (without OVER)."""
+        """Build the analytic function expression (without OVER).
+
+        For ratio_to_report, returns the complete expression including OVER clause.
+        Callers must check _is_self_contained_analytic() to avoid adding OVER again.
+        """
+        if op == tokens.RATIO_TO_REPORT:
+            over_clause = self._build_over_clause(node)
+            return (
+                f"CAST({operand_sql} AS DOUBLE) / "
+                f"SUM({operand_sql}) OVER ({over_clause})"
+            )
         if op == tokens.RANK:
             return "RANK()"
         if op in (tokens.LAG, tokens.LEAD) and node.params:
@@ -1900,7 +1936,11 @@ class SQLTranspiler(ASTTemplate):
             default_val = node.params[1] if len(node.params) > 1 else None
             func_sql = f"{op.upper()}({operand_sql}, {offset}"
             if default_val is not None:
-                func_sql += f", {default_val}"
+                if isinstance(default_val, AST.AST):
+                    default_sql = self.visit(default_val)
+                else:
+                    default_sql = str(default_val)
+                func_sql += f", {default_sql}"
             return func_sql + ")"
         if registry.analytic.is_registered(op):
             return registry.analytic.generate(op, operand_sql)
@@ -1917,6 +1957,9 @@ class SQLTranspiler(ASTTemplate):
         # Component-level: single expression with OVER
         operand_sql = self.visit(node.operand) if node.operand else ""
         func_sql = self._build_analytic_expr(op, operand_sql, node)
+        # ratio_to_report already includes its own OVER clause
+        if op == tokens.RATIO_TO_REPORT:
+            return func_sql
         over_clause = self._build_over_clause(node)
         return f"{func_sql} OVER ({over_clause})"
 
@@ -1935,7 +1978,29 @@ class SQLTranspiler(ASTTemplate):
                 cols.append(quote_identifier(name))
             elif comp.role == Role.MEASURE:
                 func_sql = self._build_analytic_expr(op, quote_identifier(name), node)
-                cols.append(f"{func_sql} OVER ({over_clause}) AS {quote_identifier(name)}")
+                if op == tokens.RATIO_TO_REPORT:
+                    cols.append(f"{func_sql} AS {quote_identifier(name)}")
+                else:
+                    cols.append(f"{func_sql} OVER ({over_clause}) AS {quote_identifier(name)}")
+
+        # VTL count always produces int_var as the measure name
+        if op == tokens.COUNT:
+            output_ds = self._get_output_dataset()
+            out_name = "int_var"
+            if output_ds:
+                out_measures = output_ds.get_measures_names()
+                if out_measures:
+                    out_name = out_measures[0]
+            cols = [c for c in cols if "OVER" not in c]  # remove measure cols
+            for name, comp in ds.components.items():
+                if comp.role == Role.IDENTIFIER:
+                    continue
+                if comp.role == Role.MEASURE:
+                    func_sql = self._build_analytic_expr(op, quote_identifier(name), node)
+                    cols.append(
+                        f"{func_sql} OVER ({over_clause}) AS {quote_identifier(out_name)}"
+                    )
+                    break  # count produces a single measure
 
         return SQLBuilder().select(*cols).from_table(table_src).build()
 
@@ -1949,11 +2014,13 @@ class SQLTranspiler(ASTTemplate):
             type_str = "RANGE"
 
         def bound_str(value: Union[int, str], mode: str) -> str:
-            if mode.upper() == "CURRENT ROW" or str(value).upper() == "CURRENT ROW":
+            mode_up = mode.upper()
+            val_str = str(value).upper()
+            if "CURRENT" in mode_up or val_str == "CURRENT ROW":
                 return "CURRENT ROW"
-            if str(value).upper() == "UNBOUNDED":
-                return f"UNBOUNDED {mode.upper()}"
-            return f"{value} {mode.upper()}"
+            if val_str == "UNBOUNDED" or (isinstance(value, int) and value < 0):
+                return f"UNBOUNDED {mode_up}"
+            return f"{value} {mode_up}"
 
         start = bound_str(node.start, node.start_mode)
         stop = bound_str(node.stop, node.stop_mode)
