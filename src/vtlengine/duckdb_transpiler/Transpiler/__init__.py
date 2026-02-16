@@ -8,7 +8,7 @@ sequentially, with results registered as tables for subsequent queries.
 
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import vtlengine.AST as AST
 from vtlengine.AST.ASTTemplate import ASTTemplate
@@ -64,6 +64,13 @@ class SQLTranspiler(ASTTemplate):
     # Clause context (replaces structure_visitor.in_clause / current_dataset)
     _in_clause: bool = field(default=False, init=False)
     _current_dataset: Optional[Dataset] = field(default=None, init=False)
+
+    # Join context: maps "alias#comp" -> aliased column name in SQL output
+    # e.g. {"d2#Me_2": "d2#Me_2"} for duplicate non-identifier columns
+    _join_alias_map: Dict[str, str] = field(default_factory=dict, init=False)
+
+    # Set of qualified names consumed (renamed/removed) by join body clauses
+    _consumed_join_aliases: Set[str] = field(default_factory=set, init=False)
 
     # UDO definitions: name -> Operator node info
     _udos: Dict[str, Dict[str, Any]] = field(default_factory=dict, init=False)
@@ -437,7 +444,16 @@ class SQLTranspiler(ASTTemplate):
         renames: Dict[str, str] = {}
         for child in node.children:
             if isinstance(child, AST.RenameNode):
-                renames[child.old_name] = child.new_name
+                old = child.old_name
+                # Check if alias-qualified name exists in input dataset
+                if "#" in old and old in input_ds.components:
+                    renames[old] = child.new_name
+                elif "#" in old:
+                    # Strip alias prefix from membership refs (e.g. d2#Me_2 -> Me_2)
+                    old = old.split("#", 1)[1]
+                    renames[old] = child.new_name
+                else:
+                    renames[old] = child.new_name
 
         comps: Dict[str, Component] = {}
         for name, comp in input_ds.components.items():
@@ -464,6 +480,15 @@ class SQLTranspiler(ASTTemplate):
         for child in node.children:
             if isinstance(child, (AST.VarID, AST.Identifier)):
                 drop_names.add(child.value)
+            elif isinstance(child, AST.BinOp) and str(child.op).lower() == tokens.MEMBERSHIP:
+                # Membership reference: check qualified name first, then bare name
+                ds_alias = child.left.value if hasattr(child.left, "value") else str(child.left)
+                comp = child.right.value if hasattr(child.right, "value") else str(child.right)
+                qualified = f"{ds_alias}#{comp}"
+                if qualified in input_ds.components:
+                    drop_names.add(qualified)
+                else:
+                    drop_names.add(comp)
 
         comps = {name: comp for name, comp in input_ds.components.items() if name not in drop_names}
         return Dataset(name=input_ds.name, components=comps, data=None)
@@ -482,6 +507,15 @@ class SQLTranspiler(ASTTemplate):
         for child in node.children:
             if isinstance(child, (AST.VarID, AST.Identifier)):
                 keep_names.add(child.value)
+            elif isinstance(child, AST.BinOp) and str(child.op).lower() == tokens.MEMBERSHIP:
+                # Membership reference: check qualified name first, then bare name
+                ds_alias = child.left.value if hasattr(child.left, "value") else str(child.left)
+                comp = child.right.value if hasattr(child.right, "value") else str(child.right)
+                qualified = f"{ds_alias}#{comp}"
+                if qualified in input_ds.components:
+                    keep_names.add(qualified)
+                else:
+                    keep_names.add(comp)
 
         comps = {name: comp for name, comp in input_ds.components.items() if name in keep_names}
         return Dataset(name=input_ds.name, components=comps, data=None)
@@ -489,20 +523,79 @@ class SQLTranspiler(ASTTemplate):
     def _build_join_structure(self, node: AST.JoinOp) -> Optional[Dataset]:
         """Build the output structure for a join operation from its clauses.
 
-        Merges all components from all joined datasets so that the structure
-        reflects the actual columns present in the join result (before any
-        wrapping clauses like rename/drop).
+        Merges all components from all joined datasets.  When multiple datasets
+        share a non-identifier column name the duplicates are qualified with
+        ``alias#comp`` – mirroring the VDS convention used by the interpreter.
         """
-        comps: Dict[str, Component] = {}
-        for clause in node.clauses:
+        # Determine the using identifiers for this join
+        using_ids: Optional[List[str]] = None
+        if node.using:
+            using_ids = list(node.using)
+
+        # Collect (alias, dataset) pairs
+        clause_datasets: List[tuple] = []
+        for i, clause in enumerate(node.clauses):
             actual_node = clause
+            alias: Optional[str] = None
             if isinstance(clause, AST.BinOp) and str(clause.op).lower() == "as":
                 actual_node = clause.left
+                alias = (
+                    clause.right.value if hasattr(clause.right, "value") else str(clause.right)
+                )
             ds = self._get_dataset_structure(actual_node)
+            if alias is None:
+                # Use the dataset name as alias (same convention as interpreter)
+                alias = ds.name if ds else chr(ord("a") + i)
             if ds:
-                for name, comp in ds.components.items():
-                    if name not in comps:
-                        comps[name] = comp
+                clause_datasets.append((alias, ds))
+
+        if not clause_datasets:
+            return self._get_output_dataset()
+
+        # Determine common identifiers if no USING specified
+        # Use pairwise accumulation (same as visit_JoinOp) so that multi-
+        # dataset joins where secondary datasets share different identifiers
+        # work correctly.
+        if using_ids is None:
+            accumulated_ids = set(clause_datasets[0][1].get_identifiers_names())
+            all_join_ids: Set[str] = set(accumulated_ids)
+            for _, ds in clause_datasets[1:]:
+                ds_ids = set(ds.get_identifiers_names())
+                all_join_ids |= ds_ids
+                accumulated_ids |= ds_ids
+        else:
+            all_join_ids = set(using_ids)
+
+        # Find non-identifier component names that appear in more than one dataset
+        comp_count: Dict[str, int] = {}
+        for _, ds in clause_datasets:
+            for comp_name in ds.components:
+                if comp_name not in all_join_ids:
+                    comp_count[comp_name] = comp_count.get(comp_name, 0) + 1
+
+        duplicate_comps = {name for name, cnt in comp_count.items() if cnt >= 2}
+
+        is_cross = str(node.op).lower() == tokens.CROSS_JOIN
+
+        comps: Dict[str, Component] = {}
+        for alias, ds in clause_datasets:
+            for comp_name, comp in ds.components.items():
+                is_join_id = (
+                    comp.role == Role.IDENTIFIER or comp_name in all_join_ids
+                )
+                if comp_name in duplicate_comps and (
+                    not is_join_id or is_cross
+                ):
+                    qualified = f"{alias}#{comp_name}"
+                    new_comp = Component(
+                        name=qualified,
+                        data_type=comp.data_type,
+                        role=comp.role,
+                        nullable=comp.nullable,
+                    )
+                    comps[qualified] = new_comp
+                elif comp_name not in comps:
+                    comps[comp_name] = comp
         if not comps:
             return self._get_output_dataset()
         return Dataset(name="_join", components=comps, data=None)
@@ -583,9 +676,75 @@ class SQLTranspiler(ASTTemplate):
                 else:
                     is_persistent = isinstance(child, AST.PersistentAssignment)
                     query = self.visit(child)
+                    # Post-process: unqualify any remaining "alias#comp" column
+                    # names back to plain "comp" to match the expected output
+                    # structure from semantic analysis.
+                    query = self._unqualify_join_columns(name, query)
                     queries.append((name, query, is_persistent))
 
+                # Reset join alias map after each assignment
+                self._join_alias_map = {}
+                self._consumed_join_aliases = set()
+
         return queries
+
+    def _unqualify_join_columns(self, ds_name: str, query: str) -> str:
+        """Wrap the query to rename any remaining alias#comp columns to comp.
+
+        After join clauses (calc/drop/keep/rename) are applied, some columns
+        may still have qualified names like ``d1#Me_2``.  The output dataset
+        (from semantic analysis) expects plain names like ``Me_2``.  This
+        method adds a wrapping SELECT to rename them.
+        """
+        if not self._join_alias_map:
+            return query
+
+        output_ds = self.output_datasets.get(ds_name)
+        if output_ds is None:
+            return query
+
+        # Build a mapping from unqualified name -> list of qualified candidates,
+        # excluding any that were consumed (renamed/removed) by join body clauses
+        output_comp_names = set(output_ds.components.keys())
+        candidates: Dict[str, List[str]] = {}
+
+        for qualified in self._join_alias_map:
+            if qualified in self._consumed_join_aliases:
+                continue
+            if qualified not in output_comp_names and "#" in qualified:
+                unqualified = qualified.split("#", 1)[1]
+                if unqualified in output_comp_names:
+                    candidates.setdefault(unqualified, []).append(qualified)
+
+        if not candidates:
+            return query
+
+        # For each unqualified name, pick the surviving qualified name
+        renames: Dict[str, str] = {}
+        for unqualified, quals in candidates.items():
+            # Use the first (and typically only) surviving candidate
+            renames[quals[0]] = unqualified
+
+        if not renames:
+            return query
+
+        # Build a wrapping SELECT with renames
+        cols: List[str] = []
+        for comp_name in output_ds.components:
+            # Check if this component comes from a qualified name
+            reverse_found = False
+            for qual, unqual in renames.items():
+                if unqual == comp_name:
+                    cols.append(
+                        f"{quote_identifier(qual)} AS {quote_identifier(comp_name)}"
+                    )
+                    reverse_found = True
+                    break
+            if not reverse_found:
+                cols.append(quote_identifier(comp_name))
+
+        select_clause = ", ".join(cols)
+        return f"SELECT {select_clause} FROM ({query})"
 
     def visit_Assignment(self, node: AST.Assignment) -> str:
         """Visit an assignment and return the SQL for its right-hand side."""
@@ -654,6 +813,17 @@ class SQLTranspiler(ASTTemplate):
 
         if self._in_clause and self._current_dataset and name in self._current_dataset.components:
             return quote_identifier(name)
+
+        # In clause context, check if the variable matches a qualified column
+        # (e.g., "Me_2" → "d1#Me_2" when datasets share that column name).
+        if self._in_clause and self._current_dataset and name not in self._current_dataset.components:
+            matches = [
+                comp_name
+                for comp_name in self._current_dataset.components
+                if "#" in comp_name and comp_name.split("#", 1)[1] == name
+            ]
+            if len(matches) == 1:
+                return quote_identifier(matches[0])
 
         if name in self.available_tables:
             return f"SELECT * FROM {quote_identifier(name)}"
@@ -879,6 +1049,18 @@ class SQLTranspiler(ASTTemplate):
                 comp_name = udo_val.value
             elif isinstance(udo_val, str):
                 comp_name = udo_val
+
+        # Inside a clause context (e.g., join body calc/filter/keep/drop/rename),
+        # membership just references a column name — but when there are duplicate
+        # columns across joined datasets, use the qualified "alias#comp" name.
+        if self._in_clause:
+            ds_name = node.left.value if hasattr(node.left, "value") else str(node.left)
+            qualified = f"{ds_name}#{comp_name}"
+            if qualified in self._join_alias_map:
+                return quote_identifier(qualified)
+            # Check if the component exists without qualification in the dataset
+            # (i.e. it's not duplicated across datasets)
+            return quote_identifier(comp_name)
 
         ds = self._get_dataset_structure(node.left)
         table_src = self._get_dataset_sql(node.left)
@@ -1560,6 +1742,21 @@ class SQLTranspiler(ASTTemplate):
         for child in node.children:
             if isinstance(child, (AST.VarID, AST.Identifier)):
                 keep_names.append(child.value)
+            elif isinstance(child, AST.BinOp) and str(child.op).lower() == tokens.MEMBERSHIP:
+                # Membership reference (e.g. d1#Me_2): use qualified name if duplicated
+                ds_alias = child.left.value if hasattr(child.left, "value") else str(child.left)
+                comp = child.right.value if hasattr(child.right, "value") else str(child.right)
+                qualified = f"{ds_alias}#{comp}"
+                if qualified in self._join_alias_map:
+                    keep_names.append(qualified)
+                else:
+                    keep_names.append(comp)
+
+        # Track qualified names that are NOT kept (consumed by this clause)
+        keep_set = set(keep_names)
+        for qualified in self._join_alias_map:
+            if qualified not in keep_set:
+                self._consumed_join_aliases.add(qualified)
 
         cols = [quote_identifier(name) for name in keep_names]
 
@@ -1580,6 +1777,16 @@ class SQLTranspiler(ASTTemplate):
         for child in node.children:
             if isinstance(child, (AST.VarID, AST.Identifier)):
                 drop_names.append(quote_identifier(child.value))
+            elif isinstance(child, AST.BinOp) and str(child.op).lower() == tokens.MEMBERSHIP:
+                # Membership reference (e.g. d2#Me_2): use qualified name if duplicated
+                ds_alias = child.left.value if hasattr(child.left, "value") else str(child.left)
+                comp = child.right.value if hasattr(child.right, "value") else str(child.right)
+                qualified = f"{ds_alias}#{comp}"
+                if qualified in self._join_alias_map:
+                    drop_names.append(quote_identifier(qualified))
+                    self._consumed_join_aliases.add(qualified)
+                else:
+                    drop_names.append(quote_identifier(comp))
 
         if not drop_names:
             return f"SELECT * FROM {table_src}"
@@ -1604,7 +1811,18 @@ class SQLTranspiler(ASTTemplate):
         renames: Dict[str, str] = {}
         for child in node.children:
             if isinstance(child, AST.RenameNode):
-                renames[child.old_name] = child.new_name
+                old = child.old_name
+                # Check if alias-qualified name is in the join alias map
+                if "#" in old and old in self._join_alias_map:
+                    renames[old] = child.new_name
+                    # Track renamed qualified name as consumed
+                    self._consumed_join_aliases.add(old)
+                elif "#" in old:
+                    # Strip alias prefix from membership refs (e.g. d2#Me_2 -> Me_2)
+                    old = old.split("#", 1)[1]
+                    renames[old] = child.new_name
+                else:
+                    renames[old] = child.new_name
 
         cols: List[str] = []
         for name in ds.components:
@@ -2325,7 +2543,11 @@ class SQLTranspiler(ASTTemplate):
             table_src = self._get_dataset_sql(actual_node)
 
             if alias is None:
-                alias = chr(ord("a") + i)
+                # Use dataset name as alias (mirrors interpreter convention)
+                alias = ds.name if ds else chr(ord("a") + i)
+
+            # Quote alias for SQL if it contains special characters
+            sql_alias = quote_identifier(alias) if ("." in alias or " " in alias) else alias
 
             clause_info.append(
                 {
@@ -2333,6 +2555,7 @@ class SQLTranspiler(ASTTemplate):
                     "ds": ds,
                     "table_src": table_src,
                     "alias": alias,
+                    "sql_alias": sql_alias,
                 }
             )
 
@@ -2346,61 +2569,134 @@ class SQLTranspiler(ASTTemplate):
         first_ids = set(first_ds.get_identifiers_names())
         self._get_output_dataset()
 
-        using_ids: List[str] = []
+        explicit_using: Optional[List[str]] = None
         if node.using:
-            using_ids = list(node.using)
-        else:
-            common = set(first_ids)
-            for info in clause_info[1:]:
-                if info["ds"]:
-                    common &= set(info["ds"].get_identifiers_names())
-            using_ids = sorted(common)
+            explicit_using = list(node.using)
 
-        first_alias = clause_info[0]["alias"]
-        builder = SQLBuilder()
+        # Compute pairwise join keys for each secondary dataset.
+        # When explicit using is given, all secondary datasets use the same
+        # keys.  Otherwise, each secondary dataset is joined on the identifiers
+        # it shares with the accumulated result (mirroring the interpreter).
+        accumulated_ids = set(first_ids)
+        pairwise_keys: List[List[str]] = []
+        for info in clause_info[1:]:
+            if explicit_using is not None:
+                pairwise_keys.append(list(explicit_using))
+            else:
+                ds_ids = set(info["ds"].get_identifiers_names()) if info["ds"] else set()
+                common = sorted(accumulated_ids & ds_ids)
+                pairwise_keys.append(common)
+                # Accumulate identifiers from this dataset for the next pairwise join
+                accumulated_ids |= ds_ids
 
-        # Build columns from the actual joined tables (NOT from the output
-        # dataset, which may include columns added by subsequent clauses like
-        # calc that wrap the join result).
-        all_comps: Dict[str, Any] = {}
+        # Flatten all join keys for the purpose of determining which components
+        # are treated as identifiers (not aliased as duplicates)
+        all_join_ids: Set[str] = set()
+        for keys in pairwise_keys:
+            all_join_ids.update(keys)
+        # Also include all identifiers from all datasets (they won't be aliased)
         for info in clause_info:
             if info["ds"]:
                 for comp_name, comp in info["ds"].components.items():
-                    if comp_name not in all_comps:
-                        all_comps[comp_name] = comp
+                    if comp.role == Role.IDENTIFIER:
+                        all_join_ids.add(comp_name)
 
-        cols: List[str] = []
-        # Build a map of component_name → alias for correct qualification
-        comp_alias_map: Dict[str, str] = {}
+        # Detect duplicate non-identifier component names across datasets
+        comp_count: Dict[str, int] = {}
         for info in clause_info:
             if info["ds"]:
-                for comp_name in info["ds"].components:
-                    if comp_name not in comp_alias_map:
-                        comp_alias_map[comp_name] = info["alias"]
+                for comp_name, comp in info["ds"].components.items():
+                    if comp_name not in all_join_ids:
+                        comp_count[comp_name] = comp_count.get(comp_name, 0) + 1
 
-        for comp_name in all_comps:
-            alias_for_comp = comp_alias_map.get(comp_name, first_alias)
-            cols.append(f"{alias_for_comp}.{quote_identifier(comp_name)}")
+        duplicate_comps = {name for name, cnt in comp_count.items() if cnt >= 2}
+        is_cross = join_type == "CROSS"
+        is_full = join_type == "FULL"
+
+        first_sql_alias = clause_info[0]["sql_alias"]
+        builder = SQLBuilder()
+
+        # Build columns, aliasing duplicates with "alias#comp" convention
+        cols: List[str] = []
+        self._join_alias_map = {}
+        seen_identifiers: set = set()
+
+        for info in clause_info:
+            if not info["ds"]:
+                continue
+            sa = info["sql_alias"]
+            for comp_name, comp in info["ds"].components.items():
+                is_join_id = (
+                    (comp.role == Role.IDENTIFIER and not is_cross)
+                    or comp_name in all_join_ids
+                )
+                if is_join_id:
+                    if comp_name not in seen_identifiers:
+                        seen_identifiers.add(comp_name)
+                        if is_full and comp_name in all_join_ids:
+                            # For FULL JOIN identifiers, use COALESCE to pick
+                            # the non-NULL value from either side.
+                            coalesce_parts = [
+                                f"{ci['sql_alias']}.{quote_identifier(comp_name)}"
+                                for ci in clause_info
+                                if ci["ds"] and comp_name in ci["ds"].components
+                            ]
+                            cols.append(
+                                f"COALESCE({', '.join(coalesce_parts)})"
+                                f" AS {quote_identifier(comp_name)}"
+                            )
+                        else:
+                            cols.append(
+                                f"{sa}.{quote_identifier(comp_name)}"
+                            )
+                elif comp_name in duplicate_comps:
+                    # Duplicate non-identifier: alias with "alias#comp" convention
+                    qualified_name = f"{info['alias']}#{comp_name}"
+                    cols.append(
+                        f"{sa}.{quote_identifier(comp_name)}"
+                        f" AS {quote_identifier(qualified_name)}"
+                    )
+                    self._join_alias_map[qualified_name] = qualified_name
+                else:
+                    cols.append(
+                        f"{sa}.{quote_identifier(comp_name)}"
+                    )
 
         if not cols:
             builder.select_all()
         else:
             builder.select(*cols)
 
-        builder.from_table(clause_info[0]["table_src"], first_alias)
+        builder.from_table(clause_info[0]["table_src"], first_sql_alias)
 
-        for info in clause_info[1:]:
-            on_parts = [
-                f"{first_alias}.{quote_identifier(id_)} = {info['alias']}.{quote_identifier(id_)}"
-                for id_ in using_ids
-            ]
-            on_clause = " AND ".join(on_parts) if on_parts else "1=1"
-            builder.join(
-                info["table_src"],
-                info["alias"],
-                on=on_clause,
-                join_type=join_type,
-            )
+        for idx, info in enumerate(clause_info[1:]):
+            join_keys = pairwise_keys[idx]
+            if is_cross:
+                builder.cross_join(info["table_src"], info["sql_alias"])
+            else:
+                on_parts = []
+                for id_ in join_keys:
+                    if id_ not in (info["ds"].components if info["ds"] else {}):
+                        continue
+                    # Find which preceding dataset alias has this identifier
+                    # (for multi-dataset joins where identifiers come from
+                    # different source datasets)
+                    left_alias = first_sql_alias
+                    for prev_info in clause_info[:idx + 1]:
+                        if prev_info["ds"] and id_ in prev_info["ds"].components:
+                            left_alias = prev_info["sql_alias"]
+                            break
+                    on_parts.append(
+                        f"{left_alias}.{quote_identifier(id_)} = "
+                        f"{info['sql_alias']}.{quote_identifier(id_)}"
+                    )
+                on_clause = " AND ".join(on_parts) if on_parts else "1=1"
+                builder.join(
+                    info["table_src"],
+                    info["sql_alias"],
+                    on=on_clause,
+                    join_type=join_type,
+                )
 
         return builder.build()
 
