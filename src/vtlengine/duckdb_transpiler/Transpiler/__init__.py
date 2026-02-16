@@ -13,13 +13,13 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import vtlengine.AST as AST
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.Grammar import tokens
-from vtlengine.DataTypes import Date, TimePeriod
+from vtlengine.DataTypes import Date, String as StringType, TimePeriod
 from vtlengine.duckdb_transpiler.Transpiler.operators import (
     get_duckdb_type,
     registry,
 )
 from vtlengine.duckdb_transpiler.Transpiler.sql_builder import SQLBuilder, quote_identifier
-from vtlengine.Model import Dataset, ExternalRoutine, Role, Scalar, ValueDomain
+from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 
 # Operand type constants (replaces StructureVisitor.OperandType)
 _DATASET = "Dataset"
@@ -234,6 +234,11 @@ class SQLTranspiler(ASTTemplate):
             return self.available_tables.get(node.value)
 
         if isinstance(node, AST.RegularAggregation) and node.dataset:
+            op = str(node.op).lower() if node.op else ""
+            if op == tokens.UNPIVOT and len(node.children) >= 2:
+                result = self._build_unpivot_structure(node)
+                if result is not None:
+                    return result
             return self._get_dataset_structure(node.dataset)
 
         if isinstance(node, AST.BinOp):
@@ -257,14 +262,11 @@ class SQLTranspiler(ASTTemplate):
         if isinstance(node, AST.Aggregation) and node.operand:
             return self._get_dataset_structure(node.operand)
 
-        if isinstance(node, AST.JoinOp):
+        if isinstance(node, (AST.JoinOp, AST.UDOCall)):
             return self._get_output_dataset()
 
         if isinstance(node, AST.MulOp) and node.children:
             return self._get_dataset_structure(node.children[0])
-
-        if isinstance(node, AST.UDOCall):
-            return self._get_output_dataset()
 
         if isinstance(node, AST.If):
             return self._get_dataset_structure(node.thenOp)
@@ -273,6 +275,38 @@ class SQLTranspiler(ASTTemplate):
             return self._get_dataset_structure(node.cases[0].thenOp)
 
         return None
+
+    def _build_unpivot_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:
+        """Build the output dataset structure for an unpivot clause."""
+        input_ds = self._get_dataset_structure(node.dataset)
+        if input_ds is None:
+            return None
+        new_id = (
+            node.children[0].value
+            if hasattr(node.children[0], "value")
+            else str(node.children[0])
+        )
+        new_measure = (
+            node.children[1].value
+            if hasattr(node.children[1], "value")
+            else str(node.children[1])
+        )
+        comps = {
+            name: comp
+            for name, comp in input_ds.components.items()
+            if comp.role == Role.IDENTIFIER
+        }
+        comps[new_id] = Component(
+            name=new_id, data_type=StringType, role=Role.IDENTIFIER, nullable=False
+        )
+        measure_types = [
+            c.data_type for c in input_ds.components.values() if c.role == Role.MEASURE
+        ]
+        m_type = measure_types[0] if measure_types else StringType
+        comps[new_measure] = Component(
+            name=new_measure, data_type=m_type, role=Role.MEASURE, nullable=True
+        )
+        return Dataset(name="_unpivot", components=comps, data=None)
 
     def _resolve_dataset_name(self, node: AST.AST) -> str:
         """Resolve a VarID to its actual dataset name (handles UDO params)."""
@@ -1200,6 +1234,8 @@ class SQLTranspiler(ASTTemplate):
             return self._visit_clause_aggregate(node)
         elif op == tokens.APPLY:
             return self._visit_apply(node)
+        elif op == tokens.UNPIVOT:
+            return self._visit_unpivot(node)
         else:
             if node.dataset:
                 return self.visit(node.dataset)
@@ -1244,12 +1280,14 @@ class SQLTranspiler(ASTTemplate):
         if ds is None:
             return f"SELECT * FROM {table_src}"
 
-        self._in_clause = True
-        self._current_dataset = ds
+        # Use the output dataset when available – it reflects the correct
+        # column set after preceding clauses (e.g. an aggregate that changes
+        # the available identifiers/measures).
+        output_ds = self._get_output_dataset()
+        effective_ds = output_ds if output_ds is not None else ds
 
-        original_cols: List[str] = []
-        for name in ds.components:
-            original_cols.append(quote_identifier(name))
+        self._in_clause = True
+        self._current_dataset = effective_ds
 
         calc_exprs: Dict[str, str] = {}
         for child in node.children:
@@ -1269,19 +1307,19 @@ class SQLTranspiler(ASTTemplate):
         self._in_clause = False
         self._current_dataset = None
 
-        # Build SELECT: keep original columns that are NOT being overwritten,
-        # then add the calc expressions (possibly replacing originals).
+        # Build SELECT using the effective dataset's columns.  Columns being
+        # calculated are replaced with their expression; others are passed
+        # through.
         select_cols: List[str] = []
-        for name in ds.components:
+        for name in effective_ds.components:
             if name in calc_exprs:
-                # Overwrite: use calc expression instead of the original column
                 select_cols.append(f"{calc_exprs[name]} AS {quote_identifier(name)}")
             else:
                 select_cols.append(quote_identifier(name))
 
-        # Add any new columns (not in original dataset)
+        # Add any new columns not already present in the effective structure
         for col_name, expr_sql in calc_exprs.items():
-            if col_name not in ds.components:
+            if col_name not in effective_ds.components:
                 select_cols.append(f"{expr_sql} AS {quote_identifier(col_name)}")
 
         # Wrap inner query as subquery: if it's already a SELECT, wrap in parens;
@@ -1458,6 +1496,54 @@ class SQLTranspiler(ASTTemplate):
         if node.dataset:
             return self.visit(node.dataset)
         return ""
+
+    def _visit_unpivot(self, node: AST.RegularAggregation) -> str:
+        """Visit unpivot clause: DS[unpivot new_id, new_measure].
+
+        Transforms measures into rows.  For each measure column, produces one
+        row per data point with the measure *name* as the new identifier value
+        and the measure *value* as the new measure value.  Rows where the
+        measure value is NULL are dropped (VTL 2.1 RM line 7200).
+        """
+        if not node.dataset:
+            return ""
+
+        ds = self._get_dataset_structure(node.dataset)
+        table_src = self._get_dataset_sql(node.dataset)
+
+        if ds is None:
+            return f"SELECT * FROM {table_src}"
+
+        if len(node.children) < 2:
+            raise ValueError("Unpivot clause requires two operands")
+
+        new_id_name = (
+            node.children[0].value if hasattr(node.children[0], "value") else str(node.children[0])
+        )
+        new_measure_name = (
+            node.children[1].value if hasattr(node.children[1], "value") else str(node.children[1])
+        )
+
+        id_names = ds.get_identifiers_names()
+        measure_names = ds.get_measures_names()
+
+        if not measure_names:
+            return f"SELECT * FROM {table_src}"
+
+        # Build one SELECT per measure, filtering NULLs, then UNION ALL
+        parts: List[str] = []
+        for measure in measure_names:
+            cols: List[str] = [quote_identifier(i) for i in id_names]
+            cols.append(f"'{measure}' AS {quote_identifier(new_id_name)}")
+            cols.append(f"{quote_identifier(measure)} AS {quote_identifier(new_measure_name)}")
+            select_clause = ", ".join(cols)
+            part = (
+                f"SELECT {select_clause} FROM {table_src} "
+                f"WHERE {quote_identifier(measure)} IS NOT NULL"
+            )
+            parts.append(part)
+
+        return " UNION ALL ".join(parts)
 
     # =========================================================================
     # Aggregation visitor
@@ -1755,7 +1841,12 @@ class SQLTranspiler(ASTTemplate):
         return base_sql
 
     def _visit_set_operation(self, node: AST.MulOp, op: str) -> str:
-        """Visit set operations: UNION, INTERSECT, SETDIFF, SYMDIFF."""
+        """Visit set operations: UNION, INTERSECT, SETDIFF, SYMDIFF.
+
+        VTL set operations match data points by **identifiers only**, keeping
+        the measure values from the first (or relevant) dataset.  This differs
+        from SQL INTERSECT/EXCEPT which compare all columns.
+        """
         child_sqls = []
         for child in node.children:
             child_sql = self.visit(child)
@@ -1777,10 +1868,49 @@ class SQLTranspiler(ASTTemplate):
                     return f"SELECT DISTINCT ON ({id_cols}) * FROM ({inner_sql}) AS _union_t"
             return registry.set_ops.generate(op, *child_sqls)
 
-        if op == tokens.SYMDIFF and len(child_sqls) >= 2:
-            a = child_sqls[0]
-            b = child_sqls[1]
-            return f"(({a}) EXCEPT ({b})) UNION ALL (({b}) EXCEPT ({a}))"
+        if len(child_sqls) < 2:
+            return child_sqls[0] if child_sqls else ""
+
+        first_ds = self._get_dataset_structure(node.children[0])
+        if first_ds is None:
+            return registry.set_ops.generate(op, *child_sqls)
+
+        id_names = first_ds.get_identifiers_names()
+        a_sql = child_sqls[0]
+        b_sql = child_sqls[1]
+
+        on_parts = [
+            f"a.{quote_identifier(id_)} = b.{quote_identifier(id_)}" for id_ in id_names
+        ]
+        on_clause = " AND ".join(on_parts) if on_parts else "1=1"
+
+        if op == tokens.INTERSECT:
+            return (
+                f"SELECT a.* FROM ({a_sql}) AS a "
+                f"WHERE EXISTS (SELECT 1 FROM ({b_sql}) AS b WHERE {on_clause})"
+            )
+
+        if op == tokens.SETDIFF:
+            return (
+                f"SELECT a.* FROM ({a_sql}) AS a "
+                f"WHERE NOT EXISTS (SELECT 1 FROM ({b_sql}) AS b WHERE {on_clause})"
+            )
+
+        if op == tokens.SYMDIFF:
+            second_ds = self._get_dataset_structure(node.children[1])
+            second_ids = second_ds.get_identifiers_names() if second_ds else id_names
+            on_parts_rev = [
+                f"c.{quote_identifier(id_)} = d.{quote_identifier(id_)}"
+                for id_ in second_ids
+            ]
+            on_clause_rev = " AND ".join(on_parts_rev) if on_parts_rev else "1=1"
+            return (
+                f"(SELECT a.* FROM ({a_sql}) AS a "
+                f"WHERE NOT EXISTS (SELECT 1 FROM ({b_sql}) AS b WHERE {on_clause})) "
+                f"UNION ALL "
+                f"(SELECT c.* FROM ({b_sql}) AS c "
+                f"WHERE NOT EXISTS (SELECT 1 FROM ({a_sql}) AS d WHERE {on_clause_rev}))"
+            )
 
         return registry.set_ops.generate(op, *child_sqls)
 
