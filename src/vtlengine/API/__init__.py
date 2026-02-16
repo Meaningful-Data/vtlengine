@@ -1,3 +1,4 @@
+import copy
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Union, cast
 
@@ -323,10 +324,10 @@ def _run_with_duckdb(
     loaded_routines = load_external_routines(external_routines) if external_routines else None
 
     interpreter = InterpreterAnalyzer(
-        datasets=input_datasets,
+        datasets=copy.deepcopy(input_datasets),
         value_domains=loaded_vds,
         external_routines=loaded_routines,
-        scalars=input_scalars,
+        scalars=copy.deepcopy(input_scalars),
         only_semantic=True,
         return_only_persistent=False,
     )
