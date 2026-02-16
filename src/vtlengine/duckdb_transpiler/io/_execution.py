@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import duckdb
 import pandas as pd
 
+from vtlengine.AST.DAG._words import DELETE, GLOBAL, INSERT, PERSISTENT
 from vtlengine.duckdb_transpiler.io._io import (
     load_datapoints_duckdb,
     register_dataframes,
@@ -167,10 +168,6 @@ def execute_queries(
     output_scalars: Dict[str, Scalar],
     output_folder: Optional[Path],
     return_only_persistent: bool,
-    insert_key: str,
-    delete_key: str,
-    global_key: str,
-    persistent_key: str,
 ) -> Dict[str, Union[Dataset, Scalar]]:
     """
     Execute transpiled SQL queries with DAG-scheduled dataset loading/saving.
@@ -186,11 +183,6 @@ def execute_queries(
         output_scalars: Dict of output scalar structures
         output_folder: Path to save CSVs (None for in-memory mode)
         return_only_persistent: Only return persistent assignments
-        insert_key: Key in ds_analysis for insertion schedule
-        delete_key: Key in ds_analysis for deletion schedule
-        global_key: Key in ds_analysis for global inputs
-        persistent_key: Key in ds_analysis for persistent outputs
-
     Returns:
         Dict of result_name -> Dataset or Scalar
     """
@@ -213,7 +205,7 @@ def execute_queries(
             path_dict=path_dict,
             dataframe_dict=dataframe_dict,
             input_datasets=input_datasets,
-            insert_key=insert_key,
+            insert_key=INSERT,
         )
 
         # Execute query and create table
@@ -223,7 +215,7 @@ def execute_queries(
             import sys
 
             print(f"FAILED at query {statement_num}: {result_name}", file=sys.stderr)
-            print(f"SQL: {sql_query[:2000]}", file=sys.stderr)
+            print(f"SQL: {str(sql_query)[:2000]}", file=sys.stderr)
             raise
 
         # Clean up datasets scheduled for deletion
@@ -235,9 +227,9 @@ def execute_queries(
             output_datasets=output_datasets,
             results=results,
             return_only_persistent=return_only_persistent,
-            delete_key=delete_key,
-            global_key=global_key,
-            persistent_key=persistent_key,
+            delete_key=DELETE,
+            global_key=GLOBAL,
+            persistent_key=PERSISTENT,
         )
 
     # Handle final results not yet processed
