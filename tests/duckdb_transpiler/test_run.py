@@ -632,42 +632,49 @@ class TestAggregationOperations:
     """Tests for aggregation operations."""
 
     @pytest.mark.parametrize(
-        "vtl_script,input_data,expected_value",
+        "vtl_script,input_data,expected_value,result_col",
         [
             # Sum
             (
                 "DS_r := sum(DS_1);",
                 [["A", 10], ["B", 20], ["C", 30]],
                 60,
+                "Me_1",
             ),
             # Count
             (
                 "DS_r := count(DS_1);",
                 [["A", 10], ["B", 20], ["C", 30]],
                 3,
+                "int_var",
             ),
             # Avg
             (
                 "DS_r := avg(DS_1);",
                 [["A", 10], ["B", 20], ["C", 30]],
                 20.0,
+                "Me_1",
             ),
             # Min
             (
                 "DS_r := min(DS_1);",
                 [["A", 10], ["B", 20], ["C", 30]],
                 10,
+                "Me_1",
             ),
             # Max
             (
                 "DS_r := max(DS_1);",
                 [["A", 10], ["B", 20], ["C", 30]],
                 30,
+                "Me_1",
             ),
         ],
         ids=["sum", "count", "avg", "min", "max"],
     )
-    def test_aggregation_functions(self, temp_data_dir, vtl_script, input_data, expected_value):
+    def test_aggregation_functions(
+        self, temp_data_dir, vtl_script, input_data, expected_value, result_col
+    ):
         """Test aggregation function operations."""
         structure = create_dataset_structure(
             "DS_1",
@@ -681,7 +688,7 @@ class TestAggregationOperations:
         results = execute_vtl_with_duckdb(vtl_script, data_structures, {"DS_1": input_df})
 
         # For aggregations, the result should have the aggregated value
-        result_value = results["DS_r"]["Me_1"].iloc[0]
+        result_value = results["DS_r"][result_col].iloc[0]
         assert result_value == expected_value
 
 

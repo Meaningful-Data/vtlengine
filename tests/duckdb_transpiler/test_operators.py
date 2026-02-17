@@ -29,7 +29,6 @@ from vtlengine.AST.Grammar.tokens import (
     MOD,
     MULT,
     NEQ,
-    NVL,
     OR,
     PLUS,
     POWER,
@@ -267,7 +266,7 @@ class TestGlobalRegistry:
             (LT, '("a" < "b")'),
             (AND, '("a" AND "b")'),
             (OR, '("a" OR "b")'),
-            (XOR, '("a" XOR "b")'),
+            (XOR, '(("a" AND NOT "b") OR (NOT "a" AND "b"))'),
             (CONCAT, '("a" || "b")'),
         ],
     )
@@ -329,12 +328,11 @@ class TestGlobalRegistry:
     @pytest.mark.parametrize(
         "token,args,expected_output",
         [
-            (ROUND, ('"x"', "2"), 'ROUND("x", 2)'),
-            (TRUNC, ('"x"', "0"), 'TRUNC("x", 0)'),
-            (INSTR, ('"str"', "'a'"), "INSTR(\"str\", 'a')"),
+            (ROUND, ('"x"', "2"), 'ROUND("x", CAST(2 AS INTEGER))'),
+            (TRUNC, ('"x"', "0"), 'TRUNC("x", CAST(0 AS INTEGER))'),
+            (INSTR, ('"str"', "'a'"), "vtl_instr(\"str\", 'a', 1, 1)"),
             (LOG, ('"x"', "10"), 'LOG(10, "x")'),  # Note: LOG has swapped args
             (POWER, ('"x"', "2"), 'POWER("x", 2)'),
-            (NVL, ('"x"', "0"), 'COALESCE("x", 0)'),
             (SUBSTR, ('"str"', "1", "5"), 'SUBSTR("str", 1, 5)'),
             (REPLACE, ('"str"', "'a'", "'b'"), "REPLACE(\"str\", 'a', 'b')"),
         ],
