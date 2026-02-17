@@ -19,11 +19,11 @@ from vtlengine.duckdb_transpiler.Transpiler.operators import (
     registry,
 )
 from vtlengine.duckdb_transpiler.Transpiler.sql_builder import SQLBuilder, quote_identifier
-from vtlengine.duckdb_transpiler.Transpiler.structure_helpers import (
+from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
     _COMPONENT,
     _DATASET,
     _SCALAR,
-    StructureHelpersMixin,
+    StructureVisitor,
 )
 from vtlengine.Model import Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 
@@ -45,7 +45,7 @@ _DP_OP_MAP: Dict[str, str] = {
 
 
 @dataclass
-class SQLTranspiler(StructureHelpersMixin, ASTTemplate):
+class SQLTranspiler(StructureVisitor, ASTTemplate):
     """
     Transpiler that converts VTL AST to SQL queries.
 
