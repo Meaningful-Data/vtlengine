@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Union
 import vtlengine.AST as AST
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.Grammar import tokens
-from vtlengine.DataTypes import Date, TimePeriod
+from vtlengine.DataTypes import COMP_NAME_MAPPING, Date, TimePeriod
 from vtlengine.DataTypes import String as StringType
 from vtlengine.duckdb_transpiler.Transpiler.operators import (
     get_duckdb_type,
@@ -77,6 +77,12 @@ class SQLTranspiler(ASTTemplate):
 
     # UDO parameter stack
     _udo_params: Optional[List[Dict[str, Any]]] = field(default=None, init=False)
+
+    # Datapoint ruleset definitions
+    _dprs: Dict[str, Dict[str, Any]] = field(default_factory=dict, init=False)
+
+    # Datapoint ruleset context
+    _dp_signature: Optional[Dict[str, str]] = field(default=None, init=False)
 
     def __post_init__(self) -> None:
         """Initialize available tables."""
@@ -159,6 +165,14 @@ class SQLTranspiler(ASTTemplate):
         name = node.value
         udo_val = self._get_udo_param(name)
         if udo_val is not None:
+            # Check VarID specifically to avoid infinite recursion when
+            # a UDO param name matches its argument name.
+            if isinstance(udo_val, AST.VarID):
+                if udo_val.value in self.available_tables:
+                    return _DATASET
+                if udo_val.value != name:
+                    return self._get_operand_type(udo_val)
+                return _SCALAR
             if isinstance(udo_val, AST.AST):
                 return self._get_operand_type(udo_val)
             if isinstance(udo_val, str) and udo_val in self.available_tables:
@@ -235,6 +249,15 @@ class SQLTranspiler(ASTTemplate):
         if isinstance(node, AST.VarID):
             udo_val = self._get_udo_param(node.value)
             if udo_val is not None:
+                # Check VarID specifically to avoid infinite recursion when
+                # a UDO param name matches its argument name (e.g., DS → VarID('DS')).
+                if isinstance(udo_val, AST.VarID):
+                    if udo_val.value in self.available_tables:
+                        return self.available_tables[udo_val.value]
+                    # Avoid recursing with same name (would loop)
+                    if udo_val.value != node.value:
+                        return self._get_dataset_structure(udo_val)
+                    return None
                 if isinstance(udo_val, AST.AST):
                     return self._get_dataset_structure(udo_val)
                 if isinstance(udo_val, str) and udo_val in self.available_tables:
@@ -346,6 +369,13 @@ class SQLTranspiler(ASTTemplate):
                 assignment = child.operand
             if isinstance(assignment, AST.Assignment):
                 col_name = assignment.left.value if hasattr(assignment.left, "value") else ""
+                # Resolve UDO component parameters for column names
+                udo_val = self._get_udo_param(col_name)
+                if udo_val is not None:
+                    if isinstance(udo_val, (AST.VarID, AST.Identifier)):
+                        col_name = udo_val.value
+                    elif isinstance(udo_val, str):
+                        col_name = udo_val
                 if col_name not in comps and output_ds and col_name in output_ds.components:
                     comps[col_name] = output_ds.components[col_name]
                 elif col_name not in comps:
@@ -652,7 +682,7 @@ class SQLTranspiler(ASTTemplate):
             if isinstance(child, AST.Operator):
                 self.visit(child)
             elif isinstance(child, AST.DPRuleset):
-                pass
+                self.visit_DPRuleset(child)
             elif isinstance(child, AST.Assignment):
                 name = child.left.value
                 self.current_assignment = name
@@ -747,6 +777,283 @@ class SQLTranspiler(ASTTemplate):
         return self.visit(node.right)
 
     # =========================================================================
+    # Datapoint Ruleset definition and validation
+    # =========================================================================
+
+    def visit_DPRuleset(self, node: AST.DPRuleset) -> None:
+        """Register a datapoint ruleset definition."""
+        # Build signature: alias -> actual column name
+        signature: Dict[str, str] = {}
+        if not isinstance(node.params, AST.DefIdentifier):
+            for param in node.params:
+                alias = param.alias if param.alias is not None else param.value
+                signature[alias] = param.value
+
+        # Auto-number unnamed rules
+        rule_names = [r.name for r in node.rules if r.name is not None]
+        if len(rule_names) == 0:
+            for i, rule in enumerate(node.rules):
+                rule.name = str(i + 1)
+
+        self._dprs[node.name] = {
+            "rules": node.rules,
+            "signature": signature,
+            "signature_type": node.signature_type,
+        }
+
+    def visit_DPValidation(self, node: AST.DPValidation) -> str:
+        """Generate SQL for check_datapoint operator."""
+        dpr_name = node.ruleset_name
+        dpr_info = self._dprs[dpr_name]
+        signature = dpr_info["signature"]
+
+        # Get input dataset SQL and structure
+        ds = self._get_dataset_structure(node.dataset)
+        table_src = self._get_dataset_sql(node.dataset)
+
+        if ds is None:
+            raise ValueError("Cannot resolve dataset for check_datapoint")
+
+        self._get_output_dataset()
+        output_mode = node.output.value if node.output else "invalid"
+
+        id_cols = ds.get_identifiers_names()
+        measure_cols = ds.get_measures_names()
+
+        # Build SQL for each rule and UNION ALL
+        rule_queries: List[str] = []
+        for rule in dpr_info["rules"]:
+            rule_sql = self._build_dp_rule_sql(
+                rule=rule,
+                table_src=table_src,
+                signature=signature,
+                id_cols=id_cols,
+                measure_cols=measure_cols,
+                output_mode=output_mode,
+            )
+            rule_queries.append(rule_sql)
+
+        if not rule_queries:
+            # Empty ruleset — return empty select
+            cols = [quote_identifier(c) for c in id_cols]
+            return f"SELECT {', '.join(cols)} FROM {table_src} WHERE 1=0"
+
+        combined = " UNION ALL ".join(rule_queries)
+        return combined
+
+    def _build_dp_rule_sql(
+        self,
+        rule: AST.DPRule,
+        table_src: str,
+        signature: Dict[str, str],
+        id_cols: List[str],
+        measure_cols: List[str],
+        output_mode: str,
+    ) -> str:
+        """Build SQL for a single datapoint rule."""
+        rule_name = rule.name or ""
+        error_code = rule.erCode
+        error_level = rule.erLevel
+
+        # The rule.rule is an HRBinOp node. For "when COND then EXPR":
+        #   rule.rule.op == "when", .left == COND, .right == EXPR
+        # For unconditional rules: rule.rule is just a comparison node
+
+        # Store the signature for DefIdentifier resolution
+        self._dp_signature = signature
+
+        has_when = isinstance(rule.rule, AST.HRBinOp) and rule.rule.op == "when"
+
+        if has_when:
+            when_cond_sql = self._visit_dp_expr(rule.rule.left, signature)
+            then_expr_sql = self._visit_dp_expr(rule.rule.right, signature)
+        else:
+            when_cond_sql = None
+            then_expr_sql = self._visit_dp_expr(rule.rule, signature)
+
+        self._dp_signature = None
+
+        # Build SELECT columns
+        select_parts: List[str] = [quote_identifier(c) for c in id_cols]
+
+        # Error code and level SQL
+        ec_sql = f"'{error_code}'" if error_code else "NULL"
+        el_sql = str(float(error_level)) if error_level is not None else "NULL"
+
+        if output_mode == "invalid":
+            # Include measures, filter to failing rows only
+            select_parts.extend(quote_identifier(m) for m in measure_cols)
+            select_parts.append(f"'{rule_name}' AS {quote_identifier('ruleid')}")
+            select_parts.append(f"{ec_sql} AS {quote_identifier('errorcode')}")
+            select_parts.append(f"{el_sql} AS {quote_identifier('errorlevel')}")
+
+            # WHERE: when_cond is TRUE AND then_expr is FALSE
+            if when_cond_sql:
+                where_clause = f"WHERE ({when_cond_sql}) AND NOT ({then_expr_sql})"
+            else:
+                where_clause = f"WHERE NOT ({then_expr_sql})"
+
+            return f"SELECT {', '.join(select_parts)} FROM {table_src} {where_clause}"
+
+        elif output_mode == "all":
+            # No measures, include bool_var for all rows × this rule
+            # bool_var: TRUE if rule passes or doesn't apply, FALSE if fails
+            if when_cond_sql:
+                bool_expr = f"CASE WHEN ({when_cond_sql}) THEN ({then_expr_sql}) ELSE TRUE END"
+            else:
+                bool_expr = f"({then_expr_sql})"
+
+            select_parts.append(f"{bool_expr} AS {quote_identifier('bool_var')}")
+            select_parts.append(f"'{rule_name}' AS {quote_identifier('ruleid')}")
+
+            # errorcode/errorlevel: only set when rule fails
+            if when_cond_sql:
+                ec_case = (
+                    f"CASE WHEN ({when_cond_sql}) AND NOT ({then_expr_sql}) "
+                    f"THEN {ec_sql} ELSE NULL END"
+                )
+                el_case = (
+                    f"CASE WHEN ({when_cond_sql}) AND NOT ({then_expr_sql}) "
+                    f"THEN {el_sql} ELSE NULL END"
+                )
+            else:
+                ec_case = f"CASE WHEN NOT ({then_expr_sql}) THEN {ec_sql} ELSE NULL END"
+                el_case = f"CASE WHEN NOT ({then_expr_sql}) THEN {el_sql} ELSE NULL END"
+
+            select_parts.append(f"{ec_case} AS {quote_identifier('errorcode')}")
+            select_parts.append(f"{el_case} AS {quote_identifier('errorlevel')}")
+
+            return f"SELECT {', '.join(select_parts)} FROM {table_src}"
+
+        else:  # all_measures
+            # Include measures + bool_var
+            select_parts.extend(quote_identifier(m) for m in measure_cols)
+
+            if when_cond_sql:
+                bool_expr = f"CASE WHEN ({when_cond_sql}) THEN ({then_expr_sql}) ELSE TRUE END"
+            else:
+                bool_expr = f"({then_expr_sql})"
+
+            select_parts.append(f"{bool_expr} AS {quote_identifier('bool_var')}")
+            select_parts.append(f"'{rule_name}' AS {quote_identifier('ruleid')}")
+
+            if when_cond_sql:
+                ec_case = (
+                    f"CASE WHEN ({when_cond_sql}) AND NOT ({then_expr_sql}) "
+                    f"THEN {ec_sql} ELSE NULL END"
+                )
+                el_case = (
+                    f"CASE WHEN ({when_cond_sql}) AND NOT ({then_expr_sql}) "
+                    f"THEN {el_sql} ELSE NULL END"
+                )
+            else:
+                ec_case = f"CASE WHEN NOT ({then_expr_sql}) THEN {ec_sql} ELSE NULL END"
+                el_case = f"CASE WHEN NOT ({then_expr_sql}) THEN {el_sql} ELSE NULL END"
+
+            select_parts.append(f"{ec_case} AS {quote_identifier('errorcode')}")
+            select_parts.append(f"{el_case} AS {quote_identifier('errorlevel')}")
+
+            return f"SELECT {', '.join(select_parts)} FROM {table_src}"
+
+    def _visit_dp_expr(self, node: AST.AST, signature: Dict[str, str]) -> str:
+        """Visit an expression node in the context of a datapoint rule.
+
+        Resolves DefIdentifier/VarID aliases via the signature mapping and
+        delegates to the regular visitor for other node types.
+        """
+        if isinstance(node, AST.HRBinOp):
+            left_sql = self._visit_dp_expr(node.left, signature)
+            right_sql = self._visit_dp_expr(node.right, signature)
+            op = node.op
+            # Map VTL operators to SQL
+            op_map = {
+                "=": "=",
+                ">": ">",
+                "<": "<",
+                ">=": ">=",
+                "<=": "<=",
+                "<>": "!=",
+                "+": "+",
+                "-": "-",
+                "*": "*",
+                "/": "/",
+            }
+            if op == "and":
+                return f"({left_sql} AND {right_sql})"
+            elif op == "or":
+                return f"({left_sql} OR {right_sql})"
+            elif op in op_map:
+                return f"({left_sql} {op_map[op]} {right_sql})"
+            elif op == "when":
+                # Nested when-then
+                return f"CASE WHEN ({left_sql}) THEN ({right_sql}) ELSE TRUE END"
+            else:
+                return f"({left_sql} {op} {right_sql})"
+        elif isinstance(node, AST.HRUnOp):
+            operand_sql = self._visit_dp_expr(node.operand, signature)
+            if node.op == "not":
+                return f"NOT ({operand_sql})"
+            elif node.op == "-":
+                return f"-({operand_sql})"
+            else:
+                return f"{node.op}({operand_sql})"
+        elif isinstance(node, AST.DefIdentifier):
+            # Resolve alias to actual column name
+            col_name = signature.get(node.value, node.value)
+            return quote_identifier(col_name)
+        elif isinstance(node, AST.VarID):
+            # VarID nodes in DP rules — resolve alias via signature
+            col_name = signature.get(node.value, node.value)
+            return quote_identifier(col_name)
+        elif isinstance(node, AST.Constant):
+            if isinstance(node.value, str):
+                escaped = node.value.replace("'", "''")
+                return f"'{escaped}'"
+            elif isinstance(node.value, bool):
+                return "TRUE" if node.value else "FALSE"
+            elif node.value is None:
+                return "NULL"
+            else:
+                return str(node.value)
+        elif isinstance(node, AST.BinOp):
+            left_sql = self._visit_dp_expr(node.left, signature)
+            right_sql = self._visit_dp_expr(node.right, signature)
+            op = node.op
+            op_map = {
+                "and": "AND",
+                "or": "OR",
+                "=": "=",
+                "<>": "!=",
+                ">": ">",
+                "<": "<",
+                ">=": ">=",
+                "<=": "<=",
+            }
+            if op == "nvl":
+                return f"COALESCE({left_sql}, {right_sql})"
+            sql_op = op_map.get(op, op)
+            return f"({left_sql} {sql_op} {right_sql})"
+        elif isinstance(node, AST.UnaryOp):
+            operand_sql = self._visit_dp_expr(node.operand, signature)
+            if node.op == "not":
+                return f"NOT ({operand_sql})"
+            else:
+                return f"{node.op}({operand_sql})"
+        elif isinstance(node, AST.If):
+            # if-then-else inside a DP rule
+            cond_sql = self._visit_dp_expr(node.condition, signature)
+            then_sql = self._visit_dp_expr(node.thenOp, signature)
+            else_sql = self._visit_dp_expr(node.elseOp, signature)
+            return f"CASE WHEN ({cond_sql}) THEN ({then_sql}) ELSE ({else_sql}) END"
+        else:
+            # Fallback: use the regular transpiler visitor, saving/restoring DP context
+            saved_sig = self._dp_signature
+            self._dp_signature = signature
+            result = self.visit(node)
+            self._dp_signature = saved_sig
+            return result
+
+    # =========================================================================
     # UDO definition and call
     # =========================================================================
 
@@ -776,6 +1083,9 @@ class SQLTranspiler(ASTTemplate):
             param_name = param_info["name"]
             if i < len(node.params):
                 bindings[param_name] = node.params[i]
+            elif param_info.get("default") is not None:
+                # Use the default value AST node when argument is not provided
+                bindings[param_name] = param_info["default"]
 
         self._push_udo_params(bindings)
         try:
@@ -794,6 +1104,18 @@ class SQLTranspiler(ASTTemplate):
         name = node.value
         udo_val = self._get_udo_param(name)
         if udo_val is not None:
+            # Handle VarID specifically to avoid infinite recursion when
+            # a UDO param name matches its argument name (e.g., DS → VarID('DS')).
+            if isinstance(udo_val, AST.VarID):
+                resolved_name = udo_val.value
+                if resolved_name in self.available_tables:
+                    return f"SELECT * FROM {quote_identifier(resolved_name)}"
+                if resolved_name in self.scalars:
+                    sc = self.scalars[resolved_name]
+                    return self._to_sql_literal(sc.value, type(sc.data_type).__name__)
+                if resolved_name != name:
+                    return self.visit(udo_val)
+                return quote_identifier(resolved_name)
             if isinstance(udo_val, AST.AST):
                 return self.visit(udo_val)
             if isinstance(udo_val, str):
@@ -1065,11 +1387,26 @@ class SQLTranspiler(ASTTemplate):
             ds_name = self._resolve_dataset_name(node.left)
             return f"SELECT {quote_identifier(comp_name)} FROM {quote_identifier(ds_name)}"
 
+        # Determine if the component needs renaming (identifiers/attributes become measures)
+        target_comp = ds.components.get(comp_name)
+        alias_name = comp_name
+        if target_comp and target_comp.role in (Role.IDENTIFIER, Role.ATTRIBUTE):
+            alias_name = COMP_NAME_MAPPING.get(target_comp.data_type, comp_name)
+
         cols: List[str] = []
         for name, comp in ds.components.items():
             if comp.role == Role.IDENTIFIER:
                 cols.append(quote_identifier(name))
-        cols.append(quote_identifier(comp_name))
+        # Add the target component, with rename if needed
+        if alias_name != comp_name:
+            cols.append(f"{quote_identifier(comp_name)} AS {quote_identifier(alias_name)}")
+        else:
+            # For measures, just select the component (avoid duplicates with identifiers)
+            if comp_name not in [n for n, c in ds.components.items() if c.role == Role.IDENTIFIER]:
+                cols.append(quote_identifier(comp_name))
+            else:
+                # Component is an identifier but no mapping found, still select it aliased
+                cols.append(quote_identifier(comp_name))
 
         return SQLBuilder().select(*cols).from_table(table_src).build()
 
@@ -1688,6 +2025,13 @@ class SQLTranspiler(ASTTemplate):
 
             if isinstance(assignment, AST.Assignment):
                 col_name = assignment.left.value if hasattr(assignment.left, "value") else ""
+                # Resolve UDO component parameters for column names
+                udo_val = self._get_udo_param(col_name)
+                if udo_val is not None:
+                    if isinstance(udo_val, (AST.VarID, AST.Identifier)):
+                        col_name = udo_val.value
+                    elif isinstance(udo_val, str):
+                        col_name = udo_val
                 expr_sql = self.visit(assignment.right)
                 calc_exprs[col_name] = expr_sql
 
@@ -2076,17 +2420,22 @@ class SQLTranspiler(ASTTemplate):
         # count replaces all measures with a single int_var column.
         # VTL count() excludes rows where all measures are null.
         if op == tokens.COUNT:
-            output_measures = effective_ds.get_measures_names()
-            alias = output_measures[0] if output_measures else "int_var"
+            # VTL spec: count() always produces a single measure "int_var"
+            alias = "int_var"
             # Build conditional count excluding all-null measure rows
+            # VTL count returns NULL when no data points have any non-null measure
             source_measures = ds.get_measures_names()
             if source_measures:
-                or_parts = " OR ".join(
+                and_parts = " AND ".join(
                     f"{quote_identifier(m)} IS NOT NULL" for m in source_measures
                 )
-                cols.append(f"COUNT(CASE WHEN {or_parts} THEN 1 END) AS {quote_identifier(alias)}")
+                cols.append(
+                    f"NULLIF(COUNT(CASE WHEN {and_parts} THEN 1 END), 0)"
+                    f" AS {quote_identifier(alias)}"
+                )
             else:
-                cols.append(f"COUNT(*) AS {quote_identifier(alias)}")
+                # No measures: count should be NULL (no non-null measures to count)
+                cols.append(f"NULL AS {quote_identifier(alias)}")
         else:
             measures = effective_ds.get_measures_names()
             for measure in measures:
@@ -2510,7 +2859,7 @@ class SQLTranspiler(ASTTemplate):
     # Join visitor
     # =========================================================================
 
-    def visit_JoinOp(self, node: AST.JoinOp) -> str:
+    def visit_JoinOp(self, node: AST.JoinOp) -> str:  # noqa: C901
         """Visit a join operation."""
         op = str(node.op).lower()
         join_type_map = {
@@ -2596,7 +2945,7 @@ class SQLTranspiler(ASTTemplate):
         comp_count: Dict[str, int] = {}
         for info in clause_info:
             if info["ds"]:
-                for comp_name, comp in info["ds"].components.items():
+                for comp_name, _comp in info["ds"].components.items():
                     if comp_name not in all_join_ids:
                         comp_count[comp_name] = comp_count.get(comp_name, 0) + 1
 
