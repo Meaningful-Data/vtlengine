@@ -1556,8 +1556,7 @@ class JoinUsingTests(JoinHelper):
         """
         code = "GL_251_2"
         number_inputs = 3
-        error_code = "1-1-1-1"
-        # TODO: check the error code, there is no type to check on join operation type promotion
+        error_code = "1-1-13-18"
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code
         )
@@ -2286,6 +2285,42 @@ class JoinsGeneralTests(JoinHelper):
         code = "GL_384_8"
         number_inputs = 3
         error_code = "1-1-13-4"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
+    def test_GH_500_1(self):
+        """
+        Inner join
+        Dataset --> Dataset
+        Status: SemanticError
+        Expression: DS_r <- inner_join(DS_1, DS_2);
+
+        Git Branch: cr-500
+        Goal: Joining Time_Period vs String identifiers should raise SemanticError.
+        """
+        code = "GH_500_1"
+        number_inputs = 2
+        error_code = "1-1-13-18"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
+    def test_GH_500_2(self):
+        """
+        Inner join
+        Dataset --> Dataset
+        Status: SemanticError
+        Expression: DS_r <- inner_join(DS_1, DS_2);
+
+        Git Branch: cr-500
+        Goal: Joining Time_Period vs Integer identifiers should raise SemanticError.
+        """
+        code = "GH_500_2"
+        number_inputs = 2
+        error_code = "1-1-13-18"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code

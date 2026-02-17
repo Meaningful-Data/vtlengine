@@ -171,8 +171,7 @@ class TimePeriodHandler:
 
     def __str__(self) -> str:
         if self.period_indicator == "A":
-            # return f"{self.year}{self.period_indicator}"
-            return f"{self.year}"  # Drop A from exit time period year
+            return f"{self.year}A"
         if self.period_indicator in ["W", "M"]:
             period_number_str = f"{self.period_number:02}"
         elif self.period_indicator == "D":
@@ -341,7 +340,7 @@ class TimePeriodHandler:
 
     def vtl_representation(self) -> str:
         if self.period_indicator == "A":
-            return f"{self.year}"  # Drop A from exit time period year
+            return f"{self.year}A"
         if self.period_indicator in ["W", "M"]:
             period_number_str = f"{self.period_number:02}"
         elif self.period_indicator == "D":

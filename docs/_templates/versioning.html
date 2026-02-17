@@ -51,7 +51,7 @@
             {% endif %}
           </dd>
         {% else %}
-          <dd><a href="{{ version.url }}">{{ display_name }}</a>
+          <dd><a href="{% if version.name == computed_latest %}{{ version.url | replace('/' + version.name + '/', '/latest/') }}{% else %}{{ version.url }}{% endif %}">{{ display_name }}</a>
             {% if version.name == computed_latest %}
               <em style="color: #27ae60; font-size: 0.85em;">(latest)</em>
             {% elif "rc" in version.name %}
