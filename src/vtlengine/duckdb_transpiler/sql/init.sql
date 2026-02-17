@@ -499,7 +499,6 @@ CREATE OR REPLACE MACRO vtl_interval_shift(i, days) AS (
 -- For the simple case (start=1, occurrence=1), just use INSTR.
 -- For start > 1: search in SUBSTR, add offset back.
 -- For occurrence > 1: we need vtl_instr_impl which loops.
--- DuckDB macros can't do recursion, so we implement up to 10 occurrences.
 CREATE OR REPLACE MACRO vtl_instr(s, pat, start_pos, occur) AS (
     CASE
         WHEN s IS NULL THEN NULL

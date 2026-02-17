@@ -480,24 +480,13 @@ def _create_default_registries() -> SQLOperatorRegistries:
         We always use vtl_instr macro for consistency (handles null pattern → 0).
         """
         # Build args with defaults for missing values
-        non_none = []
-        for i, a in enumerate(args):
-            if a is None:
-                if i == 0 or i == 1:  # string
-                    non_none.append("NULL")
-                elif i == 2 or i == 3:  # start - defaults to 1
-                    non_none.append("1")
-            else:
-                non_none.append(str(a))
+        params = []
+        params.append(args[0] if len(args) > 0 and args[0] is not None else "NULL")
+        params.append(args[1] if len(args) > 1 and args[1] is not None else "NULL")
+        params.append(args[2] if len(args) > 2 and args[2] is not None else "1")
+        params.append(args[3] if len(args) > 3 and args[3] is not None else "1")
 
-        # Ensure we always have 4 args for vtl_instr
-        while len(non_none) < 4:
-            if len(non_none) == 2:
-                non_none.append("1")  # default start
-            elif len(non_none) == 3:
-                non_none.append("1")  # default occurrence
-
-        return f"vtl_instr({', '.join(non_none)})"
+        return f"vtl_instr({', '.join(params)})"
 
     registries.parameterized.register(
         tokens.INSTR,
