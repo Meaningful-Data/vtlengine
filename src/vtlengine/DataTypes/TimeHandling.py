@@ -103,6 +103,8 @@ def from_input_customer_support_to_internal(period: str) -> tuple[int, str, int]
             if indicator in PERIOD_INDICATORS
             else (year, "M", int(second_term))
         )
+    if length == 1:  # 'YYYY-M' single digit month case
+        return year, "M", int(second_term)
     raise SemanticError("2-1-19-6", period_format=period)
     # raise ValueError
 

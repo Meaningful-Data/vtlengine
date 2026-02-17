@@ -720,11 +720,7 @@ class StructureVisitor(ASTTemplate):
                 return OperandType.SCALAR
 
             # In clause context: component
-            if (
-                self.in_clause
-                and self.current_dataset
-                and name in self.current_dataset.components
-            ):
+            if self.in_clause and self.current_dataset and name in self.current_dataset.components:
                 return OperandType.COMPONENT
 
             # Known dataset
@@ -832,9 +828,7 @@ class StructureVisitor(ASTTemplate):
 
         return None
 
-    def _get_measure_name_regular_aggregation(
-        self, node: AST.RegularAggregation
-    ) -> Optional[str]:
+    def _get_measure_name_regular_aggregation(self, node: AST.RegularAggregation) -> Optional[str]:
         """Extract measure name from RegularAggregation node."""
         from vtlengine.AST.Grammar.tokens import CALC, KEEP, RENAME
 

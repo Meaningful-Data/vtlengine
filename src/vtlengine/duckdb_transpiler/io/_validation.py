@@ -31,12 +31,22 @@ from vtlengine.Model import Component, Role
 # =============================================================================
 
 TIME_PERIOD_PATTERN = (
-    r"^\d{4}[A]?$|"  # Year - 2024 or 2024A
+    r"^\d{4}$|"  # Year - 2024
+    r"^\d{4}[A]\d?$|"  # Annual - 2024A, 2024A1
     r"^\d{4}[S][1-2]$|"  # Semester - 2024S1
     r"^\d{4}[Q][1-4]$|"  # Quarter - 2024Q1
-    r"^\d{4}[M](0[1-9]|1[0-2])$|"  # Month - 2024M01
-    r"^\d{4}[W](0[1-9]|[1-4][0-9]|5[0-3])$|"  # Week - 2024W01
-    r"^\d{4}[D](00[1-9]|0[1-9][0-9]|[1-2][0-9][0-9]|3[0-5][0-9]|36[0-6])$"  # Day
+    r"^\d{4}[M]\d{1,2}$|"  # Month - 2024M01, 2024M1
+    r"^\d{4}[W]\d{1,2}$|"  # Week - 2024W01, 2024W1
+    r"^\d{4}[D]\d{1,3}$|"  # Day - 2024D001, 2024D01, 2024D1
+    # SDMX Gregorian formats (hyphen-separated)
+    r"^\d{4}-\d{1,2}$|"  # Month numeric - 2024-01, 2024-1
+    r"^\d{4}-A\d?$|"  # Annual - 2024-A1, 2024-A
+    r"^\d{4}-S[1-2]$|"  # Semester - 2024-S1
+    r"^\d{4}-Q[1-4]$|"  # Quarter - 2024-Q1
+    r"^\d{4}-M\d{1,2}$|"  # Month - 2024-M01, 2024-M1
+    r"^\d{4}-W\d{1,2}$|"  # Week - 2024-W01, 2024-W1
+    r"^\d{4}-D\d{1,3}$|"  # Day - 2024-D001, 2024-D01, 2024-D1
+    r"^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$"  # Full date - 2024-01-15
 )
 
 TIME_INTERVAL_PATTERN = (
@@ -363,6 +373,9 @@ def build_select_columns(
             # Cast DOUBLE → DECIMAL for Number type
             elif csv_type == "DOUBLE" and "DECIMAL" in table_type:
                 select_cols.append(f'CAST("{comp_name}" AS {table_type}) AS "{comp_name}"')
+            elif csv_type == "VARCHAR" and comp.nullable:
+                # Treat empty strings as NULL for nullable VARCHAR columns
+                select_cols.append(f'NULLIF("{comp_name}", \'\') AS "{comp_name}"')
             else:
                 select_cols.append(f'"{comp_name}"')
         else:

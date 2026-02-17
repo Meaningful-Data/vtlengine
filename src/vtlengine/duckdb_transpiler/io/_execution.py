@@ -12,6 +12,7 @@ import duckdb
 import pandas as pd
 
 from vtlengine.AST.DAG._words import DELETE, GLOBAL, INSERT, PERSISTENT
+from vtlengine.DataTypes import Date, TimeInterval, TimePeriod
 from vtlengine.duckdb_transpiler.io._io import (
     load_datapoints_duckdb,
     register_dataframes,
@@ -19,6 +20,25 @@ from vtlengine.duckdb_transpiler.io._io import (
 )
 from vtlengine.duckdb_transpiler.sql import initialize_time_types
 from vtlengine.Model import Dataset, Scalar
+
+
+def _convert_date_columns(ds: Dataset) -> None:
+    """Convert DuckDB datetime columns to string format.
+
+    DuckDB returns Timestamp/NaT for date columns but the VTL engine
+    (Pandas backend) uses string dates ('YYYY-MM-DD') and None for nulls.
+    Only converts columns that actually have datetime dtype (not already strings).
+    """
+    if ds.components and ds.data is not None:
+        for comp_name, comp in ds.components.items():
+            if (
+                comp.data_type in (Date, TimePeriod, TimeInterval)
+                and comp_name in ds.data.columns
+                and pd.api.types.is_datetime64_any_dtype(ds.data[comp_name])
+            ):
+                ds.data[comp_name] = ds.data[comp_name].apply(
+                    lambda x: x.strftime("%Y-%m-%d") if pd.notna(x) else None
+                )
 
 
 def load_scheduled_datasets(
@@ -68,6 +88,7 @@ def cleanup_scheduled_datasets(
     ds_analysis: Dict[str, Any],
     output_folder: Optional[Path],
     output_datasets: Dict[str, Dataset],
+    output_scalars: Dict[str, Scalar],
     results: Dict[str, Union[Dataset, Scalar]],
     return_only_persistent: bool,
     delete_key: str,
@@ -83,6 +104,7 @@ def cleanup_scheduled_datasets(
         ds_analysis: DAG analysis dict with deletion schedule
         output_folder: Path to save CSVs (None for in-memory mode)
         output_datasets: Dict of output dataset structures
+        output_scalars: Dict of output scalar structures
         results: Dict to store results
         return_only_persistent: Only return persistent assignments
         delete_key: Key in ds_analysis for deletion schedule
@@ -100,7 +122,22 @@ def cleanup_scheduled_datasets(
             # Drop global inputs without saving
             conn.execute(f'DROP TABLE IF EXISTS "{ds_name}"')
         elif not return_only_persistent or ds_name in persistent_datasets:
-            if output_folder:
+            if ds_name in output_scalars:
+                # Handle scalar results
+                result_df = conn.execute(f'SELECT * FROM "{ds_name}"').fetchdf()
+                if len(result_df) == 1 and len(result_df.columns) == 1:
+                    scalar = output_scalars[ds_name]
+                    raw_value = result_df.iloc[0, 0]
+                    # Convert numpy types to Python natives for Scalar.value setter
+                    if hasattr(raw_value, "item"):
+                        raw_value = raw_value.item()
+                    scalar.value = raw_value
+                    results[ds_name] = scalar
+                else:
+                    ds = Dataset(name=ds_name, components={}, data=result_df)
+                    results[ds_name] = ds
+                conn.execute(f'DROP TABLE IF EXISTS "{ds_name}"')
+            elif output_folder:
                 # Save to CSV and drop table
                 save_datapoints_duckdb(conn, ds_name, output_folder)
                 ds = output_datasets.get(ds_name, Dataset(name=ds_name, components={}, data=None))
@@ -110,6 +147,7 @@ def cleanup_scheduled_datasets(
                 result_df = conn.execute(f'SELECT * FROM "{ds_name}"').fetchdf()
                 ds = output_datasets.get(ds_name, Dataset(name=ds_name, components={}, data=None))
                 ds.data = result_df
+                _convert_date_columns(ds)
                 results[ds_name] = ds
                 conn.execute(f'DROP TABLE IF EXISTS "{ds_name}"')
         else:
@@ -148,12 +186,20 @@ def fetch_result(
     if result_name in output_scalars:
         if len(result_df) == 1 and len(result_df.columns) == 1:
             scalar = output_scalars[result_name]
-            scalar.value = result_df.iloc[0, 0]
+            raw_value = result_df.iloc[0, 0]
+            # Convert numpy types to Python natives for Scalar.value setter
+            if hasattr(raw_value, "item"):
+                raw_value = raw_value.item()
+            scalar.value = raw_value
             return scalar
         return Dataset(name=result_name, components={}, data=result_df)
 
     ds = output_datasets.get(result_name, Dataset(name=result_name, components={}, data=None))
     ds.data = result_df
+
+    # Post-process: convert DuckDB datetime columns to string format
+    _convert_date_columns(ds)
+
     return ds
 
 
@@ -225,6 +271,7 @@ def execute_queries(
             ds_analysis=ds_analysis,
             output_folder=output_folder,
             output_datasets=output_datasets,
+            output_scalars=output_scalars,
             results=results,
             return_only_persistent=return_only_persistent,
             delete_key=DELETE,
