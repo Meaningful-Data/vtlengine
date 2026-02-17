@@ -648,6 +648,7 @@ COMP_NAME_MAPPING: Dict[Type[ScalarType], str] = {
     Null: "null_var",
 }
 
+# Key is the data type, value is the set of types to which it can be implicitly promoted
 IMPLICIT_TYPE_PROMOTION_MAPPING: Dict[Type[ScalarType], Any] = {
     String: {String},
     Number: {Number, Integer},
@@ -670,7 +671,6 @@ IMPLICIT_TYPE_PROMOTION_MAPPING: Dict[Type[ScalarType], Any] = {
     },
 }
 
-# TODO: Implicit are valid as cast without mask
 EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING: Dict[Type[ScalarType], Any] = {
     # TODO: Remove time types, only for compatibility with previous engine
     String: {Integer, String, Date, TimePeriod, TimeInterval, Duration, Number},

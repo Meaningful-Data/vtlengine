@@ -28,13 +28,15 @@ class AnaVal(ExternalProjectsHelper):
         code = "AnaVal_Monthly_validations_1"
         number_inputs = 16
         vd_names = ["EU_countries", "AnaCreditCountries"]
-        message = "1-1-1-1"
+        rn = [str(i) for i in range(1, 186)]
+        references_names = rn
 
-        self.NewSemanticExceptionTest(
+        self.BaseTest(
             code=code,
             number_inputs=number_inputs,
-            exception_code=message,
+            references_names=references_names,
             vd_names=vd_names,
+            only_semantic=True,
         )
 
     def test_Monthly_validations_1(self):
@@ -46,12 +48,13 @@ class AnaVal(ExternalProjectsHelper):
         code = "AnaVal_Monthly_validations_1"
         number_inputs = 16
         vd_names = ["EU_countries", "AnaCreditCountries"]
-        message = "1-1-1-1"
+        rn = [str(i) for i in range(1, 186)]
+        references_names = rn
 
-        self.NewSemanticExceptionTest(
+        self.BaseTest(
             code=code,
             number_inputs=number_inputs,
-            exception_code=message,
+            references_names=references_names,
             vd_names=vd_names,
         )
 
@@ -64,12 +67,13 @@ class AnaVal(ExternalProjectsHelper):
         code = "AnaVal_Monthly_validations_2"
         number_inputs = 16
         vd_names = ["EU_countries", "AnaCreditCountries"]
-        message = "1-1-1-1"
+        rn = [str(i) for i in range(1, 186)]
+        references_names = rn
 
-        self.NewSemanticExceptionTest(
+        self.BaseTest(
             code=code,
             number_inputs=number_inputs,
-            exception_code=message,
+            references_names=references_names,
             vd_names=vd_names,
         )
 
