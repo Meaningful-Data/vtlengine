@@ -328,8 +328,8 @@ class TestGlobalRegistry:
     @pytest.mark.parametrize(
         "token,args,expected_output",
         [
-            (ROUND, ('"x"', "2"), 'ROUND("x", CAST(2 AS INTEGER))'),
-            (TRUNC, ('"x"', "0"), 'TRUNC("x", CAST(0 AS INTEGER))'),
+            (ROUND, ('"x"', "2"), 'ROUND(CAST("x" AS DOUBLE), COALESCE(CAST(2 AS INTEGER), 0))'),
+            (TRUNC, ('"x"', "0"), 'TRUNC(CAST("x" AS DOUBLE), COALESCE(CAST(0 AS INTEGER), 0))'),
             (INSTR, ('"str"', "'a'"), "vtl_instr(\"str\", 'a', 1, 1)"),
             (LOG, ('"x"', "10"), 'LOG(10, "x")'),  # Note: LOG has swapped args
             (POWER, ('"x"', "2"), 'POWER("x", 2)'),

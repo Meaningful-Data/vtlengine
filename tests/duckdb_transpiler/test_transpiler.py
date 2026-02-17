@@ -664,7 +664,7 @@ class TestParameterizedOperations:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = 'SELECT "Id_1", ROUND("Me_1", CAST(2 AS INTEGER)) AS "Me_1", ROUND("Me_2", CAST(2 AS INTEGER)) AS "Me_2" FROM "DS_1"'
+        expected_sql = 'SELECT "Id_1", ROUND(CAST("Me_1" AS DOUBLE), COALESCE(CAST(2 AS INTEGER), 0)) AS "Me_1", ROUND(CAST("Me_2" AS DOUBLE), COALESCE(CAST(2 AS INTEGER), 0)) AS "Me_2" FROM "DS_1"'
         assert_sql_equal(sql, expected_sql)
 
     def test_nvl_dataset_operation(self):

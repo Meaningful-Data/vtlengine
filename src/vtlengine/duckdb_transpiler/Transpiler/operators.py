@@ -443,8 +443,34 @@ def _create_default_registries() -> SQLOperatorRegistries:
     registries.parameterized.register_simple(tokens.BETWEEN, "({0} BETWEEN {1} AND {2})")
 
     # Single parameter operations
-    registries.parameterized.register_simple(tokens.ROUND, "ROUND({0}, CAST({1} AS INTEGER))")
-    registries.parameterized.register_simple(tokens.TRUNC, "TRUNC({0}, CAST({1} AS INTEGER))")
+    # DuckDB does not support ROUND/TRUNC(DECIMAL, col) with non-constant
+    # precision.  Casting the value to DOUBLE avoids this limitation.
+    # VTL semantics: null precision defaults to 0.
+    def _round_generator(*args: Optional[str]) -> str:
+        precision = "0" if (len(args) < 2 or args[1] is None) else str(args[1])
+        return f"ROUND(CAST({args[0]} AS DOUBLE), COALESCE(CAST({precision} AS INTEGER), 0))"
+
+    registries.parameterized.register(
+        tokens.ROUND,
+        SQLOperator(
+            sql_template="ROUND({0}, CAST({1} AS INTEGER))",
+            category=OperatorCategory.PARAMETERIZED,
+            custom_generator=_round_generator,
+        ),
+    )
+
+    def _trunc_generator(*args: Optional[str]) -> str:
+        precision = "0" if (len(args) < 2 or args[1] is None) else str(args[1])
+        return f"TRUNC(CAST({args[0]} AS DOUBLE), COALESCE(CAST({precision} AS INTEGER), 0))"
+
+    registries.parameterized.register(
+        tokens.TRUNC,
+        SQLOperator(
+            sql_template="TRUNC({0}, CAST({1} AS INTEGER))",
+            category=OperatorCategory.PARAMETERIZED,
+            custom_generator=_trunc_generator,
+        ),
+    )
 
     def _instr_generator(*args: Optional[str]) -> str:
         """Generate INSTR SQL emulating VTL instr(string, pattern, start, occurrence).
