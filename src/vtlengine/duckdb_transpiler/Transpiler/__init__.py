@@ -27,6 +27,30 @@ _DATASET = "Dataset"
 _COMPONENT = "Component"
 _SCALAR = "Scalar"
 
+# Datapoint rule operator mappings (module-level to avoid dataclass mutable default)
+_DP_HR_OP_MAP: Dict[str, str] = {
+    "=": "=",
+    ">": ">",
+    "<": "<",
+    ">=": ">=",
+    "<=": "<=",
+    "<>": "!=",
+    "+": "+",
+    "-": "-",
+    "*": "*",
+    "/": "/",
+}
+_DP_BINOP_MAP: Dict[str, str] = {
+    "and": "AND",
+    "or": "OR",
+    "=": "=",
+    "<>": "!=",
+    ">": ">",
+    "<": "<",
+    ">=": ">=",
+    "<=": "<=",
+}
+
 
 @dataclass
 class SQLTranspiler(ASTTemplate):
@@ -282,6 +306,8 @@ class SQLTranspiler(ASTTemplate):
                 return self._build_drop_structure(node)
             if op == tokens.KEEP:
                 return self._build_keep_structure(node)
+            if op == tokens.SUBSPACE:
+                return self._build_subspace_structure(node)
             return self._get_dataset_structure(node.dataset)
 
         if isinstance(node, AST.BinOp):
@@ -305,12 +331,40 @@ class SQLTranspiler(ASTTemplate):
             return None
 
         if isinstance(node, AST.Aggregation) and node.operand:
-            return self._get_dataset_structure(node.operand)
+            ds = self._get_dataset_structure(node.operand)
+            if ds is not None and (node.grouping is not None or node.grouping_op is not None):
+                all_ids = ds.get_identifiers_names()
+                group_cols = set(self._resolve_group_cols(node, all_ids))
+                comps = {}
+                for name, comp in ds.components.items():
+                    if comp.role == Role.IDENTIFIER:
+                        if name in group_cols:
+                            comps[name] = comp
+                    else:
+                        comps[name] = comp
+                return Dataset(name=ds.name, components=comps, data=None)
+            return ds
 
         if isinstance(node, AST.JoinOp):
             return self._build_join_structure(node)
 
         if isinstance(node, AST.UDOCall):
+            if node.op in self._udos:
+                udo_def = self._udos[node.op]
+                expression = udo_def["expression"]
+                bindings: Dict[str, Any] = {}
+                for i, param_info in enumerate(udo_def["params"]):
+                    param_name = param_info["name"]
+                    if i < len(node.params):
+                        bindings[param_name] = node.params[i]
+                    elif param_info.get("default") is not None:
+                        bindings[param_name] = param_info["default"]
+                self._push_udo_params(bindings)
+                try:
+                    result = self._get_dataset_structure(expression)
+                finally:
+                    self._pop_udo_params()
+                return result
             return self._get_output_dataset()
 
         if isinstance(node, AST.MulOp) and node.children:
@@ -521,6 +575,25 @@ class SQLTranspiler(ASTTemplate):
                     drop_names.add(comp)
 
         comps = {name: comp for name, comp in input_ds.components.items() if name not in drop_names}
+        return Dataset(name=input_ds.name, components=comps, data=None)
+
+    def _build_subspace_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:
+        """Build the output structure for a subspace clause.
+
+        Subspace filters on identifier values and removes those identifiers
+        from the result structure.
+        """
+        input_ds = self._get_dataset_structure(node.dataset)
+        if input_ds is None:
+            return None
+
+        remove_ids: set = set()
+        for child in node.children:
+            if isinstance(child, AST.BinOp):
+                col_name = child.left.value if hasattr(child.left, "value") else ""
+                remove_ids.add(col_name)
+
+        comps = {name: comp for name, comp in input_ds.components.items() if name not in remove_ids}
         return Dataset(name=input_ds.name, components=comps, data=None)
 
     def _build_keep_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:
@@ -855,10 +928,6 @@ class SQLTranspiler(ASTTemplate):
         error_code = rule.erCode
         error_level = rule.erLevel
 
-        # The rule.rule is an HRBinOp node. For "when COND then EXPR":
-        #   rule.rule.op == "when", .left == COND, .right == EXPR
-        # For unconditional rules: rule.rule is just a comparison node
-
         # Store the signature for DefIdentifier resolution
         self._dp_signature = signature
 
@@ -962,96 +1031,90 @@ class SQLTranspiler(ASTTemplate):
         delegates to the regular visitor for other node types.
         """
         if isinstance(node, AST.HRBinOp):
-            left_sql = self._visit_dp_expr(node.left, signature)
-            right_sql = self._visit_dp_expr(node.right, signature)
-            op = node.op
-            # Map VTL operators to SQL
-            op_map = {
-                "=": "=",
-                ">": ">",
-                "<": "<",
-                ">=": ">=",
-                "<=": "<=",
-                "<>": "!=",
-                "+": "+",
-                "-": "-",
-                "*": "*",
-                "/": "/",
-            }
-            if op == "and":
-                return f"({left_sql} AND {right_sql})"
-            elif op == "or":
-                return f"({left_sql} OR {right_sql})"
-            elif op in op_map:
-                return f"({left_sql} {op_map[op]} {right_sql})"
-            elif op == "when":
-                # Nested when-then
-                return f"CASE WHEN ({left_sql}) THEN ({right_sql}) ELSE TRUE END"
-            else:
-                return f"({left_sql} {op} {right_sql})"
-        elif isinstance(node, AST.HRUnOp):
-            operand_sql = self._visit_dp_expr(node.operand, signature)
-            if node.op == "not":
-                return f"NOT ({operand_sql})"
-            elif node.op == "-":
-                return f"-({operand_sql})"
-            else:
-                return f"{node.op}({operand_sql})"
-        elif isinstance(node, AST.DefIdentifier):
-            # Resolve alias to actual column name
+            return self._visit_dp_hr_binop(node, signature)
+        if isinstance(node, AST.HRUnOp):
+            return self._visit_dp_hr_unop(node, signature)
+        if isinstance(node, (AST.DefIdentifier, AST.VarID)):
             col_name = signature.get(node.value, node.value)
             return quote_identifier(col_name)
-        elif isinstance(node, AST.VarID):
-            # VarID nodes in DP rules — resolve alias via signature
-            col_name = signature.get(node.value, node.value)
-            return quote_identifier(col_name)
-        elif isinstance(node, AST.Constant):
-            if isinstance(node.value, str):
-                escaped = node.value.replace("'", "''")
-                return f"'{escaped}'"
-            elif isinstance(node.value, bool):
-                return "TRUE" if node.value else "FALSE"
-            elif node.value is None:
-                return "NULL"
-            else:
-                return str(node.value)
-        elif isinstance(node, AST.BinOp):
-            left_sql = self._visit_dp_expr(node.left, signature)
-            right_sql = self._visit_dp_expr(node.right, signature)
-            op = node.op
-            op_map = {
-                "and": "AND",
-                "or": "OR",
-                "=": "=",
-                "<>": "!=",
-                ">": ">",
-                "<": "<",
-                ">=": ">=",
-                "<=": "<=",
-            }
-            if op == "nvl":
-                return f"COALESCE({left_sql}, {right_sql})"
-            sql_op = op_map.get(op, op)
-            return f"({left_sql} {sql_op} {right_sql})"
-        elif isinstance(node, AST.UnaryOp):
-            operand_sql = self._visit_dp_expr(node.operand, signature)
-            if node.op == "not":
-                return f"NOT ({operand_sql})"
-            else:
-                return f"{node.op}({operand_sql})"
-        elif isinstance(node, AST.If):
-            # if-then-else inside a DP rule
+        if isinstance(node, AST.Constant):
+            return self._visit_dp_constant(node)
+        if isinstance(node, AST.BinOp):
+            return self._visit_dp_binop(node, signature)
+        if isinstance(node, AST.UnaryOp):
+            return self._visit_dp_unop(node, signature)
+        if isinstance(node, AST.If):
             cond_sql = self._visit_dp_expr(node.condition, signature)
             then_sql = self._visit_dp_expr(node.thenOp, signature)
             else_sql = self._visit_dp_expr(node.elseOp, signature)
             return f"CASE WHEN ({cond_sql}) THEN ({then_sql}) ELSE ({else_sql}) END"
-        else:
-            # Fallback: use the regular transpiler visitor, saving/restoring DP context
-            saved_sig = self._dp_signature
-            self._dp_signature = signature
-            result = self.visit(node)
-            self._dp_signature = saved_sig
-            return result
+        # Fallback: use the regular transpiler visitor, saving/restoring DP context
+        saved_sig = self._dp_signature
+        self._dp_signature = signature
+        result = self.visit(node)
+        self._dp_signature = saved_sig
+        return result
+
+    def _visit_dp_hr_binop(self, node: AST.HRBinOp, signature: Dict[str, str]) -> str:
+        """Visit an HRBinOp in a datapoint rule context."""
+        left_sql = self._visit_dp_expr(node.left, signature)
+        right_sql = self._visit_dp_expr(node.right, signature)
+        op = node.op
+        if op == "and":
+            return f"({left_sql} AND {right_sql})"
+        if op == "or":
+            return f"({left_sql} OR {right_sql})"
+        if op in _DP_HR_OP_MAP:
+            return f"({left_sql} {_DP_HR_OP_MAP[op]} {right_sql})"
+        if op == "when":
+            return f"CASE WHEN ({left_sql}) THEN ({right_sql}) ELSE TRUE END"
+        if registry.binary.is_registered(op):
+            return registry.binary.generate(op, left_sql, right_sql)
+        return f"({left_sql} {op} {right_sql})"
+
+    def _visit_dp_hr_unop(self, node: AST.HRUnOp, signature: Dict[str, str]) -> str:
+        """Visit an HRUnOp in a datapoint rule context."""
+        operand_sql = self._visit_dp_expr(node.operand, signature)
+        if node.op == "not":
+            return f"NOT ({operand_sql})"
+        if node.op == "-":
+            return f"-({operand_sql})"
+        return f"{node.op}({operand_sql})"
+
+    @staticmethod
+    def _visit_dp_constant(node: AST.Constant) -> str:
+        """Visit a constant in a datapoint rule context."""
+        if isinstance(node.value, str):
+            escaped = node.value.replace("'", "''")
+            return f"'{escaped}'"
+        if isinstance(node.value, bool):
+            return "TRUE" if node.value else "FALSE"
+        if node.value is None:
+            return "NULL"
+        return str(node.value)
+
+    def _visit_dp_binop(self, node: AST.BinOp, signature: Dict[str, str]) -> str:
+        """Visit a BinOp in a datapoint rule context."""
+        left_sql = self._visit_dp_expr(node.left, signature)
+        right_sql = self._visit_dp_expr(node.right, signature)
+        op = node.op
+        if op == "nvl":
+            return f"COALESCE({left_sql}, {right_sql})"
+        if registry.binary.is_registered(op):
+            return registry.binary.generate(op, left_sql, right_sql)
+        sql_op = _DP_BINOP_MAP.get(op, op)
+        return f"({left_sql} {sql_op} {right_sql})"
+
+    def _visit_dp_unop(self, node: AST.UnaryOp, signature: Dict[str, str]) -> str:
+        """Visit a UnaryOp in a datapoint rule context."""
+        operand_sql = self._visit_dp_expr(node.operand, signature)
+        if node.op == "not":
+            return f"NOT ({operand_sql})"
+        if node.op == tokens.ISNULL:
+            return f"({operand_sql} IS NULL)"
+        if registry.unary.is_registered(node.op):
+            return registry.unary.generate(node.op, operand_sql)
+        return f"{node.op}({operand_sql})"
 
     # =========================================================================
     # UDO definition and call
@@ -2409,8 +2472,11 @@ class SQLTranspiler(ASTTemplate):
 
         # Use the output dataset structure when available, as it reflects
         # renames and other clause transformations applied to the operand.
-        output_ds = self._get_output_dataset()
-        effective_ds = output_ds if output_ds is not None else ds
+        if self._udo_params:
+            effective_ds = ds
+        else:
+            output_ds = self._get_output_dataset()
+            effective_ds = output_ds if output_ds is not None else ds
 
         all_ids = effective_ds.get_identifiers_names()
         group_cols = self._resolve_group_cols(node, all_ids)
