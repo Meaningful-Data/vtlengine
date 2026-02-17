@@ -11,7 +11,7 @@ import vtlengine.Exceptions
 import vtlengine.Operators as Operators
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.DAG import HRDAGAnalyzer
-from vtlengine.AST.DAG._words import DELETE, GLOBAL, INSERT, PERSISTENT
+from vtlengine.AST.DAG._models import DatasetSchedule
 from vtlengine.AST.Grammar.tokens import (
     AGGREGATE,
     ALL,
@@ -115,7 +115,7 @@ class InterpreterAnalyzer(ASTTemplate):
     # Analysis mode
     only_semantic: bool = False
     # Memory efficient
-    ds_analysis: Optional[Dict[str, Any]] = None
+    ds_analysis: Optional[DatasetSchedule] = None
     datapoints_paths: Optional[Dict[str, Path]] = None
     output_path: Optional[Union[str, Path]] = None
     # Time Period Representation
@@ -168,9 +168,9 @@ class InterpreterAnalyzer(ASTTemplate):
             return
         if self.ds_analysis is None:
             return
-        if statement_num not in self.ds_analysis[INSERT]:
+        if statement_num not in self.ds_analysis.insertion:
             return
-        for ds_name in self.ds_analysis[INSERT][statement_num]:
+        for ds_name in self.ds_analysis.insertion[statement_num]:
             if ds_name in self.datapoints_paths:
                 self.datasets[ds_name].data = load_datapoints(
                     self.datasets[ds_name].components,
@@ -186,20 +186,20 @@ class InterpreterAnalyzer(ASTTemplate):
             return
         if self.ds_analysis is None:
             return
-        if statement_num not in self.ds_analysis[DELETE]:
+        if statement_num not in self.ds_analysis.deletion:
             return
-        for ds_name in self.ds_analysis[DELETE][statement_num]:
+        for ds_name in self.ds_analysis.deletion[statement_num]:
             if (
                 ds_name not in self.datasets
                 or not isinstance(self.datasets[ds_name], Dataset)
                 or self.datasets[ds_name].data is None
             ):
                 continue
-            if ds_name in self.ds_analysis[GLOBAL]:
+            if ds_name in self.ds_analysis.global_inputs:
                 # We do not save global input datasets, only results of transformations
                 self.datasets[ds_name].data = None
                 continue
-            if self.return_only_persistent and ds_name not in self.ds_analysis[PERSISTENT]:
+            if self.return_only_persistent and ds_name not in self.ds_analysis.persistent:
                 self.datasets[ds_name].data = None
                 continue
             # Saving only datasets, no scalars
@@ -288,7 +288,10 @@ class InterpreterAnalyzer(ASTTemplate):
             scalars_filtered = {
                 name: self.scalars[name]  # type: ignore[index]
                 for name in scalars_to_save
-                if (not self.return_only_persistent or name in self.ds_analysis.get(PERSISTENT, []))  # type: ignore[union-attr]
+                if (
+                    not self.return_only_persistent
+                    or name in (self.ds_analysis.persistent if self.ds_analysis else [])
+                )
             }
             self._save_scalars_efficient(scalars_filtered)
 

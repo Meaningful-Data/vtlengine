@@ -88,7 +88,7 @@ def _extract_input_datasets(script: Union[str, TransformationScheme, Path]) -> L
         raise TypeError("Unsupported script type.")
 
     ast = create_ast(vtl_script)
-    dag_inputs = DAGAnalyzer.ds_structure(ast)["global_inputs"]
+    dag_inputs = DAGAnalyzer.ds_structure(ast).global_inputs
 
     return dag_inputs
 
@@ -129,7 +129,7 @@ def create_ast(text: str) -> Start:
     cst = _parser(stream)
     visitor = ASTVisitor()
     ast = visitor.visitStart(cst)
-    DAGAnalyzer.createDAG(ast)
+    DAGAnalyzer.create_dag(ast)
     return ast
 
 
