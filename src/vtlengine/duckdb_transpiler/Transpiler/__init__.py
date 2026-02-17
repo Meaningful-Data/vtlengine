@@ -8,7 +8,7 @@ sequentially, with results registered as tables for subsequent queries.
 
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
 import vtlengine.AST as AST
 from vtlengine.AST.ASTTemplate import ASTTemplate
@@ -1255,6 +1255,64 @@ class SQLTranspiler(ASTTemplate):
         return f"({', '.join(literals)})"
 
     # =========================================================================
+    # Generic dataset-level helpers
+    # =========================================================================
+
+    def _apply_to_measures(
+        self,
+        ds_node: AST.AST,
+        expr_fn: "Callable[[str], str]",
+        output_name_override: Optional[str] = None,
+    ) -> str:
+        """Apply a SQL expression to each measure of a dataset, passing identifiers through.
+
+        This factors out the very common pattern of:
+          SELECT id1, id2, f(Me_1) AS Me_1, f(Me_2) AS Me_2 FROM ...
+
+        Args:
+            ds_node: The AST node for the dataset operand.
+            expr_fn: A callable that receives a quoted column reference
+                     (e.g. ``'"Me_1"'``) and returns the SQL expression
+                     to use for that measure.
+            output_name_override: When set, forces all measures to use this
+                                  name (used for mono-measure → bool_var etc.).
+                                  When ``None``, the output dataset from semantic
+                                  analysis is consulted to remap single-measure
+                                  names automatically.
+
+        Returns:
+            A complete ``SELECT … FROM …`` SQL string.
+        """
+        ds = self._get_dataset_structure(ds_node)
+        if ds is None:
+            raise ValueError("Cannot resolve dataset structure for dataset-level operation")
+
+        table_src = self._get_dataset_sql(ds_node)
+        output_ds = self._get_output_dataset()
+        output_measure_names = list(output_ds.get_measures_names()) if output_ds else []
+        input_measures = ds.get_measures_names()
+
+        cols: List[str] = []
+        for name, comp in ds.components.items():
+            if comp.role == Role.IDENTIFIER:
+                cols.append(quote_identifier(name))
+            elif comp.role == Role.MEASURE:
+                expr = expr_fn(quote_identifier(name))
+                if output_name_override is not None:
+                    out_name = output_name_override
+                elif (
+                    output_measure_names
+                    and len(input_measures) == 1
+                    and len(output_measure_names) == 1
+                ):
+                    out_name = output_measure_names[0]
+                else:
+                    out_name = name
+                cols.append(f"{expr} AS {quote_identifier(out_name)}")
+
+        return SQLBuilder().select(*cols).from_table(table_src).build()
+
+    # =========================================================================
     # Dataset-level binary operation helpers
     # =========================================================================
 
@@ -1342,29 +1400,13 @@ class SQLTranspiler(ASTTemplate):
                 return registry.binary.generate(op, right_sql, left_sql)
 
         scalar_sql = self.visit(scalar_node)
-        table_src = self._get_dataset_sql(ds_node)
-        output_ds = self._get_output_dataset()
-        output_measure_names = list(output_ds.get_measures_names()) if output_ds else []
 
-        cols: List[str] = []
-        measures = ds.get_measures_names()
+        def _bin_expr(col_ref: str) -> str:
+            if ds_on_left:
+                return registry.binary.generate(op, col_ref, scalar_sql)
+            return registry.binary.generate(op, scalar_sql, col_ref)
 
-        for name, comp in ds.components.items():
-            if comp.role == Role.IDENTIFIER:
-                cols.append(quote_identifier(name))
-            elif comp.role == Role.MEASURE:
-                col_ref = quote_identifier(name)
-                if ds_on_left:
-                    expr = registry.binary.generate(op, col_ref, scalar_sql)
-                else:
-                    expr = registry.binary.generate(op, scalar_sql, col_ref)
-
-                out_name = name
-                if output_measure_names and len(measures) == 1 and len(output_measure_names) == 1:
-                    out_name = output_measure_names[0]
-                cols.append(f"{expr} AS {quote_identifier(out_name)}")
-
-        return SQLBuilder().select(*cols).from_table(table_src).build()
+        return self._apply_to_measures(ds_node, _bin_expr)
 
     # =========================================================================
     # Expression visitors
@@ -1479,21 +1521,10 @@ class SQLTranspiler(ASTTemplate):
         pattern_sql = self.visit(node.right)
 
         if left_type == _DATASET:
-            ds = self._get_dataset_structure(node.left)
-            if ds is None:
-                raise ValueError("Cannot resolve dataset for match_characters")
-
-            table_src = self._get_dataset_sql(node.left)
-            cols: List[str] = []
-            for name, comp in ds.components.items():
-                if comp.role == Role.IDENTIFIER:
-                    cols.append(quote_identifier(name))
-                elif comp.role == Role.MEASURE:
-                    expr = registry.binary.generate(
-                        tokens.CHARSET_MATCH, quote_identifier(name), pattern_sql
-                    )
-                    cols.append(f"{expr} AS {quote_identifier(name)}")
-            return SQLBuilder().select(*cols).from_table(table_src).build()
+            return self._apply_to_measures(
+                node.left,
+                lambda col: registry.binary.generate(tokens.CHARSET_MATCH, col, pattern_sql),
+            )
         else:
             left_sql = self.visit(node.left)
             return registry.binary.generate(tokens.CHARSET_MATCH, left_sql, pattern_sql)
@@ -1572,9 +1603,7 @@ class SQLTranspiler(ASTTemplate):
         """Visit a unary operation."""
         op = str(node.op).lower()
 
-        if op == tokens.ISNULL:
-            return self._visit_isnull(node)
-
+        # --- Special-case operators that need dedicated logic ---
         if op == tokens.PERIOD_INDICATOR:
             operand_sql = self.visit(node.operand)
             return f"vtl_period_indicator(vtl_period_parse({operand_sql}))"
@@ -1591,94 +1620,28 @@ class SQLTranspiler(ASTTemplate):
         if op == tokens.FILL_TIME_SERIES:
             return self._visit_fill_time_series(node)
 
+        # --- Generic path: registry-based unary ---
         operand_type = self._get_operand_type(node.operand)
 
         if operand_type == _DATASET:
-            return self._visit_unary_dataset(node, op)
+            # isnull on mono-measure dataset produces "bool_var"
+            name_override: Optional[str] = None
+            if op == tokens.ISNULL:
+                ds = self._get_dataset_structure(node.operand)
+                if ds and len(ds.get_measures_names()) == 1:
+                    name_override = "bool_var"
+
+            def _unary_expr(col_ref: str) -> str:
+                if registry.unary.is_registered(op):
+                    return registry.unary.generate(op, col_ref)
+                return f"{op.upper()}({col_ref})"
+
+            return self._apply_to_measures(node.operand, _unary_expr, name_override)
         else:
             operand_sql = self.visit(node.operand)
             if registry.unary.is_registered(op):
                 return registry.unary.generate(op, operand_sql)
-            if op == tokens.PLUS:
-                return f"+{operand_sql}"
-            if op == tokens.MINUS:
-                return f"-{operand_sql}"
             return f"{op.upper()}({operand_sql})"
-
-    def _visit_unary_dataset(self, node: AST.UnaryOp, op: str) -> str:
-        """Visit a dataset-level unary operation."""
-        ds = self._get_dataset_structure(node.operand)
-        if ds is None:
-            raise ValueError(f"Cannot resolve dataset for unary op '{op}'")
-
-        table_src = self._get_dataset_sql(node.operand)
-        output_ds = self._get_output_dataset()
-        output_measure_names = list(output_ds.get_measures_names()) if output_ds else []
-
-        if op == tokens.NOT:
-            cols: List[str] = []
-            for name, comp in ds.components.items():
-                if comp.role == Role.IDENTIFIER:
-                    cols.append(quote_identifier(name))
-                elif comp.role == Role.MEASURE:
-                    expr = registry.unary.generate(tokens.NOT, quote_identifier(name))
-                    cols.append(f"{expr} AS {quote_identifier(name)}")
-            return SQLBuilder().select(*cols).from_table(table_src).build()
-
-        cols = []
-        measures = ds.get_measures_names()
-        for name, comp in ds.components.items():
-            if comp.role == Role.IDENTIFIER:
-                cols.append(quote_identifier(name))
-            elif comp.role == Role.MEASURE:
-                if registry.unary.is_registered(op):
-                    expr = registry.unary.generate(op, quote_identifier(name))
-                else:
-                    expr = f"{op.upper()}({quote_identifier(name)})"
-                out_name = name
-                if output_measure_names and len(measures) == 1 and len(output_measure_names) == 1:
-                    out_name = output_measure_names[0]
-                cols.append(f"{expr} AS {quote_identifier(out_name)}")
-
-        return SQLBuilder().select(*cols).from_table(table_src).build()
-
-    def _visit_isnull(self, node: AST.UnaryOp) -> str:
-        """Visit ISNULL operation."""
-        operand_type = self._get_operand_type(node.operand)
-
-        if operand_type == _DATASET:
-            ds = self._get_dataset_structure(node.operand)
-            if ds is None:
-                raise ValueError("Cannot resolve dataset for isnull")
-
-            table_src = self._get_dataset_sql(node.operand)
-            measures = ds.get_measures_names()
-
-            # isnull on mono-measure dataset always produces bool_var
-            output_measure_names: List[str] = []
-            if len(measures) == 1:
-                output_measure_names = ["bool_var"]
-
-            cols: List[str] = []
-            for name, comp in ds.components.items():
-                if comp.role == Role.IDENTIFIER:
-                    cols.append(quote_identifier(name))
-                elif comp.role == Role.MEASURE:
-                    out_name = name
-                    if (
-                        output_measure_names
-                        and len(measures) == 1
-                        and len(output_measure_names) == 1
-                    ):
-                        out_name = output_measure_names[0]
-                    cols.append(
-                        f"{registry.unary.generate(tokens.ISNULL, quote_identifier(name))}"
-                        f" AS {quote_identifier(out_name)}"
-                    )
-            return SQLBuilder().select(*cols).from_table(table_src).build()
-        else:
-            operand_sql = self.visit(node.operand)
-            return registry.unary.generate(tokens.ISNULL, operand_sql)
 
     def _visit_flow_to_stock(self, node: AST.UnaryOp) -> str:
         """Visit flow_to_stock: cumulative sum over time."""
@@ -1831,42 +1794,19 @@ class SQLTranspiler(ASTTemplate):
     def _visit_paramop_dataset(self, node: AST.ParamOp, op: str) -> str:
         """Visit a dataset-level parameterized operation."""
         ds_node = node.children[0]
-        ds = self._get_dataset_structure(ds_node)
-        if ds is None:
-            raise ValueError(f"Cannot resolve dataset for parameterized op '{op}'")
-
-        table_src = self._get_dataset_sql(ds_node)
         params_sql = self._visit_params(node.params)
 
         # Default precision for ROUND/TRUNC when no parameter given
         if op in (tokens.ROUND, tokens.TRUNC) and not params_sql:
             params_sql = ["0"]
 
-        cols: List[str] = []
-        output_ds = self._get_output_dataset()
-        output_measure_names = list(output_ds.get_measures_names()) if output_ds else []
-        input_measures = ds.get_measures_names()
+        def _param_expr(col_ref: str) -> str:
+            if registry.parameterized.is_registered(op):
+                return registry.parameterized.generate(op, col_ref, *params_sql)
+            all_args = [col_ref] + [a for a in params_sql if a is not None]
+            return f"{op.upper()}({', '.join(all_args)})"
 
-        for name, comp in ds.components.items():
-            if comp.role == Role.IDENTIFIER:
-                cols.append(quote_identifier(name))
-            elif comp.role == Role.MEASURE:
-                col_ref = quote_identifier(name)
-                if registry.parameterized.is_registered(op):
-                    expr = registry.parameterized.generate(op, col_ref, *params_sql)
-                else:
-                    all_args = [col_ref] + [a for a in params_sql if a is not None]
-                    expr = f"{op.upper()}({', '.join(all_args)})"
-                out_name = name
-                if (
-                    output_measure_names
-                    and len(input_measures) == 1
-                    and len(output_measure_names) == 1
-                ):
-                    out_name = output_measure_names[0]
-                cols.append(f"{expr} AS {quote_identifier(out_name)}")
-
-        return SQLBuilder().select(*cols).from_table(table_src).build()
+        return self._apply_to_measures(ds_node, _param_expr)
 
     def _visit_cast(self, node: AST.ParamOp) -> str:
         """Visit CAST operation."""
@@ -1911,20 +1851,10 @@ class SQLTranspiler(ASTTemplate):
         mask: Optional[str],
     ) -> str:
         """Visit dataset-level CAST."""
-        ds = self._get_dataset_structure(ds_node)
-        if ds is None:
-            raise ValueError("Cannot resolve dataset for CAST")
-
-        table_src = self._get_dataset_sql(ds_node)
-        cols: List[str] = []
-        for name, comp in ds.components.items():
-            if comp.role == Role.IDENTIFIER:
-                cols.append(quote_identifier(name))
-            elif comp.role == Role.MEASURE:
-                expr = self._cast_expr(quote_identifier(name), duckdb_type, target_type_str, mask)
-                cols.append(f"{expr} AS {quote_identifier(name)}")
-
-        return SQLBuilder().select(*cols).from_table(table_src).build()
+        return self._apply_to_measures(
+            ds_node,
+            lambda col: self._cast_expr(col, duckdb_type, target_type_str, mask),
+        )
 
     def _visit_random(self, node: AST.ParamOp) -> str:
         """Visit RANDOM operator (ParamOp form): deterministic hash-based random."""
@@ -1949,23 +1879,11 @@ class SQLTranspiler(ASTTemplate):
         seed_type = self._get_operand_type(seed_node) if seed_node else _SCALAR
 
         if seed_type == _DATASET:
-            # Convert to dataset-level random; reuse the ParamOp handler logic
-            ds = self._get_dataset_structure(seed_node)
-            if ds is None:
-                raise ValueError("Cannot resolve dataset for RANDOM")
-
-            table_src = self._get_dataset_sql(seed_node)
             index_sql = self.visit(index_node) if index_node else "0"
-
-            cols: List[str] = []
-            for name, comp in ds.components.items():
-                if comp.role == Role.IDENTIFIER:
-                    cols.append(quote_identifier(name))
-                elif comp.role == Role.MEASURE:
-                    expr = self._random_hash_expr(quote_identifier(name), index_sql)
-                    cols.append(f"{expr} AS {quote_identifier(name)}")
-
-            return SQLBuilder().select(*cols).from_table(table_src).build()
+            return self._apply_to_measures(
+                seed_node,
+                lambda col: self._random_hash_expr(col, index_sql),
+            )
 
         seed_sql = self.visit(seed_node) if seed_node else "0"
         index_sql = self.visit(index_node) if index_node else "0"
@@ -1983,25 +1901,12 @@ class SQLTranspiler(ASTTemplate):
     def _visit_random_dataset(self, node: AST.ParamOp) -> str:
         """Visit dataset-level RANDOM."""
         ds_node = node.children[0]
-        ds = self._get_dataset_structure(ds_node)
-        if ds is None:
-            raise ValueError("Cannot resolve dataset for RANDOM")
-
-        table_src = self._get_dataset_sql(ds_node)
         index_sql = self.visit(node.params[0]) if node.params else "0"
 
-        cols: List[str] = []
-        for name, comp in ds.components.items():
-            if comp.role == Role.IDENTIFIER:
-                cols.append(quote_identifier(name))
-            elif comp.role == Role.MEASURE:
-                expr = (
-                    f"(ABS(hash(CAST({quote_identifier(name)} AS VARCHAR) || '_' || "
-                    f"CAST({index_sql} AS VARCHAR))) % 1000000) / 1000000.0"
-                )
-                cols.append(f"{expr} AS {quote_identifier(name)}")
-
-        return SQLBuilder().select(*cols).from_table(table_src).build()
+        return self._apply_to_measures(
+            ds_node,
+            lambda col: self._random_hash_expr(col, index_sql),
+        )
 
     # =========================================================================
     # Clause visitor (RegularAggregation)
@@ -2705,30 +2610,13 @@ class SQLTranspiler(ASTTemplate):
     def _visit_between_dataset(self, node: AST.MulOp) -> str:
         """Visit dataset-level BETWEEN: applies BETWEEN to each measure."""
         ds_node = node.children[0]
-        ds = self._get_dataset_structure(ds_node)
-        if ds is None:
-            raise ValueError("Cannot resolve dataset for BETWEEN")
-
-        table_src = self._get_dataset_sql(ds_node)
         low_sql = self.visit(node.children[1])
         high_sql = self.visit(node.children[2])
 
-        output_ds = self._get_output_dataset()
-        output_measure_names = list(output_ds.get_measures_names()) if output_ds else []
-
-        cols: List[str] = []
-        measures = ds.get_measures_names()
-        for name, comp in ds.components.items():
-            if comp.role == Role.IDENTIFIER:
-                cols.append(quote_identifier(name))
-            elif comp.role == Role.MEASURE:
-                expr = self._between_expr(quote_identifier(name), low_sql, high_sql)
-                out_name = name
-                if output_measure_names and len(measures) == 1 and len(output_measure_names) == 1:
-                    out_name = output_measure_names[0]
-                cols.append(f"{expr} AS {quote_identifier(out_name)}")
-
-        return SQLBuilder().select(*cols).from_table(table_src).build()
+        return self._apply_to_measures(
+            ds_node,
+            lambda col: self._between_expr(col, low_sql, high_sql),
+        )
 
     def _visit_exists_in_mul(self, node: AST.MulOp) -> str:
         """Visit EXISTS_IN in MulOp form, handling the optional retain parameter."""
