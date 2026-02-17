@@ -23,7 +23,7 @@ from pysdmx.model.vtl import VtlDataflowMapping
 from tests.Helper import TestHelper
 from vtlengine.API import generate_sdmx, prettify, run, run_sdmx, semantic_analysis
 from vtlengine.API._InternalApi import _check_script, to_vtl_json
-from vtlengine.Exceptions import DataLoadError, InputValidationException
+from vtlengine.Exceptions import DataLoadError, InputValidationException, SemanticError
 from vtlengine.Model import Dataset
 
 # Path setup
@@ -77,6 +77,9 @@ params_run_sdmx_datapoints_dict = [
     # (script, datapoints_key, description)
     ("DS_r <- BIS_DER;", "BIS_DER", "simple assignment"),
     ("DS_r <- BIS_DER [calc Me_4 := OBS_VALUE];", "BIS_DER", "calc clause"),
+]
+
+params_run_sdmx_datapoints_dict_semantic_error = [
     ("DS_r <- BIS_DER [filter OBS_VALUE > 0];", "BIS_DER", "filter clause"),
 ]
 
@@ -94,6 +97,23 @@ def test_run_sdmx_file_via_dict(sdmx_data_file, sdmx_data_structure, script, ds_
     assert "DS_r" in result
     assert result["DS_r"].data is not None
     assert len(result["DS_r"].data) > 0
+
+
+@pytest.mark.parametrize(
+    "script, ds_key, description", params_run_sdmx_datapoints_dict_semantic_error
+)
+def test_run_sdmx_file_via_dict_semantic_error(
+    sdmx_data_file, sdmx_data_structure, script, ds_key, description
+):
+    """Test SDMX-ML file loading raises SemanticError for type mismatches."""
+    with pytest.raises(SemanticError) as context:
+        run(
+            script=script,
+            data_structures=sdmx_data_structure,
+            datapoints={ds_key: sdmx_data_file},
+            return_only_persistent=False,
+        )
+    assert context.value.args[1] == "1-1-1-1"
 
 
 def test_run_sdmx_file_via_list(sdmx_data_file, sdmx_data_structure):

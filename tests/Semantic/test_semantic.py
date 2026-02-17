@@ -135,9 +135,11 @@ class ClauseClauseTests(SemanticHelper):
         """
         code = "CC_7"
         number_inputs = 1
-        references_names = ["1"]
+        error_code = "1-1-1-1"
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_8(self):
         """
@@ -522,9 +524,11 @@ class ClauseClauseTests(SemanticHelper):
         """
         code = "CC_30"
         number_inputs = 1
-        references_names = ["1"]
+        error_code = "1-1-1-1"
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_31(self):
         """
@@ -623,7 +627,7 @@ class ClauseClauseTests(SemanticHelper):
         """
         code = "CC_36"
         number_inputs = 1
-        error_code = "1-1-6-10"
+        error_code = "1-1-1-1"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code
@@ -2063,9 +2067,11 @@ class ScalarTests(SemanticHelper):
         """
         code = "Sc_10"
         number_inputs = 1
-        references_names = ["1"]
+        error_code = "1-1-1-2"
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_11(self):
         """
@@ -2079,9 +2085,11 @@ class ScalarTests(SemanticHelper):
         """
         code = "Sc_11"
         number_inputs = 2
-        references_names = ["1"]
+        error_code = "1-1-1-2"
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_12(self):
         """
@@ -2095,9 +2103,11 @@ class ScalarTests(SemanticHelper):
         """
         code = "Sc_12"
         number_inputs = 2
-        references_names = ["1"]
+        error_code = "1-1-1-2"
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_13(self):
         """
@@ -2129,9 +2139,11 @@ class ScalarTests(SemanticHelper):
         """
         code = "Sc_14"
         number_inputs = 2
-        references_names = ["1"]
+        error_code = "1-1-1-1"
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_15(self):
         """

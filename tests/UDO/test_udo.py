@@ -617,9 +617,11 @@ class UdoTest(UDOHelper):
         """
         code = "GL_473_1"
         number_inputs = 1
-        references_names = ["1", "2", "3", "4"]
+        message = "1-1-1-1"
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_473_2(self):
         """
@@ -629,9 +631,11 @@ class UdoTest(UDOHelper):
         """
         code = "GL_473_2"
         number_inputs = 1
-        references_names = ["1", "2"]
+        message = "1-1-1-1"
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_474_1(self):
         """
@@ -641,9 +645,11 @@ class UdoTest(UDOHelper):
         """
         code = "GL_474_1"
         number_inputs = 1
-        references_names = ["1", "2"]
+        message = "1-1-1-1"
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_474_2(self):
         """
@@ -653,7 +659,7 @@ class UdoTest(UDOHelper):
         """
         code = "GL_474_2"
         number_inputs = 1
-        message = "1-1-1-3"
+        message = "1-1-1-1"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
@@ -681,9 +687,11 @@ class UdoTest(UDOHelper):
         """
         code = "GL_475_1"
         number_inputs = 1
-        references_names = ["1", "2", "3", "4"]
+        message = "1-1-1-1"
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_476_1(self):
         """

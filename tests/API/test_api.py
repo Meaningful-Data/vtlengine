@@ -1865,80 +1865,15 @@ def test_with_multiple_vd_and_ext_routines():
         filepath_ValueDomains / "VD_2.json",
     ]
 
-    run_result = run(
-        script=script,
-        data_structures=data_structures,
-        datapoints=datapoints,
-        value_domains=value_domains,
-        external_routines=external_routines,
-    )
-
-    reference = {
-        "DS_r": Dataset(
-            name="DS_r",
-            components={
-                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
-                "Id_2": Component("Id_2", DataTypes.String, Role.IDENTIFIER, False),
-                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
-                "Me_2": Component("Me_2", DataTypes.Boolean, Role.MEASURE, True),
-            },
-            data=pd.DataFrame(
-                {
-                    "Id_1": [2012, 2012, 2012],
-                    "Id_2": ["AT", "DE", "FR"],
-                    "Me_1": [0.0, 4.0, 9.0],
-                    "Me_2": [False, False, False],
-                }
-            ),
-        ),
-        "DS_r2": Dataset(
-            name="DS_r2",
-            components={
-                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
-                "Id_2": Component("Id_2", DataTypes.String, Role.IDENTIFIER, False),
-                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
-                "Me_2": Component("Me_2", DataTypes.Boolean, Role.MEASURE, True),
-            },
-            data=pd.DataFrame(
-                {
-                    "Id_1": [2012, 2012, 2012],
-                    "Id_2": ["AT", "DE", "FR"],
-                    "Me_1": [0.0, 4.0, 9.0],
-                    "Me_2": [False, False, False],
-                }
-            ),
-        ),
-        "DS_r3": Dataset(
-            name="DS_r3",
-            components={
-                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
-                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
-            },
-            data=pd.DataFrame(
-                {
-                    "Id_1": [2012],
-                    "Me_1": [3.0],
-                }
-            ),
-        ),
-        "DS_r4": Dataset(
-            name="DS_r4",
-            components={
-                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
-                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
-            },
-            data=pd.DataFrame(
-                {
-                    "Id_1": [2012, 2012, 2012],
-                    "Me_1": [0.0, 4.0, 9.0],
-                }
-            ),
-        ),
-    }
-    assert run_result["DS_r"] == reference["DS_r"]
-    assert run_result["DS_r2"] == reference["DS_r2"]
-    assert run_result["DS_r3"] == reference["DS_r3"]
-    assert run_result["DS_r4"] == reference["DS_r4"]
+    with pytest.raises(SemanticError) as context:
+        run(
+            script=script,
+            data_structures=data_structures,
+            datapoints=datapoints,
+            value_domains=value_domains,
+            external_routines=external_routines,
+        )
+    assert context.value.args[1] == "1-1-1-1"
 
 
 def test_semantic_analysis_list_vd_ext_routines():
@@ -1974,55 +1909,14 @@ def test_semantic_analysis_list_vd_ext_routines():
         ]
     }
 
-    semantic_result = semantic_analysis(
-        script=script,
-        data_structures=data_structures,
-        value_domains=value_domains,
-        external_routines=external_routines,
-    )
-
-    reference = {
-        "DS_r": Dataset(
-            name="DS_r",
-            components={
-                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
-                "Id_2": Component("Id_2", DataTypes.String, Role.IDENTIFIER, False),
-                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
-                "Me_2": Component("Me_2", DataTypes.Boolean, Role.MEASURE, True),
-            },
-            data=None,
-        ),
-        "DS_r2": Dataset(
-            name="DS_r2",
-            components={
-                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
-                "Id_2": Component("Id_2", DataTypes.String, Role.IDENTIFIER, False),
-                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
-                "Me_2": Component("Me_2", DataTypes.Boolean, Role.MEASURE, True),
-            },
-            data=None,
-        ),
-        "DS_r3": Dataset(
-            name="DS_r3",
-            components={
-                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
-                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
-            },
-            data=None,
-        ),
-        "DS_r4": Dataset(
-            name="DS_r4",
-            components={
-                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
-                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
-            },
-            data=None,
-        ),
-    }
-    assert semantic_result["DS_r"] == reference["DS_r"]
-    assert semantic_result["DS_r2"] == reference["DS_r2"]
-    assert semantic_result["DS_r3"] == reference["DS_r3"]
-    assert semantic_result["DS_r4"] == reference["DS_r4"]
+    with pytest.raises(SemanticError) as context:
+        semantic_analysis(
+            script=script,
+            data_structures=data_structures,
+            value_domains=value_domains,
+            external_routines=external_routines,
+        )
+    assert context.value.args[1] == "1-1-1-1"
 
 
 @pytest.mark.parametrize(

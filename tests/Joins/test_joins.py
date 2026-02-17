@@ -872,9 +872,11 @@ class JoinCalcIfThenElseTests(JoinHelper):
         """
         code = "3-1-1-5"
         number_inputs = 2
-        references_names = ["1"]
+        error_code = "1-1-1-1"
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_6(self):
         """
@@ -968,9 +970,11 @@ class JoinCalcIfThenElseTests(JoinHelper):
         """
         code = "3-1-1-10"
         number_inputs = 2
-        references_names = ["1"]
+        error_code = "1-1-1-1"
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_11(self):
         """

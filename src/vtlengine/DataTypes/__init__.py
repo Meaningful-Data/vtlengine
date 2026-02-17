@@ -124,18 +124,7 @@ class String(ScalarType):
 
     @classmethod
     def implicit_cast(cls, value: Any, from_type: Any) -> str:
-        # if pd.isna(value):
-        #     return cls.default
-        if from_type in {
-            Number,
-            Integer,
-            Boolean,
-            String,
-            Date,
-            TimePeriod,
-            TimeInterval,
-            Duration,
-        }:
+        if from_type in {Boolean, String}:
             return str(value)
 
         raise SemanticError(
@@ -147,7 +136,16 @@ class String(ScalarType):
 
     @classmethod
     def explicit_cast(cls, value: Any, from_type: Any) -> str:
-        if from_type in {TimePeriod, Date, String}:
+        if from_type in {
+            Integer,
+            Number,
+            Boolean,
+            String,
+            Date,
+            TimePeriod,
+            TimeInterval,
+            Duration,
+        }:
             return str(value)
 
         raise RunTimeError(
@@ -251,15 +249,18 @@ class Integer(Number):
             return value
 
         if from_type.__name__ == "Number":
+            # TODO: VTL 2.2 specifies truncation toward zero (return int(value)),
+            #  pending discussion
             if value.is_integer():
                 return int(value)
-            else:
-                raise RunTimeError(
-                    "2-1-5-1",
-                    value=value,
-                    type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
-                    type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
-                )
+            # else:
+            #     raise RunTimeError(
+            #         "2-1-5-1",
+            #         value=value,
+            #         type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+            #         type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
+            #     )
+            return int(value)
 
         raise RunTimeError(
             "2-1-5-1",
@@ -335,8 +336,7 @@ class TimeInterval(ScalarType):
 
     @classmethod
     def implicit_cast(cls, value: Any, from_type: Any) -> Any:
-        # TODO: Remove String, only for compatibility with previous engine
-        if from_type in {TimeInterval, String}:
+        if from_type in {TimeInterval}:
             return value
         if from_type in {Date}:
             value = check_max_date(value)
@@ -384,8 +384,7 @@ class Date(TimeInterval):
 
     @classmethod
     def implicit_cast(cls, value: Any, from_type: Any) -> Any:
-        # TODO: Remove String, only for compatibility with previous engine
-        if from_type in {Date, String}:
+        if from_type in {Date}:
             return check_max_date(value)
 
         raise RunTimeError(
@@ -426,8 +425,7 @@ class TimePeriod(TimeInterval):
 
     @classmethod
     def implicit_cast(cls, value: Any, from_type: Any) -> Any:
-        # TODO: Remove String, only for compatibility with previous engine
-        if from_type in {TimePeriod, String}:
+        if from_type in {TimePeriod}:
             return value
 
         raise RunTimeError(
@@ -486,7 +484,7 @@ class Duration(ScalarType):
 
     @classmethod
     def implicit_cast(cls, value: Any, from_type: Any) -> str:
-        if from_type == String and cls.validate_duration(value):
+        if from_type == Duration:
             return value
 
         raise RunTimeError(
@@ -563,6 +561,8 @@ class Boolean(ScalarType):
     def explicit_cast(cls, value: Any, from_type: Any) -> bool:
         if from_type in {Number, Integer}:
             return value not in {0}
+        if from_type == String and isinstance(value, str) and value.lower() in {"true", "false"}:
+            return value.lower() == "true"
 
         raise RunTimeError(
             "2-1-5-1",
@@ -649,14 +649,14 @@ COMP_NAME_MAPPING: Dict[Type[ScalarType], str] = {
 }
 
 IMPLICIT_TYPE_PROMOTION_MAPPING: Dict[Type[ScalarType], Any] = {
-    String: {String, Boolean},
-    Number: {String, Number, Integer},
-    Integer: {String, Number, Integer},
+    String: {String},
+    Number: {Number, Integer},
+    Integer: {Number, Integer},
     TimeInterval: {TimeInterval},
-    Date: {TimeInterval, Date},
-    TimePeriod: {TimeInterval, TimePeriod},
+    Date: {Date, TimeInterval},
+    TimePeriod: {TimePeriod, TimeInterval},
     Duration: {Duration},
-    Boolean: {String, Boolean},
+    Boolean: {Boolean, String},
     Null: {
         String,
         Number,

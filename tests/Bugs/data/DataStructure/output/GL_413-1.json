@@ -1,1 +1,87 @@
-{"datasets": [{"name": "A", "DataStructure": [{"name": "FREQ", "role": "Identifier", "type": "String", "nullable": false}, {"name": "L_MEASURE", "role": "Identifier", "type": "String", "nullable": false}, {"name": "L_INSTR", "role": "Identifier", "type": "String", "nullable": false}, {"name": "L_DENOM", "role": "Identifier", "type": "String", "nullable": false}, {"name": "L_CURR_TYPE", "role": "Identifier", "type": "String", "nullable": false}, {"name": "L_PARENT_CTY", "role": "Identifier", "type": "String", "nullable": false}, {"name": "L_REP_BANK_TYPE", "role": "Identifier", "type": "String", "nullable": false}, {"name": "L_REP_CTY", "role": "Identifier", "type": "String", "nullable": false}, {"name": "L_CP_SECTOR", "role": "Identifier", "type": "String", "nullable": false}, {"name": "L_CP_COUNTRY", "role": "Identifier", "type": "String", "nullable": false}, {"name": "L_POS_TYPE", "role": "Identifier", "type": "String", "nullable": false}, {"name": "TIME_PERIOD", "role": "Identifier", "type": "Date", "nullable": false}, {"name": "OBS_VALUE", "role": "Measure", "type": "Integer", "nullable": true}], "DataPoints": null}]}
+{
+  "datasets": [
+    {
+      "name": "A",
+      "DataStructure": [
+        {
+          "name": "FREQ",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "L_MEASURE",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "L_INSTR",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "L_DENOM",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "L_CURR_TYPE",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "L_PARENT_CTY",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "L_REP_BANK_TYPE",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "L_REP_CTY",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "L_CP_SECTOR",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "L_CP_COUNTRY",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "L_POS_TYPE",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "TIME_PERIOD",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "OBS_VALUE",
+          "role": "Measure",
+          "type": "Integer",
+          "nullable": false
+        }
+      ]
+    }
+  ]
+}
