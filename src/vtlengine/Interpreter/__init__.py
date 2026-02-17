@@ -829,47 +829,42 @@ class InterpreterAnalyzer(ASTTemplate):
                     if node.value in self.regular_aggregation_dataset.components:
                         raise SemanticError("1-1-6-11", comp_name=node.value)
                     return copy(self.scalars[node.value])
-                if self.regular_aggregation_dataset.data is not None:
-                    if (
-                        self.is_from_join
-                        and node.value
-                        not in self.regular_aggregation_dataset.get_components_names()
-                    ):
-                        is_partial_present = 0
-                        found_comp = None
-                        for comp_name in self.regular_aggregation_dataset.get_components_names():
-                            if (
-                                "#" in comp_name
-                                and comp_name.split("#")[1] == node.value
-                                or "#" in node.value
-                                and node.value.split("#")[1] == comp_name
-                            ):
-                                is_partial_present += 1
-                                found_comp = comp_name
-                        if is_partial_present == 0:
-                            raise SemanticError(
-                                "1-1-1-10",
-                                comp_name=node.value,
-                                dataset_name=self.regular_aggregation_dataset.name,
-                            )
-                        elif is_partial_present == 2:
-                            raise SemanticError("1-1-13-9", comp_name=node.value)
-                        node.value = found_comp  # type:ignore[assignment]
-                    if node.value not in self.regular_aggregation_dataset.components:
+                # Resolve aliased component references (e.g. d1#Me_1 -> Me_1)
+                # in join context, regardless of whether data is present.
+                if (
+                    self.is_from_join
+                    and node.value not in self.regular_aggregation_dataset.get_components_names()
+                ):
+                    is_partial_present = 0
+                    found_comp = None
+                    for comp_name in self.regular_aggregation_dataset.get_components_names():
+                        if (
+                            "#" in comp_name
+                            and comp_name.split("#")[1] == node.value
+                            or "#" in node.value
+                            and node.value.split("#")[1] == comp_name
+                        ):
+                            is_partial_present += 1
+                            found_comp = comp_name
+                    if is_partial_present == 0:
                         raise SemanticError(
                             "1-1-1-10",
                             comp_name=node.value,
                             dataset_name=self.regular_aggregation_dataset.name,
                         )
-                    data = copy(self.regular_aggregation_dataset.data[node.value])
-                else:
-                    data = None
+                    elif is_partial_present == 2:
+                        raise SemanticError("1-1-13-9", comp_name=node.value)
+                    node.value = found_comp  # type:ignore[assignment]
                 if node.value not in self.regular_aggregation_dataset.components:
                     raise SemanticError(
                         "1-1-1-10",
                         comp_name=node.value,
                         dataset_name=self.regular_aggregation_dataset.name,
                     )
+                if self.regular_aggregation_dataset.data is not None:
+                    data = copy(self.regular_aggregation_dataset.data[node.value])
+                else:
+                    data = None
                 return DataComponent(
                     name=node.value,
                     data=data,
