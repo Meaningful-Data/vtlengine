@@ -12,7 +12,16 @@ import duckdb
 import pandas as pd
 
 from vtlengine.AST.DAG._words import DELETE, GLOBAL, INSERT, PERSISTENT
-from vtlengine.DataTypes import Date, TimeInterval, TimePeriod
+from vtlengine.DataTypes import (
+    Boolean,
+    Date,
+    Integer,
+    Null,
+    Number,
+    TimeInterval,
+    TimePeriod,
+)
+from vtlengine.DataTypes import String as StringType
 from vtlengine.duckdb_transpiler.io._io import (
     load_datapoints_duckdb,
     register_dataframes,
@@ -20,6 +29,20 @@ from vtlengine.duckdb_transpiler.io._io import (
 )
 from vtlengine.duckdb_transpiler.sql import initialize_time_types
 from vtlengine.Model import Dataset, Scalar
+
+
+def _normalize_scalar_value(raw_value: Any) -> Any:
+    """Convert pandas/numpy null types to Python ``None``.
+
+    DuckDB's ``fetchdf()`` may return ``pd.NA``, ``pd.NaT`` or
+    ``numpy.nan`` for SQL NULLs.  The rest of the engine expects
+    plain ``None``.
+    """
+    if hasattr(raw_value, "item"):
+        raw_value = raw_value.item()
+    if pd.isna(raw_value):
+        return None
+    return raw_value
 
 
 def _convert_date_columns(ds: Dataset) -> None:
@@ -127,10 +150,7 @@ def cleanup_scheduled_datasets(
                 result_df = conn.execute(f'SELECT * FROM "{ds_name}"').fetchdf()
                 if len(result_df) == 1 and len(result_df.columns) == 1:
                     scalar = output_scalars[ds_name]
-                    raw_value = result_df.iloc[0, 0]
-                    # Convert numpy types to Python natives for Scalar.value setter
-                    if hasattr(raw_value, "item"):
-                        raw_value = raw_value.item()
+                    raw_value = _normalize_scalar_value(result_df.iloc[0, 0])
                     scalar.value = raw_value
                     results[ds_name] = scalar
                 else:
@@ -186,10 +206,7 @@ def fetch_result(
     if result_name in output_scalars:
         if len(result_df) == 1 and len(result_df.columns) == 1:
             scalar = output_scalars[result_name]
-            raw_value = result_df.iloc[0, 0]
-            # Convert numpy types to Python natives for Scalar.value setter
-            if hasattr(raw_value, "item"):
-                raw_value = raw_value.item()
+            raw_value = _normalize_scalar_value(result_df.iloc[0, 0])
             scalar.value = raw_value
             return scalar
         return Dataset(name=result_name, components={}, data=result_df)
