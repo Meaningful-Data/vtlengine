@@ -22,13 +22,13 @@ from vtlengine.duckdb_transpiler.Transpiler.operators import (
 from vtlengine.duckdb_transpiler.Transpiler.sql_builder import SQLBuilder, quote_identifier
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 
-# Operand type constants (replaces StructureVisitor.OperandType)
+# Operand type constants
 _DATASET = "Dataset"
 _COMPONENT = "Component"
 _SCALAR = "Scalar"
 
 # Datapoint rule operator mappings (module-level to avoid dataclass mutable default)
-_DP_HR_OP_MAP: Dict[str, str] = {
+_DP_OP_MAP: Dict[str, str] = {
     "=": "=",
     ">": ">",
     "<": "<",
@@ -39,16 +39,8 @@ _DP_HR_OP_MAP: Dict[str, str] = {
     "-": "-",
     "*": "*",
     "/": "/",
-}
-_DP_BINOP_MAP: Dict[str, str] = {
     "and": "AND",
     "or": "OR",
-    "=": "=",
-    "<>": "!=",
-    ">": ">",
-    "<": "<",
-    ">=": ">=",
-    "<=": "<=",
 }
 
 
@@ -85,7 +77,7 @@ class SQLTranspiler(ASTTemplate):
     scalars: Dict[str, Scalar] = field(default_factory=dict, init=False)
     available_tables: Dict[str, Dataset] = field(default_factory=dict, init=False)
 
-    # Clause context (replaces structure_visitor.in_clause / current_dataset)
+    # Clause context for component-level resolution
     _in_clause: bool = field(default=False, init=False)
     _current_dataset: Optional[Dataset] = field(default=None, init=False)
 
@@ -128,7 +120,7 @@ class SQLTranspiler(ASTTemplate):
         return []
 
     def _get_operand_type(self, node: AST.AST) -> str:  # noqa: C901
-        """Determine the operand type of a node without StructureVisitor."""
+        """Determine the operand type of a node."""
         if isinstance(node, AST.VarID):
             return self._get_varid_type(node)
         if isinstance(node, (AST.Constant, AST.ParamConstant, AST.Collection)):
@@ -235,23 +227,12 @@ class SQLTranspiler(ASTTemplate):
 
     def _constant_to_sql(self, node: AST.Constant) -> str:
         """Convert a Constant AST node to a SQL literal."""
-        if node.value is None:
-            return "NULL"
-        type_str = str(node.type_).upper() if node.type_ else ""
-        if "BOOLEAN" in type_str:
-            return "TRUE" if node.value else "FALSE"
-        if "STRING" in type_str:
-            escaped = str(node.value).replace("'", "''")
-            return f"'{escaped}'"
-        if "INTEGER" in type_str or "FLOAT" in type_str or "NUMBER" in type_str:
-            return str(node.value)
-        # Fallback
-        if isinstance(node.value, bool):
-            return "TRUE" if node.value else "FALSE"
-        if isinstance(node.value, str):
-            escaped = node.value.replace("'", "''")
-            return f"'{escaped}'"
-        return str(node.value)
+        type_name = ""
+        if node.type_:
+            type_str = str(node.type_).upper()
+            if "DATE" in type_str:
+                type_name = "Date"
+        return self._to_sql_literal(node.value, type_name)
 
     def _get_dataset_sql(self, node: AST.AST) -> str:
         """Get the SQL FROM source for a dataset node."""
@@ -554,45 +535,51 @@ class SQLTranspiler(ASTTemplate):
 
         return Dataset(name=input_ds.name, components=comps, data=None)
 
+    def _resolve_clause_component_names(self, children: List[AST.AST], input_ds: Dataset) -> set:
+        """Extract component names from clause children (keep/drop), resolving memberships."""
+        names: set = set()
+        for child in children:
+            if isinstance(child, (AST.VarID, AST.Identifier)):
+                names.add(child.value)
+            elif isinstance(child, AST.BinOp) and str(child.op).lower() == tokens.MEMBERSHIP:
+                ds_alias = child.left.value if hasattr(child.left, "value") else str(child.left)
+                comp = child.right.value if hasattr(child.right, "value") else str(child.right)
+                qualified = f"{ds_alias}#{comp}"
+                names.add(qualified if qualified in input_ds.components else comp)
+        return names
+
+    def _resolve_join_component_names(self, children: List[AST.AST]) -> List[str]:
+        """Extract component names from clause children, resolving via join alias map."""
+        names: List[str] = []
+        for child in children:
+            if isinstance(child, (AST.VarID, AST.Identifier)):
+                names.append(child.value)
+            elif isinstance(child, AST.BinOp) and str(child.op).lower() == tokens.MEMBERSHIP:
+                ds_alias = child.left.value if hasattr(child.left, "value") else str(child.left)
+                comp = child.right.value if hasattr(child.right, "value") else str(child.right)
+                qualified = f"{ds_alias}#{comp}"
+                names.append(qualified if qualified in self._join_alias_map else comp)
+        return names
+
     def _build_drop_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:
         """Build the output structure for a drop clause."""
         input_ds = self._get_dataset_structure(node.dataset)
         if input_ds is None:
             return None
-
-        drop_names: set = set()
-        for child in node.children:
-            if isinstance(child, (AST.VarID, AST.Identifier)):
-                drop_names.add(child.value)
-            elif isinstance(child, AST.BinOp) and str(child.op).lower() == tokens.MEMBERSHIP:
-                # Membership reference: check qualified name first, then bare name
-                ds_alias = child.left.value if hasattr(child.left, "value") else str(child.left)
-                comp = child.right.value if hasattr(child.right, "value") else str(child.right)
-                qualified = f"{ds_alias}#{comp}"
-                if qualified in input_ds.components:
-                    drop_names.add(qualified)
-                else:
-                    drop_names.add(comp)
-
+        drop_names = self._resolve_clause_component_names(node.children, input_ds)
         comps = {name: comp for name, comp in input_ds.components.items() if name not in drop_names}
         return Dataset(name=input_ds.name, components=comps, data=None)
 
     def _build_subspace_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:
-        """Build the output structure for a subspace clause.
-
-        Subspace filters on identifier values and removes those identifiers
-        from the result structure.
-        """
+        """Build the output structure for a subspace clause."""
         input_ds = self._get_dataset_structure(node.dataset)
         if input_ds is None:
             return None
-
         remove_ids: set = set()
         for child in node.children:
             if isinstance(child, AST.BinOp):
                 col_name = child.left.value if hasattr(child.left, "value") else ""
                 remove_ids.add(col_name)
-
         comps = {name: comp for name, comp in input_ds.components.items() if name not in remove_ids}
         return Dataset(name=input_ds.name, components=comps, data=None)
 
@@ -601,25 +588,11 @@ class SQLTranspiler(ASTTemplate):
         input_ds = self._get_dataset_structure(node.dataset)
         if input_ds is None:
             return None
-
-        keep_names: set = set()
         # Identifiers are always kept
-        for name, comp in input_ds.components.items():
-            if comp.role == Role.IDENTIFIER:
-                keep_names.add(name)
-        for child in node.children:
-            if isinstance(child, (AST.VarID, AST.Identifier)):
-                keep_names.add(child.value)
-            elif isinstance(child, AST.BinOp) and str(child.op).lower() == tokens.MEMBERSHIP:
-                # Membership reference: check qualified name first, then bare name
-                ds_alias = child.left.value if hasattr(child.left, "value") else str(child.left)
-                comp = child.right.value if hasattr(child.right, "value") else str(child.right)
-                qualified = f"{ds_alias}#{comp}"
-                if qualified in input_ds.components:
-                    keep_names.add(qualified)
-                else:
-                    keep_names.add(comp)
-
+        keep_names = {
+            name for name, comp in input_ds.components.items() if comp.role == Role.IDENTIFIER
+        }
+        keep_names |= self._resolve_clause_component_names(node.children, input_ds)
         comps = {name: comp for name, comp in input_ds.components.items() if name in keep_names}
         return Dataset(name=input_ds.name, components=comps, data=None)
 
@@ -925,14 +898,11 @@ class SQLTranspiler(ASTTemplate):
     ) -> str:
         """Build SQL for a single datapoint rule."""
         rule_name = rule.name or ""
-        error_code = rule.erCode
-        error_level = rule.erLevel
 
         # Store the signature for DefIdentifier resolution
         self._dp_signature = signature
 
         has_when = isinstance(rule.rule, AST.HRBinOp) and rule.rule.op == "when"
-
         if has_when:
             when_cond_sql = self._visit_dp_expr(rule.rule.left, signature)
             then_expr_sql = self._visit_dp_expr(rule.rule.right, signature)
@@ -942,12 +912,16 @@ class SQLTranspiler(ASTTemplate):
 
         self._dp_signature = None
 
-        # Build SELECT columns
-        select_parts: List[str] = [quote_identifier(c) for c in id_cols]
+        # Common parts
+        ec_sql = f"'{rule.erCode}'" if rule.erCode else "NULL"
+        el_sql = str(float(rule.erLevel)) if rule.erLevel is not None else "NULL"
+        fail_cond = (
+            f"({when_cond_sql}) AND NOT ({then_expr_sql})"
+            if when_cond_sql
+            else f"NOT ({then_expr_sql})"
+        )
 
-        # Error code and level SQL
-        ec_sql = f"'{error_code}'" if error_code else "NULL"
-        el_sql = str(float(error_level)) if error_level is not None else "NULL"
+        select_parts: List[str] = [quote_identifier(c) for c in id_cols]
 
         if output_mode == "invalid":
             # Include measures, filter to failing rows only
@@ -955,74 +929,26 @@ class SQLTranspiler(ASTTemplate):
             select_parts.append(f"'{rule_name}' AS {quote_identifier('ruleid')}")
             select_parts.append(f"{ec_sql} AS {quote_identifier('errorcode')}")
             select_parts.append(f"{el_sql} AS {quote_identifier('errorlevel')}")
+            return f"SELECT {', '.join(select_parts)} FROM {table_src} WHERE {fail_cond}"
 
-            # WHERE: when_cond is TRUE AND then_expr is FALSE
-            if when_cond_sql:
-                where_clause = f"WHERE ({when_cond_sql}) AND NOT ({then_expr_sql})"
-            else:
-                where_clause = f"WHERE NOT ({then_expr_sql})"
-
-            return f"SELECT {', '.join(select_parts)} FROM {table_src} {where_clause}"
-
-        elif output_mode == "all":
-            # No measures, include bool_var for all rows × this rule
-            # bool_var: TRUE if rule passes or doesn't apply, FALSE if fails
-            if when_cond_sql:
-                bool_expr = f"CASE WHEN ({when_cond_sql}) THEN ({then_expr_sql}) ELSE TRUE END"
-            else:
-                bool_expr = f"({then_expr_sql})"
-
-            select_parts.append(f"{bool_expr} AS {quote_identifier('bool_var')}")
-            select_parts.append(f"'{rule_name}' AS {quote_identifier('ruleid')}")
-
-            # errorcode/errorlevel: only set when rule fails
-            if when_cond_sql:
-                ec_case = (
-                    f"CASE WHEN ({when_cond_sql}) AND NOT ({then_expr_sql}) "
-                    f"THEN {ec_sql} ELSE NULL END"
-                )
-                el_case = (
-                    f"CASE WHEN ({when_cond_sql}) AND NOT ({then_expr_sql}) "
-                    f"THEN {el_sql} ELSE NULL END"
-                )
-            else:
-                ec_case = f"CASE WHEN NOT ({then_expr_sql}) THEN {ec_sql} ELSE NULL END"
-                el_case = f"CASE WHEN NOT ({then_expr_sql}) THEN {el_sql} ELSE NULL END"
-
-            select_parts.append(f"{ec_case} AS {quote_identifier('errorcode')}")
-            select_parts.append(f"{el_case} AS {quote_identifier('errorlevel')}")
-
-            return f"SELECT {', '.join(select_parts)} FROM {table_src}"
-
-        else:  # all_measures
-            # Include measures + bool_var
+        # "all" and "all_measures" share the same structure
+        if output_mode == "all_measures":
             select_parts.extend(quote_identifier(m) for m in measure_cols)
 
-            if when_cond_sql:
-                bool_expr = f"CASE WHEN ({when_cond_sql}) THEN ({then_expr_sql}) ELSE TRUE END"
-            else:
-                bool_expr = f"({then_expr_sql})"
-
-            select_parts.append(f"{bool_expr} AS {quote_identifier('bool_var')}")
-            select_parts.append(f"'{rule_name}' AS {quote_identifier('ruleid')}")
-
-            if when_cond_sql:
-                ec_case = (
-                    f"CASE WHEN ({when_cond_sql}) AND NOT ({then_expr_sql}) "
-                    f"THEN {ec_sql} ELSE NULL END"
-                )
-                el_case = (
-                    f"CASE WHEN ({when_cond_sql}) AND NOT ({then_expr_sql}) "
-                    f"THEN {el_sql} ELSE NULL END"
-                )
-            else:
-                ec_case = f"CASE WHEN NOT ({then_expr_sql}) THEN {ec_sql} ELSE NULL END"
-                el_case = f"CASE WHEN NOT ({then_expr_sql}) THEN {el_sql} ELSE NULL END"
-
-            select_parts.append(f"{ec_case} AS {quote_identifier('errorcode')}")
-            select_parts.append(f"{el_case} AS {quote_identifier('errorlevel')}")
-
-            return f"SELECT {', '.join(select_parts)} FROM {table_src}"
+        bool_expr = (
+            f"CASE WHEN ({when_cond_sql}) THEN ({then_expr_sql}) ELSE TRUE END"
+            if when_cond_sql
+            else f"({then_expr_sql})"
+        )
+        select_parts.append(f"{bool_expr} AS {quote_identifier('bool_var')}")
+        select_parts.append(f"'{rule_name}' AS {quote_identifier('ruleid')}")
+        select_parts.append(
+            f"CASE WHEN {fail_cond} THEN {ec_sql} ELSE NULL END AS {quote_identifier('errorcode')}"
+        )
+        select_parts.append(
+            f"CASE WHEN {fail_cond} THEN {el_sql} ELSE NULL END AS {quote_identifier('errorlevel')}"
+        )
+        return f"SELECT {', '.join(select_parts)} FROM {table_src}"
 
     def _visit_dp_expr(self, node: AST.AST, signature: Dict[str, str]) -> str:
         """Visit an expression node in the context of a datapoint rule.
@@ -1038,7 +964,7 @@ class SQLTranspiler(ASTTemplate):
             col_name = signature.get(node.value, node.value)
             return quote_identifier(col_name)
         if isinstance(node, AST.Constant):
-            return self._visit_dp_constant(node)
+            return self._to_sql_literal(node.value)
         if isinstance(node, AST.BinOp):
             return self._visit_dp_binop(node, signature)
         if isinstance(node, AST.UnaryOp):
@@ -1060,61 +986,46 @@ class SQLTranspiler(ASTTemplate):
         left_sql = self._visit_dp_expr(node.left, signature)
         right_sql = self._visit_dp_expr(node.right, signature)
         op = node.op
-        if op == "and":
-            return f"({left_sql} AND {right_sql})"
-        if op == "or":
-            return f"({left_sql} OR {right_sql})"
-        if op in _DP_HR_OP_MAP:
-            return f"({left_sql} {_DP_HR_OP_MAP[op]} {right_sql})"
         if op == "when":
             return f"CASE WHEN ({left_sql}) THEN ({right_sql}) ELSE TRUE END"
-        if registry.binary.is_registered(op):
-            return registry.binary.generate(op, left_sql, right_sql)
-        return f"({left_sql} {op} {right_sql})"
+        return self._dp_binary_sql(op, left_sql, right_sql)
 
     def _visit_dp_hr_unop(self, node: AST.HRUnOp, signature: Dict[str, str]) -> str:
         """Visit an HRUnOp in a datapoint rule context."""
         operand_sql = self._visit_dp_expr(node.operand, signature)
-        if node.op == "not":
-            return f"NOT ({operand_sql})"
-        if node.op == "-":
-            return f"-({operand_sql})"
-        return f"{node.op}({operand_sql})"
-
-    @staticmethod
-    def _visit_dp_constant(node: AST.Constant) -> str:
-        """Visit a constant in a datapoint rule context."""
-        if isinstance(node.value, str):
-            escaped = node.value.replace("'", "''")
-            return f"'{escaped}'"
-        if isinstance(node.value, bool):
-            return "TRUE" if node.value else "FALSE"
-        if node.value is None:
-            return "NULL"
-        return str(node.value)
+        return self._dp_unary_sql(node.op, operand_sql)
 
     def _visit_dp_binop(self, node: AST.BinOp, signature: Dict[str, str]) -> str:
         """Visit a BinOp in a datapoint rule context."""
         left_sql = self._visit_dp_expr(node.left, signature)
         right_sql = self._visit_dp_expr(node.right, signature)
-        op = node.op
-        if op == "nvl":
-            return f"COALESCE({left_sql}, {right_sql})"
-        if registry.binary.is_registered(op):
-            return registry.binary.generate(op, left_sql, right_sql)
-        sql_op = _DP_BINOP_MAP.get(op, op)
-        return f"({left_sql} {sql_op} {right_sql})"
+        return self._dp_binary_sql(node.op, left_sql, right_sql)
 
     def _visit_dp_unop(self, node: AST.UnaryOp, signature: Dict[str, str]) -> str:
         """Visit a UnaryOp in a datapoint rule context."""
         operand_sql = self._visit_dp_expr(node.operand, signature)
-        if node.op == "not":
+        return self._dp_unary_sql(node.op, operand_sql)
+
+    def _dp_binary_sql(self, op: str, left_sql: str, right_sql: str) -> str:
+        """Generate SQL for a binary operation in datapoint rule context."""
+        if op == "nvl":
+            return f"COALESCE({left_sql}, {right_sql})"
+        if registry.binary.is_registered(op):
+            return registry.binary.generate(op, left_sql, right_sql)
+        sql_op = _DP_OP_MAP.get(op, op)
+        return f"({left_sql} {sql_op} {right_sql})"
+
+    def _dp_unary_sql(self, op: str, operand_sql: str) -> str:
+        """Generate SQL for a unary operation in datapoint rule context."""
+        if op == "not":
             return f"NOT ({operand_sql})"
-        if node.op == tokens.ISNULL:
+        if op == "-":
+            return f"-({operand_sql})"
+        if op == tokens.ISNULL:
             return f"({operand_sql} IS NULL)"
-        if registry.unary.is_registered(node.op):
-            return registry.unary.generate(node.op, operand_sql)
-        return f"{node.op}({operand_sql})"
+        if registry.unary.is_registered(op):
+            return registry.unary.generate(op, operand_sql)
+        return f"{op}({operand_sql})"
 
     # =========================================================================
     # UDO definition and call
@@ -1608,11 +1519,8 @@ class SQLTranspiler(ASTTemplate):
             operand_sql = self.visit(node.operand)
             return f"vtl_period_indicator(vtl_period_parse({operand_sql}))"
 
-        if op == tokens.FLOW_TO_STOCK:
-            return self._visit_flow_to_stock(node)
-
-        if op == tokens.STOCK_TO_FLOW:
-            return self._visit_stock_to_flow(node)
+        if op in (tokens.FLOW_TO_STOCK, tokens.STOCK_TO_FLOW):
+            return self._visit_time_window_op(node, op)
 
         if op in (tokens.DAYTOYEAR, tokens.DAYTOMONTH, tokens.YEARTODAY, tokens.MONTHTODAY):
             return self._visit_duration_conversion(node, op)
@@ -1643,56 +1551,34 @@ class SQLTranspiler(ASTTemplate):
                 return registry.unary.generate(op, operand_sql)
             return f"{op.upper()}({operand_sql})"
 
-    def _visit_flow_to_stock(self, node: AST.UnaryOp) -> str:
-        """Visit flow_to_stock: cumulative sum over time."""
+    def _visit_time_window_op(self, node: AST.UnaryOp, op_name: str) -> str:
+        """Visit a time-based window operation (flow_to_stock or stock_to_flow).
+
+        Both operations share the same pattern: iterate dataset components,
+        pass identifiers through, and apply a window function over the time
+        identifier to each measure.
+        """
         if not self._is_dataset(node.operand):
-            raise ValueError("flow_to_stock requires a dataset operand")
+            raise ValueError(f"{op_name} requires a dataset operand")
 
         ds = self._get_dataset_structure(node.operand)
         if ds is None:
-            raise ValueError("Cannot resolve dataset for flow_to_stock")
+            raise ValueError(f"Cannot resolve dataset for {op_name}")
 
-        table_src = self._get_dataset_sql(node.operand)
         time_id, other_ids = self._split_time_identifier(ds)
 
-        cols: List[str] = []
-        for name, comp in ds.components.items():
-            if comp.role == Role.IDENTIFIER:
-                cols.append(quote_identifier(name))
-            elif comp.role == Role.MEASURE:
-                partition = ", ".join(quote_identifier(i) for i in other_ids)
-                partition_clause = f"PARTITION BY {partition} " if partition else ""
-                order_clause = f"ORDER BY {quote_identifier(time_id)}"
-                expr = f"SUM({quote_identifier(name)}) OVER ({partition_clause}{order_clause})"
-                cols.append(f"{expr} AS {quote_identifier(name)}")
+        partition = ", ".join(quote_identifier(i) for i in other_ids)
+        partition_clause = f"PARTITION BY {partition} " if partition else ""
+        order_clause = f"ORDER BY {quote_identifier(time_id)}"
+        window = f"{partition_clause}{order_clause}"
 
-        return SQLBuilder().select(*cols).from_table(table_src).build()
+        def _measure_expr(col_ref: str) -> str:
+            if op_name == "flow_to_stock":
+                return f"SUM({col_ref}) OVER ({window})"
+            lag = f"LAG({col_ref}) OVER ({window})"
+            return f"COALESCE({col_ref} - {lag}, {col_ref})"
 
-    def _visit_stock_to_flow(self, node: AST.UnaryOp) -> str:
-        """Visit stock_to_flow: current - lag(current) over time."""
-        if not self._is_dataset(node.operand):
-            raise ValueError("stock_to_flow requires a dataset operand")
-
-        ds = self._get_dataset_structure(node.operand)
-        if ds is None:
-            raise ValueError("Cannot resolve dataset for stock_to_flow")
-
-        table_src = self._get_dataset_sql(node.operand)
-        time_id, other_ids = self._split_time_identifier(ds)
-
-        cols: List[str] = []
-        for name, comp in ds.components.items():
-            if comp.role == Role.IDENTIFIER:
-                cols.append(quote_identifier(name))
-            elif comp.role == Role.MEASURE:
-                partition = ", ".join(quote_identifier(i) for i in other_ids)
-                partition_clause = f"PARTITION BY {partition} " if partition else ""
-                order_clause = f"ORDER BY {quote_identifier(time_id)}"
-                lag_expr = f"LAG({quote_identifier(name)}) OVER ({partition_clause}{order_clause})"
-                expr = f"COALESCE({quote_identifier(name)} - {lag_expr}, {quote_identifier(name)})"
-                cols.append(f"{expr} AS {quote_identifier(name)}")
-
-        return SQLBuilder().select(*cols).from_table(table_src).build()
+        return self._apply_to_measures(node.operand, _measure_expr)
 
     def _split_time_identifier(self, ds: Dataset) -> Tuple[str, List[str]]:
         """Split identifiers into time identifier and other identifiers."""
@@ -1830,7 +1716,10 @@ class SQLTranspiler(ASTTemplate):
         operand_type = self._get_operand_type(operand)
 
         if operand_type == _DATASET:
-            return self._visit_cast_dataset(operand, duckdb_type, target_type_str, mask)
+            return self._apply_to_measures(
+                operand,
+                lambda col: self._cast_expr(col, duckdb_type, target_type_str, mask),
+            )
         else:
             operand_sql = self.visit(operand)
             return self._cast_expr(operand_sql, duckdb_type, target_type_str, mask)
@@ -1843,32 +1732,21 @@ class SQLTranspiler(ASTTemplate):
             return f"STRPTIME({expr}, '{mask}')::DATE"
         return f"CAST({expr} AS {duckdb_type})"
 
-    def _visit_cast_dataset(
-        self,
-        ds_node: AST.AST,
-        duckdb_type: str,
-        target_type_str: str,
-        mask: Optional[str],
-    ) -> str:
-        """Visit dataset-level CAST."""
-        return self._apply_to_measures(
-            ds_node,
-            lambda col: self._cast_expr(col, duckdb_type, target_type_str, mask),
-        )
-
     def _visit_random(self, node: AST.ParamOp) -> str:
         """Visit RANDOM operator (ParamOp form): deterministic hash-based random."""
         seed_node = node.children[0] if node.children else None
         index_node = node.params[0] if node.params else None
-
         seed_type = self._get_operand_type(seed_node) if seed_node else _SCALAR
 
-        if seed_type == _DATASET:
-            return self._visit_random_dataset(node)
+        if seed_type == _DATASET and seed_node is not None:
+            index_sql = self.visit(index_node) if index_node else "0"
+            return self._apply_to_measures(
+                seed_node,
+                lambda col: self._random_hash_expr(col, index_sql),
+            )
 
         seed_sql = self.visit(seed_node) if seed_node else "0"
         index_sql = self.visit(index_node) if index_node else "0"
-
         return self._random_hash_expr(seed_sql, index_sql)
 
     def _visit_random_binop(self, node: AST.BinOp) -> str:
@@ -1896,16 +1774,6 @@ class SQLTranspiler(ASTTemplate):
         return (
             f"(ABS(hash(CAST({seed_sql} AS VARCHAR) || '_' || "
             f"CAST({index_sql} AS VARCHAR))) % 1000000) / 1000000.0"
-        )
-
-    def _visit_random_dataset(self, node: AST.ParamOp) -> str:
-        """Visit dataset-level RANDOM."""
-        ds_node = node.children[0]
-        index_sql = self.visit(node.params[0]) if node.params else "0"
-
-        return self._apply_to_measures(
-            ds_node,
-            lambda col: self._random_hash_expr(col, index_sql),
         )
 
     # =========================================================================
@@ -2040,25 +1908,11 @@ class SQLTranspiler(ASTTemplate):
         if ds is None:
             return f"SELECT * FROM {table_src}"
 
-        # Identifiers are always kept — use the input dataset's names so that
-        # we reference columns that actually exist in the source table.
-        id_names: List[str] = [
+        # Identifiers are always kept
+        keep_names: List[str] = [
             name for name, comp in ds.components.items() if comp.role == Role.IDENTIFIER
         ]
-
-        keep_names: List[str] = list(id_names)
-        for child in node.children:
-            if isinstance(child, (AST.VarID, AST.Identifier)):
-                keep_names.append(child.value)
-            elif isinstance(child, AST.BinOp) and str(child.op).lower() == tokens.MEMBERSHIP:
-                # Membership reference (e.g. d1#Me_2): use qualified name if duplicated
-                ds_alias = child.left.value if hasattr(child.left, "value") else str(child.left)
-                comp = child.right.value if hasattr(child.right, "value") else str(child.right)
-                qualified = f"{ds_alias}#{comp}"
-                if qualified in self._join_alias_map:
-                    keep_names.append(qualified)
-                else:
-                    keep_names.append(comp)
+        keep_names.extend(self._resolve_join_component_names(node.children))
 
         # Track qualified names that are NOT kept (consumed by this clause)
         keep_set = set(keep_names)
@@ -2067,7 +1921,6 @@ class SQLTranspiler(ASTTemplate):
                 self._consumed_join_aliases.add(qualified)
 
         cols = [quote_identifier(name) for name in keep_names]
-
         return SQLBuilder().select(*cols).from_table(table_src).build()
 
     def _visit_drop(self, node: AST.RegularAggregation) -> str:
@@ -2080,30 +1933,18 @@ class SQLTranspiler(ASTTemplate):
             return ""
 
         table_src = self._get_dataset_sql(node.dataset)
+        drop_names = self._resolve_join_component_names(node.children)
 
-        drop_names: List[str] = []
-        for child in node.children:
-            if isinstance(child, (AST.VarID, AST.Identifier)):
-                drop_names.append(quote_identifier(child.value))
-            elif isinstance(child, AST.BinOp) and str(child.op).lower() == tokens.MEMBERSHIP:
-                # Membership reference (e.g. d2#Me_2): use qualified name if duplicated
-                ds_alias = child.left.value if hasattr(child.left, "value") else str(child.left)
-                comp = child.right.value if hasattr(child.right, "value") else str(child.right)
-                qualified = f"{ds_alias}#{comp}"
-                if qualified in self._join_alias_map:
-                    drop_names.append(quote_identifier(qualified))
-                    self._consumed_join_aliases.add(qualified)
-                else:
-                    drop_names.append(quote_identifier(comp))
+        # Track consumed qualified names
+        for name in drop_names:
+            if name in self._join_alias_map:
+                self._consumed_join_aliases.add(name)
 
         if not drop_names:
             return f"SELECT * FROM {table_src}"
 
-        exclude = ", ".join(drop_names)
-        builder = SQLBuilder()
-        builder.select(f"* EXCLUDE ({exclude})")
-        builder.from_table(table_src)
-        return builder.build()
+        exclude = ", ".join(quote_identifier(n) for n in drop_names)
+        return SQLBuilder().select(f"* EXCLUDE ({exclude})").from_table(table_src).build()
 
     def _visit_rename(self, node: AST.RegularAggregation) -> str:
         """Visit rename clause."""
@@ -2496,42 +2337,17 @@ class SQLTranspiler(ASTTemplate):
 
     def _visit_analytic_dataset(self, node: AST.Analytic, op: str) -> str:
         """Visit a dataset-level analytic: applies the window function to each measure."""
-        ds = self._get_dataset_structure(node.operand)
-        if ds is None:
-            raise ValueError(f"Cannot resolve dataset for analytic '{op}'")
-
-        table_src = self._get_dataset_sql(node.operand)
         over_clause = self._build_over_clause(node)
 
-        cols: List[str] = []
-        for name, comp in ds.components.items():
-            if comp.role == Role.IDENTIFIER:
-                cols.append(quote_identifier(name))
-            elif comp.role == Role.MEASURE:
-                func_sql = self._build_analytic_expr(op, quote_identifier(name), node)
-                if op == tokens.RATIO_TO_REPORT:
-                    cols.append(f"{func_sql} AS {quote_identifier(name)}")
-                else:
-                    cols.append(f"{func_sql} OVER ({over_clause}) AS {quote_identifier(name)}")
+        def _analytic_expr(col_ref: str) -> str:
+            func_sql = self._build_analytic_expr(op, col_ref, node)
+            if op == tokens.RATIO_TO_REPORT:
+                return func_sql
+            return f"{func_sql} OVER ({over_clause})"
 
-        # VTL count always produces int_var as the measure name
-        if op == tokens.COUNT:
-            output_ds = self._get_output_dataset()
-            out_name = "int_var"
-            if output_ds:
-                out_measures = output_ds.get_measures_names()
-                if out_measures:
-                    out_name = out_measures[0]
-            cols = [c for c in cols if "OVER" not in c]  # remove measure cols
-            for name, comp in ds.components.items():
-                if comp.role == Role.IDENTIFIER:
-                    continue
-                if comp.role == Role.MEASURE:
-                    func_sql = self._build_analytic_expr(op, quote_identifier(name), node)
-                    cols.append(f"{func_sql} OVER ({over_clause}) AS {quote_identifier(out_name)}")
-                    break  # count produces a single measure
-
-        return SQLBuilder().select(*cols).from_table(table_src).build()
+        # VTL count always produces a single "int_var" measure
+        name_override = "int_var" if op == tokens.COUNT else None
+        return self._apply_to_measures(node.operand, _analytic_expr, name_override)
 
     def visit_Windowing(self, node: AST.Windowing) -> str:
         """Visit a windowing specification."""
@@ -2599,24 +2415,17 @@ class SQLTranspiler(ASTTemplate):
 
         operand_type = self._get_operand_type(node.children[0])
 
+        low_sql = self.visit(node.children[1])
+        high_sql = self.visit(node.children[2])
+
         if operand_type == _DATASET:
-            return self._visit_between_dataset(node)
+            return self._apply_to_measures(
+                node.children[0],
+                lambda col: self._between_expr(col, low_sql, high_sql),
+            )
 
         operand_sql = self.visit(node.children[0])
-        low_sql = self.visit(node.children[1])
-        high_sql = self.visit(node.children[2])
         return self._between_expr(operand_sql, low_sql, high_sql)
-
-    def _visit_between_dataset(self, node: AST.MulOp) -> str:
-        """Visit dataset-level BETWEEN: applies BETWEEN to each measure."""
-        ds_node = node.children[0]
-        low_sql = self.visit(node.children[1])
-        high_sql = self.visit(node.children[2])
-
-        return self._apply_to_measures(
-            ds_node,
-            lambda col: self._between_expr(col, low_sql, high_sql),
-        )
 
     def _visit_exists_in_mul(self, node: AST.MulOp) -> str:
         """Visit EXISTS_IN in MulOp form, handling the optional retain parameter."""
