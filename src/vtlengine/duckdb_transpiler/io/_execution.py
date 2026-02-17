@@ -13,15 +13,10 @@ import pandas as pd
 
 from vtlengine.AST.DAG._words import DELETE, GLOBAL, INSERT, PERSISTENT
 from vtlengine.DataTypes import (
-    Boolean,
     Date,
-    Integer,
-    Null,
-    Number,
     TimeInterval,
     TimePeriod,
 )
-from vtlengine.DataTypes import String as StringType
 from vtlengine.duckdb_transpiler.io._io import (
     load_datapoints_duckdb,
     register_dataframes,

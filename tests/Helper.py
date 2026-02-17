@@ -255,9 +255,7 @@ class TestHelper(TestCase):
         # Load value domains if specified
         value_domains = None
         if vd_names is not None:
-            value_domains = [
-                cls.filepath_valueDomain / f"{name}.json" for name in vd_names
-            ]
+            value_domains = [cls.filepath_valueDomain / f"{name}.json" for name in vd_names]
 
         # Load external routines if specified
         external_routines = None
