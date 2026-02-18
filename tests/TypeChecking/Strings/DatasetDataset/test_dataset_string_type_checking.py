@@ -49,12 +49,11 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    # BUG
     def test_2(self):
         """
         CONCATENATION OPERATOR
         Integer --> string
-        Status: BUG
+        Status: OK
         Expression: DS_r := DS_1 || DS_2
                             DS_1 Measure Integer
                             DS_2 Measure String
@@ -68,16 +67,15 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         code = "3-4-1-2"
         number_inputs = 2
 
-        references_names = ["DS_r"]
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-1-2"
+        )
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
-
-    # BUG
     def test_3(self):
         """
         CONCATENATION OPERATOR
         number --> string
-        Status: BUG
+        Status: OK
         Expression: DS_r := DS_1 || DS_2
                             DS_1 Measure Number
                             DS_2 Measure String
@@ -88,21 +86,18 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #23 String operators types checking tests.
         Goal: Do the concatenation of a Number with String.
         """
-        code = "Test3"
-
         code = "3-4-1-3"
         number_inputs = 2
 
-        references_names = ["DS_r"]
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-1-2"
+        )
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
-
-    # BUG
     def test_4(self):
         """
         CONCATENATION OPERATOR
         Boolean --> string
-        Status: BUG
+        Status: OK
         Expression: DS_r := DS_1 || DS_2
                             DS_1 Measure Boolean
                             DS_2 Measure String
@@ -138,9 +133,9 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         code = "3-4-1-5"
         number_inputs = 2
 
-        references_names = ["DS_r"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-1-2"
+        )
 
     def test_6(self):
         """
@@ -270,9 +265,9 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         code = "3-4-1-11"
         number_inputs = 2
 
-        references_names = ["DS_r"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-1-2"
+        )
 
     def test_12(self):
         """
@@ -422,12 +417,11 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    # BUG
     def test_19(self):
         """
         WHITESPACE REMOVAL OPERATOR
         Integer --> String
-        Status: BUG
+        Status: OK
         Expression: DS_r := trim(DS_1)
                             DS_1 Measure Integer
 
@@ -439,16 +433,16 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = "3-4-2-4"
         number_inputs = 2
-        references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-1-3"
+        )
 
-    # BUG
     def test_20(self):
         """
         WHITESPACE REMOVAL OPERATOR
         Integer --> String
-        Status: BUG
+        Status: OK
         Expression: DS_r := rtrim(DS_1)
                             DS_1 Measure String
 
@@ -460,16 +454,16 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = "3-4-2-5"
         number_inputs = 2
-        references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-1-3"
+        )
 
-    # BUG
     def test_21(self):
         """
         WHITESPACE REMOVAL OPERATOR
         Integer --> String
-        Status: BUG
+        Status: OK
         Expression: DS_r := ltrim(DS_1)
                             DS_1 Measure Number
 
@@ -481,16 +475,16 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = "3-4-2-6"
         number_inputs = 2
-        references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-1-3"
+        )
 
-    # BUG
     def test_22(self):
         """
         WHITESPACE REMOVAL OPERATOR
         Number --> String
-        Status: BUG
+        Status: OK
         Expression: DS_r := trim(DS_1)
                             DS_1 Measure Number
 
@@ -502,16 +496,16 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = "3-4-2-7"
         number_inputs = 2
-        references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-1-3"
+        )
 
-    # BUG
     def test_23(self):
         """
         WHITESPACE REMOVAL OPERATOR
         Number --> String
-        Status: BUG
+        Status: OK
         Expression: DS_r := rtrim(DS_1)
                             DS_1 Measure Number
 
@@ -527,12 +521,11 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    # BUG
     def test_24(self):
         """
         WHITESPACE REMOVAL OPERATOR
         Number --> String
-        Status: BUG
+        Status: OK
         Expression: DS_r := ltrim(DS_1)
                             DS_1 Measure Number
 
@@ -544,16 +537,16 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = "3-4-2-9"
         number_inputs = 2
-        references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-1-3"
+        )
 
-    # BUG
     def test_25(self):
         """
         WHITESPACE REMOVAL OPERATOR
         Boolean --> String
-        Status: BUG
+        Status: OK
         Expression: DS_r := trim(DS_1)
                             DS_1 Measure Boolean
 
@@ -569,12 +562,11 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    # BUG
     def test_26(self):
         """
         WHITESPACE REMOVAL OPERATOR
         Boolean --> String
-        Status: BUG
+        Status: OK
         Expression: DS_r := rtrim(DS_1)
                             DS_1 Measure Boolean
 
@@ -590,12 +582,11 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    # BUG
     def test_27(self):
         """
         WHITESPACE REMOVAL OPERATOR
         Boolean --> String
-        Status: BUG
+        Status: OK
         Expression: DS_r := ltrim(DS_1)
                             DS_1 Measure Boolean
 
@@ -903,12 +894,11 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    # BUG
     def test_42(self):
         """
         CHARACTER CASE CONVERSION: UPPER/LOWER
         Integer --> String
-        Status: BUG
+        Status: OK
         Expression: DS_r := upper(DS_1)
                             DS_1 Measure Integer
 
@@ -920,16 +910,16 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = "3-4-3-3"
         number_inputs = 2
-        references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-1-3"
+        )
 
-    # BUG
     def test_43(self):
         """
         CHARACTER CASE CONVERSION: UPPER/LOWER
         Integer --> String
-        Status: BUG
+        Status: OK
         Expression: DS_r := lower(DS_1)
                             DS_1 Measure Integer
 
@@ -941,16 +931,16 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = "3-4-3-4"
         number_inputs = 2
-        references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-1-3"
+        )
 
-    # BUG
     def test_44(self):
         """
         CHARACTER CASE CONVERSION: UPPER/LOWER
         Number --> String
-        Status: BUG
+        Status: OK
         Expression: DS_r := upper(DS_1)
                             DS_1 Measure Number
 
@@ -962,16 +952,16 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = "3-4-3-5"
         number_inputs = 2
-        references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-1-3"
+        )
 
-    # BUG
     def test_45(self):
         """
         CHARACTER CASE CONVERSION: UPPER/LOWER
         Number --> String
-        Status: BUG
+        Status: OK
         Expression: DS_r := lower(DS_1)
                             DS_1 Measure Number
 
@@ -983,9 +973,10 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = "3-4-3-6"
         number_inputs = 2
-        references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-1-3"
+        )
 
     def test_46(self):
         """
@@ -1292,12 +1283,11 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    # BUG
     def test_60(self):
         """
         SUB-STRING EXTRACTION
         Integer --> String
-        Status: BUG
+        Status: OK
         Expression: DS_r := substr (DS_1,start,length)
                             DS_1 Measure Integer
 
@@ -1312,16 +1302,16 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = "3-4-4-5"
         number_inputs = 2
-        references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-1-3"
+        )
 
-    # BUG
     def test_61(self):
         """
         SUB-STRING EXTRACTION
         Number --> String
-        Status: BUG
+        Status: OK
         Expression: DS_r := substr (DS_1,start,length)
                             DS_1 Measure Number
 
@@ -1336,16 +1326,16 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = "3-4-4-6"
         number_inputs = 2
-        references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-1-3"
+        )
 
-    # BUG
     def test_62(self):
         """
         SUB-STRING EXTRACTION
         Boolean --> String
-        Status: BUG
+        Status: OK
         Expression: DS_r := substr (DS_1,start,length)
                             DS_1 Measure Boolean
 
@@ -1503,12 +1493,11 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    # BUG
     def test_69(self):
         """
         STRING PATTERN REPLACEMENT
         Integer --> String
-        Status: BUG
+        Status: OK
         Expression: DS_r := replace (op , pattern1, pattern2)
                             DS_1 Measure Integer
 
@@ -1521,16 +1510,16 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = "3-4-5-3"
         number_inputs = 2
-        references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-1-3"
+        )
 
-    # BUG
     def test_70(self):
         """
         STRING PATTERN REPLACEMENT
         Number --> String
-        Status: BUG
+        Status: OK
         Expression: DS_r := replace (op , pattern1, pattern2)
                             DS_1 Measure Number
 
@@ -1543,16 +1532,16 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = "3-4-5-4"
         number_inputs = 2
-        references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-1-3"
+        )
 
-    # BUG
     def test_71(self):
         """
         STRING PATTERN REPLACEMENT
         Boolean --> String
-        Status: BUG
+        Status: OK
         Expression: DS_r := replace (op , pattern1, pattern2)
                             DS_1 Measure Boolean
 
@@ -1780,9 +1769,10 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = "3-4-6-5"
         number_inputs = 2
-        references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-1-3"
+        )
 
     def test_81(self):
         """
@@ -1804,9 +1794,10 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = "3-4-6-6"
         number_inputs = 2
-        references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-1-3"
+        )
 
     def test_82(self):
         """
@@ -1989,9 +1980,10 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = "3-4-7-3"
         number_inputs = 2
-        references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-1-3"
+        )
 
     def test_90(self):
         """
@@ -2009,9 +2001,10 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = "3-4-7-4"
         number_inputs = 2
-        references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-1-3"
+        )
 
     def test_91(self):
         """

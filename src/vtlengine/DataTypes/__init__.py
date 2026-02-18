@@ -124,18 +124,7 @@ class String(ScalarType):
 
     @classmethod
     def implicit_cast(cls, value: Any, from_type: Any) -> str:
-        # if pd.isna(value):
-        #     return cls.default
-        if from_type in {
-            Number,
-            Integer,
-            Boolean,
-            String,
-            Date,
-            TimePeriod,
-            TimeInterval,
-            Duration,
-        }:
+        if from_type in {Boolean, String}:
             return str(value)
 
         raise SemanticError(
@@ -147,7 +136,16 @@ class String(ScalarType):
 
     @classmethod
     def explicit_cast(cls, value: Any, from_type: Any) -> str:
-        if from_type in {TimePeriod, Date, String}:
+        if from_type in {
+            Integer,
+            Number,
+            Boolean,
+            String,
+            Date,
+            TimePeriod,
+            TimeInterval,
+            Duration,
+        }:
             return str(value)
 
         raise RunTimeError(
@@ -251,15 +249,18 @@ class Integer(Number):
             return value
 
         if from_type.__name__ == "Number":
+            # TODO: VTL 2.2 specifies truncation toward zero (return int(value)),
+            #  pending discussion
             if value.is_integer():
                 return int(value)
-            else:
-                raise RunTimeError(
-                    "2-1-5-1",
-                    value=value,
-                    type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
-                    type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
-                )
+            # else:
+            #     raise RunTimeError(
+            #         "2-1-5-1",
+            #         value=value,
+            #         type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+            #         type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
+            #     )
+            return int(value)
 
         raise RunTimeError(
             "2-1-5-1",
@@ -335,8 +336,7 @@ class TimeInterval(ScalarType):
 
     @classmethod
     def implicit_cast(cls, value: Any, from_type: Any) -> Any:
-        # TODO: Remove String, only for compatibility with previous engine
-        if from_type in {TimeInterval, String}:
+        if from_type in {TimeInterval}:
             return value
         if from_type in {Date}:
             value = check_max_date(value)
@@ -344,8 +344,8 @@ class TimeInterval(ScalarType):
             return f"{value}/{value}"
 
         if from_type in {TimePeriod}:
-            init_value = str_period_to_date(value, start=True).isoformat()
-            end_value = str_period_to_date(value, start=False).isoformat()
+            init_value = str_period_to_date(value, start=True)
+            end_value = str_period_to_date(value, start=False)
             return f"{init_value}/{end_value}"
 
         raise RunTimeError(
@@ -384,8 +384,7 @@ class Date(TimeInterval):
 
     @classmethod
     def implicit_cast(cls, value: Any, from_type: Any) -> Any:
-        # TODO: Remove String, only for compatibility with previous engine
-        if from_type in {Date, String}:
+        if from_type in {Date}:
             return check_max_date(value)
 
         raise RunTimeError(
@@ -426,8 +425,7 @@ class TimePeriod(TimeInterval):
 
     @classmethod
     def implicit_cast(cls, value: Any, from_type: Any) -> Any:
-        # TODO: Remove String, only for compatibility with previous engine
-        if from_type in {TimePeriod, String}:
+        if from_type in {TimePeriod}:
             return value
 
         raise RunTimeError(
@@ -486,7 +484,7 @@ class Duration(ScalarType):
 
     @classmethod
     def implicit_cast(cls, value: Any, from_type: Any) -> str:
-        if from_type == String and cls.validate_duration(value):
+        if from_type == Duration:
             return value
 
         raise RunTimeError(
@@ -563,6 +561,8 @@ class Boolean(ScalarType):
     def explicit_cast(cls, value: Any, from_type: Any) -> bool:
         if from_type in {Number, Integer}:
             return value not in {0}
+        if from_type == String and isinstance(value, str) and value.lower() in {"true", "false"}:
+            return value.lower() == "true"
 
         raise RunTimeError(
             "2-1-5-1",
@@ -648,15 +648,16 @@ COMP_NAME_MAPPING: Dict[Type[ScalarType], str] = {
     Null: "null_var",
 }
 
+# Key is the data type, value is the set of types to which it can be implicitly promoted
 IMPLICIT_TYPE_PROMOTION_MAPPING: Dict[Type[ScalarType], Any] = {
-    String: {String, Boolean},
-    Number: {String, Number, Integer},
-    Integer: {String, Number, Integer},
+    String: {String},
+    Number: {Number, Integer},
+    Integer: {Number, Integer},
     TimeInterval: {TimeInterval},
-    Date: {TimeInterval, Date},
-    TimePeriod: {TimeInterval, TimePeriod},
+    Date: {Date, TimeInterval},
+    TimePeriod: {TimePeriod, TimeInterval},
     Duration: {Duration},
-    Boolean: {String, Boolean},
+    Boolean: {Boolean, String},
     Null: {
         String,
         Number,
@@ -670,7 +671,6 @@ IMPLICIT_TYPE_PROMOTION_MAPPING: Dict[Type[ScalarType], Any] = {
     },
 }
 
-# TODO: Implicit are valid as cast without mask
 EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING: Dict[Type[ScalarType], Any] = {
     # TODO: Remove time types, only for compatibility with previous engine
     String: {Integer, String, Date, TimePeriod, TimeInterval, Duration, Number},
@@ -764,6 +764,17 @@ def binary_implicit_promotion(
     if right_type.is_included(left_implicities):
         return right_type
 
+    # Fallback: check if both types can be promoted to a common type
+    # e.g. Date → TimeInterval and TimePeriod → TimeInterval
+    common = left_implicities.intersection(right_implicities)
+    if common:
+        if return_type:
+            return return_type
+        # Return the common promoted type (exclude Null if present)
+        common.discard(Null)
+        if len(common) == 1:
+            return common.pop()
+
     raise SemanticError(
         code="1-1-1-1",
         type_1=SCALAR_TYPES_CLASS_REVERSE[left_type],
@@ -791,7 +802,11 @@ def check_binary_implicit_promotion(
     if type_to_check:
         return type_to_check.is_included(set_=left_implicities.intersection(right_implicities))
 
-    return left.is_included(right_implicities) or right.is_included(left_implicities)
+    return (
+        left.is_included(right_implicities)
+        or right.is_included(left_implicities)
+        or bool(left_implicities.intersection(right_implicities))
+    )
 
 
 def unary_implicit_promotion(

@@ -1138,12 +1138,12 @@ dsPrep.LST_RIAD_CDS := drop_identifier ( ANCRDT_ENTTY [ filter DT_RFRNC >= DT_BR
 dsPrep.INSTR_ACCNTNG_Z := inner_join ( ANCRDT_INSTRMNT_C , ANCRDT_ACCNTNG_C_Z keep RCGNTN_STTS ) ; 
 dsPrep.ENTTY_INSTRUMNT_OA := ANCRDT_ENTTY_INSTRMNT_C [ filter ENTTY_RIAD_CD = OBSRVD_AGNT_CD ] ; 
 dsPrep.ENTTY_INSTRUMNT_MX := drop_identifier ( dsPrep.ENTTY_INSTRUMNT_OA , ENTTY_RIAD_CD ) ; 
-dsPrep.CRDTR_PVT := left_join ( dsPrep.INSTR_ACCNTNG_Z , dsPrep.ENTTY_INSTRUMNT_MX [ sub ENTTY_RL = 1 ] [ calc CRDTR := true ] as B ) ; 
-dsPrep.CRDTR_SRVCR_PVT := left_join ( dsPrep.CRDTR_PVT , dsPrep.ENTTY_INSTRUMNT_MX [ sub ENTTY_RL = 7 ] [ calc SRVCR := true ] as B ) ; 
-dsPrep.CRDTR_SRVCR_DBTR_PVT := left_join ( dsPrep.CRDTR_SRVCR_PVT , dsPrep.ENTTY_INSTRUMNT_MX [ sub ENTTY_RL = 2 ] [ calc DBTR := true ] as B ) ; 
-dsPrep.INSTRMNT_OBSRVD_AGNT := inner_join ( ANCRDT_INSTRMNT_C , ANCRDT_ENTTY [ rename ENTTY_RIAD_CD to OBSRVD_AGNT_CD ] as B ) ; 
-dsPrep.ENTTY_INSTRUMNT_CRDTR := ANCRDT_ENTTY_INSTRMNT_C [ sub ENTTY_RL = 1 ] [ calc CRDTR_CD := ENTTY_RIAD_CD ] ; 
-dsPrep.ENTTY_INSTRUMNT_DBTR := ANCRDT_ENTTY_INSTRMNT_C [ sub ENTTY_RL = 2 ] [ calc DBTR_CD := ENTTY_RIAD_CD ] ; 
+dsPrep.CRDTR_PVT := left_join ( dsPrep.INSTR_ACCNTNG_Z , dsPrep.ENTTY_INSTRUMNT_MX [ sub ENTTY_RL = "1" ] [ calc CRDTR := true ] as B ) ;
+dsPrep.CRDTR_SRVCR_PVT := left_join ( dsPrep.CRDTR_PVT , dsPrep.ENTTY_INSTRUMNT_MX [ sub ENTTY_RL = "7" ] [ calc SRVCR := true ] as B ) ;
+dsPrep.CRDTR_SRVCR_DBTR_PVT := left_join ( dsPrep.CRDTR_SRVCR_PVT , dsPrep.ENTTY_INSTRUMNT_MX [ sub ENTTY_RL = "2" ] [ calc DBTR := true ] as B ) ;
+dsPrep.INSTRMNT_OBSRVD_AGNT := inner_join ( ANCRDT_INSTRMNT_C , ANCRDT_ENTTY [ rename ENTTY_RIAD_CD to OBSRVD_AGNT_CD ] as B ) ;
+dsPrep.ENTTY_INSTRUMNT_CRDTR := ANCRDT_ENTTY_INSTRMNT_C [ sub ENTTY_RL = "1" ] [ calc CRDTR_CD := ENTTY_RIAD_CD ] ;
+dsPrep.ENTTY_INSTRUMNT_DBTR := ANCRDT_ENTTY_INSTRMNT_C [ sub ENTTY_RL = "2" ] [ calc DBTR_CD := ENTTY_RIAD_CD ] ; 
 dsPrep.ENTTY_HD_QRTR_CRDTR_P := inner_join ( drop_identifier ( dsPrep.ENTTY_INSTRUMNT_CRDTR , ENTTY_RIAD_CD ) as A , drop_identifier ( dsPrep.ENTTY_INSTRUMNT_DBTR , ENTTY_RIAD_CD ) as B ) ; 
 dsPrep.ENTTY_HD_QRTR_CRDTR := left_join ( dsPrep.ENTTY_HD_QRTR_CRDTR_P , ANCRDT_ENTTY [ rename ENTTY_RIAD_CD to CRDTR_CD ] [ calc HD_QRTR_CD_CRDTR := HD_OFFC_UNDRT_CD ] [ keep HD_QRTR_CD_CRDTR ] as C using DT_RFRNC , CRDTR_CD ) ; 
 dsPrep.ENTTY_HD_QRTR := left_join ( dsPrep.ENTTY_HD_QRTR_CRDTR , ANCRDT_ENTTY [ rename ENTTY_RIAD_CD to DBTR_CD ] [ calc HD_QRTR_CD_DBTR := HD_OFFC_UNDRT_CD ] [ keep HD_QRTR_CD_DBTR ] as B using DT_RFRNC , DBTR_CD ) ; 

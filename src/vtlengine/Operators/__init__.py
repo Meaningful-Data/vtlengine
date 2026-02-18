@@ -553,11 +553,40 @@ class Binary(Operator):
 
         # Measures are the same, using left operand measures names
         for measure in left_operand.get_measures():
+            left_type = measure.data_type
+            right_type = right_operand.get_component(measure.name).data_type
+
+            if left_type != right_type:
+                promoted_type = binary_implicit_promotion(left_type, right_type)
+                # Only apply implicit_cast when both types need conversion
+                # (e.g. Date + TimePeriod → TimeInterval)
+                if promoted_type != left_type and promoted_type != right_type:
+                    if use_right_as_base:
+                        x_type, y_type = right_type, left_type
+                    else:
+                        x_type, y_type = left_type, right_type
+
+                    def _cast_x(v: Any, ft: Any = x_type) -> Any:
+                        return promoted_type.implicit_cast(v, ft)
+
+                    def _cast_y(v: Any, ft: Any = y_type) -> Any:
+                        return promoted_type.implicit_cast(v, ft)
+
+                    result_data[measure.name + "_x"] = result_data[measure.name + "_x"].map(
+                        _cast_x, na_action="ignore"
+                    )
+                    result_data[measure.name + "_y"] = result_data[measure.name + "_y"].map(
+                        _cast_y, na_action="ignore"
+                    )
+                cast_type = promoted_type
+            else:
+                cast_type = left_type
+
             result_data[measure.name + "_x"] = cls.cast_time_types(
-                measure.data_type, result_data[measure.name + "_x"]
+                cast_type, result_data[measure.name + "_x"]
             )
             result_data[measure.name + "_y"] = cls.cast_time_types(
-                measure.data_type, result_data[measure.name + "_y"]
+                cast_type, result_data[measure.name + "_y"]
             )
             if use_right_as_base:
                 result_data[measure.name] = cls.apply_operation_two_series(

@@ -1988,9 +1988,11 @@ class StringOperatorsTest(TestAttributesHelper):
         """
         code = "3-4-1-2"
         number_inputs = 3
-        references_names = ["1"]
+        message = "1-1-1-2"
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_3(self):
         """
