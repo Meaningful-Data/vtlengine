@@ -1334,9 +1334,11 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
 
         code = "GL_397_29"
         number_inputs = 1
-        references_names = ["1"]
+        message = "1-1-1-1"
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_397_30(self):
         """
@@ -2563,9 +2565,11 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
 
         code = "GL_397_21"
         number_inputs = 1
-        references_names = ["1"]
+        message = "1-1-1-1"
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_397_22(self):
         """
