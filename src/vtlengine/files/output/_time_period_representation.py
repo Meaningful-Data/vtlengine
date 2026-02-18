@@ -42,9 +42,10 @@ def format_time_period_external_representation(
     VTL: YYYY, YYYYSn, YYYYQn, YYYYMm, YYYYWw, YYYYDd (no hyphens)
     """
     if isinstance(dataset, Scalar):
-        value = dataset.value
-        if value is None:
+        if dataset.data_type != TimePeriod or dataset.value is None:
             return
+        
+        value = dataset.value
         if mode == TimePeriodRepresentation.VTL:
             dataset.value = _format_vtl_representation(value)
         elif mode == TimePeriodRepresentation.SDMX_GREGORIAN:
