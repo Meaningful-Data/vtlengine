@@ -72,22 +72,29 @@ def check_time(value: str) -> str:
     )
 
 
-day_period_pattern = r"^\d{4}[-][0-1]?\d[-][0-3]?\d$"
-month_period_pattern = r"^\d{4}[-][0-1]?\d$"
-year_period_pattern = r"^\d{4}$"
-period_pattern = (
-    r"^\d{4}[A]$|^\d{4}[S][1-2]$|^\d{4}[Q][1-4]$|^\d{4}[M]"
-    r"[0-1]?\d$|^\d{4}[W][0-5]?\d$|^\d{4}[D][0-3]?[0-9]?\d$"
+# Comprehensive time period pattern covering all accepted input formats.
+# Compact formats (no hyphen): YYYY, YYYYA, YYYYSN, YYYYQN, YYYYM[M], YYYYW[W], YYYYD[DD]
+_vtl_period_pattern = (
+    r"^\d{4}$"  # YYYY (year only)
+    r"|^\d{4}A$"  # YYYYA (annual with indicator)
+    r"|^\d{4}S[1-2]$"  # YYYYSN (semester)
+    r"|^\d{4}Q[1-4]$"  # YYYYQN (quarter)
+    r"|^\d{4}M[0-1]?\d$"  # YYYYM[M] (month, 1 or 2 digits)
+    r"|^\d{4}W[0-5]?\d$"  # YYYYW[W] (week, 1 or 2 digits)
+    r"|^\d{4}D[0-3]?[0-9]?\d$"  # YYYYD[DD] (day of year, 1 to 3 digits)
 )
 
-# Related with gitlab issue #440, we can say that period pattern
-# matches with our internal representation (or vtl user manual)
-# and further_options_period_pattern matches
-# with other kinds of inputs that we have to accept for the period.
-further_options_period_pattern = (
-    r"\d{4}-\d{2}-\d{2}|^\d{4}-D[0-3]\d\d$|^\d{4}-W([0-4]"
-    r"\d|5[0-3])|^\d{4}-(0[1-9]|1[0-2]|M(0[1-9]|1[0-2]|[1-9]))$|^"
-    r"\d{4}-Q[1-4]$|^\d{4}-S[1-2]$|^\d{4}-A1$"
+# Hyphenated formats: YYYY-MM, YYYY-M, YYYY-MM-DD, YYYY-MXX, YYYY-QX, YYYY-SX, YYYY-WXX,
+# YYYY-DXXX, YYYY-A1
+_sdmx_period_pattern = (
+    r"^\d{4}-\d{1,2}$"  # YYYY-MM or YYYY-M (ISO month, 1 or 2 digits)
+    r"|^\d{4}-\d{2}-\d{2}$"  # YYYY-MM-DD (ISO date)
+    r"|^\d{4}-M(0[1-9]|1[0-2]|[1-9])$"  # YYYY-MXX (hyphenated month)
+    r"|^\d{4}-Q[1-4]$"  # YYYY-QX (hyphenated quarter)
+    r"|^\d{4}-S[1-2]$"  # YYYY-SX (hyphenated semester)
+    r"|^\d{4}-W([0-4]\d|5[0-3]|[1-9])$"  # YYYY-WXX (hyphenated week)
+    r"|^\d{4}-D[0-3]\d\d$"  # YYYY-DXXX (hyphenated day)
+    r"|^\d{4}-A1$"  # YYYY-A1 (SDMX reporting annual)
 )
 
 
@@ -96,38 +103,33 @@ def check_time_period(value: str) -> str:
         value = str(value)
     value = value.strip()
 
-    match = re.fullmatch(r"^(\d{4})-(\d{2})$", value)
-    if match:
-        value = f"{match.group(1)}-M{match.group(2)}"
+    # Try compact formats first (no hyphen)
+    if re.fullmatch(_vtl_period_pattern, value) is not None:
+        if re.fullmatch(r"^\d{4}$", value):
+            # Year only → annual
+            result = TimePeriodHandler(f"{value}A")
+        else:
+            result = TimePeriodHandler(value)
+        return str(result)
 
-    period_result = re.fullmatch(period_pattern, value)
-    if period_result is not None:
+    # Normalize YYYY-M-D, YYYY-M-DD, YYYY-MM-D to zero-padded YYYY-MM-DD
+    match_iso_date = re.fullmatch(r"^(\d{4})-(\d{1,2})-(\d{1,2})$", value)
+    if match_iso_date:
+        year, month, day = match_iso_date.groups()
+        value = f"{year}-{int(month):02d}-{int(day):02d}"
+
+    # Convert YYYY-MM or YYYY-M (ISO month) to hyphenated month format for TimePeriodHandler
+    match_iso_month = re.fullmatch(r"^(\d{4})-(\d{1,2})$", value)
+    if match_iso_month:
+        value = f"{match_iso_month.group(1)}-M{match_iso_month.group(2)}"
+
+    # Try hyphenated formats
+    if re.fullmatch(_sdmx_period_pattern, value) is not None:
         result = TimePeriodHandler(value)
         return str(result)
 
-    # We allow the user to input the time period in different formats.
-    # See gl-440 or documentation in time period tests.
-    further_options_period_result = re.fullmatch(further_options_period_pattern, value)
-    if further_options_period_result is not None:
-        result = TimePeriodHandler(value)
-        return str(result)
-
-    year_result = re.fullmatch(year_period_pattern, value)
-    if year_result is not None:
-        result = TimePeriodHandler(f"{value}A")
-        return str(result)
-
-    month_result = re.fullmatch(month_period_pattern, value)
-    if month_result is not None:
-        month = datetime.strptime(value, "%Y-%m")
-        month_period = month.strftime("%YM%m")
-        result = TimePeriodHandler(month_period)
-        return str(result)
-
-    # TODO: Do we use this?
-    day_result = re.fullmatch(day_period_pattern, value)
-    if day_result is not None:
-        day = datetime.strptime(value, "%Y-%m-%d")
-        day_period = day.strftime("%YD%-j")
-        return day_period
-    raise ValueError
+    raise ValueError(
+        f"Time period '{value}' is not in a valid format. "
+        f"Accepted formats: YYYY, YYYYA, YYYYSn, YYYYQn, YYYYMm, YYYYWw, YYYYDd, "
+        f"YYYY-MM, YYYY-MM-DD, YYYY-Mxx, YYYY-Qx, YYYY-Sx, YYYY-Wxx, YYYY-Dxxx, YYYY-A1."
+    )

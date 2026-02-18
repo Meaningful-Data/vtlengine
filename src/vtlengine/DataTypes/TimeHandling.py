@@ -81,10 +81,12 @@ def from_input_customer_support_to_internal(period: str) -> tuple[int, str, int]
     Converts a period string from the input customer support format to the internal format
     2020-01-01 -> (2020, 'D', 1)
     2020-01 -> (2020, 'M', 1)
+    2020-1 -> (2020, 'M', 1)
     2020-Q1 -> (2020, 'Q', 1)
     2020-S1 -> (2020, 'S', 1)
     2020-M01 -> (2020, 'M', 1)
     2020-W01 -> (2020, 'W', 1)
+    2020-A1 -> (2020, 'A', 1)
     """
     parts = period.split("-")
     year = int(parts[0])
@@ -103,8 +105,9 @@ def from_input_customer_support_to_internal(period: str) -> tuple[int, str, int]
             if indicator in PERIOD_INDICATORS
             else (year, "M", int(second_term))
         )
+    if length == 1:  # 'YYYY-M' case (single digit month)
+        return year, "M", int(second_term)
     raise SemanticError("2-1-19-6", period_format=period)
-    # raise ValueError
 
 
 class SingletonMeta(type):
@@ -219,15 +222,11 @@ class TimePeriodHandler:
                 periods=PeriodDuration.periods[self.period_indicator],
                 period_indicator=self.period_indicator,
             )
-            # raise ValueError(f'Period Number must be between 1 and '
-            #                  f'{PeriodDuration.periods[self.period_indicator]} '
-            #                  f'for period indicator {self.period_indicator}.')
         # check day is correct for year
         if self.period_indicator == "D":
             if calendar.isleap(self.year):
                 if value > 366:
                     raise SemanticError("2-1-19-9", day=value, year=self.year)
-                    # raise ValueError(f'Invalid day {value} for year {self.year}.')
             else:
                 if value > 365:
                     raise SemanticError("2-1-19-9", day=value, year=self.year)
@@ -337,18 +336,41 @@ class TimePeriodHandler:
         ).period_number
 
     def vtl_representation(self) -> str:
+        """VTL representation: YYYY, YYYYSn, YYYYQn, YYYYMm, YYYYWw, YYYYDd (no hyphens)."""
         if self.period_indicator == "A":
-            return f"{self.year}A"
+            return f"{self.year}"
+        return f"{self.year}{self.period_indicator}{self.period_number}"
+
+    def sdmx_gregorian_representation(self) -> str:
+        """SDMX Gregorian representation: YYYY, YYYY-MM, YYYY-MM-DD.
+
+        Only Annual (A), Month (M), and Day (D) period indicators are supported.
+        Raises SemanticError for Semester (S), Quarter (Q), and Week (W).
+        """
+        if self.period_indicator == "A":
+            return f"{self.year}"
+        if self.period_indicator == "M":
+            return f"{self.year}-{self.period_number:02}"
+        if self.period_indicator == "D":
+            d = period_to_date(self.year, "D", self.period_number)
+            return d.isoformat()
+        raise SemanticError(
+            "2-1-19-21",
+            period=self.period_indicator,
+        )
+
+    def sdmx_reporting_representation(self) -> str:
+        """SDMX Reporting representation: YYYY-A1, YYYY-Ss, YYYY-Qq, YYYY-Mmm, YYYY-Www,
+        YYYY-Dddd."""
+        if self.period_indicator == "A":
+            return f"{self.year}-A1"
         if self.period_indicator in ["W", "M"]:
             period_number_str = f"{self.period_number:02}"
         elif self.period_indicator == "D":
             period_number_str = f"{self.period_number:03}"
         else:
             period_number_str = str(self.period_number)
-        return f"{self.year}{self.period_indicator}{period_number_str}"
-
-    def sdmx_gregorian_representation(self) -> None:
-        raise NotImplementedError
+        return f"{self.year}-{self.period_indicator}{period_number_str}"
 
 
 class TimeIntervalHandler:
