@@ -44,7 +44,7 @@ def format_time_period_external_representation(
     if isinstance(dataset, Scalar):
         if dataset.data_type != TimePeriod or dataset.value is None:
             return
-        
+
         value = dataset.value
         if mode == TimePeriodRepresentation.VTL:
             dataset.value = _format_vtl_representation(value)
