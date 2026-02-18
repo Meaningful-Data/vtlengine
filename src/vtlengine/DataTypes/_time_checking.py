@@ -103,7 +103,7 @@ def check_time_period(value: str) -> str:
         value = str(value)
     value = value.strip()
 
-    # Try compact formats first (no hyphen)
+    # Try vtl formats first
     if re.fullmatch(_vtl_period_pattern, value) is not None:
         if re.fullmatch(r"^\d{4}$", value):
             # Year only → annual
@@ -123,7 +123,7 @@ def check_time_period(value: str) -> str:
     if match_iso_month:
         value = f"{match_iso_month.group(1)}-M{match_iso_month.group(2)}"
 
-    # Try hyphenated formats
+    # Try sdmx formats
     if re.fullmatch(_sdmx_period_pattern, value) is not None:
         result = TimePeriodHandler(value)
         return str(result)
