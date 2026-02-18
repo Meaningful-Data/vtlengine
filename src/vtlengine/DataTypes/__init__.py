@@ -344,8 +344,8 @@ class TimeInterval(ScalarType):
             return f"{value}/{value}"
 
         if from_type in {TimePeriod}:
-            init_value = str_period_to_date(value, start=True).isoformat()
-            end_value = str_period_to_date(value, start=False).isoformat()
+            init_value = str_period_to_date(value, start=True)
+            end_value = str_period_to_date(value, start=False)
             return f"{init_value}/{end_value}"
 
         raise RunTimeError(
@@ -764,6 +764,17 @@ def binary_implicit_promotion(
     if right_type.is_included(left_implicities):
         return right_type
 
+    # Fallback: check if both types can be promoted to a common type
+    # e.g. Date → TimeInterval and TimePeriod → TimeInterval
+    common = left_implicities.intersection(right_implicities)
+    if common:
+        if return_type:
+            return return_type
+        # Return the common promoted type (exclude Null if present)
+        common.discard(Null)
+        if len(common) == 1:
+            return common.pop()
+
     raise SemanticError(
         code="1-1-1-1",
         type_1=SCALAR_TYPES_CLASS_REVERSE[left_type],
@@ -791,7 +802,11 @@ def check_binary_implicit_promotion(
     if type_to_check:
         return type_to_check.is_included(set_=left_implicities.intersection(right_implicities))
 
-    return left.is_included(right_implicities) or right.is_included(left_implicities)
+    return (
+        left.is_included(right_implicities)
+        or right.is_included(left_implicities)
+        or bool(left_implicities.intersection(right_implicities))
+    )
 
 
 def unary_implicit_promotion(
