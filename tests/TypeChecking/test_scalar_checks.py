@@ -103,6 +103,7 @@ def test_scalar_valid_values(data_type, value):
         # Date
         (Date, "2020-13-01"),
         (Date, "2020-02-30"),
+        (Date, "1799-12-31"),
         (Date, "10000-01-01"),
         (Date, True),
         # TimeInterval

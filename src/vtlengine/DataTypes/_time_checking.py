@@ -42,7 +42,7 @@ def check_date(value: str) -> str:
     has_time = _has_time_component(value)
     try:
         if has_time:
-            iso_result = datetime.fromisoformat(_truncate_nanoseconds(value)).isoformat()
+            iso_result = datetime.fromisoformat(_truncate_nanoseconds(value)).isoformat(sep=" ")
         else:
             if len(value) == 9 and value[7] == "-":
                 value = value[:-1] + "0" + value[-1]
@@ -56,6 +56,13 @@ def check_date(value: str) -> str:
             )
         raise InputValidationException(
             f"Date {value} is not in the correct format. Use YYYY-MM-DD or YYYY-MM-DD HH:MM:SS."
+        )
+
+    # Check date is between 1800 and 9999
+    year = int(value[:4])
+    if not 1800 <= year <= 9999:
+        raise InputValidationException(
+            f"Date {value} is invalid. Year must be between 1900 and 9999."
         )
 
     return iso_result

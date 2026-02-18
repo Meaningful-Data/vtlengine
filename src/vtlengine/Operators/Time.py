@@ -1044,7 +1044,9 @@ class Date_Add(Parametrized):
             last_day = (datetime(new_year, new_month % 12 + 1, 1) - timedelta(days=1)).day
             result = dt_val.replace(year=new_year, month=new_month, day=min(dt_val.day, last_day))
 
-        return result.isoformat() if has_time else result.strftime("%Y-%m-%d")
+        if has_time and isinstance(result, datetime):
+            return result.isoformat(sep=" ")
+        return result.strftime("%Y-%m-%d")
 
 
 class SimpleUnaryTime(Operators.Unary):

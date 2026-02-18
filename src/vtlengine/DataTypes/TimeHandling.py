@@ -534,7 +534,7 @@ def check_max_date(str_: Optional[str]) -> Optional[str]:
     if has_time:
         from vtlengine.DataTypes._time_checking import _truncate_nanoseconds
 
-        return dt.fromisoformat(_truncate_nanoseconds(str_)).isoformat()
+        return dt.fromisoformat(_truncate_nanoseconds(str_)).isoformat(sep=" ")
     elif len(str_) == 10 and str_[7] == "-":
         return date.fromisoformat(str_).isoformat()
     else:
