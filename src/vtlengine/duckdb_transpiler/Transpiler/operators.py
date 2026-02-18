@@ -28,64 +28,7 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from vtlengine.AST.Grammar.tokens import (
-    ABS,
-    AND,
-    AVG,
-    CEIL,
-    CONCAT,
-    COUNT,
-    DIV,
-    EQ,
-    EXP,
-    FIRST_VALUE,
-    FLOOR,
-    GT,
-    GTE,
-    INSTR,
-    INTERSECT,
-    LAG,
-    LAST_VALUE,
-    LCASE,
-    LEAD,
-    LEN,
-    LN,
-    LOG,
-    LT,
-    LTE,
-    LTRIM,
-    MAX,
-    MEDIAN,
-    MIN,
-    MINUS,
-    MOD,
-    MULT,
-    NEQ,
-    NOT,
-    NVL,
-    OR,
-    PLUS,
-    POWER,
-    RANK,
-    RATIO_TO_REPORT,
-    REPLACE,
-    ROUND,
-    RTRIM,
-    SETDIFF,
-    SQRT,
-    STDDEV_POP,
-    STDDEV_SAMP,
-    SUBSTR,
-    SUM,
-    SYMDIFF,
-    TRIM,
-    TRUNC,
-    UCASE,
-    UNION,
-    VAR_POP,
-    VAR_SAMP,
-    XOR,
-)
+import vtlengine.AST.Grammar.tokens as tokens
 
 
 class OperatorCategory(Enum):
@@ -273,15 +216,22 @@ class OperatorRegistry:
 
         # For binary operators like "({0} + {1})", extract "+"
         if operator.category == OperatorCategory.BINARY:
-            # Remove placeholders and parentheses to get the operator
             cleaned = (
                 template.replace("{0}", "").replace("{1}", "").replace("(", "").replace(")", "")
             )
             return cleaned.strip()
 
-        # For unary/aggregate like "CEIL({0})", extract "CEIL"
+        # For prefix unary operators like "+{0}", "-{0}", "NOT {0}"
+        if operator.is_prefix:
+            return template.replace("{0}", "").strip()
+
+        # For function-style like "CEIL({0})", "SUM({0})", extract "CEIL", "SUM"
         if "({" in template:
             return template.split("(")[0]
+
+        # For templates like "RANK()" (no placeholder), extract "RANK"
+        if template.endswith("()"):
+            return template[:-2]
 
         return template
 
@@ -366,120 +316,252 @@ def _create_default_registries() -> SQLOperatorRegistries:
     # =========================================================================
 
     # Arithmetic
-    registries.binary.register_simple(PLUS, "({0} + {1})")
-    registries.binary.register_simple(MINUS, "({0} - {1})")
-    registries.binary.register_simple(MULT, "({0} * {1})")
-    registries.binary.register_simple(DIV, "({0} / {1})")
-    registries.binary.register_simple(MOD, "({0} % {1})")
+    registries.binary.register_simple(tokens.PLUS, "({0} + {1})")
+    registries.binary.register_simple(tokens.MINUS, "({0} - {1})")
+    registries.binary.register_simple(tokens.MULT, "({0} * {1})")
+    registries.binary.register_simple(tokens.DIV, "({0} / {1})")
+    registries.binary.register_simple(tokens.MOD, "({0} % {1})")
 
     # Comparison
-    registries.binary.register_simple(EQ, "({0} = {1})")
-    registries.binary.register_simple(NEQ, "({0} <> {1})")
-    registries.binary.register_simple(GT, "({0} > {1})")
-    registries.binary.register_simple(LT, "({0} < {1})")
-    registries.binary.register_simple(GTE, "({0} >= {1})")
-    registries.binary.register_simple(LTE, "({0} <= {1})")
+    registries.binary.register_simple(tokens.EQ, "({0} = {1})")
+    registries.binary.register_simple(tokens.NEQ, "({0} <> {1})")
+    registries.binary.register_simple(tokens.GT, "({0} > {1})")
+    registries.binary.register_simple(tokens.LT, "({0} < {1})")
+    registries.binary.register_simple(tokens.GTE, "({0} >= {1})")
+    registries.binary.register_simple(tokens.LTE, "({0} <= {1})")
 
     # Logical
-    registries.binary.register_simple(AND, "({0} AND {1})")
-    registries.binary.register_simple(OR, "({0} OR {1})")
-    registries.binary.register_simple(XOR, "({0} XOR {1})")
+    registries.binary.register_simple(tokens.AND, "({0} AND {1})")
+    registries.binary.register_simple(tokens.OR, "({0} OR {1})")
+    registries.binary.register(
+        tokens.XOR,
+        SQLOperator(
+            sql_template="",
+            category=OperatorCategory.BINARY,
+            custom_generator=lambda a, b: f"(({a} AND NOT {b}) OR (NOT {a} AND {b}))",
+        ),
+    )
+    registries.binary.register_simple(tokens.IN, "({0} IN {1})")
+    registries.binary.register_simple(tokens.NOT_IN, "({0} NOT IN {1})")
 
     # String
-    registries.binary.register_simple(CONCAT, "({0} || {1})")
+    registries.binary.register_simple(tokens.CONCAT, "({0} || {1})")
+
+    # Numeric functions (come through BinOp AST)
+    registries.binary.register_simple(tokens.POWER, "POWER({0}, {1})")
+    registries.binary.register_simple(tokens.LOG, "LOG({1}, {0})")  # DuckDB: LOG(base, value)
+
+    # Conditional (come through BinOp AST)
+    registries.binary.register_simple(tokens.NVL, "COALESCE({0}, {1})")
+
+    # Date/Time
+    registries.binary.register_simple(tokens.DATEDIFF, "ABS(DATE_DIFF('day', {0}, {1}))")
+
+    # String matching
+    registries.binary.register_simple(tokens.CHARSET_MATCH, "regexp_full_match({0}, {1})")
 
     # =========================================================================
     # Unary Operators
     # =========================================================================
 
     # Arithmetic prefix
-    registries.unary.register_simple(PLUS, "+{0}", is_prefix=True)
-    registries.unary.register_simple(MINUS, "-{0}", is_prefix=True)
+    registries.unary.register_simple(tokens.PLUS, "+{0}", is_prefix=True)
+    registries.unary.register_simple(tokens.MINUS, "-{0}", is_prefix=True)
 
     # Arithmetic functions
-    registries.unary.register_simple(CEIL, "CEIL({0})")
-    registries.unary.register_simple(FLOOR, "FLOOR({0})")
-    registries.unary.register_simple(ABS, "ABS({0})")
-    registries.unary.register_simple(EXP, "EXP({0})")
-    registries.unary.register_simple(LN, "LN({0})")
-    registries.unary.register_simple(SQRT, "SQRT({0})")
+    registries.unary.register_simple(tokens.CEIL, "CEIL({0})")
+    registries.unary.register_simple(tokens.FLOOR, "FLOOR({0})")
+    registries.unary.register_simple(tokens.ABS, "ABS({0})")
+    registries.unary.register_simple(tokens.EXP, "EXP({0})")
+    registries.unary.register_simple(tokens.LN, "LN({0})")
+    registries.unary.register_simple(tokens.SQRT, "SQRT({0})")
 
     # Logical
-    registries.unary.register_simple(NOT, "NOT {0}", is_prefix=True)
+    registries.unary.register_simple(tokens.NOT, "NOT {0}", is_prefix=True)
 
     # String functions
-    registries.unary.register_simple(LEN, "LENGTH({0})")
-    registries.unary.register_simple(TRIM, "TRIM({0})")
-    registries.unary.register_simple(LTRIM, "LTRIM({0})")
-    registries.unary.register_simple(RTRIM, "RTRIM({0})")
-    registries.unary.register_simple(UCASE, "UPPER({0})")
-    registries.unary.register_simple(LCASE, "LOWER({0})")
+    registries.unary.register_simple(tokens.LEN, "LENGTH({0})")
+    registries.unary.register_simple(tokens.TRIM, "TRIM({0})")
+    registries.unary.register_simple(tokens.LTRIM, "LTRIM({0})")
+    registries.unary.register_simple(tokens.RTRIM, "RTRIM({0})")
+    registries.unary.register_simple(tokens.UCASE, "UPPER({0})")
+    registries.unary.register_simple(tokens.LCASE, "LOWER({0})")
+
+    # Null check
+    registries.unary.register_simple(tokens.ISNULL, "({0} IS NULL)")
+
+    # Time extraction functions
+    registries.unary.register_simple(tokens.YEAR, "YEAR({0})")
+    registries.unary.register_simple(tokens.MONTH, "MONTH({0})")
+    registries.unary.register_simple(tokens.DAYOFMONTH, "DAY({0})")
+    registries.unary.register_simple(tokens.DAYOFYEAR, "DAYOFYEAR({0})")
 
     # =========================================================================
     # Aggregate Operators
     # =========================================================================
 
-    registries.aggregate.register_simple(SUM, "SUM({0})")
-    registries.aggregate.register_simple(AVG, "AVG({0})")
-    registries.aggregate.register_simple(COUNT, "COUNT({0})")
-    registries.aggregate.register_simple(MIN, "MIN({0})")
-    registries.aggregate.register_simple(MAX, "MAX({0})")
-    registries.aggregate.register_simple(MEDIAN, "MEDIAN({0})")
-    registries.aggregate.register_simple(STDDEV_POP, "STDDEV_POP({0})")
-    registries.aggregate.register_simple(STDDEV_SAMP, "STDDEV_SAMP({0})")
-    registries.aggregate.register_simple(VAR_POP, "VAR_POP({0})")
-    registries.aggregate.register_simple(VAR_SAMP, "VAR_SAMP({0})")
+    registries.aggregate.register_simple(tokens.SUM, "SUM({0})")
+    registries.aggregate.register_simple(tokens.AVG, "AVG({0})")
+    registries.aggregate.register_simple(tokens.COUNT, "COUNT({0})")
+    registries.aggregate.register_simple(tokens.MIN, "MIN({0})")
+    registries.aggregate.register_simple(tokens.MAX, "MAX({0})")
+    registries.aggregate.register_simple(tokens.MEDIAN, "MEDIAN({0})")
+    registries.aggregate.register_simple(tokens.STDDEV_POP, "STDDEV_POP({0})")
+    registries.aggregate.register_simple(tokens.STDDEV_SAMP, "STDDEV_SAMP({0})")
+    registries.aggregate.register_simple(tokens.VAR_POP, "VAR_POP({0})")
+    registries.aggregate.register_simple(tokens.VAR_SAMP, "VAR_SAMP({0})")
 
     # =========================================================================
     # Analytic (Window) Operators
     # =========================================================================
 
     # Aggregate functions can also be used as analytics
-    registries.analytic.register_simple(SUM, "SUM({0})")
-    registries.analytic.register_simple(AVG, "AVG({0})")
-    registries.analytic.register_simple(COUNT, "COUNT({0})")
-    registries.analytic.register_simple(MIN, "MIN({0})")
-    registries.analytic.register_simple(MAX, "MAX({0})")
-    registries.analytic.register_simple(MEDIAN, "MEDIAN({0})")
-    registries.analytic.register_simple(STDDEV_POP, "STDDEV_POP({0})")
-    registries.analytic.register_simple(STDDEV_SAMP, "STDDEV_SAMP({0})")
-    registries.analytic.register_simple(VAR_POP, "VAR_POP({0})")
-    registries.analytic.register_simple(VAR_SAMP, "VAR_SAMP({0})")
+    registries.analytic.register_simple(tokens.SUM, "SUM({0})")
+    registries.analytic.register_simple(tokens.AVG, "AVG({0})")
+    registries.analytic.register_simple(tokens.COUNT, "COUNT({0})")
+    registries.analytic.register_simple(tokens.MIN, "MIN({0})")
+    registries.analytic.register_simple(tokens.MAX, "MAX({0})")
+    registries.analytic.register_simple(tokens.MEDIAN, "MEDIAN({0})")
+    registries.analytic.register_simple(tokens.STDDEV_POP, "STDDEV_POP({0})")
+    registries.analytic.register_simple(tokens.STDDEV_SAMP, "STDDEV_SAMP({0})")
+    registries.analytic.register_simple(tokens.VAR_POP, "VAR_POP({0})")
+    registries.analytic.register_simple(tokens.VAR_SAMP, "VAR_SAMP({0})")
 
     # Pure analytic functions
-    registries.analytic.register_simple(FIRST_VALUE, "FIRST_VALUE({0})")
-    registries.analytic.register_simple(LAST_VALUE, "LAST_VALUE({0})")
-    registries.analytic.register_simple(LAG, "LAG({0})")
-    registries.analytic.register_simple(LEAD, "LEAD({0})")
-    registries.analytic.register_simple(RANK, "RANK()")  # RANK takes no argument
-    registries.analytic.register_simple(RATIO_TO_REPORT, "RATIO_TO_REPORT({0})")
+    registries.analytic.register_simple(tokens.FIRST_VALUE, "FIRST_VALUE({0})")
+    registries.analytic.register_simple(tokens.LAST_VALUE, "LAST_VALUE({0})")
+    registries.analytic.register_simple(tokens.LAG, "LAG({0})")
+    registries.analytic.register_simple(tokens.LEAD, "LEAD({0})")
+    registries.analytic.register_simple(tokens.RANK, "RANK()")  # RANK takes no argument
+    registries.analytic.register_simple(tokens.RATIO_TO_REPORT, "RATIO_TO_REPORT({0})")
 
     # =========================================================================
     # Parameterized Operators
     # =========================================================================
 
-    # Single parameter operations
-    registries.parameterized.register_simple(ROUND, "ROUND({0}, {1})")
-    registries.parameterized.register_simple(TRUNC, "TRUNC({0}, {1})")
-    registries.parameterized.register_simple(INSTR, "INSTR({0}, {1})")
-    registries.parameterized.register_simple(LOG, "LOG({1}, {0})")  # LOG(base, value)
-    registries.parameterized.register_simple(POWER, "POWER({0}, {1})")
-    registries.parameterized.register_simple(NVL, "COALESCE({0}, {1})")
+    # Comparison
+    registries.parameterized.register_simple(tokens.BETWEEN, "({0} BETWEEN {1} AND {2})")
 
-    # Multi-parameter operations
-    registries.parameterized.register_simple(SUBSTR, "SUBSTR({0}, {1}, {2})")
-    registries.parameterized.register_simple(REPLACE, "REPLACE({0}, {1}, {2})")
+    # Single parameter operations
+    # DuckDB does not support ROUND/TRUNC(DECIMAL, col) with non-constant
+    # precision.  Casting the value to DOUBLE avoids this limitation.
+    # VTL semantics: null precision defaults to 0.
+    def _round_generator(*args: Optional[str]) -> str:
+        precision = "0" if (len(args) < 2 or args[1] is None) else str(args[1])
+        return f"ROUND(CAST({args[0]} AS DOUBLE), COALESCE(CAST({precision} AS INTEGER), 0))"
+
+    registries.parameterized.register(
+        tokens.ROUND,
+        SQLOperator(
+            sql_template="ROUND({0}, CAST({1} AS INTEGER))",
+            category=OperatorCategory.PARAMETERIZED,
+            custom_generator=_round_generator,
+        ),
+    )
+
+    def _trunc_generator(*args: Optional[str]) -> str:
+        precision = "0" if (len(args) < 2 or args[1] is None) else str(args[1])
+        return f"TRUNC(CAST({args[0]} AS DOUBLE), COALESCE(CAST({precision} AS INTEGER), 0))"
+
+    registries.parameterized.register(
+        tokens.TRUNC,
+        SQLOperator(
+            sql_template="TRUNC({0}, CAST({1} AS INTEGER))",
+            category=OperatorCategory.PARAMETERIZED,
+            custom_generator=_trunc_generator,
+        ),
+    )
+
+    def _instr_generator(*args: Optional[str]) -> str:
+        """Generate INSTR SQL emulating VTL instr(string, pattern, start, occurrence).
+
+        DuckDB's INSTR only supports 2 args: INSTR(string, pattern).
+        VTL's instr supports: instr(string, pattern, start=1, occurrence=1).
+        We always use vtl_instr macro for consistency (handles null pattern → 0).
+        """
+        # Build args with defaults for missing values
+        params = []
+        params.append(args[0] if len(args) > 0 and args[0] is not None else "NULL")
+        params.append(args[1] if len(args) > 1 and args[1] is not None else "NULL")
+        params.append(args[2] if len(args) > 2 and args[2] is not None else "1")
+        params.append(args[3] if len(args) > 3 and args[3] is not None else "1")
+
+        return f"vtl_instr({', '.join(params)})"
+
+    registries.parameterized.register(
+        tokens.INSTR,
+        SQLOperator(
+            sql_template="INSTR({0}, {1})",
+            category=OperatorCategory.PARAMETERIZED,
+            custom_generator=_instr_generator,
+        ),
+    )
+    registries.parameterized.register_simple(tokens.LOG, "LOG({1}, {0})")  # LOG(base, value)
+    registries.parameterized.register_simple(tokens.POWER, "POWER({0}, {1})")
+
+    # Multi-parameter operations (variable args)
+    def _substr_generator(*args: Optional[str]) -> str:
+        """Generate SUBSTR SQL handling None args (VTL defaults: start=1)."""
+        if len(args) == 1:
+            # Just the string, no start/length → return as-is
+            return str(args[0])
+        filtered = []
+        for i, a in enumerate(args):
+            if a is None:
+                if i == 1:  # start position defaults to 1
+                    filtered.append("1")
+                # if i == 2 (length) is None, omit it
+            else:
+                filtered.append(str(a))
+        return f"SUBSTR({', '.join(filtered)})"
+
+    registries.parameterized.register(
+        tokens.SUBSTR,
+        SQLOperator(
+            sql_template="SUBSTR({0}, {1}, {2})",
+            category=OperatorCategory.PARAMETERIZED,
+            custom_generator=_substr_generator,
+        ),
+    )
+
+    def _replace_generator(*args: Optional[str]) -> str:
+        """Generate REPLACE SQL. DuckDB requires 3 args; VTL allows 2.
+
+        VTL replace(op, s1, s2):
+        - s1=null → return op unchanged
+        - s2=null → replace s1 with empty string
+        - only 2 args → replace s1 with empty string
+        """
+        # args order: string, pattern, replacement
+        if len(args) < 2 or args[1] is None:
+            # Pattern is null/missing → return original string unchanged
+            return str(args[0]) if args else "''"
+        string_arg = str(args[0])
+        pattern_arg = str(args[1])
+        if len(args) < 3 or args[2] is None:
+            # Replacement is null/missing → replace with empty string
+            return f"REPLACE({string_arg}, {pattern_arg}, '')"
+        return f"REPLACE({string_arg}, {pattern_arg}, {args[2]})"
+
+    registries.parameterized.register(
+        tokens.REPLACE,
+        SQLOperator(
+            sql_template="REPLACE({0}, {1}, {2})",
+            category=OperatorCategory.PARAMETERIZED,
+            custom_generator=_replace_generator,
+        ),
+    )
 
     # =========================================================================
     # Set Operations
     # =========================================================================
 
-    registries.set_ops.register_simple(UNION, "UNION ALL")
-    registries.set_ops.register_simple(INTERSECT, "INTERSECT")
-    registries.set_ops.register_simple(SETDIFF, "EXCEPT")
+    registries.set_ops.register_simple(tokens.UNION, "UNION ALL")
+    registries.set_ops.register_simple(tokens.INTERSECT, "INTERSECT")
+    registries.set_ops.register_simple(tokens.SETDIFF, "EXCEPT")
     # SYMDIFF requires special handling (not a simple SQL operator)
     registries.set_ops.register(
-        SYMDIFF,
+        tokens.SYMDIFF,
         SQLOperator(
             sql_template="SYMDIFF",
             category=OperatorCategory.SET,
@@ -499,47 +581,29 @@ registry = _create_default_registries()
 # =========================================================================
 
 
-def get_binary_sql(vtl_token: str, left: str, right: str) -> str:
+def generate_sql(vtl_token: str, *args: str) -> str:
     """
-    Generate SQL for a binary operation.
+    Generate SQL for a given VTL operator token and operands.
+
+    Searches all registries for the token and delegates to the operator.
+    Prefer using registry.<category>.generate() directly from the visitor
+    when the category is known (e.g., registry.unary.generate(token, operand)).
 
     Args:
         vtl_token: The VTL operator token.
-        left: SQL for left operand.
-        right: SQL for right operand.
+        *args: The SQL expressions for operands.
 
     Returns:
-        Generated SQL expression.
+        The generated SQL expression.
+
+    Raises:
+        ValueError: If operator is not registered.
     """
-    return registry.binary.generate(vtl_token, left, right)
-
-
-def get_unary_sql(vtl_token: str, operand: str) -> str:
-    """
-    Generate SQL for a unary operation.
-
-    Args:
-        vtl_token: The VTL operator token.
-        operand: SQL for the operand.
-
-    Returns:
-        Generated SQL expression.
-    """
-    return registry.unary.generate(vtl_token, operand)
-
-
-def get_aggregate_sql(vtl_token: str, operand: str) -> str:
-    """
-    Generate SQL for an aggregate operation.
-
-    Args:
-        vtl_token: The VTL operator token.
-        operand: SQL for the operand.
-
-    Returns:
-        Generated SQL expression.
-    """
-    return registry.aggregate.generate(vtl_token, operand)
+    result = registry.find_operator(vtl_token)
+    if result is None:
+        raise ValueError(f"Unknown operator: {vtl_token}")
+    _, op = result
+    return op.generate(*args)
 
 
 def get_sql_operator_symbol(vtl_token: str) -> Optional[str]:
@@ -580,6 +644,21 @@ def is_operator_registered(vtl_token: str) -> bool:
         True if operator is registered.
     """
     return registry.find_operator(vtl_token) is not None
+
+
+def get_binary_sql(vtl_token: str, left: str, right: str) -> str:
+    """Convenience: generate SQL for a binary operator."""
+    return registry.binary.generate(vtl_token, left, right)
+
+
+def get_unary_sql(vtl_token: str, operand: str) -> str:
+    """Convenience: generate SQL for a unary operator."""
+    return registry.unary.generate(vtl_token, operand)
+
+
+def get_aggregate_sql(vtl_token: str, operand: str) -> str:
+    """Convenience: generate SQL for an aggregate operator."""
+    return registry.aggregate.generate(vtl_token, operand)
 
 
 # =========================================================================

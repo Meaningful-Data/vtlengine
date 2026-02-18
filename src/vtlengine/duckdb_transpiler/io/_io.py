@@ -94,8 +94,16 @@ def load_datapoints_duckdb(
         csv_dtypes = build_csv_column_types(components, keep_columns)
         select_cols = build_select_columns(components, keep_columns, csv_dtypes, dataset_name)
 
-        # 5. Build type string for read_csv
-        type_str = ", ".join(f"'{k}': '{v}'" for k, v in csv_dtypes.items())
+        # 5. Build type string for read_csv (must include ALL CSV columns)
+        # Include extra SDMX columns (DATAFLOW, ACTION, etc.) as VARCHAR so
+        # the columns parameter matches the actual CSV column count.
+        all_csv_dtypes = dict(csv_dtypes)
+        for col in csv_columns:
+            if col not in all_csv_dtypes:
+                all_csv_dtypes[col] = "VARCHAR"
+        # Preserve original CSV column order for read_csv
+        ordered_dtypes = {col: all_csv_dtypes[col] for col in csv_columns if col in all_csv_dtypes}
+        type_str = ", ".join(f"'{k}': '{v}'" for k, v in ordered_dtypes.items())
 
         # 6. Build filter for SDMX ACTION column
         action_filter = ""

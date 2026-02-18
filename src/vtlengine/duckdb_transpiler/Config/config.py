@@ -157,9 +157,7 @@ def configure_duckdb_connection(conn: duckdb.DuckDBPyConnection) -> None:
 
     # Set max temp directory size if explicitly configured
     if MAX_TEMP_DIRECTORY_SIZE:
-        conn.execute(
-            f"SET max_temp_directory_size = '{MAX_TEMP_DIRECTORY_SIZE}'"
-        )
+        conn.execute(f"SET max_temp_directory_size = '{MAX_TEMP_DIRECTORY_SIZE}'")
 
     # Set thread count if specified
     if THREADS is not None:

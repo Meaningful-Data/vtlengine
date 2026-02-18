@@ -1,6 +1,8 @@
+import copy
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Union, cast
 
+import duckdb
 import pandas as pd
 from antlr4 import CommonTokenStream, InputStream  # type: ignore[import-untyped]
 from antlr4.error.ErrorListener import ErrorListener  # type: ignore[import-untyped]
@@ -27,6 +29,9 @@ from vtlengine.AST.ASTString import ASTString
 from vtlengine.AST.DAG import DAGAnalyzer
 from vtlengine.AST.Grammar.lexer import Lexer
 from vtlengine.AST.Grammar.parser import Parser
+from vtlengine.duckdb_transpiler.Config.config import configure_duckdb_connection
+from vtlengine.duckdb_transpiler.io import execute_queries, extract_datapoint_paths
+from vtlengine.duckdb_transpiler.Transpiler import SQLTranspiler
 from vtlengine.Exceptions import InputValidationException
 from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
@@ -307,17 +312,11 @@ def _run_with_duckdb(
     Always uses DAG analysis for efficient dataset loading/saving scheduling.
     When output_folder is provided, saves results as CSV files.
     """
-    import duckdb
-
-    from vtlengine.AST.DAG._words import DELETE, GLOBAL, INSERT, PERSISTENT
-    from vtlengine.duckdb_transpiler import SQLTranspiler
-    from vtlengine.duckdb_transpiler.Config.config import configure_duckdb_connection
-    from vtlengine.duckdb_transpiler.io import execute_queries, extract_datapoint_paths
-
     # AST generation
     script = _check_script(script)
     vtl = load_vtl(script)
     ast = create_ast(vtl)
+    dag = DAGAnalyzer.createDAG(ast)
 
     # Load datasets structure (without data)
     input_datasets, input_scalars = load_datasets(data_structures)
@@ -333,10 +332,10 @@ def _run_with_duckdb(
     loaded_routines = load_external_routines(external_routines) if external_routines else None
 
     interpreter = InterpreterAnalyzer(
-        datasets=input_datasets,
+        datasets=copy.deepcopy(input_datasets),
         value_domains=loaded_vds,
         external_routines=loaded_routines,
-        scalars=input_scalars,
+        scalars=copy.deepcopy(input_scalars),
         only_semantic=True,
         return_only_persistent=False,
     )
@@ -366,6 +365,7 @@ def _run_with_duckdb(
         output_scalars=output_scalars,
         value_domains=loaded_vds or {},
         external_routines=loaded_routines or {},
+        dag=dag,
     )
     queries = transpiler.transpile(ast)
 
@@ -387,10 +387,6 @@ def _run_with_duckdb(
             output_scalars=output_scalars,
             output_folder=output_folder_path,
             return_only_persistent=return_only_persistent,
-            insert_key=INSERT,
-            delete_key=DELETE,
-            global_key=GLOBAL,
-            persistent_key=PERSISTENT,
         )
     finally:
         conn.close()

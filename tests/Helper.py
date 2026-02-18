@@ -1,4 +1,5 @@
 import json
+import os
 import warnings
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
@@ -6,7 +7,7 @@ from unittest import TestCase
 
 import pytest
 
-from vtlengine.API import create_ast
+from vtlengine.API import create_ast, run
 from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.Exceptions import (
     RunTimeError,
@@ -29,6 +30,14 @@ from vtlengine.Model import (
     Scalar,
     ValueDomain,
 )
+
+# VTL_ENGINE_BACKEND can be "pandas" (default) or "duckdb"
+VTL_ENGINE_BACKEND = os.environ.get("VTL_ENGINE_BACKEND", "duckdb").lower()
+
+
+def _use_duckdb_backend() -> bool:
+    """Check if DuckDB backend should be used."""
+    return VTL_ENGINE_BACKEND == "duckdb"
 
 
 class TestHelper(TestCase):
@@ -151,8 +160,7 @@ class TestHelper(TestCase):
         warnings.filterwarnings("ignore", category=FutureWarning)
         if text is None:
             text = cls.LoadVTL(code)
-        ast = create_ast(text)
-        input_datasets = cls.LoadInputs(code, number_inputs, only_semantic)
+
         reference_datasets = cls.LoadOutputs(code, references_names, only_semantic)
         value_domains = None
         if vd_names is not None:
@@ -162,25 +170,41 @@ class TestHelper(TestCase):
         if sql_names is not None:
             external_routines = cls.LoadExternalRoutines(sql_names)
 
-        if scalars is not None:
-            for scalar_name, scalar_value in scalars.items():
-                if scalar_name not in input_datasets:
-                    raise Exception(f"Scalar {scalar_name} not found in the input datasets")
-                if not isinstance(input_datasets[scalar_name], Scalar):
-                    raise Exception(f"{scalar_name} is a dataset")
-                input_datasets[scalar_name].value = scalar_value
+        # Use DuckDB backend if configured
+        if _use_duckdb_backend() and not only_semantic:
+            result = cls._run_with_duckdb_backend(
+                code=code,
+                number_inputs=number_inputs,
+                script=text,
+                vd_names=vd_names,
+                sql_names=sql_names,
+                scalars=scalars,
+            )
+        else:
+            # Original Pandas/Interpreter backend
+            ast = create_ast(text)
+            input_datasets = cls.LoadInputs(code, number_inputs, only_semantic)
 
-        datasets = {k: v for k, v in input_datasets.items() if isinstance(v, Dataset)}
-        scalars_obj = {k: v for k, v in input_datasets.items() if isinstance(v, Scalar)}
+            if scalars is not None:
+                for scalar_name, scalar_value in scalars.items():
+                    if scalar_name not in input_datasets:
+                        raise Exception(f"Scalar {scalar_name} not found in the input datasets")
+                    if not isinstance(input_datasets[scalar_name], Scalar):
+                        raise Exception(f"{scalar_name} is a dataset")
+                    input_datasets[scalar_name].value = scalar_value
 
-        interpreter = InterpreterAnalyzer(
-            datasets=datasets,
-            scalars=scalars_obj,
-            value_domains=value_domains,
-            external_routines=external_routines,
-            only_semantic=only_semantic,
-        )
-        result = interpreter.visit(ast)
+            datasets = {k: v for k, v in input_datasets.items() if isinstance(v, Dataset)}
+            scalars_obj = {k: v for k, v in input_datasets.items() if isinstance(v, Scalar)}
+
+            interpreter = InterpreterAnalyzer(
+                datasets=datasets,
+                scalars=scalars_obj,
+                value_domains=value_domains,
+                external_routines=external_routines,
+                only_semantic=only_semantic,
+            )
+            result = interpreter.visit(ast)
+
         for dataset in result.values():
             format_time_period_external_representation(
                 dataset, TimePeriodRepresentation.SDMX_REPORTING
@@ -195,6 +219,64 @@ class TestHelper(TestCase):
         # cls._override_structures(code, result, reference_datasets)
         # cls._override_data(code, result, reference_datasets)
         assert result == reference_datasets
+
+    @classmethod
+    def _run_with_duckdb_backend(
+        cls,
+        code: str,
+        number_inputs: int,
+        script: str,
+        vd_names: List[str] = None,
+        sql_names: List[str] = None,
+        scalars: Dict[str, Any] = None,
+    ) -> Dict[str, Union[Dataset, Scalar]]:
+        """
+        Execute test using DuckDB backend.
+        """
+        # Collect data structure JSON files
+        data_structures = []
+        for i in range(number_inputs):
+            json_file = cls.filepath_json / f"{code}-{cls.ds_input_prefix}{str(i + 1)}{cls.JSON}"
+            data_structures.append(json_file)
+
+        # Collect datapoint CSV paths
+        datapoints = {}
+        for i in range(number_inputs):
+            json_file = cls.filepath_json / f"{code}-{cls.ds_input_prefix}{str(i + 1)}{cls.JSON}"
+            csv_file = cls.filepath_csv / f"{code}-{cls.ds_input_prefix}{str(i + 1)}{cls.CSV}"
+            # Load structure to get dataset names
+            with open(json_file, "r") as f:
+                structure = json.load(f)
+            if "datasets" in structure:
+                for ds in structure["datasets"]:
+                    datapoints[ds["name"]] = csv_file
+            # Scalars don't need datapoints
+
+        # Load value domains if specified
+        value_domains = None
+        if vd_names is not None:
+            value_domains = [cls.filepath_valueDomain / f"{name}.json" for name in vd_names]
+
+        # Load external routines if specified
+        external_routines = None
+        if sql_names is not None:
+            external_routines = cls.LoadExternalRoutines(sql_names)
+
+        # Prepare scalar values
+        scalar_values = None
+        if scalars is not None:
+            scalar_values = scalars
+
+        return run(
+            script=script,
+            data_structures=data_structures,
+            datapoints=datapoints,
+            value_domains=value_domains,
+            external_routines=external_routines,
+            scalar_values=scalar_values,
+            return_only_persistent=False,
+            use_duckdb=True,
+        )
 
     @classmethod
     def _override_structures(cls, code, result, reference_datasets):

@@ -1,104 +1,83 @@
-"""
-DuckDB Transpiler for VTL.
+"""DuckDB transpiler for VTL scripts."""
 
-This module provides SQL transpilation capabilities for VTL scripts,
-converting VTL AST to DuckDB-compatible SQL queries.
-"""
+from typing import Any, Dict, List, Optional, Tuple
 
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
-
-from pysdmx.model import TransformationScheme
-from pysdmx.model.dataflow import Dataflow, DataStructureDefinition, Schema
-
-from vtlengine.API import create_ast, semantic_analysis
-from vtlengine.API._InternalApi import (
-    _check_script,
-    load_datasets,
-    load_external_routines,
-    load_value_domains,
-    load_vtl,
-)
 from vtlengine.duckdb_transpiler.Transpiler import SQLTranspiler
-from vtlengine.Model import Dataset, Scalar
 
 __all__ = ["SQLTranspiler", "transpile"]
 
 
 def transpile(
-    script: Union[str, TransformationScheme, Path],
-    data_structures: Union[
-        Dict[str, Any],
-        Path,
-        Schema,
-        DataStructureDefinition,
-        Dataflow,
-        List[Union[Dict[str, Any], Path, Schema, DataStructureDefinition, Dataflow]],
-    ],
-    value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
-    external_routines: Optional[
-        Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
-    ] = None,
+    vtl_script: str,
+    data_structures: Optional[Dict[str, Any]] = None,
+    value_domains: Any = None,
+    external_routines: Any = None,
 ) -> List[Tuple[str, str, bool]]:
     """
-    Transpile a VTL script to SQL queries.
+    Transpile a VTL script to a list of (name, SQL, is_persistent) tuples.
+
+    This is a convenience function that runs the full pipeline:
+    1. Parses the VTL script into an AST
+    2. Runs semantic analysis to determine output structures
+    3. Transpiles the AST to SQL queries
 
     Args:
-        script: VTL script as string, TransformationScheme object, or Path.
-        data_structures: Dict or Path with data structure definitions.
-        value_domains: Optional value domains.
-        external_routines: Optional external routines.
+        vtl_script: The VTL script to transpile.
+        data_structures: Input dataset structures (raw dict format as used by the API).
+        value_domains: Value domain definitions.
+        external_routines: External routine definitions.
 
     Returns:
-        List of tuples: (result_name, sql_query, is_persistent)
-        Each tuple represents one top-level assignment.
+        List of (dataset_name, sql_query, is_persistent) tuples.
     """
-    # 1. Parse script and create AST
-    script = _check_script(script)
-    vtl = load_vtl(script)
-    ast = create_ast(vtl)
+    from vtlengine.API import create_ast, load_datasets, load_external_routines, load_value_domains
+    from vtlengine.AST.DAG import DAGAnalyzer
+    from vtlengine.Interpreter import InterpreterAnalyzer
+    from vtlengine.Model import Dataset, Scalar
 
-    # 2. Load input datasets and scalars from data structures
+    if data_structures is None:
+        data_structures = {}
+
+    # Parse VTL to AST
+    ast = create_ast(vtl_script)
+    dag = DAGAnalyzer.createDAG(ast)
+
+    # Load datasets structure (without data) from raw dict format
     input_datasets, input_scalars = load_datasets(data_structures)
 
-    # 3. Run semantic analysis to get output structures and validate script
-    semantic_results = semantic_analysis(
-        script=vtl,
-        data_structures=data_structures,
-        value_domains=value_domains,
-        external_routines=external_routines,
-    )
+    # Load value domains and external routines
+    loaded_vds = load_value_domains(value_domains) if value_domains else None
+    loaded_routines = load_external_routines(external_routines) if external_routines else None
 
-    # 4. Separate output datasets and scalars from semantic results
+    # Run semantic analysis to get output structures
+    interpreter = InterpreterAnalyzer(
+        datasets=input_datasets,
+        value_domains=loaded_vds,
+        external_routines=loaded_routines,
+        scalars=input_scalars,
+        only_semantic=True,
+        return_only_persistent=False,
+    )
+    semantic_results = interpreter.visit(ast)
+
+    # Separate output datasets and scalars
     output_datasets: Dict[str, Dataset] = {}
     output_scalars: Dict[str, Scalar] = {}
-
     for name, result in semantic_results.items():
         if isinstance(result, Dataset):
             output_datasets[name] = result
         elif isinstance(result, Scalar):
             output_scalars[name] = result
 
-    # 5. Load value domains and external routines
-    loaded_vds = load_value_domains(value_domains) if value_domains else {}
-    loaded_routines = load_external_routines(external_routines) if external_routines else {}
-
-    # 6. Create the SQL transpiler with:
-    #    - input_datasets: Tables available for querying (inputs)
-    #    - output_datasets: Expected output structures (for validation)
-    #    - scalars: Both input and output scalars
-    #    - value_domains: Loaded value domains
-    #    - external_routines: Loaded external routines
+    # Create transpiler and generate SQL
     transpiler = SQLTranspiler(
         input_datasets=input_datasets,
         output_datasets=output_datasets,
         input_scalars=input_scalars,
         output_scalars=output_scalars,
-        value_domains=loaded_vds,
-        external_routines=loaded_routines,
+        value_domains=loaded_vds or {},
+        external_routines=loaded_routines or {},
+        dag=dag,
     )
 
-    # 7. Transpile AST to SQL queries
-    queries = transpiler.transpile(ast)
-
-    return queries
+    return transpiler.transpile(ast)

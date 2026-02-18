@@ -214,7 +214,7 @@ class Dataset:
                 if name not in self.data.columns:
                     raise ValueError(f"Component {name} not found in the data")
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: Any) -> bool:  # noqa: C901
         if not isinstance(other, Dataset):
             return False
 
@@ -262,6 +262,26 @@ class Dataset:
             return False
         if len(self.data) == len(other.data) == 0 and self.data.shape != other.data.shape:
             raise SemanticError("0-1-1-14", dataset1=self.name, dataset2=other.name)
+
+        # Convert nullable typed columns to object before fillna to avoid
+        # TypeError on Boolean/Int64 columns that can't accept "" fill value
+        for df in (self.data, other.data):
+            for col in df.columns:
+                if hasattr(df[col], "dtype"):
+                    dtype_str = str(df[col].dtype)
+                    if dtype_str in (
+                        "boolean",
+                        "Boolean",
+                        "Int64",
+                        "Int32",
+                        "Int16",
+                        "Int8",
+                        "UInt64",
+                        "UInt32",
+                        "UInt16",
+                        "UInt8",
+                    ):
+                        df[col] = df[col].astype(object)
 
         self.data.fillna("", inplace=True)
         other.data.fillna("", inplace=True)

@@ -293,7 +293,7 @@ class TestColumnTypeMapping:
     )
     def test_type_mapping(self, vtl_type, duckdb_type):
         """Test that VTL types map to correct DuckDB types."""
-        from vtlengine.duckdb_transpiler.Transpiler import VTL_TO_DUCKDB_TYPES
+        from vtlengine.duckdb_transpiler.Transpiler.operators import VTL_TO_DUCKDB_TYPES
 
         assert VTL_TO_DUCKDB_TYPES.get(vtl_type, "VARCHAR") == duckdb_type or vtl_type == "Number"
 

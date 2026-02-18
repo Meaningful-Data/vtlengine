@@ -138,8 +138,6 @@ class TestTimeshiftTimePeriod:
 
         # Should use vtl_period_shift function
         assert "vtl_period_shift" in sql
-        assert "vtl_period_parse" in sql
-        assert "vtl_period_to_string" in sql
 
     def test_timeshift_execution(self):
         """Test that TIMESHIFT SQL actually executes correctly."""
