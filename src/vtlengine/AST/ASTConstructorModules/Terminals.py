@@ -25,6 +25,7 @@ from vtlengine.DataTypes import (
     TimeInterval,
     TimePeriod,
 )
+from vtlengine.DataTypes._time_checking import detect_time_constant_type, validate_time_constant
 from vtlengine.Model import Component, Dataset, Role, Scalar
 
 
@@ -44,7 +45,7 @@ class Terminals(VtlVisitor):
             constant_node = Constant(type_="INTEGER_CONSTANT", value=int(token.text), **token_info)
 
         elif token.type == Parser.NUMBER_CONSTANT:
-            constant_node = Constant(type_="FLOAT_CONSTANT", value=float(token.text), **token_info)
+            constant_node = Constant(type_="NUMBER_CONSTANT", value=float(token.text), **token_info)
 
         elif token.type == Parser.BOOLEAN_CONSTANT:
             if token.text == "true":
@@ -55,7 +56,13 @@ class Terminals(VtlVisitor):
                 raise NotImplementedError
 
         elif token.type == Parser.STRING_CONSTANT:
-            constant_node = Constant(type_="STRING_CONSTANT", value=token.text[1:-1], **token_info)
+            str_value = token.text[1:-1]
+            detected_type = detect_time_constant_type(str_value)
+            if detected_type is not None:
+                validate_time_constant(str_value, detected_type)
+                constant_node = Constant(type_=detected_type, value=str_value, **token_info)
+            else:
+                constant_node = Constant(type_="STRING_CONSTANT", value=str_value, **token_info)
 
         elif token.type == Parser.NULL_CONSTANT:
             constant_node = Constant(type_="NULL_CONSTANT", value=None, **token_info)

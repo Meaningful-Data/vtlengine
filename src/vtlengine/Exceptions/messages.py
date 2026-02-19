@@ -932,6 +932,12 @@ centralised_messages = {
         "description": "Raised when a Time aggregation operator is missing the operand "
         "definition outside an aggregation context.",
     },
+    # AST Constants
+    "1-3-3-1": {
+        "message": 'Invalid {type_} value: "{value}".',
+        "description": "Raised when a string constant is detected as a time type "
+        "but contains an invalid value.",
+    },
     # ---------- Interpreter ----------
     "1-3-5": {
         "message": "{node_op} not found or not valid for {op_type}.",

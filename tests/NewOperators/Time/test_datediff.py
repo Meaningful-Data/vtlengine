@@ -31,8 +31,8 @@ scalar_time_params = [
 ]
 
 scalar_time_error_params = [
-    ('datediff(cast("2022Q1",date),cast("2023Q2",time_period))', "2-1-19-8"),
-    ('datediff(cast("2020D1",time_period),cast("2020D15",date))', "2-1-19-8"),
+    ('datediff(cast("2022Q1",date),cast("2023Q2",time_period))', "1-1-5-3"),
+    ('datediff(cast("2020D1",time_period),cast("2020D15",date))', "1-1-5-3"),
     ('datediff(cast("2022-06-30",date),cast("2023Q2",time_period))', "1-1-1-2"),
     ('datediff(cast("2022Q2",time_period),cast("2023-06-30",date))', "1-1-1-2"),
 ]

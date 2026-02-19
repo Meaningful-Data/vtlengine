@@ -148,29 +148,28 @@ test_params = [
     ),
     (
         'cast("2022-01-01", date, "YYYY-MM-DD")',
-        NotImplementedError,
-        "How this mask should be implemented is not yet defined.",
+        SemanticError,
+        "A mask can't be provided to cast from type Date to Date.",
     ),
     (
         r'cast("2023-01-12", date, "\\PY\\YDDD\\D")',
-        NotImplementedError,
-        "How this mask should be implemented is not yet defined.",
+        SemanticError,
+        "A mask can't be provided to cast from type Date to Date.",
     ),
     (
         r'cast ("2000Q1", time_period, "YYYY\\QQ")',
-        NotImplementedError,
-        "How this mask should be implemented is not yet defined.",
+        SemanticError,
+        "A mask can't be provided to cast from type Time_Period to Time_Period.",
     ),
     (
         'cast ("2022-05-21/2023-05-21", time, "YYYY-MM-DD/YYYY-MM-DD")',
-        NotImplementedError,
-        "How this mask should be implemented is not yet defined.",
+        SemanticError,
+        "A mask can't be provided to cast from type Time to Time.",
     ),
     (
         'cast("2021-12-21", string, "YYYY-MM-DD hh:mm:ss")',
-        SemanticError,
-        "A mask can't be provided to cast from type String to String. Mask provided: "
-        "YYYY-MM-DD hh:mm:ss",
+        NotImplementedError,
+        "How this mask should be implemented is not yet defined.",
     ),
     (
         'cast("P0Y240D", string, "YYYY-MM-DD hh:mm:ss")',
@@ -180,9 +179,8 @@ test_params = [
     ),
     (
         'cast ("2022-05-21/2023-05-21", string, "YYYY-MM-DD/YYYY-MM-DD")',
-        SemanticError,
-        "A mask can't be provided to cast from type String to String. Mask provided: "
-        "YYYY-MM-DD/YYYY-MM-DD",
+        NotImplementedError,
+        "How this mask should be implemented is not yet defined.",
     ),
 ]
 
