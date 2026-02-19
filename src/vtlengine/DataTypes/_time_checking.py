@@ -1,6 +1,7 @@
 import calendar
 import re
 from datetime import date, datetime
+from functools import lru_cache
 
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.Exceptions import InputValidationException
@@ -74,7 +75,7 @@ def check_time(value: str) -> str:
 
 # Comprehensive time period pattern covering all accepted input formats.
 # Compact formats (no hyphen): YYYY, YYYYA, YYYYSN, YYYYQN, YYYYM[M], YYYYW[W], YYYYD[DD]
-_vtl_period_pattern = (
+_vtl_period_re = re.compile(
     r"^\d{4}$"  # YYYY (year only)
     r"|^\d{4}A$"  # YYYYA (annual with indicator)
     r"|^\d{4}S[1-2]$"  # YYYYSN (semester)
@@ -86,7 +87,7 @@ _vtl_period_pattern = (
 
 # Hyphenated formats: YYYY-MM, YYYY-M, YYYY-MM-DD, YYYY-MXX, YYYY-QX, YYYY-SX, YYYY-WXX,
 # YYYY-DXXX, YYYY-A1
-_sdmx_period_pattern = (
+_sdmx_period_re = re.compile(
     r"^\d{4}-\d{1,2}$"  # YYYY-MM or YYYY-M (ISO month, 1 or 2 digits)
     r"|^\d{4}-\d{2}-\d{2}$"  # YYYY-MM-DD (ISO date)
     r"|^\d{4}-M(0[1-9]|1[0-2]|[1-9])$"  # YYYY-MXX (hyphenated month)
@@ -97,34 +98,37 @@ _sdmx_period_pattern = (
     r"|^\d{4}-A1$"  # YYYY-A1 (SDMX reporting annual)
 )
 
+_iso_date_re = re.compile(r"^(\d{4})-(\d{1,2})-(\d{1,2})$")
+_iso_month_re = re.compile(r"^(\d{4})-(\d{1,2})$")
+
 
 def check_time_period(value: str) -> str:
     if isinstance(value, int):
         value = str(value)
     value = value.strip()
+    return _check_time_period_cached(value)
 
+
+@lru_cache(maxsize=4096)
+def _check_time_period_cached(value: str) -> str:
     # Try vtl formats first
-    if re.fullmatch(_vtl_period_pattern, value) is not None:
-        if re.fullmatch(r"^\d{4}$", value):
-            # Year only → annual
-            result = TimePeriodHandler(f"{value}A")
-        else:
-            result = TimePeriodHandler(value)
+    if _vtl_period_re.fullmatch(value) is not None:
+        result = TimePeriodHandler(f"{value}A") if len(value) == 4 else TimePeriodHandler(value)
         return str(result)
 
     # Normalize YYYY-M-D, YYYY-M-DD, YYYY-MM-D to zero-padded YYYY-MM-DD
-    match_iso_date = re.fullmatch(r"^(\d{4})-(\d{1,2})-(\d{1,2})$", value)
+    match_iso_date = _iso_date_re.fullmatch(value)
     if match_iso_date:
         year, month, day = match_iso_date.groups()
         value = f"{year}-{int(month):02d}-{int(day):02d}"
 
     # Convert YYYY-MM or YYYY-M (ISO month) to hyphenated month format for TimePeriodHandler
-    match_iso_month = re.fullmatch(r"^(\d{4})-(\d{1,2})$", value)
+    match_iso_month = _iso_month_re.fullmatch(value)
     if match_iso_month:
         value = f"{match_iso_month.group(1)}-M{match_iso_month.group(2)}"
 
     # Try sdmx formats
-    if re.fullmatch(_sdmx_period_pattern, value) is not None:
+    if _sdmx_period_re.fullmatch(value) is not None:
         result = TimePeriodHandler(value)
         return str(result)
 
