@@ -1351,14 +1351,16 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         component over a set of data point.
 
         Git Branch: #397.
-        Goal:
+        Goal: String condition component vs Date constants raises type error.
         """
 
         code = "GL_397_30"
         number_inputs = 1
-        references_names = ["1"]
+        error_code = "1-1-1-1"
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_397_32(self):
         """
@@ -1411,16 +1413,14 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         component over a set of data point.
 
         Git Branch: #397.
-        Goal:
+        Goal: Date condition component with Date constants works correctly.
         """
 
         code = "GL_397_36"
         number_inputs = 1
-        error_code = "1-1-1-1"
+        references_names = ["1"]
 
-        self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code=error_code
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_566_1(self):
         """
@@ -2642,14 +2642,16 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         component over a set of data point.
 
         Git Branch: #397.
-        Goal: check the warning because different types in the rule.
+        Goal: String condition component vs Date constants raises type error.
         """
 
         code = "GL_397_31"
         number_inputs = 1
-        references_names = ["1"]
+        error_code = "1-1-1-1"
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_397_33(self):
         """
@@ -2703,16 +2705,14 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         component over a set of data point.
 
         Git Branch: #397.
-        Goal:
+        Goal: Date condition component with Date constants works correctly.
         """
 
         code = "GL_397_37"
         number_inputs = 1
-        error_code = "1-1-1-1"
+        references_names = ["1"]
 
-        self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code=error_code
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_463_1(self):
         """

@@ -2,9 +2,10 @@ import calendar
 import re
 from datetime import date, datetime
 from functools import lru_cache
+from typing import Optional
 
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
-from vtlengine.Exceptions import InputValidationException
+from vtlengine.Exceptions import InputValidationException, SemanticError
 
 
 def check_date(value: str) -> str:
@@ -137,3 +138,44 @@ def _check_time_period_cached(value: str) -> str:
         f"Accepted formats: YYYY, YYYYA, YYYYSn, YYYYQn, YYYYMm, YYYYWw, YYYYDd, "
         f"YYYY-MM, YYYY-MM-DD, YYYY-Mxx, YYYY-Qx, YYYY-Sx, YYYY-Wxx, YYYY-Dxxx, YYYY-A1."
     )
+
+
+# Permissive format-detection regex for time periods.
+# Catches format-correct but value-wrong strings like "2020Q5" so we can raise SemanticError.
+_time_period_detect_re = re.compile(
+    r"^\d{4}[ASQMWD]\d*$"  # YYYYXn (compact VTL-style)
+    r"|^\d{4}-\d{1,2}$"  # YYYY-MM (ISO month)
+    r"|^\d{4}-[ASQMWD]\d*$"  # YYYY-Xnn (hyphenated SDMX-style)
+)
+
+
+def detect_time_constant_type(value: str) -> Optional[str]:
+    """Detect if a string value represents a time type constant.
+
+    Detection priority: time interval -> date -> time period -> None.
+    The order ensures YYYY-MM-DD is always DATE, not TimePeriod.
+    """
+    if re.fullmatch(time_pattern, value):
+        return "TIME_INTERVAL_CONSTANT"
+    if re.fullmatch(date_pattern, value):
+        return "DATE_CONSTANT"
+    if _time_period_detect_re.fullmatch(value):
+        return "TIME_PERIOD_CONSTANT"
+    return None
+
+
+def validate_time_constant(value: str, constant_type: str) -> None:
+    """Validate a detected time constant value.
+
+    Raises SemanticError if the value matches a time format but is invalid
+    (e.g., "2020Q5", "2020-13-01").
+    """
+    try:
+        if constant_type == "DATE_CONSTANT":
+            check_date(value)
+        elif constant_type == "TIME_PERIOD_CONSTANT":
+            check_time_period(value)
+        elif constant_type == "TIME_INTERVAL_CONSTANT":
+            check_time(value)
+    except (ValueError, InputValidationException):
+        raise SemanticError("1-3-3-1", value=value, type_=constant_type)

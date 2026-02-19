@@ -628,15 +628,13 @@ class ComparisonBugs(BugHelper):
         Expression: DS_r := DS_1 [ calc Me_5:= Me_4 in { "2000-01-01/2009-12-31", "2001-01-01/2001-12-31" } ]
         Description: If there is a null, the result is null.
         Git Issue: bug-88-treatment-of-null-with-in-operation-not-correct.
-        Goal: Check Exception.
+        Goal: Check that TimeInterval IN {TimeInterval, TimeInterval} works.
         """
         code = "GL_88_4"
         number_inputs = 1
+        references_names = ["DS_r"]
 
-        message = "1-1-1-1"
-        self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code=message
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_169_1(self):
         """
@@ -2562,7 +2560,6 @@ class OtherBugs(BugHelper):
         code = "GL_67_Fail"
         number_inputs = 39
         message = "1-1-1-10"
-        # TODO: test error code has been changed until revision
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )

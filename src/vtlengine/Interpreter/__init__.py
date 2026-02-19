@@ -50,7 +50,10 @@ from vtlengine.DataTypes import (
     BASIC_TYPES,
     SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
+    Date,
     ScalarType,
+    TimeInterval,
+    TimePeriod,
     check_unary_implicit_promotion,
 )
 from vtlengine.Exceptions import SemanticError
@@ -102,6 +105,12 @@ from vtlengine.Utils import (
     UNARY_MAPPING,
 )
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+
+_CONSTANT_TYPE_MAP: Dict[str, Type[ScalarType]] = {
+    "DATE_CONSTANT": Date,
+    "TIME_PERIOD_CONSTANT": TimePeriod,
+    "TIME_INTERVAL_CONSTANT": TimeInterval,
+}
 
 
 # noinspection PyTypeChecker
@@ -1188,10 +1197,11 @@ class InterpreterAnalyzer(ASTTemplate):
         return node
 
     def visit_Constant(self, node: AST.Constant) -> Any:
+        data_type = _CONSTANT_TYPE_MAP.get(node.type_) or BASIC_TYPES[type(node.value)]
         return Scalar(
             name=str(node.value),
             value=node.value,
-            data_type=BASIC_TYPES[type(node.value)],
+            data_type=data_type,
         )
 
     def visit_JoinOp(self, node: AST.JoinOp) -> None:
