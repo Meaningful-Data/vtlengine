@@ -1,1 +1,40 @@
-{"datasets": [{"name": "DS_r", "DataStructure": [{"name": "REF_AREA", "role": "Identifier", "type": "String", "nullable": false}, {"name": "DATE", "role": "Identifier", "type": "Date", "nullable": false}, {"name": "Id_3", "role": "Identifier", "type": "String", "nullable": false}, {"name": "DATE_STR", "role": "Identifier", "type": "String", "nullable": false}, {"name": "OBS_VALUE", "role": "Measure", "type": "Number", "nullable": true}], "DataPoints": null}]}
+{
+  "datasets": [
+    {
+      "name": "DS_r",
+      "DataStructure": [
+        {
+          "name": "REF_AREA",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "DATE",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "Id_3",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "DATE_STR",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "OBS_VALUE",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        }
+      ],
+      "DataPoints": null
+    }
+  ]
+}
