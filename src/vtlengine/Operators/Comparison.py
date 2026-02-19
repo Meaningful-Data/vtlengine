@@ -18,7 +18,7 @@ from vtlengine.AST.Grammar.tokens import (
     NEQ,
     NOT_IN,
 )
-from vtlengine.DataTypes import COMP_NAME_MAPPING, Boolean, Null, Number, String
+from vtlengine.DataTypes import COMP_NAME_MAPPING, Boolean, Null, String
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
@@ -82,18 +82,10 @@ class Binary(Operator.Binary):
         y: Optional[Union[int, float, str, bool]],
     ) -> Any:
         # Cast values to compatible types for comparison
-        try:
-            if isinstance(x, str) and isinstance(y, bool):
-                y = String.cast(y)
-            elif isinstance(x, bool) and isinstance(y, str):
-                x = String.cast(x)
-            elif isinstance(x, str) and isinstance(y, (int, float)):
-                x = Number.cast(x)
-            elif isinstance(x, (int, float)) and isinstance(y, str):
-                y = Number.cast(y)
-        except ValueError:
-            x = str(x)
-            y = str(y)
+        if isinstance(x, str) and isinstance(y, bool):
+            y = String.cast(y)
+        elif isinstance(x, bool) and isinstance(y, str):
+            x = String.cast(x)
 
         return x, y
 

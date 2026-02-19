@@ -461,14 +461,13 @@ class NumericBugs(BugHelper):
         Expression: A := cast(BIS_LBS_DISS#OBS_VALUE, integer) * 2;
         Description: Cast Operator.
         Git Issue: GL_413-cast-with-integer
-        Goal: Check Exception.
+        Goal: Check Result.
         """
         code = "GL_413"
         number_inputs = 1
-        message = "2-1-5-1"
-        self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code=message
-        )
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
 
 class ComparisonBugs(BugHelper):
@@ -556,13 +555,14 @@ class ComparisonBugs(BugHelper):
         """
         Status: OK.
         Git Branch: fix-86-comp-scalar
-        Goal: Check Result.
+        Goal: Check Exception.
         """
         code = "GL_86"
         number_inputs = 1
-        references_names = ["1"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        message = "1-1-1-1"
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_88_1(self):
         """
@@ -599,13 +599,14 @@ class ComparisonBugs(BugHelper):
         Expression: DS_r := DS_1 [ calc Me_5:= Me_2 in { "0", "3", "6", "12" } ]
         Description: If there is a null, the result is null.
         Git Issue: bug-88-treatment-of-null-with-in-operation-not-correct.
-        Goal: Check Result.
+        Goal: Check Exception.
         """
         code = "GL_88_2"
         number_inputs = 1
-        references_names = ["1"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        message = "1-1-1-1"
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_88_3(self):
         """
@@ -741,13 +742,14 @@ class ComparisonBugs(BugHelper):
         Expression: DS_r := match_characters(DS_1, "[A-Z]{2}[0-9]{3}");
         Description: Implicit cast string for number.
         Git Issue: feat-169-implement-match.
-        Goal: Check Result.
+        Goal: Check Exception.
         """
         code = "GL_169_8"
         number_inputs = 1
-        references_names = ["1"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        message = "1-1-1-2"
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_169_9(self):
         """
@@ -842,14 +844,14 @@ class ComparisonBugs(BugHelper):
         Expression: temp := dsPrep.OVR_1_DBTR_ALL_DFLTD#DFLT_STTS<> 14;
         Description: Comparison between string and integer.
         Git Issue: fix-gl-165-force-df-string-type-cast.
-        Goal: Check Result.
+        Goal: Check Exception.
         """
         code = "GL_165_2"
         number_inputs = 1
-        references_names = ["1"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        message = "1-1-1-1"
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_165_3(self):
         """
@@ -857,13 +859,14 @@ class ComparisonBugs(BugHelper):
         Expression: temp := dsPrep.OVR_1_DBTR_ALL_DFLTD#DFLT_STTS<> 14.0;
         Description: Comparison between string and number.
         Git Issue: fix-gl-165-force-df-string-type-cast.
-        Goal: Check Result.
+        Goal: Check Exception.
         """
         code = "GL_165_3"
         number_inputs = 1
-        references_names = ["1"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        message = "1-1-1-1"
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_165_4(self):
         """
@@ -871,13 +874,14 @@ class ComparisonBugs(BugHelper):
         Expression: temp := dsPrep.OVR_1_DBTR_ALL_DFLTD#DFLT_STTS<> 14.05;
         Description: Comparison between string and number.
         Git Issue: fix-gl-165-force-df-string-type-cast.
-        Goal: Check Result.
+        Goal: Check Exception.
         """
         code = "GL_165_4"
         number_inputs = 1
-        references_names = ["1"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        message = "1-1-1-1"
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_165_5(self):
         """
@@ -899,13 +903,14 @@ class ComparisonBugs(BugHelper):
         Expression: temp := ;
         Description: Comparison between number and string.
         Git Issue: fix-gl-165-force-df-string-type-cast.
-        Goal: Check Result.
+        Goal: Check Exception.
         """
         code = "GL_165_6"
         number_inputs = 1
-        references_names = ["1"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        message = "1-1-1-1"
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_165_7(self):
         """
@@ -913,13 +918,14 @@ class ComparisonBugs(BugHelper):
         Expression: temp := dsPrep.OVR_1_DBTR_ALL_DFLTD[calc Me_2 := DFLT_STTS<> Me_1];
         Description: Comparison between string and number for components.
         Git Issue: fix-gl-165-force-df-string-type-cast.
-        Goal: Check Result.
+        Goal: Check Exception.
         """
         code = "GL_165_7"
         number_inputs = 1
-        references_names = ["1"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        message = "1-1-1-1"
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_165_8(self):
         """
@@ -927,13 +933,14 @@ class ComparisonBugs(BugHelper):
         Expression: temp := dsPrep.OVR_1_DBTR_ALL_DFLTD[calc Me_2 := DFLT_STTS >= Me_1];
         Description: Comparison between string and number for components.
         Git Issue: fix-gl-165-force-df-string-type-cast.
-        Goal: Check Result.
+        Goal: Check Exception.
         """
         code = "GL_165_8"
         number_inputs = 1
-        references_names = ["1"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        message = "1-1-1-1"
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_165_9(self):
         """
@@ -1592,12 +1599,11 @@ class DataValidationBugs(BugHelper):
         code = "GL_443_1"
         number_inputs = 1
         vd_names = ["GL_443_1"]
-        references_names = ["1"]
-
-        self.BaseTest(
+        message = "1-1-1-1"
+        self.NewSemanticExceptionTest(
             code=code,
             number_inputs=number_inputs,
-            references_names=references_names,
+            exception_code=message,
             vd_names=vd_names,
         )
 
@@ -1606,12 +1612,11 @@ class DataValidationBugs(BugHelper):
         code = "GL_443_2"
         number_inputs = 1
         vd_names = ["GL_443_2"]
-        references_names = ["1"]
-
-        self.BaseTest(
+        message = "1-1-1-1"
+        self.NewSemanticExceptionTest(
             code=code,
             number_inputs=number_inputs,
-            references_names=references_names,
+            exception_code=message,
             vd_names=vd_names,
         )
 
@@ -1620,12 +1625,11 @@ class DataValidationBugs(BugHelper):
         code = "GL_443_3"
         number_inputs = 1
         vd_names = ["GL_443_3"]
-        references_names = ["1"]
-
-        self.BaseTest(
+        message = "1-1-1-1"
+        self.NewSemanticExceptionTest(
             code=code,
             number_inputs=number_inputs,
-            references_names=references_names,
+            exception_code=message,
             vd_names=vd_names,
         )
 
@@ -1780,13 +1784,14 @@ class ConditionalBugs(BugHelper):
         Status: OK
         Description: if-then-else inside a calc identifier.
         Git Branch: fix-196-isnull-for-evaluate-on-if-then-else.
-        Goal: Check Result.
+        Goal: Check Exception.
         """
         code = "GL_196_1"
         number_inputs = 1
-        references_names = ["1"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        message = "1-1-1-1"
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_196_2(self):
         """
@@ -2390,7 +2395,7 @@ class DefinedBugs(BugHelper):
         code = "VTLEN_410"
         number_inputs = 3
 
-        message = "1-3-1-1"
+        message = "1-1-1-1"
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -2742,39 +2747,42 @@ class OtherBugs(BugHelper):
         Description: Is related with comparison, set and clause bugs.
         Issue: #171 in and not_in Not working properly inside a calc.
         Git Branch: bug-171-in-and-not-inside-a-calc.
-        Goal: Check result.
+        Goal: Check Exception.
         """
         code = "GL_171_6"
         number_inputs = 1
-        references_names = ["1"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        message = "1-1-1-1"
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_171_7(self):
         """
         Description: Is related with comparison, set and clause bugs.
         Issue: #171 in and not_in Not working properly inside a calc.
         Git Branch: bug-171-in-and-not-inside-a-calc.
-        Goal: Check result.
+        Goal: Check Exception.
         """
         code = "GL_171_7"
         number_inputs = 1
-        references_names = ["1"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        message = "1-1-1-1"
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_171_8(self):
         """
         Description: Is related with comparison, set and clause bugs.
         Issue: #171 in and not_in Not working properly inside a calc.
         Git Branch: bug-171-in-and-not-inside-a-calc.
-        Goal: Check result.
+        Goal: Check Exception.
         """
         code = "GL_171_8"
         number_inputs = 1
-        references_names = ["1"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        message = "1-1-1-1"
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_262(self):
         """
