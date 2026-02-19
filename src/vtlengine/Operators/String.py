@@ -21,14 +21,18 @@ from vtlengine.DataTypes import Integer, String, check_unary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Scalar
 
+# Sentinel to distinguish "param2 was omitted" from "param2 was explicitly null"
+_REPLACE_PARAM2_OMITTED: object = object()
+
 
 class Unary(Operator.Unary):
     type_to_check = String
 
     @classmethod
     def op_func(cls, x: Any) -> Any:
-        x = "" if pd.isnull(x) else str(x)
-        return cls.py_op(x)
+        if pd.isnull(x):
+            return None
+        return cls.py_op(str(x))
 
     @classmethod
     def apply_operation_component(cls, series: Any) -> Any:
@@ -53,10 +57,9 @@ class Length(Unary):
 
     @classmethod
     def op_func(cls, x: Any) -> Any:
-        result = super().op_func(x)
-        if pd.isnull(result):
-            return 0
-        return result
+        if pd.isnull(x):
+            return None
+        return len(str(x))
 
     @classmethod
     def apply_operation_component(cls, series: Any) -> Any:
@@ -99,9 +102,9 @@ class Binary(Operator.Binary):
 
     @classmethod
     def op_func(cls, x: Any, y: Any) -> Any:
-        x = "" if pd.isnull(x) else str(x)
-        y = "" if pd.isnull(y) else str(y)
-        return cls.py_op(x, y)
+        if pd.isnull(x) or pd.isnull(y):
+            return None
+        return cls.py_op(str(x), str(y))
 
 
 class Concatenate(Binary):
@@ -131,7 +134,8 @@ class Parameterized(Unary):
         param2: Optional[Any]
         x, param1, param2 = (args + (None, None))[:3]
 
-        x = "" if pd.isnull(x) else x
+        if pd.isnull(x):
+            return None
         return cls.py_op(x, param1, param2)
 
     @classmethod
@@ -308,15 +312,84 @@ class Replace(Parameterized):
     return_type = String
 
     @classmethod
-    def py_op(cls, x: str, param1: Optional[Any], param2: Optional[Any]) -> Any:
+    def py_op(cls, x: str, param1: Optional[Any], param2: Any) -> Any:
         if pd.isnull(param1):
-            return ""
-        elif pd.isnull(param2):
-            param2 = ""
+            return None
+        if param2 is not _REPLACE_PARAM2_OMITTED and pd.isnull(param2):
+            return None
         x = str(x)
-        if param1 is not None and param2 is not None:
-            return x.replace(param1, param2)
-        return x
+        param2_val = "" if param2 is _REPLACE_PARAM2_OMITTED else str(param2)
+        return x.replace(str(param1), param2_val)
+
+    @classmethod
+    def scalar_evaluation(cls, *args: Any) -> Scalar:
+        operand: Scalar
+        param1: Optional[Scalar]
+        param2: Optional[Scalar]
+        operand, param1, param2 = (args + (None, None))[:3]
+        result = cls.validate(operand, param1, param2)
+        param_value1 = None if param1 is None else param1.value
+        param_value2 = _REPLACE_PARAM2_OMITTED if param2 is None else param2.value
+        result.value = cls.op_func(operand.value, param_value1, param_value2)
+        return result
+
+    @classmethod
+    def dataset_evaluation(cls, *args: Any) -> Dataset:
+        operand: Dataset
+        param1: Optional[Union[DataComponent, Scalar]]
+        param2: Optional[Union[DataComponent, Scalar]]
+        operand, param1, param2 = (args + (None, None))[:3]
+        result = cls.validate(operand, param1, param2)
+        result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
+        for measure_name in operand.get_measures_names():
+            if isinstance(param1, DataComponent) or isinstance(param2, DataComponent):
+                result.data[measure_name] = cls.apply_operation_series(
+                    result.data[measure_name], param1, param2
+                )
+            else:
+                param_value1 = None if param1 is None else param1.value
+                param_value2 = _REPLACE_PARAM2_OMITTED if param2 is None else param2.value
+                result.data[measure_name] = cls.apply_operation_series_scalar(
+                    result.data[measure_name], param_value1, param_value2
+                )
+        cols_to_keep = operand.get_identifiers_names() + operand.get_measures_names()
+        result.data = result.data[cols_to_keep]
+        cls.modify_measure_column(result)
+        return result
+
+    @classmethod
+    def apply_operation_series(cls, *args: Any) -> Any:
+        param1: Optional[Union[DataComponent, Scalar]]
+        param2: Optional[Union[DataComponent, Scalar]]
+        data, param1, param2 = (args + (None, None))[:3]
+        param1_data = cls.generate_series_from_param(param1, len(data))
+        if param2 is None:
+            # param2 was omitted; pass the sentinel so py_op uses "" as default
+            df = pd.DataFrame([data, param1_data]).T
+            n1, n2 = df.columns
+            return df.apply(lambda x: cls.op_func(x[n1], x[n2], _REPLACE_PARAM2_OMITTED), axis=1)
+        param2_data = cls.generate_series_from_param(param2, len(data))
+        df = pd.DataFrame([data, param1_data, param2_data]).T
+        n1, n2, n3 = df.columns
+        return df.apply(lambda x: cls.op_func(x[n1], x[n2], x[n3]), axis=1)
+
+    @classmethod
+    def component_evaluation(cls, *args: Any) -> DataComponent:
+        operand: DataComponent
+        param1: Optional[Union[DataComponent, Scalar]]
+        param2: Optional[Union[DataComponent, Scalar]]
+        operand, param1, param2 = (args + (None, None))[:3]
+        result = cls.validate(operand, param1, param2)
+        result.data = operand.data.copy() if operand.data is not None else pd.Series()
+        if isinstance(param1, DataComponent) or isinstance(param2, DataComponent):
+            result.data = cls.apply_operation_series(result.data, param1, param2)
+        else:
+            param_value1 = None if param1 is None else param1.value
+            param_value2 = _REPLACE_PARAM2_OMITTED if param2 is None else param2.value
+            result.data = cls.apply_operation_series_scalar(
+                operand.data, param_value1, param_value2
+            )
+        return result
 
     @classmethod
     def check_param(cls, param: Optional[Union[DataComponent, Scalar]], position: int) -> None:
@@ -561,7 +634,7 @@ class Instr(Parameterized):
         else:
             occurrence = 0
         if pd.isnull(str_to_find):
-            return 0
+            return None
         else:
             str_to_find = str(str_to_find)
 
