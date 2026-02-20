@@ -19,11 +19,9 @@ from vtlengine.AST.Grammar.tokens import (
 )
 from vtlengine.DataTypes import (
     Boolean,
-    Date,
     Duration,
     Integer,
     Number,
-    String,
     TimeInterval,
     TimePeriod,
     unary_implicit_promotion,
@@ -53,27 +51,11 @@ def extract_grouping_identifiers(
 class Aggregation(Operator.Unary):
     @classmethod
     def _handle_data_types(cls, data: pd.DataFrame, measures: List[Component], mode: str) -> None:
-        to_replace: List[Optional[str]]
-        new_value: List[Optional[str]]
         if cls.op == COUNT:
             return
-        if mode == "input":
-            to_replace = [None]
-            new_value = [""]
-        else:
-            to_replace = [""]
-            new_value = [None]
 
         for measure in measures:
-            if measure.data_type == Date:
-                if cls.op == MIN:
-                    if mode == "input":
-                        # Invalid date only for null values
-                        new_value = ["9999-99-99"]
-                    else:
-                        to_replace = ["9999-99-99"]
-                data[measure.name] = data[measure.name].replace(to_replace, new_value)  # type: ignore[arg-type, unused-ignore]
-            elif measure.data_type == TimePeriod:
+            if measure.data_type == TimePeriod:
                 if mode == "input":
                     data[measure.name] = (
                         data[measure.name]
@@ -102,8 +84,6 @@ class Aggregation(Operator.Unary):
                     data[measure.name] = data[measure.name].map(
                         lambda x: str(x), na_action="ignore"
                     )
-            elif measure.data_type == String:
-                data[measure.name] = data[measure.name].replace(to_replace, new_value)  # type: ignore[arg-type, unused-ignore]
             elif measure.data_type == Duration:
                 if mode == "input":
                     data[measure.name] = data[measure.name].map(
@@ -115,12 +95,11 @@ class Aggregation(Operator.Unary):
                         lambda x: PERIOD_IND_MAPPING_REVERSE[x],
                         na_action="ignore",
                     )
-            elif measure.data_type == Boolean:
-                if mode == "result":
-                    data[measure.name] = data[measure.name].map(
-                        lambda x: Boolean().cast(x), na_action="ignore"
-                    )
-                    data[measure.name] = data[measure.name].astype(object)
+            elif measure.data_type == Boolean and mode == "result":
+                data[measure.name] = data[measure.name].map(
+                    lambda x: Boolean().cast(x), na_action="ignore"
+                )
+                data[measure.name] = data[measure.name].astype(object)
 
     @classmethod
     def validate(  # type: ignore[override]

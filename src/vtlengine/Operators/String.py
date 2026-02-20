@@ -21,9 +21,6 @@ from vtlengine.DataTypes import Integer, String, check_unary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Scalar
 
-# Sentinel to distinguish "param2 was omitted" from "param2 was explicitly null"
-_REPLACE_PARAM2_OMITTED: object = object()
-
 
 class Unary(Operator.Unary):
     type_to_check = String
@@ -240,7 +237,7 @@ class Parameterized(Unary):
         if param is None:
             return pd.Series(index=range(length), dtype=object)
         if isinstance(param, Scalar):
-            return pd.Series(data=[param.value], index=range(length))
+            return pd.Series(data=param.value, index=range(length), dtype=object)
         return param.data
 
     @classmethod
@@ -312,84 +309,20 @@ class Replace(Parameterized):
     return_type = String
 
     @classmethod
-    def py_op(cls, x: str, param1: Optional[Any], param2: Any) -> Any:
+    def py_op(cls, x: str, param1: Optional[Any], param2: Optional[Any]) -> Any:
         if pd.isnull(param1):
             return None
-        if param2 is not _REPLACE_PARAM2_OMITTED and pd.isnull(param2):
+        if pd.isnull(param2):
             return None
         x = str(x)
-        param2_val = "" if param2 is _REPLACE_PARAM2_OMITTED else str(param2)
-        return x.replace(str(param1), param2_val)
+        return x.replace(str(param1), str(param2))
 
     @classmethod
-    def scalar_evaluation(cls, *args: Any) -> Scalar:
-        operand: Scalar
-        param1: Optional[Scalar]
-        param2: Optional[Scalar]
+    def evaluate(cls, *args: Any) -> Union[Dataset, DataComponent, Scalar]:
         operand, param1, param2 = (args + (None, None))[:3]
-        result = cls.validate(operand, param1, param2)
-        param_value1 = None if param1 is None else param1.value
-        param_value2 = _REPLACE_PARAM2_OMITTED if param2 is None else param2.value
-        result.value = cls.op_func(operand.value, param_value1, param_value2)
-        return result
-
-    @classmethod
-    def dataset_evaluation(cls, *args: Any) -> Dataset:
-        operand: Dataset
-        param1: Optional[Union[DataComponent, Scalar]]
-        param2: Optional[Union[DataComponent, Scalar]]
-        operand, param1, param2 = (args + (None, None))[:3]
-        result = cls.validate(operand, param1, param2)
-        result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
-        for measure_name in operand.get_measures_names():
-            if isinstance(param1, DataComponent) or isinstance(param2, DataComponent):
-                result.data[measure_name] = cls.apply_operation_series(
-                    result.data[measure_name], param1, param2
-                )
-            else:
-                param_value1 = None if param1 is None else param1.value
-                param_value2 = _REPLACE_PARAM2_OMITTED if param2 is None else param2.value
-                result.data[measure_name] = cls.apply_operation_series_scalar(
-                    result.data[measure_name], param_value1, param_value2
-                )
-        cols_to_keep = operand.get_identifiers_names() + operand.get_measures_names()
-        result.data = result.data[cols_to_keep]
-        cls.modify_measure_column(result)
-        return result
-
-    @classmethod
-    def apply_operation_series(cls, *args: Any) -> Any:
-        param1: Optional[Union[DataComponent, Scalar]]
-        param2: Optional[Union[DataComponent, Scalar]]
-        data, param1, param2 = (args + (None, None))[:3]
-        param1_data = cls.generate_series_from_param(param1, len(data))
         if param2 is None:
-            # param2 was omitted; pass the sentinel so py_op uses "" as default
-            df = pd.DataFrame([data, param1_data]).T
-            n1, n2 = df.columns
-            return df.apply(lambda x: cls.op_func(x[n1], x[n2], _REPLACE_PARAM2_OMITTED), axis=1)
-        param2_data = cls.generate_series_from_param(param2, len(data))
-        df = pd.DataFrame([data, param1_data, param2_data]).T
-        n1, n2, n3 = df.columns
-        return df.apply(lambda x: cls.op_func(x[n1], x[n2], x[n3]), axis=1)
-
-    @classmethod
-    def component_evaluation(cls, *args: Any) -> DataComponent:
-        operand: DataComponent
-        param1: Optional[Union[DataComponent, Scalar]]
-        param2: Optional[Union[DataComponent, Scalar]]
-        operand, param1, param2 = (args + (None, None))[:3]
-        result = cls.validate(operand, param1, param2)
-        result.data = operand.data.copy() if operand.data is not None else pd.Series()
-        if isinstance(param1, DataComponent) or isinstance(param2, DataComponent):
-            result.data = cls.apply_operation_series(result.data, param1, param2)
-        else:
-            param_value1 = None if param1 is None else param1.value
-            param_value2 = _REPLACE_PARAM2_OMITTED if param2 is None else param2.value
-            result.data = cls.apply_operation_series_scalar(
-                operand.data, param_value1, param_value2
-            )
-        return result
+            param2 = Scalar(name="replace_default", data_type=String, value="")
+        return super().evaluate(operand, param1, param2)
 
     @classmethod
     def check_param(cls, param: Optional[Union[DataComponent, Scalar]], position: int) -> None:
