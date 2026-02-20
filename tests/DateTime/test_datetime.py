@@ -11,78 +11,54 @@ from vtlengine.DataTypes.TimeHandling import check_max_date
 from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.Interpreter import InterpreterAnalyzer
 
-# ---- check_date tests ----
+check_date_valid_params = [
+    pytest.param("2020-01-15", "2020-01-15", id="date_only"),
+    pytest.param("2020-01-15T10:30:00", "2020-01-15 10:30:00", id="datetime_t_separator"),
+    pytest.param("2020-01-15 10:30:00", "2020-01-15 10:30:00", id="datetime_space_separator"),
+    pytest.param("2020-01-15T00:00:00", "2020-01-15 00:00:00", id="datetime_midnight"),
+    pytest.param("2020-12-31T23:59:59", "2020-12-31 23:59:59", id="datetime_end_of_day"),
+    pytest.param("2020-01-15T10:30", "2020-01-15 10:30:00", id="datetime_no_seconds_normalized"),
+    pytest.param(
+        "2020-01-15T10:30:00.123456",
+        "2020-01-15 10:30:00.123456",
+        id="datetime_microseconds",
+    ),
+    pytest.param(
+        "2020-01-15 10:30:00.123456",
+        "2020-01-15 10:30:00.123456",
+        id="datetime_microseconds_space_separator",
+    ),
+    pytest.param(
+        "2020-01-15T10:30:00.123456789",
+        "2020-01-15 10:30:00.123456",
+        id="datetime_nanoseconds_truncated",
+    ),
+]
 
+check_date_invalid_params = [
+    pytest.param("2020-01-15T25:00:00", InputValidationException, id="invalid_datetime_bad_hour"),
+    pytest.param("1799-12-31", InputValidationException, id="invalid_year_below_range"),
+]
 
-class TestCheckDate:
-    def test_date_only(self):
-        assert check_date("2020-01-15") == "2020-01-15"
+check_max_date_valid_params = [
+    pytest.param("2020-01-15", "2020-01-15", id="date_only"),
+    pytest.param("2020-01-15T10:30:00", "2020-01-15 10:30:00", id="datetime_t_separator"),
+    pytest.param("2020-01-15 10:30:00", "2020-01-15 10:30:00", id="datetime_space_separator"),
+    pytest.param(
+        "2020-01-15T10:30:00.123456",
+        "2020-01-15 10:30:00.123456",
+        id="datetime_microseconds",
+    ),
+    pytest.param(
+        "2020-01-15T10:30:00.123456789",
+        "2020-01-15 10:30:00.123456",
+        id="datetime_nanoseconds_truncated",
+    ),
+]
 
-    def test_datetime_t_separator(self):
-        assert check_date("2020-01-15T10:30:00") == "2020-01-15 10:30:00"
-
-    def test_datetime_space_separator(self):
-        """Space separator input is accepted; internal output uses space."""
-        assert check_date("2020-01-15 10:30:00") == "2020-01-15 10:30:00"
-
-    def test_datetime_midnight(self):
-        assert check_date("2020-01-15T00:00:00") == "2020-01-15 00:00:00"
-
-    def test_datetime_end_of_day(self):
-        assert check_date("2020-12-31T23:59:59") == "2020-12-31 23:59:59"
-
-    def test_datetime_no_seconds_normalized(self):
-        """Partial time (HH:MM) is accepted and normalized to HH:MM:SS."""
-        assert check_date("2020-01-15T10:30") == "2020-01-15 10:30:00"
-
-    def test_datetime_microseconds(self):
-        assert check_date("2020-01-15T10:30:00.123456") == "2020-01-15 10:30:00.123456"
-
-    def test_datetime_microseconds_space_separator(self):
-        assert check_date("2020-01-15 10:30:00.123456") == "2020-01-15 10:30:00.123456"
-
-    def test_datetime_nanoseconds_truncated(self):
-        """Nanosecond input is truncated to microsecond precision."""
-        assert check_date("2020-01-15T10:30:00.123456789") == "2020-01-15 10:30:00.123456"
-
-    def test_invalid_datetime_bad_hour(self):
-        with pytest.raises(InputValidationException):
-            check_date("2020-01-15T25:00:00")
-
-    def test_invalid_year_below_range(self):
-        with pytest.raises(InputValidationException):
-            check_date("1799-12-31")
-
-
-# ---- check_max_date tests ----
-
-
-class TestCheckMaxDate:
-    def test_date_only(self):
-        assert check_max_date("2020-01-15") == "2020-01-15"
-
-    def test_datetime_t_separator(self):
-        assert check_max_date("2020-01-15T10:30:00") == "2020-01-15 10:30:00"
-
-    def test_datetime_space_separator(self):
-        assert check_max_date("2020-01-15 10:30:00") == "2020-01-15 10:30:00"
-
-    def test_datetime_microseconds(self):
-        assert check_max_date("2020-01-15T10:30:00.123456") == "2020-01-15 10:30:00.123456"
-
-    def test_datetime_nanoseconds_truncated(self):
-        assert check_max_date("2020-01-15T10:30:00.123456789") == "2020-01-15 10:30:00.123456"
-
-    def test_none(self):
-        assert check_max_date(None) is None
-
-    def test_invalid_format(self):
-        with pytest.raises(SemanticError):
-            check_max_date("2020/01/15")
-
-
-# ---- Scalar operator tests with datetime ----
-
+check_max_date_invalid_params = [
+    pytest.param("2020/01/15", SemanticError, id="invalid_format"),
+]
 
 scalar_time_params = [
     ('year(cast("2023-01-12T10:30:00", date))', 2023),
@@ -94,17 +70,6 @@ scalar_time_params = [
     ('dayofyear(cast("2023-02-01T23:59:59", date))', 32),
     ('dayofyear(cast("2023-02-01 23:59:59", date))', 32),
 ]
-
-
-@pytest.mark.parametrize("text, reference", scalar_time_params)
-def test_unary_time_scalar_datetime(text, reference):
-    warnings.filterwarnings("ignore", category=FutureWarning)
-    expression = f"DS_r := {text};"
-    ast = create_ast(expression)
-    interpreter = InterpreterAnalyzer({})
-    result = interpreter.visit(ast)
-    assert result["DS_r"].value == reference
-    assert result["DS_r"].data_type == Integer
 
 
 datediff_params = [
@@ -127,17 +92,6 @@ datediff_params = [
 ]
 
 
-@pytest.mark.parametrize("text, reference", datediff_params)
-def test_datediff_datetime(text, reference):
-    warnings.filterwarnings("ignore", category=FutureWarning)
-    expression = f"DS_r := {text};"
-    ast = create_ast(expression)
-    interpreter = InterpreterAnalyzer({})
-    result = interpreter.visit(ast)
-    assert result["DS_r"].value == reference
-    assert result["DS_r"].data_type == Integer
-
-
 dateadd_params = [
     ('dateadd(cast("2020-01-15T10:30:00", date), 1, "D")', "2020-01-16 10:30:00"),
     ('dateadd(cast("2020-01-15T10:30:00", date), 1, "M")', "2020-02-15 10:30:00"),
@@ -149,41 +103,6 @@ dateadd_params = [
     ('dateadd(cast("2020-01-15 10:30:00", date), 5, "D")', "2020-01-20 10:30:00"),
     ('dateadd(cast("2020-01-15 10:30:00", date), 3, "M")', "2020-04-15 10:30:00"),
 ]
-
-
-@pytest.mark.parametrize("text, reference", dateadd_params)
-def test_dateadd_datetime(text, reference):
-    warnings.filterwarnings("ignore", category=FutureWarning)
-    expression = f"DS_r := {text};"
-    ast = create_ast(expression)
-    interpreter = InterpreterAnalyzer({})
-    result = interpreter.visit(ast)
-    assert result["DS_r"].value == reference
-    assert result["DS_r"].data_type == Date
-
-
-# ---- Helpers for dataset tests ----
-
-_DS_1_STRUCTURE = {
-    "datasets": [
-        {
-            "name": "DS_1",
-            "DataStructure": [
-                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
-                {"name": "Me_1", "type": "Date", "role": "Measure", "nullable": True},
-            ],
-        }
-    ]
-}
-
-
-def _run_ds(script, input_values):
-    data_df = pd.DataFrame({"Id_1": list(range(1, len(input_values) + 1)), "Me_1": input_values})
-    result = run(script=script, data_structures=_DS_1_STRUCTURE, datapoints={"DS_1": data_df})
-    return result["DS_r"].data["Me_1"].tolist()
-
-
-# ---- Dataset-level dataload tests (parametrized) ----
 
 dataload_params = [
     pytest.param(
@@ -213,16 +132,6 @@ dataload_params = [
     ),
 ]
 
-
-@pytest.mark.parametrize("input_values, expected", dataload_params)
-def test_dataset_dataload(input_values, expected):
-    """Data loading normalizes datetime values: T→space, nanoseconds→microseconds."""
-    result = _run_ds("DS_r <- DS_1;", input_values)
-    assert result == expected
-
-
-# ---- Dataset-level VTL operator tests (parametrized) ----
-
 dataset_operator_params = [
     pytest.param(
         'DS_r <- DS_1[calc Me_1 := dateadd(Me_1, 1, "D")];',
@@ -251,29 +160,6 @@ dataset_operator_params = [
 ]
 
 
-@pytest.mark.parametrize("script, input_values, expected", dataset_operator_params)
-def test_dataset_operator(script, input_values, expected):
-    """VTL operators preserve hours, minutes, seconds, and microseconds."""
-    result = _run_ds(script, input_values)
-    assert result == expected
-
-
-# ---- Dataset-level extraction operator tests ----
-
-_DS_1_INT_MEASURE = {
-    "datasets": [
-        {
-            "name": "DS_1",
-            "DataStructure": [
-                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
-                {"name": "Me_1", "type": "Date", "role": "Measure", "nullable": True},
-                {"name": "Me_2", "type": "Integer", "role": "Measure", "nullable": True},
-            ],
-        }
-    ]
-}
-
-
 dataset_extraction_params = [
     pytest.param(
         "year",
@@ -300,6 +186,120 @@ dataset_extraction_params = [
         id="dayofyear_from_datetime",
     ),
 ]
+
+
+@pytest.mark.parametrize("input_value, expected", check_date_valid_params)
+def test_check_date_valid(input_value, expected):
+    assert check_date(input_value) == expected
+
+
+@pytest.mark.parametrize("input_value, expected_exception", check_date_invalid_params)
+def test_check_date_invalid(input_value, expected_exception):
+    with pytest.raises(expected_exception):
+        check_date(input_value)
+
+
+@pytest.mark.parametrize("input_value, expected", check_max_date_valid_params)
+def test_check_max_date_valid(input_value, expected):
+    assert check_max_date(input_value) == expected
+
+
+@pytest.mark.parametrize("input_value, expected_exception", check_max_date_invalid_params)
+def test_check_max_date_invalid(input_value, expected_exception):
+    with pytest.raises(expected_exception):
+        check_max_date(input_value)
+
+
+def test_check_max_date_none():
+    assert check_max_date(None) is None
+
+
+@pytest.mark.parametrize("text, reference", scalar_time_params)
+def test_unary_time_scalar_datetime(text, reference):
+    warnings.filterwarnings("ignore", category=FutureWarning)
+    expression = f"DS_r := {text};"
+    ast = create_ast(expression)
+    interpreter = InterpreterAnalyzer({})
+    result = interpreter.visit(ast)
+    assert result["DS_r"].value == reference
+    assert result["DS_r"].data_type == Integer
+
+
+@pytest.mark.parametrize("text, reference", datediff_params)
+def test_datediff_datetime(text, reference):
+    warnings.filterwarnings("ignore", category=FutureWarning)
+    expression = f"DS_r := {text};"
+    ast = create_ast(expression)
+    interpreter = InterpreterAnalyzer({})
+    result = interpreter.visit(ast)
+    assert result["DS_r"].value == reference
+    assert result["DS_r"].data_type == Integer
+
+
+@pytest.mark.parametrize("text, reference", dateadd_params)
+def test_dateadd_datetime(text, reference):
+    warnings.filterwarnings("ignore", category=FutureWarning)
+    expression = f"DS_r := {text};"
+    ast = create_ast(expression)
+    interpreter = InterpreterAnalyzer({})
+    result = interpreter.visit(ast)
+    assert result["DS_r"].value == reference
+    assert result["DS_r"].data_type == Date
+
+
+_DS_1_STRUCTURE = {
+    "datasets": [
+        {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Date", "role": "Measure", "nullable": True},
+            ],
+        }
+    ]
+}
+
+
+def _run_ds(script, input_values):
+    data_df = pd.DataFrame({"Id_1": list(range(1, len(input_values) + 1)), "Me_1": input_values})
+    result = run(script=script, data_structures=_DS_1_STRUCTURE, datapoints={"DS_1": data_df})
+    return result["DS_r"].data["Me_1"].tolist()
+
+
+# ---- Dataset-level dataload tests (parametrized) ----
+
+
+@pytest.mark.parametrize("input_values, expected", dataload_params)
+def test_dataset_dataload(input_values, expected):
+    """Data loading normalizes datetime values: T→space, nanoseconds→microseconds."""
+    result = _run_ds("DS_r <- DS_1;", input_values)
+    assert result == expected
+
+
+# ---- Dataset-level VTL operator tests (parametrized) ----
+
+
+@pytest.mark.parametrize("script, input_values, expected", dataset_operator_params)
+def test_dataset_operator(script, input_values, expected):
+    """VTL operators preserve hours, minutes, seconds, and microseconds."""
+    result = _run_ds(script, input_values)
+    assert result == expected
+
+
+# ---- Dataset-level extraction operator tests ----
+
+_DS_1_INT_MEASURE = {
+    "datasets": [
+        {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Date", "role": "Measure", "nullable": True},
+                {"name": "Me_2", "type": "Integer", "role": "Measure", "nullable": True},
+            ],
+        }
+    ]
+}
 
 
 @pytest.mark.parametrize("op, input_values, expected", dataset_extraction_params)
