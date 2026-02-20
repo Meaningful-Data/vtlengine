@@ -1044,6 +1044,12 @@ centralised_messages = {
         "description": "Raised when < or > comparisons are attempted between operands "
         "with different period indicators.",
     },
+    "2-1-19-21": {
+        "message": "SDMX Gregorian representation is not supported for period indicator "
+        "'{period}'. Only Annual (A), Month (M), and Day (D) are supported.",
+        "description": "Raised when trying to convert a time period with Semester (S), "
+        "Quarter (Q), or Week (W) indicator to SDMX Gregorian format.",
+    },
     # ----------- Interpreter Common ------
     "2-3-4": {
         "message": "{op} operator must have a {comp}",
