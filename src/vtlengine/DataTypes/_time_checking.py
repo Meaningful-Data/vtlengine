@@ -7,16 +7,47 @@ from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.Exceptions import InputValidationException
 
 
+def _has_time_component(value: str) -> bool:
+    """Check if a date string includes a time component (T or space separator at position 10)."""
+    return len(value) > 10 and value[10] in ("T", " ")
+
+
+def _truncate_nanoseconds(value: str) -> str:
+    """Truncate sub-second precision beyond 6 digits (microseconds) for Python compatibility."""
+    dot_idx = value.find(".")
+    if dot_idx == -1:
+        return value
+    # Keep at most 6 decimal digits after the dot
+    frac_end = dot_idx + 1
+    while frac_end < len(value) and value[frac_end].isdigit():
+        frac_end += 1
+    frac_digits = value[dot_idx + 1 : frac_end]
+    if len(frac_digits) > 6:
+        return value[:dot_idx] + "." + frac_digits[:6] + value[frac_end:]
+    return value
+
+
+def parse_date_value(value: str) -> date:
+    """Parse a date or datetime string into a date object (time part is discarded)."""
+    return date.fromisoformat(value[:10])
+
+
 def check_date(value: str) -> str:
     """
     Check if the date is in the correct format.
+    Accepts YYYY-MM-DD and YYYY-MM-DD[T| ]HH:MM:SS[.fffffffff] (ISO 8601).
+    Output always uses T separator for datetime values, no timezone.
+    Nanosecond input is truncated to microsecond precision.
     """
-    # Remove all whitespaces
     value = value.strip()
+    has_time = _has_time_component(value)
     try:
-        if len(value) == 9 and value[7] == "-":
-            value = value[:-1] + "0" + value[-1]
-        date_value = date.fromisoformat(value)
+        if has_time:
+            iso_result = datetime.fromisoformat(_truncate_nanoseconds(value)).isoformat(sep=" ")
+        else:
+            if len(value) == 9 and value[7] == "-":
+                value = value[:-1] + "0" + value[-1]
+            iso_result = date.fromisoformat(value).isoformat()
     except ValueError as e:
         if "is out of range" in str(e):
             raise InputValidationException(f"Date {value} is out of range for the month.")
@@ -25,16 +56,17 @@ def check_date(value: str) -> str:
                 f"Date {value} is invalid. Month must be between 1 and 12."
             )
         raise InputValidationException(
-            f"Date {value} is not in the correct format. Use YYYY-MM-DD."
+            f"Date {value} is not in the correct format. Use YYYY-MM-DD or YYYY-MM-DD HH:MM:SS."
         )
 
-    # Check date is between 1900 and 9999
-    if not 1800 <= date_value.year <= 9999:
+    # Check date is between 1800 and 9999
+    year = int(value[:4])
+    if not 1800 <= year <= 9999:
         raise InputValidationException(
             f"Date {value} is invalid. Year must be between 1900 and 9999."
         )
 
-    return date_value.isoformat()
+    return iso_result
 
 
 def dates_to_string(date1: date, date2: date) -> str:
@@ -43,7 +75,7 @@ def dates_to_string(date1: date, date2: date) -> str:
     return f"{date1_str}/{date2_str}"
 
 
-date_pattern = r"\d{4}[-][0-1]?\d[-][0-3]?\d"
+date_pattern = r"\d{4}[-][0-1]?\d[-][0-3]?\d([T ]\d{2}:\d{2}:\d{2}(\.\d+)?)?"
 year_pattern = r"\d{4}"
 month_pattern = r"\d{4}[-][0-1]?\d"
 time_pattern = r"^" + date_pattern + r"/" + date_pattern + r"$"
