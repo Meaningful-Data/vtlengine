@@ -27,8 +27,9 @@ class Unary(Operator.Unary):
 
     @classmethod
     def op_func(cls, x: Any) -> Any:
-        x = "" if pd.isnull(x) else str(x)
-        return cls.py_op(x)
+        if pd.isnull(x):
+            return None
+        return cls.py_op(str(x))
 
     @classmethod
     def apply_operation_component(cls, series: Any) -> Any:
@@ -53,10 +54,9 @@ class Length(Unary):
 
     @classmethod
     def op_func(cls, x: Any) -> Any:
-        result = super().op_func(x)
-        if pd.isnull(result):
-            return 0
-        return result
+        if pd.isnull(x):
+            return None
+        return len(str(x))
 
     @classmethod
     def apply_operation_component(cls, series: Any) -> Any:
@@ -99,9 +99,9 @@ class Binary(Operator.Binary):
 
     @classmethod
     def op_func(cls, x: Any, y: Any) -> Any:
-        x = "" if pd.isnull(x) else str(x)
-        y = "" if pd.isnull(y) else str(y)
-        return cls.py_op(x, y)
+        if pd.isnull(x) or pd.isnull(y):
+            return None
+        return cls.py_op(str(x), str(y))
 
 
 class Concatenate(Binary):
@@ -131,7 +131,8 @@ class Parameterized(Unary):
         param2: Optional[Any]
         x, param1, param2 = (args + (None, None))[:3]
 
-        x = "" if pd.isnull(x) else x
+        if pd.isnull(x):
+            return None
         return cls.py_op(x, param1, param2)
 
     @classmethod
@@ -236,7 +237,7 @@ class Parameterized(Unary):
         if param is None:
             return pd.Series(index=range(length), dtype=object)
         if isinstance(param, Scalar):
-            return pd.Series(data=[param.value], index=range(length))
+            return pd.Series(data=param.value, index=range(length), dtype=object)
         return param.data
 
     @classmethod
@@ -310,13 +311,18 @@ class Replace(Parameterized):
     @classmethod
     def py_op(cls, x: str, param1: Optional[Any], param2: Optional[Any]) -> Any:
         if pd.isnull(param1):
-            return ""
-        elif pd.isnull(param2):
-            param2 = ""
+            return None
+        if pd.isnull(param2):
+            return None
         x = str(x)
-        if param1 is not None and param2 is not None:
-            return x.replace(param1, param2)
-        return x
+        return x.replace(str(param1), str(param2))
+
+    @classmethod
+    def evaluate(cls, *args: Any) -> Union[Dataset, DataComponent, Scalar]:
+        operand, param1, param2 = (args + (None, None))[:3]
+        if param2 is None:
+            param2 = Scalar(name="replace_default", data_type=String, value="")
+        return super().evaluate(operand, param1, param2)
 
     @classmethod
     def check_param(cls, param: Optional[Union[DataComponent, Scalar]], position: int) -> None:
@@ -561,7 +567,7 @@ class Instr(Parameterized):
         else:
             occurrence = 0
         if pd.isnull(str_to_find):
-            return 0
+            return None
         else:
             str_to_find = str(str_to_find)
 
