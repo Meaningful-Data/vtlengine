@@ -187,6 +187,199 @@ dataset_extraction_params = [
     ),
 ]
 
+Time_id_structure = {
+    "datasets": [
+        {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Id_2", "type": "Date", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Integer", "role": "Measure", "nullable": True},
+            ],
+        }
+    ]
+}
+
+Time_id_str_structure = {
+    "datasets": [
+        {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "String", "role": "Identifier", "nullable": False},
+                {"name": "Id_2", "type": "Date", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Integer", "role": "Measure", "nullable": True},
+            ],
+        }
+    ]
+}
+
+
+flow_to_stock_params = [
+    pytest.param(
+        {
+            "Id_1": [1, 1, 1],
+            "Id_2": [
+                "2020-01-01 10:30:00",
+                "2020-01-02 10:30:00",
+                "2020-01-03 10:30:00",
+            ],
+            "Me_1": [10, 20, 30],
+        },
+        [
+            "2020-01-01 10:30:00",
+            "2020-01-02 10:30:00",
+            "2020-01-03 10:30:00",
+        ],
+        [10, 30, 60],
+        id="single_group_cumulative",
+    ),
+    pytest.param(
+        {
+            "Id_1": [1, 1, 1, 2, 2, 2],
+            "Id_2": [
+                "2020-01-01 10:30:00",
+                "2020-01-02 10:30:00",
+                "2020-01-03 10:30:00",
+                "2020-01-01 10:30:00",
+                "2020-01-02 10:30:00",
+                "2020-01-03 10:30:00",
+            ],
+            "Me_1": [10, 20, 30, 5, 15, 25],
+        },
+        None,
+        [10, 30, 60, 5, 20, 45],
+        id="multiple_groups_cumulative",
+    ),
+]
+
+
+fill_time_series_params = [
+    pytest.param(
+        "single",
+        ["A", "A", "A", "B", "B", "B"],
+        [
+            "2010-12-31",
+            "2012-12-31",
+            "2013-12-31",
+            "2011-12-31",
+            "2012-12-31",
+            "2014-12-31",
+        ],
+        [10, 30, 40, 50, 60, 80],
+        ["A", "A", "A", "A", "B", "B", "B", "B"],
+        [
+            "2010-12-31",
+            "2011-12-31",
+            "2012-12-31",
+            "2013-12-31",
+            "2011-12-31",
+            "2012-12-31",
+            "2013-12-31",
+            "2014-12-31",
+        ],
+        [10, None, 30, 40, 50, 60, None, 80],
+        id="limit_method(single)",
+    ),
+    pytest.param(
+        "all",
+        ["A", "A", "A", "B", "B", "B"],
+        [
+            "2010-12-31",
+            "2012-12-31",
+            "2013-12-31",
+            "2011-12-31",
+            "2012-12-31",
+            "2014-12-31",
+        ],
+        [10, 30, 40, 50, 60, 80],
+        [
+            "A",
+            "A",
+            "A",
+            "A",
+            "A",
+            "B",
+            "B",
+            "B",
+            "B",
+            "B",
+        ],
+        [
+            "2010-12-31",
+            "2011-12-31",
+            "2012-12-31",
+            "2013-12-31",
+            "2014-12-31",
+            "2010-12-31",
+            "2011-12-31",
+            "2012-12-31",
+            "2013-12-31",
+            "2014-12-31",
+        ],
+        [10, None, 30, 40, None, None, 50, 60, None, 80],
+        id="limit_method(all)",
+    ),
+]
+
+time_agg_scalar_params = [
+    pytest.param(
+        '"A", cast("2020-06-15 10:30:00", date), first',
+        "2020-01-01",
+        id="annual_first",
+    ),
+]
+
+time_agg_dataset_params = [
+    pytest.param(
+        '"A", _, DS_1, first',
+        {
+            "Id_1": [1, 2, 3],
+            "Me_1": [
+                "2020-01-15 10:30:00",
+                "2020-06-15 08:00:00",
+                "2021-03-01 12:00:00",
+            ],
+        },
+        ["2020-01-01", "2020-01-01", "2021-01-01"],
+        id="annual_first_dataset",
+    ),
+    pytest.param(
+        '"Q", _, DS_1, last',
+        {
+            "Id_1": [1, 2, 3],
+            "Me_1": [
+                "2020-01-15 10:30:00",
+                "2020-06-15 08:00:00",
+                "2021-11-20 12:00:00",
+            ],
+        },
+        ["2020-03-31", "2020-06-30", "2021-12-31"],
+        id="quarterly_last_dataset",
+    ),
+]
+
+
+timeshift_params = [
+    pytest.param(
+        "DS_r <- timeshift(DS_1, 1);",
+        [1, 1, 1],
+        ["2020-01-01 10:30:00", "2020-01-02 10:30:00", "2020-01-03 10:30:00"],
+        [10, 20, 30],
+        ["2020-01-02 10:30:00", "2020-01-03 10:30:00", "2020-01-04 10:30:00"],
+        [10, 20, 30],
+        id="timeshift_forward_preserves_time",
+    ),
+    pytest.param(
+        "DS_r <- timeshift(DS_1, -1);",
+        [1, 1, 1],
+        ["2020-01-01 10:30:00", "2020-01-02 10:30:00", "2020-01-03 10:30:00"],
+        [10, 20, 30],
+        ["2019-12-31 10:30:00", "2020-01-01 10:30:00", "2020-01-02 10:30:00"],
+        [10, 20, 30],
+        id="timeshift_backward_preserves_time",
+    ),
+]
+
 
 @pytest.mark.parametrize("input_value, expected", check_date_valid_params)
 def test_check_date_valid(input_value, expected):
@@ -247,7 +440,7 @@ def test_dateadd_datetime(text, reference):
     assert result["DS_r"].data_type == Date
 
 
-_DS_1_STRUCTURE = {
+DS_1_Structure = {
     "datasets": [
         {
             "name": "DS_1",
@@ -262,7 +455,7 @@ _DS_1_STRUCTURE = {
 
 def _run_ds(script, input_values):
     data_df = pd.DataFrame({"Id_1": list(range(1, len(input_values) + 1)), "Me_1": input_values})
-    result = run(script=script, data_structures=_DS_1_STRUCTURE, datapoints={"DS_1": data_df})
+    result = run(script=script, data_structures=DS_1_Structure, datapoints={"DS_1": data_df})
     return result["DS_r"].data["Me_1"].tolist()
 
 
@@ -344,3 +537,70 @@ def test_dataset_datediff_with_datetime():
     )
     result = run(script=script, data_structures=data_structures, datapoints={"DS_1": data_df})
     assert result["DS_r"].data["Me_2"].tolist() == [9, 0]
+
+
+@pytest.mark.parametrize("input_data, expected_Id_2, expected_Me_1", flow_to_stock_params)
+def test_flow_to_stock_datetime(input_data, expected_Id_2, expected_Me_1):
+    script = "DS_r <- flow_to_stock(DS_1);"
+    data_df = pd.DataFrame(input_data)
+    result = run(
+        script=script,
+        data_structures=Time_id_structure,
+        datapoints={"DS_1": data_df},
+    )
+    result_data = result["DS_r"].data
+    if expected_Id_2 is not None:
+        assert result_data["Id_2"].tolist() == expected_Id_2
+    assert result_data["Me_1"].tolist() == expected_Me_1
+
+
+@pytest.mark.parametrize(
+    "lim_method, Id_1, Id_2, Me_1, exp_Id_1, exp_Id_2, exp_Me_1",
+    fill_time_series_params,
+)
+def test_fill_time_series(lim_method, Id_1, Id_2, Me_1, exp_Id_1, exp_Id_2, exp_Me_1):
+    script = f"DS_r <- fill_time_series(DS_1, {lim_method});"
+    data_df = pd.DataFrame({"Id_1": Id_1, "Id_2": Id_2, "Me_1": Me_1})
+    result = run(
+        script=script,
+        data_structures=Time_id_str_structure,
+        datapoints={"DS_1": data_df},
+    )
+    result_data = result["DS_r"].data.sort_values(["Id_1", "Id_2"]).reset_index(drop=True)
+    assert result_data["Id_1"].tolist() == exp_Id_1
+    assert result_data["Id_2"].tolist() == exp_Id_2
+    assert result_data["Me_1"].tolist() == exp_Me_1
+
+
+@pytest.mark.parametrize("args, expected", time_agg_scalar_params)
+def test_time_agg_scalar_datetime(args, expected):
+    warnings.filterwarnings("ignore", category=FutureWarning)
+    expression = f"DS_r := time_agg({args});"
+    ast = create_ast(expression)
+    interpreter = InterpreterAnalyzer({})
+    result = interpreter.visit(ast)
+    assert result["DS_r"].value == expected
+    assert result["DS_r"].data_type == Date
+
+
+@pytest.mark.parametrize("args, input_data, expected", time_agg_dataset_params)
+def test_time_agg_dataset_datetime(args, input_data, expected):
+    script = f"DS_r <- time_agg({args});"
+    data_df = pd.DataFrame(input_data)
+    result = run(
+        script=script,
+        data_structures=DS_1_Structure,
+        datapoints={"DS_1": data_df},
+    )
+    assert result["DS_r"].data["Me_1"].tolist() == expected
+
+
+@pytest.mark.parametrize(
+    "script, Id_1, Id_2, Me_1, Id_2_reference, Me_1_reference", timeshift_params
+)
+def test_timeshift_datetime(script, Id_1, Id_2, Me_1, Id_2_reference, Me_1_reference):
+    data_df = pd.DataFrame({"Id_1": Id_1, "Id_2": Id_2, "Me_1": Me_1})
+    result = run(script=script, data_structures=Time_id_structure, datapoints={"DS_1": data_df})
+    result_data = result["DS_r"].data
+    assert result_data["Id_2"].astype(str).tolist() == Id_2_reference
+    assert result_data["Me_1"].tolist() == Me_1_reference
