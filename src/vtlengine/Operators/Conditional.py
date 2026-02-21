@@ -230,7 +230,14 @@ class Nvl(Binary):
         else:
             if not isinstance(result, Scalar):
                 if isinstance(right, Scalar):
-                    result.data = left.data.fillna(right.value)
+                    if isinstance(result, Dataset):
+                        measure_names = result.get_measures_names()
+                        result.data = left.data.copy()
+                        for me in measure_names:
+                            if me in result.data.columns:
+                                result.data[me] = result.data[me].fillna(right.value)
+                    else:
+                        result.data = left.data.fillna(right.value)
                 else:
                     result.data = left.data.fillna(right.data)
                 if isinstance(result, Dataset):

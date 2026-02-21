@@ -264,6 +264,10 @@ class Flow_to_stock(Unary):
     @classmethod
     def py_op(cls, x: Any) -> Any:
         x = _cast_bool_columns(x)
+        if isinstance(x, pd.DataFrame):
+            numeric = x.select_dtypes(include="number")
+            x[numeric.columns] = numeric.cumsum().fillna(numeric)
+            return x
         return x.cumsum().fillna(x)
 
 
@@ -271,6 +275,10 @@ class Stock_to_flow(Unary):
     @classmethod
     def py_op(cls, x: Any) -> Any:
         x = _cast_bool_columns(x)
+        if isinstance(x, pd.DataFrame):
+            numeric = x.select_dtypes(include="number")
+            x[numeric.columns] = numeric.diff().fillna(numeric)
+            return x
         return x.diff().fillna(x)
 
 
