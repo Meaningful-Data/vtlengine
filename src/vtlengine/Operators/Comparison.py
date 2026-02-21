@@ -111,9 +111,9 @@ class Binary(Operator.Binary):
 
             if series_type != first_non_null_type:
                 if isinstance(first_non_null, str):
-                    series = series.astype(str)
+                    series = series.astype("string[pyarrow]")
                 elif isinstance(first_non_null, (int, float)):
-                    series = series.astype(float)
+                    series = series.astype("double[pyarrow]")
 
         # Use op_func if it's overridden (not from Binary base class)
         # to support tolerance-based number comparisons

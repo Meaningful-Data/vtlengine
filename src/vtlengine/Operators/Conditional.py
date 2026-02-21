@@ -73,7 +73,7 @@ class If(Operator):
         if condition.data is None:
             return pd.Series()
 
-        cond = condition.data.fillna(False).astype(bool)
+        cond = condition.data.fillna(False).astype("bool[pyarrow]")
         t_base = component_assign(cond, true_branch)
         f_base = component_assign(~cond, false_branch)
         return pd.concat([t_base, f_base])
@@ -95,7 +95,7 @@ class If(Operator):
 
         cond_measure = condition.get_measures_names()[0]
         cond = condition.data
-        cond[COND_COL] = cond.pop(cond_measure).fillna(False).astype(bool)
+        cond[COND_COL] = cond.pop(cond_measure).fillna(False).astype("bool[pyarrow]")
 
         t_base = dataset_assign(cond[cond[COND_COL]], true_branch, ids, measures)
         f_base = dataset_assign(cond[~cond[COND_COL]], false_branch, ids, measures)
@@ -314,7 +314,7 @@ class Case(Operator):
             result = pd.Series(elseOp.value, index=conditions[0].data.index)
 
         for i in range(len(conditions)):
-            case = conditions[i].data[conditions[i].data.fillna(False).astype(bool)]
+            case = conditions[i].data[conditions[i].data.fillna(False).astype("bool[pyarrow]")]
             case_result = component_assign(case, thenOps[i])
             result = result.reindex(result.index.union(case.index))
             result.loc[case.index] = case_result

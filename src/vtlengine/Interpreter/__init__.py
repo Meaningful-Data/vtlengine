@@ -295,6 +295,11 @@ class InterpreterAnalyzer(ASTTemplate):
             }
             self._save_scalars_efficient(scalars_filtered)
 
+        # Enforce output dtypes match DataStructure declarations
+        for obj in results.values():
+            if isinstance(obj, Dataset):
+                obj.enforce_dtypes()
+
         return results
 
     # Definition Language
@@ -1135,7 +1140,7 @@ class InterpreterAnalyzer(ASTTemplate):
             if isinstance(merge_ds, Dataset) and merge_ds.data is not None:
                 cond = cond.loc[merge_ds.data.index]
 
-            valid = cond.dropna().astype(bool)
+            valid = cond.dropna().astype("bool[pyarrow]")
             if isinstance(condition, Dataset) and condition.data is not None:
                 then_df = condition.data.loc[valid.index[valid]]
                 else_df = condition.data.loc[valid.index[~valid]]
