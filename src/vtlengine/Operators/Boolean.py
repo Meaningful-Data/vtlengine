@@ -86,4 +86,4 @@ class Not(Unary):
 
     @classmethod
     def apply_operation_component(cls, series: Any) -> Any:
-        return series.map(lambda x: not x, na_action="ignore").astype("bool[pyarrow]")
+        return ~series.astype("bool[pyarrow]")

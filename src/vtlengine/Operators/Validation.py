@@ -114,13 +114,13 @@ class Check(Operator):
         # NULL bool_var means indeterminate - should NOT have errorcode/errorlevel
         validation_measure_name = validation_element.get_measures_names()[0]
         bool_col = result.data[validation_measure_name]
-        result.data["errorcode"] = bool_col.map(
-            lambda x: error_code if x is False else None  # type: ignore[arg-type, return-value, unused-ignore]
-        ).astype("string[pyarrow]")
+        is_false = bool_col.fillna(True) == False  # noqa: E712
+        result.data["errorcode"] = pd.Series(None, index=result.data.index, dtype="string[pyarrow]")
+        result.data.loc[is_false, "errorcode"] = error_code
         errorlevel_dtype = result.components["errorlevel"].data_type.dtype()
-        result.data["errorlevel"] = bool_col.map(
-            lambda x: error_level if x is False else None  # type: ignore[arg-type, return-value, unused-ignore]
-        ).astype(errorlevel_dtype)  # type: ignore[call-overload]
+        result.data["errorlevel"] = pd.Series(None, index=result.data.index, dtype=errorlevel_dtype)
+        if error_level is not None:
+            result.data.loc[is_false, "errorlevel"] = error_level
 
         if invalid:
             result.data = result.data[result.data[validation_measure_name] == False]

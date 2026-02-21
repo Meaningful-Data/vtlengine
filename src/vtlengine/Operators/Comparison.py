@@ -242,9 +242,8 @@ class In(Binary):
         if right_series.data_type == Null:
             return pd.Series(None, index=left_series.index, dtype="bool[pyarrow]")
 
-        return left_series.map(lambda x: x in right_series, na_action="ignore").astype(
-            "bool[pyarrow]"
-        )
+        result = left_series.isin(right_series.values)
+        return result.where(left_series.notna(), other=pd.NA).astype("bool[pyarrow]")
 
     @classmethod
     def py_op(cls, x: Any, y: Any) -> Any:
@@ -259,7 +258,7 @@ class NotIn(Binary):
     @classmethod
     def apply_operation_two_series(cls, left_series: Any, right_series: Any) -> Any:
         series_result = In.apply_operation_two_series(left_series, right_series)
-        return series_result.map(lambda x: not x, na_action="ignore").astype("bool[pyarrow]")
+        return (~series_result).astype("bool[pyarrow]")
 
     @classmethod
     def py_op(cls, x: Any, y: Any) -> Any:

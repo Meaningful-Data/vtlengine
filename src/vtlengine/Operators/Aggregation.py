@@ -80,15 +80,9 @@ class Aggregation(Operator.Unary):
                     )
             elif measure.data_type == Duration:
                 if mode == "input":
-                    data[measure.name] = data[measure.name].map(
-                        lambda x: PERIOD_IND_MAPPING[x],
-                        na_action="ignore",
-                    )
+                    data[measure.name] = data[measure.name].map(PERIOD_IND_MAPPING)
                 else:
-                    data[measure.name] = data[measure.name].map(
-                        lambda x: PERIOD_IND_MAPPING_REVERSE[x],
-                        na_action="ignore",
-                    )
+                    data[measure.name] = data[measure.name].map(PERIOD_IND_MAPPING_REVERSE)
             elif measure.data_type == Boolean and mode == "result":
                 data[measure.name] = (
                     data[measure.name]  # type: ignore[call-overload, unused-ignore]

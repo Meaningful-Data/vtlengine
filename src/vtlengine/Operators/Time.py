@@ -497,8 +497,8 @@ class Fill_time_series(Binary):
         )
 
         def extract_max_min(group: Any) -> Dict[str, Any]:
-            start_dates = group.apply(lambda x: x.split("/")[0])
-            end_dates = group.apply(lambda x: x.split("/")[1])
+            start_dates = group.str.split("/").str[0]
+            end_dates = group.str.split("/").str[1]
             return {
                 "start": {"min": start_dates.min(), "max": start_dates.max()},
                 "end": {"min": end_dates.min(), "max": end_dates.max()},
@@ -544,11 +544,9 @@ class Fill_time_series(Binary):
                         empty_row, ignore_index=True
                     )
             start_group_df = group_df.copy()
-            start_group_df[cls.time_id] = start_group_df[cls.time_id].apply(
-                lambda x: x.split("/")[0]
-            )
+            start_group_df[cls.time_id] = start_group_df[cls.time_id].str.split("/").str[0]
             end_group_df = group_df.copy()
-            end_group_df[cls.time_id] = end_group_df[cls.time_id].apply(lambda x: x.split("/")[1])
+            end_group_df[cls.time_id] = end_group_df[cls.time_id].str.split("/").str[1]
             start_filled = cls.date_filler(start_group_df, fill_type, frequency)
             end_filled = cls.date_filler(end_group_df, fill_type, frequency)
             start_filled[cls.time_id] = start_filled[cls.time_id].str.cat(

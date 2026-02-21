@@ -72,7 +72,7 @@ class Operator:
         elif data_type.__name__ == "TimePeriod":
             series = series.map(lambda x: TimePeriodHandler(x), na_action="ignore")
         elif data_type.__name__ == "Duration":
-            series = series.map(lambda x: PERIOD_IND_MAPPING[x], na_action="ignore")
+            series = series.map(PERIOD_IND_MAPPING)
         return series
 
     @classmethod
