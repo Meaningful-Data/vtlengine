@@ -1,6 +1,5 @@
 from typing import Any, Dict, List
 
-import numpy as np
 import pandas as pd
 
 from vtlengine.DataTypes import binary_implicit_promotion
@@ -117,11 +116,10 @@ class Symdiff(Set):
                 for measure in result.get_measures_names():
                     y_null = result.data[f"{measure}_y"].isna()
                     x_null = result.data[f"{measure}_x"].isna()
-                    result.data["_merge"] = np.select(
-                        [y_null, x_null],
-                        ["left_only", "right_only"],
-                        default="both",
-                    )
+                    merge_col = pd.Series("both", index=result.data.index)
+                    merge_col = merge_col.where(~x_null, "right_only")
+                    merge_col = merge_col.where(~y_null, "left_only")
+                    result.data["_merge"] = merge_col
 
                 not_identifiers = result.get_measures_names() + result.get_attributes_names()
                 left_mask = result.data["_merge"] == "left_only"
