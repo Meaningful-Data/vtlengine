@@ -1701,6 +1701,7 @@ class InterpreterAnalyzer(ASTTemplate):
         if node.value in df[hr_component].values:
             value_data = df[df[hr_component] == node.value]
             merged = value_data.merge(code_data, how="right", on=other_ids, indicator=True)
+            merged[me_name] = merged[me_name].astype(object)
             merged.loc[merged["_merge"] == "right_only", me_name] = REMOVE
             df = merged.drop(columns=["_merge"]).set_index(code_data.index)
         else:

@@ -52,7 +52,7 @@ def ensure_dtype(series: "pd.Series[Any]", data_type: Type[ScalarType]) -> "pd.S
     """Re-cast a Series to its correct pyarrow dtype after .map()/.apply()."""
     target_dtype = data_type.dtype()
     if str(series.dtype) != target_dtype:
-        return series.astype(target_dtype)
+        return series.astype(target_dtype)  # type: ignore[call-overload]
     return series
 
 
@@ -198,21 +198,24 @@ def _id_type_promotion_join_keys(
     left_type_name: str = str(c_left.data_type.__name__)
     right_type_name: str = str(c_right.data_type.__name__)
 
+    target_dtype = c_left.data_type.dtype()
     if left_type_name == right_type_name or len(left_data) == 0 or len(right_data) == 0:
-        left_data[join_key] = left_data[join_key].astype(object)
-        right_data[join_key] = right_data[join_key].astype(object)
+        left_data[join_key] = left_data[join_key].astype(target_dtype)  # type: ignore[call-overload]
+        right_data[join_key] = right_data[join_key].astype(target_dtype)  # type: ignore[call-overload]
         return
     if (left_type_name == "Integer" and right_type_name == "Number") or (
         left_type_name == "Number" and right_type_name == "Integer"
     ):
         left_data[join_key] = left_data[join_key].map(lambda x: int(float(x)))
         right_data[join_key] = right_data[join_key].map(lambda x: int(float(x)))
-    elif left_type_name == "String" and right_type_name in ("Integer", "Number"):
+        target_dtype = "int64[pyarrow]"
+    elif (left_type_name == "String" and right_type_name in ("Integer", "Number")) or (
+        left_type_name in ("Integer", "Number") and right_type_name == "String"
+    ):
         left_data[join_key] = left_data[join_key].map(lambda x: _handle_str_number(x))
-    elif left_type_name in ("Integer", "Number") and right_type_name == "String":
         right_data[join_key] = right_data[join_key].map(lambda x: _handle_str_number(x))
-    left_data[join_key] = left_data[join_key].astype(object)
-    right_data[join_key] = right_data[join_key].astype(object)
+    left_data[join_key] = left_data[join_key].astype(target_dtype)  # type: ignore[call-overload]
+    right_data[join_key] = right_data[join_key].astype(target_dtype)  # type: ignore[call-overload]
 
 
 def _handle_str_number(x: Union[str, int, float]) -> Union[str, int, float]:
@@ -240,7 +243,8 @@ class Binary(Operator):
     def apply_operation_two_series(cls, left_series: Any, right_series: Any) -> Any:
         result = list(map(cls.op_func, left_series.values, right_series.values))
         index = left_series.index if len(left_series) <= len(right_series) else right_series.index
-        return pd.Series(result, index=index, dtype=object)
+        result_dtype = cls.return_type.dtype() if cls.return_type is not None else "string[pyarrow]"
+        return pd.Series(result, index=index, dtype=result_dtype)
 
     @classmethod
     def apply_operation_series_scalar(
@@ -249,12 +253,17 @@ class Binary(Operator):
         scalar: Scalar,
         series_left: bool,
     ) -> Any:
+        result_dtype = cls.return_type.dtype() if cls.return_type is not None else "string[pyarrow]"
         if scalar is None:
-            return pd.Series(None, index=series.index)
+            return pd.Series(None, index=series.index, dtype=result_dtype)
         if series_left:
-            return series.map(lambda x: cls.py_op(x, scalar), na_action="ignore")
+            return series.map(lambda x: cls.py_op(x, scalar), na_action="ignore").astype(
+                result_dtype
+            )
         else:
-            return series.map(lambda x: cls.py_op(scalar, x), na_action="ignore")
+            return series.map(lambda x: cls.py_op(scalar, x), na_action="ignore").astype(
+                result_dtype
+            )
 
     @classmethod
     def validate(cls, *args: Any) -> Any:
@@ -621,7 +630,12 @@ class Binary(Operator):
 
         result_dataset.data = result_data
         cls.modify_measure_column(result_dataset)
-
+        if result_dataset.data is not None:
+            for comp_name, comp in result_dataset.components.items():
+                if comp_name in result_dataset.data.columns:
+                    result_dataset.data[comp_name] = ensure_dtype(
+                        result_dataset.data[comp_name], comp.data_type
+                    )
         return result_dataset
 
     @classmethod
@@ -656,6 +670,12 @@ class Binary(Operator):
         cols_to_keep = dataset.get_identifiers_names() + dataset.get_measures_names()
         result_dataset.data = result_dataset.data[cols_to_keep]
         cls.modify_measure_column(result_dataset)
+        if result_dataset.data is not None:
+            for comp_name, comp in result_dataset.components.items():
+                if comp_name in result_dataset.data.columns:
+                    result_dataset.data[comp_name] = ensure_dtype(
+                        result_dataset.data[comp_name], comp.data_type
+                    )
         return result_dataset
 
     @classmethod
@@ -672,6 +692,8 @@ class Binary(Operator):
             (right_operand.data.copy() if right_operand.data is not None else pd.Series()),
         )
         result_component.data = cls.apply_operation_two_series(left_data, right_data)
+        if result_component.data is not None:
+            result_component.data = ensure_dtype(result_component.data, result_component.data_type)
         return result_component
 
     @classmethod
@@ -693,6 +715,8 @@ class Binary(Operator):
         result_component.data = cls.apply_operation_series_scalar(
             comp_data, scalar_value, component_left
         )
+        if result_component.data is not None:
+            result_component.data = ensure_dtype(result_component.data, result_component.data_type)
         return result_component
 
     @classmethod
@@ -774,8 +798,10 @@ class Unary(Operator):
         """
         Applies the operation to a component
         """
-
-        return series.map(cls.py_op, na_action="ignore")
+        result = series.map(cls.py_op, na_action="ignore")
+        if cls.return_type is not None:
+            return ensure_dtype(result, cls.return_type)
+        return result
 
     @classmethod
     def validate(cls, operand: Any) -> Any:
@@ -909,6 +935,12 @@ class Unary(Operator):
 
         result_dataset.data = result_data
         cls.modify_measure_column(result_dataset)
+        if result_dataset.data is not None:
+            for comp_name, comp in result_dataset.components.items():
+                if comp_name in result_dataset.data.columns:
+                    result_dataset.data[comp_name] = ensure_dtype(
+                        result_dataset.data[comp_name], comp.data_type
+                    )
         return result_dataset
 
     @classmethod
@@ -923,6 +955,8 @@ class Unary(Operator):
         result_component.data = cls.apply_operation_component(
             operand.data.copy() if operand.data is not None else pd.Series()
         )
+        if result_component.data is not None:
+            result_component.data = ensure_dtype(result_component.data, result_component.data_type)
         return result_component
 
     @classmethod

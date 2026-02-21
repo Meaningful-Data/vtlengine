@@ -107,7 +107,7 @@ def _sanitize_pandas_columns(
 
 
 def _pandas_load_csv(components: Dict[str, Component], csv_path: Union[str, Path]) -> pd.DataFrame:
-    obj_dtypes = {comp_name: "string[pyarrow]" for comp_name in components}
+    obj_dtypes = dict.fromkeys(components, "string[pyarrow]")
 
     data = pd.read_csv(
         csv_path,  # type: ignore[call-overload, unused-ignore]
@@ -199,7 +199,7 @@ def _validate_pandas(
                 data[comp_name] = data[comp_name].map(
                     lambda x: str(x).replace('"', ""), na_action="ignore"
                 )
-            data[comp_name] = data[comp_name].astype(comp.data_type.dtype())
+            data[comp_name] = data[comp_name].astype(comp.data_type.dtype())  # type: ignore[call-overload]
 
     except (ValueError, InputValidationException) as e:
         str_comp = SCALAR_TYPES_CLASS_REVERSE[comp.data_type] if comp else "Null"

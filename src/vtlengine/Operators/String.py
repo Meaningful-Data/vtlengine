@@ -235,9 +235,9 @@ class Parameterized(Unary):
             length = args[0]
 
         if param is None:
-            return pd.Series(index=range(length), dtype=object)
+            return pd.Series(index=range(length), dtype="string[pyarrow]")
         if isinstance(param, Scalar):
-            return pd.Series(data=param.value, index=range(length), dtype=object)
+            return pd.Series(data=param.value, index=range(length), dtype="string[pyarrow]")
         return param.data
 
     @classmethod

@@ -96,10 +96,11 @@ class Aggregation(Operator.Unary):
                         na_action="ignore",
                     )
             elif measure.data_type == Boolean and mode == "result":
-                data[measure.name] = data[measure.name].map(
-                    lambda x: Boolean().cast(x), na_action="ignore"
+                data[measure.name] = (
+                    data[measure.name]
+                    .map(lambda x: Boolean().cast(x), na_action="ignore")
+                    .astype("bool[pyarrow]")
                 )
-                data[measure.name] = data[measure.name].astype(object)
 
     @classmethod
     def validate(  # type: ignore[override]
@@ -219,7 +220,7 @@ class Aggregation(Operator.Unary):
             )
 
         try:
-            return duckdb.query(query).to_df().astype(object)
+            return duckdb.query(query).to_df()
         except RuntimeError as e:
             if "Conversion" in e.args[0]:
                 raise RunTimeError("2-3-8", op=cls.op, msg=e.args[0].split(":")[-1])
@@ -267,6 +268,9 @@ class Aggregation(Operator.Unary):
             aux_df = pd.merge(aux_df, result_df, how="left", on=grouping_keys)
         if having_expr is not None:
             aux_df.dropna(subset=result.get_measures_names(), how="any", inplace=True)
+        for comp_name, comp in result.components.items():
+            if comp_name in aux_df.columns:
+                aux_df[comp_name] = aux_df[comp_name].astype(comp.data_type.dtype())  # type: ignore[call-overload]
         result.data = aux_df
         return result
 

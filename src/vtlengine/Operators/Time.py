@@ -249,15 +249,28 @@ class Parametrized(Time):
         pass
 
 
+def _cast_bool_columns(x: Any) -> Any:
+    """Cast bool[pyarrow] columns to int64[pyarrow] for cumsum/diff support."""
+    if isinstance(x, pd.DataFrame):
+        for col in x.columns:
+            if str(x[col].dtype) == "bool[pyarrow]":
+                x[col] = x[col].astype("int64[pyarrow]")
+    elif hasattr(x, "dtype") and str(x.dtype) == "bool[pyarrow]":
+        return x.astype("int64[pyarrow]")
+    return x
+
+
 class Flow_to_stock(Unary):
     @classmethod
     def py_op(cls, x: Any) -> Any:
+        x = _cast_bool_columns(x)
         return x.cumsum().fillna(x)
 
 
 class Stock_to_flow(Unary):
     @classmethod
     def py_op(cls, x: Any) -> Any:
+        x = _cast_bool_columns(x)
         return x.diff().fillna(x)
 
 
@@ -270,7 +283,7 @@ class Fill_time_series(Binary):
         if operand.data is None:
             operand.data = pd.DataFrame()
         result.data = operand.data.copy()
-        result.data[cls.time_id] = result.data[cls.time_id].astype(str)
+        result.data[cls.time_id] = result.data[cls.time_id].astype("string[pyarrow]")
         if len(result.data) < 2:
             return result
         data_type = result.components[cls.time_id].data_type
@@ -391,7 +404,7 @@ class Fill_time_series(Binary):
 
         filled_data = pd.concat(filled_data, ignore_index=True)
         combined_data = pd.concat([filled_data, data], ignore_index=True)
-        combined_data[cls.time_id] = combined_data[cls.time_id].astype(str)
+        combined_data[cls.time_id] = combined_data[cls.time_id].astype("string[pyarrow]")
         return combined_data.sort_values(by=cls.other_ids + [cls.time_id])
 
     @classmethod
@@ -466,7 +479,7 @@ class Fill_time_series(Binary):
         filled_data = pd.concat(filled_data, ignore_index=True)
         filled_data[cls.time_id] = filled_data[cls.time_id].dt.strftime(date_format)
         combined_data = pd.concat([filled_data, data], ignore_index=True)
-        combined_data[cls.time_id] = combined_data[cls.time_id].astype(str)
+        combined_data[cls.time_id] = combined_data[cls.time_id].astype("string[pyarrow]")
         return combined_data.sort_values(by=cls.other_ids + [cls.time_id])
 
     @classmethod

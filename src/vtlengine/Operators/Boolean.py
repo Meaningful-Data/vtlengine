@@ -20,14 +20,16 @@ class Binary(Operator.Binary):
     @classmethod
     def apply_operation_series_scalar(cls, series: Any, scalar: Any, series_left: bool) -> Any:
         if series_left:
-            return series.map(lambda x: cls.py_op(x, scalar))
+            return series.map(lambda x: cls.py_op(x, scalar)).astype("bool[pyarrow]")
         else:
-            return series.map(lambda x: cls.py_op(scalar, x))
+            return series.map(lambda x: cls.py_op(scalar, x)).astype("bool[pyarrow]")
 
     @classmethod
     def apply_operation_two_series(cls, left_series: Any, right_series: Any) -> Any:
-        result = cls.comp_op(left_series.astype("boolean"), right_series.astype("boolean"))
-        return result.replace({pd.NA: None}).astype(object)
+        result = cls.comp_op(
+            left_series.astype("bool[pyarrow]"), right_series.astype("bool[pyarrow]")
+        )
+        return result
 
     @classmethod
     def op_func(cls, x: Optional[bool], y: Optional[bool]) -> Optional[bool]:
@@ -40,9 +42,11 @@ class And(Binary):
 
     @staticmethod
     def py_op(x: Optional[bool], y: Optional[bool]) -> Optional[bool]:
-        if (x is None and y == False) or (x == False and y is None):
+        x_na = pd.isna(x)
+        y_na = pd.isna(y)
+        if (x_na and y is False) or (x is False and y_na):
             return False
-        elif x is None or y is None:
+        elif x_na or y_na:
             return None
         return x and y
 
@@ -53,9 +57,11 @@ class Or(Binary):
 
     @staticmethod
     def py_op(x: Optional[bool], y: Optional[bool]) -> Optional[bool]:
-        if (x is None and y == True) or (x == True and y is None):
+        x_na = pd.isna(x)
+        y_na = pd.isna(y)
+        if (x_na and y is True) or (x is True and y_na):
             return True
-        elif x is None or y is None:
+        elif x_na or y_na:
             return None
         return x or y
 
@@ -76,8 +82,8 @@ class Not(Unary):
 
     @staticmethod
     def py_op(x: Optional[bool]) -> Optional[bool]:
-        return None if x is None else not x
+        return None if pd.isna(x) else not x
 
     @classmethod
     def apply_operation_component(cls, series: Any) -> Any:
-        return series.map(lambda x: not x, na_action="ignore")
+        return series.map(lambda x: not x, na_action="ignore").astype("bool[pyarrow]")

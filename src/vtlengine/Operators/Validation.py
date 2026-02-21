@@ -114,8 +114,13 @@ class Check(Operator):
         # NULL bool_var means indeterminate - should NOT have errorcode/errorlevel
         validation_measure_name = validation_element.get_measures_names()[0]
         bool_col = result.data[validation_measure_name]
-        result.data["errorcode"] = bool_col.map(lambda x: error_code if x is False else None)
-        result.data["errorlevel"] = bool_col.map(lambda x: error_level if x is False else None)
+        result.data["errorcode"] = bool_col.map(
+            lambda x: error_code if x is False else None
+        ).astype("string[pyarrow]")
+        errorlevel_dtype = result.components["errorlevel"].data_type.dtype()
+        result.data["errorlevel"] = bool_col.map(
+            lambda x: error_level if x is False else None
+        ).astype(errorlevel_dtype)  # type: ignore[call-overload]
 
         if invalid:
             result.data = result.data[result.data[validation_measure_name] == False]
@@ -131,8 +136,11 @@ class Validation(Operator):
         for rule_name, rule_data in rule_info.items():
             rule_df = rule_data["output"]
             rule_df["ruleid"] = rule_name
-            rule_df["errorcode"] = rule_df["bool_var"].map({False: rule_data["errorcode"]})
-            rule_df["errorlevel"] = rule_df["bool_var"].map({False: rule_data["errorlevel"]})
+            bool_col = rule_df["bool_var"]
+            if str(bool_col.dtype) != "bool[pyarrow]":
+                bool_col = bool_col.astype("bool[pyarrow]")
+            rule_df["errorcode"] = bool_col.map({False: rule_data["errorcode"]})
+            rule_df["errorlevel"] = bool_col.map({False: rule_data["errorlevel"]})
             rule_list_df.append(rule_df)
 
         if len(rule_list_df) == 1:
@@ -235,8 +243,11 @@ class Check_Hierarchy(Validation):
             rule_df["ruleid"] = rule_name
             # Set errorcode/errorlevel ONLY when validation explicitly fails (bool_var is False)
             # NULL bool_var means indeterminate - should NOT have errorcode/errorlevel
-            rule_df["errorcode"] = rule_df["bool_var"].map({False: rule_data["errorcode"]})
-            rule_df["errorlevel"] = rule_df["bool_var"].map({False: rule_data["errorlevel"]})
+            bool_col = rule_df["bool_var"]
+            if str(bool_col.dtype) != "bool[pyarrow]":
+                bool_col = bool_col.astype("bool[pyarrow]")
+            rule_df["errorcode"] = bool_col.map({False: rule_data["errorcode"]})
+            rule_df["errorlevel"] = bool_col.map({False: rule_data["errorlevel"]})
             df = pd.concat([df, rule_df], ignore_index=True)
         if df is None:
             df = pd.DataFrame()
