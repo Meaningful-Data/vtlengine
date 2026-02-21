@@ -1,6 +1,6 @@
 import re
 from copy import copy
-from typing import Any, Optional, Union
+from typing import Any, Optional, Type, Union
 
 import pandas as pd
 
@@ -21,6 +21,7 @@ from vtlengine.AST.Grammar.tokens import (
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
     SCALAR_TYPES_CLASS_REVERSE,
+    ScalarType,
     binary_implicit_promotion,
     check_binary_implicit_promotion,
     check_unary_implicit_promotion,
@@ -45,6 +46,14 @@ BINARY_COMPARISON_OPERATORS = [EQ, NEQ, GT, GTE, LT, LTE]
 BINARY_BOOLEAN_OPERATORS = [AND, OR, XOR]
 
 only_semantic = False
+
+
+def ensure_dtype(series: "pd.Series[Any]", data_type: Type[ScalarType]) -> "pd.Series[Any]":
+    """Re-cast a Series to its correct pyarrow dtype after .map()/.apply()."""
+    target_dtype = data_type.dtype()
+    if str(series.dtype) != target_dtype:
+        return series.astype(target_dtype)
+    return series
 
 
 class Operator:
