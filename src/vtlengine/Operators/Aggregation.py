@@ -91,7 +91,7 @@ class Aggregation(Operator.Unary):
                     )
             elif measure.data_type == Boolean and mode == "result":
                 data[measure.name] = (
-                    data[measure.name]
+                    data[measure.name]  # type: ignore[call-overload, unused-ignore]
                     .map(lambda x: Boolean().cast(x), na_action="ignore")
                     .astype("bool[pyarrow]")
                 )

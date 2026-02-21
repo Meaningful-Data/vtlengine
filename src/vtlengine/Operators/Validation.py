@@ -115,11 +115,11 @@ class Check(Operator):
         validation_measure_name = validation_element.get_measures_names()[0]
         bool_col = result.data[validation_measure_name]
         result.data["errorcode"] = bool_col.map(
-            lambda x: error_code if x is False else None
+            lambda x: error_code if x is False else None  # type: ignore[arg-type, return-value, unused-ignore]
         ).astype("string[pyarrow]")
         errorlevel_dtype = result.components["errorlevel"].data_type.dtype()
         result.data["errorlevel"] = bool_col.map(
-            lambda x: error_level if x is False else None
+            lambda x: error_level if x is False else None  # type: ignore[arg-type, return-value, unused-ignore]
         ).astype(errorlevel_dtype)  # type: ignore[call-overload]
 
         if invalid:
