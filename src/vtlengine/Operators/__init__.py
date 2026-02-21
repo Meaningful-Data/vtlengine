@@ -1,6 +1,6 @@
 import re
 from copy import copy
-from typing import Any, Optional, Type, Union
+from typing import Any, Optional, Union
 
 import pandas as pd
 
@@ -21,7 +21,6 @@ from vtlengine.AST.Grammar.tokens import (
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
     SCALAR_TYPES_CLASS_REVERSE,
-    ScalarType,
     binary_implicit_promotion,
     check_binary_implicit_promotion,
     check_unary_implicit_promotion,
@@ -46,14 +45,6 @@ BINARY_COMPARISON_OPERATORS = [EQ, NEQ, GT, GTE, LT, LTE]
 BINARY_BOOLEAN_OPERATORS = [AND, OR, XOR]
 
 only_semantic = False
-
-
-def ensure_dtype(series: "pd.Series[Any]", data_type: Type[ScalarType]) -> "pd.Series[Any]":
-    """Re-cast a Series to its correct pyarrow dtype after .map()/.apply()."""
-    target_dtype = data_type.dtype()
-    if str(series.dtype) != target_dtype:
-        return series.astype(target_dtype)  # type: ignore[call-overload]
-    return series
 
 
 class Operator:
@@ -614,6 +605,12 @@ class Binary(Operator):
                 result_data[measure.name] = cls.apply_operation_two_series(
                     result_data[measure.name + "_x"], result_data[measure.name + "_y"]
                 )
+            # Enforce measure dtype from component declaration
+            result_comp = result_dataset.components.get(measure.name)
+            if result_comp is not None:
+                target = result_comp.data_type.dtype()
+                if str(result_data[measure.name].dtype) != target:
+                    result_data[measure.name] = result_data[measure.name].astype(target)  # type: ignore[call-overload]
             result_data = result_data.drop([measure.name + "_x", measure.name + "_y"], axis=1)
 
         # Delete attributes from the result data
@@ -630,12 +627,6 @@ class Binary(Operator):
 
         result_dataset.data = result_data
         cls.modify_measure_column(result_dataset)
-        if result_dataset.data is not None:
-            for comp_name, comp in result_dataset.components.items():
-                if comp_name in result_dataset.data.columns:
-                    result_dataset.data[comp_name] = ensure_dtype(
-                        result_dataset.data[comp_name], comp.data_type
-                    )
         return result_dataset
 
     @classmethod
@@ -665,17 +656,19 @@ class Binary(Operator):
             result_dataset.data[measure.name] = cls.apply_operation_series_scalar(
                 measure_data, scalar_value, dataset_left
             )
+            # Enforce measure dtype from component declaration
+            result_comp = result_dataset.components.get(measure.name)
+            if result_comp is not None:
+                target = result_comp.data_type.dtype()
+                if str(result_dataset.data[measure.name].dtype) != target:
+                    result_dataset.data[measure.name] = result_dataset.data[  # type: ignore[call-overload]
+                        measure.name
+                    ].astype(target)
 
         result_dataset.data = result_data
         cols_to_keep = dataset.get_identifiers_names() + dataset.get_measures_names()
         result_dataset.data = result_dataset.data[cols_to_keep]
         cls.modify_measure_column(result_dataset)
-        if result_dataset.data is not None:
-            for comp_name, comp in result_dataset.components.items():
-                if comp_name in result_dataset.data.columns:
-                    result_dataset.data[comp_name] = ensure_dtype(
-                        result_dataset.data[comp_name], comp.data_type
-                    )
         return result_dataset
 
     @classmethod
@@ -692,8 +685,10 @@ class Binary(Operator):
             (right_operand.data.copy() if right_operand.data is not None else pd.Series()),
         )
         result_component.data = cls.apply_operation_two_series(left_data, right_data)
-        if result_component.data is not None:
-            result_component.data = ensure_dtype(result_component.data, result_component.data_type)
+        # Enforce dtype from component declaration
+        target = result_component.data_type.dtype()
+        if result_component.data is not None and str(result_component.data.dtype) != target:
+            result_component.data = result_component.data.astype(target)
         return result_component
 
     @classmethod
@@ -715,8 +710,10 @@ class Binary(Operator):
         result_component.data = cls.apply_operation_series_scalar(
             comp_data, scalar_value, component_left
         )
-        if result_component.data is not None:
-            result_component.data = ensure_dtype(result_component.data, result_component.data_type)
+        # Enforce dtype from component declaration
+        target = result_component.data_type.dtype()
+        if result_component.data is not None and str(result_component.data.dtype) != target:
+            result_component.data = result_component.data.astype(target)
         return result_component
 
     @classmethod
@@ -798,10 +795,7 @@ class Unary(Operator):
         """
         Applies the operation to a component
         """
-        result = series.map(cls.py_op, na_action="ignore")
-        if cls.return_type is not None:
-            return ensure_dtype(result, cls.return_type)
-        return result
+        return series.map(cls.py_op, na_action="ignore")
 
     @classmethod
     def validate(cls, operand: Any) -> Any:
@@ -929,18 +923,18 @@ class Unary(Operator):
         result_data = operand.data.copy() if operand.data is not None else pd.DataFrame()
         for measure_name in operand.get_measures_names():
             result_data[measure_name] = cls.apply_operation_component(result_data[measure_name])
+            # Enforce measure dtype from component declaration
+            result_comp = result_dataset.components.get(measure_name)
+            if result_comp is not None:
+                target = result_comp.data_type.dtype()
+                if str(result_data[measure_name].dtype) != target:
+                    result_data[measure_name] = result_data[measure_name].astype(target)  # type: ignore[call-overload]
 
         cols_to_keep = operand.get_identifiers_names() + operand.get_measures_names()
         result_data = result_data[cols_to_keep]
 
         result_dataset.data = result_data
         cls.modify_measure_column(result_dataset)
-        if result_dataset.data is not None:
-            for comp_name, comp in result_dataset.components.items():
-                if comp_name in result_dataset.data.columns:
-                    result_dataset.data[comp_name] = ensure_dtype(
-                        result_dataset.data[comp_name], comp.data_type
-                    )
         return result_dataset
 
     @classmethod
@@ -955,8 +949,10 @@ class Unary(Operator):
         result_component.data = cls.apply_operation_component(
             operand.data.copy() if operand.data is not None else pd.Series()
         )
-        if result_component.data is not None:
-            result_component.data = ensure_dtype(result_component.data, result_component.data_type)
+        # Enforce dtype from component declaration
+        target = result_component.data_type.dtype()
+        if result_component.data is not None and str(result_component.data.dtype) != target:
+            result_component.data = result_component.data.astype(target)
         return result_component
 
     @classmethod
