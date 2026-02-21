@@ -3,7 +3,6 @@ from csv import DictReader
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Type, Union
 
-import numpy as np
 import pandas as pd
 
 from vtlengine.DataTypes import (
@@ -108,7 +107,7 @@ def _sanitize_pandas_columns(
 
 
 def _pandas_load_csv(components: Dict[str, Component], csv_path: Union[str, Path]) -> pd.DataFrame:
-    obj_dtypes = {comp_name: object for comp_name, comp in components.items()}
+    obj_dtypes = dict.fromkeys(components, "string[pyarrow]")
 
     data = pd.read_csv(
         csv_path,  # type: ignore[call-overload, unused-ignore]
@@ -151,7 +150,7 @@ def _validate_pandas(
     if len(id_names) == 0 and len(data) > 1:
         raise DataLoadError("0-3-1-4", name=dataset_name)
 
-    data = data.fillna(np.nan).replace([np.nan], None)
+    data = data.fillna(value=pd.NA)
     # Checking data types on all data types
     comp_name = ""
     comp = None
@@ -200,7 +199,7 @@ def _validate_pandas(
                 data[comp_name] = data[comp_name].map(
                     lambda x: str(x).replace('"', ""), na_action="ignore"
                 )
-            data[comp_name] = data[comp_name].astype(object, errors="raise")
+            data[comp_name] = data[comp_name].astype(comp.data_type.dtype())  # type: ignore[call-overload]
 
     except (ValueError, InputValidationException) as e:
         str_comp = SCALAR_TYPES_CLASS_REVERSE[comp.data_type] if comp else "Null"

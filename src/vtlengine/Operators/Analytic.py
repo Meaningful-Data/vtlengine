@@ -248,7 +248,7 @@ class Analytic(Operator.Unary):
 
         if cls.op == COUNT:
             df[measure_names] = df[measure_names].fillna(-1)
-        return duckdb.query(query).to_df().astype(object)
+        return duckdb.query(query).to_df()
 
     @classmethod
     def evaluate(  # type: ignore[override]
@@ -279,8 +279,10 @@ class Analytic(Operator.Unary):
             params=params,
         )
 
-        # if cls.return_type == Integer:
-        #     result.data[measure_names] = result.data[measure_names].astype('Int64')
+        if result.data is not None:
+            for comp_name, comp in result.components.items():
+                if comp_name in result.data.columns:
+                    result.data[comp_name] = result.data[comp_name].astype(comp.data_type.dtype())  # type: ignore[call-overload]
 
         return result
 

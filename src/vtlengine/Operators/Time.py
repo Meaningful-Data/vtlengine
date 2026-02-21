@@ -249,15 +249,36 @@ class Parametrized(Time):
         pass
 
 
+def _cast_bool_columns(x: Any) -> Any:
+    """Cast bool[pyarrow] columns to int64[pyarrow] for cumsum/diff support."""
+    if isinstance(x, pd.DataFrame):
+        for col in x.columns:
+            if str(x[col].dtype) == "bool[pyarrow]":
+                x[col] = x[col].astype("int64[pyarrow]")
+    elif hasattr(x, "dtype") and str(x.dtype) == "bool[pyarrow]":
+        return x.astype("int64[pyarrow]")
+    return x
+
+
 class Flow_to_stock(Unary):
     @classmethod
     def py_op(cls, x: Any) -> Any:
+        x = _cast_bool_columns(x)
+        if isinstance(x, pd.DataFrame):
+            numeric = x.select_dtypes(include="number")
+            x[numeric.columns] = numeric.cumsum().fillna(numeric)
+            return x
         return x.cumsum().fillna(x)
 
 
 class Stock_to_flow(Unary):
     @classmethod
     def py_op(cls, x: Any) -> Any:
+        x = _cast_bool_columns(x)
+        if isinstance(x, pd.DataFrame):
+            numeric = x.select_dtypes(include="number")
+            x[numeric.columns] = numeric.diff().fillna(numeric)
+            return x
         return x.diff().fillna(x)
 
 
@@ -270,7 +291,7 @@ class Fill_time_series(Binary):
         if operand.data is None:
             operand.data = pd.DataFrame()
         result.data = operand.data.copy()
-        result.data[cls.time_id] = result.data[cls.time_id].astype(str)
+        result.data[cls.time_id] = result.data[cls.time_id].astype("string[pyarrow]")
         if len(result.data) < 2:
             return result
         data_type = result.components[cls.time_id].data_type
@@ -391,7 +412,7 @@ class Fill_time_series(Binary):
 
         filled_data = pd.concat(filled_data, ignore_index=True)
         combined_data = pd.concat([filled_data, data], ignore_index=True)
-        combined_data[cls.time_id] = combined_data[cls.time_id].astype(str)
+        combined_data[cls.time_id] = combined_data[cls.time_id].astype("string[pyarrow]")
         return combined_data.sort_values(by=cls.other_ids + [cls.time_id])
 
     @classmethod
@@ -466,7 +487,7 @@ class Fill_time_series(Binary):
         filled_data = pd.concat(filled_data, ignore_index=True)
         filled_data[cls.time_id] = filled_data[cls.time_id].dt.strftime(date_format)
         combined_data = pd.concat([filled_data, data], ignore_index=True)
-        combined_data[cls.time_id] = combined_data[cls.time_id].astype(str)
+        combined_data[cls.time_id] = combined_data[cls.time_id].astype("string[pyarrow]")
         return combined_data.sort_values(by=cls.other_ids + [cls.time_id])
 
     @classmethod
@@ -476,8 +497,8 @@ class Fill_time_series(Binary):
         )
 
         def extract_max_min(group: Any) -> Dict[str, Any]:
-            start_dates = group.apply(lambda x: x.split("/")[0])
-            end_dates = group.apply(lambda x: x.split("/")[1])
+            start_dates = group.str.split("/").str[0]
+            end_dates = group.str.split("/").str[1]
             return {
                 "start": {"min": start_dates.min(), "max": start_dates.max()},
                 "end": {"min": end_dates.min(), "max": end_dates.max()},
@@ -523,11 +544,9 @@ class Fill_time_series(Binary):
                         empty_row, ignore_index=True
                     )
             start_group_df = group_df.copy()
-            start_group_df[cls.time_id] = start_group_df[cls.time_id].apply(
-                lambda x: x.split("/")[0]
-            )
+            start_group_df[cls.time_id] = start_group_df[cls.time_id].str.split("/").str[0]
             end_group_df = group_df.copy()
-            end_group_df[cls.time_id] = end_group_df[cls.time_id].apply(lambda x: x.split("/")[1])
+            end_group_df[cls.time_id] = end_group_df[cls.time_id].str.split("/").str[1]
             start_filled = cls.date_filler(start_group_df, fill_type, frequency)
             end_filled = cls.date_filler(end_group_df, fill_type, frequency)
             start_filled[cls.time_id] = start_filled[cls.time_id].str.cat(

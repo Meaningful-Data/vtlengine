@@ -48,7 +48,7 @@ class IsNull(Unary):
 
     @classmethod
     def apply_operation_component(cls, series: Any) -> Any:
-        return series.isnull()
+        return series.isnull().astype("bool[pyarrow]")
 
     @classmethod
     def op_func(cls, x: Any) -> Any:
@@ -100,7 +100,7 @@ class Binary(Operator.Binary):
     @classmethod
     def apply_operation_series_scalar(cls, series: Any, scalar: Any, series_left: bool) -> Any:
         if pd.isnull(scalar):
-            return pd.Series(None, index=series.index)
+            return pd.Series(None, index=series.index, dtype="bool[pyarrow]")
 
         first_non_null = series.dropna().iloc[0] if not series.dropna().empty else None
         if first_non_null is not None:
@@ -111,9 +111,9 @@ class Binary(Operator.Binary):
 
             if series_type != first_non_null_type:
                 if isinstance(first_non_null, str):
-                    series = series.astype(str)
+                    series = series.astype("string[pyarrow]")
                 elif isinstance(first_non_null, (int, float)):
-                    series = series.astype(float)
+                    series = series.astype("double[pyarrow]")
 
         # Use op_func if it's overridden (not from Binary base class)
         # to support tolerance-based number comparisons
@@ -127,7 +127,7 @@ class Binary(Operator.Binary):
         else:
             result = series.map(lambda x: op(scalar, x), na_action="ignore")
 
-        return result
+        return result.astype("bool[pyarrow]")
 
     @classmethod
     def apply_return_type_dataset(
@@ -240,9 +240,10 @@ class In(Binary):
     @classmethod
     def apply_operation_two_series(cls, left_series: Any, right_series: ScalarSet) -> Any:
         if right_series.data_type == Null:
-            return pd.Series(None, index=left_series.index)
+            return pd.Series(None, index=left_series.index, dtype="bool[pyarrow]")
 
-        return left_series.map(lambda x: x in right_series, na_action="ignore")
+        result = left_series.isin(right_series.values)
+        return result.where(left_series.notna(), other=pd.NA).astype("bool[pyarrow]")
 
     @classmethod
     def py_op(cls, x: Any, y: Any) -> Any:
@@ -257,7 +258,7 @@ class NotIn(Binary):
     @classmethod
     def apply_operation_two_series(cls, left_series: Any, right_series: Any) -> Any:
         series_result = In.apply_operation_two_series(left_series, right_series)
-        return series_result.map(lambda x: not x, na_action="ignore")
+        return (~series_result).astype("bool[pyarrow]")
 
     @classmethod
     def py_op(cls, x: Any, y: Any) -> Any:
@@ -319,16 +320,16 @@ class Between(Operator.Operator):
         )
         if control_any_series_from_to:
             if not isinstance(from_data, pd.Series):
-                from_data = pd.Series(from_data, index=series.index, dtype=object)
+                from_data = pd.Series(from_data, index=series.index, dtype=series.dtype)
             if not isinstance(to_data, pd.Series):
-                to_data = pd.Series(to_data, index=series.index)
+                to_data = pd.Series(to_data, index=series.index, dtype=series.dtype)
             df = pd.DataFrame({"operand": series, "from_data": from_data, "to_data": to_data})
-            return df.apply(
+            return df.apply(  # type: ignore[call-overload]
                 lambda x: cls.op_func(x["operand"], x["from_data"], x["to_data"]),
                 axis=1,
-            )
+            ).astype("bool[pyarrow]")
 
-        return series.map(lambda x: cls.op_func(x, from_data, to_data))
+        return series.map(lambda x: cls.op_func(x, from_data, to_data)).astype("bool[pyarrow]")
 
     @classmethod
     def apply_return_type_dataset(cls, result_dataset: Dataset, operand: Dataset) -> None:
@@ -439,9 +440,9 @@ class Between(Operator.Operator):
             isinstance(from_data, pd.Series) or isinstance(to_data, pd.Series)
         ):  # From or To is a DataComponent, or both
             if isinstance(from_data, pd.Series):
-                series = pd.Series(operand.value, index=from_data.index, dtype=object)
+                series = pd.Series(operand.value, index=from_data.index, dtype=from_data.dtype)
             elif isinstance(to_data, pd.Series):
-                series = pd.Series(operand.value, index=to_data.index, dtype=object)
+                series = pd.Series(operand.value, index=to_data.index, dtype=to_data.dtype)
             result_series = cls.apply_operation_component(series, from_data, to_data)
             result = DataComponent(
                 name=operand.name,
@@ -529,7 +530,7 @@ class ExistIn(Operator.Operator):
         final_result = final_result[reference_identifiers_names + ["bool_var"]]
 
         # No null values are returned, only True or False
-        final_result["bool_var"] = final_result["bool_var"].fillna(False)
+        final_result["bool_var"] = final_result["bool_var"].fillna(False).astype("bool[pyarrow]")
 
         # Adding to the result dataset
         result_dataset.data = final_result

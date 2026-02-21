@@ -57,10 +57,8 @@ class Aggregation(Operator.Unary):
         for measure in measures:
             if measure.data_type == TimePeriod:
                 if mode == "input":
-                    data[measure.name] = (
-                        data[measure.name]
-                        .astype(object)
-                        .map(lambda x: TimePeriodHandler(str(x)), na_action="ignore")
+                    data[measure.name] = data[measure.name].map(
+                        lambda x: TimePeriodHandler(str(x)), na_action="ignore"
                     )
                     if cls.op in [MAX, MIN]:
                         indicators = {v.period_indicator for v in data[measure.name].dropna()}
@@ -72,13 +70,9 @@ class Aggregation(Operator.Unary):
                     )
             elif measure.data_type == TimeInterval:
                 if mode == "input":
-                    data[measure.name] = (
-                        data[measure.name]
-                        .astype(object)
-                        .map(
-                            lambda x: TimeIntervalHandler.from_iso_format(str(x)),
-                            na_action="ignore",
-                        )
+                    data[measure.name] = data[measure.name].map(
+                        lambda x: TimeIntervalHandler.from_iso_format(str(x)),
+                        na_action="ignore",
                     )
                 else:
                     data[measure.name] = data[measure.name].map(
@@ -86,20 +80,15 @@ class Aggregation(Operator.Unary):
                     )
             elif measure.data_type == Duration:
                 if mode == "input":
-                    data[measure.name] = data[measure.name].map(
-                        lambda x: PERIOD_IND_MAPPING[x],
-                        na_action="ignore",
-                    )
+                    data[measure.name] = data[measure.name].map(PERIOD_IND_MAPPING)
                 else:
-                    data[measure.name] = data[measure.name].map(
-                        lambda x: PERIOD_IND_MAPPING_REVERSE[x],
-                        na_action="ignore",
-                    )
+                    data[measure.name] = data[measure.name].map(PERIOD_IND_MAPPING_REVERSE)
             elif measure.data_type == Boolean and mode == "result":
-                data[measure.name] = data[measure.name].map(
-                    lambda x: Boolean().cast(x), na_action="ignore"
+                data[measure.name] = (
+                    data[measure.name]  # type: ignore[call-overload, unused-ignore]
+                    .map(lambda x: Boolean().cast(x), na_action="ignore")
+                    .astype("bool[pyarrow]")
                 )
-                data[measure.name] = data[measure.name].astype(object)
 
     @classmethod
     def validate(  # type: ignore[override]
@@ -219,7 +208,7 @@ class Aggregation(Operator.Unary):
             )
 
         try:
-            return duckdb.query(query).to_df().astype(object)
+            return duckdb.query(query).to_df()
         except RuntimeError as e:
             if "Conversion" in e.args[0]:
                 raise RunTimeError("2-3-8", op=cls.op, msg=e.args[0].split(":")[-1])
@@ -267,6 +256,9 @@ class Aggregation(Operator.Unary):
             aux_df = pd.merge(aux_df, result_df, how="left", on=grouping_keys)
         if having_expr is not None:
             aux_df.dropna(subset=result.get_measures_names(), how="any", inplace=True)
+        for comp_name, comp in result.components.items():
+            if comp_name in aux_df.columns:
+                aux_df[comp_name] = aux_df[comp_name].astype(comp.data_type.dtype())  # type: ignore[call-overload]
         result.data = aux_df
         return result
 

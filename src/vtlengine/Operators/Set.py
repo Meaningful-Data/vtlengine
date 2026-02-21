@@ -114,25 +114,20 @@ class Symdiff(Set):
                 )
 
                 for measure in result.get_measures_names():
-                    result.data["_merge"] = result.data.apply(
-                        lambda row: (
-                            "left_only"
-                            if pd.isnull(row[f"{measure}_y"])
-                            else ("right_only" if pd.isnull(row[f"{measure}_x"]) else "both")
-                        ),
-                        axis=1,
-                    )
+                    y_null = result.data[f"{measure}_y"].isna()
+                    x_null = result.data[f"{measure}_x"].isna()
+                    merge_col = pd.Series("both", index=result.data.index)
+                    merge_col = merge_col.where(~x_null, "right_only")
+                    merge_col = merge_col.where(~y_null, "left_only")
+                    result.data["_merge"] = merge_col
 
                 not_identifiers = result.get_measures_names() + result.get_attributes_names()
+                left_mask = result.data["_merge"] == "left_only"
+                right_mask = result.data["_merge"] == "right_only"
                 for col in not_identifiers:
-                    result.data[col] = result.data.apply(
-                        lambda x, c=col: (
-                            x[c + "_x"]
-                            if x["_merge"] == "left_only"
-                            else (x[c + "_y"] if x["_merge"] == "right_only" else None)
-                        ),
-                        axis=1,
-                    )
+                    result.data[col] = None
+                    result.data.loc[left_mask, col] = result.data.loc[left_mask, col + "_x"]
+                    result.data.loc[right_mask, col] = result.data.loc[right_mask, col + "_y"]
                 result.data = result.data[result.get_identifiers_names() + not_identifiers].dropna()
         if result.data is not None:
             result.data = result.data.reset_index(drop=True)
@@ -156,7 +151,7 @@ class Setdiff(Set):
                     data = pd.DataFrame(columns=result.get_identifiers_names())
                 result.data = result.data.merge(data, how="left", on=result.get_identifiers_names())
                 if len(result.data) > 0:
-                    result.data = result.data[result.data.apply(cls.has_null, axis=1)]
+                    result.data = result.data[result.data.isnull().any(axis=1)]
 
                 not_identifiers = result.get_measures_names() + result.get_attributes_names()
                 for col in not_identifiers:
