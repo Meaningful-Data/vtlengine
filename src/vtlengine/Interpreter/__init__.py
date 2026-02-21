@@ -267,6 +267,10 @@ class InterpreterAnalyzer(ASTTemplate):
             if result is None:
                 continue
 
+            # Enforce output dtypes match DataStructure declarations
+            if isinstance(result, Dataset):
+                result.enforce_dtypes()
+
             # Removing output dataset
             vtlengine.Exceptions.dataset_output = None
             # Save results
@@ -294,11 +298,6 @@ class InterpreterAnalyzer(ASTTemplate):
                 )
             }
             self._save_scalars_efficient(scalars_filtered)
-
-        # Enforce output dtypes match DataStructure declarations
-        for obj in results.values():
-            if isinstance(obj, Dataset):
-                obj.enforce_dtypes()
 
         return results
 

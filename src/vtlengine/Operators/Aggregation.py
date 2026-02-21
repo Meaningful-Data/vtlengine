@@ -57,10 +57,8 @@ class Aggregation(Operator.Unary):
         for measure in measures:
             if measure.data_type == TimePeriod:
                 if mode == "input":
-                    data[measure.name] = (
-                        data[measure.name]
-                        .astype(object)
-                        .map(lambda x: TimePeriodHandler(str(x)), na_action="ignore")
+                    data[measure.name] = data[measure.name].map(
+                        lambda x: TimePeriodHandler(str(x)), na_action="ignore"
                     )
                     if cls.op in [MAX, MIN]:
                         indicators = {v.period_indicator for v in data[measure.name].dropna()}
@@ -72,13 +70,9 @@ class Aggregation(Operator.Unary):
                     )
             elif measure.data_type == TimeInterval:
                 if mode == "input":
-                    data[measure.name] = (
-                        data[measure.name]
-                        .astype(object)
-                        .map(
-                            lambda x: TimeIntervalHandler.from_iso_format(str(x)),
-                            na_action="ignore",
-                        )
+                    data[measure.name] = data[measure.name].map(
+                        lambda x: TimeIntervalHandler.from_iso_format(str(x)),
+                        na_action="ignore",
                     )
                 else:
                     data[measure.name] = data[measure.name].map(

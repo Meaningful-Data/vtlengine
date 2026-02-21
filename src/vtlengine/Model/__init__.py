@@ -220,11 +220,12 @@ class Dataset:
             return
         for comp_name, comp in self.components.items():
             if comp_name in self.data.columns:
+                col = self.data[comp_name]
+                if isinstance(col, pd.DataFrame):
+                    continue
                 target_dtype = comp.data_type.dtype()
-                if str(self.data[comp_name].dtype) != target_dtype:
-                    self.data[comp_name] = self.data[comp_name].astype(  # type: ignore[call-overload]
-                        target_dtype
-                    )
+                if str(col.dtype) != target_dtype:
+                    self.data[comp_name] = col.astype(target_dtype)  # type: ignore[call-overload]
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Dataset):

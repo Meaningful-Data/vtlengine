@@ -217,9 +217,7 @@ class HAAssignment(Operators.Binary):
         measure_name = left.get_measures_names()[0]
         result.data = left.data.copy() if left.data is not None else pd.DataFrame()
         if right.data is not None:
-            result.data[measure_name] = right.data.astype(object).map(
-                lambda x: cls.handle_mode(x, hr_mode)
-            )
+            result.data[measure_name] = right.data.map(lambda x: cls.handle_mode(x, hr_mode))
             result.data = result.data.iloc[right.data.index[0 : len(result.data)]]
 
         result.data = result.data[result.data[measure_name] != REMOVE]
