@@ -9,7 +9,7 @@ from vtlengine.API import create_ast
 from vtlengine.DataTypes import Date, Integer
 from vtlengine.DataTypes._time_checking import check_date
 from vtlengine.DataTypes.TimeHandling import check_max_date
-from vtlengine.Exceptions import InputValidationException, SemanticError
+from vtlengine.Exceptions import InputValidationException, RunTimeError
 from vtlengine.Interpreter import InterpreterAnalyzer
 
 
@@ -64,7 +64,7 @@ check_max_date_valid_params = [
 ]
 
 check_max_date_invalid_params = [
-    pytest.param("2020/01/15", SemanticError, id="invalid_format"),
+    pytest.param("2020/01/15", RunTimeError, id="invalid_format"),
 ]
 
 scalar_time_params = [
