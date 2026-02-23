@@ -587,3 +587,31 @@ def date_to_period_str(date_value: date, period_indicator: str) -> Any:
         return f"{cal[0]}W{cal[1]}"
     elif period_indicator == "D":  # Extract day of the year
         return f"{date_value.year}D{date_value.timetuple().tm_yday}"
+
+
+def interval_to_period_str(interval_value: str) -> Optional[str]:
+    """
+    Try to convert a time interval string (start/end) to a time_period string.
+    Returns None if the interval does not match any regular period (A, S, Q, M, W, D).
+    """
+    parts = str(interval_value).split("/", maxsplit=1)
+    if len(parts) != 2:
+        return None
+    try:
+        start = date.fromisoformat(parts[0])
+        end = date.fromisoformat(parts[1])
+    except ValueError:
+        return None
+
+    # Try each period indicator from largest to smallest
+    for indicator in ["A", "S", "Q", "M", "W", "D"]:
+        period_handler = date_to_period(start, indicator)
+        expected_start = period_to_date(
+            period_handler.year, indicator, period_handler.period_number, start=True
+        )
+        expected_end = period_to_date(
+            period_handler.year, indicator, period_handler.period_number, start=False
+        )
+        if expected_start == start and expected_end == end:
+            return str(period_handler)
+    return None

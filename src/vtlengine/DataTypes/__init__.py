@@ -10,8 +10,10 @@ from vtlengine.DataTypes._time_checking import (
 )
 from vtlengine.DataTypes.TimeHandling import (
     PERIOD_IND_MAPPING,
+    TimePeriodHandler,
     check_max_date,
     date_to_period_str,
+    interval_to_period_str,
     str_period_to_date,
 )
 from vtlengine.Exceptions import InputValidationException, RunTimeError, SemanticError
@@ -358,7 +360,7 @@ class TimeInterval(ScalarType):
     @classmethod
     def explicit_cast(cls, value: Any, from_type: Any) -> Any:
         if from_type == String:
-            return value  # check_time(value). TODO: resolve this to avoid a circular import.
+            return value
         raise RunTimeError(
             "2-1-5-1",
             value=value,
@@ -396,9 +398,28 @@ class Date(TimeInterval):
 
     @classmethod
     def explicit_cast(cls, value: Any, from_type: Any) -> Any:
-        # TODO: Remove String, only for compatibility with previous engine
         if from_type == String:
             return check_max_date(value)
+        if from_type == TimePeriod:
+            handler = TimePeriodHandler(str(value))
+            if handler.period_indicator == "D":
+                return handler.start_date(as_date=False)
+            raise RunTimeError(
+                "2-1-5-1",
+                value=value,
+                type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+                type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
+            )
+        if from_type == TimeInterval:
+            parts = str(value).split("/", maxsplit=1)
+            if len(parts) == 2 and parts[0] == parts[1]:
+                return check_max_date(parts[0])
+            raise RunTimeError(
+                "2-1-5-1",
+                value=value,
+                type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+                type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
+            )
 
         raise RunTimeError(
             "2-1-5-1",
@@ -448,9 +469,18 @@ class TimePeriod(TimeInterval):
                     type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
                 )
             return period_str
-        # TODO: Remove String, only for compatibility with previous engine
-        elif from_type == String:
-            return value  # check_time_period(value) TODO: resolve this to avoid a circular import.
+        if from_type == String:
+            return value
+        if from_type == TimeInterval:
+            result = interval_to_period_str(str(value))
+            if result is not None:
+                return result
+            raise RunTimeError(
+                "2-1-5-1",
+                value=value,
+                type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+                type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
+            )
 
         raise RunTimeError(
             "2-1-5-1",
@@ -561,8 +591,8 @@ class Boolean(ScalarType):
     def explicit_cast(cls, value: Any, from_type: Any) -> bool:
         if from_type in {Number, Integer}:
             return value not in {0}
-        if from_type == String and isinstance(value, str) and value.lower() in {"true", "false"}:
-            return value.lower() == "true"
+        if from_type == String and isinstance(value, str):
+            return value.strip().lower() == "true"
 
         raise RunTimeError(
             "2-1-5-1",
@@ -672,14 +702,12 @@ IMPLICIT_TYPE_PROMOTION_MAPPING: Dict[Type[ScalarType], Any] = {
 }
 
 EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING: Dict[Type[ScalarType], Any] = {
-    # TODO: Remove time types, only for compatibility with previous engine
-    String: {Integer, String, Date, TimePeriod, TimeInterval, Duration, Number},
+    String: {Integer, Number, Boolean, String, Date, TimePeriod, TimeInterval, Duration},
     Number: {Integer, Boolean, String, Number},
     Integer: {Number, Boolean, String, Integer},
-    # TODO: Remove String on time types, only for compatibility with previous engine
-    TimeInterval: {TimeInterval, String},
+    TimeInterval: {Date, TimePeriod, String, TimeInterval},
     Date: {TimePeriod, Date, String},
-    TimePeriod: {TimePeriod, String},
+    TimePeriod: {Date, TimePeriod, String},
     Duration: {Duration, String},
     Boolean: {Integer, Number, String, Boolean},
     Null: {
@@ -696,12 +724,12 @@ EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING: Dict[Type[ScalarType], Any] = {
 }
 
 EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING: Dict[Type[ScalarType], Any] = {
-    String: {Number, TimeInterval, Date, TimePeriod, Duration},
-    Number: {},
-    Integer: {},
+    String: {Integer, Number, TimeInterval, Date, TimePeriod, Duration},
+    Number: {String},
+    Integer: {String},
     TimeInterval: {String},
     Date: {String},
-    TimePeriod: {Date},
+    TimePeriod: {String},
     Duration: {String},
     Boolean: {},
     Null: {
