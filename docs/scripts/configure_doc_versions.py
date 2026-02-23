@@ -95,9 +95,7 @@ def get_current_branch() -> Optional[str]:
         return None
 
 
-def write_whitelist_config(
-    tag_whitelist: str, include_current_branch: bool = False
-) -> None:
+def write_whitelist_config(tag_whitelist: str, include_current_branch: bool = False) -> None:
     """
     Write the sphinx-multiversion whitelist configuration to a JSON file.
 

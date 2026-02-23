@@ -122,7 +122,11 @@ def _get_site_versions():
         return []
     # Skip non-version dirs and "latest" alias (duplicate of the latest stable version)
     skip = {".doctrees", "_static", "_sources", "_images", "latest"}
-    return [d.name for d in sorted(site_dir.iterdir(), reverse=True) if d.is_dir() and d.name not in skip]
+    return [
+        d.name
+        for d in sorted(site_dir.iterdir(), reverse=True)
+        if d.is_dir() and d.name not in skip
+    ]
 
 
 # Add version information to template context
