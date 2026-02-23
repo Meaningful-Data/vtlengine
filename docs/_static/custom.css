@@ -57,3 +57,8 @@
 .rst-versions.version-development .rst-current-version {
     color: #5dade2 !important;
 }
+
+/* Current working branch - light pink text */
+.rst-versions.version-current .rst-current-version {
+    color: #f48fb1 !important;
+}

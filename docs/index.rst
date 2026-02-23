@@ -58,6 +58,7 @@ The S3 extra is based on the pandas[aws] extra, which requires to set up some en
 .. toctree::
 
     walkthrough
+    data_types
     api
     environment_variables
     error_messages

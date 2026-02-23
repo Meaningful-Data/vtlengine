@@ -5,6 +5,7 @@
 VTL Engine is a Python library for validating, formatting, and executing VTL (Validation and Transformation Language) 2.1 scripts. It's built around ANTLR-generated parsers and uses Pandas DataFrames for data manipulation.
 
 **VTL 2.1 Reference Manual**: <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf>
+**VTL 2.2 Documentation (preview)**: <https://sdmx-twg.github.io/vtl/2.2/>
 
 ## Core Architecture
 
@@ -41,6 +42,30 @@ All operators MUST validate types before execution.
 - `run_sdmx()`: SDMX-specific wrapper using `pysdmx.PandasDataset`
 - `semantic_analysis()`: Validate script and infer output structures (no execution)
 - `prettify()`: Format VTL scripts
+
+## Documentation (`docs/`)
+
+Sphinx-based documentation published at <https://docs.vtlengine.meaningfuldata.eu>.
+
+- `docs/index.rst` — Main entry point and toctree
+- `docs/walkthrough.rst` — 10-minute quick start guide
+- `docs/data_types.rst` — Data types reference (input/output/internal, casting rules)
+- `docs/api.rst` — API reference (autodoc)
+- `docs/environment_variables.rst` — Configuration
+- `docs/error_messages.rst` — Auto-generated error codes
+- `docs/Operators/` — Per-category operator documentation (RST with `autoclass`)
+- `docs/conf.py` — Sphinx config (theme: `sphinx_rtd_theme`, versioning: `sphinx-multiversion`)
+
+Build docs locally (all released versions + current branch):
+
+```bash
+rm -rf _site
+poetry run python docs/scripts/configure_doc_versions.py --include-current-branch
+poetry run sphinx-multiversion docs _site
+poetry run python docs/scripts/generate_latest_alias.py _site
+poetry run python docs/scripts/generate_redirect.py _site
+poetry run sphinx-build docs _site/$(git branch --show-current)
+```
 
 ## Testing
 
@@ -171,6 +196,10 @@ Pattern: `cr-{issue_number}` (e.g., `cr-457` for issue #457)
 - Use issue types instead of labels: `Bug`, `Feature`, or `Task`
 - Use standard dataset/component naming: `DS_1`, `DS_2` for datasets; `Id_1`, `Id_2` for identifiers; `Me_1`, `Me_2` for measures; `At_1`, `At_2` for attributes
 - Always run the reproduction script to get the actual output — never guess or manually write it. If the output is data, format it as a markdown table for clarity
+- Use GitHub callout syntax for notes and warnings in issue descriptions:
+  - `> [!NOTE]` for informational notes
+  - `> [!IMPORTANT]` for critical information users must know
+  - `> [!WARNING]` for potential pitfalls or breaking changes
 - Include a self-contained Python reproduction script using `run()` instead of separate VTL/JSON/CSV files:
 
 ```python

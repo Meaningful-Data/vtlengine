@@ -28,6 +28,8 @@
   {% set version_class = "version-prerelease" %}
 {% elif current_version.name == "main" %}
   {% set version_class = "version-development" %}
+{% elif not current_version.name.startswith('v') and current_version.name != "main" %}
+  {% set version_class = "version-current" %}
 {% endif %}
 <div class="rst-versions {{ version_class }}" data-toggle="rst-versions" role="note" aria-label="versions">
   <span class="rst-current-version" data-toggle="rst-current-version">
@@ -48,6 +50,8 @@
               <em style="color: #e67e22; font-size: 0.85em;">(pre-release)</em>
             {% elif version.name == "main" %}
               <em style="color: #3498db; font-size: 0.85em;">(development)</em>
+            {% elif not version.name.startswith('v') and version.name != "main" %}
+              <em style="color: #f48fb1; font-size: 0.85em;">(current)</em>
             {% endif %}
           </dd>
         {% else %}
@@ -57,6 +61,41 @@
             {% elif "rc" in version.name %}
               <em style="color: #e67e22; font-size: 0.85em;">(pre-release)</em>
             {% elif version.name == "main" %}
+              <em style="color: #3498db; font-size: 0.85em;">(development)</em>
+            {% elif not version.name.startswith('v') and version.name != "main" %}
+              <em style="color: #f48fb1; font-size: 0.85em;">(current)</em>
+            {% endif %}
+          </dd>
+        {% endif %}
+      {% endfor %}
+    </dl>
+  </div>
+</div>
+{% elif site_versions is defined and site_versions %}
+{# Fallback version selector for sphinx-build (working tree with uncommitted changes) #}
+{% set branch = current_branch or "dev" %}
+<div class="rst-versions version-current" data-toggle="rst-versions" role="note" aria-label="versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    <span class="fa fa-book"> VTL Engine Docs</span>
+    v: {{ branch }}
+    <span class="fa fa-caret-down"></span>
+  </span>
+  <div class="rst-other-versions">
+    <dl>
+      <dt>Versions</dt>
+      {% for ver in site_versions %}
+        {% set display = ver.lstrip('v') %}
+        {% if ver == branch %}
+          <dd><strong>{{ display }}</strong>
+            <em style="color: #f48fb1; font-size: 0.85em;">(current)</em>
+          </dd>
+        {% else %}
+          <dd><a href="{{ pathto('', 1) }}../{{ ver }}/index.html">{{ display }}</a>
+            {% if ver == latest_version %}
+              <em style="color: #27ae60; font-size: 0.85em;">(latest)</em>
+            {% elif "rc" in ver %}
+              <em style="color: #e67e22; font-size: 0.85em;">(pre-release)</em>
+            {% elif ver == "main" %}
               <em style="color: #3498db; font-size: 0.85em;">(development)</em>
             {% endif %}
           </dd>

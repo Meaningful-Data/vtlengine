@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Configure which versions to build in documentation based on tag analysis."""
 
+import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 from typing import Optional
@@ -12,6 +14,8 @@ from version_utils import (
     get_latest_stable_versions,
     parse_version,
 )
+
+SMV_WHITELIST_PATH = Path(__file__).parent.parent / "_smv_whitelist.json"
 
 
 def should_build_rc_tags(
@@ -76,37 +80,52 @@ def generate_tag_whitelist(
     return f"^({'|'.join(patterns)})"
 
 
-def update_sphinx_config(tag_whitelist: str) -> None:
+def get_current_branch() -> Optional[str]:
+    """Get the current git branch name, or None if in detached HEAD state."""
+    try:
+        result = subprocess.run(
+            ["git", "branch", "--show-current"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        branch = result.stdout.strip()
+        return branch if branch else None
+    except subprocess.CalledProcessError:
+        return None
+
+
+def write_whitelist_config(
+    tag_whitelist: str, include_current_branch: bool = False
+) -> None:
     """
-    Update the Sphinx configuration file with the new tag whitelist.
+    Write the sphinx-multiversion whitelist configuration to a JSON file.
 
     Args:
         tag_whitelist: The regex pattern for tag whitelist
+        include_current_branch: Whether to add the current git branch to smv_branch_whitelist
     """
-    conf_path = Path(__file__).parent.parent / "conf.py"
+    branch_whitelist = r"^main$"
 
-    if not conf_path.exists():
-        print(f"Error: Configuration file not found: {conf_path}")
-        sys.exit(1)
+    if include_current_branch:
+        current_branch = get_current_branch()
+        if current_branch and current_branch != "main":
+            branch_whitelist = f"^(main|{re.escape(current_branch)})$"
+            print(f"Updated smv_branch_whitelist to include: {current_branch}")
 
-    content = conf_path.read_text(encoding="utf-8")
-    pattern = r'smv_tag_whitelist = r"[^"]*"'
+    config = {
+        "smv_tag_whitelist": tag_whitelist,
+        "smv_branch_whitelist": branch_whitelist,
+    }
 
-    if not re.search(pattern, content):
-        print("Error: Could not find smv_tag_whitelist in conf.py")
-        sys.exit(1)
-
-    new_content = re.sub(pattern, f'smv_tag_whitelist = r"{tag_whitelist}"', content)
-
-    if new_content == content:
-        print(f"smv_tag_whitelist already set to: {tag_whitelist}")
-    else:
-        conf_path.write_text(new_content, encoding="utf-8")
-        print(f"Updated smv_tag_whitelist to: {tag_whitelist}")
+    SMV_WHITELIST_PATH.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
+    print(f"Wrote whitelist config to {SMV_WHITELIST_PATH.name}")
 
 
 def main() -> int:
     """Main entry point."""
+    include_current_branch = "--include-current-branch" in sys.argv
+
     print("Analyzing version tags...")
 
     all_tags = get_all_version_tags()
@@ -125,8 +144,8 @@ def main() -> int:
     tag_whitelist = generate_tag_whitelist(stable_versions, build_rc, latest_rc)
     print(f"Generated tag whitelist: {tag_whitelist}")
 
-    update_sphinx_config(tag_whitelist)
-    print("Sphinx configuration updated successfully")
+    write_whitelist_config(tag_whitelist, include_current_branch=include_current_branch)
+    print("Configuration updated successfully")
 
     return 0
 
