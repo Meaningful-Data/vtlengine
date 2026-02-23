@@ -34,44 +34,29 @@ duration_mapping = {"A": 6, "S": 5, "Q": 4, "M": 3, "W": 2, "D": 1}
 # ---------------------------------------------------------------------------
 
 
-def _number_mask_to_regex(mask: str) -> str:
-    """Convert a VTL number mask (e.g. 'DD.DDD') to a compiled regex pattern string."""
-    pattern = ""
-    i = 0
-    while i < len(mask):
-        c = mask[i]
-        if c in ("+", "-"):
-            i += 1
-            continue  # sign is handled by the optional prefix below
-        elif c == "D":
-            j = i
-            while j < len(mask) and mask[j] == "D":
-                j += 1
-            pattern += rf"\d{{{j - i}}}"
-            i = j
-            continue
+_NUM_MASK_RE = re.compile(r"D+|d+|[Ee][DdEe]*|[+\-]|.")
+
+
+def _parse_vtl_number_mask(mask: str) -> str:
+    """Convert a VTL number mask (e.g. 'DD.DDD') to a regex pattern string."""
+    parts: list[str] = []
+    for tok in _NUM_MASK_RE.findall(mask):
+        c = tok[0]
+        if c == "D":
+            parts.append(rf"\d{{{len(tok)}}}")
         elif c == "d":
-            j = i
-            while j < len(mask) and mask[j] == "d":
-                j += 1
-            pattern += rf"\d{{0,{j - i}}}"
-            i = j
-            continue
-        elif c == ".":
-            pattern += r"\."
-        elif c == ",":
-            pattern += ","
+            parts.append(rf"\d{{0,{len(tok)}}}")
         elif c in ("E", "e"):
-            pattern += r"[Ee][+-]?\d+"
-            # skip remaining exponent D/d/E/e chars in mask
-            i += 1
-            while i < len(mask) and mask[i] in ("D", "d", "E", "e"):
-                i += 1
+            parts.append(r"[Ee][+-]?\d+")
+        elif c == ".":
+            parts.append(r"\.")
+        elif c == ",":
+            parts.append(",")
+        elif c in ("+", "-"):
             continue
         else:
-            pattern += re.escape(c)
-        i += 1
-    return rf"^[+-]?{pattern}$"
+            parts.append(re.escape(tok))
+    return rf"^[+-]?{''.join(parts)}$"
 
 
 _VTL_DATE_TOKENS = [
@@ -99,6 +84,9 @@ def _vtl_date_mask_to_python(mask: str) -> str:
     return _VTL_TOKEN_RE.sub(lambda m: lookup[m.group(0)], mask)
 
 
+_TP_MASK_RE = re.compile(r"YYYY|YY|\\.|Q+|S+|A+|W+|M+|D+|.")
+
+
 def _parse_vtl_tp_mask(mask: str) -> list[dict[str, Any]]:
     """
     Tokenize a VTL TimePeriod mask into a list of token dicts.
@@ -111,66 +99,30 @@ def _parse_vtl_tp_mask(mask: str) -> list[dict[str, Any]]:
       cal_day    - {'type':'cal_day',   'n': int}
     """
     tokens: list[dict[str, Any]] = []
-    i = 0
-    while i < len(mask):
-        if mask[i : i + 4] == "YYYY":
-            tokens.append({"type": "year", "n": 4})
-            i += 4
-        elif mask[i : i + 2] == "YY":
-            tokens.append({"type": "year", "n": 2})
-            i += 2
-        elif mask[i] == "\\" and i + 1 < len(mask):
-            ch = mask[i + 1]
-            tokens.append({"type": "literal", "ch": ch})
-            i += 2
-            # If escaped char is a period indicator, consume following same-letter digits
-            if ch in "QSMWDA":
-                j = i
-                while j < len(mask) and mask[j] == ch:
-                    j += 1
-                if j > i:
-                    tokens.append({"type": "period_num", "indicator": ch, "n": j - i})
-                    i = j
-        elif mask[i] in "QSA":
-            ch = mask[i]
-            j = i
-            while j < len(mask) and mask[j] == ch:
-                j += 1
-            tokens.append({"type": "period_num", "indicator": ch, "n": j - i})
-            i = j
-        elif mask[i] == "W":
-            j = i
-            while j < len(mask) and mask[j] == "W":
-                j += 1
-            tokens.append({"type": "period_num", "indicator": "W", "n": j - i})
-            i = j
-        elif mask[i] == "M":
-            j = i
-            while j < len(mask) and mask[j] == "M":
-                j += 1
-            n = j - i
-            has_d_later = "D" in mask[j:]
-            if has_d_later:
-                tokens.append({"type": "cal_month", "n": n})
+    for m in _TP_MASK_RE.finditer(mask):
+        tok = m.group()
+        if tok in ("YYYY", "YY"):
+            tokens.append({"type": "year", "n": len(tok)})
+        elif tok.startswith("\\"):
+            tokens.append({"type": "literal", "ch": tok[1]})
+        elif tok[0] in "QSAW":
+            tokens.append({"type": "period_num", "indicator": tok[0], "n": len(tok)})
+        elif tok[0] == "M":
+            if "D" in mask[m.end() :]:
+                tokens.append({"type": "cal_month", "n": len(tok)})
             else:
-                tokens.append({"type": "period_num", "indicator": "M", "n": n})
-            i = j
-        elif mask[i] == "D":
-            j = i
-            while j < len(mask) and mask[j] == "D":
-                j += 1
-            n = j - i
-            has_m_before = any(t["type"] in ("cal_month",) for t in tokens) or any(
-                t["type"] == "period_num" and t["indicator"] == "M" for t in tokens
+                tokens.append({"type": "period_num", "indicator": "M", "n": len(tok)})
+        elif tok[0] == "D":
+            has_m = any(
+                t["type"] == "cal_month" or (t["type"] == "period_num" and t["indicator"] == "M")
+                for t in tokens
             )
-            if has_m_before:
-                tokens.append({"type": "cal_day", "n": n})
+            if has_m:
+                tokens.append({"type": "cal_day", "n": len(tok)})
             else:
-                tokens.append({"type": "period_num", "indicator": "D", "n": n})
-            i = j
+                tokens.append({"type": "period_num", "indicator": "D", "n": len(tok)})
         else:
-            tokens.append({"type": "literal", "ch": mask[i]})
-            i += 1
+            tokens.append({"type": "literal", "ch": tok})
     return tokens
 
 
@@ -204,7 +156,7 @@ class Cast(Operator.Unary):
     @classmethod
     def cast_string_to_integer(cls, value: Any, mask: str) -> Any:
         """Cast a string to an integer, according to the mask."""
-        pattern = _number_mask_to_regex(mask)
+        pattern = _parse_vtl_number_mask(mask)
         stripped = str(value).strip()
         if not re.match(pattern, stripped):
             raise RunTimeError(
@@ -218,7 +170,7 @@ class Cast(Operator.Unary):
     @classmethod
     def cast_string_to_number(cls, value: Any, mask: str) -> Any:
         """Cast a string to a number, according to the mask."""
-        pattern = _number_mask_to_regex(mask)
+        pattern = _parse_vtl_number_mask(mask)
         stripped = str(value).strip()
         if not re.match(pattern, stripped):
             raise RunTimeError(
