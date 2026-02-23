@@ -97,6 +97,8 @@ poetry run ruff check --fix --unsafe-fixes
 poetry run mypy
 ```
 
+All errors from `ruff format` and `ruff check` MUST be fixed before committing. Do not leave any warnings or errors unresolved.
+
 ### Ruff Rules
 
 - Max line length: 100

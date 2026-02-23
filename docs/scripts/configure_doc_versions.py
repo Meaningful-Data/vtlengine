@@ -84,7 +84,7 @@ def get_current_branch() -> Optional[str]:
     """Get the current git branch name, or None if in detached HEAD state."""
     try:
         result = subprocess.run(
-            ["git", "branch", "--show-current"],
+            ["git", "branch", "--show-current"],  # noqa: S603, S607
             capture_output=True,
             text=True,
             check=True,

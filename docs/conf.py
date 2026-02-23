@@ -105,7 +105,7 @@ def _get_current_branch():
     """Get current git branch name for sphinx-build fallback."""
     try:
         result = subprocess.run(
-            ["git", "branch", "--show-current"],
+            ["git", "branch", "--show-current"],  # noqa: S603, S607
             capture_output=True,
             text=True,
             check=True,
