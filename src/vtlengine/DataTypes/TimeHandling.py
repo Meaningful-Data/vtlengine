@@ -488,9 +488,19 @@ def sort_dataframe_by_period_column(
     return data
 
 
+def _max_periods_in_year(indicator: str, year: int) -> int:
+    """Get the actual maximum period number for a frequency in a given year."""
+    if indicator == "D":
+        return 366 if calendar.isleap(year) else 365
+    if indicator == "W":
+        return date(year, 12, 28).isocalendar()[1]
+    return PeriodDuration.periods[indicator]
+
+
 def next_period(x: TimePeriodHandler) -> TimePeriodHandler:
     y = copy.copy(x)
-    if y.period_number == PeriodDuration.periods[x.period_indicator]:
+    max_p = _max_periods_in_year(x.period_indicator, x.year)
+    if y.period_number == max_p:
         y.year += 1
         y.period_number = 1
     else:
@@ -502,7 +512,7 @@ def previous_period(x: TimePeriodHandler) -> TimePeriodHandler:
     y = copy.copy(x)
     if x.period_number == 1:
         y.year -= 1
-        y.period_number = PeriodDuration.periods[x.period_indicator]
+        y.period_number = _max_periods_in_year(x.period_indicator, y.year)
     else:
         y.period_number -= 1
     return y

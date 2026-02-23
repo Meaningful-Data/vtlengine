@@ -1,4 +1,3 @@
-import calendar
 from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional, Type, Union
 
@@ -35,8 +34,8 @@ from vtlengine.DataTypes import (
 from vtlengine.DataTypes._time_checking import _has_time_component, parse_date_value
 from vtlengine.DataTypes.TimeHandling import (
     PERIOD_IND_MAPPING,
-    PeriodDuration,
     TimePeriodHandler,
+    _max_periods_in_year,
     date_to_period,
     generate_period_range,
     period_to_date,
@@ -333,15 +332,6 @@ class Fill_time_series(Binary):
         return Dataset(name=dataset_name, components=operand.components.copy(), data=None)
 
     @classmethod
-    def _max_period_for_year(cls, freq: str, year: int) -> int:
-        """Get the maximum period number for a frequency in a given year."""
-        if freq == "D":
-            return 366 if calendar.isleap(year) else 365
-        if freq == "W":
-            return date(year, 12, 28).isocalendar()[1]
-        return PeriodDuration.periods[freq]
-
-    @classmethod
     def fill_periods(cls, data: pd.DataFrame, fill_type: str) -> pd.DataFrame:
         # Normalize time_id to canonical TimePeriodHandler format
         data = data.copy()
@@ -380,7 +370,7 @@ class Fill_time_series(Binary):
                     start = TimePeriodHandler(f"{global_min_year}A")
                     end = TimePeriodHandler(f"{global_max_year}A")
                 else:
-                    max_p = cls._max_period_for_year(freq, global_max_year)
+                    max_p = _max_periods_in_year(freq, global_max_year)
                     start = TimePeriodHandler(f"{global_min_year}-{freq}1")
                     end = TimePeriodHandler(f"{global_max_year}-{freq}{max_p}")
             else:  # single
