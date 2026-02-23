@@ -49,11 +49,10 @@ Sphinx-based documentation published at <https://docs.vtlengine.meaningfuldata.e
 
 - `docs/index.rst` — Main entry point and toctree
 - `docs/walkthrough.rst` — 10-minute quick start guide
-- `docs/data_types.rst` — Data types reference (input/output/internal, casting rules)
 - `docs/api.rst` — API reference (autodoc)
+- `docs/data_types.rst` — Data types reference (input/output/internal, casting rules)
 - `docs/environment_variables.rst` — Configuration
 - `docs/error_messages.rst` — Auto-generated error codes
-- `docs/Operators/` — Per-category operator documentation (RST with `autoclass`)
 - `docs/conf.py` — Sphinx config (theme: `sphinx_rtd_theme`, versioning: `sphinx-multiversion`)
 
 Build docs locally (all released versions + current branch):

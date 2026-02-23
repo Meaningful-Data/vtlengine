@@ -2,22 +2,37 @@
 Data Types
 ##########
 
-This page documents the data types supported by vtlengine, covering input formats,
-internal representation, output formats, and type casting rules based on the
+This page documents the data types supported by vtlengine,
+covering input formats, internal representation, output formats,
+and type casting rules based on the
 `VTL 2.2 specification <https://sdmx-twg.github.io/vtl/2.2/>`_.
 
 .. seealso::
 
-    - `VTL Data Types <https://sdmx-twg.github.io/vtl/2.2/user_manual/types.html>`_ — Full type system in the VTL 2.2 User Manual
-    - `Scalar type definitions <https://sdmx-twg.github.io/vtl/2.2/user_manual/types.html#scalar-types>`_ — Detailed scalar type descriptions
-    - `Type conversion: cast <https://sdmx-twg.github.io/vtl/2.2/reference_manual/operators/General%20purpose%20operators/Type%20conversion/index.html>`_ — Cast operator reference
-    - `Type Conversion and Formatting Mask <https://sdmx-twg.github.io/vtl/2.2/reference_manual/typical_behaviour.html#type-conversion-and-formatting-mask>`_ — Conversion rules and masks
+    - `VTL Data Types
+      <https://sdmx-twg.github.io/vtl/2.2/user_manual/types.html>`_
+      — Full type system in the VTL 2.2 User Manual
+    - `Scalar type definitions
+      <https://sdmx-twg.github.io/vtl/2.2/user_manual/types.html
+      #scalar-types>`_
+      — Detailed scalar type descriptions
+    - `Type conversion\: cast
+      <https://sdmx-twg.github.io/vtl/2.2/reference_manual/operators
+      /General%20purpose%20operators/Type%20conversion/index.html>`_
+      — Cast operator reference
+    - `Type Conversion and Formatting Mask
+      <https://sdmx-twg.github.io/vtl/2.2/reference_manual
+      /typical_behaviour.html
+      #type-conversion-and-formatting-mask>`_
+      — Conversion rules and masks
 
 Type Hierarchy
 **************
 
 The VTL 2.2 specification defines a hierarchy of
-`scalar types <https://sdmx-twg.github.io/vtl/2.2/user_manual/types.html#basic-scalar-types>`_:
+`scalar types
+<https://sdmx-twg.github.io/vtl/2.2/user_manual/types.html
+#basic-scalar-types>`_:
 
 .. code-block:: text
 
@@ -33,15 +48,19 @@ The VTL 2.2 specification defines a hierarchy of
 
 .. note::
 
-    In vtlengine, the VTL ``Time`` type is implemented as ``TimeInterval``, and ``Time_Period``
-    as ``TimePeriod``. The user-facing names remain ``Time`` and ``Time_Period``.
+    In vtlengine, the VTL ``Time`` type is implemented as
+    ``TimeInterval``, and ``Time_Period`` as ``TimePeriod``.
+    The user-facing names remain ``Time`` and ``Time_Period``.
 
 
 Data Types Reference
 ********************
 
-Each type below describes how vtlengine handles input, storage, and output. For the formal
-VTL definitions, see `External representations and literals <https://sdmx-twg.github.io/vtl/2.2/user_manual/types.html#external-representations-and-literals-used-in-the-vtl-manuals>`_.
+Each type below describes how vtlengine handles input, storage,
+and output. For the formal VTL definitions, see
+`External representations and literals
+<https://sdmx-twg.github.io/vtl/2.2/user_manual/types.html
+#external-representations-and-literals-used-in-the-vtl-manuals>`_.
 
 String
 ======
@@ -51,7 +70,8 @@ String
     :header-rows: 0
 
     * - **Input (CSV)**
-      - Any text value. Surrounding double quotes are stripped automatically.
+      - Any text value. Surrounding double quotes are
+        stripped automatically.
     * - **Input (DataFrame)**
       - Any value (all values pass validation).
     * - **Internal representation**
@@ -67,15 +87,17 @@ Integer
     :header-rows: 0
 
     * - **Input (CSV)**
-      - Whole numbers: ``"42"``, ``"0"``, ``"-7"``. Also accepts ``"true"``/``"false"`` (cast to ``1``/``0``).
+      - Whole numbers: ``"42"``, ``"0"``, ``"-7"``.
     * - **Input (DataFrame)**
-      - Values are cast via ``str → float → int``. Non-integer floats (e.g. ``3.5``) are rejected.
+      - Values are cast via ``str → float → int``.
+        Non-integer floats (e.g. ``3.5``) are rejected.
     * - **Internal representation**
       - Python ``int``, stored as ``int64[pyarrow]``.
     * - **Output dtype**
       - ``int64[pyarrow]``
 
-Integer is a **subtype of Number** — anywhere a Number is expected, an Integer is accepted automatically.
+Integer is a **subtype of Number** — anywhere a Number is
+expected, an Integer is accepted automatically.
 
 Number
 ======
@@ -85,7 +107,8 @@ Number
     :header-rows: 0
 
     * - **Input (CSV)**
-      - Decimal or integer numbers: ``"3.14"``, ``"1e5"``, ``"42"``. Also accepts ``"true"``/``"false"`` (cast to ``1.0``/``0.0``).
+      - Decimal or integer numbers: ``"3.14"``, ``"1e5"``,
+        ``"42"``.
     * - **Input (DataFrame)**
       - Values are cast via ``str → float``.
     * - **Internal representation**
@@ -101,9 +124,11 @@ Boolean
     :header-rows: 0
 
     * - **Input (CSV)**
-      - ``"true"``, ``"false"`` (case-insensitive), ``"1"``, ``"0"``.
+      - ``"true"``, ``"false"`` (case-insensitive),
+        ``"1"``, ``"0"``.
     * - **Input (DataFrame)**
-      - Same string values or native Python ``bool``/``int``/``float``.
+      - Same string values or native Python
+        ``bool``/``int``/``float``.
     * - **Internal representation**
       - Python ``bool``, stored as ``bool[pyarrow]``.
     * - **Output dtype**
@@ -117,15 +142,23 @@ Date
     :header-rows: 0
 
     * - **Input (CSV)**
-      - ISO 8601 date: ``"2020-01-15"``. Datetime: ``"2020-01-15 10:30:00"`` or ``"2020-01-15T10:30:00"``. Nanosecond precision is truncated to microseconds. Year range: 1800–9999.
+      - ISO 8601 date: ``"2020-01-15"``.
+        Datetime: ``"2020-01-15 10:30:00"`` or
+        ``"2020-01-15T10:30:00"``.
+        Nanosecond precision is truncated to microseconds.
+        Year range: 1800–9999.
     * - **Input (DataFrame)**
-      - String values validated against the same ISO 8601 formats.
+      - String values validated against the same
+        ISO 8601 formats.
     * - **Internal representation**
-      - Python ``str`` in ``"YYYY-MM-DD"`` or ``"YYYY-MM-DD HH:MM:SS"`` format, stored as ``string[pyarrow]``.
+      - Python ``str`` in ``"YYYY-MM-DD"`` or
+        ``"YYYY-MM-DD HH:MM:SS"`` format,
+        stored as ``string[pyarrow]``.
     * - **Output dtype**
       - ``string[pyarrow]``
 
-Date is a **subtype of Time** — anywhere a Time value is expected, a Date is accepted automatically.
+Date is a **subtype of Time** — anywhere a Time value is
+expected, a Date is accepted automatically.
 
 Time_Period
 ===========
@@ -137,9 +170,14 @@ Time_Period
     * - **Input (CSV/DataFrame)**
       - Multiple formats accepted (see tables below).
     * - **Internal representation**
-      - Hyphenated string (e.g. ``"2020-M01"``, ``"2020-Q1"``), stored as ``string[pyarrow]``. Internally parsed to ``TimePeriodHandler`` objects (year + period indicator + period number) when time operations are needed.
+      - Hyphenated string (e.g. ``"2020-M01"``,
+        ``"2020-Q1"``), stored as ``string[pyarrow]``.
+        Internally parsed to ``TimePeriodHandler`` objects
+        (year + period indicator + period number)
+        when time operations are needed.
     * - **Output dtype**
-      - ``string[pyarrow]`` — output format depends on the ``time_period_output_format`` parameter.
+      - ``string[pyarrow]`` — output format depends on
+        the ``time_period_output_format`` parameter.
 
 **Accepted input formats:**
 
@@ -151,16 +189,21 @@ Time_Period
       - Formats
       - Examples
     * - VTL compact
-      - ``YYYY``, ``YYYYA``, ``YYYYSn``, ``YYYYQn``, ``YYYYMm``, ``YYYYWw``, ``YYYYDd``
-      - ``2020``, ``2020A``, ``2020S1``, ``2020Q3``, ``2020M1``, ``2020W15``, ``2020D100``
+      - ``YYYY``, ``YYYYA``, ``YYYYSn``, ``YYYYQn``,
+        ``YYYYMm``, ``YYYYWw``, ``YYYYDd``
+      - ``2020``, ``2020A``, ``2020S1``, ``2020Q3``,
+        ``2020M1``, ``2020W15``, ``2020D100``
     * - SDMX reporting
-      - ``YYYY-A1``, ``YYYY-Sx``, ``YYYY-Qx``, ``YYYY-Mxx``, ``YYYY-Wxx``, ``YYYY-Dxxx``
-      - ``2020-A1``, ``2020-S1``, ``2020-Q3``, ``2020-M01``, ``2020-W15``, ``2020-D100``
+      - ``YYYY-A1``, ``YYYY-Sx``, ``YYYY-Qx``,
+        ``YYYY-Mxx``, ``YYYY-Wxx``, ``YYYY-Dxxx``
+      - ``2020-A1``, ``2020-S1``, ``2020-Q3``,
+        ``2020-M01``, ``2020-W15``, ``2020-D100``
     * - ISO date/month
       - ``YYYY-MM``, ``YYYY-M``, ``YYYY-MM-DD``
       - ``2020-01``, ``2020-1``, ``2020-01-15``
 
-**Output formats** (controlled by ``time_period_output_format`` parameter):
+**Output formats** (controlled by ``time_period_output_format``
+parameter):
 
 .. list-table::
     :widths: 18 14 14 14 14 13 13
@@ -195,7 +238,8 @@ Time_Period
       - Not supported
       - ``2020-01-15``
 
-Time_Period is a **subtype of Time** — anywhere a Time value is expected, a Time_Period is accepted automatically.
+Time_Period is a **subtype of Time** — anywhere a Time value
+is expected, a Time_Period is accepted automatically.
 
 Time (TimeInterval)
 ===================
@@ -205,9 +249,13 @@ Time (TimeInterval)
     :header-rows: 0
 
     * - **Input (CSV/DataFrame)**
-      - ISO 8601 interval: ``"2020-01-01/2020-12-31"``. Also accepts ``"YYYY"`` (expanded to full year interval) and ``"YYYY-MM"`` (expanded to full month interval).
+      - ISO 8601 interval: ``"2020-01-01/2020-12-31"``.
+        Also accepts ``"YYYY"`` (expanded to full year
+        interval) and ``"YYYY-MM"`` (expanded to full
+        month interval).
     * - **Internal representation**
-      - Python ``str`` in ``"YYYY-MM-DD/YYYY-MM-DD"`` format, stored as ``string[pyarrow]``.
+      - Python ``str`` in ``"YYYY-MM-DD/YYYY-MM-DD"``
+        format, stored as ``string[pyarrow]``.
     * - **Output dtype**
       - ``string[pyarrow]``
 
@@ -219,9 +267,12 @@ Duration
     :header-rows: 0
 
     * - **Input (CSV/DataFrame)**
-      - Single-letter period indicator: ``"A"`` (annual), ``"S"`` (semester), ``"Q"`` (quarter), ``"M"`` (month), ``"W"`` (week), ``"D"`` (day).
+      - Single-letter period indicator: ``"A"`` (annual),
+        ``"S"`` (semester), ``"Q"`` (quarter),
+        ``"M"`` (month), ``"W"`` (week), ``"D"`` (day).
     * - **Internal representation**
-      - Python ``str`` (single letter), stored as ``string[pyarrow]``.
+      - Python ``str`` (single letter),
+        stored as ``string[pyarrow]``.
     * - **Output dtype**
       - ``string[pyarrow]``
 
@@ -229,13 +280,18 @@ Duration
 Null Handling
 *************
 
-All VTL scalar types support ``null`` values (represented as ``pd.NA`` / ``None``), with one exception:
+All VTL scalar types support ``null`` values (represented as
+``pd.NA`` / ``None``), with one exception:
 
-- **Identifiers** cannot be null — loading data with null identifiers raises an error.
-- **Measures** and **Attributes** can be nullable (controlled by the ``nullable`` flag in the data structure definition).
+- **Identifiers** cannot be null — loading data with null
+  identifiers raises an error.
+- **Measures** and **Attributes** can be nullable (controlled
+  by the ``nullable`` flag in the data structure definition).
 
-During operations, ``null`` propagates: any operation involving a ``null`` operand typically produces
-a ``null`` result. The ``Null`` type is compatible with all other types for implicit promotion.
+During operations, ``null`` propagates: any operation involving
+a ``null`` operand typically produces a ``null`` result.
+The ``Null`` type is compatible with all other types for
+implicit promotion.
 
 
 Type Casting
@@ -244,16 +300,19 @@ Type Casting
 Implicit Casting (Automatic)
 ============================
 
-Implicit casts happen automatically when operators receive operands of different but compatible types.
+Implicit casts happen automatically when operators receive
+operands of different but compatible types.
 The engine resolves the common type using the
-`type promotion rules <https://sdmx-twg.github.io/vtl/2.2/reference_manual/typical_behaviour.html#operators-changing-the-data-type>`_
+`type promotion rules
+<https://sdmx-twg.github.io/vtl/2.2/reference_manual
+/typical_behaviour.html#operators-changing-the-data-type>`_
 defined in VTL 2.2.
 
 .. list-table::
     :widths: 14 10 10 10 10 10 10 12 10
     :header-rows: 1
 
-    * - From ↓ / To →
+    * - From / To
       - String
       - Number
       - Integer
@@ -263,7 +322,7 @@ defined in VTL 2.2.
       - Time_Period
       - Duration
     * - **String**
-      - ✅
+      - |y|
       - —
       - —
       - —
@@ -273,8 +332,8 @@ defined in VTL 2.2.
       - —
     * - **Number**
       - —
-      - ✅
-      - ✅
+      - |y|
+      - |y|
       - —
       - —
       - —
@@ -282,18 +341,18 @@ defined in VTL 2.2.
       - —
     * - **Integer**
       - —
-      - ✅
-      - ✅
+      - |y|
+      - |y|
       - —
       - —
       - —
       - —
       - —
     * - **Boolean**
-      - ✅
+      - |y|
       - —
       - —
-      - ✅
+      - |y|
       - —
       - —
       - —
@@ -303,7 +362,7 @@ defined in VTL 2.2.
       - —
       - —
       - —
-      - ✅
+      - |y|
       - —
       - —
       - —
@@ -312,8 +371,8 @@ defined in VTL 2.2.
       - —
       - —
       - —
-      - ✅
-      - ✅
+      - |y|
+      - |y|
       - —
       - —
     * - **Time_Period**
@@ -321,9 +380,9 @@ defined in VTL 2.2.
       - —
       - —
       - —
-      - ✅
+      - |y|
       - —
-      - ✅
+      - |y|
       - —
     * - **Duration**
       - —
@@ -333,30 +392,44 @@ defined in VTL 2.2.
       - —
       - —
       - —
-      - ✅
+      - |y|
 
 Key rules:
 
-- **Integer ↔ Number**: Both directions are implicit (Integer is a subtype of Number).
-- **Date → Time**: A Date is implicitly converted to a Time interval (``"2020-01-15"`` → ``"2020-01-15/2020-01-15"``).
-- **Time_Period → Time**: A Time_Period is implicitly converted to a Time interval (``"2020-Q1"`` → ``"2020-01-01/2020-03-31"``).
-- **Boolean → String**: ``true`` → ``"True"``, ``false`` → ``"False"``.
-- **Null → any type**: Null is compatible with every type.
+- **Integer / Number**: Both directions are implicit
+  (Integer is a subtype of Number).
+- **Date to Time**: A Date is implicitly converted to a
+  Time interval
+  (``"2020-01-15"`` becomes ``"2020-01-15/2020-01-15"``).
+- **Time_Period to Time**: A Time_Period is implicitly
+  converted to a Time interval
+  (``"2020-Q1"`` becomes ``"2020-01-01/2020-03-31"``).
+- **Boolean to String**: ``true`` becomes ``"True"``,
+  ``false`` becomes ``"False"``.
+- **Null to any type**: Null is compatible with every type.
 
 
 Explicit Casting (cast operator)
 ================================
 
-The `cast <https://sdmx-twg.github.io/vtl/2.2/reference_manual/operators/General%20purpose%20operators/Type%20conversion/index.html>`_
+The `cast
+<https://sdmx-twg.github.io/vtl/2.2/reference_manual/operators
+/General%20purpose%20operators/Type%20conversion/index.html>`_
 operator converts values from one type to another:
 
 .. code-block::
 
     /* Without mask */
-    DS_r <- cast(DS_1, Integer);
+    DS_r <- cast(DS_1, integer);
 
     /* With mask */
-    DS_r <- cast(DS_1, Date, MASK);
+    DS_r <- cast(DS_1, date, MASK);
+
+.. note::
+
+    VTL type names in the ``cast`` operator are lowercase:
+    ``string``, ``integer``, ``number``, ``boolean``,
+    ``time``, ``date``, ``time_period``, ``duration``.
 
 Supported conversions without mask
 -----------------------------------
@@ -365,7 +438,7 @@ Supported conversions without mask
     :widths: 14 10 10 10 10 10 10 12 10
     :header-rows: 1
 
-    * - From ↓ / To →
+    * - From / To
       - String
       - Number
       - Integer
@@ -375,85 +448,89 @@ Supported conversions without mask
       - Time_Period
       - Duration
     * - **String**
-      - ✅
-      - ✅
-      - ✅
+      - |y|
+      - |y|
+      - |y|
       - —
-      - ✅
-      - ✅
-      - ✅
-      - ✅
+      - |y|
+      - |y|
+      - |y|
+      - |y|
     * - **Number**
-      - ✅
-      - ✅
-      - ✅
-      - ✅
+      - |y|
+      - |y|
+      - |y|
+      - |y|
       - —
       - —
       - —
       - —
     * - **Integer**
-      - ✅
-      - ✅
-      - ✅
-      - ✅
+      - |y|
+      - |y|
+      - |y|
+      - |y|
       - —
       - —
       - —
       - —
     * - **Boolean**
-      - ✅
-      - ✅
-      - ✅
-      - ✅
+      - |y|
+      - |y|
+      - |y|
+      - |y|
       - —
       - —
       - —
       - —
     * - **Time**
-      - ✅
+      - |y|
       - —
       - —
       - —
-      - ✅
+      - |y|
       - —
       - —
       - —
     * - **Date**
-      - ✅
+      - |y|
       - —
       - —
       - —
       - —
-      - ✅
-      - ✅
+      - |y|
+      - |y|
       - —
     * - **Time_Period**
-      - ✅
+      - |y|
       - —
       - —
       - —
       - —
       - —
-      - ✅
+      - |y|
       - —
     * - **Duration**
-      - ✅
+      - |y|
       - —
       - —
       - —
       - —
       - —
       - —
-      - ✅
+      - |y|
 
 Conversion details:
 
-- **Number/Integer → Boolean**: ``0`` → ``false``, any other value → ``true``.
-- **Boolean → Number/Integer**: ``true`` → ``1`` (or ``1.0``), ``false`` → ``0`` (or ``0.0``).
-- **String → Integer**: Must be a valid integer string (rejects ``"3.5"``).
-- **String → Boolean**: Only ``"true"`` / ``"false"`` (case-insensitive).
-- **Date → Time_Period**: Converts to daily period (e.g. ``"2020-01-15"`` → ``"2020-D015"``).
+- **Number/Integer to Boolean**: ``0`` becomes ``false``,
+  any other value becomes ``true``.
+- **Boolean to Number/Integer**: ``true`` becomes ``1``
+  (or ``1.0``), ``false`` becomes ``0`` (or ``0.0``).
+- **String to Integer**: Must be a valid integer string
+  (rejects ``"3.5"``).
+- **Date to Time_Period**: Converts to daily period
+  (e.g. ``"2020-01-15"`` becomes ``"2020D15"``
+  with the default ``vtl`` output format).
 
 Supported conversions with mask
 -------------------------------
@@ -462,7 +539,7 @@ Supported conversions with mask
     :widths: 18 14 14 14 14 14 14
     :header-rows: 1
 
-    * - From ↓ / To →
+    * - From / To
       - String
       - Number
       - Time
@@ -471,20 +548,20 @@ Supported conversions with mask
       - Duration
     * - **String**
       - —
-      - ⏳
-      - ⏳
-      - ⏳
-      - ⏳
-      - ⏳
+      - |p|
+      - |p|
+      - |p|
+      - |p|
+      - |p|
     * - **Time**
-      - ⏳
+      - |p|
       - —
       - —
       - —
       - —
       - —
     * - **Date**
-      - ⏳
+      - |p|
       - —
       - —
       - —
@@ -494,18 +571,22 @@ Supported conversions with mask
       - —
       - —
       - —
-      - ⏳
+      - |p|
       - —
       - —
     * - **Duration**
-      - ⏳
+      - |p|
       - —
       - —
       - —
       - —
       - —
 
-Legend: ✅ = implemented, ⏳ = defined in VTL 2.2 but not yet implemented (raises ``NotImplementedError``).
+Legend: |y| = implemented, |p| = defined in VTL 2.2 but not
+yet implemented (raises ``NotImplementedError``).
+
+.. |y| unicode:: U+2705
+.. |p| unicode:: U+23F3
 
 .. note::
 
@@ -515,9 +596,9 @@ Legend: ✅ = implemented, ⏳ = defined in VTL 2.2 but not yet implemented (rai
 Cast on datasets
 ----------------
 
-When ``cast`` is applied to a Dataset, it must have exactly **one measure** (monomeasure).
-If the cast is explicit (not implicit), the measure is renamed to a generic name based on the
-target type:
+When ``cast`` is applied to a Dataset, it must have exactly
+**one measure** (monomeasure). The measure is renamed to a
+generic name based on the target type:
 
 .. list-table::
     :widths: 40 60
@@ -541,3 +622,9 @@ target type:
       - ``date_var``
     * - Duration
       - ``duration_var``
+
+.. note::
+
+    When the source type can be implicitly promoted to the
+    target type (e.g. Boolean to String, Integer to Number,
+    or Number to Integer), the measure is **not** renamed.
