@@ -142,11 +142,11 @@ Date
     :header-rows: 0
 
     * - **Input (CSV)**
-      - ISO 8601 date: ``"2020-01-15"``.
-        Datetime: ``"2020-01-15 10:30:00"`` or
+      - ISO 8601 date: ``"2020-01-15"``,
+        ``"2020-01-15 10:30:00"``,
         ``"2020-01-15T10:30:00"``.
-        Nanosecond precision is truncated to microseconds.
-        Year range: 1800–9999.
+        Nanosecond precision is truncated to
+        microseconds. Year range: 1800–9999.
     * - **Input (DataFrame)**
       - String values validated against the same
         ISO 8601 formats.
@@ -172,12 +172,9 @@ Time_Period
     * - **Internal representation**
       - Hyphenated string (e.g. ``"2020-M01"``,
         ``"2020-Q1"``), stored as ``string[pyarrow]``.
-        Internally parsed to ``TimePeriodHandler`` objects
-        (year + period indicator + period number)
-        when time operations are needed.
     * - **Output dtype**
-      - ``string[pyarrow]`` — output format depends on
-        the ``time_period_output_format`` parameter.
+      - ``string[pyarrow]`` — format controlled by
+        ``time_period_output_format``.
 
 **Accepted input formats:**
 
