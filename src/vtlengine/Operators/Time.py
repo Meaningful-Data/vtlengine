@@ -35,9 +35,9 @@ from vtlengine.DataTypes._time_checking import _has_time_component, parse_date_v
 from vtlengine.DataTypes.TimeHandling import (
     PERIOD_IND_MAPPING,
     TimePeriodHandler,
-    _max_periods_in_year,
     date_to_period,
     generate_period_range,
+    max_periods_in_year,
     period_to_date,
 )
 from vtlengine.Exceptions import RunTimeError, SemanticError
@@ -333,20 +333,16 @@ class Fill_time_series(Binary):
 
     @classmethod
     def fill_periods(cls, data: pd.DataFrame, fill_type: str) -> pd.DataFrame:
-        # Normalize time_id to canonical TimePeriodHandler format
+        # Parse each time_id value once and reuse throughout
         data = data.copy()
-        data[cls.time_id] = data[cls.time_id].map(
-            lambda x: str(TimePeriodHandler(x)), na_action="ignore"
-        )
-
-        # Parse periods and add frequency column
-        tp_series = data[cls.time_id].map(lambda x: TimePeriodHandler(x))
-        data = data.assign(_freq=tp_series.map(lambda x: x.period_indicator))
+        tp_parsed = data[cls.time_id].map(lambda x: TimePeriodHandler(x), na_action="ignore")
+        data[cls.time_id] = tp_parsed.map(str, na_action="ignore")
+        data = data.assign(_freq=tp_parsed.map(lambda x: x.period_indicator, na_action="ignore"))
 
         # Determine global year range (for "all" mode)
         if fill_type == "all":
-            global_min_year: int = tp_series.map(lambda x: x.year).min()
-            global_max_year: int = tp_series.map(lambda x: x.year).max()
+            global_min_year: int = tp_parsed.map(lambda x: x.year).min()
+            global_max_year: int = tp_parsed.map(lambda x: x.year).max()
 
         # Group by other_ids + frequency and fill missing periods
         filled_rows: List[Dict[str, Any]] = []
@@ -362,7 +358,7 @@ class Fill_time_series(Binary):
                 freq = group_key
                 other_id_values = ()
 
-            group_tp = group_df[cls.time_id].map(lambda x: TimePeriodHandler(x))
+            group_tp = tp_parsed.loc[group_df.index]
 
             # Determine range start/end
             if fill_type == "all":
@@ -370,7 +366,7 @@ class Fill_time_series(Binary):
                     start = TimePeriodHandler(f"{global_min_year}A")
                     end = TimePeriodHandler(f"{global_max_year}A")
                 else:
-                    max_p = _max_periods_in_year(freq, global_max_year)
+                    max_p = max_periods_in_year(freq, global_max_year)
                     start = TimePeriodHandler(f"{global_min_year}-{freq}1")
                     end = TimePeriodHandler(f"{global_max_year}-{freq}{max_p}")
             else:  # single

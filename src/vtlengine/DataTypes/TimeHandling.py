@@ -345,7 +345,7 @@ class TimePeriodHandler:
         """SDMX Gregorian representation: YYYY, YYYY-MM, YYYY-MM-DD.
 
         Only Annual (A), Month (M), and Day (D) period indicators are supported.
-        Raises SemanticError for Semester (S), Quarter (Q), and Week (W).
+        Raises RunTimeError for Semester (S), Quarter (Q), and Week (W).
         """
         if self.period_indicator == "A":
             return f"{self.year}"
@@ -488,7 +488,7 @@ def sort_dataframe_by_period_column(
     return data
 
 
-def _max_periods_in_year(indicator: str, year: int) -> int:
+def max_periods_in_year(indicator: str, year: int) -> int:
     """Get the actual maximum period number for a frequency in a given year."""
     if indicator == "D":
         return 366 if calendar.isleap(year) else 365
@@ -499,7 +499,7 @@ def _max_periods_in_year(indicator: str, year: int) -> int:
 
 def next_period(x: TimePeriodHandler) -> TimePeriodHandler:
     y = copy.copy(x)
-    max_p = _max_periods_in_year(x.period_indicator, x.year)
+    max_p = max_periods_in_year(x.period_indicator, x.year)
     if y.period_number == max_p:
         y.year += 1
         y.period_number = 1
@@ -512,7 +512,7 @@ def previous_period(x: TimePeriodHandler) -> TimePeriodHandler:
     y = copy.copy(x)
     if x.period_number == 1:
         y.year -= 1
-        y.period_number = _max_periods_in_year(x.period_indicator, y.year)
+        y.period_number = max_periods_in_year(x.period_indicator, y.year)
     else:
         y.period_number -= 1
     return y
