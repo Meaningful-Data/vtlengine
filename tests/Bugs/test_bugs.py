@@ -2944,10 +2944,12 @@ class CastBugs(BugHelper):
         Status: OK
         Description:
         Goal: Check Result.
+        Note: In VTL 2.2, TimePeriod->Date is allowed without mask but only
+              for daily periods. Monthly periods fail at runtime.
         """
         code = "GL_449_2"
         number_inputs = 1
-        message = "1-1-5-3"
+        message = "2-1-5-1"
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -2957,10 +2959,11 @@ class CastBugs(BugHelper):
         Status: OK
         Description:
         Goal: Check Result.
+        Note: In VTL 2.2, TimePeriod->Date no longer accepts a mask.
         """
         code = "GL_449_3"
         number_inputs = 1
-        message = "1-1-5-4"
+        message = "1-1-5-5"
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -2970,27 +2973,29 @@ class CastBugs(BugHelper):
         Status: OK
         Description: Over dataset
         Goal: Check Result.
+        Note: In VTL 2.2, TimePeriod->Date no longer accepts a mask.
         """
         code = "GL_449_6"
         number_inputs = 1
-        references_names = ["1"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        message = "1-1-5-5"
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_449_7(self):
         """
         Status: OK
-        Description: Over scalardataset
+        Description: Over scalar
         Goal: Check Result.
+        Note: In VTL 2.2, TimePeriod->Date no longer accepts a mask.
         """
         code = "GL_449_7"
         number_inputs = 1
-        references_names = ["1"]
-
-        self.BaseTest(
+        message = "1-1-5-5"
+        self.NewSemanticExceptionTest(
             code=code,
             number_inputs=number_inputs,
-            references_names=references_names,
+            exception_code=message,
             scalars={"sc_1": "2000Q2"},
         )
 
