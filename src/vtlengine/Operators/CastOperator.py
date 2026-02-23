@@ -1,4 +1,6 @@
+import re
 from copy import copy
+from datetime import datetime
 from typing import Any, Optional, Type, Union
 
 import pandas as pd
@@ -13,18 +15,183 @@ from vtlengine.DataTypes import (
     SCALAR_TYPES_CLASS_REVERSE,
     Date,
     Duration,
+    Integer,
     Number,
     ScalarType,
     String,
     TimeInterval,
     TimePeriod,
 )
-from vtlengine.DataTypes.TimeHandling import str_period_to_date
-from vtlengine.Exceptions import SemanticError
+from vtlengine.DataTypes.TimeHandling import TimePeriodHandler, period_to_date
+from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
 duration_mapping = {"A": 6, "S": 5, "Q": 4, "M": 3, "W": 2, "D": 1}
+
+# ---------------------------------------------------------------------------
+# Mask helpers
+# ---------------------------------------------------------------------------
+
+
+def _number_mask_to_regex(mask: str) -> str:
+    """Convert a VTL number mask (e.g. 'DD.DDD') to a compiled regex pattern string."""
+    pattern = ""
+    i = 0
+    while i < len(mask):
+        c = mask[i]
+        if c in ("+", "-"):
+            i += 1
+            continue  # sign is handled by the optional prefix below
+        elif c == "D":
+            j = i
+            while j < len(mask) and mask[j] == "D":
+                j += 1
+            pattern += rf"\d{{{j - i}}}"
+            i = j
+            continue
+        elif c == "d":
+            j = i
+            while j < len(mask) and mask[j] == "d":
+                j += 1
+            pattern += rf"\d{{0,{j - i}}}"
+            i = j
+            continue
+        elif c == ".":
+            pattern += r"\."
+        elif c == ",":
+            pattern += ","
+        elif c in ("E", "e"):
+            pattern += r"[Ee][+-]?\d+"
+            # skip remaining exponent D/d/E/e chars in mask
+            i += 1
+            while i < len(mask) and mask[i] in ("D", "d", "E", "e"):
+                i += 1
+            continue
+        else:
+            pattern += re.escape(c)
+        i += 1
+    return rf"^[+-]?{pattern}$"
+
+
+_VTL_DATE_TOKENS = [
+    ("YYYY", "%Y"),
+    ("MONTH", "%B"),
+    ("Month", "%B"),
+    ("month", "%B"),
+    ("MON", "%b"),
+    ("DAY", "%A"),
+    ("Day", "%A"),
+    ("day", "%a"),
+    ("YY", "%y"),
+    ("MM", "%m"),
+    ("DD", "%d"),
+    ("hh", "%H"),
+    ("mm", "%M"),
+    ("ss", "%S"),
+]
+_VTL_TOKEN_RE = re.compile("|".join(re.escape(t[0]) for t in _VTL_DATE_TOKENS))
+
+
+def _vtl_date_mask_to_python(mask: str) -> str:
+    """Convert a VTL date mask to a Python strptime/strftime format string."""
+    lookup = dict(_VTL_DATE_TOKENS)
+    return _VTL_TOKEN_RE.sub(lambda m: lookup[m.group(0)], mask)
+
+
+def _parse_vtl_tp_mask(mask: str) -> list[dict[str, Any]]:
+    """
+    Tokenize a VTL TimePeriod mask into a list of token dicts.
+
+    Token types:
+      year       - {'type':'year', 'n': 4|2}
+      literal    - {'type':'literal', 'ch': str}
+      period_num - {'type':'period_num', 'indicator': str, 'n': int}
+      cal_month  - {'type':'cal_month', 'n': int}
+      cal_day    - {'type':'cal_day',   'n': int}
+    """
+    tokens: list[dict[str, Any]] = []
+    i = 0
+    while i < len(mask):
+        if mask[i : i + 4] == "YYYY":
+            tokens.append({"type": "year", "n": 4})
+            i += 4
+        elif mask[i : i + 2] == "YY":
+            tokens.append({"type": "year", "n": 2})
+            i += 2
+        elif mask[i] == "\\" and i + 1 < len(mask):
+            ch = mask[i + 1]
+            tokens.append({"type": "literal", "ch": ch})
+            i += 2
+            # If escaped char is a period indicator, consume following same-letter digits
+            if ch in "QSMWDA":
+                j = i
+                while j < len(mask) and mask[j] == ch:
+                    j += 1
+                if j > i:
+                    tokens.append({"type": "period_num", "indicator": ch, "n": j - i})
+                    i = j
+        elif mask[i] in "QSA":
+            ch = mask[i]
+            j = i
+            while j < len(mask) and mask[j] == ch:
+                j += 1
+            tokens.append({"type": "period_num", "indicator": ch, "n": j - i})
+            i = j
+        elif mask[i] == "W":
+            j = i
+            while j < len(mask) and mask[j] == "W":
+                j += 1
+            tokens.append({"type": "period_num", "indicator": "W", "n": j - i})
+            i = j
+        elif mask[i] == "M":
+            j = i
+            while j < len(mask) and mask[j] == "M":
+                j += 1
+            n = j - i
+            has_d_later = "D" in mask[j:]
+            if has_d_later:
+                tokens.append({"type": "cal_month", "n": n})
+            else:
+                tokens.append({"type": "period_num", "indicator": "M", "n": n})
+            i = j
+        elif mask[i] == "D":
+            j = i
+            while j < len(mask) and mask[j] == "D":
+                j += 1
+            n = j - i
+            has_m_before = any(t["type"] in ("cal_month",) for t in tokens) or any(
+                t["type"] == "period_num" and t["indicator"] == "M" for t in tokens
+            )
+            if has_m_before:
+                tokens.append({"type": "cal_day", "n": n})
+            else:
+                tokens.append({"type": "period_num", "indicator": "D", "n": n})
+            i = j
+        else:
+            tokens.append({"type": "literal", "ch": mask[i]})
+            i += 1
+    return tokens
+
+
+def _infer_tp_period_type(tokens: list[dict[str, Any]]) -> str:
+    """Infer the VTL period type (A/S/Q/M/W/D or D_CAL) from a tokenized mask."""
+    pn_inds = [t["indicator"] for t in tokens if t["type"] == "period_num"]
+    has_cal_month = any(t["type"] == "cal_month" for t in tokens)
+    has_cal_day = any(t["type"] == "cal_day" for t in tokens)
+
+    if has_cal_month and has_cal_day:
+        return "D_CAL"
+    if has_cal_month:
+        return "M"
+    if "M" in pn_inds and "D" in pn_inds:
+        return "D_CAL"  # e.g. YYYY\MMM\DDD
+
+    for ind in ("Q", "S", "W", "M", "D", "A"):
+        if ind in pn_inds:
+            return ind
+    return "A"
+
 
 ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
 
@@ -33,74 +200,291 @@ class Cast(Operator.Unary):
     op = CAST
 
     # CASTS VALUES
-    # Converts the value from one type to another in a way that is according to the mask
+    # Converts the value from one type to another according to the mask
+    @classmethod
+    def cast_string_to_integer(cls, value: Any, mask: str) -> Any:
+        """Cast a string to an integer, according to the mask."""
+        pattern = _number_mask_to_regex(mask)
+        stripped = str(value).strip()
+        if not re.match(pattern, stripped):
+            raise RunTimeError(
+                "2-1-5-1",
+                value=value,
+                type_1=SCALAR_TYPES_CLASS_REVERSE[String],
+                type_2=SCALAR_TYPES_CLASS_REVERSE[Integer],
+            )
+        return int(float(stripped.replace(",", "")))
+
     @classmethod
     def cast_string_to_number(cls, value: Any, mask: str) -> Any:
-        """
-        This method casts a string to a number, according to the mask.
-
-        """
-
-        raise NotImplementedError("How this mask should be implemented is not yet defined.")
+        """Cast a string to a number, according to the mask."""
+        pattern = _number_mask_to_regex(mask)
+        stripped = str(value).strip()
+        if not re.match(pattern, stripped):
+            raise RunTimeError(
+                "2-1-5-1",
+                value=value,
+                type_1=SCALAR_TYPES_CLASS_REVERSE[String],
+                type_2=SCALAR_TYPES_CLASS_REVERSE[Number],
+            )
+        return float(stripped.replace(",", ""))
 
     @classmethod
     def cast_string_to_date(cls, value: Any, mask: str) -> Any:
-        """
-        This method casts a string to a number, according to the mask.
-
-        """
-
-        raise NotImplementedError("How this mask should be implemented is not yet defined.")
+        """Cast a string to a date, according to the mask."""
+        py_fmt = _vtl_date_mask_to_python(mask)
+        stripped = str(value).strip()
+        try:
+            return datetime.strptime(stripped, py_fmt).date().isoformat()
+        except ValueError:
+            raise RunTimeError(
+                "2-1-5-1",
+                value=value,
+                type_1=SCALAR_TYPES_CLASS_REVERSE[String],
+                type_2=SCALAR_TYPES_CLASS_REVERSE[Date],
+            )
 
     @classmethod
     def cast_string_to_duration(cls, value: Any, mask: str) -> Any:
-        """
-        This method casts a string to a duration, according to the mask.
+        """Cast a string to a duration, according to the mask."""
+        from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING
 
-        """
-
-        raise NotImplementedError("How this mask should be implemented is not yet defined.")
+        stripped = str(value).strip().upper()
+        if stripped in PERIOD_IND_MAPPING:
+            return stripped
+        raise RunTimeError(
+            "2-1-5-1",
+            value=value,
+            type_1=SCALAR_TYPES_CLASS_REVERSE[String],
+            type_2=SCALAR_TYPES_CLASS_REVERSE[Duration],
+        )
 
     @classmethod
     def cast_string_to_time_period(cls, value: Any, mask: str) -> Any:
-        """
-        This method casts a string to a time period, according to the mask.
+        """Cast a string to a time period, according to the mask."""
+        from datetime import date as date_cls
 
-        """
+        tokens = _parse_vtl_tp_mask(mask)
+        period_type = _infer_tp_period_type(tokens)
+        s = str(value).strip()
+        pos = 0
+        year: Optional[int] = None
+        period_num: Optional[int] = None
+        cal_month: Optional[int] = None
+        cal_day: Optional[int] = None
 
-        raise NotImplementedError("How this mask should be implemented is not yet defined.")
+        for t in tokens:
+            if pos > len(s):
+                raise RunTimeError(
+                    "2-1-5-1",
+                    value=value,
+                    type_1=SCALAR_TYPES_CLASS_REVERSE[String],
+                    type_2=SCALAR_TYPES_CLASS_REVERSE[TimePeriod],
+                )
+            ttype = t["type"]
+            if ttype == "year":
+                n = t["n"]
+                chunk = s[pos : pos + n]
+                if not chunk.isdigit():
+                    raise RunTimeError(
+                        "2-1-5-1",
+                        value=value,
+                        type_1=SCALAR_TYPES_CLASS_REVERSE[String],
+                        type_2=SCALAR_TYPES_CLASS_REVERSE[TimePeriod],
+                    )
+                year = int(chunk) + (2000 if n == 2 else 0)
+                pos += n
+            elif ttype == "literal":
+                if pos >= len(s) or s[pos] != t["ch"]:
+                    raise RunTimeError(
+                        "2-1-5-1",
+                        value=value,
+                        type_1=SCALAR_TYPES_CLASS_REVERSE[String],
+                        type_2=SCALAR_TYPES_CLASS_REVERSE[TimePeriod],
+                    )
+                pos += 1
+            elif ttype == "period_num":
+                n = t["n"]
+                chunk = s[pos : pos + n]
+                if not chunk.isdigit():
+                    raise RunTimeError(
+                        "2-1-5-1",
+                        value=value,
+                        type_1=SCALAR_TYPES_CLASS_REVERSE[String],
+                        type_2=SCALAR_TYPES_CLASS_REVERSE[TimePeriod],
+                    )
+                ind = t["indicator"]
+                if period_type == "D_CAL" and ind == "M":
+                    cal_month = int(chunk)
+                elif period_type == "D_CAL" and ind == "D":
+                    cal_day = int(chunk)
+                else:
+                    period_num = int(chunk)
+                pos += n
+            elif ttype == "cal_month":
+                n = t["n"]
+                chunk = s[pos : pos + n]
+                if not chunk.isdigit():
+                    raise RunTimeError(
+                        "2-1-5-1",
+                        value=value,
+                        type_1=SCALAR_TYPES_CLASS_REVERSE[String],
+                        type_2=SCALAR_TYPES_CLASS_REVERSE[TimePeriod],
+                    )
+                cal_month = int(chunk)
+                pos += n
+            elif ttype == "cal_day":
+                n = t["n"]
+                chunk = s[pos : pos + n]
+                if not chunk.isdigit():
+                    raise RunTimeError(
+                        "2-1-5-1",
+                        value=value,
+                        type_1=SCALAR_TYPES_CLASS_REVERSE[String],
+                        type_2=SCALAR_TYPES_CLASS_REVERSE[TimePeriod],
+                    )
+                cal_day = int(chunk)
+                pos += n
+
+        if pos != len(s) or year is None:
+            raise RunTimeError(
+                "2-1-5-1",
+                value=value,
+                type_1=SCALAR_TYPES_CLASS_REVERSE[String],
+                type_2=SCALAR_TYPES_CLASS_REVERSE[TimePeriod],
+            )
+
+        if period_type in ("D_CAL",) or (cal_month is not None and cal_day is not None):
+            d = date_cls(year, cal_month, cal_day)  # type: ignore[arg-type]
+            doy = d.timetuple().tm_yday
+            return str(TimePeriodHandler(f"{year}D{doy}"))
+        if period_type == "A" or period_num is None:
+            return str(TimePeriodHandler(f"{year}A"))
+        return str(TimePeriodHandler(f"{year}{period_type}{period_num}"))
 
     @classmethod
     def cast_string_to_time(cls, value: Any, mask: str) -> Any:
-        """
-        This method casts a string to a time, according to the mask.
-
-        """
-
-        raise NotImplementedError("How this cast should be implemented is not yet defined.")
-
-    #
-    # @classmethod
-    # def cast_date_to_string(cls, value: Any, mask: str) -> Any:
-    #     """ """
-    #     return NotImplementedError("How this cast should be implemented is not yet defined.")
-    #
-    # @classmethod
-    # def cast_duration_to_string(cls, value: Any, mask: str) -> Any:
-    #     """ """
-    #     return NotImplementedError("How this cast should be implemented is not yet defined.")
-    #
-    # @classmethod
-    # def cast_time_to_string(cls, value: Any, mask: str) -> Any:
-    #     """ """
-    #     return NotImplementedError("How this cast should be implemented is not yet defined.")
+        """Cast a string to a time (TimeInterval), according to the mask."""
+        if "/" not in mask:
+            return str(value).strip()
+        mask_parts = mask.split("/", 1)
+        val_parts = str(value).strip().split("/", 1)
+        if len(val_parts) != 2:
+            raise RunTimeError(
+                "2-1-5-1",
+                value=value,
+                type_1=SCALAR_TYPES_CLASS_REVERSE[String],
+                type_2=SCALAR_TYPES_CLASS_REVERSE[TimeInterval],
+            )
+        date1 = cls.cast_string_to_date(val_parts[0].strip(), mask_parts[0])
+        date2 = cls.cast_string_to_date(val_parts[1].strip(), mask_parts[1])
+        return f"{date1}/{date2}"
 
     @classmethod
-    def cast_time_period_to_date(cls, value: Any, mask_value: str) -> Any:
-        """ """
+    def cast_integer_to_string(cls, value: Any, mask: str) -> Any:
+        """Cast an integer to a string, according to the mask."""
+        return cls.cast_number_to_string(float(value), mask)
 
-        start = mask_value == "START"
-        return str_period_to_date(value, start)
+    @classmethod
+    def cast_number_to_string(cls, value: Any, mask: str) -> Any:
+        """Cast a number to a string, according to the mask."""
+        fval = float(value)
+        # Count D-groups on each side of the decimal separator
+        sep = "." if "." in mask else ("," if "," in mask else None)
+        if sep:
+            idx = mask.index(sep)
+            n_dec = mask[idx + 1 :].count("D") + mask[idx + 1 :].count("d")
+            n_int = mask[:idx].count("D") + mask[:idx].count("d")
+        else:
+            n_dec = 0
+            n_int = mask.count("D") + mask.count("d")
+
+        negative = fval < 0
+        abs_val = abs(fval)
+        if n_dec > 0:
+            formatted = f"{abs_val:.{n_dec}f}"
+            int_str, dec_str = formatted.split(".")
+            int_str = int_str.zfill(n_int)
+            result = int_str + sep + dec_str  # type: ignore[operator]
+        else:
+            result = str(int(abs_val)).zfill(n_int)
+        return ("-" if negative else "") + result
+
+    @classmethod
+    def cast_date_to_string(cls, value: Any, mask: str) -> Any:
+        """Cast a date to a string, according to the mask."""
+        py_fmt = _vtl_date_mask_to_python(mask)
+        try:
+            return datetime.fromisoformat(str(value)).strftime(py_fmt)
+        except ValueError:
+            raise RunTimeError(
+                "2-1-5-1",
+                value=value,
+                type_1=SCALAR_TYPES_CLASS_REVERSE[Date],
+                type_2=SCALAR_TYPES_CLASS_REVERSE[String],
+            )
+
+    @classmethod
+    def cast_time_to_string(cls, value: Any, mask: str) -> Any:
+        """Cast a time (TimeInterval) to a string, according to the mask."""
+        if "/" not in mask:
+            return str(value)
+        mask_parts = mask.split("/", 1)
+        val_str = str(value)
+        if "/" not in val_str:
+            raise RunTimeError(
+                "2-1-5-1",
+                value=value,
+                type_1=SCALAR_TYPES_CLASS_REVERSE[TimeInterval],
+                type_2=SCALAR_TYPES_CLASS_REVERSE[String],
+            )
+        val_parts = val_str.split("/", 1)
+        date1 = cls.cast_date_to_string(val_parts[0], mask_parts[0])
+        date2 = cls.cast_date_to_string(val_parts[1], mask_parts[1])
+        return f"{date1}/{date2}"
+
+    @classmethod
+    def cast_time_period_to_string(cls, value: Any, mask: str) -> Any:
+        """Cast a time_period to a string, according to the mask."""
+        handler = TimePeriodHandler(str(value))
+        tokens = _parse_vtl_tp_mask(mask)
+        period_type = _infer_tp_period_type(tokens)
+        parts: list[str] = []
+
+        for t in tokens:
+            ttype = t["type"]
+            if ttype == "year":
+                parts.append(f"{handler.year:04d}" if t["n"] == 4 else f"{handler.year % 100:02d}")
+            elif ttype == "literal":
+                parts.append(t["ch"])
+            elif ttype == "period_num":
+                n = t["n"]
+                ind = t["indicator"]
+                if period_type == "D_CAL":
+                    start = period_to_date(
+                        handler.year, handler.period_indicator, handler.period_number, start=True
+                    )
+                    val = start.month if ind == "M" else start.day
+                else:
+                    val = handler.period_number
+                parts.append(f"{val:0{n}d}")
+            elif ttype == "cal_month":
+                start = period_to_date(
+                    handler.year, handler.period_indicator, handler.period_number, start=True
+                )
+                parts.append(f"{start.month:0{t['n']}d}")
+            elif ttype == "cal_day":
+                start = period_to_date(
+                    handler.year, handler.period_indicator, handler.period_number, start=True
+                )
+                parts.append(f"{start.day:0{t['n']}d}")
+
+        return "".join(parts)
+
+    @classmethod
+    def cast_duration_to_string(cls, value: Any, mask: str) -> Any:
+        """Cast a duration to a string, according to the mask."""
+        return str(value)
 
     invalid_mask_message = "At op {op}: Invalid mask to cast from type {type_1} to {type_2}."
 
@@ -111,16 +495,9 @@ class Cast(Operator.Unary):
         """
         This method checks if the mask value is valid for the cast operation.
         """
-
-        if from_type == TimeInterval and to_type == String:
-            return cls.check_mask_value_from_time_to_string(mask_value)
-        # from = Date
-        if from_type == Date and to_type == String:
-            return cls.check_mask_value_from_date_to_string(mask_value)
-        # from = Time_Period
-        if from_type == TimePeriod and to_type == Date:
-            return cls.check_mask_value_from_time_period_to_date(mask_value)
         # from = String
+        if from_type == String and to_type == Integer:
+            return cls.check_mask_value_from_string_to_integer(mask_value)
         if from_type == String and to_type == Number:
             return cls.check_mask_value_from_string_to_number(mask_value)
         if from_type == String and to_type == TimeInterval:
@@ -131,6 +508,21 @@ class Cast(Operator.Unary):
             return cls.check_mask_value_from_string_to_time_period(mask_value)
         if from_type == String and to_type == Duration:
             return cls.check_mask_value_from_string_to_duration(mask_value)
+        # from = Integer
+        if from_type == Integer and to_type == String:
+            return cls.check_mask_value_from_integer_to_string(mask_value)
+        # from = Number
+        if from_type == Number and to_type == String:
+            return cls.check_mask_value_from_number_to_string(mask_value)
+        # from = TimeInterval (Time)
+        if from_type == TimeInterval and to_type == String:
+            return cls.check_mask_value_from_time_to_string(mask_value)
+        # from = Date
+        if from_type == Date and to_type == String:
+            return cls.check_mask_value_from_date_to_string(mask_value)
+        # from = TimePeriod
+        if from_type == TimePeriod and to_type == String:
+            return cls.check_mask_value_from_time_period_to_string(mask_value)
         # from = Duration
         if from_type == Duration and to_type == String:
             return cls.check_mask_value_from_duration_to_string(mask_value)
@@ -143,41 +535,52 @@ class Cast(Operator.Unary):
         )
 
     @classmethod
-    def check_mask_value_from_time_period_to_date(cls, mask_value: str) -> None:
-        if mask_value not in ["START", "END"]:
-            raise SemanticError("1-1-5-4", op=cls.op, type_1="Time_Period", type_2="Date")
+    def check_mask_value_from_string_to_integer(cls, *args: Any) -> None:
+        pass
+
+    @classmethod
+    def check_mask_value_from_integer_to_string(cls, *args: Any) -> None:
+        pass
+
+    @classmethod
+    def check_mask_value_from_number_to_string(cls, *args: Any) -> None:
+        pass
 
     @classmethod
     def check_mask_value_from_time_to_string(cls, *args: Any) -> None:
-        raise NotImplementedError("How this mask should be implemented is not yet defined.")
+        pass
 
     @classmethod
     def check_mask_value_from_date_to_string(cls, *args: Any) -> None:
-        raise NotImplementedError("How this mask should be implemented is not yet defined.")
+        pass
+
+    @classmethod
+    def check_mask_value_from_time_period_to_string(cls, *args: Any) -> None:
+        pass
 
     @classmethod
     def check_mask_value_from_string_to_number(cls, *args: Any) -> None:
-        raise NotImplementedError("How this mask should be implemented is not yet defined.")
+        pass
 
     @classmethod
     def check_mask_value_from_string_to_time(cls, *args: Any) -> None:
-        raise NotImplementedError("How this mask should be implemented is not yet defined.")
+        pass
 
     @classmethod
     def check_mask_value_from_string_to_date(cls, *args: Any) -> None:
-        raise NotImplementedError("How this mask should be implemented is not yet defined.")
+        pass
 
     @classmethod
     def check_mask_value_from_string_to_time_period(cls, *args: Any) -> None:
-        raise NotImplementedError("How this mask should be implemented is not yet defined.")
+        pass
 
     @classmethod
     def check_mask_value_from_string_to_duration(cls, *args: Any) -> None:
-        raise NotImplementedError("How this mask should be implemented is not yet defined.")
+        pass
 
     @classmethod
     def check_mask_value_from_duration_to_string(cls, *args: Any) -> None:
-        raise NotImplementedError("How this mask should be implemented is not yet defined.")
+        pass
 
     @classmethod
     def check_cast(
@@ -254,6 +657,9 @@ class Cast(Operator.Unary):
         to_type: Type[ScalarType],
         mask_value: str,
     ) -> Any:
+        # from = String
+        if provided_type == String and to_type == Integer:
+            return cls.cast_string_to_integer(value, mask_value)
         if provided_type == String and to_type == Number:
             return cls.cast_string_to_number(value, mask_value)
         if provided_type == String and to_type == Date:
@@ -264,14 +670,19 @@ class Cast(Operator.Unary):
             return cls.cast_string_to_time_period(value, mask_value)
         if provided_type == String and to_type == TimeInterval:
             return cls.cast_string_to_time(value, mask_value)
-        # if provided_type == Date and to_type == String:
-        #     return cls.cast_date_to_string(value, mask_value)
-        # if provided_type == Duration and to_type == String:
-        #     return cls.cast_duration_to_string(value, mask_value)
-        # if provided_type == TimeInterval and to_type == String:
-        #     return cls.cast_time_to_string(value, mask_value)
-        if provided_type == TimePeriod and to_type == Date:
-            return cls.cast_time_period_to_date(value, mask_value)
+        # to = String
+        if provided_type == Integer and to_type == String:
+            return cls.cast_integer_to_string(value, mask_value)
+        if provided_type == Number and to_type == String:
+            return cls.cast_number_to_string(value, mask_value)
+        if provided_type == Date and to_type == String:
+            return cls.cast_date_to_string(value, mask_value)
+        if provided_type == Duration and to_type == String:
+            return cls.cast_duration_to_string(value, mask_value)
+        if provided_type == TimeInterval and to_type == String:
+            return cls.cast_time_to_string(value, mask_value)
+        if provided_type == TimePeriod and to_type == String:
+            return cls.cast_time_period_to_string(value, mask_value)
 
         raise SemanticError(
             "2-1-5-1",
@@ -447,5 +858,6 @@ class Cast(Operator.Unary):
             casted_data = cls.cast_mask_component(operand.data, from_type, to_type, mask)
         else:
             casted_data = cls.cast_component(operand.data, from_type, to_type)
+
         result_component.data = casted_data
         return result_component
