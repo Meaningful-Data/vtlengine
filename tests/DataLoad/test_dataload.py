@@ -657,7 +657,9 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_91-41"
         number_inputs = 1
 
-        message = "Date 2014/12/31 is not in the correct format. Use YYYY-MM-DD."
+        message = (
+            "Date 2014/12/31 is not in the correct format. Use YYYY-MM-DD or YYYY-MM-DD HH:MM:SS."
+        )
 
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_message=message

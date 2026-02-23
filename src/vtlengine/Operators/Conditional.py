@@ -20,7 +20,7 @@ COND_COL = "__cond__"
 def component_assign(cond: Any, op: Union[DataComponent, Scalar]) -> Any:
     idx = cond.index[cond.fillna(False)]
     if isinstance(op, DataComponent):
-        return pd.Series(dtype=object) if op.data is None else op.data.reindex(idx)
+        return pd.Series(dtype=op.data_type.dtype()) if op.data is None else op.data.reindex(idx)
     return pd.Series(op.value, index=idx)
 
 
@@ -73,7 +73,7 @@ class If(Operator):
         if condition.data is None:
             return pd.Series()
 
-        cond = condition.data.fillna(False).astype(bool)
+        cond = condition.data.fillna(False).astype("bool[pyarrow]")
         t_base = component_assign(cond, true_branch)
         f_base = component_assign(~cond, false_branch)
         return pd.concat([t_base, f_base])
@@ -95,10 +95,18 @@ class If(Operator):
 
         cond_measure = condition.get_measures_names()[0]
         cond = condition.data
-        cond[COND_COL] = cond.pop(cond_measure).fillna(False).astype(bool)
+        cond[COND_COL] = cond.pop(cond_measure).fillna(False).astype("bool[pyarrow]")
 
         t_base = dataset_assign(cond[cond[COND_COL]], true_branch, ids, measures)
         f_base = dataset_assign(cond[~cond[COND_COL]], false_branch, ids, measures)
+        # Ensure compatible dtypes for merge
+        for col in t_base.columns.intersection(f_base.columns):
+            if col != COND_COL and str(t_base[col].dtype) != str(f_base[col].dtype):
+                common_dtype = (
+                    t_base[col].dtype if str(t_base[col].dtype) != "object" else f_base[col].dtype
+                )
+                t_base[col] = t_base[col].astype(common_dtype)
+                f_base[col] = f_base[col].astype(common_dtype)
         result.data = t_base.merge(f_base, how="outer").drop(columns=COND_COL)
 
     @classmethod
@@ -222,7 +230,14 @@ class Nvl(Binary):
         else:
             if not isinstance(result, Scalar):
                 if isinstance(right, Scalar):
-                    result.data = left.data.fillna(right.value)
+                    if isinstance(result, Dataset):
+                        measure_names = result.get_measures_names()
+                        result.data = left.data.copy()
+                        for me in measure_names:
+                            if me in result.data.columns:
+                                result.data[me] = result.data[me].fillna(right.value)
+                    else:
+                        result.data = left.data.fillna(right.value)
                 else:
                     result.data = left.data.fillna(right.data)
                 if isinstance(result, Dataset):
@@ -251,7 +266,7 @@ class Nvl(Binary):
             cls.type_validation(left.data_type, right.data_type)
             return DataComponent(
                 name=comp_name,
-                data=pd.Series(dtype=object),
+                data=pd.Series(dtype=left.data_type.dtype()),
                 data_type=left.data_type,
                 role=Role.MEASURE,
                 nullable=False,
@@ -299,12 +314,14 @@ class Case(Operator):
         cls, conditions: List[Any], thenOps: List[Any], elseOp: Any
     ) -> Any:
         if isinstance(elseOp, DataComponent):
-            result = pd.Series(dtype=object) if elseOp.data is None else elseOp.data
+            result = (
+                pd.Series(dtype=elseOp.data_type.dtype()) if elseOp.data is None else elseOp.data
+            )
         else:
             result = pd.Series(elseOp.value, index=conditions[0].data.index)
 
         for i in range(len(conditions)):
-            case = conditions[i].data[conditions[i].data.fillna(False).astype(bool)]
+            case = conditions[i].data[conditions[i].data.fillna(False).astype("bool[pyarrow]")]
             case_result = component_assign(case, thenOps[i])
             result = result.reindex(result.index.union(case.index))
             result.loc[case.index] = case_result
