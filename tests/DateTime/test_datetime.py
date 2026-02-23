@@ -1,4 +1,5 @@
 import warnings
+from typing import Any, List
 
 import pandas as pd
 import pytest
@@ -10,6 +11,12 @@ from vtlengine.DataTypes._time_checking import check_date
 from vtlengine.DataTypes.TimeHandling import check_max_date
 from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.Interpreter import InterpreterAnalyzer
+
+
+def _to_pylist(series: pd.Series) -> List[Any]:  # type: ignore[type-arg]
+    """Convert Series to list with None for null values (pyarrow returns pd.NA)."""
+    return [None if pd.isna(v) else v for v in series.tolist()]
+
 
 check_date_valid_params = [
     pytest.param("2020-01-15", "2020-01-15", id="date_only"),
@@ -456,7 +463,7 @@ DS_1_Structure = {
 def _run_ds(script, input_values):
     data_df = pd.DataFrame({"Id_1": list(range(1, len(input_values) + 1)), "Me_1": input_values})
     result = run(script=script, data_structures=DS_1_Structure, datapoints={"DS_1": data_df})
-    return result["DS_r"].data["Me_1"].tolist()
+    return _to_pylist(result["DS_r"].data["Me_1"])
 
 
 # ---- Dataset-level dataload tests (parametrized) ----
@@ -507,7 +514,7 @@ def test_dataset_extraction_operator(op, input_values, expected):
         }
     )
     result = run(script=script, data_structures=_DS_1_INT_MEASURE, datapoints={"DS_1": data_df})
-    assert result["DS_r"].data["Me_2"].tolist() == expected
+    assert _to_pylist(result["DS_r"].data["Me_2"]) == expected
 
 
 # ---- Dataset-level datediff test ----
@@ -536,7 +543,7 @@ def test_dataset_datediff_with_datetime():
         }
     )
     result = run(script=script, data_structures=data_structures, datapoints={"DS_1": data_df})
-    assert result["DS_r"].data["Me_2"].tolist() == [9, 0]
+    assert _to_pylist(result["DS_r"].data["Me_2"]) == [9, 0]
 
 
 @pytest.mark.parametrize("input_data, expected_Id_2, expected_Me_1", flow_to_stock_params)
@@ -550,8 +557,8 @@ def test_flow_to_stock_datetime(input_data, expected_Id_2, expected_Me_1):
     )
     result_data = result["DS_r"].data
     if expected_Id_2 is not None:
-        assert result_data["Id_2"].tolist() == expected_Id_2
-    assert result_data["Me_1"].tolist() == expected_Me_1
+        assert _to_pylist(result_data["Id_2"]) == expected_Id_2
+    assert _to_pylist(result_data["Me_1"]) == expected_Me_1
 
 
 @pytest.mark.parametrize(
@@ -567,9 +574,9 @@ def test_fill_time_series(lim_method, Id_1, Id_2, Me_1, exp_Id_1, exp_Id_2, exp_
         datapoints={"DS_1": data_df},
     )
     result_data = result["DS_r"].data.sort_values(["Id_1", "Id_2"]).reset_index(drop=True)
-    assert result_data["Id_1"].tolist() == exp_Id_1
-    assert result_data["Id_2"].tolist() == exp_Id_2
-    assert result_data["Me_1"].tolist() == exp_Me_1
+    assert _to_pylist(result_data["Id_1"]) == exp_Id_1
+    assert _to_pylist(result_data["Id_2"]) == exp_Id_2
+    assert _to_pylist(result_data["Me_1"]) == exp_Me_1
 
 
 @pytest.mark.parametrize("args, expected", time_agg_scalar_params)
@@ -592,7 +599,7 @@ def test_time_agg_dataset_datetime(args, input_data, expected):
         data_structures=DS_1_Structure,
         datapoints={"DS_1": data_df},
     )
-    assert result["DS_r"].data["Me_1"].tolist() == expected
+    assert _to_pylist(result["DS_r"].data["Me_1"]) == expected
 
 
 @pytest.mark.parametrize(
@@ -603,4 +610,4 @@ def test_timeshift_datetime(script, Id_1, Id_2, Me_1, Id_2_reference, Me_1_refer
     result = run(script=script, data_structures=Time_id_structure, datapoints={"DS_1": data_df})
     result_data = result["DS_r"].data
     assert result_data["Id_2"].astype(str).tolist() == Id_2_reference
-    assert result_data["Me_1"].tolist() == Me_1_reference
+    assert _to_pylist(result_data["Me_1"]) == Me_1_reference

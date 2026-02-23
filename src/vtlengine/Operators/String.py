@@ -24,6 +24,7 @@ from vtlengine.Model import DataComponent, Dataset, Scalar
 
 class Unary(Operator.Unary):
     type_to_check = String
+    str_accessor: Optional[str] = None
 
     @classmethod
     def op_func(cls, x: Any) -> Any:
@@ -34,6 +35,13 @@ class Unary(Operator.Unary):
     @classmethod
     def apply_operation_component(cls, series: Any) -> Any:
         """Applies the operation to a component"""
+        if cls.str_accessor is not None:
+            s = (
+                series.astype("string[pyarrow]")
+                if str(series.dtype) != "string[pyarrow]"
+                else series
+            )
+            return getattr(s.str, cls.str_accessor)()
         return series.map(lambda x: cls.py_op(str(x)), na_action="ignore")
 
     @classmethod
@@ -61,37 +69,43 @@ class Length(Unary):
     @classmethod
     def apply_operation_component(cls, series: Any) -> Any:
         """Applies the operation to a component"""
-        return series.map(cls.op_func)
+        s = series.astype("string[pyarrow]") if str(series.dtype) != "string[pyarrow]" else series
+        return s.str.len()
 
 
 class Lower(Unary):
     op = LCASE
     py_op = str.lower
     return_type = String
+    str_accessor = "lower"
 
 
 class Upper(Unary):
     op = UCASE
     py_op = str.upper
     return_type = String
+    str_accessor = "upper"
 
 
 class Trim(Unary):
     op = TRIM
     py_op = str.strip
     return_type = String
+    str_accessor = "strip"
 
 
 class Ltrim(Unary):
     op = LTRIM
     py_op = str.lstrip
     return_type = String
+    str_accessor = "lstrip"
 
 
 class Rtrim(Unary):
     op = RTRIM
     py_op = str.rstrip
     return_type = String
+    str_accessor = "rstrip"
 
 
 class Binary(Operator.Binary):
@@ -235,9 +249,9 @@ class Parameterized(Unary):
             length = args[0]
 
         if param is None:
-            return pd.Series(index=range(length), dtype=object)
+            return pd.Series(index=range(length), dtype="string[pyarrow]")
         if isinstance(param, Scalar):
-            return pd.Series(data=param.value, index=range(length), dtype=object)
+            return pd.Series(data=param.value, index=range(length), dtype="string[pyarrow]")
         return param.data
 
     @classmethod

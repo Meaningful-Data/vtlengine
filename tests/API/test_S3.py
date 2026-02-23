@@ -159,7 +159,9 @@ def test_run_s3(mock_read_csv):
     with pytest.raises(InputValidationException):
         run(script="DS_r := DS_1;", data_structures=data_structures, datapoints=input_path)
 
-    dtypes = {comp["name"]: object for comp in data_structures["datasets"][0]["DataStructure"]}
+    dtypes = {
+        comp["name"]: "string[pyarrow]" for comp in data_structures["datasets"][0]["DataStructure"]
+    }
     mock_read_csv.assert_called_once_with(
         input_path,
         dtype=dtypes,
@@ -179,7 +181,9 @@ def test_validate_dataset_s3(mock_read_csv):
     with pytest.raises(InputValidationException):
         validate_dataset(data_structures=data_structures, datapoints=input_path)
 
-    dtypes = {comp["name"]: object for comp in data_structures["datasets"][0]["DataStructure"]}
+    dtypes = {
+        comp["name"]: "string[pyarrow]" for comp in data_structures["datasets"][0]["DataStructure"]
+    }
     mock_read_csv.assert_called_once_with(
         input_path,
         dtype=dtypes,

@@ -65,4 +65,6 @@ def format_time_period_external_representation(
 
     for comp in dataset.components.values():
         if comp.data_type == TimePeriod:
-            dataset.data[comp.name] = dataset.data[comp.name].map(formatter, na_action="ignore")
+            dataset.data[comp.name] = (
+                dataset.data[comp.name].map(formatter, na_action="ignore").astype("string[pyarrow]")
+            )
