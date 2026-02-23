@@ -1,4 +1,4 @@
-import re
+import calendar
 from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional, Type, Union
 
@@ -35,8 +35,10 @@ from vtlengine.DataTypes import (
 from vtlengine.DataTypes._time_checking import _has_time_component, parse_date_value
 from vtlengine.DataTypes.TimeHandling import (
     PERIOD_IND_MAPPING,
+    PeriodDuration,
     TimePeriodHandler,
     date_to_period,
+    generate_period_range,
     period_to_date,
 )
 from vtlengine.Exceptions import RunTimeError, SemanticError
@@ -331,115 +333,87 @@ class Fill_time_series(Binary):
         return Dataset(name=dataset_name, components=operand.components.copy(), data=None)
 
     @classmethod
-    def max_min_from_period(cls, data: pd.DataFrame, mode: str = "all") -> Dict[str, Any]:
-        result_dict: Dict[Any, Any] = {}
-        data = data.assign(
-            Periods_col=data[cls.time_id].apply(cls._get_period),
-            Periods_values_col=data[cls.time_id].apply(
-                lambda x: int(re.sub(r"[^\d]", "", x.split("-")[-1]))
-            ),
-            Year_values_col=data[cls.time_id].apply(lambda x: int(x[:4])),
-        ).sort_values(by=["Year_values_col", "Periods_col", "Periods_values_col"])
-
-        if mode == "all":
-            min_year = data["Year_values_col"].min()
-            max_year = data["Year_values_col"].max()
-            result_dict = {"min": {"A": min_year}, "max": {"A": max_year}}
-            for period, group in data.groupby("Periods_col"):
-                if period != "A":
-                    result_dict["min"][period] = group["Periods_values_col"].min()
-                    result_dict["max"][period] = group["Periods_values_col"].max()
-
-        elif mode == "single":
-            for name, group in data.groupby(cls.other_ids + ["Periods_col"]):
-                key = name[:-1] if len(name[:-1]) > 1 else name[0]
-                period = name[-1]
-                if key not in result_dict:
-                    result_dict[key] = {
-                        "min": {"A": group["Year_values_col"].min()},
-                        "max": {"A": group["Year_values_col"].max()},
-                    }
-                if period != "A":
-                    year_min = group["Year_values_col"].min()
-                    year_max = group["Year_values_col"].max()
-
-                    result_dict[key]["min"]["A"] = min(result_dict[key]["min"]["A"], year_min)
-                    result_dict[key]["max"]["A"] = max(result_dict[key]["max"]["A"], year_max)
-                    result_dict[key]["min"][period] = group["Periods_values_col"].min()
-                    result_dict[key]["max"][period] = group["Periods_values_col"].max()
-
-        else:
-            raise ValueError("Mode must be either 'all' or 'single'")
-        return result_dict
+    def _max_period_for_year(cls, freq: str, year: int) -> int:
+        """Get the maximum period number for a frequency in a given year."""
+        if freq == "D":
+            return 366 if calendar.isleap(year) else 365
+        if freq == "W":
+            return date(year, 12, 28).isocalendar()[1]
+        return PeriodDuration.periods[freq]
 
     @classmethod
     def fill_periods(cls, data: pd.DataFrame, fill_type: str) -> pd.DataFrame:
-        result_data = cls.period_filler(data, single=(fill_type != "all"))
-        not_na = result_data[cls.measures].notna().any(axis=1)
-        duplicated = result_data.duplicated(subset=(cls.other_ids + [cls.time_id]), keep=False)
-        return result_data[~duplicated | not_na]
-
-    @classmethod
-    def period_filler(cls, data: pd.DataFrame, single: bool = False) -> pd.DataFrame:
-        filled_data = []
-        MAX_MIN = cls.max_min_from_period(data, mode="single" if single else "all")
-        cls.periods = (
-            list(MAX_MIN[list(MAX_MIN.keys())[0]]["min"].keys())
-            if single
-            else list(MAX_MIN["min"].keys())
+        # Normalize time_id to canonical TimePeriodHandler format
+        data = data.copy()
+        data[cls.time_id] = data[cls.time_id].map(
+            lambda x: str(TimePeriodHandler(x)), na_action="ignore"
         )
-        groups = data.groupby(cls.other_ids)
 
-        for group, group_df in groups:
-            period_limits = (
-                MAX_MIN if not single else MAX_MIN[group if len(group) > 1 else group[0]]
-            )
-            years = list(range(period_limits["min"]["A"], period_limits["max"]["A"] + 1))
-            for period in cls.periods:
-                if period == "A":
-                    filled_data.extend(cls.fill_periods_rows(group_df, period, years))
+        # Parse periods and add frequency column
+        tp_series = data[cls.time_id].map(lambda x: TimePeriodHandler(x))
+        data = data.assign(_freq=tp_series.map(lambda x: x.period_indicator))
+
+        # Determine global year range (for "all" mode)
+        if fill_type == "all":
+            global_min_year: int = tp_series.map(lambda x: x.year).min()
+            global_max_year: int = tp_series.map(lambda x: x.year).max()
+
+        # Group by other_ids + frequency and fill missing periods
+        filled_rows: List[Dict[str, Any]] = []
+        non_id_cols = [
+            c for c in data.columns if c not in cls.other_ids and c != cls.time_id and c != "_freq"
+        ]
+
+        for group_key, group_df in data.groupby(cls.other_ids + ["_freq"]):
+            if isinstance(group_key, tuple):
+                freq = group_key[-1]
+                other_id_values = group_key[:-1]
+            else:
+                freq = group_key
+                other_id_values = ()
+
+            group_tp = group_df[cls.time_id].map(lambda x: TimePeriodHandler(x))
+
+            # Determine range start/end
+            if fill_type == "all":
+                if freq == "A":
+                    start = TimePeriodHandler(f"{global_min_year}A")
+                    end = TimePeriodHandler(f"{global_max_year}A")
                 else:
-                    if period in period_limits["min"] and period in period_limits["max"]:
-                        vals = list(
-                            range(
-                                period_limits["min"][period],
-                                period_limits["max"][period] + 1,
-                            )
-                        )
-                        filled_data.extend(
-                            cls.fill_periods_rows(group_df, period, years, vals=vals)
-                        )
+                    max_p = cls._max_period_for_year(freq, global_max_year)
+                    start = TimePeriodHandler(f"{global_min_year}-{freq}1")
+                    end = TimePeriodHandler(f"{global_max_year}-{freq}{max_p}")
+            else:  # single
+                sorted_tp = sorted(group_tp.tolist(), key=lambda x: (x.year, x.period_number))
+                start, end = sorted_tp[0], sorted_tp[-1]
 
-        filled_data = pd.concat(filled_data, ignore_index=True)
-        combined_data = pd.concat([filled_data, data], ignore_index=True)
-        combined_data[cls.time_id] = combined_data[cls.time_id].astype("string[pyarrow]")
-        return combined_data.sort_values(by=cls.other_ids + [cls.time_id])
+            # Generate all expected periods and find missing ones
+            expected = generate_period_range(start, end)
+            existing = set(group_df[cls.time_id].tolist())
 
-    @classmethod
-    def fill_periods_rows(
-        cls,
-        group_df: Any,
-        period: str,
-        years: List[int],
-        vals: Optional[List[int]] = None,
-    ) -> List[Any]:
-        rows = []
-        for year in years:
-            if period == "A":
-                rows.append(cls.create_period_row(group_df, period, year))
-            elif vals is not None:
-                for val in vals:
-                    rows.append(cls.create_period_row(group_df, period, year, val=val))
-        return rows
+            # Build other_ids dict for fill rows
+            other_vals: Dict[str, Any] = {}
+            if cls.other_ids:
+                for i, col in enumerate(cls.other_ids):
+                    other_vals[col] = other_id_values[i]
 
-    @classmethod
-    def create_period_row(
-        cls, group_df: Any, period: str, year: int, val: Optional[int] = None
-    ) -> Any:
-        row = group_df.iloc[0].copy()
-        row[cls.time_id] = f"{year}A" if period == "A" else f"{year}-{period}{val:d}"
-        row[cls.measures] = None
-        return row.to_frame().T
+            for tp in expected:
+                tp_str = str(tp)
+                if tp_str not in existing:
+                    row: Dict[str, Any] = {**other_vals, cls.time_id: tp_str}
+                    for col in non_id_cols:
+                        row[col] = None
+                    filled_rows.append(row)
+
+        # Combine and return
+        data = data.drop(columns=["_freq"])
+        if filled_rows:
+            fill_df = pd.DataFrame(filled_rows)
+            result = pd.concat([data, fill_df], ignore_index=True)
+        else:
+            result = data
+        result[cls.time_id] = result[cls.time_id].astype("string[pyarrow]")
+        return result.sort_values(by=cls.other_ids + [cls.time_id]).reset_index(drop=True)
 
     @classmethod
     def max_min_from_date(cls, data: pd.DataFrame, fill_type: str = "all") -> Dict[str, Any]:
