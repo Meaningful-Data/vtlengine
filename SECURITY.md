@@ -2,13 +2,22 @@
 
 ## Supported Versions
 
-Versions currently supported with security updates
-
-| Version | Supported          |
-| ------- | ------------------ |
-| 1.1.x   | :white_check_mark: |
-| 1.0.x   | :x:                |
-| < 1.0.x | :x:                |
+| Version | Supported |
+| ------- | --------- |
+| 1.5.x   | Yes       |
+| < 1.5.0 | No        |
 
 ## Reporting a Vulnerability
-To report a vulnerability, please add a new issue (selecting Report a Vulnerability) or send an email to javier.hernandez@meaningfuldata.eu
+
+**Please do not report security vulnerabilities through public GitHub issues.**
+
+Instead, report them by emailing <javier.hernandez@meaningfuldata.eu>.
+
+Please include:
+
+- Description of the vulnerability
+- Steps to reproduce
+- Impact assessment
+- Suggested fix (if any)
+
+You should receive a response within 48 hours. If the issue is confirmed, a fix will be released as soon as possible depending on severity.
