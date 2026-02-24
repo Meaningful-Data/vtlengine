@@ -36,6 +36,20 @@
     word-break: break-word !important;
 }
 
+/* All tables - wrap text in cells to prevent horizontal overflow */
+.wy-table-responsive table td,
+.wy-table-responsive table th {
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+}
+
+/* Inline code in table cells should also wrap */
+.wy-table-responsive table code {
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+}
+
 /* Version selector styling based on version type */
 
 /* Default (older stable versions) - white text */
@@ -56,4 +70,9 @@
 /* Development/main branch - blue text */
 .rst-versions.version-development .rst-current-version {
     color: #5dade2 !important;
+}
+
+/* Current working branch - light pink text */
+.rst-versions.version-current .rst-current-version {
+    color: #f48fb1 !important;
 }
