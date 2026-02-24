@@ -17,7 +17,7 @@ import pytest
 from vtlengine.DataTypes import TimePeriod
 from vtlengine.DataTypes._time_checking import check_time_period
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import RunTimeError
 from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
     format_time_period_external_representation,
@@ -258,7 +258,7 @@ def test_sdmx_gregorian_representation(internal: str, expected: str) -> None:
     ids=[c[1] for c in sdmx_gregorian_error_params],
 )
 def test_sdmx_gregorian_representation_unsupported(internal: str) -> None:
-    with pytest.raises(SemanticError, match="2-1-19-21"):
+    with pytest.raises(RunTimeError, match="2-1-19-21"):
         TimePeriodHandler(internal).sdmx_gregorian_representation()
 
 
@@ -341,7 +341,7 @@ gregorian_error_params = [
 )
 def test_format_external_representation_gregorian_error(internal: str) -> None:
     ds = get_tp_dataset([internal])
-    with pytest.raises(SemanticError, match="2-1-19-21"):
+    with pytest.raises(RunTimeError, match="2-1-19-21"):
         format_time_period_external_representation(ds, TimePeriodRepresentation.SDMX_GREGORIAN)
 
 

@@ -9,7 +9,7 @@ from vtlengine.API import create_ast
 from vtlengine.DataTypes import Date, Integer
 from vtlengine.DataTypes._time_checking import check_date
 from vtlengine.DataTypes.TimeHandling import check_max_date
-from vtlengine.Exceptions import InputValidationException, SemanticError
+from vtlengine.Exceptions import InputValidationException, RunTimeError
 from vtlengine.Interpreter import InterpreterAnalyzer
 
 
@@ -64,7 +64,7 @@ check_max_date_valid_params = [
 ]
 
 check_max_date_invalid_params = [
-    pytest.param("2020/01/15", SemanticError, id="invalid_format"),
+    pytest.param("2020/01/15", RunTimeError, id="invalid_format"),
 ]
 
 scalar_time_params = [
@@ -328,6 +328,93 @@ fill_time_series_params = [
     ),
 ]
 
+Time_Period_structure = {
+    "datasets": [
+        {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "String", "role": "Identifier", "nullable": False},
+                {"name": "Id_2", "type": "Time_Period", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Integer", "role": "Measure", "nullable": True},
+            ],
+        }
+    ]
+}
+
+# VTL 2.2 spec examples for fill_time_series with Time_Period identifiers
+fill_time_series_period_params = [
+    # DS_3 / ex_5: Annual only, single mode
+    pytest.param(
+        "single",
+        ["A", "A", "A", "B", "B", "B"],
+        ["2010A", "2012A", "2013A", "2011A", "2012A", "2014A"],
+        [10, 30, 40, 50, 60, 80],
+        ["A", "A", "A", "A", "B", "B", "B", "B"],
+        ["2010", "2011", "2012", "2013", "2011", "2012", "2013", "2014"],
+        [10, None, 30, 40, 50, 60, None, 80],
+        id="annual_single",
+    ),
+    # DS_3 / ex_6: Annual only, all mode
+    pytest.param(
+        "all",
+        ["A", "A", "A", "B", "B", "B"],
+        ["2010A", "2012A", "2013A", "2011A", "2012A", "2014A"],
+        [10, 30, 40, 50, 60, 80],
+        ["A", "A", "A", "A", "A", "B", "B", "B", "B", "B"],
+        ["2010", "2011", "2012", "2013", "2014", "2010", "2011", "2012", "2013", "2014"],
+        [10, None, 30, 40, None, None, 50, 60, None, 80],
+        id="annual_all",
+    ),
+    # DS_4 / ex_7: Mixed annual+quarterly, single mode
+    pytest.param(
+        "single",
+        ["A", "A", "A", "A", "A", "A"],
+        ["2010A", "2012A", "2010Q1", "2010Q2", "2010Q4", "2011Q2"],
+        [1, 3, 10, 20, 40, 60],
+        ["A", "A", "A", "A", "A", "A", "A", "A", "A"],
+        [
+            "2010",
+            "2010Q1",
+            "2010Q2",
+            "2010Q3",
+            "2010Q4",
+            "2011",
+            "2011Q1",
+            "2011Q2",
+            "2012",
+        ],
+        [1, 10, 20, None, 40, None, None, 60, 3],
+        id="mixed_annual_quarterly_single",
+    ),
+    # DS_4 / ex_8: Mixed annual+quarterly, all mode
+    pytest.param(
+        "all",
+        ["A", "A", "A", "A", "A", "A"],
+        ["2010A", "2012A", "2010Q1", "2010Q2", "2010Q4", "2011Q2"],
+        [1, 3, 10, 20, 40, 60],
+        ["A"] * 15,
+        [
+            "2010",
+            "2010Q1",
+            "2010Q2",
+            "2010Q3",
+            "2010Q4",
+            "2011",
+            "2011Q1",
+            "2011Q2",
+            "2011Q3",
+            "2011Q4",
+            "2012",
+            "2012Q1",
+            "2012Q2",
+            "2012Q3",
+            "2012Q4",
+        ],
+        [1, 10, 20, None, 40, None, None, 60, None, None, 3, None, None, None, None],
+        id="mixed_annual_quarterly_all",
+    ),
+]
+
 time_agg_scalar_params = [
     pytest.param(
         '"A", cast("2020-06-15 10:30:00", date), first',
@@ -571,6 +658,24 @@ def test_fill_time_series(lim_method, Id_1, Id_2, Me_1, exp_Id_1, exp_Id_2, exp_
     result = run(
         script=script,
         data_structures=Time_id_str_structure,
+        datapoints={"DS_1": data_df},
+    )
+    result_data = result["DS_r"].data.sort_values(["Id_1", "Id_2"]).reset_index(drop=True)
+    assert _to_pylist(result_data["Id_1"]) == exp_Id_1
+    assert _to_pylist(result_data["Id_2"]) == exp_Id_2
+    assert _to_pylist(result_data["Me_1"]) == exp_Me_1
+
+
+@pytest.mark.parametrize(
+    "lim_method, Id_1, Id_2, Me_1, exp_Id_1, exp_Id_2, exp_Me_1",
+    fill_time_series_period_params,
+)
+def test_fill_time_series_period(lim_method, Id_1, Id_2, Me_1, exp_Id_1, exp_Id_2, exp_Me_1):
+    script = f"DS_r <- fill_time_series(DS_1, {lim_method});"
+    data_df = pd.DataFrame({"Id_1": Id_1, "Id_2": Id_2, "Me_1": Me_1})
+    result = run(
+        script=script,
+        data_structures=Time_Period_structure,
         datapoints={"DS_1": data_df},
     )
     result_data = result["DS_r"].data.sort_values(["Id_1", "Id_2"]).reset_index(drop=True)

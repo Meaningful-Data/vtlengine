@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional, Union
 import pandas as pd
 
 from vtlengine.AST.Grammar.tokens import GT, GTE, LT, LTE
-from vtlengine.Exceptions import RunTimeError, SemanticError
+from vtlengine.Exceptions import RunTimeError
 
 PERIOD_IND_MAPPING = {"A": 6, "S": 5, "Q": 4, "M": 3, "W": 2, "D": 1}
 
@@ -61,7 +61,7 @@ def period_to_date(
         return dt.strptime(f"{year}-W{period_number}-{week_day}", "%G-W%V-%w").date()
     if period_indicator == "D":
         return dt.strptime(f"{year}-D{period_number}", "%Y-D%j").date()
-    raise SemanticError("2-1-19-2", period=period_indicator)
+    raise RunTimeError("2-1-19-2", period=period_indicator)
 
 
 def day_of_year(date: str) -> int:
@@ -107,7 +107,7 @@ def from_input_customer_support_to_internal(period: str) -> tuple[int, str, int]
         )
     if length == 1:  # 'YYYY-M' case (single digit month)
         return year, "M", int(second_term)
-    raise SemanticError("2-1-19-6", period_format=period)
+    raise RunTimeError("2-1-19-6", period_format=period)
 
 
 class SingletonMeta(type):
@@ -184,7 +184,7 @@ class TimePeriodHandler:
     @staticmethod
     def _check_year(year: int) -> None:
         if year < 0 or year > 9999:
-            raise SemanticError("2-1-19-10", year=year)
+            raise RunTimeError("2-1-19-10", year=year)
             # raise ValueError(f'Invalid year {year}, must be between 1900 and 9999.')
 
     @property
@@ -203,7 +203,7 @@ class TimePeriodHandler:
     @period_indicator.setter
     def period_indicator(self, value: str) -> None:
         if value not in PeriodDuration():
-            raise SemanticError("2-1-19-2", period=value)
+            raise RunTimeError("2-1-19-2", period=value)
         self._period_indicator = value
 
     @property
@@ -217,7 +217,7 @@ class TimePeriodHandler:
     @period_number.setter
     def period_number(self, value: int) -> None:
         if not PeriodDuration.check_period_range(self.period_indicator, value):
-            raise SemanticError(
+            raise RunTimeError(
                 "2-1-19-7",
                 periods=PeriodDuration.periods[self.period_indicator],
                 period_indicator=self.period_indicator,
@@ -226,10 +226,10 @@ class TimePeriodHandler:
         if self.period_indicator == "D":
             if calendar.isleap(self.year):
                 if value > 366:
-                    raise SemanticError("2-1-19-9", day=value, year=self.year)
+                    raise RunTimeError("2-1-19-9", day=value, year=self.year)
             else:
                 if value > 365:
-                    raise SemanticError("2-1-19-9", day=value, year=self.year)
+                    raise RunTimeError("2-1-19-9", day=value, year=self.year)
                     # raise ValueError(f'Invalid day {value} for year {self.year}.')
         self._period_number = value
 
@@ -255,7 +255,7 @@ class TimePeriodHandler:
 
         if self.period_indicator != other.period_indicator:
             tokens = {operator.lt: "<", operator.le: "<=", operator.gt: ">", operator.ge: ">="}
-            raise SemanticError("2-1-19-19", op=tokens[py_op], value1=self, value2=other)
+            raise RunTimeError("2-1-19-19", op=tokens[py_op], value1=self, value2=other)
 
         self_lapse, other_lapse = self.period_dates, other.period_dates
         is_lt_or_le = py_op in [operator.lt, operator.le]
@@ -345,7 +345,7 @@ class TimePeriodHandler:
         """SDMX Gregorian representation: YYYY, YYYY-MM, YYYY-MM-DD.
 
         Only Annual (A), Month (M), and Day (D) period indicators are supported.
-        Raises SemanticError for Semester (S), Quarter (Q), and Week (W).
+        Raises RunTimeError for Semester (S), Quarter (Q), and Week (W).
         """
         if self.period_indicator == "A":
             return f"{self.year}"
@@ -354,7 +354,7 @@ class TimePeriodHandler:
         if self.period_indicator == "D":
             d = period_to_date(self.year, "D", self.period_number)
             return d.isoformat()
-        raise SemanticError(
+        raise RunTimeError(
             "2-1-19-21",
             period=self.period_indicator,
         )
@@ -403,7 +403,7 @@ class TimeIntervalHandler:
     def set_date1(self, value: str) -> None:
         date.fromisoformat(value)
         if value > self.date2.__str__():
-            raise SemanticError("2-1-19-4", date=self.date2, value=value)
+            raise RunTimeError("2-1-19-4", date=self.date2, value=value)
             # raise ValueError(f"({value} > {self.date2}).
             # Cannot set date1 with a value greater than date2.")
         self._date1 = value
@@ -411,7 +411,7 @@ class TimeIntervalHandler:
     def set_date2(self, value: str) -> None:
         date.fromisoformat(value)
         if value < self.date1.__str__():
-            raise SemanticError("2-1-19-5", date=self.date1, value=value)
+            raise RunTimeError("2-1-19-5", date=self.date1, value=value)
             # raise ValueError(f"({value} < {self.date1}).
             # Cannot set date2 with a value lower than date1.")
         self._date2 = value
@@ -445,16 +445,16 @@ class TimeIntervalHandler:
         return str(self) != str(other) if other is not None else None
 
     def __lt__(self, other: Any) -> Optional[bool]:
-        raise SemanticError("2-1-19-17", op=LT, type="Time")
+        raise RunTimeError("2-1-19-17", op=LT, type="Time")
 
     def __le__(self, other: Any) -> Optional[bool]:
-        raise SemanticError("2-1-19-17", op=LTE, type="Time")
+        raise RunTimeError("2-1-19-17", op=LTE, type="Time")
 
     def __gt__(self, other: Any) -> Optional[bool]:
-        raise SemanticError("2-1-19-17", op=GT, type="Time")
+        raise RunTimeError("2-1-19-17", op=GT, type="Time")
 
     def __ge__(self, other: Any) -> Optional[bool]:
-        raise SemanticError("2-1-19-17", op=GTE, type="Time")
+        raise RunTimeError("2-1-19-17", op=GTE, type="Time")
 
     @classmethod
     def from_time_period(cls, value: TimePeriodHandler) -> "TimeIntervalHandler":
@@ -488,9 +488,19 @@ def sort_dataframe_by_period_column(
     return data
 
 
+def max_periods_in_year(indicator: str, year: int) -> int:
+    """Get the actual maximum period number for a frequency in a given year."""
+    if indicator == "D":
+        return 366 if calendar.isleap(year) else 365
+    if indicator == "W":
+        return date(year, 12, 28).isocalendar()[1]
+    return PeriodDuration.periods[indicator]
+
+
 def next_period(x: TimePeriodHandler) -> TimePeriodHandler:
     y = copy.copy(x)
-    if y.period_number == PeriodDuration.periods[x.period_indicator]:
+    max_p = max_periods_in_year(x.period_indicator, x.year)
+    if y.period_number == max_p:
         y.year += 1
         y.period_number = 1
     else:
@@ -502,7 +512,7 @@ def previous_period(x: TimePeriodHandler) -> TimePeriodHandler:
     y = copy.copy(x)
     if x.period_number == 1:
         y.year -= 1
-        y.period_number = PeriodDuration.periods[x.period_indicator]
+        y.period_number = max_periods_in_year(x.period_indicator, y.year)
     else:
         y.period_number -= 1
     return y
@@ -530,9 +540,7 @@ def generate_period_range(
 ) -> list[TimePeriodHandler]:
     period_range = [start]
     if start.period_indicator != end.period_indicator:
-        raise SemanticError(
-            "2-1-19-3", period1=start.period_indicator, period2=end.period_indicator
-        )
+        raise RunTimeError("2-1-19-3", period1=start.period_indicator, period2=end.period_indicator)
         # raise Exception("Only same period indicator allowed")
     if start.period_indicator == "A":
         for _ in range(end.year - start.year):
@@ -560,7 +568,7 @@ def check_max_date(str_: Optional[str]) -> Optional[str]:
     elif len(str_) == 10 and str_[7] == "-":
         return date.fromisoformat(str_).isoformat()
     else:
-        raise SemanticError("2-1-19-8", date=str_)
+        raise RunTimeError("2-1-19-8", date=str_)
 
 
 def str_period_to_date(value: str, start: bool = False) -> Any:
