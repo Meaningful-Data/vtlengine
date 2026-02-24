@@ -1207,6 +1207,7 @@ class TestCastInterpreter:
             ('cast("-456", integer, "-DDD")', -456, Integer),
             ('cast("-0456", integer, "DDDD")', -456, Integer),
             ('cast("123.45", number, "DDD.DD")', 123.45, Number),
+            ('cast("123,45", number, "DDD.DD")', 123.45, Number),
             ('cast("+123.45", number, "DDD.DD")', 123.45, Number),
             ('cast("+123.45", number, "+DDD.DD")', 123.45, Number),
             ('cast("1.23E5", number, "D.DDED")', 123000.0, Number),

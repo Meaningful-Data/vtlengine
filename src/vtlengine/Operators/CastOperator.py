@@ -49,7 +49,7 @@ def _parse_vtl_number_mask(mask: str) -> str:
         elif c in ("E", "e"):
             parts.append(r"[Ee][+-]?\d+")
         elif c == ".":
-            parts.append(r"\.")
+            parts.append(r"[^\d]")
         elif c == ",":
             parts.append(",")
         elif c in ("+", "-"):
@@ -181,7 +181,9 @@ class Cast(Operator.Unary):
                 type_2=SCALAR_TYPES_CLASS_REVERSE[Number],
                 mask=mask,
             )
-        return float(stripped.replace(",", ""))
+        # Normalize: replace any non-digit separator (between digits) with '.' for float()
+        normalized = re.sub(r"(?<=\d)[^\deE+\-](?=\d)", ".", stripped)
+        return float(normalized)
 
     @classmethod
     def cast_string_to_date(cls, value: Any, mask: str) -> Any:
@@ -433,37 +435,14 @@ class Cast(Operator.Unary):
         """
         This method checks if the mask value is valid for the cast operation.
         """
+        valid_types = (Integer, Number, TimeInterval, Date, TimePeriod, Duration)
+
         # from = String
-        if from_type == String and to_type == Integer:
-            return cls.check_mask_value_from_string_to_integer(mask_value)
-        if from_type == String and to_type == Number:
-            return cls.check_mask_value_from_string_to_number(mask_value)
-        if from_type == String and to_type == TimeInterval:
-            return cls.check_mask_value_from_string_to_time(mask_value)
-        if from_type == String and to_type == Date:
-            return cls.check_mask_value_from_string_to_date(mask_value)
-        if from_type == String and to_type == TimePeriod:
-            return cls.check_mask_value_from_string_to_time_period(mask_value)
-        if from_type == String and to_type == Duration:
-            return cls.check_mask_value_from_string_to_duration(mask_value)
-        # from = Integer
-        if from_type == Integer and to_type == String:
-            return cls.check_mask_value_from_integer_to_string(mask_value)
-        # from = Number
-        if from_type == Number and to_type == String:
-            return cls.check_mask_value_from_number_to_string(mask_value)
-        # from = TimeInterval (Time)
-        if from_type == TimeInterval and to_type == String:
-            return cls.check_mask_value_from_time_to_string(mask_value)
-        # from = Date
-        if from_type == Date and to_type == String:
-            return cls.check_mask_value_from_date_to_string(mask_value)
-        # from = TimePeriod
-        if from_type == TimePeriod and to_type == String:
-            return cls.check_mask_value_from_time_period_to_string(mask_value)
-        # from = Duration
-        if from_type == Duration and to_type == String:
-            return cls.check_mask_value_from_duration_to_string(mask_value)
+        if (from_type == String and to_type in valid_types) or (
+            to_type == String and from_type in valid_types
+        ):
+            return
+
         raise SemanticError(
             "1-1-5-5",
             op=cls.op,
@@ -471,54 +450,6 @@ class Cast(Operator.Unary):
             type_2=SCALAR_TYPES_CLASS_REVERSE[to_type],
             mask_value=mask_value,
         )
-
-    @classmethod
-    def check_mask_value_from_string_to_integer(cls, *args: Any) -> None:
-        pass
-
-    @classmethod
-    def check_mask_value_from_integer_to_string(cls, *args: Any) -> None:
-        pass
-
-    @classmethod
-    def check_mask_value_from_number_to_string(cls, *args: Any) -> None:
-        pass
-
-    @classmethod
-    def check_mask_value_from_time_to_string(cls, *args: Any) -> None:
-        pass
-
-    @classmethod
-    def check_mask_value_from_date_to_string(cls, *args: Any) -> None:
-        pass
-
-    @classmethod
-    def check_mask_value_from_time_period_to_string(cls, *args: Any) -> None:
-        pass
-
-    @classmethod
-    def check_mask_value_from_string_to_number(cls, *args: Any) -> None:
-        pass
-
-    @classmethod
-    def check_mask_value_from_string_to_time(cls, *args: Any) -> None:
-        pass
-
-    @classmethod
-    def check_mask_value_from_string_to_date(cls, *args: Any) -> None:
-        pass
-
-    @classmethod
-    def check_mask_value_from_string_to_time_period(cls, *args: Any) -> None:
-        pass
-
-    @classmethod
-    def check_mask_value_from_string_to_duration(cls, *args: Any) -> None:
-        pass
-
-    @classmethod
-    def check_mask_value_from_duration_to_string(cls, *args: Any) -> None:
-        pass
 
     @classmethod
     def check_cast(
