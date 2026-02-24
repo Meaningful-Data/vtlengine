@@ -44,8 +44,8 @@ def find_latest_stable_version(site_dir: Path) -> Optional[str]:
 def generate_redirect_html(target: str) -> str:
     """Generate a minimal HTML redirect page."""
     return f"""<!DOCTYPE html>
-<html><head><meta http-equiv="refresh" content="0; url=../{target}/"></head>
-<body><a href="../{target}/">Redirect</a></body></html>
+<html><head><meta http-equiv="refresh" content="0; url=../{target}/index.html"></head>
+<body><a href="../{target}/index.html">Redirect</a></body></html>
 """
 
 
