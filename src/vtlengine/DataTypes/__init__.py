@@ -768,28 +768,6 @@ EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING: Dict[Type[ScalarType], Any] = {
     },
 }
 
-EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING: Dict[Type[ScalarType], Any] = {
-    String: {Integer, Number, TimeInterval, Date, TimePeriod, Duration},
-    Number: {String},
-    Integer: {String},
-    TimeInterval: {String},
-    Date: {String},
-    TimePeriod: {String},
-    Duration: {String},
-    Boolean: {},
-    Null: {
-        String,
-        Number,
-        Integer,
-        TimeInterval,
-        Date,
-        TimePeriod,
-        Duration,
-        Boolean,
-        Null,
-    },
-}
-
 
 def binary_implicit_promotion(
     left_type: Type[ScalarType],
