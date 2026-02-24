@@ -7,7 +7,6 @@ import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import CAST
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
-    EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING,
     EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING,
     IMPLICIT_TYPE_PROMOTION_MAPPING,
     SCALAR_TYPES_CLASS_REVERSE,
@@ -48,14 +47,6 @@ class Cast(Operator.Unary):
         explicit_promotion = EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING[from_type]
         implicit_promotion = IMPLICIT_TYPE_PROMOTION_MAPPING[from_type]
         if not (to_type.is_included(explicit_promotion) or to_type.is_included(implicit_promotion)):
-            explicit_with_mask = EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING[from_type]
-            if to_type.is_included(explicit_with_mask):
-                raise SemanticError(
-                    "1-1-5-3",
-                    op=cls.op,
-                    type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
-                    type_2=SCALAR_TYPES_CLASS_REVERSE[to_type],
-                )
             raise SemanticError(
                 "1-1-5-4",
                 op=cls.op,
