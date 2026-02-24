@@ -2,11 +2,19 @@ name: Feature request
 description: Suggest an idea or improvement
 type: Feature
 body:
-  - type: textarea
-    id: summary
+  - type: checkboxes
+    id: checks
     attributes:
-      label: Summary
-      description: What you want and why it helps.
+      label: Initial Checks
+      options:
+        - label: I have searched [existing issues](https://github.com/Meaningful-Data/vtlengine/issues?q=is%3Aissue) for duplicates
+          required: true
+
+  - type: textarea
+    id: problem-description
+    attributes:
+      label: Problem Description
+      description: What problem would this feature solve? e.g., "I wish I could use VTL Engine to ..."
     validations:
       required: true
 
@@ -14,16 +22,21 @@ body:
     id: proposed-solution
     attributes:
       label: Proposed Solution
-      description: Outline of the change/API/behavior. Include any VTL syntax, API signatures, or CLI entrypoints you expect.
+      description: >
+        How should the feature work? Include VTL syntax, API signatures,
+        or code examples if applicable.
+      render: python
+    validations:
+      required: true
 
   - type: textarea
     id: alternatives-considered
     attributes:
       label: Alternatives Considered
-      description: Other approaches you thought about.
+      description: Other approaches you thought about and why they are insufficient.
 
   - type: textarea
     id: additional-context
     attributes:
       label: Additional Context
-      description: References, links, or examples. Note required data inputs/outputs (datasets, value domains, external routines) if relevant.
+      description: References, links, or examples. Note required data inputs/outputs if relevant.

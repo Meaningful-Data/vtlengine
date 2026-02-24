@@ -14,9 +14,7 @@ body:
     id: scope
     attributes:
       label: Scope
-      value: |
-        - Files/areas impacted:
-        - Out of scope:
+      description: Files/areas impacted and what is out of scope.
 
   - type: textarea
     id: testing

@@ -3,6 +3,16 @@ description: Ask a question about VTL Engine usage or behavior
 type: Task
 labels: [question]
 body:
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Initial Checks
+      options:
+        - label: I have searched [existing issues](https://github.com/Meaningful-Data/vtlengine/issues?q=is%3Aissue) for a similar question
+          required: true
+        - label: I have checked the [documentation](https://docs.vtlengine.meaningfuldata.eu)
+          required: true
+
   - type: textarea
     id: question
     attributes:
@@ -16,16 +26,13 @@ body:
     attributes:
       label: Context
       description: What are you trying to achieve? Include VTL script or code snippet if applicable.
+      render: python
 
   - type: input
     id: vtlengine-version
     attributes:
       label: vtlengine version
-
-  - type: input
-    id: python-version
-    attributes:
-      label: Python version
+      placeholder: e.g., 1.5.0
 
   - type: textarea
     id: additional-context

@@ -3,6 +3,14 @@ description: Report missing, incorrect, or unclear documentation
 type: Task
 labels: [documentation]
 body:
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Initial Checks
+      options:
+        - label: I have checked the [documentation](https://docs.vtlengine.meaningfuldata.eu) and the issue is not already addressed
+          required: true
+
   - type: textarea
     id: summary
     attributes:
@@ -17,11 +25,12 @@ body:
       label: Suggested Change
       description: Describe the improvement or correction needed.
 
-  - type: textarea
+  - type: input
     id: location
     attributes:
       label: Location
-      description: Page/section affected and URL if applicable.
+      description: Page, section, or URL affected.
+      placeholder: e.g., https://docs.vtlengine.meaningfuldata.eu/walkthrough.html
 
   - type: textarea
     id: additional-context
