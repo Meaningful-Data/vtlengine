@@ -146,9 +146,10 @@ class String(ScalarType):
             Date,
             TimePeriod,
             TimeInterval,
-            Duration,
         }:
             return str(value)
+        if from_type == Duration:
+            return _SHORTCODE_TO_ISO.get(str(value), str(value))
 
         raise RunTimeError(
             "2-1-5-1",
@@ -470,6 +471,17 @@ class TimePeriod(TimeInterval):
                 )
             return period_str
         if from_type == String:
+            s = str(value)
+            if "/" in s:
+                result = interval_to_period_str(s)
+                if result is not None:
+                    return result
+                raise RunTimeError(
+                    "2-1-5-1",
+                    value=value,
+                    type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+                    type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
+                )
             return value
         if from_type == TimeInterval:
             result = interval_to_period_str(str(value))
@@ -500,6 +512,26 @@ class TimePeriod(TimeInterval):
         return True
 
 
+_SHORTCODE_TO_ISO: dict[str, str] = {
+    "A": "P1Y",
+    "S": "P6M",
+    "Q": "P3M",
+    "M": "P1M",
+    "W": "P1W",
+    "D": "P1D",
+}
+
+_ISO_TO_SHORTCODE: dict[str, str] = {
+    "P1Y": "A",
+    "P6M": "S",
+    "P3M": "Q",
+    "P1M": "M",
+    "P1W": "W",
+    "P7D": "W",
+    "P1D": "D",
+}
+
+
 class Duration(ScalarType):
     @classmethod
     def validate_duration(cls, value: Any) -> bool:
@@ -526,9 +558,22 @@ class Duration(ScalarType):
 
     @classmethod
     def explicit_cast(cls, value: Any, from_type: Any) -> Any:
-        if from_type == String and cls.validate_duration(value):
-            return value
-
+        if from_type == String:
+            s = str(value).strip().upper()
+            # ISO-8601 duration format (P1Y, P3M, etc.)
+            if s.startswith("P"):
+                shortcode = _ISO_TO_SHORTCODE.get(s)
+                if shortcode is not None:
+                    return shortcode
+                raise RunTimeError(
+                    "2-1-5-1",
+                    value=value,
+                    type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+                    type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
+                )
+            # VTL shortcode (A, S, Q, M, W, D)
+            if cls.validate_duration(s):
+                return s
         raise RunTimeError(
             "2-1-5-1",
             value=value,

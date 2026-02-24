@@ -160,10 +160,11 @@ class Cast(Operator.Unary):
         stripped = str(value).strip()
         if not re.match(pattern, stripped):
             raise RunTimeError(
-                "2-1-5-1",
+                "2-1-5-3",
                 value=value,
                 type_1=SCALAR_TYPES_CLASS_REVERSE[String],
                 type_2=SCALAR_TYPES_CLASS_REVERSE[Integer],
+                mask=mask,
             )
         return int(float(stripped.replace(",", "")))
 
@@ -174,10 +175,11 @@ class Cast(Operator.Unary):
         stripped = str(value).strip()
         if not re.match(pattern, stripped):
             raise RunTimeError(
-                "2-1-5-1",
+                "2-1-5-3",
                 value=value,
                 type_1=SCALAR_TYPES_CLASS_REVERSE[String],
                 type_2=SCALAR_TYPES_CLASS_REVERSE[Number],
+                mask=mask,
             )
         return float(stripped.replace(",", ""))
 
@@ -190,31 +192,45 @@ class Cast(Operator.Unary):
             return datetime.strptime(stripped, py_fmt).date().isoformat()
         except ValueError:
             raise RunTimeError(
-                "2-1-5-1",
+                "2-1-5-3",
                 value=value,
                 type_1=SCALAR_TYPES_CLASS_REVERSE[String],
                 type_2=SCALAR_TYPES_CLASS_REVERSE[Date],
+                mask=mask,
             )
 
     @classmethod
     def cast_string_to_duration(cls, value: Any, mask: str) -> Any:
         """Cast a string to a duration, according to the mask."""
+        from vtlengine.DataTypes import _ISO_TO_SHORTCODE
         from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING
 
         stripped = str(value).strip().upper()
-        if stripped in PERIOD_IND_MAPPING:
+        if stripped.startswith("P"):
+            shortcode = _ISO_TO_SHORTCODE.get(stripped)
+            if shortcode is not None:
+                return shortcode
+        elif stripped in PERIOD_IND_MAPPING:
             return stripped
         raise RunTimeError(
-            "2-1-5-1",
+            "2-1-5-3",
             value=value,
             type_1=SCALAR_TYPES_CLASS_REVERSE[String],
             type_2=SCALAR_TYPES_CLASS_REVERSE[Duration],
+            mask=mask,
         )
 
     @classmethod
     def cast_string_to_time_period(cls, value: Any, mask: str) -> Any:
         """Cast a string to a time period, according to the mask."""
         from datetime import date as date_cls
+
+        _tp_error_kwargs = {
+            "value": value,
+            "type_1": SCALAR_TYPES_CLASS_REVERSE[String],
+            "type_2": SCALAR_TYPES_CLASS_REVERSE[TimePeriod],
+            "mask": mask,
+        }
 
         tokens = _parse_vtl_tp_mask(mask)
         period_type = _infer_tp_period_type(tokens)
@@ -227,44 +243,24 @@ class Cast(Operator.Unary):
 
         for t in tokens:
             if pos > len(s):
-                raise RunTimeError(
-                    "2-1-5-1",
-                    value=value,
-                    type_1=SCALAR_TYPES_CLASS_REVERSE[String],
-                    type_2=SCALAR_TYPES_CLASS_REVERSE[TimePeriod],
-                )
+                raise RunTimeError("2-1-5-3", **_tp_error_kwargs)
             ttype = t["type"]
             if ttype == "year":
                 n = t["n"]
                 chunk = s[pos : pos + n]
                 if not chunk.isdigit():
-                    raise RunTimeError(
-                        "2-1-5-1",
-                        value=value,
-                        type_1=SCALAR_TYPES_CLASS_REVERSE[String],
-                        type_2=SCALAR_TYPES_CLASS_REVERSE[TimePeriod],
-                    )
+                    raise RunTimeError("2-1-5-3", **_tp_error_kwargs)
                 year = int(chunk) + (2000 if n == 2 else 0)
                 pos += n
             elif ttype == "literal":
                 if pos >= len(s) or s[pos] != t["ch"]:
-                    raise RunTimeError(
-                        "2-1-5-1",
-                        value=value,
-                        type_1=SCALAR_TYPES_CLASS_REVERSE[String],
-                        type_2=SCALAR_TYPES_CLASS_REVERSE[TimePeriod],
-                    )
+                    raise RunTimeError("2-1-5-3", **_tp_error_kwargs)
                 pos += 1
             elif ttype == "period_num":
                 n = t["n"]
                 chunk = s[pos : pos + n]
                 if not chunk.isdigit():
-                    raise RunTimeError(
-                        "2-1-5-1",
-                        value=value,
-                        type_1=SCALAR_TYPES_CLASS_REVERSE[String],
-                        type_2=SCALAR_TYPES_CLASS_REVERSE[TimePeriod],
-                    )
+                    raise RunTimeError("2-1-5-3", **_tp_error_kwargs)
                 ind = t["indicator"]
                 if period_type == "D_CAL" and ind == "M":
                     cal_month = int(chunk)
@@ -277,34 +273,19 @@ class Cast(Operator.Unary):
                 n = t["n"]
                 chunk = s[pos : pos + n]
                 if not chunk.isdigit():
-                    raise RunTimeError(
-                        "2-1-5-1",
-                        value=value,
-                        type_1=SCALAR_TYPES_CLASS_REVERSE[String],
-                        type_2=SCALAR_TYPES_CLASS_REVERSE[TimePeriod],
-                    )
+                    raise RunTimeError("2-1-5-3", **_tp_error_kwargs)
                 cal_month = int(chunk)
                 pos += n
             elif ttype == "cal_day":
                 n = t["n"]
                 chunk = s[pos : pos + n]
                 if not chunk.isdigit():
-                    raise RunTimeError(
-                        "2-1-5-1",
-                        value=value,
-                        type_1=SCALAR_TYPES_CLASS_REVERSE[String],
-                        type_2=SCALAR_TYPES_CLASS_REVERSE[TimePeriod],
-                    )
+                    raise RunTimeError("2-1-5-3", **_tp_error_kwargs)
                 cal_day = int(chunk)
                 pos += n
 
         if pos != len(s) or year is None:
-            raise RunTimeError(
-                "2-1-5-1",
-                value=value,
-                type_1=SCALAR_TYPES_CLASS_REVERSE[String],
-                type_2=SCALAR_TYPES_CLASS_REVERSE[TimePeriod],
-            )
+            raise RunTimeError("2-1-5-3", **_tp_error_kwargs)
 
         if period_type in ("D_CAL",) or (cal_month is not None and cal_day is not None):
             d = date_cls(year, cal_month, cal_day)  # type: ignore[arg-type]
@@ -323,10 +304,11 @@ class Cast(Operator.Unary):
         val_parts = str(value).strip().split("/", 1)
         if len(val_parts) != 2:
             raise RunTimeError(
-                "2-1-5-1",
+                "2-1-5-3",
                 value=value,
                 type_1=SCALAR_TYPES_CLASS_REVERSE[String],
                 type_2=SCALAR_TYPES_CLASS_REVERSE[TimeInterval],
+                mask=mask,
             )
         date1 = cls.cast_string_to_date(val_parts[0].strip(), mask_parts[0])
         date2 = cls.cast_string_to_date(val_parts[1].strip(), mask_parts[1])
@@ -370,10 +352,11 @@ class Cast(Operator.Unary):
             return datetime.fromisoformat(str(value)).strftime(py_fmt)
         except ValueError:
             raise RunTimeError(
-                "2-1-5-1",
+                "2-1-5-3",
                 value=value,
                 type_1=SCALAR_TYPES_CLASS_REVERSE[Date],
                 type_2=SCALAR_TYPES_CLASS_REVERSE[String],
+                mask=mask,
             )
 
     @classmethod
@@ -385,10 +368,11 @@ class Cast(Operator.Unary):
         val_str = str(value)
         if "/" not in val_str:
             raise RunTimeError(
-                "2-1-5-1",
+                "2-1-5-3",
                 value=value,
                 type_1=SCALAR_TYPES_CLASS_REVERSE[TimeInterval],
                 type_2=SCALAR_TYPES_CLASS_REVERSE[String],
+                mask=mask,
             )
         val_parts = val_str.split("/", 1)
         date1 = cls.cast_date_to_string(val_parts[0], mask_parts[0])
@@ -435,8 +419,10 @@ class Cast(Operator.Unary):
 
     @classmethod
     def cast_duration_to_string(cls, value: Any, mask: str) -> Any:
-        """Cast a duration to a string, according to the mask."""
-        return str(value)
+        """Cast a duration to a string, according to the mask (ISO-8601)."""
+        from vtlengine.DataTypes import _SHORTCODE_TO_ISO
+
+        return _SHORTCODE_TO_ISO.get(str(value), str(value))
 
     invalid_mask_message = "At op {op}: Invalid mask to cast from type {type_1} to {type_2}."
 
