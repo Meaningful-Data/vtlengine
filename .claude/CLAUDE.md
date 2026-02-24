@@ -222,9 +222,13 @@ Pattern: `cr-{issue_number}` (e.g., `cr-457` for issue #457)
 
 ```python
 import pandas as pd
+
 from vtlengine import run
 
-script = """DS_r <- DS_1 * 10;"""
+
+script = """
+    DS_A <- DS_1 * 10;
+"""
 
 data_structures = {
     "datasets": [
@@ -239,10 +243,12 @@ data_structures = {
 }
 
 data_df = pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [10, 20, 30]})
+
 datapoints = {"DS_1": data_df}
 
-result = run(script=script, data_structures=data_structures, datapoints=datapoints)
-print(result)
+run_result = run(script=script, data_structures=data_structures, datapoints=datapoints)
+
+print(run_result)
 ```
 
 ### Pull Request Descriptions

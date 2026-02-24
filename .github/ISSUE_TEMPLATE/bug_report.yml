@@ -29,9 +29,13 @@ body:
         Reports without reproducible examples may be closed.
       placeholder: |
         import pandas as pd
+
         from vtlengine import run
 
-        script = """DS_r <- DS_1 * 10;"""
+
+        script = """
+            DS_A <- DS_1 * 10;
+        """
 
         data_structures = {
             "datasets": [
@@ -45,10 +49,13 @@ body:
             ]
         }
 
-        datapoints = {"DS_1": pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [10, 20, 30]})}
+        data_df = pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [10, 20, 30]})
 
-        result = run(script=script, data_structures=data_structures, datapoints=datapoints)
-        print(result)
+        datapoints = {"DS_1": data_df}
+
+        run_result = run(script=script, data_structures=data_structures, datapoints=datapoints)
+
+        print(run_result)
       render: python
     validations:
       required: true
