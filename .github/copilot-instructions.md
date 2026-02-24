@@ -1,339 +1,272 @@
-# VTL Engine - AI Coding Agent Instructions
+# VTL Engine - Claude Code Instructions
 
 ## Project Overview
 
 VTL Engine is a Python library for validating, formatting, and executing VTL (Validation and Transformation Language) 2.1 scripts. It's built around ANTLR-generated parsers and uses Pandas DataFrames for data manipulation.
 
-**VTL 2.1 Reference Manual**: https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf
+**VTL 2.1 Reference Manual**: <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf>
+**VTL 2.2 Documentation (preview)**: <https://sdmx-twg.github.io/vtl/2.2/>
 
 ## Core Architecture
 
-### 1. Parser Pipeline (ANTLR → AST → Interpreter)
-
-The execution flow follows a strict three-stage pattern:
+### Parser Pipeline (ANTLR → AST → Interpreter)
 
 1. **Lexing/Parsing** (`src/vtlengine/AST/Grammar/`): ANTLR4 grammar generates lexer/parser (DO NOT manually edit)
 2. **AST Construction** (`src/vtlengine/AST/ASTConstructor.py`): Visitor pattern transforms parse tree to typed AST nodes
 3. **Interpretation** (`src/vtlengine/Interpreter/__init__.py`): `InterpreterAnalyzer` walks AST and executes operations
 
-**Key Pattern**: All AST visitors extend `ASTTemplate` (visitor base class with default traversal methods). To add new operators:
-- Define AST node in `src/vtlengine/AST/__init__.py` 
-- Add visitor method in `ASTConstructor.py` (parse tree → AST)
+To add new operators:
+
+- Define AST node in `src/vtlengine/AST/__init__.py`
+- Add visitor method in `ASTConstructor.py`
 - Implement semantic analysis in `Interpreter/__init__.py`
 - Add operator implementation in `src/vtlengine/Operators/`
 
-### 2. Data Model (src/vtlengine/Model/__init__.py)
+### Data Model (`src/vtlengine/Model/__init__.py`)
 
-Three core data structures:
 - **Dataset**: Components (identifiers/attributes/measures) + Pandas DataFrame
-- **Component**: Name, data_type (from DataTypes), role (IDENTIFIER/ATTRIBUTE/MEASURE), nullable flag
+- **Component**: Name, data_type, role (IDENTIFIER/ATTRIBUTE/MEASURE), nullable flag
 - **Scalar**: Single-value results with type checking
 
-**Critical**: Identifiers cannot be nullable; measures can. Role determines clause behavior (e.g., `calc` creates measures, not identifiers).
+Identifiers cannot be nullable; measures can. Role determines clause behavior.
 
-### 3. Type System (src/vtlengine/DataTypes/)
+### Type System (`src/vtlengine/DataTypes/`)
 
-Strict hierarchy: `String`, `Number`, `Integer`, `Boolean`, `Date`, `TimePeriod`, `TimeInterval`, `Duration`, `Null`
-- Type promotion rules in `check_unary_implicit_promotion()` and binary equivalents
-- All operators MUST validate types before execution (see `Operators/*/validate()` pattern)
+Hierarchy: `String`, `Number`, `Integer`, `Boolean`, `Date`, `TimePeriod`, `TimeInterval`, `Duration`, `Null`
 
-## Public API Entry Points
+All operators MUST validate types before execution.
 
-Main functions in `src/vtlengine/API/__init__.py`:
-- `run()`: Execute VTL script with data structures + datapoints (CSV/DataFrame)
+## Public API (`src/vtlengine/API/__init__.py`)
+
+- `run()`: Execute VTL script with data structures + datapoints
 - `run_sdmx()`: SDMX-specific wrapper using `pysdmx.PandasDataset`
 - `semantic_analysis()`: Validate script and infer output structures (no execution)
 - `prettify()`: Format VTL scripts
-- `validate_dataset()`, `validate_value_domain()`, `validate_external_routine()`: Input validation
 
-**Common Pattern**: Scripts can be strings, Paths, or `TransformationScheme` objects. DAG analysis (`AST/DAG.py`) validates dependency graph before execution.
+## Documentation (`docs/`)
 
-**Execution Lifecycle**:
-1. `load_datasets_with_data()` loads data structures and datapoints
-2. Data validation ensures datapoints match structures
-3. AST traversal via `InterpreterAnalyzer` generates results for each transformation (AST children on Start node)
-4. Each visit method returns evaluated result; inspect at return statements for debugging
+Sphinx-based documentation published at <https://docs.vtlengine.meaningfuldata.eu>.
 
-## Testing Standards
+- `docs/index.rst` — Main entry point and toctree
+- `docs/walkthrough.rst` — 10-minute quick start guide
+- `docs/api.rst` — API reference (autodoc)
+- `docs/data_types.rst` — Data types reference (input/output/internal, casting rules)
+- `docs/environment_variables.rst` — Configuration
+- `docs/error_messages.rst` — Auto-generated error codes
+- `docs/conf.py` — Sphinx config (theme: `sphinx_rtd_theme`, versioning: `sphinx-multiversion`)
 
-### Test Organization (tests/)
-- Each operator/feature has directory: `tests/Aggregate/`, `tests/Joins/`, etc.
-- Files follow pattern: `test_*.py` with helper class extending `TestHelper`
-- Data files: `data/{vtl,DataStructure/input,DataSet/input,DataSet/output}/`
+Build docs locally (all released versions + current branch):
 
-### Test Helper Pattern (tests/Helper.py)
-```python
-class MyTest(TestHelper):
-    base_path = Path(__file__).parent
-    filepath_VTL = base_path / "data" / "vtl"
-    filepath_json = base_path / "data" / "DataStructure" / "input"
-    filepath_csv = base_path / "data" / "DataSet" / "input"
-    
-    def test_case(self):
-        code = "1-1"  # References {code}.vtl, DS_{code}.json, DS_{code}.csv
-        self.BaseTest(code=code, number_inputs=1, references_names=["DS_r"])
+```bash
+rm -rf _site
+poetry run python docs/scripts/configure_doc_versions.py --include-current-branch
+poetry run sphinx-multiversion docs _site
+poetry run python docs/scripts/generate_latest_alias.py _site
+poetry run python docs/scripts/generate_redirect.py _site
+poetry run sphinx-build docs _site/$(git branch --show-current)
 ```
 
-**Critical Convention**: Test code `"1-1"` automatically maps to:
+## Testing
+
+### Organization
+
+- Each operator/feature has its own directory: `tests/Aggregate/`, `tests/Joins/`, etc.
+- Test files: `test_*.py` extending `TestHelper` from `tests/Helper.py`
+- Data files: `data/{vtl,DataStructure/input,DataSet/input,DataSet/output}/`
+
+### Naming Convention
+
+Test code `"1-1"` maps to:
+
 - VTL script: `data/vtl/1-1.vtl`
 - Input structure: `data/DataStructure/input/DS_1-1.json`
 - Input data: `data/DataSet/input/DS_1-1.csv`
 - Output reference: `data/DataSet/output/DS_r_1-1.csv`
 
-Run tests: `pytest tests/` (uses `pytest-xdist` for parallelization)
+### Running Tests
 
-## Code Quality Requirements
-
-### Ruff Configuration (pyproject.toml)
-- Max line length: 100 characters
-- Max complexity: 20
-- Key ignored rules: D* (most docstrings), S608 (DuckDB queries), B023/B028/B904
-- Tests exempt from: S101 (asserts), PT006/PT012/PT013 (pytest styles)
-
-### Mypy Type Checking
-- Strict mode enabled for `src/` (except `src/vtlengine/AST/Grammar/` - autogenerated)
-- All functions MUST have type annotations
-- No implicit optionals
-
-Run checks: `ruff check src/` and `mypy src/`
-
-### Error Handling
-- **SemanticError**: Data structure and data type compatibility issues within operators (e.g., incompatible types, missing components, invalid roles)
-- **RuntimeError**: Datapoints handling issues during execution (e.g., data conversion failures, computation errors)
-- Always raise appropriate error type based on whether issue is structural/semantic vs execution/runtime
-
-## VTL-Specific Patterns
-
-### Operator Implementation Template
-Operators in `src/vtlengine/Operators/` follow standard structure:
-```python
-class MyOperator:
-    @classmethod
-    def validate(cls, left: Dataset, right: Any) -> Dataset:
-        # 1. Type checking
-        # 2. Component validation
-        # 3. Return output Dataset structure (without data)
-        pass
-    
-    @classmethod  
-    def compute(cls, left: Dataset, right: Any, **kwargs) -> Dataset:
-        # Manipulate Dataset.data (Pandas DataFrame) directly
-        # DuckDB may be used for specific SQL operations when needed
-        # Return Dataset with computed data
-        pass
-```
-
-**Operator Organization**: Operators are grouped following the [VTL 2.1 Reference Manual](https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf) structure (Aggregate, Join, String, Numeric, etc.). Refer to the spec for type promotion rules and component mutation semantics.
-
-### DAG Analysis
-Before execution, `DAGAnalyzer.ds_structure(ast)` validates:
-- No circular dependencies
-- All referenced datasets exist
-- Input/output dataset structures
-- Determines computation order for transformations
-- Identifies when datasets can be freed from memory after writing data
-
-Access via: `dag_analysis = DAGAnalyzer.ds_structure(ast)` → `dag_analysis["global_inputs"]`
-
-### Assignment Types
-- `DS_A := expr;` - Temporary assignment (`:=`)
-- `DS_A <- expr;` - Persistent assignment (`<-`, saved to output if provided)
-- `return_only_persistent=True` (default) filters results
-
-## Common Pitfalls
-
-1. **Never edit Grammar files** - They're ANTLR-generated. Change `.g4` and regenerate if needed.
-2. **Test data naming** - Code `"GL_123"` needs files `GL_123.vtl`, `DS_GL_123.json`, etc. (underscores matter!)
-3. **AST node equality** - Override `ast_equality()` when adding nodes, don't rely on `__eq__`
-4. **Nullable identifiers** - Will raise `SemanticError("0-1-1-13")` at data load time
-5. **Time period formats** - Three output modes: `"vtl"`, `"sdmx_gregorian"`, `"sdmx_reporting"` (controlled by `time_period_output_format`)
-6. **External routines scope** - Only executed in Eval operator, only on in-memory data (never external databases)
-7. **Debugging operators** - Inspect operator returns at each `visit_*` method's return statement in `InterpreterAnalyzer` for step-by-step debugging
-
-## ANTLR Grammar Regeneration
-
-Grammar files are in `src/vtlengine/AST/Grammar/`:
-- `Vtl.g4` - Main VTL grammar rules
-- `VtlTokens.g4` - Token definitions
-- Generated files: `lexer.py`, `parser.py`, `tokens.py` (DO NOT EDIT)
-
-**Regeneration Steps** (requires ANTLR 4.9.x):
 ```bash
-cd src/vtlengine/AST/Grammar
-
-# Install ANTLR (if not available)
-pip install antlr4-tools
-
-# Regenerate parser from grammar
-antlr4 -Dlanguage=Python3 -visitor Vtl.g4
-
-# Verify regeneration
-python -c "from vtlengine.AST.Grammar.parser import Parser; print('OK')"
+poetry run pytest
 ```
 
-**When to regenerate**:
-- Adding new VTL operators or keywords
-- Fixing parsing issues with specific VTL syntax
-- Updating to match VTL 2.1 specification changes
+## Code Quality (mandatory before every commit)
 
-**Critical**: Always use ANTLR version 4.9.x to match `antlr4-python3-runtime` dependency.
-
-## SDMX 3.0 Integration
-
-The VTL Engine integrates with SDMX 3.0 via `pysdmx` library for statistical data exchange.
-
-### Core SDMX Concepts
-
-| SDMX Concept | VTL Mapping | Notes |
-|--------------|-------------|-------|
-| `PandasDataset` | `Dataset` | Data + structure via `Schema` |
-| `Schema` / `DataStructureDefinition` | Data structure JSON | Component definitions |
-| `Dimension` | `Identifier` | Non-nullable by definition |
-| `Measure` | `Measure` | Nullable |
-| `Attribute` | `Attribute` | Nullable |
-| `TransformationScheme` | VTL script | SDMX-ML representation |
-| `VtlDataflowMapping` | Dataset name mapping | Links SDMX URN to VTL name |
-
-### SDMX Functions
-
-```python
-from pysdmx.io import get_datasets
-from pysdmx.model.vtl import VtlDataflowMapping, TransformationScheme
-from vtlengine import run_sdmx, generate_sdmx
-
-# Execute VTL with SDMX data
-datasets = get_datasets("data.xml", "metadata.xml")
-result = run_sdmx(script, datasets, mappings=mapping)
-
-# Generate SDMX TransformationScheme from VTL
-ts = generate_sdmx(script, agency_id="MD", id="TS1", version="1.0")
-```
-
-### Dataset Mapping Patterns
-
-**Single dataset** (no mapping required):
-```python
-result = run_sdmx("DS_r <- DS_1 * 10;", [dataset])
-# Schema ID becomes dataset name: DataStructure=MD:TEST(1.0) → TEST
-```
-
-**Multiple datasets** (mapping required):
-```python
-# Dictionary mapping: short_urn → VTL name
-mapping = {"Dataflow=MD:TEST_DF(1.0)": "DS_1"}
-
-# Or VtlDataflowMapping object
-mapping = VtlDataflowMapping(
-    dataflow="urn:sdmx:org.sdmx.infomodel.datastructure.Dataflow=MD:TEST_DF(1.0)",
-    dataflow_alias="DS_1",
-    id="VTL_MAP_1"
-)
-result = run_sdmx(script, datasets, mappings=mapping)
-```
-
-### Short URN Format
-
-The short-URN is the meaningful part of an SDMX URN:
-```
-SDMX_type=Agency:ID(Version)
-
-Examples:
-  Dataflow=MD:TEST_DF(1.0)
-  DataStructure=BIS:BIS_DER(1.0)
-```
-
-### Type Mapping (SDMX → VTL)
-
-Handled by `VTL_DTYPES_MAPPING` in `src/vtlengine/Utils/__init__.py`:
-- `String` → `String`
-- `Integer`, `Long`, `Short` → `Integer`  
-- `Float`, `Double`, `Decimal` → `Number`
-- `Boolean` → `Boolean`
-- `ObservationalTimePeriod`, `ReportingTimePeriod` → `TimePeriod`
-
-### Common SDMX Errors
-
-| Error Code | Meaning |
-|------------|---------|
-| `0-1-3-1` | Script expects one input, found multiple |
-| `0-1-3-2` | Dataset missing Schema object |
-| `0-1-3-3` | Multiple datasets without mapping |
-| `0-1-3-4` | Short URN not found in mapping |
-| `0-1-3-5` | Mapped dataset name not in script inputs |
-
-## External Dependencies
-
-- **pandas** (2.x): Primary data manipulation tool (Dataset.data is a DataFrame)
-- **DuckDB** (1.4.x): Optional SQL execution engine for specific operations
-- **pysdmx** (≥1.5.2): SDMX 3.0 data handling (`run_sdmx`, `generate_sdmx`)
-- **sqlglot** (22.x): SQL parsing for external routines
-- **antlr4-python3-runtime** (4.9.x): Parser runtime - must match grammar generation version
-
-## Quick Reference Commands
-
-Code quality checks (run before every commit):
 ```bash
 poetry run ruff format
 poetry run ruff check --fix --unsafe-fixes
 poetry run mypy
 ```
 
-Before finishing an issue, run the full test suite (all tests must pass):
+All errors from `ruff format` and `ruff check` MUST be fixed before committing. Do not leave any warnings or errors unresolved.
+
+### Ruff Rules
+
+- Max line length: 100
+- Max complexity: 20
+
+### Mypy
+
+- Strict mode for `src/` (except `src/vtlengine/AST/Grammar/` which is autogenerated)
+- All functions MUST have type annotations
+- No implicit optionals
+
+## Error Handling
+
+- **SemanticError**: Data structure/type compatibility issues (incompatible types, missing components, invalid roles)
+- **RuntimeError**: Datapoints handling issues during execution (data conversion, computation errors)
+
+## GitHub Project
+
+**Open Source Initiatives**: <https://github.com/orgs/Meaningful-Data/projects/2>
+
+Project ID: `PVT_kwDOA9gk5M4Aurey`
+
+### Project Fields
+
+Each issue in the project tracks the following fields:
+
+| Field | Type | Values |
+| ----- | ---- | ------ |
+| Status | Single Select | Todo, In Progress, In Review, Awaiting for BIS Review, Done |
+| Priority | Single Select | P0, P1, P2 |
+| Size | Single Select | XS, S, M, L, XL |
+| Estimate | Number | Hours estimate for the task |
+| Iteration | Iteration | Current iterations (e.g., Iteration 28, 29) |
+| Start date | Date | When work begins |
+| End date | Date | Target completion |
+
+### Querying the Project
+
 ```bash
-poetry run pytest
+# List all projects
+gh api graphql -f query='
+{
+  organization(login: "Meaningful-Data") {
+    projectsV2(first: 10) {
+      nodes { id title number url }
+    }
+  }
+}'
+
+# Get project items with field values
+gh api graphql -f query='
+{
+  organization(login: "Meaningful-Data") {
+    projectV2(number: 2) {
+      items(first: 20) {
+        nodes {
+          content {
+            ... on Issue { number title state }
+          }
+          fieldValues(first: 10) {
+            nodes {
+              ... on ProjectV2ItemFieldSingleSelectValue {
+                name
+                field { ... on ProjectV2SingleSelectField { name } }
+              }
+              ... on ProjectV2ItemFieldNumberValue {
+                number
+                field { ... on ProjectV2Field { name } }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}'
 ```
+
+### Labels
+
+Labels indicate cross-cutting concerns, NOT issue type. The issue type (Bug, Feature, Task) is set via GitHub's issue type field.
+
+Only use the following labels — **never create new labels**:
+
+| Label | Purpose |
+| ----- | ------- |
+| `documentation` | Documentation changes (triggers docs workflow on PR merge) |
+| `workflows` | CI/CD and GitHub Actions issues |
+| `dependencies` | Dependency management and updates |
+| `optimization` | Performance improvements and code complexity reduction |
+| `question` | Questions needing further information |
+| `help wanted` | Issues where community contributions are welcome |
 
 ## Git Workflow
 
-### Branch Naming Convention
+### Branch Naming
 
-Always use the pattern `cr-{issue_number}` for feature branches:
+Pattern: `cr-{issue_number}` (e.g., `cr-457` for issue #457)
 
-```bash
-# Example: Working on issue #457
-git checkout -b cr-457
+### Workflow
+
+1. Create branch: `git checkout -b cr-{issue_number}`
+2. Make changes with descriptive commits
+3. Run all quality checks (ruff format, ruff check, mypy, pytest)
+4. Push and create draft PR: `gh pr create --draft --title "Fix #{issue_number}: Description"`
+5. Never add the PR to a milestone
+
+### Issue Conventions
+
+- Never include links to gitlab in issue descriptions
+- Always set the issue type: `Bug`, `Feature`, or `Task` — do not use labels for issue categorization
+- Only apply labels for cross-cutting concerns: `documentation`, `workflows`, `dependencies`, `optimization`, `question`, `help wanted`
+- Never create new labels — only use the existing set listed above
+- Use standard dataset/component naming: `DS_1`, `DS_2` for datasets; `Id_1`, `Id_2` for identifiers; `Me_1`, `Me_2` for measures; `At_1`, `At_2` for attributes
+- Always run the reproduction script to get the actual output — never guess or manually write it. If the output is data, format it as a markdown table for clarity
+- Use GitHub callout syntax for notes and warnings in issue descriptions:
+  - `> [!NOTE]` for informational notes
+  - `> [!IMPORTANT]` for critical information users must know
+  - `> [!WARNING]` for potential pitfalls or breaking changes
+- Include a self-contained Python reproduction script using `run()` instead of separate VTL/JSON/CSV files:
+
+```python
+import pandas as pd
+from vtlengine import run
+
+script = """DS_r <- DS_1 * 10;"""
+
+data_structures = {
+    "datasets": [
+        {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+            ],
+        }
+    ]
+}
+
+data_df = pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [10, 20, 30]})
+datapoints = {"DS_1": data_df}
+
+result = run(script=script, data_structures=data_structures, datapoints=datapoints)
+print(result)
 ```
 
-**Pattern breakdown:**
-- `cr` = "change request" prefix
-- `{issue_number}` = GitHub issue number being addressed
+### Pull Request Descriptions
 
-**Examples:**
-- `cr-457` - Feature for issue #457
-- `cr-123` - Bug fix for issue #123
-- `cr-42` - Enhancement for issue #42
+- Never include code quality check results (ruff, mypy, pytest) in PR descriptions
+- Focus on what changed, why, impact/risk, and notes
 
-### Workflow Steps
+## Common Pitfalls
 
-1. Create branch from the appropriate base (usually `main` or a release candidate):
-   ```bash
-   git checkout -b cr-{issue_number}
-   ```
+1. **Never edit Grammar files** - They're ANTLR-generated. Change `.g4` and regenerate if needed.
+2. **Test data naming** - Code `"GL_123"` needs files `GL_123.vtl`, `DS_GL_123.json`, etc.
+3. **AST node equality** - Override `ast_equality()` when adding nodes
+4. **Nullable identifiers** - Will raise `SemanticError("0-1-1-13")`
+5. **ANTLR version** - Must use 4.9.x to match `antlr4-python3-runtime` dependency
+6. **Version updates** - When bumping version, update BOTH `pyproject.toml` AND `src/vtlengine/__init__.py`. Always create a new branch from `origin/main` for version bumps and create a PR with no body
 
-2. Make changes, commit frequently with descriptive messages
+## External Dependencies
 
-3. **Before creating a PR, run ALL quality checks (mandatory):**
-   ```bash
-   poetry run ruff format
-   poetry run ruff check --fix --unsafe-fixes
-   poetry run mypy
-   poetry run pytest
-   ```
-   All checks must pass before proceeding.
+- **pandas** (2.x): Dataset.data is a DataFrame
+- **DuckDB** (1.4.x): Optional SQL engine for specific operations
+- **pysdmx** (≥1.5.2): SDMX 3.0 data handling
+- **sqlglot** (22.x): SQL parsing for external routines
+- **antlr4-python3-runtime** (4.9.x): Parser runtime
 
-4. Push and create a draft PR:
-   ```bash
-   git push -u origin cr-{issue_number}
-   gh pr create --draft --title "Fix #{issue_number}: Description"
-   ```
+## File Sync Rules
 
-5. When ready for review, mark PR as ready
-
-## File Naming Conventions
-
-- AST nodes: PascalCase dataclasses in `AST/__init__.py`
-- Operators: PascalCase classes in `Operators/{Category}.py`
-- Test files: `test_*.py` with snake_case functions
-- VTL scripts: `{code}.vtl` in test data directories
-- Data structures: `DS_{code}.json` (input) or `DS_{name}_{code}.json`
-- Datapoints: `DS_{name}_{code}.csv`
+- `.github/copilot-instructions.md` must always have the same content as `.claude/CLAUDE.md`. When updating one, always update the other to match.
