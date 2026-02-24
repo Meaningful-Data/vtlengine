@@ -34,7 +34,7 @@ duration_mapping = {"A": 6, "S": 5, "Q": 4, "M": 3, "W": 2, "D": 1}
 # ---------------------------------------------------------------------------
 
 
-_NUM_MASK_RE = re.compile(r"D+|d+|[Ee][DdEe]*|[+\-]|.")
+_NUM_MASK_RE = re.compile(r"D+|d+|[Ee][+\-]?[DdEe]*|[+\-]|.")
 
 
 def _parse_vtl_number_mask(mask: str) -> str:
