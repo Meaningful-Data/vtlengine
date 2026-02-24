@@ -72,7 +72,7 @@ class Operator:
         elif data_type.__name__ == "TimePeriod":
             series = series.map(lambda x: TimePeriodHandler(x), na_action="ignore")
         elif data_type.__name__ == "Duration":
-            series = series.map(lambda x: PERIOD_IND_MAPPING[x], na_action="ignore")
+            series = series.map(PERIOD_IND_MAPPING)
         return series
 
     @classmethod
@@ -189,21 +189,24 @@ def _id_type_promotion_join_keys(
     left_type_name: str = str(c_left.data_type.__name__)
     right_type_name: str = str(c_right.data_type.__name__)
 
+    target_dtype = c_left.data_type.dtype()
     if left_type_name == right_type_name or len(left_data) == 0 or len(right_data) == 0:
-        left_data[join_key] = left_data[join_key].astype(object)
-        right_data[join_key] = right_data[join_key].astype(object)
+        left_data[join_key] = left_data[join_key].astype(target_dtype)  # type: ignore[call-overload]
+        right_data[join_key] = right_data[join_key].astype(target_dtype)  # type: ignore[call-overload]
         return
     if (left_type_name == "Integer" and right_type_name == "Number") or (
         left_type_name == "Number" and right_type_name == "Integer"
     ):
         left_data[join_key] = left_data[join_key].map(lambda x: int(float(x)))
         right_data[join_key] = right_data[join_key].map(lambda x: int(float(x)))
-    elif left_type_name == "String" and right_type_name in ("Integer", "Number"):
+        target_dtype = "int64[pyarrow]"
+    elif (left_type_name == "String" and right_type_name in ("Integer", "Number")) or (
+        left_type_name in ("Integer", "Number") and right_type_name == "String"
+    ):
         left_data[join_key] = left_data[join_key].map(lambda x: _handle_str_number(x))
-    elif left_type_name in ("Integer", "Number") and right_type_name == "String":
         right_data[join_key] = right_data[join_key].map(lambda x: _handle_str_number(x))
-    left_data[join_key] = left_data[join_key].astype(object)
-    right_data[join_key] = right_data[join_key].astype(object)
+    left_data[join_key] = left_data[join_key].astype(target_dtype)  # type: ignore[call-overload]
+    right_data[join_key] = right_data[join_key].astype(target_dtype)  # type: ignore[call-overload]
 
 
 def _handle_str_number(x: Union[str, int, float]) -> Union[str, int, float]:
@@ -231,7 +234,8 @@ class Binary(Operator):
     def apply_operation_two_series(cls, left_series: Any, right_series: Any) -> Any:
         result = list(map(cls.op_func, left_series.values, right_series.values))
         index = left_series.index if len(left_series) <= len(right_series) else right_series.index
-        return pd.Series(result, index=index, dtype=object)
+        result_dtype = cls.return_type.dtype() if cls.return_type is not None else "string[pyarrow]"
+        return pd.Series(result, index=index, dtype=result_dtype)
 
     @classmethod
     def apply_operation_series_scalar(
@@ -240,12 +244,17 @@ class Binary(Operator):
         scalar: Scalar,
         series_left: bool,
     ) -> Any:
+        result_dtype = cls.return_type.dtype() if cls.return_type is not None else "string[pyarrow]"
         if scalar is None:
-            return pd.Series(None, index=series.index)
+            return pd.Series(None, index=series.index, dtype=result_dtype)
         if series_left:
-            return series.map(lambda x: cls.py_op(x, scalar), na_action="ignore")
+            return series.map(lambda x: cls.py_op(x, scalar), na_action="ignore").astype(
+                result_dtype
+            )
         else:
-            return series.map(lambda x: cls.py_op(scalar, x), na_action="ignore")
+            return series.map(lambda x: cls.py_op(scalar, x), na_action="ignore").astype(
+                result_dtype
+            )
 
     @classmethod
     def validate(cls, *args: Any) -> Any:
@@ -596,6 +605,12 @@ class Binary(Operator):
                 result_data[measure.name] = cls.apply_operation_two_series(
                     result_data[measure.name + "_x"], result_data[measure.name + "_y"]
                 )
+            # Enforce measure dtype from component declaration
+            result_comp = result_dataset.components.get(measure.name)
+            if result_comp is not None:
+                target = result_comp.data_type.dtype()
+                if str(result_data[measure.name].dtype) != target:
+                    result_data[measure.name] = result_data[measure.name].astype(target)  # type: ignore[call-overload]
             result_data = result_data.drop([measure.name + "_x", measure.name + "_y"], axis=1)
 
         # Delete attributes from the result data
@@ -612,7 +627,6 @@ class Binary(Operator):
 
         result_dataset.data = result_data
         cls.modify_measure_column(result_dataset)
-
         return result_dataset
 
     @classmethod
@@ -642,6 +656,14 @@ class Binary(Operator):
             result_dataset.data[measure.name] = cls.apply_operation_series_scalar(
                 measure_data, scalar_value, dataset_left
             )
+            # Enforce measure dtype from component declaration
+            result_comp = result_dataset.components.get(measure.name)
+            if result_comp is not None:
+                target = result_comp.data_type.dtype()
+                if str(result_dataset.data[measure.name].dtype) != target:
+                    result_dataset.data[measure.name] = result_dataset.data[  # type: ignore[call-overload]
+                        measure.name
+                    ].astype(target)
 
         result_dataset.data = result_data
         cols_to_keep = dataset.get_identifiers_names() + dataset.get_measures_names()
@@ -663,6 +685,10 @@ class Binary(Operator):
             (right_operand.data.copy() if right_operand.data is not None else pd.Series()),
         )
         result_component.data = cls.apply_operation_two_series(left_data, right_data)
+        # Enforce dtype from component declaration
+        target = result_component.data_type.dtype()
+        if result_component.data is not None and str(result_component.data.dtype) != target:
+            result_component.data = result_component.data.astype(target)
         return result_component
 
     @classmethod
@@ -684,6 +710,10 @@ class Binary(Operator):
         result_component.data = cls.apply_operation_series_scalar(
             comp_data, scalar_value, component_left
         )
+        # Enforce dtype from component declaration
+        target = result_component.data_type.dtype()
+        if result_component.data is not None and str(result_component.data.dtype) != target:
+            result_component.data = result_component.data.astype(target)
         return result_component
 
     @classmethod
@@ -765,7 +795,6 @@ class Unary(Operator):
         """
         Applies the operation to a component
         """
-
         return series.map(cls.py_op, na_action="ignore")
 
     @classmethod
@@ -894,6 +923,12 @@ class Unary(Operator):
         result_data = operand.data.copy() if operand.data is not None else pd.DataFrame()
         for measure_name in operand.get_measures_names():
             result_data[measure_name] = cls.apply_operation_component(result_data[measure_name])
+            # Enforce measure dtype from component declaration
+            result_comp = result_dataset.components.get(measure_name)
+            if result_comp is not None:
+                target = result_comp.data_type.dtype()
+                if str(result_data[measure_name].dtype) != target:
+                    result_data[measure_name] = result_data[measure_name].astype(target)  # type: ignore[call-overload]
 
         cols_to_keep = operand.get_identifiers_names() + operand.get_measures_names()
         result_data = result_data[cols_to_keep]
@@ -914,6 +949,10 @@ class Unary(Operator):
         result_component.data = cls.apply_operation_component(
             operand.data.copy() if operand.data is not None else pd.Series()
         )
+        # Enforce dtype from component declaration
+        target = result_component.data_type.dtype()
+        if result_component.data is not None and str(result_component.data.dtype) != target:
+            result_component.data = result_component.data.astype(target)
         return result_component
 
     @classmethod

@@ -551,13 +551,16 @@ def check_max_date(str_: Optional[str]) -> Optional[str]:
     if len(str_) == 9 and str_[7] == "-":
         str_ = str_[:-1] + "0" + str_[-1]
 
-    # Format 2010-01-01. Prevent passthrough of other ISO 8601 formats.
-    if len(str_) != 10 or str_[7] != "-":
-        raise SemanticError("2-1-19-8", date=str_)
-        # raise ValueError(f"Invalid date format, must be YYYY-MM-DD: {str_}")
+    # Accept YYYY-MM-DD (len 10) or YYYY-MM-DD[T| ]HH:MM:SS[.fffffffff]
+    has_time = len(str_) > 10 and str_[10] in ("T", " ")
+    if has_time:
+        from vtlengine.DataTypes._time_checking import _truncate_nanoseconds
 
-    result = date.fromisoformat(str_)
-    return result.isoformat()
+        return dt.fromisoformat(_truncate_nanoseconds(str_)).isoformat(sep=" ")
+    elif len(str_) == 10 and str_[7] == "-":
+        return date.fromisoformat(str_).isoformat()
+    else:
+        raise SemanticError("2-1-19-8", date=str_)
 
 
 def str_period_to_date(value: str, start: bool = False) -> Any:
@@ -573,7 +576,7 @@ def str_period_to_date(value: str, start: bool = False) -> Any:
 def date_to_period_str(date_value: date, period_indicator: str) -> Any:
     if isinstance(date_value, str):
         date_value = check_max_date(date_value)
-        date_value = date.fromisoformat(date_value)
+        date_value = date.fromisoformat(date_value[:10])
     if period_indicator == "A":
         return f"{date_value.year}A"
     elif period_indicator == "S":

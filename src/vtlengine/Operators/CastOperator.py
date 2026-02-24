@@ -511,12 +511,12 @@ class Cast(Operator.Unary):
             result = data.map(lambda x: to_type.implicit_cast(x, from_type), na_action="ignore")
         else:
             result = data.map(lambda x: to_type.explicit_cast(x, from_type), na_action="ignore")
-        return result
+        return result.astype(to_type.dtype())
 
     @classmethod
     def cast_mask_component(cls, data: Any, from_type: Any, to_type: Any, mask: str) -> Any:
         result = data.map(lambda x: cls.cast_value(x, from_type, to_type, mask), na_action="ignore")
-        return result
+        return result.astype(to_type.dtype())
 
     @classmethod
     def cast_value(

@@ -373,4 +373,6 @@ def test_format_external_multiple_values() -> None:
     ds = get_tp_dataset(["2020A", "2020-M06", "2020-Q2"])
     format_time_period_external_representation(ds, TimePeriodRepresentation.VTL)
     assert len(ds.data["Id_1"]) == 3
-    assert ds.data["Id_1"].equals(pd.Series(["2020", "2020M6", "2020Q2"], name="Id_1"))
+    assert ds.data["Id_1"].equals(
+        pd.Series(["2020", "2020M6", "2020Q2"], name="Id_1", dtype="string[pyarrow]")
+    )

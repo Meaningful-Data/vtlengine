@@ -19,14 +19,14 @@ from vtlengine.DataTypes.TimeHandling import (
 from vtlengine.Exceptions import InputValidationException, RunTimeError, SemanticError
 
 DTYPE_MAPPING: Dict[str, str] = {
-    "String": "string",
-    "Number": "float64",
-    "Integer": "int64",
-    "TimeInterval": "string",
-    "Date": "string",
-    "TimePeriod": "string",
-    "Duration": "string",
-    "Boolean": "object",
+    "String": "string[pyarrow]",
+    "Number": "double[pyarrow]",
+    "Integer": "int64[pyarrow]",
+    "TimeInterval": "string[pyarrow]",
+    "Date": "string[pyarrow]",
+    "TimePeriod": "string[pyarrow]",
+    "Duration": "string[pyarrow]",
+    "Boolean": "bool[pyarrow]",
 }
 
 CAST_MAPPING: Dict[str, type] = {
@@ -672,7 +672,7 @@ class Null(ScalarType):
 
     @classmethod
     def dtype(cls) -> str:
-        return "string"
+        return "string[pyarrow]"
 
     @classmethod
     def check(cls, value: Any) -> bool:

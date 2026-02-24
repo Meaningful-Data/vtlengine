@@ -267,6 +267,10 @@ class InterpreterAnalyzer(ASTTemplate):
             if result is None:
                 continue
 
+            # Enforce output dtypes match DataStructure declarations
+            if isinstance(result, Dataset):
+                result.enforce_dtypes()
+
             # Removing output dataset
             vtlengine.Exceptions.dataset_output = None
             # Save results
@@ -1135,7 +1139,7 @@ class InterpreterAnalyzer(ASTTemplate):
             if isinstance(merge_ds, Dataset) and merge_ds.data is not None:
                 cond = cond.loc[merge_ds.data.index]
 
-            valid = cond.dropna().astype(bool)
+            valid = cond.dropna().astype("bool[pyarrow]")
             if isinstance(condition, Dataset) and condition.data is not None:
                 then_df = condition.data.loc[valid.index[valid]]
                 else_df = condition.data.loc[valid.index[~valid]]
@@ -1701,6 +1705,7 @@ class InterpreterAnalyzer(ASTTemplate):
         if node.value in df[hr_component].values:
             value_data = df[df[hr_component] == node.value]
             merged = value_data.merge(code_data, how="right", on=other_ids, indicator=True)
+            merged[me_name] = merged[me_name].astype(object)
             merged.loc[merged["_merge"] == "right_only", me_name] = REMOVE
             df = merged.drop(columns=["_merge"]).set_index(code_data.index)
         else:

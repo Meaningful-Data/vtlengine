@@ -24,15 +24,24 @@ from vtlengine.Model import DataComponent, Dataset, Scalar
 
 class Unary(Operator.Unary):
     type_to_check = String
+    str_accessor: Optional[str] = None
 
     @classmethod
     def op_func(cls, x: Any) -> Any:
-        x = "" if pd.isnull(x) else str(x)
-        return cls.py_op(x)
+        if pd.isnull(x):
+            return None
+        return cls.py_op(str(x))
 
     @classmethod
     def apply_operation_component(cls, series: Any) -> Any:
         """Applies the operation to a component"""
+        if cls.str_accessor is not None:
+            s = (
+                series.astype("string[pyarrow]")
+                if str(series.dtype) != "string[pyarrow]"
+                else series
+            )
+            return getattr(s.str, cls.str_accessor)()
         return series.map(lambda x: cls.py_op(str(x)), na_action="ignore")
 
     @classmethod
@@ -53,45 +62,50 @@ class Length(Unary):
 
     @classmethod
     def op_func(cls, x: Any) -> Any:
-        result = super().op_func(x)
-        if pd.isnull(result):
-            return 0
-        return result
+        if pd.isnull(x):
+            return None
+        return len(str(x))
 
     @classmethod
     def apply_operation_component(cls, series: Any) -> Any:
         """Applies the operation to a component"""
-        return series.map(cls.op_func)
+        s = series.astype("string[pyarrow]") if str(series.dtype) != "string[pyarrow]" else series
+        return s.str.len()
 
 
 class Lower(Unary):
     op = LCASE
     py_op = str.lower
     return_type = String
+    str_accessor = "lower"
 
 
 class Upper(Unary):
     op = UCASE
     py_op = str.upper
     return_type = String
+    str_accessor = "upper"
 
 
 class Trim(Unary):
     op = TRIM
     py_op = str.strip
     return_type = String
+    str_accessor = "strip"
 
 
 class Ltrim(Unary):
     op = LTRIM
     py_op = str.lstrip
     return_type = String
+    str_accessor = "lstrip"
 
 
 class Rtrim(Unary):
     op = RTRIM
     py_op = str.rstrip
     return_type = String
+    str_accessor = "rstrip"
 
 
 class Binary(Operator.Binary):
@@ -99,9 +113,9 @@ class Binary(Operator.Binary):
 
     @classmethod
     def op_func(cls, x: Any, y: Any) -> Any:
-        x = "" if pd.isnull(x) else str(x)
-        y = "" if pd.isnull(y) else str(y)
-        return cls.py_op(x, y)
+        if pd.isnull(x) or pd.isnull(y):
+            return None
+        return cls.py_op(str(x), str(y))
 
 
 class Concatenate(Binary):
@@ -131,7 +145,8 @@ class Parameterized(Unary):
         param2: Optional[Any]
         x, param1, param2 = (args + (None, None))[:3]
 
-        x = "" if pd.isnull(x) else x
+        if pd.isnull(x):
+            return None
         return cls.py_op(x, param1, param2)
 
     @classmethod
@@ -234,9 +249,9 @@ class Parameterized(Unary):
             length = args[0]
 
         if param is None:
-            return pd.Series(index=range(length), dtype=object)
+            return pd.Series(index=range(length), dtype="string[pyarrow]")
         if isinstance(param, Scalar):
-            return pd.Series(data=[param.value], index=range(length))
+            return pd.Series(data=param.value, index=range(length), dtype="string[pyarrow]")
         return param.data
 
     @classmethod
@@ -310,13 +325,18 @@ class Replace(Parameterized):
     @classmethod
     def py_op(cls, x: str, param1: Optional[Any], param2: Optional[Any]) -> Any:
         if pd.isnull(param1):
-            return ""
-        elif pd.isnull(param2):
-            param2 = ""
+            return None
+        if pd.isnull(param2):
+            return None
         x = str(x)
-        if param1 is not None and param2 is not None:
-            return x.replace(param1, param2)
-        return x
+        return x.replace(str(param1), str(param2))
+
+    @classmethod
+    def evaluate(cls, *args: Any) -> Union[Dataset, DataComponent, Scalar]:
+        operand, param1, param2 = (args + (None, None))[:3]
+        if param2 is None:
+            param2 = Scalar(name="replace_default", data_type=String, value="")
+        return super().evaluate(operand, param1, param2)
 
     @classmethod
     def check_param(cls, param: Optional[Union[DataComponent, Scalar]], position: int) -> None:
@@ -561,7 +581,7 @@ class Instr(Parameterized):
         else:
             occurrence = 0
         if pd.isnull(str_to_find):
-            return 0
+            return None
         else:
             str_to_find = str(str_to_find)
 
