@@ -11,7 +11,10 @@
 
 **Please do not report security vulnerabilities through public GitHub issues.**
 
-Instead, report them by emailing <javier.hernandez@meaningfuldata.eu>.
+Instead, use one of the following:
+
+1. **GitHub**: [Report a vulnerability](https://github.com/Meaningful-Data/vtlengine/security/advisories/new) via GitHub Security Advisories
+2. **Email**: <javier.hernandez@meaningfuldata.eu>
 
 Please include:
 
