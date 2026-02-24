@@ -4,8 +4,8 @@
 
 VTL Engine is a Python library for validating, formatting, and executing VTL (Validation and Transformation Language) 2.1 scripts. It's built around ANTLR-generated parsers and uses Pandas DataFrames for data manipulation.
 
-**VTL 2.1 Reference Manual**: <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf>
-**VTL 2.2 Documentation (preview)**: <https://sdmx-twg.github.io/vtl/2.2/>
+- **VTL 2.1 Reference Manual**: <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf>
+- **VTL 2.2 Documentation (preview)**: <https://sdmx-twg.github.io/vtl/2.2/>
 
 ## Core Architecture
 
