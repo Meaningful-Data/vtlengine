@@ -6,7 +6,7 @@ from pytest import mark
 
 from vtlengine.API import create_ast
 from vtlengine.DataTypes import Integer
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Interpreter import InterpreterAnalyzer
 
 pytestmark = mark.input_path(Path(__file__).parent / "data")
@@ -31,10 +31,10 @@ scalar_time_params = [
 ]
 
 scalar_time_error_params = [
-    ('datediff(cast("2022Q1",date),cast("2023Q2",time_period))', "2-1-19-8"),
-    ('datediff(cast("2020D1",time_period),cast("2020D15",date))', "2-1-19-8"),
-    ('datediff(cast("2022-06-30",date),cast("2023Q2",time_period))', "1-1-1-2"),
-    ('datediff(cast("2022Q2",time_period),cast("2023-06-30",date))', "1-1-1-2"),
+    ('datediff(cast("2022Q1",date),cast("2023Q2",time_period))', RunTimeError, "2-1-19-8"),
+    ('datediff(cast("2020D1",time_period),cast("2020D15",date))', RunTimeError, "2-1-19-8"),
+    ('datediff(cast("2022-06-30",date),cast("2023Q2",time_period))', SemanticError, "1-1-1-2"),
+    ('datediff(cast("2022Q2",time_period),cast("2023-06-30",date))', SemanticError, "1-1-1-2"),
 ]
 
 
@@ -72,11 +72,11 @@ def test_errors(load_input, code, expression, error_code):
     assert result
 
 
-@pytest.mark.parametrize("text, exception_message", scalar_time_error_params)
-def test_errors_time_scalar(text, exception_message):
+@pytest.mark.parametrize("text, exception_type, exception_message", scalar_time_error_params)
+def test_errors_time_scalar(text, exception_type, exception_message):
     warnings.filterwarnings("ignore", category=FutureWarning)
     expression = f"DS_r := {text};"
     ast = create_ast(expression)
     interpreter = InterpreterAnalyzer({})
-    with pytest.raises(SemanticError, match=f".*{exception_message}"):
+    with pytest.raises(exception_type, match=f".*{exception_message}"):
         interpreter.visit(ast)

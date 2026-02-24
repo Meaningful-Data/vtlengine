@@ -43,14 +43,14 @@ scalar_time_params = [
 ]
 
 scalar_time_error_params = [
-    ('year(cast("2023-01-12/2024-01-03", date))', "2-1-19-8"),
-    ('month(cast("2023-01-12/2024-02-15", date))', "2-1-19-8"),
-    ('dayofmonth(cast("2023-01-12/2024-02-02", date))', "2-1-19-8"),
-    ('dayofyear(cast("2023-01-12/2024-03-06", date))', "2-1-19-8"),
-    ('year(cast("2023-01-12/2024-01-31", time))', "1-1-19-10"),
-    ('month(cast("2023-01-12/2024-03-25", time))', "1-1-19-10"),
-    ('dayofmonth(cast("2023-01-12/2024-05-29", time))', "1-1-19-10"),
-    ('dayofyear(cast("2023-01-12/2024-06-08", time))', "1-1-19-10"),
+    ('year(cast("2023-01-12/2024-01-03", date))', RunTimeError, "2-1-19-8"),
+    ('month(cast("2023-01-12/2024-02-15", date))', RunTimeError, "2-1-19-8"),
+    ('dayofmonth(cast("2023-01-12/2024-02-02", date))', RunTimeError, "2-1-19-8"),
+    ('dayofyear(cast("2023-01-12/2024-03-06", date))', RunTimeError, "2-1-19-8"),
+    ('year(cast("2023-01-12/2024-01-31", time))', SemanticError, "1-1-19-10"),
+    ('month(cast("2023-01-12/2024-03-25", time))', SemanticError, "1-1-19-10"),
+    ('dayofmonth(cast("2023-01-12/2024-05-29", time))', SemanticError, "1-1-19-10"),
+    ('dayofyear(cast("2023-01-12/2024-06-08", time))', SemanticError, "1-1-19-10"),
 ]
 
 
@@ -88,11 +88,11 @@ def test_errors_ds(load_input, code, expression, type_error, error_code):
     assert result
 
 
-@pytest.mark.parametrize("text, exception_message", scalar_time_error_params)
-def test_errors_time_scalar(text, exception_message):
+@pytest.mark.parametrize("text, exception_type, exception_message", scalar_time_error_params)
+def test_errors_time_scalar(text, exception_type, exception_message):
     warnings.filterwarnings("ignore", category=FutureWarning)
     expression = f"DS_r := {text};"
     ast = create_ast(expression)
     interpreter = InterpreterAnalyzer({})
-    with pytest.raises(SemanticError, match=f".*{exception_message}"):
+    with pytest.raises(exception_type, match=f".*{exception_message}"):
         interpreter.visit(ast)
