@@ -1,0 +1,30 @@
+name: Documentation
+description: Report missing, incorrect, or unclear documentation
+type: Task
+labels: [documentation]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What documentation is missing, incorrect, or unclear?
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggested-change
+    attributes:
+      label: Suggested Change
+      description: Describe the improvement or correction needed.
+
+  - type: textarea
+    id: location
+    attributes:
+      label: Location
+      description: Page/section affected and URL if applicable.
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: References, links, or examples that support the change.

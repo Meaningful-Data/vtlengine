@@ -1,0 +1,31 @@
+name: Task
+description: Small change, refactor, or cleanup
+type: Task
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What needs to be changed/refactored and why.
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      value: |
+        - Files/areas impacted:
+        - Out of scope:
+
+  - type: textarea
+    id: testing
+    attributes:
+      label: Testing
+      description: How will you verify (targeted tests, existing suite, manual checks)?
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Links, decisions, or constraints.

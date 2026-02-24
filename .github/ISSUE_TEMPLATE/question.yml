@@ -1,0 +1,34 @@
+name: Question
+description: Ask a question about VTL Engine usage or behavior
+type: Task
+labels: [question]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What would you like to know?
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: What are you trying to achieve? Include VTL script or code snippet if applicable.
+
+  - type: input
+    id: vtlengine-version
+    attributes:
+      label: vtlengine version
+
+  - type: input
+    id: python-version
+    attributes:
+      label: Python version
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Any related documentation, error messages, or examples.

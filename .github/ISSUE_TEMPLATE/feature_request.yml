@@ -1,0 +1,29 @@
+name: Feature request
+description: Suggest an idea or improvement
+type: Feature
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What you want and why it helps.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed Solution
+      description: Outline of the change/API/behavior. Include any VTL syntax, API signatures, or CLI entrypoints you expect.
+
+  - type: textarea
+    id: alternatives-considered
+    attributes:
+      label: Alternatives Considered
+      description: Other approaches you thought about.
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: References, links, or examples. Note required data inputs/outputs (datasets, value domains, external routines) if relevant.

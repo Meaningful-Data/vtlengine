@@ -1,0 +1,66 @@
+name: Bug report
+description: Report a problem
+type: Bug
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Clear, concise description of the problem.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior.
+      value: |
+        1.
+        2.
+        3.
+
+  - type: textarea
+    id: expected-vs-actual
+    attributes:
+      label: Expected vs Actual
+      value: |
+        - Expected:
+        - Actual:
+    validations:
+      required: true
+
+  - type: textarea
+    id: input-artifacts
+    attributes:
+      label: Input Artifacts (if applicable)
+      description: VTL script snippet, data structures / datasets, value domains / external routines.
+
+  - type: input
+    id: vtlengine-version
+    attributes:
+      label: vtlengine version
+
+  - type: input
+    id: python-version
+    attributes:
+      label: Python version
+
+  - type: input
+    id: os
+    attributes:
+      label: OS
+
+  - type: dropdown
+    id: install-method
+    attributes:
+      label: Install method
+      options:
+        - pip
+        - poetry
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Logs, stack traces, or sample data (redact secrets). Attach minimal repro data if possible.
