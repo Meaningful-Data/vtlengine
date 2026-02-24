@@ -208,6 +208,7 @@ Pattern: `cr-{issue_number}` (e.g., `cr-457` for issue #457)
 
 ### Issue Conventions
 
+- Always follow the issue templates in `.github/ISSUE_TEMPLATE/` — do not create issues with free-form bodies
 - Never include links to gitlab in issue descriptions
 - Always set the issue type: `Bug`, `Feature`, or `Task` — do not use labels for issue categorization
 - Only apply labels for cross-cutting concerns: `documentation`, `workflows`, `dependencies`, `optimization`, `question`, `help wanted`
@@ -253,7 +254,7 @@ print(run_result)
 
 ### Pull Request Descriptions
 
-- Never include code quality check results (ruff, mypy, pytest) in PR descriptions
+- Always follow the pull request template in `.github/PULL_REQUEST_TEMPLATE.md`
 - Focus on what changed, why, impact/risk, and notes
 
 ## Common Pitfalls
