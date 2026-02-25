@@ -327,6 +327,10 @@ centralised_messages = {
         "description": "Raised when attempting to cast a decimal value to an integer, "
         "which is not allowed.",
     },
+    "2-1-5-3": {
+        "message": "Impossible to cast {value} from type {type_1} to {type_2} using mask {mask}.",
+        "description": "Occurs when a value cannot be converted between the specified types.",
+    },
     # Clause errors
     "1-1-6-2": {
         "message": "At op {op}: The Identifier {name} in Dataset {dataset} could not be included "

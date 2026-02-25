@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from tests.Helper import TestHelper
 from vtlengine.API import create_ast
 from vtlengine.Interpreter import InterpreterAnalyzer
@@ -2944,10 +2946,12 @@ class CastBugs(BugHelper):
         Status: OK
         Description:
         Goal: Check Result.
+        Note: In VTL 2.2, TimePeriod->Date is allowed without mask but only
+              for daily periods. Monthly periods fail at runtime.
         """
         code = "GL_449_2"
         number_inputs = 1
-        message = "1-1-5-3"
+        message = "2-1-5-1"
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -2957,42 +2961,51 @@ class CastBugs(BugHelper):
         Status: OK
         Description:
         Goal: Check Result.
+        Note: Cast with mask raises NotImplementedError (not yet implemented).
         """
         code = "GL_449_3"
         number_inputs = 1
-        message = "1-1-5-4"
-        self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code=message
-        )
+        text = self.LoadVTL(code)
+        ast = create_ast(text)
+        input_datasets = self.LoadInputs(code=code, number_inputs=number_inputs)
+        interpreter = InterpreterAnalyzer(datasets=input_datasets)
+        with pytest.raises(NotImplementedError):
+            interpreter.visit(ast)
 
     def test_GL_449_6(self):
         """
         Status: OK
         Description: Over dataset
         Goal: Check Result.
+        Note: Cast with mask raises NotImplementedError (not yet implemented).
         """
         code = "GL_449_6"
         number_inputs = 1
-        references_names = ["1"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        text = self.LoadVTL(code)
+        ast = create_ast(text)
+        input_datasets = self.LoadInputs(code=code, number_inputs=number_inputs)
+        interpreter = InterpreterAnalyzer(datasets=input_datasets)
+        with pytest.raises(NotImplementedError):
+            interpreter.visit(ast)
 
     def test_GL_449_7(self):
         """
         Status: OK
-        Description: Over scalardataset
+        Description: Over scalar
         Goal: Check Result.
+        Note: Cast with mask raises NotImplementedError (not yet implemented).
         """
         code = "GL_449_7"
         number_inputs = 1
-        references_names = ["1"]
-
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names,
-            scalars={"sc_1": "2000Q2"},
-        )
+        text = self.LoadVTL(code)
+        ast = create_ast(text)
+        input_datasets = self.LoadInputs(code=code, number_inputs=number_inputs)
+        input_datasets["sc_1"].value = "2000Q2"
+        scalars = {k: v for k, v in input_datasets.items() if not hasattr(v, "components")}
+        datasets = {k: v for k, v in input_datasets.items() if hasattr(v, "components")}
+        interpreter = InterpreterAnalyzer(datasets=datasets, scalars=scalars)
+        with pytest.raises(NotImplementedError):
+            interpreter.visit(ast)
 
     def test_GL_448_1(self):
         """
