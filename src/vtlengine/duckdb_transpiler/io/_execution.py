@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import duckdb
 import pandas as pd
 
+from vtlengine.AST.DAG._models import DatasetSchedule
 from vtlengine.DataTypes import (
     Date,
     TimeInterval,
@@ -54,14 +55,14 @@ def _convert_date_columns(ds: Dataset) -> None:
                 and pd.api.types.is_datetime64_any_dtype(ds.data[comp_name])
             ):
                 ds.data[comp_name] = ds.data[comp_name].apply(
-                    lambda x: x.strftime("%Y-%m-%d") if pd.notna(x) else None
+                    lambda x: x.strftime("%Y-%m-%d") if pd.notna(x) else None  # type: ignore[redundant-expr]
                 )
 
 
 def load_scheduled_datasets(
     conn: duckdb.DuckDBPyConnection,
     statement_num: int,
-    ds_analysis: Dict[str, Any],
+    ds_analysis: DatasetSchedule,
     path_dict: Optional[Dict[str, Path]],
     dataframe_dict: Dict[str, pd.DataFrame],
     input_datasets: Dict[str, Dataset],
@@ -101,7 +102,7 @@ def load_scheduled_datasets(
 def cleanup_scheduled_datasets(
     conn: duckdb.DuckDBPyConnection,
     statement_num: int,
-    ds_analysis: Dict[str, Any],
+    ds_analysis: DatasetSchedule,
     output_folder: Optional[Path],
     output_datasets: Dict[str, Dataset],
     output_scalars: Dict[str, Scalar],
@@ -213,7 +214,7 @@ def fetch_result(
 def execute_queries(
     conn: duckdb.DuckDBPyConnection,
     queries: List[Tuple[str, str, bool]],
-    ds_analysis: Dict[str, Any],
+    ds_analysis: DatasetSchedule,
     path_dict: Optional[Dict[str, Path]],
     dataframe_dict: Dict[str, pd.DataFrame],
     input_datasets: Dict[str, Dataset],

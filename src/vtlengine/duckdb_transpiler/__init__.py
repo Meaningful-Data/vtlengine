@@ -30,7 +30,8 @@ def transpile(
     Returns:
         List of (dataset_name, sql_query, is_persistent) tuples.
     """
-    from vtlengine.API import create_ast, load_datasets, load_external_routines, load_value_domains
+    from vtlengine.API import create_ast
+    from vtlengine.API._InternalApi import load_datasets, load_external_routines, load_value_domains
     from vtlengine.AST.DAG import DAGAnalyzer
     from vtlengine.Interpreter import InterpreterAnalyzer
     from vtlengine.Model import Dataset, Scalar
