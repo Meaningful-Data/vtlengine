@@ -47,7 +47,7 @@ class Unary(Operator.Unary):
         if cls.pc_func is not None:
             arr = series.values._pa_array
             return pd.Series(
-                pd.arrays.ArrowExtensionArray(cls.pc_func(arr)),
+                pd.arrays.ArrowExtensionArray(cls.pc_func(arr)),  # type: ignore[attr-defined,unused-ignore]
                 index=series.index,
             )
         return super().apply_operation_component(series)

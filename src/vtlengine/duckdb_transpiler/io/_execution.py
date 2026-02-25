@@ -55,7 +55,7 @@ def _convert_date_columns(ds: Dataset) -> None:
                 and pd.api.types.is_datetime64_any_dtype(ds.data[comp_name])
             ):
                 ds.data[comp_name] = ds.data[comp_name].apply(
-                    lambda x: x.strftime("%Y-%m-%d") if pd.notna(x) else None  # type: ignore[redundant-expr]
+                    lambda x: x.strftime("%Y-%m-%d") if pd.notna(x) else None  # type: ignore[redundant-expr,unused-ignore]
                 )
 
 
