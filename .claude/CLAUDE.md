@@ -4,8 +4,8 @@
 
 VTL Engine is a Python library for validating, formatting, and executing VTL (Validation and Transformation Language) 2.1 scripts. It's built around ANTLR-generated parsers and uses Pandas DataFrames for data manipulation.
 
-**VTL 2.1 Reference Manual**: <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf>
-**VTL 2.2 Documentation (preview)**: <https://sdmx-twg.github.io/vtl/2.2/>
+- **VTL 2.1 Reference Manual**: <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf>
+- **VTL 2.2 Documentation (preview)**: <https://sdmx-twg.github.io/vtl/2.2/>
 
 ## Core Architecture
 
@@ -177,6 +177,21 @@ gh api graphql -f query='
 }'
 ```
 
+### Labels
+
+Labels indicate cross-cutting concerns, NOT issue type. The issue type (Bug, Feature, Task) is set via GitHub's issue type field.
+
+Only use the following labels — **never create new labels**:
+
+| Label | Purpose |
+| ----- | ------- |
+| `documentation` | Documentation changes (triggers docs workflow on PR merge) |
+| `workflows` | CI/CD and GitHub Actions issues |
+| `dependencies` | Dependency management and updates |
+| `optimization` | Performance improvements and code complexity reduction |
+| `question` | Questions needing further information |
+| `help wanted` | Issues where community contributions are welcome |
+
 ## Git Workflow
 
 ### Branch Naming
@@ -193,8 +208,11 @@ Pattern: `cr-{issue_number}` (e.g., `cr-457` for issue #457)
 
 ### Issue Conventions
 
+- Always follow the issue templates in `.github/ISSUE_TEMPLATE/` — do not create issues with free-form bodies
 - Never include links to gitlab in issue descriptions
-- Use issue types instead of labels: `Bug`, `Feature`, or `Task`
+- Always set the issue type: `Bug`, `Feature`, or `Task` — do not use labels for issue categorization
+- Only apply labels for cross-cutting concerns: `documentation`, `workflows`, `dependencies`, `optimization`, `question`, `help wanted`
+- Never create new labels — only use the existing set listed above
 - Use standard dataset/component naming: `DS_1`, `DS_2` for datasets; `Id_1`, `Id_2` for identifiers; `Me_1`, `Me_2` for measures; `At_1`, `At_2` for attributes
 - Always run the reproduction script to get the actual output — never guess or manually write it. If the output is data, format it as a markdown table for clarity
 - Use GitHub callout syntax for notes and warnings in issue descriptions:
@@ -205,9 +223,13 @@ Pattern: `cr-{issue_number}` (e.g., `cr-457` for issue #457)
 
 ```python
 import pandas as pd
+
 from vtlengine import run
 
-script = """DS_r <- DS_1 * 10;"""
+
+script = """
+    DS_A <- DS_1 * 10;
+"""
 
 data_structures = {
     "datasets": [
@@ -222,15 +244,17 @@ data_structures = {
 }
 
 data_df = pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [10, 20, 30]})
+
 datapoints = {"DS_1": data_df}
 
-result = run(script=script, data_structures=data_structures, datapoints=datapoints)
-print(result)
+run_result = run(script=script, data_structures=data_structures, datapoints=datapoints)
+
+print(run_result)
 ```
 
 ### Pull Request Descriptions
 
-- Never include code quality check results (ruff, mypy, pytest) in PR descriptions
+- Always follow the pull request template in `.github/PULL_REQUEST_TEMPLATE.md`
 - Focus on what changed, why, impact/risk, and notes
 
 ## Common Pitfalls
@@ -249,3 +273,7 @@ print(result)
 - **pysdmx** (≥1.5.2): SDMX 3.0 data handling
 - **sqlglot** (22.x): SQL parsing for external routines
 - **antlr4-python3-runtime** (4.9.x): Parser runtime
+
+## File Sync Rules
+
+- `.github/copilot-instructions.md` must always have the same content as `.claude/CLAUDE.md`. When updating one, always update the other to match.
