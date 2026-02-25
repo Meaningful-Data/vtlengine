@@ -93,7 +93,7 @@ def _extract_input_datasets(script: Union[str, TransformationScheme, Path]) -> L
         raise TypeError("Unsupported script type.")
 
     ast = create_ast(vtl_script)
-    dag_inputs = DAGAnalyzer.ds_structure(ast)["global_inputs"]
+    dag_inputs = DAGAnalyzer.ds_structure(ast).global_inputs
 
     return dag_inputs
 
@@ -134,7 +134,7 @@ def create_ast(text: str) -> Start:
     cst = _parser(stream)
     visitor = ASTVisitor()
     ast = visitor.visitStart(cst)
-    DAGAnalyzer.createDAG(ast)
+    DAGAnalyzer.create_dag(ast)
     return ast
 
 
@@ -289,12 +289,13 @@ def semantic_analysis(
 def _run_with_duckdb(
     script: Union[str, TransformationScheme, Path],
     data_structures: Union[
+        str,
         Dict[str, Any],
         Path,
         Schema,
         DataStructureDefinition,
         Dataflow,
-        List[Union[Dict[str, Any], Path, Schema, DataStructureDefinition, Dataflow]],
+        List[Union[str, Dict[str, Any], Path, Schema, DataStructureDefinition, Dataflow]],
     ],
     datapoints: Union[Dict[str, Union[pd.DataFrame, str, Path]], List[Union[str, Path]], str, Path],
     value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
@@ -316,7 +317,7 @@ def _run_with_duckdb(
     script = _check_script(script)
     vtl = load_vtl(script)
     ast = create_ast(vtl)
-    dag = DAGAnalyzer.createDAG(ast)
+    dag = DAGAnalyzer.create_dag(ast)
 
     # Load datasets structure (without data)
     input_datasets, input_scalars = load_datasets(data_structures)

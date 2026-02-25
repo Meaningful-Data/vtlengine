@@ -29,7 +29,7 @@ class TestGenerateRedirectHtml:
 
     def test_redirect_target_in_link(self) -> None:
         html = generate_redirect_html("latest")
-        assert 'href="./latest/"' in html
+        assert 'href="./latest/index.html"' in html
 
     def test_specific_version_target(self) -> None:
         html = generate_redirect_html("v1.4.0")

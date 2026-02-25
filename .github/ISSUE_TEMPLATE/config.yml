@@ -1,2 +1,11 @@
 blank_issues_enabled: false
-contact_links: []
+contact_links:
+  - name: VTL Engine Documentation
+    url: https://docs.vtlengine.meaningfuldata.eu
+    about: Check the documentation for guides, API reference, and data type information.
+  - name: VTL 2.1 Reference Manual
+    url: https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf
+    about: Official VTL 2.1 specification from SDMX for language syntax and semantics.
+  - name: Report a Security Vulnerability
+    url: https://github.com/Meaningful-Data/vtlengine/security/advisories/new
+    about: Please report security vulnerabilities privately — do not open a public issue.

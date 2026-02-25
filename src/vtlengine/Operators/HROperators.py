@@ -41,7 +41,10 @@ class HRBinOp(Operators.Binary):
     @classmethod
     def align_series(cls, left: Any, right: Any, mode: str) -> Tuple[Any, Any]:
         fill_value = 0 if mode.endswith("zero") else None
-        left_aligned, right_aligned = left.align(right, join="outer")
+        # Convert to object dtype for sentinel-based alignment
+        left_obj = left.astype(object)
+        right_obj = right.astype(object) if isinstance(right, pd.Series) else right
+        left_aligned, right_aligned = left_obj.align(right_obj, join="outer")
 
         left_aligned[left_aligned.index.difference(left.index, sort=False)] = REMOVE
         right_aligned[right_aligned.index.difference(right.index, sort=False)] = REMOVE
@@ -255,6 +258,11 @@ class Hierarchy(Operators.Operator):
             computed_data = pd.DataFrame(columns=dataset.get_components_names())
         else:
             computed_data = cls.generate_computed_data(computed_dict)
+        # Convert computed data columns to proper pyarrow dtypes
+        for comp_name, comp in result.components.items():
+            if comp_name in computed_data.columns:
+                computed_data[comp_name] = computed_data[comp_name].astype(comp.data_type.dtype())  # type: ignore[call-overload]
+
         if output == "computed":
             result.data = computed_data
             return result

@@ -4,36 +4,6 @@ import os
 import warnings
 from pathlib import Path
 
-# if os.environ.get("SPARK", False):
-#     import sys
-#
-#     virtualenv_path = sys.prefix
-#     sys.path.append(virtualenv_path)
-#     # os.environ['PYTHONPATH'] = f'{virtualenv_path}'
-#     os.environ['PYSPARK_PYTHON'] = f'{virtualenv_path}/bin/python'
-#     # os.environ['PYSPARK_PYTHON'] = f'{virtualenv_path}\\Scripts\\python'
-#     # os.environ['VIRTUAL_ENV'] = os.environ.get('PYTHONPATH', f'{virtualenv_path}')
-#
-#     from pyspark import SparkConf, SparkContext
-#
-#     conf = SparkConf()
-#     conf.set('spark.driver.cores', '2')
-#     conf.set('spark.executor.cores', '2')
-#     conf.set('spark.driver.memory', '2g')
-#     conf.set('spark.executor.memory', '2g')
-#     # conf.set('spark.sql.execution.arrow.pyspark.enabled', 'true')
-#     conf.set('spark.pyspark.virtualenv.enabled', 'true')
-#     conf.set('spark.pyspark.virtualenv.type', 'native')
-#     conf.set('spark.pyspark.virtualenv.requirements', 'requirements.txt')
-#     # conf.set('spark.pyspark.virtualenv.bin.path', f'{virtualenv_path}/Scripts/python')
-#     # Pandas API on Spark automatically uses this Spark context with the configurations set.
-#     SparkContext(conf=conf)
-#
-#     import pyspark.pandas as pd
-#
-#     pd.set_option('compute.ops_on_diff_frames', True)
-#     os.environ["PYSPARK_SUBMIT_ARGS"] = "--conf spark.network.timeout=600s pyspark-shell"
-# else:
 import pandas as pd
 import pytest
 
@@ -42,6 +12,8 @@ from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.files.parser import load_datapoints
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Component, Dataset, Role, ValueDomain
+
+VTL_ENGINE_BACKEND = os.environ.get("VTL_ENGINE_BACKEND", "pandas").lower()
 
 base_path = Path(__file__).parent
 input_dp_dir = base_path / "data/DataSet/input"
@@ -223,7 +195,7 @@ def get_test_files(dataPoints, dataStructures, dp_dir, param):
     return vtl, ds, dp
 
 
-@pytest.mark.parametrize("param", params)
+@pytest.mark.parametrize("param", params if VTL_ENGINE_BACKEND == "duckdb" else [])
 def test_reference_duckdb(input_datasets, reference_datasets, ast, param, value_domains):
     warnings.filterwarnings("ignore", category=FutureWarning)
     reference_datasets = load_dataset(*reference_datasets, dp_dir=reference_dp_dir, param=param)

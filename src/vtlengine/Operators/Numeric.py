@@ -6,6 +6,7 @@ from decimal import Decimal, getcontext
 from typing import Any, Optional, Union
 
 import pandas as pd
+import pyarrow.compute as pc
 
 import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import (
@@ -39,6 +40,17 @@ class Unary(Operator.Unary):
     """
 
     type_to_check = Number
+    pc_func: Any = None
+
+    @classmethod
+    def apply_operation_component(cls, series: Any) -> Any:
+        if cls.pc_func is not None:
+            arr = series.values._pa_array
+            return pd.Series(
+                pd.arrays.ArrowExtensionArray(cls.pc_func(arr)),  # type: ignore[attr-defined,unused-ignore]
+                index=series.index,
+            )
+        return super().apply_operation_component(series)
 
 
 class Binary(Operator.Binary):
@@ -49,9 +61,8 @@ class Binary(Operator.Binary):
     type_to_check = Number
 
     @classmethod
-    def op_func(cls, x: Any, y: Any) -> Any:
-        if pd.isnull(x) or pd.isnull(y):
-            return None
+    def _decimal_op(cls, x: Any, y: Any, precision: Optional[int]) -> Any:
+        """Apply the operator with Decimal precision. Assumes x, y are non-null."""
         if isinstance(x, int) and isinstance(y, int):
             if cls.op == DIV and y == 0:
                 raise SemanticError("2-1-15-6", op=cls.op, value=y)
@@ -59,11 +70,8 @@ class Binary(Operator.Binary):
                 return cls.py_op(x, y)
         x = float(x)
         y = float(y)
-        # Handles precision to avoid floating point errors
         if cls.op == DIV and y == 0:
             raise SemanticError("2-1-15-6", op=cls.op, value=y)
-
-        precision = get_effective_numeric_digits()
         if precision is not None:
             getcontext().prec = precision
         decimal_value = cls.py_op(Decimal(x), Decimal(y))
@@ -71,6 +79,52 @@ class Binary(Operator.Binary):
         if result.is_integer():
             return int(result)
         return result
+
+    @classmethod
+    def op_func(cls, x: Any, y: Any) -> Any:
+        if pd.isnull(x) or pd.isnull(y):
+            return None
+        return cls._decimal_op(x, y, get_effective_numeric_digits())
+
+    @classmethod
+    def _null_aware_decimal_op(cls, x: Any, y: Any, precision: Optional[int]) -> Any:
+        if pd.isnull(x) or pd.isnull(y):
+            return None
+        return cls._decimal_op(x, y, precision)
+
+    @classmethod
+    def apply_operation_two_series(cls, left_series: Any, right_series: Any) -> Any:
+        precision = get_effective_numeric_digits()
+        result = list(
+            map(
+                lambda x, y: cls._null_aware_decimal_op(x, y, precision),
+                left_series.values,
+                right_series.values,
+            )
+        )
+        index = left_series.index if len(left_series) <= len(right_series) else right_series.index
+        result_dtype = cls.return_type.dtype() if cls.return_type is not None else "string[pyarrow]"
+        return pd.Series(result, index=index, dtype=result_dtype)
+
+    @classmethod
+    def apply_operation_series_scalar(
+        cls,
+        series: Any,
+        scalar: Any,
+        series_left: bool,
+    ) -> Any:
+        result_dtype = cls.return_type.dtype() if cls.return_type is not None else "string[pyarrow]"
+        if scalar is None:
+            return pd.Series(None, index=series.index, dtype=result_dtype)
+        precision = get_effective_numeric_digits()
+        if series_left:
+            return series.map(
+                lambda x: cls._decimal_op(x, scalar, precision), na_action="ignore"
+            ).astype(result_dtype)
+        else:
+            return series.map(
+                lambda x: cls._decimal_op(scalar, x, precision), na_action="ignore"
+            ).astype(result_dtype)
 
 
 class UnPlus(Unary):
@@ -93,6 +147,7 @@ class UnMinus(Unary):
 
     op = MINUS
     py_op = operator.neg
+    pc_func = staticmethod(pc.negate)
 
 
 class AbsoluteValue(Unary):
@@ -102,6 +157,7 @@ class AbsoluteValue(Unary):
 
     op = ABS
     py_op = operator.abs
+    pc_func = staticmethod(pc.abs)
 
 
 class Exponential(Unary):
@@ -112,6 +168,7 @@ class Exponential(Unary):
     op = EXP
     py_op = math.exp
     return_type = Number
+    pc_func = staticmethod(pc.exp)
 
 
 class NaturalLogarithm(Unary):
@@ -123,6 +180,7 @@ class NaturalLogarithm(Unary):
     op = LN
     py_op = math.log
     return_type = Number
+    pc_func = staticmethod(pc.ln)
 
 
 class SquareRoot(Unary):
@@ -134,6 +192,7 @@ class SquareRoot(Unary):
     op = SQRT
     py_op = math.sqrt
     return_type = Number
+    pc_func = staticmethod(pc.sqrt)
 
 
 class Ceil(Unary):
@@ -144,6 +203,7 @@ class Ceil(Unary):
     op = CEIL
     py_op = math.ceil
     return_type = Integer
+    pc_func = staticmethod(pc.ceil)
 
 
 class Floor(Unary):
@@ -154,6 +214,7 @@ class Floor(Unary):
     op = FLOOR
     py_op = math.floor
     return_type = Integer
+    pc_func = staticmethod(pc.floor)
 
 
 class BinPlus(Binary):

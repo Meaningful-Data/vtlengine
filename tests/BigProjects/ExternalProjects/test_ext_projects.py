@@ -54,13 +54,12 @@ class AnaVal(ExternalProjectsHelper):
         code = "GL_283_1"
         number_inputs = 36
         vd_names = ["EU_countries", "AnaCreditCountries_1"]
-        rn = [str(i) for i in range(1, 129)]
-        references_names = rn
+        message = "1-1-1-1"
 
-        self.BaseTest(
+        self.NewSemanticExceptionTest(
             code=code,
             number_inputs=number_inputs,
-            references_names=references_names,
+            exception_code=message,
             vd_names=vd_names,
         )
 

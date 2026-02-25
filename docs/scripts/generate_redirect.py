@@ -54,7 +54,7 @@ def generate_redirect_html(target_version: str) -> str:
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="0; url=./{target_version}/">
+    <meta http-equiv="refresh" content="0; url=./{target_version}/index.html">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Redirecting to VTL Engine Documentation</title>
     <style>
@@ -87,8 +87,11 @@ def generate_redirect_html(target_version: str) -> str:
 <body>
     <div class="container">
         <h1>VTL Engine Documentation</h1>
-        <p>Redirecting to <a href="./{target_version}/">version {target_version}</a>...</p>
-        <p><small>If you are not redirected automatically, please click the link above.</small></p>
+        <p>Redirecting to
+        <a href="./{target_version}/index.html">
+        version {target_version}</a>...</p>
+        <p><small>If you are not redirected automatically,
+        please click the link above.</small></p>
     </div>
 </body>
 </html>

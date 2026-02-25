@@ -214,7 +214,20 @@ class Dataset:
                 if name not in self.data.columns:
                     raise ValueError(f"Component {name} not found in the data")
 
-    def __eq__(self, other: Any) -> bool:  # noqa: C901
+    def enforce_dtypes(self) -> None:
+        """Ensure all DataFrame column dtypes match their component DataType."""
+        if self.data is None:
+            return
+        for comp_name, comp in self.components.items():
+            if comp_name in self.data.columns:
+                col = self.data[comp_name]
+                if isinstance(col, pd.DataFrame):
+                    continue
+                target_dtype = comp.data_type.dtype()
+                if str(col.dtype) != target_dtype:
+                    self.data[comp_name] = col.astype(target_dtype)  # type: ignore[call-overload]
+
+    def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Dataset):
             return False
 
@@ -263,28 +276,6 @@ class Dataset:
         if len(self.data) == len(other.data) == 0 and self.data.shape != other.data.shape:
             raise SemanticError("0-1-1-14", dataset1=self.name, dataset2=other.name)
 
-        # Convert nullable typed columns to object before fillna to avoid
-        # TypeError on Boolean/Int64 columns that can't accept "" fill value
-        for df in (self.data, other.data):
-            for col in df.columns:
-                if hasattr(df[col], "dtype"):
-                    dtype_str = str(df[col].dtype)
-                    if dtype_str in (
-                        "boolean",
-                        "Boolean",
-                        "Int64",
-                        "Int32",
-                        "Int16",
-                        "Int8",
-                        "UInt64",
-                        "UInt32",
-                        "UInt16",
-                        "UInt8",
-                    ):
-                        df[col] = df[col].astype(object)
-
-        self.data.fillna("", inplace=True)
-        other.data.fillna("", inplace=True)
         sorted_identifiers = sorted(self.get_identifiers_names())
         self.data = self.data.sort_values(by=sorted_identifiers).reset_index(drop=True)
         other.data = other.data.sort_values(by=sorted_identifiers).reset_index(drop=True)
@@ -292,29 +283,22 @@ class Dataset:
         other.data = other.data.reindex(sorted(other.data.columns), axis=1)
         for comp in self.components.values():
             type_name: str = comp.data_type.__name__.__str__()
-            if type_name in ["String", "Date"]:
-                self.data[comp.name] = self.data[comp.name].astype(str)
-                other.data[comp.name] = other.data[comp.name].astype(str)
+            if type_name in ["String", "Date", "TimeInterval", "Duration"]:
+                self.data[comp.name] = self.data[comp.name].fillna("").astype(str)
+                other.data[comp.name] = other.data[comp.name].fillna("").astype(str)
             elif type_name == "TimePeriod":
-                self.data[comp.name] = self.data[comp.name].astype(str)
-                other.data[comp.name] = other.data[comp.name].astype(str)
+                self.data[comp.name] = self.data[comp.name].fillna("").astype(str)
+                other.data[comp.name] = other.data[comp.name].fillna("").astype(str)
                 self.data[comp.name] = self.data[comp.name].map(
                     lambda x: str(TimePeriodHandler(str(x))) if x != "" else "",
-                    na_action="ignore",
                 )
                 other.data[comp.name] = other.data[comp.name].map(
                     lambda x: str(TimePeriodHandler(str(x))) if x != "" else "",
-                    na_action="ignore",
                 )
             elif type_name in ["Integer", "Number"]:
                 type_ = "int64" if type_name == "Integer" else "float32"
-                # We use here a number to avoid errors on equality on empty strings
-                self.data[comp.name] = (
-                    self.data[comp.name].replace("", -1234997).astype(type_)  # type: ignore[call-overload]
-                )
-                other.data[comp.name] = (
-                    other.data[comp.name].replace("", -1234997).astype(type_)  # type: ignore[call-overload]
-                )
+                self.data[comp.name] = self.data[comp.name].fillna(-1234997).astype(type_)  # type: ignore[call-overload]
+                other.data[comp.name] = other.data[comp.name].fillna(-1234997).astype(type_)  # type: ignore[call-overload]
         try:
             assert_frame_equal(
                 self.data,

@@ -327,6 +327,10 @@ centralised_messages = {
         "description": "Raised when attempting to cast a decimal value to an integer, "
         "which is not allowed.",
     },
+    "2-1-5-3": {
+        "message": "Impossible to cast {value} from type {type_1} to {type_2} using mask {mask}.",
+        "description": "Occurs when a value cannot be converted between the specified types.",
+    },
     # Clause errors
     "1-1-6-2": {
         "message": "At op {op}: The Identifier {name} in Dataset {dataset} could not be included "
@@ -1043,6 +1047,12 @@ centralised_messages = {
         "Comparison operations, unable to get the {op}",
         "description": "Raised when < or > comparisons are attempted between operands "
         "with different period indicators.",
+    },
+    "2-1-19-21": {
+        "message": "SDMX Gregorian representation is not supported for period indicator "
+        "'{period}'. Only Annual (A), Month (M), and Day (D) are supported.",
+        "description": "Raised when trying to convert a time period with Semester (S), "
+        "Quarter (Q), or Week (W) indicator to SDMX Gregorian format.",
     },
     # ----------- Interpreter Common ------
     "2-3-4": {

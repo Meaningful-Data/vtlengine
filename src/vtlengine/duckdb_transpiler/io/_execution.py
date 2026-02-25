@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import duckdb
 import pandas as pd
 
-from vtlengine.AST.DAG._words import DELETE, GLOBAL, INSERT, PERSISTENT
+from vtlengine.AST.DAG._models import DatasetSchedule
 from vtlengine.DataTypes import (
     Date,
     TimeInterval,
@@ -55,18 +55,17 @@ def _convert_date_columns(ds: Dataset) -> None:
                 and pd.api.types.is_datetime64_any_dtype(ds.data[comp_name])
             ):
                 ds.data[comp_name] = ds.data[comp_name].apply(
-                    lambda x: x.strftime("%Y-%m-%d") if pd.notna(x) else None
+                    lambda x: x.strftime("%Y-%m-%d") if pd.notna(x) else None  # type: ignore[redundant-expr,unused-ignore]
                 )
 
 
 def load_scheduled_datasets(
     conn: duckdb.DuckDBPyConnection,
     statement_num: int,
-    ds_analysis: Dict[str, Any],
+    ds_analysis: DatasetSchedule,
     path_dict: Optional[Dict[str, Path]],
     dataframe_dict: Dict[str, pd.DataFrame],
     input_datasets: Dict[str, Dataset],
-    insert_key: str,
 ) -> None:
     """
     Load datasets scheduled for a given statement using DAG analysis.
@@ -80,10 +79,10 @@ def load_scheduled_datasets(
         input_datasets: Dict of input dataset structures
         insert_key: Key in ds_analysis for insertion schedule (e.g., 'insertion')
     """
-    if statement_num not in ds_analysis.get(insert_key, {}):
+    if statement_num not in ds_analysis.insertion:
         return
 
-    for ds_name in ds_analysis[insert_key][statement_num]:
+    for ds_name in ds_analysis.insertion[statement_num]:
         if ds_name not in input_datasets:
             continue
 
@@ -103,15 +102,12 @@ def load_scheduled_datasets(
 def cleanup_scheduled_datasets(
     conn: duckdb.DuckDBPyConnection,
     statement_num: int,
-    ds_analysis: Dict[str, Any],
+    ds_analysis: DatasetSchedule,
     output_folder: Optional[Path],
     output_datasets: Dict[str, Dataset],
     output_scalars: Dict[str, Scalar],
     results: Dict[str, Union[Dataset, Scalar]],
     return_only_persistent: bool,
-    delete_key: str,
-    global_key: str,
-    persistent_key: str,
 ) -> None:
     """
     Clean up datasets scheduled for deletion at a given statement.
@@ -129,13 +125,13 @@ def cleanup_scheduled_datasets(
         global_key: Key in ds_analysis for global inputs
         persistent_key: Key in ds_analysis for persistent outputs
     """
-    if statement_num not in ds_analysis.get(delete_key, {}):
+    if statement_num not in ds_analysis.deletion:
         return
 
-    global_inputs = ds_analysis.get(global_key, [])
-    persistent_datasets = ds_analysis.get(persistent_key, [])
+    global_inputs = ds_analysis.global_inputs
+    persistent_datasets = ds_analysis.persistent
 
-    for ds_name in ds_analysis[delete_key][statement_num]:
+    for ds_name in ds_analysis.deletion[statement_num]:
         if ds_name in global_inputs:
             # Drop global inputs without saving
             conn.execute(f'DROP TABLE IF EXISTS "{ds_name}"')
@@ -218,7 +214,7 @@ def fetch_result(
 def execute_queries(
     conn: duckdb.DuckDBPyConnection,
     queries: List[Tuple[str, str, bool]],
-    ds_analysis: Dict[str, Any],
+    ds_analysis: DatasetSchedule,
     path_dict: Optional[Dict[str, Path]],
     dataframe_dict: Dict[str, pd.DataFrame],
     input_datasets: Dict[str, Dataset],
@@ -263,7 +259,6 @@ def execute_queries(
             path_dict=path_dict,
             dataframe_dict=dataframe_dict,
             input_datasets=input_datasets,
-            insert_key=INSERT,
         )
 
         # Execute query and create table
@@ -286,9 +281,6 @@ def execute_queries(
             output_scalars=output_scalars,
             results=results,
             return_only_persistent=return_only_persistent,
-            delete_key=DELETE,
-            global_key=GLOBAL,
-            persistent_key=PERSISTENT,
         )
 
     # Handle final results not yet processed

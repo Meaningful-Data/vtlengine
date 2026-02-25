@@ -1,21 +1,53 @@
 import calendar
 import re
 from datetime import date, datetime
+from functools import lru_cache
 
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.Exceptions import InputValidationException
 
 
+def _has_time_component(value: str) -> bool:
+    """Check if a date string includes a time component (T or space separator at position 10)."""
+    return len(value) > 10 and value[10] in ("T", " ")
+
+
+def _truncate_nanoseconds(value: str) -> str:
+    """Truncate sub-second precision beyond 6 digits (microseconds) for Python compatibility."""
+    dot_idx = value.find(".")
+    if dot_idx == -1:
+        return value
+    # Keep at most 6 decimal digits after the dot
+    frac_end = dot_idx + 1
+    while frac_end < len(value) and value[frac_end].isdigit():
+        frac_end += 1
+    frac_digits = value[dot_idx + 1 : frac_end]
+    if len(frac_digits) > 6:
+        return value[:dot_idx] + "." + frac_digits[:6] + value[frac_end:]
+    return value
+
+
+def parse_date_value(value: str) -> date:
+    """Parse a date or datetime string into a date object (time part is discarded)."""
+    return date.fromisoformat(value[:10])
+
+
 def check_date(value: str) -> str:
     """
     Check if the date is in the correct format.
+    Accepts YYYY-MM-DD and YYYY-MM-DD[T| ]HH:MM:SS[.fffffffff] (ISO 8601).
+    Output always uses T separator for datetime values, no timezone.
+    Nanosecond input is truncated to microsecond precision.
     """
-    # Remove all whitespaces
     value = value.strip()
+    has_time = _has_time_component(value)
     try:
-        if len(value) == 9 and value[7] == "-":
-            value = value[:-1] + "0" + value[-1]
-        date_value = date.fromisoformat(value)
+        if has_time:
+            iso_result = datetime.fromisoformat(_truncate_nanoseconds(value)).isoformat(sep=" ")
+        else:
+            if len(value) == 9 and value[7] == "-":
+                value = value[:-1] + "0" + value[-1]
+            iso_result = date.fromisoformat(value).isoformat()
     except ValueError as e:
         if "is out of range" in str(e):
             raise InputValidationException(f"Date {value} is out of range for the month.")
@@ -24,16 +56,17 @@ def check_date(value: str) -> str:
                 f"Date {value} is invalid. Month must be between 1 and 12."
             )
         raise InputValidationException(
-            f"Date {value} is not in the correct format. Use YYYY-MM-DD."
+            f"Date {value} is not in the correct format. Use YYYY-MM-DD or YYYY-MM-DD HH:MM:SS."
         )
 
-    # Check date is between 1900 and 9999
-    if not 1800 <= date_value.year <= 9999:
+    # Check date is between 1800 and 9999
+    year = int(value[:4])
+    if not 1800 <= year <= 9999:
         raise InputValidationException(
             f"Date {value} is invalid. Year must be between 1900 and 9999."
         )
 
-    return date_value.isoformat()
+    return iso_result
 
 
 def dates_to_string(date1: date, date2: date) -> str:
@@ -42,7 +75,7 @@ def dates_to_string(date1: date, date2: date) -> str:
     return f"{date1_str}/{date2_str}"
 
 
-date_pattern = r"\d{4}[-][0-1]?\d[-][0-3]?\d"
+date_pattern = r"\d{4}[-][0-1]?\d[-][0-3]?\d([T ]\d{2}:\d{2}:\d{2}(\.\d+)?)?"
 year_pattern = r"\d{4}"
 month_pattern = r"\d{4}[-][0-1]?\d"
 time_pattern = r"^" + date_pattern + r"/" + date_pattern + r"$"
@@ -72,62 +105,67 @@ def check_time(value: str) -> str:
     )
 
 
-day_period_pattern = r"^\d{4}[-][0-1]?\d[-][0-3]?\d$"
-month_period_pattern = r"^\d{4}[-][0-1]?\d$"
-year_period_pattern = r"^\d{4}$"
-period_pattern = (
-    r"^\d{4}[A]$|^\d{4}[S][1-2]$|^\d{4}[Q][1-4]$|^\d{4}[M]"
-    r"[0-1]?\d$|^\d{4}[W][0-5]?\d$|^\d{4}[D][0-3]?[0-9]?\d$"
+# Comprehensive time period pattern covering all accepted input formats.
+# Compact formats (no hyphen): YYYY, YYYYA, YYYYSN, YYYYQN, YYYYM[M], YYYYW[W], YYYYD[DD]
+_vtl_period_re = re.compile(
+    r"^\d{4}$"  # YYYY (year only)
+    r"|^\d{4}A$"  # YYYYA (annual with indicator)
+    r"|^\d{4}S[1-2]$"  # YYYYSN (semester)
+    r"|^\d{4}Q[1-4]$"  # YYYYQN (quarter)
+    r"|^\d{4}M[0-1]?\d$"  # YYYYM[M] (month, 1 or 2 digits)
+    r"|^\d{4}W[0-5]?\d$"  # YYYYW[W] (week, 1 or 2 digits)
+    r"|^\d{4}D[0-3]?[0-9]?\d$"  # YYYYD[DD] (day of year, 1 to 3 digits)
 )
 
-# Related with gitlab issue #440, we can say that period pattern
-# matches with our internal representation (or vtl user manual)
-# and further_options_period_pattern matches
-# with other kinds of inputs that we have to accept for the period.
-further_options_period_pattern = (
-    r"\d{4}-\d{2}-\d{2}|^\d{4}-D[0-3]\d\d$|^\d{4}-W([0-4]"
-    r"\d|5[0-3])|^\d{4}-(0[1-9]|1[0-2]|M(0[1-9]|1[0-2]|[1-9]))$|^"
-    r"\d{4}-Q[1-4]$|^\d{4}-S[1-2]$|^\d{4}-A1$"
+# Hyphenated formats: YYYY-MM, YYYY-M, YYYY-MM-DD, YYYY-MXX, YYYY-QX, YYYY-SX, YYYY-WXX,
+# YYYY-DXXX, YYYY-A1
+_sdmx_period_re = re.compile(
+    r"^\d{4}-\d{1,2}$"  # YYYY-MM or YYYY-M (ISO month, 1 or 2 digits)
+    r"|^\d{4}-\d{2}-\d{2}$"  # YYYY-MM-DD (ISO date)
+    r"|^\d{4}-M(0[1-9]|1[0-2]|[1-9])$"  # YYYY-MXX (hyphenated month)
+    r"|^\d{4}-Q[1-4]$"  # YYYY-QX (hyphenated quarter)
+    r"|^\d{4}-S[1-2]$"  # YYYY-SX (hyphenated semester)
+    r"|^\d{4}-W([0-4]\d|5[0-3]|[1-9])$"  # YYYY-WXX (hyphenated week)
+    r"|^\d{4}-D[0-3]\d\d$"  # YYYY-DXXX (hyphenated day)
+    r"|^\d{4}-A1$"  # YYYY-A1 (SDMX reporting annual)
 )
+
+_iso_date_re = re.compile(r"^(\d{4})-(\d{1,2})-(\d{1,2})$")
+_iso_month_re = re.compile(r"^(\d{4})-(\d{1,2})$")
 
 
 def check_time_period(value: str) -> str:
     if isinstance(value, int):
         value = str(value)
     value = value.strip()
+    return _check_time_period_cached(value)
 
-    match = re.fullmatch(r"^(\d{4})-(\d{2})$", value)
-    if match:
-        value = f"{match.group(1)}-M{match.group(2)}"
 
-    period_result = re.fullmatch(period_pattern, value)
-    if period_result is not None:
+@lru_cache(maxsize=4096)
+def _check_time_period_cached(value: str) -> str:
+    # Try vtl formats first
+    if _vtl_period_re.fullmatch(value) is not None:
+        result = TimePeriodHandler(f"{value}A") if len(value) == 4 else TimePeriodHandler(value)
+        return str(result)
+
+    # Normalize YYYY-M-D, YYYY-M-DD, YYYY-MM-D to zero-padded YYYY-MM-DD
+    match_iso_date = _iso_date_re.fullmatch(value)
+    if match_iso_date:
+        year, month, day = match_iso_date.groups()
+        value = f"{year}-{int(month):02d}-{int(day):02d}"
+
+    # Convert YYYY-MM or YYYY-M (ISO month) to hyphenated month format for TimePeriodHandler
+    match_iso_month = _iso_month_re.fullmatch(value)
+    if match_iso_month:
+        value = f"{match_iso_month.group(1)}-M{match_iso_month.group(2)}"
+
+    # Try sdmx formats
+    if _sdmx_period_re.fullmatch(value) is not None:
         result = TimePeriodHandler(value)
         return str(result)
 
-    # We allow the user to input the time period in different formats.
-    # See gl-440 or documentation in time period tests.
-    further_options_period_result = re.fullmatch(further_options_period_pattern, value)
-    if further_options_period_result is not None:
-        result = TimePeriodHandler(value)
-        return str(result)
-
-    year_result = re.fullmatch(year_period_pattern, value)
-    if year_result is not None:
-        result = TimePeriodHandler(f"{value}A")
-        return str(result)
-
-    month_result = re.fullmatch(month_period_pattern, value)
-    if month_result is not None:
-        month = datetime.strptime(value, "%Y-%m")
-        month_period = month.strftime("%YM%m")
-        result = TimePeriodHandler(month_period)
-        return str(result)
-
-    # TODO: Do we use this?
-    day_result = re.fullmatch(day_period_pattern, value)
-    if day_result is not None:
-        day = datetime.strptime(value, "%Y-%m-%d")
-        day_period = day.strftime("%YD%-j")
-        return day_period
-    raise ValueError
+    raise ValueError(
+        f"Time period '{value}' is not in a valid format. "
+        f"Accepted formats: YYYY, YYYYA, YYYYSn, YYYYQn, YYYYMm, YYYYWw, YYYYDd, "
+        f"YYYY-MM, YYYY-MM-DD, YYYY-Mxx, YYYY-Qx, YYYY-Sx, YYYY-Wxx, YYYY-Dxxx, YYYY-A1."
+    )

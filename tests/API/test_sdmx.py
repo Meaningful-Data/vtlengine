@@ -77,7 +77,7 @@ params_run_sdmx_datapoints_dict = [
     # (script, datapoints_key, description)
     ("DS_r <- BIS_DER;", "BIS_DER", "simple assignment"),
     ("DS_r <- BIS_DER [calc Me_4 := OBS_VALUE];", "BIS_DER", "calc clause"),
-    ("DS_r <- BIS_DER [filter OBS_VALUE > 0];", "BIS_DER", "filter clause"),
+    ('DS_r <- BIS_DER [filter OBS_VALUE > "0"];', "BIS_DER", "filter clause"),
 ]
 
 

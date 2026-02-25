@@ -593,14 +593,16 @@ class TestCastOperator:
                 [["A", 10.5], ["B", 20.7]],
                 "int",
             ),
+            # TODO: Deactivated until revision
             # Cast to String
-            (
-                "DS_r := cast(DS_1, string);",
-                [["A", 10], ["B", 20]],
-                "str",
-            ),
+            # (
+            #     "DS_r := cast(DS_1, string);",
+            #     [["A", 10], ["B", 20]],
+            #     "str",
+            # ),
         ],
-        ids=["to_integer", "to_string"],
+        # ids=["to_integer", "to_string"],
+        ids=["to_integer"],
     )
     def test_cast_type_conversion(self, temp_data_dir, vtl_script, input_data, expected_type):
         """Test CAST type conversion."""

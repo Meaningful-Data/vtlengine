@@ -115,8 +115,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return []
         if hasattr(self.dag, "dependencies"):
             for deps in self.dag.dependencies.values():
-                if name in deps.get("outputs", []) or name in deps.get("persistent", []):
-                    return deps.get("inputs", [])
+                if name in deps.outputs or name in deps.persistent:
+                    return deps.inputs
         return []
 
     # =========================================================================
@@ -137,7 +137,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             elif isinstance(child, AST.DPRuleset):
                 self.visit_DPRuleset(child)
             elif isinstance(child, AST.Assignment):
-                name = child.left.value
+                name = child.left.value  # type: ignore[attr-defined]
                 self.current_assignment = name
                 self.inputs = self._get_assignment_inputs(name)
 
@@ -254,7 +254,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             "signature_type": node.signature_type,
         }
 
-    def visit_DPValidation(self, node: AST.DPValidation) -> str:
+    def visit_DPValidation(self, node: AST.DPValidation) -> str:  # type: ignore[override]
         """Generate SQL for check_datapoint operator."""
         dpr_name = node.ruleset_name
         dpr_info = self._dprs[dpr_name]
@@ -309,7 +309,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         # Store the signature for DefIdentifier resolution
         self._dp_signature = signature
 
-        has_when = isinstance(rule.rule, AST.HRBinOp) and rule.rule.op == "when"
+        has_when = rule.rule.op == "when"
         if has_when:
             when_cond_sql = self._visit_dp_expr(rule.rule.left, signature)
             then_expr_sql = self._visit_dp_expr(rule.rule.right, signature)
@@ -450,7 +450,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             "expression": node.expression,
         }
 
-    def visit_UDOCall(self, node: AST.UDOCall) -> str:
+    def visit_UDOCall(self, node: AST.UDOCall) -> str:  # type: ignore[override]
         """Visit a UDO call by expanding its definition with parameter bindings."""
         if node.op not in self._udos:
             raise ValueError(f"Unknown UDO: {node.op}")
@@ -480,7 +480,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     # Leaf visitors
     # =========================================================================
 
-    def visit_VarID(self, node: AST.VarID) -> str:
+    def visit_VarID(self, node: AST.VarID) -> str:  # type: ignore[override]
         """Visit a variable identifier."""
         name = node.value
         udo_val = self._get_udo_param(name)
@@ -529,7 +529,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         return quote_identifier(name)
 
-    def visit_Constant(self, node: AST.Constant) -> str:
+    def visit_Constant(self, node: AST.Constant) -> str:  # type: ignore[override]
         """Visit a constant literal."""
         return self._constant_to_sql(node)
 
@@ -541,18 +541,18 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         """Visit an identifier node."""
         return quote_identifier(node.value)
 
-    def visit_ID(self, node: AST.ID) -> str:
+    def visit_ID(self, node: AST.ID) -> str:  # type: ignore[override]
         """Visit an ID node (used for type names, placeholders like '_', etc.)."""
         if node.value == "_":
             # VTL underscore means "use default" - return None marker
             return ""
         return node.value
 
-    def visit_ParFunction(self, node: AST.ParFunction) -> str:
+    def visit_ParFunction(self, node: AST.ParFunction) -> str:  # type: ignore[override]
         """Visit a parenthesized function/expression."""
         return self.visit(node.operand)
 
-    def visit_Collection(self, node: AST.Collection) -> str:
+    def visit_Collection(self, node: AST.Collection) -> str:  # type: ignore[override]
         """Visit a Collection (Set or ValueDomain reference)."""
         if node.kind == "ValueDomain":
             return self._visit_value_domain(node)
@@ -730,7 +730,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     # Expression visitors
     # =========================================================================
 
-    def visit_BinOp(self, node: AST.BinOp) -> str:
+    def visit_BinOp(self, node: AST.BinOp) -> str:  # type: ignore[override]
         """Visit a binary operation."""
         op = str(node.op).lower() if node.op else ""
 
@@ -917,7 +917,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         return SQLBuilder().select(*cols).from_table(table_src).build()
 
-    def visit_UnaryOp(self, node: AST.UnaryOp) -> str:
+    def visit_UnaryOp(self, node: AST.UnaryOp) -> str:  # type: ignore[override]
         """Visit a unary operation."""
         op = str(node.op).lower()
 
@@ -1027,7 +1027,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         table_src = self._get_dataset_sql(node.operand)
         return f"SELECT * FROM fill_time_series({table_src})"
 
-    def visit_ParamOp(self, node: AST.ParamOp) -> str:
+    def visit_ParamOp(self, node: AST.ParamOp) -> str:  # type: ignore[override]
         """Visit a parameterized operation."""
         op = str(node.op).lower()
 
@@ -1078,7 +1078,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         def _param_expr(col_ref: str) -> str:
             if registry.parameterized.is_registered(op):
-                return registry.parameterized.generate(op, col_ref, *params_sql)
+                return registry.parameterized.generate(
+                    op, col_ref, *[p for p in params_sql if p is not None]
+                )
             all_args = [col_ref] + [a for a in params_sql if a is not None]
             return f"{op.upper()}({', '.join(all_args)})"
 
@@ -1144,17 +1146,17 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         seed_node = node.left
         index_node = node.right
 
-        seed_type = self._get_operand_type(seed_node) if seed_node else _SCALAR
+        seed_type = self._get_operand_type(seed_node)
 
         if seed_type == _DATASET:
-            index_sql = self.visit(index_node) if index_node else "0"
+            index_sql = self.visit(index_node)
             return self._apply_to_measures(
                 seed_node,
                 lambda col: self._random_hash_expr(col, index_sql),
             )
 
-        seed_sql = self.visit(seed_node) if seed_node else "0"
-        index_sql = self.visit(index_node) if index_node else "0"
+        seed_sql = self.visit(seed_node)
+        index_sql = self.visit(index_node)
 
         return self._random_hash_expr(seed_sql, index_sql)
 
@@ -1170,7 +1172,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     # Clause visitor (RegularAggregation)
     # =========================================================================
 
-    def visit_RegularAggregation(self, node: AST.RegularAggregation) -> str:
+    def visit_RegularAggregation(self, node: AST.RegularAggregation) -> str:  # type: ignore[override]
         """Visit clause operations: filter, calc, keep, drop, rename, subspace, aggr."""
         op = str(node.op).lower()
 
@@ -1384,7 +1386,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return f"SELECT * FROM {table_src}"
 
         where_parts: List[str] = []
-        remove_ids: set = set()
+        remove_ids: set[str] = set()
         for child in node.children:
             if isinstance(child, AST.BinOp):
                 col_name = child.left.value if hasattr(child.left, "value") else ""
@@ -1532,7 +1534,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     # Aggregation visitor
     # =========================================================================
 
-    def visit_Aggregation(self, node: AST.Aggregation) -> str:
+    def visit_Aggregation(self, node: AST.Aggregation) -> str:  # type: ignore[override]
         """Visit a standalone aggregation: sum(DS group by Id)."""
         op = str(node.op).lower()
 
@@ -1672,7 +1674,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return registry.analytic.generate(op, operand_sql)
         return f"{op.upper()}({operand_sql})"
 
-    def visit_Analytic(self, node: AST.Analytic) -> str:
+    def visit_Analytic(self, node: AST.Analytic) -> str:  # type: ignore[override]
         """Visit an analytic (window) function."""
         op = str(node.op).lower()
 
@@ -1701,9 +1703,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         # VTL count always produces a single "int_var" measure
         name_override = "int_var" if op == tokens.COUNT else None
+        if node.operand is None:
+            raise ValueError("Analytic node must have an operand")
         return self._apply_to_measures(node.operand, _analytic_expr, name_override)
 
-    def visit_Windowing(self, node: AST.Windowing) -> str:
+    def visit_Windowing(self, node: AST.Windowing) -> str:  # type: ignore[override]
         """Visit a windowing specification."""
         type_str = str(node.type_).upper() if node.type_ else "ROWS"
         # Map VTL types to SQL: DATA POINTS → ROWS
@@ -1730,7 +1734,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     # MulOp visitor (set ops, between, exists_in, current_date)
     # =========================================================================
 
-    def visit_MulOp(self, node: AST.MulOp) -> str:
+    def visit_MulOp(self, node: AST.MulOp) -> str:  # type: ignore[override]
         """Visit a multi-operand operation."""
         op = str(node.op).lower()
 
@@ -1976,7 +1980,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     # Join visitor
     # =========================================================================
 
-    def visit_JoinOp(self, node: AST.JoinOp) -> str:  # noqa: C901
+    def visit_JoinOp(self, node: AST.JoinOp) -> str:  # type: ignore[override]  # noqa: C901
         """Visit a join operation."""
         op = str(node.op).lower()
         join_type_map = {
@@ -2076,7 +2080,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         # Build columns, aliasing duplicates with "alias#comp" convention
         cols: List[str] = []
         self._join_alias_map = {}
-        seen_identifiers: set = set()
+        seen_identifiers: set[str] = set()
 
         for info in clause_info:
             if not info["ds"]:
@@ -2155,7 +2159,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     # Time aggregation visitor
     # =========================================================================
 
-    def visit_TimeAggregation(self, node: AST.TimeAggregation) -> str:
+    def visit_TimeAggregation(self, node: AST.TimeAggregation) -> str:  # type: ignore[override]
         """Visit TIME_AGG operation."""
         period = node.period_to
         operand_sql = self.visit(node.operand) if node.operand else ""

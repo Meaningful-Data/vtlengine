@@ -1,6 +1,6 @@
 [project]
 name = "vtlengine"
-version = "1.5.0"
+version = "1.6.0rc1"
 description = "Run and Validate VTL Scripts"
 license = "AGPL-3.0"
 readme = "README.md"
@@ -32,6 +32,7 @@ dependencies = [
     "antlr4-python3-runtime>=4.9,<4.10",
     "pandas>=2.1.4,<3.0",
     "networkx>=2.8,<3.0",
+    "pyarrow>=14.0,<20.0",
     "numpy>=2.0.2,<2.1; python_version < '3.10'",
     "numpy>=2.2.0,<2.3; python_version >= '3.10'",
     "psutil (>=7.2.2,<8.0.0)"
@@ -59,10 +60,10 @@ pytest-xdist = ">=3.8.0,<4.0"
 line-profiler-pycharm = ">=1.2.0,<2.0"
 mypy = ">=1.18,<2.0"
 pandas-stubs = ">=2.2.2,<3.0"
+pyarrow-stubs = ">=19.0,<21.0"
 ruff = ">=0.14,<1.0.0"
 types-jsonschema = ">=4.25.1,<5.0"
 psutil = "^7.2.1"
-matplotlib = "<3.9"
 
 [tool.poetry.group.docs.dependencies]
 sphinx = ">=7.4.7,<8.0"

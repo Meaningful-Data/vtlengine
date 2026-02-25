@@ -32,7 +32,7 @@ from vtlengine.Model import (
 )
 
 # VTL_ENGINE_BACKEND can be "pandas" (default) or "duckdb"
-VTL_ENGINE_BACKEND = os.environ.get("VTL_ENGINE_BACKEND", "duckdb").lower()
+VTL_ENGINE_BACKEND = os.environ.get("VTL_ENGINE_BACKEND", "pandas").lower()
 
 
 def _use_duckdb_backend() -> bool:

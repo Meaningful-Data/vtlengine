@@ -101,7 +101,7 @@ class StructureVisitor(ASTTemplate):
     # when the class is used as a base class.
     # =========================================================================
 
-    def visit_VarID(self, node: AST.VarID) -> Optional[Dataset]:  # type: ignore[override]
+    def visit_VarID(self, node: AST.VarID) -> Optional[Dataset]:
         """Return dataset structure for a VarID."""
         return self._get_dataset_structure(node)
 
@@ -109,7 +109,7 @@ class StructureVisitor(ASTTemplate):
         """Return dataset structure for a BinOp."""
         return self._get_dataset_structure(node)
 
-    def visit_UnaryOp(self, node: AST.UnaryOp) -> Optional[Dataset]:  # type: ignore[override]
+    def visit_UnaryOp(self, node: AST.UnaryOp) -> Optional[Dataset]:
         """Return dataset structure for a UnaryOp.
 
         ``isnull`` replaces all measures with a single ``bool_var`` measure.
@@ -194,7 +194,7 @@ class StructureVisitor(ASTTemplate):
         """Return dataset structure for a UDO call."""
         return self._get_dataset_structure(node)
 
-    def generic_visit(self, node: AST.AST) -> None:  # type: ignore[override]
+    def generic_visit(self, node: AST.AST) -> None:
         """Return None for any unhandled node type."""
         return None
 
@@ -390,8 +390,10 @@ class StructureVisitor(ASTTemplate):
     # Dataset structure resolution
     # =========================================================================
 
-    def _get_dataset_structure(self, node: AST.AST) -> Optional[Dataset]:  # noqa: C901
+    def _get_dataset_structure(self, node: Optional[AST.AST]) -> Optional[Dataset]:  # noqa: C901
         """Get dataset structure for a node, tracing to the source dataset."""
+        if node is None:
+            return None
         if isinstance(node, AST.VarID):
             udo_val = self._get_udo_param(node.value)
             if udo_val is not None:
@@ -581,7 +583,7 @@ class StructureVisitor(ASTTemplate):
         comps: Dict[str, Component] = {}
 
         # Determine group-by identifiers from children or default to all
-        group_ids: set = set()
+        group_ids: set[str] = set()
         for child in node.children:
             assignment = child
             if isinstance(child, AST.UnaryOp) and isinstance(child.operand, AST.Assignment):
@@ -694,7 +696,7 @@ class StructureVisitor(ASTTemplate):
         input_ds = self._get_dataset_structure(node.dataset)
         if input_ds is None:
             return None
-        remove_ids: set = set()
+        remove_ids: set[str] = set()
         for child in node.children:
             if isinstance(child, AST.BinOp):
                 col_name = child.left.value if hasattr(child.left, "value") else ""
@@ -728,7 +730,7 @@ class StructureVisitor(ASTTemplate):
             using_ids = list(node.using)
 
         # Collect (alias, dataset) pairs
-        clause_datasets: List[tuple] = []
+        clause_datasets: List[tuple[Optional[str], Dataset]] = []
         for i, clause in enumerate(node.clauses):
             actual_node = clause
             alias: Optional[str] = None
@@ -793,9 +795,11 @@ class StructureVisitor(ASTTemplate):
     # Component name resolution helpers
     # =========================================================================
 
-    def _resolve_clause_component_names(self, children: List[AST.AST], input_ds: Dataset) -> set:
+    def _resolve_clause_component_names(
+        self, children: List[AST.AST], input_ds: Dataset
+    ) -> set[str]:
         """Extract component names from clause children (keep/drop), resolving memberships."""
-        names: set = set()
+        names: set[str] = set()
         for child in children:
             if isinstance(child, (AST.VarID, AST.Identifier)):
                 names.add(child.value)
@@ -860,7 +864,7 @@ class StructureVisitor(ASTTemplate):
                     group_cols.append(resolved)
             return group_cols
         if node.grouping and node.grouping_op == "group except":
-            except_cols: set = set()
+            except_cols: set[str] = set()
             for g in node.grouping:
                 if isinstance(g, (AST.VarID, AST.Identifier)):
                     resolved = g.value
