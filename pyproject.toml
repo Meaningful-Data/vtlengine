@@ -64,7 +64,6 @@ pyarrow-stubs = ">=19.0,<21.0"
 ruff = ">=0.14,<1.0.0"
 types-jsonschema = ">=4.25.1,<5.0"
 psutil = "^7.2.1"
-matplotlib = "<3.9"
 
 [tool.poetry.group.docs.dependencies]
 sphinx = ">=7.4.7,<8.0"
