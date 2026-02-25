@@ -76,9 +76,11 @@ class IfThenElseTest(TestIfThenElse):
         """
         code = "1-1-1-3"
         number_inputs = 1
-        references_names = ["1"]
+        error_code = "1-1-1-1"
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_4(self):
         """
@@ -301,9 +303,11 @@ class IfThenElseTest(TestIfThenElse):
         """
         code = "1-1-1-14"
         number_inputs = 3
-        references_names = ["1"]
+        error_code = "1-1-1-1"
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_15(self):
         """
@@ -514,9 +518,11 @@ class IfThenElseTest(TestIfThenElse):
         """
         code = "GL_424_1"
         number_inputs = 1
-        references_names = ["1"]
+        error_code = "1-1-1-2"
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_424_2(self):
         """
@@ -537,9 +543,11 @@ class IfThenElseTest(TestIfThenElse):
         """
         code = "GL_424_2"
         number_inputs = 1
-        references_names = ["1"]
+        error_code = "1-1-1-2"
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_436_1(self):
         """

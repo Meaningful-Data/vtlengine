@@ -1,4 +1,3 @@
-import re
 from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional, Type, Union
 
@@ -32,10 +31,13 @@ from vtlengine.DataTypes import (
     TimePeriod,
     unary_implicit_promotion,
 )
+from vtlengine.DataTypes._time_checking import _has_time_component, parse_date_value
 from vtlengine.DataTypes.TimeHandling import (
     PERIOD_IND_MAPPING,
     TimePeriodHandler,
     date_to_period,
+    generate_period_range,
+    max_periods_in_year,
     period_to_date,
 )
 from vtlengine.Exceptions import RunTimeError, SemanticError
@@ -90,7 +92,7 @@ class Time(Operators.Operator):
 
     @classmethod
     def parse_date(cls, date_str: str) -> date:
-        return date.fromisoformat(date_str)
+        return parse_date_value(date_str)
 
     @classmethod
     def get_frequencies(cls, dates: Any) -> Any:
@@ -248,15 +250,36 @@ class Parametrized(Time):
         pass
 
 
+def _cast_bool_columns(x: Any) -> Any:
+    """Cast bool[pyarrow] columns to int64[pyarrow] for cumsum/diff support."""
+    if isinstance(x, pd.DataFrame):
+        for col in x.columns:
+            if str(x[col].dtype) == "bool[pyarrow]":
+                x[col] = x[col].astype("int64[pyarrow]")
+    elif hasattr(x, "dtype") and str(x.dtype) == "bool[pyarrow]":
+        return x.astype("int64[pyarrow]")
+    return x
+
+
 class Flow_to_stock(Unary):
     @classmethod
     def py_op(cls, x: Any) -> Any:
+        x = _cast_bool_columns(x)
+        if isinstance(x, pd.DataFrame):
+            numeric = x.select_dtypes(include="number")
+            x[numeric.columns] = numeric.cumsum().fillna(numeric)
+            return x
         return x.cumsum().fillna(x)
 
 
 class Stock_to_flow(Unary):
     @classmethod
     def py_op(cls, x: Any) -> Any:
+        x = _cast_bool_columns(x)
+        if isinstance(x, pd.DataFrame):
+            numeric = x.select_dtypes(include="number")
+            x[numeric.columns] = numeric.diff().fillna(numeric)
+            return x
         return x.diff().fillna(x)
 
 
@@ -269,7 +292,7 @@ class Fill_time_series(Binary):
         if operand.data is None:
             operand.data = pd.DataFrame()
         result.data = operand.data.copy()
-        result.data[cls.time_id] = result.data[cls.time_id].astype(str)
+        result.data[cls.time_id] = result.data[cls.time_id].astype("string[pyarrow]")
         if len(result.data) < 2:
             return result
         data_type = result.components[cls.time_id].data_type
@@ -309,115 +332,74 @@ class Fill_time_series(Binary):
         return Dataset(name=dataset_name, components=operand.components.copy(), data=None)
 
     @classmethod
-    def max_min_from_period(cls, data: pd.DataFrame, mode: str = "all") -> Dict[str, Any]:
-        result_dict: Dict[Any, Any] = {}
-        data = data.assign(
-            Periods_col=data[cls.time_id].apply(cls._get_period),
-            Periods_values_col=data[cls.time_id].apply(
-                lambda x: int(re.sub(r"[^\d]", "", x.split("-")[-1]))
-            ),
-            Year_values_col=data[cls.time_id].apply(lambda x: int(x[:4])),
-        ).sort_values(by=["Year_values_col", "Periods_col", "Periods_values_col"])
-
-        if mode == "all":
-            min_year = data["Year_values_col"].min()
-            max_year = data["Year_values_col"].max()
-            result_dict = {"min": {"A": min_year}, "max": {"A": max_year}}
-            for period, group in data.groupby("Periods_col"):
-                if period != "A":
-                    result_dict["min"][period] = group["Periods_values_col"].min()
-                    result_dict["max"][period] = group["Periods_values_col"].max()
-
-        elif mode == "single":
-            for name, group in data.groupby(cls.other_ids + ["Periods_col"]):
-                key = name[:-1] if len(name[:-1]) > 1 else name[0]
-                period = name[-1]
-                if key not in result_dict:
-                    result_dict[key] = {
-                        "min": {"A": group["Year_values_col"].min()},
-                        "max": {"A": group["Year_values_col"].max()},
-                    }
-                if period != "A":
-                    year_min = group["Year_values_col"].min()
-                    year_max = group["Year_values_col"].max()
-
-                    result_dict[key]["min"]["A"] = min(result_dict[key]["min"]["A"], year_min)
-                    result_dict[key]["max"]["A"] = max(result_dict[key]["max"]["A"], year_max)
-                    result_dict[key]["min"][period] = group["Periods_values_col"].min()
-                    result_dict[key]["max"][period] = group["Periods_values_col"].max()
-
-        else:
-            raise ValueError("Mode must be either 'all' or 'single'")
-        return result_dict
-
-    @classmethod
     def fill_periods(cls, data: pd.DataFrame, fill_type: str) -> pd.DataFrame:
-        result_data = cls.period_filler(data, single=(fill_type != "all"))
-        not_na = result_data[cls.measures].notna().any(axis=1)
-        duplicated = result_data.duplicated(subset=(cls.other_ids + [cls.time_id]), keep=False)
-        return result_data[~duplicated | not_na]
+        # Parse each time_id value once and reuse throughout
+        data = data.copy()
+        tp_parsed = data[cls.time_id].map(lambda x: TimePeriodHandler(x), na_action="ignore")
+        data[cls.time_id] = tp_parsed.map(str, na_action="ignore")
+        data = data.assign(_freq=tp_parsed.map(lambda x: x.period_indicator, na_action="ignore"))
 
-    @classmethod
-    def period_filler(cls, data: pd.DataFrame, single: bool = False) -> pd.DataFrame:
-        filled_data = []
-        MAX_MIN = cls.max_min_from_period(data, mode="single" if single else "all")
-        cls.periods = (
-            list(MAX_MIN[list(MAX_MIN.keys())[0]]["min"].keys())
-            if single
-            else list(MAX_MIN["min"].keys())
-        )
-        groups = data.groupby(cls.other_ids)
+        # Determine global year range (for "all" mode)
+        if fill_type == "all":
+            global_min_year: int = tp_parsed.map(lambda x: x.year).min()
+            global_max_year: int = tp_parsed.map(lambda x: x.year).max()
 
-        for group, group_df in groups:
-            period_limits = (
-                MAX_MIN if not single else MAX_MIN[group if len(group) > 1 else group[0]]
-            )
-            years = list(range(period_limits["min"]["A"], period_limits["max"]["A"] + 1))
-            for period in cls.periods:
-                if period == "A":
-                    filled_data.extend(cls.fill_periods_rows(group_df, period, years))
+        # Group by other_ids + frequency and fill missing periods
+        filled_rows: List[Dict[str, Any]] = []
+        non_id_cols = [
+            c for c in data.columns if c not in cls.other_ids and c != cls.time_id and c != "_freq"
+        ]
+
+        for group_key, group_df in data.groupby(cls.other_ids + ["_freq"]):
+            if isinstance(group_key, tuple):
+                freq = group_key[-1]
+                other_id_values = group_key[:-1]
+            else:
+                freq = group_key
+                other_id_values = ()
+
+            group_tp = tp_parsed.loc[group_df.index]
+
+            # Determine range start/end
+            if fill_type == "all":
+                if freq == "A":
+                    start = TimePeriodHandler(f"{global_min_year}A")
+                    end = TimePeriodHandler(f"{global_max_year}A")
                 else:
-                    if period in period_limits["min"] and period in period_limits["max"]:
-                        vals = list(
-                            range(
-                                period_limits["min"][period],
-                                period_limits["max"][period] + 1,
-                            )
-                        )
-                        filled_data.extend(
-                            cls.fill_periods_rows(group_df, period, years, vals=vals)
-                        )
+                    max_p = max_periods_in_year(freq, global_max_year)
+                    start = TimePeriodHandler(f"{global_min_year}-{freq}1")
+                    end = TimePeriodHandler(f"{global_max_year}-{freq}{max_p}")
+            else:  # single
+                sorted_tp = sorted(group_tp.tolist(), key=lambda x: (x.year, x.period_number))
+                start, end = sorted_tp[0], sorted_tp[-1]
 
-        filled_data = pd.concat(filled_data, ignore_index=True)
-        combined_data = pd.concat([filled_data, data], ignore_index=True)
-        combined_data[cls.time_id] = combined_data[cls.time_id].astype(str)
-        return combined_data.sort_values(by=cls.other_ids + [cls.time_id])
+            # Generate all expected periods and find missing ones
+            expected = generate_period_range(start, end)
+            existing = set(group_df[cls.time_id].tolist())
 
-    @classmethod
-    def fill_periods_rows(
-        cls,
-        group_df: Any,
-        period: str,
-        years: List[int],
-        vals: Optional[List[int]] = None,
-    ) -> List[Any]:
-        rows = []
-        for year in years:
-            if period == "A":
-                rows.append(cls.create_period_row(group_df, period, year))
-            elif vals is not None:
-                for val in vals:
-                    rows.append(cls.create_period_row(group_df, period, year, val=val))
-        return rows
+            # Build other_ids dict for fill rows
+            other_vals: Dict[str, Any] = {}
+            if cls.other_ids:
+                for i, col in enumerate(cls.other_ids):
+                    other_vals[col] = other_id_values[i]
 
-    @classmethod
-    def create_period_row(
-        cls, group_df: Any, period: str, year: int, val: Optional[int] = None
-    ) -> Any:
-        row = group_df.iloc[0].copy()
-        row[cls.time_id] = f"{year}A" if period == "A" else f"{year}-{period}{val:d}"
-        row[cls.measures] = None
-        return row.to_frame().T
+            for tp in expected:
+                tp_str = str(tp)
+                if tp_str not in existing:
+                    row: Dict[str, Any] = {**other_vals, cls.time_id: tp_str}
+                    for col in non_id_cols:
+                        row[col] = None
+                    filled_rows.append(row)
+
+        # Combine and return
+        data = data.drop(columns=["_freq"])
+        if filled_rows:
+            fill_df = pd.DataFrame(filled_rows)
+            result = pd.concat([data, fill_df], ignore_index=True)
+        else:
+            result = data
+        result[cls.time_id] = result[cls.time_id].astype("string[pyarrow]")
+        return result.sort_values(by=cls.other_ids + [cls.time_id]).reset_index(drop=True)
 
     @classmethod
     def max_min_from_date(cls, data: pd.DataFrame, fill_type: str = "all") -> Dict[str, Any]:
@@ -465,7 +447,7 @@ class Fill_time_series(Binary):
         filled_data = pd.concat(filled_data, ignore_index=True)
         filled_data[cls.time_id] = filled_data[cls.time_id].dt.strftime(date_format)
         combined_data = pd.concat([filled_data, data], ignore_index=True)
-        combined_data[cls.time_id] = combined_data[cls.time_id].astype(str)
+        combined_data[cls.time_id] = combined_data[cls.time_id].astype("string[pyarrow]")
         return combined_data.sort_values(by=cls.other_ids + [cls.time_id])
 
     @classmethod
@@ -475,8 +457,8 @@ class Fill_time_series(Binary):
         )
 
         def extract_max_min(group: Any) -> Dict[str, Any]:
-            start_dates = group.apply(lambda x: x.split("/")[0])
-            end_dates = group.apply(lambda x: x.split("/")[1])
+            start_dates = group.str.split("/").str[0]
+            end_dates = group.str.split("/").str[1]
             return {
                 "start": {"min": start_dates.min(), "max": start_dates.max()},
                 "end": {"min": end_dates.min(), "max": end_dates.max()},
@@ -522,11 +504,9 @@ class Fill_time_series(Binary):
                         empty_row, ignore_index=True
                     )
             start_group_df = group_df.copy()
-            start_group_df[cls.time_id] = start_group_df[cls.time_id].apply(
-                lambda x: x.split("/")[0]
-            )
+            start_group_df[cls.time_id] = start_group_df[cls.time_id].str.split("/").str[0]
             end_group_df = group_df.copy()
-            end_group_df[cls.time_id] = end_group_df[cls.time_id].apply(lambda x: x.split("/")[1])
+            end_group_df[cls.time_id] = end_group_df[cls.time_id].str.split("/").str[1]
             start_filled = cls.date_filler(start_group_df, fill_type, frequency)
             end_filled = cls.date_filler(end_group_df, fill_type, frequency)
             start_filled[cls.time_id] = start_filled[cls.time_id].str.cat(
@@ -861,7 +841,7 @@ def _time_period_access(v: Any, to_param: str) -> Any:
 
 
 def _date_access(v: str, to_param: str, start: bool) -> Any:
-    period_value = date_to_period(date.fromisoformat(v), to_param)
+    period_value = date_to_period(parse_date_value(v), to_param)
     if start:
         return period_value.start_date()
     return period_value.end_date()
@@ -931,16 +911,16 @@ class Date_Diff(SimpleBinaryTime):
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
 
         if x.count("-") == 2:
-            fecha1 = datetime.strptime(x, "%Y-%m-%d").date()
+            date_1 = parse_date_value(x)
         else:
-            fecha1 = TimePeriodHandler(x).end_date(as_date=True)  # type: ignore[assignment]
+            date_1 = TimePeriodHandler(x).end_date(as_date=True)  # type: ignore[assignment]
 
         if y.count("-") == 2:
-            fecha2 = datetime.strptime(y, "%Y-%m-%d").date()
+            date_2 = parse_date_value(y)
         else:
-            fecha2 = TimePeriodHandler(y).end_date(as_date=True)  # type: ignore[assignment]
+            date_2 = TimePeriodHandler(y).end_date(as_date=True)  # type: ignore[assignment]
 
-        return abs((fecha2 - fecha1).days)
+        return abs((date_2 - date_1).days)
 
 
 class Date_Add(Parametrized):
@@ -1024,23 +1004,28 @@ class Date_Add(Parametrized):
 
     @classmethod
     def py_op(cls, date_str: str, shift: int, period: str, is_tp: bool = False) -> str:
+        has_time = _has_time_component(date_str)
         if is_tp:
             tp_value = TimePeriodHandler(date_str)
-            date = period_to_date(tp_value.year, tp_value.period_indicator, tp_value.period_number)
+            dt_val = period_to_date(
+                tp_value.year, tp_value.period_indicator, tp_value.period_number
+            )
         else:
-            date = datetime.strptime(date_str, "%Y-%m-%d")
+            dt_val = datetime.fromisoformat(date_str)
 
         if period in ["D", "W"]:
             days_shift = shift * (7 if period == "W" else 1)
-            return (date + timedelta(days=days_shift)).strftime("%Y-%m-%d")
+            result = dt_val + timedelta(days=days_shift)
+        else:
+            month_shift = {"M": 1, "Q": 3, "S": 6, "A": 12}[period] * shift
+            new_year = dt_val.year + (dt_val.month - 1 + month_shift) // 12
+            new_month = (dt_val.month - 1 + month_shift) % 12 + 1
+            last_day = (datetime(new_year, new_month % 12 + 1, 1) - timedelta(days=1)).day
+            result = dt_val.replace(year=new_year, month=new_month, day=min(dt_val.day, last_day))
 
-        month_shift = {"M": 1, "Q": 3, "S": 6, "A": 12}[period] * shift
-        new_year = date.year + (date.month - 1 + month_shift) // 12
-        new_month = (date.month - 1 + month_shift) % 12 + 1
-        last_day = (datetime(new_year, new_month % 12 + 1, 1) - timedelta(days=1)).day
-        return date.replace(year=new_year, month=new_month, day=min(date.day, last_day)).strftime(
-            "%Y-%m-%d"
-        )
+        if has_time and isinstance(result, datetime):
+            return result.isoformat(sep=" ")
+        return result.strftime("%Y-%m-%d")
 
 
 class SimpleUnaryTime(Operators.Unary):
@@ -1086,7 +1071,7 @@ class Month(SimpleUnaryTime):
     @classmethod
     def py_op(cls, value: str) -> int:
         if value.count("-") == 2:
-            return date.fromisoformat(value).month
+            return parse_date_value(value).month
 
         result = TimePeriodHandler(value).start_date(as_date=True)
         return result.month  # type: ignore[union-attr]
@@ -1099,7 +1084,7 @@ class Day_of_Month(SimpleUnaryTime):
     @classmethod
     def py_op(cls, value: str) -> int:
         if value.count("-") == 2:
-            return date.fromisoformat(value).day
+            return parse_date_value(value).day
 
         result = TimePeriodHandler(value).end_date(as_date=True)
         return result.day  # type: ignore[union-attr]
@@ -1112,8 +1097,8 @@ class Day_of_Year(SimpleUnaryTime):
     @classmethod
     def py_op(cls, value: str) -> int:
         if value.count("-") == 2:
-            day_y = datetime.strptime(value, "%Y-%m-%d")
-            return day_y.timetuple().tm_yday
+            d = parse_date_value(value)
+            return d.timetuple().tm_yday
 
         result = TimePeriodHandler(value).end_date(as_date=True)
         datetime_value = datetime(

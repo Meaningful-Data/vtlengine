@@ -1,4 +1,0 @@
-Area_Operation,ASETTY,Asset_List,AUDST,BRNAME,COUNTRY,Currency,DEPENDENCY_TYPE,DMID,DSDID,FA_DET,Fixed_Assets,Measure_Type,OBS_VALUE,Other_Assets,TIME_PERIOD,TIME_SPAN,comp1,comp2,comp3,comp4
-Area_Operation,ASETTY,Asset_List,AUDST,BRNAME,COUNTRY,Currency,DEPENDENCY_TYPE,DMID,DSDID,FA_DET,Fixed_Assets,Measure_Type,1,Other_Assets,TIME_PERIOD,TIME_SPAN,True,True,False,1
-Area_Operation_2,ASETTY_2,Asset_List_2,AUDST_2,BRNAME_2,COUNTRY_2,Currency_2,DEPENDENCY_TYPE_2,DMID_2,DSDID_2,FA_DET_2,Fixed_Assets_2,Measure_Type_2,3,Other_Assets_2,TIME_PERIOD_2,TIME_SPAN_2,True,True,False,3
-Area_Operation_3,ASETTY_3,Asset_List_3,AUDST_3,BRNAME_3,COUNTRY_3,Currency_3,DEPENDENCY_TYPE_3,DMID_3,DSDID_3,FA_DET_3,Fixed_Assets_3,Measure_Type_3,4,Other_Assets_3,TIME_PERIOD_3,TIME_SPAN_3,False,False,True,4

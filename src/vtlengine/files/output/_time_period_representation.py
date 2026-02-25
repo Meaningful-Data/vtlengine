@@ -23,33 +23,48 @@ def _format_vtl_representation(value: str) -> str:
     return TimePeriodHandler(value).vtl_representation()
 
 
+def _format_sdmx_gregorian_representation(value: str) -> str:
+    return TimePeriodHandler(value).sdmx_gregorian_representation()
+
+
+def _format_sdmx_reporting_representation(value: str) -> str:
+    return TimePeriodHandler(value).sdmx_reporting_representation()
+
+
 def format_time_period_external_representation(
     dataset: Union[Dataset, Scalar], mode: TimePeriodRepresentation
 ) -> None:
     """
-    From SDMX time period representation to standard VTL representation (no hyphen).
-    'A': 'nothing to do',
-    'S': 'YYYY-Sx',
-    'Q': 'YYYY-Qx',
-    'M': 'YYYY-MM',
-    'W': 'YYYY-Wxx',
-    'D': 'YYYY-MM-DD'
+    Converts internal time period representation to the requested external format.
+
+    SDMX Reporting: YYYY-A1, YYYY-Ss, YYYY-Qq, YYYY-Mmm, YYYY-Www, YYYY-Dddd
+    SDMX Gregorian: YYYY, YYYY-MM, YYYY-MM-DD (only A, M, D supported)
+    VTL: YYYY, YYYYSn, YYYYQn, YYYYMm, YYYYWw, YYYYDd (no hyphens)
     """
-    if mode == TimePeriodRepresentation.SDMX_REPORTING:
-        return
-    elif mode == TimePeriodRepresentation.SDMX_GREGORIAN:
-        raise NotImplementedError
-
     if isinstance(dataset, Scalar):
+        if dataset.data_type != TimePeriod or dataset.value is None:
+            return
+
+        value = dataset.value
+        if mode == TimePeriodRepresentation.VTL:
+            dataset.value = _format_vtl_representation(value)
+        elif mode == TimePeriodRepresentation.SDMX_GREGORIAN:
+            dataset.value = _format_sdmx_gregorian_representation(value)
+        elif mode == TimePeriodRepresentation.SDMX_REPORTING:
+            dataset.value = _format_sdmx_reporting_representation(value)
         return
 
-    # VTL Representation
     if dataset.data is None or len(dataset.data) == 0:
         return
+    if mode == TimePeriodRepresentation.VTL:
+        formatter = _format_vtl_representation
+    elif mode == TimePeriodRepresentation.SDMX_GREGORIAN:
+        formatter = _format_sdmx_gregorian_representation
+    elif mode == TimePeriodRepresentation.SDMX_REPORTING:
+        formatter = _format_sdmx_reporting_representation
+
     for comp in dataset.components.values():
         if comp.data_type == TimePeriod:
-            dataset.data[comp.name] = dataset.data[comp.name].map(
-                _format_vtl_representation, na_action="ignore"
+            dataset.data[comp.name] = (
+                dataset.data[comp.name].map(formatter, na_action="ignore").astype("string[pyarrow]")
             )
-
-    return

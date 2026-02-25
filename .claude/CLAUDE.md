@@ -4,7 +4,8 @@
 
 VTL Engine is a Python library for validating, formatting, and executing VTL (Validation and Transformation Language) 2.1 scripts. It's built around ANTLR-generated parsers and uses Pandas DataFrames for data manipulation.
 
-**VTL 2.1 Reference Manual**: <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf>
+- **VTL 2.1 Reference Manual**: <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf>
+- **VTL 2.2 Documentation (preview)**: <https://sdmx-twg.github.io/vtl/2.2/>
 
 ## Core Architecture
 
@@ -42,6 +43,29 @@ All operators MUST validate types before execution.
 - `semantic_analysis()`: Validate script and infer output structures (no execution)
 - `prettify()`: Format VTL scripts
 
+## Documentation (`docs/`)
+
+Sphinx-based documentation published at <https://docs.vtlengine.meaningfuldata.eu>.
+
+- `docs/index.rst` — Main entry point and toctree
+- `docs/walkthrough.rst` — 10-minute quick start guide
+- `docs/api.rst` — API reference (autodoc)
+- `docs/data_types.rst` — Data types reference (input/output/internal, casting rules)
+- `docs/environment_variables.rst` — Configuration
+- `docs/error_messages.rst` — Auto-generated error codes
+- `docs/conf.py` — Sphinx config (theme: `sphinx_rtd_theme`, versioning: `sphinx-multiversion`)
+
+Build docs locally (all released versions + current branch):
+
+```bash
+rm -rf _site
+poetry run python docs/scripts/configure_doc_versions.py --include-current-branch
+poetry run sphinx-multiversion docs _site
+poetry run python docs/scripts/generate_latest_alias.py _site
+poetry run python docs/scripts/generate_redirect.py _site
+poetry run sphinx-build docs _site/$(git branch --show-current)
+```
+
 ## Testing
 
 ### Organization
@@ -72,6 +96,8 @@ poetry run ruff format
 poetry run ruff check --fix --unsafe-fixes
 poetry run mypy
 ```
+
+All errors from `ruff format` and `ruff check` MUST be fixed before committing. Do not leave any warnings or errors unresolved.
 
 ### Ruff Rules
 
@@ -151,6 +177,21 @@ gh api graphql -f query='
 }'
 ```
 
+### Labels
+
+Labels indicate cross-cutting concerns, NOT issue type. The issue type (Bug, Feature, Task) is set via GitHub's issue type field.
+
+Only use the following labels — **never create new labels**:
+
+| Label | Purpose |
+| ----- | ------- |
+| `documentation` | Documentation changes (triggers docs workflow on PR merge) |
+| `workflows` | CI/CD and GitHub Actions issues |
+| `dependencies` | Dependency management and updates |
+| `optimization` | Performance improvements and code complexity reduction |
+| `question` | Questions needing further information |
+| `help wanted` | Issues where community contributions are welcome |
+
 ## Git Workflow
 
 ### Branch Naming
@@ -167,17 +208,28 @@ Pattern: `cr-{issue_number}` (e.g., `cr-457` for issue #457)
 
 ### Issue Conventions
 
+- Always follow the issue templates in `.github/ISSUE_TEMPLATE/` — do not create issues with free-form bodies
 - Never include links to gitlab in issue descriptions
-- Use issue types instead of labels: `Bug`, `Feature`, or `Task`
+- Always set the issue type: `Bug`, `Feature`, or `Task` — do not use labels for issue categorization
+- Only apply labels for cross-cutting concerns: `documentation`, `workflows`, `dependencies`, `optimization`, `question`, `help wanted`
+- Never create new labels — only use the existing set listed above
 - Use standard dataset/component naming: `DS_1`, `DS_2` for datasets; `Id_1`, `Id_2` for identifiers; `Me_1`, `Me_2` for measures; `At_1`, `At_2` for attributes
 - Always run the reproduction script to get the actual output — never guess or manually write it. If the output is data, format it as a markdown table for clarity
+- Use GitHub callout syntax for notes and warnings in issue descriptions:
+  - `> [!NOTE]` for informational notes
+  - `> [!IMPORTANT]` for critical information users must know
+  - `> [!WARNING]` for potential pitfalls or breaking changes
 - Include a self-contained Python reproduction script using `run()` instead of separate VTL/JSON/CSV files:
 
 ```python
 import pandas as pd
+
 from vtlengine import run
 
-script = """DS_r <- DS_1 * 10;"""
+
+script = """
+    DS_A <- DS_1 * 10;
+"""
 
 data_structures = {
     "datasets": [
@@ -192,15 +244,17 @@ data_structures = {
 }
 
 data_df = pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [10, 20, 30]})
+
 datapoints = {"DS_1": data_df}
 
-result = run(script=script, data_structures=data_structures, datapoints=datapoints)
-print(result)
+run_result = run(script=script, data_structures=data_structures, datapoints=datapoints)
+
+print(run_result)
 ```
 
 ### Pull Request Descriptions
 
-- Never include code quality check results (ruff, mypy, pytest) in PR descriptions
+- Always follow the pull request template in `.github/PULL_REQUEST_TEMPLATE.md`
 - Focus on what changed, why, impact/risk, and notes
 
 ## Common Pitfalls
@@ -219,3 +273,7 @@ print(result)
 - **pysdmx** (≥1.5.2): SDMX 3.0 data handling
 - **sqlglot** (22.x): SQL parsing for external routines
 - **antlr4-python3-runtime** (4.9.x): Parser runtime
+
+## File Sync Rules
+
+- `.github/copilot-instructions.md` must always have the same content as `.claude/CLAUDE.md`. When updating one, always update the other to match.

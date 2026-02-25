@@ -2,7 +2,14 @@ VTL Engine Documentation
 ########################
 
 The VTL Engine is a Python library that allows you to validate, format and run VTL scripts.
+
 It is a Python-based library around the `VTL Language 2.1 <https://sdmx-twg.github.io/vtl/2.1/html/index.html>`_
+
+.. note::
+
+    The data types and type casting is based on the
+    `VTL 2.2 specification <https://sdmx-twg.github.io/vtl/2.2/>`_
+    (preview).
 
 The vtlengine library provides full SDMX compatibility:
 
@@ -59,6 +66,7 @@ The S3 extra is based on the pandas[aws] extra, which requires to set up some en
 
     walkthrough
     api
+    data_types
     environment_variables
     error_messages
 

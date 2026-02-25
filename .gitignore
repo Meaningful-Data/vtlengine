@@ -172,6 +172,7 @@ development/
 _build/
 _site/
 docs/error_messages.rst
+docs/_smv_whitelist.json
 docs/plans/
 
 # Root level temp files

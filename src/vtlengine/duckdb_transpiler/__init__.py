@@ -40,7 +40,7 @@ def transpile(
 
     # Parse VTL to AST
     ast = create_ast(vtl_script)
-    dag = DAGAnalyzer.createDAG(ast)
+    dag = DAGAnalyzer.create_dag(ast)
 
     # Load datasets structure (without data) from raw dict format
     input_datasets, input_scalars = load_datasets(data_structures)

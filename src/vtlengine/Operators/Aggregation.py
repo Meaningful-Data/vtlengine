@@ -19,11 +19,9 @@ from vtlengine.AST.Grammar.tokens import (
 )
 from vtlengine.DataTypes import (
     Boolean,
-    Date,
     Duration,
     Integer,
     Number,
-    String,
     TimeInterval,
     TimePeriod,
     unary_implicit_promotion,
@@ -53,32 +51,14 @@ def extract_grouping_identifiers(
 class Aggregation(Operator.Unary):
     @classmethod
     def _handle_data_types(cls, data: pd.DataFrame, measures: List[Component], mode: str) -> None:
-        to_replace: List[Optional[str]]
-        new_value: List[Optional[str]]
         if cls.op == COUNT:
             return
-        if mode == "input":
-            to_replace = [None]
-            new_value = [""]
-        else:
-            to_replace = [""]
-            new_value = [None]
 
         for measure in measures:
-            if measure.data_type == Date:
-                if cls.op == MIN:
-                    if mode == "input":
-                        # Invalid date only for null values
-                        new_value = ["9999-99-99"]
-                    else:
-                        to_replace = ["9999-99-99"]
-                data[measure.name] = data[measure.name].replace(to_replace, new_value)  # type: ignore[arg-type, unused-ignore]
-            elif measure.data_type == TimePeriod:
+            if measure.data_type == TimePeriod:
                 if mode == "input":
-                    data[measure.name] = (
-                        data[measure.name]
-                        .astype(object)
-                        .map(lambda x: TimePeriodHandler(str(x)), na_action="ignore")
+                    data[measure.name] = data[measure.name].map(
+                        lambda x: TimePeriodHandler(str(x)), na_action="ignore"
                     )
                     if cls.op in [MAX, MIN]:
                         indicators = {v.period_indicator for v in data[measure.name].dropna()}
@@ -90,37 +70,25 @@ class Aggregation(Operator.Unary):
                     )
             elif measure.data_type == TimeInterval:
                 if mode == "input":
-                    data[measure.name] = (
-                        data[measure.name]
-                        .astype(object)
-                        .map(
-                            lambda x: TimeIntervalHandler.from_iso_format(str(x)),
-                            na_action="ignore",
-                        )
+                    data[measure.name] = data[measure.name].map(
+                        lambda x: TimeIntervalHandler.from_iso_format(str(x)),
+                        na_action="ignore",
                     )
                 else:
                     data[measure.name] = data[measure.name].map(
                         lambda x: str(x), na_action="ignore"
                     )
-            elif measure.data_type == String:
-                data[measure.name] = data[measure.name].replace(to_replace, new_value)  # type: ignore[arg-type, unused-ignore]
             elif measure.data_type == Duration:
                 if mode == "input":
-                    data[measure.name] = data[measure.name].map(
-                        lambda x: PERIOD_IND_MAPPING[x],
-                        na_action="ignore",
-                    )
+                    data[measure.name] = data[measure.name].map(PERIOD_IND_MAPPING)
                 else:
-                    data[measure.name] = data[measure.name].map(
-                        lambda x: PERIOD_IND_MAPPING_REVERSE[x],
-                        na_action="ignore",
-                    )
-            elif measure.data_type == Boolean:
-                if mode == "result":
-                    data[measure.name] = data[measure.name].map(
-                        lambda x: Boolean().cast(x), na_action="ignore"
-                    )
-                    data[measure.name] = data[measure.name].astype(object)
+                    data[measure.name] = data[measure.name].map(PERIOD_IND_MAPPING_REVERSE)
+            elif measure.data_type == Boolean and mode == "result":
+                data[measure.name] = (
+                    data[measure.name]  # type: ignore[call-overload, unused-ignore]
+                    .map(lambda x: Boolean().cast(x), na_action="ignore")
+                    .astype("bool[pyarrow]")
+                )
 
     @classmethod
     def validate(  # type: ignore[override]
@@ -240,7 +208,7 @@ class Aggregation(Operator.Unary):
             )
 
         try:
-            return duckdb.query(query).to_df().astype(object)
+            return duckdb.query(query).to_df()
         except RuntimeError as e:
             if "Conversion" in e.args[0]:
                 raise RunTimeError("2-3-8", op=cls.op, msg=e.args[0].split(":")[-1])
@@ -288,6 +256,9 @@ class Aggregation(Operator.Unary):
             aux_df = pd.merge(aux_df, result_df, how="left", on=grouping_keys)
         if having_expr is not None:
             aux_df.dropna(subset=result.get_measures_names(), how="any", inplace=True)
+        for comp_name, comp in result.components.items():
+            if comp_name in aux_df.columns:
+                aux_df[comp_name] = aux_df[comp_name].astype(comp.data_type.dtype())  # type: ignore[call-overload]
         result.data = aux_df
         return result
 

@@ -115,8 +115,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return []
         if hasattr(self.dag, "dependencies"):
             for deps in self.dag.dependencies.values():
-                if name in deps.get("outputs", []) or name in deps.get("persistent", []):
-                    return deps.get("inputs", [])
+                if name in deps.outputs or name in deps.persistent:
+                    return deps.inputs
         return []
 
     # =========================================================================
