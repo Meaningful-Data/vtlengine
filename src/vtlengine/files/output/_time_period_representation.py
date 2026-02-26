@@ -11,6 +11,7 @@ class TimePeriodRepresentation(Enum):
     SDMX_GREGORIAN = "sdmx_gregorian"
     SDMX_REPORTING = "sdmx_reporting"
     VTL = "vtl"
+    LEGACY = "legacy"
 
     @classmethod
     def check_value(cls, value: str) -> "TimePeriodRepresentation":
@@ -31,6 +32,10 @@ def _format_sdmx_reporting_representation(value: str) -> str:
     return TimePeriodHandler(value).sdmx_reporting_representation()
 
 
+def _format_legacy_representation(value: str) -> str:
+    return TimePeriodHandler(value).legacy_representation()
+
+
 def format_time_period_external_representation(
     dataset: Union[Dataset, Scalar], mode: TimePeriodRepresentation
 ) -> None:
@@ -40,6 +45,7 @@ def format_time_period_external_representation(
     SDMX Reporting: YYYY-A1, YYYY-Ss, YYYY-Qq, YYYY-Mmm, YYYY-Www, YYYY-Dddd
     SDMX Gregorian: YYYY, YYYY-MM, YYYY-MM-DD (only A, M, D supported)
     VTL: YYYY, YYYYSn, YYYYQn, YYYYMm, YYYYWw, YYYYDd (no hyphens)
+    Legacy: YYYY, YYYY-Sx, YYYY-Qx, YYYY-Mxx, YYYY-Wxx, YYYY-MM-DD
     """
     if isinstance(dataset, Scalar):
         if dataset.data_type != TimePeriod or dataset.value is None:
@@ -52,6 +58,8 @@ def format_time_period_external_representation(
             dataset.value = _format_sdmx_gregorian_representation(value)
         elif mode == TimePeriodRepresentation.SDMX_REPORTING:
             dataset.value = _format_sdmx_reporting_representation(value)
+        elif mode == TimePeriodRepresentation.LEGACY:
+            dataset.value = _format_legacy_representation(value)
         return
 
     if dataset.data is None or len(dataset.data) == 0:
@@ -62,6 +70,8 @@ def format_time_period_external_representation(
         formatter = _format_sdmx_gregorian_representation
     elif mode == TimePeriodRepresentation.SDMX_REPORTING:
         formatter = _format_sdmx_reporting_representation
+    elif mode == TimePeriodRepresentation.LEGACY:
+        formatter = _format_legacy_representation
 
     for comp in dataset.components.values():
         if comp.data_type == TimePeriod:

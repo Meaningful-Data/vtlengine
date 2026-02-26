@@ -381,7 +381,7 @@ def run(
         :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
 
         time_period_output_format: String with the possible values \
-        ("sdmx_gregorian", "sdmx_reporting", "vtl") for the representation of the \
+        ("sdmx_gregorian", "sdmx_reporting", "vtl", "legacy") for the representation of the \
         Time Period components.
 
         return_only_persistent: If True, run function will only return the results of \
@@ -523,7 +523,7 @@ def run_sdmx(
         :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
 
         time_period_output_format: String with the possible values \
-        ("sdmx_gregorian", "sdmx_reporting", "vtl") for the representation of the \
+        ("sdmx_gregorian", "sdmx_reporting", "vtl", "legacy") for the representation of the \
         Time Period components.
 
         return_only_persistent: If True, run function will only return the results of \
