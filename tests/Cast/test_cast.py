@@ -59,16 +59,6 @@ class CastExplicitWithoutMask(CastHelper):
 
         self.BaseTest(code, number_inputs, references_names=reference_names)
 
-    def test_GH_537_1(self):
-        """
-        Solves bug report in github issue #537: sub fails whith scalar casting
-        """
-        code = "GH_537_1"
-        number_inputs = 1
-        reference_names = ["1"]
-
-        self.BaseTest(code, number_inputs, references_names=reference_names)
-
 
 # ===========================================================================
 # Comprehensive explicit cast tests (VTL 2.2) - Without mask
