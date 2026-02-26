@@ -372,6 +372,19 @@ class TimePeriodHandler:
             period_number_str = str(self.period_number)
         return f"{self.year}-{self.period_indicator}{period_number_str}"
 
+    def legacy_representation(self) -> str:
+        """Legacy representation: YYYY, YYYY-Sx, YYYY-Qx, YYYY-Mxx, YYYY-Wxx, YYYY-MM-DD."""
+        if self.period_indicator == "A":
+            return f"{self.year}"
+        if self.period_indicator == "D":
+            d = period_to_date(self.year, "D", self.period_number)
+            return d.isoformat()
+        if self.period_indicator in ("M", "W"):
+            period_number_str = f"{self.period_number:02}"
+        else:
+            period_number_str = str(self.period_number)
+        return f"{self.year}-{self.period_indicator}{period_number_str}"
+
 
 class TimeIntervalHandler:
     _date1: str = "0"
