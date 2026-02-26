@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 
 from tests.Helper import TestHelper
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Operators.General import Eval
 
 
@@ -125,28 +125,28 @@ def test_execute_query_empty_row():
 def test_execute_query_forbid_install():
     query = "INSTALL some_extension;"
     datasets = {"DS_1": pd.DataFrame([{"A": 1}])}
-    with pytest.raises(Exception, match="Query contains forbidden command: INSTALL"):
+    with pytest.raises(SemanticError, match="forbidden command: INSTALL"):
         Eval._execute_query(query, ["DS_1"], datasets)
 
 
 def test_execute_query_forbid_load():
     query = "LOAD 'some_file';"
     datasets = {"DS_1": pd.DataFrame([{"A": 1}])}
-    with pytest.raises(Exception, match="Query contains forbidden command: LOAD"):
+    with pytest.raises(SemanticError, match="forbidden command: LOAD"):
         Eval._execute_query(query, ["DS_1"], datasets)
 
 
 def test_execute_query_forbid_url_in_from():
     query = "SELECT column_a FROM 'https://domain.tld/file.parquet';"
     datasets = {"DS_1": pd.DataFrame([{"column_a": 1}])}
-    with pytest.raises(Exception, match="Query contains forbidden URL in FROM clause"):
+    with pytest.raises(SemanticError, match="forbidden URL in FROM clause"):
         Eval._execute_query(query, ["DS_1"], datasets)
 
 
 def test_execute_query_sql_error():
     query = "SELECT NONEXISTENT_FUNC(A) FROM DS_1;"
     datasets = {"DS_1": pd.DataFrame([{"A": 1}])}
-    with pytest.raises(Exception, match="Error executing SQL query:"):
+    with pytest.raises(RunTimeError, match="DuckDB runtime error"):
         Eval._execute_query(query, ["DS_1"], datasets)
 
 
@@ -165,5 +165,5 @@ def test_execute_query_empty_row_with_function_error():
     FROM MSMTCH_BL_DS;
     """
     datasets = {"MSMTCH_BL_DS": pd.DataFrame([{"DT_LGL_FNL_MTRTY": None, "DT_MTRTY_PRTCTN": None}])}
-    with pytest.raises(Exception, match="Error executing SQL query:"):
+    with pytest.raises(RunTimeError, match="DuckDB runtime error"):
         Eval._execute_query(query, ["MSMTCH_BL_DS"], datasets)
