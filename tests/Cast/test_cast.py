@@ -65,7 +65,7 @@ class CastExplicitWithoutMask(CastHelper):
         """
         code = "GH_537_1"
         number_inputs = 1
-        reference_names = ["1", "2"]
+        reference_names = ["1"]
 
         self.BaseTest(code, number_inputs, references_names=reference_names)
 

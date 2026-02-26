@@ -4,10 +4,11 @@ from antlr4 import *
 from antlr4 import Parser as ANTLRParser
 from io import StringIO
 import sys
+
 if sys.version_info[1] > 5:
-	from typing import TextIO
+    from typing import TextIO
 else:
-	from typing.io import TextIO
+    from typing.io import TextIO
 
 
 def serializedATN():
@@ -18,8 +19,8 @@ def serializedATN():
         buf.write("\t\16\4\17\t\17\4\20\t\20\4\21\t\21\4\22\t\22\4\23\t\23")
         buf.write("\4\24\t\24\4\25\t\25\4\26\t\26\4\27\t\27\4\30\t\30\4\31")
         buf.write("\t\31\4\32\t\32\4\33\t\33\4\34\t\34\4\35\t\35\4\36\t\36")
-        buf.write("\4\37\t\37\4 \t \4!\t!\4\"\t\"\4#\t#\4$\t$\4%\t%\4&\t")
-        buf.write("&\4\'\t\'\4(\t(\4)\t)\4*\t*\4+\t+\4,\t,\4-\t-\4.\t.\4")
+        buf.write('\4\37\t\37\4 \t \4!\t!\4"\t"\4#\t#\4$\t$\4%\t%\4&\t')
+        buf.write("&\4'\t'\4(\t(\4)\t)\4*\t*\4+\t+\4,\t,\4-\t-\4.\t.\4")
         buf.write("/\t/\4\60\t\60\4\61\t\61\4\62\t\62\4\63\t\63\4\64\t\64")
         buf.write("\4\65\t\65\4\66\t\66\4\67\t\67\48\t8\49\t9\4:\t:\4;\t")
         buf.write(";\4<\t<\4=\t=\4>\t>\4?\t?\4@\t@\4A\tA\4B\tB\4C\tC\4D\t")
@@ -123,18 +124,18 @@ def serializedATN():
         buf.write("\3!\3!\3!\3!\3!\3!\5!\u0480\n!\3!\3!\5!\u0484\n!\3!\5")
         buf.write("!\u0487\n!\3!\5!\u048a\n!\3!\5!\u048d\n!\3!\3!\3!\3!\3")
         buf.write("!\3!\5!\u0495\n!\3!\5!\u0498\n!\3!\5!\u049b\n!\3!\5!\u049e")
-        buf.write("\n!\3!\3!\5!\u04a2\n!\3\"\3\"\3\"\3\"\3\"\3\"\3\"\3#\3")
+        buf.write('\n!\3!\3!\5!\u04a2\n!\3"\3"\3"\3"\3"\3"\3"\3#\3')
         buf.write("#\3#\3#\3#\3#\3#\3$\3$\3$\3$\3$\3$\3$\3$\5$\u04ba\n$\3")
         buf.write("%\3%\3%\3%\3%\5%\u04c1\n%\5%\u04c3\n%\3%\3%\3&\3&\3&\3")
         buf.write("&\3&\3&\5&\u04cd\n&\3&\5&\u04d0\n&\3&\5&\u04d3\n&\3&\3")
         buf.write("&\3&\3&\3&\3&\3&\3&\3&\3&\5&\u04df\n&\5&\u04e1\n&\3&\3")
         buf.write("&\3&\5&\u04e6\n&\3&\3&\3&\3&\3&\3&\3&\3&\3&\3&\3&\3&\3")
-        buf.write("&\3&\5&\u04f6\n&\3\'\3\'\3\'\3\'\3\'\3\'\5\'\u04fe\n\'")
-        buf.write("\3\'\5\'\u0501\n\'\3\'\5\'\u0504\n\'\3\'\3\'\3\'\3\'\3")
-        buf.write("\'\3\'\3\'\3\'\3\'\5\'\u050f\n\'\5\'\u0511\n\'\3\'\3\'")
-        buf.write("\3\'\5\'\u0516\n\'\3\'\3\'\3\'\3\'\3\'\3\'\3\'\3\'\3\'")
-        buf.write("\3\'\5\'\u0522\n\'\3\'\3\'\3\'\3\'\3\'\3\'\3\'\3\'\3\'")
-        buf.write("\3\'\3\'\3\'\3\'\3\'\5\'\u0532\n\'\3(\3(\3(\3(\3)\3)\3")
+        buf.write("&\3&\5&\u04f6\n&\3'\3'\3'\3'\3'\3'\5'\u04fe\n'")
+        buf.write("\3'\5'\u0501\n'\3'\5'\u0504\n'\3'\3'\3'\3'\3")
+        buf.write("'\3'\3'\3'\3'\5'\u050f\n'\5'\u0511\n'\3'\3'")
+        buf.write("\3'\5'\u0516\n'\3'\3'\3'\3'\3'\3'\3'\3'\3'")
+        buf.write("\3'\5'\u0522\n'\3'\3'\3'\3'\3'\3'\3'\3'\3'")
+        buf.write("\3'\3'\3'\3'\3'\5'\u0532\n'\3(\3(\3(\3(\3)\3)\3")
         buf.write(")\7)\u053b\n)\f)\16)\u053e\13)\3*\5*\u0541\n*\3*\3*\3")
         buf.write("*\3*\3+\5+\u0548\n+\3+\3+\3+\3+\3,\3,\3,\3,\5,\u0552\n")
         buf.write(",\3-\3-\3-\3-\3-\3-\3-\3-\5-\u055c\n-\3-\3-\3-\3-\3-\3")
@@ -178,13 +179,13 @@ def serializedATN():
         buf.write("\13b\3b\3b\3c\3c\3c\3d\3d\3d\3e\3e\3f\3f\5f\u072d\nf\3")
         buf.write("g\3g\5g\u0731\ng\3h\3h\3h\3h\3h\5h\u0738\nh\3i\3i\3i\3")
         buf.write("j\3j\3k\3k\3l\3l\3m\3m\3n\3n\3o\3o\3o\2\4\6\bp\2\4\6\b")
-        buf.write("\n\f\16\20\22\24\26\30\32\34\36 \"$&(*,.\60\62\64\668")
+        buf.write('\n\f\16\20\22\24\26\30\32\34\36 "$&(*,.\60\62\64\668')
         buf.write(":<>@BDFHJLNPRTVXZ\\^`bdfhjlnprtvxz|~\u0080\u0082\u0084")
         buf.write("\u0086\u0088\u008a\u008c\u008e\u0090\u0092\u0094\u0096")
         buf.write("\u0098\u009a\u009c\u009e\u00a0\u00a2\u00a4\u00a6\u00a8")
         buf.write("\u00aa\u00ac\u00ae\u00b0\u00b2\u00b4\u00b6\u00b8\u00ba")
         buf.write("\u00bc\u00be\u00c0\u00c2\u00c4\u00c6\u00c8\u00ca\u00cc")
-        buf.write("\u00ce\u00d0\u00d2\u00d4\u00d6\u00d8\u00da\u00dc\2\'\4")
+        buf.write("\u00ce\u00d0\u00d2\u00d4\u00d6\u00d8\u00da\u00dc\2'\4")
         buf.write("\2\17\20\64\64\3\2\21\22\4\2\17\20``\3\2\62\63\3\2\66")
         buf.write("\67\3\2+,\4\2\u00cc\u00cc\u00ce\u00ce\3\2\u00c3\u00c4")
         buf.write("\3\2\u00c5\u00c6\5\2__ac\u0085\u0086\6\2WWYYnn\u0089\u008b")
@@ -201,7 +202,7 @@ def serializedATN():
         buf.write("\u0190\3\2\2\2\20\u0192\3\2\2\2\22\u019b\3\2\2\2\24\u01a3")
         buf.write("\3\2\2\2\26\u01a6\3\2\2\2\30\u01af\3\2\2\2\32\u01b8\3")
         buf.write("\2\2\2\34\u01bd\3\2\2\2\36\u01ca\3\2\2\2 \u01df\3\2\2")
-        buf.write("\2\"\u0213\3\2\2\2$\u024e\3\2\2\2&\u0289\3\2\2\2(\u028d")
+        buf.write('\2"\u0213\3\2\2\2$\u024e\3\2\2\2&\u0289\3\2\2\2(\u028d')
         buf.write("\3\2\2\2*\u0291\3\2\2\2,\u02c3\3\2\2\2.\u02f5\3\2\2\2")
         buf.write("\60\u030c\3\2\2\2\62\u0323\3\2\2\2\64\u0345\3\2\2\2\66")
         buf.write("\u035c\3\2\2\28\u03c4\3\2\2\2:\u042c\3\2\2\2<\u044b\3")
@@ -238,7 +239,7 @@ def serializedATN():
         buf.write("\3\2\2\2\u00e8\u00e9\5\u00bc_\2\u00e9\u00ea\7\26\2\2\u00ea")
         buf.write("\u00eb\5\6\4\2\u00eb\u00f2\3\2\2\2\u00ec\u00ed\5\u00bc")
         buf.write("_\2\u00ed\u00ee\7~\2\2\u00ee\u00ef\5\6\4\2\u00ef\u00f2")
-        buf.write("\3\2\2\2\u00f0\u00f2\5\"\22\2\u00f1\u00e8\3\2\2\2\u00f1")
+        buf.write('\3\2\2\2\u00f0\u00f2\5"\22\2\u00f1\u00e8\3\2\2\2\u00f1')
         buf.write("\u00ec\3\2\2\2\u00f1\u00f0\3\2\2\2\u00f2\5\3\2\2\2\u00f3")
         buf.write("\u00f4\b\4\1\2\u00f4\u00f5\7\3\2\2\u00f5\u00f6\5\6\4\2")
         buf.write("\u00f6\u00f7\7\4\2\2\u00f7\u0112\3\2\2\2\u00f8\u0112\5")
@@ -300,14 +301,14 @@ def serializedATN():
         buf.write("\u016f\3\2\2\2\u016f\t\3\2\2\2\u0170\u016e\3\2\2\2\u0171")
         buf.write("\u017a\5&\24\2\u0172\u017a\5.\30\2\u0173\u017a\5\62\32")
         buf.write("\2\u0174\u017a\5\66\34\2\u0175\u017a\5:\36\2\u0176\u017a")
-        buf.write("\5D#\2\u0177\u017a\5F$\2\u0178\u017a\5L\'\2\u0179\u0171")
+        buf.write("\5D#\2\u0177\u017a\5F$\2\u0178\u017a\5L'\2\u0179\u0171")
         buf.write("\3\2\2\2\u0179\u0172\3\2\2\2\u0179\u0173\3\2\2\2\u0179")
         buf.write("\u0174\3\2\2\2\u0179\u0175\3\2\2\2\u0179\u0176\3\2\2\2")
         buf.write("\u0179\u0177\3\2\2\2\u0179\u0178\3\2\2\2\u017a\13\3\2")
         buf.write("\2\2\u017b\u0188\5 \21\2\u017c\u0188\5$\23\2\u017d\u0188")
         buf.write("\5,\27\2\u017e\u0188\5\60\31\2\u017f\u0188\5\64\33\2\u0180")
         buf.write("\u0188\58\35\2\u0181\u0188\5<\37\2\u0182\u0188\5> \2\u0183")
-        buf.write("\u0188\5@!\2\u0184\u0188\5B\"\2\u0185\u0188\5H%\2\u0186")
+        buf.write('\u0188\5@!\2\u0184\u0188\5B"\2\u0185\u0188\5H%\2\u0186')
         buf.write("\u0188\5J&\2\u0187\u017b\3\2\2\2\u0187\u017c\3\2\2\2\u0187")
         buf.write("\u017d\3\2\2\2\u0187\u017e\3\2\2\2\u0187\u017f\3\2\2\2")
         buf.write("\u0187\u0180\3\2\2\2\u0187\u0181\3\2\2\2\u0187\u0182\3")
@@ -424,7 +425,7 @@ def serializedATN():
         buf.write("\7\u00cb\2\2\u0284\u0286\5x=\2\u0285\u0283\3\2\2\2\u0285")
         buf.write("\u0286\3\2\2\2\u0286\u0287\3\2\2\2\u0287\u0288\7\4\2\2")
         buf.write("\u0288\u028a\3\2\2\2\u0289\u0250\3\2\2\2\u0289\u025e\3")
-        buf.write("\2\2\2\u0289\u026c\3\2\2\2\u028a\'\3\2\2\2\u028b\u028e")
+        buf.write("\2\2\2\u0289\u026c\3\2\2\2\u028a'\3\2\2\2\u028b\u028e")
         buf.write("\5\b\5\2\u028c\u028e\7u\2\2\u028d\u028b\3\2\2\2\u028d")
         buf.write("\u028c\3\2\2\2\u028e)\3\2\2\2\u028f\u0292\5\6\4\2\u0290")
         buf.write("\u0292\7u\2\2\u0291\u028f\3\2\2\2\u0291\u0290\3\2\2\2")
@@ -539,7 +540,7 @@ def serializedATN():
         buf.write("\u0393\u0394\7!\2\2\u0394\u0395\7\3\2\2\u0395\u0396\5")
         buf.write("\6\4\2\u0396\u0397\7\23\2\2\u0397\u0398\5\6\4\2\u0398")
         buf.write("\u0399\7\23\2\2\u0399\u039a\5\6\4\2\u039a\u039b\7\4\2")
-        buf.write("\2\u039b\u03c5\3\2\2\2\u039c\u039d\7\"\2\2\u039d\u039e")
+        buf.write('\2\u039b\u03c5\3\2\2\2\u039c\u039d\7"\2\2\u039d\u039e')
         buf.write("\7\3\2\2\u039e\u039f\5\6\4\2\u039f\u03a0\7\4\2\2\u03a0")
         buf.write("\u03c5\3\2\2\2\u03a1\u03a2\7#\2\2\u03a2\u03a3\7\3\2\2")
         buf.write("\u03a3\u03a4\5\6\4\2\u03a4\u03a5\7\4\2\2\u03a5\u03c5\3")
@@ -548,7 +549,7 @@ def serializedATN():
         buf.write("\u03ac\7%\2\2\u03ac\u03ad\7\3\2\2\u03ad\u03ae\5\6\4\2")
         buf.write("\u03ae\u03af\7\4\2\2\u03af\u03c5\3\2\2\2\u03b0\u03b1\7")
         buf.write("&\2\2\u03b1\u03b2\7\3\2\2\u03b2\u03b3\5\6\4\2\u03b3\u03b4")
-        buf.write("\7\4\2\2\u03b4\u03c5\3\2\2\2\u03b5\u03b6\7\'\2\2\u03b6")
+        buf.write("\7\4\2\2\u03b4\u03c5\3\2\2\2\u03b5\u03b6\7'\2\2\u03b6")
         buf.write("\u03b7\7\3\2\2\u03b7\u03b8\5\6\4\2\u03b8\u03b9\7\4\2\2")
         buf.write("\u03b9\u03c5\3\2\2\2\u03ba\u03bb\7(\2\2\u03bb\u03bc\7")
         buf.write("\3\2\2\u03bc\u03bd\5\6\4\2\u03bd\u03be\7\4\2\2\u03be\u03c5")
@@ -585,7 +586,7 @@ def serializedATN():
         buf.write("\u03fb\u03fc\7!\2\2\u03fc\u03fd\7\3\2\2\u03fd\u03fe\5")
         buf.write("\b\5\2\u03fe\u03ff\7\23\2\2\u03ff\u0400\5\b\5\2\u0400")
         buf.write("\u0401\7\23\2\2\u0401\u0402\5\b\5\2\u0402\u0403\7\4\2")
-        buf.write("\2\u0403\u042d\3\2\2\2\u0404\u0405\7\"\2\2\u0405\u0406")
+        buf.write('\2\u0403\u042d\3\2\2\2\u0404\u0405\7"\2\2\u0405\u0406')
         buf.write("\7\3\2\2\u0406\u0407\5\b\5\2\u0407\u0408\7\4\2\2\u0408")
         buf.write("\u042d\3\2\2\2\u0409\u040a\7#\2\2\u040a\u040b\7\3\2\2")
         buf.write("\u040b\u040c\5\b\5\2\u040c\u040d\7\4\2\2\u040d\u042d\3")
@@ -594,7 +595,7 @@ def serializedATN():
         buf.write("\u0414\7%\2\2\u0414\u0415\7\3\2\2\u0415\u0416\5\b\5\2")
         buf.write("\u0416\u0417\7\4\2\2\u0417\u042d\3\2\2\2\u0418\u0419\7")
         buf.write("&\2\2\u0419\u041a\7\3\2\2\u041a\u041b\5\b\5\2\u041b\u041c")
-        buf.write("\7\4\2\2\u041c\u042d\3\2\2\2\u041d\u041e\7\'\2\2\u041e")
+        buf.write("\7\4\2\2\u041c\u042d\3\2\2\2\u041d\u041e\7'\2\2\u041e")
         buf.write("\u041f\7\3\2\2\u041f\u0420\5\b\5\2\u0420\u0421\7\4\2\2")
         buf.write("\u0421\u042d\3\2\2\2\u0422\u0423\7(\2\2\u0423\u0424\7")
         buf.write("\3\2\2\u0424\u0425\5\b\5\2\u0425\u0426\7\4\2\2\u0426\u042d")
@@ -927,7 +928,7 @@ def serializedATN():
         buf.write("\u0701\3\2\2\2\u0701\u00b1\3\2\2\2\u0702\u0700\3\2\2\2")
         buf.write("\u0703\u0704\t \2\2\u0704\u00b3\3\2\2\2\u0705\u0706\7")
         buf.write("H\2\2\u0706\u0707\5\6\4\2\u0707\u00b5\3\2\2\2\u0708\u0709")
-        buf.write("\t!\2\2\u0709\u00b7\3\2\2\2\u070a\u070b\t\"\2\2\u070b")
+        buf.write('\t!\2\2\u0709\u00b7\3\2\2\2\u070a\u070b\t"\2\2\u070b')
         buf.write("\u00b9\3\2\2\2\u070c\u070d\7\u00f7\2\2\u070d\u00bb\3\2")
         buf.write("\2\2\u070e\u070f\7\u00f7\2\2\u070f\u00bd\3\2\2\2\u0710")
         buf.write("\u0711\7\u00f7\2\2\u0711\u00bf\3\2\2\2\u0712\u0715\7\u00f7")
@@ -980,119 +981,517 @@ def serializedATN():
 
 
 class Parser(ANTLRParser):
-
     grammarFileName = "Vtl.g4"
 
     atn = ATNDeserializer().deserialize(serializedATN())
 
-    decisionsToDFA = [ DFA(ds, i) for i, ds in enumerate(atn.decisionToState) ]
+    decisionsToDFA = [DFA(ds, i) for i, ds in enumerate(atn.decisionToState)]
 
     sharedContextCache = PredictionContextCache()
 
-    literalNames = [ "<INVALID>", "'('", "')'", "'['", "']'", "'{'", "'}'", 
-                     "'='", "'<'", "'>'", "'>='", "'<>'", "'<='", "'+'", 
-                     "'-'", "'*'", "'/'", "','", "'->'", "':'", "':='", 
-                     "'#'", "'eval'", "'if'", "'case'", "'then'", "'else'", 
-                     "'using'", "'with'", "'current_date'", "'datediff'", 
-                     "'dateadd'", "'year'", "'month'", "'dayofmonth'", "'dayofyear'", 
-                     "'daytoyear'", "'daytomonth'", "'yeartoday'", "'monthtoday'", 
-                     "'on'", "'drop'", "'keep'", "'calc'", "'attrcalc'", 
-                     "'rename'", "'as'", "'and'", "'or'", "'xor'", "'not'", 
-                     "'between'", "'in'", "'not_in'", "'null'", "'isnull'", 
-                     "'ex'", "'union'", "'diff'", "'symdiff'", "'intersect'", 
-                     "'random'", "'keys'", "'intyear'", "'intmonth'", "'intday'", 
-                     "'check'", "'exists_in'", "'to'", "'return'", "'imbalance'", 
-                     "'errorcode'", "'all'", "'aggr'", "'errorlevel'", "'order'", 
-                     "'by'", "'rank'", "'asc'", "'desc'", "'min'", "'max'", 
-                     "'first'", "'last'", "'indexof'", "'abs'", "'key'", 
-                     "'ln'", "'log'", "'trunc'", "'round'", "'power'", "'mod'", 
-                     "'length'", "'||'", "'trim'", "'upper'", "'lower'", 
-                     "'substr'", "'sum'", "'avg'", "'median'", "'count'", 
-                     "'identifier'", "'measure'", "'attribute'", "'filter'", 
-                     "'merge'", "'exp'", "'componentRole'", "'viral'", "'match_characters'", 
-                     "'type'", "'nvl'", "'hierarchy'", "'_'", "'invalid'", 
-                     "'valuedomain'", "'variable'", "'data'", "'structure'", 
-                     "'dataset'", "'operator'", "'define'", "'<-'", "'datapoint'", 
-                     "'hierarchical'", "'ruleset'", "'rule'", "'end'", "'alterDataset'", 
-                     "'ltrim'", "'rtrim'", "'instr'", "'replace'", "'ceil'", 
-                     "'floor'", "'sqrt'", "'any'", "'setdiff'", "'stddev_pop'", 
-                     "'stddev_samp'", "'var_pop'", "'var_samp'", "'group'", 
-                     "'except'", "'having'", "'first_value'", "'last_value'", 
-                     "'lag'", "'lead'", "'ratio_to_report'", "'over'", "'preceding'", 
-                     "'following'", "'unbounded'", "'partition'", "'rows'", 
-                     "'range'", "'current'", "'valid'", "'fill_time_series'", 
-                     "'flow_to_stock'", "'stock_to_flow'", "'timeshift'", 
-                     "'measures'", "'no_measures'", "'condition'", "'boolean'", 
-                     "'date'", "'time_period'", "'number'", "'string'", 
-                     "'time'", "'integer'", "'float'", "'list'", "'record'", 
-                     "'restrict'", "'yyyy'", "'mm'", "'dd'", "'maxLength'", 
-                     "'regexp'", "'is'", "'when'", "'from'", "'aggregates'", 
-                     "'points'", "'point'", "'total'", "'partial'", "'always'", 
-                     "'inner_join'", "'left_join'", "'cross_join'", "'full_join'", 
-                     "'maps_from'", "'maps_to'", "'map_to'", "'map_from'", 
-                     "'returns'", "'pivot'", "'customPivot'", "'unpivot'", 
-                     "'sub'", "'apply'", "'conditioned'", "'period_indicator'", 
-                     "'single'", "'duration'", "'time_agg'", "'unit'", "'Value'", 
-                     "'valuedomains'", "'variables'", "'input'", "'output'", 
-                     "'cast'", "'rule_priority'", "'dataset_priority'", 
-                     "'default'", "'check_datapoint'", "'check_hierarchy'", 
-                     "'computed'", "'non_null'", "'non_zero'", "'partial_null'", 
-                     "'partial_zero'", "'always_null'", "'always_zero'", 
-                     "'components'", "'all_measures'", "'scalar'", "'component'", 
-                     "'datapoint_on_valuedomains'", "'datapoint_on_variables'", 
-                     "'hierarchical_on_valuedomains'", "'hierarchical_on_variables'", 
-                     "'set'", "'language'", "<INVALID>", "<INVALID>", "<INVALID>", 
-                     "<INVALID>", "<INVALID>", "<INVALID>", "';'" ]
+    literalNames = [
+        "<INVALID>",
+        "'('",
+        "')'",
+        "'['",
+        "']'",
+        "'{'",
+        "'}'",
+        "'='",
+        "'<'",
+        "'>'",
+        "'>='",
+        "'<>'",
+        "'<='",
+        "'+'",
+        "'-'",
+        "'*'",
+        "'/'",
+        "','",
+        "'->'",
+        "':'",
+        "':='",
+        "'#'",
+        "'eval'",
+        "'if'",
+        "'case'",
+        "'then'",
+        "'else'",
+        "'using'",
+        "'with'",
+        "'current_date'",
+        "'datediff'",
+        "'dateadd'",
+        "'year'",
+        "'month'",
+        "'dayofmonth'",
+        "'dayofyear'",
+        "'daytoyear'",
+        "'daytomonth'",
+        "'yeartoday'",
+        "'monthtoday'",
+        "'on'",
+        "'drop'",
+        "'keep'",
+        "'calc'",
+        "'attrcalc'",
+        "'rename'",
+        "'as'",
+        "'and'",
+        "'or'",
+        "'xor'",
+        "'not'",
+        "'between'",
+        "'in'",
+        "'not_in'",
+        "'null'",
+        "'isnull'",
+        "'ex'",
+        "'union'",
+        "'diff'",
+        "'symdiff'",
+        "'intersect'",
+        "'random'",
+        "'keys'",
+        "'intyear'",
+        "'intmonth'",
+        "'intday'",
+        "'check'",
+        "'exists_in'",
+        "'to'",
+        "'return'",
+        "'imbalance'",
+        "'errorcode'",
+        "'all'",
+        "'aggr'",
+        "'errorlevel'",
+        "'order'",
+        "'by'",
+        "'rank'",
+        "'asc'",
+        "'desc'",
+        "'min'",
+        "'max'",
+        "'first'",
+        "'last'",
+        "'indexof'",
+        "'abs'",
+        "'key'",
+        "'ln'",
+        "'log'",
+        "'trunc'",
+        "'round'",
+        "'power'",
+        "'mod'",
+        "'length'",
+        "'||'",
+        "'trim'",
+        "'upper'",
+        "'lower'",
+        "'substr'",
+        "'sum'",
+        "'avg'",
+        "'median'",
+        "'count'",
+        "'identifier'",
+        "'measure'",
+        "'attribute'",
+        "'filter'",
+        "'merge'",
+        "'exp'",
+        "'componentRole'",
+        "'viral'",
+        "'match_characters'",
+        "'type'",
+        "'nvl'",
+        "'hierarchy'",
+        "'_'",
+        "'invalid'",
+        "'valuedomain'",
+        "'variable'",
+        "'data'",
+        "'structure'",
+        "'dataset'",
+        "'operator'",
+        "'define'",
+        "'<-'",
+        "'datapoint'",
+        "'hierarchical'",
+        "'ruleset'",
+        "'rule'",
+        "'end'",
+        "'alterDataset'",
+        "'ltrim'",
+        "'rtrim'",
+        "'instr'",
+        "'replace'",
+        "'ceil'",
+        "'floor'",
+        "'sqrt'",
+        "'any'",
+        "'setdiff'",
+        "'stddev_pop'",
+        "'stddev_samp'",
+        "'var_pop'",
+        "'var_samp'",
+        "'group'",
+        "'except'",
+        "'having'",
+        "'first_value'",
+        "'last_value'",
+        "'lag'",
+        "'lead'",
+        "'ratio_to_report'",
+        "'over'",
+        "'preceding'",
+        "'following'",
+        "'unbounded'",
+        "'partition'",
+        "'rows'",
+        "'range'",
+        "'current'",
+        "'valid'",
+        "'fill_time_series'",
+        "'flow_to_stock'",
+        "'stock_to_flow'",
+        "'timeshift'",
+        "'measures'",
+        "'no_measures'",
+        "'condition'",
+        "'boolean'",
+        "'date'",
+        "'time_period'",
+        "'number'",
+        "'string'",
+        "'time'",
+        "'integer'",
+        "'float'",
+        "'list'",
+        "'record'",
+        "'restrict'",
+        "'yyyy'",
+        "'mm'",
+        "'dd'",
+        "'maxLength'",
+        "'regexp'",
+        "'is'",
+        "'when'",
+        "'from'",
+        "'aggregates'",
+        "'points'",
+        "'point'",
+        "'total'",
+        "'partial'",
+        "'always'",
+        "'inner_join'",
+        "'left_join'",
+        "'cross_join'",
+        "'full_join'",
+        "'maps_from'",
+        "'maps_to'",
+        "'map_to'",
+        "'map_from'",
+        "'returns'",
+        "'pivot'",
+        "'customPivot'",
+        "'unpivot'",
+        "'sub'",
+        "'apply'",
+        "'conditioned'",
+        "'period_indicator'",
+        "'single'",
+        "'duration'",
+        "'time_agg'",
+        "'unit'",
+        "'Value'",
+        "'valuedomains'",
+        "'variables'",
+        "'input'",
+        "'output'",
+        "'cast'",
+        "'rule_priority'",
+        "'dataset_priority'",
+        "'default'",
+        "'check_datapoint'",
+        "'check_hierarchy'",
+        "'computed'",
+        "'non_null'",
+        "'non_zero'",
+        "'partial_null'",
+        "'partial_zero'",
+        "'always_null'",
+        "'always_zero'",
+        "'components'",
+        "'all_measures'",
+        "'scalar'",
+        "'component'",
+        "'datapoint_on_valuedomains'",
+        "'datapoint_on_variables'",
+        "'hierarchical_on_valuedomains'",
+        "'hierarchical_on_variables'",
+        "'set'",
+        "'language'",
+        "<INVALID>",
+        "<INVALID>",
+        "<INVALID>",
+        "<INVALID>",
+        "<INVALID>",
+        "<INVALID>",
+        "';'",
+    ]
 
-    symbolicNames = [ "<INVALID>", "LPAREN", "RPAREN", "QLPAREN", "QRPAREN", 
-                      "GLPAREN", "GRPAREN", "EQ", "LT", "MT", "ME", "NEQ", 
-                      "LE", "PLUS", "MINUS", "MUL", "DIV", "COMMA", "POINTER", 
-                      "COLON", "ASSIGN", "MEMBERSHIP", "EVAL", "IF", "CASE", 
-                      "THEN", "ELSE", "USING", "WITH", "CURRENT_DATE", "DATEDIFF", 
-                      "DATEADD", "YEAR_OP", "MONTH_OP", "DAYOFMONTH", "DAYOFYEAR", 
-                      "DAYTOYEAR", "DAYTOMONTH", "YEARTODAY", "MONTHTODAY", 
-                      "ON", "DROP", "KEEP", "CALC", "ATTRCALC", "RENAME", 
-                      "AS", "AND", "OR", "XOR", "NOT", "BETWEEN", "IN", 
-                      "NOT_IN", "NULL_CONSTANT", "ISNULL", "EX", "UNION", 
-                      "DIFF", "SYMDIFF", "INTERSECT", "RANDOM", "KEYS", 
-                      "INTYEAR", "INTMONTH", "INTDAY", "CHECK", "EXISTS_IN", 
-                      "TO", "RETURN", "IMBALANCE", "ERRORCODE", "ALL", "AGGREGATE", 
-                      "ERRORLEVEL", "ORDER", "BY", "RANK", "ASC", "DESC", 
-                      "MIN", "MAX", "FIRST", "LAST", "INDEXOF", "ABS", "KEY", 
-                      "LN", "LOG", "TRUNC", "ROUND", "POWER", "MOD", "LEN", 
-                      "CONCAT", "TRIM", "UCASE", "LCASE", "SUBSTR", "SUM", 
-                      "AVG", "MEDIAN", "COUNT", "DIMENSION", "MEASURE", 
-                      "ATTRIBUTE", "FILTER", "MERGE", "EXP", "ROLE", "VIRAL", 
-                      "CHARSET_MATCH", "TYPE", "NVL", "HIERARCHY", "OPTIONAL", 
-                      "INVALID", "VALUE_DOMAIN", "VARIABLE", "DATA", "STRUCTURE", 
-                      "DATASET", "OPERATOR", "DEFINE", "PUT_SYMBOL", "DATAPOINT", 
-                      "HIERARCHICAL", "RULESET", "RULE", "END", "ALTER_DATASET", 
-                      "LTRIM", "RTRIM", "INSTR", "REPLACE", "CEIL", "FLOOR", 
-                      "SQRT", "ANY", "SETDIFF", "STDDEV_POP", "STDDEV_SAMP", 
-                      "VAR_POP", "VAR_SAMP", "GROUP", "EXCEPT", "HAVING", 
-                      "FIRST_VALUE", "LAST_VALUE", "LAG", "LEAD", "RATIO_TO_REPORT", 
-                      "OVER", "PRECEDING", "FOLLOWING", "UNBOUNDED", "PARTITION", 
-                      "ROWS", "RANGE", "CURRENT", "VALID", "FILL_TIME_SERIES", 
-                      "FLOW_TO_STOCK", "STOCK_TO_FLOW", "TIMESHIFT", "MEASURES", 
-                      "NO_MEASURES", "CONDITION", "BOOLEAN", "DATE", "TIME_PERIOD", 
-                      "NUMBER", "STRING", "TIME", "INTEGER", "FLOAT", "LIST", 
-                      "RECORD", "RESTRICT", "YYYY", "MM", "DD", "MAX_LENGTH", 
-                      "REGEXP", "IS", "WHEN", "FROM", "AGGREGATES", "POINTS", 
-                      "POINT", "TOTAL", "PARTIAL", "ALWAYS", "INNER_JOIN", 
-                      "LEFT_JOIN", "CROSS_JOIN", "FULL_JOIN", "MAPS_FROM", 
-                      "MAPS_TO", "MAP_TO", "MAP_FROM", "RETURNS", "PIVOT", 
-                      "CUSTOMPIVOT", "UNPIVOT", "SUBSPACE", "APPLY", "CONDITIONED", 
-                      "PERIOD_INDICATOR", "SINGLE", "DURATION", "TIME_AGG", 
-                      "UNIT", "VALUE", "VALUEDOMAINS", "VARIABLES", "INPUT", 
-                      "OUTPUT", "CAST", "RULE_PRIORITY", "DATASET_PRIORITY", 
-                      "DEFAULT", "CHECK_DATAPOINT", "CHECK_HIERARCHY", "COMPUTED", 
-                      "NON_NULL", "NON_ZERO", "PARTIAL_NULL", "PARTIAL_ZERO", 
-                      "ALWAYS_NULL", "ALWAYS_ZERO", "COMPONENTS", "ALL_MEASURES", 
-                      "SCALAR", "COMPONENT", "DATAPOINT_ON_VD", "DATAPOINT_ON_VAR", 
-                      "HIERARCHICAL_ON_VD", "HIERARCHICAL_ON_VAR", "SET", 
-                      "LANGUAGE", "INTEGER_CONSTANT", "NUMBER_CONSTANT", 
-                      "BOOLEAN_CONSTANT", "STRING_CONSTANT", "IDENTIFIER", 
-                      "WS", "EOL", "ML_COMMENT", "SL_COMMENT" ]
+    symbolicNames = [
+        "<INVALID>",
+        "LPAREN",
+        "RPAREN",
+        "QLPAREN",
+        "QRPAREN",
+        "GLPAREN",
+        "GRPAREN",
+        "EQ",
+        "LT",
+        "MT",
+        "ME",
+        "NEQ",
+        "LE",
+        "PLUS",
+        "MINUS",
+        "MUL",
+        "DIV",
+        "COMMA",
+        "POINTER",
+        "COLON",
+        "ASSIGN",
+        "MEMBERSHIP",
+        "EVAL",
+        "IF",
+        "CASE",
+        "THEN",
+        "ELSE",
+        "USING",
+        "WITH",
+        "CURRENT_DATE",
+        "DATEDIFF",
+        "DATEADD",
+        "YEAR_OP",
+        "MONTH_OP",
+        "DAYOFMONTH",
+        "DAYOFYEAR",
+        "DAYTOYEAR",
+        "DAYTOMONTH",
+        "YEARTODAY",
+        "MONTHTODAY",
+        "ON",
+        "DROP",
+        "KEEP",
+        "CALC",
+        "ATTRCALC",
+        "RENAME",
+        "AS",
+        "AND",
+        "OR",
+        "XOR",
+        "NOT",
+        "BETWEEN",
+        "IN",
+        "NOT_IN",
+        "NULL_CONSTANT",
+        "ISNULL",
+        "EX",
+        "UNION",
+        "DIFF",
+        "SYMDIFF",
+        "INTERSECT",
+        "RANDOM",
+        "KEYS",
+        "INTYEAR",
+        "INTMONTH",
+        "INTDAY",
+        "CHECK",
+        "EXISTS_IN",
+        "TO",
+        "RETURN",
+        "IMBALANCE",
+        "ERRORCODE",
+        "ALL",
+        "AGGREGATE",
+        "ERRORLEVEL",
+        "ORDER",
+        "BY",
+        "RANK",
+        "ASC",
+        "DESC",
+        "MIN",
+        "MAX",
+        "FIRST",
+        "LAST",
+        "INDEXOF",
+        "ABS",
+        "KEY",
+        "LN",
+        "LOG",
+        "TRUNC",
+        "ROUND",
+        "POWER",
+        "MOD",
+        "LEN",
+        "CONCAT",
+        "TRIM",
+        "UCASE",
+        "LCASE",
+        "SUBSTR",
+        "SUM",
+        "AVG",
+        "MEDIAN",
+        "COUNT",
+        "DIMENSION",
+        "MEASURE",
+        "ATTRIBUTE",
+        "FILTER",
+        "MERGE",
+        "EXP",
+        "ROLE",
+        "VIRAL",
+        "CHARSET_MATCH",
+        "TYPE",
+        "NVL",
+        "HIERARCHY",
+        "OPTIONAL",
+        "INVALID",
+        "VALUE_DOMAIN",
+        "VARIABLE",
+        "DATA",
+        "STRUCTURE",
+        "DATASET",
+        "OPERATOR",
+        "DEFINE",
+        "PUT_SYMBOL",
+        "DATAPOINT",
+        "HIERARCHICAL",
+        "RULESET",
+        "RULE",
+        "END",
+        "ALTER_DATASET",
+        "LTRIM",
+        "RTRIM",
+        "INSTR",
+        "REPLACE",
+        "CEIL",
+        "FLOOR",
+        "SQRT",
+        "ANY",
+        "SETDIFF",
+        "STDDEV_POP",
+        "STDDEV_SAMP",
+        "VAR_POP",
+        "VAR_SAMP",
+        "GROUP",
+        "EXCEPT",
+        "HAVING",
+        "FIRST_VALUE",
+        "LAST_VALUE",
+        "LAG",
+        "LEAD",
+        "RATIO_TO_REPORT",
+        "OVER",
+        "PRECEDING",
+        "FOLLOWING",
+        "UNBOUNDED",
+        "PARTITION",
+        "ROWS",
+        "RANGE",
+        "CURRENT",
+        "VALID",
+        "FILL_TIME_SERIES",
+        "FLOW_TO_STOCK",
+        "STOCK_TO_FLOW",
+        "TIMESHIFT",
+        "MEASURES",
+        "NO_MEASURES",
+        "CONDITION",
+        "BOOLEAN",
+        "DATE",
+        "TIME_PERIOD",
+        "NUMBER",
+        "STRING",
+        "TIME",
+        "INTEGER",
+        "FLOAT",
+        "LIST",
+        "RECORD",
+        "RESTRICT",
+        "YYYY",
+        "MM",
+        "DD",
+        "MAX_LENGTH",
+        "REGEXP",
+        "IS",
+        "WHEN",
+        "FROM",
+        "AGGREGATES",
+        "POINTS",
+        "POINT",
+        "TOTAL",
+        "PARTIAL",
+        "ALWAYS",
+        "INNER_JOIN",
+        "LEFT_JOIN",
+        "CROSS_JOIN",
+        "FULL_JOIN",
+        "MAPS_FROM",
+        "MAPS_TO",
+        "MAP_TO",
+        "MAP_FROM",
+        "RETURNS",
+        "PIVOT",
+        "CUSTOMPIVOT",
+        "UNPIVOT",
+        "SUBSPACE",
+        "APPLY",
+        "CONDITIONED",
+        "PERIOD_INDICATOR",
+        "SINGLE",
+        "DURATION",
+        "TIME_AGG",
+        "UNIT",
+        "VALUE",
+        "VALUEDOMAINS",
+        "VARIABLES",
+        "INPUT",
+        "OUTPUT",
+        "CAST",
+        "RULE_PRIORITY",
+        "DATASET_PRIORITY",
+        "DEFAULT",
+        "CHECK_DATAPOINT",
+        "CHECK_HIERARCHY",
+        "COMPUTED",
+        "NON_NULL",
+        "NON_ZERO",
+        "PARTIAL_NULL",
+        "PARTIAL_ZERO",
+        "ALWAYS_NULL",
+        "ALWAYS_ZERO",
+        "COMPONENTS",
+        "ALL_MEASURES",
+        "SCALAR",
+        "COMPONENT",
+        "DATAPOINT_ON_VD",
+        "DATAPOINT_ON_VAR",
+        "HIERARCHICAL_ON_VD",
+        "HIERARCHICAL_ON_VAR",
+        "SET",
+        "LANGUAGE",
+        "INTEGER_CONSTANT",
+        "NUMBER_CONSTANT",
+        "BOOLEAN_CONSTANT",
+        "STRING_CONSTANT",
+        "IDENTIFIER",
+        "WS",
+        "EOL",
+        "ML_COMMENT",
+        "SL_COMMENT",
+    ]
 
     RULE_start = 0
     RULE_statement = 1
@@ -1205,318 +1604,395 @@ class Parser(ANTLRParser):
     RULE_basicScalarType = 108
     RULE_retainType = 109
 
-    ruleNames =  [ "start", "statement", "expr", "exprComponent", "functionsComponents", 
-                   "functions", "datasetClause", "renameClause", "aggrClause", 
-                   "filterClause", "calcClause", "keepOrDropClause", "pivotOrUnpivotClause", 
-                   "customPivotClause", "subspaceClause", "joinOperators", 
-                   "defOperators", "genericOperators", "genericOperatorsComponent", 
-                   "parameterComponent", "parameter", "stringOperators", 
-                   "stringOperatorsComponent", "numericOperators", "numericOperatorsComponent", 
-                   "comparisonOperators", "comparisonOperatorsComponent", 
-                   "timeOperators", "timeOperatorsComponent", "setOperators", 
-                   "hierarchyOperators", "validationOperators", "conditionalOperators", 
-                   "conditionalOperatorsComponent", "aggrOperators", "aggrOperatorsGrouping", 
-                   "anFunction", "anFunctionComponent", "renameClauseItem", 
-                   "aggregateClause", "aggrFunctionClause", "calcClauseItem", 
-                   "subspaceClauseItem", "scalarItem", "joinClauseWithoutUsing", 
-                   "joinClause", "joinClauseItem", "joinBody", "joinApplyClause", 
-                   "partitionByClause", "orderByClause", "orderByItem", 
-                   "windowingClause", "signedInteger", "limitClauseItem", 
-                   "groupingClause", "havingClause", "parameterItem", "outputParameterType", 
-                   "outputParameterTypeComponent", "inputParameterType", 
-                   "rulesetType", "scalarType", "componentType", "datasetType", 
-                   "evalDatasetType", "scalarSetType", "dpRuleset", "hrRuleset", 
-                   "valueDomainName", "rulesetID", "rulesetSignature", "signature", 
-                   "ruleClauseDatapoint", "ruleItemDatapoint", "ruleClauseHierarchical", 
-                   "ruleItemHierarchical", "hierRuleSignature", "valueDomainSignature", 
-                   "codeItemRelation", "codeItemRelationClause", "valueDomainValue", 
-                   "scalarTypeConstraint", "compConstraint", "multModifier", 
-                   "validationOutput", "validationMode", "conditionClause", 
-                   "inputMode", "imbalanceExpr", "inputModeHierarchy", "outputModeHierarchy", 
-                   "alias", "varID", "simpleComponentId", "componentID", 
-                   "lists", "erCode", "erLevel", "comparisonOperand", "optionalExpr", 
-                   "optionalExprComponent", "componentRole", "viralAttribute", 
-                   "valueDomainID", "operatorID", "routineName", "constant", 
-                   "basicScalarType", "retainType" ]
+    ruleNames = [
+        "start",
+        "statement",
+        "expr",
+        "exprComponent",
+        "functionsComponents",
+        "functions",
+        "datasetClause",
+        "renameClause",
+        "aggrClause",
+        "filterClause",
+        "calcClause",
+        "keepOrDropClause",
+        "pivotOrUnpivotClause",
+        "customPivotClause",
+        "subspaceClause",
+        "joinOperators",
+        "defOperators",
+        "genericOperators",
+        "genericOperatorsComponent",
+        "parameterComponent",
+        "parameter",
+        "stringOperators",
+        "stringOperatorsComponent",
+        "numericOperators",
+        "numericOperatorsComponent",
+        "comparisonOperators",
+        "comparisonOperatorsComponent",
+        "timeOperators",
+        "timeOperatorsComponent",
+        "setOperators",
+        "hierarchyOperators",
+        "validationOperators",
+        "conditionalOperators",
+        "conditionalOperatorsComponent",
+        "aggrOperators",
+        "aggrOperatorsGrouping",
+        "anFunction",
+        "anFunctionComponent",
+        "renameClauseItem",
+        "aggregateClause",
+        "aggrFunctionClause",
+        "calcClauseItem",
+        "subspaceClauseItem",
+        "scalarItem",
+        "joinClauseWithoutUsing",
+        "joinClause",
+        "joinClauseItem",
+        "joinBody",
+        "joinApplyClause",
+        "partitionByClause",
+        "orderByClause",
+        "orderByItem",
+        "windowingClause",
+        "signedInteger",
+        "limitClauseItem",
+        "groupingClause",
+        "havingClause",
+        "parameterItem",
+        "outputParameterType",
+        "outputParameterTypeComponent",
+        "inputParameterType",
+        "rulesetType",
+        "scalarType",
+        "componentType",
+        "datasetType",
+        "evalDatasetType",
+        "scalarSetType",
+        "dpRuleset",
+        "hrRuleset",
+        "valueDomainName",
+        "rulesetID",
+        "rulesetSignature",
+        "signature",
+        "ruleClauseDatapoint",
+        "ruleItemDatapoint",
+        "ruleClauseHierarchical",
+        "ruleItemHierarchical",
+        "hierRuleSignature",
+        "valueDomainSignature",
+        "codeItemRelation",
+        "codeItemRelationClause",
+        "valueDomainValue",
+        "scalarTypeConstraint",
+        "compConstraint",
+        "multModifier",
+        "validationOutput",
+        "validationMode",
+        "conditionClause",
+        "inputMode",
+        "imbalanceExpr",
+        "inputModeHierarchy",
+        "outputModeHierarchy",
+        "alias",
+        "varID",
+        "simpleComponentId",
+        "componentID",
+        "lists",
+        "erCode",
+        "erLevel",
+        "comparisonOperand",
+        "optionalExpr",
+        "optionalExprComponent",
+        "componentRole",
+        "viralAttribute",
+        "valueDomainID",
+        "operatorID",
+        "routineName",
+        "constant",
+        "basicScalarType",
+        "retainType",
+    ]
 
     EOF = Token.EOF
-    LPAREN=1
-    RPAREN=2
-    QLPAREN=3
-    QRPAREN=4
-    GLPAREN=5
-    GRPAREN=6
-    EQ=7
-    LT=8
-    MT=9
-    ME=10
-    NEQ=11
-    LE=12
-    PLUS=13
-    MINUS=14
-    MUL=15
-    DIV=16
-    COMMA=17
-    POINTER=18
-    COLON=19
-    ASSIGN=20
-    MEMBERSHIP=21
-    EVAL=22
-    IF=23
-    CASE=24
-    THEN=25
-    ELSE=26
-    USING=27
-    WITH=28
-    CURRENT_DATE=29
-    DATEDIFF=30
-    DATEADD=31
-    YEAR_OP=32
-    MONTH_OP=33
-    DAYOFMONTH=34
-    DAYOFYEAR=35
-    DAYTOYEAR=36
-    DAYTOMONTH=37
-    YEARTODAY=38
-    MONTHTODAY=39
-    ON=40
-    DROP=41
-    KEEP=42
-    CALC=43
-    ATTRCALC=44
-    RENAME=45
-    AS=46
-    AND=47
-    OR=48
-    XOR=49
-    NOT=50
-    BETWEEN=51
-    IN=52
-    NOT_IN=53
-    NULL_CONSTANT=54
-    ISNULL=55
-    EX=56
-    UNION=57
-    DIFF=58
-    SYMDIFF=59
-    INTERSECT=60
-    RANDOM=61
-    KEYS=62
-    INTYEAR=63
-    INTMONTH=64
-    INTDAY=65
-    CHECK=66
-    EXISTS_IN=67
-    TO=68
-    RETURN=69
-    IMBALANCE=70
-    ERRORCODE=71
-    ALL=72
-    AGGREGATE=73
-    ERRORLEVEL=74
-    ORDER=75
-    BY=76
-    RANK=77
-    ASC=78
-    DESC=79
-    MIN=80
-    MAX=81
-    FIRST=82
-    LAST=83
-    INDEXOF=84
-    ABS=85
-    KEY=86
-    LN=87
-    LOG=88
-    TRUNC=89
-    ROUND=90
-    POWER=91
-    MOD=92
-    LEN=93
-    CONCAT=94
-    TRIM=95
-    UCASE=96
-    LCASE=97
-    SUBSTR=98
-    SUM=99
-    AVG=100
-    MEDIAN=101
-    COUNT=102
-    DIMENSION=103
-    MEASURE=104
-    ATTRIBUTE=105
-    FILTER=106
-    MERGE=107
-    EXP=108
-    ROLE=109
-    VIRAL=110
-    CHARSET_MATCH=111
-    TYPE=112
-    NVL=113
-    HIERARCHY=114
-    OPTIONAL=115
-    INVALID=116
-    VALUE_DOMAIN=117
-    VARIABLE=118
-    DATA=119
-    STRUCTURE=120
-    DATASET=121
-    OPERATOR=122
-    DEFINE=123
-    PUT_SYMBOL=124
-    DATAPOINT=125
-    HIERARCHICAL=126
-    RULESET=127
-    RULE=128
-    END=129
-    ALTER_DATASET=130
-    LTRIM=131
-    RTRIM=132
-    INSTR=133
-    REPLACE=134
-    CEIL=135
-    FLOOR=136
-    SQRT=137
-    ANY=138
-    SETDIFF=139
-    STDDEV_POP=140
-    STDDEV_SAMP=141
-    VAR_POP=142
-    VAR_SAMP=143
-    GROUP=144
-    EXCEPT=145
-    HAVING=146
-    FIRST_VALUE=147
-    LAST_VALUE=148
-    LAG=149
-    LEAD=150
-    RATIO_TO_REPORT=151
-    OVER=152
-    PRECEDING=153
-    FOLLOWING=154
-    UNBOUNDED=155
-    PARTITION=156
-    ROWS=157
-    RANGE=158
-    CURRENT=159
-    VALID=160
-    FILL_TIME_SERIES=161
-    FLOW_TO_STOCK=162
-    STOCK_TO_FLOW=163
-    TIMESHIFT=164
-    MEASURES=165
-    NO_MEASURES=166
-    CONDITION=167
-    BOOLEAN=168
-    DATE=169
-    TIME_PERIOD=170
-    NUMBER=171
-    STRING=172
-    TIME=173
-    INTEGER=174
-    FLOAT=175
-    LIST=176
-    RECORD=177
-    RESTRICT=178
-    YYYY=179
-    MM=180
-    DD=181
-    MAX_LENGTH=182
-    REGEXP=183
-    IS=184
-    WHEN=185
-    FROM=186
-    AGGREGATES=187
-    POINTS=188
-    POINT=189
-    TOTAL=190
-    PARTIAL=191
-    ALWAYS=192
-    INNER_JOIN=193
-    LEFT_JOIN=194
-    CROSS_JOIN=195
-    FULL_JOIN=196
-    MAPS_FROM=197
-    MAPS_TO=198
-    MAP_TO=199
-    MAP_FROM=200
-    RETURNS=201
-    PIVOT=202
-    CUSTOMPIVOT=203
-    UNPIVOT=204
-    SUBSPACE=205
-    APPLY=206
-    CONDITIONED=207
-    PERIOD_INDICATOR=208
-    SINGLE=209
-    DURATION=210
-    TIME_AGG=211
-    UNIT=212
-    VALUE=213
-    VALUEDOMAINS=214
-    VARIABLES=215
-    INPUT=216
-    OUTPUT=217
-    CAST=218
-    RULE_PRIORITY=219
-    DATASET_PRIORITY=220
-    DEFAULT=221
-    CHECK_DATAPOINT=222
-    CHECK_HIERARCHY=223
-    COMPUTED=224
-    NON_NULL=225
-    NON_ZERO=226
-    PARTIAL_NULL=227
-    PARTIAL_ZERO=228
-    ALWAYS_NULL=229
-    ALWAYS_ZERO=230
-    COMPONENTS=231
-    ALL_MEASURES=232
-    SCALAR=233
-    COMPONENT=234
-    DATAPOINT_ON_VD=235
-    DATAPOINT_ON_VAR=236
-    HIERARCHICAL_ON_VD=237
-    HIERARCHICAL_ON_VAR=238
-    SET=239
-    LANGUAGE=240
-    INTEGER_CONSTANT=241
-    NUMBER_CONSTANT=242
-    BOOLEAN_CONSTANT=243
-    STRING_CONSTANT=244
-    IDENTIFIER=245
-    WS=246
-    EOL=247
-    ML_COMMENT=248
-    SL_COMMENT=249
+    LPAREN = 1
+    RPAREN = 2
+    QLPAREN = 3
+    QRPAREN = 4
+    GLPAREN = 5
+    GRPAREN = 6
+    EQ = 7
+    LT = 8
+    MT = 9
+    ME = 10
+    NEQ = 11
+    LE = 12
+    PLUS = 13
+    MINUS = 14
+    MUL = 15
+    DIV = 16
+    COMMA = 17
+    POINTER = 18
+    COLON = 19
+    ASSIGN = 20
+    MEMBERSHIP = 21
+    EVAL = 22
+    IF = 23
+    CASE = 24
+    THEN = 25
+    ELSE = 26
+    USING = 27
+    WITH = 28
+    CURRENT_DATE = 29
+    DATEDIFF = 30
+    DATEADD = 31
+    YEAR_OP = 32
+    MONTH_OP = 33
+    DAYOFMONTH = 34
+    DAYOFYEAR = 35
+    DAYTOYEAR = 36
+    DAYTOMONTH = 37
+    YEARTODAY = 38
+    MONTHTODAY = 39
+    ON = 40
+    DROP = 41
+    KEEP = 42
+    CALC = 43
+    ATTRCALC = 44
+    RENAME = 45
+    AS = 46
+    AND = 47
+    OR = 48
+    XOR = 49
+    NOT = 50
+    BETWEEN = 51
+    IN = 52
+    NOT_IN = 53
+    NULL_CONSTANT = 54
+    ISNULL = 55
+    EX = 56
+    UNION = 57
+    DIFF = 58
+    SYMDIFF = 59
+    INTERSECT = 60
+    RANDOM = 61
+    KEYS = 62
+    INTYEAR = 63
+    INTMONTH = 64
+    INTDAY = 65
+    CHECK = 66
+    EXISTS_IN = 67
+    TO = 68
+    RETURN = 69
+    IMBALANCE = 70
+    ERRORCODE = 71
+    ALL = 72
+    AGGREGATE = 73
+    ERRORLEVEL = 74
+    ORDER = 75
+    BY = 76
+    RANK = 77
+    ASC = 78
+    DESC = 79
+    MIN = 80
+    MAX = 81
+    FIRST = 82
+    LAST = 83
+    INDEXOF = 84
+    ABS = 85
+    KEY = 86
+    LN = 87
+    LOG = 88
+    TRUNC = 89
+    ROUND = 90
+    POWER = 91
+    MOD = 92
+    LEN = 93
+    CONCAT = 94
+    TRIM = 95
+    UCASE = 96
+    LCASE = 97
+    SUBSTR = 98
+    SUM = 99
+    AVG = 100
+    MEDIAN = 101
+    COUNT = 102
+    DIMENSION = 103
+    MEASURE = 104
+    ATTRIBUTE = 105
+    FILTER = 106
+    MERGE = 107
+    EXP = 108
+    ROLE = 109
+    VIRAL = 110
+    CHARSET_MATCH = 111
+    TYPE = 112
+    NVL = 113
+    HIERARCHY = 114
+    OPTIONAL = 115
+    INVALID = 116
+    VALUE_DOMAIN = 117
+    VARIABLE = 118
+    DATA = 119
+    STRUCTURE = 120
+    DATASET = 121
+    OPERATOR = 122
+    DEFINE = 123
+    PUT_SYMBOL = 124
+    DATAPOINT = 125
+    HIERARCHICAL = 126
+    RULESET = 127
+    RULE = 128
+    END = 129
+    ALTER_DATASET = 130
+    LTRIM = 131
+    RTRIM = 132
+    INSTR = 133
+    REPLACE = 134
+    CEIL = 135
+    FLOOR = 136
+    SQRT = 137
+    ANY = 138
+    SETDIFF = 139
+    STDDEV_POP = 140
+    STDDEV_SAMP = 141
+    VAR_POP = 142
+    VAR_SAMP = 143
+    GROUP = 144
+    EXCEPT = 145
+    HAVING = 146
+    FIRST_VALUE = 147
+    LAST_VALUE = 148
+    LAG = 149
+    LEAD = 150
+    RATIO_TO_REPORT = 151
+    OVER = 152
+    PRECEDING = 153
+    FOLLOWING = 154
+    UNBOUNDED = 155
+    PARTITION = 156
+    ROWS = 157
+    RANGE = 158
+    CURRENT = 159
+    VALID = 160
+    FILL_TIME_SERIES = 161
+    FLOW_TO_STOCK = 162
+    STOCK_TO_FLOW = 163
+    TIMESHIFT = 164
+    MEASURES = 165
+    NO_MEASURES = 166
+    CONDITION = 167
+    BOOLEAN = 168
+    DATE = 169
+    TIME_PERIOD = 170
+    NUMBER = 171
+    STRING = 172
+    TIME = 173
+    INTEGER = 174
+    FLOAT = 175
+    LIST = 176
+    RECORD = 177
+    RESTRICT = 178
+    YYYY = 179
+    MM = 180
+    DD = 181
+    MAX_LENGTH = 182
+    REGEXP = 183
+    IS = 184
+    WHEN = 185
+    FROM = 186
+    AGGREGATES = 187
+    POINTS = 188
+    POINT = 189
+    TOTAL = 190
+    PARTIAL = 191
+    ALWAYS = 192
+    INNER_JOIN = 193
+    LEFT_JOIN = 194
+    CROSS_JOIN = 195
+    FULL_JOIN = 196
+    MAPS_FROM = 197
+    MAPS_TO = 198
+    MAP_TO = 199
+    MAP_FROM = 200
+    RETURNS = 201
+    PIVOT = 202
+    CUSTOMPIVOT = 203
+    UNPIVOT = 204
+    SUBSPACE = 205
+    APPLY = 206
+    CONDITIONED = 207
+    PERIOD_INDICATOR = 208
+    SINGLE = 209
+    DURATION = 210
+    TIME_AGG = 211
+    UNIT = 212
+    VALUE = 213
+    VALUEDOMAINS = 214
+    VARIABLES = 215
+    INPUT = 216
+    OUTPUT = 217
+    CAST = 218
+    RULE_PRIORITY = 219
+    DATASET_PRIORITY = 220
+    DEFAULT = 221
+    CHECK_DATAPOINT = 222
+    CHECK_HIERARCHY = 223
+    COMPUTED = 224
+    NON_NULL = 225
+    NON_ZERO = 226
+    PARTIAL_NULL = 227
+    PARTIAL_ZERO = 228
+    ALWAYS_NULL = 229
+    ALWAYS_ZERO = 230
+    COMPONENTS = 231
+    ALL_MEASURES = 232
+    SCALAR = 233
+    COMPONENT = 234
+    DATAPOINT_ON_VD = 235
+    DATAPOINT_ON_VAR = 236
+    HIERARCHICAL_ON_VD = 237
+    HIERARCHICAL_ON_VAR = 238
+    SET = 239
+    LANGUAGE = 240
+    INTEGER_CONSTANT = 241
+    NUMBER_CONSTANT = 242
+    BOOLEAN_CONSTANT = 243
+    STRING_CONSTANT = 244
+    IDENTIFIER = 245
+    WS = 246
+    EOL = 247
+    ML_COMMENT = 248
+    SL_COMMENT = 249
 
-    def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
+    def __init__(self, input: TokenStream, output: TextIO = sys.stdout):
         super().__init__(input, output)
         self.checkVersion("4.9.3")
-        self._interp = ParserATNSimulator(self, self.atn, self.decisionsToDFA, self.sharedContextCache)
+        self._interp = ParserATNSimulator(
+            self, self.atn, self.decisionsToDFA, self.sharedContextCache
+        )
         self._predicates = None
-
-
-
 
     class StartContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
         def EOF(self):
             return self.getToken(Parser.EOF, 0)
 
-        def statement(self, i:int=None):
+        def statement(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.StatementContext)
             else:
-                return self.getTypedRuleContext(Parser.StatementContext,i)
+                return self.getTypedRuleContext(Parser.StatementContext, i)
 
-
-        def EOL(self, i:int=None):
+        def EOL(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.EOL)
             else:
@@ -1525,34 +2001,31 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_start
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterStart" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterStart"):
                 listener.enterStart(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitStart" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitStart"):
                 listener.exitStart(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitStart" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitStart"):
                 return visitor.visitStart(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def start(self):
 
         localctx = Parser.StartContext(self, self._ctx, self.state)
         self.enterRule(localctx, 0, self.RULE_start)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 225
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==Parser.DEFINE or _la==Parser.IDENTIFIER:
+            while _la == Parser.DEFINE or _la == Parser.IDENTIFIER:
                 self.state = 220
                 self.statement()
                 self.state = 221
@@ -1571,109 +2044,102 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class StatementContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-
 
         def getRuleIndex(self):
             return Parser.RULE_statement
 
-     
-        def copyFrom(self, ctx:ParserRuleContext):
+        def copyFrom(self, ctx: ParserRuleContext):
             super().copyFrom(ctx)
 
-
-
     class DefineExpressionContext(StatementContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.StatementContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.StatementContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def defOperators(self):
-            return self.getTypedRuleContext(Parser.DefOperatorsContext,0)
+            return self.getTypedRuleContext(Parser.DefOperatorsContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDefineExpression" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterDefineExpression"):
                 listener.enterDefineExpression(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDefineExpression" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitDefineExpression"):
                 listener.exitDefineExpression(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDefineExpression" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitDefineExpression"):
                 return visitor.visitDefineExpression(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class TemporaryAssignmentContext(StatementContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.StatementContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.StatementContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def varID(self):
-            return self.getTypedRuleContext(Parser.VarIDContext,0)
+            return self.getTypedRuleContext(Parser.VarIDContext, 0)
 
         def ASSIGN(self):
             return self.getToken(Parser.ASSIGN, 0)
+
         def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTemporaryAssignment" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterTemporaryAssignment"):
                 listener.enterTemporaryAssignment(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTemporaryAssignment" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitTemporaryAssignment"):
                 listener.exitTemporaryAssignment(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitTemporaryAssignment" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitTemporaryAssignment"):
                 return visitor.visitTemporaryAssignment(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class PersistAssignmentContext(StatementContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.StatementContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.StatementContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def varID(self):
-            return self.getTypedRuleContext(Parser.VarIDContext,0)
+            return self.getTypedRuleContext(Parser.VarIDContext, 0)
 
         def PUT_SYMBOL(self):
             return self.getToken(Parser.PUT_SYMBOL, 0)
+
         def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterPersistAssignment" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterPersistAssignment"):
                 listener.enterPersistAssignment(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitPersistAssignment" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitPersistAssignment"):
                 listener.exitPersistAssignment(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitPersistAssignment" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitPersistAssignment"):
                 return visitor.visitPersistAssignment(self)
             else:
                 return visitor.visitChildren(self)
-
-
 
     def statement(self):
 
@@ -1682,7 +2148,7 @@ class Parser(ANTLRParser):
         try:
             self.state = 239
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,1,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 1, self._ctx)
             if la_ == 1:
                 localctx = Parser.TemporaryAssignmentContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
@@ -1712,7 +2178,6 @@ class Parser(ANTLRParser):
                 self.defOperators()
                 pass
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -1721,497 +2186,475 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class ExprContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-
 
         def getRuleIndex(self):
             return Parser.RULE_expr
 
-     
-        def copyFrom(self, ctx:ParserRuleContext):
+        def copyFrom(self, ctx: ParserRuleContext):
             super().copyFrom(ctx)
 
-
     class VarIdExprContext(ExprContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ExprContext
+        def __init__(self, ANTLRParser, ctx: ParserRuleContext):  # actually a Parser.ExprContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def varID(self):
-            return self.getTypedRuleContext(Parser.VarIDContext,0)
+            return self.getTypedRuleContext(Parser.VarIDContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterVarIdExpr" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterVarIdExpr"):
                 listener.enterVarIdExpr(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitVarIdExpr" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitVarIdExpr"):
                 listener.exitVarIdExpr(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitVarIdExpr" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitVarIdExpr"):
                 return visitor.visitVarIdExpr(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class MembershipExprContext(ExprContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ExprContext
+        def __init__(self, ANTLRParser, ctx: ParserRuleContext):  # actually a Parser.ExprContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
 
         def MEMBERSHIP(self):
             return self.getToken(Parser.MEMBERSHIP, 0)
+
         def simpleComponentId(self):
-            return self.getTypedRuleContext(Parser.SimpleComponentIdContext,0)
+            return self.getTypedRuleContext(Parser.SimpleComponentIdContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterMembershipExpr" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterMembershipExpr"):
                 listener.enterMembershipExpr(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitMembershipExpr" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitMembershipExpr"):
                 listener.exitMembershipExpr(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitMembershipExpr" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitMembershipExpr"):
                 return visitor.visitMembershipExpr(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class InNotInExprContext(ExprContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ExprContext
+        def __init__(self, ANTLRParser, ctx: ParserRuleContext):  # actually a Parser.ExprContext
             super().__init__(ANTLRParser)
-            self.left = None # ExprContext
-            self.op = None # Token
+            self.left = None  # ExprContext
+            self.op = None  # Token
             self.copyFrom(ctx)
 
         def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
 
         def IN(self):
             return self.getToken(Parser.IN, 0)
+
         def NOT_IN(self):
             return self.getToken(Parser.NOT_IN, 0)
+
         def lists(self):
-            return self.getTypedRuleContext(Parser.ListsContext,0)
+            return self.getTypedRuleContext(Parser.ListsContext, 0)
 
         def valueDomainID(self):
-            return self.getTypedRuleContext(Parser.ValueDomainIDContext,0)
+            return self.getTypedRuleContext(Parser.ValueDomainIDContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterInNotInExpr" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterInNotInExpr"):
                 listener.enterInNotInExpr(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitInNotInExpr" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitInNotInExpr"):
                 listener.exitInNotInExpr(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInNotInExpr" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitInNotInExpr"):
                 return visitor.visitInNotInExpr(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class BooleanExprContext(ExprContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ExprContext
+        def __init__(self, ANTLRParser, ctx: ParserRuleContext):  # actually a Parser.ExprContext
             super().__init__(ANTLRParser)
-            self.left = None # ExprContext
-            self.op = None # Token
-            self.right = None # ExprContext
+            self.left = None  # ExprContext
+            self.op = None  # Token
+            self.right = None  # ExprContext
             self.copyFrom(ctx)
 
-        def expr(self, i:int=None):
+        def expr(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ExprContext)
             else:
-                return self.getTypedRuleContext(Parser.ExprContext,i)
+                return self.getTypedRuleContext(Parser.ExprContext, i)
 
         def AND(self):
             return self.getToken(Parser.AND, 0)
+
         def OR(self):
             return self.getToken(Parser.OR, 0)
+
         def XOR(self):
             return self.getToken(Parser.XOR, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterBooleanExpr" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterBooleanExpr"):
                 listener.enterBooleanExpr(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitBooleanExpr" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitBooleanExpr"):
                 listener.exitBooleanExpr(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitBooleanExpr" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitBooleanExpr"):
                 return visitor.visitBooleanExpr(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class ComparisonExprContext(ExprContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ExprContext
+        def __init__(self, ANTLRParser, ctx: ParserRuleContext):  # actually a Parser.ExprContext
             super().__init__(ANTLRParser)
-            self.left = None # ExprContext
-            self.op = None # ComparisonOperandContext
-            self.right = None # ExprContext
+            self.left = None  # ExprContext
+            self.op = None  # ComparisonOperandContext
+            self.right = None  # ExprContext
             self.copyFrom(ctx)
 
-        def expr(self, i:int=None):
+        def expr(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ExprContext)
             else:
-                return self.getTypedRuleContext(Parser.ExprContext,i)
+                return self.getTypedRuleContext(Parser.ExprContext, i)
 
         def comparisonOperand(self):
-            return self.getTypedRuleContext(Parser.ComparisonOperandContext,0)
+            return self.getTypedRuleContext(Parser.ComparisonOperandContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterComparisonExpr" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterComparisonExpr"):
                 listener.enterComparisonExpr(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitComparisonExpr" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitComparisonExpr"):
                 listener.exitComparisonExpr(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitComparisonExpr" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitComparisonExpr"):
                 return visitor.visitComparisonExpr(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class UnaryExprContext(ExprContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ExprContext
+        def __init__(self, ANTLRParser, ctx: ParserRuleContext):  # actually a Parser.ExprContext
             super().__init__(ANTLRParser)
-            self.op = None # Token
-            self.right = None # ExprContext
+            self.op = None  # Token
+            self.right = None  # ExprContext
             self.copyFrom(ctx)
 
         def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
 
         def PLUS(self):
             return self.getToken(Parser.PLUS, 0)
+
         def MINUS(self):
             return self.getToken(Parser.MINUS, 0)
+
         def NOT(self):
             return self.getToken(Parser.NOT, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterUnaryExpr" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterUnaryExpr"):
                 listener.enterUnaryExpr(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitUnaryExpr" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitUnaryExpr"):
                 listener.exitUnaryExpr(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitUnaryExpr" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitUnaryExpr"):
                 return visitor.visitUnaryExpr(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class FunctionsExpressionContext(ExprContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ExprContext
+        def __init__(self, ANTLRParser, ctx: ParserRuleContext):  # actually a Parser.ExprContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def functions(self):
-            return self.getTypedRuleContext(Parser.FunctionsContext,0)
+            return self.getTypedRuleContext(Parser.FunctionsContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterFunctionsExpression" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterFunctionsExpression"):
                 listener.enterFunctionsExpression(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitFunctionsExpression" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitFunctionsExpression"):
                 listener.exitFunctionsExpression(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitFunctionsExpression" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitFunctionsExpression"):
                 return visitor.visitFunctionsExpression(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class IfExprContext(ExprContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ExprContext
+        def __init__(self, ANTLRParser, ctx: ParserRuleContext):  # actually a Parser.ExprContext
             super().__init__(ANTLRParser)
-            self.conditionalExpr = None # ExprContext
-            self.thenExpr = None # ExprContext
-            self.elseExpr = None # ExprContext
+            self.conditionalExpr = None  # ExprContext
+            self.thenExpr = None  # ExprContext
+            self.elseExpr = None  # ExprContext
             self.copyFrom(ctx)
 
         def IF(self):
             return self.getToken(Parser.IF, 0)
+
         def THEN(self):
             return self.getToken(Parser.THEN, 0)
+
         def ELSE(self):
             return self.getToken(Parser.ELSE, 0)
-        def expr(self, i:int=None):
+
+        def expr(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ExprContext)
             else:
-                return self.getTypedRuleContext(Parser.ExprContext,i)
+                return self.getTypedRuleContext(Parser.ExprContext, i)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterIfExpr" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterIfExpr"):
                 listener.enterIfExpr(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitIfExpr" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitIfExpr"):
                 listener.exitIfExpr(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitIfExpr" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitIfExpr"):
                 return visitor.visitIfExpr(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class ClauseExprContext(ExprContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ExprContext
+        def __init__(self, ANTLRParser, ctx: ParserRuleContext):  # actually a Parser.ExprContext
             super().__init__(ANTLRParser)
-            self.dataset = None # ExprContext
-            self.clause = None # DatasetClauseContext
+            self.dataset = None  # ExprContext
+            self.clause = None  # DatasetClauseContext
             self.copyFrom(ctx)
 
         def QLPAREN(self):
             return self.getToken(Parser.QLPAREN, 0)
+
         def QRPAREN(self):
             return self.getToken(Parser.QRPAREN, 0)
+
         def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
 
         def datasetClause(self):
-            return self.getTypedRuleContext(Parser.DatasetClauseContext,0)
+            return self.getTypedRuleContext(Parser.DatasetClauseContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterClauseExpr" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterClauseExpr"):
                 listener.enterClauseExpr(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitClauseExpr" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitClauseExpr"):
                 listener.exitClauseExpr(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitClauseExpr" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitClauseExpr"):
                 return visitor.visitClauseExpr(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class CaseExprContext(ExprContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ExprContext
+        def __init__(self, ANTLRParser, ctx: ParserRuleContext):  # actually a Parser.ExprContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def CASE(self):
             return self.getToken(Parser.CASE, 0)
+
         def ELSE(self):
             return self.getToken(Parser.ELSE, 0)
-        def expr(self, i:int=None):
+
+        def expr(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ExprContext)
             else:
-                return self.getTypedRuleContext(Parser.ExprContext,i)
+                return self.getTypedRuleContext(Parser.ExprContext, i)
 
-        def WHEN(self, i:int=None):
+        def WHEN(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.WHEN)
             else:
                 return self.getToken(Parser.WHEN, i)
-        def THEN(self, i:int=None):
+
+        def THEN(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.THEN)
             else:
                 return self.getToken(Parser.THEN, i)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterCaseExpr" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterCaseExpr"):
                 listener.enterCaseExpr(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitCaseExpr" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitCaseExpr"):
                 listener.exitCaseExpr(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitCaseExpr" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitCaseExpr"):
                 return visitor.visitCaseExpr(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class ArithmeticExprContext(ExprContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ExprContext
+        def __init__(self, ANTLRParser, ctx: ParserRuleContext):  # actually a Parser.ExprContext
             super().__init__(ANTLRParser)
-            self.left = None # ExprContext
-            self.op = None # Token
-            self.right = None # ExprContext
+            self.left = None  # ExprContext
+            self.op = None  # Token
+            self.right = None  # ExprContext
             self.copyFrom(ctx)
 
-        def expr(self, i:int=None):
+        def expr(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ExprContext)
             else:
-                return self.getTypedRuleContext(Parser.ExprContext,i)
+                return self.getTypedRuleContext(Parser.ExprContext, i)
 
         def MUL(self):
             return self.getToken(Parser.MUL, 0)
+
         def DIV(self):
             return self.getToken(Parser.DIV, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterArithmeticExpr" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterArithmeticExpr"):
                 listener.enterArithmeticExpr(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitArithmeticExpr" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitArithmeticExpr"):
                 listener.exitArithmeticExpr(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitArithmeticExpr" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitArithmeticExpr"):
                 return visitor.visitArithmeticExpr(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class ParenthesisExprContext(ExprContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ExprContext
+        def __init__(self, ANTLRParser, ctx: ParserRuleContext):  # actually a Parser.ExprContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterParenthesisExpr" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterParenthesisExpr"):
                 listener.enterParenthesisExpr(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitParenthesisExpr" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitParenthesisExpr"):
                 listener.exitParenthesisExpr(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitParenthesisExpr" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitParenthesisExpr"):
                 return visitor.visitParenthesisExpr(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class ConstantExprContext(ExprContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ExprContext
+        def __init__(self, ANTLRParser, ctx: ParserRuleContext):  # actually a Parser.ExprContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def constant(self):
-            return self.getTypedRuleContext(Parser.ConstantContext,0)
+            return self.getTypedRuleContext(Parser.ConstantContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterConstantExpr" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterConstantExpr"):
                 listener.enterConstantExpr(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitConstantExpr" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitConstantExpr"):
                 listener.exitConstantExpr(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitConstantExpr" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitConstantExpr"):
                 return visitor.visitConstantExpr(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class ArithmeticExprOrConcatContext(ExprContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ExprContext
+        def __init__(self, ANTLRParser, ctx: ParserRuleContext):  # actually a Parser.ExprContext
             super().__init__(ANTLRParser)
-            self.left = None # ExprContext
-            self.op = None # Token
-            self.right = None # ExprContext
+            self.left = None  # ExprContext
+            self.op = None  # Token
+            self.right = None  # ExprContext
             self.copyFrom(ctx)
 
-        def expr(self, i:int=None):
+        def expr(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ExprContext)
             else:
-                return self.getTypedRuleContext(Parser.ExprContext,i)
+                return self.getTypedRuleContext(Parser.ExprContext, i)
 
         def PLUS(self):
             return self.getToken(Parser.PLUS, 0)
+
         def MINUS(self):
             return self.getToken(Parser.MINUS, 0)
+
         def CONCAT(self):
             return self.getToken(Parser.CONCAT, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterArithmeticExprOrConcat" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterArithmeticExprOrConcat"):
                 listener.enterArithmeticExprOrConcat(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitArithmeticExprOrConcat" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitArithmeticExprOrConcat"):
                 listener.exitArithmeticExprOrConcat(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitArithmeticExprOrConcat" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitArithmeticExprOrConcat"):
                 return visitor.visitArithmeticExprOrConcat(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-    def expr(self, _p:int=0):
+    def expr(self, _p: int = 0):
         _parentctx = self._ctx
         _parentState = self.state
         localctx = Parser.ExprContext(self, self._ctx, _parentState)
         _prevctx = localctx
         _startState = 4
         self.enterRecursionRule(localctx, 4, self.RULE_expr, _p)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 271
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,3,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 3, self._ctx)
             if la_ == 1:
                 localctx = Parser.ParenthesisExprContext(self, localctx)
                 self._ctx = localctx
@@ -2240,7 +2683,13 @@ class Parser(ANTLRParser):
                 self.state = 247
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << Parser.PLUS) | (1 << Parser.MINUS) | (1 << Parser.NOT))) != 0)):
+                if not (
+                    ((_la) & ~0x3F) == 0
+                    and (
+                        (1 << _la) & ((1 << Parser.PLUS) | (1 << Parser.MINUS) | (1 << Parser.NOT))
+                    )
+                    != 0
+                ):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -2273,7 +2722,7 @@ class Parser(ANTLRParser):
                 _prevctx = localctx
                 self.state = 256
                 self.match(Parser.CASE)
-                self.state = 262 
+                self.state = 262
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 while True:
@@ -2285,10 +2734,10 @@ class Parser(ANTLRParser):
                     self.match(Parser.THEN)
                     self.state = 260
                     self.expr(0)
-                    self.state = 264 
+                    self.state = 264
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    if not (_la==Parser.WHEN):
+                    if not (_la == Parser.WHEN):
                         break
 
                 self.state = 266
@@ -2313,31 +2762,33 @@ class Parser(ANTLRParser):
                 self.varID()
                 pass
 
-
             self._ctx.stop = self._input.LT(-1)
             self.state = 305
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input,6,self._ctx)
-            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
-                if _alt==1:
+            _alt = self._interp.adaptivePredict(self._input, 6, self._ctx)
+            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
+                if _alt == 1:
                     if self._parseListeners is not None:
                         self.triggerExitRuleEvent()
                     _prevctx = localctx
                     self.state = 303
                     self._errHandler.sync(self)
-                    la_ = self._interp.adaptivePredict(self._input,5,self._ctx)
+                    la_ = self._interp.adaptivePredict(self._input, 5, self._ctx)
                     if la_ == 1:
-                        localctx = Parser.ArithmeticExprContext(self, Parser.ExprContext(self, _parentctx, _parentState))
+                        localctx = Parser.ArithmeticExprContext(
+                            self, Parser.ExprContext(self, _parentctx, _parentState)
+                        )
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 273
                         if not self.precpred(self._ctx, 10):
                             from antlr4.error.Errors import FailedPredicateException
+
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 10)")
                         self.state = 274
                         localctx.op = self._input.LT(1)
                         _la = self._input.LA(1)
-                        if not(_la==Parser.MUL or _la==Parser.DIV):
+                        if not (_la == Parser.MUL or _la == Parser.DIV):
                             localctx.op = self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)
@@ -2347,17 +2798,20 @@ class Parser(ANTLRParser):
                         pass
 
                     elif la_ == 2:
-                        localctx = Parser.ArithmeticExprOrConcatContext(self, Parser.ExprContext(self, _parentctx, _parentState))
+                        localctx = Parser.ArithmeticExprOrConcatContext(
+                            self, Parser.ExprContext(self, _parentctx, _parentState)
+                        )
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 276
                         if not self.precpred(self._ctx, 9):
                             from antlr4.error.Errors import FailedPredicateException
+
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 9)")
                         self.state = 277
                         localctx.op = self._input.LT(1)
                         _la = self._input.LA(1)
-                        if not(_la==Parser.PLUS or _la==Parser.MINUS or _la==Parser.CONCAT):
+                        if not (_la == Parser.PLUS or _la == Parser.MINUS or _la == Parser.CONCAT):
                             localctx.op = self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)
@@ -2367,12 +2821,15 @@ class Parser(ANTLRParser):
                         pass
 
                     elif la_ == 3:
-                        localctx = Parser.ComparisonExprContext(self, Parser.ExprContext(self, _parentctx, _parentState))
+                        localctx = Parser.ComparisonExprContext(
+                            self, Parser.ExprContext(self, _parentctx, _parentState)
+                        )
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 279
                         if not self.precpred(self._ctx, 8):
                             from antlr4.error.Errors import FailedPredicateException
+
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 8)")
                         self.state = 280
                         localctx.op = self.comparisonOperand()
@@ -2381,12 +2838,15 @@ class Parser(ANTLRParser):
                         pass
 
                     elif la_ == 4:
-                        localctx = Parser.BooleanExprContext(self, Parser.ExprContext(self, _parentctx, _parentState))
+                        localctx = Parser.BooleanExprContext(
+                            self, Parser.ExprContext(self, _parentctx, _parentState)
+                        )
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 283
                         if not self.precpred(self._ctx, 6):
                             from antlr4.error.Errors import FailedPredicateException
+
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 6)")
                         self.state = 284
                         localctx.op = self.match(Parser.AND)
@@ -2395,17 +2855,20 @@ class Parser(ANTLRParser):
                         pass
 
                     elif la_ == 5:
-                        localctx = Parser.BooleanExprContext(self, Parser.ExprContext(self, _parentctx, _parentState))
+                        localctx = Parser.BooleanExprContext(
+                            self, Parser.ExprContext(self, _parentctx, _parentState)
+                        )
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 286
                         if not self.precpred(self._ctx, 5):
                             from antlr4.error.Errors import FailedPredicateException
+
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 5)")
                         self.state = 287
                         localctx.op = self._input.LT(1)
                         _la = self._input.LA(1)
-                        if not(_la==Parser.OR or _la==Parser.XOR):
+                        if not (_la == Parser.OR or _la == Parser.XOR):
                             localctx.op = self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)
@@ -2415,12 +2878,15 @@ class Parser(ANTLRParser):
                         pass
 
                     elif la_ == 6:
-                        localctx = Parser.ClauseExprContext(self, Parser.ExprContext(self, _parentctx, _parentState))
+                        localctx = Parser.ClauseExprContext(
+                            self, Parser.ExprContext(self, _parentctx, _parentState)
+                        )
                         localctx.dataset = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 289
                         if not self.precpred(self._ctx, 13):
                             from antlr4.error.Errors import FailedPredicateException
+
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 13)")
                         self.state = 290
                         self.match(Parser.QLPAREN)
@@ -2431,11 +2897,14 @@ class Parser(ANTLRParser):
                         pass
 
                     elif la_ == 7:
-                        localctx = Parser.MembershipExprContext(self, Parser.ExprContext(self, _parentctx, _parentState))
+                        localctx = Parser.MembershipExprContext(
+                            self, Parser.ExprContext(self, _parentctx, _parentState)
+                        )
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 294
                         if not self.precpred(self._ctx, 12):
                             from antlr4.error.Errors import FailedPredicateException
+
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 12)")
                         self.state = 295
                         self.match(Parser.MEMBERSHIP)
@@ -2444,17 +2913,20 @@ class Parser(ANTLRParser):
                         pass
 
                     elif la_ == 8:
-                        localctx = Parser.InNotInExprContext(self, Parser.ExprContext(self, _parentctx, _parentState))
+                        localctx = Parser.InNotInExprContext(
+                            self, Parser.ExprContext(self, _parentctx, _parentState)
+                        )
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 297
                         if not self.precpred(self._ctx, 7):
                             from antlr4.error.Errors import FailedPredicateException
+
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 7)")
                         self.state = 298
                         localctx.op = self._input.LT(1)
                         _la = self._input.LA(1)
-                        if not(_la==Parser.IN or _la==Parser.NOT_IN):
+                        if not (_la == Parser.IN or _la == Parser.NOT_IN):
                             localctx.op = self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)
@@ -2475,10 +2947,9 @@ class Parser(ANTLRParser):
 
                         pass
 
-             
                 self.state = 307
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input,6,self._ctx)
+                _alt = self._interp.adaptivePredict(self._input, 6, self._ctx)
 
         except RecognitionException as re:
             localctx.exception = re
@@ -2488,432 +2959,437 @@ class Parser(ANTLRParser):
             self.unrollRecursionContexts(_parentctx)
         return localctx
 
-
     class ExprComponentContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-
 
         def getRuleIndex(self):
             return Parser.RULE_exprComponent
 
-     
-        def copyFrom(self, ctx:ParserRuleContext):
+        def copyFrom(self, ctx: ParserRuleContext):
             super().copyFrom(ctx)
 
-
     class ArithmeticExprCompContext(ExprComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ExprComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.ExprComponentContext
             super().__init__(ANTLRParser)
-            self.left = None # ExprComponentContext
-            self.op = None # Token
-            self.right = None # ExprComponentContext
+            self.left = None  # ExprComponentContext
+            self.op = None  # Token
+            self.right = None  # ExprComponentContext
             self.copyFrom(ctx)
 
-        def exprComponent(self, i:int=None):
+        def exprComponent(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ExprComponentContext)
             else:
-                return self.getTypedRuleContext(Parser.ExprComponentContext,i)
+                return self.getTypedRuleContext(Parser.ExprComponentContext, i)
 
         def MUL(self):
             return self.getToken(Parser.MUL, 0)
+
         def DIV(self):
             return self.getToken(Parser.DIV, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterArithmeticExprComp" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterArithmeticExprComp"):
                 listener.enterArithmeticExprComp(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitArithmeticExprComp" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitArithmeticExprComp"):
                 listener.exitArithmeticExprComp(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitArithmeticExprComp" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitArithmeticExprComp"):
                 return visitor.visitArithmeticExprComp(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class IfExprCompContext(ExprComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ExprComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.ExprComponentContext
             super().__init__(ANTLRParser)
-            self.conditionalExpr = None # ExprComponentContext
-            self.thenExpr = None # ExprComponentContext
-            self.elseExpr = None # ExprComponentContext
+            self.conditionalExpr = None  # ExprComponentContext
+            self.thenExpr = None  # ExprComponentContext
+            self.elseExpr = None  # ExprComponentContext
             self.copyFrom(ctx)
 
         def IF(self):
             return self.getToken(Parser.IF, 0)
+
         def THEN(self):
             return self.getToken(Parser.THEN, 0)
+
         def ELSE(self):
             return self.getToken(Parser.ELSE, 0)
-        def exprComponent(self, i:int=None):
+
+        def exprComponent(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ExprComponentContext)
             else:
-                return self.getTypedRuleContext(Parser.ExprComponentContext,i)
+                return self.getTypedRuleContext(Parser.ExprComponentContext, i)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterIfExprComp" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterIfExprComp"):
                 listener.enterIfExprComp(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitIfExprComp" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitIfExprComp"):
                 listener.exitIfExprComp(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitIfExprComp" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitIfExprComp"):
                 return visitor.visitIfExprComp(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class ComparisonExprCompContext(ExprComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ExprComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.ExprComponentContext
             super().__init__(ANTLRParser)
-            self.left = None # ExprComponentContext
-            self.right = None # ExprComponentContext
+            self.left = None  # ExprComponentContext
+            self.right = None  # ExprComponentContext
             self.copyFrom(ctx)
 
         def comparisonOperand(self):
-            return self.getTypedRuleContext(Parser.ComparisonOperandContext,0)
+            return self.getTypedRuleContext(Parser.ComparisonOperandContext, 0)
 
-        def exprComponent(self, i:int=None):
+        def exprComponent(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ExprComponentContext)
             else:
-                return self.getTypedRuleContext(Parser.ExprComponentContext,i)
+                return self.getTypedRuleContext(Parser.ExprComponentContext, i)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterComparisonExprComp" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterComparisonExprComp"):
                 listener.enterComparisonExprComp(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitComparisonExprComp" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitComparisonExprComp"):
                 listener.exitComparisonExprComp(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitComparisonExprComp" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitComparisonExprComp"):
                 return visitor.visitComparisonExprComp(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class FunctionsExpressionCompContext(ExprComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ExprComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.ExprComponentContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def functionsComponents(self):
-            return self.getTypedRuleContext(Parser.FunctionsComponentsContext,0)
+            return self.getTypedRuleContext(Parser.FunctionsComponentsContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterFunctionsExpressionComp" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterFunctionsExpressionComp"):
                 listener.enterFunctionsExpressionComp(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitFunctionsExpressionComp" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitFunctionsExpressionComp"):
                 listener.exitFunctionsExpressionComp(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitFunctionsExpressionComp" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitFunctionsExpressionComp"):
                 return visitor.visitFunctionsExpressionComp(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class CompIdContext(ExprComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ExprComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.ExprComponentContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def componentID(self):
-            return self.getTypedRuleContext(Parser.ComponentIDContext,0)
+            return self.getTypedRuleContext(Parser.ComponentIDContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterCompId" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterCompId"):
                 listener.enterCompId(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitCompId" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitCompId"):
                 listener.exitCompId(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitCompId" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitCompId"):
                 return visitor.visitCompId(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class ConstantExprCompContext(ExprComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ExprComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.ExprComponentContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def constant(self):
-            return self.getTypedRuleContext(Parser.ConstantContext,0)
+            return self.getTypedRuleContext(Parser.ConstantContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterConstantExprComp" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterConstantExprComp"):
                 listener.enterConstantExprComp(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitConstantExprComp" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitConstantExprComp"):
                 listener.exitConstantExprComp(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitConstantExprComp" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitConstantExprComp"):
                 return visitor.visitConstantExprComp(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class ArithmeticExprOrConcatCompContext(ExprComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ExprComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.ExprComponentContext
             super().__init__(ANTLRParser)
-            self.left = None # ExprComponentContext
-            self.op = None # Token
-            self.right = None # ExprComponentContext
+            self.left = None  # ExprComponentContext
+            self.op = None  # Token
+            self.right = None  # ExprComponentContext
             self.copyFrom(ctx)
 
-        def exprComponent(self, i:int=None):
+        def exprComponent(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ExprComponentContext)
             else:
-                return self.getTypedRuleContext(Parser.ExprComponentContext,i)
+                return self.getTypedRuleContext(Parser.ExprComponentContext, i)
 
         def PLUS(self):
             return self.getToken(Parser.PLUS, 0)
+
         def MINUS(self):
             return self.getToken(Parser.MINUS, 0)
+
         def CONCAT(self):
             return self.getToken(Parser.CONCAT, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterArithmeticExprOrConcatComp" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterArithmeticExprOrConcatComp"):
                 listener.enterArithmeticExprOrConcatComp(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitArithmeticExprOrConcatComp" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitArithmeticExprOrConcatComp"):
                 listener.exitArithmeticExprOrConcatComp(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitArithmeticExprOrConcatComp" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitArithmeticExprOrConcatComp"):
                 return visitor.visitArithmeticExprOrConcatComp(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class ParenthesisExprCompContext(ExprComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ExprComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.ExprComponentContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def exprComponent(self):
-            return self.getTypedRuleContext(Parser.ExprComponentContext,0)
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterParenthesisExprComp" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterParenthesisExprComp"):
                 listener.enterParenthesisExprComp(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitParenthesisExprComp" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitParenthesisExprComp"):
                 listener.exitParenthesisExprComp(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitParenthesisExprComp" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitParenthesisExprComp"):
                 return visitor.visitParenthesisExprComp(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class InNotInExprCompContext(ExprComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ExprComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.ExprComponentContext
             super().__init__(ANTLRParser)
-            self.left = None # ExprComponentContext
-            self.op = None # Token
+            self.left = None  # ExprComponentContext
+            self.op = None  # Token
             self.copyFrom(ctx)
 
         def exprComponent(self):
-            return self.getTypedRuleContext(Parser.ExprComponentContext,0)
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def IN(self):
             return self.getToken(Parser.IN, 0)
+
         def NOT_IN(self):
             return self.getToken(Parser.NOT_IN, 0)
+
         def lists(self):
-            return self.getTypedRuleContext(Parser.ListsContext,0)
+            return self.getTypedRuleContext(Parser.ListsContext, 0)
 
         def valueDomainID(self):
-            return self.getTypedRuleContext(Parser.ValueDomainIDContext,0)
+            return self.getTypedRuleContext(Parser.ValueDomainIDContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterInNotInExprComp" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterInNotInExprComp"):
                 listener.enterInNotInExprComp(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitInNotInExprComp" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitInNotInExprComp"):
                 listener.exitInNotInExprComp(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInNotInExprComp" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitInNotInExprComp"):
                 return visitor.visitInNotInExprComp(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class UnaryExprCompContext(ExprComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ExprComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.ExprComponentContext
             super().__init__(ANTLRParser)
-            self.op = None # Token
-            self.right = None # ExprComponentContext
+            self.op = None  # Token
+            self.right = None  # ExprComponentContext
             self.copyFrom(ctx)
 
         def exprComponent(self):
-            return self.getTypedRuleContext(Parser.ExprComponentContext,0)
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def PLUS(self):
             return self.getToken(Parser.PLUS, 0)
+
         def MINUS(self):
             return self.getToken(Parser.MINUS, 0)
+
         def NOT(self):
             return self.getToken(Parser.NOT, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterUnaryExprComp" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterUnaryExprComp"):
                 listener.enterUnaryExprComp(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitUnaryExprComp" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitUnaryExprComp"):
                 listener.exitUnaryExprComp(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitUnaryExprComp" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitUnaryExprComp"):
                 return visitor.visitUnaryExprComp(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class CaseExprCompContext(ExprComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ExprComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.ExprComponentContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def CASE(self):
             return self.getToken(Parser.CASE, 0)
+
         def ELSE(self):
             return self.getToken(Parser.ELSE, 0)
-        def exprComponent(self, i:int=None):
+
+        def exprComponent(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ExprComponentContext)
             else:
-                return self.getTypedRuleContext(Parser.ExprComponentContext,i)
+                return self.getTypedRuleContext(Parser.ExprComponentContext, i)
 
-        def WHEN(self, i:int=None):
+        def WHEN(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.WHEN)
             else:
                 return self.getToken(Parser.WHEN, i)
-        def THEN(self, i:int=None):
+
+        def THEN(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.THEN)
             else:
                 return self.getToken(Parser.THEN, i)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterCaseExprComp" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterCaseExprComp"):
                 listener.enterCaseExprComp(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitCaseExprComp" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitCaseExprComp"):
                 listener.exitCaseExprComp(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitCaseExprComp" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitCaseExprComp"):
                 return visitor.visitCaseExprComp(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class BooleanExprCompContext(ExprComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ExprComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.ExprComponentContext
             super().__init__(ANTLRParser)
-            self.left = None # ExprComponentContext
-            self.op = None # Token
-            self.right = None # ExprComponentContext
+            self.left = None  # ExprComponentContext
+            self.op = None  # Token
+            self.right = None  # ExprComponentContext
             self.copyFrom(ctx)
 
-        def exprComponent(self, i:int=None):
+        def exprComponent(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ExprComponentContext)
             else:
-                return self.getTypedRuleContext(Parser.ExprComponentContext,i)
+                return self.getTypedRuleContext(Parser.ExprComponentContext, i)
 
         def AND(self):
             return self.getToken(Parser.AND, 0)
+
         def OR(self):
             return self.getToken(Parser.OR, 0)
+
         def XOR(self):
             return self.getToken(Parser.XOR, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterBooleanExprComp" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterBooleanExprComp"):
                 listener.enterBooleanExprComp(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitBooleanExprComp" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitBooleanExprComp"):
                 listener.exitBooleanExprComp(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitBooleanExprComp" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitBooleanExprComp"):
                 return visitor.visitBooleanExprComp(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-    def exprComponent(self, _p:int=0):
+    def exprComponent(self, _p: int = 0):
         _parentctx = self._ctx
         _parentState = self.state
         localctx = Parser.ExprComponentContext(self, self._ctx, _parentState)
         _prevctx = localctx
         _startState = 6
         self.enterRecursionRule(localctx, 6, self.RULE_exprComponent, _p)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 338
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,8,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 8, self._ctx)
             if la_ == 1:
                 localctx = Parser.ParenthesisExprCompContext(self, localctx)
                 self._ctx = localctx
@@ -2942,7 +3418,13 @@ class Parser(ANTLRParser):
                 self.state = 314
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << Parser.PLUS) | (1 << Parser.MINUS) | (1 << Parser.NOT))) != 0)):
+                if not (
+                    ((_la) & ~0x3F) == 0
+                    and (
+                        (1 << _la) & ((1 << Parser.PLUS) | (1 << Parser.MINUS) | (1 << Parser.NOT))
+                    )
+                    != 0
+                ):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -2975,7 +3457,7 @@ class Parser(ANTLRParser):
                 _prevctx = localctx
                 self.state = 323
                 self.match(Parser.CASE)
-                self.state = 329 
+                self.state = 329
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 while True:
@@ -2987,10 +3469,10 @@ class Parser(ANTLRParser):
                     self.match(Parser.THEN)
                     self.state = 327
                     self.exprComponent(0)
-                    self.state = 331 
+                    self.state = 331
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    if not (_la==Parser.WHEN):
+                    if not (_la == Parser.WHEN):
                         break
 
                 self.state = 333
@@ -3015,31 +3497,33 @@ class Parser(ANTLRParser):
                 self.componentID()
                 pass
 
-
             self._ctx.stop = self._input.LT(-1)
             self.state = 364
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input,11,self._ctx)
-            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
-                if _alt==1:
+            _alt = self._interp.adaptivePredict(self._input, 11, self._ctx)
+            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
+                if _alt == 1:
                     if self._parseListeners is not None:
                         self.triggerExitRuleEvent()
                     _prevctx = localctx
                     self.state = 362
                     self._errHandler.sync(self)
-                    la_ = self._interp.adaptivePredict(self._input,10,self._ctx)
+                    la_ = self._interp.adaptivePredict(self._input, 10, self._ctx)
                     if la_ == 1:
-                        localctx = Parser.ArithmeticExprCompContext(self, Parser.ExprComponentContext(self, _parentctx, _parentState))
+                        localctx = Parser.ArithmeticExprCompContext(
+                            self, Parser.ExprComponentContext(self, _parentctx, _parentState)
+                        )
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_exprComponent)
                         self.state = 340
                         if not self.precpred(self._ctx, 10):
                             from antlr4.error.Errors import FailedPredicateException
+
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 10)")
                         self.state = 341
                         localctx.op = self._input.LT(1)
                         _la = self._input.LA(1)
-                        if not(_la==Parser.MUL or _la==Parser.DIV):
+                        if not (_la == Parser.MUL or _la == Parser.DIV):
                             localctx.op = self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)
@@ -3049,17 +3533,20 @@ class Parser(ANTLRParser):
                         pass
 
                     elif la_ == 2:
-                        localctx = Parser.ArithmeticExprOrConcatCompContext(self, Parser.ExprComponentContext(self, _parentctx, _parentState))
+                        localctx = Parser.ArithmeticExprOrConcatCompContext(
+                            self, Parser.ExprComponentContext(self, _parentctx, _parentState)
+                        )
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_exprComponent)
                         self.state = 343
                         if not self.precpred(self._ctx, 9):
                             from antlr4.error.Errors import FailedPredicateException
+
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 9)")
                         self.state = 344
                         localctx.op = self._input.LT(1)
                         _la = self._input.LA(1)
-                        if not(_la==Parser.PLUS or _la==Parser.MINUS or _la==Parser.CONCAT):
+                        if not (_la == Parser.PLUS or _la == Parser.MINUS or _la == Parser.CONCAT):
                             localctx.op = self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)
@@ -3069,12 +3556,15 @@ class Parser(ANTLRParser):
                         pass
 
                     elif la_ == 3:
-                        localctx = Parser.ComparisonExprCompContext(self, Parser.ExprComponentContext(self, _parentctx, _parentState))
+                        localctx = Parser.ComparisonExprCompContext(
+                            self, Parser.ExprComponentContext(self, _parentctx, _parentState)
+                        )
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_exprComponent)
                         self.state = 346
                         if not self.precpred(self._ctx, 8):
                             from antlr4.error.Errors import FailedPredicateException
+
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 8)")
                         self.state = 347
                         self.comparisonOperand()
@@ -3083,12 +3573,15 @@ class Parser(ANTLRParser):
                         pass
 
                     elif la_ == 4:
-                        localctx = Parser.BooleanExprCompContext(self, Parser.ExprComponentContext(self, _parentctx, _parentState))
+                        localctx = Parser.BooleanExprCompContext(
+                            self, Parser.ExprComponentContext(self, _parentctx, _parentState)
+                        )
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_exprComponent)
                         self.state = 350
                         if not self.precpred(self._ctx, 6):
                             from antlr4.error.Errors import FailedPredicateException
+
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 6)")
                         self.state = 351
                         localctx.op = self.match(Parser.AND)
@@ -3097,17 +3590,20 @@ class Parser(ANTLRParser):
                         pass
 
                     elif la_ == 5:
-                        localctx = Parser.BooleanExprCompContext(self, Parser.ExprComponentContext(self, _parentctx, _parentState))
+                        localctx = Parser.BooleanExprCompContext(
+                            self, Parser.ExprComponentContext(self, _parentctx, _parentState)
+                        )
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_exprComponent)
                         self.state = 353
                         if not self.precpred(self._ctx, 5):
                             from antlr4.error.Errors import FailedPredicateException
+
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 5)")
                         self.state = 354
                         localctx.op = self._input.LT(1)
                         _la = self._input.LA(1)
-                        if not(_la==Parser.OR or _la==Parser.XOR):
+                        if not (_la == Parser.OR or _la == Parser.XOR):
                             localctx.op = self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)
@@ -3117,17 +3613,20 @@ class Parser(ANTLRParser):
                         pass
 
                     elif la_ == 6:
-                        localctx = Parser.InNotInExprCompContext(self, Parser.ExprComponentContext(self, _parentctx, _parentState))
+                        localctx = Parser.InNotInExprCompContext(
+                            self, Parser.ExprComponentContext(self, _parentctx, _parentState)
+                        )
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_exprComponent)
                         self.state = 356
                         if not self.precpred(self._ctx, 7):
                             from antlr4.error.Errors import FailedPredicateException
+
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 7)")
                         self.state = 357
                         localctx.op = self._input.LT(1)
                         _la = self._input.LA(1)
-                        if not(_la==Parser.IN or _la==Parser.NOT_IN):
+                        if not (_la == Parser.IN or _la == Parser.NOT_IN):
                             localctx.op = self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)
@@ -3148,10 +3647,9 @@ class Parser(ANTLRParser):
 
                         pass
 
-             
                 self.state = 366
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input,11,self._ctx)
+                _alt = self._interp.adaptivePredict(self._input, 11, self._ctx)
 
         except RecognitionException as re:
             localctx.exception = re
@@ -3161,224 +3659,210 @@ class Parser(ANTLRParser):
             self.unrollRecursionContexts(_parentctx)
         return localctx
 
-
     class FunctionsComponentsContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-
 
         def getRuleIndex(self):
             return Parser.RULE_functionsComponents
 
-     
-        def copyFrom(self, ctx:ParserRuleContext):
+        def copyFrom(self, ctx: ParserRuleContext):
             super().copyFrom(ctx)
 
-
-
     class NumericFunctionsComponentsContext(FunctionsComponentsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.FunctionsComponentsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.FunctionsComponentsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def numericOperatorsComponent(self):
-            return self.getTypedRuleContext(Parser.NumericOperatorsComponentContext,0)
+            return self.getTypedRuleContext(Parser.NumericOperatorsComponentContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterNumericFunctionsComponents" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterNumericFunctionsComponents"):
                 listener.enterNumericFunctionsComponents(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitNumericFunctionsComponents" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitNumericFunctionsComponents"):
                 listener.exitNumericFunctionsComponents(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitNumericFunctionsComponents" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitNumericFunctionsComponents"):
                 return visitor.visitNumericFunctionsComponents(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class StringFunctionsComponentsContext(FunctionsComponentsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.FunctionsComponentsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.FunctionsComponentsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def stringOperatorsComponent(self):
-            return self.getTypedRuleContext(Parser.StringOperatorsComponentContext,0)
+            return self.getTypedRuleContext(Parser.StringOperatorsComponentContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterStringFunctionsComponents" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterStringFunctionsComponents"):
                 listener.enterStringFunctionsComponents(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitStringFunctionsComponents" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitStringFunctionsComponents"):
                 listener.exitStringFunctionsComponents(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitStringFunctionsComponents" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitStringFunctionsComponents"):
                 return visitor.visitStringFunctionsComponents(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class ComparisonFunctionsComponentsContext(FunctionsComponentsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.FunctionsComponentsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.FunctionsComponentsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def comparisonOperatorsComponent(self):
-            return self.getTypedRuleContext(Parser.ComparisonOperatorsComponentContext,0)
+            return self.getTypedRuleContext(Parser.ComparisonOperatorsComponentContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterComparisonFunctionsComponents" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterComparisonFunctionsComponents"):
                 listener.enterComparisonFunctionsComponents(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitComparisonFunctionsComponents" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitComparisonFunctionsComponents"):
                 listener.exitComparisonFunctionsComponents(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitComparisonFunctionsComponents" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitComparisonFunctionsComponents"):
                 return visitor.visitComparisonFunctionsComponents(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class TimeFunctionsComponentsContext(FunctionsComponentsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.FunctionsComponentsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.FunctionsComponentsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def timeOperatorsComponent(self):
-            return self.getTypedRuleContext(Parser.TimeOperatorsComponentContext,0)
+            return self.getTypedRuleContext(Parser.TimeOperatorsComponentContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTimeFunctionsComponents" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterTimeFunctionsComponents"):
                 listener.enterTimeFunctionsComponents(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTimeFunctionsComponents" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitTimeFunctionsComponents"):
                 listener.exitTimeFunctionsComponents(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitTimeFunctionsComponents" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitTimeFunctionsComponents"):
                 return visitor.visitTimeFunctionsComponents(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class GenericFunctionsComponentsContext(FunctionsComponentsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.FunctionsComponentsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.FunctionsComponentsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def genericOperatorsComponent(self):
-            return self.getTypedRuleContext(Parser.GenericOperatorsComponentContext,0)
+            return self.getTypedRuleContext(Parser.GenericOperatorsComponentContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterGenericFunctionsComponents" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterGenericFunctionsComponents"):
                 listener.enterGenericFunctionsComponents(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitGenericFunctionsComponents" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitGenericFunctionsComponents"):
                 listener.exitGenericFunctionsComponents(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitGenericFunctionsComponents" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitGenericFunctionsComponents"):
                 return visitor.visitGenericFunctionsComponents(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class AnalyticFunctionsComponentsContext(FunctionsComponentsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.FunctionsComponentsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.FunctionsComponentsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def anFunctionComponent(self):
-            return self.getTypedRuleContext(Parser.AnFunctionComponentContext,0)
+            return self.getTypedRuleContext(Parser.AnFunctionComponentContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAnalyticFunctionsComponents" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterAnalyticFunctionsComponents"):
                 listener.enterAnalyticFunctionsComponents(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAnalyticFunctionsComponents" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitAnalyticFunctionsComponents"):
                 listener.exitAnalyticFunctionsComponents(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAnalyticFunctionsComponents" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitAnalyticFunctionsComponents"):
                 return visitor.visitAnalyticFunctionsComponents(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class ConditionalFunctionsComponentsContext(FunctionsComponentsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.FunctionsComponentsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.FunctionsComponentsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def conditionalOperatorsComponent(self):
-            return self.getTypedRuleContext(Parser.ConditionalOperatorsComponentContext,0)
+            return self.getTypedRuleContext(Parser.ConditionalOperatorsComponentContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterConditionalFunctionsComponents" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterConditionalFunctionsComponents"):
                 listener.enterConditionalFunctionsComponents(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitConditionalFunctionsComponents" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitConditionalFunctionsComponents"):
                 listener.exitConditionalFunctionsComponents(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitConditionalFunctionsComponents" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitConditionalFunctionsComponents"):
                 return visitor.visitConditionalFunctionsComponents(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class AggregateFunctionsComponentsContext(FunctionsComponentsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.FunctionsComponentsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.FunctionsComponentsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def aggrOperators(self):
-            return self.getTypedRuleContext(Parser.AggrOperatorsContext,0)
+            return self.getTypedRuleContext(Parser.AggrOperatorsContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAggregateFunctionsComponents" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterAggregateFunctionsComponents"):
                 listener.enterAggregateFunctionsComponents(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAggregateFunctionsComponents" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitAggregateFunctionsComponents"):
                 listener.exitAggregateFunctionsComponents(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAggregateFunctionsComponents" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitAggregateFunctionsComponents"):
                 return visitor.visitAggregateFunctionsComponents(self)
             else:
                 return visitor.visitChildren(self)
-
-
 
     def functionsComponents(self):
 
@@ -3387,7 +3871,7 @@ class Parser(ANTLRParser):
         try:
             self.state = 375
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,12,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 12, self._ctx)
             if la_ == 1:
                 localctx = Parser.GenericFunctionsComponentsContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
@@ -3444,7 +3928,6 @@ class Parser(ANTLRParser):
                 self.anFunctionComponent()
                 pass
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -3453,324 +3936,306 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class FunctionsContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-
 
         def getRuleIndex(self):
             return Parser.RULE_functions
 
-     
-        def copyFrom(self, ctx:ParserRuleContext):
+        def copyFrom(self, ctx: ParserRuleContext):
             super().copyFrom(ctx)
 
-
-
     class HierarchyFunctionsContext(FunctionsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.FunctionsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.FunctionsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def hierarchyOperators(self):
-            return self.getTypedRuleContext(Parser.HierarchyOperatorsContext,0)
+            return self.getTypedRuleContext(Parser.HierarchyOperatorsContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterHierarchyFunctions" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterHierarchyFunctions"):
                 listener.enterHierarchyFunctions(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitHierarchyFunctions" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitHierarchyFunctions"):
                 listener.exitHierarchyFunctions(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitHierarchyFunctions" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitHierarchyFunctions"):
                 return visitor.visitHierarchyFunctions(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class StringFunctionsContext(FunctionsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.FunctionsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.FunctionsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def stringOperators(self):
-            return self.getTypedRuleContext(Parser.StringOperatorsContext,0)
+            return self.getTypedRuleContext(Parser.StringOperatorsContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterStringFunctions" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterStringFunctions"):
                 listener.enterStringFunctions(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitStringFunctions" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitStringFunctions"):
                 listener.exitStringFunctions(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitStringFunctions" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitStringFunctions"):
                 return visitor.visitStringFunctions(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class ValidationFunctionsContext(FunctionsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.FunctionsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.FunctionsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def validationOperators(self):
-            return self.getTypedRuleContext(Parser.ValidationOperatorsContext,0)
+            return self.getTypedRuleContext(Parser.ValidationOperatorsContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterValidationFunctions" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterValidationFunctions"):
                 listener.enterValidationFunctions(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitValidationFunctions" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitValidationFunctions"):
                 listener.exitValidationFunctions(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitValidationFunctions" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitValidationFunctions"):
                 return visitor.visitValidationFunctions(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class GenericFunctionsContext(FunctionsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.FunctionsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.FunctionsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def genericOperators(self):
-            return self.getTypedRuleContext(Parser.GenericOperatorsContext,0)
+            return self.getTypedRuleContext(Parser.GenericOperatorsContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterGenericFunctions" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterGenericFunctions"):
                 listener.enterGenericFunctions(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitGenericFunctions" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitGenericFunctions"):
                 listener.exitGenericFunctions(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitGenericFunctions" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitGenericFunctions"):
                 return visitor.visitGenericFunctions(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class ConditionalFunctionsContext(FunctionsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.FunctionsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.FunctionsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def conditionalOperators(self):
-            return self.getTypedRuleContext(Parser.ConditionalOperatorsContext,0)
+            return self.getTypedRuleContext(Parser.ConditionalOperatorsContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterConditionalFunctions" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterConditionalFunctions"):
                 listener.enterConditionalFunctions(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitConditionalFunctions" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitConditionalFunctions"):
                 listener.exitConditionalFunctions(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitConditionalFunctions" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitConditionalFunctions"):
                 return visitor.visitConditionalFunctions(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class AggregateFunctionsContext(FunctionsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.FunctionsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.FunctionsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def aggrOperatorsGrouping(self):
-            return self.getTypedRuleContext(Parser.AggrOperatorsGroupingContext,0)
+            return self.getTypedRuleContext(Parser.AggrOperatorsGroupingContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAggregateFunctions" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterAggregateFunctions"):
                 listener.enterAggregateFunctions(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAggregateFunctions" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitAggregateFunctions"):
                 listener.exitAggregateFunctions(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAggregateFunctions" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitAggregateFunctions"):
                 return visitor.visitAggregateFunctions(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class JoinFunctionsContext(FunctionsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.FunctionsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.FunctionsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def joinOperators(self):
-            return self.getTypedRuleContext(Parser.JoinOperatorsContext,0)
+            return self.getTypedRuleContext(Parser.JoinOperatorsContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterJoinFunctions" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterJoinFunctions"):
                 listener.enterJoinFunctions(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitJoinFunctions" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitJoinFunctions"):
                 listener.exitJoinFunctions(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitJoinFunctions" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitJoinFunctions"):
                 return visitor.visitJoinFunctions(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class ComparisonFunctionsContext(FunctionsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.FunctionsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.FunctionsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def comparisonOperators(self):
-            return self.getTypedRuleContext(Parser.ComparisonOperatorsContext,0)
+            return self.getTypedRuleContext(Parser.ComparisonOperatorsContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterComparisonFunctions" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterComparisonFunctions"):
                 listener.enterComparisonFunctions(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitComparisonFunctions" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitComparisonFunctions"):
                 listener.exitComparisonFunctions(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitComparisonFunctions" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitComparisonFunctions"):
                 return visitor.visitComparisonFunctions(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class NumericFunctionsContext(FunctionsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.FunctionsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.FunctionsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def numericOperators(self):
-            return self.getTypedRuleContext(Parser.NumericOperatorsContext,0)
+            return self.getTypedRuleContext(Parser.NumericOperatorsContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterNumericFunctions" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterNumericFunctions"):
                 listener.enterNumericFunctions(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitNumericFunctions" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitNumericFunctions"):
                 listener.exitNumericFunctions(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitNumericFunctions" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitNumericFunctions"):
                 return visitor.visitNumericFunctions(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class TimeFunctionsContext(FunctionsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.FunctionsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.FunctionsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def timeOperators(self):
-            return self.getTypedRuleContext(Parser.TimeOperatorsContext,0)
+            return self.getTypedRuleContext(Parser.TimeOperatorsContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTimeFunctions" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterTimeFunctions"):
                 listener.enterTimeFunctions(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTimeFunctions" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitTimeFunctions"):
                 listener.exitTimeFunctions(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitTimeFunctions" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitTimeFunctions"):
                 return visitor.visitTimeFunctions(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class SetFunctionsContext(FunctionsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.FunctionsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.FunctionsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def setOperators(self):
-            return self.getTypedRuleContext(Parser.SetOperatorsContext,0)
+            return self.getTypedRuleContext(Parser.SetOperatorsContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSetFunctions" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterSetFunctions"):
                 listener.enterSetFunctions(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSetFunctions" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitSetFunctions"):
                 listener.exitSetFunctions(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSetFunctions" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitSetFunctions"):
                 return visitor.visitSetFunctions(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class AnalyticFunctionsContext(FunctionsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.FunctionsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.FunctionsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def anFunction(self):
-            return self.getTypedRuleContext(Parser.AnFunctionContext,0)
+            return self.getTypedRuleContext(Parser.AnFunctionContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAnalyticFunctions" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterAnalyticFunctions"):
                 listener.enterAnalyticFunctions(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAnalyticFunctions" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitAnalyticFunctions"):
                 listener.exitAnalyticFunctions(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAnalyticFunctions" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitAnalyticFunctions"):
                 return visitor.visitAnalyticFunctions(self)
             else:
                 return visitor.visitChildren(self)
-
-
 
     def functions(self):
 
@@ -3779,7 +4244,7 @@ class Parser(ANTLRParser):
         try:
             self.state = 389
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,13,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 13, self._ctx)
             if la_ == 1:
                 localctx = Parser.JoinFunctionsContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
@@ -3864,7 +4329,6 @@ class Parser(ANTLRParser):
                 self.anFunction()
                 pass
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -3873,61 +4337,50 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class DatasetClauseContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
         def renameClause(self):
-            return self.getTypedRuleContext(Parser.RenameClauseContext,0)
-
+            return self.getTypedRuleContext(Parser.RenameClauseContext, 0)
 
         def aggrClause(self):
-            return self.getTypedRuleContext(Parser.AggrClauseContext,0)
-
+            return self.getTypedRuleContext(Parser.AggrClauseContext, 0)
 
         def filterClause(self):
-            return self.getTypedRuleContext(Parser.FilterClauseContext,0)
-
+            return self.getTypedRuleContext(Parser.FilterClauseContext, 0)
 
         def calcClause(self):
-            return self.getTypedRuleContext(Parser.CalcClauseContext,0)
-
+            return self.getTypedRuleContext(Parser.CalcClauseContext, 0)
 
         def keepOrDropClause(self):
-            return self.getTypedRuleContext(Parser.KeepOrDropClauseContext,0)
-
+            return self.getTypedRuleContext(Parser.KeepOrDropClauseContext, 0)
 
         def pivotOrUnpivotClause(self):
-            return self.getTypedRuleContext(Parser.PivotOrUnpivotClauseContext,0)
-
+            return self.getTypedRuleContext(Parser.PivotOrUnpivotClauseContext, 0)
 
         def subspaceClause(self):
-            return self.getTypedRuleContext(Parser.SubspaceClauseContext,0)
-
+            return self.getTypedRuleContext(Parser.SubspaceClauseContext, 0)
 
         def getRuleIndex(self):
             return Parser.RULE_datasetClause
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDatasetClause" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterDatasetClause"):
                 listener.enterDatasetClause(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDatasetClause" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitDatasetClause"):
                 listener.exitDatasetClause(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDatasetClause" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitDatasetClause"):
                 return visitor.visitDatasetClause(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def datasetClause(self):
 
@@ -3983,25 +4436,23 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class RenameClauseContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
         def RENAME(self):
             return self.getToken(Parser.RENAME, 0)
 
-        def renameClauseItem(self, i:int=None):
+        def renameClauseItem(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.RenameClauseItemContext)
             else:
-                return self.getTypedRuleContext(Parser.RenameClauseItemContext,i)
+                return self.getTypedRuleContext(Parser.RenameClauseItemContext, i)
 
-
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
@@ -4010,28 +4461,25 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_renameClause
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterRenameClause" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterRenameClause"):
                 listener.enterRenameClause(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitRenameClause" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitRenameClause"):
                 listener.exitRenameClause(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitRenameClause" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitRenameClause"):
                 return visitor.visitRenameClause(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def renameClause(self):
 
         localctx = Parser.RenameClauseContext(self, self._ctx, self.state)
         self.enterRule(localctx, 14, self.RULE_renameClause)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 400
@@ -4041,7 +4489,7 @@ class Parser(ANTLRParser):
             self.state = 406
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==Parser.COMMA:
+            while _la == Parser.COMMA:
                 self.state = 402
                 self.match(Parser.COMMA)
                 self.state = 403
@@ -4058,11 +4506,10 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class AggrClauseContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
@@ -4070,42 +4517,36 @@ class Parser(ANTLRParser):
             return self.getToken(Parser.AGGREGATE, 0)
 
         def aggregateClause(self):
-            return self.getTypedRuleContext(Parser.AggregateClauseContext,0)
-
+            return self.getTypedRuleContext(Parser.AggregateClauseContext, 0)
 
         def groupingClause(self):
-            return self.getTypedRuleContext(Parser.GroupingClauseContext,0)
-
+            return self.getTypedRuleContext(Parser.GroupingClauseContext, 0)
 
         def havingClause(self):
-            return self.getTypedRuleContext(Parser.HavingClauseContext,0)
-
+            return self.getTypedRuleContext(Parser.HavingClauseContext, 0)
 
         def getRuleIndex(self):
             return Parser.RULE_aggrClause
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAggrClause" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterAggrClause"):
                 listener.enterAggrClause(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAggrClause" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitAggrClause"):
                 listener.exitAggrClause(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAggrClause" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitAggrClause"):
                 return visitor.visitAggrClause(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def aggrClause(self):
 
         localctx = Parser.AggrClauseContext(self, self._ctx, self.state)
         self.enterRule(localctx, 16, self.RULE_aggrClause)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 409
@@ -4115,18 +4556,15 @@ class Parser(ANTLRParser):
             self.state = 415
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==Parser.GROUP:
+            if _la == Parser.GROUP:
                 self.state = 411
                 self.groupingClause()
                 self.state = 413
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.HAVING:
+                if _la == Parser.HAVING:
                     self.state = 412
                     self.havingClause()
-
-
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -4136,11 +4574,10 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class FilterClauseContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
@@ -4148,28 +4585,24 @@ class Parser(ANTLRParser):
             return self.getToken(Parser.FILTER, 0)
 
         def exprComponent(self):
-            return self.getTypedRuleContext(Parser.ExprComponentContext,0)
-
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def getRuleIndex(self):
             return Parser.RULE_filterClause
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterFilterClause" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterFilterClause"):
                 listener.enterFilterClause(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitFilterClause" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitFilterClause"):
                 listener.exitFilterClause(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitFilterClause" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitFilterClause"):
                 return visitor.visitFilterClause(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def filterClause(self):
 
@@ -4189,25 +4622,23 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class CalcClauseContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
         def CALC(self):
             return self.getToken(Parser.CALC, 0)
 
-        def calcClauseItem(self, i:int=None):
+        def calcClauseItem(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.CalcClauseItemContext)
             else:
-                return self.getTypedRuleContext(Parser.CalcClauseItemContext,i)
+                return self.getTypedRuleContext(Parser.CalcClauseItemContext, i)
 
-
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
@@ -4216,28 +4647,25 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_calcClause
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterCalcClause" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterCalcClause"):
                 listener.enterCalcClause(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitCalcClause" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitCalcClause"):
                 listener.exitCalcClause(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitCalcClause" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitCalcClause"):
                 return visitor.visitCalcClause(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def calcClause(self):
 
         localctx = Parser.CalcClauseContext(self, self._ctx, self.state)
         self.enterRule(localctx, 20, self.RULE_calcClause)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 420
@@ -4247,7 +4675,7 @@ class Parser(ANTLRParser):
             self.state = 426
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==Parser.COMMA:
+            while _la == Parser.COMMA:
                 self.state = 422
                 self.match(Parser.COMMA)
                 self.state = 423
@@ -4264,21 +4692,19 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class KeepOrDropClauseContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-            self.op = None # Token
+            self.op = None  # Token
 
-        def componentID(self, i:int=None):
+        def componentID(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ComponentIDContext)
             else:
-                return self.getTypedRuleContext(Parser.ComponentIDContext,i)
-
+                return self.getTypedRuleContext(Parser.ComponentIDContext, i)
 
         def KEEP(self):
             return self.getToken(Parser.KEEP, 0)
@@ -4286,7 +4712,7 @@ class Parser(ANTLRParser):
         def DROP(self):
             return self.getToken(Parser.DROP, 0)
 
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
@@ -4295,34 +4721,31 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_keepOrDropClause
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterKeepOrDropClause" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterKeepOrDropClause"):
                 listener.enterKeepOrDropClause(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitKeepOrDropClause" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitKeepOrDropClause"):
                 listener.exitKeepOrDropClause(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitKeepOrDropClause" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitKeepOrDropClause"):
                 return visitor.visitKeepOrDropClause(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def keepOrDropClause(self):
 
         localctx = Parser.KeepOrDropClauseContext(self, self._ctx, self.state)
         self.enterRule(localctx, 22, self.RULE_keepOrDropClause)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 429
             localctx.op = self._input.LT(1)
             _la = self._input.LA(1)
-            if not(_la==Parser.DROP or _la==Parser.KEEP):
+            if not (_la == Parser.DROP or _la == Parser.KEEP):
                 localctx.op = self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -4332,7 +4755,7 @@ class Parser(ANTLRParser):
             self.state = 435
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==Parser.COMMA:
+            while _la == Parser.COMMA:
                 self.state = 431
                 self.match(Parser.COMMA)
                 self.state = 432
@@ -4349,26 +4772,24 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class PivotOrUnpivotClauseContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-            self.op = None # Token
-            self.id_ = None # ComponentIDContext
-            self.mea = None # ComponentIDContext
+            self.op = None  # Token
+            self.id_ = None  # ComponentIDContext
+            self.mea = None  # ComponentIDContext
 
         def COMMA(self):
             return self.getToken(Parser.COMMA, 0)
 
-        def componentID(self, i:int=None):
+        def componentID(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ComponentIDContext)
             else:
-                return self.getTypedRuleContext(Parser.ComponentIDContext,i)
-
+                return self.getTypedRuleContext(Parser.ComponentIDContext, i)
 
         def PIVOT(self):
             return self.getToken(Parser.PIVOT, 0)
@@ -4379,34 +4800,31 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_pivotOrUnpivotClause
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterPivotOrUnpivotClause" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterPivotOrUnpivotClause"):
                 listener.enterPivotOrUnpivotClause(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitPivotOrUnpivotClause" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitPivotOrUnpivotClause"):
                 listener.exitPivotOrUnpivotClause(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitPivotOrUnpivotClause" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitPivotOrUnpivotClause"):
                 return visitor.visitPivotOrUnpivotClause(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def pivotOrUnpivotClause(self):
 
         localctx = Parser.PivotOrUnpivotClauseContext(self, self._ctx, self.state)
         self.enterRule(localctx, 24, self.RULE_pivotOrUnpivotClause)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 438
             localctx.op = self._input.LT(1)
             _la = self._input.LA(1)
-            if not(_la==Parser.PIVOT or _la==Parser.UNPIVOT):
+            if not (_la == Parser.PIVOT or _la == Parser.UNPIVOT):
                 localctx.op = self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -4425,20 +4843,19 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class CustomPivotClauseContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-            self.id_ = None # ComponentIDContext
-            self.mea = None # ComponentIDContext
+            self.id_ = None  # ComponentIDContext
+            self.mea = None  # ComponentIDContext
 
         def CUSTOMPIVOT(self):
             return self.getToken(Parser.CUSTOMPIVOT, 0)
 
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
@@ -4447,45 +4864,40 @@ class Parser(ANTLRParser):
         def IN(self):
             return self.getToken(Parser.IN, 0)
 
-        def constant(self, i:int=None):
+        def constant(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ConstantContext)
             else:
-                return self.getTypedRuleContext(Parser.ConstantContext,i)
+                return self.getTypedRuleContext(Parser.ConstantContext, i)
 
-
-        def componentID(self, i:int=None):
+        def componentID(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ComponentIDContext)
             else:
-                return self.getTypedRuleContext(Parser.ComponentIDContext,i)
-
+                return self.getTypedRuleContext(Parser.ComponentIDContext, i)
 
         def getRuleIndex(self):
             return Parser.RULE_customPivotClause
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterCustomPivotClause" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterCustomPivotClause"):
                 listener.enterCustomPivotClause(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitCustomPivotClause" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitCustomPivotClause"):
                 listener.exitCustomPivotClause(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitCustomPivotClause" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitCustomPivotClause"):
                 return visitor.visitCustomPivotClause(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def customPivotClause(self):
 
         localctx = Parser.CustomPivotClauseContext(self, self._ctx, self.state)
         self.enterRule(localctx, 26, self.RULE_customPivotClause)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 443
@@ -4503,7 +4915,7 @@ class Parser(ANTLRParser):
             self.state = 453
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==Parser.COMMA:
+            while _la == Parser.COMMA:
                 self.state = 449
                 self.match(Parser.COMMA)
                 self.state = 450
@@ -4520,25 +4932,23 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class SubspaceClauseContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
         def SUBSPACE(self):
             return self.getToken(Parser.SUBSPACE, 0)
 
-        def subspaceClauseItem(self, i:int=None):
+        def subspaceClauseItem(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.SubspaceClauseItemContext)
             else:
-                return self.getTypedRuleContext(Parser.SubspaceClauseItemContext,i)
+                return self.getTypedRuleContext(Parser.SubspaceClauseItemContext, i)
 
-
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
@@ -4547,28 +4957,25 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_subspaceClause
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSubspaceClause" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterSubspaceClause"):
                 listener.enterSubspaceClause(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSubspaceClause" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitSubspaceClause"):
                 listener.exitSubspaceClause(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSubspaceClause" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitSubspaceClause"):
                 return visitor.visitSubspaceClause(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def subspaceClause(self):
 
         localctx = Parser.SubspaceClauseContext(self, self._ctx, self.state)
         self.enterRule(localctx, 28, self.RULE_subspaceClause)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 456
@@ -4578,7 +4985,7 @@ class Parser(ANTLRParser):
             self.state = 462
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==Parser.COMMA:
+            while _la == Parser.COMMA:
                 self.state = 458
                 self.match(Parser.COMMA)
                 self.state = 459
@@ -4595,74 +5002,73 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class JoinOperatorsContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-
 
         def getRuleIndex(self):
             return Parser.RULE_joinOperators
 
-     
-        def copyFrom(self, ctx:ParserRuleContext):
+        def copyFrom(self, ctx: ParserRuleContext):
             super().copyFrom(ctx)
 
-
-
     class JoinExprContext(JoinOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.JoinOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.JoinOperatorsContext
             super().__init__(ANTLRParser)
-            self.joinKeyword = None # Token
+            self.joinKeyword = None  # Token
             self.copyFrom(ctx)
 
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def joinClause(self):
-            return self.getTypedRuleContext(Parser.JoinClauseContext,0)
+            return self.getTypedRuleContext(Parser.JoinClauseContext, 0)
 
         def joinBody(self):
-            return self.getTypedRuleContext(Parser.JoinBodyContext,0)
+            return self.getTypedRuleContext(Parser.JoinBodyContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
+
         def INNER_JOIN(self):
             return self.getToken(Parser.INNER_JOIN, 0)
+
         def LEFT_JOIN(self):
             return self.getToken(Parser.LEFT_JOIN, 0)
+
         def joinClauseWithoutUsing(self):
-            return self.getTypedRuleContext(Parser.JoinClauseWithoutUsingContext,0)
+            return self.getTypedRuleContext(Parser.JoinClauseWithoutUsingContext, 0)
 
         def FULL_JOIN(self):
             return self.getToken(Parser.FULL_JOIN, 0)
+
         def CROSS_JOIN(self):
             return self.getToken(Parser.CROSS_JOIN, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterJoinExpr" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterJoinExpr"):
                 listener.enterJoinExpr(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitJoinExpr" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitJoinExpr"):
                 listener.exitJoinExpr(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitJoinExpr" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitJoinExpr"):
                 return visitor.visitJoinExpr(self)
             else:
                 return visitor.visitChildren(self)
-
-
 
     def joinOperators(self):
 
         localctx = Parser.JoinOperatorsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 30, self.RULE_joinOperators)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.state = 477
             self._errHandler.sync(self)
@@ -4673,7 +5079,7 @@ class Parser(ANTLRParser):
                 self.state = 465
                 localctx.joinKeyword = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not(_la==Parser.INNER_JOIN or _la==Parser.LEFT_JOIN):
+                if not (_la == Parser.INNER_JOIN or _la == Parser.LEFT_JOIN):
                     localctx.joinKeyword = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -4693,7 +5099,7 @@ class Parser(ANTLRParser):
                 self.state = 471
                 localctx.joinKeyword = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not(_la==Parser.CROSS_JOIN or _la==Parser.FULL_JOIN):
+                if not (_la == Parser.CROSS_JOIN or _la == Parser.FULL_JOIN):
                     localctx.joinKeyword = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -4718,195 +5124,208 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class DefOperatorsContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-
 
         def getRuleIndex(self):
             return Parser.RULE_defOperators
 
-     
-        def copyFrom(self, ctx:ParserRuleContext):
+        def copyFrom(self, ctx: ParserRuleContext):
             super().copyFrom(ctx)
 
-
-
     class DefOperatorContext(DefOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.DefOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.DefOperatorsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def DEFINE(self):
             return self.getToken(Parser.DEFINE, 0)
-        def OPERATOR(self, i:int=None):
+
+        def OPERATOR(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.OPERATOR)
             else:
                 return self.getToken(Parser.OPERATOR, i)
+
         def operatorID(self):
-            return self.getTypedRuleContext(Parser.OperatorIDContext,0)
+            return self.getTypedRuleContext(Parser.OperatorIDContext, 0)
 
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
+
         def IS(self):
             return self.getToken(Parser.IS, 0)
+
         def END(self):
             return self.getToken(Parser.END, 0)
-        def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
 
-        def parameterItem(self, i:int=None):
+        def expr(self):
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
+
+        def parameterItem(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ParameterItemContext)
             else:
-                return self.getTypedRuleContext(Parser.ParameterItemContext,i)
+                return self.getTypedRuleContext(Parser.ParameterItemContext, i)
 
         def RETURNS(self):
             return self.getToken(Parser.RETURNS, 0)
-        def outputParameterType(self):
-            return self.getTypedRuleContext(Parser.OutputParameterTypeContext,0)
 
-        def COMMA(self, i:int=None):
+        def outputParameterType(self):
+            return self.getTypedRuleContext(Parser.OutputParameterTypeContext, 0)
+
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
                 return self.getToken(Parser.COMMA, i)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDefOperator" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterDefOperator"):
                 listener.enterDefOperator(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDefOperator" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitDefOperator"):
                 listener.exitDefOperator(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDefOperator" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitDefOperator"):
                 return visitor.visitDefOperator(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class DefHierarchicalContext(DefOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.DefOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.DefOperatorsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def DEFINE(self):
             return self.getToken(Parser.DEFINE, 0)
-        def HIERARCHICAL(self, i:int=None):
+
+        def HIERARCHICAL(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.HIERARCHICAL)
             else:
                 return self.getToken(Parser.HIERARCHICAL, i)
-        def RULESET(self, i:int=None):
+
+        def RULESET(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.RULESET)
             else:
                 return self.getToken(Parser.RULESET, i)
+
         def rulesetID(self):
-            return self.getTypedRuleContext(Parser.RulesetIDContext,0)
+            return self.getTypedRuleContext(Parser.RulesetIDContext, 0)
 
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def hierRuleSignature(self):
-            return self.getTypedRuleContext(Parser.HierRuleSignatureContext,0)
+            return self.getTypedRuleContext(Parser.HierRuleSignatureContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
+
         def IS(self):
             return self.getToken(Parser.IS, 0)
+
         def ruleClauseHierarchical(self):
-            return self.getTypedRuleContext(Parser.RuleClauseHierarchicalContext,0)
+            return self.getTypedRuleContext(Parser.RuleClauseHierarchicalContext, 0)
 
         def END(self):
             return self.getToken(Parser.END, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDefHierarchical" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterDefHierarchical"):
                 listener.enterDefHierarchical(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDefHierarchical" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitDefHierarchical"):
                 listener.exitDefHierarchical(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDefHierarchical" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitDefHierarchical"):
                 return visitor.visitDefHierarchical(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class DefDatapointRulesetContext(DefOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.DefOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.DefOperatorsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def DEFINE(self):
             return self.getToken(Parser.DEFINE, 0)
-        def DATAPOINT(self, i:int=None):
+
+        def DATAPOINT(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.DATAPOINT)
             else:
                 return self.getToken(Parser.DATAPOINT, i)
-        def RULESET(self, i:int=None):
+
+        def RULESET(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.RULESET)
             else:
                 return self.getToken(Parser.RULESET, i)
+
         def rulesetID(self):
-            return self.getTypedRuleContext(Parser.RulesetIDContext,0)
+            return self.getTypedRuleContext(Parser.RulesetIDContext, 0)
 
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def rulesetSignature(self):
-            return self.getTypedRuleContext(Parser.RulesetSignatureContext,0)
+            return self.getTypedRuleContext(Parser.RulesetSignatureContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
+
         def IS(self):
             return self.getToken(Parser.IS, 0)
+
         def ruleClauseDatapoint(self):
-            return self.getTypedRuleContext(Parser.RuleClauseDatapointContext,0)
+            return self.getTypedRuleContext(Parser.RuleClauseDatapointContext, 0)
 
         def END(self):
             return self.getToken(Parser.END, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDefDatapointRuleset" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterDefDatapointRuleset"):
                 listener.enterDefDatapointRuleset(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDefDatapointRuleset" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitDefDatapointRuleset"):
                 listener.exitDefDatapointRuleset(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDefDatapointRuleset" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitDefDatapointRuleset"):
                 return visitor.visitDefDatapointRuleset(self)
             else:
                 return visitor.visitChildren(self)
-
-
 
     def defOperators(self):
 
         localctx = Parser.DefOperatorsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 32, self.RULE_defOperators)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.state = 529
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,26,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 26, self._ctx)
             if la_ == 1:
                 localctx = Parser.DefOperatorContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
@@ -4921,13 +5340,13 @@ class Parser(ANTLRParser):
                 self.state = 491
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.IDENTIFIER:
+                if _la == Parser.IDENTIFIER:
                     self.state = 483
                     self.parameterItem()
                     self.state = 488
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    while _la==Parser.COMMA:
+                    while _la == Parser.COMMA:
                         self.state = 484
                         self.match(Parser.COMMA)
                         self.state = 485
@@ -4936,19 +5355,16 @@ class Parser(ANTLRParser):
                         self._errHandler.sync(self)
                         _la = self._input.LA(1)
 
-
-
                 self.state = 493
                 self.match(Parser.RPAREN)
                 self.state = 496
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.RETURNS:
+                if _la == Parser.RETURNS:
                     self.state = 494
                     self.match(Parser.RETURNS)
                     self.state = 495
                     self.outputParameterType()
-
 
                 self.state = 498
                 self.match(Parser.IS)
@@ -5019,7 +5435,6 @@ class Parser(ANTLRParser):
                 self.match(Parser.RULESET)
                 pass
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -5028,177 +5443,183 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class GenericOperatorsContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-
 
         def getRuleIndex(self):
             return Parser.RULE_genericOperators
 
-     
-        def copyFrom(self, ctx:ParserRuleContext):
+        def copyFrom(self, ctx: ParserRuleContext):
             super().copyFrom(ctx)
 
-
-
     class EvalAtomContext(GenericOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.GenericOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.GenericOperatorsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def EVAL(self):
             return self.getToken(Parser.EVAL, 0)
-        def LPAREN(self, i:int=None):
+
+        def LPAREN(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.LPAREN)
             else:
                 return self.getToken(Parser.LPAREN, i)
-        def routineName(self):
-            return self.getTypedRuleContext(Parser.RoutineNameContext,0)
 
-        def RPAREN(self, i:int=None):
+        def routineName(self):
+            return self.getTypedRuleContext(Parser.RoutineNameContext, 0)
+
+        def RPAREN(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.RPAREN)
             else:
                 return self.getToken(Parser.RPAREN, i)
-        def varID(self, i:int=None):
+
+        def varID(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.VarIDContext)
             else:
-                return self.getTypedRuleContext(Parser.VarIDContext,i)
+                return self.getTypedRuleContext(Parser.VarIDContext, i)
 
-        def scalarItem(self, i:int=None):
+        def scalarItem(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ScalarItemContext)
             else:
-                return self.getTypedRuleContext(Parser.ScalarItemContext,i)
+                return self.getTypedRuleContext(Parser.ScalarItemContext, i)
 
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
                 return self.getToken(Parser.COMMA, i)
+
         def LANGUAGE(self):
             return self.getToken(Parser.LANGUAGE, 0)
+
         def STRING_CONSTANT(self):
             return self.getToken(Parser.STRING_CONSTANT, 0)
+
         def RETURNS(self):
             return self.getToken(Parser.RETURNS, 0)
+
         def evalDatasetType(self):
-            return self.getTypedRuleContext(Parser.EvalDatasetTypeContext,0)
+            return self.getTypedRuleContext(Parser.EvalDatasetTypeContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterEvalAtom" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterEvalAtom"):
                 listener.enterEvalAtom(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitEvalAtom" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitEvalAtom"):
                 listener.exitEvalAtom(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitEvalAtom" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitEvalAtom"):
                 return visitor.visitEvalAtom(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class CastExprDatasetContext(GenericOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.GenericOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.GenericOperatorsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def CAST(self):
             return self.getToken(Parser.CAST, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
-        def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
 
-        def COMMA(self, i:int=None):
+        def expr(self):
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
+
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
                 return self.getToken(Parser.COMMA, i)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
+
         def basicScalarType(self):
-            return self.getTypedRuleContext(Parser.BasicScalarTypeContext,0)
+            return self.getTypedRuleContext(Parser.BasicScalarTypeContext, 0)
 
         def valueDomainName(self):
-            return self.getTypedRuleContext(Parser.ValueDomainNameContext,0)
+            return self.getTypedRuleContext(Parser.ValueDomainNameContext, 0)
 
         def STRING_CONSTANT(self):
             return self.getToken(Parser.STRING_CONSTANT, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterCastExprDataset" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterCastExprDataset"):
                 listener.enterCastExprDataset(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitCastExprDataset" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitCastExprDataset"):
                 listener.exitCastExprDataset(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitCastExprDataset" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitCastExprDataset"):
                 return visitor.visitCastExprDataset(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class CallDatasetContext(GenericOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.GenericOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.GenericOperatorsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def operatorID(self):
-            return self.getTypedRuleContext(Parser.OperatorIDContext,0)
+            return self.getTypedRuleContext(Parser.OperatorIDContext, 0)
 
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
-        def parameter(self, i:int=None):
+
+        def parameter(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ParameterContext)
             else:
-                return self.getTypedRuleContext(Parser.ParameterContext,i)
+                return self.getTypedRuleContext(Parser.ParameterContext, i)
 
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
                 return self.getToken(Parser.COMMA, i)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterCallDataset" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterCallDataset"):
                 listener.enterCallDataset(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitCallDataset" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitCallDataset"):
                 listener.exitCallDataset(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitCallDataset" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitCallDataset"):
                 return visitor.visitCallDataset(self)
             else:
                 return visitor.visitChildren(self)
-
-
 
     def genericOperators(self):
 
         localctx = Parser.GenericOperatorsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 34, self.RULE_genericOperators)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.state = 588
             self._errHandler.sync(self)
@@ -5213,13 +5634,135 @@ class Parser(ANTLRParser):
                 self.state = 541
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << Parser.LPAREN) | (1 << Parser.PLUS) | (1 << Parser.MINUS) | (1 << Parser.EVAL) | (1 << Parser.IF) | (1 << Parser.CASE) | (1 << Parser.CURRENT_DATE) | (1 << Parser.DATEDIFF) | (1 << Parser.DATEADD) | (1 << Parser.YEAR_OP) | (1 << Parser.MONTH_OP) | (1 << Parser.DAYOFMONTH) | (1 << Parser.DAYOFYEAR) | (1 << Parser.DAYTOYEAR) | (1 << Parser.DAYTOMONTH) | (1 << Parser.YEARTODAY) | (1 << Parser.MONTHTODAY) | (1 << Parser.NOT) | (1 << Parser.BETWEEN) | (1 << Parser.NULL_CONSTANT) | (1 << Parser.ISNULL) | (1 << Parser.UNION) | (1 << Parser.SYMDIFF) | (1 << Parser.INTERSECT) | (1 << Parser.RANDOM))) != 0) or ((((_la - 66)) & ~0x3f) == 0 and ((1 << (_la - 66)) & ((1 << (Parser.CHECK - 66)) | (1 << (Parser.EXISTS_IN - 66)) | (1 << (Parser.MIN - 66)) | (1 << (Parser.MAX - 66)) | (1 << (Parser.ABS - 66)) | (1 << (Parser.LN - 66)) | (1 << (Parser.LOG - 66)) | (1 << (Parser.TRUNC - 66)) | (1 << (Parser.ROUND - 66)) | (1 << (Parser.POWER - 66)) | (1 << (Parser.MOD - 66)) | (1 << (Parser.LEN - 66)) | (1 << (Parser.TRIM - 66)) | (1 << (Parser.UCASE - 66)) | (1 << (Parser.LCASE - 66)) | (1 << (Parser.SUBSTR - 66)) | (1 << (Parser.SUM - 66)) | (1 << (Parser.AVG - 66)) | (1 << (Parser.MEDIAN - 66)) | (1 << (Parser.COUNT - 66)) | (1 << (Parser.EXP - 66)) | (1 << (Parser.CHARSET_MATCH - 66)) | (1 << (Parser.NVL - 66)) | (1 << (Parser.HIERARCHY - 66)) | (1 << (Parser.OPTIONAL - 66)))) != 0) or ((((_la - 131)) & ~0x3f) == 0 and ((1 << (_la - 131)) & ((1 << (Parser.LTRIM - 131)) | (1 << (Parser.RTRIM - 131)) | (1 << (Parser.INSTR - 131)) | (1 << (Parser.REPLACE - 131)) | (1 << (Parser.CEIL - 131)) | (1 << (Parser.FLOOR - 131)) | (1 << (Parser.SQRT - 131)) | (1 << (Parser.SETDIFF - 131)) | (1 << (Parser.STDDEV_POP - 131)) | (1 << (Parser.STDDEV_SAMP - 131)) | (1 << (Parser.VAR_POP - 131)) | (1 << (Parser.VAR_SAMP - 131)) | (1 << (Parser.FIRST_VALUE - 131)) | (1 << (Parser.LAST_VALUE - 131)) | (1 << (Parser.LAG - 131)) | (1 << (Parser.LEAD - 131)) | (1 << (Parser.RATIO_TO_REPORT - 131)) | (1 << (Parser.FILL_TIME_SERIES - 131)) | (1 << (Parser.FLOW_TO_STOCK - 131)) | (1 << (Parser.STOCK_TO_FLOW - 131)) | (1 << (Parser.TIMESHIFT - 131)) | (1 << (Parser.INNER_JOIN - 131)) | (1 << (Parser.LEFT_JOIN - 131)))) != 0) or ((((_la - 195)) & ~0x3f) == 0 and ((1 << (_la - 195)) & ((1 << (Parser.CROSS_JOIN - 195)) | (1 << (Parser.FULL_JOIN - 195)) | (1 << (Parser.PERIOD_INDICATOR - 195)) | (1 << (Parser.TIME_AGG - 195)) | (1 << (Parser.CAST - 195)) | (1 << (Parser.CHECK_DATAPOINT - 195)) | (1 << (Parser.CHECK_HIERARCHY - 195)) | (1 << (Parser.INTEGER_CONSTANT - 195)) | (1 << (Parser.NUMBER_CONSTANT - 195)) | (1 << (Parser.BOOLEAN_CONSTANT - 195)) | (1 << (Parser.STRING_CONSTANT - 195)) | (1 << (Parser.IDENTIFIER - 195)))) != 0):
+                if (
+                    (
+                        ((_la) & ~0x3F) == 0
+                        and (
+                            (1 << _la)
+                            & (
+                                (1 << Parser.LPAREN)
+                                | (1 << Parser.PLUS)
+                                | (1 << Parser.MINUS)
+                                | (1 << Parser.EVAL)
+                                | (1 << Parser.IF)
+                                | (1 << Parser.CASE)
+                                | (1 << Parser.CURRENT_DATE)
+                                | (1 << Parser.DATEDIFF)
+                                | (1 << Parser.DATEADD)
+                                | (1 << Parser.YEAR_OP)
+                                | (1 << Parser.MONTH_OP)
+                                | (1 << Parser.DAYOFMONTH)
+                                | (1 << Parser.DAYOFYEAR)
+                                | (1 << Parser.DAYTOYEAR)
+                                | (1 << Parser.DAYTOMONTH)
+                                | (1 << Parser.YEARTODAY)
+                                | (1 << Parser.MONTHTODAY)
+                                | (1 << Parser.NOT)
+                                | (1 << Parser.BETWEEN)
+                                | (1 << Parser.NULL_CONSTANT)
+                                | (1 << Parser.ISNULL)
+                                | (1 << Parser.UNION)
+                                | (1 << Parser.SYMDIFF)
+                                | (1 << Parser.INTERSECT)
+                                | (1 << Parser.RANDOM)
+                            )
+                        )
+                        != 0
+                    )
+                    or (
+                        ((_la - 66) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 66))
+                            & (
+                                (1 << (Parser.CHECK - 66))
+                                | (1 << (Parser.EXISTS_IN - 66))
+                                | (1 << (Parser.MIN - 66))
+                                | (1 << (Parser.MAX - 66))
+                                | (1 << (Parser.ABS - 66))
+                                | (1 << (Parser.LN - 66))
+                                | (1 << (Parser.LOG - 66))
+                                | (1 << (Parser.TRUNC - 66))
+                                | (1 << (Parser.ROUND - 66))
+                                | (1 << (Parser.POWER - 66))
+                                | (1 << (Parser.MOD - 66))
+                                | (1 << (Parser.LEN - 66))
+                                | (1 << (Parser.TRIM - 66))
+                                | (1 << (Parser.UCASE - 66))
+                                | (1 << (Parser.LCASE - 66))
+                                | (1 << (Parser.SUBSTR - 66))
+                                | (1 << (Parser.SUM - 66))
+                                | (1 << (Parser.AVG - 66))
+                                | (1 << (Parser.MEDIAN - 66))
+                                | (1 << (Parser.COUNT - 66))
+                                | (1 << (Parser.EXP - 66))
+                                | (1 << (Parser.CHARSET_MATCH - 66))
+                                | (1 << (Parser.NVL - 66))
+                                | (1 << (Parser.HIERARCHY - 66))
+                                | (1 << (Parser.OPTIONAL - 66))
+                            )
+                        )
+                        != 0
+                    )
+                    or (
+                        ((_la - 131) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 131))
+                            & (
+                                (1 << (Parser.LTRIM - 131))
+                                | (1 << (Parser.RTRIM - 131))
+                                | (1 << (Parser.INSTR - 131))
+                                | (1 << (Parser.REPLACE - 131))
+                                | (1 << (Parser.CEIL - 131))
+                                | (1 << (Parser.FLOOR - 131))
+                                | (1 << (Parser.SQRT - 131))
+                                | (1 << (Parser.SETDIFF - 131))
+                                | (1 << (Parser.STDDEV_POP - 131))
+                                | (1 << (Parser.STDDEV_SAMP - 131))
+                                | (1 << (Parser.VAR_POP - 131))
+                                | (1 << (Parser.VAR_SAMP - 131))
+                                | (1 << (Parser.FIRST_VALUE - 131))
+                                | (1 << (Parser.LAST_VALUE - 131))
+                                | (1 << (Parser.LAG - 131))
+                                | (1 << (Parser.LEAD - 131))
+                                | (1 << (Parser.RATIO_TO_REPORT - 131))
+                                | (1 << (Parser.FILL_TIME_SERIES - 131))
+                                | (1 << (Parser.FLOW_TO_STOCK - 131))
+                                | (1 << (Parser.STOCK_TO_FLOW - 131))
+                                | (1 << (Parser.TIMESHIFT - 131))
+                                | (1 << (Parser.INNER_JOIN - 131))
+                                | (1 << (Parser.LEFT_JOIN - 131))
+                            )
+                        )
+                        != 0
+                    )
+                    or (
+                        ((_la - 195) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 195))
+                            & (
+                                (1 << (Parser.CROSS_JOIN - 195))
+                                | (1 << (Parser.FULL_JOIN - 195))
+                                | (1 << (Parser.PERIOD_INDICATOR - 195))
+                                | (1 << (Parser.TIME_AGG - 195))
+                                | (1 << (Parser.CAST - 195))
+                                | (1 << (Parser.CHECK_DATAPOINT - 195))
+                                | (1 << (Parser.CHECK_HIERARCHY - 195))
+                                | (1 << (Parser.INTEGER_CONSTANT - 195))
+                                | (1 << (Parser.NUMBER_CONSTANT - 195))
+                                | (1 << (Parser.BOOLEAN_CONSTANT - 195))
+                                | (1 << (Parser.STRING_CONSTANT - 195))
+                                | (1 << (Parser.IDENTIFIER - 195))
+                            )
+                        )
+                        != 0
+                    )
+                ):
                     self.state = 533
                     self.parameter()
                     self.state = 538
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    while _la==Parser.COMMA:
+                    while _la == Parser.COMMA:
                         self.state = 534
                         self.match(Parser.COMMA)
                         self.state = 535
@@ -5227,8 +5770,6 @@ class Parser(ANTLRParser):
                         self.state = 540
                         self._errHandler.sync(self)
                         _la = self._input.LA(1)
-
-
 
                 self.state = 543
                 self.match(Parser.RPAREN)
@@ -5251,7 +5792,14 @@ class Parser(ANTLRParser):
                     self.state = 549
                     self.varID()
                     pass
-                elif token in [Parser.NULL_CONSTANT, Parser.CAST, Parser.INTEGER_CONSTANT, Parser.NUMBER_CONSTANT, Parser.BOOLEAN_CONSTANT, Parser.STRING_CONSTANT]:
+                elif token in [
+                    Parser.NULL_CONSTANT,
+                    Parser.CAST,
+                    Parser.INTEGER_CONSTANT,
+                    Parser.NUMBER_CONSTANT,
+                    Parser.BOOLEAN_CONSTANT,
+                    Parser.STRING_CONSTANT,
+                ]:
                     self.state = 550
                     self.scalarItem()
                     pass
@@ -5262,7 +5810,7 @@ class Parser(ANTLRParser):
                 self.state = 560
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while _la==Parser.COMMA:
+                while _la == Parser.COMMA:
                     self.state = 553
                     self.match(Parser.COMMA)
                     self.state = 556
@@ -5272,7 +5820,14 @@ class Parser(ANTLRParser):
                         self.state = 554
                         self.varID()
                         pass
-                    elif token in [Parser.NULL_CONSTANT, Parser.CAST, Parser.INTEGER_CONSTANT, Parser.NUMBER_CONSTANT, Parser.BOOLEAN_CONSTANT, Parser.STRING_CONSTANT]:
+                    elif token in [
+                        Parser.NULL_CONSTANT,
+                        Parser.CAST,
+                        Parser.INTEGER_CONSTANT,
+                        Parser.NUMBER_CONSTANT,
+                        Parser.BOOLEAN_CONSTANT,
+                        Parser.STRING_CONSTANT,
+                    ]:
                         self.state = 555
                         self.scalarItem()
                         pass
@@ -5288,22 +5843,20 @@ class Parser(ANTLRParser):
                 self.state = 566
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.LANGUAGE:
+                if _la == Parser.LANGUAGE:
                     self.state = 564
                     self.match(Parser.LANGUAGE)
                     self.state = 565
                     self.match(Parser.STRING_CONSTANT)
 
-
                 self.state = 570
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.RETURNS:
+                if _la == Parser.RETURNS:
                     self.state = 568
                     self.match(Parser.RETURNS)
                     self.state = 569
                     self.evalDatasetType()
-
 
                 self.state = 572
                 self.match(Parser.RPAREN)
@@ -5322,7 +5875,17 @@ class Parser(ANTLRParser):
                 self.state = 580
                 self._errHandler.sync(self)
                 token = self._input.LA(1)
-                if token in [Parser.BOOLEAN, Parser.DATE, Parser.TIME_PERIOD, Parser.NUMBER, Parser.STRING, Parser.TIME, Parser.INTEGER, Parser.DURATION, Parser.SCALAR]:
+                if token in [
+                    Parser.BOOLEAN,
+                    Parser.DATE,
+                    Parser.TIME_PERIOD,
+                    Parser.NUMBER,
+                    Parser.STRING,
+                    Parser.TIME,
+                    Parser.INTEGER,
+                    Parser.DURATION,
+                    Parser.SCALAR,
+                ]:
                     self.state = 578
                     self.basicScalarType()
                     pass
@@ -5336,12 +5899,11 @@ class Parser(ANTLRParser):
                 self.state = 584
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.COMMA:
+                if _la == Parser.COMMA:
                     self.state = 582
                     self.match(Parser.COMMA)
                     self.state = 583
                     self.match(Parser.STRING_CONSTANT)
-
 
                 self.state = 586
                 self.match(Parser.RPAREN)
@@ -5357,177 +5919,183 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class GenericOperatorsComponentContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-
 
         def getRuleIndex(self):
             return Parser.RULE_genericOperatorsComponent
 
-     
-        def copyFrom(self, ctx:ParserRuleContext):
+        def copyFrom(self, ctx: ParserRuleContext):
             super().copyFrom(ctx)
 
-
-
     class EvalAtomComponentContext(GenericOperatorsComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.GenericOperatorsComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.GenericOperatorsComponentContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def EVAL(self):
             return self.getToken(Parser.EVAL, 0)
-        def LPAREN(self, i:int=None):
+
+        def LPAREN(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.LPAREN)
             else:
                 return self.getToken(Parser.LPAREN, i)
-        def routineName(self):
-            return self.getTypedRuleContext(Parser.RoutineNameContext,0)
 
-        def RPAREN(self, i:int=None):
+        def routineName(self):
+            return self.getTypedRuleContext(Parser.RoutineNameContext, 0)
+
+        def RPAREN(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.RPAREN)
             else:
                 return self.getToken(Parser.RPAREN, i)
-        def componentID(self, i:int=None):
+
+        def componentID(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ComponentIDContext)
             else:
-                return self.getTypedRuleContext(Parser.ComponentIDContext,i)
+                return self.getTypedRuleContext(Parser.ComponentIDContext, i)
 
-        def scalarItem(self, i:int=None):
+        def scalarItem(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ScalarItemContext)
             else:
-                return self.getTypedRuleContext(Parser.ScalarItemContext,i)
+                return self.getTypedRuleContext(Parser.ScalarItemContext, i)
 
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
                 return self.getToken(Parser.COMMA, i)
+
         def LANGUAGE(self):
             return self.getToken(Parser.LANGUAGE, 0)
+
         def STRING_CONSTANT(self):
             return self.getToken(Parser.STRING_CONSTANT, 0)
+
         def RETURNS(self):
             return self.getToken(Parser.RETURNS, 0)
+
         def outputParameterTypeComponent(self):
-            return self.getTypedRuleContext(Parser.OutputParameterTypeComponentContext,0)
+            return self.getTypedRuleContext(Parser.OutputParameterTypeComponentContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterEvalAtomComponent" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterEvalAtomComponent"):
                 listener.enterEvalAtomComponent(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitEvalAtomComponent" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitEvalAtomComponent"):
                 listener.exitEvalAtomComponent(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitEvalAtomComponent" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitEvalAtomComponent"):
                 return visitor.visitEvalAtomComponent(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class CastExprComponentContext(GenericOperatorsComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.GenericOperatorsComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.GenericOperatorsComponentContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def CAST(self):
             return self.getToken(Parser.CAST, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
-        def exprComponent(self):
-            return self.getTypedRuleContext(Parser.ExprComponentContext,0)
 
-        def COMMA(self, i:int=None):
+        def exprComponent(self):
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
+
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
                 return self.getToken(Parser.COMMA, i)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
+
         def basicScalarType(self):
-            return self.getTypedRuleContext(Parser.BasicScalarTypeContext,0)
+            return self.getTypedRuleContext(Parser.BasicScalarTypeContext, 0)
 
         def valueDomainName(self):
-            return self.getTypedRuleContext(Parser.ValueDomainNameContext,0)
+            return self.getTypedRuleContext(Parser.ValueDomainNameContext, 0)
 
         def STRING_CONSTANT(self):
             return self.getToken(Parser.STRING_CONSTANT, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterCastExprComponent" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterCastExprComponent"):
                 listener.enterCastExprComponent(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitCastExprComponent" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitCastExprComponent"):
                 listener.exitCastExprComponent(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitCastExprComponent" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitCastExprComponent"):
                 return visitor.visitCastExprComponent(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class CallComponentContext(GenericOperatorsComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.GenericOperatorsComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.GenericOperatorsComponentContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def operatorID(self):
-            return self.getTypedRuleContext(Parser.OperatorIDContext,0)
+            return self.getTypedRuleContext(Parser.OperatorIDContext, 0)
 
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
-        def parameterComponent(self, i:int=None):
+
+        def parameterComponent(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ParameterComponentContext)
             else:
-                return self.getTypedRuleContext(Parser.ParameterComponentContext,i)
+                return self.getTypedRuleContext(Parser.ParameterComponentContext, i)
 
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
                 return self.getToken(Parser.COMMA, i)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterCallComponent" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterCallComponent"):
                 listener.enterCallComponent(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitCallComponent" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitCallComponent"):
                 listener.exitCallComponent(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitCallComponent" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitCallComponent"):
                 return visitor.visitCallComponent(self)
             else:
                 return visitor.visitChildren(self)
-
-
 
     def genericOperatorsComponent(self):
 
         localctx = Parser.GenericOperatorsComponentContext(self, self._ctx, self.state)
         self.enterRule(localctx, 36, self.RULE_genericOperatorsComponent)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.state = 647
             self._errHandler.sync(self)
@@ -5542,13 +6110,123 @@ class Parser(ANTLRParser):
                 self.state = 600
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << Parser.LPAREN) | (1 << Parser.PLUS) | (1 << Parser.MINUS) | (1 << Parser.EVAL) | (1 << Parser.IF) | (1 << Parser.CASE) | (1 << Parser.CURRENT_DATE) | (1 << Parser.DATEDIFF) | (1 << Parser.DATEADD) | (1 << Parser.YEAR_OP) | (1 << Parser.MONTH_OP) | (1 << Parser.DAYOFMONTH) | (1 << Parser.DAYOFYEAR) | (1 << Parser.DAYTOYEAR) | (1 << Parser.DAYTOMONTH) | (1 << Parser.YEARTODAY) | (1 << Parser.MONTHTODAY) | (1 << Parser.NOT) | (1 << Parser.BETWEEN) | (1 << Parser.NULL_CONSTANT) | (1 << Parser.ISNULL) | (1 << Parser.RANDOM))) != 0) or ((((_la - 77)) & ~0x3f) == 0 and ((1 << (_la - 77)) & ((1 << (Parser.RANK - 77)) | (1 << (Parser.MIN - 77)) | (1 << (Parser.MAX - 77)) | (1 << (Parser.ABS - 77)) | (1 << (Parser.LN - 77)) | (1 << (Parser.LOG - 77)) | (1 << (Parser.TRUNC - 77)) | (1 << (Parser.ROUND - 77)) | (1 << (Parser.POWER - 77)) | (1 << (Parser.MOD - 77)) | (1 << (Parser.LEN - 77)) | (1 << (Parser.TRIM - 77)) | (1 << (Parser.UCASE - 77)) | (1 << (Parser.LCASE - 77)) | (1 << (Parser.SUBSTR - 77)) | (1 << (Parser.SUM - 77)) | (1 << (Parser.AVG - 77)) | (1 << (Parser.MEDIAN - 77)) | (1 << (Parser.COUNT - 77)) | (1 << (Parser.EXP - 77)) | (1 << (Parser.CHARSET_MATCH - 77)) | (1 << (Parser.NVL - 77)) | (1 << (Parser.OPTIONAL - 77)) | (1 << (Parser.LTRIM - 77)) | (1 << (Parser.RTRIM - 77)) | (1 << (Parser.INSTR - 77)) | (1 << (Parser.REPLACE - 77)) | (1 << (Parser.CEIL - 77)) | (1 << (Parser.FLOOR - 77)) | (1 << (Parser.SQRT - 77)) | (1 << (Parser.STDDEV_POP - 77)))) != 0) or ((((_la - 141)) & ~0x3f) == 0 and ((1 << (_la - 141)) & ((1 << (Parser.STDDEV_SAMP - 141)) | (1 << (Parser.VAR_POP - 141)) | (1 << (Parser.VAR_SAMP - 141)) | (1 << (Parser.FIRST_VALUE - 141)) | (1 << (Parser.LAST_VALUE - 141)) | (1 << (Parser.LAG - 141)) | (1 << (Parser.LEAD - 141)) | (1 << (Parser.RATIO_TO_REPORT - 141)) | (1 << (Parser.FILL_TIME_SERIES - 141)) | (1 << (Parser.FLOW_TO_STOCK - 141)) | (1 << (Parser.STOCK_TO_FLOW - 141)) | (1 << (Parser.TIMESHIFT - 141)))) != 0) or ((((_la - 208)) & ~0x3f) == 0 and ((1 << (_la - 208)) & ((1 << (Parser.PERIOD_INDICATOR - 208)) | (1 << (Parser.TIME_AGG - 208)) | (1 << (Parser.CAST - 208)) | (1 << (Parser.INTEGER_CONSTANT - 208)) | (1 << (Parser.NUMBER_CONSTANT - 208)) | (1 << (Parser.BOOLEAN_CONSTANT - 208)) | (1 << (Parser.STRING_CONSTANT - 208)) | (1 << (Parser.IDENTIFIER - 208)))) != 0):
+                if (
+                    (
+                        ((_la) & ~0x3F) == 0
+                        and (
+                            (1 << _la)
+                            & (
+                                (1 << Parser.LPAREN)
+                                | (1 << Parser.PLUS)
+                                | (1 << Parser.MINUS)
+                                | (1 << Parser.EVAL)
+                                | (1 << Parser.IF)
+                                | (1 << Parser.CASE)
+                                | (1 << Parser.CURRENT_DATE)
+                                | (1 << Parser.DATEDIFF)
+                                | (1 << Parser.DATEADD)
+                                | (1 << Parser.YEAR_OP)
+                                | (1 << Parser.MONTH_OP)
+                                | (1 << Parser.DAYOFMONTH)
+                                | (1 << Parser.DAYOFYEAR)
+                                | (1 << Parser.DAYTOYEAR)
+                                | (1 << Parser.DAYTOMONTH)
+                                | (1 << Parser.YEARTODAY)
+                                | (1 << Parser.MONTHTODAY)
+                                | (1 << Parser.NOT)
+                                | (1 << Parser.BETWEEN)
+                                | (1 << Parser.NULL_CONSTANT)
+                                | (1 << Parser.ISNULL)
+                                | (1 << Parser.RANDOM)
+                            )
+                        )
+                        != 0
+                    )
+                    or (
+                        ((_la - 77) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 77))
+                            & (
+                                (1 << (Parser.RANK - 77))
+                                | (1 << (Parser.MIN - 77))
+                                | (1 << (Parser.MAX - 77))
+                                | (1 << (Parser.ABS - 77))
+                                | (1 << (Parser.LN - 77))
+                                | (1 << (Parser.LOG - 77))
+                                | (1 << (Parser.TRUNC - 77))
+                                | (1 << (Parser.ROUND - 77))
+                                | (1 << (Parser.POWER - 77))
+                                | (1 << (Parser.MOD - 77))
+                                | (1 << (Parser.LEN - 77))
+                                | (1 << (Parser.TRIM - 77))
+                                | (1 << (Parser.UCASE - 77))
+                                | (1 << (Parser.LCASE - 77))
+                                | (1 << (Parser.SUBSTR - 77))
+                                | (1 << (Parser.SUM - 77))
+                                | (1 << (Parser.AVG - 77))
+                                | (1 << (Parser.MEDIAN - 77))
+                                | (1 << (Parser.COUNT - 77))
+                                | (1 << (Parser.EXP - 77))
+                                | (1 << (Parser.CHARSET_MATCH - 77))
+                                | (1 << (Parser.NVL - 77))
+                                | (1 << (Parser.OPTIONAL - 77))
+                                | (1 << (Parser.LTRIM - 77))
+                                | (1 << (Parser.RTRIM - 77))
+                                | (1 << (Parser.INSTR - 77))
+                                | (1 << (Parser.REPLACE - 77))
+                                | (1 << (Parser.CEIL - 77))
+                                | (1 << (Parser.FLOOR - 77))
+                                | (1 << (Parser.SQRT - 77))
+                                | (1 << (Parser.STDDEV_POP - 77))
+                            )
+                        )
+                        != 0
+                    )
+                    or (
+                        ((_la - 141) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 141))
+                            & (
+                                (1 << (Parser.STDDEV_SAMP - 141))
+                                | (1 << (Parser.VAR_POP - 141))
+                                | (1 << (Parser.VAR_SAMP - 141))
+                                | (1 << (Parser.FIRST_VALUE - 141))
+                                | (1 << (Parser.LAST_VALUE - 141))
+                                | (1 << (Parser.LAG - 141))
+                                | (1 << (Parser.LEAD - 141))
+                                | (1 << (Parser.RATIO_TO_REPORT - 141))
+                                | (1 << (Parser.FILL_TIME_SERIES - 141))
+                                | (1 << (Parser.FLOW_TO_STOCK - 141))
+                                | (1 << (Parser.STOCK_TO_FLOW - 141))
+                                | (1 << (Parser.TIMESHIFT - 141))
+                            )
+                        )
+                        != 0
+                    )
+                    or (
+                        ((_la - 208) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 208))
+                            & (
+                                (1 << (Parser.PERIOD_INDICATOR - 208))
+                                | (1 << (Parser.TIME_AGG - 208))
+                                | (1 << (Parser.CAST - 208))
+                                | (1 << (Parser.INTEGER_CONSTANT - 208))
+                                | (1 << (Parser.NUMBER_CONSTANT - 208))
+                                | (1 << (Parser.BOOLEAN_CONSTANT - 208))
+                                | (1 << (Parser.STRING_CONSTANT - 208))
+                                | (1 << (Parser.IDENTIFIER - 208))
+                            )
+                        )
+                        != 0
+                    )
+                ):
                     self.state = 592
                     self.parameterComponent()
                     self.state = 597
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    while _la==Parser.COMMA:
+                    while _la == Parser.COMMA:
                         self.state = 593
                         self.match(Parser.COMMA)
                         self.state = 594
@@ -5556,8 +6234,6 @@ class Parser(ANTLRParser):
                         self.state = 599
                         self._errHandler.sync(self)
                         _la = self._input.LA(1)
-
-
 
                 self.state = 602
                 self.match(Parser.RPAREN)
@@ -5576,7 +6252,17 @@ class Parser(ANTLRParser):
                 self.state = 610
                 self._errHandler.sync(self)
                 token = self._input.LA(1)
-                if token in [Parser.BOOLEAN, Parser.DATE, Parser.TIME_PERIOD, Parser.NUMBER, Parser.STRING, Parser.TIME, Parser.INTEGER, Parser.DURATION, Parser.SCALAR]:
+                if token in [
+                    Parser.BOOLEAN,
+                    Parser.DATE,
+                    Parser.TIME_PERIOD,
+                    Parser.NUMBER,
+                    Parser.STRING,
+                    Parser.TIME,
+                    Parser.INTEGER,
+                    Parser.DURATION,
+                    Parser.SCALAR,
+                ]:
                     self.state = 608
                     self.basicScalarType()
                     pass
@@ -5590,12 +6276,11 @@ class Parser(ANTLRParser):
                 self.state = 614
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.COMMA:
+                if _la == Parser.COMMA:
                     self.state = 612
                     self.match(Parser.COMMA)
                     self.state = 613
                     self.match(Parser.STRING_CONSTANT)
-
 
                 self.state = 616
                 self.match(Parser.RPAREN)
@@ -5618,7 +6303,14 @@ class Parser(ANTLRParser):
                     self.state = 622
                     self.componentID()
                     pass
-                elif token in [Parser.NULL_CONSTANT, Parser.CAST, Parser.INTEGER_CONSTANT, Parser.NUMBER_CONSTANT, Parser.BOOLEAN_CONSTANT, Parser.STRING_CONSTANT]:
+                elif token in [
+                    Parser.NULL_CONSTANT,
+                    Parser.CAST,
+                    Parser.INTEGER_CONSTANT,
+                    Parser.NUMBER_CONSTANT,
+                    Parser.BOOLEAN_CONSTANT,
+                    Parser.STRING_CONSTANT,
+                ]:
                     self.state = 623
                     self.scalarItem()
                     pass
@@ -5629,7 +6321,7 @@ class Parser(ANTLRParser):
                 self.state = 633
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while _la==Parser.COMMA:
+                while _la == Parser.COMMA:
                     self.state = 626
                     self.match(Parser.COMMA)
                     self.state = 629
@@ -5639,7 +6331,14 @@ class Parser(ANTLRParser):
                         self.state = 627
                         self.componentID()
                         pass
-                    elif token in [Parser.NULL_CONSTANT, Parser.CAST, Parser.INTEGER_CONSTANT, Parser.NUMBER_CONSTANT, Parser.BOOLEAN_CONSTANT, Parser.STRING_CONSTANT]:
+                    elif token in [
+                        Parser.NULL_CONSTANT,
+                        Parser.CAST,
+                        Parser.INTEGER_CONSTANT,
+                        Parser.NUMBER_CONSTANT,
+                        Parser.BOOLEAN_CONSTANT,
+                        Parser.STRING_CONSTANT,
+                    ]:
                         self.state = 628
                         self.scalarItem()
                         pass
@@ -5655,22 +6354,20 @@ class Parser(ANTLRParser):
                 self.state = 639
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.LANGUAGE:
+                if _la == Parser.LANGUAGE:
                     self.state = 637
                     self.match(Parser.LANGUAGE)
                     self.state = 638
                     self.match(Parser.STRING_CONSTANT)
 
-
                 self.state = 643
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.RETURNS:
+                if _la == Parser.RETURNS:
                     self.state = 641
                     self.match(Parser.RETURNS)
                     self.state = 642
                     self.outputParameterTypeComponent()
-
 
                 self.state = 645
                 self.match(Parser.RPAREN)
@@ -5686,17 +6383,15 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class ParameterComponentContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
         def exprComponent(self):
-            return self.getTypedRuleContext(Parser.ExprComponentContext,0)
-
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def OPTIONAL(self):
             return self.getToken(Parser.OPTIONAL, 0)
@@ -5704,22 +6399,19 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_parameterComponent
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterParameterComponent" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterParameterComponent"):
                 listener.enterParameterComponent(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitParameterComponent" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitParameterComponent"):
                 listener.exitParameterComponent(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitParameterComponent" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitParameterComponent"):
                 return visitor.visitParameterComponent(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def parameterComponent(self):
 
@@ -5729,7 +6421,80 @@ class Parser(ANTLRParser):
             self.state = 651
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [Parser.LPAREN, Parser.PLUS, Parser.MINUS, Parser.EVAL, Parser.IF, Parser.CASE, Parser.CURRENT_DATE, Parser.DATEDIFF, Parser.DATEADD, Parser.YEAR_OP, Parser.MONTH_OP, Parser.DAYOFMONTH, Parser.DAYOFYEAR, Parser.DAYTOYEAR, Parser.DAYTOMONTH, Parser.YEARTODAY, Parser.MONTHTODAY, Parser.NOT, Parser.BETWEEN, Parser.NULL_CONSTANT, Parser.ISNULL, Parser.RANDOM, Parser.RANK, Parser.MIN, Parser.MAX, Parser.ABS, Parser.LN, Parser.LOG, Parser.TRUNC, Parser.ROUND, Parser.POWER, Parser.MOD, Parser.LEN, Parser.TRIM, Parser.UCASE, Parser.LCASE, Parser.SUBSTR, Parser.SUM, Parser.AVG, Parser.MEDIAN, Parser.COUNT, Parser.EXP, Parser.CHARSET_MATCH, Parser.NVL, Parser.LTRIM, Parser.RTRIM, Parser.INSTR, Parser.REPLACE, Parser.CEIL, Parser.FLOOR, Parser.SQRT, Parser.STDDEV_POP, Parser.STDDEV_SAMP, Parser.VAR_POP, Parser.VAR_SAMP, Parser.FIRST_VALUE, Parser.LAST_VALUE, Parser.LAG, Parser.LEAD, Parser.RATIO_TO_REPORT, Parser.FILL_TIME_SERIES, Parser.FLOW_TO_STOCK, Parser.STOCK_TO_FLOW, Parser.TIMESHIFT, Parser.PERIOD_INDICATOR, Parser.TIME_AGG, Parser.CAST, Parser.INTEGER_CONSTANT, Parser.NUMBER_CONSTANT, Parser.BOOLEAN_CONSTANT, Parser.STRING_CONSTANT, Parser.IDENTIFIER]:
+            if token in [
+                Parser.LPAREN,
+                Parser.PLUS,
+                Parser.MINUS,
+                Parser.EVAL,
+                Parser.IF,
+                Parser.CASE,
+                Parser.CURRENT_DATE,
+                Parser.DATEDIFF,
+                Parser.DATEADD,
+                Parser.YEAR_OP,
+                Parser.MONTH_OP,
+                Parser.DAYOFMONTH,
+                Parser.DAYOFYEAR,
+                Parser.DAYTOYEAR,
+                Parser.DAYTOMONTH,
+                Parser.YEARTODAY,
+                Parser.MONTHTODAY,
+                Parser.NOT,
+                Parser.BETWEEN,
+                Parser.NULL_CONSTANT,
+                Parser.ISNULL,
+                Parser.RANDOM,
+                Parser.RANK,
+                Parser.MIN,
+                Parser.MAX,
+                Parser.ABS,
+                Parser.LN,
+                Parser.LOG,
+                Parser.TRUNC,
+                Parser.ROUND,
+                Parser.POWER,
+                Parser.MOD,
+                Parser.LEN,
+                Parser.TRIM,
+                Parser.UCASE,
+                Parser.LCASE,
+                Parser.SUBSTR,
+                Parser.SUM,
+                Parser.AVG,
+                Parser.MEDIAN,
+                Parser.COUNT,
+                Parser.EXP,
+                Parser.CHARSET_MATCH,
+                Parser.NVL,
+                Parser.LTRIM,
+                Parser.RTRIM,
+                Parser.INSTR,
+                Parser.REPLACE,
+                Parser.CEIL,
+                Parser.FLOOR,
+                Parser.SQRT,
+                Parser.STDDEV_POP,
+                Parser.STDDEV_SAMP,
+                Parser.VAR_POP,
+                Parser.VAR_SAMP,
+                Parser.FIRST_VALUE,
+                Parser.LAST_VALUE,
+                Parser.LAG,
+                Parser.LEAD,
+                Parser.RATIO_TO_REPORT,
+                Parser.FILL_TIME_SERIES,
+                Parser.FLOW_TO_STOCK,
+                Parser.STOCK_TO_FLOW,
+                Parser.TIMESHIFT,
+                Parser.PERIOD_INDICATOR,
+                Parser.TIME_AGG,
+                Parser.CAST,
+                Parser.INTEGER_CONSTANT,
+                Parser.NUMBER_CONSTANT,
+                Parser.BOOLEAN_CONSTANT,
+                Parser.STRING_CONSTANT,
+                Parser.IDENTIFIER,
+            ]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 649
                 self.exprComponent(0)
@@ -5750,17 +6515,15 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class ParameterContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
         def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
-
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
 
         def OPTIONAL(self):
             return self.getToken(Parser.OPTIONAL, 0)
@@ -5768,22 +6531,19 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_parameter
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterParameter" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterParameter"):
                 listener.enterParameter(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitParameter" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitParameter"):
                 listener.exitParameter(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitParameter" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitParameter"):
                 return visitor.visitParameter(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def parameter(self):
 
@@ -5793,7 +6553,92 @@ class Parser(ANTLRParser):
             self.state = 655
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [Parser.LPAREN, Parser.PLUS, Parser.MINUS, Parser.EVAL, Parser.IF, Parser.CASE, Parser.CURRENT_DATE, Parser.DATEDIFF, Parser.DATEADD, Parser.YEAR_OP, Parser.MONTH_OP, Parser.DAYOFMONTH, Parser.DAYOFYEAR, Parser.DAYTOYEAR, Parser.DAYTOMONTH, Parser.YEARTODAY, Parser.MONTHTODAY, Parser.NOT, Parser.BETWEEN, Parser.NULL_CONSTANT, Parser.ISNULL, Parser.UNION, Parser.SYMDIFF, Parser.INTERSECT, Parser.RANDOM, Parser.CHECK, Parser.EXISTS_IN, Parser.MIN, Parser.MAX, Parser.ABS, Parser.LN, Parser.LOG, Parser.TRUNC, Parser.ROUND, Parser.POWER, Parser.MOD, Parser.LEN, Parser.TRIM, Parser.UCASE, Parser.LCASE, Parser.SUBSTR, Parser.SUM, Parser.AVG, Parser.MEDIAN, Parser.COUNT, Parser.EXP, Parser.CHARSET_MATCH, Parser.NVL, Parser.HIERARCHY, Parser.LTRIM, Parser.RTRIM, Parser.INSTR, Parser.REPLACE, Parser.CEIL, Parser.FLOOR, Parser.SQRT, Parser.SETDIFF, Parser.STDDEV_POP, Parser.STDDEV_SAMP, Parser.VAR_POP, Parser.VAR_SAMP, Parser.FIRST_VALUE, Parser.LAST_VALUE, Parser.LAG, Parser.LEAD, Parser.RATIO_TO_REPORT, Parser.FILL_TIME_SERIES, Parser.FLOW_TO_STOCK, Parser.STOCK_TO_FLOW, Parser.TIMESHIFT, Parser.INNER_JOIN, Parser.LEFT_JOIN, Parser.CROSS_JOIN, Parser.FULL_JOIN, Parser.PERIOD_INDICATOR, Parser.TIME_AGG, Parser.CAST, Parser.CHECK_DATAPOINT, Parser.CHECK_HIERARCHY, Parser.INTEGER_CONSTANT, Parser.NUMBER_CONSTANT, Parser.BOOLEAN_CONSTANT, Parser.STRING_CONSTANT, Parser.IDENTIFIER]:
+            if token in [
+                Parser.LPAREN,
+                Parser.PLUS,
+                Parser.MINUS,
+                Parser.EVAL,
+                Parser.IF,
+                Parser.CASE,
+                Parser.CURRENT_DATE,
+                Parser.DATEDIFF,
+                Parser.DATEADD,
+                Parser.YEAR_OP,
+                Parser.MONTH_OP,
+                Parser.DAYOFMONTH,
+                Parser.DAYOFYEAR,
+                Parser.DAYTOYEAR,
+                Parser.DAYTOMONTH,
+                Parser.YEARTODAY,
+                Parser.MONTHTODAY,
+                Parser.NOT,
+                Parser.BETWEEN,
+                Parser.NULL_CONSTANT,
+                Parser.ISNULL,
+                Parser.UNION,
+                Parser.SYMDIFF,
+                Parser.INTERSECT,
+                Parser.RANDOM,
+                Parser.CHECK,
+                Parser.EXISTS_IN,
+                Parser.MIN,
+                Parser.MAX,
+                Parser.ABS,
+                Parser.LN,
+                Parser.LOG,
+                Parser.TRUNC,
+                Parser.ROUND,
+                Parser.POWER,
+                Parser.MOD,
+                Parser.LEN,
+                Parser.TRIM,
+                Parser.UCASE,
+                Parser.LCASE,
+                Parser.SUBSTR,
+                Parser.SUM,
+                Parser.AVG,
+                Parser.MEDIAN,
+                Parser.COUNT,
+                Parser.EXP,
+                Parser.CHARSET_MATCH,
+                Parser.NVL,
+                Parser.HIERARCHY,
+                Parser.LTRIM,
+                Parser.RTRIM,
+                Parser.INSTR,
+                Parser.REPLACE,
+                Parser.CEIL,
+                Parser.FLOOR,
+                Parser.SQRT,
+                Parser.SETDIFF,
+                Parser.STDDEV_POP,
+                Parser.STDDEV_SAMP,
+                Parser.VAR_POP,
+                Parser.VAR_SAMP,
+                Parser.FIRST_VALUE,
+                Parser.LAST_VALUE,
+                Parser.LAG,
+                Parser.LEAD,
+                Parser.RATIO_TO_REPORT,
+                Parser.FILL_TIME_SERIES,
+                Parser.FLOW_TO_STOCK,
+                Parser.STOCK_TO_FLOW,
+                Parser.TIMESHIFT,
+                Parser.INNER_JOIN,
+                Parser.LEFT_JOIN,
+                Parser.CROSS_JOIN,
+                Parser.FULL_JOIN,
+                Parser.PERIOD_INDICATOR,
+                Parser.TIME_AGG,
+                Parser.CAST,
+                Parser.CHECK_DATAPOINT,
+                Parser.CHECK_HIERARCHY,
+                Parser.INTEGER_CONSTANT,
+                Parser.NUMBER_CONSTANT,
+                Parser.BOOLEAN_CONSTANT,
+                Parser.STRING_CONSTANT,
+                Parser.IDENTIFIER,
+            ]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 653
                 self.expr(0)
@@ -5814,218 +6659,249 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class StringOperatorsContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-
 
         def getRuleIndex(self):
             return Parser.RULE_stringOperators
 
-     
-        def copyFrom(self, ctx:ParserRuleContext):
+        def copyFrom(self, ctx: ParserRuleContext):
             super().copyFrom(ctx)
 
-
-
     class InstrAtomContext(StringOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.StringOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.StringOperatorsContext
             super().__init__(ANTLRParser)
-            self.pattern = None # ExprContext
-            self.startParameter = None # OptionalExprContext
-            self.occurrenceParameter = None # OptionalExprContext
+            self.pattern = None  # ExprContext
+            self.startParameter = None  # OptionalExprContext
+            self.occurrenceParameter = None  # OptionalExprContext
             self.copyFrom(ctx)
 
         def INSTR(self):
             return self.getToken(Parser.INSTR, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
-        def expr(self, i:int=None):
+
+        def expr(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ExprContext)
             else:
-                return self.getTypedRuleContext(Parser.ExprContext,i)
+                return self.getTypedRuleContext(Parser.ExprContext, i)
 
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
                 return self.getToken(Parser.COMMA, i)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
-        def optionalExpr(self, i:int=None):
+
+        def optionalExpr(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.OptionalExprContext)
             else:
-                return self.getTypedRuleContext(Parser.OptionalExprContext,i)
+                return self.getTypedRuleContext(Parser.OptionalExprContext, i)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterInstrAtom" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterInstrAtom"):
                 listener.enterInstrAtom(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitInstrAtom" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitInstrAtom"):
                 listener.exitInstrAtom(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInstrAtom" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitInstrAtom"):
                 return visitor.visitInstrAtom(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class UnaryStringFunctionContext(StringOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.StringOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.StringOperatorsContext
             super().__init__(ANTLRParser)
-            self.op = None # Token
+            self.op = None  # Token
             self.copyFrom(ctx)
 
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
+
         def TRIM(self):
             return self.getToken(Parser.TRIM, 0)
+
         def LTRIM(self):
             return self.getToken(Parser.LTRIM, 0)
+
         def RTRIM(self):
             return self.getToken(Parser.RTRIM, 0)
+
         def UCASE(self):
             return self.getToken(Parser.UCASE, 0)
+
         def LCASE(self):
             return self.getToken(Parser.LCASE, 0)
+
         def LEN(self):
             return self.getToken(Parser.LEN, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterUnaryStringFunction" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterUnaryStringFunction"):
                 listener.enterUnaryStringFunction(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitUnaryStringFunction" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitUnaryStringFunction"):
                 listener.exitUnaryStringFunction(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitUnaryStringFunction" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitUnaryStringFunction"):
                 return visitor.visitUnaryStringFunction(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class SubstrAtomContext(StringOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.StringOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.StringOperatorsContext
             super().__init__(ANTLRParser)
-            self.startParameter = None # OptionalExprContext
-            self.endParameter = None # OptionalExprContext
+            self.startParameter = None  # OptionalExprContext
+            self.endParameter = None  # OptionalExprContext
             self.copyFrom(ctx)
 
         def SUBSTR(self):
             return self.getToken(Parser.SUBSTR, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
-        def COMMA(self, i:int=None):
+
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
                 return self.getToken(Parser.COMMA, i)
-        def optionalExpr(self, i:int=None):
+
+        def optionalExpr(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.OptionalExprContext)
             else:
-                return self.getTypedRuleContext(Parser.OptionalExprContext,i)
+                return self.getTypedRuleContext(Parser.OptionalExprContext, i)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSubstrAtom" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterSubstrAtom"):
                 listener.enterSubstrAtom(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSubstrAtom" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitSubstrAtom"):
                 listener.exitSubstrAtom(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSubstrAtom" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitSubstrAtom"):
                 return visitor.visitSubstrAtom(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class ReplaceAtomContext(StringOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.StringOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.StringOperatorsContext
             super().__init__(ANTLRParser)
-            self.param = None # ExprContext
+            self.param = None  # ExprContext
             self.copyFrom(ctx)
 
         def REPLACE(self):
             return self.getToken(Parser.REPLACE, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
-        def expr(self, i:int=None):
+
+        def expr(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ExprContext)
             else:
-                return self.getTypedRuleContext(Parser.ExprContext,i)
+                return self.getTypedRuleContext(Parser.ExprContext, i)
 
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
                 return self.getToken(Parser.COMMA, i)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
+
         def optionalExpr(self):
-            return self.getTypedRuleContext(Parser.OptionalExprContext,0)
+            return self.getTypedRuleContext(Parser.OptionalExprContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterReplaceAtom" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterReplaceAtom"):
                 listener.enterReplaceAtom(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitReplaceAtom" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitReplaceAtom"):
                 listener.exitReplaceAtom(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitReplaceAtom" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitReplaceAtom"):
                 return visitor.visitReplaceAtom(self)
             else:
                 return visitor.visitChildren(self)
-
-
 
     def stringOperators(self):
 
         localctx = Parser.StringOperatorsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 42, self.RULE_stringOperators)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.state = 705
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [Parser.LEN, Parser.TRIM, Parser.UCASE, Parser.LCASE, Parser.LTRIM, Parser.RTRIM]:
+            if token in [
+                Parser.LEN,
+                Parser.TRIM,
+                Parser.UCASE,
+                Parser.LCASE,
+                Parser.LTRIM,
+                Parser.RTRIM,
+            ]:
                 localctx = Parser.UnaryStringFunctionContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
                 self.state = 657
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not(((((_la - 93)) & ~0x3f) == 0 and ((1 << (_la - 93)) & ((1 << (Parser.LEN - 93)) | (1 << (Parser.TRIM - 93)) | (1 << (Parser.UCASE - 93)) | (1 << (Parser.LCASE - 93)) | (1 << (Parser.LTRIM - 93)) | (1 << (Parser.RTRIM - 93)))) != 0)):
+                if not (
+                    ((_la - 93) & ~0x3F) == 0
+                    and (
+                        (1 << (_la - 93))
+                        & (
+                            (1 << (Parser.LEN - 93))
+                            | (1 << (Parser.TRIM - 93))
+                            | (1 << (Parser.UCASE - 93))
+                            | (1 << (Parser.LCASE - 93))
+                            | (1 << (Parser.LTRIM - 93))
+                            | (1 << (Parser.RTRIM - 93))
+                        )
+                    )
+                    != 0
+                ):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -6048,12 +6924,12 @@ class Parser(ANTLRParser):
                 self.expr(0)
                 self.state = 675
                 self._errHandler.sync(self)
-                la_ = self._interp.adaptivePredict(self._input,50,self._ctx)
+                la_ = self._interp.adaptivePredict(self._input, 50, self._ctx)
                 if la_ == 1:
                     self.state = 671
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    if _la==Parser.COMMA:
+                    if _la == Parser.COMMA:
                         self.state = 665
                         self.match(Parser.COMMA)
                         self.state = 666
@@ -6064,7 +6940,6 @@ class Parser(ANTLRParser):
                         self.state = 669
                         localctx.endParameter = self.optionalExpr()
 
-
                     pass
 
                 elif la_ == 2:
@@ -6073,7 +6948,6 @@ class Parser(ANTLRParser):
                     self.state = 674
                     localctx.startParameter = self.optionalExpr()
                     pass
-
 
                 self.state = 677
                 self.match(Parser.RPAREN)
@@ -6094,12 +6968,11 @@ class Parser(ANTLRParser):
                 self.state = 686
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.COMMA:
+                if _la == Parser.COMMA:
                     self.state = 684
                     self.match(Parser.COMMA)
                     self.state = 685
                     self.optionalExpr()
-
 
                 self.state = 688
                 self.match(Parser.RPAREN)
@@ -6119,23 +6992,21 @@ class Parser(ANTLRParser):
                 localctx.pattern = self.expr(0)
                 self.state = 697
                 self._errHandler.sync(self)
-                la_ = self._interp.adaptivePredict(self._input,52,self._ctx)
+                la_ = self._interp.adaptivePredict(self._input, 52, self._ctx)
                 if la_ == 1:
                     self.state = 695
                     self.match(Parser.COMMA)
                     self.state = 696
                     localctx.startParameter = self.optionalExpr()
 
-
                 self.state = 701
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.COMMA:
+                if _la == Parser.COMMA:
                     self.state = 699
                     self.match(Parser.COMMA)
                     self.state = 700
                     localctx.occurrenceParameter = self.optionalExpr()
-
 
                 self.state = 703
                 self.match(Parser.RPAREN)
@@ -6151,218 +7022,249 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class StringOperatorsComponentContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-
 
         def getRuleIndex(self):
             return Parser.RULE_stringOperatorsComponent
 
-     
-        def copyFrom(self, ctx:ParserRuleContext):
+        def copyFrom(self, ctx: ParserRuleContext):
             super().copyFrom(ctx)
 
-
-
     class ReplaceAtomComponentContext(StringOperatorsComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.StringOperatorsComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.StringOperatorsComponentContext
             super().__init__(ANTLRParser)
-            self.param = None # ExprComponentContext
+            self.param = None  # ExprComponentContext
             self.copyFrom(ctx)
 
         def REPLACE(self):
             return self.getToken(Parser.REPLACE, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
-        def exprComponent(self, i:int=None):
+
+        def exprComponent(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ExprComponentContext)
             else:
-                return self.getTypedRuleContext(Parser.ExprComponentContext,i)
+                return self.getTypedRuleContext(Parser.ExprComponentContext, i)
 
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
                 return self.getToken(Parser.COMMA, i)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
+
         def optionalExprComponent(self):
-            return self.getTypedRuleContext(Parser.OptionalExprComponentContext,0)
+            return self.getTypedRuleContext(Parser.OptionalExprComponentContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterReplaceAtomComponent" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterReplaceAtomComponent"):
                 listener.enterReplaceAtomComponent(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitReplaceAtomComponent" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitReplaceAtomComponent"):
                 listener.exitReplaceAtomComponent(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitReplaceAtomComponent" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitReplaceAtomComponent"):
                 return visitor.visitReplaceAtomComponent(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class UnaryStringFunctionComponentContext(StringOperatorsComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.StringOperatorsComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.StringOperatorsComponentContext
             super().__init__(ANTLRParser)
-            self.op = None # Token
+            self.op = None  # Token
             self.copyFrom(ctx)
 
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def exprComponent(self):
-            return self.getTypedRuleContext(Parser.ExprComponentContext,0)
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
+
         def TRIM(self):
             return self.getToken(Parser.TRIM, 0)
+
         def LTRIM(self):
             return self.getToken(Parser.LTRIM, 0)
+
         def RTRIM(self):
             return self.getToken(Parser.RTRIM, 0)
+
         def UCASE(self):
             return self.getToken(Parser.UCASE, 0)
+
         def LCASE(self):
             return self.getToken(Parser.LCASE, 0)
+
         def LEN(self):
             return self.getToken(Parser.LEN, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterUnaryStringFunctionComponent" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterUnaryStringFunctionComponent"):
                 listener.enterUnaryStringFunctionComponent(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitUnaryStringFunctionComponent" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitUnaryStringFunctionComponent"):
                 listener.exitUnaryStringFunctionComponent(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitUnaryStringFunctionComponent" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitUnaryStringFunctionComponent"):
                 return visitor.visitUnaryStringFunctionComponent(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class SubstrAtomComponentContext(StringOperatorsComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.StringOperatorsComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.StringOperatorsComponentContext
             super().__init__(ANTLRParser)
-            self.startParameter = None # OptionalExprComponentContext
-            self.endParameter = None # OptionalExprComponentContext
+            self.startParameter = None  # OptionalExprComponentContext
+            self.endParameter = None  # OptionalExprComponentContext
             self.copyFrom(ctx)
 
         def SUBSTR(self):
             return self.getToken(Parser.SUBSTR, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def exprComponent(self):
-            return self.getTypedRuleContext(Parser.ExprComponentContext,0)
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
-        def COMMA(self, i:int=None):
+
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
                 return self.getToken(Parser.COMMA, i)
-        def optionalExprComponent(self, i:int=None):
+
+        def optionalExprComponent(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.OptionalExprComponentContext)
             else:
-                return self.getTypedRuleContext(Parser.OptionalExprComponentContext,i)
+                return self.getTypedRuleContext(Parser.OptionalExprComponentContext, i)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSubstrAtomComponent" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterSubstrAtomComponent"):
                 listener.enterSubstrAtomComponent(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSubstrAtomComponent" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitSubstrAtomComponent"):
                 listener.exitSubstrAtomComponent(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSubstrAtomComponent" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitSubstrAtomComponent"):
                 return visitor.visitSubstrAtomComponent(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class InstrAtomComponentContext(StringOperatorsComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.StringOperatorsComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.StringOperatorsComponentContext
             super().__init__(ANTLRParser)
-            self.pattern = None # ExprComponentContext
-            self.startParameter = None # OptionalExprComponentContext
-            self.occurrenceParameter = None # OptionalExprComponentContext
+            self.pattern = None  # ExprComponentContext
+            self.startParameter = None  # OptionalExprComponentContext
+            self.occurrenceParameter = None  # OptionalExprComponentContext
             self.copyFrom(ctx)
 
         def INSTR(self):
             return self.getToken(Parser.INSTR, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
-        def exprComponent(self, i:int=None):
+
+        def exprComponent(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ExprComponentContext)
             else:
-                return self.getTypedRuleContext(Parser.ExprComponentContext,i)
+                return self.getTypedRuleContext(Parser.ExprComponentContext, i)
 
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
                 return self.getToken(Parser.COMMA, i)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
-        def optionalExprComponent(self, i:int=None):
+
+        def optionalExprComponent(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.OptionalExprComponentContext)
             else:
-                return self.getTypedRuleContext(Parser.OptionalExprComponentContext,i)
+                return self.getTypedRuleContext(Parser.OptionalExprComponentContext, i)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterInstrAtomComponent" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterInstrAtomComponent"):
                 listener.enterInstrAtomComponent(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitInstrAtomComponent" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitInstrAtomComponent"):
                 listener.exitInstrAtomComponent(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInstrAtomComponent" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitInstrAtomComponent"):
                 return visitor.visitInstrAtomComponent(self)
             else:
                 return visitor.visitChildren(self)
-
-
 
     def stringOperatorsComponent(self):
 
         localctx = Parser.StringOperatorsComponentContext(self, self._ctx, self.state)
         self.enterRule(localctx, 44, self.RULE_stringOperatorsComponent)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.state = 755
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [Parser.LEN, Parser.TRIM, Parser.UCASE, Parser.LCASE, Parser.LTRIM, Parser.RTRIM]:
+            if token in [
+                Parser.LEN,
+                Parser.TRIM,
+                Parser.UCASE,
+                Parser.LCASE,
+                Parser.LTRIM,
+                Parser.RTRIM,
+            ]:
                 localctx = Parser.UnaryStringFunctionComponentContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
                 self.state = 707
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not(((((_la - 93)) & ~0x3f) == 0 and ((1 << (_la - 93)) & ((1 << (Parser.LEN - 93)) | (1 << (Parser.TRIM - 93)) | (1 << (Parser.UCASE - 93)) | (1 << (Parser.LCASE - 93)) | (1 << (Parser.LTRIM - 93)) | (1 << (Parser.RTRIM - 93)))) != 0)):
+                if not (
+                    ((_la - 93) & ~0x3F) == 0
+                    and (
+                        (1 << (_la - 93))
+                        & (
+                            (1 << (Parser.LEN - 93))
+                            | (1 << (Parser.TRIM - 93))
+                            | (1 << (Parser.UCASE - 93))
+                            | (1 << (Parser.LCASE - 93))
+                            | (1 << (Parser.LTRIM - 93))
+                            | (1 << (Parser.RTRIM - 93))
+                        )
+                    )
+                    != 0
+                ):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -6385,12 +7287,12 @@ class Parser(ANTLRParser):
                 self.exprComponent(0)
                 self.state = 725
                 self._errHandler.sync(self)
-                la_ = self._interp.adaptivePredict(self._input,56,self._ctx)
+                la_ = self._interp.adaptivePredict(self._input, 56, self._ctx)
                 if la_ == 1:
                     self.state = 721
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    if _la==Parser.COMMA:
+                    if _la == Parser.COMMA:
                         self.state = 715
                         self.match(Parser.COMMA)
                         self.state = 716
@@ -6401,7 +7303,6 @@ class Parser(ANTLRParser):
                         self.state = 719
                         localctx.endParameter = self.optionalExprComponent()
 
-
                     pass
 
                 elif la_ == 2:
@@ -6410,7 +7311,6 @@ class Parser(ANTLRParser):
                     self.state = 724
                     localctx.startParameter = self.optionalExprComponent()
                     pass
-
 
                 self.state = 727
                 self.match(Parser.RPAREN)
@@ -6431,12 +7331,11 @@ class Parser(ANTLRParser):
                 self.state = 736
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.COMMA:
+                if _la == Parser.COMMA:
                     self.state = 734
                     self.match(Parser.COMMA)
                     self.state = 735
                     self.optionalExprComponent()
-
 
                 self.state = 738
                 self.match(Parser.RPAREN)
@@ -6456,23 +7355,21 @@ class Parser(ANTLRParser):
                 localctx.pattern = self.exprComponent(0)
                 self.state = 747
                 self._errHandler.sync(self)
-                la_ = self._interp.adaptivePredict(self._input,58,self._ctx)
+                la_ = self._interp.adaptivePredict(self._input, 58, self._ctx)
                 if la_ == 1:
                     self.state = 745
                     self.match(Parser.COMMA)
                     self.state = 746
                     localctx.startParameter = self.optionalExprComponent()
 
-
                 self.state = 751
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.COMMA:
+                if _la == Parser.COMMA:
                     self.state = 749
                     self.match(Parser.COMMA)
                     self.state = 750
                     localctx.occurrenceParameter = self.optionalExprComponent()
-
 
                 self.state = 753
                 self.match(Parser.RPAREN)
@@ -6488,156 +7385,167 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class NumericOperatorsContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-
 
         def getRuleIndex(self):
             return Parser.RULE_numericOperators
 
-     
-        def copyFrom(self, ctx:ParserRuleContext):
+        def copyFrom(self, ctx: ParserRuleContext):
             super().copyFrom(ctx)
 
-
-
     class UnaryNumericContext(NumericOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.NumericOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.NumericOperatorsContext
             super().__init__(ANTLRParser)
-            self.op = None # Token
+            self.op = None  # Token
             self.copyFrom(ctx)
 
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
+
         def CEIL(self):
             return self.getToken(Parser.CEIL, 0)
+
         def FLOOR(self):
             return self.getToken(Parser.FLOOR, 0)
+
         def ABS(self):
             return self.getToken(Parser.ABS, 0)
+
         def EXP(self):
             return self.getToken(Parser.EXP, 0)
+
         def LN(self):
             return self.getToken(Parser.LN, 0)
+
         def SQRT(self):
             return self.getToken(Parser.SQRT, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterUnaryNumeric" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterUnaryNumeric"):
                 listener.enterUnaryNumeric(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitUnaryNumeric" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitUnaryNumeric"):
                 listener.exitUnaryNumeric(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitUnaryNumeric" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitUnaryNumeric"):
                 return visitor.visitUnaryNumeric(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class UnaryWithOptionalNumericContext(NumericOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.NumericOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.NumericOperatorsContext
             super().__init__(ANTLRParser)
-            self.op = None # Token
+            self.op = None  # Token
             self.copyFrom(ctx)
 
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
+
         def ROUND(self):
             return self.getToken(Parser.ROUND, 0)
+
         def TRUNC(self):
             return self.getToken(Parser.TRUNC, 0)
+
         def COMMA(self):
             return self.getToken(Parser.COMMA, 0)
+
         def optionalExpr(self):
-            return self.getTypedRuleContext(Parser.OptionalExprContext,0)
+            return self.getTypedRuleContext(Parser.OptionalExprContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterUnaryWithOptionalNumeric" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterUnaryWithOptionalNumeric"):
                 listener.enterUnaryWithOptionalNumeric(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitUnaryWithOptionalNumeric" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitUnaryWithOptionalNumeric"):
                 listener.exitUnaryWithOptionalNumeric(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitUnaryWithOptionalNumeric" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitUnaryWithOptionalNumeric"):
                 return visitor.visitUnaryWithOptionalNumeric(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class BinaryNumericContext(NumericOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.NumericOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.NumericOperatorsContext
             super().__init__(ANTLRParser)
-            self.op = None # Token
-            self.left = None # ExprContext
-            self.right = None # ExprContext
+            self.op = None  # Token
+            self.left = None  # ExprContext
+            self.right = None  # ExprContext
             self.copyFrom(ctx)
 
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def COMMA(self):
             return self.getToken(Parser.COMMA, 0)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
-        def expr(self, i:int=None):
+
+        def expr(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ExprContext)
             else:
-                return self.getTypedRuleContext(Parser.ExprContext,i)
+                return self.getTypedRuleContext(Parser.ExprContext, i)
 
         def MOD(self):
             return self.getToken(Parser.MOD, 0)
+
         def POWER(self):
             return self.getToken(Parser.POWER, 0)
+
         def LOG(self):
             return self.getToken(Parser.LOG, 0)
+
         def RANDOM(self):
             return self.getToken(Parser.RANDOM, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterBinaryNumeric" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterBinaryNumeric"):
                 listener.enterBinaryNumeric(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitBinaryNumeric" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitBinaryNumeric"):
                 listener.exitBinaryNumeric(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitBinaryNumeric" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitBinaryNumeric"):
                 return visitor.visitBinaryNumeric(self)
             else:
                 return visitor.visitChildren(self)
-
-
 
     def numericOperators(self):
 
         localctx = Parser.NumericOperatorsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 46, self.RULE_numericOperators)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.state = 778
             self._errHandler.sync(self)
@@ -6648,7 +7556,21 @@ class Parser(ANTLRParser):
                 self.state = 757
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not(((((_la - 85)) & ~0x3f) == 0 and ((1 << (_la - 85)) & ((1 << (Parser.ABS - 85)) | (1 << (Parser.LN - 85)) | (1 << (Parser.EXP - 85)) | (1 << (Parser.CEIL - 85)) | (1 << (Parser.FLOOR - 85)) | (1 << (Parser.SQRT - 85)))) != 0)):
+                if not (
+                    ((_la - 85) & ~0x3F) == 0
+                    and (
+                        (1 << (_la - 85))
+                        & (
+                            (1 << (Parser.ABS - 85))
+                            | (1 << (Parser.LN - 85))
+                            | (1 << (Parser.EXP - 85))
+                            | (1 << (Parser.CEIL - 85))
+                            | (1 << (Parser.FLOOR - 85))
+                            | (1 << (Parser.SQRT - 85))
+                        )
+                    )
+                    != 0
+                ):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -6666,7 +7588,7 @@ class Parser(ANTLRParser):
                 self.state = 762
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not(_la==Parser.TRUNC or _la==Parser.ROUND):
+                if not (_la == Parser.TRUNC or _la == Parser.ROUND):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -6678,12 +7600,11 @@ class Parser(ANTLRParser):
                 self.state = 767
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.COMMA:
+                if _la == Parser.COMMA:
                     self.state = 765
                     self.match(Parser.COMMA)
                     self.state = 766
                     self.optionalExpr()
-
 
                 self.state = 769
                 self.match(Parser.RPAREN)
@@ -6694,7 +7615,19 @@ class Parser(ANTLRParser):
                 self.state = 771
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not(((((_la - 61)) & ~0x3f) == 0 and ((1 << (_la - 61)) & ((1 << (Parser.RANDOM - 61)) | (1 << (Parser.LOG - 61)) | (1 << (Parser.POWER - 61)) | (1 << (Parser.MOD - 61)))) != 0)):
+                if not (
+                    ((_la - 61) & ~0x3F) == 0
+                    and (
+                        (1 << (_la - 61))
+                        & (
+                            (1 << (Parser.RANDOM - 61))
+                            | (1 << (Parser.LOG - 61))
+                            | (1 << (Parser.POWER - 61))
+                            | (1 << (Parser.MOD - 61))
+                        )
+                    )
+                    != 0
+                ):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -6721,156 +7654,167 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class NumericOperatorsComponentContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-
 
         def getRuleIndex(self):
             return Parser.RULE_numericOperatorsComponent
 
-     
-        def copyFrom(self, ctx:ParserRuleContext):
+        def copyFrom(self, ctx: ParserRuleContext):
             super().copyFrom(ctx)
 
-
-
     class UnaryNumericComponentContext(NumericOperatorsComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.NumericOperatorsComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.NumericOperatorsComponentContext
             super().__init__(ANTLRParser)
-            self.op = None # Token
+            self.op = None  # Token
             self.copyFrom(ctx)
 
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def exprComponent(self):
-            return self.getTypedRuleContext(Parser.ExprComponentContext,0)
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
+
         def CEIL(self):
             return self.getToken(Parser.CEIL, 0)
+
         def FLOOR(self):
             return self.getToken(Parser.FLOOR, 0)
+
         def ABS(self):
             return self.getToken(Parser.ABS, 0)
+
         def EXP(self):
             return self.getToken(Parser.EXP, 0)
+
         def LN(self):
             return self.getToken(Parser.LN, 0)
+
         def SQRT(self):
             return self.getToken(Parser.SQRT, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterUnaryNumericComponent" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterUnaryNumericComponent"):
                 listener.enterUnaryNumericComponent(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitUnaryNumericComponent" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitUnaryNumericComponent"):
                 listener.exitUnaryNumericComponent(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitUnaryNumericComponent" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitUnaryNumericComponent"):
                 return visitor.visitUnaryNumericComponent(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class BinaryNumericComponentContext(NumericOperatorsComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.NumericOperatorsComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.NumericOperatorsComponentContext
             super().__init__(ANTLRParser)
-            self.op = None # Token
-            self.left = None # ExprComponentContext
-            self.right = None # ExprComponentContext
+            self.op = None  # Token
+            self.left = None  # ExprComponentContext
+            self.right = None  # ExprComponentContext
             self.copyFrom(ctx)
 
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def COMMA(self):
             return self.getToken(Parser.COMMA, 0)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
-        def exprComponent(self, i:int=None):
+
+        def exprComponent(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ExprComponentContext)
             else:
-                return self.getTypedRuleContext(Parser.ExprComponentContext,i)
+                return self.getTypedRuleContext(Parser.ExprComponentContext, i)
 
         def MOD(self):
             return self.getToken(Parser.MOD, 0)
+
         def POWER(self):
             return self.getToken(Parser.POWER, 0)
+
         def LOG(self):
             return self.getToken(Parser.LOG, 0)
+
         def RANDOM(self):
             return self.getToken(Parser.RANDOM, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterBinaryNumericComponent" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterBinaryNumericComponent"):
                 listener.enterBinaryNumericComponent(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitBinaryNumericComponent" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitBinaryNumericComponent"):
                 listener.exitBinaryNumericComponent(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitBinaryNumericComponent" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitBinaryNumericComponent"):
                 return visitor.visitBinaryNumericComponent(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class UnaryWithOptionalNumericComponentContext(NumericOperatorsComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.NumericOperatorsComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.NumericOperatorsComponentContext
             super().__init__(ANTLRParser)
-            self.op = None # Token
+            self.op = None  # Token
             self.copyFrom(ctx)
 
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def exprComponent(self):
-            return self.getTypedRuleContext(Parser.ExprComponentContext,0)
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
+
         def ROUND(self):
             return self.getToken(Parser.ROUND, 0)
+
         def TRUNC(self):
             return self.getToken(Parser.TRUNC, 0)
+
         def COMMA(self):
             return self.getToken(Parser.COMMA, 0)
+
         def optionalExprComponent(self):
-            return self.getTypedRuleContext(Parser.OptionalExprComponentContext,0)
+            return self.getTypedRuleContext(Parser.OptionalExprComponentContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterUnaryWithOptionalNumericComponent" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterUnaryWithOptionalNumericComponent"):
                 listener.enterUnaryWithOptionalNumericComponent(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitUnaryWithOptionalNumericComponent" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitUnaryWithOptionalNumericComponent"):
                 listener.exitUnaryWithOptionalNumericComponent(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitUnaryWithOptionalNumericComponent" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitUnaryWithOptionalNumericComponent"):
                 return visitor.visitUnaryWithOptionalNumericComponent(self)
             else:
                 return visitor.visitChildren(self)
-
-
 
     def numericOperatorsComponent(self):
 
         localctx = Parser.NumericOperatorsComponentContext(self, self._ctx, self.state)
         self.enterRule(localctx, 48, self.RULE_numericOperatorsComponent)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.state = 801
             self._errHandler.sync(self)
@@ -6881,7 +7825,21 @@ class Parser(ANTLRParser):
                 self.state = 780
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not(((((_la - 85)) & ~0x3f) == 0 and ((1 << (_la - 85)) & ((1 << (Parser.ABS - 85)) | (1 << (Parser.LN - 85)) | (1 << (Parser.EXP - 85)) | (1 << (Parser.CEIL - 85)) | (1 << (Parser.FLOOR - 85)) | (1 << (Parser.SQRT - 85)))) != 0)):
+                if not (
+                    ((_la - 85) & ~0x3F) == 0
+                    and (
+                        (1 << (_la - 85))
+                        & (
+                            (1 << (Parser.ABS - 85))
+                            | (1 << (Parser.LN - 85))
+                            | (1 << (Parser.EXP - 85))
+                            | (1 << (Parser.CEIL - 85))
+                            | (1 << (Parser.FLOOR - 85))
+                            | (1 << (Parser.SQRT - 85))
+                        )
+                    )
+                    != 0
+                ):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -6899,7 +7857,7 @@ class Parser(ANTLRParser):
                 self.state = 785
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not(_la==Parser.TRUNC or _la==Parser.ROUND):
+                if not (_la == Parser.TRUNC or _la == Parser.ROUND):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -6911,12 +7869,11 @@ class Parser(ANTLRParser):
                 self.state = 790
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.COMMA:
+                if _la == Parser.COMMA:
                     self.state = 788
                     self.match(Parser.COMMA)
                     self.state = 789
                     self.optionalExprComponent()
-
 
                 self.state = 792
                 self.match(Parser.RPAREN)
@@ -6927,7 +7884,19 @@ class Parser(ANTLRParser):
                 self.state = 794
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not(((((_la - 61)) & ~0x3f) == 0 and ((1 << (_la - 61)) & ((1 << (Parser.RANDOM - 61)) | (1 << (Parser.LOG - 61)) | (1 << (Parser.POWER - 61)) | (1 << (Parser.MOD - 61)))) != 0)):
+                if not (
+                    ((_la - 61) & ~0x3F) == 0
+                    and (
+                        (1 << (_la - 61))
+                        & (
+                            (1 << (Parser.RANDOM - 61))
+                            | (1 << (Parser.LOG - 61))
+                            | (1 << (Parser.POWER - 61))
+                            | (1 << (Parser.MOD - 61))
+                        )
+                    )
+                    != 0
+                ):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -6954,185 +7923,190 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class ComparisonOperatorsContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-
 
         def getRuleIndex(self):
             return Parser.RULE_comparisonOperators
 
-     
-        def copyFrom(self, ctx:ParserRuleContext):
+        def copyFrom(self, ctx: ParserRuleContext):
             super().copyFrom(ctx)
 
-
-
     class BetweenAtomContext(ComparisonOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ComparisonOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.ComparisonOperatorsContext
             super().__init__(ANTLRParser)
-            self.op = None # ExprContext
-            self.from_ = None # ExprContext
-            self.to_ = None # ExprContext
+            self.op = None  # ExprContext
+            self.from_ = None  # ExprContext
+            self.to_ = None  # ExprContext
             self.copyFrom(ctx)
 
         def BETWEEN(self):
             return self.getToken(Parser.BETWEEN, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
-        def COMMA(self, i:int=None):
+
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
                 return self.getToken(Parser.COMMA, i)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
-        def expr(self, i:int=None):
+
+        def expr(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ExprContext)
             else:
-                return self.getTypedRuleContext(Parser.ExprContext,i)
+                return self.getTypedRuleContext(Parser.ExprContext, i)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterBetweenAtom" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterBetweenAtom"):
                 listener.enterBetweenAtom(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitBetweenAtom" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitBetweenAtom"):
                 listener.exitBetweenAtom(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitBetweenAtom" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitBetweenAtom"):
                 return visitor.visitBetweenAtom(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class CharsetMatchAtomContext(ComparisonOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ComparisonOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.ComparisonOperatorsContext
             super().__init__(ANTLRParser)
-            self.op = None # ExprContext
-            self.pattern = None # ExprContext
+            self.op = None  # ExprContext
+            self.pattern = None  # ExprContext
             self.copyFrom(ctx)
 
         def CHARSET_MATCH(self):
             return self.getToken(Parser.CHARSET_MATCH, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def COMMA(self):
             return self.getToken(Parser.COMMA, 0)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
-        def expr(self, i:int=None):
+
+        def expr(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ExprContext)
             else:
-                return self.getTypedRuleContext(Parser.ExprContext,i)
+                return self.getTypedRuleContext(Parser.ExprContext, i)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterCharsetMatchAtom" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterCharsetMatchAtom"):
                 listener.enterCharsetMatchAtom(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitCharsetMatchAtom" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitCharsetMatchAtom"):
                 listener.exitCharsetMatchAtom(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitCharsetMatchAtom" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitCharsetMatchAtom"):
                 return visitor.visitCharsetMatchAtom(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class IsNullAtomContext(ComparisonOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ComparisonOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.ComparisonOperatorsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def ISNULL(self):
             return self.getToken(Parser.ISNULL, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterIsNullAtom" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterIsNullAtom"):
                 listener.enterIsNullAtom(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitIsNullAtom" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitIsNullAtom"):
                 listener.exitIsNullAtom(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitIsNullAtom" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitIsNullAtom"):
                 return visitor.visitIsNullAtom(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class ExistInAtomContext(ComparisonOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ComparisonOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.ComparisonOperatorsContext
             super().__init__(ANTLRParser)
-            self.left = None # ExprContext
-            self.right = None # ExprContext
+            self.left = None  # ExprContext
+            self.right = None  # ExprContext
             self.copyFrom(ctx)
 
         def EXISTS_IN(self):
             return self.getToken(Parser.EXISTS_IN, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
-        def COMMA(self, i:int=None):
+
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
                 return self.getToken(Parser.COMMA, i)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
-        def expr(self, i:int=None):
+
+        def expr(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ExprContext)
             else:
-                return self.getTypedRuleContext(Parser.ExprContext,i)
+                return self.getTypedRuleContext(Parser.ExprContext, i)
 
         def retainType(self):
-            return self.getTypedRuleContext(Parser.RetainTypeContext,0)
+            return self.getTypedRuleContext(Parser.RetainTypeContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExistInAtom" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterExistInAtom"):
                 listener.enterExistInAtom(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExistInAtom" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitExistInAtom"):
                 listener.exitExistInAtom(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExistInAtom" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitExistInAtom"):
                 return visitor.visitExistInAtom(self)
             else:
                 return visitor.visitChildren(self)
-
-
 
     def comparisonOperators(self):
 
         localctx = Parser.ComparisonOperatorsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 50, self.RULE_comparisonOperators)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.state = 835
             self._errHandler.sync(self)
@@ -7201,12 +8175,11 @@ class Parser(ANTLRParser):
                 self.state = 831
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.COMMA:
+                if _la == Parser.COMMA:
                     self.state = 829
                     self.match(Parser.COMMA)
                     self.state = 830
                     self.retainType()
-
 
                 self.state = 833
                 self.match(Parser.RPAREN)
@@ -7222,135 +8195,137 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class ComparisonOperatorsComponentContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-
 
         def getRuleIndex(self):
             return Parser.RULE_comparisonOperatorsComponent
 
-     
-        def copyFrom(self, ctx:ParserRuleContext):
+        def copyFrom(self, ctx: ParserRuleContext):
             super().copyFrom(ctx)
 
-
-
     class IsNullAtomComponentContext(ComparisonOperatorsComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ComparisonOperatorsComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.ComparisonOperatorsComponentContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def ISNULL(self):
             return self.getToken(Parser.ISNULL, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def exprComponent(self):
-            return self.getTypedRuleContext(Parser.ExprComponentContext,0)
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterIsNullAtomComponent" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterIsNullAtomComponent"):
                 listener.enterIsNullAtomComponent(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitIsNullAtomComponent" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitIsNullAtomComponent"):
                 listener.exitIsNullAtomComponent(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitIsNullAtomComponent" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitIsNullAtomComponent"):
                 return visitor.visitIsNullAtomComponent(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class CharsetMatchAtomComponentContext(ComparisonOperatorsComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ComparisonOperatorsComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.ComparisonOperatorsComponentContext
             super().__init__(ANTLRParser)
-            self.op = None # ExprComponentContext
-            self.pattern = None # ExprComponentContext
+            self.op = None  # ExprComponentContext
+            self.pattern = None  # ExprComponentContext
             self.copyFrom(ctx)
 
         def CHARSET_MATCH(self):
             return self.getToken(Parser.CHARSET_MATCH, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def COMMA(self):
             return self.getToken(Parser.COMMA, 0)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
-        def exprComponent(self, i:int=None):
+
+        def exprComponent(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ExprComponentContext)
             else:
-                return self.getTypedRuleContext(Parser.ExprComponentContext,i)
+                return self.getTypedRuleContext(Parser.ExprComponentContext, i)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterCharsetMatchAtomComponent" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterCharsetMatchAtomComponent"):
                 listener.enterCharsetMatchAtomComponent(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitCharsetMatchAtomComponent" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitCharsetMatchAtomComponent"):
                 listener.exitCharsetMatchAtomComponent(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitCharsetMatchAtomComponent" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitCharsetMatchAtomComponent"):
                 return visitor.visitCharsetMatchAtomComponent(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class BetweenAtomComponentContext(ComparisonOperatorsComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ComparisonOperatorsComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.ComparisonOperatorsComponentContext
             super().__init__(ANTLRParser)
-            self.op = None # ExprComponentContext
-            self.from_ = None # ExprComponentContext
-            self.to_ = None # ExprComponentContext
+            self.op = None  # ExprComponentContext
+            self.from_ = None  # ExprComponentContext
+            self.to_ = None  # ExprComponentContext
             self.copyFrom(ctx)
 
         def BETWEEN(self):
             return self.getToken(Parser.BETWEEN, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
-        def COMMA(self, i:int=None):
+
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
                 return self.getToken(Parser.COMMA, i)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
-        def exprComponent(self, i:int=None):
+
+        def exprComponent(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ExprComponentContext)
             else:
-                return self.getTypedRuleContext(Parser.ExprComponentContext,i)
+                return self.getTypedRuleContext(Parser.ExprComponentContext, i)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterBetweenAtomComponent" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterBetweenAtomComponent"):
                 listener.enterBetweenAtomComponent(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitBetweenAtomComponent" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitBetweenAtomComponent"):
                 listener.exitBetweenAtomComponent(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitBetweenAtomComponent" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitBetweenAtomComponent"):
                 return visitor.visitBetweenAtomComponent(self)
             else:
                 return visitor.visitChildren(self)
-
-
 
     def comparisonOperatorsComponent(self):
 
@@ -7419,574 +8394,612 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class TimeOperatorsContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-
 
         def getRuleIndex(self):
             return Parser.RULE_timeOperators
 
-     
-        def copyFrom(self, ctx:ParserRuleContext):
+        def copyFrom(self, ctx: ParserRuleContext):
             super().copyFrom(ctx)
 
-
-
     class DayToYearAtomContext(TimeOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.TimeOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.TimeOperatorsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def DAYTOYEAR(self):
             return self.getToken(Parser.DAYTOYEAR, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDayToYearAtom" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterDayToYearAtom"):
                 listener.enterDayToYearAtom(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDayToYearAtom" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitDayToYearAtom"):
                 listener.exitDayToYearAtom(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDayToYearAtom" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitDayToYearAtom"):
                 return visitor.visitDayToYearAtom(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class YearAtomContext(TimeOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.TimeOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.TimeOperatorsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def YEAR_OP(self):
             return self.getToken(Parser.YEAR_OP, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterYearAtom" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterYearAtom"):
                 listener.enterYearAtom(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitYearAtom" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitYearAtom"):
                 listener.exitYearAtom(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitYearAtom" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitYearAtom"):
                 return visitor.visitYearAtom(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class MonthToDayAtomContext(TimeOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.TimeOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.TimeOperatorsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def MONTHTODAY(self):
             return self.getToken(Parser.MONTHTODAY, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterMonthToDayAtom" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterMonthToDayAtom"):
                 listener.enterMonthToDayAtom(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitMonthToDayAtom" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitMonthToDayAtom"):
                 listener.exitMonthToDayAtom(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitMonthToDayAtom" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitMonthToDayAtom"):
                 return visitor.visitMonthToDayAtom(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class DayToMonthAtomContext(TimeOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.TimeOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.TimeOperatorsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def DAYTOMONTH(self):
             return self.getToken(Parser.DAYTOMONTH, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDayToMonthAtom" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterDayToMonthAtom"):
                 listener.enterDayToMonthAtom(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDayToMonthAtom" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitDayToMonthAtom"):
                 listener.exitDayToMonthAtom(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDayToMonthAtom" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitDayToMonthAtom"):
                 return visitor.visitDayToMonthAtom(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class PeriodAtomContext(TimeOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.TimeOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.TimeOperatorsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def PERIOD_INDICATOR(self):
             return self.getToken(Parser.PERIOD_INDICATOR, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
+
         def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterPeriodAtom" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterPeriodAtom"):
                 listener.enterPeriodAtom(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitPeriodAtom" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitPeriodAtom"):
                 listener.exitPeriodAtom(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitPeriodAtom" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitPeriodAtom"):
                 return visitor.visitPeriodAtom(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class FillTimeAtomContext(TimeOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.TimeOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.TimeOperatorsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def FILL_TIME_SERIES(self):
             return self.getToken(Parser.FILL_TIME_SERIES, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
+
         def COMMA(self):
             return self.getToken(Parser.COMMA, 0)
+
         def SINGLE(self):
             return self.getToken(Parser.SINGLE, 0)
+
         def ALL(self):
             return self.getToken(Parser.ALL, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterFillTimeAtom" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterFillTimeAtom"):
                 listener.enterFillTimeAtom(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitFillTimeAtom" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitFillTimeAtom"):
                 listener.exitFillTimeAtom(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitFillTimeAtom" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitFillTimeAtom"):
                 return visitor.visitFillTimeAtom(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class MonthAtomContext(TimeOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.TimeOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.TimeOperatorsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def MONTH_OP(self):
             return self.getToken(Parser.MONTH_OP, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterMonthAtom" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterMonthAtom"):
                 listener.enterMonthAtom(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitMonthAtom" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitMonthAtom"):
                 listener.exitMonthAtom(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitMonthAtom" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitMonthAtom"):
                 return visitor.visitMonthAtom(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class DayOfYearAtomContext(TimeOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.TimeOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.TimeOperatorsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def DAYOFYEAR(self):
             return self.getToken(Parser.DAYOFYEAR, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDayOfYearAtom" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterDayOfYearAtom"):
                 listener.enterDayOfYearAtom(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDayOfYearAtom" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitDayOfYearAtom"):
                 listener.exitDayOfYearAtom(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDayOfYearAtom" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitDayOfYearAtom"):
                 return visitor.visitDayOfYearAtom(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class FlowAtomContext(TimeOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.TimeOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.TimeOperatorsContext
             super().__init__(ANTLRParser)
-            self.op = None # Token
+            self.op = None  # Token
             self.copyFrom(ctx)
 
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
+
         def FLOW_TO_STOCK(self):
             return self.getToken(Parser.FLOW_TO_STOCK, 0)
+
         def STOCK_TO_FLOW(self):
             return self.getToken(Parser.STOCK_TO_FLOW, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterFlowAtom" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterFlowAtom"):
                 listener.enterFlowAtom(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitFlowAtom" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitFlowAtom"):
                 listener.exitFlowAtom(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitFlowAtom" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitFlowAtom"):
                 return visitor.visitFlowAtom(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class TimeShiftAtomContext(TimeOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.TimeOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.TimeOperatorsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def TIMESHIFT(self):
             return self.getToken(Parser.TIMESHIFT, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
 
         def COMMA(self):
             return self.getToken(Parser.COMMA, 0)
+
         def signedInteger(self):
-            return self.getTypedRuleContext(Parser.SignedIntegerContext,0)
+            return self.getTypedRuleContext(Parser.SignedIntegerContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTimeShiftAtom" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterTimeShiftAtom"):
                 listener.enterTimeShiftAtom(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTimeShiftAtom" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitTimeShiftAtom"):
                 listener.exitTimeShiftAtom(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitTimeShiftAtom" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitTimeShiftAtom"):
                 return visitor.visitTimeShiftAtom(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class TimeAggAtomContext(TimeOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.TimeOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.TimeOperatorsContext
             super().__init__(ANTLRParser)
-            self.periodIndTo = None # Token
-            self.periodIndFrom = None # Token
-            self.op = None # OptionalExprContext
+            self.periodIndTo = None  # Token
+            self.periodIndFrom = None  # Token
+            self.op = None  # OptionalExprContext
             self.copyFrom(ctx)
 
         def TIME_AGG(self):
             return self.getToken(Parser.TIME_AGG, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
-        def STRING_CONSTANT(self, i:int=None):
+
+        def STRING_CONSTANT(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.STRING_CONSTANT)
             else:
                 return self.getToken(Parser.STRING_CONSTANT, i)
-        def COMMA(self, i:int=None):
+
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
                 return self.getToken(Parser.COMMA, i)
+
         def optionalExpr(self):
-            return self.getTypedRuleContext(Parser.OptionalExprContext,0)
+            return self.getTypedRuleContext(Parser.OptionalExprContext, 0)
 
         def FIRST(self):
             return self.getToken(Parser.FIRST, 0)
+
         def LAST(self):
             return self.getToken(Parser.LAST, 0)
+
         def OPTIONAL(self):
             return self.getToken(Parser.OPTIONAL, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTimeAggAtom" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterTimeAggAtom"):
                 listener.enterTimeAggAtom(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTimeAggAtom" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitTimeAggAtom"):
                 listener.exitTimeAggAtom(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitTimeAggAtom" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitTimeAggAtom"):
                 return visitor.visitTimeAggAtom(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class DateDiffAtomContext(TimeOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.TimeOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.TimeOperatorsContext
             super().__init__(ANTLRParser)
-            self.dateFrom = None # ExprContext
-            self.dateTo = None # ExprContext
+            self.dateFrom = None  # ExprContext
+            self.dateTo = None  # ExprContext
             self.copyFrom(ctx)
 
         def DATEDIFF(self):
             return self.getToken(Parser.DATEDIFF, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def COMMA(self):
             return self.getToken(Parser.COMMA, 0)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
-        def expr(self, i:int=None):
+
+        def expr(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ExprContext)
             else:
-                return self.getTypedRuleContext(Parser.ExprContext,i)
+                return self.getTypedRuleContext(Parser.ExprContext, i)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDateDiffAtom" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterDateDiffAtom"):
                 listener.enterDateDiffAtom(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDateDiffAtom" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitDateDiffAtom"):
                 listener.exitDateDiffAtom(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDateDiffAtom" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitDateDiffAtom"):
                 return visitor.visitDateDiffAtom(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class DateAddAtomContext(TimeOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.TimeOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.TimeOperatorsContext
             super().__init__(ANTLRParser)
-            self.op = None # ExprContext
-            self.shiftNumber = None # ExprContext
-            self.periodInd = None # ExprContext
+            self.op = None  # ExprContext
+            self.shiftNumber = None  # ExprContext
+            self.periodInd = None  # ExprContext
             self.copyFrom(ctx)
 
         def DATEADD(self):
             return self.getToken(Parser.DATEADD, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
-        def COMMA(self, i:int=None):
+
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
                 return self.getToken(Parser.COMMA, i)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
-        def expr(self, i:int=None):
+
+        def expr(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ExprContext)
             else:
-                return self.getTypedRuleContext(Parser.ExprContext,i)
+                return self.getTypedRuleContext(Parser.ExprContext, i)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDateAddAtom" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterDateAddAtom"):
                 listener.enterDateAddAtom(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDateAddAtom" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitDateAddAtom"):
                 listener.exitDateAddAtom(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDateAddAtom" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitDateAddAtom"):
                 return visitor.visitDateAddAtom(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class YearToDayAtomContext(TimeOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.TimeOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.TimeOperatorsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def YEARTODAY(self):
             return self.getToken(Parser.YEARTODAY, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterYearToDayAtom" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterYearToDayAtom"):
                 listener.enterYearToDayAtom(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitYearToDayAtom" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitYearToDayAtom"):
                 listener.exitYearToDayAtom(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitYearToDayAtom" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitYearToDayAtom"):
                 return visitor.visitYearToDayAtom(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class DayOfMonthAtomContext(TimeOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.TimeOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.TimeOperatorsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def DAYOFMONTH(self):
             return self.getToken(Parser.DAYOFMONTH, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDayOfMonthAtom" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterDayOfMonthAtom"):
                 listener.enterDayOfMonthAtom(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDayOfMonthAtom" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitDayOfMonthAtom"):
                 listener.exitDayOfMonthAtom(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDayOfMonthAtom" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitDayOfMonthAtom"):
                 return visitor.visitDayOfMonthAtom(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class CurrentDateAtomContext(TimeOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.TimeOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.TimeOperatorsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def CURRENT_DATE(self):
             return self.getToken(Parser.CURRENT_DATE, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterCurrentDateAtom" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterCurrentDateAtom"):
                 listener.enterCurrentDateAtom(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitCurrentDateAtom" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitCurrentDateAtom"):
                 listener.exitCurrentDateAtom(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitCurrentDateAtom" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitCurrentDateAtom"):
                 return visitor.visitCurrentDateAtom(self)
             else:
                 return visitor.visitChildren(self)
-
-
 
     def timeOperators(self):
 
         localctx = Parser.TimeOperatorsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 54, self.RULE_timeOperators)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.state = 962
             self._errHandler.sync(self)
@@ -8001,10 +9014,130 @@ class Parser(ANTLRParser):
                 self.state = 863
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << Parser.LPAREN) | (1 << Parser.PLUS) | (1 << Parser.MINUS) | (1 << Parser.EVAL) | (1 << Parser.IF) | (1 << Parser.CASE) | (1 << Parser.CURRENT_DATE) | (1 << Parser.DATEDIFF) | (1 << Parser.DATEADD) | (1 << Parser.YEAR_OP) | (1 << Parser.MONTH_OP) | (1 << Parser.DAYOFMONTH) | (1 << Parser.DAYOFYEAR) | (1 << Parser.DAYTOYEAR) | (1 << Parser.DAYTOMONTH) | (1 << Parser.YEARTODAY) | (1 << Parser.MONTHTODAY) | (1 << Parser.NOT) | (1 << Parser.BETWEEN) | (1 << Parser.NULL_CONSTANT) | (1 << Parser.ISNULL) | (1 << Parser.UNION) | (1 << Parser.SYMDIFF) | (1 << Parser.INTERSECT) | (1 << Parser.RANDOM))) != 0) or ((((_la - 66)) & ~0x3f) == 0 and ((1 << (_la - 66)) & ((1 << (Parser.CHECK - 66)) | (1 << (Parser.EXISTS_IN - 66)) | (1 << (Parser.MIN - 66)) | (1 << (Parser.MAX - 66)) | (1 << (Parser.ABS - 66)) | (1 << (Parser.LN - 66)) | (1 << (Parser.LOG - 66)) | (1 << (Parser.TRUNC - 66)) | (1 << (Parser.ROUND - 66)) | (1 << (Parser.POWER - 66)) | (1 << (Parser.MOD - 66)) | (1 << (Parser.LEN - 66)) | (1 << (Parser.TRIM - 66)) | (1 << (Parser.UCASE - 66)) | (1 << (Parser.LCASE - 66)) | (1 << (Parser.SUBSTR - 66)) | (1 << (Parser.SUM - 66)) | (1 << (Parser.AVG - 66)) | (1 << (Parser.MEDIAN - 66)) | (1 << (Parser.COUNT - 66)) | (1 << (Parser.EXP - 66)) | (1 << (Parser.CHARSET_MATCH - 66)) | (1 << (Parser.NVL - 66)) | (1 << (Parser.HIERARCHY - 66)))) != 0) or ((((_la - 131)) & ~0x3f) == 0 and ((1 << (_la - 131)) & ((1 << (Parser.LTRIM - 131)) | (1 << (Parser.RTRIM - 131)) | (1 << (Parser.INSTR - 131)) | (1 << (Parser.REPLACE - 131)) | (1 << (Parser.CEIL - 131)) | (1 << (Parser.FLOOR - 131)) | (1 << (Parser.SQRT - 131)) | (1 << (Parser.SETDIFF - 131)) | (1 << (Parser.STDDEV_POP - 131)) | (1 << (Parser.STDDEV_SAMP - 131)) | (1 << (Parser.VAR_POP - 131)) | (1 << (Parser.VAR_SAMP - 131)) | (1 << (Parser.FIRST_VALUE - 131)) | (1 << (Parser.LAST_VALUE - 131)) | (1 << (Parser.LAG - 131)) | (1 << (Parser.LEAD - 131)) | (1 << (Parser.RATIO_TO_REPORT - 131)) | (1 << (Parser.FILL_TIME_SERIES - 131)) | (1 << (Parser.FLOW_TO_STOCK - 131)) | (1 << (Parser.STOCK_TO_FLOW - 131)) | (1 << (Parser.TIMESHIFT - 131)) | (1 << (Parser.INNER_JOIN - 131)) | (1 << (Parser.LEFT_JOIN - 131)))) != 0) or ((((_la - 195)) & ~0x3f) == 0 and ((1 << (_la - 195)) & ((1 << (Parser.CROSS_JOIN - 195)) | (1 << (Parser.FULL_JOIN - 195)) | (1 << (Parser.PERIOD_INDICATOR - 195)) | (1 << (Parser.TIME_AGG - 195)) | (1 << (Parser.CAST - 195)) | (1 << (Parser.CHECK_DATAPOINT - 195)) | (1 << (Parser.CHECK_HIERARCHY - 195)) | (1 << (Parser.INTEGER_CONSTANT - 195)) | (1 << (Parser.NUMBER_CONSTANT - 195)) | (1 << (Parser.BOOLEAN_CONSTANT - 195)) | (1 << (Parser.STRING_CONSTANT - 195)) | (1 << (Parser.IDENTIFIER - 195)))) != 0):
+                if (
+                    (
+                        ((_la) & ~0x3F) == 0
+                        and (
+                            (1 << _la)
+                            & (
+                                (1 << Parser.LPAREN)
+                                | (1 << Parser.PLUS)
+                                | (1 << Parser.MINUS)
+                                | (1 << Parser.EVAL)
+                                | (1 << Parser.IF)
+                                | (1 << Parser.CASE)
+                                | (1 << Parser.CURRENT_DATE)
+                                | (1 << Parser.DATEDIFF)
+                                | (1 << Parser.DATEADD)
+                                | (1 << Parser.YEAR_OP)
+                                | (1 << Parser.MONTH_OP)
+                                | (1 << Parser.DAYOFMONTH)
+                                | (1 << Parser.DAYOFYEAR)
+                                | (1 << Parser.DAYTOYEAR)
+                                | (1 << Parser.DAYTOMONTH)
+                                | (1 << Parser.YEARTODAY)
+                                | (1 << Parser.MONTHTODAY)
+                                | (1 << Parser.NOT)
+                                | (1 << Parser.BETWEEN)
+                                | (1 << Parser.NULL_CONSTANT)
+                                | (1 << Parser.ISNULL)
+                                | (1 << Parser.UNION)
+                                | (1 << Parser.SYMDIFF)
+                                | (1 << Parser.INTERSECT)
+                                | (1 << Parser.RANDOM)
+                            )
+                        )
+                        != 0
+                    )
+                    or (
+                        ((_la - 66) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 66))
+                            & (
+                                (1 << (Parser.CHECK - 66))
+                                | (1 << (Parser.EXISTS_IN - 66))
+                                | (1 << (Parser.MIN - 66))
+                                | (1 << (Parser.MAX - 66))
+                                | (1 << (Parser.ABS - 66))
+                                | (1 << (Parser.LN - 66))
+                                | (1 << (Parser.LOG - 66))
+                                | (1 << (Parser.TRUNC - 66))
+                                | (1 << (Parser.ROUND - 66))
+                                | (1 << (Parser.POWER - 66))
+                                | (1 << (Parser.MOD - 66))
+                                | (1 << (Parser.LEN - 66))
+                                | (1 << (Parser.TRIM - 66))
+                                | (1 << (Parser.UCASE - 66))
+                                | (1 << (Parser.LCASE - 66))
+                                | (1 << (Parser.SUBSTR - 66))
+                                | (1 << (Parser.SUM - 66))
+                                | (1 << (Parser.AVG - 66))
+                                | (1 << (Parser.MEDIAN - 66))
+                                | (1 << (Parser.COUNT - 66))
+                                | (1 << (Parser.EXP - 66))
+                                | (1 << (Parser.CHARSET_MATCH - 66))
+                                | (1 << (Parser.NVL - 66))
+                                | (1 << (Parser.HIERARCHY - 66))
+                            )
+                        )
+                        != 0
+                    )
+                    or (
+                        ((_la - 131) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 131))
+                            & (
+                                (1 << (Parser.LTRIM - 131))
+                                | (1 << (Parser.RTRIM - 131))
+                                | (1 << (Parser.INSTR - 131))
+                                | (1 << (Parser.REPLACE - 131))
+                                | (1 << (Parser.CEIL - 131))
+                                | (1 << (Parser.FLOOR - 131))
+                                | (1 << (Parser.SQRT - 131))
+                                | (1 << (Parser.SETDIFF - 131))
+                                | (1 << (Parser.STDDEV_POP - 131))
+                                | (1 << (Parser.STDDEV_SAMP - 131))
+                                | (1 << (Parser.VAR_POP - 131))
+                                | (1 << (Parser.VAR_SAMP - 131))
+                                | (1 << (Parser.FIRST_VALUE - 131))
+                                | (1 << (Parser.LAST_VALUE - 131))
+                                | (1 << (Parser.LAG - 131))
+                                | (1 << (Parser.LEAD - 131))
+                                | (1 << (Parser.RATIO_TO_REPORT - 131))
+                                | (1 << (Parser.FILL_TIME_SERIES - 131))
+                                | (1 << (Parser.FLOW_TO_STOCK - 131))
+                                | (1 << (Parser.STOCK_TO_FLOW - 131))
+                                | (1 << (Parser.TIMESHIFT - 131))
+                                | (1 << (Parser.INNER_JOIN - 131))
+                                | (1 << (Parser.LEFT_JOIN - 131))
+                            )
+                        )
+                        != 0
+                    )
+                    or (
+                        ((_la - 195) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 195))
+                            & (
+                                (1 << (Parser.CROSS_JOIN - 195))
+                                | (1 << (Parser.FULL_JOIN - 195))
+                                | (1 << (Parser.PERIOD_INDICATOR - 195))
+                                | (1 << (Parser.TIME_AGG - 195))
+                                | (1 << (Parser.CAST - 195))
+                                | (1 << (Parser.CHECK_DATAPOINT - 195))
+                                | (1 << (Parser.CHECK_HIERARCHY - 195))
+                                | (1 << (Parser.INTEGER_CONSTANT - 195))
+                                | (1 << (Parser.NUMBER_CONSTANT - 195))
+                                | (1 << (Parser.BOOLEAN_CONSTANT - 195))
+                                | (1 << (Parser.STRING_CONSTANT - 195))
+                                | (1 << (Parser.IDENTIFIER - 195))
+                            )
+                        )
+                        != 0
+                    )
+                ):
                     self.state = 862
                     self.expr(0)
-
 
                 self.state = 865
                 self.match(Parser.RPAREN)
@@ -8021,17 +9154,16 @@ class Parser(ANTLRParser):
                 self.state = 871
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.COMMA:
+                if _la == Parser.COMMA:
                     self.state = 869
                     self.match(Parser.COMMA)
                     self.state = 870
                     _la = self._input.LA(1)
-                    if not(_la==Parser.ALL or _la==Parser.SINGLE):
+                    if not (_la == Parser.ALL or _la == Parser.SINGLE):
                         self._errHandler.recoverInline(self)
                     else:
                         self._errHandler.reportMatch(self)
                         self.consume()
-
 
                 self.state = 873
                 self.match(Parser.RPAREN)
@@ -8042,7 +9174,7 @@ class Parser(ANTLRParser):
                 self.state = 875
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not(_la==Parser.FLOW_TO_STOCK or _la==Parser.STOCK_TO_FLOW):
+                if not (_la == Parser.FLOW_TO_STOCK or _la == Parser.STOCK_TO_FLOW):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -8081,44 +9213,41 @@ class Parser(ANTLRParser):
                 localctx.periodIndTo = self.match(Parser.STRING_CONSTANT)
                 self.state = 892
                 self._errHandler.sync(self)
-                la_ = self._interp.adaptivePredict(self._input,70,self._ctx)
+                la_ = self._interp.adaptivePredict(self._input, 70, self._ctx)
                 if la_ == 1:
                     self.state = 890
                     self.match(Parser.COMMA)
                     self.state = 891
                     localctx.periodIndFrom = self._input.LT(1)
                     _la = self._input.LA(1)
-                    if not(_la==Parser.OPTIONAL or _la==Parser.STRING_CONSTANT):
+                    if not (_la == Parser.OPTIONAL or _la == Parser.STRING_CONSTANT):
                         localctx.periodIndFrom = self._errHandler.recoverInline(self)
                     else:
                         self._errHandler.reportMatch(self)
                         self.consume()
 
-
                 self.state = 896
                 self._errHandler.sync(self)
-                la_ = self._interp.adaptivePredict(self._input,71,self._ctx)
+                la_ = self._interp.adaptivePredict(self._input, 71, self._ctx)
                 if la_ == 1:
                     self.state = 894
                     self.match(Parser.COMMA)
                     self.state = 895
                     localctx.op = self.optionalExpr()
 
-
                 self.state = 900
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.COMMA:
+                if _la == Parser.COMMA:
                     self.state = 898
                     self.match(Parser.COMMA)
                     self.state = 899
                     _la = self._input.LA(1)
-                    if not(_la==Parser.FIRST or _la==Parser.LAST):
+                    if not (_la == Parser.FIRST or _la == Parser.LAST):
                         self._errHandler.recoverInline(self)
                     else:
                         self._errHandler.reportMatch(self)
                         self.consume()
-
 
                 self.state = 902
                 self.match(Parser.RPAREN)
@@ -8276,574 +9405,612 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class TimeOperatorsComponentContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-
 
         def getRuleIndex(self):
             return Parser.RULE_timeOperatorsComponent
 
-     
-        def copyFrom(self, ctx:ParserRuleContext):
+        def copyFrom(self, ctx: ParserRuleContext):
             super().copyFrom(ctx)
 
-
-
     class PeriodAtomComponentContext(TimeOperatorsComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.TimeOperatorsComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.TimeOperatorsComponentContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def PERIOD_INDICATOR(self):
             return self.getToken(Parser.PERIOD_INDICATOR, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
+
         def exprComponent(self):
-            return self.getTypedRuleContext(Parser.ExprComponentContext,0)
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterPeriodAtomComponent" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterPeriodAtomComponent"):
                 listener.enterPeriodAtomComponent(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitPeriodAtomComponent" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitPeriodAtomComponent"):
                 listener.exitPeriodAtomComponent(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitPeriodAtomComponent" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitPeriodAtomComponent"):
                 return visitor.visitPeriodAtomComponent(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class TimeShiftAtomComponentContext(TimeOperatorsComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.TimeOperatorsComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.TimeOperatorsComponentContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def TIMESHIFT(self):
             return self.getToken(Parser.TIMESHIFT, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def exprComponent(self):
-            return self.getTypedRuleContext(Parser.ExprComponentContext,0)
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def COMMA(self):
             return self.getToken(Parser.COMMA, 0)
+
         def signedInteger(self):
-            return self.getTypedRuleContext(Parser.SignedIntegerContext,0)
+            return self.getTypedRuleContext(Parser.SignedIntegerContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTimeShiftAtomComponent" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterTimeShiftAtomComponent"):
                 listener.enterTimeShiftAtomComponent(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTimeShiftAtomComponent" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitTimeShiftAtomComponent"):
                 listener.exitTimeShiftAtomComponent(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitTimeShiftAtomComponent" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitTimeShiftAtomComponent"):
                 return visitor.visitTimeShiftAtomComponent(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class TimeAggAtomComponentContext(TimeOperatorsComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.TimeOperatorsComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.TimeOperatorsComponentContext
             super().__init__(ANTLRParser)
-            self.periodIndTo = None # Token
-            self.periodIndFrom = None # Token
-            self.op = None # OptionalExprComponentContext
+            self.periodIndTo = None  # Token
+            self.periodIndFrom = None  # Token
+            self.op = None  # OptionalExprComponentContext
             self.copyFrom(ctx)
 
         def TIME_AGG(self):
             return self.getToken(Parser.TIME_AGG, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
-        def STRING_CONSTANT(self, i:int=None):
+
+        def STRING_CONSTANT(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.STRING_CONSTANT)
             else:
                 return self.getToken(Parser.STRING_CONSTANT, i)
-        def COMMA(self, i:int=None):
+
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
                 return self.getToken(Parser.COMMA, i)
+
         def optionalExprComponent(self):
-            return self.getTypedRuleContext(Parser.OptionalExprComponentContext,0)
+            return self.getTypedRuleContext(Parser.OptionalExprComponentContext, 0)
 
         def FIRST(self):
             return self.getToken(Parser.FIRST, 0)
+
         def LAST(self):
             return self.getToken(Parser.LAST, 0)
+
         def OPTIONAL(self):
             return self.getToken(Parser.OPTIONAL, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTimeAggAtomComponent" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterTimeAggAtomComponent"):
                 listener.enterTimeAggAtomComponent(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTimeAggAtomComponent" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitTimeAggAtomComponent"):
                 listener.exitTimeAggAtomComponent(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitTimeAggAtomComponent" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitTimeAggAtomComponent"):
                 return visitor.visitTimeAggAtomComponent(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class DayToMonthAtomComponentContext(TimeOperatorsComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.TimeOperatorsComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.TimeOperatorsComponentContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def DAYTOMONTH(self):
             return self.getToken(Parser.DAYTOMONTH, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def exprComponent(self):
-            return self.getTypedRuleContext(Parser.ExprComponentContext,0)
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDayToMonthAtomComponent" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterDayToMonthAtomComponent"):
                 listener.enterDayToMonthAtomComponent(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDayToMonthAtomComponent" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitDayToMonthAtomComponent"):
                 listener.exitDayToMonthAtomComponent(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDayToMonthAtomComponent" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitDayToMonthAtomComponent"):
                 return visitor.visitDayToMonthAtomComponent(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class DateAddAtomComponentContext(TimeOperatorsComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.TimeOperatorsComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.TimeOperatorsComponentContext
             super().__init__(ANTLRParser)
-            self.op = None # ExprComponentContext
-            self.shiftNumber = None # ExprComponentContext
-            self.periodInd = None # ExprComponentContext
+            self.op = None  # ExprComponentContext
+            self.shiftNumber = None  # ExprComponentContext
+            self.periodInd = None  # ExprComponentContext
             self.copyFrom(ctx)
 
         def DATEADD(self):
             return self.getToken(Parser.DATEADD, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
-        def COMMA(self, i:int=None):
+
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
                 return self.getToken(Parser.COMMA, i)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
-        def exprComponent(self, i:int=None):
+
+        def exprComponent(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ExprComponentContext)
             else:
-                return self.getTypedRuleContext(Parser.ExprComponentContext,i)
+                return self.getTypedRuleContext(Parser.ExprComponentContext, i)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDateAddAtomComponent" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterDateAddAtomComponent"):
                 listener.enterDateAddAtomComponent(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDateAddAtomComponent" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitDateAddAtomComponent"):
                 listener.exitDateAddAtomComponent(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDateAddAtomComponent" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitDateAddAtomComponent"):
                 return visitor.visitDateAddAtomComponent(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class MonthToDayAtomComponentContext(TimeOperatorsComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.TimeOperatorsComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.TimeOperatorsComponentContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def MONTHTODAY(self):
             return self.getToken(Parser.MONTHTODAY, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def exprComponent(self):
-            return self.getTypedRuleContext(Parser.ExprComponentContext,0)
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterMonthToDayAtomComponent" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterMonthToDayAtomComponent"):
                 listener.enterMonthToDayAtomComponent(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitMonthToDayAtomComponent" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitMonthToDayAtomComponent"):
                 listener.exitMonthToDayAtomComponent(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitMonthToDayAtomComponent" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitMonthToDayAtomComponent"):
                 return visitor.visitMonthToDayAtomComponent(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class DayOfMonthAtomComponentContext(TimeOperatorsComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.TimeOperatorsComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.TimeOperatorsComponentContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def DAYOFMONTH(self):
             return self.getToken(Parser.DAYOFMONTH, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def exprComponent(self):
-            return self.getTypedRuleContext(Parser.ExprComponentContext,0)
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDayOfMonthAtomComponent" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterDayOfMonthAtomComponent"):
                 listener.enterDayOfMonthAtomComponent(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDayOfMonthAtomComponent" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitDayOfMonthAtomComponent"):
                 listener.exitDayOfMonthAtomComponent(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDayOfMonthAtomComponent" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitDayOfMonthAtomComponent"):
                 return visitor.visitDayOfMonthAtomComponent(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class DayOfYearAtomComponentContext(TimeOperatorsComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.TimeOperatorsComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.TimeOperatorsComponentContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def DAYOFYEAR(self):
             return self.getToken(Parser.DAYOFYEAR, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def exprComponent(self):
-            return self.getTypedRuleContext(Parser.ExprComponentContext,0)
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDayOfYearAtomComponent" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterDayOfYearAtomComponent"):
                 listener.enterDayOfYearAtomComponent(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDayOfYearAtomComponent" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitDayOfYearAtomComponent"):
                 listener.exitDayOfYearAtomComponent(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDayOfYearAtomComponent" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitDayOfYearAtomComponent"):
                 return visitor.visitDayOfYearAtomComponent(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class MonthAtomComponentContext(TimeOperatorsComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.TimeOperatorsComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.TimeOperatorsComponentContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def MONTH_OP(self):
             return self.getToken(Parser.MONTH_OP, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def exprComponent(self):
-            return self.getTypedRuleContext(Parser.ExprComponentContext,0)
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterMonthAtomComponent" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterMonthAtomComponent"):
                 listener.enterMonthAtomComponent(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitMonthAtomComponent" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitMonthAtomComponent"):
                 listener.exitMonthAtomComponent(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitMonthAtomComponent" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitMonthAtomComponent"):
                 return visitor.visitMonthAtomComponent(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class YearToDayAtomComponentContext(TimeOperatorsComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.TimeOperatorsComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.TimeOperatorsComponentContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def YEARTODAY(self):
             return self.getToken(Parser.YEARTODAY, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def exprComponent(self):
-            return self.getTypedRuleContext(Parser.ExprComponentContext,0)
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterYearToDayAtomComponent" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterYearToDayAtomComponent"):
                 listener.enterYearToDayAtomComponent(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitYearToDayAtomComponent" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitYearToDayAtomComponent"):
                 listener.exitYearToDayAtomComponent(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitYearToDayAtomComponent" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitYearToDayAtomComponent"):
                 return visitor.visitYearToDayAtomComponent(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class FillTimeAtomComponentContext(TimeOperatorsComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.TimeOperatorsComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.TimeOperatorsComponentContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def FILL_TIME_SERIES(self):
             return self.getToken(Parser.FILL_TIME_SERIES, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def exprComponent(self):
-            return self.getTypedRuleContext(Parser.ExprComponentContext,0)
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
+
         def COMMA(self):
             return self.getToken(Parser.COMMA, 0)
+
         def SINGLE(self):
             return self.getToken(Parser.SINGLE, 0)
+
         def ALL(self):
             return self.getToken(Parser.ALL, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterFillTimeAtomComponent" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterFillTimeAtomComponent"):
                 listener.enterFillTimeAtomComponent(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitFillTimeAtomComponent" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitFillTimeAtomComponent"):
                 listener.exitFillTimeAtomComponent(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitFillTimeAtomComponent" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitFillTimeAtomComponent"):
                 return visitor.visitFillTimeAtomComponent(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class DayToYearAtomComponentContext(TimeOperatorsComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.TimeOperatorsComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.TimeOperatorsComponentContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def DAYTOYEAR(self):
             return self.getToken(Parser.DAYTOYEAR, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def exprComponent(self):
-            return self.getTypedRuleContext(Parser.ExprComponentContext,0)
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDayToYearAtomComponent" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterDayToYearAtomComponent"):
                 listener.enterDayToYearAtomComponent(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDayToYearAtomComponent" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitDayToYearAtomComponent"):
                 listener.exitDayToYearAtomComponent(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDayToYearAtomComponent" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitDayToYearAtomComponent"):
                 return visitor.visitDayToYearAtomComponent(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class CurrentDateAtomComponentContext(TimeOperatorsComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.TimeOperatorsComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.TimeOperatorsComponentContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def CURRENT_DATE(self):
             return self.getToken(Parser.CURRENT_DATE, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterCurrentDateAtomComponent" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterCurrentDateAtomComponent"):
                 listener.enterCurrentDateAtomComponent(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitCurrentDateAtomComponent" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitCurrentDateAtomComponent"):
                 listener.exitCurrentDateAtomComponent(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitCurrentDateAtomComponent" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitCurrentDateAtomComponent"):
                 return visitor.visitCurrentDateAtomComponent(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class FlowAtomComponentContext(TimeOperatorsComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.TimeOperatorsComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.TimeOperatorsComponentContext
             super().__init__(ANTLRParser)
-            self.op = None # Token
+            self.op = None  # Token
             self.copyFrom(ctx)
 
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def exprComponent(self):
-            return self.getTypedRuleContext(Parser.ExprComponentContext,0)
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
+
         def FLOW_TO_STOCK(self):
             return self.getToken(Parser.FLOW_TO_STOCK, 0)
+
         def STOCK_TO_FLOW(self):
             return self.getToken(Parser.STOCK_TO_FLOW, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterFlowAtomComponent" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterFlowAtomComponent"):
                 listener.enterFlowAtomComponent(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitFlowAtomComponent" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitFlowAtomComponent"):
                 listener.exitFlowAtomComponent(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitFlowAtomComponent" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitFlowAtomComponent"):
                 return visitor.visitFlowAtomComponent(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class DateDiffAtomComponentContext(TimeOperatorsComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.TimeOperatorsComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.TimeOperatorsComponentContext
             super().__init__(ANTLRParser)
-            self.dateFrom = None # ExprComponentContext
-            self.dateTo = None # ExprComponentContext
+            self.dateFrom = None  # ExprComponentContext
+            self.dateTo = None  # ExprComponentContext
             self.copyFrom(ctx)
 
         def DATEDIFF(self):
             return self.getToken(Parser.DATEDIFF, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def COMMA(self):
             return self.getToken(Parser.COMMA, 0)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
-        def exprComponent(self, i:int=None):
+
+        def exprComponent(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ExprComponentContext)
             else:
-                return self.getTypedRuleContext(Parser.ExprComponentContext,i)
+                return self.getTypedRuleContext(Parser.ExprComponentContext, i)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDateDiffAtomComponent" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterDateDiffAtomComponent"):
                 listener.enterDateDiffAtomComponent(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDateDiffAtomComponent" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitDateDiffAtomComponent"):
                 listener.exitDateDiffAtomComponent(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDateDiffAtomComponent" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitDateDiffAtomComponent"):
                 return visitor.visitDateDiffAtomComponent(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class YearAtomComponentContext(TimeOperatorsComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.TimeOperatorsComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.TimeOperatorsComponentContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def YEAR_OP(self):
             return self.getToken(Parser.YEAR_OP, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def exprComponent(self):
-            return self.getTypedRuleContext(Parser.ExprComponentContext,0)
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterYearAtomComponent" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterYearAtomComponent"):
                 listener.enterYearAtomComponent(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitYearAtomComponent" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitYearAtomComponent"):
                 listener.exitYearAtomComponent(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitYearAtomComponent" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitYearAtomComponent"):
                 return visitor.visitYearAtomComponent(self)
             else:
                 return visitor.visitChildren(self)
-
-
 
     def timeOperatorsComponent(self):
 
         localctx = Parser.TimeOperatorsComponentContext(self, self._ctx, self.state)
         self.enterRule(localctx, 56, self.RULE_timeOperatorsComponent)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.state = 1066
             self._errHandler.sync(self)
@@ -8858,10 +10025,118 @@ class Parser(ANTLRParser):
                 self.state = 967
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << Parser.LPAREN) | (1 << Parser.PLUS) | (1 << Parser.MINUS) | (1 << Parser.EVAL) | (1 << Parser.IF) | (1 << Parser.CASE) | (1 << Parser.CURRENT_DATE) | (1 << Parser.DATEDIFF) | (1 << Parser.DATEADD) | (1 << Parser.YEAR_OP) | (1 << Parser.MONTH_OP) | (1 << Parser.DAYOFMONTH) | (1 << Parser.DAYOFYEAR) | (1 << Parser.DAYTOYEAR) | (1 << Parser.DAYTOMONTH) | (1 << Parser.YEARTODAY) | (1 << Parser.MONTHTODAY) | (1 << Parser.NOT) | (1 << Parser.BETWEEN) | (1 << Parser.NULL_CONSTANT) | (1 << Parser.ISNULL) | (1 << Parser.RANDOM))) != 0) or ((((_la - 77)) & ~0x3f) == 0 and ((1 << (_la - 77)) & ((1 << (Parser.RANK - 77)) | (1 << (Parser.MIN - 77)) | (1 << (Parser.MAX - 77)) | (1 << (Parser.ABS - 77)) | (1 << (Parser.LN - 77)) | (1 << (Parser.LOG - 77)) | (1 << (Parser.TRUNC - 77)) | (1 << (Parser.ROUND - 77)) | (1 << (Parser.POWER - 77)) | (1 << (Parser.MOD - 77)) | (1 << (Parser.LEN - 77)) | (1 << (Parser.TRIM - 77)) | (1 << (Parser.UCASE - 77)) | (1 << (Parser.LCASE - 77)) | (1 << (Parser.SUBSTR - 77)) | (1 << (Parser.SUM - 77)) | (1 << (Parser.AVG - 77)) | (1 << (Parser.MEDIAN - 77)) | (1 << (Parser.COUNT - 77)) | (1 << (Parser.EXP - 77)) | (1 << (Parser.CHARSET_MATCH - 77)) | (1 << (Parser.NVL - 77)) | (1 << (Parser.LTRIM - 77)) | (1 << (Parser.RTRIM - 77)) | (1 << (Parser.INSTR - 77)) | (1 << (Parser.REPLACE - 77)) | (1 << (Parser.CEIL - 77)) | (1 << (Parser.FLOOR - 77)) | (1 << (Parser.SQRT - 77)) | (1 << (Parser.STDDEV_POP - 77)))) != 0) or ((((_la - 141)) & ~0x3f) == 0 and ((1 << (_la - 141)) & ((1 << (Parser.STDDEV_SAMP - 141)) | (1 << (Parser.VAR_POP - 141)) | (1 << (Parser.VAR_SAMP - 141)) | (1 << (Parser.FIRST_VALUE - 141)) | (1 << (Parser.LAST_VALUE - 141)) | (1 << (Parser.LAG - 141)) | (1 << (Parser.LEAD - 141)) | (1 << (Parser.RATIO_TO_REPORT - 141)) | (1 << (Parser.FILL_TIME_SERIES - 141)) | (1 << (Parser.FLOW_TO_STOCK - 141)) | (1 << (Parser.STOCK_TO_FLOW - 141)) | (1 << (Parser.TIMESHIFT - 141)))) != 0) or ((((_la - 208)) & ~0x3f) == 0 and ((1 << (_la - 208)) & ((1 << (Parser.PERIOD_INDICATOR - 208)) | (1 << (Parser.TIME_AGG - 208)) | (1 << (Parser.CAST - 208)) | (1 << (Parser.INTEGER_CONSTANT - 208)) | (1 << (Parser.NUMBER_CONSTANT - 208)) | (1 << (Parser.BOOLEAN_CONSTANT - 208)) | (1 << (Parser.STRING_CONSTANT - 208)) | (1 << (Parser.IDENTIFIER - 208)))) != 0):
+                if (
+                    (
+                        ((_la) & ~0x3F) == 0
+                        and (
+                            (1 << _la)
+                            & (
+                                (1 << Parser.LPAREN)
+                                | (1 << Parser.PLUS)
+                                | (1 << Parser.MINUS)
+                                | (1 << Parser.EVAL)
+                                | (1 << Parser.IF)
+                                | (1 << Parser.CASE)
+                                | (1 << Parser.CURRENT_DATE)
+                                | (1 << Parser.DATEDIFF)
+                                | (1 << Parser.DATEADD)
+                                | (1 << Parser.YEAR_OP)
+                                | (1 << Parser.MONTH_OP)
+                                | (1 << Parser.DAYOFMONTH)
+                                | (1 << Parser.DAYOFYEAR)
+                                | (1 << Parser.DAYTOYEAR)
+                                | (1 << Parser.DAYTOMONTH)
+                                | (1 << Parser.YEARTODAY)
+                                | (1 << Parser.MONTHTODAY)
+                                | (1 << Parser.NOT)
+                                | (1 << Parser.BETWEEN)
+                                | (1 << Parser.NULL_CONSTANT)
+                                | (1 << Parser.ISNULL)
+                                | (1 << Parser.RANDOM)
+                            )
+                        )
+                        != 0
+                    )
+                    or (
+                        ((_la - 77) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 77))
+                            & (
+                                (1 << (Parser.RANK - 77))
+                                | (1 << (Parser.MIN - 77))
+                                | (1 << (Parser.MAX - 77))
+                                | (1 << (Parser.ABS - 77))
+                                | (1 << (Parser.LN - 77))
+                                | (1 << (Parser.LOG - 77))
+                                | (1 << (Parser.TRUNC - 77))
+                                | (1 << (Parser.ROUND - 77))
+                                | (1 << (Parser.POWER - 77))
+                                | (1 << (Parser.MOD - 77))
+                                | (1 << (Parser.LEN - 77))
+                                | (1 << (Parser.TRIM - 77))
+                                | (1 << (Parser.UCASE - 77))
+                                | (1 << (Parser.LCASE - 77))
+                                | (1 << (Parser.SUBSTR - 77))
+                                | (1 << (Parser.SUM - 77))
+                                | (1 << (Parser.AVG - 77))
+                                | (1 << (Parser.MEDIAN - 77))
+                                | (1 << (Parser.COUNT - 77))
+                                | (1 << (Parser.EXP - 77))
+                                | (1 << (Parser.CHARSET_MATCH - 77))
+                                | (1 << (Parser.NVL - 77))
+                                | (1 << (Parser.LTRIM - 77))
+                                | (1 << (Parser.RTRIM - 77))
+                                | (1 << (Parser.INSTR - 77))
+                                | (1 << (Parser.REPLACE - 77))
+                                | (1 << (Parser.CEIL - 77))
+                                | (1 << (Parser.FLOOR - 77))
+                                | (1 << (Parser.SQRT - 77))
+                                | (1 << (Parser.STDDEV_POP - 77))
+                            )
+                        )
+                        != 0
+                    )
+                    or (
+                        ((_la - 141) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 141))
+                            & (
+                                (1 << (Parser.STDDEV_SAMP - 141))
+                                | (1 << (Parser.VAR_POP - 141))
+                                | (1 << (Parser.VAR_SAMP - 141))
+                                | (1 << (Parser.FIRST_VALUE - 141))
+                                | (1 << (Parser.LAST_VALUE - 141))
+                                | (1 << (Parser.LAG - 141))
+                                | (1 << (Parser.LEAD - 141))
+                                | (1 << (Parser.RATIO_TO_REPORT - 141))
+                                | (1 << (Parser.FILL_TIME_SERIES - 141))
+                                | (1 << (Parser.FLOW_TO_STOCK - 141))
+                                | (1 << (Parser.STOCK_TO_FLOW - 141))
+                                | (1 << (Parser.TIMESHIFT - 141))
+                            )
+                        )
+                        != 0
+                    )
+                    or (
+                        ((_la - 208) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 208))
+                            & (
+                                (1 << (Parser.PERIOD_INDICATOR - 208))
+                                | (1 << (Parser.TIME_AGG - 208))
+                                | (1 << (Parser.CAST - 208))
+                                | (1 << (Parser.INTEGER_CONSTANT - 208))
+                                | (1 << (Parser.NUMBER_CONSTANT - 208))
+                                | (1 << (Parser.BOOLEAN_CONSTANT - 208))
+                                | (1 << (Parser.STRING_CONSTANT - 208))
+                                | (1 << (Parser.IDENTIFIER - 208))
+                            )
+                        )
+                        != 0
+                    )
+                ):
                     self.state = 966
                     self.exprComponent(0)
-
 
                 self.state = 969
                 self.match(Parser.RPAREN)
@@ -8878,17 +10153,16 @@ class Parser(ANTLRParser):
                 self.state = 975
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.COMMA:
+                if _la == Parser.COMMA:
                     self.state = 973
                     self.match(Parser.COMMA)
                     self.state = 974
                     _la = self._input.LA(1)
-                    if not(_la==Parser.ALL or _la==Parser.SINGLE):
+                    if not (_la == Parser.ALL or _la == Parser.SINGLE):
                         self._errHandler.recoverInline(self)
                     else:
                         self._errHandler.reportMatch(self)
                         self.consume()
-
 
                 self.state = 977
                 self.match(Parser.RPAREN)
@@ -8899,7 +10173,7 @@ class Parser(ANTLRParser):
                 self.state = 979
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not(_la==Parser.FLOW_TO_STOCK or _la==Parser.STOCK_TO_FLOW):
+                if not (_la == Parser.FLOW_TO_STOCK or _la == Parser.STOCK_TO_FLOW):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -8938,44 +10212,41 @@ class Parser(ANTLRParser):
                 localctx.periodIndTo = self.match(Parser.STRING_CONSTANT)
                 self.state = 996
                 self._errHandler.sync(self)
-                la_ = self._interp.adaptivePredict(self._input,76,self._ctx)
+                la_ = self._interp.adaptivePredict(self._input, 76, self._ctx)
                 if la_ == 1:
                     self.state = 994
                     self.match(Parser.COMMA)
                     self.state = 995
                     localctx.periodIndFrom = self._input.LT(1)
                     _la = self._input.LA(1)
-                    if not(_la==Parser.OPTIONAL or _la==Parser.STRING_CONSTANT):
+                    if not (_la == Parser.OPTIONAL or _la == Parser.STRING_CONSTANT):
                         localctx.periodIndFrom = self._errHandler.recoverInline(self)
                     else:
                         self._errHandler.reportMatch(self)
                         self.consume()
 
-
                 self.state = 1000
                 self._errHandler.sync(self)
-                la_ = self._interp.adaptivePredict(self._input,77,self._ctx)
+                la_ = self._interp.adaptivePredict(self._input, 77, self._ctx)
                 if la_ == 1:
                     self.state = 998
                     self.match(Parser.COMMA)
                     self.state = 999
                     localctx.op = self.optionalExprComponent()
 
-
                 self.state = 1004
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.COMMA:
+                if _la == Parser.COMMA:
                     self.state = 1002
                     self.match(Parser.COMMA)
                     self.state = 1003
                     _la = self._input.LA(1)
-                    if not(_la==Parser.FIRST or _la==Parser.LAST):
+                    if not (_la == Parser.FIRST or _la == Parser.LAST):
                         self._errHandler.recoverInline(self)
                     else:
                         self._errHandler.reportMatch(self)
                         self.consume()
-
 
                 self.state = 1006
                 self.match(Parser.RPAREN)
@@ -9133,151 +10404,155 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class SetOperatorsContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-
 
         def getRuleIndex(self):
             return Parser.RULE_setOperators
 
-     
-        def copyFrom(self, ctx:ParserRuleContext):
+        def copyFrom(self, ctx: ParserRuleContext):
             super().copyFrom(ctx)
 
-
-
     class SetOrSYmDiffAtomContext(SetOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.SetOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.SetOperatorsContext
             super().__init__(ANTLRParser)
-            self.op = None # Token
-            self.left = None # ExprContext
-            self.right = None # ExprContext
+            self.op = None  # Token
+            self.left = None  # ExprContext
+            self.right = None  # ExprContext
             self.copyFrom(ctx)
 
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def COMMA(self):
             return self.getToken(Parser.COMMA, 0)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
-        def expr(self, i:int=None):
+
+        def expr(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ExprContext)
             else:
-                return self.getTypedRuleContext(Parser.ExprContext,i)
+                return self.getTypedRuleContext(Parser.ExprContext, i)
 
         def SETDIFF(self):
             return self.getToken(Parser.SETDIFF, 0)
+
         def SYMDIFF(self):
             return self.getToken(Parser.SYMDIFF, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSetOrSYmDiffAtom" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterSetOrSYmDiffAtom"):
                 listener.enterSetOrSYmDiffAtom(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSetOrSYmDiffAtom" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitSetOrSYmDiffAtom"):
                 listener.exitSetOrSYmDiffAtom(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSetOrSYmDiffAtom" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitSetOrSYmDiffAtom"):
                 return visitor.visitSetOrSYmDiffAtom(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class IntersectAtomContext(SetOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.SetOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.SetOperatorsContext
             super().__init__(ANTLRParser)
-            self.left = None # ExprContext
+            self.left = None  # ExprContext
             self.copyFrom(ctx)
 
         def INTERSECT(self):
             return self.getToken(Parser.INTERSECT, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
-        def expr(self, i:int=None):
+
+        def expr(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ExprContext)
             else:
-                return self.getTypedRuleContext(Parser.ExprContext,i)
+                return self.getTypedRuleContext(Parser.ExprContext, i)
 
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
                 return self.getToken(Parser.COMMA, i)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterIntersectAtom" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterIntersectAtom"):
                 listener.enterIntersectAtom(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitIntersectAtom" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitIntersectAtom"):
                 listener.exitIntersectAtom(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitIntersectAtom" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitIntersectAtom"):
                 return visitor.visitIntersectAtom(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class UnionAtomContext(SetOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.SetOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.SetOperatorsContext
             super().__init__(ANTLRParser)
-            self.left = None # ExprContext
+            self.left = None  # ExprContext
             self.copyFrom(ctx)
 
         def UNION(self):
             return self.getToken(Parser.UNION, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
-        def expr(self, i:int=None):
+
+        def expr(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ExprContext)
             else:
-                return self.getTypedRuleContext(Parser.ExprContext,i)
+                return self.getTypedRuleContext(Parser.ExprContext, i)
 
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
                 return self.getToken(Parser.COMMA, i)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterUnionAtom" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterUnionAtom"):
                 listener.enterUnionAtom(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitUnionAtom" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitUnionAtom"):
                 listener.exitUnionAtom(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitUnionAtom" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitUnionAtom"):
                 return visitor.visitUnionAtom(self)
             else:
                 return visitor.visitChildren(self)
-
-
 
     def setOperators(self):
 
         localctx = Parser.SetOperatorsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 58, self.RULE_setOperators)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.state = 1097
             self._errHandler.sync(self)
@@ -9291,7 +10566,7 @@ class Parser(ANTLRParser):
                 self.match(Parser.LPAREN)
                 self.state = 1070
                 localctx.left = self.expr(0)
-                self.state = 1073 
+                self.state = 1073
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 while True:
@@ -9299,10 +10574,10 @@ class Parser(ANTLRParser):
                     self.match(Parser.COMMA)
                     self.state = 1072
                     self.expr(0)
-                    self.state = 1075 
+                    self.state = 1075
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    if not (_la==Parser.COMMA):
+                    if not (_la == Parser.COMMA):
                         break
 
                 self.state = 1077
@@ -9317,7 +10592,7 @@ class Parser(ANTLRParser):
                 self.match(Parser.LPAREN)
                 self.state = 1081
                 localctx.left = self.expr(0)
-                self.state = 1084 
+                self.state = 1084
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 while True:
@@ -9325,10 +10600,10 @@ class Parser(ANTLRParser):
                     self.match(Parser.COMMA)
                     self.state = 1083
                     self.expr(0)
-                    self.state = 1086 
+                    self.state = 1086
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    if not (_la==Parser.COMMA):
+                    if not (_la == Parser.COMMA):
                         break
 
                 self.state = 1088
@@ -9340,7 +10615,7 @@ class Parser(ANTLRParser):
                 self.state = 1090
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not(_la==Parser.SYMDIFF or _la==Parser.SETDIFF):
+                if not (_la == Parser.SYMDIFF or _la == Parser.SETDIFF):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -9367,16 +10642,15 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class HierarchyOperatorsContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-            self.op = None # ExprContext
-            self.hrName = None # Token
-            self.ruleComponent = None # ComponentIDContext
+            self.op = None  # ExprContext
+            self.hrName = None  # Token
+            self.ruleComponent = None  # ComponentIDContext
 
         def HIERARCHY(self):
             return self.getToken(Parser.HIERARCHY, 0)
@@ -9391,60 +10665,51 @@ class Parser(ANTLRParser):
             return self.getToken(Parser.RPAREN, 0)
 
         def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
-
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
 
         def IDENTIFIER(self):
             return self.getToken(Parser.IDENTIFIER, 0)
 
         def conditionClause(self):
-            return self.getTypedRuleContext(Parser.ConditionClauseContext,0)
-
+            return self.getTypedRuleContext(Parser.ConditionClauseContext, 0)
 
         def RULE(self):
             return self.getToken(Parser.RULE, 0)
 
         def validationMode(self):
-            return self.getTypedRuleContext(Parser.ValidationModeContext,0)
-
+            return self.getTypedRuleContext(Parser.ValidationModeContext, 0)
 
         def inputModeHierarchy(self):
-            return self.getTypedRuleContext(Parser.InputModeHierarchyContext,0)
-
+            return self.getTypedRuleContext(Parser.InputModeHierarchyContext, 0)
 
         def outputModeHierarchy(self):
-            return self.getTypedRuleContext(Parser.OutputModeHierarchyContext,0)
-
+            return self.getTypedRuleContext(Parser.OutputModeHierarchyContext, 0)
 
         def componentID(self):
-            return self.getTypedRuleContext(Parser.ComponentIDContext,0)
-
+            return self.getTypedRuleContext(Parser.ComponentIDContext, 0)
 
         def getRuleIndex(self):
             return Parser.RULE_hierarchyOperators
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterHierarchyOperators" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterHierarchyOperators"):
                 listener.enterHierarchyOperators(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitHierarchyOperators" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitHierarchyOperators"):
                 listener.exitHierarchyOperators(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitHierarchyOperators" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitHierarchyOperators"):
                 return visitor.visitHierarchyOperators(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def hierarchyOperators(self):
 
         localctx = Parser.HierarchyOperatorsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 60, self.RULE_hierarchyOperators)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1099
@@ -9460,44 +10725,49 @@ class Parser(ANTLRParser):
             self.state = 1105
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==Parser.CONDITION:
+            if _la == Parser.CONDITION:
                 self.state = 1104
                 self.conditionClause()
 
-
             self.state = 1109
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,84,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 84, self._ctx)
             if la_ == 1:
                 self.state = 1107
                 self.match(Parser.RULE)
                 self.state = 1108
                 localctx.ruleComponent = self.componentID()
 
-
             self.state = 1112
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if ((((_la - 225)) & ~0x3f) == 0 and ((1 << (_la - 225)) & ((1 << (Parser.NON_NULL - 225)) | (1 << (Parser.NON_ZERO - 225)) | (1 << (Parser.PARTIAL_NULL - 225)) | (1 << (Parser.PARTIAL_ZERO - 225)) | (1 << (Parser.ALWAYS_NULL - 225)) | (1 << (Parser.ALWAYS_ZERO - 225)))) != 0):
+            if ((_la - 225) & ~0x3F) == 0 and (
+                (1 << (_la - 225))
+                & (
+                    (1 << (Parser.NON_NULL - 225))
+                    | (1 << (Parser.NON_ZERO - 225))
+                    | (1 << (Parser.PARTIAL_NULL - 225))
+                    | (1 << (Parser.PARTIAL_ZERO - 225))
+                    | (1 << (Parser.ALWAYS_NULL - 225))
+                    | (1 << (Parser.ALWAYS_ZERO - 225))
+                )
+            ) != 0:
                 self.state = 1111
                 self.validationMode()
-
 
             self.state = 1115
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==Parser.DATASET or _la==Parser.RULE or _la==Parser.RULE_PRIORITY:
+            if _la == Parser.DATASET or _la == Parser.RULE or _la == Parser.RULE_PRIORITY:
                 self.state = 1114
                 self.inputModeHierarchy()
-
 
             self.state = 1118
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==Parser.ALL or _la==Parser.COMPUTED:
+            if _la == Parser.ALL or _la == Parser.COMPUTED:
                 self.state = 1117
                 self.outputModeHierarchy()
-
 
             self.state = 1120
             self.match(Parser.RPAREN)
@@ -9509,183 +10779,191 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class ValidationOperatorsContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-
 
         def getRuleIndex(self):
             return Parser.RULE_validationOperators
 
-     
-        def copyFrom(self, ctx:ParserRuleContext):
+        def copyFrom(self, ctx: ParserRuleContext):
             super().copyFrom(ctx)
 
-
-
     class ValidateHRrulesetContext(ValidationOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ValidationOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.ValidationOperatorsContext
             super().__init__(ANTLRParser)
-            self.op = None # ExprContext
-            self.hrName = None # Token
+            self.op = None  # ExprContext
+            self.hrName = None  # Token
             self.copyFrom(ctx)
 
         def CHECK_HIERARCHY(self):
             return self.getToken(Parser.CHECK_HIERARCHY, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def COMMA(self):
             return self.getToken(Parser.COMMA, 0)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
+
         def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
 
         def IDENTIFIER(self):
             return self.getToken(Parser.IDENTIFIER, 0)
+
         def conditionClause(self):
-            return self.getTypedRuleContext(Parser.ConditionClauseContext,0)
+            return self.getTypedRuleContext(Parser.ConditionClauseContext, 0)
 
         def RULE(self):
             return self.getToken(Parser.RULE, 0)
+
         def componentID(self):
-            return self.getTypedRuleContext(Parser.ComponentIDContext,0)
+            return self.getTypedRuleContext(Parser.ComponentIDContext, 0)
 
         def validationMode(self):
-            return self.getTypedRuleContext(Parser.ValidationModeContext,0)
+            return self.getTypedRuleContext(Parser.ValidationModeContext, 0)
 
         def inputMode(self):
-            return self.getTypedRuleContext(Parser.InputModeContext,0)
+            return self.getTypedRuleContext(Parser.InputModeContext, 0)
 
         def validationOutput(self):
-            return self.getTypedRuleContext(Parser.ValidationOutputContext,0)
+            return self.getTypedRuleContext(Parser.ValidationOutputContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterValidateHRruleset" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterValidateHRruleset"):
                 listener.enterValidateHRruleset(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitValidateHRruleset" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitValidateHRruleset"):
                 listener.exitValidateHRruleset(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitValidateHRruleset" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitValidateHRruleset"):
                 return visitor.visitValidateHRruleset(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class ValidateDPrulesetContext(ValidationOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ValidationOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.ValidationOperatorsContext
             super().__init__(ANTLRParser)
-            self.op = None # ExprContext
-            self.dpName = None # Token
+            self.op = None  # ExprContext
+            self.dpName = None  # Token
             self.copyFrom(ctx)
 
         def CHECK_DATAPOINT(self):
             return self.getToken(Parser.CHECK_DATAPOINT, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
-        def COMMA(self, i:int=None):
+
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
                 return self.getToken(Parser.COMMA, i)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
+
         def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
 
         def IDENTIFIER(self):
             return self.getToken(Parser.IDENTIFIER, 0)
+
         def COMPONENTS(self):
             return self.getToken(Parser.COMPONENTS, 0)
-        def componentID(self, i:int=None):
+
+        def componentID(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ComponentIDContext)
             else:
-                return self.getTypedRuleContext(Parser.ComponentIDContext,i)
+                return self.getTypedRuleContext(Parser.ComponentIDContext, i)
 
         def validationOutput(self):
-            return self.getTypedRuleContext(Parser.ValidationOutputContext,0)
+            return self.getTypedRuleContext(Parser.ValidationOutputContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterValidateDPruleset" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterValidateDPruleset"):
                 listener.enterValidateDPruleset(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitValidateDPruleset" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitValidateDPruleset"):
                 listener.exitValidateDPruleset(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitValidateDPruleset" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitValidateDPruleset"):
                 return visitor.visitValidateDPruleset(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class ValidationSimpleContext(ValidationOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ValidationOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.ValidationOperatorsContext
             super().__init__(ANTLRParser)
-            self.op = None # ExprContext
-            self.codeErr = None # ErCodeContext
-            self.levelCode = None # ErLevelContext
-            self.output = None # Token
+            self.op = None  # ExprContext
+            self.codeErr = None  # ErCodeContext
+            self.levelCode = None  # ErLevelContext
+            self.output = None  # Token
             self.copyFrom(ctx)
 
         def CHECK(self):
             return self.getToken(Parser.CHECK, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
+
         def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
 
         def imbalanceExpr(self):
-            return self.getTypedRuleContext(Parser.ImbalanceExprContext,0)
+            return self.getTypedRuleContext(Parser.ImbalanceExprContext, 0)
 
         def erCode(self):
-            return self.getTypedRuleContext(Parser.ErCodeContext,0)
+            return self.getTypedRuleContext(Parser.ErCodeContext, 0)
 
         def erLevel(self):
-            return self.getTypedRuleContext(Parser.ErLevelContext,0)
+            return self.getTypedRuleContext(Parser.ErLevelContext, 0)
 
         def INVALID(self):
             return self.getToken(Parser.INVALID, 0)
+
         def ALL(self):
             return self.getToken(Parser.ALL, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterValidationSimple" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterValidationSimple"):
                 listener.enterValidationSimple(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitValidationSimple" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitValidationSimple"):
                 listener.exitValidationSimple(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitValidationSimple" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitValidationSimple"):
                 return visitor.visitValidationSimple(self)
             else:
                 return visitor.visitChildren(self)
-
-
 
     def validationOperators(self):
 
         localctx = Parser.ValidationOperatorsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 62, self.RULE_validationOperators)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.state = 1183
             self._errHandler.sync(self)
@@ -9706,7 +10984,7 @@ class Parser(ANTLRParser):
                 self.state = 1136
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.COMPONENTS:
+                if _la == Parser.COMPONENTS:
                     self.state = 1127
                     self.match(Parser.COMPONENTS)
                     self.state = 1128
@@ -9714,7 +10992,7 @@ class Parser(ANTLRParser):
                     self.state = 1133
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    while _la==Parser.COMMA:
+                    while _la == Parser.COMMA:
                         self.state = 1129
                         self.match(Parser.COMMA)
                         self.state = 1130
@@ -9723,15 +11001,12 @@ class Parser(ANTLRParser):
                         self._errHandler.sync(self)
                         _la = self._input.LA(1)
 
-
-
                 self.state = 1139
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.ALL or _la==Parser.INVALID or _la==Parser.ALL_MEASURES:
+                if _la == Parser.ALL or _la == Parser.INVALID or _la == Parser.ALL_MEASURES:
                     self.state = 1138
                     self.validationOutput()
-
 
                 self.state = 1141
                 self.match(Parser.RPAREN)
@@ -9752,44 +11027,49 @@ class Parser(ANTLRParser):
                 self.state = 1149
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.CONDITION:
+                if _la == Parser.CONDITION:
                     self.state = 1148
                     self.conditionClause()
-
 
                 self.state = 1153
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.RULE:
+                if _la == Parser.RULE:
                     self.state = 1151
                     self.match(Parser.RULE)
                     self.state = 1152
                     self.componentID()
 
-
                 self.state = 1156
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if ((((_la - 225)) & ~0x3f) == 0 and ((1 << (_la - 225)) & ((1 << (Parser.NON_NULL - 225)) | (1 << (Parser.NON_ZERO - 225)) | (1 << (Parser.PARTIAL_NULL - 225)) | (1 << (Parser.PARTIAL_ZERO - 225)) | (1 << (Parser.ALWAYS_NULL - 225)) | (1 << (Parser.ALWAYS_ZERO - 225)))) != 0):
+                if ((_la - 225) & ~0x3F) == 0 and (
+                    (1 << (_la - 225))
+                    & (
+                        (1 << (Parser.NON_NULL - 225))
+                        | (1 << (Parser.NON_ZERO - 225))
+                        | (1 << (Parser.PARTIAL_NULL - 225))
+                        | (1 << (Parser.PARTIAL_ZERO - 225))
+                        | (1 << (Parser.ALWAYS_NULL - 225))
+                        | (1 << (Parser.ALWAYS_ZERO - 225))
+                    )
+                ) != 0:
                     self.state = 1155
                     self.validationMode()
-
 
                 self.state = 1159
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.DATASET or _la==Parser.DATASET_PRIORITY:
+                if _la == Parser.DATASET or _la == Parser.DATASET_PRIORITY:
                     self.state = 1158
                     self.inputMode()
-
 
                 self.state = 1162
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.ALL or _la==Parser.INVALID or _la==Parser.ALL_MEASURES:
+                if _la == Parser.ALL or _la == Parser.INVALID or _la == Parser.ALL_MEASURES:
                     self.state = 1161
                     self.validationOutput()
-
 
                 self.state = 1164
                 self.match(Parser.RPAREN)
@@ -9806,40 +11086,36 @@ class Parser(ANTLRParser):
                 self.state = 1170
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.ERRORCODE:
+                if _la == Parser.ERRORCODE:
                     self.state = 1169
                     localctx.codeErr = self.erCode()
-
 
                 self.state = 1173
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.ERRORLEVEL:
+                if _la == Parser.ERRORLEVEL:
                     self.state = 1172
                     localctx.levelCode = self.erLevel()
-
 
                 self.state = 1176
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.IMBALANCE:
+                if _la == Parser.IMBALANCE:
                     self.state = 1175
                     self.imbalanceExpr()
-
 
                 self.state = 1179
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.ALL or _la==Parser.INVALID:
+                if _la == Parser.ALL or _la == Parser.INVALID:
                     self.state = 1178
                     localctx.output = self._input.LT(1)
                     _la = self._input.LA(1)
-                    if not(_la==Parser.ALL or _la==Parser.INVALID):
+                    if not (_la == Parser.ALL or _la == Parser.INVALID):
                         localctx.output = self._errHandler.recoverInline(self)
                     else:
                         self._errHandler.reportMatch(self)
                         self.consume()
-
 
                 self.state = 1181
                 self.match(Parser.RPAREN)
@@ -9855,62 +11131,59 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class ConditionalOperatorsContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-
 
         def getRuleIndex(self):
             return Parser.RULE_conditionalOperators
 
-     
-        def copyFrom(self, ctx:ParserRuleContext):
+        def copyFrom(self, ctx: ParserRuleContext):
             super().copyFrom(ctx)
 
-
-
     class NvlAtomContext(ConditionalOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ConditionalOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.ConditionalOperatorsContext
             super().__init__(ANTLRParser)
-            self.left = None # ExprContext
-            self.right = None # ExprContext
+            self.left = None  # ExprContext
+            self.right = None  # ExprContext
             self.copyFrom(ctx)
 
         def NVL(self):
             return self.getToken(Parser.NVL, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def COMMA(self):
             return self.getToken(Parser.COMMA, 0)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
-        def expr(self, i:int=None):
+
+        def expr(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ExprContext)
             else:
-                return self.getTypedRuleContext(Parser.ExprContext,i)
+                return self.getTypedRuleContext(Parser.ExprContext, i)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterNvlAtom" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterNvlAtom"):
                 listener.enterNvlAtom(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitNvlAtom" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitNvlAtom"):
                 listener.exitNvlAtom(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitNvlAtom" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitNvlAtom"):
                 return visitor.visitNvlAtom(self)
             else:
                 return visitor.visitChildren(self)
-
-
 
     def conditionalOperators(self):
 
@@ -9939,62 +11212,59 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class ConditionalOperatorsComponentContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-
 
         def getRuleIndex(self):
             return Parser.RULE_conditionalOperatorsComponent
 
-     
-        def copyFrom(self, ctx:ParserRuleContext):
+        def copyFrom(self, ctx: ParserRuleContext):
             super().copyFrom(ctx)
 
-
-
     class NvlAtomComponentContext(ConditionalOperatorsComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ConditionalOperatorsComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.ConditionalOperatorsComponentContext
             super().__init__(ANTLRParser)
-            self.left = None # ExprComponentContext
-            self.right = None # ExprComponentContext
+            self.left = None  # ExprComponentContext
+            self.right = None  # ExprComponentContext
             self.copyFrom(ctx)
 
         def NVL(self):
             return self.getToken(Parser.NVL, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def COMMA(self):
             return self.getToken(Parser.COMMA, 0)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
-        def exprComponent(self, i:int=None):
+
+        def exprComponent(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ExprComponentContext)
             else:
-                return self.getTypedRuleContext(Parser.ExprComponentContext,i)
+                return self.getTypedRuleContext(Parser.ExprComponentContext, i)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterNvlAtomComponent" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterNvlAtomComponent"):
                 listener.enterNvlAtomComponent(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitNvlAtomComponent" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitNvlAtomComponent"):
                 listener.exitNvlAtomComponent(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitNvlAtomComponent" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitNvlAtomComponent"):
                 return visitor.visitNvlAtomComponent(self)
             else:
                 return visitor.visitChildren(self)
-
-
 
     def conditionalOperatorsComponent(self):
 
@@ -10023,119 +11293,144 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class AggrOperatorsContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-
 
         def getRuleIndex(self):
             return Parser.RULE_aggrOperators
 
-     
-        def copyFrom(self, ctx:ParserRuleContext):
+        def copyFrom(self, ctx: ParserRuleContext):
             super().copyFrom(ctx)
 
-
-
     class AggrCompContext(AggrOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.AggrOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.AggrOperatorsContext
             super().__init__(ANTLRParser)
-            self.op = None # Token
+            self.op = None  # Token
             self.copyFrom(ctx)
 
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def exprComponent(self):
-            return self.getTypedRuleContext(Parser.ExprComponentContext,0)
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
+
         def SUM(self):
             return self.getToken(Parser.SUM, 0)
+
         def AVG(self):
             return self.getToken(Parser.AVG, 0)
+
         def COUNT(self):
             return self.getToken(Parser.COUNT, 0)
+
         def MEDIAN(self):
             return self.getToken(Parser.MEDIAN, 0)
+
         def MIN(self):
             return self.getToken(Parser.MIN, 0)
+
         def MAX(self):
             return self.getToken(Parser.MAX, 0)
+
         def STDDEV_POP(self):
             return self.getToken(Parser.STDDEV_POP, 0)
+
         def STDDEV_SAMP(self):
             return self.getToken(Parser.STDDEV_SAMP, 0)
+
         def VAR_POP(self):
             return self.getToken(Parser.VAR_POP, 0)
+
         def VAR_SAMP(self):
             return self.getToken(Parser.VAR_SAMP, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAggrComp" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterAggrComp"):
                 listener.enterAggrComp(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAggrComp" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitAggrComp"):
                 listener.exitAggrComp(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAggrComp" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitAggrComp"):
                 return visitor.visitAggrComp(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class CountAggrCompContext(AggrOperatorsContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.AggrOperatorsContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.AggrOperatorsContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def COUNT(self):
             return self.getToken(Parser.COUNT, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterCountAggrComp" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterCountAggrComp"):
                 listener.enterCountAggrComp(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitCountAggrComp" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitCountAggrComp"):
                 listener.exitCountAggrComp(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitCountAggrComp" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitCountAggrComp"):
                 return visitor.visitCountAggrComp(self)
             else:
                 return visitor.visitChildren(self)
-
-
 
     def aggrOperators(self):
 
         localctx = Parser.AggrOperatorsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 68, self.RULE_aggrOperators)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.state = 1207
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,101,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 101, self._ctx)
             if la_ == 1:
                 localctx = Parser.AggrCompContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1199
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not(((((_la - 80)) & ~0x3f) == 0 and ((1 << (_la - 80)) & ((1 << (Parser.MIN - 80)) | (1 << (Parser.MAX - 80)) | (1 << (Parser.SUM - 80)) | (1 << (Parser.AVG - 80)) | (1 << (Parser.MEDIAN - 80)) | (1 << (Parser.COUNT - 80)) | (1 << (Parser.STDDEV_POP - 80)) | (1 << (Parser.STDDEV_SAMP - 80)) | (1 << (Parser.VAR_POP - 80)) | (1 << (Parser.VAR_SAMP - 80)))) != 0)):
+                if not (
+                    ((_la - 80) & ~0x3F) == 0
+                    and (
+                        (1 << (_la - 80))
+                        & (
+                            (1 << (Parser.MIN - 80))
+                            | (1 << (Parser.MAX - 80))
+                            | (1 << (Parser.SUM - 80))
+                            | (1 << (Parser.AVG - 80))
+                            | (1 << (Parser.MEDIAN - 80))
+                            | (1 << (Parser.COUNT - 80))
+                            | (1 << (Parser.STDDEV_POP - 80))
+                            | (1 << (Parser.STDDEV_SAMP - 80))
+                            | (1 << (Parser.VAR_POP - 80))
+                            | (1 << (Parser.VAR_SAMP - 80))
+                        )
+                    )
+                    != 0
+                ):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -10159,7 +11454,6 @@ class Parser(ANTLRParser):
                 self.match(Parser.RPAREN)
                 pass
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -10168,93 +11462,116 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class AggrOperatorsGroupingContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-
 
         def getRuleIndex(self):
             return Parser.RULE_aggrOperatorsGrouping
 
-     
-        def copyFrom(self, ctx:ParserRuleContext):
+        def copyFrom(self, ctx: ParserRuleContext):
             super().copyFrom(ctx)
 
-
-
     class AggrDatasetContext(AggrOperatorsGroupingContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.AggrOperatorsGroupingContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.AggrOperatorsGroupingContext
             super().__init__(ANTLRParser)
-            self.op = None # Token
+            self.op = None  # Token
             self.copyFrom(ctx)
 
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
+
         def SUM(self):
             return self.getToken(Parser.SUM, 0)
+
         def AVG(self):
             return self.getToken(Parser.AVG, 0)
+
         def COUNT(self):
             return self.getToken(Parser.COUNT, 0)
+
         def MEDIAN(self):
             return self.getToken(Parser.MEDIAN, 0)
+
         def MIN(self):
             return self.getToken(Parser.MIN, 0)
+
         def MAX(self):
             return self.getToken(Parser.MAX, 0)
+
         def STDDEV_POP(self):
             return self.getToken(Parser.STDDEV_POP, 0)
+
         def STDDEV_SAMP(self):
             return self.getToken(Parser.STDDEV_SAMP, 0)
+
         def VAR_POP(self):
             return self.getToken(Parser.VAR_POP, 0)
+
         def VAR_SAMP(self):
             return self.getToken(Parser.VAR_SAMP, 0)
+
         def groupingClause(self):
-            return self.getTypedRuleContext(Parser.GroupingClauseContext,0)
+            return self.getTypedRuleContext(Parser.GroupingClauseContext, 0)
 
         def havingClause(self):
-            return self.getTypedRuleContext(Parser.HavingClauseContext,0)
+            return self.getTypedRuleContext(Parser.HavingClauseContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAggrDataset" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterAggrDataset"):
                 listener.enterAggrDataset(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAggrDataset" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitAggrDataset"):
                 listener.exitAggrDataset(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAggrDataset" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitAggrDataset"):
                 return visitor.visitAggrDataset(self)
             else:
                 return visitor.visitChildren(self)
-
-
 
     def aggrOperatorsGrouping(self):
 
         localctx = Parser.AggrOperatorsGroupingContext(self, self._ctx, self.state)
         self.enterRule(localctx, 70, self.RULE_aggrOperatorsGrouping)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             localctx = Parser.AggrDatasetContext(self, localctx)
             self.enterOuterAlt(localctx, 1)
             self.state = 1209
             localctx.op = self._input.LT(1)
             _la = self._input.LA(1)
-            if not(((((_la - 80)) & ~0x3f) == 0 and ((1 << (_la - 80)) & ((1 << (Parser.MIN - 80)) | (1 << (Parser.MAX - 80)) | (1 << (Parser.SUM - 80)) | (1 << (Parser.AVG - 80)) | (1 << (Parser.MEDIAN - 80)) | (1 << (Parser.COUNT - 80)) | (1 << (Parser.STDDEV_POP - 80)) | (1 << (Parser.STDDEV_SAMP - 80)) | (1 << (Parser.VAR_POP - 80)) | (1 << (Parser.VAR_SAMP - 80)))) != 0)):
+            if not (
+                ((_la - 80) & ~0x3F) == 0
+                and (
+                    (1 << (_la - 80))
+                    & (
+                        (1 << (Parser.MIN - 80))
+                        | (1 << (Parser.MAX - 80))
+                        | (1 << (Parser.SUM - 80))
+                        | (1 << (Parser.AVG - 80))
+                        | (1 << (Parser.MEDIAN - 80))
+                        | (1 << (Parser.COUNT - 80))
+                        | (1 << (Parser.STDDEV_POP - 80))
+                        | (1 << (Parser.STDDEV_SAMP - 80))
+                        | (1 << (Parser.VAR_POP - 80))
+                        | (1 << (Parser.VAR_SAMP - 80))
+                    )
+                )
+                != 0
+            ):
                 localctx.op = self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -10266,18 +11583,15 @@ class Parser(ANTLRParser):
             self.state = 1216
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==Parser.GROUP:
+            if _la == Parser.GROUP:
                 self.state = 1212
                 self.groupingClause()
                 self.state = 1214
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.HAVING:
+                if _la == Parser.HAVING:
                     self.state = 1213
                     self.havingClause()
-
-
-
 
             self.state = 1218
             self.match(Parser.RPAREN)
@@ -10289,222 +11603,273 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class AnFunctionContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-
 
         def getRuleIndex(self):
             return Parser.RULE_anFunction
 
-     
-        def copyFrom(self, ctx:ParserRuleContext):
+        def copyFrom(self, ctx: ParserRuleContext):
             super().copyFrom(ctx)
 
-
-
     class LagOrLeadAnContext(AnFunctionContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.AnFunctionContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.AnFunctionContext
             super().__init__(ANTLRParser)
-            self.op = None # Token
-            self.offset = None # SignedIntegerContext
-            self.defaultValue = None # ScalarItemContext
-            self.partition = None # PartitionByClauseContext
-            self.orderBy = None # OrderByClauseContext
+            self.op = None  # Token
+            self.offset = None  # SignedIntegerContext
+            self.defaultValue = None  # ScalarItemContext
+            self.partition = None  # PartitionByClauseContext
+            self.orderBy = None  # OrderByClauseContext
             self.copyFrom(ctx)
 
-        def LPAREN(self, i:int=None):
+        def LPAREN(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.LPAREN)
             else:
                 return self.getToken(Parser.LPAREN, i)
+
         def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
 
         def OVER(self):
             return self.getToken(Parser.OVER, 0)
-        def RPAREN(self, i:int=None):
+
+        def RPAREN(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.RPAREN)
             else:
                 return self.getToken(Parser.RPAREN, i)
+
         def LAG(self):
             return self.getToken(Parser.LAG, 0)
+
         def LEAD(self):
             return self.getToken(Parser.LEAD, 0)
-        def COMMA(self, i:int=None):
+
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
                 return self.getToken(Parser.COMMA, i)
+
         def orderByClause(self):
-            return self.getTypedRuleContext(Parser.OrderByClauseContext,0)
+            return self.getTypedRuleContext(Parser.OrderByClauseContext, 0)
 
         def signedInteger(self):
-            return self.getTypedRuleContext(Parser.SignedIntegerContext,0)
+            return self.getTypedRuleContext(Parser.SignedIntegerContext, 0)
 
         def partitionByClause(self):
-            return self.getTypedRuleContext(Parser.PartitionByClauseContext,0)
+            return self.getTypedRuleContext(Parser.PartitionByClauseContext, 0)
 
         def scalarItem(self):
-            return self.getTypedRuleContext(Parser.ScalarItemContext,0)
+            return self.getTypedRuleContext(Parser.ScalarItemContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterLagOrLeadAn" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterLagOrLeadAn"):
                 listener.enterLagOrLeadAn(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitLagOrLeadAn" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitLagOrLeadAn"):
                 listener.exitLagOrLeadAn(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitLagOrLeadAn" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitLagOrLeadAn"):
                 return visitor.visitLagOrLeadAn(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class RatioToReportAnContext(AnFunctionContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.AnFunctionContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.AnFunctionContext
             super().__init__(ANTLRParser)
-            self.op = None # Token
-            self.partition = None # PartitionByClauseContext
+            self.op = None  # Token
+            self.partition = None  # PartitionByClauseContext
             self.copyFrom(ctx)
 
-        def LPAREN(self, i:int=None):
+        def LPAREN(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.LPAREN)
             else:
                 return self.getToken(Parser.LPAREN, i)
+
         def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
 
         def OVER(self):
             return self.getToken(Parser.OVER, 0)
-        def RPAREN(self, i:int=None):
+
+        def RPAREN(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.RPAREN)
             else:
                 return self.getToken(Parser.RPAREN, i)
+
         def RATIO_TO_REPORT(self):
             return self.getToken(Parser.RATIO_TO_REPORT, 0)
+
         def partitionByClause(self):
-            return self.getTypedRuleContext(Parser.PartitionByClauseContext,0)
+            return self.getTypedRuleContext(Parser.PartitionByClauseContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterRatioToReportAn" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterRatioToReportAn"):
                 listener.enterRatioToReportAn(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitRatioToReportAn" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitRatioToReportAn"):
                 listener.exitRatioToReportAn(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitRatioToReportAn" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitRatioToReportAn"):
                 return visitor.visitRatioToReportAn(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class AnSimpleFunctionContext(AnFunctionContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.AnFunctionContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.AnFunctionContext
             super().__init__(ANTLRParser)
-            self.op = None # Token
-            self.partition = None # PartitionByClauseContext
-            self.orderBy = None # OrderByClauseContext
-            self.windowing = None # WindowingClauseContext
+            self.op = None  # Token
+            self.partition = None  # PartitionByClauseContext
+            self.orderBy = None  # OrderByClauseContext
+            self.windowing = None  # WindowingClauseContext
             self.copyFrom(ctx)
 
-        def LPAREN(self, i:int=None):
+        def LPAREN(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.LPAREN)
             else:
                 return self.getToken(Parser.LPAREN, i)
+
         def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
 
         def OVER(self):
             return self.getToken(Parser.OVER, 0)
-        def RPAREN(self, i:int=None):
+
+        def RPAREN(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.RPAREN)
             else:
                 return self.getToken(Parser.RPAREN, i)
+
         def SUM(self):
             return self.getToken(Parser.SUM, 0)
+
         def AVG(self):
             return self.getToken(Parser.AVG, 0)
+
         def COUNT(self):
             return self.getToken(Parser.COUNT, 0)
+
         def MEDIAN(self):
             return self.getToken(Parser.MEDIAN, 0)
+
         def MIN(self):
             return self.getToken(Parser.MIN, 0)
+
         def MAX(self):
             return self.getToken(Parser.MAX, 0)
+
         def STDDEV_POP(self):
             return self.getToken(Parser.STDDEV_POP, 0)
+
         def STDDEV_SAMP(self):
             return self.getToken(Parser.STDDEV_SAMP, 0)
+
         def VAR_POP(self):
             return self.getToken(Parser.VAR_POP, 0)
+
         def VAR_SAMP(self):
             return self.getToken(Parser.VAR_SAMP, 0)
+
         def FIRST_VALUE(self):
             return self.getToken(Parser.FIRST_VALUE, 0)
+
         def LAST_VALUE(self):
             return self.getToken(Parser.LAST_VALUE, 0)
+
         def partitionByClause(self):
-            return self.getTypedRuleContext(Parser.PartitionByClauseContext,0)
+            return self.getTypedRuleContext(Parser.PartitionByClauseContext, 0)
 
         def orderByClause(self):
-            return self.getTypedRuleContext(Parser.OrderByClauseContext,0)
+            return self.getTypedRuleContext(Parser.OrderByClauseContext, 0)
 
         def windowingClause(self):
-            return self.getTypedRuleContext(Parser.WindowingClauseContext,0)
+            return self.getTypedRuleContext(Parser.WindowingClauseContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAnSimpleFunction" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterAnSimpleFunction"):
                 listener.enterAnSimpleFunction(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAnSimpleFunction" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitAnSimpleFunction"):
                 listener.exitAnSimpleFunction(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAnSimpleFunction" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitAnSimpleFunction"):
                 return visitor.visitAnSimpleFunction(self)
             else:
                 return visitor.visitChildren(self)
-
-
 
     def anFunction(self):
 
         localctx = Parser.AnFunctionContext(self, self._ctx, self.state)
         self.enterRule(localctx, 72, self.RULE_anFunction)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.state = 1267
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [Parser.MIN, Parser.MAX, Parser.SUM, Parser.AVG, Parser.MEDIAN, Parser.COUNT, Parser.STDDEV_POP, Parser.STDDEV_SAMP, Parser.VAR_POP, Parser.VAR_SAMP, Parser.FIRST_VALUE, Parser.LAST_VALUE]:
+            if token in [
+                Parser.MIN,
+                Parser.MAX,
+                Parser.SUM,
+                Parser.AVG,
+                Parser.MEDIAN,
+                Parser.COUNT,
+                Parser.STDDEV_POP,
+                Parser.STDDEV_SAMP,
+                Parser.VAR_POP,
+                Parser.VAR_SAMP,
+                Parser.FIRST_VALUE,
+                Parser.LAST_VALUE,
+            ]:
                 localctx = Parser.AnSimpleFunctionContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1220
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not(((((_la - 80)) & ~0x3f) == 0 and ((1 << (_la - 80)) & ((1 << (Parser.MIN - 80)) | (1 << (Parser.MAX - 80)) | (1 << (Parser.SUM - 80)) | (1 << (Parser.AVG - 80)) | (1 << (Parser.MEDIAN - 80)) | (1 << (Parser.COUNT - 80)) | (1 << (Parser.STDDEV_POP - 80)) | (1 << (Parser.STDDEV_SAMP - 80)) | (1 << (Parser.VAR_POP - 80)) | (1 << (Parser.VAR_SAMP - 80)))) != 0) or _la==Parser.FIRST_VALUE or _la==Parser.LAST_VALUE):
+                if not (
+                    (
+                        ((_la - 80) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 80))
+                            & (
+                                (1 << (Parser.MIN - 80))
+                                | (1 << (Parser.MAX - 80))
+                                | (1 << (Parser.SUM - 80))
+                                | (1 << (Parser.AVG - 80))
+                                | (1 << (Parser.MEDIAN - 80))
+                                | (1 << (Parser.COUNT - 80))
+                                | (1 << (Parser.STDDEV_POP - 80))
+                                | (1 << (Parser.STDDEV_SAMP - 80))
+                                | (1 << (Parser.VAR_POP - 80))
+                                | (1 << (Parser.VAR_SAMP - 80))
+                            )
+                        )
+                        != 0
+                    )
+                    or _la == Parser.FIRST_VALUE
+                    or _la == Parser.LAST_VALUE
+                ):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -10521,26 +11886,23 @@ class Parser(ANTLRParser):
                 self.state = 1226
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.PARTITION:
+                if _la == Parser.PARTITION:
                     self.state = 1225
                     localctx.partition = self.partitionByClause()
-
 
                 self.state = 1229
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.ORDER:
+                if _la == Parser.ORDER:
                     self.state = 1228
                     localctx.orderBy = self.orderByClause()
-
 
                 self.state = 1232
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.DATA or _la==Parser.RANGE:
+                if _la == Parser.DATA or _la == Parser.RANGE:
                     self.state = 1231
                     localctx.windowing = self.windowingClause()
-
 
                 self.state = 1234
                 self.match(Parser.RPAREN)
@@ -10553,7 +11915,7 @@ class Parser(ANTLRParser):
                 self.state = 1237
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not(_la==Parser.LAG or _la==Parser.LEAD):
+                if not (_la == Parser.LAG or _la == Parser.LEAD):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -10565,7 +11927,7 @@ class Parser(ANTLRParser):
                 self.state = 1246
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.COMMA:
+                if _la == Parser.COMMA:
                     self.state = 1240
                     self.match(Parser.COMMA)
                     self.state = 1241
@@ -10573,14 +11935,11 @@ class Parser(ANTLRParser):
                     self.state = 1244
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    if _la==Parser.COMMA:
+                    if _la == Parser.COMMA:
                         self.state = 1242
                         self.match(Parser.COMMA)
                         self.state = 1243
                         localctx.defaultValue = self.scalarItem()
-
-
-
 
                 self.state = 1248
                 self.match(Parser.OVER)
@@ -10590,10 +11949,9 @@ class Parser(ANTLRParser):
                 self.state = 1251
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.PARTITION:
+                if _la == Parser.PARTITION:
                     self.state = 1250
                     localctx.partition = self.partitionByClause()
-
 
                 self.state = 1253
                 localctx.orderBy = self.orderByClause()
@@ -10634,264 +11992,318 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class AnFunctionComponentContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-
 
         def getRuleIndex(self):
             return Parser.RULE_anFunctionComponent
 
-     
-        def copyFrom(self, ctx:ParserRuleContext):
+        def copyFrom(self, ctx: ParserRuleContext):
             super().copyFrom(ctx)
 
-
-
     class AnSimpleFunctionComponentContext(AnFunctionComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.AnFunctionComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.AnFunctionComponentContext
             super().__init__(ANTLRParser)
-            self.op = None # Token
-            self.partition = None # PartitionByClauseContext
-            self.orderBy = None # OrderByClauseContext
-            self.windowing = None # WindowingClauseContext
+            self.op = None  # Token
+            self.partition = None  # PartitionByClauseContext
+            self.orderBy = None  # OrderByClauseContext
+            self.windowing = None  # WindowingClauseContext
             self.copyFrom(ctx)
 
-        def LPAREN(self, i:int=None):
+        def LPAREN(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.LPAREN)
             else:
                 return self.getToken(Parser.LPAREN, i)
+
         def exprComponent(self):
-            return self.getTypedRuleContext(Parser.ExprComponentContext,0)
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def OVER(self):
             return self.getToken(Parser.OVER, 0)
-        def RPAREN(self, i:int=None):
+
+        def RPAREN(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.RPAREN)
             else:
                 return self.getToken(Parser.RPAREN, i)
+
         def SUM(self):
             return self.getToken(Parser.SUM, 0)
+
         def AVG(self):
             return self.getToken(Parser.AVG, 0)
+
         def COUNT(self):
             return self.getToken(Parser.COUNT, 0)
+
         def MEDIAN(self):
             return self.getToken(Parser.MEDIAN, 0)
+
         def MIN(self):
             return self.getToken(Parser.MIN, 0)
+
         def MAX(self):
             return self.getToken(Parser.MAX, 0)
+
         def STDDEV_POP(self):
             return self.getToken(Parser.STDDEV_POP, 0)
+
         def STDDEV_SAMP(self):
             return self.getToken(Parser.STDDEV_SAMP, 0)
+
         def VAR_POP(self):
             return self.getToken(Parser.VAR_POP, 0)
+
         def VAR_SAMP(self):
             return self.getToken(Parser.VAR_SAMP, 0)
+
         def FIRST_VALUE(self):
             return self.getToken(Parser.FIRST_VALUE, 0)
+
         def LAST_VALUE(self):
             return self.getToken(Parser.LAST_VALUE, 0)
+
         def partitionByClause(self):
-            return self.getTypedRuleContext(Parser.PartitionByClauseContext,0)
+            return self.getTypedRuleContext(Parser.PartitionByClauseContext, 0)
 
         def orderByClause(self):
-            return self.getTypedRuleContext(Parser.OrderByClauseContext,0)
+            return self.getTypedRuleContext(Parser.OrderByClauseContext, 0)
 
         def windowingClause(self):
-            return self.getTypedRuleContext(Parser.WindowingClauseContext,0)
+            return self.getTypedRuleContext(Parser.WindowingClauseContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAnSimpleFunctionComponent" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterAnSimpleFunctionComponent"):
                 listener.enterAnSimpleFunctionComponent(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAnSimpleFunctionComponent" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitAnSimpleFunctionComponent"):
                 listener.exitAnSimpleFunctionComponent(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAnSimpleFunctionComponent" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitAnSimpleFunctionComponent"):
                 return visitor.visitAnSimpleFunctionComponent(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class LagOrLeadAnComponentContext(AnFunctionComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.AnFunctionComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.AnFunctionComponentContext
             super().__init__(ANTLRParser)
-            self.op = None # Token
-            self.offet = None # SignedIntegerContext
-            self.defaultValue = None # ScalarItemContext
-            self.partition = None # PartitionByClauseContext
-            self.orderBy = None # OrderByClauseContext
+            self.op = None  # Token
+            self.offet = None  # SignedIntegerContext
+            self.defaultValue = None  # ScalarItemContext
+            self.partition = None  # PartitionByClauseContext
+            self.orderBy = None  # OrderByClauseContext
             self.copyFrom(ctx)
 
-        def LPAREN(self, i:int=None):
+        def LPAREN(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.LPAREN)
             else:
                 return self.getToken(Parser.LPAREN, i)
+
         def exprComponent(self):
-            return self.getTypedRuleContext(Parser.ExprComponentContext,0)
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def OVER(self):
             return self.getToken(Parser.OVER, 0)
-        def RPAREN(self, i:int=None):
+
+        def RPAREN(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.RPAREN)
             else:
                 return self.getToken(Parser.RPAREN, i)
+
         def LAG(self):
             return self.getToken(Parser.LAG, 0)
+
         def LEAD(self):
             return self.getToken(Parser.LEAD, 0)
+
         def COMMA(self):
             return self.getToken(Parser.COMMA, 0)
+
         def orderByClause(self):
-            return self.getTypedRuleContext(Parser.OrderByClauseContext,0)
+            return self.getTypedRuleContext(Parser.OrderByClauseContext, 0)
 
         def signedInteger(self):
-            return self.getTypedRuleContext(Parser.SignedIntegerContext,0)
+            return self.getTypedRuleContext(Parser.SignedIntegerContext, 0)
 
         def partitionByClause(self):
-            return self.getTypedRuleContext(Parser.PartitionByClauseContext,0)
+            return self.getTypedRuleContext(Parser.PartitionByClauseContext, 0)
 
         def scalarItem(self):
-            return self.getTypedRuleContext(Parser.ScalarItemContext,0)
+            return self.getTypedRuleContext(Parser.ScalarItemContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterLagOrLeadAnComponent" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterLagOrLeadAnComponent"):
                 listener.enterLagOrLeadAnComponent(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitLagOrLeadAnComponent" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitLagOrLeadAnComponent"):
                 listener.exitLagOrLeadAnComponent(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitLagOrLeadAnComponent" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitLagOrLeadAnComponent"):
                 return visitor.visitLagOrLeadAnComponent(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class RankAnComponentContext(AnFunctionComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.AnFunctionComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.AnFunctionComponentContext
             super().__init__(ANTLRParser)
-            self.op = None # Token
-            self.partition = None # PartitionByClauseContext
-            self.orderBy = None # OrderByClauseContext
+            self.op = None  # Token
+            self.partition = None  # PartitionByClauseContext
+            self.orderBy = None  # OrderByClauseContext
             self.copyFrom(ctx)
 
-        def LPAREN(self, i:int=None):
+        def LPAREN(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.LPAREN)
             else:
                 return self.getToken(Parser.LPAREN, i)
+
         def OVER(self):
             return self.getToken(Parser.OVER, 0)
-        def RPAREN(self, i:int=None):
+
+        def RPAREN(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.RPAREN)
             else:
                 return self.getToken(Parser.RPAREN, i)
+
         def RANK(self):
             return self.getToken(Parser.RANK, 0)
+
         def orderByClause(self):
-            return self.getTypedRuleContext(Parser.OrderByClauseContext,0)
+            return self.getTypedRuleContext(Parser.OrderByClauseContext, 0)
 
         def partitionByClause(self):
-            return self.getTypedRuleContext(Parser.PartitionByClauseContext,0)
+            return self.getTypedRuleContext(Parser.PartitionByClauseContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterRankAnComponent" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterRankAnComponent"):
                 listener.enterRankAnComponent(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitRankAnComponent" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitRankAnComponent"):
                 listener.exitRankAnComponent(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitRankAnComponent" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitRankAnComponent"):
                 return visitor.visitRankAnComponent(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class RatioToReportAnComponentContext(AnFunctionComponentContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.AnFunctionComponentContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.AnFunctionComponentContext
             super().__init__(ANTLRParser)
-            self.op = None # Token
-            self.partition = None # PartitionByClauseContext
+            self.op = None  # Token
+            self.partition = None  # PartitionByClauseContext
             self.copyFrom(ctx)
 
-        def LPAREN(self, i:int=None):
+        def LPAREN(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.LPAREN)
             else:
                 return self.getToken(Parser.LPAREN, i)
+
         def exprComponent(self):
-            return self.getTypedRuleContext(Parser.ExprComponentContext,0)
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def OVER(self):
             return self.getToken(Parser.OVER, 0)
-        def RPAREN(self, i:int=None):
+
+        def RPAREN(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.RPAREN)
             else:
                 return self.getToken(Parser.RPAREN, i)
+
         def RATIO_TO_REPORT(self):
             return self.getToken(Parser.RATIO_TO_REPORT, 0)
+
         def partitionByClause(self):
-            return self.getTypedRuleContext(Parser.PartitionByClauseContext,0)
+            return self.getTypedRuleContext(Parser.PartitionByClauseContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterRatioToReportAnComponent" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterRatioToReportAnComponent"):
                 listener.enterRatioToReportAnComponent(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitRatioToReportAnComponent" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitRatioToReportAnComponent"):
                 listener.exitRatioToReportAnComponent(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitRatioToReportAnComponent" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitRatioToReportAnComponent"):
                 return visitor.visitRatioToReportAnComponent(self)
             else:
                 return visitor.visitChildren(self)
-
-
 
     def anFunctionComponent(self):
 
         localctx = Parser.AnFunctionComponentContext(self, self._ctx, self.state)
         self.enterRule(localctx, 74, self.RULE_anFunctionComponent)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.state = 1327
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [Parser.MIN, Parser.MAX, Parser.SUM, Parser.AVG, Parser.MEDIAN, Parser.COUNT, Parser.STDDEV_POP, Parser.STDDEV_SAMP, Parser.VAR_POP, Parser.VAR_SAMP, Parser.FIRST_VALUE, Parser.LAST_VALUE]:
+            if token in [
+                Parser.MIN,
+                Parser.MAX,
+                Parser.SUM,
+                Parser.AVG,
+                Parser.MEDIAN,
+                Parser.COUNT,
+                Parser.STDDEV_POP,
+                Parser.STDDEV_SAMP,
+                Parser.VAR_POP,
+                Parser.VAR_SAMP,
+                Parser.FIRST_VALUE,
+                Parser.LAST_VALUE,
+            ]:
                 localctx = Parser.AnSimpleFunctionComponentContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1269
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not(((((_la - 80)) & ~0x3f) == 0 and ((1 << (_la - 80)) & ((1 << (Parser.MIN - 80)) | (1 << (Parser.MAX - 80)) | (1 << (Parser.SUM - 80)) | (1 << (Parser.AVG - 80)) | (1 << (Parser.MEDIAN - 80)) | (1 << (Parser.COUNT - 80)) | (1 << (Parser.STDDEV_POP - 80)) | (1 << (Parser.STDDEV_SAMP - 80)) | (1 << (Parser.VAR_POP - 80)) | (1 << (Parser.VAR_SAMP - 80)))) != 0) or _la==Parser.FIRST_VALUE or _la==Parser.LAST_VALUE):
+                if not (
+                    (
+                        ((_la - 80) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 80))
+                            & (
+                                (1 << (Parser.MIN - 80))
+                                | (1 << (Parser.MAX - 80))
+                                | (1 << (Parser.SUM - 80))
+                                | (1 << (Parser.AVG - 80))
+                                | (1 << (Parser.MEDIAN - 80))
+                                | (1 << (Parser.COUNT - 80))
+                                | (1 << (Parser.STDDEV_POP - 80))
+                                | (1 << (Parser.STDDEV_SAMP - 80))
+                                | (1 << (Parser.VAR_POP - 80))
+                                | (1 << (Parser.VAR_SAMP - 80))
+                            )
+                        )
+                        != 0
+                    )
+                    or _la == Parser.FIRST_VALUE
+                    or _la == Parser.LAST_VALUE
+                ):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -10908,26 +12320,23 @@ class Parser(ANTLRParser):
                 self.state = 1275
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.PARTITION:
+                if _la == Parser.PARTITION:
                     self.state = 1274
                     localctx.partition = self.partitionByClause()
-
 
                 self.state = 1278
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.ORDER:
+                if _la == Parser.ORDER:
                     self.state = 1277
                     localctx.orderBy = self.orderByClause()
-
 
                 self.state = 1281
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.DATA or _la==Parser.RANGE:
+                if _la == Parser.DATA or _la == Parser.RANGE:
                     self.state = 1280
                     localctx.windowing = self.windowingClause()
-
 
                 self.state = 1283
                 self.match(Parser.RPAREN)
@@ -10940,7 +12349,7 @@ class Parser(ANTLRParser):
                 self.state = 1286
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not(_la==Parser.LAG or _la==Parser.LEAD):
+                if not (_la == Parser.LAG or _la == Parser.LEAD):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -10952,7 +12361,7 @@ class Parser(ANTLRParser):
                 self.state = 1294
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.COMMA:
+                if _la == Parser.COMMA:
                     self.state = 1289
                     self.match(Parser.COMMA)
                     self.state = 1290
@@ -10960,12 +12369,22 @@ class Parser(ANTLRParser):
                     self.state = 1292
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    if _la==Parser.NULL_CONSTANT or ((((_la - 218)) & ~0x3f) == 0 and ((1 << (_la - 218)) & ((1 << (Parser.CAST - 218)) | (1 << (Parser.INTEGER_CONSTANT - 218)) | (1 << (Parser.NUMBER_CONSTANT - 218)) | (1 << (Parser.BOOLEAN_CONSTANT - 218)) | (1 << (Parser.STRING_CONSTANT - 218)))) != 0):
+                    if _la == Parser.NULL_CONSTANT or (
+                        ((_la - 218) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 218))
+                            & (
+                                (1 << (Parser.CAST - 218))
+                                | (1 << (Parser.INTEGER_CONSTANT - 218))
+                                | (1 << (Parser.NUMBER_CONSTANT - 218))
+                                | (1 << (Parser.BOOLEAN_CONSTANT - 218))
+                                | (1 << (Parser.STRING_CONSTANT - 218))
+                            )
+                        )
+                        != 0
+                    ):
                         self.state = 1291
                         localctx.defaultValue = self.scalarItem()
-
-
-
 
                 self.state = 1296
                 self.match(Parser.OVER)
@@ -10975,10 +12394,9 @@ class Parser(ANTLRParser):
                 self.state = 1299
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.PARTITION:
+                if _la == Parser.PARTITION:
                     self.state = 1298
                     localctx.partition = self.partitionByClause()
-
 
                 self.state = 1301
                 localctx.orderBy = self.orderByClause()
@@ -11002,10 +12420,9 @@ class Parser(ANTLRParser):
                 self.state = 1311
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.PARTITION:
+                if _la == Parser.PARTITION:
                     self.state = 1310
                     localctx.partition = self.partitionByClause()
-
 
                 self.state = 1313
                 localctx.orderBy = self.orderByClause()
@@ -11046,45 +12463,40 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class RenameClauseItemContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-            self.fromName = None # ComponentIDContext
-            self.toName = None # ComponentIDContext
+            self.fromName = None  # ComponentIDContext
+            self.toName = None  # ComponentIDContext
 
         def TO(self):
             return self.getToken(Parser.TO, 0)
 
-        def componentID(self, i:int=None):
+        def componentID(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ComponentIDContext)
             else:
-                return self.getTypedRuleContext(Parser.ComponentIDContext,i)
-
+                return self.getTypedRuleContext(Parser.ComponentIDContext, i)
 
         def getRuleIndex(self):
             return Parser.RULE_renameClauseItem
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterRenameClauseItem" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterRenameClauseItem"):
                 listener.enterRenameClauseItem(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitRenameClauseItem" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitRenameClauseItem"):
                 listener.exitRenameClauseItem(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitRenameClauseItem" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitRenameClauseItem"):
                 return visitor.visitRenameClauseItem(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def renameClauseItem(self):
 
@@ -11106,22 +12518,20 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class AggregateClauseContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
-        def aggrFunctionClause(self, i:int=None):
+        def aggrFunctionClause(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.AggrFunctionClauseContext)
             else:
-                return self.getTypedRuleContext(Parser.AggrFunctionClauseContext,i)
+                return self.getTypedRuleContext(Parser.AggrFunctionClauseContext, i)
 
-
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
@@ -11130,28 +12540,25 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_aggregateClause
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAggregateClause" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterAggregateClause"):
                 listener.enterAggregateClause(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAggregateClause" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitAggregateClause"):
                 listener.exitAggregateClause(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAggregateClause" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitAggregateClause"):
                 return visitor.visitAggregateClause(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def aggregateClause(self):
 
         localctx = Parser.AggregateClauseContext(self, self._ctx, self.state)
         self.enterRule(localctx, 78, self.RULE_aggregateClause)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1333
@@ -11159,7 +12566,7 @@ class Parser(ANTLRParser):
             self.state = 1338
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==Parser.COMMA:
+            while _la == Parser.COMMA:
                 self.state = 1334
                 self.match(Parser.COMMA)
                 self.state = 1335
@@ -11176,63 +12583,67 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class AggrFunctionClauseContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
         def componentID(self):
-            return self.getTypedRuleContext(Parser.ComponentIDContext,0)
-
+            return self.getTypedRuleContext(Parser.ComponentIDContext, 0)
 
         def ASSIGN(self):
             return self.getToken(Parser.ASSIGN, 0)
 
         def aggrOperators(self):
-            return self.getTypedRuleContext(Parser.AggrOperatorsContext,0)
-
+            return self.getTypedRuleContext(Parser.AggrOperatorsContext, 0)
 
         def componentRole(self):
-            return self.getTypedRuleContext(Parser.ComponentRoleContext,0)
-
+            return self.getTypedRuleContext(Parser.ComponentRoleContext, 0)
 
         def getRuleIndex(self):
             return Parser.RULE_aggrFunctionClause
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAggrFunctionClause" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterAggrFunctionClause"):
                 listener.enterAggrFunctionClause(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAggrFunctionClause" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitAggrFunctionClause"):
                 listener.exitAggrFunctionClause(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAggrFunctionClause" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitAggrFunctionClause"):
                 return visitor.visitAggrFunctionClause(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def aggrFunctionClause(self):
 
         localctx = Parser.AggrFunctionClauseContext(self, self._ctx, self.state)
         self.enterRule(localctx, 80, self.RULE_aggrFunctionClause)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1342
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if ((((_la - 103)) & ~0x3f) == 0 and ((1 << (_la - 103)) & ((1 << (Parser.DIMENSION - 103)) | (1 << (Parser.MEASURE - 103)) | (1 << (Parser.ATTRIBUTE - 103)) | (1 << (Parser.VIRAL - 103)))) != 0) or _la==Parser.COMPONENT:
+            if (
+                ((_la - 103) & ~0x3F) == 0
+                and (
+                    (1 << (_la - 103))
+                    & (
+                        (1 << (Parser.DIMENSION - 103))
+                        | (1 << (Parser.MEASURE - 103))
+                        | (1 << (Parser.ATTRIBUTE - 103))
+                        | (1 << (Parser.VIRAL - 103))
+                    )
+                )
+                != 0
+            ) or _la == Parser.COMPONENT:
                 self.state = 1341
                 self.componentRole()
-
 
             self.state = 1344
             self.componentID()
@@ -11248,63 +12659,67 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class CalcClauseItemContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
         def componentID(self):
-            return self.getTypedRuleContext(Parser.ComponentIDContext,0)
-
+            return self.getTypedRuleContext(Parser.ComponentIDContext, 0)
 
         def ASSIGN(self):
             return self.getToken(Parser.ASSIGN, 0)
 
         def exprComponent(self):
-            return self.getTypedRuleContext(Parser.ExprComponentContext,0)
-
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def componentRole(self):
-            return self.getTypedRuleContext(Parser.ComponentRoleContext,0)
-
+            return self.getTypedRuleContext(Parser.ComponentRoleContext, 0)
 
         def getRuleIndex(self):
             return Parser.RULE_calcClauseItem
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterCalcClauseItem" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterCalcClauseItem"):
                 listener.enterCalcClauseItem(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitCalcClauseItem" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitCalcClauseItem"):
                 listener.exitCalcClauseItem(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitCalcClauseItem" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitCalcClauseItem"):
                 return visitor.visitCalcClauseItem(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def calcClauseItem(self):
 
         localctx = Parser.CalcClauseItemContext(self, self._ctx, self.state)
         self.enterRule(localctx, 82, self.RULE_calcClauseItem)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1349
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if ((((_la - 103)) & ~0x3f) == 0 and ((1 << (_la - 103)) & ((1 << (Parser.DIMENSION - 103)) | (1 << (Parser.MEASURE - 103)) | (1 << (Parser.ATTRIBUTE - 103)) | (1 << (Parser.VIRAL - 103)))) != 0) or _la==Parser.COMPONENT:
+            if (
+                ((_la - 103) & ~0x3F) == 0
+                and (
+                    (1 << (_la - 103))
+                    & (
+                        (1 << (Parser.DIMENSION - 103))
+                        | (1 << (Parser.MEASURE - 103))
+                        | (1 << (Parser.ATTRIBUTE - 103))
+                        | (1 << (Parser.VIRAL - 103))
+                    )
+                )
+                != 0
+            ) or _la == Parser.COMPONENT:
                 self.state = 1348
                 self.componentRole()
-
 
             self.state = 1351
             self.componentID()
@@ -11320,48 +12735,41 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class SubspaceClauseItemContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
         def componentID(self):
-            return self.getTypedRuleContext(Parser.ComponentIDContext,0)
-
+            return self.getTypedRuleContext(Parser.ComponentIDContext, 0)
 
         def EQ(self):
             return self.getToken(Parser.EQ, 0)
 
         def scalarItem(self):
-            return self.getTypedRuleContext(Parser.ScalarItemContext,0)
-
+            return self.getTypedRuleContext(Parser.ScalarItemContext, 0)
 
         def varID(self):
-            return self.getTypedRuleContext(Parser.VarIDContext,0)
-
+            return self.getTypedRuleContext(Parser.VarIDContext, 0)
 
         def getRuleIndex(self):
             return Parser.RULE_subspaceClauseItem
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSubspaceClauseItem" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterSubspaceClauseItem"):
                 listener.enterSubspaceClauseItem(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSubspaceClauseItem" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitSubspaceClauseItem"):
                 listener.exitSubspaceClauseItem(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSubspaceClauseItem" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitSubspaceClauseItem"):
                 return visitor.visitSubspaceClauseItem(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def subspaceClauseItem(self):
 
@@ -11376,7 +12784,14 @@ class Parser(ANTLRParser):
             self.state = 1359
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [Parser.NULL_CONSTANT, Parser.CAST, Parser.INTEGER_CONSTANT, Parser.NUMBER_CONSTANT, Parser.BOOLEAN_CONSTANT, Parser.STRING_CONSTANT]:
+            if token in [
+                Parser.NULL_CONSTANT,
+                Parser.CAST,
+                Parser.INTEGER_CONSTANT,
+                Parser.NUMBER_CONSTANT,
+                Parser.BOOLEAN_CONSTANT,
+                Parser.STRING_CONSTANT,
+            ]:
                 self.state = 1357
                 self.scalarItem()
                 pass
@@ -11395,141 +12810,142 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class ScalarItemContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-
 
         def getRuleIndex(self):
             return Parser.RULE_scalarItem
 
-     
-        def copyFrom(self, ctx:ParserRuleContext):
+        def copyFrom(self, ctx: ParserRuleContext):
             super().copyFrom(ctx)
 
-
-
     class ScalarWithCastContext(ScalarItemContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ScalarItemContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.ScalarItemContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def CAST(self):
             return self.getToken(Parser.CAST, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
-        def constant(self):
-            return self.getTypedRuleContext(Parser.ConstantContext,0)
 
-        def COMMA(self, i:int=None):
+        def constant(self):
+            return self.getTypedRuleContext(Parser.ConstantContext, 0)
+
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
                 return self.getToken(Parser.COMMA, i)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
+
         def basicScalarType(self):
-            return self.getTypedRuleContext(Parser.BasicScalarTypeContext,0)
+            return self.getTypedRuleContext(Parser.BasicScalarTypeContext, 0)
 
         def STRING_CONSTANT(self):
             return self.getToken(Parser.STRING_CONSTANT, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterScalarWithCast" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterScalarWithCast"):
                 listener.enterScalarWithCast(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitScalarWithCast" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitScalarWithCast"):
                 listener.exitScalarWithCast(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitScalarWithCast" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitScalarWithCast"):
                 return visitor.visitScalarWithCast(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class SimpleScalarContext(ScalarItemContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ScalarItemContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.ScalarItemContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def constant(self):
-            return self.getTypedRuleContext(Parser.ConstantContext,0)
+            return self.getTypedRuleContext(Parser.ConstantContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSimpleScalar" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterSimpleScalar"):
                 listener.enterSimpleScalar(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSimpleScalar" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitSimpleScalar"):
                 listener.exitSimpleScalar(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSimpleScalar" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitSimpleScalar"):
                 return visitor.visitSimpleScalar(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class ScalarVarWithCastContext(ScalarItemContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ScalarItemContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.ScalarItemContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def CAST(self):
             return self.getToken(Parser.CAST, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
-        def varID(self):
-            return self.getTypedRuleContext(Parser.VarIDContext,0)
 
-        def COMMA(self, i:int=None):
+        def varID(self):
+            return self.getTypedRuleContext(Parser.VarIDContext, 0)
+
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
                 return self.getToken(Parser.COMMA, i)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
+
         def basicScalarType(self):
-            return self.getTypedRuleContext(Parser.BasicScalarTypeContext,0)
+            return self.getTypedRuleContext(Parser.BasicScalarTypeContext, 0)
 
         def STRING_CONSTANT(self):
             return self.getToken(Parser.STRING_CONSTANT, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterScalarVarWithCast" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterScalarVarWithCast"):
                 listener.enterScalarVarWithCast(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitScalarVarWithCast" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitScalarVarWithCast"):
                 listener.exitScalarVarWithCast(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitScalarVarWithCast" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitScalarVarWithCast"):
                 return visitor.visitScalarVarWithCast(self)
             else:
                 return visitor.visitChildren(self)
-
-
 
     def scalarItem(self):
 
         localctx = Parser.ScalarItemContext(self, self._ctx, self.state)
         self.enterRule(localctx, 86, self.RULE_scalarItem)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.state = 1384
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,125,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 125, self._ctx)
             if la_ == 1:
                 localctx = Parser.SimpleScalarContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
@@ -11554,12 +12970,11 @@ class Parser(ANTLRParser):
                 self.state = 1369
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.COMMA:
+                if _la == Parser.COMMA:
                     self.state = 1367
                     self.match(Parser.COMMA)
                     self.state = 1368
                     self.match(Parser.STRING_CONSTANT)
-
 
                 self.state = 1371
                 self.match(Parser.RPAREN)
@@ -11582,17 +12997,15 @@ class Parser(ANTLRParser):
                 self.state = 1380
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.COMMA:
+                if _la == Parser.COMMA:
                     self.state = 1378
                     self.match(Parser.COMMA)
                     self.state = 1379
                     self.match(Parser.STRING_CONSTANT)
 
-
                 self.state = 1382
                 self.match(Parser.RPAREN)
                 pass
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -11602,22 +13015,20 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class JoinClauseWithoutUsingContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
-        def joinClauseItem(self, i:int=None):
+        def joinClauseItem(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.JoinClauseItemContext)
             else:
-                return self.getTypedRuleContext(Parser.JoinClauseItemContext,i)
+                return self.getTypedRuleContext(Parser.JoinClauseItemContext, i)
 
-
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
@@ -11626,28 +13037,25 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_joinClauseWithoutUsing
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterJoinClauseWithoutUsing" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterJoinClauseWithoutUsing"):
                 listener.enterJoinClauseWithoutUsing(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitJoinClauseWithoutUsing" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitJoinClauseWithoutUsing"):
                 listener.exitJoinClauseWithoutUsing(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitJoinClauseWithoutUsing" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitJoinClauseWithoutUsing"):
                 return visitor.visitJoinClauseWithoutUsing(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def joinClauseWithoutUsing(self):
 
         localctx = Parser.JoinClauseWithoutUsingContext(self, self._ctx, self.state)
         self.enterRule(localctx, 88, self.RULE_joinClauseWithoutUsing)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1386
@@ -11655,7 +13063,7 @@ class Parser(ANTLRParser):
             self.state = 1391
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==Parser.COMMA:
+            while _la == Parser.COMMA:
                 self.state = 1387
                 self.match(Parser.COMMA)
                 self.state = 1388
@@ -11672,22 +13080,20 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class JoinClauseContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
-        def joinClauseItem(self, i:int=None):
+        def joinClauseItem(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.JoinClauseItemContext)
             else:
-                return self.getTypedRuleContext(Parser.JoinClauseItemContext,i)
+                return self.getTypedRuleContext(Parser.JoinClauseItemContext, i)
 
-
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
@@ -11696,38 +13102,34 @@ class Parser(ANTLRParser):
         def USING(self):
             return self.getToken(Parser.USING, 0)
 
-        def componentID(self, i:int=None):
+        def componentID(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ComponentIDContext)
             else:
-                return self.getTypedRuleContext(Parser.ComponentIDContext,i)
-
+                return self.getTypedRuleContext(Parser.ComponentIDContext, i)
 
         def getRuleIndex(self):
             return Parser.RULE_joinClause
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterJoinClause" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterJoinClause"):
                 listener.enterJoinClause(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitJoinClause" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitJoinClause"):
                 listener.exitJoinClause(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitJoinClause" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitJoinClause"):
                 return visitor.visitJoinClause(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def joinClause(self):
 
         localctx = Parser.JoinClauseContext(self, self._ctx, self.state)
         self.enterRule(localctx, 90, self.RULE_joinClause)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1394
@@ -11735,7 +13137,7 @@ class Parser(ANTLRParser):
             self.state = 1399
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==Parser.COMMA:
+            while _la == Parser.COMMA:
                 self.state = 1395
                 self.match(Parser.COMMA)
                 self.state = 1396
@@ -11747,7 +13149,7 @@ class Parser(ANTLRParser):
             self.state = 1411
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==Parser.USING:
+            if _la == Parser.USING:
                 self.state = 1402
                 self.match(Parser.USING)
                 self.state = 1403
@@ -11755,7 +13157,7 @@ class Parser(ANTLRParser):
                 self.state = 1408
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while _la==Parser.COMMA:
+                while _la == Parser.COMMA:
                     self.state = 1404
                     self.match(Parser.COMMA)
                     self.state = 1405
@@ -11764,8 +13166,6 @@ class Parser(ANTLRParser):
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
 
-
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -11774,50 +13174,44 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class JoinClauseItemContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
         def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
-
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
 
         def AS(self):
             return self.getToken(Parser.AS, 0)
 
         def alias(self):
-            return self.getTypedRuleContext(Parser.AliasContext,0)
-
+            return self.getTypedRuleContext(Parser.AliasContext, 0)
 
         def getRuleIndex(self):
             return Parser.RULE_joinClauseItem
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterJoinClauseItem" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterJoinClauseItem"):
                 listener.enterJoinClauseItem(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitJoinClauseItem" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitJoinClauseItem"):
                 listener.exitJoinClauseItem(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitJoinClauseItem" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitJoinClauseItem"):
                 return visitor.visitJoinClauseItem(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def joinClauseItem(self):
 
         localctx = Parser.JoinClauseItemContext(self, self._ctx, self.state)
         self.enterRule(localctx, 92, self.RULE_joinClauseItem)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1413
@@ -11825,12 +13219,11 @@ class Parser(ANTLRParser):
             self.state = 1416
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==Parser.AS:
+            if _la == Parser.AS:
                 self.state = 1414
                 self.match(Parser.AS)
                 self.state = 1415
                 self.alias()
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -11840,72 +13233,61 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class JoinBodyContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
         def filterClause(self):
-            return self.getTypedRuleContext(Parser.FilterClauseContext,0)
-
+            return self.getTypedRuleContext(Parser.FilterClauseContext, 0)
 
         def calcClause(self):
-            return self.getTypedRuleContext(Parser.CalcClauseContext,0)
-
+            return self.getTypedRuleContext(Parser.CalcClauseContext, 0)
 
         def joinApplyClause(self):
-            return self.getTypedRuleContext(Parser.JoinApplyClauseContext,0)
-
+            return self.getTypedRuleContext(Parser.JoinApplyClauseContext, 0)
 
         def aggrClause(self):
-            return self.getTypedRuleContext(Parser.AggrClauseContext,0)
-
+            return self.getTypedRuleContext(Parser.AggrClauseContext, 0)
 
         def keepOrDropClause(self):
-            return self.getTypedRuleContext(Parser.KeepOrDropClauseContext,0)
-
+            return self.getTypedRuleContext(Parser.KeepOrDropClauseContext, 0)
 
         def renameClause(self):
-            return self.getTypedRuleContext(Parser.RenameClauseContext,0)
-
+            return self.getTypedRuleContext(Parser.RenameClauseContext, 0)
 
         def getRuleIndex(self):
             return Parser.RULE_joinBody
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterJoinBody" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterJoinBody"):
                 listener.enterJoinBody(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitJoinBody" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitJoinBody"):
                 listener.exitJoinBody(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitJoinBody" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitJoinBody"):
                 return visitor.visitJoinBody(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def joinBody(self):
 
         localctx = Parser.JoinBodyContext(self, self._ctx, self.state)
         self.enterRule(localctx, 94, self.RULE_joinBody)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1419
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==Parser.FILTER:
+            if _la == Parser.FILTER:
                 self.state = 1418
                 self.filterClause()
-
 
             self.state = 1424
             self._errHandler.sync(self)
@@ -11929,18 +13311,16 @@ class Parser(ANTLRParser):
             self.state = 1427
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==Parser.DROP or _la==Parser.KEEP:
+            if _la == Parser.DROP or _la == Parser.KEEP:
                 self.state = 1426
                 self.keepOrDropClause()
-
 
             self.state = 1430
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==Parser.RENAME:
+            if _la == Parser.RENAME:
                 self.state = 1429
                 self.renameClause()
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -11950,11 +13330,10 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class JoinApplyClauseContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
@@ -11962,28 +13341,24 @@ class Parser(ANTLRParser):
             return self.getToken(Parser.APPLY, 0)
 
         def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
-
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
 
         def getRuleIndex(self):
             return Parser.RULE_joinApplyClause
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterJoinApplyClause" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterJoinApplyClause"):
                 listener.enterJoinApplyClause(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitJoinApplyClause" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitJoinApplyClause"):
                 listener.exitJoinApplyClause(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitJoinApplyClause" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitJoinApplyClause"):
                 return visitor.visitJoinApplyClause(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def joinApplyClause(self):
 
@@ -12003,11 +13378,10 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class PartitionByClauseContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
@@ -12017,14 +13391,13 @@ class Parser(ANTLRParser):
         def BY(self):
             return self.getToken(Parser.BY, 0)
 
-        def componentID(self, i:int=None):
+        def componentID(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ComponentIDContext)
             else:
-                return self.getTypedRuleContext(Parser.ComponentIDContext,i)
+                return self.getTypedRuleContext(Parser.ComponentIDContext, i)
 
-
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
@@ -12033,28 +13406,25 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_partitionByClause
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterPartitionByClause" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterPartitionByClause"):
                 listener.enterPartitionByClause(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitPartitionByClause" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitPartitionByClause"):
                 listener.exitPartitionByClause(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitPartitionByClause" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitPartitionByClause"):
                 return visitor.visitPartitionByClause(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def partitionByClause(self):
 
         localctx = Parser.PartitionByClauseContext(self, self._ctx, self.state)
         self.enterRule(localctx, 98, self.RULE_partitionByClause)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1435
@@ -12066,7 +13436,7 @@ class Parser(ANTLRParser):
             self.state = 1442
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==Parser.COMMA:
+            while _la == Parser.COMMA:
                 self.state = 1438
                 self.match(Parser.COMMA)
                 self.state = 1439
@@ -12083,11 +13453,10 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class OrderByClauseContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
@@ -12097,14 +13466,13 @@ class Parser(ANTLRParser):
         def BY(self):
             return self.getToken(Parser.BY, 0)
 
-        def orderByItem(self, i:int=None):
+        def orderByItem(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.OrderByItemContext)
             else:
-                return self.getTypedRuleContext(Parser.OrderByItemContext,i)
+                return self.getTypedRuleContext(Parser.OrderByItemContext, i)
 
-
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
@@ -12113,28 +13481,25 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_orderByClause
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterOrderByClause" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterOrderByClause"):
                 listener.enterOrderByClause(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitOrderByClause" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitOrderByClause"):
                 listener.exitOrderByClause(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitOrderByClause" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitOrderByClause"):
                 return visitor.visitOrderByClause(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def orderByClause(self):
 
         localctx = Parser.OrderByClauseContext(self, self._ctx, self.state)
         self.enterRule(localctx, 100, self.RULE_orderByClause)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1445
@@ -12146,7 +13511,7 @@ class Parser(ANTLRParser):
             self.state = 1452
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==Parser.COMMA:
+            while _la == Parser.COMMA:
                 self.state = 1448
                 self.match(Parser.COMMA)
                 self.state = 1449
@@ -12163,17 +13528,15 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class OrderByItemContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
         def componentID(self):
-            return self.getTypedRuleContext(Parser.ComponentIDContext,0)
-
+            return self.getTypedRuleContext(Parser.ComponentIDContext, 0)
 
         def ASC(self):
             return self.getToken(Parser.ASC, 0)
@@ -12184,28 +13547,25 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_orderByItem
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterOrderByItem" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterOrderByItem"):
                 listener.enterOrderByItem(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitOrderByItem" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitOrderByItem"):
                 listener.exitOrderByItem(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitOrderByItem" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitOrderByItem"):
                 return visitor.visitOrderByItem(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def orderByItem(self):
 
         localctx = Parser.OrderByItemContext(self, self._ctx, self.state)
         self.enterRule(localctx, 102, self.RULE_orderByItem)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1455
@@ -12213,15 +13573,14 @@ class Parser(ANTLRParser):
             self.state = 1457
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==Parser.ASC or _la==Parser.DESC:
+            if _la == Parser.ASC or _la == Parser.DESC:
                 self.state = 1456
                 _la = self._input.LA(1)
-                if not(_la==Parser.ASC or _la==Parser.DESC):
+                if not (_la == Parser.ASC or _la == Parser.DESC):
                     self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
                     self.consume()
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -12231,15 +13590,14 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class WindowingClauseContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-            self.from_ = None # LimitClauseItemContext
-            self.to_ = None # LimitClauseItemContext
+            self.from_ = None  # LimitClauseItemContext
+            self.to_ = None  # LimitClauseItemContext
 
         def BETWEEN(self):
             return self.getToken(Parser.BETWEEN, 0)
@@ -12247,12 +13605,11 @@ class Parser(ANTLRParser):
         def AND(self):
             return self.getToken(Parser.AND, 0)
 
-        def limitClauseItem(self, i:int=None):
+        def limitClauseItem(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.LimitClauseItemContext)
             else:
-                return self.getTypedRuleContext(Parser.LimitClauseItemContext,i)
-
+                return self.getTypedRuleContext(Parser.LimitClauseItemContext, i)
 
         def RANGE(self):
             return self.getToken(Parser.RANGE, 0)
@@ -12266,22 +13623,19 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_windowingClause
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterWindowingClause" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterWindowingClause"):
                 listener.enterWindowingClause(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitWindowingClause" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitWindowingClause"):
                 listener.exitWindowingClause(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitWindowingClause" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitWindowingClause"):
                 return visitor.visitWindowingClause(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def windowingClause(self):
 
@@ -12321,11 +13675,10 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class SignedIntegerContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
@@ -12335,22 +13688,19 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_signedInteger
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSignedInteger" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterSignedInteger"):
                 listener.enterSignedInteger(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSignedInteger" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitSignedInteger"):
                 listener.exitSignedInteger(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSignedInteger" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitSignedInteger"):
                 return visitor.visitSignedInteger(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def signedInteger(self):
 
@@ -12368,11 +13718,10 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class LimitClauseItemContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
@@ -12400,22 +13749,19 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_limitClauseItem
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterLimitClauseItem" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterLimitClauseItem"):
                 listener.enterLimitClauseItem(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitLimitClauseItem" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitLimitClauseItem"):
                 listener.exitLimitClauseItem(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitLimitClauseItem" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitLimitClauseItem"):
                 return visitor.visitLimitClauseItem(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def limitClauseItem(self):
 
@@ -12424,7 +13770,7 @@ class Parser(ANTLRParser):
         try:
             self.state = 1482
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,139,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 139, self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1471
@@ -12467,7 +13813,6 @@ class Parser(ANTLRParser):
                 self.match(Parser.FOLLOWING)
                 pass
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -12476,103 +13821,101 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class GroupingClauseContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-
 
         def getRuleIndex(self):
             return Parser.RULE_groupingClause
 
-     
-        def copyFrom(self, ctx:ParserRuleContext):
+        def copyFrom(self, ctx: ParserRuleContext):
             super().copyFrom(ctx)
 
-
-
     class GroupAllContext(GroupingClauseContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.GroupingClauseContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.GroupingClauseContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def GROUP(self):
             return self.getToken(Parser.GROUP, 0)
+
         def ALL(self):
             return self.getToken(Parser.ALL, 0)
+
         def exprComponent(self):
-            return self.getTypedRuleContext(Parser.ExprComponentContext,0)
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterGroupAll" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterGroupAll"):
                 listener.enterGroupAll(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitGroupAll" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitGroupAll"):
                 listener.exitGroupAll(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitGroupAll" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitGroupAll"):
                 return visitor.visitGroupAll(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class GroupByOrExceptContext(GroupingClauseContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.GroupingClauseContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.GroupingClauseContext
             super().__init__(ANTLRParser)
-            self.op = None # Token
+            self.op = None  # Token
             self.copyFrom(ctx)
 
         def GROUP(self):
             return self.getToken(Parser.GROUP, 0)
-        def componentID(self, i:int=None):
+
+        def componentID(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ComponentIDContext)
             else:
-                return self.getTypedRuleContext(Parser.ComponentIDContext,i)
+                return self.getTypedRuleContext(Parser.ComponentIDContext, i)
 
         def BY(self):
             return self.getToken(Parser.BY, 0)
+
         def EXCEPT(self):
             return self.getToken(Parser.EXCEPT, 0)
-        def COMMA(self, i:int=None):
+
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
                 return self.getToken(Parser.COMMA, i)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterGroupByOrExcept" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterGroupByOrExcept"):
                 listener.enterGroupByOrExcept(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitGroupByOrExcept" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitGroupByOrExcept"):
                 listener.exitGroupByOrExcept(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitGroupByOrExcept" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitGroupByOrExcept"):
                 return visitor.visitGroupByOrExcept(self)
             else:
                 return visitor.visitChildren(self)
-
-
 
     def groupingClause(self):
 
         localctx = Parser.GroupingClauseContext(self, self._ctx, self.state)
         self.enterRule(localctx, 110, self.RULE_groupingClause)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.state = 1497
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,141,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 141, self._ctx)
             if la_ == 1:
                 localctx = Parser.GroupByOrExceptContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
@@ -12581,7 +13924,7 @@ class Parser(ANTLRParser):
                 self.state = 1485
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not(_la==Parser.BY or _la==Parser.EXCEPT):
+                if not (_la == Parser.BY or _la == Parser.EXCEPT):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -12591,7 +13934,7 @@ class Parser(ANTLRParser):
                 self.state = 1491
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while _la==Parser.COMMA:
+                while _la == Parser.COMMA:
                     self.state = 1487
                     self.match(Parser.COMMA)
                     self.state = 1488
@@ -12613,7 +13956,6 @@ class Parser(ANTLRParser):
                 self.exprComponent(0)
                 pass
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -12622,11 +13964,10 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class HavingClauseContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
@@ -12634,28 +13975,24 @@ class Parser(ANTLRParser):
             return self.getToken(Parser.HAVING, 0)
 
         def exprComponent(self):
-            return self.getTypedRuleContext(Parser.ExprComponentContext,0)
-
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def getRuleIndex(self):
             return Parser.RULE_havingClause
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterHavingClause" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterHavingClause"):
                 listener.enterHavingClause(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitHavingClause" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitHavingClause"):
                 listener.exitHavingClause(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitHavingClause" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitHavingClause"):
                 return visitor.visitHavingClause(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def havingClause(self):
 
@@ -12675,54 +14012,47 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class ParameterItemContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
         def varID(self):
-            return self.getTypedRuleContext(Parser.VarIDContext,0)
-
+            return self.getTypedRuleContext(Parser.VarIDContext, 0)
 
         def inputParameterType(self):
-            return self.getTypedRuleContext(Parser.InputParameterTypeContext,0)
-
+            return self.getTypedRuleContext(Parser.InputParameterTypeContext, 0)
 
         def DEFAULT(self):
             return self.getToken(Parser.DEFAULT, 0)
 
         def scalarItem(self):
-            return self.getTypedRuleContext(Parser.ScalarItemContext,0)
-
+            return self.getTypedRuleContext(Parser.ScalarItemContext, 0)
 
         def getRuleIndex(self):
             return Parser.RULE_parameterItem
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterParameterItem" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterParameterItem"):
                 listener.enterParameterItem(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitParameterItem" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitParameterItem"):
                 listener.exitParameterItem(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitParameterItem" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitParameterItem"):
                 return visitor.visitParameterItem(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def parameterItem(self):
 
         localctx = Parser.ParameterItemContext(self, self._ctx, self.state)
         self.enterRule(localctx, 114, self.RULE_parameterItem)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1502
@@ -12732,12 +14062,11 @@ class Parser(ANTLRParser):
             self.state = 1506
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==Parser.DEFAULT:
+            if _la == Parser.DEFAULT:
                 self.state = 1504
                 self.match(Parser.DEFAULT)
                 self.state = 1505
                 self.scalarItem()
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -12747,45 +14076,38 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class OutputParameterTypeContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
         def scalarType(self):
-            return self.getTypedRuleContext(Parser.ScalarTypeContext,0)
-
+            return self.getTypedRuleContext(Parser.ScalarTypeContext, 0)
 
         def datasetType(self):
-            return self.getTypedRuleContext(Parser.DatasetTypeContext,0)
-
+            return self.getTypedRuleContext(Parser.DatasetTypeContext, 0)
 
         def componentType(self):
-            return self.getTypedRuleContext(Parser.ComponentTypeContext,0)
-
+            return self.getTypedRuleContext(Parser.ComponentTypeContext, 0)
 
         def getRuleIndex(self):
             return Parser.RULE_outputParameterType
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterOutputParameterType" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterOutputParameterType"):
                 listener.enterOutputParameterType(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitOutputParameterType" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitOutputParameterType"):
                 listener.exitOutputParameterType(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitOutputParameterType" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitOutputParameterType"):
                 return visitor.visitOutputParameterType(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def outputParameterType(self):
 
@@ -12795,7 +14117,18 @@ class Parser(ANTLRParser):
             self.state = 1511
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [Parser.BOOLEAN, Parser.DATE, Parser.TIME_PERIOD, Parser.NUMBER, Parser.STRING, Parser.TIME, Parser.INTEGER, Parser.DURATION, Parser.SCALAR, Parser.IDENTIFIER]:
+            if token in [
+                Parser.BOOLEAN,
+                Parser.DATE,
+                Parser.TIME_PERIOD,
+                Parser.NUMBER,
+                Parser.STRING,
+                Parser.TIME,
+                Parser.INTEGER,
+                Parser.DURATION,
+                Parser.SCALAR,
+                Parser.IDENTIFIER,
+            ]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1508
                 self.scalarType()
@@ -12805,7 +14138,13 @@ class Parser(ANTLRParser):
                 self.state = 1509
                 self.datasetType()
                 pass
-            elif token in [Parser.DIMENSION, Parser.MEASURE, Parser.ATTRIBUTE, Parser.VIRAL, Parser.COMPONENT]:
+            elif token in [
+                Parser.DIMENSION,
+                Parser.MEASURE,
+                Parser.ATTRIBUTE,
+                Parser.VIRAL,
+                Parser.COMPONENT,
+            ]:
                 self.enterOuterAlt(localctx, 3)
                 self.state = 1510
                 self.componentType()
@@ -12821,41 +14160,35 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class OutputParameterTypeComponentContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
         def componentType(self):
-            return self.getTypedRuleContext(Parser.ComponentTypeContext,0)
-
+            return self.getTypedRuleContext(Parser.ComponentTypeContext, 0)
 
         def scalarType(self):
-            return self.getTypedRuleContext(Parser.ScalarTypeContext,0)
-
+            return self.getTypedRuleContext(Parser.ScalarTypeContext, 0)
 
         def getRuleIndex(self):
             return Parser.RULE_outputParameterTypeComponent
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterOutputParameterTypeComponent" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterOutputParameterTypeComponent"):
                 listener.enterOutputParameterTypeComponent(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitOutputParameterTypeComponent" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitOutputParameterTypeComponent"):
                 listener.exitOutputParameterTypeComponent(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitOutputParameterTypeComponent" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitOutputParameterTypeComponent"):
                 return visitor.visitOutputParameterTypeComponent(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def outputParameterTypeComponent(self):
 
@@ -12865,12 +14198,29 @@ class Parser(ANTLRParser):
             self.state = 1515
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [Parser.DIMENSION, Parser.MEASURE, Parser.ATTRIBUTE, Parser.VIRAL, Parser.COMPONENT]:
+            if token in [
+                Parser.DIMENSION,
+                Parser.MEASURE,
+                Parser.ATTRIBUTE,
+                Parser.VIRAL,
+                Parser.COMPONENT,
+            ]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1513
                 self.componentType()
                 pass
-            elif token in [Parser.BOOLEAN, Parser.DATE, Parser.TIME_PERIOD, Parser.NUMBER, Parser.STRING, Parser.TIME, Parser.INTEGER, Parser.DURATION, Parser.SCALAR, Parser.IDENTIFIER]:
+            elif token in [
+                Parser.BOOLEAN,
+                Parser.DATE,
+                Parser.TIME_PERIOD,
+                Parser.NUMBER,
+                Parser.STRING,
+                Parser.TIME,
+                Parser.INTEGER,
+                Parser.DURATION,
+                Parser.SCALAR,
+                Parser.IDENTIFIER,
+            ]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 1514
                 self.scalarType()
@@ -12886,53 +14236,44 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class InputParameterTypeContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
         def scalarType(self):
-            return self.getTypedRuleContext(Parser.ScalarTypeContext,0)
-
+            return self.getTypedRuleContext(Parser.ScalarTypeContext, 0)
 
         def datasetType(self):
-            return self.getTypedRuleContext(Parser.DatasetTypeContext,0)
-
+            return self.getTypedRuleContext(Parser.DatasetTypeContext, 0)
 
         def scalarSetType(self):
-            return self.getTypedRuleContext(Parser.ScalarSetTypeContext,0)
-
+            return self.getTypedRuleContext(Parser.ScalarSetTypeContext, 0)
 
         def rulesetType(self):
-            return self.getTypedRuleContext(Parser.RulesetTypeContext,0)
-
+            return self.getTypedRuleContext(Parser.RulesetTypeContext, 0)
 
         def componentType(self):
-            return self.getTypedRuleContext(Parser.ComponentTypeContext,0)
-
+            return self.getTypedRuleContext(Parser.ComponentTypeContext, 0)
 
         def getRuleIndex(self):
             return Parser.RULE_inputParameterType
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterInputParameterType" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterInputParameterType"):
                 listener.enterInputParameterType(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitInputParameterType" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitInputParameterType"):
                 listener.exitInputParameterType(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInputParameterType" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitInputParameterType"):
                 return visitor.visitInputParameterType(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def inputParameterType(self):
 
@@ -12942,7 +14283,18 @@ class Parser(ANTLRParser):
             self.state = 1522
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [Parser.BOOLEAN, Parser.DATE, Parser.TIME_PERIOD, Parser.NUMBER, Parser.STRING, Parser.TIME, Parser.INTEGER, Parser.DURATION, Parser.SCALAR, Parser.IDENTIFIER]:
+            if token in [
+                Parser.BOOLEAN,
+                Parser.DATE,
+                Parser.TIME_PERIOD,
+                Parser.NUMBER,
+                Parser.STRING,
+                Parser.TIME,
+                Parser.INTEGER,
+                Parser.DURATION,
+                Parser.SCALAR,
+                Parser.IDENTIFIER,
+            ]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1517
                 self.scalarType()
@@ -12957,12 +14309,26 @@ class Parser(ANTLRParser):
                 self.state = 1519
                 self.scalarSetType()
                 pass
-            elif token in [Parser.DATAPOINT, Parser.HIERARCHICAL, Parser.RULESET, Parser.DATAPOINT_ON_VD, Parser.DATAPOINT_ON_VAR, Parser.HIERARCHICAL_ON_VD, Parser.HIERARCHICAL_ON_VAR]:
+            elif token in [
+                Parser.DATAPOINT,
+                Parser.HIERARCHICAL,
+                Parser.RULESET,
+                Parser.DATAPOINT_ON_VD,
+                Parser.DATAPOINT_ON_VAR,
+                Parser.HIERARCHICAL_ON_VD,
+                Parser.HIERARCHICAL_ON_VAR,
+            ]:
                 self.enterOuterAlt(localctx, 4)
                 self.state = 1520
                 self.rulesetType()
                 pass
-            elif token in [Parser.DIMENSION, Parser.MEASURE, Parser.ATTRIBUTE, Parser.VIRAL, Parser.COMPONENT]:
+            elif token in [
+                Parser.DIMENSION,
+                Parser.MEASURE,
+                Parser.ATTRIBUTE,
+                Parser.VIRAL,
+                Parser.COMPONENT,
+            ]:
                 self.enterOuterAlt(localctx, 5)
                 self.state = 1521
                 self.componentType()
@@ -12978,11 +14344,10 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class RulesetTypeContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
@@ -12990,32 +14355,27 @@ class Parser(ANTLRParser):
             return self.getToken(Parser.RULESET, 0)
 
         def dpRuleset(self):
-            return self.getTypedRuleContext(Parser.DpRulesetContext,0)
-
+            return self.getTypedRuleContext(Parser.DpRulesetContext, 0)
 
         def hrRuleset(self):
-            return self.getTypedRuleContext(Parser.HrRulesetContext,0)
-
+            return self.getTypedRuleContext(Parser.HrRulesetContext, 0)
 
         def getRuleIndex(self):
             return Parser.RULE_rulesetType
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterRulesetType" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterRulesetType"):
                 listener.enterRulesetType(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitRulesetType" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitRulesetType"):
                 listener.exitRulesetType(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitRulesetType" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitRulesetType"):
                 return visitor.visitRulesetType(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def rulesetType(self):
 
@@ -13035,7 +14395,11 @@ class Parser(ANTLRParser):
                 self.state = 1525
                 self.dpRuleset()
                 pass
-            elif token in [Parser.HIERARCHICAL, Parser.HIERARCHICAL_ON_VD, Parser.HIERARCHICAL_ON_VAR]:
+            elif token in [
+                Parser.HIERARCHICAL,
+                Parser.HIERARCHICAL_ON_VD,
+                Parser.HIERARCHICAL_ON_VAR,
+            ]:
                 self.enterOuterAlt(localctx, 3)
                 self.state = 1526
                 self.hrRuleset()
@@ -13051,25 +14415,21 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class ScalarTypeContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
         def basicScalarType(self):
-            return self.getTypedRuleContext(Parser.BasicScalarTypeContext,0)
-
+            return self.getTypedRuleContext(Parser.BasicScalarTypeContext, 0)
 
         def valueDomainName(self):
-            return self.getTypedRuleContext(Parser.ValueDomainNameContext,0)
-
+            return self.getTypedRuleContext(Parser.ValueDomainNameContext, 0)
 
         def scalarTypeConstraint(self):
-            return self.getTypedRuleContext(Parser.ScalarTypeConstraintContext,0)
-
+            return self.getTypedRuleContext(Parser.ScalarTypeConstraintContext, 0)
 
         def NULL_CONSTANT(self):
             return self.getToken(Parser.NULL_CONSTANT, 0)
@@ -13080,34 +14440,41 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_scalarType
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterScalarType" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterScalarType"):
                 listener.enterScalarType(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitScalarType" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitScalarType"):
                 listener.exitScalarType(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitScalarType" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitScalarType"):
                 return visitor.visitScalarType(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def scalarType(self):
 
         localctx = Parser.ScalarTypeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 124, self.RULE_scalarType)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1531
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [Parser.BOOLEAN, Parser.DATE, Parser.TIME_PERIOD, Parser.NUMBER, Parser.STRING, Parser.TIME, Parser.INTEGER, Parser.DURATION, Parser.SCALAR]:
+            if token in [
+                Parser.BOOLEAN,
+                Parser.DATE,
+                Parser.TIME_PERIOD,
+                Parser.NUMBER,
+                Parser.STRING,
+                Parser.TIME,
+                Parser.INTEGER,
+                Parser.DURATION,
+                Parser.SCALAR,
+            ]:
                 self.state = 1529
                 self.basicScalarType()
                 pass
@@ -13121,26 +14488,23 @@ class Parser(ANTLRParser):
             self.state = 1534
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==Parser.QLPAREN or _la==Parser.GLPAREN:
+            if _la == Parser.QLPAREN or _la == Parser.GLPAREN:
                 self.state = 1533
                 self.scalarTypeConstraint()
-
 
             self.state = 1540
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==Parser.NOT or _la==Parser.NULL_CONSTANT:
+            if _la == Parser.NOT or _la == Parser.NULL_CONSTANT:
                 self.state = 1537
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.NOT:
+                if _la == Parser.NOT:
                     self.state = 1536
                     self.match(Parser.NOT)
 
-
                 self.state = 1539
                 self.match(Parser.NULL_CONSTANT)
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -13150,24 +14514,21 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class ComponentTypeContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
         def componentRole(self):
-            return self.getTypedRuleContext(Parser.ComponentRoleContext,0)
-
+            return self.getTypedRuleContext(Parser.ComponentRoleContext, 0)
 
         def LT(self):
             return self.getToken(Parser.LT, 0)
 
         def scalarType(self):
-            return self.getTypedRuleContext(Parser.ScalarTypeContext,0)
-
+            return self.getTypedRuleContext(Parser.ScalarTypeContext, 0)
 
         def MT(self):
             return self.getToken(Parser.MT, 0)
@@ -13175,28 +14536,25 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_componentType
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterComponentType" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterComponentType"):
                 listener.enterComponentType(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitComponentType" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitComponentType"):
                 listener.exitComponentType(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitComponentType" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitComponentType"):
                 return visitor.visitComponentType(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def componentType(self):
 
         localctx = Parser.ComponentTypeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 126, self.RULE_componentType)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1542
@@ -13204,14 +14562,13 @@ class Parser(ANTLRParser):
             self.state = 1547
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==Parser.LT:
+            if _la == Parser.LT:
                 self.state = 1543
                 self.match(Parser.LT)
                 self.state = 1544
                 self.scalarType()
                 self.state = 1545
                 self.match(Parser.MT)
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -13221,11 +14578,10 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class DatasetTypeContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
@@ -13235,17 +14591,16 @@ class Parser(ANTLRParser):
         def GLPAREN(self):
             return self.getToken(Parser.GLPAREN, 0)
 
-        def compConstraint(self, i:int=None):
+        def compConstraint(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.CompConstraintContext)
             else:
-                return self.getTypedRuleContext(Parser.CompConstraintContext,i)
-
+                return self.getTypedRuleContext(Parser.CompConstraintContext, i)
 
         def GRPAREN(self):
             return self.getToken(Parser.GRPAREN, 0)
 
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
@@ -13254,28 +14609,25 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_datasetType
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDatasetType" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterDatasetType"):
                 listener.enterDatasetType(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDatasetType" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitDatasetType"):
                 listener.exitDatasetType(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDatasetType" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitDatasetType"):
                 return visitor.visitDatasetType(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def datasetType(self):
 
         localctx = Parser.DatasetTypeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 128, self.RULE_datasetType)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1549
@@ -13283,7 +14635,7 @@ class Parser(ANTLRParser):
             self.state = 1561
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==Parser.GLPAREN:
+            if _la == Parser.GLPAREN:
                 self.state = 1550
                 self.match(Parser.GLPAREN)
                 self.state = 1551
@@ -13291,7 +14643,7 @@ class Parser(ANTLRParser):
                 self.state = 1556
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while _la==Parser.COMMA:
+                while _la == Parser.COMMA:
                     self.state = 1552
                     self.match(Parser.COMMA)
                     self.state = 1553
@@ -13303,7 +14655,6 @@ class Parser(ANTLRParser):
                 self.state = 1559
                 self.match(Parser.GRPAREN)
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -13312,41 +14663,35 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class EvalDatasetTypeContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
         def datasetType(self):
-            return self.getTypedRuleContext(Parser.DatasetTypeContext,0)
-
+            return self.getTypedRuleContext(Parser.DatasetTypeContext, 0)
 
         def scalarType(self):
-            return self.getTypedRuleContext(Parser.ScalarTypeContext,0)
-
+            return self.getTypedRuleContext(Parser.ScalarTypeContext, 0)
 
         def getRuleIndex(self):
             return Parser.RULE_evalDatasetType
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterEvalDatasetType" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterEvalDatasetType"):
                 listener.enterEvalDatasetType(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitEvalDatasetType" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitEvalDatasetType"):
                 listener.exitEvalDatasetType(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitEvalDatasetType" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitEvalDatasetType"):
                 return visitor.visitEvalDatasetType(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def evalDatasetType(self):
 
@@ -13361,7 +14706,18 @@ class Parser(ANTLRParser):
                 self.state = 1563
                 self.datasetType()
                 pass
-            elif token in [Parser.BOOLEAN, Parser.DATE, Parser.TIME_PERIOD, Parser.NUMBER, Parser.STRING, Parser.TIME, Parser.INTEGER, Parser.DURATION, Parser.SCALAR, Parser.IDENTIFIER]:
+            elif token in [
+                Parser.BOOLEAN,
+                Parser.DATE,
+                Parser.TIME_PERIOD,
+                Parser.NUMBER,
+                Parser.STRING,
+                Parser.TIME,
+                Parser.INTEGER,
+                Parser.DURATION,
+                Parser.SCALAR,
+                Parser.IDENTIFIER,
+            ]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 1564
                 self.scalarType()
@@ -13377,11 +14733,10 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class ScalarSetTypeContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
@@ -13392,8 +14747,7 @@ class Parser(ANTLRParser):
             return self.getToken(Parser.LT, 0)
 
         def scalarType(self):
-            return self.getTypedRuleContext(Parser.ScalarTypeContext,0)
-
+            return self.getTypedRuleContext(Parser.ScalarTypeContext, 0)
 
         def MT(self):
             return self.getToken(Parser.MT, 0)
@@ -13401,28 +14755,25 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_scalarSetType
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterScalarSetType" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterScalarSetType"):
                 listener.enterScalarSetType(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitScalarSetType" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitScalarSetType"):
                 listener.exitScalarSetType(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitScalarSetType" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitScalarSetType"):
                 return visitor.visitScalarSetType(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def scalarSetType(self):
 
         localctx = Parser.ScalarSetTypeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 132, self.RULE_scalarSetType)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1567
@@ -13430,14 +14781,13 @@ class Parser(ANTLRParser):
             self.state = 1572
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==Parser.LT:
+            if _la == Parser.LT:
                 self.state = 1568
                 self.match(Parser.LT)
                 self.state = 1569
                 self.scalarType()
                 self.state = 1570
                 self.match(Parser.MT)
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -13447,132 +14797,132 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class DpRulesetContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-
 
         def getRuleIndex(self):
             return Parser.RULE_dpRuleset
 
-     
-        def copyFrom(self, ctx:ParserRuleContext):
+        def copyFrom(self, ctx: ParserRuleContext):
             super().copyFrom(ctx)
 
-
-
     class DataPointVdContext(DpRulesetContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.DpRulesetContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.DpRulesetContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def DATAPOINT_ON_VD(self):
             return self.getToken(Parser.DATAPOINT_ON_VD, 0)
+
         def GLPAREN(self):
             return self.getToken(Parser.GLPAREN, 0)
-        def valueDomainName(self, i:int=None):
+
+        def valueDomainName(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ValueDomainNameContext)
             else:
-                return self.getTypedRuleContext(Parser.ValueDomainNameContext,i)
+                return self.getTypedRuleContext(Parser.ValueDomainNameContext, i)
 
         def GRPAREN(self):
             return self.getToken(Parser.GRPAREN, 0)
-        def MUL(self, i:int=None):
+
+        def MUL(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.MUL)
             else:
                 return self.getToken(Parser.MUL, i)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDataPointVd" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterDataPointVd"):
                 listener.enterDataPointVd(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDataPointVd" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitDataPointVd"):
                 listener.exitDataPointVd(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDataPointVd" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitDataPointVd"):
                 return visitor.visitDataPointVd(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class DataPointVarContext(DpRulesetContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.DpRulesetContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.DpRulesetContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def DATAPOINT_ON_VAR(self):
             return self.getToken(Parser.DATAPOINT_ON_VAR, 0)
+
         def GLPAREN(self):
             return self.getToken(Parser.GLPAREN, 0)
-        def varID(self, i:int=None):
+
+        def varID(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.VarIDContext)
             else:
-                return self.getTypedRuleContext(Parser.VarIDContext,i)
+                return self.getTypedRuleContext(Parser.VarIDContext, i)
 
         def GRPAREN(self):
             return self.getToken(Parser.GRPAREN, 0)
-        def MUL(self, i:int=None):
+
+        def MUL(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.MUL)
             else:
                 return self.getToken(Parser.MUL, i)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDataPointVar" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterDataPointVar"):
                 listener.enterDataPointVar(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDataPointVar" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitDataPointVar"):
                 listener.exitDataPointVar(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDataPointVar" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitDataPointVar"):
                 return visitor.visitDataPointVar(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class DataPointContext(DpRulesetContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.DpRulesetContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.DpRulesetContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def DATAPOINT(self):
             return self.getToken(Parser.DATAPOINT, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDataPoint" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterDataPoint"):
                 listener.enterDataPoint(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDataPoint" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitDataPoint"):
                 listener.exitDataPoint(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDataPoint" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitDataPoint"):
                 return visitor.visitDataPoint(self)
             else:
                 return visitor.visitChildren(self)
-
-
 
     def dpRuleset(self):
 
         localctx = Parser.DpRulesetContext(self, self._ctx, self.state)
         self.enterRule(localctx, 134, self.RULE_dpRuleset)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.state = 1603
             self._errHandler.sync(self)
@@ -13591,7 +14941,7 @@ class Parser(ANTLRParser):
                 self.state = 1587
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.GLPAREN:
+                if _la == Parser.GLPAREN:
                     self.state = 1576
                     self.match(Parser.GLPAREN)
                     self.state = 1577
@@ -13599,7 +14949,7 @@ class Parser(ANTLRParser):
                     self.state = 1582
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    while _la==Parser.MUL:
+                    while _la == Parser.MUL:
                         self.state = 1578
                         self.match(Parser.MUL)
                         self.state = 1579
@@ -13611,7 +14961,6 @@ class Parser(ANTLRParser):
                     self.state = 1585
                     self.match(Parser.GRPAREN)
 
-
                 pass
             elif token in [Parser.DATAPOINT_ON_VAR]:
                 localctx = Parser.DataPointVarContext(self, localctx)
@@ -13621,7 +14970,7 @@ class Parser(ANTLRParser):
                 self.state = 1601
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.GLPAREN:
+                if _la == Parser.GLPAREN:
                     self.state = 1590
                     self.match(Parser.GLPAREN)
                     self.state = 1591
@@ -13629,7 +14978,7 @@ class Parser(ANTLRParser):
                     self.state = 1596
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    while _la==Parser.MUL:
+                    while _la == Parser.MUL:
                         self.state = 1592
                         self.match(Parser.MUL)
                         self.state = 1593
@@ -13640,7 +14989,6 @@ class Parser(ANTLRParser):
 
                     self.state = 1599
                     self.match(Parser.GRPAREN)
-
 
                 pass
             else:
@@ -13654,144 +15002,149 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class HrRulesetContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-
 
         def getRuleIndex(self):
             return Parser.RULE_hrRuleset
 
-     
-        def copyFrom(self, ctx:ParserRuleContext):
+        def copyFrom(self, ctx: ParserRuleContext):
             super().copyFrom(ctx)
 
-
-
     class HrRulesetVdTypeContext(HrRulesetContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.HrRulesetContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.HrRulesetContext
             super().__init__(ANTLRParser)
-            self.vdName = None # Token
+            self.vdName = None  # Token
             self.copyFrom(ctx)
 
         def HIERARCHICAL_ON_VD(self):
             return self.getToken(Parser.HIERARCHICAL_ON_VD, 0)
+
         def GLPAREN(self):
             return self.getToken(Parser.GLPAREN, 0)
+
         def GRPAREN(self):
             return self.getToken(Parser.GRPAREN, 0)
+
         def IDENTIFIER(self):
             return self.getToken(Parser.IDENTIFIER, 0)
+
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
-        def valueDomainName(self, i:int=None):
+
+        def valueDomainName(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ValueDomainNameContext)
             else:
-                return self.getTypedRuleContext(Parser.ValueDomainNameContext,i)
+                return self.getTypedRuleContext(Parser.ValueDomainNameContext, i)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
-        def MUL(self, i:int=None):
+
+        def MUL(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.MUL)
             else:
                 return self.getToken(Parser.MUL, i)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterHrRulesetVdType" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterHrRulesetVdType"):
                 listener.enterHrRulesetVdType(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitHrRulesetVdType" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitHrRulesetVdType"):
                 listener.exitHrRulesetVdType(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitHrRulesetVdType" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitHrRulesetVdType"):
                 return visitor.visitHrRulesetVdType(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class HrRulesetVarTypeContext(HrRulesetContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.HrRulesetContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.HrRulesetContext
             super().__init__(ANTLRParser)
-            self.varName = None # VarIDContext
+            self.varName = None  # VarIDContext
             self.copyFrom(ctx)
 
         def HIERARCHICAL_ON_VAR(self):
             return self.getToken(Parser.HIERARCHICAL_ON_VAR, 0)
+
         def GLPAREN(self):
             return self.getToken(Parser.GLPAREN, 0)
+
         def GRPAREN(self):
             return self.getToken(Parser.GRPAREN, 0)
-        def varID(self, i:int=None):
+
+        def varID(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.VarIDContext)
             else:
-                return self.getTypedRuleContext(Parser.VarIDContext,i)
+                return self.getTypedRuleContext(Parser.VarIDContext, i)
 
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
+
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
-        def MUL(self, i:int=None):
+
+        def MUL(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.MUL)
             else:
                 return self.getToken(Parser.MUL, i)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterHrRulesetVarType" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterHrRulesetVarType"):
                 listener.enterHrRulesetVarType(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitHrRulesetVarType" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitHrRulesetVarType"):
                 listener.exitHrRulesetVarType(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitHrRulesetVarType" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitHrRulesetVarType"):
                 return visitor.visitHrRulesetVarType(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class HrRulesetTypeContext(HrRulesetContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.HrRulesetContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.HrRulesetContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def HIERARCHICAL(self):
             return self.getToken(Parser.HIERARCHICAL, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterHrRulesetType" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterHrRulesetType"):
                 listener.enterHrRulesetType(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitHrRulesetType" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitHrRulesetType"):
                 listener.exitHrRulesetType(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitHrRulesetType" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitHrRulesetType"):
                 return visitor.visitHrRulesetType(self)
             else:
                 return visitor.visitChildren(self)
-
-
 
     def hrRuleset(self):
 
         localctx = Parser.HrRulesetContext(self, self._ctx, self.state)
         self.enterRule(localctx, 136, self.RULE_hrRuleset)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.state = 1645
             self._errHandler.sync(self)
@@ -13810,7 +15163,7 @@ class Parser(ANTLRParser):
                 self.state = 1623
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.GLPAREN:
+                if _la == Parser.GLPAREN:
                     self.state = 1607
                     self.match(Parser.GLPAREN)
                     self.state = 1608
@@ -13818,7 +15171,7 @@ class Parser(ANTLRParser):
                     self.state = 1620
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    if _la==Parser.LPAREN:
+                    if _la == Parser.LPAREN:
                         self.state = 1609
                         self.match(Parser.LPAREN)
                         self.state = 1610
@@ -13826,7 +15179,7 @@ class Parser(ANTLRParser):
                         self.state = 1615
                         self._errHandler.sync(self)
                         _la = self._input.LA(1)
-                        while _la==Parser.MUL:
+                        while _la == Parser.MUL:
                             self.state = 1611
                             self.match(Parser.MUL)
                             self.state = 1612
@@ -13838,10 +15191,8 @@ class Parser(ANTLRParser):
                         self.state = 1618
                         self.match(Parser.RPAREN)
 
-
                     self.state = 1622
                     self.match(Parser.GRPAREN)
-
 
                 pass
             elif token in [Parser.HIERARCHICAL_ON_VAR]:
@@ -13852,7 +15203,7 @@ class Parser(ANTLRParser):
                 self.state = 1643
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==Parser.GLPAREN:
+                if _la == Parser.GLPAREN:
                     self.state = 1626
                     self.match(Parser.GLPAREN)
                     self.state = 1627
@@ -13860,7 +15211,7 @@ class Parser(ANTLRParser):
                     self.state = 1639
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    if _la==Parser.LPAREN:
+                    if _la == Parser.LPAREN:
                         self.state = 1628
                         self.match(Parser.LPAREN)
                         self.state = 1629
@@ -13868,7 +15219,7 @@ class Parser(ANTLRParser):
                         self.state = 1634
                         self._errHandler.sync(self)
                         _la = self._input.LA(1)
-                        while _la==Parser.MUL:
+                        while _la == Parser.MUL:
                             self.state = 1630
                             self.match(Parser.MUL)
                             self.state = 1631
@@ -13880,10 +15231,8 @@ class Parser(ANTLRParser):
                         self.state = 1637
                         self.match(Parser.RPAREN)
 
-
                     self.state = 1641
                     self.match(Parser.GRPAREN)
-
 
                 pass
             else:
@@ -13897,11 +15246,10 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class ValueDomainNameContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
@@ -13911,22 +15259,19 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_valueDomainName
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterValueDomainName" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterValueDomainName"):
                 listener.enterValueDomainName(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitValueDomainName" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitValueDomainName"):
                 listener.exitValueDomainName(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitValueDomainName" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitValueDomainName"):
                 return visitor.visitValueDomainName(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def valueDomainName(self):
 
@@ -13944,11 +15289,10 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class RulesetIDContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
@@ -13958,22 +15302,19 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_rulesetID
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterRulesetID" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterRulesetID"):
                 listener.enterRulesetID(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitRulesetID" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitRulesetID"):
                 listener.exitRulesetID(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitRulesetID" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitRulesetID"):
                 return visitor.visitRulesetID(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def rulesetID(self):
 
@@ -13991,20 +15332,18 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class RulesetSignatureContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
-        def signature(self, i:int=None):
+        def signature(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.SignatureContext)
             else:
-                return self.getTypedRuleContext(Parser.SignatureContext,i)
-
+                return self.getTypedRuleContext(Parser.SignatureContext, i)
 
         def VALUE_DOMAIN(self):
             return self.getToken(Parser.VALUE_DOMAIN, 0)
@@ -14012,7 +15351,7 @@ class Parser(ANTLRParser):
         def VARIABLE(self):
             return self.getToken(Parser.VARIABLE, 0)
 
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
@@ -14021,33 +15360,30 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_rulesetSignature
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterRulesetSignature" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterRulesetSignature"):
                 listener.enterRulesetSignature(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitRulesetSignature" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitRulesetSignature"):
                 listener.exitRulesetSignature(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitRulesetSignature" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitRulesetSignature"):
                 return visitor.visitRulesetSignature(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def rulesetSignature(self):
 
         localctx = Parser.RulesetSignatureContext(self, self._ctx, self.state)
         self.enterRule(localctx, 142, self.RULE_rulesetSignature)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1651
             _la = self._input.LA(1)
-            if not(_la==Parser.VALUE_DOMAIN or _la==Parser.VARIABLE):
+            if not (_la == Parser.VALUE_DOMAIN or _la == Parser.VARIABLE):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -14057,7 +15393,7 @@ class Parser(ANTLRParser):
             self.state = 1657
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==Parser.COMMA:
+            while _la == Parser.COMMA:
                 self.state = 1653
                 self.match(Parser.COMMA)
                 self.state = 1654
@@ -14074,50 +15410,44 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class SignatureContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
         def varID(self):
-            return self.getTypedRuleContext(Parser.VarIDContext,0)
-
+            return self.getTypedRuleContext(Parser.VarIDContext, 0)
 
         def AS(self):
             return self.getToken(Parser.AS, 0)
 
         def alias(self):
-            return self.getTypedRuleContext(Parser.AliasContext,0)
-
+            return self.getTypedRuleContext(Parser.AliasContext, 0)
 
         def getRuleIndex(self):
             return Parser.RULE_signature
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSignature" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterSignature"):
                 listener.enterSignature(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSignature" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitSignature"):
                 listener.exitSignature(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSignature" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitSignature"):
                 return visitor.visitSignature(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def signature(self):
 
         localctx = Parser.SignatureContext(self, self._ctx, self.state)
         self.enterRule(localctx, 144, self.RULE_signature)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1660
@@ -14125,12 +15455,11 @@ class Parser(ANTLRParser):
             self.state = 1663
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==Parser.AS:
+            if _la == Parser.AS:
                 self.state = 1661
                 self.match(Parser.AS)
                 self.state = 1662
                 self.alias()
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -14140,22 +15469,20 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class RuleClauseDatapointContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
-        def ruleItemDatapoint(self, i:int=None):
+        def ruleItemDatapoint(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.RuleItemDatapointContext)
             else:
-                return self.getTypedRuleContext(Parser.RuleItemDatapointContext,i)
+                return self.getTypedRuleContext(Parser.RuleItemDatapointContext, i)
 
-
-        def EOL(self, i:int=None):
+        def EOL(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.EOL)
             else:
@@ -14164,28 +15491,25 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_ruleClauseDatapoint
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterRuleClauseDatapoint" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterRuleClauseDatapoint"):
                 listener.enterRuleClauseDatapoint(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitRuleClauseDatapoint" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitRuleClauseDatapoint"):
                 listener.exitRuleClauseDatapoint(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitRuleClauseDatapoint" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitRuleClauseDatapoint"):
                 return visitor.visitRuleClauseDatapoint(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def ruleClauseDatapoint(self):
 
         localctx = Parser.RuleClauseDatapointContext(self, self._ctx, self.state)
         self.enterRule(localctx, 146, self.RULE_ruleClauseDatapoint)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1665
@@ -14193,7 +15517,7 @@ class Parser(ANTLRParser):
             self.state = 1670
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==Parser.EOL:
+            while _la == Parser.EOL:
                 self.state = 1666
                 self.match(Parser.EOL)
                 self.state = 1667
@@ -14210,23 +15534,21 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class RuleItemDatapointContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-            self.ruleName = None # Token
-            self.antecedentContiditon = None # ExprComponentContext
-            self.consequentCondition = None # ExprComponentContext
+            self.ruleName = None  # Token
+            self.antecedentContiditon = None  # ExprComponentContext
+            self.consequentCondition = None  # ExprComponentContext
 
-        def exprComponent(self, i:int=None):
+        def exprComponent(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ExprComponentContext)
             else:
-                return self.getTypedRuleContext(Parser.ExprComponentContext,i)
-
+                return self.getTypedRuleContext(Parser.ExprComponentContext, i)
 
         def COLON(self):
             return self.getToken(Parser.COLON, 0)
@@ -14238,12 +15560,10 @@ class Parser(ANTLRParser):
             return self.getToken(Parser.THEN, 0)
 
         def erCode(self):
-            return self.getTypedRuleContext(Parser.ErCodeContext,0)
-
+            return self.getTypedRuleContext(Parser.ErCodeContext, 0)
 
         def erLevel(self):
-            return self.getTypedRuleContext(Parser.ErLevelContext,0)
-
+            return self.getTypedRuleContext(Parser.ErLevelContext, 0)
 
         def IDENTIFIER(self):
             return self.getToken(Parser.IDENTIFIER, 0)
@@ -14251,44 +15571,40 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_ruleItemDatapoint
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterRuleItemDatapoint" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterRuleItemDatapoint"):
                 listener.enterRuleItemDatapoint(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitRuleItemDatapoint" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitRuleItemDatapoint"):
                 listener.exitRuleItemDatapoint(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitRuleItemDatapoint" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitRuleItemDatapoint"):
                 return visitor.visitRuleItemDatapoint(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def ruleItemDatapoint(self):
 
         localctx = Parser.RuleItemDatapointContext(self, self._ctx, self.state)
         self.enterRule(localctx, 148, self.RULE_ruleItemDatapoint)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1675
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,171,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 171, self._ctx)
             if la_ == 1:
                 self.state = 1673
                 localctx.ruleName = self.match(Parser.IDENTIFIER)
                 self.state = 1674
                 self.match(Parser.COLON)
 
-
             self.state = 1681
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==Parser.WHEN:
+            if _la == Parser.WHEN:
                 self.state = 1677
                 self.match(Parser.WHEN)
                 self.state = 1678
@@ -14296,24 +15612,21 @@ class Parser(ANTLRParser):
                 self.state = 1679
                 self.match(Parser.THEN)
 
-
             self.state = 1683
             localctx.consequentCondition = self.exprComponent(0)
             self.state = 1685
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==Parser.ERRORCODE:
+            if _la == Parser.ERRORCODE:
                 self.state = 1684
                 self.erCode()
-
 
             self.state = 1688
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==Parser.ERRORLEVEL:
+            if _la == Parser.ERRORLEVEL:
                 self.state = 1687
                 self.erLevel()
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -14323,22 +15636,20 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class RuleClauseHierarchicalContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
-        def ruleItemHierarchical(self, i:int=None):
+        def ruleItemHierarchical(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.RuleItemHierarchicalContext)
             else:
-                return self.getTypedRuleContext(Parser.RuleItemHierarchicalContext,i)
+                return self.getTypedRuleContext(Parser.RuleItemHierarchicalContext, i)
 
-
-        def EOL(self, i:int=None):
+        def EOL(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.EOL)
             else:
@@ -14347,28 +15658,25 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_ruleClauseHierarchical
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterRuleClauseHierarchical" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterRuleClauseHierarchical"):
                 listener.enterRuleClauseHierarchical(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitRuleClauseHierarchical" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitRuleClauseHierarchical"):
                 listener.exitRuleClauseHierarchical(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitRuleClauseHierarchical" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitRuleClauseHierarchical"):
                 return visitor.visitRuleClauseHierarchical(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def ruleClauseHierarchical(self):
 
         localctx = Parser.RuleClauseHierarchicalContext(self, self._ctx, self.state)
         self.enterRule(localctx, 150, self.RULE_ruleClauseHierarchical)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1690
@@ -14376,7 +15684,7 @@ class Parser(ANTLRParser):
             self.state = 1695
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==Parser.EOL:
+            while _la == Parser.EOL:
                 self.state = 1691
                 self.match(Parser.EOL)
                 self.state = 1692
@@ -14393,29 +15701,25 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class RuleItemHierarchicalContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-            self.ruleName = None # Token
+            self.ruleName = None  # Token
 
         def codeItemRelation(self):
-            return self.getTypedRuleContext(Parser.CodeItemRelationContext,0)
-
+            return self.getTypedRuleContext(Parser.CodeItemRelationContext, 0)
 
         def COLON(self):
             return self.getToken(Parser.COLON, 0)
 
         def erCode(self):
-            return self.getTypedRuleContext(Parser.ErCodeContext,0)
-
+            return self.getTypedRuleContext(Parser.ErCodeContext, 0)
 
         def erLevel(self):
-            return self.getTypedRuleContext(Parser.ErLevelContext,0)
-
+            return self.getTypedRuleContext(Parser.ErLevelContext, 0)
 
         def IDENTIFIER(self):
             return self.getToken(Parser.IDENTIFIER, 0)
@@ -14423,57 +15727,51 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_ruleItemHierarchical
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterRuleItemHierarchical" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterRuleItemHierarchical"):
                 listener.enterRuleItemHierarchical(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitRuleItemHierarchical" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitRuleItemHierarchical"):
                 listener.exitRuleItemHierarchical(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitRuleItemHierarchical" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitRuleItemHierarchical"):
                 return visitor.visitRuleItemHierarchical(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def ruleItemHierarchical(self):
 
         localctx = Parser.RuleItemHierarchicalContext(self, self._ctx, self.state)
         self.enterRule(localctx, 152, self.RULE_ruleItemHierarchical)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1700
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,176,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 176, self._ctx)
             if la_ == 1:
                 self.state = 1698
                 localctx.ruleName = self.match(Parser.IDENTIFIER)
                 self.state = 1699
                 self.match(Parser.COLON)
 
-
             self.state = 1702
             self.codeItemRelation()
             self.state = 1704
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==Parser.ERRORCODE:
+            if _la == Parser.ERRORCODE:
                 self.state = 1703
                 self.erCode()
-
 
             self.state = 1707
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==Parser.ERRORLEVEL:
+            if _la == Parser.ERRORLEVEL:
                 self.state = 1706
                 self.erLevel()
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -14483,11 +15781,10 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class HierRuleSignatureContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
@@ -14507,39 +15804,35 @@ class Parser(ANTLRParser):
             return self.getToken(Parser.CONDITION, 0)
 
         def valueDomainSignature(self):
-            return self.getTypedRuleContext(Parser.ValueDomainSignatureContext,0)
-
+            return self.getTypedRuleContext(Parser.ValueDomainSignatureContext, 0)
 
         def getRuleIndex(self):
             return Parser.RULE_hierRuleSignature
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterHierRuleSignature" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterHierRuleSignature"):
                 listener.enterHierRuleSignature(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitHierRuleSignature" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitHierRuleSignature"):
                 listener.exitHierRuleSignature(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitHierRuleSignature" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitHierRuleSignature"):
                 return visitor.visitHierRuleSignature(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def hierRuleSignature(self):
 
         localctx = Parser.HierRuleSignatureContext(self, self._ctx, self.state)
         self.enterRule(localctx, 154, self.RULE_hierRuleSignature)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1709
             _la = self._input.LA(1)
-            if not(_la==Parser.VALUE_DOMAIN or _la==Parser.VARIABLE):
+            if not (_la == Parser.VALUE_DOMAIN or _la == Parser.VARIABLE):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -14547,12 +15840,11 @@ class Parser(ANTLRParser):
             self.state = 1712
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==Parser.CONDITION:
+            if _la == Parser.CONDITION:
                 self.state = 1710
                 self.match(Parser.CONDITION)
                 self.state = 1711
                 self.valueDomainSignature()
-
 
             self.state = 1714
             self.match(Parser.RULE)
@@ -14566,22 +15858,20 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class ValueDomainSignatureContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
-        def signature(self, i:int=None):
+        def signature(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.SignatureContext)
             else:
-                return self.getTypedRuleContext(Parser.SignatureContext,i)
+                return self.getTypedRuleContext(Parser.SignatureContext, i)
 
-
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
@@ -14590,28 +15880,25 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_valueDomainSignature
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterValueDomainSignature" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterValueDomainSignature"):
                 listener.enterValueDomainSignature(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitValueDomainSignature" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitValueDomainSignature"):
                 listener.exitValueDomainSignature(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitValueDomainSignature" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitValueDomainSignature"):
                 return visitor.visitValueDomainSignature(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def valueDomainSignature(self):
 
         localctx = Parser.ValueDomainSignatureContext(self, self._ctx, self.state)
         self.enterRule(localctx, 156, self.RULE_valueDomainSignature)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1717
@@ -14619,7 +15906,7 @@ class Parser(ANTLRParser):
             self.state = 1722
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==Parser.COMMA:
+            while _la == Parser.COMMA:
                 self.state = 1718
                 self.match(Parser.COMMA)
                 self.state = 1719
@@ -14636,71 +15923,63 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class CodeItemRelationContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-            self.codetemRef = None # ValueDomainValueContext
+            self.codetemRef = None  # ValueDomainValueContext
 
-        def codeItemRelationClause(self, i:int=None):
+        def codeItemRelationClause(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.CodeItemRelationClauseContext)
             else:
-                return self.getTypedRuleContext(Parser.CodeItemRelationClauseContext,i)
-
+                return self.getTypedRuleContext(Parser.CodeItemRelationClauseContext, i)
 
         def valueDomainValue(self):
-            return self.getTypedRuleContext(Parser.ValueDomainValueContext,0)
-
+            return self.getTypedRuleContext(Parser.ValueDomainValueContext, 0)
 
         def WHEN(self):
             return self.getToken(Parser.WHEN, 0)
 
         def exprComponent(self):
-            return self.getTypedRuleContext(Parser.ExprComponentContext,0)
-
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def THEN(self):
             return self.getToken(Parser.THEN, 0)
 
         def comparisonOperand(self):
-            return self.getTypedRuleContext(Parser.ComparisonOperandContext,0)
-
+            return self.getTypedRuleContext(Parser.ComparisonOperandContext, 0)
 
         def getRuleIndex(self):
             return Parser.RULE_codeItemRelation
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterCodeItemRelation" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterCodeItemRelation"):
                 listener.enterCodeItemRelation(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitCodeItemRelation" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitCodeItemRelation"):
                 listener.exitCodeItemRelation(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitCodeItemRelation" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitCodeItemRelation"):
                 return visitor.visitCodeItemRelation(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def codeItemRelation(self):
 
         localctx = Parser.CodeItemRelationContext(self, self._ctx, self.state)
         self.enterRule(localctx, 158, self.RULE_codeItemRelation)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1729
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==Parser.WHEN:
+            if _la == Parser.WHEN:
                 self.state = 1725
                 self.match(Parser.WHEN)
                 self.state = 1726
@@ -14708,23 +15987,46 @@ class Parser(ANTLRParser):
                 self.state = 1727
                 self.match(Parser.THEN)
 
-
             self.state = 1731
             localctx.codetemRef = self.valueDomainValue()
             self.state = 1733
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << Parser.EQ) | (1 << Parser.LT) | (1 << Parser.MT) | (1 << Parser.ME) | (1 << Parser.NEQ) | (1 << Parser.LE))) != 0):
+            if ((_la) & ~0x3F) == 0 and (
+                (1 << _la)
+                & (
+                    (1 << Parser.EQ)
+                    | (1 << Parser.LT)
+                    | (1 << Parser.MT)
+                    | (1 << Parser.ME)
+                    | (1 << Parser.NEQ)
+                    | (1 << Parser.LE)
+                )
+            ) != 0:
                 self.state = 1732
                 self.comparisonOperand()
-
 
             self.state = 1735
             self.codeItemRelationClause()
             self.state = 1739
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==Parser.PLUS or _la==Parser.MINUS or ((((_la - 241)) & ~0x3f) == 0 and ((1 << (_la - 241)) & ((1 << (Parser.INTEGER_CONSTANT - 241)) | (1 << (Parser.NUMBER_CONSTANT - 241)) | (1 << (Parser.IDENTIFIER - 241)))) != 0):
+            while (
+                _la == Parser.PLUS
+                or _la == Parser.MINUS
+                or (
+                    ((_la - 241) & ~0x3F) == 0
+                    and (
+                        (1 << (_la - 241))
+                        & (
+                            (1 << (Parser.INTEGER_CONSTANT - 241))
+                            | (1 << (Parser.NUMBER_CONSTANT - 241))
+                            | (1 << (Parser.IDENTIFIER - 241))
+                        )
+                    )
+                    != 0
+                )
+            ):
                 self.state = 1736
                 self.codeItemRelationClause()
                 self.state = 1741
@@ -14739,20 +16041,18 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class CodeItemRelationClauseContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-            self.opAdd = None # Token
-            self.rightCodeItem = None # ValueDomainValueContext
-            self.rightCondition = None # ExprComponentContext
+            self.opAdd = None  # Token
+            self.rightCodeItem = None  # ValueDomainValueContext
+            self.rightCondition = None  # ExprComponentContext
 
         def valueDomainValue(self):
-            return self.getTypedRuleContext(Parser.ValueDomainValueContext,0)
-
+            return self.getTypedRuleContext(Parser.ValueDomainValueContext, 0)
 
         def QLPAREN(self):
             return self.getToken(Parser.QLPAREN, 0)
@@ -14761,8 +16061,7 @@ class Parser(ANTLRParser):
             return self.getToken(Parser.QRPAREN, 0)
 
         def exprComponent(self):
-            return self.getTypedRuleContext(Parser.ExprComponentContext,0)
-
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def PLUS(self):
             return self.getToken(Parser.PLUS, 0)
@@ -14773,57 +16072,52 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_codeItemRelationClause
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterCodeItemRelationClause" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterCodeItemRelationClause"):
                 listener.enterCodeItemRelationClause(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitCodeItemRelationClause" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitCodeItemRelationClause"):
                 listener.exitCodeItemRelationClause(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitCodeItemRelationClause" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitCodeItemRelationClause"):
                 return visitor.visitCodeItemRelationClause(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def codeItemRelationClause(self):
 
         localctx = Parser.CodeItemRelationClauseContext(self, self._ctx, self.state)
         self.enterRule(localctx, 160, self.RULE_codeItemRelationClause)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1743
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==Parser.PLUS or _la==Parser.MINUS:
+            if _la == Parser.PLUS or _la == Parser.MINUS:
                 self.state = 1742
                 localctx.opAdd = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not(_la==Parser.PLUS or _la==Parser.MINUS):
+                if not (_la == Parser.PLUS or _la == Parser.MINUS):
                     localctx.opAdd = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
                     self.consume()
-
 
             self.state = 1745
             localctx.rightCodeItem = self.valueDomainValue()
             self.state = 1750
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==Parser.QLPAREN:
+            if _la == Parser.QLPAREN:
                 self.state = 1746
                 self.match(Parser.QLPAREN)
                 self.state = 1747
                 localctx.rightCondition = self.exprComponent(0)
                 self.state = 1748
                 self.match(Parser.QRPAREN)
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -14833,11 +16127,10 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class ValueDomainValueContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
@@ -14853,33 +16146,41 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_valueDomainValue
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterValueDomainValue" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterValueDomainValue"):
                 listener.enterValueDomainValue(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitValueDomainValue" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitValueDomainValue"):
                 listener.exitValueDomainValue(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitValueDomainValue" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitValueDomainValue"):
                 return visitor.visitValueDomainValue(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def valueDomainValue(self):
 
         localctx = Parser.ValueDomainValueContext(self, self._ctx, self.state)
         self.enterRule(localctx, 162, self.RULE_valueDomainValue)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1752
             _la = self._input.LA(1)
-            if not(((((_la - 241)) & ~0x3f) == 0 and ((1 << (_la - 241)) & ((1 << (Parser.INTEGER_CONSTANT - 241)) | (1 << (Parser.NUMBER_CONSTANT - 241)) | (1 << (Parser.IDENTIFIER - 241)))) != 0)):
+            if not (
+                ((_la - 241) & ~0x3F) == 0
+                and (
+                    (1 << (_la - 241))
+                    & (
+                        (1 << (Parser.INTEGER_CONSTANT - 241))
+                        | (1 << (Parser.NUMBER_CONSTANT - 241))
+                        | (1 << (Parser.IDENTIFIER - 241))
+                    )
+                )
+                != 0
+            ):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -14892,96 +16193,93 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class ScalarTypeConstraintContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
-
 
         def getRuleIndex(self):
             return Parser.RULE_scalarTypeConstraint
 
-     
-        def copyFrom(self, ctx:ParserRuleContext):
+        def copyFrom(self, ctx: ParserRuleContext):
             super().copyFrom(ctx)
 
-
-
     class RangeConstraintContext(ScalarTypeConstraintContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ScalarTypeConstraintContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.ScalarTypeConstraintContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def GLPAREN(self):
             return self.getToken(Parser.GLPAREN, 0)
-        def scalarItem(self, i:int=None):
+
+        def scalarItem(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ScalarItemContext)
             else:
-                return self.getTypedRuleContext(Parser.ScalarItemContext,i)
+                return self.getTypedRuleContext(Parser.ScalarItemContext, i)
 
         def GRPAREN(self):
             return self.getToken(Parser.GRPAREN, 0)
-        def COMMA(self, i:int=None):
+
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
                 return self.getToken(Parser.COMMA, i)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterRangeConstraint" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterRangeConstraint"):
                 listener.enterRangeConstraint(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitRangeConstraint" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitRangeConstraint"):
                 listener.exitRangeConstraint(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitRangeConstraint" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitRangeConstraint"):
                 return visitor.visitRangeConstraint(self)
             else:
                 return visitor.visitChildren(self)
 
-
     class ConditionConstraintContext(ScalarTypeConstraintContext):
-
-        def __init__(self, ANTLRParser, ctx:ParserRuleContext): # actually a Parser.ScalarTypeConstraintContext
+        def __init__(
+            self, ANTLRParser, ctx: ParserRuleContext
+        ):  # actually a Parser.ScalarTypeConstraintContext
             super().__init__(ANTLRParser)
             self.copyFrom(ctx)
 
         def QLPAREN(self):
             return self.getToken(Parser.QLPAREN, 0)
+
         def exprComponent(self):
-            return self.getTypedRuleContext(Parser.ExprComponentContext,0)
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def QRPAREN(self):
             return self.getToken(Parser.QRPAREN, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterConditionConstraint" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterConditionConstraint"):
                 listener.enterConditionConstraint(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitConditionConstraint" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitConditionConstraint"):
                 listener.exitConditionConstraint(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitConditionConstraint" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitConditionConstraint"):
                 return visitor.visitConditionConstraint(self)
             else:
                 return visitor.visitChildren(self)
-
-
 
     def scalarTypeConstraint(self):
 
         localctx = Parser.ScalarTypeConstraintContext(self, self._ctx, self.state)
         self.enterRule(localctx, 164, self.RULE_scalarTypeConstraint)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.state = 1769
             self._errHandler.sync(self)
@@ -15006,7 +16304,7 @@ class Parser(ANTLRParser):
                 self.state = 1764
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while _la==Parser.COMMA:
+                while _la == Parser.COMMA:
                     self.state = 1760
                     self.match(Parser.COMMA)
                     self.state = 1761
@@ -15029,45 +16327,38 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class CompConstraintContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
         def componentType(self):
-            return self.getTypedRuleContext(Parser.ComponentTypeContext,0)
-
+            return self.getTypedRuleContext(Parser.ComponentTypeContext, 0)
 
         def componentID(self):
-            return self.getTypedRuleContext(Parser.ComponentIDContext,0)
-
+            return self.getTypedRuleContext(Parser.ComponentIDContext, 0)
 
         def multModifier(self):
-            return self.getTypedRuleContext(Parser.MultModifierContext,0)
-
+            return self.getTypedRuleContext(Parser.MultModifierContext, 0)
 
         def getRuleIndex(self):
             return Parser.RULE_compConstraint
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterCompConstraint" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterCompConstraint"):
                 listener.enterCompConstraint(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitCompConstraint" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitCompConstraint"):
                 listener.exitCompConstraint(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitCompConstraint" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitCompConstraint"):
                 return visitor.visitCompConstraint(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def compConstraint(self):
 
@@ -15099,11 +16390,10 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class MultModifierContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
@@ -15119,28 +16409,25 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_multModifier
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterMultModifier" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterMultModifier"):
                 listener.enterMultModifier(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitMultModifier" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitMultModifier"):
                 listener.exitMultModifier(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitMultModifier" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitMultModifier"):
                 return visitor.visitMultModifier(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def multModifier(self):
 
         localctx = Parser.MultModifierContext(self, self._ctx, self.state)
         self.enterRule(localctx, 168, self.RULE_multModifier)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1776
@@ -15148,15 +16435,14 @@ class Parser(ANTLRParser):
             self.state = 1778
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==Parser.PLUS or _la==Parser.MUL:
+            if _la == Parser.PLUS or _la == Parser.MUL:
                 self.state = 1777
                 _la = self._input.LA(1)
-                if not(_la==Parser.PLUS or _la==Parser.MUL):
+                if not (_la == Parser.PLUS or _la == Parser.MUL):
                     self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
                     self.consume()
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -15166,11 +16452,10 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class ValidationOutputContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
@@ -15186,33 +16471,30 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_validationOutput
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterValidationOutput" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterValidationOutput"):
                 listener.enterValidationOutput(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitValidationOutput" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitValidationOutput"):
                 listener.exitValidationOutput(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitValidationOutput" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitValidationOutput"):
                 return visitor.visitValidationOutput(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def validationOutput(self):
 
         localctx = Parser.ValidationOutputContext(self, self._ctx, self.state)
         self.enterRule(localctx, 170, self.RULE_validationOutput)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1780
             _la = self._input.LA(1)
-            if not(_la==Parser.ALL or _la==Parser.INVALID or _la==Parser.ALL_MEASURES):
+            if not (_la == Parser.ALL or _la == Parser.INVALID or _la == Parser.ALL_MEASURES):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -15225,11 +16507,10 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class ValidationModeContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
@@ -15254,33 +16535,44 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_validationMode
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterValidationMode" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterValidationMode"):
                 listener.enterValidationMode(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitValidationMode" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitValidationMode"):
                 listener.exitValidationMode(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitValidationMode" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitValidationMode"):
                 return visitor.visitValidationMode(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def validationMode(self):
 
         localctx = Parser.ValidationModeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 172, self.RULE_validationMode)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1782
             _la = self._input.LA(1)
-            if not(((((_la - 225)) & ~0x3f) == 0 and ((1 << (_la - 225)) & ((1 << (Parser.NON_NULL - 225)) | (1 << (Parser.NON_ZERO - 225)) | (1 << (Parser.PARTIAL_NULL - 225)) | (1 << (Parser.PARTIAL_ZERO - 225)) | (1 << (Parser.ALWAYS_NULL - 225)) | (1 << (Parser.ALWAYS_ZERO - 225)))) != 0)):
+            if not (
+                ((_la - 225) & ~0x3F) == 0
+                and (
+                    (1 << (_la - 225))
+                    & (
+                        (1 << (Parser.NON_NULL - 225))
+                        | (1 << (Parser.NON_ZERO - 225))
+                        | (1 << (Parser.PARTIAL_NULL - 225))
+                        | (1 << (Parser.PARTIAL_ZERO - 225))
+                        | (1 << (Parser.ALWAYS_NULL - 225))
+                        | (1 << (Parser.ALWAYS_ZERO - 225))
+                    )
+                )
+                != 0
+            ):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -15293,25 +16585,23 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class ConditionClauseContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
         def CONDITION(self):
             return self.getToken(Parser.CONDITION, 0)
 
-        def componentID(self, i:int=None):
+        def componentID(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ComponentIDContext)
             else:
-                return self.getTypedRuleContext(Parser.ComponentIDContext,i)
+                return self.getTypedRuleContext(Parser.ComponentIDContext, i)
 
-
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
@@ -15320,28 +16610,25 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_conditionClause
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterConditionClause" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterConditionClause"):
                 listener.enterConditionClause(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitConditionClause" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitConditionClause"):
                 listener.exitConditionClause(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitConditionClause" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitConditionClause"):
                 return visitor.visitConditionClause(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def conditionClause(self):
 
         localctx = Parser.ConditionClauseContext(self, self._ctx, self.state)
         self.enterRule(localctx, 174, self.RULE_conditionClause)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1784
@@ -15351,7 +16638,7 @@ class Parser(ANTLRParser):
             self.state = 1790
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==Parser.COMMA:
+            while _la == Parser.COMMA:
                 self.state = 1786
                 self.match(Parser.COMMA)
                 self.state = 1787
@@ -15368,11 +16655,10 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class InputModeContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
@@ -15385,33 +16671,30 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_inputMode
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterInputMode" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterInputMode"):
                 listener.enterInputMode(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitInputMode" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitInputMode"):
                 listener.exitInputMode(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInputMode" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitInputMode"):
                 return visitor.visitInputMode(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def inputMode(self):
 
         localctx = Parser.InputModeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 176, self.RULE_inputMode)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1793
             _la = self._input.LA(1)
-            if not(_la==Parser.DATASET or _la==Parser.DATASET_PRIORITY):
+            if not (_la == Parser.DATASET or _la == Parser.DATASET_PRIORITY):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -15424,11 +16707,10 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class ImbalanceExprContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
@@ -15436,28 +16718,24 @@ class Parser(ANTLRParser):
             return self.getToken(Parser.IMBALANCE, 0)
 
         def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
-
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
 
         def getRuleIndex(self):
             return Parser.RULE_imbalanceExpr
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterImbalanceExpr" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterImbalanceExpr"):
                 listener.enterImbalanceExpr(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitImbalanceExpr" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitImbalanceExpr"):
                 listener.exitImbalanceExpr(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitImbalanceExpr" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitImbalanceExpr"):
                 return visitor.visitImbalanceExpr(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def imbalanceExpr(self):
 
@@ -15477,11 +16755,10 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class InputModeHierarchyContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
@@ -15497,33 +16774,30 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_inputModeHierarchy
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterInputModeHierarchy" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterInputModeHierarchy"):
                 listener.enterInputModeHierarchy(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitInputModeHierarchy" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitInputModeHierarchy"):
                 listener.exitInputModeHierarchy(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInputModeHierarchy" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitInputModeHierarchy"):
                 return visitor.visitInputModeHierarchy(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def inputModeHierarchy(self):
 
         localctx = Parser.InputModeHierarchyContext(self, self._ctx, self.state)
         self.enterRule(localctx, 180, self.RULE_inputModeHierarchy)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1798
             _la = self._input.LA(1)
-            if not(_la==Parser.DATASET or _la==Parser.RULE or _la==Parser.RULE_PRIORITY):
+            if not (_la == Parser.DATASET or _la == Parser.RULE or _la == Parser.RULE_PRIORITY):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -15536,11 +16810,10 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class OutputModeHierarchyContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
@@ -15553,33 +16826,30 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_outputModeHierarchy
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterOutputModeHierarchy" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterOutputModeHierarchy"):
                 listener.enterOutputModeHierarchy(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitOutputModeHierarchy" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitOutputModeHierarchy"):
                 listener.exitOutputModeHierarchy(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitOutputModeHierarchy" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitOutputModeHierarchy"):
                 return visitor.visitOutputModeHierarchy(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def outputModeHierarchy(self):
 
         localctx = Parser.OutputModeHierarchyContext(self, self._ctx, self.state)
         self.enterRule(localctx, 182, self.RULE_outputModeHierarchy)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1800
             _la = self._input.LA(1)
-            if not(_la==Parser.ALL or _la==Parser.COMPUTED):
+            if not (_la == Parser.ALL or _la == Parser.COMPUTED):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -15592,11 +16862,10 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class AliasContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
@@ -15606,22 +16875,19 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_alias
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAlias" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterAlias"):
                 listener.enterAlias(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAlias" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitAlias"):
                 listener.exitAlias(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAlias" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitAlias"):
                 return visitor.visitAlias(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def alias(self):
 
@@ -15639,11 +16905,10 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class VarIDContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
@@ -15653,22 +16918,19 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_varID
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterVarID" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterVarID"):
                 listener.enterVarID(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitVarID" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitVarID"):
                 listener.exitVarID(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitVarID" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitVarID"):
                 return visitor.visitVarID(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def varID(self):
 
@@ -15686,11 +16948,10 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class SimpleComponentIdContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
@@ -15700,22 +16961,19 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_simpleComponentId
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSimpleComponentId" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterSimpleComponentId"):
                 listener.enterSimpleComponentId(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSimpleComponentId" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitSimpleComponentId"):
                 listener.exitSimpleComponentId(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSimpleComponentId" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitSimpleComponentId"):
                 return visitor.visitSimpleComponentId(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def simpleComponentId(self):
 
@@ -15733,15 +16991,14 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class ComponentIDContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
-        def IDENTIFIER(self, i:int=None):
+        def IDENTIFIER(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.IDENTIFIER)
             else:
@@ -15753,22 +17010,19 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_componentID
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterComponentID" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterComponentID"):
                 listener.enterComponentID(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitComponentID" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitComponentID"):
                 listener.exitComponentID(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitComponentID" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitComponentID"):
                 return visitor.visitComponentID(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def componentID(self):
 
@@ -15780,13 +17034,12 @@ class Parser(ANTLRParser):
             self.match(Parser.IDENTIFIER)
             self.state = 1811
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,191,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 191, self._ctx)
             if la_ == 1:
                 self.state = 1809
                 self.match(Parser.MEMBERSHIP)
                 self.state = 1810
                 self.match(Parser.IDENTIFIER)
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -15796,28 +17049,26 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class ListsContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
         def GLPAREN(self):
             return self.getToken(Parser.GLPAREN, 0)
 
-        def scalarItem(self, i:int=None):
+        def scalarItem(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(Parser.ScalarItemContext)
             else:
-                return self.getTypedRuleContext(Parser.ScalarItemContext,i)
-
+                return self.getTypedRuleContext(Parser.ScalarItemContext, i)
 
         def GRPAREN(self):
             return self.getToken(Parser.GRPAREN, 0)
 
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(Parser.COMMA)
             else:
@@ -15826,28 +17077,25 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_lists
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterLists" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterLists"):
                 listener.enterLists(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitLists" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitLists"):
                 listener.exitLists(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitLists" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitLists"):
                 return visitor.visitLists(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def lists(self):
 
         localctx = Parser.ListsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 192, self.RULE_lists)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1813
@@ -15857,7 +17105,7 @@ class Parser(ANTLRParser):
             self.state = 1819
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==Parser.COMMA:
+            while _la == Parser.COMMA:
                 self.state = 1815
                 self.match(Parser.COMMA)
                 self.state = 1816
@@ -15876,11 +17124,10 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class ErCodeContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
@@ -15888,28 +17135,24 @@ class Parser(ANTLRParser):
             return self.getToken(Parser.ERRORCODE, 0)
 
         def constant(self):
-            return self.getTypedRuleContext(Parser.ConstantContext,0)
-
+            return self.getTypedRuleContext(Parser.ConstantContext, 0)
 
         def getRuleIndex(self):
             return Parser.RULE_erCode
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterErCode" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterErCode"):
                 listener.enterErCode(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitErCode" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitErCode"):
                 listener.exitErCode(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitErCode" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitErCode"):
                 return visitor.visitErCode(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def erCode(self):
 
@@ -15929,11 +17172,10 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class ErLevelContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
@@ -15941,28 +17183,24 @@ class Parser(ANTLRParser):
             return self.getToken(Parser.ERRORLEVEL, 0)
 
         def constant(self):
-            return self.getTypedRuleContext(Parser.ConstantContext,0)
-
+            return self.getTypedRuleContext(Parser.ConstantContext, 0)
 
         def getRuleIndex(self):
             return Parser.RULE_erLevel
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterErLevel" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterErLevel"):
                 listener.enterErLevel(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitErLevel" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitErLevel"):
                 listener.exitErLevel(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitErLevel" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitErLevel"):
                 return visitor.visitErLevel(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def erLevel(self):
 
@@ -15982,11 +17220,10 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class ComparisonOperandContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
@@ -16011,33 +17248,44 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_comparisonOperand
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterComparisonOperand" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterComparisonOperand"):
                 listener.enterComparisonOperand(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitComparisonOperand" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitComparisonOperand"):
                 listener.exitComparisonOperand(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitComparisonOperand" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitComparisonOperand"):
                 return visitor.visitComparisonOperand(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def comparisonOperand(self):
 
         localctx = Parser.ComparisonOperandContext(self, self._ctx, self.state)
         self.enterRule(localctx, 198, self.RULE_comparisonOperand)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1830
             _la = self._input.LA(1)
-            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << Parser.EQ) | (1 << Parser.LT) | (1 << Parser.MT) | (1 << Parser.ME) | (1 << Parser.NEQ) | (1 << Parser.LE))) != 0)):
+            if not (
+                ((_la) & ~0x3F) == 0
+                and (
+                    (1 << _la)
+                    & (
+                        (1 << Parser.EQ)
+                        | (1 << Parser.LT)
+                        | (1 << Parser.MT)
+                        | (1 << Parser.ME)
+                        | (1 << Parser.NEQ)
+                        | (1 << Parser.LE)
+                    )
+                )
+                != 0
+            ):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -16050,17 +17298,15 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class OptionalExprContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
         def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext,0)
-
+            return self.getTypedRuleContext(Parser.ExprContext, 0)
 
         def OPTIONAL(self):
             return self.getToken(Parser.OPTIONAL, 0)
@@ -16068,22 +17314,19 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_optionalExpr
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterOptionalExpr" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterOptionalExpr"):
                 listener.enterOptionalExpr(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitOptionalExpr" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitOptionalExpr"):
                 listener.exitOptionalExpr(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitOptionalExpr" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitOptionalExpr"):
                 return visitor.visitOptionalExpr(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def optionalExpr(self):
 
@@ -16093,7 +17336,92 @@ class Parser(ANTLRParser):
             self.state = 1834
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [Parser.LPAREN, Parser.PLUS, Parser.MINUS, Parser.EVAL, Parser.IF, Parser.CASE, Parser.CURRENT_DATE, Parser.DATEDIFF, Parser.DATEADD, Parser.YEAR_OP, Parser.MONTH_OP, Parser.DAYOFMONTH, Parser.DAYOFYEAR, Parser.DAYTOYEAR, Parser.DAYTOMONTH, Parser.YEARTODAY, Parser.MONTHTODAY, Parser.NOT, Parser.BETWEEN, Parser.NULL_CONSTANT, Parser.ISNULL, Parser.UNION, Parser.SYMDIFF, Parser.INTERSECT, Parser.RANDOM, Parser.CHECK, Parser.EXISTS_IN, Parser.MIN, Parser.MAX, Parser.ABS, Parser.LN, Parser.LOG, Parser.TRUNC, Parser.ROUND, Parser.POWER, Parser.MOD, Parser.LEN, Parser.TRIM, Parser.UCASE, Parser.LCASE, Parser.SUBSTR, Parser.SUM, Parser.AVG, Parser.MEDIAN, Parser.COUNT, Parser.EXP, Parser.CHARSET_MATCH, Parser.NVL, Parser.HIERARCHY, Parser.LTRIM, Parser.RTRIM, Parser.INSTR, Parser.REPLACE, Parser.CEIL, Parser.FLOOR, Parser.SQRT, Parser.SETDIFF, Parser.STDDEV_POP, Parser.STDDEV_SAMP, Parser.VAR_POP, Parser.VAR_SAMP, Parser.FIRST_VALUE, Parser.LAST_VALUE, Parser.LAG, Parser.LEAD, Parser.RATIO_TO_REPORT, Parser.FILL_TIME_SERIES, Parser.FLOW_TO_STOCK, Parser.STOCK_TO_FLOW, Parser.TIMESHIFT, Parser.INNER_JOIN, Parser.LEFT_JOIN, Parser.CROSS_JOIN, Parser.FULL_JOIN, Parser.PERIOD_INDICATOR, Parser.TIME_AGG, Parser.CAST, Parser.CHECK_DATAPOINT, Parser.CHECK_HIERARCHY, Parser.INTEGER_CONSTANT, Parser.NUMBER_CONSTANT, Parser.BOOLEAN_CONSTANT, Parser.STRING_CONSTANT, Parser.IDENTIFIER]:
+            if token in [
+                Parser.LPAREN,
+                Parser.PLUS,
+                Parser.MINUS,
+                Parser.EVAL,
+                Parser.IF,
+                Parser.CASE,
+                Parser.CURRENT_DATE,
+                Parser.DATEDIFF,
+                Parser.DATEADD,
+                Parser.YEAR_OP,
+                Parser.MONTH_OP,
+                Parser.DAYOFMONTH,
+                Parser.DAYOFYEAR,
+                Parser.DAYTOYEAR,
+                Parser.DAYTOMONTH,
+                Parser.YEARTODAY,
+                Parser.MONTHTODAY,
+                Parser.NOT,
+                Parser.BETWEEN,
+                Parser.NULL_CONSTANT,
+                Parser.ISNULL,
+                Parser.UNION,
+                Parser.SYMDIFF,
+                Parser.INTERSECT,
+                Parser.RANDOM,
+                Parser.CHECK,
+                Parser.EXISTS_IN,
+                Parser.MIN,
+                Parser.MAX,
+                Parser.ABS,
+                Parser.LN,
+                Parser.LOG,
+                Parser.TRUNC,
+                Parser.ROUND,
+                Parser.POWER,
+                Parser.MOD,
+                Parser.LEN,
+                Parser.TRIM,
+                Parser.UCASE,
+                Parser.LCASE,
+                Parser.SUBSTR,
+                Parser.SUM,
+                Parser.AVG,
+                Parser.MEDIAN,
+                Parser.COUNT,
+                Parser.EXP,
+                Parser.CHARSET_MATCH,
+                Parser.NVL,
+                Parser.HIERARCHY,
+                Parser.LTRIM,
+                Parser.RTRIM,
+                Parser.INSTR,
+                Parser.REPLACE,
+                Parser.CEIL,
+                Parser.FLOOR,
+                Parser.SQRT,
+                Parser.SETDIFF,
+                Parser.STDDEV_POP,
+                Parser.STDDEV_SAMP,
+                Parser.VAR_POP,
+                Parser.VAR_SAMP,
+                Parser.FIRST_VALUE,
+                Parser.LAST_VALUE,
+                Parser.LAG,
+                Parser.LEAD,
+                Parser.RATIO_TO_REPORT,
+                Parser.FILL_TIME_SERIES,
+                Parser.FLOW_TO_STOCK,
+                Parser.STOCK_TO_FLOW,
+                Parser.TIMESHIFT,
+                Parser.INNER_JOIN,
+                Parser.LEFT_JOIN,
+                Parser.CROSS_JOIN,
+                Parser.FULL_JOIN,
+                Parser.PERIOD_INDICATOR,
+                Parser.TIME_AGG,
+                Parser.CAST,
+                Parser.CHECK_DATAPOINT,
+                Parser.CHECK_HIERARCHY,
+                Parser.INTEGER_CONSTANT,
+                Parser.NUMBER_CONSTANT,
+                Parser.BOOLEAN_CONSTANT,
+                Parser.STRING_CONSTANT,
+                Parser.IDENTIFIER,
+            ]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1832
                 self.expr(0)
@@ -16114,17 +17442,15 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class OptionalExprComponentContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
         def exprComponent(self):
-            return self.getTypedRuleContext(Parser.ExprComponentContext,0)
-
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def OPTIONAL(self):
             return self.getToken(Parser.OPTIONAL, 0)
@@ -16132,22 +17458,19 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_optionalExprComponent
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterOptionalExprComponent" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterOptionalExprComponent"):
                 listener.enterOptionalExprComponent(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitOptionalExprComponent" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitOptionalExprComponent"):
                 listener.exitOptionalExprComponent(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitOptionalExprComponent" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitOptionalExprComponent"):
                 return visitor.visitOptionalExprComponent(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def optionalExprComponent(self):
 
@@ -16157,7 +17480,80 @@ class Parser(ANTLRParser):
             self.state = 1838
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [Parser.LPAREN, Parser.PLUS, Parser.MINUS, Parser.EVAL, Parser.IF, Parser.CASE, Parser.CURRENT_DATE, Parser.DATEDIFF, Parser.DATEADD, Parser.YEAR_OP, Parser.MONTH_OP, Parser.DAYOFMONTH, Parser.DAYOFYEAR, Parser.DAYTOYEAR, Parser.DAYTOMONTH, Parser.YEARTODAY, Parser.MONTHTODAY, Parser.NOT, Parser.BETWEEN, Parser.NULL_CONSTANT, Parser.ISNULL, Parser.RANDOM, Parser.RANK, Parser.MIN, Parser.MAX, Parser.ABS, Parser.LN, Parser.LOG, Parser.TRUNC, Parser.ROUND, Parser.POWER, Parser.MOD, Parser.LEN, Parser.TRIM, Parser.UCASE, Parser.LCASE, Parser.SUBSTR, Parser.SUM, Parser.AVG, Parser.MEDIAN, Parser.COUNT, Parser.EXP, Parser.CHARSET_MATCH, Parser.NVL, Parser.LTRIM, Parser.RTRIM, Parser.INSTR, Parser.REPLACE, Parser.CEIL, Parser.FLOOR, Parser.SQRT, Parser.STDDEV_POP, Parser.STDDEV_SAMP, Parser.VAR_POP, Parser.VAR_SAMP, Parser.FIRST_VALUE, Parser.LAST_VALUE, Parser.LAG, Parser.LEAD, Parser.RATIO_TO_REPORT, Parser.FILL_TIME_SERIES, Parser.FLOW_TO_STOCK, Parser.STOCK_TO_FLOW, Parser.TIMESHIFT, Parser.PERIOD_INDICATOR, Parser.TIME_AGG, Parser.CAST, Parser.INTEGER_CONSTANT, Parser.NUMBER_CONSTANT, Parser.BOOLEAN_CONSTANT, Parser.STRING_CONSTANT, Parser.IDENTIFIER]:
+            if token in [
+                Parser.LPAREN,
+                Parser.PLUS,
+                Parser.MINUS,
+                Parser.EVAL,
+                Parser.IF,
+                Parser.CASE,
+                Parser.CURRENT_DATE,
+                Parser.DATEDIFF,
+                Parser.DATEADD,
+                Parser.YEAR_OP,
+                Parser.MONTH_OP,
+                Parser.DAYOFMONTH,
+                Parser.DAYOFYEAR,
+                Parser.DAYTOYEAR,
+                Parser.DAYTOMONTH,
+                Parser.YEARTODAY,
+                Parser.MONTHTODAY,
+                Parser.NOT,
+                Parser.BETWEEN,
+                Parser.NULL_CONSTANT,
+                Parser.ISNULL,
+                Parser.RANDOM,
+                Parser.RANK,
+                Parser.MIN,
+                Parser.MAX,
+                Parser.ABS,
+                Parser.LN,
+                Parser.LOG,
+                Parser.TRUNC,
+                Parser.ROUND,
+                Parser.POWER,
+                Parser.MOD,
+                Parser.LEN,
+                Parser.TRIM,
+                Parser.UCASE,
+                Parser.LCASE,
+                Parser.SUBSTR,
+                Parser.SUM,
+                Parser.AVG,
+                Parser.MEDIAN,
+                Parser.COUNT,
+                Parser.EXP,
+                Parser.CHARSET_MATCH,
+                Parser.NVL,
+                Parser.LTRIM,
+                Parser.RTRIM,
+                Parser.INSTR,
+                Parser.REPLACE,
+                Parser.CEIL,
+                Parser.FLOOR,
+                Parser.SQRT,
+                Parser.STDDEV_POP,
+                Parser.STDDEV_SAMP,
+                Parser.VAR_POP,
+                Parser.VAR_SAMP,
+                Parser.FIRST_VALUE,
+                Parser.LAST_VALUE,
+                Parser.LAG,
+                Parser.LEAD,
+                Parser.RATIO_TO_REPORT,
+                Parser.FILL_TIME_SERIES,
+                Parser.FLOW_TO_STOCK,
+                Parser.STOCK_TO_FLOW,
+                Parser.TIMESHIFT,
+                Parser.PERIOD_INDICATOR,
+                Parser.TIME_AGG,
+                Parser.CAST,
+                Parser.INTEGER_CONSTANT,
+                Parser.NUMBER_CONSTANT,
+                Parser.BOOLEAN_CONSTANT,
+                Parser.STRING_CONSTANT,
+                Parser.IDENTIFIER,
+            ]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1836
                 self.exprComponent(0)
@@ -16178,11 +17574,10 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class ComponentRoleContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
@@ -16199,28 +17594,24 @@ class Parser(ANTLRParser):
             return self.getToken(Parser.ATTRIBUTE, 0)
 
         def viralAttribute(self):
-            return self.getTypedRuleContext(Parser.ViralAttributeContext,0)
-
+            return self.getTypedRuleContext(Parser.ViralAttributeContext, 0)
 
         def getRuleIndex(self):
             return Parser.RULE_componentRole
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterComponentRole" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterComponentRole"):
                 listener.enterComponentRole(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitComponentRole" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitComponentRole"):
                 listener.exitComponentRole(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitComponentRole" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitComponentRole"):
                 return visitor.visitComponentRole(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def componentRole(self):
 
@@ -16266,11 +17657,10 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class ViralAttributeContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
@@ -16283,22 +17673,19 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_viralAttribute
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterViralAttribute" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterViralAttribute"):
                 listener.enterViralAttribute(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitViralAttribute" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitViralAttribute"):
                 listener.exitViralAttribute(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitViralAttribute" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitViralAttribute"):
                 return visitor.visitViralAttribute(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def viralAttribute(self):
 
@@ -16318,11 +17705,10 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class ValueDomainIDContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
@@ -16332,22 +17718,19 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_valueDomainID
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterValueDomainID" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterValueDomainID"):
                 listener.enterValueDomainID(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitValueDomainID" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitValueDomainID"):
                 listener.exitValueDomainID(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitValueDomainID" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitValueDomainID"):
                 return visitor.visitValueDomainID(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def valueDomainID(self):
 
@@ -16365,11 +17748,10 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class OperatorIDContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
@@ -16379,22 +17761,19 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_operatorID
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterOperatorID" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterOperatorID"):
                 listener.enterOperatorID(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitOperatorID" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitOperatorID"):
                 listener.exitOperatorID(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitOperatorID" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitOperatorID"):
                 return visitor.visitOperatorID(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def operatorID(self):
 
@@ -16412,11 +17791,10 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class RoutineNameContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
@@ -16426,22 +17804,19 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_routineName
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterRoutineName" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterRoutineName"):
                 listener.enterRoutineName(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitRoutineName" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitRoutineName"):
                 listener.exitRoutineName(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitRoutineName" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitRoutineName"):
                 return visitor.visitRoutineName(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def routineName(self):
 
@@ -16459,11 +17834,10 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class ConstantContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
@@ -16485,33 +17859,45 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_constant
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterConstant" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterConstant"):
                 listener.enterConstant(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitConstant" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitConstant"):
                 listener.exitConstant(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitConstant" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitConstant"):
                 return visitor.visitConstant(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def constant(self):
 
         localctx = Parser.ConstantContext(self, self._ctx, self.state)
         self.enterRule(localctx, 214, self.RULE_constant)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1856
             _la = self._input.LA(1)
-            if not(_la==Parser.NULL_CONSTANT or ((((_la - 241)) & ~0x3f) == 0 and ((1 << (_la - 241)) & ((1 << (Parser.INTEGER_CONSTANT - 241)) | (1 << (Parser.NUMBER_CONSTANT - 241)) | (1 << (Parser.BOOLEAN_CONSTANT - 241)) | (1 << (Parser.STRING_CONSTANT - 241)))) != 0)):
+            if not (
+                _la == Parser.NULL_CONSTANT
+                or (
+                    ((_la - 241) & ~0x3F) == 0
+                    and (
+                        (1 << (_la - 241))
+                        & (
+                            (1 << (Parser.INTEGER_CONSTANT - 241))
+                            | (1 << (Parser.NUMBER_CONSTANT - 241))
+                            | (1 << (Parser.BOOLEAN_CONSTANT - 241))
+                            | (1 << (Parser.STRING_CONSTANT - 241))
+                        )
+                    )
+                    != 0
+                )
+            ):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -16524,11 +17910,10 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class BasicScalarTypeContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
@@ -16562,33 +17947,49 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_basicScalarType
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterBasicScalarType" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterBasicScalarType"):
                 listener.enterBasicScalarType(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitBasicScalarType" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitBasicScalarType"):
                 listener.exitBasicScalarType(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitBasicScalarType" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitBasicScalarType"):
                 return visitor.visitBasicScalarType(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def basicScalarType(self):
 
         localctx = Parser.BasicScalarTypeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 216, self.RULE_basicScalarType)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1858
             _la = self._input.LA(1)
-            if not(((((_la - 168)) & ~0x3f) == 0 and ((1 << (_la - 168)) & ((1 << (Parser.BOOLEAN - 168)) | (1 << (Parser.DATE - 168)) | (1 << (Parser.TIME_PERIOD - 168)) | (1 << (Parser.NUMBER - 168)) | (1 << (Parser.STRING - 168)) | (1 << (Parser.TIME - 168)) | (1 << (Parser.INTEGER - 168)) | (1 << (Parser.DURATION - 168)))) != 0) or _la==Parser.SCALAR):
+            if not (
+                (
+                    ((_la - 168) & ~0x3F) == 0
+                    and (
+                        (1 << (_la - 168))
+                        & (
+                            (1 << (Parser.BOOLEAN - 168))
+                            | (1 << (Parser.DATE - 168))
+                            | (1 << (Parser.TIME_PERIOD - 168))
+                            | (1 << (Parser.NUMBER - 168))
+                            | (1 << (Parser.STRING - 168))
+                            | (1 << (Parser.TIME - 168))
+                            | (1 << (Parser.INTEGER - 168))
+                            | (1 << (Parser.DURATION - 168))
+                        )
+                    )
+                    != 0
+                )
+                or _la == Parser.SCALAR
+            ):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -16601,11 +18002,10 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
     class RetainTypeContext(ParserRuleContext):
         __slots__ = "ANTLRParser"
 
-        def __init__(self, ANTLRParser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(self, ANTLRParser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.ANTLRParser = ANTLRParser
 
@@ -16618,33 +18018,30 @@ class Parser(ANTLRParser):
         def getRuleIndex(self):
             return Parser.RULE_retainType
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterRetainType" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterRetainType"):
                 listener.enterRetainType(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitRetainType" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitRetainType"):
                 listener.exitRetainType(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitRetainType" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitRetainType"):
                 return visitor.visitRetainType(self)
             else:
                 return visitor.visitChildren(self)
-
-
-
 
     def retainType(self):
 
         localctx = Parser.RetainTypeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 218, self.RULE_retainType)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1860
             _la = self._input.LA(1)
-            if not(_la==Parser.ALL or _la==Parser.BOOLEAN_CONSTANT):
+            if not (_la == Parser.ALL or _la == Parser.BOOLEAN_CONSTANT):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -16657,9 +18054,7 @@ class Parser(ANTLRParser):
             self.exitRule()
         return localctx
 
-
-
-    def sempred(self, localctx:RuleContext, ruleIndex:int, predIndex:int):
+    def sempred(self, localctx: RuleContext, ruleIndex: int, predIndex: int):
         if self._predicates == None:
             self._predicates = dict()
         self._predicates[2] = self.expr_sempred
@@ -16670,64 +18065,46 @@ class Parser(ANTLRParser):
         else:
             return pred(localctx, predIndex)
 
-    def expr_sempred(self, localctx:ExprContext, predIndex:int):
-            if predIndex == 0:
-                return self.precpred(self._ctx, 10)
-         
+    def expr_sempred(self, localctx: ExprContext, predIndex: int):
+        if predIndex == 0:
+            return self.precpred(self._ctx, 10)
 
-            if predIndex == 1:
-                return self.precpred(self._ctx, 9)
-         
+        if predIndex == 1:
+            return self.precpred(self._ctx, 9)
 
-            if predIndex == 2:
-                return self.precpred(self._ctx, 8)
-         
+        if predIndex == 2:
+            return self.precpred(self._ctx, 8)
 
-            if predIndex == 3:
-                return self.precpred(self._ctx, 6)
-         
+        if predIndex == 3:
+            return self.precpred(self._ctx, 6)
 
-            if predIndex == 4:
-                return self.precpred(self._ctx, 5)
-         
+        if predIndex == 4:
+            return self.precpred(self._ctx, 5)
 
-            if predIndex == 5:
-                return self.precpred(self._ctx, 13)
-         
+        if predIndex == 5:
+            return self.precpred(self._ctx, 13)
 
-            if predIndex == 6:
-                return self.precpred(self._ctx, 12)
-         
+        if predIndex == 6:
+            return self.precpred(self._ctx, 12)
 
-            if predIndex == 7:
-                return self.precpred(self._ctx, 7)
-         
+        if predIndex == 7:
+            return self.precpred(self._ctx, 7)
 
-    def exprComponent_sempred(self, localctx:ExprComponentContext, predIndex:int):
-            if predIndex == 8:
-                return self.precpred(self._ctx, 10)
-         
+    def exprComponent_sempred(self, localctx: ExprComponentContext, predIndex: int):
+        if predIndex == 8:
+            return self.precpred(self._ctx, 10)
 
-            if predIndex == 9:
-                return self.precpred(self._ctx, 9)
-         
+        if predIndex == 9:
+            return self.precpred(self._ctx, 9)
 
-            if predIndex == 10:
-                return self.precpred(self._ctx, 8)
-         
+        if predIndex == 10:
+            return self.precpred(self._ctx, 8)
 
-            if predIndex == 11:
-                return self.precpred(self._ctx, 6)
-         
+        if predIndex == 11:
+            return self.precpred(self._ctx, 6)
 
-            if predIndex == 12:
-                return self.precpred(self._ctx, 5)
-         
+        if predIndex == 12:
+            return self.precpred(self._ctx, 5)
 
-            if predIndex == 13:
-                return self.precpred(self._ctx, 7)
-         
-
-
-
-
+        if predIndex == 13:
+            return self.precpred(self._ctx, 7)
