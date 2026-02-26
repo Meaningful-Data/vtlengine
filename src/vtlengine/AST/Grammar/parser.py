@@ -1,5 +1,7 @@
 # Generated from Vtl.g4 by ANTLR 4.9.3
 # encoding: utf-8
+from typing import Any
+
 from antlr4 import *
 from antlr4 import Parser as ANTLRParser
 from io import StringIO
@@ -8,7 +10,7 @@ import sys
 if sys.version_info[1] > 5:
     from typing import TextIO
 else:
-    from typing.io import TextIO
+    from typing.io import TextIO  # type: ignore
 
 
 def serializedATN():
@@ -2015,7 +2017,7 @@ class Parser(ANTLRParser):
             else:
                 return visitor.visitChildren(self)
 
-    def start(self):
+    def start(self) -> Any:
 
         localctx = Parser.StartContext(self, self._ctx, self.state)
         self.enterRule(localctx, 0, self.RULE_start)
