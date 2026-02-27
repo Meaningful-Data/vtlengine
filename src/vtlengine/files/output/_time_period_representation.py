@@ -37,7 +37,7 @@ def _format_legacy_representation(value: str) -> str:
 
 
 def format_time_period_external_representation(
-    dataset: Union[Dataset, Scalar], mode: TimePeriodRepresentation
+    operand: Union[Dataset, Scalar], mode: TimePeriodRepresentation
 ) -> None:
     """
     Converts internal time period representation to the requested external format.
@@ -47,22 +47,22 @@ def format_time_period_external_representation(
     VTL: YYYY, YYYYSn, YYYYQn, YYYYMm, YYYYWw, YYYYDd (no hyphens)
     Legacy: YYYY, YYYY-Sx, YYYY-Qx, YYYY-Mxx, YYYY-Wxx, YYYY-MM-DD
     """
-    if isinstance(dataset, Scalar):
-        if dataset.data_type != TimePeriod or dataset.value is None:
+    if isinstance(operand, Scalar):
+        if operand.data_type != TimePeriod or operand.value is None:
             return
 
-        value = dataset.value
+        value = operand.value
         if mode == TimePeriodRepresentation.VTL:
-            dataset.value = _format_vtl_representation(value)
+            operand.value = _format_vtl_representation(value)
         elif mode == TimePeriodRepresentation.SDMX_GREGORIAN:
-            dataset.value = _format_sdmx_gregorian_representation(value)
+            operand.value = _format_sdmx_gregorian_representation(value)
         elif mode == TimePeriodRepresentation.SDMX_REPORTING:
-            dataset.value = _format_sdmx_reporting_representation(value)
+            operand.value = _format_sdmx_reporting_representation(value)
         elif mode == TimePeriodRepresentation.LEGACY:
-            dataset.value = _format_legacy_representation(value)
+            operand.value = _format_legacy_representation(value)
         return
 
-    if dataset.data is None or len(dataset.data) == 0:
+    if operand.data is None or len(operand.data) == 0:
         return
     if mode == TimePeriodRepresentation.VTL:
         formatter = _format_vtl_representation
@@ -73,8 +73,8 @@ def format_time_period_external_representation(
     elif mode == TimePeriodRepresentation.LEGACY:
         formatter = _format_legacy_representation
 
-    for comp in dataset.components.values():
+    for comp in operand.components.values():
         if comp.data_type == TimePeriod:
-            dataset.data[comp.name] = (
-                dataset.data[comp.name].map(formatter, na_action="ignore").astype("string[pyarrow]")
+            operand.data[comp.name] = (
+                operand.data[comp.name].map(formatter, na_action="ignore").astype("string[pyarrow]")
             )
