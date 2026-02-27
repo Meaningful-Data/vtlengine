@@ -3,6 +3,7 @@ from typing import Union
 
 from vtlengine.DataTypes import TimePeriod
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
+from vtlengine.Exceptions import InputValidationException
 from vtlengine.Model import Dataset, Scalar
 
 
@@ -16,7 +17,10 @@ class TimePeriodRepresentation(Enum):
     @classmethod
     def check_value(cls, value: str) -> "TimePeriodRepresentation":
         if value not in cls._value2member_map_:
-            raise Exception("Invalid Time Period Representation")
+            valid_options = ", ".join(m.value for m in cls)
+            raise InputValidationException(
+                code="0-1-1-15", value=value, valid_options=valid_options
+            )
         return cls(value)
 
 
