@@ -208,12 +208,13 @@ class Aggregation(Operator.Unary):
             )
 
         try:
-            return duckdb.query(query).to_df()
+            result = duckdb.query(query).to_df()
         except RuntimeError as e:
             if "Conversion" in e.args[0]:
                 raise RunTimeError("2-3-8", op=cls.op, msg=e.args[0].split(":")[-1])
             else:
-                raise RunTimeError("2-1-1-1", op=cls.op)
+                raise RunTimeError("2-1-1-1", op=cls.op, error=e)
+        return result
 
     @classmethod
     def evaluate(  # type: ignore[override]
