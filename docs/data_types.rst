@@ -179,30 +179,34 @@ Time_Period
 **Accepted input formats:**
 
 .. list-table::
-    :widths: 20 40 40
+    :widths: 15 45 40
     :header-rows: 1
 
-    * - Category
+    * - Period
       - Formats
       - Examples
-    * - VTL compact
-      - ``YYYY``, ``YYYYA``, ``YYYYSn``, ``YYYYQn``,
-        ``YYYYMm``, ``YYYYWw``, ``YYYYDd``
-      - ``2020``, ``2020A``, ``2020S1``, ``2020Q3``,
-        ``2020M1``, ``2020W15``, ``2020D100``
-    * - SDMX reporting
-      - ``YYYY-A1``, ``YYYY-Sx``, ``YYYY-Qx``,
-        ``YYYY-Mxx``, ``YYYY-Wxx``, ``YYYY-Dxxx``
-      - ``2020-A1``, ``2020-S1``, ``2020-Q3``,
-        ``2020-M01``, ``2020-W15``, ``2020-D100``
-    * - ISO date/month
-      - ``YYYY-MM``, ``YYYY-M``, ``YYYY-MM-DD``
-      - ``2020-01``, ``2020-1``, ``2020-01-15``
-    * - Legacy
-      - ``YYYY``, ``YYYY-Sx``, ``YYYY-Qx``,
-        ``YYYY-Mxx``, ``YYYY-Wxx``, ``YYYY-MM-DD``
-      - ``2020``, ``2020-S1``, ``2020-Q3``,
-        ``2020-M01``, ``2020-W15``, ``2020-01-15``
+    * - Annual
+      - ``YYYY``, ``YYYYA``, ``YYYY-A1``
+      - ``2020``, ``2020A``, ``2020-A1``
+    * - Semester
+      - ``YYYYSx``, ``YYYY-Sx``
+      - ``2020S1``, ``2020-S1``
+    * - Quarter
+      - ``YYYYQx``, ``YYYY-Qx``
+      - ``2020Q1``, ``2020-Q1``
+    * - Monthly
+      - ``YYYYMm``, ``YYYYMmm``, ``YYYY-MM``,
+        ``YYYY-M``, ``YYYY-Mxx``, ``YYYY-Mx``
+      - ``2020M1``, ``2020M01``, ``2020-01``,
+        ``2020-1``, ``2020-M01``, ``2020-M1``
+    * - Weekly
+      - ``YYYYWw``, ``YYYYWww``, ``YYYY-Wxx``
+      - ``2020W1``, ``2020W01``, ``2020-W01``
+    * - Daily
+      - ``YYYYDd``, ``YYYYDdd``, ``YYYYDddd``,
+        ``YYYY-Dxxx``, ``YYYY-MM-DD``
+      - ``2020D1``, ``2020D01``, ``2020D001``,
+        ``2020-D001``, ``2020-01-01``
 
 **Output formats** (controlled by ``time_period_output_format``
 parameter):
