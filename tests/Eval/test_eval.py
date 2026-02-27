@@ -4,6 +4,7 @@ import pandas as pd
 import pytest
 
 from tests.Helper import TestHelper
+from vtlengine import run
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Operators.General import Eval
 
@@ -167,3 +168,59 @@ def test_execute_query_empty_row_with_function_error():
     datasets = {"MSMTCH_BL_DS": pd.DataFrame([{"DT_LGL_FNL_MTRTY": None, "DT_MTRTY_PRTCTN": None}])}
     with pytest.raises(RunTimeError, match="DuckDB runtime error"):
         Eval._execute_query(query, ["MSMTCH_BL_DS"], datasets)
+
+
+def test_eval_julian_with_date_columns():
+    """Date columns stored as string[pyarrow] should work with DuckDB date functions."""
+
+    script = """
+        DS_r <- eval(
+            dateDiff(DS_1)
+            language "sql"
+            returns dataset {
+                identifier<string> Id_1,
+                measure<integer> DIFF_DAYS
+            }
+        );
+    """
+
+    er = {
+        "name": "dateDiff",
+        "query": (
+            "SELECT Id_1, CAST(julian(Me_1) - julian(Me_2) AS INTEGER) AS DIFF_DAYS FROM DS_1;"
+        ),
+    }
+
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "String", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Date", "role": "Measure", "nullable": True},
+                    {"name": "Me_2", "type": "Date", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+
+    df = pd.DataFrame(
+        {
+            "Id_1": ["A", "B"],
+            "Me_1": ["2024-01-15", "2024-06-01"],
+            "Me_2": ["2024-01-01", "2024-05-01"],
+        }
+    )
+    datapoints = {"DS_1": df}
+
+    expected_diff_days = (pd.to_datetime(df["Me_1"]) - pd.to_datetime(df["Me_2"])).dt.days
+
+    result = run(
+        script=script,
+        data_structures=data_structures,
+        datapoints=datapoints,
+        external_routines=er,
+    )
+
+    assert result["DS_r"] is not None
+    assert result["DS_r"].data["DIFF_DAYS"].tolist() == expected_diff_days.tolist()

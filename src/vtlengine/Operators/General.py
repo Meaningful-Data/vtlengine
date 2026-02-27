@@ -1,12 +1,12 @@
 import re
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 
 import duckdb
 import pandas as pd
 import pyarrow as pa
 import pyarrow.compute as pc
 
-from vtlengine.DataTypes import COMP_NAME_MAPPING
+from vtlengine.DataTypes import COMP_NAME_MAPPING, Date
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, ExternalRoutine, Role
 from vtlengine.Operators import Binary, Unary
@@ -191,10 +191,28 @@ class Eval(Unary):
         output: Dataset,
     ) -> Dataset:
         result: Dataset = cls.validate(operands, external_routine, output)
-        operands_data_dict = {ds_name: operands[ds_name].data for ds_name in operands}
+        operands_data = {}
+        for ds_name in operands:
+            operands_data[ds_name] = cls.normalize_dates(
+                operands[ds_name].data, operands[ds_name].components
+            )
+
         result.data = cls._execute_query(
             external_routine.query,
             external_routine.dataset_names,
-            operands_data_dict,  # type: ignore[arg-type]
+            operands_data,
         )
         return result
+
+    @classmethod
+    def normalize_dates(
+        cls, data: Optional[pd.DataFrame], components: Dict[str, Component]
+    ) -> pd.DataFrame:
+        if data is None:
+            return pd.DataFrame(columns=[comp.name for comp in components.values()])
+        elif any(comp.data_type is Date for comp in components.values()):
+            data = data.copy()
+            for comp_name, comp in components.items():
+                if comp.data_type is Date:
+                    data[comp_name] = data[comp_name].astype("date64[pyarrow]")
+        return data
