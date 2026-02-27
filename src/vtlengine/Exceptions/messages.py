@@ -75,6 +75,12 @@ centralised_messages = {
         "message": "Empty Datasets {dataset1} and {dataset2} shape missmatch.",
         "description": "Raised when two Datasets are empty or have incompatible shapes.",
     },
+    "0-1-1-15": {
+        "message": "Invalid time_period_output_format value: '{value}'. "
+        "Allowed formats: {valid_options}.",
+        "description": "Raised when the provided time period output format "
+        "is not one of the supported representations.",
+    },
     "0-1-2-3": {
         "message": "{element_type} '{element}' is/are duplicated.",
         "description": "Occurs when an element (e.g., Identifier or component) "
