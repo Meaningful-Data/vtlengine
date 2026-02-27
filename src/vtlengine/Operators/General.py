@@ -191,7 +191,7 @@ class Eval(Unary):
         output: Dataset,
     ) -> Dataset:
         result: Dataset = cls.validate(operands, external_routine, output)
-        operands_data: Dict[str, pd.DataFrame] = {}
+        operands_data = {}
         for ds_name in operands:
             operands_data[ds_name] = cls.normalize_dates(
                 operands[ds_name].data, operands[ds_name].components
@@ -207,7 +207,7 @@ class Eval(Unary):
     @classmethod
     def normalize_dates(
         cls, data: Optional[pd.DataFrame], components: Dict[str, Component]
-    ) -> pd.DataFrame:
+    ) -> Optional[pd.DataFrame]:
         if data is not None and any(comp.data_type is Date for comp in components.values()):
             data = data.copy()
             for comp_name, comp in components.items():
