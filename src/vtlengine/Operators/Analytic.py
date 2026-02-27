@@ -3,6 +3,8 @@ from typing import List, Optional
 
 import duckdb
 import pandas as pd
+import pyarrow as pa
+import pyarrow.compute as pc
 
 import vtlengine.Operators as Operator
 from vtlengine.AST import OrderBy, Windowing
@@ -30,7 +32,7 @@ from vtlengine.DataTypes import (
     Number,
     unary_implicit_promotion,
 )
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
@@ -248,7 +250,13 @@ class Analytic(Operator.Unary):
 
         if cls.op == COUNT:
             df[measure_names] = df[measure_names].fillna(-1)
-        return duckdb.query(query).to_df()
+        result = duckdb.query(query).to_df()
+        if cls.op == RATIO_TO_REPORT:
+            for col_name in measure_names:
+                arr = pa.array(result[col_name])
+                if pa.types.is_floating(arr.type) and pc.any(pc.is_inf(arr)).as_py():
+                    raise RunTimeError("2-1-3-1", op=cls.op)
+        return result
 
     @classmethod
     def evaluate(  # type: ignore[override]
