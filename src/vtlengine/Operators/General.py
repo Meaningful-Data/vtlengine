@@ -188,7 +188,7 @@ class Eval(Unary):
             if df is not None:
                 df = df.copy()
                 for comp_name, comp in operands[ds_name].components.items():
-                    if comp.data_type is Date and comp_name in df.columns:
+                    if comp.data_type is Date:
                         df[comp_name] = df[comp_name].astype("date64[pyarrow]")
             operands_data_dict[ds_name] = df  # type: ignore[assignment]
         result.data = cls._execute_query(
