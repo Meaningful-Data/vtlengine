@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Union
 import duckdb
 import pandas as pd
 
-from vtlengine.DataTypes import COMP_NAME_MAPPING
+from vtlengine.DataTypes import COMP_NAME_MAPPING, Date
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, ExternalRoutine, Role
 from vtlengine.Operators import Binary, Unary
@@ -182,10 +182,18 @@ class Eval(Unary):
         output: Dataset,
     ) -> Dataset:
         result: Dataset = cls.validate(operands, external_routine, output)
-        operands_data_dict = {ds_name: operands[ds_name].data for ds_name in operands}
+        operands_data_dict: Dict[str, pd.DataFrame] = {}
+        for ds_name in operands:
+            df = operands[ds_name].data
+            if df is not None:
+                df = df.copy()
+                for comp_name, comp in operands[ds_name].components.items():
+                    if comp.data_type is Date and comp_name in df.columns:
+                        df[comp_name] = df[comp_name].astype("date64[pyarrow]")
+            operands_data_dict[ds_name] = df  # type: ignore[assignment]
         result.data = cls._execute_query(
             external_routine.query,
             external_routine.dataset_names,
-            operands_data_dict,  # type: ignore[arg-type]
+            operands_data_dict,
         )
         return result
