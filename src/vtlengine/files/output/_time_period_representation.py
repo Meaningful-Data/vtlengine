@@ -3,6 +3,7 @@ from typing import Union
 
 from vtlengine.DataTypes import TimePeriod
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
+from vtlengine.Exceptions import InputValidationException
 from vtlengine.Model import Dataset, Scalar
 
 
@@ -11,11 +12,15 @@ class TimePeriodRepresentation(Enum):
     SDMX_GREGORIAN = "sdmx_gregorian"
     SDMX_REPORTING = "sdmx_reporting"
     VTL = "vtl"
+    LEGACY = "legacy"
 
     @classmethod
     def check_value(cls, value: str) -> "TimePeriodRepresentation":
         if value not in cls._value2member_map_:
-            raise Exception("Invalid Time Period Representation")
+            valid_options = ", ".join(m.value for m in cls)
+            raise InputValidationException(
+                code="0-1-1-15", value=value, valid_options=valid_options
+            )
         return cls(value)
 
 
@@ -31,8 +36,12 @@ def _format_sdmx_reporting_representation(value: str) -> str:
     return TimePeriodHandler(value).sdmx_reporting_representation()
 
 
+def _format_legacy_representation(value: str) -> str:
+    return TimePeriodHandler(value).legacy_representation()
+
+
 def format_time_period_external_representation(
-    dataset: Union[Dataset, Scalar], mode: TimePeriodRepresentation
+    operand: Union[Dataset, Scalar], mode: TimePeriodRepresentation
 ) -> None:
     """
     Converts internal time period representation to the requested external format.
@@ -40,21 +49,24 @@ def format_time_period_external_representation(
     SDMX Reporting: YYYY-A1, YYYY-Ss, YYYY-Qq, YYYY-Mmm, YYYY-Www, YYYY-Dddd
     SDMX Gregorian: YYYY, YYYY-MM, YYYY-MM-DD (only A, M, D supported)
     VTL: YYYY, YYYYSn, YYYYQn, YYYYMm, YYYYWw, YYYYDd (no hyphens)
+    Legacy: YYYY, YYYY-Sx, YYYY-Qx, YYYY-Mxx, YYYY-Wxx, YYYY-MM-DD
     """
-    if isinstance(dataset, Scalar):
-        if dataset.data_type != TimePeriod or dataset.value is None:
+    if isinstance(operand, Scalar):
+        if operand.data_type != TimePeriod or operand.value is None:
             return
 
-        value = dataset.value
+        value = operand.value
         if mode == TimePeriodRepresentation.VTL:
-            dataset.value = _format_vtl_representation(value)
+            operand.value = _format_vtl_representation(value)
         elif mode == TimePeriodRepresentation.SDMX_GREGORIAN:
-            dataset.value = _format_sdmx_gregorian_representation(value)
+            operand.value = _format_sdmx_gregorian_representation(value)
         elif mode == TimePeriodRepresentation.SDMX_REPORTING:
-            dataset.value = _format_sdmx_reporting_representation(value)
+            operand.value = _format_sdmx_reporting_representation(value)
+        elif mode == TimePeriodRepresentation.LEGACY:
+            operand.value = _format_legacy_representation(value)
         return
 
-    if dataset.data is None or len(dataset.data) == 0:
+    if operand.data is None or len(operand.data) == 0:
         return
     if mode == TimePeriodRepresentation.VTL:
         formatter = _format_vtl_representation
@@ -62,9 +74,11 @@ def format_time_period_external_representation(
         formatter = _format_sdmx_gregorian_representation
     elif mode == TimePeriodRepresentation.SDMX_REPORTING:
         formatter = _format_sdmx_reporting_representation
+    elif mode == TimePeriodRepresentation.LEGACY:
+        formatter = _format_legacy_representation
 
-    for comp in dataset.components.values():
+    for comp in operand.components.values():
         if comp.data_type == TimePeriod:
-            dataset.data[comp.name] = (
-                dataset.data[comp.name].map(formatter, na_action="ignore").astype("string[pyarrow]")
+            operand.data[comp.name] = (
+                operand.data[comp.name].map(formatter, na_action="ignore").astype("string[pyarrow]")
             )
