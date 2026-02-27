@@ -198,6 +198,11 @@ Time_Period
     * - ISO date/month
       - ``YYYY-MM``, ``YYYY-M``, ``YYYY-MM-DD``
       - ``2020-01``, ``2020-1``, ``2020-01-15``
+    * - Legacy
+      - ``YYYY``, ``YYYY-Sx``, ``YYYY-Qx``,
+        ``YYYY-Mxx``, ``YYYY-Wxx``, ``YYYY-MM-DD``
+      - ``2020``, ``2020-S1``, ``2020-Q3``,
+        ``2020-M01``, ``2020-W15``, ``2020-01-15``
 
 **Output formats** (controlled by ``time_period_output_format``
 parameter):
@@ -233,6 +238,13 @@ parameter):
       - Not supported
       - ``2020-01``
       - Not supported
+      - ``2020-01-15``
+    * - ``"legacy"``
+      - ``2020``
+      - ``2020-S1``
+      - ``2020-Q1``
+      - ``2020-M01``
+      - ``2020-W15``
       - ``2020-01-15``
 
 Time_Period is a **subtype of Time** — anywhere a Time value
