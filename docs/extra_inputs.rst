@@ -104,7 +104,8 @@ Supported Types
       - JSON string in time period format
         (e.g. ``"2024Q1"``)
     * - ``Time``
-      - JSON string in time format
+      - JSON string as ISO 8601 interval
+        (e.g. ``"2024-01-01/2024-12-31"``)
     * - ``Duration``
       - JSON string in duration format (e.g. ``"P1Y"``)
 
@@ -248,6 +249,12 @@ External Routines allow VTL scripts to execute SQL queries
 through the ``eval()`` operator. Queries are executed in
 a sandboxed `DuckDB <https://duckdb.org/>`_ environment.
 
+.. note::
+
+    Currently, only SQL external routines are supported.
+    The ``language`` parameter in the ``eval()`` call must
+    be set to ``"SQL"``.
+
 
 Definition Format
 =================
@@ -383,8 +390,11 @@ in-memory database with the following restrictions:
 - Results are checked for infinite values.
 
 
-Example
-=======
+Examples
+========
+
+Using a dictionary
+^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
@@ -444,6 +454,81 @@ Example
     )
 
     print(result["DS_r"])
+
+Using a SQL file
+^^^^^^^^^^^^^^^^
+
+Given a file ``SQL_1.sql`` with the following content:
+
+.. code-block:: sql
+
+    SELECT Id_1, Me_1 * 2 AS Me_1 FROM DS_1;
+
+It can be loaded directly as a ``Path``:
+
+.. code-block:: python
+
+    from pathlib import Path
+
+    import pandas as pd
+
+    from vtlengine import run
+
+    script = """
+        DS_r <- eval(
+            SQL_1(DS_1)
+            language "SQL"
+            returns dataset {
+                identifier<integer> Id_1,
+                measure<number> Me_1
+            }
+        );
+    """
+
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {
+                        "name": "Id_1",
+                        "type": "Integer",
+                        "role": "Identifier",
+                        "nullable": False,
+                    },
+                    {
+                        "name": "Me_1",
+                        "type": "Number",
+                        "role": "Measure",
+                        "nullable": True,
+                    },
+                ],
+            }
+        ]
+    }
+
+    datapoints = {
+        "DS_1": pd.DataFrame(
+            {"Id_1": [1, 2, 3, 4, 5], "Me_1": [10, 20, 30, 40, 50]}
+        ),
+    }
+
+    external_routines = Path("SQL_1.sql")
+
+    result = run(
+        script=script,
+        data_structures=data_structures,
+        datapoints=datapoints,
+        external_routines=external_routines,
+    )
+
+    print(result["DS_r"])
+
+.. note::
+
+    The filename (without the ``.sql`` extension) is used as
+    the routine name. In this case, ``SQL_1.sql`` maps to
+    the routine ``SQL_1`` referenced in the VTL script.
 
 
 Validation
