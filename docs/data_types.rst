@@ -203,10 +203,10 @@ Time_Period
       - ``YYYYWw``, ``YYYYWww``, ``YYYY-Wxx``
       - ``2020W1``, ``2020W01``, ``2020-W01``
     * - Daily
-      - ``YYYYDd``, ``YYYYDdd``, ``YYYYDddd``,
-        ``YYYY-Dxxx``, ``YYYY-MM-DD``
+      - ``YYYYD[dd]d``, ``YYYY-D[xx]x``, ``YYYY-MM-DD``
       - ``2020D1``, ``2020D01``, ``2020D001``,
-        ``2020-D001``, ``2020-01-01``
+        ``2020D-1``, ``2020D-01``, ``2020D-001``,
+        ``2020-01-01``
 
 **Output formats** (controlled by ``time_period_output_format``
 parameter):
