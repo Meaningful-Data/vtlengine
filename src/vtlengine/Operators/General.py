@@ -207,8 +207,10 @@ class Eval(Unary):
     @classmethod
     def normalize_dates(
         cls, data: Optional[pd.DataFrame], components: Dict[str, Component]
-    ) -> Optional[pd.DataFrame]:
-        if data is not None and any(comp.data_type is Date for comp in components.values()):
+    ) -> pd.DataFrame:
+        if data is None:
+            return pd.DataFrame(columns=[comp.name for comp in components.values()])
+        elif any(comp.data_type is Date for comp in components.values()):
             data = data.copy()
             for comp_name, comp in components.items():
                 if comp.data_type is Date:
