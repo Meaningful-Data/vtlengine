@@ -285,15 +285,6 @@ Each external routine is a JSON object with two required fields:
         "query": "SELECT Id_1, SUM(Me_1) AS Me_1 FROM DS_1 GROUP BY Id_1;"
     }
 
-**SQL file format**: A plain ``.sql`` file containing only
-the query. The filename (without extension) is used as the
-routine name.
-
-.. code-block:: sql
-
-    -- File: SQL_1.sql
-    SELECT Id_1, SUM(Me_1) AS Me_1 FROM DS_1 GROUP BY Id_1;
-
 Multiple routines can be provided as a JSON array:
 
 .. code-block:: json
@@ -316,10 +307,9 @@ Input Options
 The ``external_routines`` parameter accepts the following formats:
 
 - **Dictionary**: A single routine as a Python dict.
-- **Path to a file**: A ``Path`` pointing to a ``.json``
-  or ``.sql`` file.
+- **Path to a file**: A ``Path`` pointing to a ``.json`` file.
 - **Path to a directory**: A ``Path`` pointing to a directory;
-  all ``.json`` and ``.sql`` files in the directory are loaded.
+  all ``.json`` files in the directory are loaded.
 - **List**: A list mixing any of the above formats.
 
 .. code-block:: python
@@ -335,13 +325,13 @@ The ``external_routines`` parameter accepts the following formats:
     # Path to file
     external_routines = Path("data/SQL_1.json")
 
-    # Path to directory (loads all .json and .sql files)
+    # Path to directory (loads all .json files)
     external_routines = Path("data/routines/")
 
     # List of mixed formats
     external_routines = [
         {"name": "SQL_1", "query": "SELECT * FROM DS_1;"},
-        Path("data/SQL_2.sql"),
+        Path("data/SQL_2.json"),
     ]
 
 
@@ -454,82 +444,6 @@ Using a dictionary
     )
 
     print(result["DS_r"])
-
-Using a SQL file
-^^^^^^^^^^^^^^^^
-
-Given a file ``SQL_1.sql`` with the following content:
-
-.. code-block:: sql
-
-    SELECT Id_1, Me_1 * 2 AS Me_1 FROM DS_1;
-
-It can be loaded directly as a ``Path``:
-
-.. code-block:: python
-
-    from pathlib import Path
-
-    import pandas as pd
-
-    from vtlengine import run
-
-    script = """
-        DS_r <- eval(
-            SQL_1(DS_1)
-            language "SQL"
-            returns dataset {
-                identifier<integer> Id_1,
-                measure<number> Me_1
-            }
-        );
-    """
-
-    data_structures = {
-        "datasets": [
-            {
-                "name": "DS_1",
-                "DataStructure": [
-                    {
-                        "name": "Id_1",
-                        "type": "Integer",
-                        "role": "Identifier",
-                        "nullable": False,
-                    },
-                    {
-                        "name": "Me_1",
-                        "type": "Number",
-                        "role": "Measure",
-                        "nullable": True,
-                    },
-                ],
-            }
-        ]
-    }
-
-    datapoints = {
-        "DS_1": pd.DataFrame(
-            {"Id_1": [1, 2, 3, 4, 5], "Me_1": [10, 20, 30, 40, 50]}
-        ),
-    }
-
-    external_routines = Path("SQL_1.sql")
-
-    result = run(
-        script=script,
-        data_structures=data_structures,
-        datapoints=datapoints,
-        external_routines=external_routines,
-    )
-
-    print(result["DS_r"])
-
-.. note::
-
-    The filename (without the ``.sql`` extension) is used as
-    the routine name. In this case, ``SQL_1.sql`` maps to
-    the routine ``SQL_1`` referenced in the VTL script.
-
 
 Validation
 ==========

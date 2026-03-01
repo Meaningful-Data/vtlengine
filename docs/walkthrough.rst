@@ -36,10 +36,10 @@ Any VTL action requires the following elements as input:
 
 * **External Routines**:
     The VTL Engine supports the use of SQL (ISO/IEC 9075) within the `eval`
-    operator. External routines can be provided as a SQL string, a `Path`
-    object, or a list of such elements pointing to `.sql` files. The
-    default value is `None`, which should be used if external routines
-    are not applicable to the script. See :ref:`example 5
+    operator. External routines can be provided as a dictionary, a `Path`
+    object pointing to a `.json` file or directory, or a list of such
+    elements. The default value is `None`, which should be used if external
+    routines are not applicable to the script. See :ref:`example 5
     <example_5_run_with_multiple_value_domains_and_external_routines>`
     for an example.
 
