@@ -30,7 +30,7 @@ def extract_python_blocks(rst_path: Path) -> List[CodeBlock]:
     Returns:
         List of CodeBlock objects with source code and metadata.
     """
-    text = rst_path.read_text()
+    text = rst_path.read_text(encoding="utf-8")
     lines = text.splitlines()
     blocks: List[CodeBlock] = []
 
