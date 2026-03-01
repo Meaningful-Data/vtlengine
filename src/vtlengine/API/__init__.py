@@ -233,8 +233,8 @@ def semantic_analysis(
         Check the following example: \
         :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
 
-        external_routines: String or Path, or List of Strings or Paths of the \
-        external routines SQL files. (default: None) It is passed as an object, that can be read \
+        external_routines: Dict or Path, or List of Dicts or Paths of the \
+        external routines JSON files. (default: None) It is passed as an object, that can be read \
         from a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
         Check the following example: \
         :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
@@ -374,7 +374,7 @@ def run(
         Check the following example: \
         :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
 
-        external_routines: String or Path, or List of Strings or Paths of the \
+        external_routines: Dict or Path, or List of Dicts or Paths of the \
         external routines JSON files. (default: None) It is passed as an object, that can be read \
         from a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
         Check the following example: \
@@ -516,7 +516,7 @@ def run_sdmx(
         Check the following example: \
         :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
 
-        external_routines: String or Path, or List of Strings or Paths of the \
+        external_routines: Dict or Path, or List of Dicts or Paths of the \
         external routines JSON files. (default: None) It is passed as an object, that can be read \
         from a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
         Check the following example: \

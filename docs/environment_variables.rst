@@ -148,7 +148,7 @@ Using S3 with environment variables
         script="DS_r := DS_1;",
         data_structures=data_structures,
         datapoints="s3://my-bucket/input/DS_1.csv",
-        output="s3://my-bucket/output/",
+        output_folder="s3://my-bucket/output/",
     )
 
 Using a custom S3 endpoint
