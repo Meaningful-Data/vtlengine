@@ -2,7 +2,7 @@
 
 import re
 from pathlib import Path
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import pandas as pd
 import pytest
@@ -111,7 +111,7 @@ def _validate_csv_outputs(
 def _csv_to_dataset_name(
     csv_file: str,
     results: Dict[str, Union[Dataset, Scalar]],
-) -> str | None:
+) -> Optional[str]:
     """Map a CSV filename to a dataset name in the results dict."""
     stem = csv_file.removesuffix(".csv")
     # Direct match
