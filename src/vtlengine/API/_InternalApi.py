@@ -659,7 +659,7 @@ def load_value_domains(
 
 
 def load_external_routines(
-    input: Union[Dict[str, Any], Path, str, List[Union[Dict[str, Any], Path]]],
+    input: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
 ) -> Any:
     """
     Load the external routines.
