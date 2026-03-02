@@ -1,5 +1,5 @@
 from copy import copy
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import duckdb
 import pandas as pd
@@ -28,6 +28,7 @@ from vtlengine.AST.Grammar.tokens import (
 )
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
+    Date,
     Integer,
     Number,
     unary_implicit_promotion,
@@ -270,6 +271,7 @@ class Analytic(Operator.Unary):
     ) -> Dataset:
         result = cls.validate(operand, partitioning, ordering, window, params, component_name)
         df = operand.data.copy() if operand.data is not None else pd.DataFrame()
+        df = cls.normalize_dates(df, operand.components)
         identifier_names = operand.get_identifiers_names()
 
         if component_name is not None:
@@ -293,6 +295,19 @@ class Analytic(Operator.Unary):
                     result.data[comp_name] = result.data[comp_name].astype(comp.data_type.dtype())  # type: ignore[call-overload]
 
         return result
+
+    @classmethod
+    def normalize_dates(
+        cls, data: Optional[pd.DataFrame], components: Dict[str, Component]
+    ) -> pd.DataFrame:
+        if data is None:
+            return pd.DataFrame(columns=[comp.name for comp in components.values()])
+        elif any(comp.data_type is Date for comp in components.values()):
+            data = data.copy()
+            for comp_name, comp in components.items():
+                if comp.data_type is Date:
+                    data[comp_name] = data[comp_name].astype("date64[pyarrow]")
+        return data
 
 
 class Max(Analytic):
