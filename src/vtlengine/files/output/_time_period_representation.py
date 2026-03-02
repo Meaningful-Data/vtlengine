@@ -49,7 +49,7 @@ def format_time_period_external_representation(
     SDMX Reporting: YYYY-A1, YYYY-Ss, YYYY-Qq, YYYY-Mmm, YYYY-Www, YYYY-Dddd
     SDMX Gregorian: YYYY, YYYY-MM, YYYY-MM-DD (only A, M, D supported)
     VTL: YYYY, YYYYSn, YYYYQn, YYYYMm, YYYYWw, YYYYDd (no hyphens)
-    Legacy: YYYY, YYYY-Sx, YYYY-Qx, YYYY-Mxx, YYYY-Wxx, YYYY-MM-DD
+    Legacy: YYYY, YYYY-Sx, YYYY-Qx, YYYY-MM, YYYY-Wxx, YYYY-MM-DD
     """
     if isinstance(operand, Scalar):
         if operand.data_type != TimePeriod or operand.value is None:
