@@ -474,15 +474,44 @@ class AnalyticOperatorsTest(AnalyticHelper):
         Max: max
         Dataset --> Dataset
         Status: OK
-        Expression: DS_r := max(DS_1 over (partition by Id_1 order by Id_2
-                    data points between 1 preceding and 1 following));
-                    DS_1 Dataset
+        Expression: DS_r <- DS_1[calc MAX_Me_1 :=
+                        max(Me_1 over (
+                            partition by Id_1
+                            order by Me_1
+                            range between unbounded preceding and 1 preceding
+                            )
+                        )
+                    ];
 
-        Description: Fix #550: max analytic with Date measure and data points window.
+        Description: Fix #550: max analytic with Date measure and range window.
 
         Goal: Check that max works correctly with Date type measures in analytic operations.
         """
         code = "GH_550_3"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_550_4(self):
+        """
+        Max: max
+        Dataset --> Dataset
+        Status: OK
+        Expression: DS_r <- DS_1[calc MAX_Me_1 :=
+                        max(Me_1 over (
+                            partition by Id_1
+                            order by Me_1
+                            range between unbounded preceding and 1 preceding
+                            )
+                        )
+                    ];
+
+        Description: Fix #550: max analytic with Time_Period measure and range window.
+
+        Goal: Check that max works correctly with Time_Period type measures in analytic operations.
+        """
+        code = "GH_550_4"
         number_inputs = 1
         references_names = ["1"]
 

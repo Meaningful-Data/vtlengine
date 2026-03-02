@@ -323,12 +323,12 @@ class Analytic(Operator.Unary):
             for comp_name, comp in components.items():
                 if comp.data_type is Date:
                     data[comp_name] = data[comp_name].astype("date64[pyarrow]")
-                elif comp.data_type is TimeInterval:
-                    data[comp_name] = data[comp_name].astype("time64[pyarrow]")
+                # elif comp.data_type is TimeInterval:
+                #     data[comp_name] = data[comp_name].astype("time64[pyarrow]")
                 elif comp.data_type is TimePeriod:
                     data[comp_name] = (
                         data[comp_name]
-                        .map(lambda x: str_period_to_date(x) if pd.notnull(x) else x)
+                        .map(lambda x: str_period_to_date(x))
                         .astype("date64[pyarrow]")
                     )
         return data
