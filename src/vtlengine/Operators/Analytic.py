@@ -31,8 +31,11 @@ from vtlengine.DataTypes import (
     Date,
     Integer,
     Number,
+    Time,
+    TimePeriod,
     unary_implicit_promotion,
 )
+from vtlengine.DataTypes.TimeHandling import str_period_to_date
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
@@ -311,13 +314,19 @@ class Analytic(Operator.Unary):
     def normalize_dates(
         cls, data: Optional[pd.DataFrame], components: Dict[str, Component]
     ) -> pd.DataFrame:
+        Date_types = (Date, Time, TimePeriod)
+
         if data is None:
             return pd.DataFrame(columns=[comp.name for comp in components.values()])
-        elif any(comp.data_type is Date for comp in components.values()):
+        elif any(comp.data_type in Date_types for comp in components.values()):
             data = data.copy()
             for comp_name, comp in components.items():
                 if comp.data_type is Date:
                     data[comp_name] = data[comp_name].astype("date64[pyarrow]")
+                elif comp.data_type is Time:
+                    data[comp_name] = data[comp_name].astype("time64[pyarrow]")
+                elif comp.data_type is TimePeriod:
+                    data[comp_name] = data[comp_name].map(lambda x: str_period_to_date(x) if pd.notnull(x) else x).astype("date64[pyarrow]")
         return data
 
 
