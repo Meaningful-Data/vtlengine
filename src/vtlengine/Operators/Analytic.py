@@ -31,7 +31,6 @@ from vtlengine.DataTypes import (
     Date,
     Integer,
     Number,
-    TimeInterval,
     TimePeriod,
     unary_implicit_promotion,
 )
