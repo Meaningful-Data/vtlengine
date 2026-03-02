@@ -326,7 +326,11 @@ class Analytic(Operator.Unary):
                 elif comp.data_type is Time:
                     data[comp_name] = data[comp_name].astype("time64[pyarrow]")
                 elif comp.data_type is TimePeriod:
-                    data[comp_name] = data[comp_name].map(lambda x: str_period_to_date(x) if pd.notnull(x) else x).astype("date64[pyarrow]")
+                    data[comp_name] = (
+                        data[comp_name]
+                        .map(lambda x: str_period_to_date(x) if pd.notnull(x) else x)
+                        .astype("date64[pyarrow]")
+                    )
         return data
 
 
