@@ -264,6 +264,12 @@ centralised_messages = {
         "message": "Component {comp_name} not found in Dataset {dataset_name}.",
         "description": "Occurs when a referenced component is missing from the Dataset.",
     },
+    "1-1-1-11": {
+        "message": "At op {op}: Sub comparison is not allowed between components. "
+        "Please check sub comparison in Dataset {dataset_name} is between a Component and a "
+        "Scalar/Constant.",
+        "description": "Occurs when a sub operation attempts to compare components.",
+    },
     "1-1-1-13": {
         "message": "At op {op}: Component {comp_name} role must be '{role_1}', found '{role_2}'.",
         "description": "Raised when a Dataset component has an unexpected role for the operation.",

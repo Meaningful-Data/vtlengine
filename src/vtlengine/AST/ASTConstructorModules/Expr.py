@@ -1886,6 +1886,8 @@ class Expr(VtlVisitor):
         op_node = ctx_list[1].getSymbol().text
         if isinstance(ctx_list[2], Parser.ScalarWithCastContext):
             right_node = Terminals().visitScalarWithCast(ctx_list[2])
+        elif isinstance(ctx_list[2], Parser.ScalarVarWithCastContext):
+            right_node = Terminals().visitScalarVarWithCast(ctx_list[2])
         elif isinstance(ctx_list[2], Parser.ScalarItemContext):
             right_node = Terminals().visitScalarItem(ctx_list[2])
         else:
