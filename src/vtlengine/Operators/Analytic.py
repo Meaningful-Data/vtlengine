@@ -126,9 +126,13 @@ class Analytic(Operator.Unary):
 
             if cls.op in return_integer_operators:
                 isNumber = False
+                has_non_numeric = False
                 for measure in measures:
-                    isNumber |= isinstance(measure.data_type, Number)
-                cls.return_integer = not isNumber
+                    if isinstance(measure.data_type, (Integer, Number)):
+                        isNumber |= isinstance(measure.data_type, Number)
+                    else:
+                        has_non_numeric = True
+                cls.return_integer = not isNumber and not has_non_numeric
 
             if cls.type_to_check is not None:
                 for measure in measures:
@@ -137,7 +141,8 @@ class Analytic(Operator.Unary):
             if cls.op in return_integer_operators:
                 for measure in measures:
                     new_measure = copy(measure)
-                    new_measure.data_type = Integer if cls.return_integer else Number
+                    if isinstance(measure.data_type, (Integer, Number)):
+                        new_measure.data_type = Integer if cls.return_integer else Number
                     result_components[measure.name] = new_measure
             elif cls.return_type is not None:
                 for measure in measures:
