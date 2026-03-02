@@ -251,7 +251,10 @@ class Analytic(Operator.Unary):
 
         if cls.op == COUNT:
             df[measure_names] = df[measure_names].fillna(-1)
-        result = duckdb.query(query).to_df()
+        try:
+            result = duckdb.query(query).to_df()
+        except RuntimeError as e:
+            raise RunTimeError("2-1-1-1", op=cls.op, error=e)
         if cls.op == RATIO_TO_REPORT:
             for col_name in measure_names:
                 arr = pa.array(result[col_name])
