@@ -259,7 +259,10 @@ class Analytic(Operator.Unary):
         try:
             result = duckdb.query(query).to_df()
         except RuntimeError as e:
-            raise RunTimeError("2-1-1-1", op=cls.op, error=e)
+            if "Conversion" in e.args[0]:
+                raise RunTimeError("2-3-8", op=cls.op, msg=e.args[0].split(":")[-1])
+            else:
+                raise RunTimeError("2-1-1-1", op=cls.op, error=e)
         if cls.op == RATIO_TO_REPORT:
             for col_name in measure_names:
                 arr = pa.array(result[col_name])
