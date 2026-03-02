@@ -63,11 +63,25 @@ If you would like to use the S3 capabilities, you need to install the `s3` extra
 The S3 extra is based on the pandas[aws] extra, which requires to set up some environment variables. Please check the `boto3 documentation <https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html#using-environment-variables>`_
 
 .. toctree::
+    :caption: Getting Started
 
     walkthrough
+
+.. toctree::
+    :caption: Using the Engine
+
     api
     data_types
+    extra_inputs
+
+.. toctree::
+    :caption: Configuration
+
     environment_variables
+
+.. toctree::
+    :caption: Error Messages
+
     error_messages
 
 
