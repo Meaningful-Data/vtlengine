@@ -88,7 +88,7 @@ class Aggregation(Operator.Unary):
                 if mode == "input":
                     data[measure.name] = data[measure.name].astype("date64[pyarrow]")
                 else:
-                    data[measure.name] = data[measure.name].astype(Date.dtype())
+                    data[measure.name] = data[measure.name].astype(Date.dtype())  # type: ignore[call-overload]
             elif measure.data_type == Boolean and mode == "result":
                 data[measure.name] = (
                     data[measure.name]  # type: ignore[call-overload, unused-ignore]
