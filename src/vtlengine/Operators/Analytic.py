@@ -31,7 +31,7 @@ from vtlengine.DataTypes import (
     Date,
     Integer,
     Number,
-    Time,
+    TimeInterval,
     TimePeriod,
     unary_implicit_promotion,
 )
@@ -314,7 +314,7 @@ class Analytic(Operator.Unary):
     def normalize_dates(
         cls, data: Optional[pd.DataFrame], components: Dict[str, Component]
     ) -> pd.DataFrame:
-        Date_types = (Date, Time, TimePeriod)
+        Date_types = (Date, TimeInterval, TimePeriod)
 
         if data is None:
             return pd.DataFrame(columns=[comp.name for comp in components.values()])
@@ -323,7 +323,7 @@ class Analytic(Operator.Unary):
             for comp_name, comp in components.items():
                 if comp.data_type is Date:
                     data[comp_name] = data[comp_name].astype("date64[pyarrow]")
-                elif comp.data_type is Time:
+                elif comp.data_type is TimeInterval:
                     data[comp_name] = data[comp_name].astype("time64[pyarrow]")
                 elif comp.data_type is TimePeriod:
                     data[comp_name] = (
