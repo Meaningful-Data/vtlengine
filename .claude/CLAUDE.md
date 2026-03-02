@@ -1,4 +1,4 @@
-# VTL Engine - Claude Code Instructions
+# VTL Engine - AI Coding Assistant Instructions
 
 ## Project Overview
 
@@ -196,7 +196,8 @@ Only use the following labels — **never create new labels**:
 
 ### Branch Naming
 
-Pattern: `cr-{issue_number}` (e.g., `cr-457` for issue #457)
+- Issue branches: `cr-{issue_number}` (e.g., `cr-457` for issue #457)
+- Version bump branches: `bump-version-{version}` (e.g., `bump-version-1.6.0rc2`)
 
 ### Workflow
 
@@ -264,7 +265,7 @@ print(run_result)
 3. **AST node equality** - Override `ast_equality()` when adding nodes
 4. **Nullable identifiers** - Will raise `SemanticError("0-1-1-13")`
 5. **ANTLR version** - Must use 4.9.x to match `antlr4-python3-runtime` dependency
-6. **Version updates** - When bumping version, update BOTH `pyproject.toml` AND `src/vtlengine/__init__.py`. Always create a new branch from `origin/main` for version bumps and create a PR with no body
+6. **Version updates** - When bumping version, update BOTH `pyproject.toml` AND `src/vtlengine/__init__.py`. Always create a new branch named `bump-version-{version}` from `origin/main` for version bumps and create a PR with no body
 
 ## External Dependencies
 
