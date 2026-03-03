@@ -137,6 +137,48 @@ jobs:
 
             const prs = Object.values(graphqlResult.repository).filter(Boolean);
 
+            // 7b. Fallback: for PRs without closingIssuesReferences, parse issue
+            // numbers from title (e.g. "Fix #504:") and query their issue types
+            const unresolvedIssueNumbers = new Set();
+            for (const pr of prs) {
+              const linked = pr.closingIssuesReferences?.nodes || [];
+              if (linked.length === 0) {
+                const titleMatch = pr.title.match(/(?:Fix|Fixes|Close|Closes|Resolve|Resolves)\s+#(\d+)/i);
+                if (titleMatch) {
+                  unresolvedIssueNumbers.add(parseInt(titleMatch[1]));
+                }
+              }
+            }
+
+            const issueTypeMap = new Map();
+            if (unresolvedIssueNumbers.size > 0) {
+              const issueAliases = [...unresolvedIssueNumbers].map((n, i) => `
+                issue${i}: issue(number: ${n}) {
+                  number
+                  issueType { name }
+                }
+              `).join('');
+
+              const issueQuery = `
+                query {
+                  repository(owner: "${context.repo.owner}", name: "${context.repo.repo}") {
+                    ${issueAliases}
+                  }
+                }
+              `;
+
+              const issueResult = await github.graphql(issueQuery, {
+                headers: { 'GraphQL-Features': 'issue_types' },
+              });
+
+              for (const issue of Object.values(issueResult.repository).filter(Boolean)) {
+                if (issue.issueType?.name) {
+                  issueTypeMap.set(issue.number, issue.issueType.name);
+                }
+              }
+              core.info(`Resolved ${issueTypeMap.size} issue types from PR titles: ${[...issueTypeMap.entries()].map(([n, t]) => `#${n}=${t}`).join(', ')}`);
+            }
+
             // 8. Parse main dependencies from pyproject.toml
             const depsSection = pyproject.match(/\[project\]\s[\s\S]*?dependencies\s*=\s*\[([\s\S]*?)\]/);
             const mainDeps = new Set();
@@ -173,11 +215,18 @@ jobs:
 
               const isDependabot = author === 'dependabot[bot]' || author === 'dependabot';
 
-              // Check linked issue types
+              // Check linked issue types (closing refs first, then title fallback)
               const linkedIssues = pr.closingIssuesReferences?.nodes || [];
-              const issueType = linkedIssues.length > 0
+              let issueType = linkedIssues.length > 0
                 ? linkedIssues[0].issueType?.name
                 : null;
+
+              if (!issueType) {
+                const titleMatch = title.match(/(?:Fix|Fixes|Close|Closes|Resolve|Resolves)\s+#(\d+)/i);
+                if (titleMatch) {
+                  issueType = issueTypeMap.get(parseInt(titleMatch[1])) || null;
+                }
+              }
 
               if (issueType) {
                 switch (issueType.toLowerCase()) {
