@@ -1331,3 +1331,24 @@ class AggregateOperatorsTest(TestAggregateHelper):
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_554_1(self):
+        """
+        Sum: sum
+        Dataset --> Dataset
+        Status: SemanticError
+        Expression: DS_r := sum(DS_1 group by Id_1);
+                    DS_1 Dataset
+
+        Description: Fix #554: TimeInterval measure is not supported in aggregate operations.
+
+        Goal: Check that a SemanticError is raised when a TimeInterval measure is used
+              in aggregate operations.
+        """
+        code = "GH_554_1"
+        number_inputs = 1
+        exception_code = "1-1-19-12"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
