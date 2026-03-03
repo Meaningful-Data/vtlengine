@@ -1352,3 +1352,25 @@ class AggregateOperatorsTest(TestAggregateHelper):
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=exception_code
         )
+
+    def test_GH_554_2(self):
+        """
+        Max: max
+        Dataset --> Dataset
+        Status: RunTimeError
+        Expression: DS_r := max(DS_1 group by Id_1);
+                    DS_1 Dataset
+
+        Description: Fix #554: TimePeriod measures with different period indicators
+                     are not supported in aggregate MAX/MIN operations.
+
+        Goal: Check that a RunTimeError is raised when TimePeriod values have different
+              period indicators in aggregate operations.
+        """
+        code = "GH_554_2"
+        number_inputs = 1
+        exception_code = "2-1-19-20"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
