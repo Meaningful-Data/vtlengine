@@ -69,6 +69,27 @@ class CastExplicitWithoutMask(CastHelper):
 
         self.BaseTest(code, number_inputs, references_names=reference_names)
 
+    def test_GH_539_1(self):
+        """
+        Solves bug report in github issue #539: sub fails whith scalar as VarID casting
+        """
+        code = "GH_539_1"
+        number_inputs = 2
+        reference_names = ["1"]
+        scalars = {"sc_1": 1}
+
+        self.BaseTest(code, number_inputs, references_names=reference_names, scalars=scalars)
+
+    def test_GH_539_2(self):
+        """
+        Solves bug report in github issue #539: sub fails whith scalar as VarID casting
+        """
+        code = "GH_539_2"
+        number_inputs = 1
+        exception_code = "1-1-1-11"  # sub comparison is not allowed between components
+
+        self.NewSemanticExceptionTest(code, number_inputs, exception_code)
+
 
 # ===========================================================================
 # Comprehensive explicit cast tests (VTL 2.2) - Without mask

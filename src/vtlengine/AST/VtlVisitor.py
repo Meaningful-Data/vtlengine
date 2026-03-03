@@ -532,6 +532,10 @@ class VtlVisitor(ParseTreeVisitor):
     def visitScalarWithCast(self, ctx: Parser.ScalarWithCastContext):
         return self.visitChildren(ctx)
 
+    # Visit a parse tree produced by Parser#scalarVarWithCast.
+    def visitScalarVarWithCast(self, ctx: Parser.ScalarVarWithCastContext):
+        return self.visitChildren(ctx)
+
     # Visit a parse tree produced by Parser#joinClauseWithoutUsing.
     def visitJoinClauseWithoutUsing(self, ctx: Parser.JoinClauseWithoutUsingContext):
         return self.visitChildren(ctx)

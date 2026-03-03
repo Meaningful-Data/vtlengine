@@ -512,6 +512,8 @@ class Terminals(VtlVisitor):
             return self.visitConstant(c)
         elif isinstance(c, Parser.ScalarWithCastContext):
             return self.visitScalarWithCast(c)
+        elif isinstance(c, Parser.ScalarVarWithCastContext):
+            return self.visitScalarVarWithCast(c)
         else:
             raise NotImplementedError
 
@@ -540,6 +542,40 @@ class Terminals(VtlVisitor):
 
         if len(basic_scalar_type) == 1:
             children_nodes = [const_node, basic_scalar_type[0]]
+
+            return ParamOp(
+                op=op, children=children_nodes, params=param_node, **extract_token_info(ctx)
+            )
+
+        else:
+            # AST_ASTCONSTRUCTOR.14
+            raise NotImplementedError
+
+    def visitScalarVarWithCast(self, ctx: Parser.ScalarVarWithCastContext):
+        """
+        |  CAST LPAREN varID COMMA (basicScalarType) (COMMA STRING_CONSTANT)? RPAREN    #scalarVarWithCast
+        """  # noqa E501
+        ctx_list = list(ctx.getChildren())
+        c = ctx_list[0]
+
+        token = c.getSymbol()
+
+        op = token.text
+        var_node = self.visitVarID(ctx_list[2])
+        basic_scalar_type = [self.visitBasicScalarType(ctx_list[4])]
+
+        param_node = (
+            [
+                ParamConstant(
+                    type_="PARAM_CAST", value=ctx_list[6], **extract_token_info(ctx_list[6])
+                )
+            ]
+            if len(ctx_list) > 6
+            else []
+        )
+
+        if len(basic_scalar_type) == 1:
+            children_nodes = [var_node, basic_scalar_type[0]]
 
             return ParamOp(
                 op=op, children=children_nodes, params=param_node, **extract_token_info(ctx)

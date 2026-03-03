@@ -369,6 +369,7 @@ subspaceClauseItem:
 scalarItem:
  constant                                                                           #simpleScalar
  |  CAST LPAREN constant COMMA (basicScalarType) (COMMA STRING_CONSTANT)? RPAREN    #scalarWithCast
+ |  CAST LPAREN varID COMMA (basicScalarType) (COMMA STRING_CONSTANT)? RPAREN       #scalarVarWithCast
 ;
 /*END SUBSPACE CLAUSE*/
 /*----------------------------------------------END CLAUSE EXPRESSION--------------------------------------*/

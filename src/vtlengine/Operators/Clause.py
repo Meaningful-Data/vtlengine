@@ -1,3 +1,4 @@
+import re
 from copy import copy
 from typing import List, Type, Union
 
@@ -318,6 +319,12 @@ class Sub(Operator):
             raise SemanticError("1-2-10", op=cls.op)
         for operand in operands:
             if operand.name not in dataset.components:
+                if re.match(r"__VDC_\d+__", operand.name):
+                    raise SemanticError(
+                        "1-1-1-11",
+                        op=cls.op,
+                        dataset_name=dataset_name,
+                    )
                 raise SemanticError(
                     "1-1-1-10",
                     op=cls.op,
