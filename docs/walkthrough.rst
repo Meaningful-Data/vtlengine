@@ -36,10 +36,10 @@ Any VTL action requires the following elements as input:
 
 * **External Routines**:
     The VTL Engine supports the use of SQL (ISO/IEC 9075) within the `eval`
-    operator. External routines can be provided as a SQL string, a `Path`
-    object, or a list of such elements pointing to `.sql` files. The
-    default value is `None`, which should be used if external routines
-    are not applicable to the script. See :ref:`example 5
+    operator. External routines can be provided as a dictionary, a `Path`
+    object pointing to a `.json` file or directory, or a list of such
+    elements. The default value is `None`, which should be used if external
+    routines are not applicable to the script. See :ref:`example 5
     <example_5_run_with_multiple_value_domains_and_external_routines>`
     for an example.
 
@@ -326,8 +326,8 @@ Optional settings are the same as in the `run` method, including:
 
     from vtlengine import run_sdmx
 
-    data = Path("Docs/_static/data.xml")
-    structure = Path("Docs/_static/metadata.xml")
+    data = Path("docs/_static/data.xml")
+    structure = Path("docs/_static/metadata.xml")
     datasets = get_datasets(data, structure)
     script = "DS_r <- DS_1 [calc Me_4 := OBS_VALUE];"
     print(run_sdmx(script, datasets)['DS_r'].data)
@@ -349,8 +349,8 @@ If no mapping is provided, the VTL script must have a single input, and the data
 
     from vtlengine import run_sdmx
 
-    data = Path("Docs/_static/data.xml")
-    structure = Path("Docs/_static/metadata.xml")
+    data = Path("docs/_static/data.xml")
+    structure = Path("docs/_static/metadata.xml")
     datasets = get_datasets(data, structure)
     script = TransformationScheme(
         id="TS1",
@@ -399,8 +399,8 @@ Finally, mapping information can be used to link an SDMX input dataset to a VTL 
 
     from vtlengine import run_sdmx
 
-    data = Path("Docs/_static/data.xml")
-    structure = Path("Docs/_static/metadata.xml")
+    data = Path("docs/_static/data.xml")
+    structure = Path("docs/_static/metadata.xml")
     datasets = get_datasets(data, structure)
     script = TransformationScheme(
         id="TS1",
@@ -553,8 +553,8 @@ Example 5: Run with multiple Value Domains and External Routines as dictionaries
 
     def main():
         script = """
-                    Example_5 <- DS_1 [ calc Me_2:= Me_1 in Countries];
-                    Example_5_2 <- eval(SQL_3(DS_1) language "sqlite" returns dataset { identifier<integer> Id_1,
+                    Example_5 <- DS_1 [ calc Me_2:= Id_2 in Countries];
+                    Example_5_2 <- eval(SQL_3(DS_1) language "SQL" returns dataset { identifier<integer> Id_1,
                     measure<number> Me_1});
                 """
 
@@ -583,8 +583,11 @@ Example 5: Run with multiple Value Domains and External Routines as dictionaries
         }
 
 
-        value_domains =
-        {"name": "Countries", "setlist": ["DE", "FR", "IT"], "type": "String"}
+        value_domains = {
+            "name": "Countries",
+            "setlist": ["DE", "FR", "IT"],
+            "type": "String",
+        }
 
         run_result = run(
             script=script,
@@ -624,13 +627,13 @@ Here, `DS_1` is the dictionary key that matches the dataset defined in the data 
     from vtlengine import run
 
     def main():
-        filepath_external_routines = Path("Docs/_static/SQL_4.json")
-        filepath_ValueDomains = Path("Docs/_static/VD_2.json")
-        filepath_vtl_script = Path("Docs/_static/Example_6.vtl")
-        filepath_data_structures = Path("Docs/_static/Example_6.json")
-        filepath_data = Path("Docs/_static/Example_6_input.csv")
+        filepath_external_routines = Path("docs/_static/SQL_4.json")
+        filepath_ValueDomains = Path("docs/_static/VD_2.json")
+        filepath_vtl_script = Path("docs/_static/Example_6.vtl")
+        filepath_data_structures = Path("docs/_static/Example_6.json")
+        filepath_data = Path("docs/_static/Example_6_input.csv")
 
-        datastructures = filepath_data_structures
+        data_structures = filepath_data_structures
         datapoints = {"DS_1": filepath_data}
         script = filepath_vtl_script
         external_routines = filepath_external_routines

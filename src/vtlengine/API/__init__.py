@@ -233,8 +233,8 @@ def semantic_analysis(
         Check the following example: \
         :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
 
-        external_routines: String or Path, or List of Strings or Paths of the \
-        external routines SQL files. (default: None) It is passed as an object, that can be read \
+        external_routines: Dict or Path, or List of Dicts or Paths of the \
+        external routines JSON files. (default: None) It is passed as an object, that can be read \
         from a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
         Check the following example: \
         :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
@@ -374,14 +374,14 @@ def run(
         Check the following example: \
         :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
 
-        external_routines: String or Path, or List of Strings or Paths of the \
+        external_routines: Dict or Path, or List of Dicts or Paths of the \
         external routines JSON files. (default: None) It is passed as an object, that can be read \
         from a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
         Check the following example: \
         :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
 
         time_period_output_format: String with the possible values \
-        ("sdmx_gregorian", "sdmx_reporting", "vtl") for the representation of the \
+        ("sdmx_gregorian", "sdmx_reporting", "vtl", "legacy") for the representation of the \
         Time Period components.
 
         return_only_persistent: If True, run function will only return the results of \
@@ -516,14 +516,14 @@ def run_sdmx(
         Check the following example: \
         :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
 
-        external_routines: String or Path, or List of Strings or Paths of the \
+        external_routines: Dict or Path, or List of Dicts or Paths of the \
         external routines JSON files. (default: None) It is passed as an object, that can be read \
         from a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
         Check the following example: \
         :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
 
         time_period_output_format: String with the possible values \
-        ("sdmx_gregorian", "sdmx_reporting", "vtl") for the representation of the \
+        ("sdmx_gregorian", "sdmx_reporting", "vtl", "legacy") for the representation of the \
         Time Period components.
 
         return_only_persistent: If True, run function will only return the results of \

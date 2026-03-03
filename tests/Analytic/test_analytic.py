@@ -429,6 +429,27 @@ class AnalyticOperatorsTest(AnalyticHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_20(self):
+        """
+        Ratio to report: ratio_to_report
+        Dataset --> Dataset
+        Status: RunTimeError
+        Expression: DS_r := ratio_to_report ( DS_1 over ( partition by Id_1 ) );
+                    DS_1 Dataset
+
+        Description: ratio_to_report raises an error when a partition sums to
+        zero, producing infinite values from the division by zero.
+
+        Goal: Check that ratio_to_report raises error 2-1-3-1 on zero-sum partitions.
+        """
+        code = "1-1-1-20"
+        number_inputs = 1
+        exception_code = "2-1-3-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
 
 class AnalyticOperatorsWithCalcTest(AnalyticHelper):
     """

@@ -114,7 +114,7 @@ _vtl_period_re = re.compile(
     r"|^\d{4}Q[1-4]$"  # YYYYQN (quarter)
     r"|^\d{4}M[0-1]?\d$"  # YYYYM[M] (month, 1 or 2 digits)
     r"|^\d{4}W[0-5]?\d$"  # YYYYW[W] (week, 1 or 2 digits)
-    r"|^\d{4}D[0-3]?[0-9]?\d$"  # YYYYD[DD] (day of year, 1 to 3 digits)
+    r"|^\d{4}D[0-3]?\d{1,2}$"  # YYYYD[DD] (day of year, 1 to 3 digits)
 )
 
 # Hyphenated formats: YYYY-MM, YYYY-M, YYYY-MM-DD, YYYY-MXX, YYYY-QX, YYYY-SX, YYYY-WXX,
@@ -126,7 +126,7 @@ _sdmx_period_re = re.compile(
     r"|^\d{4}-Q[1-4]$"  # YYYY-QX (hyphenated quarter)
     r"|^\d{4}-S[1-2]$"  # YYYY-SX (hyphenated semester)
     r"|^\d{4}-W([0-4]\d|5[0-3]|[1-9])$"  # YYYY-WXX (hyphenated week)
-    r"|^\d{4}-D[0-3]\d\d$"  # YYYY-DXXX (hyphenated day)
+    r"|^\d{4}-D[0-3]?\d{1,2}$"  # YYYY-D[XX]X (hyphenated day)
     r"|^\d{4}-A1$"  # YYYY-A1 (SDMX reporting annual)
 )
 
