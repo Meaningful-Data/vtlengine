@@ -163,12 +163,15 @@ jobs:
               const url = pr.url;
               const entry = `* ${title} by @${author} in ${url}`;
 
-              // Exclude version bumps and QA PRs
-              if (/^Bump version/i.test(title) || /^\(QA\b/i.test(title)) {
+              // Exclude version bumps always; exclude QA PRs only for stable releases
+              if (/^Bump version/i.test(title)) {
+                continue;
+              }
+              if (!isPrerelease && /^\(QA\b/i.test(title)) {
                 continue;
               }
 
-              const isDependabot = author === 'dependabot[bot]';
+              const isDependabot = author === 'dependabot[bot]' || author === 'dependabot';
 
               // Check linked issue types
               const linkedIssues = pr.closingIssuesReferences?.nodes || [];
