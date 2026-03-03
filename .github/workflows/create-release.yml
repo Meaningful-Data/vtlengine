@@ -50,12 +50,19 @@ jobs:
             }
 
             // 4. Find previous release
+            // For stable releases: compare against previous stable release
+            // For pre-releases: compare against previous release (any type)
             const releases = await github.rest.repos.listReleases({
               owner: context.repo.owner,
               repo: context.repo.repo,
               per_page: 100,
             });
-            const previousRelease = releases.data[0];
+            let previousRelease;
+            if (isPrerelease) {
+              previousRelease = releases.data[0];
+            } else {
+              previousRelease = releases.data.find(r => !r.prerelease);
+            }
             const previousTag = previousRelease ? previousRelease.tag_name : null;
             core.info(`Previous release: ${previousTag || 'none'}`);
 
@@ -223,3 +230,27 @@ jobs:
             });
 
             core.info(`Release ${tagName} created successfully`);
+
+            // 12. Delete pre-releases when publishing a stable release
+            if (!isPrerelease) {
+              const preReleases = releases.data.filter(r => r.prerelease);
+              for (const pr of preReleases) {
+                core.info(`Deleting pre-release: ${pr.tag_name}`);
+                await github.rest.repos.deleteRelease({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  release_id: pr.id,
+                });
+                // Delete the associated tag
+                try {
+                  await github.rest.git.deleteRef({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    ref: `tags/${pr.tag_name}`,
+                  });
+                } catch (e) {
+                  core.warning(`Could not delete tag ${pr.tag_name}: ${e.message}`);
+                }
+              }
+              core.info(`Deleted ${preReleases.length} pre-release(s)`);
+            }
