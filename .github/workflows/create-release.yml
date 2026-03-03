@@ -114,7 +114,7 @@ jobs:
                 title
                 url
                 author { login }
-                closingIssuesReferences(first: 10) {
+                closingIssuesReferences(first: 10, userLinkedOnly: false) {
                   nodes {
                     number
                     issueType { name }
