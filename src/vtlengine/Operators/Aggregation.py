@@ -3,8 +3,6 @@ from typing import Any, List, Optional
 
 import duckdb
 import pandas as pd
-import pyarrow as pa
-import pyarrow.compute as pc
 
 import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import (
@@ -61,14 +59,14 @@ class Aggregation(Operator.Unary):
             if measure.data_type == TimePeriod:
                 if mode == "input":
                     if cls.op in [MAX, MIN]:
-                        tp_arr = pa.array(data[measure.name].dropna().astype(str))
-                        extracted = pc.extract_regex(tp_arr, r"^\d{4}-?(?P<ind>[ASQMWD])")  # type: ignore[arg-type]
-                        indicators = pc.if_else(
-                            pc.equal(extracted.field("ind"), pa.scalar("")),
-                            pa.scalar("A"),
-                            extracted.field("ind"),
+                        indicators = (
+                            data[measure.name]
+                            .dropna()
+                            .astype(str)
+                            .str.extract(r"^\d{4}-?([ASQMWD])")[0]
+                            .fillna("A")
                         )
-                        if len(pc.unique(indicators)) > 1:
+                        if indicators.nunique() > 1:
                             raise RunTimeError("2-1-19-20", op=cls.op)
                     data[measure.name] = data[measure.name].map(
                         lambda x: TimePeriodHandler(str(x)), na_action="ignore"

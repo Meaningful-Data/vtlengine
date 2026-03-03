@@ -340,14 +340,14 @@ class Analytic(Operator.Unary):
             )
             for measure in measures:
                 if measure.data_type is TimePeriod:
-                    tp_arr = pa.array(df[measure.name].dropna().astype(str))
-                    extracted = pc.extract_regex(tp_arr, r"^\d{4}-?(?P<ind>[ASQMWD])")  # type: ignore[arg-type]
-                    indicators = pc.if_else(
-                        pc.equal(extracted.field("ind"), pa.scalar("")),
-                        pa.scalar("A"),
-                        extracted.field("ind"),
+                    indicators = (
+                        df[measure.name]
+                        .dropna()
+                        .astype(str)
+                        .str.extract(r"^\d{4}-?([ASQMWD])")[0]
+                        .fillna("A")
                     )
-                    if len(pc.unique(indicators)) > 1:
+                    if indicators.nunique() > 1:
                         raise RunTimeError("2-1-19-20", op=cls.op)
 
         result.data = cls.analyticfunc(
