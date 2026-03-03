@@ -450,6 +450,49 @@ class AnalyticOperatorsTest(AnalyticHelper):
             code=code, number_inputs=number_inputs, exception_code=exception_code
         )
 
+    def test_GH_550_1(self):
+        """
+        Max: max
+        Dataset --> Dataset
+        Status: OK
+        Expression: DS_r := max(DS_1 over (partition by Id_1 order by Id_2
+                    data points between 1 preceding and 1 following));
+                    DS_1 Dataset
+
+        Description: Fix #550: max analytic with Date measure and data points window.
+
+        Goal: Check that max works correctly with Date type measures in analytic operations.
+        """
+        code = "GH_550_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_550_3(self):
+        """
+        Max: max
+        Dataset --> Dataset
+        Status: OK
+        Expression: DS_r <- DS_1[calc MAX_Me_1 :=
+                        max(Me_1 over (
+                            partition by Id_1
+                            order by Me_1
+                            range between unbounded preceding and 1 preceding
+                            )
+                        )
+                    ];
+
+        Description: Fix #550: max analytic with Date measure and range window.
+
+        Goal: Check that max works correctly with Date type measures in analytic operations.
+        """
+        code = "GH_550_3"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class AnalyticOperatorsWithCalcTest(AnalyticHelper):
     """
@@ -1068,6 +1111,25 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
         Description: Analytic with operator before operand in a calc
         """
         code = "2-1-1-29"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_550_2(self):
+        """
+        Min: min
+        Dataset --> Dataset
+        Status: OK
+        Expression: DS_r := DS_1[calc Me_2 := min(Me_1 over (partition by Id_1
+                    order by Id_2 data points between 1 preceding and 1 following))];
+                    DS_1 Dataset
+
+        Description: Fix #550: min analytic with calc and Date measure.
+
+        Goal: Check that min works correctly with Date type measures in analytic calc.
+        """
+        code = "GH_550_2"
         number_inputs = 1
         references_names = ["1"]
 

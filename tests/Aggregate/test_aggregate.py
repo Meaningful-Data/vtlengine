@@ -1307,3 +1307,27 @@ class AggregateOperatorsTest(TestAggregateHelper):
             number_inputs=number_inputs,
             references_names=references_names,
         )
+
+    def test_GH_550_1(self):
+        """
+        Status: OK
+        Description: Fix #550: max aggregate with Date measure and group by
+        Goal: Check that max works correctly with Date type measures in aggregation
+        """
+        code = "GH_550_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_550_2(self):
+        """
+        Status: OK
+        Description: Fix #550: min aggregate with Date measure and group by
+        Goal: Check that min works correctly with Date type measures in aggregation
+        """
+        code = "GH_550_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)

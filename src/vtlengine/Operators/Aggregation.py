@@ -19,6 +19,7 @@ from vtlengine.AST.Grammar.tokens import (
 )
 from vtlengine.DataTypes import (
     Boolean,
+    Date,
     Duration,
     Integer,
     Number,
@@ -83,6 +84,11 @@ class Aggregation(Operator.Unary):
                     data[measure.name] = data[measure.name].map(PERIOD_IND_MAPPING)
                 else:
                     data[measure.name] = data[measure.name].map(PERIOD_IND_MAPPING_REVERSE)
+            elif measure.data_type == Date:
+                if mode == "input":
+                    data[measure.name] = data[measure.name].astype("date64[pyarrow]")
+                else:
+                    data[measure.name] = data[measure.name].astype(Date.dtype())  # type: ignore[call-overload]
             elif measure.data_type == Boolean and mode == "result":
                 data[measure.name] = (
                     data[measure.name]  # type: ignore[call-overload, unused-ignore]
