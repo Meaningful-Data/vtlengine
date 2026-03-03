@@ -340,13 +340,7 @@ class Analytic(Operator.Unary):
             )
             for measure in measures:
                 if measure.data_type is TimePeriod:
-                    indicators = (
-                        df[measure.name]
-                        .dropna()
-                        .astype(str)
-                        .str.extract(r"^\d{4}-?([ASQMWD])")[0]
-                        .fillna("A")
-                    )
+                    indicators = df[measure.name].dropna().str.extract(r"^\d{4}-?([ASQMWD])")[0]
                     if indicators.nunique() > 1:
                         raise RunTimeError("2-1-19-20", op=cls.op)
 

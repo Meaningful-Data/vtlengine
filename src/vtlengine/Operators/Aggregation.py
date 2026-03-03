@@ -60,11 +60,7 @@ class Aggregation(Operator.Unary):
                 if mode == "input":
                     if cls.op in [MAX, MIN]:
                         indicators = (
-                            data[measure.name]
-                            .dropna()
-                            .astype(str)
-                            .str.extract(r"^\d{4}-?([ASQMWD])")[0]
-                            .fillna("A")
+                            data[measure.name].dropna().str.extract(r"^\d{4}-?([ASQMWD])")[0]
                         )
                         if indicators.nunique() > 1:
                             raise RunTimeError("2-1-19-20", op=cls.op)
