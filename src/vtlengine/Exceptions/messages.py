@@ -817,6 +817,17 @@ centralised_messages = {
         "description": "Raised when the first/last parameter is missing in a time aggregation "
         "over a Date type.",
     },
+    "1-1-19-12": {
+        "message": "At op {op}: TimeInterval data type is not supported for {context} operations.",
+        "description": "Raised when a TimeInterval data type is used in an Analytic or "
+        "Aggregate operation, which does not support it.",
+    },
+    "1-1-19-13": {
+        "message": "At op {op}: RANGE window is not supported for {data_type} "
+        "data type in component {comp_name}.",
+        "description": "Raised when a RANGE window is applied to a component with an "
+        "incompatible data type (String, Duration, TimePeriod, TimeInterval).",
+    },
     # ---------Semantic Analyzer Common----
     "1-2-1": {
         "message": "Please don't use twice {alias} like var_to.",

@@ -138,6 +138,17 @@ class Aggregation(Operator.Unary):
         for comp_name, comp in operand.components.items():
             if comp.role == Role.ATTRIBUTE:
                 del result_components[comp_name]
+        # TimeInterval is not supported as a measure in aggregate operations
+        if any(
+            comp.role == Role.MEASURE and comp.data_type is TimeInterval
+            for comp in result_components.values()
+        ):
+            raise SemanticError(
+                "1-1-19-12",
+                op=cls.op,
+                context="aggregate",
+            )
+
         # Change Measure data type
         for _, comp in result_components.items():
             if comp.role == Role.MEASURE:
