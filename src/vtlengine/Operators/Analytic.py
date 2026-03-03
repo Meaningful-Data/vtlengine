@@ -37,7 +37,6 @@ from vtlengine.DataTypes import (
     TimePeriod,
     unary_implicit_promotion,
 )
-from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
@@ -341,11 +340,14 @@ class Analytic(Operator.Unary):
             )
             for measure in measures:
                 if measure.data_type is TimePeriod:
-                    indicators = {
-                        TimePeriodHandler(str(v)).period_indicator
-                        for v in df[measure.name].dropna()
-                    }
-                    if len(indicators) > 1:
+                    tp_arr = pa.array(df[measure.name].dropna().astype(str))
+                    extracted = pc.extract_regex(tp_arr, r"^\d{4}-?(?P<ind>[ASQMWD])")  # type: ignore[arg-type]
+                    indicators = pc.if_else(
+                        pc.equal(extracted.field("ind"), pa.scalar("")),
+                        pa.scalar("A"),
+                        extracted.field("ind"),
+                    )
+                    if len(pc.unique(indicators)) > 1:
                         raise RunTimeError("2-1-19-20", op=cls.op)
 
         result.data = cls.analyticfunc(
