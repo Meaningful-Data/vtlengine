@@ -613,11 +613,11 @@ class ExprComp(VtlVisitor):
                 Parser.YearAtomComponentContext,
                 Parser.MonthAtomComponentContext,
                 Parser.DayOfMonthAtomComponentContext,
-                Parser.DayOfYearAtomComponentContext,
+                Parser.DatOfYearAtomComponentContext,
                 Parser.DayToYearAtomComponentContext,
                 Parser.DayToMonthAtomComponentContext,
-                Parser.YearToDayAtomComponentContext,
-                Parser.MonthToDayAtomComponentContext,
+                Parser.YearTodayAtomComponentContext,
+                Parser.MonthTodayAtomComponentContext,
             ),
         ):
             return self.visitTimeUnaryAtomComponent(ctx)
@@ -737,12 +737,15 @@ class ExprComp(VtlVisitor):
 
     def visitDateDiffAtomComponent(self, ctx: Parser.TimeShiftAtomComponentContext):
         """ """
+        from vtlengine.AST.ASTConstructorModules.Expr import Expr
+
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]
 
         op = c.getSymbol().text
         left_node = self.visitExprComponent(ctx_list[2])
-        right_node = self.visitExprComponent(ctx_list[4])
+        # dateTo is 'expr' (not exprComponent) in the new grammar
+        right_node = Expr().visitExpr(ctx_list[4])
 
         return BinOp(left=left_node, op=op, right=right_node, **extract_token_info(ctx))
 

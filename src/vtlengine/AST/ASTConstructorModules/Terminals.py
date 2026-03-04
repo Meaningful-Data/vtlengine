@@ -37,31 +37,45 @@ def _remove_scaped_characters(text):
 
 class Terminals(VtlVisitor):
     def visitConstant(self, ctx: Parser.ConstantContext):
-        token = ctx.children[0].getSymbol()
-        token_info = extract_token_info(token)
+        # constant: signedInteger | signedNumber | BOOLEAN_CONSTANT |
+        #           STRING_CONSTANT | NULL_CONSTANT
+        child = ctx.children[0]
+        token_info = extract_token_info(ctx)
 
-        if token.type == Parser.INTEGER_CONSTANT:
-            constant_node = Constant(type_="INTEGER_CONSTANT", value=int(token.text), **token_info)
+        if isinstance(child, Parser.SignedIntegerContext):
+            constant_node = Constant(
+                type_="INTEGER_CONSTANT",
+                value=self.visitSignedInteger(child),
+                **token_info,
+            )
 
-        elif token.type == Parser.NUMBER_CONSTANT:
-            constant_node = Constant(type_="FLOAT_CONSTANT", value=float(token.text), **token_info)
-
-        elif token.type == Parser.BOOLEAN_CONSTANT:
-            if token.text == "true":
-                constant_node = Constant(type_="BOOLEAN_CONSTANT", value=True, **token_info)
-            elif token.text == "false":
-                constant_node = Constant(type_="BOOLEAN_CONSTANT", value=False, **token_info)
-            else:
-                raise NotImplementedError
-
-        elif token.type == Parser.STRING_CONSTANT:
-            constant_node = Constant(type_="STRING_CONSTANT", value=token.text[1:-1], **token_info)
-
-        elif token.type == Parser.NULL_CONSTANT:
-            constant_node = Constant(type_="NULL_CONSTANT", value=None, **token_info)
+        elif isinstance(child, Parser.SignedNumberContext):
+            constant_node = Constant(
+                type_="FLOAT_CONSTANT",
+                value=self.visitSignedNumber(child),
+                **token_info,
+            )
 
         else:
-            raise NotImplementedError
+            token = child.getSymbol()
+            if token.type == Parser.BOOLEAN_CONSTANT:
+                if token.text == "true":
+                    constant_node = Constant(type_="BOOLEAN_CONSTANT", value=True, **token_info)
+                elif token.text == "false":
+                    constant_node = Constant(type_="BOOLEAN_CONSTANT", value=False, **token_info)
+                else:
+                    raise NotImplementedError
+
+            elif token.type == Parser.STRING_CONSTANT:
+                constant_node = Constant(
+                    type_="STRING_CONSTANT", value=token.text[1:-1], **token_info
+                )
+
+            elif token.type == Parser.NULL_CONSTANT:
+                constant_node = Constant(type_="NULL_CONSTANT", value=None, **token_info)
+
+            else:
+                raise NotImplementedError
 
         return constant_node
 
@@ -171,7 +185,10 @@ class Terminals(VtlVisitor):
         )
 
     def visitValueDomainValue(self, ctx: Parser.ValueDomainValueContext):
-        return _remove_scaped_characters(ctx.children[0].getSymbol().text)
+        child = ctx.children[0]
+        if isinstance(child, (Parser.SignedIntegerContext, Parser.SignedNumberContext)):
+            return child.getText()
+        return _remove_scaped_characters(child.getSymbol().text)
 
     def visitRoutineName(self, ctx: Parser.RoutineNameContext):
         """
@@ -601,7 +618,12 @@ class Terminals(VtlVisitor):
         return ctx.children[0].getSymbol().text
 
     def visitSignedInteger(self, ctx: Parser.SignedIntegerContext):
-        return int(ctx.children[0].getSymbol().text)
+        # signedInteger: (MINUS|PLUS)? INTEGER_CONSTANT
+        return int(ctx.getText())
+
+    def visitSignedNumber(self, ctx: Parser.SignedNumberContext):
+        # signedNumber: (MINUS|PLUS)? NUMBER_CONSTANT
+        return float(ctx.getText())
 
     def visitComparisonOperand(self, ctx: Parser.ComparisonOperandContext):
         return ctx.children[0].getSymbol().text
@@ -756,21 +778,20 @@ class Terminals(VtlVisitor):
         )
 
     def visitLimitClauseItem(self, ctx: Parser.LimitClauseItemContext):
+        # limitClauseItem: signedInteger limitDir=PRECEDING
+        #     | signedInteger limitDir=FOLLOWING
+        #     | CURRENT DATA POINT
+        #     | UNBOUNDED limitDir=PRECEDING
+        #     | UNBOUNDED limitDir=FOLLOWING
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]
-        if c.getSymbol().text.lower() == "unbounded":
-            result = -1
+        if isinstance(c, Parser.SignedIntegerContext):
+            result = self.visitSignedInteger(c)
+            return result, ctx.limitDir.text
+        elif c.getSymbol().text.lower() == "unbounded":
+            return -1, ctx.limitDir.text
         elif c.getSymbol().text == "current":
-            result = 0
-            return result, ctx_list[0].getSymbol().text
-        else:
-            result = int(c.getSymbol().text)
-            if result < 0:
-                raise Exception(
-                    f"Cannot use negative numbers ({result}) on limitClause, line {c.symbol.line}"
-                )
-
-        return result, ctx_list[1].getSymbol().text
+            return 0, ctx_list[0].getSymbol().text
 
 
 def create_windowing(win_mode, values, modes, token_info):
