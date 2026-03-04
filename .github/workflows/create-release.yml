@@ -306,3 +306,12 @@ jobs:
               }
               core.info(`Deleted ${preReleases.length} pre-release(s)`);
             }
+
+            // 13. Trigger downstream workflows via repository_dispatch
+            await github.rest.repos.createDispatchEvent({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              event_type: 'release-published',
+              client_payload: { tag_name: tagName },
+            });
+            core.info('Dispatched release-published event');

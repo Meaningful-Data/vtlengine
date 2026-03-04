@@ -3,6 +3,8 @@ name: Publish documentation
 on:
   release:
     types: [ published ]
+  repository_dispatch:
+    types: [ release-published ]
 
   workflow_dispatch:
 
@@ -86,6 +88,7 @@ jobs:
       always() && !cancelled() &&
       (
         github.event_name == 'release' ||
+        github.event_name == 'repository_dispatch' ||
         github.event_name == 'workflow_dispatch' ||
         needs.check-docs-label.outputs.should_build == 'true'
       )
