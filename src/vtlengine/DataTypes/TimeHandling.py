@@ -372,8 +372,8 @@ class TimePeriodHandler:
             period_number_str = str(self.period_number)
         return f"{self.year}-{self.period_indicator}{period_number_str}"
 
-    def legacy_representation(self) -> str:
-        """Legacy representation: YYYY, YYYY-Sx, YYYY-Qx, YYYY-MM, YYYY-Wxx, YYYY-MM-DD."""
+    def natural_representation(self) -> str:
+        """Natural representation: YYYY, YYYY-Sx, YYYY-Qx, YYYY-MM, YYYY-Wxx, YYYY-MM-DD."""
         if self.period_indicator == "A":
             return f"{self.year}"
         if self.period_indicator == "M":
