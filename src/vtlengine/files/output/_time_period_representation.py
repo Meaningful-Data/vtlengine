@@ -12,7 +12,7 @@ class TimePeriodRepresentation(Enum):
     SDMX_GREGORIAN = "sdmx_gregorian"
     SDMX_REPORTING = "sdmx_reporting"
     VTL = "vtl"
-    LEGACY = "legacy"
+    NATURAL = "natural"
 
     @classmethod
     def check_value(cls, value: str) -> "TimePeriodRepresentation":
@@ -36,8 +36,8 @@ def _format_sdmx_reporting_representation(value: str) -> str:
     return TimePeriodHandler(value).sdmx_reporting_representation()
 
 
-def _format_legacy_representation(value: str) -> str:
-    return TimePeriodHandler(value).legacy_representation()
+def _format_natural_representation(value: str) -> str:
+    return TimePeriodHandler(value).natural_representation()
 
 
 def format_time_period_external_representation(
@@ -49,7 +49,7 @@ def format_time_period_external_representation(
     SDMX Reporting: YYYY-A1, YYYY-Ss, YYYY-Qq, YYYY-Mmm, YYYY-Www, YYYY-Dddd
     SDMX Gregorian: YYYY, YYYY-MM, YYYY-MM-DD (only A, M, D supported)
     VTL: YYYY, YYYYSn, YYYYQn, YYYYMm, YYYYWw, YYYYDd (no hyphens)
-    Legacy: YYYY, YYYY-Sx, YYYY-Qx, YYYY-MM, YYYY-Wxx, YYYY-MM-DD
+    Natural: YYYY, YYYY-Sx, YYYY-Qx, YYYY-MM, YYYY-Wxx, YYYY-MM-DD
     """
     if isinstance(operand, Scalar):
         if operand.data_type != TimePeriod or operand.value is None:
@@ -62,8 +62,8 @@ def format_time_period_external_representation(
             operand.value = _format_sdmx_gregorian_representation(value)
         elif mode == TimePeriodRepresentation.SDMX_REPORTING:
             operand.value = _format_sdmx_reporting_representation(value)
-        elif mode == TimePeriodRepresentation.LEGACY:
-            operand.value = _format_legacy_representation(value)
+        elif mode == TimePeriodRepresentation.NATURAL:
+            operand.value = _format_natural_representation(value)
         return
 
     if operand.data is None or len(operand.data) == 0:
@@ -74,8 +74,8 @@ def format_time_period_external_representation(
         formatter = _format_sdmx_gregorian_representation
     elif mode == TimePeriodRepresentation.SDMX_REPORTING:
         formatter = _format_sdmx_reporting_representation
-    elif mode == TimePeriodRepresentation.LEGACY:
-        formatter = _format_legacy_representation
+    elif mode == TimePeriodRepresentation.NATURAL:
+        formatter = _format_natural_representation
 
     for comp in operand.components.values():
         if comp.data_type == TimePeriod:
