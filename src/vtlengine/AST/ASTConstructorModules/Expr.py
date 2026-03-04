@@ -1886,10 +1886,8 @@ class Expr(VtlVisitor):
         op_node = ctx_list[1].getSymbol().text
         if isinstance(ctx_list[2], Parser.ScalarWithCastContext):
             right_node = Terminals().visitScalarWithCast(ctx_list[2])
-        elif isinstance(ctx_list[2], Parser.ScalarItemContext):
-            right_node = Terminals().visitScalarItem(ctx_list[2])
         else:
-            right_node = Terminals().visitVarID(ctx_list[2])
+            right_node = Terminals().visitScalarItem(ctx_list[2])
         return BinOp(left=left_node, op=op_node, right=right_node, **extract_token_info(ctx))
 
     def visitOptionalExpr(self, ctx: Parser.OptionalExprContext):

@@ -11821,9 +11821,6 @@ class Parser(ANTLRParser):
         def scalarItem(self):
             return self.getTypedRuleContext(Parser.ScalarItemContext, 0)
 
-        def varID(self):
-            return self.getTypedRuleContext(Parser.VarIDContext, 0)
-
         def getRuleIndex(self):
             return Parser.RULE_subspaceClauseItem
 
@@ -11844,27 +11841,8 @@ class Parser(ANTLRParser):
             self.componentID()
             self.state = 1356
             self.match(Parser.EQ)
-            self.state = 1359
-            self._errHandler.sync(self)
-            token = self._input.LA(1)
-            if token in [
-                Parser.NULL_CONSTANT,
-                Parser.CAST,
-                Parser.INTEGER_CONSTANT,
-                Parser.NUMBER_CONSTANT,
-                Parser.BOOLEAN_CONSTANT,
-                Parser.STRING_CONSTANT,
-            ]:
-                self.state = 1357
-                self.scalarItem()
-                pass
-            elif token in [Parser.IDENTIFIER]:
-                self.state = 1358
-                self.varID()
-                pass
-            else:
-                raise NoViableAltException(self)
-
+            self.state = 1357
+            self.scalarItem()
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
