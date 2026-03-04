@@ -266,7 +266,7 @@ def test_sdmx_gregorian_representation_unsupported(internal: str) -> None:
         TimePeriodHandler(internal).sdmx_gregorian_representation()
 
 
-legacy_repr_params = [
+natural_repr_params = [
     ("2020A", "2020", "annual"),
     ("2020S1", "2020-S1", "semester 1"),
     ("2020S2", "2020-S2", "semester 2"),
@@ -284,11 +284,11 @@ legacy_repr_params = [
 
 @pytest.mark.parametrize(
     "internal, expected",
-    [(c[0], c[1]) for c in legacy_repr_params],
-    ids=[c[2] for c in legacy_repr_params],
+    [(c[0], c[1]) for c in natural_repr_params],
+    ids=[c[2] for c in natural_repr_params],
 )
-def test_legacy_representation(internal: str, expected: str) -> None:
-    assert TimePeriodHandler(internal).legacy_representation() == expected
+def test_natural_representation(internal: str, expected: str) -> None:
+    assert TimePeriodHandler(internal).natural_representation() == expected
 
 
 # VTL Data Types to external representations tests
@@ -327,13 +327,13 @@ format_dataset_params = [
     ("2020A", TimePeriodRepresentation.SDMX_GREGORIAN, "2020", "gregorian annual"),
     ("2020-M01", TimePeriodRepresentation.SDMX_GREGORIAN, "2020-01", "gregorian month"),
     ("2020-D001", TimePeriodRepresentation.SDMX_GREGORIAN, "2020-01-01", "gregorian day"),
-    # Legacy
-    ("2020A", TimePeriodRepresentation.LEGACY, "2020", "legacy annual"),
-    ("2020-M01", TimePeriodRepresentation.LEGACY, "2020-01", "legacy month"),
-    ("2020-Q3", TimePeriodRepresentation.LEGACY, "2020-Q3", "legacy quarter"),
-    ("2020-S2", TimePeriodRepresentation.LEGACY, "2020-S2", "legacy semester"),
-    ("2020-W01", TimePeriodRepresentation.LEGACY, "2020-W01", "legacy week"),
-    ("2020-D001", TimePeriodRepresentation.LEGACY, "2020-01-01", "legacy day"),
+    # Natural
+    ("2020A", TimePeriodRepresentation.NATURAL, "2020", "natural annual"),
+    ("2020-M01", TimePeriodRepresentation.NATURAL, "2020-01", "natural month"),
+    ("2020-Q3", TimePeriodRepresentation.NATURAL, "2020-Q3", "natural quarter"),
+    ("2020-S2", TimePeriodRepresentation.NATURAL, "2020-S2", "natural semester"),
+    ("2020-W01", TimePeriodRepresentation.NATURAL, "2020-W01", "natural week"),
+    ("2020-D001", TimePeriodRepresentation.NATURAL, "2020-01-01", "natural day"),
 ]
 
 

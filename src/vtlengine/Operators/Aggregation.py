@@ -58,13 +58,15 @@ class Aggregation(Operator.Unary):
         for measure in measures:
             if measure.data_type == TimePeriod:
                 if mode == "input":
+                    if cls.op in [MAX, MIN]:
+                        indicators = (
+                            data[measure.name].dropna().str.extract(r"^\d{4}-?([ASQMWD])")[0]
+                        )
+                        if indicators.nunique() > 1:
+                            raise RunTimeError("2-1-19-20", op=cls.op)
                     data[measure.name] = data[measure.name].map(
                         lambda x: TimePeriodHandler(str(x)), na_action="ignore"
                     )
-                    if cls.op in [MAX, MIN]:
-                        indicators = {v.period_indicator for v in data[measure.name].dropna()}
-                        if len(indicators) > 1:
-                            raise RunTimeError("2-1-19-20", op=cls.op)
                 else:
                     data[measure.name] = data[measure.name].map(
                         lambda x: str(x), na_action="ignore"
@@ -138,6 +140,17 @@ class Aggregation(Operator.Unary):
         for comp_name, comp in operand.components.items():
             if comp.role == Role.ATTRIBUTE:
                 del result_components[comp_name]
+        # TimeInterval is not supported as a measure in aggregate operations
+        if any(
+            comp.role == Role.MEASURE and comp.data_type is TimeInterval
+            for comp in result_components.values()
+        ):
+            raise SemanticError(
+                "1-1-19-12",
+                op=cls.op,
+                context="aggregate",
+            )
+
         # Change Measure data type
         for _, comp in result_components.items():
             if comp.role == Role.MEASURE:

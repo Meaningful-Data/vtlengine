@@ -846,12 +846,6 @@
           "nullable": false
         },
         {
-          "name": "Me_interval",
-          "type": "Time",
-          "role": "Measure",
-          "nullable": true
-        },
-        {
           "name": "Me_rank",
           "type": "Integer",
           "role": "Measure",
