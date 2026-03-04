@@ -28,7 +28,7 @@ first_value_ds := first_value(DS_1#Me_num over (partition by Id_1, Id_2 order by
 last_value_ds := first_value(DS_1#Me_int over (partition by Id_1, Id_2 order by Id_3 asc));
 lag_ds := lag(DS_1#Me_num, 1 over (partition by Id_1 , Id_2 order by Id_3));
 lead_ds := lead(DS_1#Me_num, 2 over (partition by Id_1, Id_2 order by Id_3 asc));
-rank_ds := DS_1[calc Me_rank := rank (over (partition by Id_1, Id_2 order by Id_3))];
+rank_ds := DS_1_without_time[calc Me_rank := rank (over (partition by Id_1, Id_2 order by Id_3))];
 ratio_to_report_ds := ratio_to_report(DS_1#Me_num over (partition by Id_1, Id_2));
 max_analytic_ds := max(DS_1_without_time#Me_int over (partition by Id_1, Id_2 order by Id_3 desc));
 min_analytic_ds := min(DS_1_without_time#Me_int over (partition by Id_1, Id_2 order by Id_3 asc));

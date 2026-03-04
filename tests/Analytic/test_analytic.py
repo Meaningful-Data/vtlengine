@@ -493,6 +493,133 @@ class AnalyticOperatorsTest(AnalyticHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_554_1(self):
+        """
+        Max: max
+        Dataset --> Dataset
+        Status: SemanticError
+        Expression: DS_r := max(DS_1 over (partition by Id_1 order by Id_2));
+                    DS_1 Dataset
+
+        Description: Fix #554: TimeInterval measure is not supported in analytic operations.
+
+        Goal: Check that a SemanticError is raised when a TimeInterval measure is used.
+        """
+        code = "GH_554_1"
+        number_inputs = 1
+        exception_code = "1-1-19-12"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
+    def test_GH_554_2(self):
+        """
+        Max: max
+        Dataset --> Dataset
+        Status: SemanticError
+        Expression: DS_r := max(DS_1 over (partition by Id_1 order by Id_2));
+                    DS_1 Dataset
+
+        Description: Fix #554: TimeInterval identifier in ORDER BY is not supported
+                     in analytic operations.
+
+        Goal: Check that a SemanticError is raised when a TimeInterval identifier
+              is used in ORDER BY.
+        """
+        code = "GH_554_2"
+        number_inputs = 1
+        exception_code = "1-1-19-12"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
+    def test_GH_554_3(self):
+        """
+        Max: max
+        Dataset --> Dataset
+        Status: SemanticError
+        Expression: DS_r := max(DS_1 over (partition by Id_1 order by Id_2
+                    range between 1 preceding and 1 following));
+                    DS_1 Dataset
+
+        Description: Fix #554: RANGE window is not supported for String data type.
+
+        Goal: Check that a SemanticError is raised when RANGE is used with String ORDER BY.
+        """
+        code = "GH_554_3"
+        number_inputs = 1
+        exception_code = "1-1-19-13"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
+    def test_GH_554_4(self):
+        """
+        Max: max
+        Dataset --> Dataset
+        Status: SemanticError
+        Expression: DS_r := max(DS_1 over (partition by Id_1 order by Id_2
+                    range between 1 preceding and 1 following));
+                    DS_1 Dataset
+
+        Description: Fix #554: RANGE window is not supported for Duration data type.
+
+        Goal: Check that a SemanticError is raised when RANGE is used with Duration ORDER BY.
+        """
+        code = "GH_554_4"
+        number_inputs = 1
+        exception_code = "1-1-19-13"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
+    def test_GH_554_5(self):
+        """
+        Max: max
+        Dataset --> Dataset
+        Status: SemanticError
+        Expression: DS_r := max(DS_1 over (partition by Id_1 order by Id_2
+                    range between 1 preceding and 1 following));
+                    DS_1 Dataset
+
+        Description: Fix #554: RANGE window is not supported for Time_Period data type.
+
+        Goal: Check that a SemanticError is raised when RANGE is used with TimePeriod ORDER BY.
+        """
+        code = "GH_554_5"
+        number_inputs = 1
+        exception_code = "1-1-19-13"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
+    def test_GH_554_6(self):
+        """
+        Max: max
+        Dataset --> Dataset
+        Status: RunTimeError
+        Expression: DS_r := max(DS_1 over (partition by Id_1 order by Id_2));
+                    DS_1 Dataset
+
+        Description: Fix #554: TimePeriod measures with different period indicators
+                     are not supported in analytic MAX/MIN operations.
+
+        Goal: Check that a RunTimeError is raised when TimePeriod values have different
+              period indicators.
+        """
+        code = "GH_554_6"
+        number_inputs = 1
+        exception_code = "2-1-19-20"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
 
 class AnalyticOperatorsWithCalcTest(AnalyticHelper):
     """

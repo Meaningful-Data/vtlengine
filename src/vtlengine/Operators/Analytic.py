@@ -29,8 +29,12 @@ from vtlengine.AST.Grammar.tokens import (
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
     Date,
+    Duration,
     Integer,
     Number,
+    String,
+    TimeInterval,
+    TimePeriod,
     unary_implicit_promotion,
 )
 from vtlengine.Exceptions import RunTimeError, SemanticError
@@ -93,6 +97,43 @@ class Analytic(Operator.Unary):
                     comp_name=comp_name,
                     dataset_name=operand.name,
                 )
+            # TimeInterval is not supported in ORDER BY
+            if operand.components[comp_name].data_type is TimeInterval:
+                raise SemanticError(
+                    "1-1-19-12",
+                    op=cls.op,
+                    context="analytic",
+                )
+            # RANGE window is not supported for String, Duration, TimePeriod, TimeInterval
+            range_unsupported_types = (String, Duration, TimePeriod, TimeInterval)
+            if (
+                window is not None
+                and window.type_ != "data"
+                and operand.components[comp_name].data_type in range_unsupported_types
+            ):
+                raise SemanticError(
+                    "1-1-19-13",
+                    op=cls.op,
+                    data_type=operand.components[comp_name].data_type.__name__,
+                    comp_name=comp_name,
+                )
+
+        # TimeInterval is not supported as a measure in analytic operations
+        if component_name is not None:
+            if operand.components[component_name].data_type is TimeInterval:
+                raise SemanticError(
+                    "1-1-19-12",
+                    op=cls.op,
+                    context="analytic",
+                )
+        else:
+            if any(me.data_type is TimeInterval for me in operand.get_measures()):
+                raise SemanticError(
+                    "1-1-19-12",
+                    op=cls.op,
+                    context="analytic",
+                )
+
         if component_name is not None:
             if cls.type_to_check is not None:
                 unary_implicit_promotion(
@@ -289,6 +330,19 @@ class Analytic(Operator.Unary):
             measure_names = [component_name]
         else:
             measure_names = operand.get_measures_names()
+
+        # Validate TimePeriod measures have same period indicator for MAX/MIN
+        if cls.op in [MAX, MIN]:
+            measures = (
+                [operand.components[component_name]]
+                if component_name is not None
+                else operand.get_measures()
+            )
+            for measure in measures:
+                if measure.data_type is TimePeriod:
+                    indicators = df[measure.name].dropna().str.extract(r"^\d{4}-?([ASQMWD])")[0]
+                    if indicators.nunique() > 1:
+                        raise RunTimeError("2-1-19-20", op=cls.op)
 
         result.data = cls.analyticfunc(
             df=df,
