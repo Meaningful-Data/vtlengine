@@ -2036,7 +2036,7 @@ class Parser(ANTLRParser):
             else:
                 return visitor.visitChildren(self)
 
-    def start(self):
+    def start(self) -> Any:
 
         localctx = Parser.StartContext(self, self._ctx, self.state)
         self.enterRule(localctx, 0, self.RULE_start)
