@@ -258,22 +258,31 @@ DIGITS0_9:
     '0'..'9'
 ;
 
-INTEGER_CONSTANT
-  :
-  MINUS?DIGITS0_9+
-  ;
+INTEGER_CONSTANT:
+  DIGITS0_9+
+;
 
-NUMBER_CONSTANT
-  :
-  INTEGER_CONSTANT '.' INTEGER_CONSTANT* /*FLOATEXP?
-  | INTEGER_CONSTANT+ FLOATEXP*/
-  ;
+NUMBER_CONSTANT:
+  INTEGER_CONSTANT '.' INTEGER_CONSTANT
+;
 
 BOOLEAN_CONSTANT
   :
   'true'
   | 'false'
   ;
+
+/*
+TIME_UNIT
+    :
+    '"A"'
+    |'"S"'
+    |'"M"'
+    |'"Q"'
+    |'"W"'
+    |'"D"'
+    |'"T"'
+    ;*/
 
 STRING_CONSTANT
   :
@@ -356,18 +365,6 @@ IDENTIFIER
     | (MONTH MINUS DAY MINUS YEAR)
     ;*/
 
-/*TIME_UNIT
-    :
-    'A'
-    |'S'
-    |'M'
-    |'Q'
-    |'W'
-    |'D'
-    |'T'
-    ;*/
-
-
  /* old
     TIME
     :
@@ -390,11 +387,11 @@ EOL
 
 ML_COMMENT
   :
-  ('/*' (.)*? '*/')-> channel(2);
+  '/*' .*? '*/' -> channel(2);
 
 SL_COMMENT
   :
-  ('//' (.)*? '\n') ->channel(2);
+  '//' ~[\r\n]*  ->channel(2);
 
 /*
 

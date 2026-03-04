@@ -26,7 +26,7 @@ expr:
     | left=expr op=AND right=expr                                           # booleanExpr
     | left=expr op=(OR|XOR) right=expr							            # booleanExpr
     | IF  conditionalExpr=expr  THEN thenExpr=expr ELSE elseExpr=expr       # ifExpr
-    | CASE (WHEN expr THEN expr)+ ELSE expr                                 # caseExpr
+    | CASE (WHEN condExpr+=expr THEN thenExpr+=expr)+ ELSE elseExpr=expr    # caseExpr
     | constant														        # constantExpr
     | varID															        # varIdExpr
 
@@ -35,19 +35,19 @@ expr:
 
 
 exprComponent:
-    LPAREN exprComponent RPAREN                                                                                 # parenthesisExprComp
-    | functionsComponents                                                                                       # functionsExpressionComp
-    | op=(PLUS|MINUS|NOT) right=exprComponent                                                                   # unaryExprComp
-    | left=exprComponent op=(MUL|DIV) right=exprComponent                                                       # arithmeticExprComp
-    | left=exprComponent op=(PLUS|MINUS|CONCAT) right=exprComponent                                             # arithmeticExprOrConcatComp
-    | left=exprComponent comparisonOperand right=exprComponent                                                  # comparisonExprComp
-    | left=exprComponent op=(IN|NOT_IN)(lists|valueDomainID)                                                    # inNotInExprComp
-    | left=exprComponent op=AND right=exprComponent                                                             # booleanExprComp
-    | left=exprComponent op=(OR|XOR) right=exprComponent                                                        # booleanExprComp
-    | IF  conditionalExpr=exprComponent  THEN thenExpr=exprComponent ELSE elseExpr=exprComponent                # ifExprComp
-    | CASE (WHEN exprComponent THEN exprComponent)+ ELSE exprComponent                                          # caseExprComp
-    | constant                                                                                                  # constantExprComp
-    | componentID                                                                                               # compId
+    LPAREN exprComponent RPAREN                                                                             # parenthesisExprComp
+    | functionsComponents                                                                                   # functionsExpressionComp
+    | op=(PLUS|MINUS|NOT) right=exprComponent                                                               # unaryExprComp
+    | left=exprComponent op=(MUL|DIV) right=exprComponent                                                   # arithmeticExprComp
+    | left=exprComponent op=(PLUS|MINUS|CONCAT) right=exprComponent                                         # arithmeticExprOrConcatComp
+    | left=exprComponent comparisonOperand right=exprComponent                                              # comparisonExprComp
+    | left=exprComponent op=(IN|NOT_IN)(lists|valueDomainID)                                                # inNotInExprComp
+    | left=exprComponent op=AND right=exprComponent                                                         # booleanExprComp
+    | left=exprComponent op=(OR|XOR) right=exprComponent                                                    # booleanExprComp
+    | IF  conditionalExpr=exprComponent  THEN thenExpr=exprComponent ELSE elseExpr=exprComponent            # ifExprComp
+    | CASE (WHEN condExpr+=exprComponent THEN thenExpr+=exprComponent)+ ELSE elseExpr=exprComponent         # caseExprComp
+    | constant                                                                                              # constantExprComp
+    | componentID                                                                                           # compId
 ;
 
 functionsComponents:
@@ -209,10 +209,10 @@ comparisonOperatorsComponent:
 
 timeOperators:
     PERIOD_INDICATOR LPAREN expr? RPAREN                                                                                                # periodAtom
-    | FILL_TIME_SERIES LPAREN expr (COMMA (SINGLE|ALL))? RPAREN                                                                         # fillTimeAtom
+    | FILL_TIME_SERIES LPAREN expr (COMMA op=(SINGLE|ALL))? RPAREN                                                                         # fillTimeAtom
     | op=(FLOW_TO_STOCK | STOCK_TO_FLOW) LPAREN expr RPAREN	                                                                            # flowAtom
     | TIMESHIFT LPAREN expr COMMA signedInteger RPAREN                                                                                  # timeShiftAtom
-    | TIME_AGG LPAREN periodIndTo=STRING_CONSTANT (COMMA periodIndFrom=(STRING_CONSTANT| OPTIONAL ))? (COMMA op=optionalExpr)? (COMMA (FIRST|LAST))? RPAREN     # timeAggAtom
+    | TIME_AGG LPAREN periodIndTo=STRING_CONSTANT (COMMA periodIndFrom=(STRING_CONSTANT| OPTIONAL ))? (COMMA op=optionalExpr)? (COMMA delim=(FIRST|LAST))? RPAREN     # timeAggAtom
     | CURRENT_DATE LPAREN RPAREN                                                                                                        # currentDateAtom
     | DATEDIFF LPAREN dateFrom=expr COMMA dateTo=expr RPAREN                    # dateDiffAtom
     | DATEADD LPAREN op=expr COMMA shiftNumber=expr COMMA periodInd=expr RPAREN # dateAddAtom
@@ -222,27 +222,27 @@ timeOperators:
     | DAYOFYEAR LPAREN expr RPAREN                                              # dayOfYearAtom
     | DAYTOYEAR LPAREN expr RPAREN                                              # dayToYearAtom
     | DAYTOMONTH LPAREN expr RPAREN                                             # dayToMonthAtom
-    | YEARTODAY LPAREN expr RPAREN                                              # yearToDayAtom
-    | MONTHTODAY LPAREN expr RPAREN                                             # monthToDayAtom
+    | YEARTODAY LPAREN expr RPAREN                                              # yearTodayAtom
+    | MONTHTODAY LPAREN expr RPAREN                                             # monthTodayAtom
 ;
 
 timeOperatorsComponent:
     PERIOD_INDICATOR LPAREN exprComponent? RPAREN                                                                                               # periodAtomComponent
-    | FILL_TIME_SERIES LPAREN exprComponent (COMMA (SINGLE|ALL))? RPAREN                                                                        # fillTimeAtomComponent
+    | FILL_TIME_SERIES LPAREN exprComponent (COMMA op=(SINGLE|ALL))? RPAREN                                                                        # fillTimeAtomComponent
     | op=(FLOW_TO_STOCK | STOCK_TO_FLOW) LPAREN exprComponent RPAREN	                                                                                    # flowAtomComponent
     | TIMESHIFT LPAREN exprComponent COMMA signedInteger RPAREN                                                                                 # timeShiftAtomComponent
-    | TIME_AGG LPAREN periodIndTo=STRING_CONSTANT (COMMA periodIndFrom=(STRING_CONSTANT| OPTIONAL ))? (COMMA op=optionalExprComponent)? (COMMA (FIRST|LAST))? RPAREN    # timeAggAtomComponent
+    | TIME_AGG LPAREN periodIndTo=STRING_CONSTANT (COMMA periodIndFrom=(STRING_CONSTANT| OPTIONAL ))? (COMMA op=optionalExprComponent)? (COMMA delim=(FIRST|LAST))? RPAREN    # timeAggAtomComponent
     | CURRENT_DATE LPAREN RPAREN                                                                                                               # currentDateAtomComponent
-    | DATEDIFF LPAREN dateFrom=exprComponent COMMA dateTo=exprComponent RPAREN                    # dateDiffAtomComponent
+    | DATEDIFF LPAREN dateFrom=exprComponent COMMA dateTo=expr RPAREN                    # dateDiffAtomComponent
     | DATEADD LPAREN op=exprComponent COMMA shiftNumber=exprComponent COMMA periodInd=exprComponent RPAREN # dateAddAtomComponent
     | YEAR_OP LPAREN exprComponent RPAREN                                                # yearAtomComponent
     | MONTH_OP LPAREN exprComponent RPAREN                                               # monthAtomComponent
     | DAYOFMONTH LPAREN exprComponent RPAREN                                             # dayOfMonthAtomComponent
-    | DAYOFYEAR LPAREN exprComponent RPAREN                                              # dayOfYearAtomComponent
+    | DAYOFYEAR LPAREN exprComponent RPAREN                                              # datOfYearAtomComponent
     | DAYTOYEAR LPAREN exprComponent RPAREN                                              # dayToYearAtomComponent
     | DAYTOMONTH LPAREN exprComponent RPAREN                                             # dayToMonthAtomComponent
-    | YEARTODAY LPAREN exprComponent RPAREN                                              # yearToDayAtomComponent
-    | MONTHTODAY LPAREN exprComponent RPAREN                                             # monthToDayAtomComponent
+    | YEARTODAY LPAREN exprComponent RPAREN                                              # yearTodayAtomComponent
+    | MONTHTODAY LPAREN exprComponent RPAREN                                             # monthTodayAtomComponent
 ;
 
 setOperators:
@@ -331,7 +331,7 @@ aggrOperatorsGrouping:
          | FIRST_VALUE
          | LAST_VALUE)
          LPAREN exprComponent OVER LPAREN (partition=partitionByClause? orderBy=orderByClause? windowing=windowingClause?)RPAREN RPAREN       #anSimpleFunctionComponent
-    | op=(LAG |LEAD)  LPAREN exprComponent (COMMA offet=signedInteger(defaultValue=scalarItem)?)?  OVER  LPAREN (partition=partitionByClause? orderBy=orderByClause)   RPAREN RPAREN   # lagOrLeadAnComponent
+    | op=(LAG |LEAD)  LPAREN exprComponent (COMMA offset=signedInteger(defaultValue=scalarItem)?)?  OVER  LPAREN (partition=partitionByClause? orderBy=orderByClause)   RPAREN RPAREN   # lagOrLeadAnComponent
     | op=RANK LPAREN  OVER  LPAREN (partition=partitionByClause? orderBy=orderByClause) RPAREN RPAREN                                                                           # rankAnComponent
     | op=RATIO_TO_REPORT LPAREN exprComponent OVER  LPAREN (partition=partitionByClause) RPAREN RPAREN                                                                          # ratioToReportAnComponent
 ;
@@ -418,22 +418,26 @@ windowingClause:
 ;
 
 signedInteger:
-  INTEGER_CONSTANT
+  (MINUS|PLUS)?INTEGER_CONSTANT
+;
+
+signedNumber:
+  (MINUS|PLUS)?NUMBER_CONSTANT
 ;
 
 limitClauseItem:
-    INTEGER_CONSTANT PRECEDING
-    | INTEGER_CONSTANT FOLLOWING
+    signedInteger limitDir=PRECEDING
+    | signedInteger limitDir=FOLLOWING
     | CURRENT DATA POINT
-    | UNBOUNDED PRECEDING
-    | UNBOUNDED FOLLOWING
+    | UNBOUNDED limitDir=PRECEDING
+    | UNBOUNDED limitDir=FOLLOWING
 ;
 
 /*--------------------------------------------END ANALYTIC CLAUSE -----------------------------------------------*/
 /* ------------------------------------------------------------ GROUPING CLAUSE ------------------------------------*/
 groupingClause:
-    GROUP op=(BY | EXCEPT) componentID (COMMA componentID)*     # groupByOrExcept
-    | GROUP ALL exprComponent                                   # groupAll
+    GROUP op=(BY | EXCEPT) componentID (COMMA componentID)* ( TIME_AGG LPAREN STRING_CONSTANT (COMMA delim=(FIRST|LAST))? RPAREN )?     # groupByOrExcept
+    | GROUP ALL ( TIME_AGG LPAREN STRING_CONSTANT (COMMA (STRING_CONSTANT|OPTIONAL))? (COMMA optionalExpr)? (COMMA delim=(FIRST|LAST))? RPAREN )?     # groupAll
   ;
 
 havingClause:
@@ -556,8 +560,8 @@ codeItemRelationClause:
 
 valueDomainValue:
     IDENTIFIER
-    | INTEGER_CONSTANT
-    | NUMBER_CONSTANT
+    | signedInteger
+    | signedNumber
 ;
 
 scalarTypeConstraint:
@@ -679,8 +683,8 @@ routineName:
 ;
 
 constant:
-    INTEGER_CONSTANT
-    | NUMBER_CONSTANT
+    signedInteger
+    | signedNumber
     | BOOLEAN_CONSTANT
     | STRING_CONSTANT
     | NULL_CONSTANT
