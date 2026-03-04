@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from tests.Helper import TestHelper
 
 
@@ -1294,19 +1296,17 @@ class AggregateOperatorsTest(TestAggregateHelper):
 
     def test_GH_164_2(self):
         """
-        Status: OK
-        Description: Sub and filter with Scalars: https://github.com/Meaningful-Data/vtlengine/issues/164
-        Goal: Sub and filter with Scalars
+        Status: SyntaxError
+        Description: Sub with Scalars is no longer valid: https://github.com/Meaningful-Data/vtlengine/issues/164
+        Goal: Check that sub with scalar variable raises a syntax error
         """
-        code = "GH_164_2"
-        number_inputs = 1
-        references_names = ["1", "2"]
+        from vtlengine.API import create_ast
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names,
-        )
+        code = "GH_164_2"
+        text = self.LoadVTL(code)
+
+        with pytest.raises(Exception, match="Not valid VTL Syntax"):
+            create_ast(text)
 
     def test_GH_550_1(self):
         """

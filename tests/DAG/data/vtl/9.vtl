@@ -620,7 +620,7 @@ SUPDEMM.housing_dataset_final :=
 	add_general_features(SUPDEMM.housing_dataset_04);
 OUTPUT.housing_output_generic_01 :=
 	SUPDEMM.housing_dataset_final
-		[sub county = sc_selected_county]
+		[sub county = "Dublin"]
 		[calc identifier did := 1];
 OUTPUT.housing_output_generic_02 :=
 	add_special_features(OUTPUT.housing_output_generic_01);
