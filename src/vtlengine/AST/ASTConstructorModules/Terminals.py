@@ -37,7 +37,8 @@ def _remove_scaped_characters(text):
 
 class Terminals(VtlVisitor):
     def visitConstant(self, ctx: Parser.ConstantContext):
-        # constant: signedInteger | signedNumber | BOOLEAN_CONSTANT | STRING_CONSTANT | NULL_CONSTANT
+        # constant: signedInteger | signedNumber | BOOLEAN_CONSTANT |
+        #           STRING_CONSTANT | NULL_CONSTANT
         child = ctx.children[0]
         token_info = extract_token_info(ctx)
 
