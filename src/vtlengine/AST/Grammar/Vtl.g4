@@ -363,7 +363,7 @@ calcClauseItem:
 
 /*SUBSPACE CLAUSE*/
 subspaceClauseItem:
-  componentID  EQ  (scalarItem | varID)
+  componentID  EQ  scalarItem
 ;
 
 scalarItem:
