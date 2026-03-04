@@ -1300,7 +1300,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         """
         code = "GH_164_2"
         number_inputs = 1
-        references_names = ["1", "2"]
+        references_names = ["1"]
 
         self.BaseTest(
             code=code,

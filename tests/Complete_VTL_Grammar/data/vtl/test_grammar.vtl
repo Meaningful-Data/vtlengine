@@ -274,8 +274,8 @@ rtrim_ds := rtrim(DS_1#Me_str);
 TIME
 *************************************************/
 current_date_sc := current_date();
-year_sc := year(cast("2000-01-01", date));
-month_sc := month(cast("2012-12-25", date));
+year_sc := getyear(cast("2000-01-01", date));
+month_sc := getmonth(cast("2012-12-25", date));
 dayofyear_sc := dayofyear(cast("2020-12-31", date));
 dayofmonth_sc := dayofmonth(cast("2025-03-07", date));
 daytoyear_sc := daytoyear(730);
