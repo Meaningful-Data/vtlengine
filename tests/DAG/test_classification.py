@@ -629,6 +629,80 @@ CASES: dict[str, Classification] = {
         vtl="DS_r := (DS_1 * SC_1)#Me_1;",
         dataset_or_scalar=["DS_1", "SC_1"],
     ),
+    # --- Duration conversion operators (dual) ---
+    "155": Classification(vtl="DS_r := daytoyear(DS_1);", dataset_or_scalar=["DS_1"]),
+    "156": Classification(vtl="DS_r := daytomonth(DS_1);", dataset_or_scalar=["DS_1"]),
+    "157": Classification(vtl="DS_r := yeartoday(DS_1);", dataset_or_scalar=["DS_1"]),
+    "158": Classification(vtl="DS_r := monthtoday(DS_1);", dataset_or_scalar=["DS_1"]),
+    # --- time_agg (dual) ---
+    "159": Classification(
+        vtl='DS_r := time_agg("A", DS_1);',
+        dataset_or_scalar=["DS_1"],
+    ),
+    # --- current_date (no inputs) ---
+    "160": Classification(vtl="SC_r := current_date();"),
+    # --- random (seed=dual, index=scalar) ---
+    "161": Classification(vtl="SC_r := random(42, 1);"),
+    "162": Classification(vtl="DS_r := random(DS_1, 1);", dataset_or_scalar=["DS_1"]),
+    "165": Classification(
+        vtl="DS_r := random(DS_1, SC_1);",
+        scalars=["SC_1"],
+        dataset_or_scalar=["DS_1"],
+    ),
+    # --- eval (dataset-only: external SQL routine) ---
+    "163": Classification(
+        vtl=(
+            "DS_r := eval(my_routine(DS_1)"
+            ' language "SQL"'
+            " returns dataset { identifier Id_1, measure Me_1 });"
+        ),
+        datasets=["DS_1"],
+    ),
+    "164": Classification(
+        vtl=(
+            "DS_r := eval(my_routine(DS_1, DS_2)"
+            ' language "SQL"'
+            " returns dataset { identifier Id_1, measure Me_1 });"
+        ),
+        datasets=["DS_1", "DS_2"],
+    ),
+    # --- Operators with scalar-constrained parameters ---
+    # round: param is always scalar
+    "166": Classification(
+        vtl="DS_r := round(DS_1, SC_1);",
+        scalars=["SC_1"],
+        dataset_or_scalar=["DS_1"],
+    ),
+    # trunc: param is always scalar
+    "167": Classification(
+        vtl="DS_r := trunc(DS_1, SC_1);",
+        scalars=["SC_1"],
+        dataset_or_scalar=["DS_1"],
+    ),
+    # substr: start and length are always scalars
+    "168": Classification(
+        vtl="DS_r := substr(DS_1, SC_1, SC_2);",
+        scalars=["SC_1", "SC_2"],
+        dataset_or_scalar=["DS_1"],
+    ),
+    # replace: pattern and replacement are always scalars
+    "169": Classification(
+        vtl="DS_r := replace(DS_1, SC_1, SC_2);",
+        scalars=["SC_1", "SC_2"],
+        dataset_or_scalar=["DS_1"],
+    ),
+    # instr: pattern is always scalar
+    "170": Classification(
+        vtl="DS_r := instr(DS_1, SC_1);",
+        scalars=["SC_1"],
+        dataset_or_scalar=["DS_1"],
+    ),
+    # between: from and to are always scalars
+    "171": Classification(
+        vtl="DS_r := between(DS_1, SC_1, SC_2);",
+        scalars=["SC_1", "SC_2"],
+        dataset_or_scalar=["DS_1"],
+    ),
 }
 
 
