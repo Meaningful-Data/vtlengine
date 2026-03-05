@@ -365,7 +365,7 @@ class DAGAnalyzer(ASTTemplate):
     def visit_HROperation(self, node: HROperation) -> None:
         """Visit HROperation node for dependency analysis."""
         self.visit(node.dataset)
-        if node.op == HIERARCHY:
+        if node.op == HIERARCHY and node.ruleset_name in self.hrs:
             HRDAGAnalyzer.analyze_hierarchy_roll_up_rules(self.hrs[node.ruleset_name])
 
     def visit_DPValidation(self, node: DPValidation) -> None:
