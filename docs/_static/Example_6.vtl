@@ -1,3 +1,3 @@
-Example_6 <- DS_1 [ calc Me_2:= Me_1 in Countries_EU_Sample];
-Example_6_2 <- eval(SQL_3(DS_1) language "sqlite" returns dataset { identifier<integer> Id_1,
+Example_6 <- DS_1 [ calc Me_2:= Id_2 in Countries];
+Example_6_2 <- eval(SQL_4(DS_1) language "SQL" returns dataset { identifier<integer> Id_1,
 measure<number> Me_1});

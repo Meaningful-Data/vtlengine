@@ -847,8 +847,8 @@ class Expr(VtlVisitor):
                 Parser.DayOfYearAtomContext,
                 Parser.DayToYearAtomContext,
                 Parser.DayToMonthAtomContext,
-                Parser.YearToDayAtomContext,
-                Parser.MonthToDayAtomContext,
+                Parser.YearTodayAtomContext,
+                Parser.MonthTodayAtomContext,
             ),
         ):
             return self.visitTimeUnaryAtom(ctx)
@@ -1730,7 +1730,42 @@ class Expr(VtlVisitor):
 
         op_node = token_left + " " + token_right
 
-        children_nodes = [ExprComp().visitExprComponent(ctx_list[2])]
+        children_nodes: list = []
+
+        # Check if TIME_AGG is present (more than just GROUP ALL)
+        if len(ctx_list) > 2:
+            period_to = None
+            period_from = None
+            operand_node = None
+            conf = None
+
+            for child in ctx_list:
+                if isinstance(child, TerminalNodeImpl):
+                    token = child.getSymbol()
+                    if token.type == Parser.STRING_CONSTANT:
+                        if period_to is None:
+                            period_to = token.text[1:-1]
+                        else:
+                            period_from = token.text[1:-1]
+                    elif token.type in [Parser.FIRST, Parser.LAST]:
+                        conf = token.text
+                elif isinstance(child, Parser.OptionalExprContext):
+                    operand_node = self.visitOptionalExpr(child)
+                    if isinstance(operand_node, ID):
+                        operand_node = None
+                    elif isinstance(operand_node, Identifier):
+                        operand_node = VarID(value=operand_node.value, **extract_token_info(child))
+
+            children_nodes = [
+                TimeAggregation(
+                    op="time_agg",
+                    operand=operand_node,
+                    period_to=period_to,
+                    period_from=period_from,
+                    conf=conf,
+                    **extract_token_info(ctx),
+                )
+            ]
 
         return op_node, children_nodes
 
@@ -1884,7 +1919,9 @@ class Expr(VtlVisitor):
 
         left_node = Terminals().visitVarID(ctx_list[0])
         op_node = ctx_list[1].getSymbol().text
-        if isinstance(ctx_list[2], Parser.ScalarItemContext):
+        if isinstance(ctx_list[2], Parser.ScalarWithCastContext):
+            right_node = Terminals().visitScalarWithCast(ctx_list[2])
+        elif isinstance(ctx_list[2], Parser.ScalarItemContext):
             right_node = Terminals().visitScalarItem(ctx_list[2])
         else:
             right_node = Terminals().visitVarID(ctx_list[2])

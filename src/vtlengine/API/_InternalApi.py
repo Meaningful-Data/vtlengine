@@ -659,7 +659,7 @@ def load_value_domains(
 
 
 def load_external_routines(
-    input: Union[Dict[str, Any], Path, str, List[Union[Dict[str, Any], Path]]],
+    input: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
 ) -> Any:
     """
     Load the external routines.
@@ -695,7 +695,7 @@ def load_external_routines(
         raise DataLoadError(code="0-3-1-1", file=input)
     if input.is_dir():
         for f in input.iterdir():
-            if f.suffix != ".sql":
+            if f.suffix != ".json":
                 continue
             ext_rout = _load_single_external_routine_from_file(f)
             external_routines[ext_rout.name] = ext_rout
