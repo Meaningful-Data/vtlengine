@@ -140,7 +140,7 @@ class DAGAnalyzer(ASTTemplate):
 
         # Include component_or_scalar candidates in global_inputs
         for name in comp_or_scalar:
-            if name not in global_set:
+            if name not in global_set and name not in all_outputs:
                 global_set.add(name)
                 global_inputs.append(name)
 
