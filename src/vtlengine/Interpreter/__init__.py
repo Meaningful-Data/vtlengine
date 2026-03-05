@@ -10,7 +10,6 @@ import vtlengine.AST as AST
 import vtlengine.Exceptions
 import vtlengine.Operators as Operators
 from vtlengine.AST.ASTTemplate import ASTTemplate
-from vtlengine.AST.DAG import HRDAGAnalyzer
 from vtlengine.AST.DAG._models import DatasetSchedule
 from vtlengine.AST.Grammar.tokens import (
     AGGREGATE,
@@ -1350,27 +1349,6 @@ class InterpreterAnalyzer(ASTTemplate):
                         found=cond_components[i],
                     )
                 cond_info[cond_comp] = cond_components[i]
-
-            if node.op == HIERARCHY:
-                aux = []
-                for rule in hr_info["rules"]:
-                    if rule.rule.op == EQ or rule.rule.op == WHEN and rule.rule.right.op == EQ:
-                        aux.append(rule)
-                if len(aux) == 0:
-                    raise SemanticError("1-1-10-5")
-                hr_info["rules"] = aux
-
-                hierarchy_ast = AST.HRuleset(
-                    name=hr_name,
-                    signature_type=hr_info["node"].signature_type,
-                    element=hr_info["node"].element,
-                    rules=aux,
-                    line_start=node.line_start,
-                    line_stop=node.line_stop,
-                    column_start=node.column_start,
-                    column_stop=node.column_stop,
-                )
-                HRDAGAnalyzer().visit(hierarchy_ast)
 
             Check_Hierarchy.validate_hr_dataset(dataset, component)
 
