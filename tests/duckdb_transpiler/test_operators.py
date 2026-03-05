@@ -300,7 +300,7 @@ class TestGlobalRegistry:
         [
             (SUM, 'SUM("Me_1")'),
             (AVG, 'AVG("Me_1")'),
-            (COUNT, 'COUNT("Me_1")'),
+            (COUNT, 'NULLIF(COUNT("Me_1"), 0)'),
             (MIN, 'MIN("Me_1")'),
             (MAX, 'MAX("Me_1")'),
             (STDDEV_POP, 'STDDEV_POP("Me_1")'),

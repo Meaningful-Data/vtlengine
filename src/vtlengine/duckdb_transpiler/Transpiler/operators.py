@@ -402,7 +402,7 @@ def _create_default_registries() -> SQLOperatorRegistries:
 
     registries.aggregate.register_simple(tokens.SUM, "SUM({0})")
     registries.aggregate.register_simple(tokens.AVG, "AVG({0})")
-    registries.aggregate.register_simple(tokens.COUNT, "COUNT({0})")
+    registries.aggregate.register_simple(tokens.COUNT, "NULLIF(COUNT({0}), 0)")
     registries.aggregate.register_simple(tokens.MIN, "MIN({0})")
     registries.aggregate.register_simple(tokens.MAX, "MAX({0})")
     registries.aggregate.register_simple(tokens.MEDIAN, "MEDIAN({0})")

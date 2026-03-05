@@ -229,7 +229,16 @@ class StructureVisitor(ASTTemplate):
         if isinstance(node, AST.MulOp):
             return self._get_mulop_type(node)
         if isinstance(node, AST.If):
-            return self._get_operand_type(node.thenOp)
+            then_t = self._get_operand_type(node.thenOp)
+            if then_t == _DATASET:
+                return _DATASET
+            else_t = self._get_operand_type(node.elseOp)
+            if else_t == _DATASET:
+                return _DATASET
+            cond_t = self._get_operand_type(node.condition)
+            if cond_t == _DATASET:
+                return _DATASET
+            return then_t
         if isinstance(node, AST.Case):
             if node.cases:
                 return self._get_operand_type(node.cases[0].thenOp)
@@ -242,6 +251,10 @@ class StructureVisitor(ASTTemplate):
 
     def _get_binop_type(self, node: AST.BinOp) -> str:
         """Determine operand type for a BinOp."""
+        op = str(node.op).lower() if node.op else ""
+        # In clause context, membership resolves to a column reference
+        if self._in_clause and op == tokens.MEMBERSHIP:
+            return _COMPONENT
         left_t = self._get_operand_type(node.left)
         if left_t == _DATASET:
             return _DATASET
@@ -495,7 +508,10 @@ class StructureVisitor(ASTTemplate):
             return self._get_dataset_structure(node.children[0])
 
         if isinstance(node, AST.If):
-            return self._get_dataset_structure(node.thenOp)
+            ds = self._get_dataset_structure(node.thenOp)
+            if ds is not None:
+                return ds
+            return self._get_dataset_structure(node.elseOp)
 
         if isinstance(node, AST.Case) and node.cases:
             return self._get_dataset_structure(node.cases[0].thenOp)

@@ -80,6 +80,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     # Clause context for component-level resolution
     _in_clause: bool = field(default=False, init=False)
     _current_dataset: Optional[Dataset] = field(default=None, init=False)
+    _column_prefix: Optional[str] = field(default=None, init=False)
 
     # Join context: maps "alias#comp" -> aliased column name in SQL output
     # e.g. {"d2#Me_2": "d2#Me_2"} for duplicate non-identifier columns
@@ -801,7 +802,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 return quote_identifier(qualified)
             # Check if the component exists without qualification in the dataset
             # (i.e. it's not duplicated across datasets)
-            return quote_identifier(comp_name)
+            col = quote_identifier(comp_name)
+            if self._column_prefix:
+                col = f"{self._column_prefix}.{col}"
+            return col
 
         ds = self._get_dataset_structure(node.left)
         table_src = self._get_dataset_sql(node.left)
@@ -1598,8 +1602,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                     f" AS {quote_identifier(alias)}"
                 )
             else:
-                # No measures: count should be NULL (no non-null measures to count)
-                cols.append(f"NULL AS {quote_identifier(alias)}")
+                # No measures: count data points (rows)
+                cols.append(f"COUNT(*) AS {quote_identifier(alias)}")
         else:
             measures = effective_ds.get_measures_names()
             for measure in measures:
@@ -1876,10 +1880,128 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     def visit_If(self, node: AST.If) -> str:
         """Visit IF-THEN-ELSE."""
-        cond_sql = self.visit(node.condition)
-        then_sql = self.visit(node.thenOp)
-        else_sql = self.visit(node.elseOp)
-        return f"CASE WHEN {cond_sql} THEN {then_sql} ELSE {else_sql} END"
+        cond_type = self._get_operand_type(node.condition)
+
+        if cond_type != _DATASET:
+            # Scalar condition: simple CASE
+            cond_sql = self.visit(node.condition)
+            then_sql = self.visit(node.thenOp)
+            else_sql = self.visit(node.elseOp)
+            return f"CASE WHEN {cond_sql} THEN {then_sql} ELSE {else_sql} END"
+
+        # Dataset-level if-then-else: JOIN condition source with then/else datasets
+        return self._build_dataset_if(node)
+
+    def _find_condition_source(self, node: AST.AST) -> Optional[AST.AST]:
+        """Find the source dataset AST node from a condition expression."""
+        if isinstance(node, AST.BinOp):
+            op = str(node.op).lower() if node.op else ""
+            if op == tokens.MEMBERSHIP:
+                return node.left
+            left = self._find_condition_source(node.left)
+            if left is not None:
+                return left
+            return self._find_condition_source(node.right)
+        if isinstance(node, AST.UnaryOp):
+            return self._find_condition_source(node.operand)
+        if isinstance(node, AST.VarID) and self._get_operand_type(node) == _DATASET:
+            return node
+        return None
+
+    def _build_dataset_if(self, node: AST.If) -> str:
+        """Build SQL for dataset-level IF-THEN-ELSE with JOINs."""
+        # Find the source dataset that the condition references
+        source_node = self._find_condition_source(node.condition)
+        if source_node is None:
+            # Fallback to simple CASE
+            cond_sql = self.visit(node.condition)
+            then_sql = self.visit(node.thenOp)
+            else_sql = self.visit(node.elseOp)
+            return f"CASE WHEN {cond_sql} THEN {then_sql} ELSE {else_sql} END"
+
+        source_ds = self._get_dataset_structure(source_node)
+        source_sql = self._get_dataset_sql(source_node)
+        if source_ds is None:
+            cond_sql = self.visit(node.condition)
+            then_sql = self.visit(node.thenOp)
+            else_sql = self.visit(node.elseOp)
+            return f"CASE WHEN {cond_sql} THEN {then_sql} ELSE {else_sql} END"
+
+        # Evaluate condition as a column expression (not a full SELECT)
+        alias_cond = "cond"
+        old_in_clause = self._in_clause
+        old_current_ds = self._current_dataset
+        old_prefix = self._column_prefix
+        self._in_clause = True
+        self._current_dataset = source_ds
+        self._column_prefix = alias_cond
+        cond_expr = self.visit(node.condition)
+        self._in_clause = old_in_clause
+        self._current_dataset = old_current_ds
+        self._column_prefix = old_prefix
+
+        source_ids = list(source_ds.get_identifiers_names())
+
+        then_type = self._get_operand_type(node.thenOp)
+        else_type = self._get_operand_type(node.elseOp)
+
+        # Determine output measures from the dataset side
+        if then_type == _DATASET:
+            ref_ds = self._get_dataset_structure(node.thenOp)
+        elif else_type == _DATASET:
+            ref_ds = self._get_dataset_structure(node.elseOp)
+        else:
+            ref_ds = source_ds
+        output_measures = list(ref_ds.get_measures_names()) if ref_ds else []
+
+        # Build SELECT columns
+        cols: List[str] = [f"{alias_cond}.{quote_identifier(id_)}" for id_ in source_ids]
+
+        for measure in output_measures:
+            if then_type == _DATASET:
+                then_ref = f"t.{quote_identifier(measure)}"
+            else:
+                then_ref = self.visit(node.thenOp)
+
+            if else_type == _DATASET:
+                else_ref = f"e.{quote_identifier(measure)}"
+            else:
+                else_ref = self.visit(node.elseOp)
+
+            cols.append(
+                f"CASE WHEN {cond_expr} THEN {then_ref} "
+                f"ELSE {else_ref} END AS {quote_identifier(measure)}"
+            )
+
+        builder = SQLBuilder().select(*cols).from_table(source_sql, alias_cond)
+
+        # JOIN with then dataset if it's a dataset
+        if then_type == _DATASET:
+            then_sql = self._get_dataset_sql(node.thenOp)
+            then_ds = self._get_dataset_structure(node.thenOp)
+            then_ids = set(then_ds.get_identifiers_names()) if then_ds else set()
+            common = [id_ for id_ in source_ids if id_ in then_ids]
+            on_parts = [
+                f"{alias_cond}.{quote_identifier(id_)} = t.{quote_identifier(id_)}"
+                for id_ in common
+            ]
+            if on_parts:
+                builder.join(then_sql, "t", on=" AND ".join(on_parts), join_type="INNER")
+
+        # JOIN with else dataset if it's a dataset
+        if else_type == _DATASET:
+            else_sql = self._get_dataset_sql(node.elseOp)
+            else_ds = self._get_dataset_structure(node.elseOp)
+            else_ids = set(else_ds.get_identifiers_names()) if else_ds else set()
+            common = [id_ for id_ in source_ids if id_ in else_ids]
+            on_parts = [
+                f"{alias_cond}.{quote_identifier(id_)} = e.{quote_identifier(id_)}"
+                for id_ in common
+            ]
+            if on_parts:
+                builder.join(else_sql, "e", on=" AND ".join(on_parts), join_type="INNER")
+
+        return builder.build()
 
     def visit_Case(self, node: AST.Case) -> str:
         """Visit CASE expression."""
