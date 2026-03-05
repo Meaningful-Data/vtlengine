@@ -110,6 +110,7 @@ class DAGAnalyzer(ASTTemplate):
             deletion=dict(deletion),
             global_inputs=global_inputs,
             persistent=persistent_datasets,
+            all_outputs=sorted(all_outputs),
         )
 
     @classmethod
