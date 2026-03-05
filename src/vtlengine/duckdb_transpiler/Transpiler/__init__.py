@@ -100,6 +100,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     # Datapoint ruleset context
     _dp_signature: Optional[Dict[str, str]] = field(default=None, init=False)
 
+    # Hierarchical ruleset definitions
+    _hrs: Dict[str, Dict[str, Any]] = field(default_factory=dict, init=False)
+
     def __post_init__(self) -> None:
         """Initialize available tables."""
         self.datasets = {**self.input_datasets, **self.output_datasets}
@@ -136,6 +139,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 self.visit(child)
             elif isinstance(child, AST.DPRuleset):
                 self.visit_DPRuleset(child)
+            elif isinstance(child, AST.HRuleset):
+                self._visit_HRuleset(child)
             elif isinstance(child, AST.Assignment):
                 name = child.left.value  # type: ignore[attr-defined]
                 self.current_assignment = name
@@ -433,6 +438,367 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if registry.unary.is_registered(op):
             return registry.unary.generate(op, operand_sql)
         return f"{op}({operand_sql})"
+
+    # =========================================================================
+    # Hierarchical Ruleset definition and check_hierarchy
+    # =========================================================================
+
+    def _visit_HRuleset(self, node: AST.HRuleset) -> None:
+        """Register a hierarchical ruleset definition."""
+        # Auto-number unnamed rules (same logic as interpreter)
+        rule_names = [r.name for r in node.rules if r.name is not None]
+        if len(rule_names) == 0:
+            for i, rule in enumerate(node.rules):
+                rule.name = str(i + 1)
+
+        # Extract condition components and signature
+        cond_comp: List[str] = []
+        signature_value: str
+        if isinstance(node.element, list):
+            cond_comp = [x.value for x in node.element[:-1]]
+            signature_value = node.element[-1].value
+        else:
+            signature_value = node.element.value
+
+        self._hrs[node.name] = {
+            "rules": node.rules,
+            "signature": signature_value,
+            "condition": cond_comp,
+            "signature_type": node.signature_type,
+            "node": node,
+        }
+
+    def visit_HROperation(self, node: AST.HROperation) -> str:  # type: ignore[override]
+        """Generate SQL for check_hierarchy operator."""
+        hr_name = node.ruleset_name
+        hr_info = self._hrs[hr_name]
+
+        # Resolve dataset
+        ds = self._get_dataset_structure(node.dataset)
+        table_src = self._get_dataset_sql(node.dataset)
+        if ds is None:
+            raise ValueError("Cannot resolve dataset for check_hierarchy")
+
+        self._get_output_dataset()
+
+        # Get rule component name
+        component: str = hr_info["signature"]
+
+        # Get mode values with defaults
+        mode = node.validation_mode.value if node.validation_mode else "always_null"
+        output = node.output.value if node.output else "invalid"
+
+        # Condition mapping: ruleset param -> dataset column
+        cond_mapping: Dict[str, str] = {}
+        if node.conditions and hr_info["condition"]:
+            for i, cond_node in enumerate(node.conditions):
+                param_name = hr_info["condition"][i]
+                actual_col = self.visit(cond_node)
+                cond_mapping[param_name] = actual_col
+
+        return self._build_check_hierarchy_sql(
+            table_src=table_src,
+            ds=ds,
+            rules=hr_info["rules"],
+            rule_comp=component,
+            mode=mode,
+            output=output,
+            cond_mapping=cond_mapping,
+        )
+
+    def _build_check_hierarchy_sql(
+        self,
+        table_src: str,
+        ds: Dataset,
+        rules: list,  # type: ignore[type-arg]
+        rule_comp: str,
+        mode: str,
+        output: str,
+        cond_mapping: Dict[str, str],
+    ) -> str:
+        """Orchestrate SQL generation for check_hierarchy: one SELECT per rule, UNION ALL."""
+        measure_name = ds.get_measures_names()[0]
+        other_ids = [n for n in ds.get_identifiers_names() if n != rule_comp]
+
+        rule_queries: List[str] = []
+        for rule in rules:
+            rule_sql = self._build_hr_rule_sql(
+                rule=rule,
+                table_src=table_src,
+                other_ids=other_ids,
+                rule_comp=rule_comp,
+                measure=measure_name,
+                mode=mode,
+                output=output,
+                cond_mapping=cond_mapping,
+            )
+            rule_queries.append(rule_sql)
+
+        if not rule_queries:
+            out_ds = self._get_output_dataset()
+            cols = [quote_identifier(c) for c in (out_ds.components if out_ds else ds.components)]
+            return f"SELECT {', '.join(cols)} FROM {table_src} WHERE 1=0"
+
+        return " UNION ALL ".join(rule_queries)
+
+    def _collect_hr_code_items(self, node: AST.AST) -> List[str]:
+        """Extract all code item values from a hierarchical rule expression."""
+        if isinstance(node, AST.DefIdentifier):
+            return [node.value]
+        if isinstance(node, AST.HRBinOp):
+            return self._collect_hr_code_items(node.left) + self._collect_hr_code_items(node.right)
+        if isinstance(node, AST.HRUnOp):
+            return self._collect_hr_code_items(node.operand)
+        return []
+
+    def _build_hr_value_expr(
+        self, alias: str, rule_comp_col: str, measure_col: str, mode: str
+    ) -> str:
+        """Generate the value expression for a code item, with fill logic per mode."""
+        ref = f"{alias}.{quote_identifier(measure_col)}"
+        if mode in ("always_zero", "non_zero", "partial_zero"):
+            # Missing (no join match) -> 0, existing NULL -> stays NULL
+            comp_ref = f"{alias}.{quote_identifier(rule_comp_col)}"
+            return f"CASE WHEN {comp_ref} IS NULL THEN 0 ELSE {ref} END"
+        # always_null, non_null, partial_null: no fill, NULL propagates
+        return ref
+
+    def _build_hr_expr_sql(
+        self,
+        node: AST.AST,
+        code_item_map: Dict[str, str],
+        rule_comp: str,
+        measure: str,
+        mode: str,
+    ) -> str:
+        """Generate SQL for a hierarchical rule arithmetic expression."""
+        if isinstance(node, AST.DefIdentifier):
+            alias = code_item_map[node.value]
+            return self._build_hr_value_expr(alias, rule_comp, measure, mode)
+        if isinstance(node, AST.HRBinOp):
+            left_sql = self._build_hr_expr_sql(node.left, code_item_map, rule_comp, measure, mode)
+            right_sql = self._build_hr_expr_sql(node.right, code_item_map, rule_comp, measure, mode)
+            op_map = {"+": "+", "-": "-"}
+            return f"({left_sql} {op_map[node.op]} {right_sql})"
+        if isinstance(node, AST.HRUnOp):
+            operand_sql = self._build_hr_expr_sql(
+                node.operand, code_item_map, rule_comp, measure, mode
+            )
+            op_map = {"+": "+", "-": "-"}
+            return f"({op_map[node.op]}{operand_sql})"
+        raise ValueError(f"Unexpected node type in HR expression: {type(node).__name__}")
+
+    def _build_hr_rule_sql(
+        self,
+        rule: AST.HRule,
+        table_src: str,
+        other_ids: List[str],
+        rule_comp: str,
+        measure: str,
+        mode: str,
+        output: str,
+        cond_mapping: Dict[str, str],
+    ) -> str:
+        """Generate SQL for a single hierarchical rule with self-joins."""
+        rule_name = rule.name or ""
+        # rule.rule is typed as HRBinOp but at runtime its left/right may be
+        # nested HRBinOp trees, so we work through Any to avoid type errors.
+        rule_node: Any = rule.rule
+
+        # Handle WHEN clause
+        has_when: bool = rule_node.op == "when"
+        when_node: Any = None
+        comparison_node: Any
+        if has_when:
+            when_node = rule_node.left
+            comparison_node = rule_node.right
+        else:
+            comparison_node = rule_node
+
+        # Extract left code item and comparison operator
+        left_code_item: str = comparison_node.left.value
+        comp_op: str = comparison_node.op
+        right_expr_node: AST.AST = comparison_node.right
+
+        # Collect all code items from right expression
+        right_code_items = self._collect_hr_code_items(right_expr_node)
+        all_code_items = [left_code_item] + right_code_items
+
+        # Build alias map: code_item_value -> alias
+        code_item_map: Dict[str, str] = {}
+        alias_list: List[Tuple[str, str]] = []  # (alias, code_item_value)
+        for i, ci in enumerate(all_code_items):
+            if ci not in code_item_map:
+                alias = f"_ci_{i}"
+                code_item_map[ci] = alias
+                alias_list.append((alias, ci))
+
+        left_alias = code_item_map[left_code_item]
+
+        # Determine JOIN type per mode
+        use_inner = mode == "non_null"
+
+        # Build FROM clause: base (distinct other_ids) + JOINs
+        quoted_other_ids = [quote_identifier(c) for c in other_ids]
+        quoted_rule_comp = quote_identifier(rule_comp)
+        quoted_measure = quote_identifier(measure)
+
+        if other_ids:
+            base_sql = f"(SELECT DISTINCT {', '.join(quoted_other_ids)} FROM {table_src}) AS _base"
+        else:
+            base_sql = "(SELECT 1) AS _base"
+
+        join_clauses: List[str] = []
+        for alias, ci_value in alias_list:
+            join_type = "INNER JOIN" if use_inner else "LEFT JOIN"
+            on_parts = [f"_base.{qid} = {alias}.{qid}" for qid in quoted_other_ids]
+            on_parts.append(f"{alias}.{quoted_rule_comp} = '{ci_value}'")
+            on_clause = " AND ".join(on_parts) if on_parts else "1=1"
+            join_clauses.append(f"{join_type} {table_src} AS {alias} ON {on_clause}")
+
+        from_clause = base_sql + " " + " ".join(join_clauses)
+
+        # Build L and R value expressions
+        l_val = self._build_hr_value_expr(left_alias, rule_comp, measure, mode)
+        r_val = self._build_hr_expr_sql(right_expr_node, code_item_map, rule_comp, measure, mode)
+
+        # Build comparison expression
+        comp_op_sql_map = {"=": "=", ">": ">", "<": "<", ">=": ">=", "<=": "<="}
+        comp_op_sql = comp_op_sql_map[comp_op]
+
+        # bool_var: handles NULL propagation naturally in SQL
+        bool_expr = f"({l_val} {comp_op_sql} {r_val})"
+        imbalance_expr = f"({l_val} - {r_val})"
+
+        # Handle WHEN clause
+        if has_when:
+            when_sql = self._build_hr_when_sql(when_node, cond_mapping)
+            bool_expr = f"CASE WHEN NOT ({when_sql}) THEN TRUE ELSE {bool_expr} END"
+            imbalance_expr = (
+                f"CASE WHEN NOT ({when_sql}) THEN CAST(NULL AS DOUBLE) ELSE {imbalance_expr} END"
+            )
+
+        # Errorcode / errorlevel
+        ec_sql = f"'{rule.erCode}'" if rule.erCode else "NULL"
+        el_sql = str(float(rule.erLevel)) if rule.erLevel is not None else "NULL"
+
+        # Build SELECT columns based on output mode
+        # Qualify other_ids with _base alias to avoid ambiguity
+        select_parts: List[str] = [f"_base.{qid}" for qid in quoted_other_ids]
+        select_parts.append(f"'{left_code_item}' AS {quoted_rule_comp}")
+
+        if output == "invalid":
+            select_parts.append(f"{l_val} AS {quoted_measure}")
+            select_parts.append(f"{imbalance_expr} AS {quote_identifier('imbalance')}")
+            select_parts.append(f"'{rule_name}' AS {quote_identifier('ruleid')}")
+            select_parts.append(f"{ec_sql} AS {quote_identifier('errorcode')}")
+            select_parts.append(f"{el_sql} AS {quote_identifier('errorlevel')}")
+        elif output == "all":
+            select_parts.append(f"{bool_expr} AS {quote_identifier('bool_var')}")
+            select_parts.append(f"{imbalance_expr} AS {quote_identifier('imbalance')}")
+            select_parts.append(f"'{rule_name}' AS {quote_identifier('ruleid')}")
+            select_parts.append(
+                f"CASE WHEN {bool_expr} = FALSE THEN {ec_sql} ELSE NULL END "
+                f"AS {quote_identifier('errorcode')}"
+            )
+            select_parts.append(
+                f"CASE WHEN {bool_expr} = FALSE THEN {el_sql} ELSE NULL END "
+                f"AS {quote_identifier('errorlevel')}"
+            )
+        else:  # all_measures
+            select_parts.append(f"{l_val} AS {quoted_measure}")
+            select_parts.append(f"{bool_expr} AS {quote_identifier('bool_var')}")
+            select_parts.append(f"{imbalance_expr} AS {quote_identifier('imbalance')}")
+            select_parts.append(f"'{rule_name}' AS {quote_identifier('ruleid')}")
+            select_parts.append(
+                f"CASE WHEN {bool_expr} = FALSE THEN {ec_sql} ELSE NULL END "
+                f"AS {quote_identifier('errorcode')}"
+            )
+            select_parts.append(
+                f"CASE WHEN {bool_expr} = FALSE THEN {el_sql} ELSE NULL END "
+                f"AS {quote_identifier('errorlevel')}"
+            )
+
+        # Build WHERE clause
+        where_parts: List[str] = []
+
+        # Output mode filter
+        if output == "invalid":
+            if has_when:
+                when_sql_ref = self._build_hr_when_sql(when_node, cond_mapping)
+                where_parts.append(f"({when_sql_ref})")
+            where_parts.append(f"({bool_expr}) = FALSE")
+
+        # Validation mode filter
+        right_aliases = [code_item_map[ci] for ci in right_code_items]
+        where_parts.extend(
+            self._build_hr_mode_filter(mode, left_alias, right_aliases, rule_comp, measure)
+        )
+
+        select_clause = ", ".join(select_parts)
+        where_clause = f" WHERE {' AND '.join(where_parts)}" if where_parts else ""
+
+        return f"SELECT {select_clause} FROM {from_clause}{where_clause}"
+
+    def _build_hr_mode_filter(
+        self,
+        mode: str,
+        left_alias: str,
+        right_aliases: List[str],
+        rule_comp: str,
+        measure: str,
+    ) -> List[str]:
+        """Generate WHERE clauses for the validation mode."""
+        qm = quote_identifier(measure)
+        qrc = quote_identifier(rule_comp)
+        all_aliases = [left_alias] + right_aliases
+        filters: List[str] = []
+
+        if mode == "non_null":
+            for alias in all_aliases:
+                filters.append(f"{alias}.{qm} IS NOT NULL")
+
+        elif mode == "non_zero":
+            zero_checks = []
+            for alias in all_aliases:
+                val = f"CASE WHEN {alias}.{qrc} IS NULL THEN 0 ELSE {alias}.{qm} END"
+                zero_checks.append(f"COALESCE({val}, 0) = 0")
+            filters.append(f"NOT ({' AND '.join(zero_checks)})")
+
+        elif mode in ("partial_null", "partial_zero"):
+            not_null_checks = [f"{alias}.{qm} IS NOT NULL" for alias in right_aliases]
+            if not_null_checks:
+                filters.append(f"({' OR '.join(not_null_checks)})")
+
+        return filters
+
+    def _build_hr_when_sql(self, node: AST.AST, cond_mapping: Dict[str, str]) -> str:
+        """Generate SQL for a WHEN condition in a hierarchical rule."""
+        if isinstance(node, AST.HRBinOp):
+            left_sql = self._build_hr_when_sql(node.left, cond_mapping)
+            right_sql = self._build_hr_when_sql(node.right, cond_mapping)
+            op_map = {
+                "=": "=",
+                ">": ">",
+                "<": "<",
+                ">=": ">=",
+                "<=": "<=",
+                "+": "+",
+                "-": "-",
+                "and": "AND",
+                "or": "OR",
+            }
+            sql_op = op_map.get(node.op, node.op)
+            return f"({left_sql} {sql_op} {right_sql})"
+        if isinstance(node, AST.DefIdentifier):
+            col_name = cond_mapping.get(node.value, node.value)
+            return quote_identifier(col_name)
+        if isinstance(node, AST.Constant):
+            return self._to_sql_literal(node.value)
+        if isinstance(node, AST.HRUnOp):
+            operand_sql = self._build_hr_when_sql(node.operand, cond_mapping)
+            return f"({node.op}{operand_sql})"
+        raise ValueError(f"Unexpected node type in HR WHEN expression: {type(node).__name__}")
 
     # =========================================================================
     # UDO definition and call
