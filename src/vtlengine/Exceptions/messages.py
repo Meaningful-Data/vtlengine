@@ -224,6 +224,12 @@ centralised_messages = {
         "description": "Raised when URL datapoints are provided but data_structures is not a "
         "file path or URL for fetching the SDMX structure definition.",
     },
+    "0-1-3-9": {
+        "message": "Dataset(s) {datasets} defined in data structures "
+        "but not required by the script.",
+        "description": "Raised when the provided data structures contain datasets "
+        "that are not used as inputs in the VTL script.",
+    },
     # ------------Operators-------------
     # General Semantic errors
     "1-1-1-1": {

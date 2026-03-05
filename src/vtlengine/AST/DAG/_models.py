@@ -23,3 +23,4 @@ class DatasetSchedule:
     deletion: Dict[int, List[str]] = field(default_factory=dict)
     global_inputs: List[str] = field(default_factory=list)
     persistent: List[str] = field(default_factory=list)
+    all_outputs: List[str] = field(default_factory=list)
