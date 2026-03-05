@@ -29,28 +29,6 @@
             "A"
         ]
     },
-    "global_inputs": [
-        "A",
-        "A2",
-        "var1",
-        "var3",
-        "varF",
-        "varRel",
-        "varRel2"
-    ],
-    "global_input_datasets": [
-        "A",
-        "A2"
-    ],
-    "global_input_scalars": [],
-    "global_input_dataset_or_scalar": [],
-    "global_input_component_or_scalar": [
-        "var1",
-        "var3",
-        "varF",
-        "varRel",
-        "varRel2"
-    ],
     "persistent": [
         "F"
     ]

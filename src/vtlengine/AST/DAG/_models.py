@@ -15,6 +15,11 @@ class StatementDeps:
         has_dataset_op: Whether this statement involves a dataset operation
             (RegularAggregation, JoinOp, Aggregation, Analytic, MEMBERSHIP,
             UDO with dataset params, etc.).
+        dataset_inputs: Subset of inputs that are definitively datasets
+            (e.g., UDO params typed as dataset). Empty means all inputs in a
+            ``has_dataset_op`` statement are considered dataset inputs.
+        scalar_inputs: Subset of inputs that are definitively scalars
+            (e.g., UDO params typed as a scalar type like number, string, etc.).
     """
 
     inputs: List[str] = field(default_factory=list)
@@ -22,6 +27,8 @@ class StatementDeps:
     persistent: List[str] = field(default_factory=list)
     unknown_variables: List[str] = field(default_factory=list)
     has_dataset_op: bool = False
+    dataset_inputs: List[str] = field(default_factory=list)
+    scalar_inputs: List[str] = field(default_factory=list)
 
 
 @dataclass

@@ -15,17 +15,6 @@
             "SC_r"
         ]
     },
-    "global_inputs": [
-        "DS_1",
-        "SC_1"
-    ],
-    "global_input_datasets": [],
-    "global_input_scalars": [],
-    "global_input_dataset_or_scalar": [
-        "DS_1",
-        "SC_1"
-    ],
-    "global_input_component_or_scalar": [],
     "persistent": [
         "DS_r"
     ]

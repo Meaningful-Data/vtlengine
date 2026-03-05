@@ -9,11 +9,6 @@
             "c"
         ]
     },
-    "global_inputs": [],
-    "global_input_datasets": [],
-    "global_input_scalars": [],
-    "global_input_dataset_or_scalar": [],
-    "global_input_component_or_scalar": [],
     "persistent": [
         "c"
     ]
