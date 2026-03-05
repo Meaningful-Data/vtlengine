@@ -108,27 +108,86 @@ class DAGAnalyzer(ASTTemplate):
                     deletion[last_consumer.get(element, key)].append(element)
                     insertion[key].append(element)
 
-        # --- Scalar output propagation ---
+        classification = self._classify_global_inputs(
+            all_outputs, global_inputs, global_set
+        )
 
-        # Seed: outputs of statements with no dataset ops and no inputs (constant assignments)
-        # Also seed outputs resolved from unknown_variables (used in RegularAggregation context)
+        return DatasetSchedule(
+            insertion=dict(insertion),
+            deletion=dict(deletion),
+            global_inputs=classification["global_inputs"],
+            global_input_datasets=classification["global_input_datasets"],
+            global_input_scalars=classification["global_input_scalars"],
+            global_input_dataset_or_scalar=classification["global_input_dataset_or_scalar"],
+            global_input_component_or_scalar=classification[
+                "global_input_component_or_scalar"
+            ],
+            persistent=persistent_datasets,
+            all_outputs=sorted(all_outputs),
+        )
+
+    def _classify_global_inputs(
+        self,
+        all_outputs: Set[str],
+        global_inputs: List[str],
+        global_set: Set[str],
+    ) -> Dict[str, List[str]]:
+        """Classify global inputs into datasets, scalars, and ambiguous categories."""
+        scalar_outputs, comp_or_scalar = self._compute_scalar_outputs(all_outputs)
+
+        # Identify definite dataset inputs
+        definite_dataset_inputs: Set[str] = set()
+        for statement in self.dependencies.values():
+            if statement.has_dataset_op:
+                for inp in statement.inputs:
+                    definite_dataset_inputs.add(inp)
+
+        # Include component_or_scalar candidates in global_inputs
+        for name in comp_or_scalar:
+            if name not in global_set:
+                global_set.add(name)
+                global_inputs.append(name)
+
+        # Classify into four categories
+        result: Dict[str, List[str]] = {
+            "global_inputs": global_inputs,
+            "global_input_datasets": [],
+            "global_input_scalars": [],
+            "global_input_dataset_or_scalar": [],
+            "global_input_component_or_scalar": [],
+        }
+
+        for name in global_inputs:
+            if name in comp_or_scalar:
+                result["global_input_component_or_scalar"].append(name)
+            elif name in definite_dataset_inputs:
+                result["global_input_datasets"].append(name)
+            elif self._feeds_only_scalar_chains(name, scalar_outputs):
+                result["global_input_scalars"].append(name)
+            else:
+                result["global_input_dataset_or_scalar"].append(name)
+
+        return result
+
+    def _compute_scalar_outputs(
+        self, all_outputs: Set[str]
+    ) -> tuple[Set[str], Set[str]]:
+        """Compute scalar outputs via propagation and component/scalar candidates."""
         scalar_outputs: Set[str] = set()
         for statement in self.dependencies.values():
             reference = statement.outputs + statement.persistent
             if not reference:
                 continue
             ds_name = reference[0]
-            if not statement.has_dataset_op and not statement.inputs:
-                scalar_outputs.add(ds_name)
-            elif ds_name in self._resolved_from_unknown:
+            is_constant_assignment = not statement.has_dataset_op and not statement.inputs
+            if is_constant_assignment or ds_name in self._resolved_from_unknown:
                 scalar_outputs.add(ds_name)
 
-        # Collect component_or_scalar candidates from unknown_variables
-        component_or_scalar_candidates: Set[str] = set()
+        comp_or_scalar: Set[str] = set()
         for statement in self.dependencies.values():
             for uv in statement.unknown_variables:
                 if uv not in all_outputs:
-                    component_or_scalar_candidates.add(uv)
+                    comp_or_scalar.add(uv)
 
         # Propagate: statements with no dataset ops where all inputs are known scalars
         changed = True
@@ -142,63 +201,27 @@ class DAGAnalyzer(ASTTemplate):
                 if ds_name in scalar_outputs or statement.has_dataset_op:
                     continue
                 if statement.inputs and all(
-                    inp in scalar_outputs or inp in component_or_scalar_candidates
+                    inp in scalar_outputs or inp in comp_or_scalar
                     for inp in statement.inputs
                 ):
                     scalar_outputs.add(ds_name)
                     changed = True
 
-        # --- Identify definite dataset inputs ---
-        definite_dataset_inputs: Set[str] = set()
-        for statement in self.dependencies.values():
-            if statement.has_dataset_op:
-                for inp in statement.inputs:
-                    definite_dataset_inputs.add(inp)
+        return scalar_outputs, comp_or_scalar
 
-        # Include component_or_scalar candidates in global_inputs
-        for name in component_or_scalar_candidates:
-            if name not in global_set:
-                global_set.add(name)
-                global_inputs.append(name)
-
-        # --- Classify global inputs into four categories ---
-        global_input_datasets: List[str] = []
-        global_input_scalars: List[str] = []
-        global_input_dataset_or_scalar: List[str] = []
-        global_input_component_or_scalar: List[str] = []
-
-        for name in global_inputs:
-            if name in component_or_scalar_candidates:
-                global_input_component_or_scalar.append(name)
-            elif name in definite_dataset_inputs:
-                global_input_datasets.append(name)
-            else:
-                feeds_only_scalars = all(
-                    (stmt.outputs + stmt.persistent)[0] in scalar_outputs
-                    for stmt in self.dependencies.values()
-                    if name in stmt.inputs and (stmt.outputs + stmt.persistent)
-                )
-                no_dataset_ops = not any(
-                    stmt.has_dataset_op
-                    for stmt in self.dependencies.values()
-                    if name in stmt.inputs
-                )
-                if feeds_only_scalars and no_dataset_ops:
-                    global_input_scalars.append(name)
-                else:
-                    global_input_dataset_or_scalar.append(name)
-
-        return DatasetSchedule(
-            insertion=dict(insertion),
-            deletion=dict(deletion),
-            global_inputs=global_inputs,
-            global_input_datasets=global_input_datasets,
-            global_input_scalars=global_input_scalars,
-            global_input_dataset_or_scalar=global_input_dataset_or_scalar,
-            global_input_component_or_scalar=global_input_component_or_scalar,
-            persistent=persistent_datasets,
-            all_outputs=sorted(all_outputs),
-        )
+    def _feeds_only_scalar_chains(self, name: str, scalar_outputs: Set[str]) -> bool:
+        """Check if a global input feeds only into scalar-output statements."""
+        has_consumers = False
+        for stmt in self.dependencies.values():
+            if name not in stmt.inputs:
+                continue
+            has_consumers = True
+            if stmt.has_dataset_op:
+                return False
+            reference = stmt.outputs + stmt.persistent
+            if reference and reference[0] not in scalar_outputs:
+                return False
+        return has_consumers
 
     @classmethod
     def create_dag(cls, ast: Start) -> "DAGAnalyzer":
