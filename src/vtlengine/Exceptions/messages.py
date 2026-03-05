@@ -75,6 +75,12 @@ centralised_messages = {
         "message": "Empty Datasets {dataset1} and {dataset2} shape missmatch.",
         "description": "Raised when two Datasets are empty or have incompatible shapes.",
     },
+    "0-1-1-15": {
+        "message": "Invalid time_period_output_format value: '{value}'. "
+        "Allowed formats: {valid_options}.",
+        "description": "Raised when the provided time period output format "
+        "is not one of the supported representations.",
+    },
     "0-1-2-3": {
         "message": "{element_type} '{element}' is/are duplicated.",
         "description": "Occurs when an element (e.g., Identifier or component) "
@@ -278,6 +284,16 @@ centralised_messages = {
         "description": "Occurs when a Scalar is provided to an operation "
         "that only supports Datasets.",
     },
+    "1-1-1-21": {
+        "message": "At op eval: Query contains forbidden command: {command}.",
+        "description": "Raised when an eval query contains a forbidden SQL command "
+        "such as INSTALL or LOAD.",
+    },
+    "1-1-1-22": {
+        "message": "At op eval: Query contains forbidden URL in FROM clause.",
+        "description": "Raised when an eval query attempts to access an external URL "
+        "in the FROM clause.",
+    },
     # Aggregate errors
     "1-1-2-2": {
         "message": "At op {op}: Only Identifiers are allowed for grouping, "
@@ -295,6 +311,16 @@ centralised_messages = {
         "found {id_name} - {id_type}.",
         "description": "Raised when a non-Identifier component is used as a "
         "partitioning key in an analytic operation.",
+    },
+    "2-1-1-1": {
+        "message": "At op {op}: DuckDB runtime error during query execution: {error}.",
+        "description": "Raised when DuckDB encounters an unexpected runtime error "
+        "during query execution.",
+    },
+    "2-1-3-1": {
+        "message": "At op {op}: Division by zero produced infinite values.",
+        "description": "Raised when a division by zero in a DuckDB query produces "
+        "infinite floating-point values in measure columns.",
     },
     # Cast errors
     "1-1-5-1": {
@@ -791,6 +817,17 @@ centralised_messages = {
         "description": "Raised when the first/last parameter is missing in a time aggregation "
         "over a Date type.",
     },
+    "1-1-19-12": {
+        "message": "At op {op}: TimeInterval data type is not supported for {context} operations.",
+        "description": "Raised when a TimeInterval data type is used in an Analytic or "
+        "Aggregate operation, which does not support it.",
+    },
+    "1-1-19-13": {
+        "message": "At op {op}: RANGE window is not supported for {data_type} "
+        "data type in component {comp_name}.",
+        "description": "Raised when a RANGE window is applied to a component with an "
+        "incompatible data type (String, Duration, TimePeriod, TimeInterval).",
+    },
     # ---------Semantic Analyzer Common----
     "1-2-1": {
         "message": "Please don't use twice {alias} like var_to.",
@@ -1071,6 +1108,11 @@ centralised_messages = {
     "2-3-7": {
         "message": "Ruleset Dataset not found, please check the ruleset definition.",
         "description": "Occurs when the Ruleset Dataset is missing.",
+    },
+    "2-3-8": {
+        "message": "At op {op}: Data conversion error: {msg}.",
+        "description": "Raised when DuckDB encounters a data conversion error during "
+        "aggregation query execution.",
     },
     "2-3-9": {
         "message": "{comp_type} {comp_name} not found in {param}.",

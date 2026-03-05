@@ -1,8 +1,10 @@
 from copy import copy
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import duckdb
 import pandas as pd
+import pyarrow as pa
+import pyarrow.compute as pc
 
 import vtlengine.Operators as Operator
 from vtlengine.AST import OrderBy, Windowing
@@ -26,11 +28,16 @@ from vtlengine.AST.Grammar.tokens import (
 )
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
+    Date,
+    Duration,
     Integer,
     Number,
+    String,
+    TimeInterval,
+    TimePeriod,
     unary_implicit_promotion,
 )
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
@@ -90,6 +97,43 @@ class Analytic(Operator.Unary):
                     comp_name=comp_name,
                     dataset_name=operand.name,
                 )
+            # TimeInterval is not supported in ORDER BY
+            if operand.components[comp_name].data_type is TimeInterval:
+                raise SemanticError(
+                    "1-1-19-12",
+                    op=cls.op,
+                    context="analytic",
+                )
+            # RANGE window is not supported for String, Duration, TimePeriod, TimeInterval
+            range_unsupported_types = (String, Duration, TimePeriod, TimeInterval)
+            if (
+                window is not None
+                and window.type_ != "data"
+                and operand.components[comp_name].data_type in range_unsupported_types
+            ):
+                raise SemanticError(
+                    "1-1-19-13",
+                    op=cls.op,
+                    data_type=operand.components[comp_name].data_type.__name__,
+                    comp_name=comp_name,
+                )
+
+        # TimeInterval is not supported as a measure in analytic operations
+        if component_name is not None:
+            if operand.components[component_name].data_type is TimeInterval:
+                raise SemanticError(
+                    "1-1-19-12",
+                    op=cls.op,
+                    context="analytic",
+                )
+        else:
+            if any(me.data_type is TimeInterval for me in operand.get_measures()):
+                raise SemanticError(
+                    "1-1-19-12",
+                    op=cls.op,
+                    context="analytic",
+                )
+
         if component_name is not None:
             if cls.type_to_check is not None:
                 unary_implicit_promotion(
@@ -123,9 +167,13 @@ class Analytic(Operator.Unary):
 
             if cls.op in return_integer_operators:
                 isNumber = False
+                has_non_numeric = False
                 for measure in measures:
-                    isNumber |= isinstance(measure.data_type, Number)
-                cls.return_integer = not isNumber
+                    if isinstance(measure.data_type, (Integer, Number)):
+                        isNumber |= isinstance(measure.data_type, Number)
+                    else:
+                        has_non_numeric = True
+                cls.return_integer = not isNumber and not has_non_numeric
 
             if cls.type_to_check is not None:
                 for measure in measures:
@@ -134,7 +182,8 @@ class Analytic(Operator.Unary):
             if cls.op in return_integer_operators:
                 for measure in measures:
                     new_measure = copy(measure)
-                    new_measure.data_type = Integer if cls.return_integer else Number
+                    if isinstance(measure.data_type, (Integer, Number)):
+                        new_measure.data_type = Integer if cls.return_integer else Number
                     result_components[measure.name] = new_measure
             elif cls.return_type is not None:
                 for measure in measures:
@@ -248,7 +297,19 @@ class Analytic(Operator.Unary):
 
         if cls.op == COUNT:
             df[measure_names] = df[measure_names].fillna(-1)
-        return duckdb.query(query).to_df()
+        try:
+            result = duckdb.query(query).to_df()
+        except RuntimeError as e:
+            if "Conversion" in e.args[0]:
+                raise RunTimeError("2-3-8", op=cls.op, msg=e.args[0].split(":")[-1])
+            else:
+                raise RunTimeError("2-1-1-1", op=cls.op, error=e)
+        if cls.op == RATIO_TO_REPORT:
+            for col_name in measure_names:
+                arr = pa.array(result[col_name])
+                if pa.types.is_floating(arr.type) and pc.any(pc.is_inf(arr)).as_py():
+                    raise RunTimeError("2-1-3-1", op=cls.op)
+        return result
 
     @classmethod
     def evaluate(  # type: ignore[override]
@@ -262,12 +323,26 @@ class Analytic(Operator.Unary):
     ) -> Dataset:
         result = cls.validate(operand, partitioning, ordering, window, params, component_name)
         df = operand.data.copy() if operand.data is not None else pd.DataFrame()
+        df = cls.normalize_dates(df, operand.components)
         identifier_names = operand.get_identifiers_names()
 
         if component_name is not None:
             measure_names = [component_name]
         else:
             measure_names = operand.get_measures_names()
+
+        # Validate TimePeriod measures have same period indicator for MAX/MIN
+        if cls.op in [MAX, MIN]:
+            measures = (
+                [operand.components[component_name]]
+                if component_name is not None
+                else operand.get_measures()
+            )
+            for measure in measures:
+                if measure.data_type is TimePeriod:
+                    indicators = df[measure.name].dropna().str.extract(r"^\d{4}-?([ASQMWD])")[0]
+                    if indicators.nunique() > 1:
+                        raise RunTimeError("2-1-19-20", op=cls.op)
 
         result.data = cls.analyticfunc(
             df=df,
@@ -285,6 +360,19 @@ class Analytic(Operator.Unary):
                     result.data[comp_name] = result.data[comp_name].astype(comp.data_type.dtype())  # type: ignore[call-overload]
 
         return result
+
+    @classmethod
+    def normalize_dates(
+        cls, data: Optional[pd.DataFrame], components: Dict[str, Component]
+    ) -> pd.DataFrame:
+        if data is None:
+            return pd.DataFrame(columns=[comp.name for comp in components.values()])
+        elif any(comp.data_type is Date for comp in components.values()):
+            data = data.copy()
+            for comp_name, comp in components.items():
+                if comp.data_type is Date:
+                    data[comp_name] = data[comp_name].astype("date64[pyarrow]")
+        return data
 
 
 class Max(Analytic):

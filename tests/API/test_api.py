@@ -1569,7 +1569,7 @@ def test_check_script_with_transformation_scheme(transformation_scheme, result_s
 def test_run_with_scalars(data_structures, datapoints, tmp_path):
     script = """
         DS_r <- DS_3[filter Me_1 = sc_1];
-        DS_r2 <- DS_3[sub Id_1 = sc_1];
+        DS_r2 <- DS_3[sub Id_1 = 20];
         Sc_r <- sc_1 + sc_2 + 3 + sc_3;
         Sc_r2 <- sc_1 - sc_2;
         Sc_r3 <- null;
@@ -1643,7 +1643,7 @@ def test_run_with_scalars(data_structures, datapoints, tmp_path):
 def test_run_with_scalar_being_none(data_structures, datapoints, tmp_path):
     script = """
         DS_r <- DS_3[filter Me_1 = sc_1];
-        DS_r2 <- DS_3[sub Id_1 = sc_1];
+        DS_r2 <- DS_3[sub Id_1 = 20];
         Sc_r <- sc_1 + sc_2 + 3 + sc_3;
     """
     scalars = {"sc_1": 20, "sc_2": 5, "sc_3": None}

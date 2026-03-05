@@ -1300,10 +1300,77 @@ class AggregateOperatorsTest(TestAggregateHelper):
         """
         code = "GH_164_2"
         number_inputs = 1
-        references_names = ["1", "2"]
+        references_names = ["1"]
 
         self.BaseTest(
             code=code,
             number_inputs=number_inputs,
             references_names=references_names,
+        )
+
+    def test_GH_550_1(self):
+        """
+        Status: OK
+        Description: Fix #550: max aggregate with Date measure and group by
+        Goal: Check that max works correctly with Date type measures in aggregation
+        """
+        code = "GH_550_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_550_2(self):
+        """
+        Status: OK
+        Description: Fix #550: min aggregate with Date measure and group by
+        Goal: Check that min works correctly with Date type measures in aggregation
+        """
+        code = "GH_550_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_554_1(self):
+        """
+        Sum: sum
+        Dataset --> Dataset
+        Status: SemanticError
+        Expression: DS_r := sum(DS_1 group by Id_1);
+                    DS_1 Dataset
+
+        Description: Fix #554: TimeInterval measure is not supported in aggregate operations.
+
+        Goal: Check that a SemanticError is raised when a TimeInterval measure is used
+              in aggregate operations.
+        """
+        code = "GH_554_1"
+        number_inputs = 1
+        exception_code = "1-1-19-12"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
+    def test_GH_554_2(self):
+        """
+        Max: max
+        Dataset --> Dataset
+        Status: RunTimeError
+        Expression: DS_r := max(DS_1 group by Id_1);
+                    DS_1 Dataset
+
+        Description: Fix #554: TimePeriod measures with different period indicators
+                     are not supported in aggregate MAX/MIN operations.
+
+        Goal: Check that a RunTimeError is raised when TimePeriod values have different
+              period indicators in aggregate operations.
+        """
+        code = "GH_554_2"
+        number_inputs = 1
+        exception_code = "2-1-19-20"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
         )

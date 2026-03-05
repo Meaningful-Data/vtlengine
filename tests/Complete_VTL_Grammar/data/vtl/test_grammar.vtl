@@ -28,7 +28,7 @@ first_value_ds := first_value(DS_1#Me_num over (partition by Id_1, Id_2 order by
 last_value_ds := first_value(DS_1#Me_int over (partition by Id_1, Id_2 order by Id_3 asc));
 lag_ds := lag(DS_1#Me_num, 1 over (partition by Id_1 , Id_2 order by Id_3));
 lead_ds := lead(DS_1#Me_num, 2 over (partition by Id_1, Id_2 order by Id_3 asc));
-rank_ds := DS_1[calc Me_rank := rank (over (partition by Id_1, Id_2 order by Id_3))];
+rank_ds := DS_1_without_time[calc Me_rank := rank (over (partition by Id_1, Id_2 order by Id_3))];
 ratio_to_report_ds := ratio_to_report(DS_1#Me_num over (partition by Id_1, Id_2));
 max_analytic_ds := max(DS_1_without_time#Me_int over (partition by Id_1, Id_2 order by Id_3 desc));
 min_analytic_ds := min(DS_1_without_time#Me_int over (partition by Id_1, Id_2 order by Id_3 asc));
@@ -274,8 +274,8 @@ rtrim_ds := rtrim(DS_1#Me_str);
 TIME
 *************************************************/
 current_date_sc := current_date();
-year_sc := year(cast("2000-01-01", date));
-month_sc := month(cast("2012-12-25", date));
+year_sc := getyear(cast("2000-01-01", date));
+month_sc := getmonth(cast("2012-12-25", date));
 dayofyear_sc := dayofyear(cast("2020-12-31", date));
 dayofmonth_sc := dayofmonth(cast("2025-03-07", date));
 daytoyear_sc := daytoyear(730);

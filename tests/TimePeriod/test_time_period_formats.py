@@ -187,6 +187,8 @@ vtl_repr_params = [
     ("2020W1", "2020W1", "week 1"),
     ("2020W53", "2020W53", "week 53"),
     ("2020D1", "2020D1", "day 1"),
+    ("2020D01", "2020D1", "day 1"),
+    ("2020D001", "2020D1", "day 1"),
     ("2020D100", "2020D100", "day 100"),
     ("2020D366", "2020D366", "day 366"),
 ]
@@ -212,6 +214,8 @@ sdmx_reporting_params = [
     ("2020W1", "2020-W01", "week 1 zero-padded"),
     ("2020W53", "2020-W53", "week 53"),
     ("2020D1", "2020-D001", "day 1 zero-padded"),
+    ("2020D01", "2020-D001", "day 1 zero-padded"),
+    ("2020D001", "2020-D001", "day 1 zero-padded"),
     ("2020D100", "2020-D100", "day 100"),
     ("2020D366", "2020-D366", "day 366"),
 ]
@@ -262,6 +266,31 @@ def test_sdmx_gregorian_representation_unsupported(internal: str) -> None:
         TimePeriodHandler(internal).sdmx_gregorian_representation()
 
 
+natural_repr_params = [
+    ("2020A", "2020", "annual"),
+    ("2020S1", "2020-S1", "semester 1"),
+    ("2020S2", "2020-S2", "semester 2"),
+    ("2020Q1", "2020-Q1", "quarter 1"),
+    ("2020Q4", "2020-Q4", "quarter 4"),
+    ("2020M1", "2020-01", "month 1"),
+    ("2020M12", "2020-12", "month 12"),
+    ("2020W1", "2020-W01", "week 1"),
+    ("2020W53", "2020-W53", "week 53"),
+    ("2020D1", "2020-01-01", "day 1"),
+    ("2020D59", "2020-02-28", "day 59"),
+    ("2020D366", "2020-12-31", "day 366 leap year"),
+]
+
+
+@pytest.mark.parametrize(
+    "internal, expected",
+    [(c[0], c[1]) for c in natural_repr_params],
+    ids=[c[2] for c in natural_repr_params],
+)
+def test_natural_representation(internal: str, expected: str) -> None:
+    assert TimePeriodHandler(internal).natural_representation() == expected
+
+
 # VTL Data Types to external representations tests
 
 
@@ -298,6 +327,13 @@ format_dataset_params = [
     ("2020A", TimePeriodRepresentation.SDMX_GREGORIAN, "2020", "gregorian annual"),
     ("2020-M01", TimePeriodRepresentation.SDMX_GREGORIAN, "2020-01", "gregorian month"),
     ("2020-D001", TimePeriodRepresentation.SDMX_GREGORIAN, "2020-01-01", "gregorian day"),
+    # Natural
+    ("2020A", TimePeriodRepresentation.NATURAL, "2020", "natural annual"),
+    ("2020-M01", TimePeriodRepresentation.NATURAL, "2020-01", "natural month"),
+    ("2020-Q3", TimePeriodRepresentation.NATURAL, "2020-Q3", "natural quarter"),
+    ("2020-S2", TimePeriodRepresentation.NATURAL, "2020-S2", "natural semester"),
+    ("2020-W01", TimePeriodRepresentation.NATURAL, "2020-W01", "natural week"),
+    ("2020-D001", TimePeriodRepresentation.NATURAL, "2020-01-01", "natural day"),
 ]
 
 

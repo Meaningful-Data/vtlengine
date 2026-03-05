@@ -68,10 +68,10 @@ check_max_date_invalid_params = [
 ]
 
 scalar_time_params = [
-    ('year(cast("2023-01-12T10:30:00", date))', 2023),
-    ('year(cast("2023-01-12 10:30:00", date))', 2023),
-    ('month(cast("2023-06-15T08:00:00", date))', 6),
-    ('month(cast("2023-06-15 08:00:00", date))', 6),
+    ('getyear(cast("2023-01-12T10:30:00", date))', 2023),
+    ('getyear(cast("2023-01-12 10:30:00", date))', 2023),
+    ('getmonth(cast("2023-06-15T08:00:00", date))', 6),
+    ('getmonth(cast("2023-06-15 08:00:00", date))', 6),
     ('dayofmonth(cast("2023-01-12T15:45:00", date))', 12),
     ('dayofmonth(cast("2023-01-12 15:45:00", date))', 12),
     ('dayofyear(cast("2023-02-01T23:59:59", date))', 32),
@@ -169,13 +169,13 @@ dataset_operator_params = [
 
 dataset_extraction_params = [
     pytest.param(
-        "year",
+        "getyear",
         ["2023-01-12 10:30:00", "2024-06-15 08:00:00"],
         [2023, 2024],
         id="year_from_datetime",
     ),
     pytest.param(
-        "month",
+        "getmonth",
         ["2023-06-15 08:00:00", "2023-12-01 10:00:00"],
         [6, 12],
         id="month_from_datetime",

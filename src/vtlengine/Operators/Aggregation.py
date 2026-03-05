@@ -19,6 +19,7 @@ from vtlengine.AST.Grammar.tokens import (
 )
 from vtlengine.DataTypes import (
     Boolean,
+    Date,
     Duration,
     Integer,
     Number,
@@ -57,13 +58,15 @@ class Aggregation(Operator.Unary):
         for measure in measures:
             if measure.data_type == TimePeriod:
                 if mode == "input":
+                    if cls.op in [MAX, MIN]:
+                        indicators = (
+                            data[measure.name].dropna().str.extract(r"^\d{4}-?([ASQMWD])")[0]
+                        )
+                        if indicators.nunique() > 1:
+                            raise RunTimeError("2-1-19-20", op=cls.op)
                     data[measure.name] = data[measure.name].map(
                         lambda x: TimePeriodHandler(str(x)), na_action="ignore"
                     )
-                    if cls.op in [MAX, MIN]:
-                        indicators = {v.period_indicator for v in data[measure.name].dropna()}
-                        if len(indicators) > 1:
-                            raise RunTimeError("2-1-19-20", op=cls.op)
                 else:
                     data[measure.name] = data[measure.name].map(
                         lambda x: str(x), na_action="ignore"
@@ -83,6 +86,11 @@ class Aggregation(Operator.Unary):
                     data[measure.name] = data[measure.name].map(PERIOD_IND_MAPPING)
                 else:
                     data[measure.name] = data[measure.name].map(PERIOD_IND_MAPPING_REVERSE)
+            elif measure.data_type == Date:
+                if mode == "input":
+                    data[measure.name] = data[measure.name].astype("date64[pyarrow]")
+                else:
+                    data[measure.name] = data[measure.name].astype(Date.dtype())  # type: ignore[call-overload]
             elif measure.data_type == Boolean and mode == "result":
                 data[measure.name] = (
                     data[measure.name]  # type: ignore[call-overload, unused-ignore]
@@ -132,6 +140,17 @@ class Aggregation(Operator.Unary):
         for comp_name, comp in operand.components.items():
             if comp.role == Role.ATTRIBUTE:
                 del result_components[comp_name]
+        # TimeInterval is not supported as a measure in aggregate operations
+        if any(
+            comp.role == Role.MEASURE and comp.data_type is TimeInterval
+            for comp in result_components.values()
+        ):
+            raise SemanticError(
+                "1-1-19-12",
+                op=cls.op,
+                context="aggregate",
+            )
+
         # Change Measure data type
         for _, comp in result_components.items():
             if comp.role == Role.MEASURE:
@@ -208,12 +227,13 @@ class Aggregation(Operator.Unary):
             )
 
         try:
-            return duckdb.query(query).to_df()
+            result = duckdb.query(query).to_df()
         except RuntimeError as e:
             if "Conversion" in e.args[0]:
                 raise RunTimeError("2-3-8", op=cls.op, msg=e.args[0].split(":")[-1])
             else:
-                raise RunTimeError("2-1-1-1", op=cls.op)
+                raise RunTimeError("2-1-1-1", op=cls.op, error=e)
+        return result
 
     @classmethod
     def evaluate(  # type: ignore[override]

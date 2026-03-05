@@ -1,11 +1,13 @@
 import re
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 
 import duckdb
 import pandas as pd
+import pyarrow as pa
+import pyarrow.compute as pc
 
-from vtlengine.DataTypes import COMP_NAME_MAPPING
-from vtlengine.Exceptions import SemanticError
+from vtlengine.DataTypes import COMP_NAME_MAPPING, Date
+from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, ExternalRoutine, Role
 from vtlengine.Operators import Binary, Unary
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
@@ -113,9 +115,9 @@ class Eval(Unary):
         query = re.sub(r'"([^"]*)"', r"'\1'", query)
         for forbidden in ["INSTALL", "LOAD"]:
             if re.search(rf"\b{forbidden}\b", query, re.IGNORECASE):
-                raise Exception(f"Query contains forbidden command: {forbidden}")
+                raise SemanticError("1-1-1-21", command=forbidden)
         if re.search(r"FROM\s+'https?://", query, re.IGNORECASE):
-            raise Exception("Query contains forbidden URL in FROM clause")
+            raise SemanticError("1-1-1-22")
         try:
             conn = duckdb.connect(database=":memory:", read_only=False)
             conn.execute("SET enable_external_access = false")
@@ -130,12 +132,19 @@ class Eval(Unary):
                     df = data[ds_name]
                     conn.register(ds_name, df)
                 df_result = conn.execute(query).fetchdf()
+                for col_name in df_result.columns:
+                    arr = pa.array(df_result[col_name])
+                    if pa.types.is_floating(arr.type) and pc.any(pc.is_inf(arr)).as_py():
+                        conn.close()
+                        raise RunTimeError("2-1-3-1", op="eval")
                 conn.close()
             except Exception as e:
                 conn.close()
-                raise Exception(f"Error executing SQL query: {e}")
+                raise RunTimeError("2-1-1-1", op="eval", error=e)
+        except RunTimeError:
+            raise
         except Exception as e:
-            raise Exception(f"Error connecting to DuckDB in memory: {e}")
+            raise RunTimeError("2-1-1-1", op="eval", error=e)
         return df_result
 
     @classmethod
@@ -182,10 +191,28 @@ class Eval(Unary):
         output: Dataset,
     ) -> Dataset:
         result: Dataset = cls.validate(operands, external_routine, output)
-        operands_data_dict = {ds_name: operands[ds_name].data for ds_name in operands}
+        operands_data = {}
+        for ds_name in operands:
+            operands_data[ds_name] = cls.normalize_dates(
+                operands[ds_name].data, operands[ds_name].components
+            )
+
         result.data = cls._execute_query(
             external_routine.query,
             external_routine.dataset_names,
-            operands_data_dict,  # type: ignore[arg-type]
+            operands_data,
         )
         return result
+
+    @classmethod
+    def normalize_dates(
+        cls, data: Optional[pd.DataFrame], components: Dict[str, Component]
+    ) -> pd.DataFrame:
+        if data is None:
+            return pd.DataFrame(columns=[comp.name for comp in components.values()])
+        elif any(comp.data_type is Date for comp in components.values()):
+            data = data.copy()
+            for comp_name, comp in components.items():
+                if comp.data_type is Date:
+                    data[comp_name] = data[comp_name].astype("date64[pyarrow]")
+        return data
