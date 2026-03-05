@@ -1054,15 +1054,13 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return f"{op.upper()}({', '.join(non_none)})"
 
     def _visit_params(self, params: List[Any]) -> List[Optional[str]]:
-        """Visit param nodes, converting VTL defaults ('_', null) to None."""
+        """Visit param nodes, converting VTL '_' to None and VTL null to 'NULL'."""
         result: List[Optional[str]] = []
         for p in params:
-            if (
-                p is None
-                or (isinstance(p, AST.ID) and p.value == "_")
-                or (isinstance(p, AST.Constant) and p.value is None)
-            ):
+            if p is None or (isinstance(p, AST.ID) and p.value == "_"):
                 result.append(None)
+            elif isinstance(p, AST.Constant) and p.value is None:
+                result.append("NULL")
             else:
                 result.append(self.visit(p))
         return result
@@ -1078,9 +1076,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         def _param_expr(col_ref: str) -> str:
             if registry.parameterized.is_registered(op):
-                return registry.parameterized.generate(
-                    op, col_ref, *[p for p in params_sql if p is not None]
-                )
+                return registry.parameterized.generate(op, col_ref, *params_sql)
             all_args = [col_ref] + [a for a in params_sql if a is not None]
             return f"{op.upper()}({', '.join(all_args)})"
 
