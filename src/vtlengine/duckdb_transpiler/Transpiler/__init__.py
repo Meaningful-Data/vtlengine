@@ -1902,7 +1902,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             if left is not None:
                 return left
             return self._find_condition_source(node.right)
-        if isinstance(node, AST.UnaryOp):
+        if isinstance(node, (AST.UnaryOp, AST.ParFunction)):
             return self._find_condition_source(node.operand)
         if isinstance(node, AST.VarID) and self._get_operand_type(node) == _DATASET:
             return node
@@ -1975,7 +1975,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         builder = SQLBuilder().select(*cols).from_table(source_sql, alias_cond)
 
-        # JOIN with then dataset if it's a dataset
+        # Use LEFT JOINs so empty datasets don't eliminate all rows
+        then_join_id: Optional[str] = None
         if then_type == _DATASET:
             then_sql = self._get_dataset_sql(node.thenOp)
             then_ds = self._get_dataset_structure(node.thenOp)
@@ -1986,9 +1987,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 for id_ in common
             ]
             if on_parts:
-                builder.join(then_sql, "t", on=" AND ".join(on_parts), join_type="INNER")
+                builder.join(then_sql, "t", on=" AND ".join(on_parts), join_type="LEFT")
+                then_join_id = f"t.{quote_identifier(common[0])}"
 
-        # JOIN with else dataset if it's a dataset
+        else_join_id: Optional[str] = None
         if else_type == _DATASET:
             else_sql = self._get_dataset_sql(node.elseOp)
             else_ds = self._get_dataset_structure(node.elseOp)
@@ -1999,7 +2001,22 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 for id_ in common
             ]
             if on_parts:
-                builder.join(else_sql, "e", on=" AND ".join(on_parts), join_type="INNER")
+                builder.join(else_sql, "e", on=" AND ".join(on_parts), join_type="LEFT")
+                else_join_id = f"e.{quote_identifier(common[0])}"
+
+        # Filter: only keep rows where the selected side has a match.
+        # Scalar sides always match; dataset sides need a LEFT JOIN hit.
+        if then_join_id and else_join_id:
+            builder.where(
+                f"CASE WHEN {cond_expr} THEN {then_join_id} IS NOT NULL "
+                f"ELSE {else_join_id} IS NOT NULL END"
+            )
+        elif then_join_id:
+            # then=dataset, else=scalar: filter when condition is true
+            builder.where(f"NOT ({cond_expr}) OR {then_join_id} IS NOT NULL")
+        elif else_join_id:
+            # then=scalar, else=dataset: filter when condition is false
+            builder.where(f"({cond_expr}) OR {else_join_id} IS NOT NULL")
 
         return builder.build()
 

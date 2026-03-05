@@ -222,6 +222,8 @@ class StructureVisitor(ASTTemplate):
             return self._get_binop_type(node)
         if isinstance(node, AST.UnaryOp):
             return self._get_operand_type(node.operand)
+        if isinstance(node, AST.ParFunction):
+            return self._get_operand_type(node.operand)
         if isinstance(node, AST.ParamOp):
             if node.children:
                 return self._get_operand_type(node.children[0])
