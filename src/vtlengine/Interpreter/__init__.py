@@ -195,7 +195,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 or self.datasets[ds_name].data is None
             ):
                 continue
-            if ds_name in self.ds_analysis.global_inputs:
+            if ds_name in self.ds_analysis.global_input_datasets:
                 # We do not save global input datasets, only results of transformations
                 self.datasets[ds_name].data = None
                 continue
