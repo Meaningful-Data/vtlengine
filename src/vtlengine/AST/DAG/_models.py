@@ -25,7 +25,7 @@ class StatementDeps:
 
 
 @dataclass
-class DatasetSchedule:
+class Schedule:
     """Typed result of DAG dataset usage analysis.
 
     Tracks when datasets should be loaded/unloaded for memory-efficient execution,

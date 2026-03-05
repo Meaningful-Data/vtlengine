@@ -37,7 +37,7 @@ from vtlengine.AST import (
     VarID,
 )
 from vtlengine.AST.ASTTemplate import ASTTemplate
-from vtlengine.AST.DAG._models import DatasetSchedule, StatementDeps
+from vtlengine.AST.DAG._models import Schedule, StatementDeps
 from vtlengine.AST.Grammar.tokens import AS, DROP, KEEP, MEMBERSHIP, RENAME, TO
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset
@@ -67,12 +67,12 @@ class DAGAnalyzer(ASTTemplate):
     _resolved_from_unknown: Set[str] = field(default_factory=set)
 
     @classmethod
-    def ds_structure(cls, ast: AST) -> DatasetSchedule:
+    def ds_structure(cls, ast: AST) -> Schedule:
         dag = cls()
         dag.visit(ast)
         return dag._ds_usage_analysis()
 
-    def _ds_usage_analysis(self) -> DatasetSchedule:
+    def _ds_usage_analysis(self) -> Schedule:
         """Analyze dataset dependencies to build insertion/deletion schedules."""
         deletion: Dict[int, List[str]] = defaultdict(list)
         insertion: Dict[int, List[str]] = defaultdict(list)
@@ -110,7 +110,7 @@ class DAGAnalyzer(ASTTemplate):
 
         classification = self._classify_global_inputs(all_outputs, global_inputs, global_set)
 
-        return DatasetSchedule(
+        return Schedule(
             insertion=dict(insertion),
             deletion=dict(deletion),
             global_inputs=classification["global_inputs"],
