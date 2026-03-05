@@ -62,6 +62,7 @@ pandas-stubs = ">=2.2.2,<3.0"
 pyarrow-stubs = ">=19.0,<21.0"
 ruff = ">=0.14,<1.0.0"
 types-jsonschema = ">=4.25.1,<5.0"
+types-networkx = {markers = "python_version >= \"3.10\"", version = "^3.6.1.20260303"}
 
 [tool.poetry.group.docs.dependencies]
 sphinx = ">=7.4.7,<8.0"

@@ -1,13 +1,14 @@
 {
     "insertion": {},
     "deletion": {
+        "2": [
+            "a"
+        ],
         "3": [
-            "a",
             "b",
             "c"
         ]
     },
-    "global_inputs": [],
     "persistent": [
         "c"
     ]

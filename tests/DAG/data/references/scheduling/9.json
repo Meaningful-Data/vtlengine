@@ -128,13 +128,6 @@
             "Oferta_PT_2025_Q1"
         ]
     },
-    "global_inputs": [
-        "Income_PT",
-        "Inflation_PT",
-        "Inflation_divisors_Q",
-        "Oferta_PT_2025_Q1",
-        "Vendas_PT_2025_Q1"
-    ],
     "persistent": [
         "output_generic",
         "output_generic_eda",

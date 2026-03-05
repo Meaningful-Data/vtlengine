@@ -11,7 +11,7 @@ import vtlengine.Exceptions
 import vtlengine.Operators as Operators
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.DAG import HRDAGAnalyzer
-from vtlengine.AST.DAG._models import DatasetSchedule
+from vtlengine.AST.DAG._models import Schedule
 from vtlengine.AST.Grammar.tokens import (
     AGGREGATE,
     ALL,
@@ -115,7 +115,7 @@ class InterpreterAnalyzer(ASTTemplate):
     # Analysis mode
     only_semantic: bool = False
     # Memory efficient
-    ds_analysis: Optional[DatasetSchedule] = None
+    ds_analysis: Optional[Schedule] = None
     datapoints_paths: Optional[Dict[str, Path]] = None
     output_path: Optional[Union[str, Path]] = None
     # Time Period Representation
@@ -195,7 +195,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 or self.datasets[ds_name].data is None
             ):
                 continue
-            if ds_name in self.ds_analysis.global_inputs:
+            if ds_name in self.ds_analysis.global_input_datasets:
                 # We do not save global input datasets, only results of transformations
                 self.datasets[ds_name].data = None
                 continue

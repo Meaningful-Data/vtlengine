@@ -64,8 +64,5 @@
             "BOP"
         ]
     },
-    "global_inputs": [
-        "BOP"
-    ],
     "persistent": []
 }
