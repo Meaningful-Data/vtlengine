@@ -703,6 +703,94 @@ CASES: dict[str, Classification] = {
         scalars=["SC_1", "SC_2"],
         dataset_or_scalar=["DS_1"],
     ),
+    # --- Group A: Classification logic edge cases ---
+    # A1: Variable in both dataset_inputs (union) and scalar_inputs (round param)
+    "172": Classification(
+        vtl="DS_r := union(DS_1, DS_2);\nDS_r2 := round(DS_3, DS_1);",
+        datasets=["DS_2"],
+        dataset_or_scalar=["DS_1", "DS_3"],
+    ),
+    # A2: Scalar chain from resolved-from-unknown variable
+    "173": Classification(
+        vtl="DS_r <- DS_1[calc Me_2 := Me_1 + SC_b];\nSC_b := SC_1 + 10;",
+        datasets=["DS_1"],
+        scalars=["SC_1"],
+        component_or_scalar=["Me_1"],
+    ),
+    # A3: Scalar chain broken by dataset-only operator
+    "174": Classification(
+        vtl="SC_a := SC_1 + SC_2;\nDS_r := union(SC_a, DS_1);",
+        datasets=["DS_1"],
+        dataset_or_scalar=["SC_1", "SC_2"],
+    ),
+    # A4: Same variable in ambiguous AND scalar chain contexts
+    "175": Classification(
+        vtl="DS_A := DS_1 + SC_1;\nSC_r := SC_1 * 2;",
+        dataset_or_scalar=["DS_1", "SC_1"],
+    ),
+    # A5: Multiple persistent assignments with shared variable
+    "176": Classification(
+        vtl="DS_r1 <- DS_1 + SC_1;\nDS_r2 <- DS_2 * SC_1;",
+        dataset_or_scalar=["DS_1", "DS_2", "SC_1"],
+    ),
+    # --- Group B: Component/scalar edge cases ---
+    # B1: Calc with multiple assignments referencing each other's components
+    "177": Classification(
+        vtl="DS_r <- DS_1[calc Me_2 := Me_1 + SC_1, Me_3 := sum(Me_2)];",
+        datasets=["DS_1"],
+        component_or_scalar=["Me_1", "Me_2", "SC_1"],
+    ),
+    # B2: Unknown variable not resolved (stays as component_or_scalar)
+    "178": Classification(
+        vtl="DS_A <- DS_1[calc Me_2 := Me_1 + X];\nDS_B := DS_A + 1;",
+        datasets=["DS_1"],
+        component_or_scalar=["Me_1", "X"],
+    ),
+    # B3: Unknown variable resolved by later output (not a global input)
+    "179": Classification(
+        vtl="DS_r <- DS_1[calc Me_2 := Me_1 + X];\nX := 10;",
+        datasets=["DS_1"],
+        component_or_scalar=["Me_1"],
+    ),
+    # --- Group C: Operator combination edge cases ---
+    # C1: Membership on union result
+    "180": Classification(
+        vtl="DS_r := (union(DS_1, DS_2))#Me_1;",
+        datasets=["DS_1", "DS_2"],
+    ),
+    # C2: Scalar-constrained param with expression operand
+    "181": Classification(
+        vtl="DS_r := round(DS_1 + SC_1, SC_2);",
+        scalars=["SC_2"],
+        dataset_or_scalar=["DS_1", "SC_1"],
+    ),
+    # C3: time_agg with expression operand
+    "182": Classification(
+        vtl='DS_r := time_agg("A", DS_1 + SC_1);',
+        dataset_or_scalar=["DS_1", "SC_1"],
+    ),
+    # C4: Check with two membership refs on same dataset
+    "183": Classification(
+        vtl='DS_r := check(DS_1#Me_1 + DS_1#Me_2 > 0 errorcode "E001" errorlevel 1 all);',
+        datasets=["DS_1"],
+    ),
+    # C5: Join with scalar-constrained param in calc
+    "184": Classification(
+        vtl="DS_r := inner_join(DS_1, DS_2 calc Me_2 := round(Me_1, SC_1));",
+        datasets=["DS_1", "DS_2"],
+        component_or_scalar=["Me_1", "SC_1"],
+    ),
+    # C6: Deeply nested dual operators (6 levels)
+    "185": Classification(
+        vtl="DS_r := abs(ceil(floor(exp(ln(sqrt(DS_1))))));",
+        dataset_or_scalar=["DS_1"],
+    ),
+    # C7: If-then-else with dataset-only operator in branch
+    "186": Classification(
+        vtl="DS_r := if DS_1 then union(DS_2, DS_3) else DS_4;",
+        datasets=["DS_2", "DS_3"],
+        dataset_or_scalar=["DS_1", "DS_4"],
+    ),
 }
 
 

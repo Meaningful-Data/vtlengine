@@ -211,6 +211,9 @@ class DAGAnalyzer(ASTTemplate):
         for name in global_inputs:
             if name in comp_or_scalar:
                 result["global_input_component_or_scalar"].append(name)
+            elif name in definite_dataset_inputs and name in definite_scalar_inputs:
+                # Used as dataset in one context and scalar in another → ambiguous
+                result["global_input_dataset_or_scalar"].append(name)
             elif name in definite_dataset_inputs:
                 result["global_input_datasets"].append(name)
             elif name in definite_scalar_inputs or self._feeds_only_scalar_chains(
