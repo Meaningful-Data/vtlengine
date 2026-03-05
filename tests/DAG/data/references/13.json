@@ -1,0 +1,42 @@
+{
+    "insertion": {
+        "1": [
+            "SC_1",
+            "SC_2"
+        ],
+        "2": [
+            "DS_1"
+        ]
+    },
+    "deletion": {
+        "2": [
+            "DS_1",
+            "DS_r",
+            "SC_r"
+        ],
+        "1": [
+            "SC_1",
+            "SC_2"
+        ]
+    },
+    "global_inputs": [
+        "DS_1",
+        "Me_1",
+        "SC_1",
+        "SC_2"
+    ],
+    "global_input_datasets": [
+        "DS_1"
+    ],
+    "global_input_scalars": [
+        "SC_1",
+        "SC_2"
+    ],
+    "global_input_dataset_or_scalar": [],
+    "global_input_component_or_scalar": [
+        "Me_1"
+    ],
+    "persistent": [
+        "DS_r"
+    ]
+}

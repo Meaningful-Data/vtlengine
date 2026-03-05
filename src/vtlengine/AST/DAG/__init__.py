@@ -60,8 +60,11 @@ class DAGAnalyzer(ASTTemplate):
 
     # Per-statement accumulator (reset between statements)
     current_deps: StatementDeps = field(default_factory=StatementDeps)
+    _current_has_dataset_op: bool = False
     # Cross-statement unknown variable tracking
     unknown_variables: Set[str] = field(default_factory=set)
+    # Outputs that were consumed via unknown_variables (RegularAggregation context)
+    _resolved_from_unknown: Set[str] = field(default_factory=set)
 
     @classmethod
     def ds_structure(cls, ast: AST) -> DatasetSchedule:
@@ -105,11 +108,96 @@ class DAGAnalyzer(ASTTemplate):
                     deletion[last_consumer.get(element, key)].append(element)
                     insertion[key].append(element)
 
+        # --- Scalar output propagation ---
+
+        # Seed: outputs of statements with no dataset ops and no inputs (constant assignments)
+        # Also seed outputs resolved from unknown_variables (used in RegularAggregation context)
+        scalar_outputs: Set[str] = set()
+        for statement in self.dependencies.values():
+            reference = statement.outputs + statement.persistent
+            if not reference:
+                continue
+            ds_name = reference[0]
+            if not statement.has_dataset_op and not statement.inputs:
+                scalar_outputs.add(ds_name)
+            elif ds_name in self._resolved_from_unknown:
+                scalar_outputs.add(ds_name)
+
+        # Collect component_or_scalar candidates from unknown_variables
+        component_or_scalar_candidates: Set[str] = set()
+        for statement in self.dependencies.values():
+            for uv in statement.unknown_variables:
+                if uv not in all_outputs:
+                    component_or_scalar_candidates.add(uv)
+
+        # Propagate: statements with no dataset ops where all inputs are known scalars
+        changed = True
+        while changed:
+            changed = False
+            for statement in self.dependencies.values():
+                reference = statement.outputs + statement.persistent
+                if not reference:
+                    continue
+                ds_name = reference[0]
+                if ds_name in scalar_outputs or statement.has_dataset_op:
+                    continue
+                if statement.inputs and all(
+                    inp in scalar_outputs or inp in component_or_scalar_candidates
+                    for inp in statement.inputs
+                ):
+                    scalar_outputs.add(ds_name)
+                    changed = True
+
+        # --- Identify definite dataset inputs ---
+        definite_dataset_inputs: Set[str] = set()
+        for statement in self.dependencies.values():
+            if statement.has_dataset_op:
+                for inp in statement.inputs:
+                    definite_dataset_inputs.add(inp)
+
+        # Include component_or_scalar candidates in global_inputs
+        for name in component_or_scalar_candidates:
+            if name not in global_set:
+                global_set.add(name)
+                global_inputs.append(name)
+
+        # --- Classify global inputs into four categories ---
+        global_input_datasets: List[str] = []
+        global_input_scalars: List[str] = []
+        global_input_dataset_or_scalar: List[str] = []
+        global_input_component_or_scalar: List[str] = []
+
+        for name in global_inputs:
+            if name in component_or_scalar_candidates:
+                global_input_component_or_scalar.append(name)
+            elif name in definite_dataset_inputs:
+                global_input_datasets.append(name)
+            else:
+                feeds_only_scalars = all(
+                    (stmt.outputs + stmt.persistent)[0] in scalar_outputs
+                    for stmt in self.dependencies.values()
+                    if name in stmt.inputs and (stmt.outputs + stmt.persistent)
+                )
+                no_dataset_ops = not any(
+                    stmt.has_dataset_op
+                    for stmt in self.dependencies.values()
+                    if name in stmt.inputs
+                )
+                if feeds_only_scalars and no_dataset_ops:
+                    global_input_scalars.append(name)
+                else:
+                    global_input_dataset_or_scalar.append(name)
+
         return DatasetSchedule(
             insertion=dict(insertion),
             deletion=dict(deletion),
             global_inputs=global_inputs,
+            global_input_datasets=global_input_datasets,
+            global_input_scalars=global_input_scalars,
+            global_input_dataset_or_scalar=global_input_dataset_or_scalar,
+            global_input_component_or_scalar=global_input_component_or_scalar,
             persistent=persistent_datasets,
+            all_outputs=sorted(all_outputs),
         )
 
     @classmethod
@@ -212,6 +300,7 @@ class DAGAnalyzer(ASTTemplate):
             outputs=list(self.current_deps.outputs),
             persistent=list(self.current_deps.persistent),
             unknown_variables=list(self.current_deps.unknown_variables),
+            has_dataset_op=self._current_has_dataset_op,
         )
         self.unknown_variables.update(self.current_deps.unknown_variables)
         return result
@@ -246,12 +335,14 @@ class DAGAnalyzer(ASTTemplate):
                 self.number_of_statements += 1
                 self.alias = set()
                 self.current_deps = StatementDeps()
+                self._current_has_dataset_op = False
 
         aux = copy.copy(self.unknown_variables)
         for variable in aux:
             for _number_of_statement, dependency in self.dependencies.items():
                 if variable in dependency.outputs:
                     self.unknown_variables.discard(variable)
+                    self._resolved_from_unknown.add(variable)
                     for _ns2, dep2 in self.dependencies.items():
                         if variable in dep2.unknown_variables:
                             dep2.unknown_variables.remove(variable)
@@ -272,6 +363,7 @@ class DAGAnalyzer(ASTTemplate):
         self.visit(node.right)
 
     def visit_RegularAggregation(self, node: RegularAggregation) -> None:
+        self._current_has_dataset_op = True
         self.visit(node.dataset)
         if node.op in [KEEP, DROP, RENAME]:
             return
@@ -313,6 +405,7 @@ class DAGAnalyzer(ASTTemplate):
             and node.value not in self.alias
             and node.value not in self.current_deps.inputs
         ):
+            self._current_has_dataset_op = True
             self.current_deps.inputs.append(node.value)
 
     def visit_ParamOp(self, node: ParamOp) -> None:
@@ -327,14 +420,17 @@ class DAGAnalyzer(ASTTemplate):
             super(DAGAnalyzer, self).visit_ParamOp(node)
 
     def visit_Aggregation(self, node: Aggregation) -> None:
+        self._current_has_dataset_op = True
         if node.operand is not None:
             self.visit(node.operand)
 
     def visit_Analytic(self, node: Analytic) -> None:
+        self._current_has_dataset_op = True
         if node.operand is not None:
             self.visit(node.operand)
 
     def visit_JoinOp(self, node: JoinOp) -> None:
+        self._current_has_dataset_op = True
         for clause in node.clauses:
             self.visit(clause)
 
@@ -350,10 +446,12 @@ class DAGAnalyzer(ASTTemplate):
 
     def visit_HROperation(self, node: HROperation) -> None:
         """Visit HROperation node for dependency analysis."""
+        self._current_has_dataset_op = True
         self.visit(node.dataset)
 
     def visit_DPValidation(self, node: DPValidation) -> None:
         """Visit DPValidation node for dependency analysis."""
+        self._current_has_dataset_op = True
         self.visit(node.dataset)
 
 

@@ -30,8 +30,26 @@
         ]
     },
     "global_inputs": [
+        "AGE",
+        "DSD_AGR",
+        "DSD_POP",
+        "MEASURE",
+        "SEX",
+        "TIME_HORIZ",
+        "UNIT_MEASURE"
+    ],
+    "global_input_datasets": [
         "DSD_AGR",
         "DSD_POP"
+    ],
+    "global_input_scalars": [],
+    "global_input_dataset_or_scalar": [],
+    "global_input_component_or_scalar": [
+        "AGE",
+        "MEASURE",
+        "SEX",
+        "TIME_HORIZ",
+        "UNIT_MEASURE"
     ],
     "persistent": [
         "DS_check_agr",

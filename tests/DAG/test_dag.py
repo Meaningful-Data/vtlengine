@@ -22,6 +22,14 @@ def _normalize_ds_structure(ds_structure):
                 "insertion": {k: sorted(v) for k, v in ds_structure.insertion.items()},
                 "deletion": {k: sorted(v) for k, v in ds_structure.deletion.items()},
                 "global_inputs": sorted(ds_structure.global_inputs),
+                "global_input_datasets": sorted(ds_structure.global_input_datasets),
+                "global_input_scalars": sorted(ds_structure.global_input_scalars),
+                "global_input_dataset_or_scalar": sorted(
+                    ds_structure.global_input_dataset_or_scalar
+                ),
+                "global_input_component_or_scalar": sorted(
+                    ds_structure.global_input_component_or_scalar
+                ),
                 "persistent": sorted(ds_structure.persistent),
             }
         )

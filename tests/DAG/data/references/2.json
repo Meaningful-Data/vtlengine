@@ -25,6 +25,12 @@
     "global_inputs": [
         "A"
     ],
+    "global_input_datasets": [],
+    "global_input_scalars": [],
+    "global_input_dataset_or_scalar": [
+        "A"
+    ],
+    "global_input_component_or_scalar": [],
     "persistent": [
         "a",
         "b",

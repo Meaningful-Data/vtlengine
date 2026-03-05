@@ -65,7 +65,42 @@
         ]
     },
     "global_inputs": [
+        "ACCOUNTING_ENTRY",
+        "ADJUSTMENT",
+        "BOP",
+        "COMP_METHOD",
+        "COUNTERPART_SECTOR",
+        "CURRENCY_DENOM",
+        "FLOW_STOCK_ENTRY",
+        "FREQ",
+        "FUNCTIONAL_CAT",
+        "INSTR_ASSET",
+        "INT_ACC_ITEM",
+        "MATURITY",
+        "REF_SECTOR",
+        "VALUATION",
+        "imbalance"
+    ],
+    "global_input_datasets": [
         "BOP"
+    ],
+    "global_input_scalars": [],
+    "global_input_dataset_or_scalar": [],
+    "global_input_component_or_scalar": [
+        "ACCOUNTING_ENTRY",
+        "ADJUSTMENT",
+        "COMP_METHOD",
+        "COUNTERPART_SECTOR",
+        "CURRENCY_DENOM",
+        "FLOW_STOCK_ENTRY",
+        "FREQ",
+        "FUNCTIONAL_CAT",
+        "INSTR_ASSET",
+        "INT_ACC_ITEM",
+        "MATURITY",
+        "REF_SECTOR",
+        "VALUATION",
+        "imbalance"
     ],
     "persistent": []
 }

@@ -23,5 +23,7 @@
         "DS_2"
     ],
     "global_input_component_or_scalar": [],
-    "persistent": []
+    "persistent": [
+        "DS_r"
+    ]
 }

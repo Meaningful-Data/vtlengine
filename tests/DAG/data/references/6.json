@@ -56,9 +56,33 @@
     },
     "global_inputs": [
         "BIS_LOC_STATS",
+        "CURRENCY",
+        "CURRENCY_DENOM",
+        "DS1",
+        "DS2",
+        "DS3",
+        "EXCHANGE_RATE",
+        "EXR_SUFFIX",
+        "EXR_TYPE",
+        "FREQ",
+        "OBS_VALUE"
+    ],
+    "global_input_datasets": [
+        "BIS_LOC_STATS",
         "DS1",
         "DS2",
         "DS3"
+    ],
+    "global_input_scalars": [],
+    "global_input_dataset_or_scalar": [],
+    "global_input_component_or_scalar": [
+        "CURRENCY",
+        "CURRENCY_DENOM",
+        "EXCHANGE_RATE",
+        "EXR_SUFFIX",
+        "EXR_TYPE",
+        "FREQ",
+        "OBS_VALUE"
     ],
     "persistent": [
         "numCouYear",
