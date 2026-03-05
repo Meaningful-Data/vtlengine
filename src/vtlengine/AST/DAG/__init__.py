@@ -40,7 +40,7 @@ from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.DAG._models import DatasetSchedule, StatementDeps
 from vtlengine.AST.Grammar.tokens import AS, DROP, KEEP, MEMBERSHIP, RENAME, TO
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Model import Component
+from vtlengine.Model import Component, Dataset
 
 
 @dataclass
@@ -108,9 +108,7 @@ class DAGAnalyzer(ASTTemplate):
                     deletion[last_consumer.get(element, key)].append(element)
                     insertion[key].append(element)
 
-        classification = self._classify_global_inputs(
-            all_outputs, global_inputs, global_set
-        )
+        classification = self._classify_global_inputs(all_outputs, global_inputs, global_set)
 
         return DatasetSchedule(
             insertion=dict(insertion),
@@ -119,9 +117,7 @@ class DAGAnalyzer(ASTTemplate):
             global_input_datasets=classification["global_input_datasets"],
             global_input_scalars=classification["global_input_scalars"],
             global_input_dataset_or_scalar=classification["global_input_dataset_or_scalar"],
-            global_input_component_or_scalar=classification[
-                "global_input_component_or_scalar"
-            ],
+            global_input_component_or_scalar=classification["global_input_component_or_scalar"],
             persistent=persistent_datasets,
             all_outputs=sorted(all_outputs),
         )
@@ -169,9 +165,7 @@ class DAGAnalyzer(ASTTemplate):
 
         return result
 
-    def _compute_scalar_outputs(
-        self, all_outputs: Set[str]
-    ) -> tuple[Set[str], Set[str]]:
+    def _compute_scalar_outputs(self, all_outputs: Set[str]) -> tuple[Set[str], Set[str]]:
         """Compute scalar outputs via propagation and component/scalar candidates."""
         scalar_outputs: Set[str] = set()
         for statement in self.dependencies.values():
@@ -201,8 +195,7 @@ class DAGAnalyzer(ASTTemplate):
                 if ds_name in scalar_outputs or statement.has_dataset_op:
                     continue
                 if statement.inputs and all(
-                    inp in scalar_outputs or inp in comp_or_scalar
-                    for inp in statement.inputs
+                    inp in scalar_outputs or inp in comp_or_scalar for inp in statement.inputs
                 ):
                     scalar_outputs.add(ds_name)
                     changed = True
@@ -397,6 +390,7 @@ class DAGAnalyzer(ASTTemplate):
 
     def visit_BinOp(self, node: BinOp) -> None:
         if node.op == MEMBERSHIP:
+            self._current_has_dataset_op = True
             self.is_dataset = True
             self.visit(node.left)
             self.is_dataset = False
@@ -438,6 +432,7 @@ class DAGAnalyzer(ASTTemplate):
             for arg in node.params:
                 index_arg = node.params.index(arg)
                 if do_ast.parameters[index_arg].type_.kind == "DataSet":
+                    self._current_has_dataset_op = True
                     self.visit(arg)
         else:
             super(DAGAnalyzer, self).visit_ParamOp(node)
@@ -462,9 +457,12 @@ class DAGAnalyzer(ASTTemplate):
         if not node_args:
             super().visit_UDOCall(node)
         else:
-            node_sig = [type(p.type_) for p in node_args.parameters]
-            for sig, param in zip(node_sig, node.params):
-                if not isinstance(param, Constant) and sig is not Component:
+            for p, param in zip(node_args.parameters, node.params):
+                if isinstance(param, Constant):
+                    continue
+                if type(p.type_) is not Component:
+                    if isinstance(p.type_, Dataset):
+                        self._current_has_dataset_op = True
                     self.visit(param)
 
     def visit_HROperation(self, node: HROperation) -> None:

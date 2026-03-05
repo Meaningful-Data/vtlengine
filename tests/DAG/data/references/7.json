@@ -576,17 +576,16 @@
         "ANCRDT_ENTTY_INSTRMNT_C",
         "ANCRDT_ENTTY_RSK_C",
         "ANCRDT_FNNCL_C",
+        "ANCRDT_FNNCL_C_T1",
         "ANCRDT_INSTRMNT_C",
+        "ANCRDT_INSTRMNT_C_T1",
         "ANCRDT_INSTRMNT_PRTCTN_RCVD_C",
         "ANCRDT_JNT_LBLTS_C",
         "ANCRDT_PRTCTN_RCVD_C",
         "ANCRDT_PRTCTN_RCVD_C_T1"
     ],
     "global_input_scalars": [],
-    "global_input_dataset_or_scalar": [
-        "ANCRDT_FNNCL_C_T1",
-        "ANCRDT_INSTRMNT_C_T1"
-    ],
+    "global_input_dataset_or_scalar": [],
     "global_input_component_or_scalar": [
         "ACCMLTD_WRTFFS",
         "ANCRDT_DRGTN_QRTR_CR_OA",

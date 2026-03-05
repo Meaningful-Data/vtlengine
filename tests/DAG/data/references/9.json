@@ -155,13 +155,12 @@
     "global_input_datasets": [
         "Income_PT",
         "Inflation_PT",
-        "Inflation_divisors_Q"
-    ],
-    "global_input_scalars": [],
-    "global_input_dataset_or_scalar": [
+        "Inflation_divisors_Q",
         "Oferta_PT_2025_Q1",
         "Vendas_PT_2025_Q1"
     ],
+    "global_input_scalars": [],
+    "global_input_dataset_or_scalar": [],
     "global_input_component_or_scalar": [
         "coefficient",
         "coefficient_cq",

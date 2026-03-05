@@ -28,3 +28,4 @@ class DatasetSchedule:
     global_input_dataset_or_scalar: List[str] = field(default_factory=list)
     global_input_component_or_scalar: List[str] = field(default_factory=list)
     persistent: List[str] = field(default_factory=list)
+    all_outputs: List[str] = field(default_factory=list)
