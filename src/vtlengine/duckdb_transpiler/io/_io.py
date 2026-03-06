@@ -80,7 +80,8 @@ def load_datapoints_duckdb(
     try:
         # 2. Read CSV header
         header_rel = conn.sql(
-            f"SELECT * FROM read_csv('{csv_path}', header=true, auto_detect=true) LIMIT 0"
+            f"SELECT * FROM read_csv('{csv_path}', header=true, auto_detect=true,"
+            f" null_padding=true) LIMIT 0"
         )
         csv_columns = header_rel.columns
 
@@ -118,6 +119,8 @@ def load_datapoints_duckdb(
                 '{csv_path}',
                 header=true,
                 columns={{{type_str}}},
+                auto_detect=false,
+                null_padding=true,
                 parallel=true,
                 ignore_errors=false
             )

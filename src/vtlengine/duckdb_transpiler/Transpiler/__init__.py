@@ -1945,14 +1945,19 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         then_type = self._get_operand_type(node.thenOp)
         else_type = self._get_operand_type(node.elseOp)
 
-        # Determine output measures from the dataset side
-        if then_type == _DATASET:
+        # Determine output measures from the semantic analysis output dataset,
+        # which reflects renames/transformations (e.g. comparison → bool_var).
+        output_ds = self._get_output_dataset()
+        if output_ds is not None:
+            output_measures = list(output_ds.get_measures_names())
+        elif then_type == _DATASET:
             ref_ds = self._get_dataset_structure(node.thenOp)
+            output_measures = list(ref_ds.get_measures_names()) if ref_ds else []
         elif else_type == _DATASET:
             ref_ds = self._get_dataset_structure(node.elseOp)
+            output_measures = list(ref_ds.get_measures_names()) if ref_ds else []
         else:
-            ref_ds = source_ds
-        output_measures = list(ref_ds.get_measures_names()) if ref_ds else []
+            output_measures = list(source_ds.get_measures_names())
 
         # Build SELECT columns
         cols: List[str] = [f"{alias_cond}.{quote_identifier(id_)}" for id_ in source_ids]
