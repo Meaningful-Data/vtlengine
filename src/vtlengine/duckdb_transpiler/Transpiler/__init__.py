@@ -623,6 +623,13 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                     output_measure_names
                     and len(input_measures) == 1
                     and len(output_measure_names) == 1
+                    and name == input_measures[0]
+                    and name != output_measure_names[0]
+                    and (
+                        ds.name not in self.input_datasets
+                        or name
+                        in self.input_datasets[ds.name].get_measures_names()
+                    )
                 ):
                     out_name = output_measure_names[0]
                 else:
