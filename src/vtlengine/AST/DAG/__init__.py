@@ -41,13 +41,10 @@ from vtlengine.AST.DAG._models import DatasetSchedule, StatementDeps
 from vtlengine.AST.Grammar.tokens import (
     AS,
     DROP,
-    EQ,
-    HIERARCHY,
     KEEP,
     MEMBERSHIP,
     RENAME,
     TO,
-    WHEN,
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component
@@ -72,8 +69,6 @@ class DAGAnalyzer(ASTTemplate):
     current_deps: StatementDeps = field(default_factory=StatementDeps)
     # Cross-statement unknown variable tracking
     unknown_variables: Set[str] = field(default_factory=set)
-    # Hierarchical rulesets
-    hrs: Dict[str, HRuleset] = field(default_factory=dict)
 
     @classmethod
     def ds_structure(cls, ast: AST) -> DatasetSchedule:
@@ -249,7 +244,7 @@ class DAGAnalyzer(ASTTemplate):
             if isinstance(ast_element, Operator):
                 udos[ast_element.op] = ast_element
             elif isinstance(ast_element, HRuleset):
-                self.hrs[ast_element.name] = ast_element
+                HRDAGAnalyzer.sort_hr_rules(ast_element)
         self.udos = udos
         for child in node.children:
             if isinstance(child, (Assignment, PersistentAssignment)):
@@ -365,8 +360,6 @@ class DAGAnalyzer(ASTTemplate):
     def visit_HROperation(self, node: HROperation) -> None:
         """Visit HROperation node for dependency analysis."""
         self.visit(node.dataset)
-        if node.op == HIERARCHY and node.ruleset_name in self.hrs:
-            HRDAGAnalyzer.analyze_hierarchy_roll_up_rules(self.hrs[node.ruleset_name])
 
     def visit_DPValidation(self, node: DPValidation) -> None:
         """Visit DPValidation node for dependency analysis."""
@@ -375,32 +368,19 @@ class DAGAnalyzer(ASTTemplate):
 
 class HRDAGAnalyzer(DAGAnalyzer):
     @classmethod
-    def analyze_hierarchy_roll_up_rules(cls, node: HRuleset) -> None:
+    def sort_hr_rules(cls, node: HRuleset) -> None:
         """Filter valid hierarchy rules (EQ comparison) and sort by dependency order.
 
         Modifies node.rules in place: removes rules whose comparison operator is not '='
         and re-sorts the remaining rules based on the dependency DAG.
         """
-        valid_rules = [
-            rule
-            for rule in node.rules
-            if rule.rule.op == EQ
-            or (
-                rule.rule.op == WHEN and rule.rule.right.op == EQ  # type: ignore[attr-defined]
-            )
-        ]
-        if len(valid_rules) == 0:
-            raise SemanticError("1-1-10-5")
-
-        node.rules = valid_rules
-
         dag = cls()
         dag.visit(node)
         dag.load_vertex()
         dag.load_edges()
         if len(dag.edges) != 0:
             dag._build_and_sort_graph("hierarchy")
-            node.rules = dag.sort_elements(valid_rules)
+            node.rules = dag.sort_elements(node.rules)
 
     def visit_HRuleset(self, node: HRuleset) -> None:
         """
@@ -426,6 +406,10 @@ class HRDAGAnalyzer(DAGAnalyzer):
             self.number_of_statements += 1
             self.alias = set()
             self.current_deps = StatementDeps()
+
+        # Redundant sort for HIERARCHY operator: ensures rules are ordered after
+        # removing non EQ comparisons
+        self.sort_hr_rules(node)
 
     def visit_DefIdentifier(self, node: DefIdentifier) -> None:  # type: ignore[override]
         """
