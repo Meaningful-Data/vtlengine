@@ -38,7 +38,14 @@ from vtlengine.AST import (
 )
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.DAG._models import DatasetSchedule, StatementDeps
-from vtlengine.AST.Grammar.tokens import AS, DROP, KEEP, MEMBERSHIP, RENAME, TO
+from vtlengine.AST.Grammar.tokens import (
+    AS,
+    DROP,
+    KEEP,
+    MEMBERSHIP,
+    RENAME,
+    TO,
+)
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component
 
@@ -236,6 +243,8 @@ class DAGAnalyzer(ASTTemplate):
         for ast_element in node.children:
             if isinstance(ast_element, Operator):
                 udos[ast_element.op] = ast_element
+            elif isinstance(ast_element, HRuleset):
+                HRDAGAnalyzer.sort_hr_rules(ast_element)
         self.udos = udos
         for child in node.children:
             if isinstance(child, (Assignment, PersistentAssignment)):
@@ -358,6 +367,21 @@ class DAGAnalyzer(ASTTemplate):
 
 
 class HRDAGAnalyzer(DAGAnalyzer):
+    @classmethod
+    def sort_hr_rules(cls, node: HRuleset) -> None:
+        """Filter valid hierarchy rules (EQ comparison) and sort by dependency order.
+
+        Modifies node.rules in place: removes rules whose comparison operator is not '='
+        and re-sorts the remaining rules based on the dependency DAG.
+        """
+        dag = cls()
+        dag.visit(node)
+        dag.load_vertex()
+        dag.load_edges()
+        if len(dag.edges) != 0:
+            dag._build_and_sort_graph("hierarchy")
+            node.rules = dag.sort_elements(node.rules)
+
     def visit_HRuleset(self, node: HRuleset) -> None:
         """
         HRuleset: (name, element, rules)
@@ -382,6 +406,10 @@ class HRDAGAnalyzer(DAGAnalyzer):
             self.number_of_statements += 1
             self.alias = set()
             self.current_deps = StatementDeps()
+
+        # Redundant sort for HIERARCHY operator: ensures rules are ordered after
+        # removing non EQ comparisons
+        self.sort_hr_rules(node)
 
     def visit_DefIdentifier(self, node: DefIdentifier) -> None:  # type: ignore[override]
         """
