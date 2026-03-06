@@ -2386,6 +2386,18 @@ class ClauseBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=error_code
         )
 
+    def test_GH_575(self):
+        """
+        Description: Rename clause should allow swapping component names.
+        Git Branch: cr-575.
+        Goal: Check Result.
+        """
+        code = "GH_575"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class DefinedBugs(BugHelper):
     """ """
