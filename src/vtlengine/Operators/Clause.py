@@ -212,6 +212,7 @@ class Rename(Operator):
             duplicates = set([name for name in to_names if to_names.count(name) > 1])
             raise SemanticError("1-2-1", alias=duplicates)
 
+        from_names_set = set(from_names)
         for operand in operands:
             if operand.old_name not in dataset.components:
                 raise SemanticError(
@@ -220,7 +221,7 @@ class Rename(Operator):
                     comp_name=operand.old_name,
                     dataset_name=dataset_name,
                 )
-            if operand.new_name in dataset.components:
+            if operand.new_name in dataset.components and operand.new_name not in from_names_set:
                 raise SemanticError(
                     "1-1-6-8",
                     op=cls.op,
@@ -228,15 +229,19 @@ class Rename(Operator):
                     dataset_name=dataset_name,
                 )
 
-        result_components = {comp.name: comp for comp in dataset.components.values()}
-        for operand in operands:
-            result_components[operand.new_name] = Component(
-                name=operand.new_name,
-                data_type=result_components[operand.old_name].data_type,
-                role=result_components[operand.old_name].role,
-                nullable=result_components[operand.old_name].nullable,
-            )
-            del result_components[operand.old_name]
+        rename_map = {op.old_name: op.new_name for op in operands}
+        result_components = {}
+        for comp in dataset.components.values():
+            if comp.name in rename_map:
+                new_name = rename_map[comp.name]
+                result_components[new_name] = Component(
+                    name=new_name,
+                    data_type=comp.data_type,
+                    role=comp.role,
+                    nullable=comp.nullable,
+                )
+            else:
+                result_components[comp.name] = comp
         return Dataset(name=dataset_name, components=result_components, data=None)
 
     @classmethod
