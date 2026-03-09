@@ -190,6 +190,19 @@ comparison_params = [
     ('between("z", "a", "c")', False),
     ("between(6, 1, 9)", True),
     ("between(12, 1, 9)", False),
+    # Duration scalar comparisons (magnitude order: A>S>Q>M>W>D)
+    ('cast("A", duration) > cast("M", duration)', True),
+    ('cast("A", duration) > cast("D", duration)', True),
+    ('cast("D", duration) < cast("A", duration)', True),
+    ('cast("S", duration) >= cast("Q", duration)', True),
+    ('cast("W", duration) < cast("M", duration)', True),
+    ('cast("A", duration) = cast("A", duration)', True),
+    ('cast("D", duration) > cast("W", duration)', False),
+    ('cast("M", duration) > cast("A", duration)', False),
+    ('cast("A", duration) <> cast("M", duration)', True),
+    ('cast("A", duration) <> cast("A", duration)', False),
+    ('cast("D", duration) <= cast("D", duration)', True),
+    ('cast("Q", duration) >= cast("S", duration)', False),
 ]
 
 string_exception_param = [
