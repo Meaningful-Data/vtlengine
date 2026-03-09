@@ -4,6 +4,7 @@ from csv import DictReader
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Type, Union
 
+import fsspec
 import pandas as pd
 
 from vtlengine.DataTypes import (
@@ -39,14 +40,16 @@ SEPARATORS = "".join([",", ";", ":", "|", "\t"])
 
 
 def _detect_delimiter(file_path: Union[str, Path], num_bytes: int = 4096) -> str:
-    with open(file_path, "r", encoding="utf-8", errors="replace") as f:
-        sample = f.read(num_bytes)
-    if not sample:
-        return ","
     try:
-        return str(csv.Sniffer().sniff(sample, delimiters=",;\t|").delimiter)
-    except csv.Error:
-        return ","
+        reader = fsspec.open if _is_remote_path(file_path) else open
+        with reader(file_path, "r", encoding="utf-8", errors="replace") as f:
+            sample = f.read(num_bytes)
+        if sample:
+            return csv.Sniffer().sniff(sample, delimiters=SEPARATORS).delimiter
+    except Exception:
+        pass
+
+    return ","
 
 
 def _validate_csv_path(components: Dict[str, Component], csv_path: Path) -> None:
@@ -138,16 +141,12 @@ def _pandas_load_csv(components: Dict[str, Component], csv_path: Union[str, Path
     else:
         na_values = {}
 
-    if _is_remote_path(csv_path):
-        sep: Optional[str] = None
-    else:
-        file_path = Path(csv_path) if isinstance(csv_path, str) else csv_path
-        sep = _detect_delimiter(file_path) if file_path.exists() else ","
+    sep = _detect_delimiter(csv_path)
 
-    data = pd.read_csv(  # type: ignore[call-overload]
+    data = pd.read_csv(
         csv_path,
-        dtype=obj_dtypes,
-        engine="c" if sep is not None else "python",
+        dtype=obj_dtypes,  # type: ignore[arg-type]
+        engine="c",
         sep=sep,
         keep_default_na=False,
         na_values=na_values,
