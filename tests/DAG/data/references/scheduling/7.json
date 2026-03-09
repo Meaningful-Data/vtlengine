@@ -506,23 +506,6 @@
             "ANCRDT_ACCNTNG_C"
         ]
     },
-    "global_inputs": [
-        "ANCRDT_ACCNTNG_C",
-        "ANCRDT_ACCNTNG_C_Z",
-        "ANCRDT_ENTTY",
-        "ANCRDT_ENTTY_DFLT_C",
-        "ANCRDT_ENTTY_DFLT_C_T1",
-        "ANCRDT_ENTTY_INSTRMNT_C",
-        "ANCRDT_ENTTY_RSK_C",
-        "ANCRDT_FNNCL_C",
-        "ANCRDT_FNNCL_C_T1",
-        "ANCRDT_INSTRMNT_C",
-        "ANCRDT_INSTRMNT_C_T1",
-        "ANCRDT_INSTRMNT_PRTCTN_RCVD_C",
-        "ANCRDT_JNT_LBLTS_C",
-        "ANCRDT_PRTCTN_RCVD_C",
-        "ANCRDT_PRTCTN_RCVD_C_T1"
-    ],
     "persistent": [
         "ACCNTNG_CMPLTNSS",
         "CN0230",

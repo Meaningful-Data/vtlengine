@@ -22,9 +22,6 @@
             "A"
         ]
     },
-    "global_inputs": [
-        "A"
-    ],
     "persistent": [
         "a",
         "b",

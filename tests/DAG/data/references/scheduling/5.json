@@ -29,10 +29,6 @@
             "DSD_POP"
         ]
     },
-    "global_inputs": [
-        "DSD_AGR",
-        "DSD_POP"
-    ],
     "persistent": [
         "DS_check_agr",
         "DS_check_countries",
