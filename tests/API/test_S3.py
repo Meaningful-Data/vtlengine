@@ -143,9 +143,10 @@ def test_load_datapoints_s3(mock_read_csv):
     mock_read_csv.assert_called_once_with(
         input_path,
         dtype={},
-        engine="c",
+        engine="python",
+        sep=None,
         keep_default_na=False,
-        na_values=[""],
+        na_values={},
         encoding_errors="replace",
     )
 
@@ -165,9 +166,10 @@ def test_run_s3(mock_read_csv):
     mock_read_csv.assert_called_once_with(
         input_path,
         dtype=dtypes,
-        engine="c",
+        engine="python",
+        sep=None,
         keep_default_na=False,
-        na_values=[""],
+        na_values={"Id_1": ["", '""'], "Id_2": [""], "Me_1": ["", '""']},
         encoding_errors="replace",
     )
 
@@ -187,8 +189,9 @@ def test_validate_dataset_s3(mock_read_csv):
     mock_read_csv.assert_called_once_with(
         input_path,
         dtype=dtypes,
-        engine="c",
+        engine="python",
+        sep=None,
         keep_default_na=False,
-        na_values=[""],
+        na_values={"Id_1": ["", '""'], "Id_2": [""], "Me_1": ["", '""']},
         encoding_errors="replace",
     )
