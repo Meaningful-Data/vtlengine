@@ -4,7 +4,6 @@ from csv import DictReader
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Type, Union
 
-import fsspec  # type: ignore[import-untyped]
 import pandas as pd
 
 from vtlengine.DataTypes import (
@@ -41,7 +40,13 @@ SEPARATORS = "".join([",", ";", ":", "|", "\t"])
 
 def _detect_delimiter(file_path: Union[str, Path], num_bytes: int = 4096) -> str:
     try:
-        reader = fsspec.open if _is_remote_path(file_path) else open
+        if _is_remote_path(file_path):
+            import fsspec  # type: ignore[import-untyped]
+
+            reader = fsspec.open
+        else:
+            reader = open
+
         with reader(file_path, "r", encoding="utf-8", errors="replace") as f:
             sample = f.read(num_bytes)
         if sample:
