@@ -142,7 +142,7 @@ def _pandas_load_csv(components: Dict[str, Component], csv_path: Union[str, Path
 
     sep = _detect_delimiter(csv_path)
 
-    data = pd.read_csv(  # type: ignore[call-overload]
+    data = pd.read_csv(  # type: ignore[call-overload, unused-ignore]
         csv_path,
         dtype=obj_dtypes,
         engine="c",
