@@ -4,7 +4,7 @@ from csv import DictReader
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Type, Union
 
-import fsspec
+import fsspec  # type: ignore[import-untyped]
 import pandas as pd
 
 from vtlengine.DataTypes import (
@@ -48,7 +48,6 @@ def _detect_delimiter(file_path: Union[str, Path], num_bytes: int = 4096) -> str
             return csv.Sniffer().sniff(sample, delimiters=SEPARATORS).delimiter
     except Exception:
         return ","
-
     return ","
 
 
@@ -143,9 +142,9 @@ def _pandas_load_csv(components: Dict[str, Component], csv_path: Union[str, Path
 
     sep = _detect_delimiter(csv_path)
 
-    data = pd.read_csv(
+    data = pd.read_csv(  # type: ignore[call-overload]
         csv_path,
-        dtype=obj_dtypes,  # type: ignore[arg-type]
+        dtype=obj_dtypes,
         engine="c",
         sep=sep,
         keep_default_na=False,
@@ -193,7 +192,6 @@ def _validate_pandas(
     data = data.fillna(value=pd.NA)
     # Checking data types on all data types
     comp_name = ""
-    comp = None
     try:
         for comp_name, comp in components.items():
             if comp.data_type in (Date, TimePeriod, TimeInterval):
@@ -242,7 +240,7 @@ def _validate_pandas(
             data[comp_name] = data[comp_name].astype(comp.data_type.dtype())  # type: ignore[call-overload]
 
     except (ValueError, InputValidationException) as e:
-        str_comp = SCALAR_TYPES_CLASS_REVERSE[comp.data_type] if comp else "Null"
+        str_comp = SCALAR_TYPES_CLASS_REVERSE.get(comp.data_type, "Null")
         error = e.args[0] if isinstance(e, InputValidationException) else str(e)
         raise DataLoadError(
             "0-3-1-6", name=dataset_name, column=comp_name, type=str_comp, error=error
