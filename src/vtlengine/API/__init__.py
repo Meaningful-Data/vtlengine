@@ -25,6 +25,7 @@ from vtlengine.AST import Start
 from vtlengine.AST.ASTConstructor import ASTVisitor
 from vtlengine.AST.ASTString import ASTString
 from vtlengine.AST.DAG import DAGAnalyzer
+from vtlengine.AST.DAG._models import DatasetSchedule
 from vtlengine.AST.Grammar.lexer import Lexer
 from vtlengine.AST.Grammar.parser import Parser
 from vtlengine.Exceptions import InputValidationException
@@ -91,6 +92,14 @@ def _extract_input_datasets(script: Union[str, TransformationScheme, Path]) -> L
     dag_inputs = DAGAnalyzer.ds_structure(ast).global_inputs
 
     return dag_inputs
+
+
+def _validate_extra_datasets(datasets: Dict[str, Any], ds_analysis: DatasetSchedule) -> None:
+    """Raise if data_structures contains datasets not referenced by the script."""
+    script_datasets = set(ds_analysis.global_inputs) | set(ds_analysis.all_outputs)
+    extra_datasets = set(datasets.keys()) - script_datasets
+    if extra_datasets:
+        raise InputValidationException(code="0-1-3-9", datasets=sorted(extra_datasets))
 
 
 def prettify(script: Union[str, TransformationScheme, Path]) -> str:
@@ -260,6 +269,10 @@ def semantic_analysis(
 
     # Loading datasets from file/dict/pysdmx objects/URLs
     datasets, scalars = load_datasets(data_structures, sdmx_mappings=mapping_dict)
+
+    # Validate that all provided datasets are required by the script
+    ds_analysis = DAGAnalyzer.ds_structure(ast)
+    _validate_extra_datasets(datasets, ds_analysis)
 
     # Handling of library items
     vd = None
@@ -433,6 +446,9 @@ def run(
 
     # VTL Efficient analysis
     ds_analysis = DAGAnalyzer.ds_structure(ast)
+
+    # Validate that all provided datasets are required by the script
+    _validate_extra_datasets(datasets, ds_analysis)
 
     # Checking the output path to be a Path object to a directory
     if output_folder is not None:
