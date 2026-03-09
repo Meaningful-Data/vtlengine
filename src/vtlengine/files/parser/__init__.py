@@ -47,7 +47,7 @@ def _detect_delimiter(file_path: Union[str, Path], num_bytes: int = 4096) -> str
         if sample:
             return csv.Sniffer().sniff(sample, delimiters=SEPARATORS).delimiter
     except Exception:
-        pass
+        return ","
 
     return ","
 
