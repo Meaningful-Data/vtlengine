@@ -12,6 +12,7 @@ import pandas as pd
 import pytest
 
 from vtlengine import run
+from vtlengine.Model import Dataset
 from vtlengine.DataTypes import (
     Boolean,
     Date,
@@ -120,3 +121,36 @@ class TestDateTimePeriodComparison:
         result = run(script=script, data_structures=DATA_STRUCTURES, datapoints=datapoints)
         assert "DS_r" in result
         assert list(result["DS_r"].data["bool_var"]) == expected
+
+
+class TestDurationScalarComparison:
+    """Scalar Duration comparisons must use magnitude order (A>S>Q>M>W>D), not alphabetical."""
+
+    @pytest.mark.parametrize(
+        "script, expected",
+        [
+            ('DS_r <- cast("A", duration) > cast("M", duration);', True),
+            ('DS_r <- cast("A", duration) > cast("D", duration);', True),
+            ('DS_r <- cast("D", duration) < cast("A", duration);', True),
+            ('DS_r <- cast("S", duration) >= cast("Q", duration);', True),
+            ('DS_r <- cast("W", duration) < cast("M", duration);', True),
+            ('DS_r <- cast("A", duration) = cast("A", duration);', True),
+            ('DS_r <- cast("D", duration) > cast("W", duration);', False),
+            ('DS_r <- cast("M", duration) > cast("A", duration);', False),
+        ],
+        ids=[
+            "annual_gt_month",
+            "annual_gt_day",
+            "day_lt_annual",
+            "semester_gte_quarter",
+            "week_lt_month",
+            "annual_eq_annual",
+            "day_not_gt_week",
+            "month_not_gt_annual",
+        ],
+    )
+    def test_scalar_comparison(self, script: str, expected: bool) -> None:
+        result = run(script=script, data_structures={"datasets": []}, datapoints={})
+        scalar = result["DS_r"]
+        assert not isinstance(scalar, Dataset)
+        assert scalar.value == expected
