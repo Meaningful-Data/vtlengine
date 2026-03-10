@@ -156,13 +156,15 @@ class DAGAnalyzer(ASTTemplate):
             self.sorting = result
         except nx.NetworkXUnfeasible:
             error_keys: Dict[int, Any] = {}
-            for v in self.edges.values():
-                aux_v0, aux_v1 = v[1], v[0]
-                for iv in self.edges.values():
-                    if aux_v0 == iv[0] and aux_v1 == iv[1]:
-                        error_keys[aux_v0] = self.dependencies[aux_v0]
-                        error_keys[aux_v1] = self.dependencies[aux_v1]
-                        break
+            try:
+                cycle = nx.find_cycle(graph)
+                for u, v in cycle:
+                    if u in self.dependencies:
+                        error_keys[u] = self.dependencies[u]
+                    if v in self.dependencies:
+                        error_keys[v] = self.dependencies[v]
+            except nx.NetworkXNoCycle:
+                pass
             raise SemanticError("1-3-2-3", op=error_op, nodes=error_keys) from None
 
     def load_vertex(self) -> None:
