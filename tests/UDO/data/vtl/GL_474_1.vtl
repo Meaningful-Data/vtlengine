@@ -17,7 +17,7 @@ define operator AVG_M_Q (ds dataset)
      returns dataset is
     inner_join(
         count(
-			ds group all time_agg("Q",_,TIME_PERIOD)
+			ds group all time_agg("Q")
 		)
 		[filter int_var = 3]
 		[drop int_var] as A,
@@ -26,7 +26,7 @@ define operator AVG_M_Q (ds dataset)
             [aggr
                 OBS_VALUE := avg(OBS_VALUE),
                 CONF_STATUS_NUM := min(CONF_STATUS_NUM)
-                group all time_agg("Q",_,TIME_PERIOD)]
+                group all time_agg("Q")]
             [calc CONF_STATUS := conf_status_str(CONF_STATUS_NUM)]
             [drop CONF_STATUS_NUM] as B
     )

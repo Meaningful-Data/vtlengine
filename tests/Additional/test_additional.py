@@ -3733,7 +3733,7 @@ class TimeOperatorsTest(AdditionalHelper):
         """
         Basic behaviour for datasets with period type.
         """
-        text = """DS_r := sum (DS_1 group all time_agg("A", Id_1));"""
+        text = """DS_r := sum (DS_1 group all time_agg("A"));"""
         code = "7-18"
         number_inputs = 1
         references_names = ["DS_r"]
@@ -3749,7 +3749,7 @@ class TimeOperatorsTest(AdditionalHelper):
         """
         Basic behaviour for datasets with date type.
         """
-        text = """DS_r := sum (DS_1 group all time_agg("A", Id_1, last));"""
+        text = """DS_r := sum (DS_1 group all time_agg("A", last));"""
         code = "7-19"
         number_inputs = 1
         references_names = ["DS_r"]
