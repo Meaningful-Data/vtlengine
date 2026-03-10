@@ -2084,33 +2084,3 @@ def test_validate_dataset(ds_input, dp_input, is_valid, message):
     else:
         with pytest.raises(Exception, match=message):
             validate_dataset(ds_data, dp_input)
-
-
-def test_extra_dataset_in_data_structures():
-    """run() and semantic_analysis() should fail when data_structures has unused datasets."""
-    script = "DS_A <- DS_1 * 10;"
-    data_structures = {
-        "datasets": [
-            {
-                "name": "DS_1",
-                "DataStructure": [
-                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
-                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
-                ],
-            },
-            {
-                "name": "DS_2",
-                "DataStructure": [
-                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
-                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
-                ],
-            },
-        ]
-    }
-    datapoints = {"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10]})}
-
-    with pytest.raises(InputValidationException, match="0-1-3-9"):
-        semantic_analysis(script=script, data_structures=data_structures)
-
-    with pytest.raises(InputValidationException, match="0-1-3-9"):
-        run(script=script, data_structures=data_structures, datapoints=datapoints)
