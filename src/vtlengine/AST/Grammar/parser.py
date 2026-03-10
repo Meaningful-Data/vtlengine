@@ -2,7 +2,7 @@
 # encoding: utf-8
 import sys
 from io import StringIO
-from typing import TextIO
+from typing import Any, TextIO
 
 from antlr4 import *
 from antlr4 import Parser as ANTLRParser
@@ -2022,7 +2022,7 @@ class Parser(ANTLRParser):
             else:
                 return visitor.visitChildren(self)
 
-    def start(self):
+    def start(self) -> Any:
 
         localctx = Parser.StartContext(self, self._ctx, self.state)
         self.enterRule(localctx, 0, self.RULE_start)
