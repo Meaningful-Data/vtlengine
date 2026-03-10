@@ -1356,8 +1356,17 @@ class InterpreterAnalyzer(ASTTemplate):
                 for rule in hr_info["rules"]:
                     if rule.rule.op == EQ or rule.rule.op == WHEN and rule.rule.right.op == EQ:
                         aux.append(rule)
+
                 if len(aux) == 0:
                     raise SemanticError("1-1-10-5")
+
+                left_parts = []
+                for rule in aux:
+                    left_part = rule.rule.left if rule.rule.op == EQ else rule.rule.right.left
+                    if left_part in left_parts:
+                        raise SemanticError("1-1-10-10", rule=left_part)
+                    left_parts.append(left_part)
+
                 hr_info["rules"] = aux
 
                 hierarchy_ast = AST.HRuleset(
