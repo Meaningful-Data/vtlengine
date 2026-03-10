@@ -408,10 +408,6 @@ class HRDAGAnalyzer(DAGAnalyzer):
             self.alias = set()
             self.current_deps = StatementDeps()
 
-        # Redundant sort for HIERARCHY operator: ensures rules are ordered after
-        # removing non EQ comparisons
-        self.sort_hr_rules(node)
-
     def visit_DefIdentifier(self, node: DefIdentifier) -> None:  # type: ignore[override]
         """
         DefIdentifier: (value, kind)
