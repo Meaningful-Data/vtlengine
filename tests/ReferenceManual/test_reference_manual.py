@@ -62,6 +62,9 @@ time_operators.remove(125)
 # Remove tests due to wrong implicit cast (Duration to String)
 time_operators.remove(100)
 
+# Remove HR Rules cyclic graph
+validation_operators.remove(159)
+
 # Multimeasures on specific operators that must raise errors
 exceptions_tests = [27, 31]
 
