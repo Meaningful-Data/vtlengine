@@ -131,9 +131,22 @@ jobs:
               }
             `;
 
-            const graphqlResult = await github.graphql(query, {
-              headers: { 'GraphQL-Features': 'issue_types' },
-            });
+            // Some numbers extracted from commit messages may be issues, not PRs.
+            // The GraphQL query returns partial data with errors for non-PR numbers,
+            // so we catch the error and use the partial data.
+            let graphqlResult;
+            try {
+              graphqlResult = await github.graphql(query, {
+                headers: { 'GraphQL-Features': 'issue_types' },
+              });
+            } catch (e) {
+              if (e.data?.repository) {
+                graphqlResult = { repository: e.data.repository };
+                core.info(`GraphQL partial errors (non-PR numbers skipped): ${e.errors?.map(err => err.message).join(', ')}`);
+              } else {
+                throw e;
+              }
+            }
 
             const prs = Object.values(graphqlResult.repository).filter(Boolean);
 
