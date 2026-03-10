@@ -1296,7 +1296,7 @@ class InterpreterAnalyzer(ASTTemplate):
             output = node.output.value if node.output else "invalid"
         return mode, input_, output
 
-    def visit_HROperation(self, node: AST.HROperation) -> None:
+    def visit_HROperation(self, node: AST.HROperation) -> None:  # noqa: C901
         """Handle hierarchy and check_hierarchy operators."""
         # Visit dataset and get component if present
         # Deep copy the dataset when there are conditions to avoid modifying the original
