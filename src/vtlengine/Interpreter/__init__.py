@@ -1364,7 +1364,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 for rule in aux:
                     left_part = rule.rule.left if rule.rule.op == EQ else rule.rule.right.left
                     if left_part in left_parts:
-                        raise SemanticError("1-1-10-10", rule=left_part)
+                        raise SemanticError("1-1-10-10", ruleset=hr_name, rule=left_part)
                     left_parts.append(left_part)
 
                 hr_info["rules"] = aux

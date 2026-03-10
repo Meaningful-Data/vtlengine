@@ -555,7 +555,8 @@ centralised_messages = {
         "match as required.",
     },
     "1-1-10-10": {
-        "message": "Duplicated EQ rules on Hierarchy Roll-up. Check the EQ rules: {rule}.",
+        "message": "Duplicated EQ rules on the Hierarchy Roll-up {ruleset}. "
+        "Check the EQ rules: {rule}.",
         "description": "Raised when there are no applicable rules in a Hierarchy Roll-up "
         "due to missing '=' operators.",
     },

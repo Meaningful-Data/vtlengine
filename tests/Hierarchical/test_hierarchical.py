@@ -2647,9 +2647,11 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
 
         code = "GL_397_31"
         number_inputs = 1
-        references_names = ["1"]
+        exception_code = "1-1-10-10"
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
 
     def test_GL_397_33(self):
         """
@@ -2667,10 +2669,12 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
 
         code = "GL_397_33"
         number_inputs = 1
-        references_names = ["1"]
+        exception_code = "1-1-10-10"
 
         # with pytest.raises(Exception, match="cast .+? without providing a mask"):
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
 
     def test_GL_397_35(self):
         """
