@@ -1,5 +1,7 @@
 name: Publish documentation
 
+run-name: "Publish documentation ${{ github.event.client_payload.tag_name || github.event.release.tag_name || '' }}"
+
 on:
   release:
     types: [ published ]
