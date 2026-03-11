@@ -1291,7 +1291,7 @@ class InterpreterAnalyzer(ASTTemplate):
             output = node.output.value if node.output else "invalid"
         return mode, input_, output
 
-    def visit_HROperation(self, node: AST.HROperation) -> None:
+    def visit_HROperation(self, node: AST.HROperation) -> None:  # noqa: C901
         """Handle hierarchy and check_hierarchy operators."""
         # Visit dataset and get component if present
         # Deep copy the dataset when there are conditions to avoid modifying the original
@@ -1351,8 +1351,17 @@ class InterpreterAnalyzer(ASTTemplate):
                 for rule in hr_info["rules"]:
                     if rule.rule.op == EQ or rule.rule.op == WHEN and rule.rule.right.op == EQ:
                         aux.append(rule)
+
                 if len(aux) == 0:
                     raise SemanticError("1-1-10-5")
+
+                left_parts = []
+                for rule in aux:
+                    left_part = rule.rule.left if rule.rule.op == EQ else rule.rule.right.left
+                    if left_part in left_parts:
+                        raise SemanticError("1-1-10-10", ruleset=hr_name, rule=left_part)
+                    left_parts.append(left_part)
+
                 hr_info["rules"] = aux
 
                 hierarchy_ast = AST.HRuleset(

@@ -18,14 +18,8 @@ class VtlVisitor(ParseTreeVisitor):
     def visitPersistAssignment(self, ctx: Parser.PersistAssignmentContext):
         return self.visitChildren(ctx)
 
-    def visitStatement(self, ctx: Parser.StatementContext):
-        return self.visitChildren(ctx)
-
     # Visit a parse tree produced by Parser#defineExpression.
     def visitDefineExpression(self, ctx: Parser.DefineExpressionContext):
-        return self.visitChildren(ctx)
-
-    def visitExpr(self, ctx: Parser.ExprContext):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#varIdExpr.
@@ -60,12 +54,12 @@ class VtlVisitor(ParseTreeVisitor):
     def visitIfExpr(self, ctx: Parser.IfExprContext):
         return self.visitChildren(ctx)
 
-    # Visit a parse tree produced by Parser#caseExpr.
-    def visitCaseExpr(self, ctx: Parser.CaseExprContext):
-        return self.visitChildren(ctx)
-
     # Visit a parse tree produced by Parser#clauseExpr.
     def visitClauseExpr(self, ctx: Parser.ClauseExprContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by Parser#caseExpr.
+    def visitCaseExpr(self, ctx: Parser.CaseExprContext):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#arithmeticExpr.
@@ -90,10 +84,6 @@ class VtlVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by Parser#ifExprComp.
     def visitIfExprComp(self, ctx: Parser.IfExprCompContext):
-        return self.visitChildren(ctx)
-
-    # Visit a parse tree produced by Parser#caseExprComp.
-    def visitCaseExprComp(self, ctx: Parser.CaseExprCompContext):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#comparisonExprComp.
@@ -126,6 +116,10 @@ class VtlVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by Parser#unaryExprComp.
     def visitUnaryExprComp(self, ctx: Parser.UnaryExprCompContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by Parser#caseExprComp.
+    def visitCaseExprComp(self, ctx: Parser.CaseExprCompContext):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#booleanExprComp.
@@ -240,6 +234,10 @@ class VtlVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by Parser#pivotOrUnpivotClause.
     def visitPivotOrUnpivotClause(self, ctx: Parser.PivotOrUnpivotClauseContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by Parser#customPivotClause.
+    def visitCustomPivotClause(self, ctx: Parser.CustomPivotClauseContext):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#subspaceClause.
@@ -404,8 +402,48 @@ class VtlVisitor(ParseTreeVisitor):
     def visitCurrentDateAtom(self, ctx: Parser.CurrentDateAtomContext):
         return self.visitChildren(ctx)
 
+    # Visit a parse tree produced by Parser#dateDiffAtom.
+    def visitDateDiffAtom(self, ctx: Parser.DateDiffAtomContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by Parser#dateAddAtom.
+    def visitDateAddAtom(self, ctx: Parser.DateAddAtomContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by Parser#yearAtom.
+    def visitYearAtom(self, ctx: Parser.YearAtomContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by Parser#monthAtom.
+    def visitMonthAtom(self, ctx: Parser.MonthAtomContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by Parser#dayOfMonthAtom.
+    def visitDayOfMonthAtom(self, ctx: Parser.DayOfMonthAtomContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by Parser#dayOfYearAtom.
+    def visitDayOfYearAtom(self, ctx: Parser.DayOfYearAtomContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by Parser#dayToYearAtom.
+    def visitDayToYearAtom(self, ctx: Parser.DayToYearAtomContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by Parser#dayToMonthAtom.
+    def visitDayToMonthAtom(self, ctx: Parser.DayToMonthAtomContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by Parser#yearTodayAtom.
+    def visitYearTodayAtom(self, ctx: Parser.YearTodayAtomContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by Parser#monthTodayAtom.
+    def visitMonthTodayAtom(self, ctx: Parser.MonthTodayAtomContext):
+        return self.visitChildren(ctx)
+
     # Visit a parse tree produced by Parser#periodAtomComponent.
-    def visitTimeUnaryAtomComponent(self, ctx: Parser.PeriodAtomComponentContext):
+    def visitPeriodAtomComponent(self, ctx: Parser.PeriodAtomComponentContext):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#fillTimeAtomComponent.
@@ -426,6 +464,46 @@ class VtlVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by Parser#currentDateAtomComponent.
     def visitCurrentDateAtomComponent(self, ctx: Parser.CurrentDateAtomComponentContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by Parser#dateDiffAtomComponent.
+    def visitDateDiffAtomComponent(self, ctx: Parser.DateDiffAtomComponentContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by Parser#dateAddAtomComponent.
+    def visitDateAddAtomComponent(self, ctx: Parser.DateAddAtomComponentContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by Parser#yearAtomComponent.
+    def visitYearAtomComponent(self, ctx: Parser.YearAtomComponentContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by Parser#monthAtomComponent.
+    def visitMonthAtomComponent(self, ctx: Parser.MonthAtomComponentContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by Parser#dayOfMonthAtomComponent.
+    def visitDayOfMonthAtomComponent(self, ctx: Parser.DayOfMonthAtomComponentContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by Parser#datOfYearAtomComponent.
+    def visitDatOfYearAtomComponent(self, ctx: Parser.DatOfYearAtomComponentContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by Parser#dayToYearAtomComponent.
+    def visitDayToYearAtomComponent(self, ctx: Parser.DayToYearAtomComponentContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by Parser#dayToMonthAtomComponent.
+    def visitDayToMonthAtomComponent(self, ctx: Parser.DayToMonthAtomComponentContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by Parser#yearTodayAtomComponent.
+    def visitYearTodayAtomComponent(self, ctx: Parser.YearTodayAtomComponentContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by Parser#monthTodayAtomComponent.
+    def visitMonthTodayAtomComponent(self, ctx: Parser.MonthTodayAtomComponentContext):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#unionAtom.
@@ -570,6 +648,10 @@ class VtlVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by Parser#signedInteger.
     def visitSignedInteger(self, ctx: Parser.SignedIntegerContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by Parser#signedNumber.
+    def visitSignedNumber(self, ctx: Parser.SignedNumberContext):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#limitClauseItem.
