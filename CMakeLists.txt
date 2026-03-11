@@ -16,9 +16,6 @@ set(ANTLR4_SRC_DIR "${CMAKE_SOURCE_DIR}/third_party/antlr4-cpp-runtime/src")
 # Collect all ANTLR4 runtime .cpp files
 file(GLOB_RECURSE ANTLR4_RUNTIME_SOURCES "${ANTLR4_SRC_DIR}/*.cpp")
 
-# Exclude profiling (not needed, has MSVC chrono issues)
-list(FILTER ANTLR4_RUNTIME_SOURCES EXCLUDE REGEX ".*ProfilingATNSimulator\\.cpp$")
-
 add_library(antlr4_runtime STATIC ${ANTLR4_RUNTIME_SOURCES})
 target_include_directories(antlr4_runtime PUBLIC "${ANTLR4_SRC_DIR}")
 target_compile_definitions(antlr4_runtime PUBLIC ANTLR4CPP_STATIC)
@@ -26,6 +23,8 @@ target_compile_definitions(antlr4_runtime PUBLIC ANTLR4CPP_STATIC)
 # Suppress warnings from third-party code
 if(MSVC)
     target_compile_options(antlr4_runtime PRIVATE /w)
+    # Fix missing chrono include in ProfilingATNSimulator on MSVC
+    target_compile_options(antlr4_runtime PRIVATE /FI"chrono")
 else()
     target_compile_options(antlr4_runtime PRIVATE -w)
 endif()
