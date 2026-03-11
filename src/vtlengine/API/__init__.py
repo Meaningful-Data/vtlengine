@@ -20,7 +20,6 @@ from vtlengine.API._InternalApi import (
 )
 from vtlengine.API._sdmx_utils import _build_mapping_dict, _convert_sdmx_mappings
 from vtlengine.AST import Start
-from vtlengine.AST.ASTConstructor import ASTVisitor  # noqa: F401 (kept for backwards compat)
 from vtlengine.AST.ASTString import ASTString
 from vtlengine.AST.DAG import DAGAnalyzer
 from vtlengine.AST.Grammar._cpp_parser import build_ast, vtl_cpp_parser
