@@ -17,6 +17,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Cache C++ parser wheel
+        uses: actions/cache@v4
+        id: cpp-cache
+        with:
+          path: .cpp-wheel
+          key: cpp-parser-ubuntu2404-py3.12-${{ hashFiles('src/vtlengine/AST/Grammar/_cpp_parser/**', 'CMakeLists.txt', 'pyproject.toml', 'scripts/setup_antlr4_runtime.sh') }}
+
       - name: Install system dependencies
         run: |
           sudo apt-get update
@@ -46,10 +53,17 @@ jobs:
             pysdmx==1.9.0
 
       - name: Download ANTLR4 C++ runtime
+        if: steps.cpp-cache.outputs.cache-hit != 'true'
         run: bash scripts/setup_antlr4_runtime.sh
 
-      - name: Build and install C++ parser
-        run: pip install --break-system-packages --no-deps . -v
+      - name: Build C++ parser wheel
+        if: steps.cpp-cache.outputs.cache-hit != 'true'
+        run: pip wheel . -w .cpp-wheel --no-deps -v
+        env:
+          PIP_BREAK_SYSTEM_PACKAGES: "1"
+
+      - name: Install C++ parser
+        run: pip install --break-system-packages --no-deps .cpp-wheel/*.whl
 
       - name: Run tests
         run: pytest --verbose --tb=short --strict-markers --strict-config --durations=10
