@@ -175,4 +175,25 @@ std::pair<py::object, py::object> visitGroupByOrExcept(antlr4::ParserRuleContext
 std::pair<py::object, py::object> visitGroupAll(antlr4::ParserRuleContext* ctx);
 std::pair<py::object, py::str> visitHavingClause(antlr4::ParserRuleContext* ctx);
 
+// ---- Phase 4: ASTConstructor top-level visitor methods ----
+
+py::object visitStart(antlr4::ParserRuleContext* ctx);
+py::object visitStatement(antlr4::ParserRuleContext* ctx);
+py::object visitTemporaryAssignment(antlr4::ParserRuleContext* ctx);
+py::object visitPersistAssignment(antlr4::ParserRuleContext* ctx);
+py::object visitDefineExpression(antlr4::ParserRuleContext* ctx);
+py::object visitDefOperator(antlr4::ParserRuleContext* ctx);
+py::object visitDefDatapointRuleset(antlr4::ParserRuleContext* ctx);
+std::pair<std::string, py::list> visitRulesetSignature(antlr4::ParserRuleContext* ctx);
+py::list visitRuleClauseDatapoint(antlr4::ParserRuleContext* ctx);
+py::object visitRuleItemDatapoint(antlr4::ParserRuleContext* ctx);
+py::object visitParameterItem(antlr4::ParserRuleContext* ctx);
+py::object visitDefHierarchical(antlr4::ParserRuleContext* ctx);
+std::pair<std::string, py::object> visitHierRuleSignature(antlr4::ParserRuleContext* ctx);
+py::list visitValueDomainSignature(antlr4::ParserRuleContext* ctx);
+py::list visitRuleClauseHierarchical(antlr4::ParserRuleContext* ctx);
+py::object visitRuleItemHierarchical(antlr4::ParserRuleContext* ctx);
+py::object visitCodeItemRelation(antlr4::ParserRuleContext* ctx);
+py::object visitCodeItemRelationClause(antlr4::ParserRuleContext* ctx);
+
 } // namespace ASTBuilder

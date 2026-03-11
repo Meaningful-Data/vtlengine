@@ -559,13 +559,12 @@ PYBIND11_MODULE(vtl_cpp_parser, m) {
     m.def("init_ast_builder", []() { ASTBuilder::init(); },
           "Initialize the C++ AST builder (cached Python class refs)");
 
-    // AST builder terminal visitor functions
+    // AST builder: walks the full parse tree and returns Python AST
     m.def("build_ast", [](py::object parse_node) -> py::object {
-        // For now, build_ast is a placeholder for the full tree walk.
-        // The actual terminal visitors are exposed individually below.
         ASTBuilder::init();
-        return py::none();
-    }, py::arg("root"), "Build AST from parse tree (placeholder)");
+        auto& pn = parse_node.cast<LazyParseNode&>();
+        return ASTBuilder::build_ast(pn.ctx);
+    }, py::arg("root"), "Build a complete Python AST from a C++ parse tree root node");
 
     // Expose individual terminal visitors for incremental adoption
     m.def("visit_constant", [](py::object node) {
@@ -1226,4 +1225,5 @@ PYBIND11_MODULE(vtl_cpp_parser, m) {
         auto& pn = node.cast<LazyParseNode&>();
         return ASTBuilder::visitOptionalExpr(pn.ctx);
     }, "Visit an OptionalExpr rule node");
+
 }
