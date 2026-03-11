@@ -1660,16 +1660,17 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             # VTL spec: count() always produces a single measure "int_var"
             alias = "int_var"
             # Build conditional count excluding all-null measure rows
-            # VTL count returns NULL when no data points have any non-null measure
             source_measures = ds.get_measures_names()
             if source_measures:
                 and_parts = " AND ".join(
                     f"{quote_identifier(m)} IS NOT NULL" for m in source_measures
                 )
-                cols.append(
-                    f"NULLIF(COUNT(CASE WHEN {and_parts} THEN 1 END), 0)"
-                    f" AS {quote_identifier(alias)}"
-                )
+                count_expr = f"COUNT(CASE WHEN {and_parts} THEN 1 END)"
+                # When there are group columns, return NULL for groups with zero
+                # matching rows; for DWI (no group cols), return 0 directly.
+                if group_cols:
+                    count_expr = f"NULLIF({count_expr}, 0)"
+                cols.append(f"{count_expr} AS {quote_identifier(alias)}")
             else:
                 # No measures: count data points (rows)
                 cols.append(f"COUNT(*) AS {quote_identifier(alias)}")
