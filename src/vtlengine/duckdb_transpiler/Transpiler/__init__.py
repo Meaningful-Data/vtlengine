@@ -627,8 +627,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                     and name != output_measure_names[0]
                     and (
                         ds.name not in self.input_datasets
-                        or name
-                        in self.input_datasets[ds.name].get_measures_names()
+                        or name in self.input_datasets[ds.name].get_measures_names()
                     )
                 ):
                     out_name = output_measure_names[0]
@@ -2033,9 +2032,199 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         return builder.build()
 
     def visit_Case(self, node: AST.Case) -> str:
-        """Visit CASE expression."""
+        """Visit CASE expression.
+
+        VTL CASE uses last-match-wins semantics (later conditions override earlier
+        ones), while SQL CASE uses first-match-wins.  We reverse the WHEN order so
+        the SQL engine evaluates conditions with the same priority as VTL.
+
+        For dataset-level CASE (where conditions are boolean datasets), we build
+        JOINs similar to ``_build_dataset_if``.
+        """
+        cond_types = [self._get_operand_type(c.condition) for c in node.cases]
+        if any(t == _DATASET for t in cond_types):
+            return self._build_dataset_case(node)
+
+        # Component/scalar-level: reverse WHEN order for last-match-wins semantics
         parts = ["CASE"]
-        for case_obj in node.cases:
+        for case_obj in reversed(node.cases):
+            cond_sql = self.visit(case_obj.condition)
+            then_sql = self.visit(case_obj.thenOp)
+            parts.append(f"WHEN {cond_sql} THEN {then_sql}")
+        else_sql = self.visit(node.elseOp)
+        parts.append(f"ELSE {else_sql} END")
+        return " ".join(parts)
+
+    def _build_case_condition(
+        self,
+        case_obj: AST.CaseObj,
+        alias: str,
+        source_ids: List[str],
+        alias_src: str,
+        builder: SQLBuilder,
+    ) -> str:
+        """Join a CASE condition dataset and return the SQL condition expression."""
+        cond_source = self._find_condition_source(case_obj.condition)
+        cond_ds = self._get_dataset_structure(cond_source) if cond_source else None
+
+        # JOIN condition dataset
+        if cond_source is not None and cond_ds is not None:
+            cond_sql = self._get_dataset_sql(cond_source)
+            cond_ids = set(cond_ds.get_identifiers_names())
+            common = [id_ for id_ in source_ids if id_ in cond_ids]
+            on_parts = [
+                f"{alias_src}.{quote_identifier(id_)} = "
+                f"{alias}.{quote_identifier(id_)}"
+                for id_ in common
+            ]
+            if on_parts:
+                builder.join(cond_sql, alias, on=" AND ".join(on_parts),
+                             join_type="LEFT")
+
+        # Build condition expression
+        if isinstance(case_obj.condition, AST.VarID) and cond_ds is not None:
+            # Bare dataset VarID: reference its boolean measure column
+            bool_measure = list(cond_ds.get_measures_names())[0]
+            return f"{alias}.{quote_identifier(bool_measure)}"
+
+        old_in_clause = self._in_clause
+        old_current_ds = self._current_dataset
+        old_prefix = self._column_prefix
+        self._in_clause = True
+        self._current_dataset = cond_ds
+        self._column_prefix = alias
+        cond_expr = self.visit(case_obj.condition)
+        self._in_clause = old_in_clause
+        self._current_dataset = old_current_ds
+        self._column_prefix = old_prefix
+        return cond_expr
+
+    def _join_dataset_operand(
+        self,
+        operand: AST.AST,
+        alias: str,
+        source_ids: List[str],
+        alias_src: str,
+        builder: SQLBuilder,
+    ) -> None:
+        """LEFT JOIN a dataset operand (then or else branch)."""
+        ds = self._get_dataset_structure(operand)
+        if ds is None:
+            return
+        sql = self._get_dataset_sql(operand)
+        ds_ids = set(ds.get_identifiers_names())
+        common = [id_ for id_ in source_ids if id_ in ds_ids]
+        on_parts = [
+            f"{alias_src}.{quote_identifier(id_)} = "
+            f"{alias}.{quote_identifier(id_)}"
+            for id_ in common
+        ]
+        if on_parts:
+            builder.join(sql, alias, on=" AND ".join(on_parts), join_type="LEFT")
+
+    def _build_dataset_case(self, node: AST.Case) -> str:
+        """Build SQL for dataset-level CASE with JOINs."""
+        source_node = self._find_condition_source(node.cases[0].condition)
+        if source_node is None:
+            return self._build_scalar_case_sql(node)
+        source_ds = self._get_dataset_structure(source_node)
+        source_sql = self._get_dataset_sql(source_node)
+        if source_ds is None:
+            return self._build_scalar_case_sql(node)
+
+        source_ids = list(source_ds.get_identifiers_names())
+        alias_src = "src"
+
+        output_ds = self._get_output_dataset()
+        output_measures = (
+            list(output_ds.get_measures_names()) if output_ds is not None
+            else list(source_ds.get_measures_names())
+        )
+
+        builder = SQLBuilder().from_table(source_sql, alias_src)
+
+        # Process each WHEN branch
+        cond_exprs: List[str] = []
+        then_aliases: List[Optional[str]] = []
+        then_types: List[str] = []
+
+        for i, case_obj in enumerate(node.cases):
+            cond_expr = self._build_case_condition(
+                case_obj, f"c{i}", source_ids, alias_src, builder
+            )
+            cond_exprs.append(cond_expr)
+
+            t_type = self._get_operand_type(case_obj.thenOp)
+            then_types.append(t_type)
+            if t_type == _DATASET:
+                t_alias = f"t{i}"
+                self._join_dataset_operand(
+                    case_obj.thenOp, t_alias, source_ids, alias_src, builder
+                )
+                then_aliases.append(t_alias)
+            else:
+                then_aliases.append(None)
+
+        # Handle else-operand
+        else_type = self._get_operand_type(node.elseOp)
+        else_alias: Optional[str] = None
+        if else_type == _DATASET:
+            else_alias = "e"
+            self._join_dataset_operand(
+                node.elseOp, else_alias, source_ids, alias_src, builder
+            )
+
+        # Build SELECT: identifiers + CASE WHEN per measure (reversed for last-match-wins)
+        cols: List[str] = [f"{alias_src}.{quote_identifier(id_)}" for id_ in source_ids]
+        for measure in output_measures:
+            case_parts = ["CASE"]
+            for i in reversed(range(len(node.cases))):
+                then_ref = (
+                    f"{then_aliases[i]}.{quote_identifier(measure)}"
+                    if then_types[i] == _DATASET
+                    else self.visit(node.cases[i].thenOp)
+                )
+                case_parts.append(f"WHEN {cond_exprs[i]} THEN {then_ref}")
+            else_ref = (
+                f"{else_alias}.{quote_identifier(measure)}"
+                if else_type == _DATASET
+                else self.visit(node.elseOp)
+            )
+            case_parts.append(f"ELSE {else_ref} END")
+            cols.append(f"{' '.join(case_parts)} AS {quote_identifier(measure)}")
+
+        builder.select(*cols)
+
+        # Filter: only keep rows where the selected branch has a matching row.
+        # Scalar/null branches always match; dataset branches need a LEFT JOIN hit.
+        has_ds_branch = any(t == _DATASET for t in then_types) or else_type == _DATASET
+        if has_ds_branch:
+            id_col = quote_identifier(source_ids[0])
+            filter_parts: List[str] = []
+            for i in range(len(node.cases)):
+                if then_types[i] == _DATASET:
+                    match_check = f"{then_aliases[i]}.{id_col} IS NOT NULL"
+                else:
+                    match_check = "TRUE"
+                filter_parts.append(f"({cond_exprs[i]} AND {match_check})")
+            # Else branch: applies when no condition is true
+            neg = " AND ".join(
+                f"(NOT {c} OR {c} IS NULL)" for c in cond_exprs
+            )
+            if else_type == _DATASET:
+                filter_parts.append(
+                    f"(({neg}) AND {else_alias}.{id_col} IS NOT NULL)"
+                )
+            else:
+                filter_parts.append(f"({neg})")
+            builder.where(" OR ".join(filter_parts))
+
+        return builder.build()
+
+    def _build_scalar_case_sql(self, node: AST.Case) -> str:
+        """Fallback: build a simple CASE WHEN SQL for scalar-level case."""
+        parts = ["CASE"]
+        for case_obj in reversed(node.cases):
             cond_sql = self.visit(case_obj.condition)
             then_sql = self.visit(case_obj.thenOp)
             parts.append(f"WHEN {cond_sql} THEN {then_sql}")
