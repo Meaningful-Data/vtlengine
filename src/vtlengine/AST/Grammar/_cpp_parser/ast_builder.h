@@ -133,7 +133,46 @@ py::object visitLagOrLeadAnComponent(antlr4::ParserRuleContext* ctx);
 py::object visitRankAnComponent(antlr4::ParserRuleContext* ctx);
 py::object visitRatioToReportAnComponent(antlr4::ParserRuleContext* ctx);
 
-// ---- Forward declaration for Phase 3 (Expr) ----
+// ---- Phase 3: Expr visitor methods ----
+
 py::object visitExpr(antlr4::ParserRuleContext* ctx);
+py::object visitOptionalExpr(antlr4::ParserRuleContext* ctx);
+
+// Functions dispatch
+py::object visitJoinFunctions(antlr4::ParserRuleContext* ctx);
+py::object visitJoinClauseItem(antlr4::ParserRuleContext* ctx);
+std::pair<py::list, py::object> visitJoinClause(antlr4::ParserRuleContext* ctx);
+py::list visitJoinClauseWithoutUsing(antlr4::ParserRuleContext* ctx);
+py::list visitJoinBody(antlr4::ParserRuleContext* ctx);
+py::object visitGenericFunctions(antlr4::ParserRuleContext* ctx);
+py::object visitStringFunctions(antlr4::ParserRuleContext* ctx);
+py::object visitNumericFunctions(antlr4::ParserRuleContext* ctx);
+py::object visitComparisonFunctions(antlr4::ParserRuleContext* ctx);
+py::object visitTimeFunctions(antlr4::ParserRuleContext* ctx);
+py::object visitConditionalFunctions(antlr4::ParserRuleContext* ctx);
+py::object visitSetFunctions(antlr4::ParserRuleContext* ctx);
+py::object visitHierarchyFunctions(antlr4::ParserRuleContext* ctx);
+py::object visitValidationFunctions(antlr4::ParserRuleContext* ctx);
+py::object visitValidateDPruleset(antlr4::ParserRuleContext* ctx);
+py::object visitValidateHRruleset(antlr4::ParserRuleContext* ctx);
+py::object visitValidationSimple(antlr4::ParserRuleContext* ctx);
+py::object visitAggregateFunctions(antlr4::ParserRuleContext* ctx);
+py::object visitAnalyticFunctions(antlr4::ParserRuleContext* ctx);
+
+// Clause methods
+py::object visitDatasetClause(antlr4::ParserRuleContext* ctx);
+py::object visitRenameClause(antlr4::ParserRuleContext* ctx);
+py::object visitAggrClause(antlr4::ParserRuleContext* ctx);
+py::object visitFilterClause(antlr4::ParserRuleContext* ctx);
+py::object visitCalcClause(antlr4::ParserRuleContext* ctx);
+py::object visitKeepOrDropClause(antlr4::ParserRuleContext* ctx);
+py::object visitPivotOrUnpivotClause(antlr4::ParserRuleContext* ctx);
+py::object visitSubspaceClause(antlr4::ParserRuleContext* ctx);
+
+// Grouping methods
+std::pair<py::object, py::object> visitGroupingClause(antlr4::ParserRuleContext* ctx);
+std::pair<py::object, py::object> visitGroupByOrExcept(antlr4::ParserRuleContext* ctx);
+std::pair<py::object, py::object> visitGroupAll(antlr4::ParserRuleContext* ctx);
+std::pair<py::object, py::str> visitHavingClause(antlr4::ParserRuleContext* ctx);
 
 } // namespace ASTBuilder

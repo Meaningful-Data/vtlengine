@@ -1212,4 +1212,18 @@ PYBIND11_MODULE(vtl_cpp_parser, m) {
     m.attr("RULE_ER_LEVEL") = static_cast<int>(VtlParser::RuleErLevel);
     m.attr("RULE_ALIAS") = static_cast<int>(VtlParser::RuleAlias);
     m.attr("RULE_LISTS") = static_cast<int>(VtlParser::RuleLists);
+
+    // ---- Phase 3: Expr bindings ----
+
+    m.def("visit_expr", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitExpr(pn.ctx);
+    }, "Visit an Expr rule node");
+
+    m.def("visit_optional_expr", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitOptionalExpr(pn.ctx);
+    }, "Visit an OptionalExpr rule node");
 }

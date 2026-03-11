@@ -197,6 +197,11 @@ void init() {
     py_DPRIdentifier = ast_mod.attr("DPRIdentifier");
     py_Comment = ast_mod.attr("Comment");
     py_EvalOp = ast_mod.attr("EvalOp");
+    py_ParFunction = ast_mod.attr("ParFunction");
+    py_HRuleset = ast_mod.attr("HRuleset");
+    py_HROperation = ast_mod.attr("HROperation");
+    py_DPValidation = ast_mod.attr("DPValidation");
+    py_DPRuleset = ast_mod.attr("DPRuleset");
     py_DefIdentifier = ast_mod.attr("DefIdentifier");
 
     auto dt_mod = py::module_::import("vtlengine.DataTypes");
@@ -2275,11 +2280,2349 @@ py::object visitRatioToReportAnComponent(antlr4::ParserRuleContext* ctx) {
 }
 
 // ============================================================
-// Forward declaration stub for Phase 3 (Expr)
+// Phase 3: Expr visitors
 // ============================================================
 
-py::object visitExpr(antlr4::ParserRuleContext* /*ctx*/) {
-    throw std::runtime_error("NotImplementedError: visitExpr (Phase 3 not yet implemented)");
+// Forward declarations for internal helpers
+static py::object visitParenthesisExpr(antlr4::ParserRuleContext* ctx);
+static py::object visitMembershipExpr(antlr4::ParserRuleContext* ctx);
+static py::object visitClauseExpr(antlr4::ParserRuleContext* ctx);
+static py::object visitFunctionsExpression(antlr4::ParserRuleContext* ctx);
+static py::object visitUnaryExpr(antlr4::ParserRuleContext* ctx);
+static py::object bin_op_creator(antlr4::ParserRuleContext* ctx);
+static py::object visitInNotInExpr(antlr4::ParserRuleContext* ctx);
+static py::object visitCallDataset(antlr4::ParserRuleContext* ctx);
+static py::object visitEvalAtom(antlr4::ParserRuleContext* ctx);
+static py::object visitCastExprDataset(antlr4::ParserRuleContext* ctx);
+static py::object visitParameter(antlr4::ParserRuleContext* ctx);
+static py::object visitUnaryStringFunction(antlr4::ParserRuleContext* ctx);
+static py::object visitSubstrAtom(antlr4::ParserRuleContext* ctx);
+static py::object visitReplaceAtom(antlr4::ParserRuleContext* ctx);
+static py::object visitInstrAtom(antlr4::ParserRuleContext* ctx);
+static py::object visitUnaryNumeric(antlr4::ParserRuleContext* ctx);
+static py::object visitUnaryWithOptionalNumeric(antlr4::ParserRuleContext* ctx);
+static py::object visitBinaryNumeric(antlr4::ParserRuleContext* ctx);
+static py::object visitBetweenAtom(antlr4::ParserRuleContext* ctx);
+static py::object visitCharsetMatchAtom(antlr4::ParserRuleContext* ctx);
+static py::object visitIsNullAtom(antlr4::ParserRuleContext* ctx);
+static py::object visitExistInAtom(antlr4::ParserRuleContext* ctx);
+static py::object visitTimeUnaryAtom(antlr4::ParserRuleContext* ctx);
+static py::object visitTimeShiftAtom(antlr4::ParserRuleContext* ctx);
+static py::object visitFillTimeAtom(antlr4::ParserRuleContext* ctx);
+static py::object visitTimeAggAtom(antlr4::ParserRuleContext* ctx);
+static py::object visitFlowAtom(antlr4::ParserRuleContext* ctx);
+static py::object visitCurrentDateAtom(antlr4::ParserRuleContext* ctx);
+static py::object visitTimeDiffAtom(antlr4::ParserRuleContext* ctx);
+static py::object visitTimeAddAtom(antlr4::ParserRuleContext* ctx);
+static py::object visitNvlAtom(antlr4::ParserRuleContext* ctx);
+static py::object visitUnionAtom(antlr4::ParserRuleContext* ctx);
+static py::object visitIntersectAtom(antlr4::ParserRuleContext* ctx);
+static py::object visitSetOrSYmDiffAtom(antlr4::ParserRuleContext* ctx);
+static py::object visitImbalanceExpr(antlr4::ParserRuleContext* ctx);
+static py::object visitAggrDataset(antlr4::ParserRuleContext* ctx);
+static py::object visitAnSimpleFunction(antlr4::ParserRuleContext* ctx);
+static py::object visitLagOrLeadAn(antlr4::ParserRuleContext* ctx);
+static py::object visitRatioToReportAn(antlr4::ParserRuleContext* ctx);
+static py::object visitRenameClauseItem(antlr4::ParserRuleContext* ctx);
+static py::object visitAggregateClause(antlr4::ParserRuleContext* ctx);
+static py::object visitAggrFunctionClause(antlr4::ParserRuleContext* ctx);
+static py::object visitCalcClauseItem(antlr4::ParserRuleContext* ctx);
+static py::object visitSubspaceClauseItem(antlr4::ParserRuleContext* ctx);
+static py::object visitJoinApplyClause(antlr4::ParserRuleContext* ctx);
+
+// Cached Python class references for Phase 3
+static py::object py_Validation;
+static py::object py_CHInputMode_cls;
+static py::object py_HRInputMode_cls;
+static py::object py_ValidationMode_cls;
+static py::object py_ValidationOutput_cls;
+static py::object py_HierarchyOutput_cls;
+static py::object py_DATASET_PRIORITY;
+static py::object py_de_ruleset_elements;
+static bool g_phase3_initialized = false;
+
+static void init_phase3() {
+    if (g_phase3_initialized) return;
+
+    auto ast_mod = py::module_::import("vtlengine.AST");
+    py_Validation = ast_mod.attr("Validation");
+    py_CHInputMode_cls = ast_mod.attr("CHInputMode");
+    py_HRInputMode_cls = ast_mod.attr("HRInputMode");
+    py_ValidationMode_cls = ast_mod.attr("ValidationMode");
+    py_ValidationOutput_cls = ast_mod.attr("ValidationOutput");
+    py_HierarchyOutput_cls = ast_mod.attr("HierarchyOutput");
+
+    auto tokens_mod = py::module_::import("vtlengine.AST.Grammar.tokens");
+    py_DATASET_PRIORITY = tokens_mod.attr("DATASET_PRIORITY");
+
+    auto de_mod = py::module_::import("vtlengine.AST.ASTDataExchange");
+    py_de_ruleset_elements = de_mod.attr("de_ruleset_elements");
+
+    g_phase3_initialized = true;
+}
+
+// ---- visitExpr ----
+
+py::object visitExpr(antlr4::ParserRuleContext* ctx) {
+    if (!g_phase3_initialized) init_phase3();
+
+    auto& children = ctx->children;
+    auto cid = get_ctx_id(ctx);
+
+    // PARENTHESIS_EXPR = (2, 0)
+    if (cid.first == 2 && cid.second == 0) {
+        return visitParenthesisExpr(ctx);
+    }
+    // FUNCTIONS_EXPRESSION = (2, 1)
+    if (cid.first == 2 && cid.second == 1) {
+        return visitFunctionsExpression(as_rule(children[0]));
+    }
+    // CLAUSE_EXPR = (2, 2)
+    if (cid.first == 2 && cid.second == 2) {
+        return visitClauseExpr(ctx);
+    }
+    // MEMBERSHIP_EXPR = (2, 3)
+    if (cid.first == 2 && cid.second == 3) {
+        return visitMembershipExpr(ctx);
+    }
+    // UNARY_EXPR = (2, 4)
+    if (cid.first == 2 && cid.second == 4) {
+        return visitUnaryExpr(ctx);
+    }
+    // ARITHMETIC_EXPR = (2, 5)
+    if (cid.first == 2 && cid.second == 5) {
+        return bin_op_creator(ctx);
+    }
+    // ARITHMETIC_EXPR_OR_CONCAT = (2, 6)
+    if (cid.first == 2 && cid.second == 6) {
+        return bin_op_creator(ctx);
+    }
+    // COMPARISON_EXPR = (2, 7)
+    if (cid.first == 2 && cid.second == 7) {
+        return bin_op_creator(ctx);
+    }
+    // IN_NOT_IN_EXPR = (2, 8)
+    if (cid.first == 2 && cid.second == 8) {
+        return visitInNotInExpr(ctx);
+    }
+    // BOOLEAN_EXPR = (2, 9)
+    if (cid.first == 2 && cid.second == 9) {
+        return bin_op_creator(ctx);
+    }
+    // IF_EXPR = (2, 10)
+    if (cid.first == 2 && cid.second == 10) {
+        py::object condition = visitExpr(as_rule(children[1]));
+        py::object then_op = visitExpr(as_rule(children[3]));
+        py::object else_op = visitExpr(as_rule(children[5]));
+        auto ti = extract_token_info(ctx);
+        py::dict kwargs;
+        kwargs["condition"] = condition;
+        kwargs["thenOp"] = then_op;
+        kwargs["elseOp"] = else_op;
+        for (auto item : ti) kwargs[item.first] = item.second;
+        return call_with_kwargs(py_If, kwargs);
+    }
+    // CASE_EXPR = (2, 11)
+    if (cid.first == 2 && cid.second == 11) {
+        size_t n = children.size();
+        if (n % 4 != 3) {
+            throw std::runtime_error("Syntax error.");
+        }
+        py::object else_node = visitExpr(as_rule(children[n - 1]));
+        // Work on children[1:-2]
+        py::list cases;
+        for (size_t i = 1; i < n - 2; i += 4) {
+            py::object condition = visitExpr(as_rule(children[i + 1]));
+            py::object thenOp = visitExpr(as_rule(children[i + 3]));
+            auto ti_case = extract_token_info(as_rule(children[i + 1]));
+            py::dict case_kwargs;
+            case_kwargs["condition"] = condition;
+            case_kwargs["thenOp"] = thenOp;
+            for (auto item : ti_case) case_kwargs[item.first] = item.second;
+            cases.append(call_with_kwargs(py_CaseObj, case_kwargs));
+        }
+        auto ti = extract_token_info(ctx);
+        py::dict kwargs;
+        kwargs["cases"] = cases;
+        kwargs["elseOp"] = else_node;
+        for (auto item : ti) kwargs[item.first] = item.second;
+        return call_with_kwargs(py_Case, kwargs);
+    }
+    // CONSTANT_EXPR = (2, 12)
+    if (cid.first == 2 && cid.second == 12) {
+        return visitConstant(as_rule(children[0]));
+    }
+    // VAR_ID_EXPR = (2, 13)
+    if (cid.first == 2 && cid.second == 13) {
+        return visitVarIdExpr(as_rule(children[0]));
+    }
+
+    throw std::runtime_error("NotImplementedError: visitExpr");
+}
+
+// ---- visitOptionalExpr ----
+
+py::object visitOptionalExpr(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    auto* c = children[0];
+
+    auto* rule_child = as_rule(c);
+    if (rule_child && (int)rule_child->getRuleIndex() == 2) {
+        // expr (rule_index == 2)
+        return visitExpr(rule_child);
+    }
+
+    auto* term = as_terminal(c);
+    if (term) {
+        std::string opt = term->getText();
+        auto ti = extract_token_info(ctx);
+        py::dict kwargs;
+        kwargs["type_"] = "OPTIONAL";
+        kwargs["value"] = opt;
+        for (auto item : ti) kwargs[item.first] = item.second;
+        return call_with_kwargs(py_ID, kwargs);
+    }
+
+    return py::none();
+}
+
+// ---- Helpers ----
+
+static py::object bin_op_creator(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    py::object left_node = visitExpr(as_rule(children[0]));
+
+    std::string op;
+    auto* mid_rule = as_rule(children[1]);
+    if (mid_rule) {
+        // Check if it's a comparisonOperand rule (rule_index == 100)
+        if ((int)mid_rule->getRuleIndex() == VtlParser::RuleComparisonOperand) {
+            op = terminal_text(mid_rule->children[0]);
+        } else {
+            op = node_text(children[1]);
+        }
+    } else {
+        op = terminal_text(children[1]);
+    }
+
+    py::object right_node = visitExpr(as_rule(children[2]));
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["left"] = left_node;
+    kwargs["op"] = op;
+    kwargs["right"] = right_node;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_BinOp, kwargs);
+}
+
+static py::object visitParenthesisExpr(antlr4::ParserRuleContext* ctx) {
+    py::object operand = visitExpr(as_rule(ctx->children[1]));
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["operand"] = operand;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_ParFunction, kwargs);
+}
+
+static py::object visitUnaryExpr(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    std::string op = terminal_text(children[0]);
+    py::object right = visitExpr(as_rule(children[1]));
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["op"] = op;
+    kwargs["operand"] = right;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_UnaryOp, kwargs);
+}
+
+static py::object visitMembershipExpr(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+
+    // Collect simpleComponentId children
+    std::vector<antlr4::ParserRuleContext*> membership;
+    for (auto* child : children) {
+        auto* rule_child = as_rule(child);
+        if (rule_child && (int)rule_child->getRuleIndex() == VtlParser::RuleSimpleComponentId) {
+            membership.push_back(rule_child);
+        }
+    }
+
+    py::object previous_node = visitExpr(as_rule(children[0]));
+
+    if (!membership.empty()) {
+        py::object right = visitSimpleComponentId(membership[0]);
+        auto ti = extract_token_info(ctx);
+        py::dict kwargs;
+        kwargs["left"] = previous_node;
+        kwargs["op"] = "#";
+        kwargs["right"] = right;
+        for (auto item : ti) kwargs[item.first] = item.second;
+        previous_node = call_with_kwargs(py_BinOp, kwargs);
+    }
+
+    return previous_node;
+}
+
+static py::object visitClauseExpr(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+
+    py::object dataset = visitExpr(as_rule(children[0]));
+    py::object dataset_clause = visitDatasetClause(as_rule(children[2]));
+
+    dataset_clause.attr("dataset") = dataset;
+    return dataset_clause;
+}
+
+static py::object visitInNotInExpr(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    py::object left_node = visitExpr(as_rule(children[0]));
+    std::string op = terminal_text(children[1]);
+
+    auto* child2 = as_rule(children[2]);
+    py::object right_node;
+    if (child2) {
+        int ri = (int)child2->getRuleIndex();
+        if (ri == VtlParser::RuleLists) {
+            right_node = visitLists(child2);
+        } else if (ri == VtlParser::RuleValueDomainID) {
+            right_node = visitValueDomainID(child2);
+        } else {
+            throw std::runtime_error("NotImplementedError: visitInNotInExpr");
+        }
+    } else {
+        throw std::runtime_error("NotImplementedError: visitInNotInExpr terminal");
+    }
+
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["left"] = left_node;
+    kwargs["op"] = op;
+    kwargs["right"] = right_node;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_BinOp, kwargs);
+}
+
+// ---- Functions Expression ----
+
+static py::object visitFunctionsExpression(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    auto* c = as_rule(children[0]);
+    auto cid = get_ctx_id(ctx);
+
+    // JOIN_FUNCTIONS = (5, 0)
+    if (cid.first == 5 && cid.second == 0) return visitJoinFunctions(c);
+    // GENERIC_FUNCTIONS = (5, 1)
+    if (cid.first == 5 && cid.second == 1) return visitGenericFunctions(c);
+    // STRING_FUNCTIONS = (5, 2)
+    if (cid.first == 5 && cid.second == 2) return visitStringFunctions(c);
+    // NUMERIC_FUNCTIONS = (5, 3)
+    if (cid.first == 5 && cid.second == 3) return visitNumericFunctions(c);
+    // COMPARISON_FUNCTIONS = (5, 4)
+    if (cid.first == 5 && cid.second == 4) return visitComparisonFunctions(c);
+    // TIME_FUNCTIONS = (5, 5)
+    if (cid.first == 5 && cid.second == 5) return visitTimeFunctions(c);
+    // SET_FUNCTIONS = (5, 6)
+    if (cid.first == 5 && cid.second == 6) return visitSetFunctions(c);
+    // HIERARCHY_FUNCTIONS = (5, 7)
+    if (cid.first == 5 && cid.second == 7) return visitHierarchyFunctions(c);
+    // VALIDATION_FUNCTIONS = (5, 8)
+    if (cid.first == 5 && cid.second == 8) return visitValidationFunctions(c);
+    // CONDITIONAL_FUNCTIONS = (5, 9)
+    if (cid.first == 5 && cid.second == 9) return visitConditionalFunctions(c);
+    // AGGREGATE_FUNCTIONS = (5, 10)
+    if (cid.first == 5 && cid.second == 10) return visitAggregateFunctions(c);
+    // ANALYTIC_FUNCTIONS = (5, 11)
+    if (cid.first == 5 && cid.second == 11) return visitAnalyticFunctions(c);
+
+    throw std::runtime_error("NotImplementedError: visitFunctionsExpression");
+}
+
+// ---- Join Functions ----
+
+py::object visitJoinFunctions(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+
+    py::object using_node = py::none();
+    std::string op_node = terminal_text(children[0]);
+
+    py::list clause_node;
+    if (op_node == "inner_join" || op_node == "left_join") {
+        auto result = visitJoinClause(as_rule(children[2]));
+        clause_node = result.first;
+        using_node = result.second;
+    } else {
+        clause_node = visitJoinClauseWithoutUsing(as_rule(children[2]));
+    }
+
+    py::list body_node = visitJoinBody(as_rule(children[3]));
+
+    auto ti = extract_token_info(ctx);
+
+    if (py::len(body_node) != 0) {
+        py::dict join_kwargs;
+        join_kwargs["op"] = op_node;
+        join_kwargs["clauses"] = clause_node;
+        join_kwargs["using"] = using_node;
+        for (auto item : ti) join_kwargs[item.first] = item.second;
+        py::object previous_node = call_with_kwargs(py_JoinOp, join_kwargs);
+
+        py::object regular_aggregation = py::none();
+        for (auto body : body_node) {
+            regular_aggregation = py::reinterpret_borrow<py::object>(body);
+            regular_aggregation.attr("dataset") = previous_node;
+            previous_node = regular_aggregation;
+        }
+
+        previous_node.attr("isLast") = true;
+        return regular_aggregation;
+    } else {
+        py::dict join_kwargs;
+        join_kwargs["op"] = op_node;
+        join_kwargs["clauses"] = clause_node;
+        join_kwargs["using"] = using_node;
+        for (auto item : ti) join_kwargs[item.first] = item.second;
+        py::object join_node = call_with_kwargs(py_JoinOp, join_kwargs);
+        join_node.attr("isLast") = true;
+        return join_node;
+    }
+}
+
+py::object visitJoinClauseItem(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    py::object left_node = visitExpr(as_rule(children[0]));
+    if (children.size() == 1) {
+        return left_node;
+    }
+
+    auto ti = extract_token_info(ctx);
+    std::string intop_node = terminal_text(children[1]);
+
+    // right_node = Identifier(value=alias, kind="DatasetID", ...)
+    py::object alias_val = visitAlias(as_rule(children[2]));
+    py::dict ti_op;
+    auto* term1 = as_terminal(children[1]);
+    if (term1) {
+        ti_op = extract_token_info_terminal(term1);
+    } else {
+        ti_op = extract_token_info(as_rule(children[1]));
+    }
+    py::dict right_kwargs;
+    right_kwargs["value"] = alias_val;
+    right_kwargs["kind"] = "DatasetID";
+    for (auto item : ti_op) right_kwargs[item.first] = item.second;
+    py::object right_node = call_with_kwargs(py_Identifier, right_kwargs);
+
+    py::dict kwargs;
+    kwargs["left"] = left_node;
+    kwargs["op"] = intop_node;
+    kwargs["right"] = right_node;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_BinOp, kwargs);
+}
+
+std::pair<py::list, py::object> visitJoinClause(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+
+    py::list clause_nodes;
+    py::list component_nodes;
+    py::object using_val = py::none();
+
+    for (auto* child : children) {
+        auto* rule_child = as_rule(child);
+        if (!rule_child) continue;
+        int ri = (int)rule_child->getRuleIndex();
+        if (ri == VtlParser::RuleJoinClauseItem) {
+            clause_nodes.append(visitJoinClauseItem(rule_child));
+        } else if (ri == VtlParser::RuleComponentID) {
+            py::object comp = visitComponentID(rule_child);
+            component_nodes.append(comp.attr("value"));
+        }
+    }
+
+    if (py::len(component_nodes) != 0) {
+        using_val = component_nodes;
+    }
+
+    return {clause_nodes, using_val};
+}
+
+py::list visitJoinClauseWithoutUsing(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    py::list clause_nodes;
+
+    for (auto* child : children) {
+        auto* rule_child = as_rule(child);
+        if (!rule_child) continue;
+        if ((int)rule_child->getRuleIndex() == VtlParser::RuleJoinClauseItem) {
+            clause_nodes.append(visitJoinClauseItem(rule_child));
+        }
+    }
+
+    return clause_nodes;
+}
+
+py::list visitJoinBody(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    py::list body_nodes;
+
+    for (auto* child : children) {
+        auto* rule_child = as_rule(child);
+        if (!rule_child) {
+            if (is_terminal(child)) {
+                throw std::runtime_error("NotImplementedError: visitJoinBody terminal");
+            }
+            continue;
+        }
+        int ri = (int)rule_child->getRuleIndex();
+        if (ri == VtlParser::RuleFilterClause) {
+            body_nodes.append(visitFilterClause(rule_child));
+        } else if (ri == VtlParser::RuleCalcClause) {
+            body_nodes.append(visitCalcClause(rule_child));
+        } else if (ri == VtlParser::RuleJoinApplyClause) {
+            body_nodes.append(visitJoinApplyClause(rule_child));
+        } else if (ri == VtlParser::RuleAggrClause) {
+            body_nodes.append(visitAggrClause(rule_child));
+        } else if (ri == VtlParser::RuleKeepOrDropClause) {
+            body_nodes.append(visitKeepOrDropClause(rule_child));
+        } else if (ri == VtlParser::RuleRenameClause) {
+            body_nodes.append(visitRenameClause(rule_child));
+        } else {
+            throw std::runtime_error("NotImplementedError: visitJoinBody unknown rule");
+        }
+    }
+
+    return body_nodes;
+}
+
+static py::object visitJoinApplyClause(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    std::string op = terminal_text(children[0]);
+    py::list operand_nodes;
+    operand_nodes.append(visitExpr(as_rule(children[1])));
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["op"] = op;
+    kwargs["children"] = operand_nodes;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_RegularAggregation, kwargs);
+}
+
+// ---- Generic Functions ----
+
+py::object visitGenericFunctions(antlr4::ParserRuleContext* ctx) {
+    auto cid = get_ctx_id(ctx);
+    // CALL_DATASET = (17, 0)
+    if (cid.first == 17 && cid.second == 0) return visitCallDataset(ctx);
+    // EVAL_ATOM = (17, 1)
+    if (cid.first == 17 && cid.second == 1) return visitEvalAtom(ctx);
+    // CAST_EXPR_DATASET = (17, 2)
+    if (cid.first == 17 && cid.second == 2) return visitCastExprDataset(ctx);
+    throw std::runtime_error("NotImplementedError: visitGenericFunctions");
+}
+
+static py::object visitCallDataset(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    py::object op = visitOperatorID(as_rule(children[0]));
+
+    py::list param_nodes;
+    for (auto* child : children) {
+        auto* rule_child = as_rule(child);
+        if (!rule_child) continue;
+        if ((int)rule_child->getRuleIndex() == VtlParser::RuleParameter) {
+            param_nodes.append(visitParameter(rule_child));
+        }
+    }
+
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["op"] = op;
+    kwargs["params"] = param_nodes;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_UDOCall, kwargs);
+}
+
+static py::object visitEvalAtom(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    py::object routine_name = visitRoutineName(as_rule(children[2]));
+
+    py::list var_ids_nodes;
+    py::list constant_nodes;
+    for (auto* child : children) {
+        auto* rule_child = as_rule(child);
+        if (!rule_child) continue;
+        int ri = (int)rule_child->getRuleIndex();
+        auto child_cid = get_ctx_id(rule_child);
+        if (ri == VtlParser::RuleVarID) {
+            var_ids_nodes.append(visitVarID(rule_child));
+        }
+        // ScalarItem (rule_index 43) with either SIMPLE_SCALAR or SCALAR_WITH_CAST
+        if (child_cid.first == VtlParser::RuleScalarItem &&
+            (child_cid.second == 0 || child_cid.second == 1)) {
+            constant_nodes.append(visitScalarItem(rule_child));
+        }
+    }
+
+    py::list children_nodes;
+    for (auto item : var_ids_nodes) children_nodes.append(item);
+    for (auto item : constant_nodes) children_nodes.append(item);
+
+    // language
+    py::list language_list;
+    for (auto* child : children) {
+        auto* term = as_terminal(child);
+        if (term && (int)term->getSymbol()->getType() == VtlParser::STRING_CONSTANT) {
+            language_list.append(py::str(term->getText()));
+        }
+    }
+    if (py::len(language_list) == 0) {
+        py::kwargs kw;
+        kw["option"] = py::str("language");
+        raise_semantic_error("1-3-2-1", kw);
+    }
+
+    // output
+    py::list output_list;
+    for (auto* child : children) {
+        auto* rule_child = as_rule(child);
+        if (!rule_child) continue;
+        if ((int)rule_child->getRuleIndex() == VtlParser::RuleEvalDatasetType) {
+            output_list.append(visitEvalDatasetType(rule_child));
+        }
+    }
+    if (py::len(output_list) == 0) {
+        py::kwargs kw;
+        kw["option"] = py::str("output");
+        raise_semantic_error("1-3-2-1", kw);
+    }
+
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["name"] = routine_name;
+    kwargs["operands"] = children_nodes;
+    kwargs["output"] = output_list[py::int_(0)];
+    kwargs["language"] = language_list[py::int_(0)];
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_EvalOp, kwargs);
+}
+
+static py::object visitCastExprDataset(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    std::string op = terminal_text(children[0]);
+
+    py::list expr_nodes;
+    for (auto* child : children) {
+        auto* rule_child = as_rule(child);
+        if (rule_child && (int)rule_child->getRuleIndex() == 2) {
+            expr_nodes.append(visitExpr(rule_child));
+        }
+    }
+
+    py::list basic_scalar_types;
+    for (auto* child : children) {
+        auto* rule_child = as_rule(child);
+        if (!rule_child) continue;
+        if ((int)rule_child->getRuleIndex() == VtlParser::RuleBasicScalarType) {
+            basic_scalar_types.append(visitBasicScalarType(rule_child));
+        }
+    }
+
+    // Check for valueDomainName (will throw)
+    for (auto* child : children) {
+        auto* rule_child = as_rule(child);
+        if (!rule_child) continue;
+        if ((int)rule_child->getRuleIndex() == VtlParser::RuleValueDomainName) {
+            visitValueDomainName(rule_child);
+        }
+    }
+
+    py::list param_node;
+    if (children.size() > 6) {
+        for (auto* child : children) {
+            auto* term = as_terminal(child);
+            if (term && (int)term->getSymbol()->getType() == VtlParser::STRING_CONSTANT) {
+                auto term_ti = extract_token_info_terminal(term);
+                py::dict pk;
+                pk["type_"] = "PARAM_CAST";
+                std::string text = term->getText();
+                // Strip surrounding quotes
+                if (text.size() >= 2 && text.front() == '"' && text.back() == '"') {
+                    text = text.substr(1, text.size() - 2);
+                }
+                pk["value"] = text;
+                for (auto item : term_ti) pk[item.first] = item.second;
+                param_node.append(call_with_kwargs(py_ParamConstant, pk));
+            }
+        }
+    }
+
+    if (py::len(basic_scalar_types) == 1) {
+        py::list children_nodes;
+        children_nodes.append(expr_nodes[py::int_(0)]);
+        children_nodes.append(basic_scalar_types[py::int_(0)]);
+
+        auto ti = extract_token_info(ctx);
+        py::dict kwargs;
+        kwargs["op"] = op;
+        kwargs["children"] = children_nodes;
+        kwargs["params"] = param_node;
+        for (auto item : ti) kwargs[item.first] = item.second;
+        return call_with_kwargs(py_ParamOp, kwargs);
+    }
+
+    throw std::runtime_error("NotImplementedError: visitCastExprDataset");
+}
+
+static py::object visitParameter(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    auto* c = children[0];
+    auto* rule_child = as_rule(c);
+    if (rule_child && (int)rule_child->getRuleIndex() == 2) {
+        return visitExpr(rule_child);
+    }
+    auto* term = as_terminal(c);
+    if (term) {
+        auto ti = extract_token_info(ctx);
+        py::dict kwargs;
+        kwargs["type_"] = "OPTIONAL";
+        kwargs["value"] = term->getText();
+        for (auto item : ti) kwargs[item.first] = item.second;
+        return call_with_kwargs(py_ID, kwargs);
+    }
+    throw std::runtime_error("NotImplementedError: visitParameter");
+}
+
+// ---- String Functions ----
+
+py::object visitStringFunctions(antlr4::ParserRuleContext* ctx) {
+    auto cid = get_ctx_id(ctx);
+    if (cid.first == 21 && cid.second == 0) return visitUnaryStringFunction(ctx);
+    if (cid.first == 21 && cid.second == 1) return visitSubstrAtom(ctx);
+    if (cid.first == 21 && cid.second == 2) return visitReplaceAtom(ctx);
+    if (cid.first == 21 && cid.second == 3) return visitInstrAtom(ctx);
+    throw std::runtime_error("NotImplementedError: visitStringFunctions");
+}
+
+static py::object visitUnaryStringFunction(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    std::string op = terminal_text(children[0]);
+    py::object operand = visitExpr(as_rule(children[2]));
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["op"] = op;
+    kwargs["operand"] = operand;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_UnaryOp, kwargs);
+}
+
+static py::object visitSubstrAtom(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    std::string op = terminal_text(children[0]);
+
+    py::list children_nodes;
+    py::list params_nodes;
+
+    for (auto* child : children) {
+        auto* rule_child = as_rule(child);
+        if (!rule_child) continue;
+        if ((int)rule_child->getRuleIndex() == 2) {
+            children_nodes.append(visitExpr(rule_child));
+        }
+        if ((int)rule_child->getRuleIndex() == VtlParser::RuleOptionalExpr) {
+            params_nodes.append(visitOptionalExpr(rule_child));
+        }
+    }
+
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["op"] = op;
+    kwargs["children"] = children_nodes;
+    kwargs["params"] = params_nodes;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_ParamOp, kwargs);
+}
+
+static py::object visitReplaceAtom(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    std::string op = terminal_text(children[0]);
+
+    py::list expressions;
+    py::list opt_params;
+
+    for (auto* child : children) {
+        auto* rule_child = as_rule(child);
+        if (!rule_child) continue;
+        if ((int)rule_child->getRuleIndex() == 2) {
+            expressions.append(visitExpr(rule_child));
+        }
+        if ((int)rule_child->getRuleIndex() == VtlParser::RuleOptionalExpr) {
+            opt_params.append(visitOptionalExpr(rule_child));
+        }
+    }
+
+    py::list children_nodes;
+    children_nodes.append(expressions[py::int_(0)]);
+    py::list params_nodes;
+    params_nodes.append(expressions[py::int_(1)]);
+    for (auto item : opt_params) params_nodes.append(item);
+
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["op"] = op;
+    kwargs["children"] = children_nodes;
+    kwargs["params"] = params_nodes;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_ParamOp, kwargs);
+}
+
+static py::object visitInstrAtom(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    std::string op = terminal_text(children[0]);
+
+    py::list expressions;
+    py::list opt_params;
+
+    for (auto* child : children) {
+        auto* rule_child = as_rule(child);
+        if (!rule_child) continue;
+        if ((int)rule_child->getRuleIndex() == 2) {
+            expressions.append(visitExpr(rule_child));
+        }
+        if ((int)rule_child->getRuleIndex() == VtlParser::RuleOptionalExpr) {
+            opt_params.append(visitOptionalExpr(rule_child));
+        }
+    }
+
+    py::list children_nodes;
+    children_nodes.append(expressions[py::int_(0)]);
+    py::list params_nodes;
+    params_nodes.append(expressions[py::int_(1)]);
+    for (auto item : opt_params) params_nodes.append(item);
+
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["op"] = op;
+    kwargs["children"] = children_nodes;
+    kwargs["params"] = params_nodes;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_ParamOp, kwargs);
+}
+
+// ---- Numeric Functions ----
+
+py::object visitNumericFunctions(antlr4::ParserRuleContext* ctx) {
+    auto cid = get_ctx_id(ctx);
+    if (cid.first == 23 && cid.second == 0) return visitUnaryNumeric(ctx);
+    if (cid.first == 23 && cid.second == 1) return visitUnaryWithOptionalNumeric(ctx);
+    if (cid.first == 23 && cid.second == 2) return visitBinaryNumeric(ctx);
+    throw std::runtime_error("NotImplementedError: visitNumericFunctions");
+}
+
+static py::object visitUnaryNumeric(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    std::string op = terminal_text(children[0]);
+    py::object operand = visitExpr(as_rule(children[2]));
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["op"] = op;
+    kwargs["operand"] = operand;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_UnaryOp, kwargs);
+}
+
+static py::object visitUnaryWithOptionalNumeric(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    std::string op = terminal_text(children[0]);
+
+    py::list children_nodes;
+    py::list params_nodes;
+
+    for (auto* child : children) {
+        auto* rule_child = as_rule(child);
+        if (!rule_child) continue;
+        if ((int)rule_child->getRuleIndex() == 2) {
+            children_nodes.append(visitExpr(rule_child));
+        }
+        if ((int)rule_child->getRuleIndex() == VtlParser::RuleOptionalExpr) {
+            params_nodes.append(visitOptionalExpr(rule_child));
+        }
+    }
+
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["op"] = op;
+    kwargs["children"] = children_nodes;
+    kwargs["params"] = params_nodes;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_ParamOp, kwargs);
+}
+
+static py::object visitBinaryNumeric(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    std::string op = terminal_text(children[0]);
+    py::object left = visitExpr(as_rule(children[2]));
+    py::object right = visitExpr(as_rule(children[4]));
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["left"] = left;
+    kwargs["op"] = op;
+    kwargs["right"] = right;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_BinOp, kwargs);
+}
+
+// ---- Comparison Functions ----
+
+py::object visitComparisonFunctions(antlr4::ParserRuleContext* ctx) {
+    auto cid = get_ctx_id(ctx);
+    if (cid.first == 25 && cid.second == 0) return visitBetweenAtom(ctx);
+    if (cid.first == 25 && cid.second == 1) return visitCharsetMatchAtom(ctx);
+    if (cid.first == 25 && cid.second == 2) return visitIsNullAtom(ctx);
+    if (cid.first == 25 && cid.second == 3) return visitExistInAtom(ctx);
+    throw std::runtime_error("NotImplementedError: visitComparisonFunctions");
+}
+
+static py::object visitBetweenAtom(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    std::string op = terminal_text(children[0]);
+
+    py::list children_nodes;
+    for (auto* child : children) {
+        auto* rule_child = as_rule(child);
+        if (rule_child && (int)rule_child->getRuleIndex() == 2) {
+            children_nodes.append(visitExpr(rule_child));
+        }
+    }
+
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["op"] = op;
+    kwargs["children"] = children_nodes;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_MulOp, kwargs);
+}
+
+static py::object visitCharsetMatchAtom(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    std::string op = terminal_text(children[0]);
+    py::object left = visitExpr(as_rule(children[2]));
+    py::object right = visitExpr(as_rule(children[4]));
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["left"] = left;
+    kwargs["op"] = op;
+    kwargs["right"] = right;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_BinOp, kwargs);
+}
+
+static py::object visitIsNullAtom(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    std::string op = terminal_text(children[0]);
+    py::object operand = visitExpr(as_rule(children[2]));
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["op"] = op;
+    kwargs["operand"] = operand;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_UnaryOp, kwargs);
+}
+
+static py::object visitExistInAtom(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    std::string op = terminal_text(children[0]);
+
+    py::list operand_nodes;
+    for (auto* child : children) {
+        auto* rule_child = as_rule(child);
+        if (rule_child && (int)rule_child->getRuleIndex() == 2) {
+            operand_nodes.append(visitExpr(rule_child));
+        }
+    }
+
+    py::list retain_nodes;
+    for (auto* child : children) {
+        auto* rule_child = as_rule(child);
+        if (!rule_child) continue;
+        if ((int)rule_child->getRuleIndex() == VtlParser::RuleRetainType) {
+            retain_nodes.append(visitRetainType(rule_child));
+        }
+    }
+
+    // Merge operand_nodes + retain_nodes
+    py::list all_children;
+    for (auto item : operand_nodes) all_children.append(item);
+    for (auto item : retain_nodes) all_children.append(item);
+
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["op"] = op;
+    kwargs["children"] = all_children;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_MulOp, kwargs);
+}
+
+// ---- Time Functions ----
+
+py::object visitTimeFunctions(antlr4::ParserRuleContext* ctx) {
+    auto cid = get_ctx_id(ctx);
+    // PERIOD_ATOM = (27, 0)
+    if (cid.first == 27 && cid.second == 0) return visitTimeUnaryAtom(ctx);
+    // FILL_TIME_ATOM = (27, 1)
+    if (cid.first == 27 && cid.second == 1) return visitFillTimeAtom(ctx);
+    // FLOW_ATOM = (27, 2)
+    if (cid.first == 27 && cid.second == 2) return visitFlowAtom(ctx);
+    // TIME_SHIFT_ATOM = (27, 3)
+    if (cid.first == 27 && cid.second == 3) return visitTimeShiftAtom(ctx);
+    // TIME_AGG_ATOM = (27, 4)
+    if (cid.first == 27 && cid.second == 4) return visitTimeAggAtom(ctx);
+    // CURRENT_DATE_ATOM = (27, 5)
+    if (cid.first == 27 && cid.second == 5) return visitCurrentDateAtom(ctx);
+    // DATE_DIFF_ATOM = (27, 6)
+    if (cid.first == 27 && cid.second == 6) return visitTimeDiffAtom(ctx);
+    // DATE_ADD_ATOM = (27, 7)
+    if (cid.first == 27 && cid.second == 7) return visitTimeAddAtom(ctx);
+    // YEAR..MONTH_TODAY_ATOM = (27, 8..15)
+    if (cid.first == 27 && cid.second >= 8 && cid.second <= 15) {
+        return visitTimeUnaryAtom(ctx);
+    }
+    throw std::runtime_error("NotImplementedError: visitTimeFunctions");
+}
+
+static py::object visitTimeUnaryAtom(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    std::string op = terminal_text(children[0]);
+
+    py::object operand_node = py::none();
+    for (auto* child : children) {
+        auto* rule_child = as_rule(child);
+        if (rule_child && (int)rule_child->getRuleIndex() == 2) {
+            operand_node = visitExpr(rule_child);
+            break;
+        }
+    }
+
+    if (operand_node.is_none()) {
+        throw std::runtime_error("NotImplementedError: visitTimeUnaryAtom no operand");
+    }
+
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["op"] = op;
+    kwargs["operand"] = operand_node;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_UnaryOp, kwargs);
+}
+
+static py::object visitTimeShiftAtom(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    std::string op = terminal_text(children[0]);
+    py::object left_node = visitExpr(as_rule(children[2]));
+
+    // children[4] is signedInteger
+    py::object shift_val = visitSignedInteger(as_rule(children[4]));
+    auto ti_shift = extract_token_info(as_rule(children[4]));
+    py::dict const_kwargs;
+    const_kwargs["type_"] = "INTEGER_CONSTANT";
+    const_kwargs["value"] = shift_val;
+    for (auto item : ti_shift) const_kwargs[item.first] = item.second;
+    py::object right_node = call_with_kwargs(py_Constant, const_kwargs);
+
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["left"] = left_node;
+    kwargs["op"] = op;
+    kwargs["right"] = right_node;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_BinOp, kwargs);
+}
+
+static py::object visitFillTimeAtom(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    std::string op = terminal_text(children[0]);
+    py::list children_node;
+    children_node.append(visitExpr(as_rule(children[2])));
+
+    py::list param_constant_node;
+    if (children.size() > 4) {
+        auto ti_param = extract_token_info(ctx);
+        py::dict pk;
+        pk["type_"] = "PARAM_TIMESERIES";
+        pk["value"] = terminal_text(children[4]);
+        for (auto item : ti_param) pk[item.first] = item.second;
+        param_constant_node.append(call_with_kwargs(py_ParamConstant, pk));
+    }
+
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["op"] = op;
+    kwargs["children"] = children_node;
+    kwargs["params"] = param_constant_node;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_ParamOp, kwargs);
+}
+
+static py::object visitTimeAggAtom(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    std::string op = terminal_text(children[0]);
+
+    py::object period_to = py::none();
+    py::object period_from = py::none();
+    antlr4::ParserRuleContext* optional_expr_ctx = nullptr;
+    py::object conf = py::none();
+    bool period_to_found = false;
+
+    for (auto* child : children) {
+        auto* term = as_terminal(child);
+        if (term) {
+            int sym = (int)term->getSymbol()->getType();
+            if (sym == VtlParser::STRING_CONSTANT) {
+                std::string raw = term->getText();
+                std::string val = raw.substr(1, raw.size() - 2);
+                if (!period_to_found) {
+                    period_to = py::str(val);
+                    period_to_found = true;
+                } else {
+                    period_from = py::str(val);
+                }
+            } else if (sym == VtlParser::OPTIONAL) {
+                // skip
+            } else if (sym == VtlParser::FIRST || sym == VtlParser::LAST) {
+                conf = py::str(term->getText());
+            }
+            continue;
+        }
+        auto* rule_child = as_rule(child);
+        if (rule_child && (int)rule_child->getRuleIndex() == VtlParser::RuleOptionalExpr) {
+            optional_expr_ctx = rule_child;
+        }
+    }
+
+    py::object operand_node = py::none();
+    if (optional_expr_ctx) {
+        operand_node = visitOptionalExpr(optional_expr_ctx);
+        // isinstance checks
+        if (py::isinstance(operand_node, py_ID)) {
+            operand_node = py::none();
+        } else if (py::isinstance(operand_node, py_Identifier)) {
+            std::string val = operand_node.attr("value").cast<std::string>();
+            auto opt_ti = extract_token_info(ctx);
+            py::dict vk;
+            vk["value"] = val;
+            for (auto item : opt_ti) vk[item.first] = item.second;
+            operand_node = call_with_kwargs(py_VarID, vk);
+        }
+    }
+
+    if (operand_node.is_none()) {
+        py::kwargs kw;
+        raise_semantic_error("1-3-2-4", kw);
+    }
+
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["op"] = op;
+    kwargs["operand"] = operand_node;
+    kwargs["period_to"] = period_to;
+    kwargs["period_from"] = period_from;
+    kwargs["conf"] = conf;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_TimeAggregation, kwargs);
+}
+
+static py::object visitFlowAtom(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    std::string op = terminal_text(children[0]);
+    py::object operand = visitExpr(as_rule(children[2]));
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["op"] = op;
+    kwargs["operand"] = operand;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_UnaryOp, kwargs);
+}
+
+static py::object visitCurrentDateAtom(antlr4::ParserRuleContext* ctx) {
+    std::string op = terminal_text(ctx->children[0]);
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["op"] = op;
+    kwargs["children"] = py::list();
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_MulOp, kwargs);
+}
+
+static py::object visitTimeDiffAtom(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    std::string op = terminal_text(children[0]);
+    py::object left = visitExpr(as_rule(children[2]));
+    py::object right = visitExpr(as_rule(children[4]));
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["left"] = left;
+    kwargs["op"] = op;
+    kwargs["right"] = right;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_BinOp, kwargs);
+}
+
+static py::object visitTimeAddAtom(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    std::string op = terminal_text(children[0]);
+    py::list children_node;
+    children_node.append(visitExpr(as_rule(children[2])));
+
+    py::list param_node;
+    if (children.size() > 4) {
+        param_node.append(visitExpr(as_rule(children[4])));
+        if (children.size() > 6) {
+            param_node.append(visitExpr(as_rule(children[6])));
+        }
+    }
+
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["op"] = op;
+    kwargs["children"] = children_node;
+    kwargs["params"] = param_node;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_ParamOp, kwargs);
+}
+
+// ---- Conditional Functions ----
+
+py::object visitConditionalFunctions(antlr4::ParserRuleContext* ctx) {
+    auto cid = get_ctx_id(ctx);
+    if (cid.first == 32 && cid.second == 0) return visitNvlAtom(ctx);
+    throw std::runtime_error("NotImplementedError: visitConditionalFunctions");
+}
+
+static py::object visitNvlAtom(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    std::string op = terminal_text(children[0]);
+    py::object left = visitExpr(as_rule(children[2]));
+    py::object right = visitExpr(as_rule(children[4]));
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["left"] = left;
+    kwargs["op"] = op;
+    kwargs["right"] = right;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_BinOp, kwargs);
+}
+
+// ---- Set Functions ----
+
+py::object visitSetFunctions(antlr4::ParserRuleContext* ctx) {
+    auto cid = get_ctx_id(ctx);
+    if (cid.first == 29 && cid.second == 0) return visitUnionAtom(ctx);
+    if (cid.first == 29 && cid.second == 1) return visitIntersectAtom(ctx);
+    if (cid.first == 29 && cid.second == 2) return visitSetOrSYmDiffAtom(ctx);
+    throw std::runtime_error("NotImplementedError: visitSetFunctions");
+}
+
+static py::object visitUnionAtom(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    std::string op = terminal_text(children[0]);
+    py::list exprs_nodes;
+    for (auto* child : children) {
+        auto* rule_child = as_rule(child);
+        if (rule_child && (int)rule_child->getRuleIndex() == 2) {
+            exprs_nodes.append(visitExpr(rule_child));
+        }
+    }
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["op"] = op;
+    kwargs["children"] = exprs_nodes;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_MulOp, kwargs);
+}
+
+static py::object visitIntersectAtom(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    std::string op = terminal_text(children[0]);
+    py::list exprs_nodes;
+    for (auto* child : children) {
+        auto* rule_child = as_rule(child);
+        if (rule_child && (int)rule_child->getRuleIndex() == 2) {
+            exprs_nodes.append(visitExpr(rule_child));
+        }
+    }
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["op"] = op;
+    kwargs["children"] = exprs_nodes;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_MulOp, kwargs);
+}
+
+static py::object visitSetOrSYmDiffAtom(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    std::string op = terminal_text(children[0]);
+    py::list exprs_nodes;
+    for (auto* child : children) {
+        auto* rule_child = as_rule(child);
+        if (rule_child && (int)rule_child->getRuleIndex() == 2) {
+            exprs_nodes.append(visitExpr(rule_child));
+        }
+    }
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["op"] = op;
+    kwargs["children"] = exprs_nodes;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_MulOp, kwargs);
+}
+
+// ---- Hierarchy Functions ----
+
+py::object visitHierarchyFunctions(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    std::string op = terminal_text(children[0]);
+    py::object dataset_node = visitExpr(as_rule(children[2]));
+    std::string ruleset_name = terminal_text(children[4]);
+
+    py::list conditions;
+    py::object validation_mode = py::none();
+    py::object input_mode = py::none();
+    py::object output = py::none();
+    py::object rule_comp = py::none();
+
+    for (auto* child : children) {
+        auto* rule_child = as_rule(child);
+        if (!rule_child) continue;
+        int ri = (int)rule_child->getRuleIndex();
+        if (ri == VtlParser::RuleConditionClause) {
+            conditions.append(visitConditionClause(rule_child));
+        } else if (ri == VtlParser::RuleComponentID) {
+            rule_comp = visitComponentID(rule_child);
+        } else if (ri == VtlParser::RuleValidationMode) {
+            py::object mode_str = ASTBuilder::visitValidationMode(rule_child);
+            validation_mode = py_ValidationMode_cls(mode_str);
+        } else if (ri == VtlParser::RuleInputModeHierarchy) {
+            py::object input_str = visitInputModeHierarchy(rule_child);
+            if (input_str.equal(py_DATASET_PRIORITY)) {
+                throw std::runtime_error(
+                    "Dataset Priority input mode on HR is not implemented");
+            }
+            input_mode = py_HRInputMode_cls(input_str);
+        } else if (ri == VtlParser::RuleOutputModeHierarchy) {
+            py::object output_str = visitOutputModeHierarchy(rule_child);
+            output = py_HierarchyOutput_cls(output_str);
+        }
+    }
+
+    // conditions[0] if conditions else []
+    py::object cond_val;
+    if (py::len(conditions) > 0) {
+        cond_val = conditions[py::int_(0)];
+    } else {
+        cond_val = py::list();
+    }
+
+    // Auto-detect rule_comp from de_ruleset_elements
+    if (rule_comp.is_none() && py_de_ruleset_elements.contains(py::str(ruleset_name))) {
+        py::object rule_element = py_de_ruleset_elements[py::str(ruleset_name)];
+        if (py::isinstance<py::list>(rule_element)) {
+            rule_element = rule_element[py::int_(-1)];
+        }
+        std::string kind = rule_element.attr("kind").cast<std::string>();
+        if (kind == "DatasetID") {
+            std::string check_val = rule_element.attr("value").cast<std::string>();
+            auto ti_rc = extract_token_info(ctx);
+            py::dict rc_kwargs;
+            rc_kwargs["value"] = check_val;
+            rc_kwargs["kind"] = "ComponentID";
+            for (auto item : ti_rc) rc_kwargs[item.first] = item.second;
+            rule_comp = call_with_kwargs(py_Identifier, rc_kwargs);
+        } else {
+            py::kwargs kw;
+            kw["op"] = py::str(op);
+            raise_semantic_error("1-1-10-4", kw);
+        }
+    }
+
+    // Ensure conditions is a list
+    py::object cond_list;
+    if (py::isinstance<py::list>(cond_val)) {
+        cond_list = cond_val;
+    } else {
+        py::list cl;
+        cl.append(cond_val);
+        cond_list = cl;
+    }
+
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["op"] = op;
+    kwargs["dataset"] = dataset_node;
+    kwargs["ruleset_name"] = ruleset_name;
+    kwargs["rule_component"] = rule_comp;
+    kwargs["conditions"] = cond_list;
+    kwargs["validation_mode"] = validation_mode;
+    kwargs["input_mode"] = input_mode;
+    kwargs["output"] = output;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_HROperation, kwargs);
+}
+
+// ---- Validation Functions ----
+
+py::object visitValidationFunctions(antlr4::ParserRuleContext* ctx) {
+    auto cid = get_ctx_id(ctx);
+    if (cid.first == 31 && cid.second == 0) return visitValidateDPruleset(ctx);
+    if (cid.first == 31 && cid.second == 1) return visitValidateHRruleset(ctx);
+    if (cid.first == 31 && cid.second == 2) return visitValidationSimple(ctx);
+    throw std::runtime_error("NotImplementedError: visitValidationFunctions");
+}
+
+py::object visitValidateDPruleset(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+
+    py::object dataset_node = visitExpr(as_rule(children[2]));
+    std::string ruleset_name = terminal_text(children[4]);
+
+    py::list components;
+    for (auto* child : children) {
+        auto* rule_child = as_rule(child);
+        if (!rule_child) continue;
+        if ((int)rule_child->getRuleIndex() == VtlParser::RuleComponentID) {
+            components.append(visitComponentID(rule_child));
+        }
+    }
+
+    py::list component_names;
+    for (auto item : components) {
+        py::object x = py::reinterpret_borrow<py::object>(item);
+        if (py::isinstance(x, py_BinOp)) {
+            component_names.append(x.attr("right").attr("value"));
+        } else {
+            component_names.append(x.attr("value"));
+        }
+    }
+
+    py::object output_val = py::none();
+    // Check second-to-last child for ValidationOutput
+    size_t n = children.size();
+    if (n >= 2) {
+        auto* last2 = as_rule(children[n - 2]);
+        if (last2 && (int)last2->getRuleIndex() == VtlParser::RuleValidationOutput) {
+            py::object output_str = ASTBuilder::visitValidationOutput(last2);
+            output_val = py_ValidationOutput_cls(output_str);
+        }
+    }
+
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["dataset"] = dataset_node;
+    kwargs["ruleset_name"] = ruleset_name;
+    kwargs["components"] = component_names;
+    kwargs["output"] = output_val;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_DPValidation, kwargs);
+}
+
+py::object visitValidateHRruleset(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    std::string op = terminal_text(children[0]);
+    py::object dataset_node = visitExpr(as_rule(children[2]));
+    std::string ruleset_name = terminal_text(children[4]);
+
+    py::list conditions;
+    py::object validation_mode = py::none();
+    py::object input_mode = py::none();
+    py::object output = py::none();
+    py::object rule_comp = py::none();
+
+    for (auto* child : children) {
+        auto* rule_child = as_rule(child);
+        if (!rule_child) continue;
+        int ri = (int)rule_child->getRuleIndex();
+        if (ri == VtlParser::RuleConditionClause) {
+            conditions.append(visitConditionClause(rule_child));
+        } else if (ri == VtlParser::RuleComponentID) {
+            rule_comp = visitComponentID(rule_child);
+        } else if (ri == VtlParser::RuleValidationMode) {
+            py::object mode_str = ASTBuilder::visitValidationMode(rule_child);
+            validation_mode = py_ValidationMode_cls(mode_str);
+        } else if (ri == VtlParser::RuleInputMode) {
+            py::object input_str = visitInputMode(rule_child);
+            if (input_str.equal(py_DATASET_PRIORITY)) {
+                throw std::runtime_error(
+                    "Dataset Priority input mode on HR is not implemented");
+            }
+            input_mode = py_CHInputMode_cls(input_str);
+        } else if (ri == VtlParser::RuleValidationOutput) {
+            py::object output_str = ASTBuilder::visitValidationOutput(rule_child);
+            output = py_ValidationOutput_cls(output_str);
+        }
+    }
+
+    // conditions[0] if conditions else []
+    py::object cond_val;
+    if (py::len(conditions) > 0) {
+        cond_val = conditions[py::int_(0)];
+    } else {
+        cond_val = py::list();
+    }
+
+    // Auto-detect rule_comp from de_ruleset_elements
+    if (rule_comp.is_none() && py_de_ruleset_elements.contains(py::str(ruleset_name))) {
+        py::object rule_element = py_de_ruleset_elements[py::str(ruleset_name)];
+        if (py::isinstance<py::list>(rule_element)) {
+            rule_element = rule_element[py::int_(-1)];
+        }
+        std::string kind = rule_element.attr("kind").cast<std::string>();
+        if (kind == "DatasetID") {
+            std::string check_val = rule_element.attr("value").cast<std::string>();
+            auto ti_rc = extract_token_info(ctx);
+            py::dict rc_kwargs;
+            rc_kwargs["value"] = check_val;
+            rc_kwargs["kind"] = "ComponentID";
+            for (auto item : ti_rc) rc_kwargs[item.first] = item.second;
+            rule_comp = call_with_kwargs(py_Identifier, rc_kwargs);
+        } else {
+            py::kwargs kw;
+            kw["op"] = py::str(op);
+            raise_semantic_error("1-1-10-4", kw);
+        }
+    }
+
+    // Ensure conditions is a list
+    py::object cond_list;
+    if (py::isinstance<py::list>(cond_val)) {
+        cond_list = cond_val;
+    } else {
+        py::list cl;
+        cl.append(cond_val);
+        cond_list = cl;
+    }
+
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["op"] = op;
+    kwargs["dataset"] = dataset_node;
+    kwargs["ruleset_name"] = ruleset_name;
+    kwargs["rule_component"] = rule_comp;
+    kwargs["conditions"] = cond_list;
+    kwargs["validation_mode"] = validation_mode;
+    kwargs["input_mode"] = input_mode;
+    kwargs["output"] = output;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_HROperation, kwargs);
+}
+
+py::object visitValidationSimple(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    std::string op_text = terminal_text(children[0]);
+
+    py::object validation_node = visitExpr(as_rule(children[2]));
+
+    py::object inbalance_node = py::none();
+    py::object error_code = py::none();
+    py::object error_level = py::none();
+
+    for (auto* child : children) {
+        auto* rule_child = as_rule(child);
+        if (!rule_child) continue;
+        int ri = (int)rule_child->getRuleIndex();
+        if (ri == VtlParser::RuleErCode) {
+            error_code = visitErCode(rule_child);
+        } else if (ri == VtlParser::RuleErLevel) {
+            error_level = visitErLevel(rule_child);
+        } else if (ri == VtlParser::RuleImbalanceExpr) {
+            inbalance_node = visitImbalanceExpr(rule_child);
+        }
+    }
+
+    // invalid check: ctx_list[-2] terminal
+    size_t n = children.size();
+    bool invalid_value = false;
+    if (n >= 2) {
+        auto* last2 = as_terminal(children[n - 2]);
+        if (last2) {
+            std::string text = last2->getText();
+            invalid_value = (text == "invalid");
+        }
+    }
+
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["op"] = op_text;
+    kwargs["validation"] = validation_node;
+    kwargs["error_code"] = error_code;
+    kwargs["error_level"] = error_level;
+    kwargs["imbalance"] = inbalance_node;
+    kwargs["invalid"] = py::bool_(invalid_value);
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_Validation, kwargs);
+}
+
+static py::object visitImbalanceExpr(antlr4::ParserRuleContext* ctx) {
+    return visitExpr(as_rule(ctx->children[1]));
+}
+
+// ---- Aggregate Functions ----
+
+py::object visitAggregateFunctions(antlr4::ParserRuleContext* ctx) {
+    auto cid = get_ctx_id(ctx);
+    if (cid.first == 35 && cid.second == 0) return visitAggrDataset(ctx);
+    throw std::runtime_error("NotImplementedError: visitAggregateFunctions");
+}
+
+static py::object visitAggrDataset(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+
+    py::object grouping_op = py::none();
+    py::object group_node = py::none();
+    py::object have_node = py::none();
+
+    // GroupingClause has rule_index 56
+    std::vector<antlr4::ParserRuleContext*> groups;
+    std::vector<antlr4::ParserRuleContext*> haves;
+    for (auto* child : children) {
+        auto* rule_child = as_rule(child);
+        if (!rule_child) continue;
+        int ri = (int)rule_child->getRuleIndex();
+        // GroupingClause rule_index = 56
+        if (ri == 56) groups.push_back(rule_child);
+        // HavingClause rule_index = 57
+        if (ri == VtlParser::RuleHavingClause) haves.push_back(rule_child);
+    }
+
+    std::string op_node = terminal_text(children[0]);
+    py::object operand = visitExpr(as_rule(children[2]));
+
+    if (!groups.empty()) {
+        auto [gop, gn] = visitGroupingClause(groups[0]);
+        grouping_op = gop;
+        group_node = gn;
+    }
+    if (!haves.empty()) {
+        auto [hn, expr] = visitHavingClause(haves[0]);
+        hn.attr("expr") = expr;
+        have_node = hn;
+    }
+
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["op"] = op_node;
+    kwargs["operand"] = operand;
+    kwargs["grouping_op"] = grouping_op;
+    kwargs["grouping"] = group_node;
+    kwargs["having_clause"] = have_node;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_Aggregation, kwargs);
+}
+
+// ---- Analytic Functions ----
+
+py::object visitAnalyticFunctions(antlr4::ParserRuleContext* ctx) {
+    auto cid = get_ctx_id(ctx);
+    if (cid.first == 36 && cid.second == 0) return visitAnSimpleFunction(ctx);
+    if (cid.first == 36 && cid.second == 1) return visitLagOrLeadAn(ctx);
+    if (cid.first == 36 && cid.second == 2) return visitRatioToReportAn(ctx);
+    throw std::runtime_error("NotImplementedError: visitAnalyticFunctions");
+}
+
+static py::object visitAnSimpleFunction(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    py::object window = py::none();
+    py::object partition_by = py::none();
+    py::object order_by = py::none();
+
+    std::string op_node = terminal_text(children[0]);
+    py::object operand = visitExpr(as_rule(children[2]));
+
+    // children[5:-2]
+    size_t start = 5;
+    size_t end = children.size() >= 2 ? children.size() - 2 : start;
+    for (size_t i = start; i < end; i++) {
+        auto* rule_child = as_rule(children[i]);
+        if (!rule_child) {
+            throw std::runtime_error("NotImplementedError: visitAnSimpleFunction non-rule");
+        }
+        int ri = (int)rule_child->getRuleIndex();
+        if (ri == VtlParser::RulePartitionByClause) {
+            partition_by = visitPartitionByClause(rule_child);
+        } else if (ri == VtlParser::RuleOrderByClause) {
+            order_by = visitOrderByClause(rule_child);
+        } else if (ri == VtlParser::RuleWindowingClause) {
+            window = visitWindowingClause(rule_child);
+        } else {
+            throw std::runtime_error("NotImplementedError: visitAnSimpleFunction unknown");
+        }
+    }
+
+    if (window.is_none()) {
+        auto ti_w = extract_token_info(ctx);
+        window = create_windowing("data", py::int_(-1), py::int_(0),
+                                  "preceding", "current", ti_w);
+    }
+
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["op"] = op_node;
+    kwargs["operand"] = operand;
+    kwargs["partition_by"] = partition_by;
+    kwargs["order_by"] = order_by;
+    kwargs["window"] = window;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_Analytic, kwargs);
+}
+
+static py::object visitLagOrLeadAn(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    py::object params = py::none();
+    py::object partition_by = py::none();
+    py::object order_by = py::none();
+
+    std::string op_node = terminal_text(children[0]);
+    py::object operand = visitExpr(as_rule(children[2]));
+
+    // children[4:-2]
+    size_t start = 4;
+    size_t end = children.size() >= 2 ? children.size() - 2 : start;
+    for (size_t i = start; i < end; i++) {
+        auto* term = as_terminal(children[i]);
+        if (term) continue;
+        auto* rule_child = as_rule(children[i]);
+        if (!rule_child) continue;
+        int ri = (int)rule_child->getRuleIndex();
+        auto child_cid = get_ctx_id(rule_child);
+        if (ri == VtlParser::RulePartitionByClause) {
+            partition_by = visitPartitionByClause(rule_child);
+        } else if (ri == VtlParser::RuleOrderByClause) {
+            order_by = visitOrderByClause(rule_child);
+        } else if (ri == VtlParser::RuleSignedInteger ||
+                   (child_cid.first == VtlParser::RuleScalarItem &&
+                    (child_cid.second == 0 || child_cid.second == 1))) {
+            if (params.is_none()) {
+                params = py::list();
+            }
+            if (ri == VtlParser::RuleSignedInteger) {
+                params.cast<py::list>().append(visitSignedInteger(rule_child));
+            } else {
+                params.cast<py::list>().append(visitScalarItem(rule_child));
+            }
+        }
+    }
+
+    // Check params
+    if (params.is_none() || py::len(params) == 0) {
+        throw std::runtime_error(op_node + " requires an offset parameter.");
+    }
+
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["op"] = op_node;
+    kwargs["operand"] = operand;
+    kwargs["partition_by"] = partition_by;
+    kwargs["order_by"] = order_by;
+    kwargs["params"] = params;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_Analytic, kwargs);
+}
+
+static py::object visitRatioToReportAn(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    std::string op_node = terminal_text(children[0]);
+    py::object operand = visitExpr(as_rule(children[2]));
+    py::object partition_by = visitPartitionByClause(as_rule(children[5]));
+
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["op"] = op_node;
+    kwargs["operand"] = operand;
+    kwargs["partition_by"] = partition_by;
+    kwargs["order_by"] = py::none();
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_Analytic, kwargs);
+}
+
+// ---- Dataset Clause ----
+
+py::object visitDatasetClause(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    auto* c = as_rule(children[0]);
+    if (!c) throw std::runtime_error("visitDatasetClause: expected rule child");
+
+    int ri = (int)c->getRuleIndex();
+    if (ri == VtlParser::RuleRenameClause) return visitRenameClause(c);
+    if (ri == VtlParser::RuleAggrClause) return visitAggrClause(c);
+    if (ri == VtlParser::RuleFilterClause) return visitFilterClause(c);
+    if (ri == VtlParser::RuleCalcClause) return visitCalcClause(c);
+    if (ri == VtlParser::RuleKeepOrDropClause) return visitKeepOrDropClause(c);
+    if (ri == VtlParser::RulePivotOrUnpivotClause) return visitPivotOrUnpivotClause(c);
+    if (ri == VtlParser::RuleSubspaceClause) return visitSubspaceClause(c);
+
+    throw std::runtime_error("NotImplementedError: visitDatasetClause unknown clause");
+}
+
+// ---- Rename Clause ----
+
+py::object visitRenameClause(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    py::list rename_nodes;
+
+    for (auto* child : children) {
+        auto* rule_child = as_rule(child);
+        if (!rule_child) continue;
+        if ((int)rule_child->getRuleIndex() == VtlParser::RuleRenameClauseItem) {
+            rename_nodes.append(visitRenameClauseItem(rule_child));
+        }
+    }
+
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["op"] = terminal_text(children[0]);
+    kwargs["children"] = rename_nodes;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_RegularAggregation, kwargs);
+}
+
+static py::object visitRenameClauseItem(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+
+    py::object left_node = visitComponentID(as_rule(children[0]));
+    // Check if left_node is a BinOp
+    py::object left_val;
+    if (py::isinstance(left_node, py_BinOp)) {
+        std::string l = left_node.attr("left").attr("value").cast<std::string>();
+        std::string o = left_node.attr("op").cast<std::string>();
+        std::string r = left_node.attr("right").attr("value").cast<std::string>();
+        left_val = py::str(l + o + r);
+    } else {
+        left_val = left_node.attr("value");
+    }
+
+    py::object right_node = visitVarID(as_rule(children[2]));
+    py::object right_val = right_node.attr("value");
+
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["old_name"] = left_val;
+    kwargs["new_name"] = right_val;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_RenameNode, kwargs);
+}
+
+// ---- Aggregate Clause ----
+
+static py::object visitAggregateClause(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    py::list aggregates_nodes;
+
+    for (auto* child : children) {
+        auto* rule_child = as_rule(child);
+        if (!rule_child) continue;
+        if ((int)rule_child->getRuleIndex() == VtlParser::RuleAggrFunctionClause) {
+            aggregates_nodes.append(visitAggrFunctionClause(rule_child));
+        }
+    }
+
+    return aggregates_nodes;
+}
+
+static py::object visitAggrFunctionClause(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    auto* c = children[0];
+    auto* c_rule = as_rule(c);
+
+    int base_index = 0;
+    py::object role;
+    if (c_rule && (int)c_rule->getRuleIndex() == VtlParser::RuleComponentRole) {
+        role = visitComponentRole(c_rule);
+        base_index = 1;
+    } else {
+        base_index = 0;
+        role = py_Role(py::str("Measure"));
+    }
+
+    py::object left_node = visitSimpleComponentId(as_rule(children[base_index]));
+    std::string op_node = ":=";
+    py::object right_node = visitAggregateFunctionsComponents(
+        as_rule(children[base_index + 2]));
+
+    // Set role on left_node
+    left_node.attr("role") = role;
+
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["left"] = left_node;
+    kwargs["op"] = op_node;
+    kwargs["right"] = right_node;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_Assignment, kwargs);
+}
+
+py::object visitAggrClause(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    std::string op_node = terminal_text(children[0]);
+
+    py::object group_node = py::none();
+    py::object grouping_op = py::none();
+    py::object have_node = py::none();
+
+    std::vector<antlr4::ParserRuleContext*> groups;
+    std::vector<antlr4::ParserRuleContext*> haves;
+    for (auto* child : children) {
+        auto* rule_child = as_rule(child);
+        if (!rule_child) continue;
+        int ri = (int)rule_child->getRuleIndex();
+        if (ri == 56) groups.push_back(rule_child); // GroupingClause
+        if (ri == VtlParser::RuleHavingClause) haves.push_back(rule_child);
+    }
+
+    py::object aggregate_nodes = visitAggregateClause(as_rule(children[1]));
+
+    if (!groups.empty()) {
+        auto [gop, gn] = visitGroupingClause(groups[0]);
+        grouping_op = gop;
+        group_node = gn;
+    }
+    if (!haves.empty()) {
+        auto [hn, expr] = visitHavingClause(haves[0]);
+        hn.attr("expr") = expr;
+        have_node = hn;
+    }
+
+    py::list result_children;
+    auto ti_agg = extract_token_info(as_rule(children[1]));
+    auto copy_mod = py::module_::import("copy");
+
+    for (auto element : aggregate_nodes) {
+        py::object elem = py::reinterpret_borrow<py::object>(element);
+        // Rebuild right as Aggregation with grouping info
+        py::object right = elem.attr("right");
+        py::dict agg_kwargs;
+        agg_kwargs["op"] = right.attr("op");
+        agg_kwargs["operand"] = right.attr("operand");
+        agg_kwargs["grouping_op"] = grouping_op;
+        agg_kwargs["grouping"] = group_node;
+        agg_kwargs["having_clause"] = have_node;
+        for (auto item : ti_agg) agg_kwargs[item.first] = item.second;
+        elem.attr("right") = call_with_kwargs(py_Aggregation, agg_kwargs);
+        result_children.append(copy_mod.attr("copy")(elem));
+    }
+
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["op"] = op_node;
+    kwargs["children"] = result_children;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_RegularAggregation, kwargs);
+}
+
+// ---- Grouping Clause ----
+
+std::pair<py::object, py::object> visitGroupingClause(antlr4::ParserRuleContext* ctx) {
+    auto cid = get_ctx_id(ctx);
+    // GROUP_BY_OR_EXCEPT = (56, 0)
+    if (cid.first == 56 && cid.second == 0) return visitGroupByOrExcept(ctx);
+    // GROUP_ALL = (56, 1)
+    if (cid.first == 56 && cid.second == 1) return visitGroupAll(ctx);
+    throw std::runtime_error("NotImplementedError: visitGroupingClause");
+}
+
+std::pair<py::object, py::object> visitGroupByOrExcept(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+
+    std::string token_left = terminal_text(children[0]);
+    std::string token_right = terminal_text(children[1]);
+    std::string op_node = token_left + " " + token_right;
+
+    py::list children_nodes;
+    for (auto* child : children) {
+        auto* rule_child = as_rule(child);
+        if (!rule_child) continue;
+        if ((int)rule_child->getRuleIndex() == VtlParser::RuleComponentID) {
+            children_nodes.append(visitComponentID(rule_child));
+        }
+    }
+
+    return {py::str(op_node), children_nodes};
+}
+
+std::pair<py::object, py::object> visitGroupAll(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+
+    std::string token_left = terminal_text(children[0]);
+    std::string token_right = terminal_text(children[1]);
+    std::string op_node = token_left + " " + token_right;
+
+    py::list children_nodes;
+
+    // Check if TIME_AGG is present (more than just GROUP ALL)
+    if (children.size() > 2) {
+        py::object period_to = py::none();
+        py::object period_from = py::none();
+        py::object operand_node = py::none();
+        py::object conf = py::none();
+
+        for (auto* child : children) {
+            auto* term = as_terminal(child);
+            if (term) {
+                int sym = (int)term->getSymbol()->getType();
+                if (sym == VtlParser::STRING_CONSTANT) {
+                    std::string raw = term->getText();
+                    std::string val = raw.substr(1, raw.size() - 2);
+                    if (period_to.is_none()) {
+                        period_to = py::str(val);
+                    } else {
+                        period_from = py::str(val);
+                    }
+                } else if (sym == VtlParser::FIRST || sym == VtlParser::LAST) {
+                    conf = py::str(term->getText());
+                }
+                continue;
+            }
+            auto* rule_child = as_rule(child);
+            if (rule_child && (int)rule_child->getRuleIndex() == VtlParser::RuleOptionalExpr) {
+                operand_node = visitOptionalExpr(rule_child);
+                if (py::isinstance(operand_node, py_ID)) {
+                    operand_node = py::none();
+                } else if (py::isinstance(operand_node, py_Identifier)) {
+                    std::string val = operand_node.attr("value").cast<std::string>();
+                    auto opt_ti = extract_token_info(rule_child);
+                    py::dict vk;
+                    vk["value"] = val;
+                    for (auto item : opt_ti) vk[item.first] = item.second;
+                    operand_node = call_with_kwargs(py_VarID, vk);
+                }
+            }
+        }
+
+        // Build TimeAggregation node
+        auto ti_g = extract_token_info(ctx);
+        py::dict ta_kwargs;
+        ta_kwargs["op"] = "time_agg";
+        ta_kwargs["operand"] = operand_node;
+        ta_kwargs["period_to"] = period_to;
+        ta_kwargs["period_from"] = period_from;
+        ta_kwargs["conf"] = conf;
+        for (auto item : ti_g) ta_kwargs[item.first] = item.second;
+        children_nodes.append(call_with_kwargs(py_TimeAggregation, ta_kwargs));
+    }
+
+    return {py::str(op_node), children_nodes};
+}
+
+// ---- Having Clause ----
+
+std::pair<py::object, py::str> visitHavingClause(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    std::string op_node = terminal_text(children[0]);
+
+    // Get the input text and extract having clause text
+    auto vtl_mod = py::module_::import("vtlengine.AST.Grammar._cpp_parser");
+    py::object vtl_cpp = vtl_mod.attr("vtl_cpp_parser");
+    std::string strdata = vtl_cpp.attr("get_input_text")().cast<std::string>();
+
+    // Get start_line of having clause
+    int start_line = ctx->start ? (int)ctx->start->getLine() : 1;
+
+    // Split strdata by newlines
+    std::vector<std::string> lines;
+    std::istringstream stream(strdata);
+    std::string line;
+    while (std::getline(stream, line)) {
+        lines.push_back(line);
+    }
+
+    // Build text from start_line
+    std::string text_from_having;
+    if (start_line - 1 < (int)lines.size()) {
+        std::string line_text = lines[start_line - 1];
+        // Find 'having' in that line (case-insensitive)
+        std::string lower_line = line_text;
+        std::transform(lower_line.begin(), lower_line.end(), lower_line.begin(),
+                       [](unsigned char c) { return std::tolower(c); });
+        size_t having_pos = lower_line.find("having");
+        if (having_pos != std::string::npos) {
+            text_from_having = line_text.substr(having_pos);
+            for (size_t i = start_line; i < lines.size(); i++) {
+                text_from_having += "\n" + lines[i];
+            }
+        } else {
+            for (size_t i = start_line - 1; i < lines.size(); i++) {
+                if (i > (size_t)(start_line - 1)) text_from_having += "\n";
+                text_from_having += lines[i];
+            }
+        }
+    }
+
+    // Split by "having" and take second part
+    auto re_mod = py::module_::import("re");
+    py::list parts = re_mod.attr("split")(py::str("having"), py::str(text_from_having));
+    std::string expr;
+    if (py::len(parts) > 1) {
+        expr = parts[py::int_(1)].cast<std::string>();
+    } else {
+        expr = text_from_having;
+    }
+
+    // Trim last 2 chars and strip, then prepend "having "
+    if (expr.size() >= 2) {
+        expr = expr.substr(0, expr.size() - 2);
+    }
+    // Strip whitespace
+    size_t s = expr.find_first_not_of(" \t\n\r");
+    size_t e = expr.find_last_not_of(" \t\n\r");
+    if (s != std::string::npos) {
+        expr = expr.substr(s, e - s + 1);
+    }
+    expr = "having " + expr;
+
+    // Handle "]"
+    size_t bracket_pos = expr.find(']');
+    if (bracket_pos != std::string::npos) {
+        expr = expr.substr(0, bracket_pos);
+    }
+    // Handle "end"
+    size_t end_pos = expr.find("end");
+    if (end_pos != std::string::npos) {
+        expr = expr.substr(0, end_pos);
+    }
+    // Handle unbalanced parentheses
+    {
+        int open_count = 0, close_count = 0;
+        for (char c : expr) {
+            if (c == '(') open_count++;
+            if (c == ')') close_count++;
+        }
+        if (close_count > open_count) {
+            size_t last_paren = expr.rfind(')');
+            if (last_paren != std::string::npos) {
+                expr = expr.substr(0, last_paren);
+            }
+        }
+    }
+
+    // Replace { and } with ( and )
+    for (size_t i = 0; i < expr.size(); i++) {
+        if (expr[i] == '{') expr[i] = '(';
+        if (expr[i] == '}') expr[i] = ')';
+    }
+    // Replace "not_in" with "not in"
+    {
+        size_t pos = 0;
+        while ((pos = expr.find("not_in", pos)) != std::string::npos) {
+            expr.replace(pos, 6, "not in");
+            pos += 6;
+        }
+    }
+    // Replace '"' with "'"
+    for (size_t i = 0; i < expr.size(); i++) {
+        if (expr[i] == '"') expr[i] = '\'';
+    }
+
+    // Visit the exprComponent child
+    auto* expr_component = as_rule(children[1]);
+    py::object param_nodes = visitExprComponent(expr_component);
+
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["op"] = op_node;
+    kwargs["children"] = py::none();
+    kwargs["params"] = param_nodes;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    py::object result = call_with_kwargs(py_ParamOp, kwargs);
+
+    return {result, py::str(expr)};
+}
+
+// ---- Filter Clause ----
+
+py::object visitFilterClause(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    std::string op = terminal_text(children[0]);
+    py::list operand_nodes;
+    operand_nodes.append(visitExprComponent(as_rule(children[1])));
+
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["op"] = op;
+    kwargs["children"] = operand_nodes;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_RegularAggregation, kwargs);
+}
+
+// ---- Calc Clause ----
+
+py::object visitCalcClause(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    std::string op = terminal_text(children[0]);
+
+    py::list calc_items;
+    for (auto* child : children) {
+        auto* rule_child = as_rule(child);
+        if (!rule_child) continue;
+        if ((int)rule_child->getRuleIndex() == VtlParser::RuleCalcClauseItem) {
+            calc_items.append(visitCalcClauseItem(rule_child));
+        }
+    }
+
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["op"] = op;
+    kwargs["children"] = calc_items;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_RegularAggregation, kwargs);
+}
+
+static py::object visitCalcClauseItem(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    auto* c = children[0];
+    auto* c_rule = as_rule(c);
+
+    if (c_rule && (int)c_rule->getRuleIndex() == VtlParser::RuleComponentRole) {
+        py::object role = visitComponentRole(c_rule);
+
+        py::object left_node = visitComponentID(as_rule(children[1]));
+        std::string op_node = ":=";
+        py::object right_node = visitExprComponent(as_rule(children[3]));
+
+        auto ti = extract_token_info(ctx);
+        py::dict assign_kwargs;
+        assign_kwargs["left"] = left_node;
+        assign_kwargs["op"] = op_node;
+        assign_kwargs["right"] = right_node;
+        for (auto item : ti) assign_kwargs[item.first] = item.second;
+        py::object operand_node = call_with_kwargs(py_Assignment, assign_kwargs);
+
+        auto ti_c = extract_token_info(c_rule);
+        std::string role_str;
+        if (role.is_none()) {
+            role_str = "measure";
+        } else {
+            role_str = role.attr("value").cast<std::string>();
+            // lowercase
+            std::transform(role_str.begin(), role_str.end(), role_str.begin(),
+                           [](unsigned char ch) { return std::tolower(ch); });
+        }
+
+        py::dict unary_kwargs;
+        unary_kwargs["op"] = role_str;
+        unary_kwargs["operand"] = operand_node;
+        for (auto item : ti_c) unary_kwargs[item.first] = item.second;
+        return call_with_kwargs(py_UnaryOp, unary_kwargs);
+    } else {
+        py::object left_node = visitSimpleComponentId(as_rule(c));
+        std::string op_node = ":=";
+        py::object right_node = visitExprComponent(as_rule(children[2]));
+
+        auto ti = extract_token_info(ctx);
+        py::dict assign_kwargs;
+        assign_kwargs["left"] = left_node;
+        assign_kwargs["op"] = op_node;
+        assign_kwargs["right"] = right_node;
+        for (auto item : ti) assign_kwargs[item.first] = item.second;
+        py::object operand_node = call_with_kwargs(py_Assignment, assign_kwargs);
+
+        py::dict unary_kwargs;
+        unary_kwargs["op"] = "measure";
+        unary_kwargs["operand"] = operand_node;
+        for (auto item : ti) unary_kwargs[item.first] = item.second;
+        return call_with_kwargs(py_UnaryOp, unary_kwargs);
+    }
+}
+
+// ---- Keep or Drop Clause ----
+
+py::object visitKeepOrDropClause(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    std::string op = terminal_text(children[0]);
+
+    py::list nodes;
+    for (auto* child : children) {
+        auto* rule_child = as_rule(child);
+        if (!rule_child) continue;
+        if ((int)rule_child->getRuleIndex() == VtlParser::RuleComponentID) {
+            nodes.append(visitComponentID(rule_child));
+        }
+    }
+
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["op"] = op;
+    kwargs["children"] = nodes;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_RegularAggregation, kwargs);
+}
+
+// ---- Pivot/Unpivot Clause ----
+
+py::object visitPivotOrUnpivotClause(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    std::string op = terminal_text(children[0]);
+
+    py::list children_nodes;
+    children_nodes.append(visitComponentID(as_rule(children[1])));
+    children_nodes.append(visitComponentID(as_rule(children[3])));
+
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["op"] = op;
+    kwargs["children"] = children_nodes;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_RegularAggregation, kwargs);
+}
+
+// ---- Subspace Clause ----
+
+py::object visitSubspaceClause(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+    std::string op = terminal_text(children[0]);
+
+    py::list subspace_nodes;
+    for (auto* child : children) {
+        auto* rule_child = as_rule(child);
+        if (!rule_child) continue;
+        if ((int)rule_child->getRuleIndex() == VtlParser::RuleSubspaceClauseItem) {
+            subspace_nodes.append(visitSubspaceClauseItem(rule_child));
+        }
+    }
+
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["op"] = op;
+    kwargs["children"] = subspace_nodes;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_RegularAggregation, kwargs);
+}
+
+static py::object visitSubspaceClauseItem(antlr4::ParserRuleContext* ctx) {
+    auto& children = ctx->children;
+
+    py::object left_node = visitVarID(as_rule(children[0]));
+    std::string op_node = terminal_text(children[1]);
+
+    py::object right_node;
+    auto* child2 = as_rule(children[2]);
+    if (child2) {
+        auto child2_cid = get_ctx_id(child2);
+        // SCALAR_WITH_CAST = (43, 1)
+        if (child2_cid.first == VtlParser::RuleScalarItem && child2_cid.second == 1) {
+            right_node = visitScalarWithCast(child2);
+        } else if (child2_cid.first == VtlParser::RuleScalarItem &&
+                   (child2_cid.second == 0 || child2_cid.second == 1)) {
+            right_node = visitScalarItem(child2);
+        } else {
+            right_node = visitVarID(child2);
+        }
+    } else {
+        right_node = visitVarID(as_rule(children[2]));
+    }
+
+    auto ti = extract_token_info(ctx);
+    py::dict kwargs;
+    kwargs["left"] = left_node;
+    kwargs["op"] = op_node;
+    kwargs["right"] = right_node;
+    for (auto item : ti) kwargs[item.first] = item.second;
+    return call_with_kwargs(py_BinOp, kwargs);
 }
 
 } // namespace ASTBuilder

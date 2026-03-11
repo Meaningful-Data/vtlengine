@@ -66,6 +66,9 @@ from vtlengine.AST.Grammar._cpp_parser.vtl_cpp_parser import (  # type: ignore[i
     visit_replace_atom_component,
     visit_substr_atom_component,
     visit_time_agg_atom_component,
+    # Phase 3: Expr
+    visit_expr,
+    visit_optional_expr,
 )
 
 __all__ = [
@@ -136,6 +139,9 @@ __all__ = [
     "visit_replace_atom_component",
     "visit_substr_atom_component",
     "visit_time_agg_atom_component",
+    # Phase 3: Expr
+    "visit_expr",
+    "visit_optional_expr",
     "LITERAL_NAMES",
 ]
 
