@@ -35,8 +35,6 @@ jobs:
       run: poetry install --no-root --all-extras
     - name: Build and install C++ parser
       run: poetry run pip install . -v
-    - name: Copy C++ extension to source tree for mypy
-      run: poetry run python -c "import shutil, vtlengine.AST.Grammar._cpp_parser.vtl_cpp_parser as m; shutil.copy2(m.__file__, 'src/vtlengine/AST/Grammar/_cpp_parser/')"
     - name: Check compliance with code formatting guidelines
       run: poetry run ruff format --no-cache --check
     - name: Run lint checks
