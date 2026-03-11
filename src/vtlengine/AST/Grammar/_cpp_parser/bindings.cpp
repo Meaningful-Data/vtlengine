@@ -559,6 +559,10 @@ PYBIND11_MODULE(vtl_cpp_parser, m) {
     m.def("init_ast_builder", []() { ASTBuilder::init(); },
           "Initialize the C++ AST builder (cached Python class refs)");
 
+    // Release cached Python refs (call before interpreter shutdown to avoid segfault)
+    m.def("cleanup_ast_builder", []() { ASTBuilder::cleanup(); },
+          "Release cached Python class refs to prevent segfault at shutdown");
+
     // AST builder: walks the full parse tree and returns Python AST
     m.def("build_ast", [](py::object parse_node) -> py::object {
         ASTBuilder::init();

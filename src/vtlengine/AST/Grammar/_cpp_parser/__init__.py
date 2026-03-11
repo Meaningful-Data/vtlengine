@@ -1,7 +1,10 @@
+import atexit
+
 from vtlengine.AST.Grammar._cpp_parser.vtl_cpp_parser import (  # type: ignore[import-untyped]
     ParseNode,
     TerminalNode,
     build_ast,
+    cleanup_ast_builder,
     get_comments,
     get_input_text,
     init_ast_builder,
@@ -70,6 +73,10 @@ from vtlengine.AST.Grammar._cpp_parser.vtl_cpp_parser import (  # type: ignore[i
     visit_expr,
     visit_optional_expr,
 )
+
+# Register cleanup to run before interpreter shutdown (prevents segfault from
+# static py::object destructors firing after Python finalization).
+atexit.register(cleanup_ast_builder)
 
 __all__ = [
     "ParseNode",
