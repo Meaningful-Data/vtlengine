@@ -49,7 +49,7 @@ jobs:
         run: bash scripts/setup_antlr4_runtime.sh
 
       - name: Build and install C++ parser
-        run: pip install --break-system-packages . -v
+        run: pip install --break-system-packages --no-deps . -v
 
       - name: Run tests
         run: pytest --verbose --tb=short --strict-markers --strict-config --durations=10
