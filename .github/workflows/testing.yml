@@ -29,6 +29,7 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
+        cache: poetry
     - name: Cache C++ parser wheel
       uses: actions/cache@v4
       id: cpp-cache
@@ -41,10 +42,10 @@ jobs:
     - name: Build C++ parser wheel
       if: steps.cpp-cache.outputs.cache-hit != 'true'
       run: pip wheel . -w .cpp-wheel --no-deps -v
-    - name: Install dependencies
-      run: poetry install --no-root --all-extras
-    - name: Install C++ parser
-      run: poetry run pip install .cpp-wheel/*.whl
+    - name: Install package and dependencies
+      run: |
+        poetry install --no-root --all-extras
+        poetry run pip install .cpp-wheel/*.whl
       shell: bash
     - name: Check compliance with code formatting guidelines
       run: poetry run ruff format --no-cache --check
