@@ -16,20 +16,5 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
       - name: Compare versions
-        run: |
-          PYPROJECT_VERSION=$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
-          MODULE_VERSION=$(grep -oP '__version__\s*=\s*"\K[^"]+' src/vtlengine/__init__.py)
-          if [ "$PYPROJECT_VERSION" != "$MODULE_VERSION" ]; then
-            echo "❌ Version mismatch detected!"
-            echo "pyproject.toml version: $PYPROJECT_VERSION"
-            echo "__version__ value: $MODULE_VERSION"
-            exit 1
-          else
-            echo "✅ Versions match ($PYPROJECT_VERSION)"
-          fi
+        run: bash scripts/check_version.sh
