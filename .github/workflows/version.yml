@@ -21,29 +21,15 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Download ANTLR4 C++ runtime
-        run: bash scripts/setup_antlr4_runtime.sh
-
-      - name: Build and install
-        run: pip install . -v
-
-      - name: Extract __version__ from module
-        id: module-version
-        run: |
-          echo "MODULE_VERSION=$(python -c 'import vtlengine; print(vtlengine.__version__)')" >> $GITHUB_OUTPUT
-
-      - name: Extract version from pyproject.toml
-        id: pyproject-version
-        run: |
-          echo "value=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")" >> $GITHUB_OUTPUT
-
       - name: Compare versions
         run: |
-          if [ "${{ steps.pyproject-version.outputs.value }}" != "${{ steps.module-version.outputs.MODULE_VERSION }}" ]; then
+          PYPROJECT_VERSION=$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+          MODULE_VERSION=$(grep -oP '__version__\s*=\s*"\K[^"]+' src/vtlengine/__init__.py)
+          if [ "$PYPROJECT_VERSION" != "$MODULE_VERSION" ]; then
             echo "❌ Version mismatch detected!"
-            echo "pyproject.toml version: ${{ steps.pyproject-version.outputs.value }}"
-            echo "__version__ value: ${{ steps.module-version.outputs.MODULE_VERSION }}"
+            echo "pyproject.toml version: $PYPROJECT_VERSION"
+            echo "__version__ value: $MODULE_VERSION"
             exit 1
           else
-            echo "✅ Versions match (${{ steps.pyproject-version.outputs.value }})"
+            echo "✅ Versions match ($PYPROJECT_VERSION)"
           fi
