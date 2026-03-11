@@ -105,16 +105,8 @@ enable_error_code = [
 warn_return_any = false
 
 [[tool.mypy.overrides]]
-module = "vtlengine.AST.Grammar._cpp_parser.*"
+module = "vtlengine.AST.*"
 follow_imports = "silent"
-
-[[tool.mypy.overrides]]
-module = "vtlengine.AST.ASTConstructor"
-disallow_untyped_calls = false
-
-[[tool.mypy.overrides]]
-module = "vtlengine.AST.ASTConstructorModules.*"
-disallow_untyped_calls = false
 
 [tool.pytest.ini_options]
 addopts = "--strict-markers"
