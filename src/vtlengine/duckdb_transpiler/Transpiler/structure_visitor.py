@@ -820,17 +820,24 @@ class StructureVisitor(ASTTemplate):
         if not clause_datasets:
             return self._get_output_dataset()
 
+        is_cross = str(node.op).lower() == tokens.CROSS_JOIN
+
         # Determine common identifiers if no USING specified
         # Use pairwise accumulation (same as visit_JoinOp) so that multi-
         # dataset joins where secondary datasets share different identifiers
         # work correctly.
+        # For cross joins, identifiers from different datasets must be qualified
+        # (e.g. d1#Id_1, d2#Id_1), so we skip identifier deduplication.
         if using_ids is None:
-            accumulated_ids = set(clause_datasets[0][1].get_identifiers_names())
-            all_join_ids: Set[str] = set(accumulated_ids)
-            for _, ds in clause_datasets[1:]:
-                ds_ids = set(ds.get_identifiers_names())
-                all_join_ids |= ds_ids
-                accumulated_ids |= ds_ids
+            if is_cross:
+                all_join_ids: Set[str] = set()
+            else:
+                accumulated_ids = set(clause_datasets[0][1].get_identifiers_names())
+                all_join_ids = set(accumulated_ids)
+                for _, ds in clause_datasets[1:]:
+                    ds_ids = set(ds.get_identifiers_names())
+                    all_join_ids |= ds_ids
+                    accumulated_ids |= ds_ids
         else:
             all_join_ids = set(using_ids)
 
@@ -842,8 +849,6 @@ class StructureVisitor(ASTTemplate):
                     comp_count[comp_name] = comp_count.get(comp_name, 0) + 1
 
         duplicate_comps = {name for name, cnt in comp_count.items() if cnt >= 2}
-
-        is_cross = str(node.op).lower() == tokens.CROSS_JOIN
 
         comps: Dict[str, Component] = {}
         for alias, ds in clause_datasets:

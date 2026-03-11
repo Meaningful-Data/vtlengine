@@ -1483,10 +1483,73 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         return builder.build()
 
     def _visit_apply(self, node: AST.RegularAggregation) -> str:
-        """Visit apply clause."""
-        if node.dataset:
-            return self.visit(node.dataset)
-        return ""
+        """Visit apply clause: inner_join(... apply d1 op d2).
+
+        For each BinOp child, applies the operator to common measures
+        between the left and right aliases, producing a single output
+        column per common measure.
+        """
+        if not node.dataset:
+            return ""
+
+        table_src = self._get_dataset_sql(node.dataset)
+        ds = self._get_dataset_structure(node.dataset)
+
+        if ds is None:
+            return f"SELECT * FROM {table_src}"
+
+        # Get the output structure (post-apply)
+        output_ds = self.output_datasets.get(self.current_assignment)
+
+        # Collect identifier columns
+        id_names = ds.get_identifiers_names()
+
+        # Build computed measure expressions from BinOp children
+        computed: Dict[str, str] = {}
+        for child in node.children:
+            if not isinstance(child, AST.BinOp):
+                continue
+            left_alias = child.left.value if hasattr(child.left, "value") else str(child.left)
+            right_alias = child.right.value if hasattr(child.right, "value") else str(child.right)
+            op = str(child.op).lower() if child.op else ""
+
+            # Find common measures: components that exist as both alias#comp in the join
+            left_measures: Dict[str, str] = {}
+            right_measures: Dict[str, str] = {}
+            for qualified in self._join_alias_map:
+                if "#" in qualified:
+                    alias, comp = qualified.split("#", 1)
+                    if alias == left_alias:
+                        left_measures[comp] = qualified
+                    elif alias == right_alias:
+                        right_measures[comp] = qualified
+
+            common_measures = set(left_measures.keys()) & set(right_measures.keys())
+            for measure in common_measures:
+                left_col = quote_identifier(left_measures[measure])
+                right_col = quote_identifier(right_measures[measure])
+                if registry.binary.is_registered(op):
+                    expr = registry.binary.generate(op, left_col, right_col)
+                else:
+                    expr = f"{left_col} {op} {right_col}"
+                computed[measure] = expr
+                # Mark both qualified names as consumed
+                self._consumed_join_aliases.add(left_measures[measure])
+                self._consumed_join_aliases.add(right_measures[measure])
+
+        # Build SELECT: identifiers + computed measures
+        cols: List[str] = [quote_identifier(id_) for id_ in id_names]
+        if output_ds:
+            for comp_name in output_ds.get_measures_names():
+                if comp_name in computed:
+                    cols.append(f"{computed[comp_name]} AS {quote_identifier(comp_name)}")
+                else:
+                    cols.append(quote_identifier(comp_name))
+        else:
+            for measure, expr in computed.items():
+                cols.append(f"{expr} AS {quote_identifier(measure)}")
+
+        return SQLBuilder().select(*cols).from_table(table_src).build()
 
     def _visit_unpivot(self, node: AST.RegularAggregation) -> str:
         """Visit unpivot clause: DS[unpivot new_id, new_measure].
@@ -2387,16 +2450,18 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 accumulated_ids |= ds_ids
 
         # Flatten all join keys for the purpose of determining which components
-        # are treated as identifiers (not aliased as duplicates)
+        # are treated as identifiers (not aliased as duplicates).
+        # For cross joins, identifiers from different datasets must be qualified
+        # (e.g. d1#Id_1, d2#Id_1), so we skip all identifier deduplication.
         all_join_ids: Set[str] = set()
-        for keys in pairwise_keys:
-            all_join_ids.update(keys)
-        # Also include all identifiers from all datasets (they won't be aliased)
-        for info in clause_info:
-            if info["ds"]:
-                for comp_name, comp in info["ds"].components.items():
-                    if comp.role == Role.IDENTIFIER:
-                        all_join_ids.add(comp_name)
+        if join_type != "CROSS":
+            for keys in pairwise_keys:
+                all_join_ids.update(keys)
+            for info in clause_info:
+                if info["ds"]:
+                    for comp_name, comp in info["ds"].components.items():
+                        if comp.role == Role.IDENTIFIER:
+                            all_join_ids.add(comp_name)
 
         # Detect duplicate non-identifier component names across datasets
         comp_count: Dict[str, int] = {}
