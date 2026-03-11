@@ -1,5 +1,3 @@
-from antlr4.tree.Tree import TerminalNodeImpl
-
 from vtlengine.AST import (
     BinOp,
     Collection,
@@ -13,8 +11,8 @@ from vtlengine.AST import (
     Windowing,
 )
 from vtlengine.AST.ASTConstructorModules import extract_token_info
-from vtlengine.AST.Grammar.parser import Parser
-from vtlengine.AST.VtlVisitor import VtlVisitor
+from vtlengine.AST.Grammar._cpp_parser import vtl_cpp_parser
+from vtlengine.AST.Grammar._cpp_parser._rule_constants import RC
 from vtlengine.DataTypes import (
     Boolean,
     Date,
@@ -35,21 +33,21 @@ def _remove_scaped_characters(text):
     return text
 
 
-class Terminals(VtlVisitor):
-    def visitConstant(self, ctx: Parser.ConstantContext):
+class Terminals:
+    def visitConstant(self, ctx):
         # constant: signedInteger | signedNumber | BOOLEAN_CONSTANT |
         #           STRING_CONSTANT | NULL_CONSTANT
         child = ctx.children[0]
         token_info = extract_token_info(ctx)
 
-        if isinstance(child, Parser.SignedIntegerContext):
+        if not child.is_terminal and child.ctx_id == RC.SIGNED_INTEGER:
             constant_node = Constant(
                 type_="INTEGER_CONSTANT",
                 value=self.visitSignedInteger(child),
                 **token_info,
             )
 
-        elif isinstance(child, Parser.SignedNumberContext):
+        elif not child.is_terminal and child.ctx_id == RC.SIGNED_NUMBER:
             constant_node = Constant(
                 type_="FLOAT_CONSTANT",
                 value=self.visitSignedNumber(child),
@@ -57,21 +55,20 @@ class Terminals(VtlVisitor):
             )
 
         else:
-            token = child.getSymbol()
-            if token.type == Parser.BOOLEAN_CONSTANT:
-                if token.text == "true":
+            if child.symbol_type == vtl_cpp_parser.BOOLEAN_CONSTANT:
+                if child.text == "true":
                     constant_node = Constant(type_="BOOLEAN_CONSTANT", value=True, **token_info)
-                elif token.text == "false":
+                elif child.text == "false":
                     constant_node = Constant(type_="BOOLEAN_CONSTANT", value=False, **token_info)
                 else:
                     raise NotImplementedError
 
-            elif token.type == Parser.STRING_CONSTANT:
+            elif child.symbol_type == vtl_cpp_parser.STRING_CONSTANT:
                 constant_node = Constant(
-                    type_="STRING_CONSTANT", value=token.text[1:-1], **token_info
+                    type_="STRING_CONSTANT", value=child.text[1:-1], **token_info
                 )
 
-            elif token.type == Parser.NULL_CONSTANT:
+            elif child.symbol_type == vtl_cpp_parser.NULL_CONSTANT:
                 constant_node = Constant(type_="NULL_CONSTANT", value=None, **token_info)
 
             else:
@@ -79,39 +76,39 @@ class Terminals(VtlVisitor):
 
         return constant_node
 
-    def visitVarID(self, ctx: Parser.VarIDContext):
-        token = ctx.children[0].getSymbol()
-        token.text = _remove_scaped_characters(token.text)
+    def visitVarID(self, ctx):
+        token = ctx.children[0]
+        text = _remove_scaped_characters(token.text)
         token_info = extract_token_info(token)
-        var_id_node = VarID(value=token.text, **token_info)
+        var_id_node = VarID(value=text, **token_info)
         return var_id_node
 
-    def visitVarIdExpr(self, ctx: Parser.VarIdExprContext):
-        if isinstance(ctx.children[0], Parser.VarIDContext):
+    def visitVarIdExpr(self, ctx):
+        if not ctx.children[0].is_terminal and ctx.children[0].ctx_id == RC.VAR_ID:
             return self.visitVarID(ctx.children[0])
 
-        token = ctx.children[0].getSymbol()
+        token = ctx.children[0]
         # check token text
-        token.text = _remove_scaped_characters(token.text)
+        text = _remove_scaped_characters(token.text)
         token_info = extract_token_info(token)
-        var_id_node = VarID(value=token.text, **token_info)
+        var_id_node = VarID(value=text, **token_info)
         return var_id_node
 
-    def visitSimpleComponentId(self, ctx: Parser.SimpleComponentIdContext):
+    def visitSimpleComponentId(self, ctx):
         """
         componentID: IDENTIFIER ;
         """
-        token = ctx.children[0].getSymbol()
+        token = ctx.children[0]
         # check token text
-        token.text = _remove_scaped_characters(token.text)
+        text = _remove_scaped_characters(token.text)
 
-        return Identifier(value=token.text, kind="ComponentID", **extract_token_info(ctx))
+        return Identifier(value=text, kind="ComponentID", **extract_token_info(ctx))
 
-    def visitComponentID(self, ctx: Parser.ComponentIDContext):
-        ctx_list = list(ctx.getChildren())
+    def visitComponentID(self, ctx):
+        ctx_list = ctx.children
 
         if len(ctx_list) == 1:
-            component_name = ctx_list[0].getSymbol().text
+            component_name = ctx_list[0].text
             if component_name.startswith("'") and component_name.endswith(
                 "'"
             ):  # The component could be imbalance, errorcode or errorlevel
@@ -119,88 +116,85 @@ class Terminals(VtlVisitor):
             return Identifier(
                 value=component_name,
                 kind="ComponentID",
-                **extract_token_info(ctx_list[0].getSymbol()),
+                **extract_token_info(ctx_list[0]),
             )
         else:
-            component_name = ctx_list[2].getSymbol().text
+            component_name = ctx_list[2].text
             if component_name.startswith("'") and component_name.endswith(
                 "'"
             ):  # The component could be imbalance, errorcode or errorlevel
                 component_name = component_name[1:-1]
-            op_node = ctx_list[1].getSymbol().text
+            op_node = ctx_list[1].text
             return BinOp(
                 left=Identifier(
-                    value=ctx_list[0].getSymbol().text,
+                    value=ctx_list[0].text,
                     kind="DatasetID",
-                    **extract_token_info(ctx_list[0].getSymbol()),
+                    **extract_token_info(ctx_list[0]),
                 ),
                 op=op_node,
                 right=Identifier(
                     value=component_name,
                     kind="ComponentID",
-                    **extract_token_info(ctx_list[1].getSymbol()),
+                    **extract_token_info(ctx_list[1]),
                 ),
                 **extract_token_info(ctx),
             )
 
-    def visitOperatorID(self, ctx: Parser.OperatorIDContext):
+    def visitOperatorID(self, ctx):
         """
         operatorID: IDENTIFIER ;
         """
-        ctx_list = list(ctx.getChildren())
+        ctx_list = ctx.children
         c = ctx_list[0]
-        token = c.getSymbol()
-        return token.text
+        return c.text
 
-    def visitValueDomainID(self, ctx: Parser.ValueDomainIDContext):
+    def visitValueDomainID(self, ctx):
         """
         valueDomainID: IDENTIFIER ;
         """
         return Collection(
-            name=ctx.children[0].getSymbol().text,
+            name=ctx.children[0].text,
             children=[],
             kind="ValueDomain",
             type="",
             **extract_token_info(ctx),
         )
 
-    def visitRulesetID(self, ctx: Parser.RulesetIDContext):
+    def visitRulesetID(self, ctx):
         """
         rulesetID: IDENTIFIER ;
         """
-        ctx_list = list(ctx.getChildren())
+        ctx_list = ctx.children
         c = ctx_list[0]
-        token = c.getSymbol()
-        return token.text
+        return c.text
 
-    def visitValueDomainName(self, ctx: Parser.ValueDomainNameContext):
+    def visitValueDomainName(self, ctx):
         """
         valueDomainName: IDENTIFIER ;
         """
-        ctx_list = list(ctx.getChildren())
+        ctx_list = ctx.children
         # AST_ASTCONSTRUCTOR.48
         raise NotImplementedError(
             "Value Domain '{}' not available for cast operator or scalar type "
-            "representation or rulesets.".format(ctx_list[0].getSymbol().text)
+            "representation or rulesets.".format(ctx_list[0].text)
         )
 
-    def visitValueDomainValue(self, ctx: Parser.ValueDomainValueContext):
+    def visitValueDomainValue(self, ctx):
         child = ctx.children[0]
-        if isinstance(child, (Parser.SignedIntegerContext, Parser.SignedNumberContext)):
-            return child.getText()
-        return _remove_scaped_characters(child.getSymbol().text)
+        if not child.is_terminal and child.ctx_id in (RC.SIGNED_INTEGER, RC.SIGNED_NUMBER):
+            return child.text
+        return _remove_scaped_characters(child.text)
 
-    def visitRoutineName(self, ctx: Parser.RoutineNameContext):
+    def visitRoutineName(self, ctx):
         """
         routineName: IDENTIFIER ;
         """
-        ctx_list = list(ctx.getChildren())
+        ctx_list = ctx.children
         c = ctx_list[0]
-        token = c.getSymbol()
 
-        return token.text
+        return c.text
 
-    def visitBasicScalarType(self, ctx: Parser.BasicScalarTypeContext):
+    def visitBasicScalarType(self, ctx):
         """
         basicScalarType: STRING
                        | INTEGER
@@ -213,30 +207,29 @@ class Terminals(VtlVisitor):
                        | TIME
                        ;
         """
-        ctx_list = list(ctx.getChildren())
+        ctx_list = ctx.children
         c = ctx_list[0]
-        token = c.getSymbol()
 
-        if token.type == Parser.STRING:
+        if c.symbol_type == vtl_cpp_parser.STRING:
             return String
-        elif token.type == Parser.INTEGER:
+        elif c.symbol_type == vtl_cpp_parser.INTEGER:
             return Integer
-        elif token.type == Parser.NUMBER:
+        elif c.symbol_type == vtl_cpp_parser.NUMBER:
             return Number
-        elif token.type == Parser.BOOLEAN:
+        elif c.symbol_type == vtl_cpp_parser.BOOLEAN:
             return Boolean
-        elif token.type == Parser.DATE:
+        elif c.symbol_type == vtl_cpp_parser.DATE:
             return Date
-        elif token.type == Parser.TIME_PERIOD:
+        elif c.symbol_type == vtl_cpp_parser.TIME_PERIOD:
             return TimePeriod
-        elif token.type == Parser.DURATION:
+        elif c.symbol_type == vtl_cpp_parser.DURATION:
             return Duration
-        elif token.type == Parser.SCALAR:
+        elif c.symbol_type == vtl_cpp_parser.SCALAR:
             return "Scalar"
-        elif token.type == Parser.TIME:
+        elif c.symbol_type == vtl_cpp_parser.TIME:
             return TimeInterval
 
-    def visitComponentRole(self, ctx: Parser.ComponentRoleContext):
+    def visitComponentRole(self, ctx):
         """
         componentRole: MEASURE
                      |COMPONENT
@@ -245,42 +238,46 @@ class Terminals(VtlVisitor):
                      |viralAttribute
                      ;
         """
-        ctx_list = list(ctx.getChildren())
+        ctx_list = ctx.children
         c = ctx_list[0]
 
-        if isinstance(c, Parser.ViralAttributeContext):
+        if not c.is_terminal and c.ctx_id == RC.VIRAL_ATTRIBUTE:
             return self.visitViralAttribute(c)
         else:
-            token = c.getSymbol()
-            text = token.text
+            text = c.text
             if text == "component":
                 return None
             # Use upper case on first letter
             text = text[0].upper() + text[1:].lower()
             return Role(text)
 
-    def visitViralAttribute(self, ctx: Parser.ViralAttributeContext):
+    def visitViralAttribute(self, ctx):
         """
         viralAttribute: VIRAL ATTRIBUTE;
         """
-        # ctx_list = list(ctx.getChildren())
+        # ctx_list = ctx.children
         # c = ctx_list[0]
-        # token = c.getSymbol()
 
         raise NotImplementedError
 
-    def visitLists(self, ctx: Parser.ListsContext):
+    def visitLists(self, ctx):
         """
         lists:  GLPAREN  scalarItem (COMMA scalarItem)*  GRPAREN
         """
-        ctx_list = list(ctx.getChildren())
+        ctx_list = ctx.children
 
         scalar_nodes = []
 
-        scalars = [scalar for scalar in ctx_list if isinstance(scalar, Parser.SimpleScalarContext)]
+        scalars = [
+            scalar
+            for scalar in ctx_list
+            if not scalar.is_terminal and scalar.ctx_id == RC.SIMPLE_SCALAR
+        ]
 
         scalars_with_cast = [
-            scalar for scalar in ctx_list if isinstance(scalar, Parser.ScalarWithCastContext)
+            scalar
+            for scalar in ctx_list
+            if not scalar.is_terminal and scalar.ctx_id == RC.SCALAR_WITH_CAST
         ]
 
         for scalar in scalars:
@@ -293,32 +290,32 @@ class Terminals(VtlVisitor):
             name="List", type="Lists", children=scalar_nodes, **extract_token_info(ctx)
         )
 
-    def visitMultModifier(self, ctx: Parser.MultModifierContext):
+    def visitMultModifier(self, ctx):
         """
         multModifier: OPTIONAL  ( PLUS | MUL )?;
         """
         pass
 
-    def visitCompConstraint(self, ctx: Parser.CompConstraintContext):
+    def visitCompConstraint(self, ctx):
         """
         compConstraint: componentType (componentID|multModifier) ;
         """
-        ctx_list = list(ctx.getChildren())
+        ctx_list = ctx.children
 
         component_node = [
             self.visitComponentType(component)
             for component in ctx_list
-            if isinstance(component, Parser.ComponentTypeContext)
+            if not component.is_terminal and component.ctx_id == RC.COMPONENT_TYPE
         ]
         component_name = [
             self.visitComponentID(component).value
             for component in ctx_list
-            if isinstance(component, Parser.ComponentIDContext)
+            if not component.is_terminal and component.ctx_id == RC.COMPONENT_ID
         ]
         component_mult = [
             self.visitMultModifier(modifier)
             for modifier in ctx_list
-            if isinstance(modifier, Parser.MultModifierContext)
+            if not modifier.is_terminal and modifier.ctx_id == RC.MULT_MODIFIER
         ]
 
         if len(component_mult) != 0:
@@ -328,52 +325,58 @@ class Terminals(VtlVisitor):
         component_node[0].name = component_name[0]
         return component_node[0]
 
-    def visitSimpleScalar(self, ctx: Parser.SimpleScalarContext):
-        ctx_list = list(ctx.getChildren())
+    def visitSimpleScalar(self, ctx):
+        ctx_list = ctx.children
         c = ctx_list[0]
-        if isinstance(c, Parser.ConstantContext):
+        if not c.is_terminal and c.ctx_id == RC.CONSTANT:
             return self.visitConstant(c)
         else:
             raise NotImplementedError
 
-    def visitScalarType(self, ctx: Parser.ScalarTypeContext):
+    def visitScalarType(self, ctx):
         """
         scalarType: (basicScalarType|valueDomainName)scalarTypeConstraint?((NOT)? NULL_CONSTANT)? ;
         """
-        ctx_list = list(ctx.getChildren())
+        ctx_list = ctx.children
 
-        types = (
-            Parser.BasicScalarTypeContext,
-            Parser.ValueDomainNameContext,
-            Parser.ScalarTypeConstraintContext,
+        type_ctx_ids = (
+            RC.BASIC_SCALAR_TYPE,
+            RC.VALUE_DOMAIN_NAME,
+            RC.CONDITION_CONSTRAINT,
+            RC.RANGE_CONSTRAINT,
         )
-        scalartype = [scalartype for scalartype in ctx_list if isinstance(scalartype, types)][0]
+        scalartype = [
+            scalartype
+            for scalartype in ctx_list
+            if not scalartype.is_terminal and scalartype.ctx_id in type_ctx_ids
+        ][0]
 
         scalartype_constraint = [
             constraint
             for constraint in ctx_list
-            if isinstance(constraint, Parser.ScalarTypeConstraintContext)
+            if not constraint.is_terminal
+            and constraint.ctx_id in (RC.CONDITION_CONSTRAINT, RC.RANGE_CONSTRAINT)
         ]
         not_ = [
-            not_.getSymbol().text
+            not_.text
             for not_ in ctx_list
-            if isinstance(not_, TerminalNodeImpl) and not_.getSymbol().type == Parser.NOT
+            if not_.is_terminal and not_.symbol_type == vtl_cpp_parser.NOT
         ]
         null_constant = [
-            null.getSymbol().text
+            null.text
             for null in ctx_list
-            if isinstance(null, TerminalNodeImpl) and null.getSymbol().type == Parser.NULL_CONSTANT
+            if null.is_terminal and null.symbol_type == vtl_cpp_parser.NULL_CONSTANT
         ]
 
-        if isinstance(scalartype, Parser.BasicScalarTypeContext):
-            if scalartype.children[0].getSymbol().type == Parser.SCALAR:
+        if not scalartype.is_terminal and scalartype.ctx_id == RC.BASIC_SCALAR_TYPE:
+            if scalartype.children[0].symbol_type == vtl_cpp_parser.SCALAR:
                 return Scalar(name="", data_type=None, value=None)
             type_node = self.visitBasicScalarType(scalartype)
 
         else:
             raise SyntaxError(
-                f"Invalid parameter type definition {scalartype.children[0]} at line "
-                f"{ctx.start.line}:{ctx.start.column}."
+                f"Invalid parameter type definition {scalartype.children[0].text} at line "
+                f"{ctx.start_line}:{ctx.start_column}."
             )
 
         if len(scalartype_constraint) != 0:
@@ -390,22 +393,22 @@ class Terminals(VtlVisitor):
 
         return type_node
 
-    def visitDatasetType(self, ctx: Parser.DatasetTypeContext):
+    def visitDatasetType(self, ctx):
         """
         datasetType: DATASET ('{'compConstraint (',' compConstraint)* '}' )? ;
         """
-        ctx_list = list(ctx.getChildren())
+        ctx_list = ctx.children
 
         components = [
             self.visitCompConstraint(constraint)
             for constraint in ctx_list
-            if isinstance(constraint, Parser.CompConstraintContext)
+            if not constraint.is_terminal and constraint.ctx_id == RC.COMP_CONSTRAINT
         ]
         components = {component.name: component for component in components}
 
         return Dataset(name="Dataset", components=components, data=None)
 
-    def visitRulesetType(self, ctx: Parser.RulesetTypeContext):
+    def visitRulesetType(self, ctx):
         """
         rulesetType: RULESET
                    | dpRuleset
@@ -414,7 +417,7 @@ class Terminals(VtlVisitor):
         """
         raise NotImplementedError
 
-    def visitDpRuleset(self, ctx: Parser.DpRulesetContext):
+    def visitDpRuleset(self, ctx):
         """
         DATAPOINT                                                                               # dataPoint
             | DATAPOINT_ON_VD  (GLPAREN  valueDomainName (MUL valueDomainName)*  GRPAREN )?         # dataPointVd
@@ -424,7 +427,7 @@ class Terminals(VtlVisitor):
         # AST_ASTCONSTRUCTOR.54
         raise NotImplementedError
 
-    def visitHrRuleset(self, ctx: Parser.HrRulesetContext):
+    def visitHrRuleset(self, ctx):
         """
         hrRuleset: HIERARCHICAL                                                                                                            # hrRulesetType
             | HIERARCHICAL_ON_VD ( GLPAREN  vdName=IDENTIFIER (LPAREN valueDomainName (MUL valueDomainName)* RPAREN)?  GRPAREN )?   # hrRulesetVdType
@@ -434,17 +437,17 @@ class Terminals(VtlVisitor):
         # AST_ASTCONSTRUCTOR.55
         raise NotImplementedError
 
-    def visitComponentType(self, ctx: Parser.ComponentTypeContext):
+    def visitComponentType(self, ctx):
         """
         componentType:  componentRole ( LT   scalarType  MT  )?
         """
-        ctx_list = list(ctx.getChildren())
+        ctx_list = ctx.children
 
         role_node = self.visitComponentRole(ctx_list[0])
         data_type = [
             self.visitScalarType(constraint)
             for constraint in ctx_list
-            if isinstance(constraint, Parser.ScalarTypeContext)
+            if not constraint.is_terminal and constraint.ctx_id == RC.SCALAR_TYPE
         ]
         data_type = data_type[0] if len(data_type) > 0 else String()
 
@@ -452,7 +455,7 @@ class Terminals(VtlVisitor):
 
         return Component(name="Component", data_type=data_type, role=role_node, nullable=nullable)
 
-    def visitInputParameterType(self, ctx: Parser.InputParameterTypeContext):
+    def visitInputParameterType(self, ctx):
         """
         inputParameterType:
             scalarType
@@ -462,86 +465,82 @@ class Terminals(VtlVisitor):
             | componentType
         ;
         """
-        ctx_list = list(ctx.getChildren())
+        ctx_list = ctx.children
         c = ctx_list[0]
 
-        if isinstance(c, Parser.ScalarTypeContext):
+        if not c.is_terminal and c.ctx_id == RC.SCALAR_TYPE:
             return self.visitScalarType(c)
 
-        elif isinstance(c, Parser.DatasetTypeContext):
+        elif not c.is_terminal and c.ctx_id == RC.DATASET_TYPE:
             return self.visitDatasetType(c)
 
-        elif isinstance(c, Parser.ScalarSetTypeContext):
+        elif not c.is_terminal and c.ctx_id == RC.SCALAR_SET_TYPE:
             return self.visitScalarSetType(c)
 
-        elif isinstance(c, Parser.RulesetTypeContext):
+        elif not c.is_terminal and c.ctx_id == RC.RULESET_TYPE:
             return self.visitRulesetType(c)
 
-        elif isinstance(c, Parser.ComponentTypeContext):
+        elif not c.is_terminal and c.ctx_id == RC.COMPONENT_TYPE:
             return self.visitComponentType(c)
         else:
             raise NotImplementedError
 
-    def visitOutputParameterType(self, ctx: Parser.OutputParameterTypeContext):
+    def visitOutputParameterType(self, ctx):
         """
         outputParameterType: scalarType
                            | datasetType
                            | componentType
                            ;
         """
-        ctx_list = list(ctx.getChildren())
+        ctx_list = ctx.children
         c = ctx_list[0]
 
-        if isinstance(c, Parser.ScalarTypeContext):
+        if not c.is_terminal and c.ctx_id == RC.SCALAR_TYPE:
             # return self.visitScalarType(c).__class__.__name__
             return "Scalar"
 
-        elif isinstance(c, Parser.DatasetTypeContext):
+        elif not c.is_terminal and c.ctx_id == RC.DATASET_TYPE:
             return "Dataset"
 
-        elif isinstance(c, Parser.ComponentTypeContext):
+        elif not c.is_terminal and c.ctx_id == RC.COMPONENT_TYPE:
             return "Component"
         else:
             raise NotImplementedError
 
-    def visitOutputParameterTypeComponent(self, ctx: Parser.OutputParameterTypeComponentContext):
+    def visitOutputParameterTypeComponent(self, ctx):
         """
         outputParameterType: scalarType
                            | componentType
                            ;
         """
-        ctx_list = list(ctx.getChildren())
+        ctx_list = ctx.children
         c = ctx_list[0]
 
-        if isinstance(c, Parser.ScalarTypeContext):
+        if not c.is_terminal and c.ctx_id == RC.SCALAR_TYPE:
             return self.visitScalarType(c)
 
-        elif isinstance(c, Parser.ComponentTypeContext):
+        elif not c.is_terminal and c.ctx_id == RC.COMPONENT_TYPE:
             return self.visitComponentType(c)
         else:
             raise NotImplementedError
 
-    def visitScalarItem(self, ctx: Parser.ScalarItemContext):
-        ctx_list = list(ctx.getChildren())
-        c = ctx_list[0]
-
-        if isinstance(c, Parser.ConstantContext):
-            return self.visitConstant(c)
-        elif isinstance(c, Parser.ScalarWithCastContext):
-            return self.visitScalarWithCast(c)
+    def visitScalarItem(self, ctx):
+        # ctx is a scalarItem node (either simpleScalar or scalarWithCast alternative)
+        if ctx.ctx_id == RC.SIMPLE_SCALAR:
+            return self.visitSimpleScalar(ctx)
+        elif ctx.ctx_id == RC.SCALAR_WITH_CAST:
+            return self.visitScalarWithCast(ctx)
         else:
             raise NotImplementedError
 
-    def visitScalarWithCast(self, ctx: Parser.ScalarWithCastContext):
+    def visitScalarWithCast(self, ctx):
         """
         |  CAST LPAREN constant COMMA (basicScalarType) (COMMA STRING_CONSTANT)? RPAREN    #scalarWithCast  # noqa E501
         """  # noqa E501
-        ctx_list = list(ctx.getChildren())
+        ctx_list = ctx.children
         c = ctx_list[0]
 
-        token = c.getSymbol()
-
-        op = token.text
+        op = c.text
         const_node = self.visitConstant(ctx_list[2])
         basic_scalar_type = [self.visitBasicScalarType(ctx_list[4])]
 
@@ -566,22 +565,22 @@ class Terminals(VtlVisitor):
             # AST_ASTCONSTRUCTOR.14
             raise NotImplementedError
 
-    def visitScalarSetType(self, ctx: Parser.ScalarSetTypeContext):
+    def visitScalarSetType(self, ctx):
         """
         scalarSetType: SET ('<' scalarType '>')? ;
         """
         # AST_ASTCONSTRUCTOR.60
         raise NotImplementedError
 
-    def visitRetainType(self, ctx: Parser.RetainTypeContext):
+    def visitRetainType(self, ctx):
         """
         retainType: BOOLEAN_CONSTANT
                   | ALL
                   ;
         """
-        token = ctx.children[0].getSymbol()
+        token = ctx.children[0]
 
-        if token.type == Parser.BOOLEAN_CONSTANT:
+        if token.symbol_type == vtl_cpp_parser.BOOLEAN_CONSTANT:
             if token.text == "true":
                 param_constant_node = Constant(
                     type_="BOOLEAN_CONSTANT", value=True, **extract_token_info(token)
@@ -593,7 +592,7 @@ class Terminals(VtlVisitor):
             else:
                 raise NotImplementedError
 
-        elif token.type == Parser.ALL:
+        elif token.symbol_type == vtl_cpp_parser.ALL:
             param_constant_node = ParamConstant(
                 type_="PARAM_CONSTANT", value=token.text, **extract_token_info(token)
             )
@@ -603,56 +602,56 @@ class Terminals(VtlVisitor):
 
         return param_constant_node
 
-    def visitEvalDatasetType(self, ctx: Parser.EvalDatasetTypeContext):
-        ctx_list = list(ctx.getChildren())
+    def visitEvalDatasetType(self, ctx):
+        ctx_list = ctx.children
         c = ctx_list[0]
 
-        if isinstance(c, Parser.DatasetTypeContext):
+        if not c.is_terminal and c.ctx_id == RC.DATASET_TYPE:
             return self.visitDatasetType(c)
-        elif isinstance(c, Parser.ScalarTypeContext):
+        elif not c.is_terminal and c.ctx_id == RC.SCALAR_TYPE:
             return self.visitScalarType(c)
         else:
             raise NotImplementedError
 
-    def visitAlias(self, ctx: Parser.AliasContext):
-        return ctx.children[0].getSymbol().text
+    def visitAlias(self, ctx):
+        return ctx.children[0].text
 
-    def visitSignedInteger(self, ctx: Parser.SignedIntegerContext):
+    def visitSignedInteger(self, ctx):
         # signedInteger: (MINUS|PLUS)? INTEGER_CONSTANT
-        return int(ctx.getText())
+        return int(ctx.text)
 
-    def visitSignedNumber(self, ctx: Parser.SignedNumberContext):
+    def visitSignedNumber(self, ctx):
         # signedNumber: (MINUS|PLUS)? NUMBER_CONSTANT
-        return float(ctx.getText())
+        return float(ctx.text)
 
-    def visitComparisonOperand(self, ctx: Parser.ComparisonOperandContext):
-        return ctx.children[0].getSymbol().text
+    def visitComparisonOperand(self, ctx):
+        return ctx.children[0].text
 
-    def visitErCode(self, ctx: Parser.ErCodeContext):
+    def visitErCode(self, ctx):
         """
         erCode: ERRORCODE  constant;
         """
-        ctx_list = list(ctx.getChildren())
+        ctx_list = ctx.children
 
         try:
             return str(self.visitConstant(ctx_list[1]).value)
         except Exception:
-            raise Exception(f"Error code must be a string, line {ctx_list[1].getSymbol().line}")
+            raise Exception(f"Error code must be a string, line {ctx_list[1].start_line}")
 
-    def visitErLevel(self, ctx: Parser.ErLevelContext):
+    def visitErLevel(self, ctx):
         """
         erLevel: ERRORLEVEL  constant;
         """
-        ctx_list = list(ctx.getChildren())
+        ctx_list = ctx.children
         return self.visitConstant(ctx_list[1]).value
 
-    def visitSignature(self, ctx: Parser.SignatureContext, kind="ComponentID"):
+    def visitSignature(self, ctx, kind="ComponentID"):
         """
         VarID (AS alias)?
         """
         token_info = extract_token_info(ctx)
 
-        ctx_list = list(ctx.getChildren())
+        ctx_list = ctx.children
         c = ctx_list[0]
 
         node_name = self.visitVarID(c).value
@@ -669,54 +668,58 @@ class Terminals(VtlVisitor):
         From Hierarchical
     """
 
-    def visitConditionClause(self, ctx: Parser.ConditionClauseContext):
-        ctx_list = list(ctx.getChildren())
+    def visitConditionClause(self, ctx):
+        ctx_list = ctx.children
 
         components = [
-            self.visitComponentID(c) for c in ctx_list if isinstance(c, Parser.ComponentIDContext)
+            self.visitComponentID(c)
+            for c in ctx_list
+            if not c.is_terminal and c.ctx_id == RC.COMPONENT_ID
         ]
 
         return components
 
-    def visitValidationMode(self, ctx: Parser.ValidationModeContext):
-        return ctx.children[0].getSymbol().text
+    def visitValidationMode(self, ctx):
+        return ctx.children[0].text
 
-    def visitValidationOutput(self, ctx: Parser.ValidationOutputContext):
-        return ctx.children[0].getSymbol().text
+    def visitValidationOutput(self, ctx):
+        return ctx.children[0].text
 
-    def visitInputMode(self, ctx: Parser.InputModeContext):
-        return ctx.children[0].getSymbol().text
+    def visitInputMode(self, ctx):
+        return ctx.children[0].text
 
-    def visitInputModeHierarchy(self, ctx: Parser.InputModeHierarchyContext):
-        return ctx.children[0].getSymbol().text
+    def visitInputModeHierarchy(self, ctx):
+        return ctx.children[0].text
 
-    def visitOutputModeHierarchy(self, ctx: Parser.OutputModeHierarchyContext):
-        return ctx.children[0].getSymbol().text
+    def visitOutputModeHierarchy(self, ctx):
+        return ctx.children[0].text
 
     """
         From Analytic
     """
 
-    def visitPartitionByClause(self, ctx: Parser.PartitionByClauseContext):
-        ctx_list = list(ctx.getChildren())
+    def visitPartitionByClause(self, ctx):
+        ctx_list = ctx.children
 
         return [
             self.visitComponentID(compID).value
             for compID in ctx_list
-            if isinstance(compID, Parser.ComponentIDContext)
+            if not compID.is_terminal and compID.ctx_id == RC.COMPONENT_ID
         ]
 
-    def visitOrderByClause(self, ctx: Parser.OrderByClauseContext):
-        ctx_list = list(ctx.getChildren())
+    def visitOrderByClause(self, ctx):
+        ctx_list = ctx.children
 
         return [
-            self.visitOrderByItem(c) for c in ctx_list if isinstance(c, Parser.OrderByItemContext)
+            self.visitOrderByItem(c)
+            for c in ctx_list
+            if not c.is_terminal and c.ctx_id == RC.ORDER_BY_ITEM
         ]
 
-    def visitWindowingClause(self, ctx: Parser.WindowingClauseContext):
-        ctx_list = list(ctx.getChildren())
+    def visitWindowingClause(self, ctx):
+        ctx_list = ctx.children
 
-        win_mode = ctx_list[0].getSymbol().text  # Windowing mode (data points | range )
+        win_mode = ctx_list[0].text  # Windowing mode (data points | range )
 
         token_info = extract_token_info(ctx)
 
@@ -738,7 +741,7 @@ class Terminals(VtlVisitor):
         ):  # preceding and preceding (error)
             raise Exception(
                 f"Cannot have 2 preceding clauses with unbounded in analytic clause, "
-                f"line {ctx_list[3].start.line}"
+                f"line {ctx_list[3].start_line}"
             )
 
         if (
@@ -746,7 +749,7 @@ class Terminals(VtlVisitor):
         ):  # following and following (error)
             raise Exception(
                 f"Cannot have 2 following clauses with unbounded in analytic clause, "
-                f"line {ctx_list[3].start.line}"
+                f"line {ctx_list[3].start_line}"
             )
 
         if mode_1 == mode_2:
@@ -761,8 +764,8 @@ class Terminals(VtlVisitor):
 
         return create_windowing(win_mode, [first, second], [mode_1, mode_2], token_info)
 
-    def visitOrderByItem(self, ctx: Parser.OrderByItemContext):
-        ctx_list = list(ctx.getChildren())
+    def visitOrderByItem(self, ctx):
+        ctx_list = ctx.children
 
         token_info = extract_token_info(ctx)
 
@@ -773,25 +776,28 @@ class Terminals(VtlVisitor):
 
         return OrderBy(
             component=self.visitComponentID(ctx_list[0]).value,
-            order=ctx_list[1].getSymbol().text,
+            order=ctx_list[1].text,
             **token_info,
         )
 
-    def visitLimitClauseItem(self, ctx: Parser.LimitClauseItemContext):
+    def visitLimitClauseItem(self, ctx):
         # limitClauseItem: signedInteger limitDir=PRECEDING
         #     | signedInteger limitDir=FOLLOWING
         #     | CURRENT DATA POINT
         #     | UNBOUNDED limitDir=PRECEDING
         #     | UNBOUNDED limitDir=FOLLOWING
-        ctx_list = list(ctx.getChildren())
+        ctx_list = ctx.children
         c = ctx_list[0]
-        if isinstance(c, Parser.SignedIntegerContext):
+        if not c.is_terminal and c.ctx_id == RC.SIGNED_INTEGER:
             result = self.visitSignedInteger(c)
-            return result, ctx.limitDir.text
-        elif c.getSymbol().text.lower() == "unbounded":
-            return -1, ctx.limitDir.text
-        elif c.getSymbol().text == "current":
-            return 0, ctx_list[0].getSymbol().text
+            # limitDir is the last terminal child (PRECEDING or FOLLOWING)
+            limit_dir = ctx_list[-1].text
+            return result, limit_dir
+        elif c.text.lower() == "unbounded":
+            limit_dir = ctx_list[-1].text
+            return -1, limit_dir
+        elif c.text == "current":
+            return 0, ctx_list[0].text
 
 
 def create_windowing(win_mode, values, modes, token_info):
