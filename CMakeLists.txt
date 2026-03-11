@@ -48,6 +48,7 @@ set(VTL_PARSER_SOURCES
 # -------------------------------------------------------------------
 pybind11_add_module(vtl_cpp_parser
     "${VTL_PARSER_DIR}/bindings.cpp"
+    "${VTL_PARSER_DIR}/ast_builder.cpp"
     ${VTL_PARSER_SOURCES}
 )
 

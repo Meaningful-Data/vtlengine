@@ -17,6 +17,8 @@
 #include "VtlLexer.h"
 #include "VtlParser.h"
 
+#include "ast_builder.h"
+
 #include <memory>
 #include <string>
 #include <typeindex>
@@ -28,9 +30,9 @@ namespace py = pybind11;
 // ============================================================
 // Type → (rule_index, alt_index) mapping
 // ============================================================
-static std::unordered_map<std::type_index, std::pair<int, int>> g_type_map;
+std::unordered_map<std::type_index, std::pair<int, int>> g_type_map;
 
-static void init_type_map() {
+void init_type_map() {
     if (!g_type_map.empty()) return;
 
     // Rules without labeled alternatives: alt_index = -1
@@ -552,6 +554,376 @@ PYBIND11_MODULE(vtl_cpp_parser, m) {
           "Get the input text from the last parse() call");
     m.def("get_comments", &get_comments,
           "Get comment tokens from the last parse() call");
+
+    // Initialize AST builder lazily on first use
+    m.def("init_ast_builder", []() { ASTBuilder::init(); },
+          "Initialize the C++ AST builder (cached Python class refs)");
+
+    // AST builder terminal visitor functions
+    m.def("build_ast", [](py::object parse_node) -> py::object {
+        // For now, build_ast is a placeholder for the full tree walk.
+        // The actual terminal visitors are exposed individually below.
+        ASTBuilder::init();
+        return py::none();
+    }, py::arg("root"), "Build AST from parse tree (placeholder)");
+
+    // Expose individual terminal visitors for incremental adoption
+    m.def("visit_constant", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitConstant(pn.ctx);
+    }, "Visit a Constant rule node");
+
+    m.def("visit_var_id", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitVarID(pn.ctx);
+    }, "Visit a VarID rule node");
+
+    m.def("visit_var_id_expr", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitVarIdExpr(pn.ctx);
+    }, "Visit a VarIdExpr rule node");
+
+    m.def("visit_simple_component_id", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitSimpleComponentId(pn.ctx);
+    }, "Visit a SimpleComponentId rule node");
+
+    m.def("visit_component_id", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitComponentID(pn.ctx);
+    }, "Visit a ComponentID rule node");
+
+    m.def("visit_operator_id", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitOperatorID(pn.ctx);
+    }, "Visit an OperatorID rule node");
+
+    m.def("visit_value_domain_id", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitValueDomainID(pn.ctx);
+    }, "Visit a ValueDomainID rule node");
+
+    m.def("visit_ruleset_id", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitRulesetID(pn.ctx);
+    }, "Visit a RulesetID rule node");
+
+    m.def("visit_value_domain_value", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitValueDomainValue(pn.ctx);
+    }, "Visit a ValueDomainValue rule node");
+
+    m.def("visit_routine_name", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitRoutineName(pn.ctx);
+    }, "Visit a RoutineName rule node");
+
+    m.def("visit_basic_scalar_type", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitBasicScalarType(pn.ctx);
+    }, "Visit a BasicScalarType rule node");
+
+    m.def("visit_component_role", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitComponentRole(pn.ctx);
+    }, "Visit a ComponentRole rule node");
+
+    m.def("visit_lists", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitLists(pn.ctx);
+    }, "Visit a Lists rule node");
+
+    m.def("visit_comp_constraint", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitCompConstraint(pn.ctx);
+    }, "Visit a CompConstraint rule node");
+
+    m.def("visit_simple_scalar", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitSimpleScalar(pn.ctx);
+    }, "Visit a SimpleScalar rule node");
+
+    m.def("visit_scalar_type", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitScalarType(pn.ctx);
+    }, "Visit a ScalarType rule node");
+
+    m.def("visit_dataset_type", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitDatasetType(pn.ctx);
+    }, "Visit a DatasetType rule node");
+
+    m.def("visit_component_type", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitComponentType(pn.ctx);
+    }, "Visit a ComponentType rule node");
+
+    m.def("visit_input_parameter_type", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitInputParameterType(pn.ctx);
+    }, "Visit an InputParameterType rule node");
+
+    m.def("visit_output_parameter_type", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitOutputParameterType(pn.ctx);
+    }, "Visit an OutputParameterType rule node");
+
+    m.def("visit_output_parameter_type_component", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitOutputParameterTypeComponent(pn.ctx);
+    }, "Visit an OutputParameterTypeComponent rule node");
+
+    m.def("visit_scalar_item", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitScalarItem(pn.ctx);
+    }, "Visit a ScalarItem rule node");
+
+    m.def("visit_scalar_with_cast", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitScalarWithCast(pn.ctx);
+    }, "Visit a ScalarWithCast rule node");
+
+    m.def("visit_retain_type", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitRetainType(pn.ctx);
+    }, "Visit a RetainType rule node");
+
+    m.def("visit_eval_dataset_type", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitEvalDatasetType(pn.ctx);
+    }, "Visit an EvalDatasetType rule node");
+
+    m.def("visit_alias", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitAlias(pn.ctx);
+    }, "Visit an Alias rule node");
+
+    m.def("visit_signed_integer", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitSignedInteger(pn.ctx);
+    }, "Visit a SignedInteger rule node");
+
+    m.def("visit_signed_number", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitSignedNumber(pn.ctx);
+    }, "Visit a SignedNumber rule node");
+
+    m.def("visit_comparison_operand", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitComparisonOperand(pn.ctx);
+    }, "Visit a ComparisonOperand rule node");
+
+    m.def("visit_er_code", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitErCode(pn.ctx);
+    }, "Visit an ErCode rule node");
+
+    m.def("visit_er_level", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitErLevel(pn.ctx);
+    }, "Visit an ErLevel rule node");
+
+    m.def("visit_signature", [](py::object node, const std::string& kind) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitSignature(pn.ctx, kind);
+    }, py::arg("node"), py::arg("kind") = "ComponentID",
+    "Visit a Signature rule node");
+
+    m.def("visit_condition_clause", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitConditionClause(pn.ctx);
+    }, "Visit a ConditionClause rule node");
+
+    m.def("visit_validation_mode", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitValidationMode(pn.ctx);
+    }, "Visit a ValidationMode rule node");
+
+    m.def("visit_validation_output", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitValidationOutput(pn.ctx);
+    }, "Visit a ValidationOutput rule node");
+
+    m.def("visit_input_mode", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitInputMode(pn.ctx);
+    }, "Visit an InputMode rule node");
+
+    m.def("visit_input_mode_hierarchy", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitInputModeHierarchy(pn.ctx);
+    }, "Visit an InputModeHierarchy rule node");
+
+    m.def("visit_output_mode_hierarchy", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitOutputModeHierarchy(pn.ctx);
+    }, "Visit an OutputModeHierarchy rule node");
+
+    m.def("visit_partition_by_clause", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitPartitionByClause(pn.ctx);
+    }, "Visit a PartitionByClause rule node");
+
+    m.def("visit_order_by_clause", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitOrderByClause(pn.ctx);
+    }, "Visit an OrderByClause rule node");
+
+    m.def("visit_order_by_item", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitOrderByItem(pn.ctx);
+    }, "Visit an OrderByItem rule node");
+
+    m.def("visit_windowing_clause", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitWindowingClause(pn.ctx);
+    }, "Visit a WindowingClause rule node");
+
+    // ---- Phase 2: ExprComponents bindings ----
+
+    m.def("visit_expr_component", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitExprComponent(pn.ctx);
+    }, "Visit an ExprComponent rule node");
+
+    m.def("visit_optional_expr_component", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitOptionalExprComponent(pn.ctx);
+    }, "Visit an OptionalExprComponent rule node");
+
+    m.def("visit_functions_components", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitFunctionsComponents(pn.ctx);
+    }, "Visit a FunctionsComponents rule node");
+
+    m.def("visit_call_component", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitCallComponent(pn.ctx);
+    }, "Visit a CallComponent rule node");
+
+    m.def("visit_eval_atom_component", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitEvalAtomComponent(pn.ctx);
+    }, "Visit an EvalAtomComponent rule node");
+
+    m.def("visit_cast_expr_component", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitCastExprComponent(pn.ctx);
+    }, "Visit a CastExprComponent rule node");
+
+    m.def("visit_parameter_component", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitParameterComponent(pn.ctx);
+    }, "Visit a ParameterComponent rule node");
+
+    m.def("visit_substr_atom_component", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitSubstrAtomComponent(pn.ctx);
+    }, "Visit a SubstrAtomComponent rule node");
+
+    m.def("visit_replace_atom_component", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitReplaceAtomComponent(pn.ctx);
+    }, "Visit a ReplaceAtomComponent rule node");
+
+    m.def("visit_instr_atom_component", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitInstrAtomComponent(pn.ctx);
+    }, "Visit an InstrAtomComponent rule node");
+
+    m.def("visit_time_agg_atom_component", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitTimeAggAtomComponent(pn.ctx);
+    }, "Visit a TimeAggAtomComponent rule node");
+
+    m.def("visit_aggr_comp", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitAggrComp(pn.ctx);
+    }, "Visit an AggrComp rule node");
+
+    m.def("visit_count_aggr_comp", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitCountAggrComp(pn.ctx);
+    }, "Visit a CountAggrComp rule node");
+
+    m.def("visit_an_simple_function_component", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitAnSimpleFunctionComponent(pn.ctx);
+    }, "Visit an AnSimpleFunctionComponent rule node");
+
+    m.def("visit_lag_or_lead_an_component", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitLagOrLeadAnComponent(pn.ctx);
+    }, "Visit a LagOrLeadAnComponent rule node");
+
+    m.def("visit_rank_an_component", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitRankAnComponent(pn.ctx);
+    }, "Visit a RankAnComponent rule node");
+
+    m.def("visit_ratio_to_report_an_component", [](py::object node) {
+        ASTBuilder::init();
+        auto& pn = node.cast<LazyParseNode&>();
+        return ASTBuilder::visitRatioToReportAnComponent(pn.ctx);
+    }, "Visit a RatioToReportAnComponent rule node");
 
     // Token type constants
     m.attr("LPAREN") = static_cast<int>(VtlParser::LPAREN);
