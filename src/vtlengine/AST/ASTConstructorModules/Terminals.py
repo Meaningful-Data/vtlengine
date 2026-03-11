@@ -1,4 +1,3 @@
-from vtlengine.AST.Grammar._cpp_parser import vtl_cpp_parser
 from vtlengine.AST import (
     BinOp,
     Collection,
@@ -11,8 +10,9 @@ from vtlengine.AST import (
     VarID,
     Windowing,
 )
-from vtlengine.AST.Grammar._cpp_parser._rule_constants import RC
 from vtlengine.AST.ASTConstructorModules import extract_token_info
+from vtlengine.AST.Grammar._cpp_parser import vtl_cpp_parser
+from vtlengine.AST.Grammar._cpp_parser._rule_constants import RC
 from vtlengine.DataTypes import (
     Boolean,
     Date,

@@ -7,7 +7,6 @@ from pysdmx.model import TransformationScheme
 from pysdmx.model.dataflow import Dataflow, DataStructureDefinition, Schema
 from pysdmx.model.vtl import VtlDataflowMapping
 
-from vtlengine.AST.Grammar._cpp_parser import vtl_cpp_parser
 from vtlengine.API._InternalApi import (
     _check_output_folder,
     _check_script,
@@ -24,6 +23,7 @@ from vtlengine.AST import Start
 from vtlengine.AST.ASTConstructor import ASTVisitor
 from vtlengine.AST.ASTString import ASTString
 from vtlengine.AST.DAG import DAGAnalyzer
+from vtlengine.AST.Grammar._cpp_parser import vtl_cpp_parser
 from vtlengine.Exceptions import InputValidationException
 from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,

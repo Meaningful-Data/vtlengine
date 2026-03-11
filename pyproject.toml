@@ -122,15 +122,17 @@ wheel.exclude = ["vtlengine/AST/Grammar/_cpp_parser/*.cpp", "vtlengine/AST/Gramm
 [tool.cibuildwheel]
 build = "cp39-* cp310-* cp311-* cp312-* cp313-*"
 skip = "*-musllinux_*"
-before-build = "bash {project}/scripts/setup_antlr4_runtime.sh"
-test-requires = "pytest"
+test-requires = ["pytest"]
 test-command = "pytest {project}/tests -x -q --tb=short -k 'test_1' --strict-markers"
-
-[tool.cibuildwheel.macos]
-archs = ["x86_64", "arm64"]
 
 [tool.cibuildwheel.linux]
 archs = ["x86_64", "aarch64"]
+before-build = "bash {project}/scripts/setup_antlr4_runtime.sh"
+
+[tool.cibuildwheel.macos]
+archs = ["x86_64", "arm64"]
+before-build = "bash {project}/scripts/setup_antlr4_runtime.sh"
 
 [tool.cibuildwheel.windows]
 archs = ["AMD64"]
+before-build = "bash {project}/scripts/setup_antlr4_runtime.sh"

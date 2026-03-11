@@ -1,4 +1,3 @@
-from vtlengine.AST.Grammar._cpp_parser import vtl_cpp_parser
 from vtlengine.AST import (
     ID,
     Aggregation,
@@ -19,9 +18,10 @@ from vtlengine.AST import (
     UnaryOp,
     VarID,
 )
-from vtlengine.AST.Grammar._cpp_parser._rule_constants import RC
 from vtlengine.AST.ASTConstructorModules import extract_token_info
 from vtlengine.AST.ASTConstructorModules.Terminals import Terminals
+from vtlengine.AST.Grammar._cpp_parser import vtl_cpp_parser
+from vtlengine.AST.Grammar._cpp_parser._rule_constants import RC
 from vtlengine.Exceptions import SemanticError
 
 

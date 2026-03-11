@@ -3,13 +3,13 @@ from dataclasses import dataclass
 from typing import Any, Optional, Tuple, Union
 
 from vtlengine import AST
-from vtlengine.AST.Grammar._cpp_parser import LITERAL_NAMES
 from vtlengine.AST import (
     Assignment,
     PersistentAssignment,
     TimeAggregation,
 )
 from vtlengine.AST.ASTTemplate import ASTTemplate
+from vtlengine.AST.Grammar._cpp_parser import LITERAL_NAMES
 from vtlengine.AST.Grammar.tokens import (
     AGGREGATE,
     APPLY,
