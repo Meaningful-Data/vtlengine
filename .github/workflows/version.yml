@@ -21,20 +21,21 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install poetry
-        run: pipx install poetry
-      - name: Install dependencies
-        run: poetry install
+      - name: Download ANTLR4 C++ runtime
+        run: bash scripts/setup_antlr4_runtime.sh
+
+      - name: Build and install
+        run: pip install . -v
 
       - name: Extract __version__ from module
         id: module-version
         run: |
-          echo "MODULE_VERSION=$(poetry run python -c 'import vtlengine; print(vtlengine.__version__)')" >> $GITHUB_OUTPUT
+          echo "MODULE_VERSION=$(python -c 'import vtlengine; print(vtlengine.__version__)')" >> $GITHUB_OUTPUT
 
       - name: Extract version from pyproject.toml
         id: pyproject-version
         run: |
-          echo "value=$(poetry version --short)" >> $GITHUB_OUTPUT
+          echo "value=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")" >> $GITHUB_OUTPUT
 
       - name: Compare versions
         run: |

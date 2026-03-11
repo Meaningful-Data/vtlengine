@@ -48,13 +48,8 @@ jobs:
       - name: Download ANTLR4 C++ runtime
         run: bash scripts/setup_antlr4_runtime.sh
 
-      - name: Install Poetry
-        run: pip install --break-system-packages poetry
-
-      - name: Build and install
-        run: |
-          poetry config virtualenvs.create false
-          poetry install --all-extras
+      - name: Build and install C++ parser
+        run: pip install --break-system-packages . -v
 
       - name: Run tests
         run: pytest --verbose --tb=short --strict-markers --strict-config --durations=10
