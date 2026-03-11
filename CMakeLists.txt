@@ -18,7 +18,14 @@ file(GLOB_RECURSE ANTLR4_RUNTIME_SOURCES "${ANTLR4_SRC_DIR}/*.cpp")
 
 add_library(antlr4_runtime STATIC ${ANTLR4_RUNTIME_SOURCES})
 target_include_directories(antlr4_runtime PUBLIC "${ANTLR4_SRC_DIR}")
-target_compile_options(antlr4_runtime PRIVATE -w)  # Suppress warnings from third-party code
+target_compile_definitions(antlr4_runtime PUBLIC ANTLR4CPP_STATIC)
+
+# Suppress warnings from third-party code
+if(MSVC)
+    target_compile_options(antlr4_runtime PRIVATE /w)
+else()
+    target_compile_options(antlr4_runtime PRIVATE -w)
+endif()
 
 # -------------------------------------------------------------------
 # Generated VTL parser (C++ files from ANTLR)
@@ -50,7 +57,11 @@ target_include_directories(vtl_cpp_parser PRIVATE
 target_link_libraries(vtl_cpp_parser PRIVATE antlr4_runtime)
 
 # Suppress warnings from generated parser code
-target_compile_options(vtl_cpp_parser PRIVATE -w)
+if(MSVC)
+    target_compile_options(vtl_cpp_parser PRIVATE /w)
+else()
+    target_compile_options(vtl_cpp_parser PRIVATE -w)
+endif()
 
 # Install the module into the vtlengine._cpp_parser package
 install(TARGETS vtl_cpp_parser DESTINATION vtlengine/AST/Grammar/_cpp_parser)
