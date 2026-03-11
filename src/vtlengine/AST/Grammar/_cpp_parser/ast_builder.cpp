@@ -957,7 +957,12 @@ py::object visitAlias(antlr4::ParserRuleContext* ctx) {
 
 py::object visitSignedInteger(antlr4::ParserRuleContext* ctx) {
     std::string text = ctx->getText();
-    return py::int_(std::stoi(text));
+    try {
+        return py::int_(std::stoll(text));
+    } catch (const std::out_of_range&) {
+        // Fall back to Python int for arbitrarily large numbers
+        return py::int_(py::str(text));
+    }
 }
 
 py::object visitSignedNumber(antlr4::ParserRuleContext* ctx) {
@@ -3959,9 +3964,17 @@ static py::object visitAnSimpleFunction(antlr4::ParserRuleContext* ctx) {
     }
 
     if (window.is_none()) {
+        // Default windowing: raw ints, matching Python behavior
+        // (create_windowing normalizes -1/"unbounded", but the default uses raw ints)
         auto ti_w = extract_token_info(ctx);
-        window = create_windowing("data", py::int_(-1), py::int_(0),
-                                  "preceding", "current", ti_w);
+        py::dict wkw;
+        wkw["type_"] = py::str("data");
+        wkw["start"] = py::int_(-1);
+        wkw["stop"] = py::int_(0);
+        wkw["start_mode"] = py::str("preceding");
+        wkw["stop_mode"] = py::str("current");
+        for (auto item : ti_w) wkw[item.first] = item.second;
+        window = call_with_kwargs(py_Windowing, wkw);
     }
 
     auto ti = extract_token_info(ctx);
