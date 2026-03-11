@@ -29,7 +29,6 @@ dependencies = [
     # APT-supported dependencies
     "jsonschema>=3.2.0,<5.0",
     "sqlglot>=22.2.0,<23.0",
-    "antlr4-python3-runtime>=4.9,<4.10",
     "pandas>=2.1.4,<3.0",
     "networkx>=2.8,<3.0",
     "pyarrow>=14.0,<20.0",
@@ -81,7 +80,7 @@ lint.select = [
 lint.ignore = ["B023", "B028", "B904", "C403", "D100", "D101", "D102", "D103", "D104", "D105",
     "D107", "D200", "D201", "D202", "D203", "D205", "D209", "D212", "D213", "D301",
     "D400", "D401", "D404", "D411", "D413", "D415", "D419", "E203", "S608"]
-lint.exclude = ["*/Grammar/*", "*/main.py", "*/dev.py"]
+lint.exclude = ["*/Grammar/*", "*/_cpp_parser/*", "*/main.py", "*/dev.py"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101", "PT006", "PT012", "PT013", "E501", "W605"]
@@ -112,5 +111,26 @@ markers = [
 ]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["scikit-build-core>=0.10", "pybind11>=2.12"]
+build-backend = "scikit_build_core.build"
+
+[tool.scikit-build]
+cmake.build-type = "Release"
+wheel.packages = ["src/vtlengine"]
+wheel.exclude = ["vtlengine/AST/Grammar/_cpp_parser/*.cpp", "vtlengine/AST/Grammar/_cpp_parser/*.h"]
+
+[tool.cibuildwheel]
+build = "cp39-* cp310-* cp311-* cp312-* cp313-*"
+skip = "*-musllinux_*"
+before-build = "bash {project}/scripts/setup_antlr4_runtime.sh"
+test-requires = "pytest"
+test-command = "pytest {project}/tests -x -q --tb=short -k 'test_1' --strict-markers"
+
+[tool.cibuildwheel.macos]
+archs = ["x86_64", "arm64"]
+
+[tool.cibuildwheel.linux]
+archs = ["x86_64", "aarch64"]
+
+[tool.cibuildwheel.windows]
+archs = ["AMD64"]

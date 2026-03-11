@@ -1,14 +1,11 @@
-from typing import Dict, Union
+from typing import Any, Dict
 
-from antlr4.ParserRuleContext import ParserRuleContext
-from antlr4.Token import CommonToken
-
-from vtlengine.AST.Grammar.lexer import Lexer
+from vtlengine.AST.Grammar._cpp_parser.vtl_cpp_parser import ParseNode, TerminalNode
 
 
-def extract_token_info(token: Union[CommonToken, ParserRuleContext]) -> Dict[str, int]:
+def extract_token_info(token: Any) -> Dict[str, int]:
     """
-    Extracts the token information from a token or ParserRuleContext.
+    Extracts the token information from a C++ parser node.
 
     The Token information includes:
     - column_start: The starting column of the token.
@@ -16,35 +13,34 @@ def extract_token_info(token: Union[CommonToken, ParserRuleContext]) -> Dict[str
     - line_start: The starting line number of the token.
     - line_stop: The stopping line number of the token.
 
-    The overall idea is to provide the information from which line and column,
-    and to which line and column, the text is referenced by the AST object, including children.
-
-    Important Note: the keys of the dict are the same as the class attributes of the AST Object.
-
     Args:
-        token (Union[CommonToken, ParserRuleContext]): The token or ParserRuleContext to extract
-        information from.
+        token: A ParseNode or TerminalNode from the C++ parser.
 
     Returns:
         Dict[str, int]: A dictionary containing the token information.
     """
-
-    if isinstance(token, ParserRuleContext):
+    if isinstance(token, ParseNode):
+        stop_text = token.stop_text
+        # <EOF> token shouldn't contribute to column_stop calculation
+        if stop_text == "<EOF>":
+            stop_text = ""
         return {
-            "column_start": token.start.column,
-            "column_stop": token.stop.column + len(token.stop.text),
-            "line_start": token.start.line,
-            "line_stop": token.stop.line,
+            "column_start": token.start_column,
+            "column_stop": token.stop_column + len(stop_text),
+            "line_start": token.start_line,
+            "line_stop": token.stop_line,
         }
-    line_start = token.line
-    line_stop = token.line
-    # For block comments, we need to add the lines inside the block, marked by \n, to the stop line.
-    # The ML_COMMENT does not take into account the final \n in its grammar.
-    if token.type == Lexer.ML_COMMENT:
-        line_stop = token.line + token.text.count("\n")
+    if isinstance(token, TerminalNode):
+        return {
+            "column_start": token.column,
+            "column_stop": token.column + len(token.text),
+            "line_start": token.line,
+            "line_stop": token.line,
+        }
+    # Fallback for dict-like comment tokens
     return {
-        "column_start": token.column,
-        "column_stop": token.column + len(token.text),
-        "line_start": line_start,
-        "line_stop": line_stop,
+        "column_start": token.get("column", 0),  # type: ignore[union-attr]
+        "column_stop": token.get("column", 0) + len(token.get("text", "")),  # type: ignore[union-attr]
+        "line_start": token.get("line", 0),  # type: ignore[union-attr]
+        "line_stop": token.get("line", 0),  # type: ignore[union-attr]
     }

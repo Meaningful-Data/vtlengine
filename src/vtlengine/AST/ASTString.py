@@ -3,13 +3,13 @@ from dataclasses import dataclass
 from typing import Any, Optional, Tuple, Union
 
 from vtlengine import AST
+from vtlengine.AST.Grammar._cpp_parser import LITERAL_NAMES
 from vtlengine.AST import (
     Assignment,
     PersistentAssignment,
     TimeAggregation,
 )
 from vtlengine.AST.ASTTemplate import ASTTemplate
-from vtlengine.AST.Grammar.lexer import Lexer
 from vtlengine.AST.Grammar.tokens import (
     AGGREGATE,
     APPLY,
@@ -58,7 +58,7 @@ from vtlengine.Model import Component, Dataset
 
 nl = "\n"
 tab = "\t"
-RESERVED_WORDS = {x.replace("'", ""): x for x in Lexer.literalNames}
+RESERVED_WORDS = {x.replace("'", ""): x for x in LITERAL_NAMES}
 
 
 def _handle_literal(value: Union[str, int, float, bool]):

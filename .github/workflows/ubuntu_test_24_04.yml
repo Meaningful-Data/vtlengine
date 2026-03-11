@@ -21,7 +21,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            python3-antlr4 \
             python3-pip \
             python3-httpx \
             python3-pandas \
@@ -31,7 +30,10 @@ jobs:
             python3-jsonschema \
             python3-networkx \
             python3-sqlglot \
-            python3-pytest
+            python3-pytest \
+            cmake \
+            g++ \
+            pybind11-dev
 
       - name: Install pip-only dependencies
         run: |
@@ -43,18 +45,16 @@ jobs:
             duckdb==1.1 \
             pysdmx==1.9.0
 
+      - name: Download ANTLR4 C++ runtime
+        run: bash scripts/setup_antlr4_runtime.sh
+
       - name: Install Poetry
+        run: pip install --break-system-packages poetry
+
+      - name: Build and install
         run: |
-          pip install poetry
           poetry config virtualenvs.create false
-
-      - name: Build wheel
-        run: |
-          poetry build -f wheel -o .
-
-      - name: Install built package
-        run: |
-          pip install "./vtlengine-$(poetry version -s)-py3-none-any.whl" --no-dependencies --break-system-packages
+          poetry install --all-extras
 
       - name: Run tests
         run: pytest --verbose --tb=short --strict-markers --strict-config --durations=10
