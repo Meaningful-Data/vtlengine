@@ -45,6 +45,73 @@ static py::object py_SemanticError;
 // Initialized flag
 static bool g_initialized = false;
 
+// Release all cached py::object refs (prevents segfault at interpreter shutdown)
+// Note: cleanup_phase3() is called from ASTBuilder::cleanup() since Phase 3
+// statics are in the namespace.
+static void do_cleanup() {
+    // Phase 1 statics (outside namespace)
+    py_Start = py::object();
+    py_Assignment = py::object();
+    py_PersistentAssignment = py::object();
+    py_VarID = py::object();
+    py_UnaryOp = py::object();
+    py_BinOp = py::object();
+    py_MulOp = py::object();
+    py_ParamOp = py::object();
+    py_UDOCall = py::object();
+    py_JoinOp = py::object();
+    py_Constant = py::object();
+    py_ParamConstant = py::object();
+    py_Identifier = py::object();
+    py_ID = py::object();
+    py_Collection = py::object();
+    py_Windowing = py::object();
+    py_OrderBy = py::object();
+    py_Analytic = py::object();
+    py_RegularAggregation = py::object();
+    py_RenameNode = py::object();
+    py_Aggregation = py::object();
+    py_TimeAggregation = py::object();
+    py_If = py::object();
+    py_CaseObj = py::object();
+    py_Case = py::object();
+    py_Validation = py::object();
+    py_ComponentType_AST = py::object();
+    py_ASTScalarType = py::object();
+    py_DatasetType_AST = py::object();
+    py_Types = py::object();
+    py_Argument = py::object();
+    py_Operator = py::object();
+    py_DefIdentifier = py::object();
+    py_DPRIdentifier = py::object();
+    py_HRBinOp = py::object();
+    py_HRUnOp = py::object();
+    py_HRule = py::object();
+    py_DPRule = py::object();
+    py_HRuleset = py::object();
+    py_HROperation = py::object();
+    py_DPValidation = py::object();
+    py_DPRuleset = py::object();
+    py_EvalOp = py::object();
+    py_NoOp = py::object();
+    py_ParFunction = py::object();
+    py_Comment = py::object();
+    py_String = py::object();
+    py_Integer = py::object();
+    py_Number = py::object();
+    py_Boolean = py::object();
+    py_Date = py::object();
+    py_TimePeriod = py::object();
+    py_Duration = py::object();
+    py_TimeInterval = py::object();
+    py_Role = py::object();
+    py_Component = py::object();
+    py_Dataset = py::object();
+    py_Scalar = py::object();
+    py_SemanticError = py::object();
+    g_initialized = false;
+}
+
 // ============================================================
 // Helper functions
 // ============================================================
@@ -162,6 +229,14 @@ static py::object create_windowing(const std::string& win_mode,
 // ============================================================
 
 namespace ASTBuilder {
+
+// Forward declaration for Phase 3 cleanup (defined later in this namespace)
+static void cleanup_phase3();
+
+void cleanup() {
+    cleanup_phase3();
+    do_cleanup();
+}
 
 void init() {
     if (g_initialized) return;
@@ -2348,6 +2423,18 @@ static py::object py_HierarchyOutput_cls;
 static py::object py_DATASET_PRIORITY;
 static py::object py_de_ruleset_elements;
 static bool g_phase3_initialized = false;
+
+static void cleanup_phase3() {
+    py_Validation = py::object();
+    py_CHInputMode_cls = py::object();
+    py_HRInputMode_cls = py::object();
+    py_ValidationMode_cls = py::object();
+    py_ValidationOutput_cls = py::object();
+    py_HierarchyOutput_cls = py::object();
+    py_DATASET_PRIORITY = py::object();
+    py_de_ruleset_elements = py::object();
+    g_phase3_initialized = false;
+}
 
 static void init_phase3() {
     if (g_phase3_initialized) return;

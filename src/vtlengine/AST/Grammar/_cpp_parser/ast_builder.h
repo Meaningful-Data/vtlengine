@@ -34,6 +34,12 @@ namespace ASTBuilder {
 void init();
 
 /**
+ * Release all cached Python class references.
+ * Call before interpreter shutdown to prevent segfaults.
+ */
+void cleanup();
+
+/**
  * Build a Python AST from an ANTLR C++ parse tree.
  * Currently only Terminal-level visitor methods are implemented (Phase 1).
  * Returns a py::object representing the visited AST node.
