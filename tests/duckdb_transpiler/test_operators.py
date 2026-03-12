@@ -330,10 +330,10 @@ class TestGlobalRegistry:
         [
             (ROUND, ('"x"', "2"), 'ROUND(CAST("x" AS DOUBLE), COALESCE(CAST(2 AS INTEGER), 0))'),
             (TRUNC, ('"x"', "0"), 'TRUNC(CAST("x" AS DOUBLE), COALESCE(CAST(0 AS INTEGER), 0))'),
-            (INSTR, ('"str"', "'a'"), "vtl_instr(\"str\", 'a', 1, 1)"),
+            (INSTR, ('"str"', "'a'"), "vtl_instr(\"str\", 'a', NULL, NULL)"),
             (LOG, ('"x"', "10"), 'LOG(10, "x")'),  # Note: LOG has swapped args
             (POWER, ('"x"', "2"), 'POWER("x", 2)'),
-            (SUBSTR, ('"str"', "1", "5"), 'SUBSTR("str", 1, 5)'),
+            (SUBSTR, ('"str"', "1", "5"), 'SUBSTR("str", COALESCE(1, 1), COALESCE(5, LENGTH("str")))'),
             (REPLACE, ('"str"', "'a'", "'b'"), "REPLACE(\"str\", 'a', 'b')"),
         ],
     )
