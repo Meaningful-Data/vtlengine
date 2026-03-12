@@ -3919,6 +3919,70 @@ class TimeOperatorsTest(AdditionalHelper):
             references_names=references_names,
         )
 
+    def test_32(self):
+        """
+        Group by with time_agg on Date type with first conf, spanning multiple years.
+        """
+        text = """DS_r := sum(DS_1 group by Id_2 time_agg("A", first));"""
+        code = "7-32"
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
+
+    def test_33(self):
+        """
+        Group by with time_agg on Time_Period, multiple measures, multiple years.
+        """
+        text = """DS_r := sum(DS_1 group by Id_2 time_agg("A"));"""
+        code = "7-33"
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
+
+    def test_34(self):
+        """
+        Group except with time_agg on Time_Period, 3 identifiers, exclude one.
+        """
+        text = """DS_r := sum(DS_1 group except Id_3 time_agg("A"));"""
+        code = "7-34"
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
+
+    def test_35(self):
+        """
+        Group except with time_agg on Date, exclude multiple identifiers, multiple years.
+        """
+        text = """DS_r := sum(DS_1 group except Id_2, Id_3 time_agg("A", last));"""
+        code = "7-35"
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
+
     def test_GH_261_1(self):
         text = "DS_r <- DS_1[calc Me_2 := Me_1 < Me_1];"
         code = "GH_261"
