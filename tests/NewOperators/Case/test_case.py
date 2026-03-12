@@ -1,38 +1,14 @@
-import json
-import os
 import warnings
 from pathlib import Path
 
 import pytest
-from pytest import mark
 
+from tests.NewOperators.conftest import _build_run_inputs, use_duckdb
 from vtlengine import run
 from vtlengine.Exceptions import SemanticError
 
-VTL_ENGINE_BACKEND = os.environ.get("VTL_ENGINE_BACKEND", "duckdb").lower()
-use_duckdb = VTL_ENGINE_BACKEND == "duckdb"
-
 base_path = Path(__file__).parent / "data"
-ds_input_path = base_path / "DataStructure" / "input"
-dp_input_path = base_path / "DataSet" / "input"
-
-pytestmark = mark.input_path(base_path)
-
-
-def _build_run_inputs(code: str):
-    """Build data_structures and datapoints arguments for run() from test code."""
-    num_inputs = len([f for f in os.listdir(ds_input_path) if f.startswith(f"{code}-")])
-    data_structures = []
-    datapoints = {}
-    for i in range(1, num_inputs + 1):
-        ds_path = ds_input_path / f"{code}-{i}.json"
-        data_structures.append(ds_path)
-        with open(ds_path, "r") as file:
-            structure = json.load(file)
-        ds_name = structure["datasets"][0]["name"]
-        datapoints[ds_name] = dp_input_path / f"{code}-{i}.csv"
-    return data_structures, datapoints
-
+pytestmark = pytest.mark.input_path(base_path)
 
 ds_param = [
     ("1", 'DS_r := DS_1 [calc Me_3 := case when Id_1 = 1 then "X" else Me_2];'),
@@ -108,7 +84,7 @@ error_param = [
 @pytest.mark.parametrize("code, expression", ds_param)
 def test_case_ds(load_reference, code, expression):
     warnings.filterwarnings("ignore", category=FutureWarning)
-    data_structures, datapoints = _build_run_inputs(code)
+    data_structures, datapoints = _build_run_inputs(code, base_path)
     result = run(
         script=expression,
         data_structures=data_structures,
@@ -122,7 +98,7 @@ def test_case_ds(load_reference, code, expression):
 @pytest.mark.parametrize("code, expression, error_code", error_param)
 def test_errors(code, expression, error_code):
     warnings.filterwarnings("ignore", category=FutureWarning)
-    data_structures, datapoints = _build_run_inputs(code)
+    data_structures, datapoints = _build_run_inputs(code, base_path)
     with pytest.raises(SemanticError) as context:
         run(
             script=expression,
