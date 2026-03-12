@@ -33,6 +33,54 @@ SKIP_LOAD_VALIDATION = os.environ.get("VTL_SKIP_LOAD_VALIDATION", "").lower() in
 )
 
 
+def _detect_csv_format(conn: duckdb.DuckDBPyConnection, csv_path: Path) -> str:
+    """Detect CSV delimiter, quote and escape using sniff_csv.
+
+    Returns a string of read_csv format options (e.g. "delim=',', quote='\"', escape='\"'").
+    Falls back to defaults if sniffing fails or produces unreliable results.
+    """
+    try:
+        sniff_result = conn.sql(
+            f'SELECT "Delimiter", "Quote", "Escape" FROM sniff_csv(\'{csv_path}\')'
+        ).fetchone()
+    except duckdb.Error:
+        return "delim=','"
+
+    if not sniff_result:
+        return "delim=','"
+
+    csv_delimiter = sniff_result[0] or ","
+    csv_quote = sniff_result[1] or ""
+    csv_escape = sniff_result[2] or ""
+
+    # Validate: read header with sniffed delimiter and compare to auto_detect
+    try:
+        auto_cols = conn.sql(
+            f"SELECT * FROM read_csv('{csv_path}', header=true, auto_detect=true,"
+            f" null_padding=true) LIMIT 0"
+        ).columns
+
+        sniff_cols = conn.sql(
+            f"SELECT * FROM read_csv('{csv_path}', header=true, auto_detect=true,"
+            f" delim='{csv_delimiter}', null_padding=true) LIMIT 0"
+        ).columns
+
+        if list(sniff_cols) != list(auto_cols):
+            # Sniffed delimiter disagrees with auto_detect — fall back to auto_detect delimiter
+            csv_delimiter = ","
+    except duckdb.Error:
+        csv_delimiter = ","
+
+    fmt_parts = [f"delim='{csv_delimiter}'"]
+    if csv_quote and csv_quote != "(empty)":
+        esc_quote = csv_quote.replace("'", "\\'")
+        fmt_parts.append(f"quote='{esc_quote}'")
+    if csv_escape and csv_escape != "(empty)":
+        esc_escape = csv_escape.replace("'", "\\'")
+        fmt_parts.append(f"escape='{esc_escape}'")
+    return ", ".join(fmt_parts)
+
+
 def load_datapoints_duckdb(
     conn: duckdb.DuckDBPyConnection,
     components: Dict[str, Component],
@@ -78,24 +126,27 @@ def load_datapoints_duckdb(
     conn.execute(build_create_table_sql(dataset_name, components))
 
     try:
-        # 2. Read CSV header
+        # 2. Detect CSV format (delimiter, quote, escape) using sniff_csv
+        _sniffed_fmt = _detect_csv_format(conn, csv_path)
+
+        # 3. Read CSV header with auto_detect to get column names
         header_rel = conn.sql(
             f"SELECT * FROM read_csv('{csv_path}', header=true, auto_detect=true,"
             f" null_padding=true) LIMIT 0"
         )
         csv_columns = header_rel.columns
 
-        # 3. Handle SDMX-CSV special columns
+        # 4. Handle SDMX-CSV special columns
         keep_columns = handle_sdmx_columns(csv_columns, components)
 
         # Check required identifier columns exist
         check_missing_identifiers(id_columns, keep_columns, csv_path)
 
-        # 4. Build column type mapping and SELECT expressions
+        # 5. Build column type mapping and SELECT expressions
         csv_dtypes = build_csv_column_types(components, keep_columns)
         select_cols = build_select_columns(components, keep_columns, csv_dtypes, dataset_name)
 
-        # 5. Build type string for read_csv (must include ALL CSV columns)
+        # 6. Build type string for read_csv (must include ALL CSV columns)
         # Include extra SDMX columns (DATAFLOW, ACTION, etc.) as VARCHAR so
         # the columns parameter matches the actual CSV column count.
         all_csv_dtypes = dict(csv_dtypes)
@@ -106,12 +157,12 @@ def load_datapoints_duckdb(
         ordered_dtypes = {col: all_csv_dtypes[col] for col in csv_columns if col in all_csv_dtypes}
         type_str = ", ".join(f"'{k}': '{v}'" for k, v in ordered_dtypes.items())
 
-        # 6. Build filter for SDMX ACTION column
+        # 7. Build filter for SDMX ACTION column
         action_filter = ""
         if "ACTION" in csv_columns and "ACTION" not in components:
             action_filter = 'WHERE "ACTION" != \'D\' OR "ACTION" IS NULL'
 
-        # 7. Execute INSERT
+        # 8. Execute INSERT
         insert_sql = f"""
             INSERT INTO "{dataset_name}"
             SELECT {", ".join(select_cols)}
@@ -120,6 +171,7 @@ def load_datapoints_duckdb(
                 header=true,
                 columns={{{type_str}}},
                 auto_detect=false,
+                {_sniffed_fmt},
                 null_padding=true,
                 parallel=true,
                 ignore_errors=false
