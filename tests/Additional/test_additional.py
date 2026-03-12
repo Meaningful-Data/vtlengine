@@ -3886,6 +3886,39 @@ class TimeOperatorsTest(AdditionalHelper):
             text=text, code=code, number_inputs=number_inputs, exception_code=exception_code
         )
 
+    def test_30(self):
+        """
+        Group by with time_agg on Time_Period type.
+        """
+        text = """DS_r := sum(DS_1 group by Id_2 time_agg("A"));"""
+        code = "7-30"
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
+
+    def test_31(self):
+        """
+        Group except with time_agg on Date type.
+        Excludes Id_2 from grouping, time_agg transforms Id_1 to annual.
+        """
+        text = """DS_r := sum(DS_1 group except Id_2 time_agg("A", last));"""
+        code = "7-31"
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
+
     def test_GH_261_1(self):
         text = "DS_r <- DS_1[calc Me_2 := Me_1 < Me_1];"
         code = "GH_261"
