@@ -19,6 +19,7 @@ from vtlengine.DataTypes import (
     Duration,
     Integer,
     Number,
+    String,
     TimeInterval,
     TimePeriod,
 )
@@ -373,6 +374,12 @@ def build_select_columns(
             # Cast DOUBLE → DECIMAL for Number type
             elif csv_type == "DOUBLE" and "DECIMAL" in table_type:
                 select_cols.append(f'CAST("{comp_name}" AS {table_type}) AS "{comp_name}"')
+            elif csv_type == "VARCHAR" and comp.data_type == String:
+                # Strip double quotes from String values (match pandas loader behavior)
+                expr = f"""REPLACE("{comp_name}", '"', '')"""
+                if comp.nullable:
+                    expr = f"NULLIF({expr}, '')"
+                select_cols.append(f'{expr} AS "{comp_name}"')
             elif csv_type == "VARCHAR" and comp.nullable:
                 # Treat empty strings as NULL for nullable VARCHAR columns
                 select_cols.append(f'NULLIF("{comp_name}", \'\') AS "{comp_name}"')

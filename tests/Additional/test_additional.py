@@ -2850,13 +2850,10 @@ class DataValidationOperatorsTest(AdditionalHelper):
 
         code = "11-4"
         number_inputs = 1
-        references_names = ["DS_r"]
+        exception_code = "1-3-2-3"
 
-        self.BaseTest(
-            text=text,
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names,
+        self.NewSemanticExceptionTest(
+            text=text, code=code, number_inputs=number_inputs, exception_code=exception_code
         )
 
     def test_5(self):
@@ -3736,7 +3733,7 @@ class TimeOperatorsTest(AdditionalHelper):
         """
         Basic behaviour for datasets with period type.
         """
-        text = """DS_r := sum (DS_1 group all time_agg("A", Id_1));"""
+        text = """DS_r := sum (DS_1 group all time_agg("A"));"""
         code = "7-18"
         number_inputs = 1
         references_names = ["DS_r"]
@@ -3752,7 +3749,7 @@ class TimeOperatorsTest(AdditionalHelper):
         """
         Basic behaviour for datasets with date type.
         """
-        text = """DS_r := sum (DS_1 group all time_agg("A", Id_1, last));"""
+        text = """DS_r := sum (DS_1 group all time_agg("A", last));"""
         code = "7-19"
         number_inputs = 1
         references_names = ["DS_r"]

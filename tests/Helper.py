@@ -257,10 +257,15 @@ class TestHelper(TestCase):
         if vd_names is not None:
             value_domains = [cls.filepath_valueDomain / f"{name}.json" for name in vd_names]
 
-        # Load external routines if specified
+        # Load external routines as raw dicts for run() API
         external_routines = None
         if sql_names is not None:
-            external_routines = cls.LoadExternalRoutines(sql_names)
+            er_list = []
+            for name in sql_names:
+                sql_file = cls.filepath_sql / f"{name}.sql"
+                with open(sql_file, "r") as f:
+                    er_list.append({"name": name, "query": f.read()})
+            external_routines = er_list if len(er_list) > 1 else er_list[0]
 
         # Prepare scalar values
         scalar_values = None

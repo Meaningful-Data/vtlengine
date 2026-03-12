@@ -222,6 +222,8 @@ class StructureVisitor(ASTTemplate):
             return self._get_binop_type(node)
         if isinstance(node, AST.UnaryOp):
             return self._get_operand_type(node.operand)
+        if isinstance(node, AST.ParFunction):
+            return self._get_operand_type(node.operand)
         if isinstance(node, AST.ParamOp):
             if node.children:
                 return self._get_operand_type(node.children[0])
@@ -229,7 +231,16 @@ class StructureVisitor(ASTTemplate):
         if isinstance(node, AST.MulOp):
             return self._get_mulop_type(node)
         if isinstance(node, AST.If):
-            return self._get_operand_type(node.thenOp)
+            then_t = self._get_operand_type(node.thenOp)
+            if then_t == _DATASET:
+                return _DATASET
+            else_t = self._get_operand_type(node.elseOp)
+            if else_t == _DATASET:
+                return _DATASET
+            cond_t = self._get_operand_type(node.condition)
+            if cond_t == _DATASET:
+                return _DATASET
+            return then_t
         if isinstance(node, AST.Case):
             if node.cases:
                 return self._get_operand_type(node.cases[0].thenOp)
@@ -242,6 +253,10 @@ class StructureVisitor(ASTTemplate):
 
     def _get_binop_type(self, node: AST.BinOp) -> str:
         """Determine operand type for a BinOp."""
+        op = str(node.op).lower() if node.op else ""
+        # In clause context, membership resolves to a column reference
+        if self._in_clause and op == tokens.MEMBERSHIP:
+            return _COMPONENT
         left_t = self._get_operand_type(node.left)
         if left_t == _DATASET:
             return _DATASET
@@ -440,13 +455,20 @@ class StructureVisitor(ASTTemplate):
                 return self._build_membership_structure(node)
             if op == "as":
                 return self._get_dataset_structure(node.left)
-            if self._get_operand_type(node.left) == _DATASET:
+            left_is_ds = self._get_operand_type(node.left) == _DATASET
+            right_is_ds = self._get_operand_type(node.right) == _DATASET
+            if left_is_ds and right_is_ds:
+                return self._build_ds_ds_binop_structure(node)
+            if left_is_ds:
                 return self._get_dataset_structure(node.left)
-            if self._get_operand_type(node.right) == _DATASET:
+            if right_is_ds:
                 return self._get_dataset_structure(node.right)
             return None
 
         if isinstance(node, AST.UnaryOp):
+            return self._get_dataset_structure(node.operand)
+
+        if isinstance(node, AST.ParFunction):
             return self._get_dataset_structure(node.operand)
 
         if isinstance(node, AST.ParamOp):
@@ -459,13 +481,27 @@ class StructureVisitor(ASTTemplate):
             if ds is not None and (node.grouping is not None or node.grouping_op is not None):
                 all_ids = ds.get_identifiers_names()
                 group_cols = set(self._resolve_group_cols(node, all_ids))
-                comps = {}
+                comps: Dict[str, Component] = {}
                 for name, comp in ds.components.items():
                     if comp.role == Role.IDENTIFIER:
                         if name in group_cols:
                             comps[name] = comp
                     else:
                         comps[name] = comp
+                # count() replaces all measures with a single int_var
+                agg_op = str(node.op).lower() if node.op else ""
+                if agg_op == tokens.COUNT:
+                    from vtlengine.DataTypes import Integer as IntegerType
+
+                    comps = {
+                        n: c for n, c in comps.items() if c.role == Role.IDENTIFIER
+                    }
+                    comps["int_var"] = Component(
+                        name="int_var",
+                        data_type=IntegerType,
+                        role=Role.MEASURE,
+                        nullable=True,
+                    )
                 return Dataset(name=ds.name, components=comps, data=None)
             return ds
 
@@ -495,7 +531,10 @@ class StructureVisitor(ASTTemplate):
             return self._get_dataset_structure(node.children[0])
 
         if isinstance(node, AST.If):
-            return self._get_dataset_structure(node.thenOp)
+            ds = self._get_dataset_structure(node.thenOp)
+            if ds is not None:
+                return ds
+            return self._get_dataset_structure(node.elseOp)
 
         if isinstance(node, AST.Case) and node.cases:
             return self._get_dataset_structure(node.cases[0].thenOp)
@@ -567,6 +606,40 @@ class StructureVisitor(ASTTemplate):
                         name=col_name, data_type=NumberType, role=Role.MEASURE, nullable=True
                     )
         return Dataset(name=input_ds.name, components=comps, data=None)
+
+    def _build_ds_ds_binop_structure(self, node: AST.BinOp) -> Optional[Dataset]:
+        """Build structure for dataset-dataset binary ops (e.g. DS_1 * DS_2).
+
+        Arithmetic between datasets produces identifiers + common measures only,
+        no attributes — matching what the SQL transpiler actually generates.
+        """
+        left_ds = self._get_dataset_structure(node.left)
+        right_ds = self._get_dataset_structure(node.right)
+        if left_ds is None or right_ds is None:
+            return left_ds or right_ds
+
+        op = str(node.op).lower() if node.op else ""
+        # For comparison ops between datasets, the result keeps measures
+        # but they become boolean.  For arithmetic, measures stay numeric.
+        # In either case, only identifiers + common measures survive.
+        left_ids = set(left_ds.get_identifiers_names())
+        right_ids = set(right_ds.get_identifiers_names())
+        all_ids = left_ids | right_ids
+
+        right_measures = set(right_ds.get_measures_names())
+
+        comps: Dict[str, Component] = {}
+        for name, comp in left_ds.components.items():
+            if comp.role == Role.IDENTIFIER and name in all_ids:
+                comps[name] = comp
+            elif comp.role == Role.MEASURE and name in right_measures:
+                comps[name] = comp
+        # Add identifiers from right that aren't in left
+        for name, comp in right_ds.components.items():
+            if comp.role == Role.IDENTIFIER and name not in comps:
+                comps[name] = comp
+
+        return Dataset(name=left_ds.name, components=comps, data=None)
 
     def _build_aggregate_clause_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:
         """Build the output dataset structure for an aggregate clause.
@@ -747,17 +820,24 @@ class StructureVisitor(ASTTemplate):
         if not clause_datasets:
             return self._get_output_dataset()
 
+        is_cross = str(node.op).lower() == tokens.CROSS_JOIN
+
         # Determine common identifiers if no USING specified
         # Use pairwise accumulation (same as visit_JoinOp) so that multi-
         # dataset joins where secondary datasets share different identifiers
         # work correctly.
+        # For cross joins, identifiers from different datasets must be qualified
+        # (e.g. d1#Id_1, d2#Id_1), so we skip identifier deduplication.
         if using_ids is None:
-            accumulated_ids = set(clause_datasets[0][1].get_identifiers_names())
-            all_join_ids: Set[str] = set(accumulated_ids)
-            for _, ds in clause_datasets[1:]:
-                ds_ids = set(ds.get_identifiers_names())
-                all_join_ids |= ds_ids
-                accumulated_ids |= ds_ids
+            if is_cross:
+                all_join_ids: Set[str] = set()
+            else:
+                accumulated_ids = set(clause_datasets[0][1].get_identifiers_names())
+                all_join_ids = set(accumulated_ids)
+                for _, ds in clause_datasets[1:]:
+                    ds_ids = set(ds.get_identifiers_names())
+                    all_join_ids |= ds_ids
+                    accumulated_ids |= ds_ids
         else:
             all_join_ids = set(using_ids)
 
@@ -769,8 +849,6 @@ class StructureVisitor(ASTTemplate):
                     comp_count[comp_name] = comp_count.get(comp_name, 0) + 1
 
         duplicate_comps = {name for name, cnt in comp_count.items() if cnt >= 2}
-
-        is_cross = str(node.op).lower() == tokens.CROSS_JOIN
 
         comps: Dict[str, Component] = {}
         for alias, ds in clause_datasets:

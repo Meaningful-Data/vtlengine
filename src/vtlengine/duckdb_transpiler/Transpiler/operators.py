@@ -402,7 +402,7 @@ def _create_default_registries() -> SQLOperatorRegistries:
 
     registries.aggregate.register_simple(tokens.SUM, "SUM({0})")
     registries.aggregate.register_simple(tokens.AVG, "AVG({0})")
-    registries.aggregate.register_simple(tokens.COUNT, "COUNT({0})")
+    registries.aggregate.register_simple(tokens.COUNT, "NULLIF(COUNT({0}), 0)")
     registries.aggregate.register_simple(tokens.MIN, "MIN({0})")
     registries.aggregate.register_simple(tokens.MAX, "MAX({0})")
     registries.aggregate.register_simple(tokens.MEDIAN, "MEDIAN({0})")
@@ -477,14 +477,15 @@ def _create_default_registries() -> SQLOperatorRegistries:
 
         DuckDB's INSTR only supports 2 args: INSTR(string, pattern).
         VTL's instr supports: instr(string, pattern, start=1, occurrence=1).
-        We always use vtl_instr macro for consistency (handles null pattern → 0).
+        The vtl_instr macro handles NULL start/occur as defaults (1).
+        None (missing arg) → NULL in SQL (macro applies default).
+        'NULL' (VTL null literal) → NULL in SQL (macro returns NULL for pat).
         """
-        # Build args with defaults for missing values
         params = []
-        params.append(args[0] if len(args) > 0 and args[0] is not None else "NULL")
-        params.append(args[1] if len(args) > 1 and args[1] is not None else "NULL")
-        params.append(args[2] if len(args) > 2 and args[2] is not None else "1")
-        params.append(args[3] if len(args) > 3 and args[3] is not None else "1")
+        params.append(str(args[0]) if len(args) > 0 and args[0] is not None else "NULL")
+        params.append(str(args[1]) if len(args) > 1 and args[1] is not None else "NULL")
+        params.append(str(args[2]) if len(args) > 2 and args[2] is not None else "NULL")
+        params.append(str(args[3]) if len(args) > 3 and args[3] is not None else "NULL")
 
         return f"vtl_instr({', '.join(params)})"
 
@@ -501,19 +502,23 @@ def _create_default_registries() -> SQLOperatorRegistries:
 
     # Multi-parameter operations (variable args)
     def _substr_generator(*args: Optional[str]) -> str:
-        """Generate SUBSTR SQL handling None args (VTL defaults: start=1)."""
+        """Generate SUBSTR SQL handling None/NULL args.
+
+        VTL substr treats null start/length as defaults (start=1, length=all).
+        Both None (missing '_') and 'NULL' (VTL null literal) use defaults.
+        Runtime NULL values in columns also use defaults via COALESCE.
+        """
         if len(args) == 1:
-            # Just the string, no start/length → return as-is
             return str(args[0])
-        filtered = []
-        for i, a in enumerate(args):
-            if a is None:
-                if i == 1:  # start position defaults to 1
-                    filtered.append("1")
-                # if i == 2 (length) is None, omit it
-            else:
-                filtered.append(str(a))
-        return f"SUBSTR({', '.join(filtered)})"
+        string_arg = str(args[0])
+        # Start: default to 1 if missing, null, or runtime NULL
+        start = args[1] if len(args) > 1 else None
+        start_sql = "1" if start is None or start == "NULL" else f"COALESCE({start}, 1)"
+        # Length: if missing, null, or runtime NULL → omit (return rest of string)
+        length = args[2] if len(args) > 2 else None
+        if length is None or length == "NULL":
+            return f"SUBSTR({string_arg}, {start_sql})"
+        return f"SUBSTR({string_arg}, {start_sql}, COALESCE({length}, LENGTH({string_arg})))"
 
     registries.parameterized.register(
         tokens.SUBSTR,
@@ -528,18 +533,21 @@ def _create_default_registries() -> SQLOperatorRegistries:
         """Generate REPLACE SQL. DuckDB requires 3 args; VTL allows 2.
 
         VTL replace(op, s1, s2):
-        - s1=null → return op unchanged
-        - s2=null → replace s1 with empty string
-        - only 2 args → replace s1 with empty string
+        - Any arg is VTL null ('NULL') → result is NULL (null propagation)
+        - s1 missing (None) → return op unchanged
+        - s2 missing (None) or only 2 args → replace s1 with empty string
         """
         # args order: string, pattern, replacement
+        # VTL null propagation: any NULL argument → NULL result
+        if any(a == "NULL" for a in args if a is not None):
+            return "CAST(NULL AS VARCHAR)"
         if len(args) < 2 or args[1] is None:
-            # Pattern is null/missing → return original string unchanged
+            # Pattern missing → return original string unchanged
             return str(args[0]) if args else "''"
         string_arg = str(args[0])
         pattern_arg = str(args[1])
         if len(args) < 3 or args[2] is None:
-            # Replacement is null/missing → replace with empty string
+            # Replacement missing → replace with empty string
             return f"REPLACE({string_arg}, {pattern_arg}, '')"
         return f"REPLACE({string_arg}, {pattern_arg}, {args[2]})"
 

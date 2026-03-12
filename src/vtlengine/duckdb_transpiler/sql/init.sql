@@ -499,21 +499,21 @@ CREATE OR REPLACE MACRO vtl_interval_shift(i, days) AS (
 -- For the simple case (start=1, occurrence=1), just use INSTR.
 -- For start > 1: search in SUBSTR, add offset back.
 -- For occurrence > 1: we need vtl_instr_impl which loops.
-CREATE OR REPLACE MACRO vtl_instr(s, pat, start_pos, occur) AS (
+CREATE OR REPLACE MACRO vtl_instr(s, pat, start_pos_raw, occur_raw) AS (
+    -- VTL defaults: start=1, occurrence=1; NULL in start/occur means use default
     CASE
         WHEN s IS NULL THEN NULL
-        WHEN pat IS NULL THEN 0
-        WHEN occur = 1 THEN
+        WHEN pat IS NULL THEN NULL
+        WHEN COALESCE(occur_raw, 1) = 1 THEN
             CASE
-                WHEN INSTR(s[start_pos:], pat) = 0 THEN 0
-                ELSE INSTR(s[start_pos:], pat) + start_pos - 1
+                WHEN INSTR(s[COALESCE(start_pos_raw, 1):], pat) = 0 THEN 0
+                ELSE INSTR(s[COALESCE(start_pos_raw, 1):], pat) + COALESCE(start_pos_raw, 1) - 1
             END
         ELSE (
-            -- Find nth occurrence by chaining
             WITH RECURSIVE find_occ(pos, n) AS (
                 SELECT
-                    CASE WHEN INSTR(s[start_pos:], pat) = 0 THEN 0
-                         ELSE INSTR(s[start_pos:], pat) + start_pos - 1
+                    CASE WHEN INSTR(s[COALESCE(start_pos_raw, 1):], pat) = 0 THEN 0
+                         ELSE INSTR(s[COALESCE(start_pos_raw, 1):], pat) + COALESCE(start_pos_raw, 1) - 1
                     END,
                     1
                 UNION ALL
@@ -524,9 +524,9 @@ CREATE OR REPLACE MACRO vtl_instr(s, pat, start_pos, occur) AS (
                     END,
                     n + 1
                 FROM find_occ
-                WHERE n < occur AND pos > 0
+                WHERE n < COALESCE(occur_raw, 1) AND pos > 0
             )
-            SELECT COALESCE(MAX(CASE WHEN n = occur THEN pos END), 0) FROM find_occ
+            SELECT COALESCE(MAX(CASE WHEN n = COALESCE(occur_raw, 1) THEN pos END), 0) FROM find_occ
         )
     END
 );

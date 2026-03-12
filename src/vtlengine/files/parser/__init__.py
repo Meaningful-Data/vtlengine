@@ -1,3 +1,4 @@
+import csv
 import warnings
 from csv import DictReader
 from pathlib import Path
@@ -13,6 +14,7 @@ from vtlengine.DataTypes import (
     Integer,
     Number,
     ScalarType,
+    String,
     TimeInterval,
     TimePeriod,
 )
@@ -33,6 +35,26 @@ TIME_CHECKS_MAPPING: Dict[Type[ScalarType], Any] = {
     TimeInterval: check_time,
 }
 
+SEPARATORS = "".join([",", ";", ":", "|", "\t"])
+
+
+def _detect_delimiter(file_path: Union[str, Path], num_bytes: int = 4096) -> str:
+    try:
+        if _is_remote_path(file_path):
+            import fsspec  # type: ignore[import-untyped]
+
+            reader = fsspec.open
+        else:
+            reader = open
+
+        with reader(file_path, "r", encoding="utf-8", errors="replace") as f:
+            sample = f.read(num_bytes)
+        if sample:
+            return csv.Sniffer().sniff(sample, delimiters=SEPARATORS).delimiter
+    except Exception:
+        return ","
+    return ","
+
 
 def _validate_csv_path(components: Dict[str, Component], csv_path: Path) -> None:
     # GE1 check if the file is empty
@@ -42,8 +64,9 @@ def _validate_csv_path(components: Dict[str, Component], csv_path: Path) -> None
         raise DataLoadError(code="0-3-1-1", file=csv_path)
     register_rfc()
     try:
+        delimiter = _detect_delimiter(csv_path)
         with open(csv_path, "r", errors="replace", encoding="utf-8") as f:
-            reader = DictReader(f, dialect="rfc")
+            reader = DictReader(f, delimiter=delimiter)
             csv_columns = reader.fieldnames
     except InputValidationException as ie:
         raise InputValidationException("{}".format(str(ie))) from None
@@ -106,15 +129,31 @@ def _sanitize_pandas_columns(
     return data
 
 
+def _is_remote_path(csv_path: Union[str, Path]) -> bool:
+    return isinstance(csv_path, str) and "://" in csv_path
+
+
 def _pandas_load_csv(components: Dict[str, Component], csv_path: Union[str, Path]) -> pd.DataFrame:
     obj_dtypes = dict.fromkeys(components, "string[pyarrow]")
 
-    data = pd.read_csv(
-        csv_path,  # type: ignore[call-overload, unused-ignore]
+    na_values: Union[Dict[str, List[str]], List[str]]
+    if components:
+        na_values = {
+            comp_name: ["", '""'] if comp.data_type != String else [""]
+            for comp_name, comp in components.items()
+        }
+    else:
+        na_values = {}
+
+    sep = _detect_delimiter(csv_path)
+
+    data = pd.read_csv(  # type: ignore[call-overload, unused-ignore]
+        csv_path,
         dtype=obj_dtypes,
         engine="c",
+        sep=sep,
         keep_default_na=False,
-        na_values=[""],
+        na_values=na_values,
         encoding_errors="replace",
     )
 
@@ -150,10 +189,14 @@ def _validate_pandas(
     if len(id_names) == 0 and len(data) > 1:
         raise DataLoadError("0-3-1-4", name=dataset_name)
 
+    # Treat empty strings as null for non-String columns
+    for comp_name, comp in components.items():
+        if comp.data_type != String and comp_name in data.columns:
+            data[comp_name] = data[comp_name].replace("", pd.NA)
+
     data = data.fillna(value=pd.NA)
     # Checking data types on all data types
     comp_name = ""
-    comp = None
     try:
         for comp_name, comp in components.items():
             if comp.data_type in (Date, TimePeriod, TimeInterval):
@@ -202,7 +245,7 @@ def _validate_pandas(
             data[comp_name] = data[comp_name].astype(comp.data_type.dtype())  # type: ignore[call-overload]
 
     except (ValueError, InputValidationException) as e:
-        str_comp = SCALAR_TYPES_CLASS_REVERSE[comp.data_type] if comp else "Null"
+        str_comp = SCALAR_TYPES_CLASS_REVERSE.get(comp.data_type, "Null")
         error = e.args[0] if isinstance(e, InputValidationException) else str(e)
         raise DataLoadError(
             "0-3-1-6", name=dataset_name, column=comp_name, type=str_comp, error=error

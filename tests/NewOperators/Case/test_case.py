@@ -1,14 +1,37 @@
+import json
+import os
 import warnings
 from pathlib import Path
 
 import pytest
 from pytest import mark
 
-from vtlengine.API import create_ast
+from vtlengine import run
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Interpreter import InterpreterAnalyzer
 
-pytestmark = mark.input_path(Path(__file__).parent / "data")
+VTL_ENGINE_BACKEND = os.environ.get("VTL_ENGINE_BACKEND", "duckdb").lower()
+use_duckdb = VTL_ENGINE_BACKEND == "duckdb"
+
+base_path = Path(__file__).parent / "data"
+ds_input_path = base_path / "DataStructure" / "input"
+dp_input_path = base_path / "DataSet" / "input"
+
+pytestmark = mark.input_path(base_path)
+
+
+def _build_run_inputs(code: str):
+    """Build data_structures and datapoints arguments for run() from test code."""
+    num_inputs = len([f for f in os.listdir(ds_input_path) if f.startswith(f"{code}-")])
+    data_structures = []
+    datapoints = {}
+    for i in range(1, num_inputs + 1):
+        ds_path = ds_input_path / f"{code}-{i}.json"
+        data_structures.append(ds_path)
+        with open(ds_path, "r") as file:
+            structure = json.load(file)
+        ds_name = structure["datasets"][0]["name"]
+        datapoints[ds_name] = dp_input_path / f"{code}-{i}.csv"
+    return data_structures, datapoints
 
 
 ds_param = [
@@ -83,22 +106,30 @@ error_param = [
 
 
 @pytest.mark.parametrize("code, expression", ds_param)
-def test_case_ds(load_input, load_reference, code, expression):
+def test_case_ds(load_reference, code, expression):
     warnings.filterwarnings("ignore", category=FutureWarning)
-    ast = create_ast(expression)
-    interpreter = InterpreterAnalyzer(load_input)
-    result = interpreter.visit(ast)
+    data_structures, datapoints = _build_run_inputs(code)
+    result = run(
+        script=expression,
+        data_structures=data_structures,
+        datapoints=datapoints,
+        return_only_persistent=False,
+        use_duckdb=use_duckdb,
+    )
     assert result == load_reference
 
 
 @pytest.mark.parametrize("code, expression, error_code", error_param)
-def test_errors(load_input, code, expression, error_code):
+def test_errors(code, expression, error_code):
     warnings.filterwarnings("ignore", category=FutureWarning)
-    datasets = load_input
+    data_structures, datapoints = _build_run_inputs(code)
     with pytest.raises(SemanticError) as context:
-        ast = create_ast(expression)
-        interpreter = InterpreterAnalyzer(datasets)
-        interpreter.visit(ast)
+        run(
+            script=expression,
+            data_structures=data_structures,
+            datapoints=datapoints,
+            return_only_persistent=False,
+        )
     result = error_code == str(context.value.args[1])
     if result is False:
         print(f"\n{error_code} != {context.value.args[1]}")

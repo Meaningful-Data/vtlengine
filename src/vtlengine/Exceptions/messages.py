@@ -548,6 +548,12 @@ centralised_messages = {
         "description": "Raised when condComp and ruleComp in a ruleset signature do not "
         "match as required.",
     },
+    "1-1-10-10": {
+        "message": "Duplicated EQ rules on the Hierarchy Roll-up {ruleset}. "
+        "Check the EQ rules: {rule}.",
+        "description": "Raised when there are no applicable rules in a Hierarchy Roll-up "
+        "due to missing '=' operators.",
+    },
     # General Operators
     "2-1-12-1": {
         "message": "At op {op}: Create a null Measure without a Scalar type is not allowed. "
