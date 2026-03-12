@@ -18,12 +18,12 @@ define operator AVG_M_Q (ds dataset)
     round(
     inner_join(
         count(
-			ds group all time_agg("Q",_,TIME_PERIOD)
+			ds group all time_agg("Q")
 		)
 		[filter int_var = 3]
 		[drop int_var] as A,
         avg(
-			ds group all time_agg("Q",_,TIME_PERIOD)
+			ds group all time_agg("Q")
 		) as B
     )
         [sub FREQ = "M"]
@@ -40,7 +40,7 @@ conf_status :=
         [calc CONF_STATUS_NUM := conf_status_num(CONF_STATUS)]
         [aggr
             CONF_STATUS_NUM := min(CONF_STATUS_NUM)
-            group all time_agg("Q",_,TIME_PERIOD)]
+            group all time_agg("Q")]
         [calc CONF_STATUS := conf_status_str(CONF_STATUS_NUM)]
         [drop CONF_STATUS_NUM];
 

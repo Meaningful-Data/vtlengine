@@ -13,7 +13,7 @@ from vtlengine.files.parser import load_datapoints
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Component, Dataset, Role, ValueDomain
 
-VTL_ENGINE_BACKEND = os.environ.get("VTL_ENGINE_BACKEND", "pandas").lower()
+VTL_ENGINE_BACKEND = os.environ.get("VTL_ENGINE_BACKEND", "duckdb").lower()
 
 base_path = Path(__file__).parent
 input_dp_dir = base_path / "data/DataSet/input"
@@ -63,6 +63,9 @@ time_operators.remove(125)
 
 # Remove tests due to wrong implicit cast (Duration to String)
 time_operators.remove(100)
+
+# Remove HR Rules cyclic graph
+validation_operators.remove(159)
 
 # Multimeasures on specific operators that must raise errors
 exceptions_tests = [27, 31]

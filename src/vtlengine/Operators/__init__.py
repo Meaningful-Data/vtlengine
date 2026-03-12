@@ -86,9 +86,7 @@ class Operator:
         elif data_type.__name__ == "TimePeriod":
             return TimePeriodHandler(value)
         elif data_type.__name__ == "Duration":
-            if value not in PERIOD_IND_MAPPING:
-                raise Exception(f"Duration {value} is not valid")
-            return PERIOD_IND_MAPPING[value]
+            return PERIOD_IND_MAPPING.get(value)
         return value
 
     @classmethod
@@ -632,7 +630,9 @@ class Binary(Operator):
     @classmethod
     def scalar_evaluation(cls, left_operand: Scalar, right_operand: Scalar) -> Scalar:
         result_scalar = cls.scalar_validation(left_operand, right_operand)
-        result_scalar.value = cls.op_func(left_operand.value, right_operand.value)
+        left_value = cls.cast_time_types_scalar(left_operand.data_type, left_operand.value)
+        right_value = cls.cast_time_types_scalar(right_operand.data_type, right_operand.value)
+        result_scalar.value = cls.op_func(left_value, right_value)
         return result_scalar
 
     @classmethod

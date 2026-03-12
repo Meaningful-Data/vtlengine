@@ -1,0 +1,8 @@
+define hierarchical ruleset hie1 (variable rule Id_2) is
+    E = A + F    errorcode "error"   errorlevel 5;
+    A = B + C    errorcode "error2"  errorlevel 5;
+    D = E + A    errorcode "error3"  errorlevel 5;
+    A >= B       errorcode "error4"  errorlevel 5
+end hierarchical ruleset;
+
+DS_r := hierarchy(DS_1, hie1 rule Id_2 computed);
