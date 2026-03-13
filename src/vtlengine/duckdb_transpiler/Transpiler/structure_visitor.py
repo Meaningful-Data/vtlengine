@@ -249,7 +249,7 @@ class StructureVisitor(ASTTemplate):
             if node.op in self._udos:
                 return self._get_operand_type(self._udos[node.op]["expression"])
             return _SCALAR
-        if isinstance(node, (AST.Validation, AST.DPValidation)):
+        if isinstance(node, (AST.Validation, AST.DPValidation, AST.HROperation)):
             return _DATASET
         return _SCALAR
 
@@ -564,6 +564,12 @@ class StructureVisitor(ASTTemplate):
                 return Dataset(name="", components=val_comps, data=None)
             return None
 
+        if isinstance(node, AST.HROperation):
+            return self._build_hr_operation_structure(node)
+
+        if isinstance(node, AST.DPValidation):
+            return self._build_dp_validation_structure(node)
+
         if isinstance(node, AST.If):
             ds = self._get_dataset_structure(node.thenOp)
             if ds is not None:
@@ -576,6 +582,111 @@ class StructureVisitor(ASTTemplate):
         return None
 
     # =========================================================================
+    # Structure builders for validation/hierarchy operations
+    # =========================================================================
+
+    def _build_hr_operation_structure(self, node: AST.HROperation) -> Optional[Dataset]:
+        """Build output dataset structure for hierarchy/check_hierarchy."""
+        inner_ds = self._get_dataset_structure(node.dataset)
+        if inner_ds is None:
+            return None
+
+        comps: Dict[str, Component] = {}
+        for name, comp in inner_ds.components.items():
+            if comp.role == Role.IDENTIFIER:
+                comps[name] = comp
+
+        measure_name = inner_ds.get_measures_names()[0] if inner_ds.get_measures_names() else ""
+
+        if node.op == tokens.HIERARCHY:
+            # hierarchy: same structure as input (identifiers + measures)
+            for name, comp in inner_ds.components.items():
+                if comp.role != Role.IDENTIFIER:
+                    comps[name] = comp
+        else:
+            # check_hierarchy: output depends on output mode
+            output_mode = node.output.value if node.output else "invalid"
+            if output_mode == "all_measures" and measure_name:
+                comps[measure_name] = inner_ds.components[measure_name]
+            if output_mode in ("all", "all_measures"):
+                comps["bool_var"] = Component(
+                    name="bool_var",
+                    data_type=Boolean,
+                    role=Role.MEASURE,
+                    nullable=True,
+                )
+            if output_mode == "invalid" and measure_name:
+                comps[measure_name] = inner_ds.components[measure_name]
+            comps["imbalance"] = Component(
+                name="imbalance",
+                data_type=Number,
+                role=Role.MEASURE,
+                nullable=True,
+            )
+            comps["ruleid"] = Component(
+                name="ruleid",
+                data_type=StringType,
+                role=Role.IDENTIFIER,
+                nullable=False,
+            )
+            comps["errorcode"] = Component(
+                name="errorcode",
+                data_type=StringType,
+                role=Role.MEASURE,
+                nullable=True,
+            )
+            comps["errorlevel"] = Component(
+                name="errorlevel",
+                data_type=Number,
+                role=Role.MEASURE,
+                nullable=True,
+            )
+        return Dataset(name="", components=comps, data=None)
+
+    def _build_dp_validation_structure(self, node: AST.DPValidation) -> Optional[Dataset]:
+        """Build output dataset structure for check_datapoint."""
+        inner_ds = self._get_dataset_structure(node.dataset)
+        if inner_ds is None:
+            return None
+
+        comps: Dict[str, Component] = {}
+        for name, comp in inner_ds.components.items():
+            if comp.role == Role.IDENTIFIER:
+                comps[name] = comp
+
+        output_mode = node.output.value if node.output else "invalid"
+        if output_mode in ("invalid", "all_measures"):
+            for name, comp in inner_ds.components.items():
+                if comp.role == Role.MEASURE:
+                    comps[name] = comp
+
+        if output_mode in ("all", "all_measures"):
+            comps["bool_var"] = Component(
+                name="bool_var",
+                data_type=Boolean,
+                role=Role.MEASURE,
+                nullable=True,
+            )
+        comps["ruleid"] = Component(
+            name="ruleid",
+            data_type=StringType,
+            role=Role.IDENTIFIER,
+            nullable=False,
+        )
+        comps["errorcode"] = Component(
+            name="errorcode",
+            data_type=StringType,
+            role=Role.MEASURE,
+            nullable=True,
+        )
+        comps["errorlevel"] = Component(
+            name="errorlevel",
+            data_type=Number,
+            role=Role.MEASURE,
+            nullable=True,
+        )
+        return Dataset(name="", components=comps, data=None)
+
     # Structure builders for clause operations
     # =========================================================================
 

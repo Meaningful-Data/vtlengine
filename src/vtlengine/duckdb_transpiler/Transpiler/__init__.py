@@ -331,7 +331,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             ec_sql = f"'{escaped_ec}'"
         else:
             ec_sql = "CAST(NULL AS VARCHAR)"
-        el_sql = str(float(rule.erLevel)) if rule.erLevel is not None else "CAST(NULL AS DOUBLE)"
+        el_sql = self._error_level_sql(rule.erLevel)
         fail_cond = (
             f"({when_cond_sql}) AND NOT ({then_expr_sql})"
             if when_cond_sql
@@ -529,6 +529,17 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 output=output,
                 cond_mapping=cond_mapping,
             )
+
+    @staticmethod
+    def _error_level_sql(er_level: Any) -> str:
+        """Convert an errorlevel value to a SQL literal (numeric or string)."""
+        if er_level is None:
+            return "CAST(NULL AS VARCHAR)"
+        try:
+            return str(float(er_level))
+        except (ValueError, TypeError):
+            escaped = str(er_level).replace("'", "''")
+            return f"'{escaped}'"
 
     @staticmethod
     def _is_hr_eq_rule(rule: AST.HRule) -> bool:
@@ -766,7 +777,16 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             ec_sql = f"'{escaped}'"
         else:
             ec_sql = "CAST(NULL AS VARCHAR)"
-        el_sql = str(float(rule.erLevel)) if rule.erLevel is not None else "CAST(NULL AS DOUBLE)"
+        el_sql = self._error_level_sql(rule.erLevel)
+        # Determine NULL type for errorlevel: VARCHAR if string, DOUBLE if numeric
+        el_is_numeric = rule.erLevel is None
+        if rule.erLevel is not None:
+            try:
+                float(rule.erLevel)
+                el_is_numeric = True
+            except (ValueError, TypeError):
+                pass
+        el_null = "CAST(NULL AS DOUBLE)" if el_is_numeric else "CAST(NULL AS VARCHAR)"
 
         # SELECT columns
         quoted_rule_comp = quote_identifier(rule_comp)
@@ -789,7 +809,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 f"AS {quote_identifier('errorcode')}"
             )
             select_parts.append(
-                f"CASE WHEN {bool_expr} IS NOT FALSE THEN CAST(NULL AS DOUBLE) ELSE {el_sql} END "
+                f"CASE WHEN {bool_expr} IS NOT FALSE THEN {el_null} ELSE {el_sql} END "
                 f"AS {quote_identifier('errorlevel')}"
             )
         else:  # all_measures
@@ -802,7 +822,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 f"AS {quote_identifier('errorcode')}"
             )
             select_parts.append(
-                f"CASE WHEN {bool_expr} IS NOT FALSE THEN CAST(NULL AS DOUBLE) ELSE {el_sql} END "
+                f"CASE WHEN {bool_expr} IS NOT FALSE THEN {el_null} ELSE {el_sql} END "
                 f"AS {quote_identifier('errorlevel')}"
             )
 
