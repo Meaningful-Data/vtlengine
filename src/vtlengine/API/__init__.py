@@ -340,7 +340,7 @@ def _run_with_duckdb(
         only_semantic=True,
         return_only_persistent=False,
     )
-    semantic_results = interpreter.visit(ast)
+    semantic_results = interpreter.visit(copy.deepcopy(ast))
 
     # Separate output datasets and scalars
     output_datasets: Dict[str, Dataset] = {}
