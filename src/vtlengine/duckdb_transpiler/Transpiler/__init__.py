@@ -552,13 +552,23 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         measure_name = ds.get_measures_names()[0]
         other_ids = [n for n in ds.get_identifiers_names() if n != rule_comp]
 
-        # Collect all code items across all rules
+        # Collect all code items and right-side conditions across all rules
         all_code_items: List[str] = []
+        all_code_item_conds: Dict[str, str] = {}
         for rule in rules:
             rule_node: Any = rule.rule
             comp_node = rule_node.right if rule_node.op == "when" else rule_node
             all_code_items.append(comp_node.left.value)
             all_code_items.extend(self._collect_hr_code_items(comp_node.right))
+            # Collect right-side conditions (e.g. [Time >= cast("1958-01-01", date)])
+            rc = getattr(comp_node.left, "_right_condition", None)
+            if rc is not None:
+                all_code_item_conds[comp_node.left.value] = self._build_hr_when_sql(
+                    rc, cond_mapping
+                )
+            all_code_item_conds.update(
+                self._collect_hr_code_item_conditions(comp_node.right, cond_mapping)
+            )
         # Deduplicate preserving order
         seen: Set[str] = set()
         unique_items: List[str] = []
@@ -580,6 +590,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             measure=measure_name,
             other_ids=other_ids,
             cond_mapping=cond_mapping,
+            code_item_conditions=all_code_item_conds or None,
         )
 
         # Build per-rule SELECTs from the pivot
@@ -607,6 +618,25 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if isinstance(node, AST.HRUnOp):
             return self._collect_hr_code_items(node.operand)
         return []
+
+    def _collect_hr_code_item_conditions(
+        self, node: AST.AST, cond_mapping: Dict[str, str]
+    ) -> Dict[str, str]:
+        """Extract right-side conditions per code item from a hierarchical rule expression.
+
+        Returns a dict mapping code_item -> SQL condition string.
+        """
+        result: Dict[str, str] = {}
+        if isinstance(node, AST.DefIdentifier):
+            rc = getattr(node, "_right_condition", None)
+            if rc is not None:
+                result[node.value] = self._build_hr_when_sql(rc, cond_mapping)
+        elif isinstance(node, AST.HRBinOp):
+            result.update(self._collect_hr_code_item_conditions(node.left, cond_mapping))
+            result.update(self._collect_hr_code_item_conditions(node.right, cond_mapping))
+        elif isinstance(node, AST.HRUnOp):
+            result.update(self._collect_hr_code_item_conditions(node.operand, cond_mapping))
+        return result
 
     def _build_hr_value_expr(self, code_item: str, mode: str) -> str:
         """Generate the value expression for a code item from pivot columns, per mode."""
@@ -641,6 +671,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         measure: str,
         other_ids: List[str],
         cond_mapping: Dict[str, str],
+        code_item_conditions: Optional[Dict[str, str]] = None,
     ) -> str:
         """Generate the shared pivot CTE for hierarchy operations."""
         qrc = quote_identifier(rule_comp)
@@ -654,8 +685,16 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         # SELECT: group cols + pivot columns for each code item
         select_parts = list(group_cols)
         for ci in code_items:
-            select_parts.append(f"MAX(CASE WHEN {qrc} = '{ci}' THEN {qm} END) AS _val_{ci}")
-            select_parts.append(f"MAX(CASE WHEN {qrc} = '{ci}' THEN 1 ELSE 0 END) AS _has_{ci}")
+            # Apply right-side condition if present (e.g. [Time >= cast("1958-01-01", date)])
+            ci_cond = ""
+            if code_item_conditions and ci in code_item_conditions:
+                ci_cond = f" AND {code_item_conditions[ci]}"
+            select_parts.append(
+                f"MAX(CASE WHEN {qrc} = '{ci}'{ci_cond} THEN {qm} END) AS _val_{ci}"
+            )
+            select_parts.append(
+                f"MAX(CASE WHEN {qrc} = '{ci}'{ci_cond} THEN 1 ELSE 0 END) AS _has_{ci}"
+            )
 
         # WHERE: filter to relevant code items only
         in_list = ", ".join(f"'{ci}'" for ci in code_items)
@@ -809,13 +848,23 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         measure_name = ds.get_measures_names()[0]
         other_ids = [n for n in ds.get_identifiers_names() if n != rule_comp]
 
-        # Collect all code items across all rules
+        # Collect all code items and right-side conditions across all rules
         all_code_items: List[str] = []
+        all_code_item_conds: Dict[str, str] = {}
         for rule in rules:
             rule_node: Any = rule.rule
             comp_node = rule_node.right if rule_node.op == "when" else rule_node
             all_code_items.append(comp_node.left.value)
             all_code_items.extend(self._collect_hr_code_items(comp_node.right))
+            # Collect right-side conditions
+            rc = getattr(comp_node.left, "_right_condition", None)
+            if rc is not None:
+                all_code_item_conds[comp_node.left.value] = self._build_hr_when_sql(
+                    rc, cond_mapping
+                )
+            all_code_item_conds.update(
+                self._collect_hr_code_item_conditions(comp_node.right, cond_mapping)
+            )
         seen: Set[str] = set()
         unique_items: List[str] = []
         for ci in all_code_items:
@@ -835,6 +884,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             measure=measure_name,
             other_ids=other_ids,
             cond_mapping=cond_mapping,
+            code_item_conditions=all_code_item_conds or None,
         )
 
         # All input modes (dataset, rule, rule_priority) use CTE chain semantics
@@ -956,6 +1006,12 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 is_hierarchy=True,
             )
         )
+
+        # For hierarchy rollup: exclude rows where no right-side items contributed
+        # (all _has = 0, meaning items were absent or conditions not met)
+        right_presence = [f"_has_{ci} = 1" for ci in right_code_items]
+        if right_presence:
+            where_parts.append(f"({' OR '.join(right_presence)})")
 
         # Result mode filter (hierarchy-specific)
         if mode == "non_null":
@@ -1102,7 +1158,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         select_parts.extend(cond_cols)
         select_parts.append(f"{computed_expr} AS _computed")
 
-        # WHERE: mode filter only (result filter applied in final SELECT)
+        # WHERE: mode filter + right-side presence (result filter applied in final SELECT)
         r_val = self._build_hr_expr_sql(right_expr_node, mode)
         where_parts = self._build_hr_mode_filter(
             mode=mode,
@@ -1112,6 +1168,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             right_val_expr=r_val,
             is_hierarchy=True,
         )
+        # Exclude rows where no right-side items contributed
+        right_presence = [f"_has_{ci} = 1" for ci in right_code_items]
+        if right_presence:
+            where_parts.append(f"({' OR '.join(right_presence)})")
         where_clause = f" WHERE {' AND '.join(where_parts)}" if where_parts else ""
         return f"  SELECT {', '.join(select_parts)} FROM {pivot_ref}{where_clause}"
 

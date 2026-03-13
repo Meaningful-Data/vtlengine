@@ -40,6 +40,19 @@ def _normalize_scalar_value(raw_value: Any) -> Any:
     return raw_value
 
 
+def _project_columns(ds: Dataset) -> None:
+    """Project DataFrame columns to match the dataset's component structure.
+
+    DuckDB tables may retain extra columns from upstream operations (e.g. filter
+    preserves all columns from the source table).  The semantic analysis already
+    determines the correct components, so we just select those columns.
+    """
+    if ds.components and ds.data is not None:
+        expected_cols = [c for c in ds.components if c in ds.data.columns]
+        if expected_cols and set(expected_cols) != set(ds.data.columns):
+            ds.data = ds.data[expected_cols]
+
+
 def _convert_date_columns(ds: Dataset) -> None:
     """Convert DuckDB datetime columns to string format.
 
@@ -158,6 +171,7 @@ def cleanup_scheduled_datasets(
                 result_df = conn.execute(f'SELECT * FROM "{ds_name}"').fetchdf()
                 ds = output_datasets.get(ds_name, Dataset(name=ds_name, components={}, data=None))
                 ds.data = result_df
+                _project_columns(ds)
                 _convert_date_columns(ds)
                 results[ds_name] = ds
                 conn.execute(f'DROP TABLE IF EXISTS "{ds_name}"')
@@ -205,7 +219,8 @@ def fetch_result(
     ds = output_datasets.get(result_name, Dataset(name=result_name, components={}, data=None))
     ds.data = result_df
 
-    # Post-process: convert DuckDB datetime columns to string format
+    # Post-process: project columns and convert DuckDB datetime columns
+    _project_columns(ds)
     _convert_date_columns(ds)
 
     return ds
