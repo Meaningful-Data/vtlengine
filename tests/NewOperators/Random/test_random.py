@@ -3,13 +3,12 @@ from pathlib import Path
 
 import pytest
 
-from tests.NewOperators.conftest import _build_run_inputs, use_duckdb
+from tests.NewOperators.conftest import _build_run_inputs
 from vtlengine.API import run
 from vtlengine.Exceptions import SemanticError
 
 base_path = Path(__file__).parent / "data"
 pytestmark = pytest.mark.input_path(base_path)
-
 
 ds_param = [
     ("1", "DS_r := DS_1[calc Me_1 := random(1, 1)];"),
@@ -36,7 +35,6 @@ def test_random(load_reference, code, expression):
         data_structures=data_structures,
         datapoints=datapoints,
         return_only_persistent=False,
-        use_duckdb=use_duckdb,
     )
     assert result == load_reference
 
