@@ -2446,7 +2446,7 @@ class TestCheckHierarchy:
     # Tests for all 6 validation modes with edge cases (NULL, missing, normal)
     # -------------------------------------------------------------------------
 
-    @pytest.fixture()
+    @pytest.fixture
     def hierarchy_input_df(self):
         """Input data exercising all edge cases: normal, NULL, and missing values.
 
@@ -2463,7 +2463,7 @@ class TestCheckHierarchy:
             }
         )
 
-    @pytest.fixture()
+    @pytest.fixture
     def hierarchy_structures(self):
         """Data structures for check_hierarchy mode tests."""
         structure = create_dataset_structure(
@@ -2473,9 +2473,7 @@ class TestCheckHierarchy:
         )
         return create_data_structure([structure])
 
-    def test_check_hierarchy_always_null_mode(
-        self, hierarchy_input_df, hierarchy_structures
-    ):
+    def test_check_hierarchy_always_null_mode(self, hierarchy_input_df, hierarchy_structures):
         """always_null: NULL propagates, missing components treated as NULL."""
         vtl_script = """
             define hierarchical ruleset hr1 (variable rule Id_2) is
@@ -2495,11 +2493,10 @@ class TestCheckHierarchy:
                 "Id_1": ["X", "Y", "Z"],
                 "Id_2": ["B", "B", "B"],
                 "ruleid": ["1", "1", "1"],
-                "Me_1": [10.0, 5.0, 7.0],
                 "imbalance": [5.0, None, None],
                 "errorcode": ["err1", "err1", "err1"],
                 "errorlevel": [1.0, 1.0, 1.0],
-                "bool_var": [False, None, None],
+                "bool_var": pd.array([False, pd.NA, pd.NA], dtype="boolean"),
             }
         )
 
@@ -2509,9 +2506,7 @@ class TestCheckHierarchy:
             result_sorted, expected_sorted, check_dtype=False, check_like=True
         )
 
-    def test_check_hierarchy_always_zero_mode(
-        self, hierarchy_input_df, hierarchy_structures
-    ):
+    def test_check_hierarchy_always_zero_mode(self, hierarchy_input_df, hierarchy_structures):
         """always_zero: missing components filled with 0, existing NULL stays NULL."""
         vtl_script = """
             define hierarchical ruleset hr1 (variable rule Id_2) is
@@ -2531,11 +2526,10 @@ class TestCheckHierarchy:
                 "Id_1": ["X", "Y", "Z"],
                 "Id_2": ["B", "B", "B"],
                 "ruleid": ["1", "1", "1"],
-                "Me_1": [10.0, 5.0, 7.0],
                 "imbalance": [5.0, None, 3.0],
                 "errorcode": ["err1", "err1", "err1"],
                 "errorlevel": [1.0, 1.0, 1.0],
-                "bool_var": [False, None, False],
+                "bool_var": pd.array([False, pd.NA, False], dtype="boolean"),
             }
         )
 
@@ -2545,9 +2539,7 @@ class TestCheckHierarchy:
             result_sorted, expected_sorted, check_dtype=False, check_like=True
         )
 
-    def test_check_hierarchy_non_null_mode(
-        self, hierarchy_input_df, hierarchy_structures
-    ):
+    def test_check_hierarchy_non_null_mode(self, hierarchy_input_df, hierarchy_structures):
         """non_null: INNER JOIN, exclude rows with NULL measures."""
         vtl_script = """
             define hierarchical ruleset hr1 (variable rule Id_2) is
@@ -2567,7 +2559,6 @@ class TestCheckHierarchy:
                 "Id_1": ["X"],
                 "Id_2": ["B"],
                 "ruleid": ["1"],
-                "Me_1": [10.0],
                 "imbalance": [5.0],
                 "errorcode": ["err1"],
                 "errorlevel": [1.0],
@@ -2581,9 +2572,7 @@ class TestCheckHierarchy:
             result_sorted, expected_sorted, check_dtype=False, check_like=True
         )
 
-    def test_check_hierarchy_non_zero_mode(
-        self, hierarchy_input_df, hierarchy_structures
-    ):
+    def test_check_hierarchy_non_zero_mode(self, hierarchy_input_df, hierarchy_structures):
         """non_zero: LEFT JOIN + fill 0, exclude if all right-side values are zero."""
         vtl_script = """
             define hierarchical ruleset hr1 (variable rule Id_2) is
@@ -2603,11 +2592,10 @@ class TestCheckHierarchy:
                 "Id_1": ["X", "Y", "Z"],
                 "Id_2": ["B", "B", "B"],
                 "ruleid": ["1", "1", "1"],
-                "Me_1": [10.0, 5.0, 7.0],
                 "imbalance": [5.0, None, 3.0],
                 "errorcode": ["err1", "err1", "err1"],
                 "errorlevel": [1.0, 1.0, 1.0],
-                "bool_var": [False, None, False],
+                "bool_var": pd.array([False, pd.NA, False], dtype="boolean"),
             }
         )
 
@@ -2617,9 +2605,7 @@ class TestCheckHierarchy:
             result_sorted, expected_sorted, check_dtype=False, check_like=True
         )
 
-    def test_check_hierarchy_partial_null_mode(
-        self, hierarchy_input_df, hierarchy_structures
-    ):
+    def test_check_hierarchy_partial_null_mode(self, hierarchy_input_df, hierarchy_structures):
         """partial_null: LEFT JOIN, include if at least one right-side NOT NULL."""
         vtl_script = """
             define hierarchical ruleset hr1 (variable rule Id_2) is
@@ -2639,11 +2625,10 @@ class TestCheckHierarchy:
                 "Id_1": ["X", "Y", "Z"],
                 "Id_2": ["B", "B", "B"],
                 "ruleid": ["1", "1", "1"],
-                "Me_1": [10.0, 5.0, 7.0],
                 "imbalance": [5.0, None, None],
                 "errorcode": ["err1", "err1", "err1"],
                 "errorlevel": [1.0, 1.0, 1.0],
-                "bool_var": [False, None, None],
+                "bool_var": pd.array([False, pd.NA, pd.NA], dtype="boolean"),
             }
         )
 
@@ -2653,9 +2638,7 @@ class TestCheckHierarchy:
             result_sorted, expected_sorted, check_dtype=False, check_like=True
         )
 
-    def test_check_hierarchy_partial_zero_mode(
-        self, hierarchy_input_df, hierarchy_structures
-    ):
+    def test_check_hierarchy_partial_zero_mode(self, hierarchy_input_df, hierarchy_structures):
         """partial_zero: LEFT JOIN + fill 0, include if at least one right-side NOT NULL."""
         vtl_script = """
             define hierarchical ruleset hr1 (variable rule Id_2) is
@@ -2675,11 +2658,10 @@ class TestCheckHierarchy:
                 "Id_1": ["X", "Y", "Z"],
                 "Id_2": ["B", "B", "B"],
                 "ruleid": ["1", "1", "1"],
-                "Me_1": [10.0, 5.0, 7.0],
                 "imbalance": [5.0, None, 3.0],
                 "errorcode": ["err1", "err1", "err1"],
                 "errorlevel": [1.0, 1.0, 1.0],
-                "bool_var": [False, None, False],
+                "bool_var": pd.array([False, pd.NA, False], dtype="boolean"),
             }
         )
 
@@ -2868,12 +2850,12 @@ class TestCheckHierarchy:
         result_sorted = result.sort_values(["ruleid"]).reset_index(drop=True)
         # Rule 1
         assert result_sorted.iloc[0]["Id_2"] == "B"
-        assert result_sorted.iloc[0]["bool_var"] == False
+        assert not result_sorted.iloc[0]["bool_var"]
         assert result_sorted.iloc[0]["imbalance"] == 5.0
         assert result_sorted.iloc[0]["errorcode"] == "err1"
         # Rule 2
         assert result_sorted.iloc[1]["Id_2"] == "E"
-        assert result_sorted.iloc[1]["bool_var"] == False
+        assert not result_sorted.iloc[1]["bool_var"]
         assert result_sorted.iloc[1]["imbalance"] == -2.0
         assert result_sorted.iloc[1]["errorcode"] == "err2"
 
@@ -2908,7 +2890,7 @@ class TestCheckHierarchy:
         result = results["DS_r"]
 
         assert len(result) == 1
-        assert result.iloc[0]["bool_var"] == True
+        assert result.iloc[0]["bool_var"]
         assert result.iloc[0]["imbalance"] == 5.0
 
     def test_lte_operator_failing(self):
@@ -2944,3 +2926,396 @@ class TestCheckHierarchy:
         assert len(result) == 1
         assert result.iloc[0]["Id_2"] == "A"
         assert result.iloc[0]["imbalance"] == 5.0
+
+
+class TestHierarchy:
+    """Tests for hierarchy operator in DuckDB transpiler."""
+
+    @pytest.fixture
+    def hierarchy_structures(self):
+        """Data structures for hierarchy tests."""
+        structure = create_dataset_structure(
+            "DS_1",
+            [("Id_1", "String"), ("Id_2", "String")],
+            [("Me_1", "Number", True)],
+        )
+        return create_data_structure([structure])
+
+    @pytest.fixture
+    def hierarchy_input_df(self):
+        """Input data with normal, NULL, and missing value scenarios.
+
+        Groups:
+        - X: B=10, C=8, D=3 (all present, all non-null)
+        - Y: B=5, C=NULL, D=2 (C exists but NULL)
+        - Z: B=7, C=4, D=missing (D does not exist)
+        """
+        return pd.DataFrame(
+            {
+                "Id_1": ["X", "X", "X", "Y", "Y", "Y", "Z", "Z"],
+                "Id_2": ["B", "C", "D", "B", "C", "D", "B", "C"],
+                "Me_1": [10.0, 8.0, 3.0, 5.0, None, 2.0, 7.0, 4.0],
+            }
+        )
+
+    # -------------------------------------------------------------------------
+    # Basic hierarchy: non_null + computed
+    # -------------------------------------------------------------------------
+
+    def test_basic_hierarchy_non_null_computed(self, hierarchy_structures):
+        """Basic hierarchy B = C - D, non_null computed: only group X passes."""
+        vtl_script = """
+            define hierarchical ruleset hr1 (variable rule Id_2) is
+                B = C - D
+            end hierarchical ruleset;
+            DS_r <- hierarchy(DS_1, hr1 rule Id_2 non_null computed);
+        """
+        input_df = pd.DataFrame(
+            {
+                "Id_1": ["X", "X", "X", "Y", "Y", "Y", "Z", "Z"],
+                "Id_2": ["B", "C", "D", "B", "C", "D", "B", "C"],
+                "Me_1": [10.0, 8.0, 3.0, 5.0, None, 2.0, 7.0, 4.0],
+            }
+        )
+
+        results = execute_vtl_with_duckdb(vtl_script, hierarchy_structures, {"DS_1": input_df})
+        result = results["DS_r"]
+
+        # non_null: only X has all values present and non-null
+        # B = C - D = 8 - 3 = 5
+        assert len(result) == 1
+        assert result.iloc[0]["Id_1"] == "X"
+        assert result.iloc[0]["Id_2"] == "B"
+        assert result.iloc[0]["Me_1"] == 5.0
+
+    # -------------------------------------------------------------------------
+    # All 6 validation modes
+    # -------------------------------------------------------------------------
+
+    def test_hierarchy_always_null(self, hierarchy_input_df, hierarchy_structures):
+        """always_null: NULL propagates, missing treated as NULL. All groups included."""
+        vtl_script = """
+            define hierarchical ruleset hr1 (variable rule Id_2) is
+                B = C - D
+            end hierarchical ruleset;
+            DS_r <- hierarchy(DS_1, hr1 rule Id_2 always_null computed);
+        """
+        results = execute_vtl_with_duckdb(
+            vtl_script, hierarchy_structures, {"DS_1": hierarchy_input_df}
+        )
+        result = results["DS_r"].sort_values("Id_1").reset_index(drop=True)
+
+        expected = pd.DataFrame(
+            {
+                "Id_1": ["X", "Y", "Z"],
+                "Id_2": ["B", "B", "B"],
+                "Me_1": [5.0, None, None],
+            }
+        )
+        expected = expected.sort_values("Id_1").reset_index(drop=True)
+        pd.testing.assert_frame_equal(result, expected, check_dtype=False, check_like=True)
+
+    def test_hierarchy_always_zero(self, hierarchy_input_df, hierarchy_structures):
+        """always_zero: missing filled with 0, existing NULL stays NULL."""
+        vtl_script = """
+            define hierarchical ruleset hr1 (variable rule Id_2) is
+                B = C - D
+            end hierarchical ruleset;
+            DS_r <- hierarchy(DS_1, hr1 rule Id_2 always_zero computed);
+        """
+        results = execute_vtl_with_duckdb(
+            vtl_script, hierarchy_structures, {"DS_1": hierarchy_input_df}
+        )
+        result = results["DS_r"].sort_values("Id_1").reset_index(drop=True)
+
+        # X: 8-3=5, Y: NULL-0=NULL (C is NULL), Z: 4-0=4 (D missing -> 0)
+        expected = pd.DataFrame(
+            {
+                "Id_1": ["X", "Y", "Z"],
+                "Id_2": ["B", "B", "B"],
+                "Me_1": [5.0, None, 4.0],
+            }
+        )
+        expected = expected.sort_values("Id_1").reset_index(drop=True)
+        pd.testing.assert_frame_equal(result, expected, check_dtype=False, check_like=True)
+
+    def test_hierarchy_non_null(self, hierarchy_input_df, hierarchy_structures):
+        """non_null: only groups where all right-side operands are non-null."""
+        vtl_script = """
+            define hierarchical ruleset hr1 (variable rule Id_2) is
+                B = C - D
+            end hierarchical ruleset;
+            DS_r <- hierarchy(DS_1, hr1 rule Id_2 non_null computed);
+        """
+        results = execute_vtl_with_duckdb(
+            vtl_script, hierarchy_structures, {"DS_1": hierarchy_input_df}
+        )
+        result = results["DS_r"]
+
+        # Only X: C=8 and D=3 both non-null
+        assert len(result) == 1
+        assert result.iloc[0]["Id_1"] == "X"
+        assert result.iloc[0]["Me_1"] == 5.0
+
+    def test_hierarchy_non_zero(self, hierarchy_input_df, hierarchy_structures):
+        """non_zero: missing filled with 0, exclude rows where computed is zero."""
+        vtl_script = """
+            define hierarchical ruleset hr1 (variable rule Id_2) is
+                B = C - D
+            end hierarchical ruleset;
+            DS_r <- hierarchy(DS_1, hr1 rule Id_2 non_zero computed);
+        """
+        results = execute_vtl_with_duckdb(
+            vtl_script, hierarchy_structures, {"DS_1": hierarchy_input_df}
+        )
+        result = results["DS_r"].sort_values("Id_1").reset_index(drop=True)
+
+        # X: 8-3=5, Y: NULL-0=NULL (kept, NULL != 0), Z: 4-0=4
+        expected = pd.DataFrame(
+            {
+                "Id_1": ["X", "Y", "Z"],
+                "Id_2": ["B", "B", "B"],
+                "Me_1": [5.0, None, 4.0],
+            }
+        )
+        expected = expected.sort_values("Id_1").reset_index(drop=True)
+        pd.testing.assert_frame_equal(result, expected, check_dtype=False, check_like=True)
+
+    def test_hierarchy_partial_null(self, hierarchy_input_df, hierarchy_structures):
+        """partial_null: at least one right-side operand must be present and non-null."""
+        vtl_script = """
+            define hierarchical ruleset hr1 (variable rule Id_2) is
+                B = C - D
+            end hierarchical ruleset;
+            DS_r <- hierarchy(DS_1, hr1 rule Id_2 partial_null computed);
+        """
+        results = execute_vtl_with_duckdb(
+            vtl_script, hierarchy_structures, {"DS_1": hierarchy_input_df}
+        )
+        result = results["DS_r"].sort_values("Id_1").reset_index(drop=True)
+
+        # X: C=8,D=3 both present -> 5, Y: D=2 present -> NULL-2=NULL, Z: C=4 present -> 4-NULL=NULL
+        expected = pd.DataFrame(
+            {
+                "Id_1": ["X", "Y", "Z"],
+                "Id_2": ["B", "B", "B"],
+                "Me_1": [5.0, None, None],
+            }
+        )
+        expected = expected.sort_values("Id_1").reset_index(drop=True)
+        pd.testing.assert_frame_equal(result, expected, check_dtype=False, check_like=True)
+
+    def test_hierarchy_partial_zero(self, hierarchy_input_df, hierarchy_structures):
+        """partial_zero: like partial_null but missing filled with 0."""
+        vtl_script = """
+            define hierarchical ruleset hr1 (variable rule Id_2) is
+                B = C - D
+            end hierarchical ruleset;
+            DS_r <- hierarchy(DS_1, hr1 rule Id_2 partial_zero computed);
+        """
+        results = execute_vtl_with_duckdb(
+            vtl_script, hierarchy_structures, {"DS_1": hierarchy_input_df}
+        )
+        result = results["DS_r"].sort_values("Id_1").reset_index(drop=True)
+
+        # X: 8-3=5, Y: NULL-0=NULL, Z: 4-0=4
+        expected = pd.DataFrame(
+            {
+                "Id_1": ["X", "Y", "Z"],
+                "Id_2": ["B", "B", "B"],
+                "Me_1": [5.0, None, 4.0],
+            }
+        )
+        expected = expected.sort_values("Id_1").reset_index(drop=True)
+        pd.testing.assert_frame_equal(result, expected, check_dtype=False, check_like=True)
+
+    # -------------------------------------------------------------------------
+    # Output mode "all" (union input + computed, dedup keeping computed)
+    # -------------------------------------------------------------------------
+
+    def test_hierarchy_output_all(self, hierarchy_input_df, hierarchy_structures):
+        """Output all: union original rows + computed rows, computed overwrites."""
+        vtl_script = """
+            define hierarchical ruleset hr1 (variable rule Id_2) is
+                B = C - D
+            end hierarchical ruleset;
+            DS_r <- hierarchy(DS_1, hr1 rule Id_2 non_null all);
+        """
+        results = execute_vtl_with_duckdb(
+            vtl_script, hierarchy_structures, {"DS_1": hierarchy_input_df}
+        )
+        result = results["DS_r"].sort_values(["Id_1", "Id_2"]).reset_index(drop=True)
+
+        # X: B replaced with computed 5, C=8, D=3
+        # Y: B=5 (original, not computed since non_null filters), C=NULL, D=2
+        # Z: B=7 (original), C=4
+        expected = pd.DataFrame(
+            {
+                "Id_1": ["X", "X", "X", "Y", "Y", "Y", "Z", "Z"],
+                "Id_2": ["B", "C", "D", "B", "C", "D", "B", "C"],
+                "Me_1": [5.0, 8.0, 3.0, 5.0, None, 2.0, 7.0, 4.0],
+            }
+        )
+        expected = expected.sort_values(["Id_1", "Id_2"]).reset_index(drop=True)
+        pd.testing.assert_frame_equal(result, expected, check_dtype=False, check_like=True)
+
+    def test_hierarchy_output_all_always_null(self, hierarchy_input_df, hierarchy_structures):
+        """Output all with always_null: computed values (including NULL) replace originals."""
+        vtl_script = """
+            define hierarchical ruleset hr1 (variable rule Id_2) is
+                B = C - D
+            end hierarchical ruleset;
+            DS_r <- hierarchy(DS_1, hr1 rule Id_2 always_null all);
+        """
+        results = execute_vtl_with_duckdb(
+            vtl_script, hierarchy_structures, {"DS_1": hierarchy_input_df}
+        )
+        result = results["DS_r"].sort_values(["Id_1", "Id_2"]).reset_index(drop=True)
+
+        # All B values replaced with computed: X=5, Y=NULL, Z=NULL
+        expected = pd.DataFrame(
+            {
+                "Id_1": ["X", "X", "X", "Y", "Y", "Y", "Z", "Z"],
+                "Id_2": ["B", "C", "D", "B", "C", "D", "B", "C"],
+                "Me_1": [5.0, 8.0, 3.0, None, None, 2.0, None, 4.0],
+            }
+        )
+        expected = expected.sort_values(["Id_1", "Id_2"]).reset_index(drop=True)
+        pd.testing.assert_frame_equal(result, expected, check_dtype=False, check_like=True)
+
+    # -------------------------------------------------------------------------
+    # Multi-rule with dataset input mode
+    # -------------------------------------------------------------------------
+
+    def test_multi_rule_dataset_mode(self, hierarchy_structures):
+        """Multi-rule dataset mode: independent rules computed from original data."""
+        vtl_script = """
+            define hierarchical ruleset hr1 (variable rule Id_2) is
+                A = C + D;
+                B = C - E
+            end hierarchical ruleset;
+            DS_r <- hierarchy(DS_1, hr1 rule Id_2 non_null dataset computed);
+        """
+        input_df = pd.DataFrame(
+            {
+                "Id_1": ["X", "X", "X"],
+                "Id_2": ["C", "D", "E"],
+                "Me_1": [8.0, 3.0, 2.0],
+            }
+        )
+        results = execute_vtl_with_duckdb(vtl_script, hierarchy_structures, {"DS_1": input_df})
+        result = results["DS_r"].sort_values(["Id_1", "Id_2"]).reset_index(drop=True)
+
+        # A = C + D = 11, B = C - E = 6
+        expected = pd.DataFrame(
+            {
+                "Id_1": ["X", "X"],
+                "Id_2": ["A", "B"],
+                "Me_1": [11.0, 6.0],
+            }
+        )
+        expected = expected.sort_values(["Id_1", "Id_2"]).reset_index(drop=True)
+        pd.testing.assert_frame_equal(result, expected, check_dtype=False, check_like=True)
+
+    # -------------------------------------------------------------------------
+    # Multi-rule with rule input mode (later rules see earlier computed)
+    # -------------------------------------------------------------------------
+
+    def test_multi_rule_rule_mode(self, hierarchy_structures):
+        """Multi-rule rule mode: B = A - E uses computed A from first rule."""
+        vtl_script = """
+            define hierarchical ruleset hr1 (variable rule Id_2) is
+                A = C + D;
+                B = A - E
+            end hierarchical ruleset;
+            DS_r <- hierarchy(DS_1, hr1 rule Id_2 non_null rule computed);
+        """
+        input_df = pd.DataFrame(
+            {
+                "Id_1": ["X", "X", "X"],
+                "Id_2": ["C", "D", "E"],
+                "Me_1": [8.0, 3.0, 2.0],
+            }
+        )
+        results = execute_vtl_with_duckdb(vtl_script, hierarchy_structures, {"DS_1": input_df})
+        result = results["DS_r"].sort_values(["Id_1", "Id_2"]).reset_index(drop=True)
+
+        # A = C + D = 11, B = A(computed=11) - E = 9
+        expected = pd.DataFrame(
+            {
+                "Id_1": ["X", "X"],
+                "Id_2": ["A", "B"],
+                "Me_1": [11.0, 9.0],
+            }
+        )
+        expected = expected.sort_values(["Id_1", "Id_2"]).reset_index(drop=True)
+        pd.testing.assert_frame_equal(result, expected, check_dtype=False, check_like=True)
+
+    # -------------------------------------------------------------------------
+    # Multi-rule dataset mode (later rules use original data, not computed)
+    # -------------------------------------------------------------------------
+
+    def test_multi_rule_dataset_uses_original(self, hierarchy_structures):
+        """Dataset mode with dependent rules: later rules still see computed values."""
+        vtl_script = """
+            define hierarchical ruleset hr1 (variable rule Id_2) is
+                A = C + D;
+                B = A - D
+            end hierarchical ruleset;
+            DS_r <- hierarchy(DS_1, hr1 rule Id_2 non_null dataset computed);
+        """
+        # A exists in original data with value 100
+        input_df = pd.DataFrame(
+            {
+                "Id_1": ["X", "X", "X", "X"],
+                "Id_2": ["A", "C", "D", "E"],
+                "Me_1": [100.0, 8.0, 3.0, 2.0],
+            }
+        )
+        results = execute_vtl_with_duckdb(vtl_script, hierarchy_structures, {"DS_1": input_df})
+        result = results["DS_r"].sort_values(["Id_1", "Id_2"]).reset_index(drop=True)
+
+        # Matches pandas behavior: A = C+D = 11, B = A(computed=11) - D = 8
+        expected = pd.DataFrame(
+            {
+                "Id_1": ["X", "X"],
+                "Id_2": ["A", "B"],
+                "Me_1": [11.0, 8.0],
+            }
+        )
+        expected = expected.sort_values(["Id_1", "Id_2"]).reset_index(drop=True)
+        pd.testing.assert_frame_equal(result, expected, check_dtype=False, check_like=True)
+
+    # -------------------------------------------------------------------------
+    # rule_priority input mode
+    # -------------------------------------------------------------------------
+
+    def test_rule_priority_mode(self, hierarchy_structures):
+        """rule_priority mode: matches rule mode behavior per reference implementation."""
+        vtl_script = """
+            define hierarchical ruleset hr1 (variable rule Id_2) is
+                A = C + D;
+                B = A - E
+            end hierarchical ruleset;
+            DS_r <- hierarchy(DS_1, hr1 rule Id_2 non_null rule_priority computed);
+        """
+        input_df = pd.DataFrame(
+            {
+                "Id_1": ["X", "X", "X"],
+                "Id_2": ["C", "D", "E"],
+                "Me_1": [8.0, 3.0, 2.0],
+            }
+        )
+        results = execute_vtl_with_duckdb(vtl_script, hierarchy_structures, {"DS_1": input_df})
+        result = results["DS_r"].sort_values(["Id_1", "Id_2"]).reset_index(drop=True)
+
+        # A = C + D = 11, B = A(11) - E = 9
+        expected = pd.DataFrame(
+            {
+                "Id_1": ["X", "X"],
+                "Id_2": ["A", "B"],
+                "Me_1": [11.0, 9.0],
+            }
+        )
+        expected = expected.sort_values(["Id_1", "Id_2"]).reset_index(drop=True)
+        pd.testing.assert_frame_equal(result, expected, check_dtype=False, check_like=True)
