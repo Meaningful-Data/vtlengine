@@ -1262,8 +1262,15 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 )
 
         elif mode in ("partial_null", "partial_zero"):
-            # At least one right-side operand must be present and non-null
-            checks = [f"(_has_{ci} = 1 AND _val_{ci} IS NOT NULL)" for ci in right_code_items]
+            # At least one involved item must be present and non-null.
+            # For hierarchy rollup: only check right-side (left is being computed).
+            # For check_hierarchy: check all items (left + right).
+            items_to_check = right_code_items if is_hierarchy else (
+                [left_code_item] + right_code_items
+            )
+            checks = [
+                f"(_has_{ci} = 1 AND _val_{ci} IS NOT NULL)" for ci in items_to_check
+            ]
             if checks:
                 filters.append(f"({' OR '.join(checks)})")
 
@@ -1568,6 +1575,13 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         right_measures = right_ds.get_measures_names()
         common_measures = [m for m in left_measures if m in right_measures]
 
+        # VTL: mono-measure datasets pair by position even if names differ
+        paired_measures: List[Tuple[str, str]] = []
+        if common_measures:
+            paired_measures = [(m, m) for m in common_measures]
+        elif len(left_measures) == 1 and len(right_measures) == 1:
+            paired_measures = [(left_measures[0], right_measures[0])]
+
         cols: List[str] = []
         for id_name in all_ids:
             if id_name in left_ids:
@@ -1575,15 +1589,15 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             else:
                 cols.append(f"{alias_b}.{quote_identifier(id_name)}")
 
-        for measure in common_measures:
-            left_ref = f"{alias_a}.{quote_identifier(measure)}"
-            right_ref = f"{alias_b}.{quote_identifier(measure)}"
+        for left_m, right_m in paired_measures:
+            left_ref = f"{alias_a}.{quote_identifier(left_m)}"
+            right_ref = f"{alias_b}.{quote_identifier(right_m)}"
             expr = registry.binary.generate(op, left_ref, right_ref)
 
-            out_name = measure
+            out_name = left_m
             if (
                 output_measure_names
-                and len(common_measures) == 1
+                and len(paired_measures) == 1
                 and len(output_measure_names) == 1
             ):
                 out_name = output_measure_names[0]
@@ -3196,17 +3210,26 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         The inner validation expression (a comparison) produces a boolean
         measure that must be renamed to ``bool_var``.
         """
-        validation_sql = self.visit(node.validation)
+        # Temporarily clear output dataset to prevent _build_ds_ds_binary
+        # from renaming measures to match the outer assignment.
+        saved_assignment = self.current_assignment
+        self.current_assignment = ""
+        try:
+            validation_sql = self.visit(node.validation)
+        finally:
+            self.current_assignment = saved_assignment
 
-        error_code = f"'{node.error_code}'" if node.error_code else "NULL"
-        error_level = str(node.error_level) if node.error_level is not None else "NULL"
+        error_code = f"'{node.error_code}'" if node.error_code else "CAST(NULL AS VARCHAR)"
+        error_level = (
+            str(node.error_level) if node.error_level is not None else "CAST(NULL AS BIGINT)"
+        )
 
         # Discover the measure name produced by the inner comparison.
         ds = self._get_dataset_structure(node.validation)
         if ds is None:
             # Fallback: cannot determine structure – wrap as before.
             return (
-                f'SELECT t.*, NULL AS "imbalance", '
+                f'SELECT t.*, CAST(NULL AS DOUBLE) AS "imbalance", '
                 f'{error_code} AS "errorcode", '
                 f'{error_level} AS "errorlevel" '
                 f"FROM ({validation_sql}) AS t"
@@ -3224,9 +3247,13 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         # Rename the comparison measure to bool_var.
         cols.append(f't.{quote_identifier(bool_measure)} AS "bool_var"')
 
-        # Handle imbalance.
+        # Handle imbalance (also with cleared output to prevent renaming).
         if node.imbalance is not None:
-            imbalance_sql = self.visit(node.imbalance)
+            self.current_assignment = ""
+            try:
+                imbalance_sql = self.visit(node.imbalance)
+            finally:
+                self.current_assignment = saved_assignment
             imb_ds = self._get_dataset_structure(node.imbalance)
             if imb_ds is not None:
                 imb_measure = imb_ds.get_measures_names()[0]
@@ -3237,7 +3264,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 cols.append(f'i.{quote_identifier(imb_measure)} AS "imbalance"')
             else:
                 join_cond = None
-                cols.append('NULL AS "imbalance"')
+                cols.append('CAST(NULL AS DOUBLE) AS "imbalance"')
         else:
             imbalance_sql = None
             join_cond = None

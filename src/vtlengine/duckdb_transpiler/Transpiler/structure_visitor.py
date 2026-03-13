@@ -249,6 +249,8 @@ class StructureVisitor(ASTTemplate):
             if node.op in self._udos:
                 return self._get_operand_type(self._udos[node.op]["expression"])
             return _SCALAR
+        if isinstance(node, (AST.Validation, AST.DPValidation)):
+            return _DATASET
         return _SCALAR
 
     def _get_binop_type(self, node: AST.BinOp) -> str:
@@ -529,6 +531,28 @@ class StructureVisitor(ASTTemplate):
 
         if isinstance(node, AST.MulOp) and node.children:
             return self._get_dataset_structure(node.children[0])
+
+        if isinstance(node, AST.Validation):
+            inner_ds = self._get_dataset_structure(node.validation)
+            if inner_ds is not None:
+                comps: Dict[str, Component] = {}
+                for name, comp in inner_ds.components.items():
+                    if comp.role == Role.IDENTIFIER:
+                        comps[name] = comp
+                comps["bool_var"] = Component(
+                    name="bool_var", data_type=Boolean, role=Role.MEASURE, nullable=True,
+                )
+                comps["imbalance"] = Component(
+                    name="imbalance", data_type=Number, role=Role.MEASURE, nullable=True,
+                )
+                comps["errorcode"] = Component(
+                    name="errorcode", data_type=StringType, role=Role.MEASURE, nullable=True,
+                )
+                comps["errorlevel"] = Component(
+                    name="errorlevel", data_type=Integer, role=Role.MEASURE, nullable=True,
+                )
+                return Dataset(name="", components=comps, data=None)
+            return None
 
         if isinstance(node, AST.If):
             ds = self._get_dataset_structure(node.thenOp)
