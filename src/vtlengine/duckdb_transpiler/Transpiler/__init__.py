@@ -331,11 +331,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             ec_sql = f"'{escaped_ec}'"
         else:
             ec_sql = "CAST(NULL AS VARCHAR)"
-        el_sql = (
-            str(float(rule.erLevel))
-            if rule.erLevel is not None
-            else "CAST(NULL AS DOUBLE)"
-        )
+        el_sql = str(float(rule.erLevel)) if rule.erLevel is not None else "CAST(NULL AS DOUBLE)"
         fail_cond = (
             f"({when_cond_sql}) AND NOT ({then_expr_sql})"
             if when_cond_sql
@@ -493,7 +489,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         # Get rule component name: for valuedomain rulesets, use the actual column
         # from the invocation (node.rule_component), not the valuedomain name
         if hr_info["signature_type"] == "valuedomain" and node.rule_component is not None:
-            component: str = node.rule_component.value  # type: ignore[union-attr]
+            component: str = node.rule_component.value  # type: ignore[attr-defined]
         else:
             component = hr_info["signature"]
 
@@ -502,7 +498,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if node.conditions and hr_info["condition"]:
             for i, cond_node in enumerate(node.conditions):
                 param_name = hr_info["condition"][i]
-                actual_col = cond_node.value  # type: ignore[union-attr]
+                actual_col = cond_node.value  # type: ignore[attr-defined]
                 cond_mapping[param_name] = actual_col
 
         if node.op == tokens.HIERARCHY:
@@ -731,11 +727,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             ec_sql = f"'{escaped}'"
         else:
             ec_sql = "CAST(NULL AS VARCHAR)"
-        el_sql = (
-            str(float(rule.erLevel))
-            if rule.erLevel is not None
-            else "CAST(NULL AS DOUBLE)"
-        )
+        el_sql = str(float(rule.erLevel)) if rule.erLevel is not None else "CAST(NULL AS DOUBLE)"
 
         # SELECT columns
         quoted_rule_comp = quote_identifier(rule_comp)
@@ -754,11 +746,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             select_parts.append(f"{imbalance_expr} AS {quote_identifier('imbalance')}")
             select_parts.append(f"'{rule_name}' AS {quote_identifier('ruleid')}")
             select_parts.append(
-                f"CASE WHEN {bool_expr} = TRUE THEN NULL ELSE {ec_sql} END "
+                f"CASE WHEN {bool_expr} IS NOT FALSE THEN CAST(NULL AS VARCHAR) ELSE {ec_sql} END "
                 f"AS {quote_identifier('errorcode')}"
             )
             select_parts.append(
-                f"CASE WHEN {bool_expr} = TRUE THEN NULL ELSE {el_sql} END "
+                f"CASE WHEN {bool_expr} IS NOT FALSE THEN CAST(NULL AS DOUBLE) ELSE {el_sql} END "
                 f"AS {quote_identifier('errorlevel')}"
             )
         else:  # all_measures
@@ -767,11 +759,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             select_parts.append(f"{imbalance_expr} AS {quote_identifier('imbalance')}")
             select_parts.append(f"'{rule_name}' AS {quote_identifier('ruleid')}")
             select_parts.append(
-                f"CASE WHEN {bool_expr} = TRUE THEN NULL ELSE {ec_sql} END "
+                f"CASE WHEN {bool_expr} IS NOT FALSE THEN CAST(NULL AS VARCHAR) ELSE {ec_sql} END "
                 f"AS {quote_identifier('errorcode')}"
             )
             select_parts.append(
-                f"CASE WHEN {bool_expr} = TRUE THEN NULL ELSE {el_sql} END "
+                f"CASE WHEN {bool_expr} IS NOT FALSE THEN CAST(NULL AS DOUBLE) ELSE {el_sql} END "
                 f"AS {quote_identifier('errorlevel')}"
             )
 
@@ -1197,13 +1189,16 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 zero_checks = []
                 for ci in right_code_items:
                     val = self._build_hr_value_expr(ci, mode)
-                    zero_checks.append(f"COALESCE({val}, 0) = 0")
+                    zero_checks.append(f"({val} IS NOT NULL AND {val} = 0)")
                 if zero_checks:
                     filters.append(f"NOT ({' AND '.join(zero_checks)})")
             else:
                 # For check_hierarchy: both sides must not both be zero
+                # NULL is NOT zero — only explicit 0 values count
                 filters.append(
-                    f"NOT (COALESCE({left_val_expr}, 0) = 0 AND COALESCE({right_val_expr}, 0) = 0)"
+                    f"NOT ("
+                    f"({left_val_expr} IS NOT NULL AND {left_val_expr} = 0) AND "
+                    f"({right_val_expr} IS NOT NULL AND {right_val_expr} = 0))"
                 )
 
         elif mode in ("partial_null", "partial_zero"):
@@ -1212,7 +1207,12 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             if checks:
                 filters.append(f"({' OR '.join(checks)})")
 
-        # always_null, always_zero: no filter needed
+        elif mode in ("always_null", "always_zero"):
+            # Must have at least one code item from the rule actually present
+            all_items = [left_code_item] + right_code_items
+            presence_checks = [f"_has_{ci} = 1" for ci in all_items]
+            filters.append(f"({' OR '.join(presence_checks)})")
+
         return filters
 
     def _build_hr_when_sql(self, node: AST.AST, cond_mapping: Dict[str, str]) -> str:
