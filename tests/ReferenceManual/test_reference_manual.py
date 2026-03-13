@@ -67,6 +67,21 @@ time_operators.remove(100)
 # Remove HR Rules cyclic graph
 validation_operators.remove(159)
 
+# duckdb random references
+random_ref = {
+    184: pd.DataFrame(
+        {"Id_1": [10, 10, 11], "Id_2": ["A", "B", "A"], "Me_1": [0.408996, 0.845376, 0.957396]}
+    ),
+    185: pd.DataFrame(
+        {
+            "Id_1": [10, 10, 11],
+            "Id_2": ["A", "B", "A"],
+            "Me_1": [16.0, 4.0, 7.2],
+            "Me_2": [0.851794, 0.519602, 0.346913],
+        }
+    ),
+}
+
 # Multimeasures on specific operators that must raise errors
 exceptions_tests = [27, 31]
 
@@ -202,6 +217,8 @@ def get_test_files(dataPoints, dataStructures, dp_dir, param):
 def test_reference_duckdb(input_datasets, reference_datasets, ast, param, value_domains):
     warnings.filterwarnings("ignore", category=FutureWarning)
     reference_datasets = load_dataset(*reference_datasets, dp_dir=reference_dp_dir, param=param)
+    if param in random_ref:
+        reference_datasets["DS_r"].data = random_ref[param]
 
     vtl, ds, dp = get_test_files(*input_datasets, dp_dir=input_dp_dir, param=param)
     result = run(
