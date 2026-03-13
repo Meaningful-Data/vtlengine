@@ -1265,12 +1265,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             # At least one involved item must be present and non-null.
             # For hierarchy rollup: only check right-side (left is being computed).
             # For check_hierarchy: check all items (left + right).
-            items_to_check = right_code_items if is_hierarchy else (
-                [left_code_item] + right_code_items
+            items_to_check = (
+                right_code_items if is_hierarchy else ([left_code_item] + right_code_items)
             )
-            checks = [
-                f"(_has_{ci} = 1 AND _val_{ci} IS NOT NULL)" for ci in items_to_check
-            ]
+            checks = [f"(_has_{ci} = 1 AND _val_{ci} IS NOT NULL)" for ci in items_to_check]
             if checks:
                 filters.append(f"({' OR '.join(checks)})")
 
@@ -1580,7 +1578,13 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if common_measures:
             paired_measures = [(m, m) for m in common_measures]
         elif len(left_measures) == 1 and len(right_measures) == 1:
-            paired_measures = [(left_measures[0], right_measures[0])]
+            # When the output dataset has a single measure, inner visits rename
+            # both sides to match the output name in the generated SQL.
+            if output_measure_names and len(output_measure_names) == 1:
+                out_m = output_measure_names[0]
+                paired_measures = [(out_m, out_m)]
+            else:
+                paired_measures = [(left_measures[0], right_measures[0])]
 
         cols: List[str] = []
         for id_name in all_ids:

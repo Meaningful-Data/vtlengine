@@ -24,6 +24,7 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
         if "duckdb_transpiler" in str(item.fspath):
             item.add_marker(skip_marker)
 
+
 # Default timeout in seconds for transpiler tests
 DEFAULT_TIMEOUT = 5
 

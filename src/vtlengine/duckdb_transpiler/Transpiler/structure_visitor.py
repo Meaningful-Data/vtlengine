@@ -495,9 +495,7 @@ class StructureVisitor(ASTTemplate):
                 if agg_op == tokens.COUNT:
                     from vtlengine.DataTypes import Integer as IntegerType
 
-                    comps = {
-                        n: c for n, c in comps.items() if c.role == Role.IDENTIFIER
-                    }
+                    comps = {n: c for n, c in comps.items() if c.role == Role.IDENTIFIER}
                     comps["int_var"] = Component(
                         name="int_var",
                         data_type=IntegerType,
@@ -535,23 +533,35 @@ class StructureVisitor(ASTTemplate):
         if isinstance(node, AST.Validation):
             inner_ds = self._get_dataset_structure(node.validation)
             if inner_ds is not None:
-                comps: Dict[str, Component] = {}
+                val_comps: Dict[str, Component] = {}
                 for name, comp in inner_ds.components.items():
                     if comp.role == Role.IDENTIFIER:
-                        comps[name] = comp
-                comps["bool_var"] = Component(
-                    name="bool_var", data_type=Boolean, role=Role.MEASURE, nullable=True,
+                        val_comps[name] = comp
+                val_comps["bool_var"] = Component(
+                    name="bool_var",
+                    data_type=Boolean,
+                    role=Role.MEASURE,
+                    nullable=True,
                 )
-                comps["imbalance"] = Component(
-                    name="imbalance", data_type=Number, role=Role.MEASURE, nullable=True,
+                val_comps["imbalance"] = Component(
+                    name="imbalance",
+                    data_type=Number,
+                    role=Role.MEASURE,
+                    nullable=True,
                 )
-                comps["errorcode"] = Component(
-                    name="errorcode", data_type=StringType, role=Role.MEASURE, nullable=True,
+                val_comps["errorcode"] = Component(
+                    name="errorcode",
+                    data_type=StringType,
+                    role=Role.MEASURE,
+                    nullable=True,
                 )
-                comps["errorlevel"] = Component(
-                    name="errorlevel", data_type=Integer, role=Role.MEASURE, nullable=True,
+                val_comps["errorlevel"] = Component(
+                    name="errorlevel",
+                    data_type=Integer,
+                    role=Role.MEASURE,
+                    nullable=True,
                 )
-                return Dataset(name="", components=comps, data=None)
+                return Dataset(name="", components=val_comps, data=None)
             return None
 
         if isinstance(node, AST.If):
@@ -642,7 +652,7 @@ class StructureVisitor(ASTTemplate):
         if left_ds is None or right_ds is None:
             return left_ds or right_ds
 
-        op = str(node.op).lower() if node.op else ""
+        str(node.op).lower() if node.op else ""
         # For comparison ops between datasets, the result keeps measures
         # but they become boolean.  For arithmetic, measures stay numeric.
         # In either case, only identifiers + common measures survive.
@@ -654,9 +664,9 @@ class StructureVisitor(ASTTemplate):
 
         comps: Dict[str, Component] = {}
         for name, comp in left_ds.components.items():
-            if comp.role == Role.IDENTIFIER and name in all_ids:
-                comps[name] = comp
-            elif comp.role == Role.MEASURE and name in right_measures:
+            is_common_id = comp.role == Role.IDENTIFIER and name in all_ids
+            is_common_measure = comp.role == Role.MEASURE and name in right_measures
+            if is_common_id or is_common_measure:
                 comps[name] = comp
         # Add identifiers from right that aren't in left
         for name, comp in right_ds.components.items():
