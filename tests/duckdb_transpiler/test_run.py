@@ -2488,14 +2488,16 @@ class TestCheckHierarchy:
         )
         result = results["DS_r"]
 
+        # errorcode/errorlevel are only set when bool_var is explicitly False
+        # NULL bool_var (indeterminate) gets NULL errorcode/errorlevel
         expected = pd.DataFrame(
             {
                 "Id_1": ["X", "Y", "Z"],
                 "Id_2": ["B", "B", "B"],
                 "ruleid": ["1", "1", "1"],
                 "imbalance": [5.0, None, None],
-                "errorcode": ["err1", "err1", "err1"],
-                "errorlevel": [1.0, 1.0, 1.0],
+                "errorcode": ["err1", None, None],
+                "errorlevel": [1.0, None, None],
                 "bool_var": pd.array([False, pd.NA, pd.NA], dtype="boolean"),
             }
         )
@@ -2527,8 +2529,8 @@ class TestCheckHierarchy:
                 "Id_2": ["B", "B", "B"],
                 "ruleid": ["1", "1", "1"],
                 "imbalance": [5.0, None, 3.0],
-                "errorcode": ["err1", "err1", "err1"],
-                "errorlevel": [1.0, 1.0, 1.0],
+                "errorcode": ["err1", None, "err1"],
+                "errorlevel": [1.0, None, 1.0],
                 "bool_var": pd.array([False, pd.NA, False], dtype="boolean"),
             }
         )
@@ -2593,8 +2595,8 @@ class TestCheckHierarchy:
                 "Id_2": ["B", "B", "B"],
                 "ruleid": ["1", "1", "1"],
                 "imbalance": [5.0, None, 3.0],
-                "errorcode": ["err1", "err1", "err1"],
-                "errorlevel": [1.0, 1.0, 1.0],
+                "errorcode": ["err1", None, "err1"],
+                "errorlevel": [1.0, None, 1.0],
                 "bool_var": pd.array([False, pd.NA, False], dtype="boolean"),
             }
         )
@@ -2626,8 +2628,8 @@ class TestCheckHierarchy:
                 "Id_2": ["B", "B", "B"],
                 "ruleid": ["1", "1", "1"],
                 "imbalance": [5.0, None, None],
-                "errorcode": ["err1", "err1", "err1"],
-                "errorlevel": [1.0, 1.0, 1.0],
+                "errorcode": ["err1", None, None],
+                "errorlevel": [1.0, None, None],
                 "bool_var": pd.array([False, pd.NA, pd.NA], dtype="boolean"),
             }
         )
@@ -2659,8 +2661,8 @@ class TestCheckHierarchy:
                 "Id_2": ["B", "B", "B"],
                 "ruleid": ["1", "1", "1"],
                 "imbalance": [5.0, None, 3.0],
-                "errorcode": ["err1", "err1", "err1"],
-                "errorlevel": [1.0, 1.0, 1.0],
+                "errorcode": ["err1", None, "err1"],
+                "errorlevel": [1.0, None, 1.0],
                 "bool_var": pd.array([False, pd.NA, False], dtype="boolean"),
             }
         )
