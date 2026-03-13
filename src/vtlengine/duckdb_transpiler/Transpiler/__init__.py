@@ -262,7 +262,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         # Auto-number unnamed rules
         rule_names = [r.name for r in node.rules if r.name is not None]
-        if len(rule_names) == 0:
+        if not rule_names:
             for i, rule in enumerate(node.rules):
                 rule.name = str(i + 1)
 
@@ -465,7 +465,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         """Register a hierarchical ruleset definition."""
         # Auto-number unnamed rules (same logic as interpreter)
         rule_names = [r.name for r in node.rules if r.name is not None]
-        if len(rule_names) == 0:
+        if not rule_names:
             for i, rule in enumerate(node.rules):
                 rule.name = str(i + 1)
 
@@ -578,7 +578,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             comparison_node=comparison_node,
             left_code_item=comparison_node.left.value,
             right_expr_node=comparison_node.right,
-            right_code_items=self._collect_hr_code_items(comparison_node.right),
+            right_code_items=self._collect_hr_code_items(comparison_node.right)[0],
         )
 
     def _collect_all_hr_items(
@@ -600,9 +600,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             rc = getattr(parsed.comparison_node.left, "_right_condition", None)
             if rc is not None:
                 all_conds[parsed.left_code_item] = self._build_hr_when_sql(rc, cond_mapping)
-            all_conds.update(
-                self._collect_hr_code_item_conditions(parsed.right_expr_node, cond_mapping)
-            )
+            _, right_conds = self._collect_hr_code_items(parsed.right_expr_node, cond_mapping)
+            all_conds.update(right_conds)
         # Deduplicate preserving order
         seen: Set[str] = set()
         unique: List[str] = []
@@ -639,7 +638,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             measure=measure_name,
             other_ids=other_ids,
             cond_mapping=cond_mapping,
-            code_item_conditions=item_conds or None,
+            code_item_conditions=item_conds,
         )
 
         rule_queries = [
@@ -656,31 +655,31 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         ]
         return f"WITH {pivot_cte}\n" + " UNION ALL ".join(rule_queries)
 
-    def _collect_hr_code_items(self, node: AST.AST) -> List[str]:
-        """Extract all code item values from a hierarchical rule expression."""
-        if isinstance(node, AST.DefIdentifier):
-            return [node.value]
-        if isinstance(node, AST.HRBinOp):
-            return self._collect_hr_code_items(node.left) + self._collect_hr_code_items(node.right)
-        if isinstance(node, AST.HRUnOp):
-            return self._collect_hr_code_items(node.operand)
-        return []
+    def _collect_hr_code_items(
+        self,
+        node: AST.AST,
+        cond_mapping: Optional[Dict[str, str]] = None,
+    ) -> Tuple[List[str], Dict[str, str]]:
+        """Extract all code item names and their right-side conditions from an HR expression.
 
-    def _collect_hr_code_item_conditions(
-        self, node: AST.AST, cond_mapping: Dict[str, str]
-    ) -> Dict[str, str]:
-        """Extract right-side conditions per code item from a hierarchical rule expression."""
-        result: Dict[str, str] = {}
+        When *cond_mapping* is provided, also resolves ``_right_condition``
+        attributes on DefIdentifier nodes into SQL WHERE fragments.
+        """
         if isinstance(node, AST.DefIdentifier):
-            rc = getattr(node, "_right_condition", None)
-            if rc is not None:
-                result[node.value] = self._build_hr_when_sql(rc, cond_mapping)
-        elif isinstance(node, AST.HRBinOp):
-            result.update(self._collect_hr_code_item_conditions(node.left, cond_mapping))
-            result.update(self._collect_hr_code_item_conditions(node.right, cond_mapping))
-        elif isinstance(node, AST.HRUnOp):
-            result.update(self._collect_hr_code_item_conditions(node.operand, cond_mapping))
-        return result
+            conds: Dict[str, str] = {}
+            if cond_mapping is not None:
+                rc = getattr(node, "_right_condition", None)
+                if rc is not None:
+                    conds[node.value] = self._build_hr_when_sql(rc, cond_mapping)
+            return [node.value], conds
+        if isinstance(node, AST.HRBinOp):
+            li, lc = self._collect_hr_code_items(node.left, cond_mapping)
+            ri, rc = self._collect_hr_code_items(node.right, cond_mapping)
+            lc.update(rc)
+            return li + ri, lc
+        if isinstance(node, AST.HRUnOp):
+            return self._collect_hr_code_items(node.operand, cond_mapping)
+        return [], {}
 
     def _build_hr_value_expr(self, code_item: str, mode: str) -> str:
         """Generate the value expression for a code item from pivot columns, per mode."""
@@ -767,6 +766,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         bool_expr = f"({l_val} {comp_op} {r_val})"
         imbalance_expr = f"({l_val} - {r_val})"
 
+        when_sql: Optional[str] = None
         if parsed.has_when:
             when_sql = self._build_hr_when_sql(parsed.when_node, cond_mapping)
             bool_expr = f"CASE WHEN NOT ({when_sql}) THEN TRUE ELSE {bool_expr} END"
@@ -788,12 +788,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         select_parts: List[str] = [quote_identifier(c) for c in other_ids]
         select_parts.append(f"'{parsed.left_code_item}' AS {q_rc}")
 
-        if output == "invalid":
+        if output != "all":
             select_parts.append(f"{l_val} AS {q_m}")
-        elif output == "all_measures":
-            select_parts.append(f"{l_val} AS {q_m}")
-            select_parts.append(f"{bool_expr} AS {quote_identifier('bool_var')}")
-        else:  # all
+        if output != "invalid":
             select_parts.append(f"{bool_expr} AS {quote_identifier('bool_var')}")
 
         select_parts.append(f"{imbalance_expr} AS {quote_identifier('imbalance')}")
@@ -815,9 +812,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         # WHERE clause
         where_parts: List[str] = []
         if output == "invalid":
-            if parsed.has_when:
-                when_sql_ref = self._build_hr_when_sql(parsed.when_node, cond_mapping)
-                where_parts.append(f"({when_sql_ref})")
+            if when_sql is not None:
+                where_parts.append(f"({when_sql})")
             where_parts.append(f"({bool_expr}) = FALSE")
 
         where_parts.extend(
@@ -871,7 +867,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             measure=measure_name,
             other_ids=other_ids,
             cond_mapping=cond_mapping,
-            code_item_conditions=item_conds or None,
+            code_item_conditions=item_conds,
         )
 
         return self._build_hierarchy_cte_chain(
@@ -988,7 +984,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         cond_mapping: Dict[str, str],
     ) -> str:
         """Generate SELECT for _rule_N CTE in hierarchy CTE chain."""
-        computed_expr = self._build_hr_expr_sql(parsed.right_expr_node, mode)
+        r_val = self._build_hr_expr_sql(parsed.right_expr_node, mode)
+        computed_expr = r_val
         if parsed.has_when:
             when_sql = self._build_hr_when_sql(parsed.when_node, cond_mapping)
             computed_expr = f"CASE WHEN {when_sql} THEN {computed_expr} ELSE NULL END"
@@ -997,7 +994,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         select_parts.extend(quote_identifier(v) for v in cond_mapping.values())
         select_parts.append(f"{computed_expr} AS _computed")
 
-        r_val = self._build_hr_expr_sql(parsed.right_expr_node, mode)
         where_parts = self._build_hr_mode_filter(
             mode=mode,
             left_code_item=parsed.left_code_item,
@@ -1791,7 +1787,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         def _param_expr(col_ref: str) -> str:
             if registry.parameterized.is_registered(op):
-                return registry.parameterized.generate(op, col_ref, *params_sql)
+                return registry.parameterized.generate(op, col_ref, *params_sql)  # type:ignore[arg-type]
             all_args = [col_ref] + [a for a in params_sql if a is not None]
             return f"{op.upper()}({', '.join(all_args)})"
 
