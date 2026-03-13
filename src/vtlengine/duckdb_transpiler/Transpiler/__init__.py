@@ -325,9 +325,17 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         self._dp_signature = None
 
-        # Common parts
-        ec_sql = f"'{rule.erCode}'" if rule.erCode else "NULL"
-        el_sql = str(float(rule.erLevel)) if rule.erLevel is not None else "NULL"
+        # Common parts — use typed NULLs for DuckDB type inference
+        if rule.erCode:
+            escaped_ec = rule.erCode.replace("'", "''")
+            ec_sql = f"'{escaped_ec}'"
+        else:
+            ec_sql = "CAST(NULL AS VARCHAR)"
+        el_sql = (
+            str(float(rule.erLevel))
+            if rule.erLevel is not None
+            else "CAST(NULL AS DOUBLE)"
+        )
         fail_cond = (
             f"({when_cond_sql}) AND NOT ({then_expr_sql})"
             if when_cond_sql
@@ -482,15 +490,19 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         self._get_output_dataset()
 
-        # Get rule component name
-        component: str = hr_info["signature"]
+        # Get rule component name: for valuedomain rulesets, use the actual column
+        # from the invocation (node.rule_component), not the valuedomain name
+        if hr_info["signature_type"] == "valuedomain" and node.rule_component is not None:
+            component: str = node.rule_component.value  # type: ignore[union-attr]
+        else:
+            component = hr_info["signature"]
 
-        # Condition mapping: ruleset param -> dataset column
+        # Condition mapping: ruleset param -> dataset column (raw names, not quoted)
         cond_mapping: Dict[str, str] = {}
         if node.conditions and hr_info["condition"]:
             for i, cond_node in enumerate(node.conditions):
                 param_name = hr_info["condition"][i]
-                actual_col = self.visit(cond_node)
+                actual_col = cond_node.value  # type: ignore[union-attr]
                 cond_mapping[param_name] = actual_col
 
         if node.op == tokens.HIERARCHY:
@@ -713,9 +725,17 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 f"CASE WHEN NOT ({when_sql}) THEN CAST(NULL AS DOUBLE) ELSE {imbalance_expr} END"
             )
 
-        # Errorcode / errorlevel
-        ec_sql = f"'{rule.erCode}'" if rule.erCode else "NULL"
-        el_sql = str(float(rule.erLevel)) if rule.erLevel is not None else "NULL"
+        # Errorcode / errorlevel — use typed NULLs to avoid DuckDB type inference
+        if rule.erCode:
+            escaped = rule.erCode.replace("'", "''")
+            ec_sql = f"'{escaped}'"
+        else:
+            ec_sql = "CAST(NULL AS VARCHAR)"
+        el_sql = (
+            str(float(rule.erLevel))
+            if rule.erLevel is not None
+            else "CAST(NULL AS DOUBLE)"
+        )
 
         # SELECT columns
         quoted_rule_comp = quote_identifier(rule_comp)
@@ -1213,7 +1233,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             }
             sql_op = op_map.get(node.op, node.op)
             return f"({left_sql} {sql_op} {right_sql})"
-        if isinstance(node, AST.DefIdentifier):
+        if isinstance(node, (AST.DefIdentifier, AST.VarID)):
             col_name = cond_mapping.get(node.value, node.value)
             return quote_identifier(col_name)
         if isinstance(node, AST.Constant):
@@ -1221,7 +1241,36 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if isinstance(node, AST.HRUnOp):
             operand_sql = self._build_hr_when_sql(node.operand, cond_mapping)
             return f"({node.op}{operand_sql})"
-        raise ValueError(f"Unexpected node type in HR WHEN expression: {type(node).__name__}")
+        if isinstance(node, AST.BinOp):
+            left_sql = self._build_hr_when_sql(node.left, cond_mapping)
+            right_sql = self._build_hr_when_sql(node.right, cond_mapping)
+            op_map = {
+                "=": "=",
+                ">": ">",
+                "<": "<",
+                ">=": ">=",
+                "<=": "<=",
+                "+": "+",
+                "-": "-",
+                "*": "*",
+                "/": "/",
+                "and": "AND",
+                "or": "OR",
+            }
+            sql_op = op_map.get(node.op, node.op)
+            return f"({left_sql} {sql_op} {right_sql})"
+        if isinstance(node, AST.UnaryOp):
+            operand_sql = self._build_hr_when_sql(node.operand, cond_mapping)
+            return f"({node.op}({operand_sql}))"
+        if isinstance(node, AST.MulOp):
+            # Handle between(val, low, high) and similar multi-arg operations
+            if node.op.lower() == "between":
+                children_sql = [self._build_hr_when_sql(c, cond_mapping) for c in node.children]
+                return f"({children_sql[0]} BETWEEN {children_sql[1]} AND {children_sql[2]})"
+            children_sql = [self._build_hr_when_sql(c, cond_mapping) for c in node.children]
+            return f"{node.op}({', '.join(children_sql)})"
+        # Fallback: delegate to the general visitor (handles ParamOp/cast, etc.)
+        return self.visit(node)
 
     # =========================================================================
     # UDO definition and call
