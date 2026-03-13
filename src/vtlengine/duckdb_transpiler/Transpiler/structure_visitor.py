@@ -528,6 +528,9 @@ class StructureVisitor(ASTTemplate):
             return self._get_output_dataset()
 
         if isinstance(node, AST.MulOp) and node.children:
+            op = str(node.op).lower() if node.op else ""
+            if op == tokens.EXISTS_IN:
+                return self._build_exists_in_structure(node)
             return self._get_dataset_structure(node.children[0])
 
         if isinstance(node, AST.Validation):
@@ -682,6 +685,25 @@ class StructureVisitor(ASTTemplate):
         comps["errorlevel"] = Component(
             name="errorlevel",
             data_type=Number,
+            role=Role.MEASURE,
+            nullable=True,
+        )
+        return Dataset(name="", components=comps, data=None)
+
+    def _build_exists_in_structure(self, node: AST.MulOp) -> Optional[Dataset]:
+        """Build output dataset structure for exists_in."""
+        left_ds = self._get_dataset_structure(node.children[0])
+        if left_ds is None:
+            return None
+
+        comps: Dict[str, Component] = {}
+        for name, comp in left_ds.components.items():
+            if comp.role == Role.IDENTIFIER:
+                comps[name] = comp
+
+        comps["bool_var"] = Component(
+            name="bool_var",
+            data_type=Boolean,
             role=Role.MEASURE,
             nullable=True,
         )

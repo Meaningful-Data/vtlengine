@@ -353,7 +353,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             select_parts.extend(quote_identifier(m) for m in measure_cols)
 
         bool_expr = (
-            f"CASE WHEN ({when_cond_sql}) THEN ({then_expr_sql}) ELSE TRUE END"
+            f"CASE WHEN ({when_cond_sql}) THEN ({then_expr_sql})"
+            f" WHEN NOT ({when_cond_sql}) THEN TRUE ELSE NULL END"
             if when_cond_sql
             else f"({then_expr_sql})"
         )
