@@ -470,7 +470,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         }
 
     def visit_HROperation(self, node: AST.HROperation) -> str:  # type: ignore[override]
-        """Generate SQL for check_hierarchy operator."""
+        """Generate SQL for hierarchy or check_hierarchy operator."""
         hr_name = node.ruleset_name
         hr_info = self._hrs[hr_name]
 
@@ -478,16 +478,12 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         ds = self._get_dataset_structure(node.dataset)
         table_src = self._get_dataset_sql(node.dataset)
         if ds is None:
-            raise ValueError("Cannot resolve dataset for check_hierarchy")
+            raise ValueError("Cannot resolve dataset for hierarchy operation")
 
         self._get_output_dataset()
 
         # Get rule component name
         component: str = hr_info["signature"]
-
-        # Get mode values with defaults
-        mode = node.validation_mode.value if node.validation_mode else "always_null"
-        output = node.output.value if node.output else "invalid"
 
         # Condition mapping: ruleset param -> dataset column
         cond_mapping: Dict[str, str] = {}
@@ -497,15 +493,42 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 actual_col = self.visit(cond_node)
                 cond_mapping[param_name] = actual_col
 
-        return self._build_check_hierarchy_sql(
-            table_src=table_src,
-            ds=ds,
-            rules=hr_info["rules"],
-            rule_comp=component,
-            mode=mode,
-            output=output,
-            cond_mapping=cond_mapping,
-        )
+        if node.op == tokens.HIERARCHY:
+            mode = node.validation_mode.value if node.validation_mode else "non_null"
+            input_mode = node.input_mode.value if node.input_mode else "rule"
+            output = node.output.value if node.output else "computed"
+            # Filter to EQ/WHEN-EQ rules only
+            rules = [r for r in hr_info["rules"] if self._is_hr_eq_rule(r)]
+            return self._build_hierarchy_sql(
+                table_src=table_src,
+                ds=ds,
+                rules=rules,
+                rule_comp=component,
+                mode=mode,
+                input_mode=input_mode,
+                output=output,
+                cond_mapping=cond_mapping,
+            )
+        else:  # check_hierarchy
+            mode = node.validation_mode.value if node.validation_mode else "non_null"
+            output = node.output.value if node.output else "invalid"
+            return self._build_check_hierarchy_sql(
+                table_src=table_src,
+                ds=ds,
+                rules=hr_info["rules"],
+                rule_comp=component,
+                mode=mode,
+                output=output,
+                cond_mapping=cond_mapping,
+            )
+
+    @staticmethod
+    def _is_hr_eq_rule(rule: AST.HRule) -> bool:
+        """Check if a hierarchical rule is an EQ rule (or WHEN-EQ)."""
+        rule_node: Any = rule.rule
+        if rule_node.op == "when":
+            return rule_node.right.op == "="
+        return rule_node.op == "="
 
     def _build_check_hierarchy_sql(
         self,
@@ -517,15 +540,45 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         output: str,
         cond_mapping: Dict[str, str],
     ) -> str:
-        """Orchestrate SQL generation for check_hierarchy: one SELECT per rule, UNION ALL."""
+        """Generate SQL for check_hierarchy using pivot CTE."""
         measure_name = ds.get_measures_names()[0]
         other_ids = [n for n in ds.get_identifiers_names() if n != rule_comp]
 
+        # Collect all code items across all rules
+        all_code_items: List[str] = []
+        for rule in rules:
+            rule_node: Any = rule.rule
+            comp_node = rule_node.right if rule_node.op == "when" else rule_node
+            all_code_items.append(comp_node.left.value)
+            all_code_items.extend(self._collect_hr_code_items(comp_node.right))
+        # Deduplicate preserving order
+        seen: Set[str] = set()
+        unique_items: List[str] = []
+        for ci in all_code_items:
+            if ci not in seen:
+                seen.add(ci)
+                unique_items.append(ci)
+
+        if not rules:
+            out_ds = self._get_output_dataset()
+            cols = [quote_identifier(c) for c in (out_ds.components if out_ds else ds.components)]
+            return f"SELECT {', '.join(cols)} FROM {table_src} WHERE 1=0"
+
+        # Build pivot CTE
+        pivot_cte = self._build_hr_pivot_cte(
+            table_src=table_src,
+            code_items=unique_items,
+            rule_comp=rule_comp,
+            measure=measure_name,
+            other_ids=other_ids,
+            cond_mapping=cond_mapping,
+        )
+
+        # Build per-rule SELECTs from the pivot
         rule_queries: List[str] = []
         for rule in rules:
-            rule_sql = self._build_hr_rule_sql(
+            rule_sql = self._build_check_hr_rule_select(
                 rule=rule,
-                table_src=table_src,
                 other_ids=other_ids,
                 rule_comp=rule_comp,
                 measure=measure_name,
@@ -535,12 +588,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             )
             rule_queries.append(rule_sql)
 
-        if not rule_queries:
-            out_ds = self._get_output_dataset()
-            cols = [quote_identifier(c) for c in (out_ds.components if out_ds else ds.components)]
-            return f"SELECT {', '.join(cols)} FROM {table_src} WHERE 1=0"
-
-        return " UNION ALL ".join(rule_queries)
+        return f"WITH {pivot_cte}\n" + " UNION ALL ".join(rule_queries)
 
     def _collect_hr_code_items(self, node: AST.AST) -> List[str]:
         """Extract all code item values from a hierarchical rule expression."""
@@ -552,47 +600,73 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return self._collect_hr_code_items(node.operand)
         return []
 
-    def _build_hr_value_expr(
-        self, alias: str, rule_comp_col: str, measure_col: str, mode: str
-    ) -> str:
-        """Generate the value expression for a code item, with fill logic per mode."""
-        ref = f"{alias}.{quote_identifier(measure_col)}"
+    def _build_hr_value_expr(self, code_item: str, mode: str) -> str:
+        """Generate the value expression for a code item from pivot columns, per mode."""
+        val_col = f"_val_{code_item}"
+        has_col = f"_has_{code_item}"
         if mode in ("always_zero", "non_zero", "partial_zero"):
-            # Missing (no join match) -> 0, existing NULL -> stays NULL
-            comp_ref = f"{alias}.{quote_identifier(rule_comp_col)}"
-            return f"CASE WHEN {comp_ref} IS NULL THEN 0 ELSE {ref} END"
+            # Missing (_has=0) -> 0, existing NULL -> stays NULL
+            return f"CASE WHEN {has_col} = 0 THEN 0 ELSE {val_col} END"
         # always_null, non_null, partial_null: no fill, NULL propagates
-        return ref
+        return val_col
 
-    def _build_hr_expr_sql(
-        self,
-        node: AST.AST,
-        code_item_map: Dict[str, str],
-        rule_comp: str,
-        measure: str,
-        mode: str,
-    ) -> str:
-        """Generate SQL for a hierarchical rule arithmetic expression."""
+    def _build_hr_expr_sql(self, node: AST.AST, mode: str) -> str:
+        """Generate SQL for a hierarchical rule arithmetic expression using pivot columns."""
         if isinstance(node, AST.DefIdentifier):
-            alias = code_item_map[node.value]
-            return self._build_hr_value_expr(alias, rule_comp, measure, mode)
+            return self._build_hr_value_expr(node.value, mode)
         if isinstance(node, AST.HRBinOp):
-            left_sql = self._build_hr_expr_sql(node.left, code_item_map, rule_comp, measure, mode)
-            right_sql = self._build_hr_expr_sql(node.right, code_item_map, rule_comp, measure, mode)
+            left_sql = self._build_hr_expr_sql(node.left, mode)
+            right_sql = self._build_hr_expr_sql(node.right, mode)
             op_map = {"+": "+", "-": "-"}
             return f"({left_sql} {op_map[node.op]} {right_sql})"
         if isinstance(node, AST.HRUnOp):
-            operand_sql = self._build_hr_expr_sql(
-                node.operand, code_item_map, rule_comp, measure, mode
-            )
+            operand_sql = self._build_hr_expr_sql(node.operand, mode)
             op_map = {"+": "+", "-": "-"}
             return f"({op_map[node.op]}{operand_sql})"
         raise ValueError(f"Unexpected node type in HR expression: {type(node).__name__}")
 
-    def _build_hr_rule_sql(
+    def _build_hr_pivot_cte(
+        self,
+        table_src: str,
+        code_items: List[str],
+        rule_comp: str,
+        measure: str,
+        other_ids: List[str],
+        cond_mapping: Dict[str, str],
+    ) -> str:
+        """Generate the shared pivot CTE for hierarchy operations."""
+        qrc = quote_identifier(rule_comp)
+        qm = quote_identifier(measure)
+
+        # GROUP BY columns: other identifiers + condition columns
+        group_cols = [quote_identifier(c) for c in other_ids]
+        cond_cols = [quote_identifier(v) for v in cond_mapping.values()]
+        group_cols.extend(cond_cols)
+
+        # SELECT: group cols + pivot columns for each code item
+        select_parts = list(group_cols)
+        for ci in code_items:
+            select_parts.append(f"MAX(CASE WHEN {qrc} = '{ci}' THEN {qm} END) AS _val_{ci}")
+            select_parts.append(f"MAX(CASE WHEN {qrc} = '{ci}' THEN 1 ELSE 0 END) AS _has_{ci}")
+
+        # WHERE: filter to relevant code items only
+        in_list = ", ".join(f"'{ci}'" for ci in code_items)
+        where = f"WHERE {qrc} IN ({in_list})"
+
+        group_by = f"GROUP BY {', '.join(group_cols)}" if group_cols else ""
+
+        return (
+            f"_pivot AS (\n"
+            f"  SELECT {', '.join(select_parts)}\n"
+            f"  FROM {table_src}\n"
+            f"  {where}\n"
+            f"  {group_by}\n"
+            f")"
+        )
+
+    def _build_check_hr_rule_select(
         self,
         rule: AST.HRule,
-        table_src: str,
         other_ids: List[str],
         rule_comp: str,
         measure: str,
@@ -600,10 +674,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         output: str,
         cond_mapping: Dict[str, str],
     ) -> str:
-        """Generate SQL for a single hierarchical rule with self-joins."""
+        """Generate a SELECT for a single check_hierarchy rule from the pivot CTE."""
         rule_name = rule.name or ""
-        # rule.rule is typed as HRBinOp but at runtime its left/right may be
-        # nested HRBinOp trees, so we work through Any to avoid type errors.
         rule_node: Any = rule.rule
 
         # Handle WHEN clause
@@ -621,57 +693,19 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         comp_op: str = comparison_node.op
         right_expr_node: AST.AST = comparison_node.right
 
-        # Collect all code items from right expression
+        # Collect right code items
         right_code_items = self._collect_hr_code_items(right_expr_node)
-        all_code_items = [left_code_item] + right_code_items
 
-        # Build alias map: code_item_value -> alias
-        code_item_map: Dict[str, str] = {}
-        alias_list: List[Tuple[str, str]] = []  # (alias, code_item_value)
-        for i, ci in enumerate(all_code_items):
-            if ci not in code_item_map:
-                alias = f"_ci_{i}"
-                code_item_map[ci] = alias
-                alias_list.append((alias, ci))
+        # Build value expressions from pivot columns
+        l_val = self._build_hr_value_expr(left_code_item, mode)
+        r_val = self._build_hr_expr_sql(right_expr_node, mode)
 
-        left_alias = code_item_map[left_code_item]
-
-        # Determine JOIN type per mode
-        use_inner = mode == "non_null"
-
-        # Build FROM clause: base (distinct other_ids) + JOINs
-        quoted_other_ids = [quote_identifier(c) for c in other_ids]
-        quoted_rule_comp = quote_identifier(rule_comp)
-        quoted_measure = quote_identifier(measure)
-
-        if other_ids:
-            base_sql = f"(SELECT DISTINCT {', '.join(quoted_other_ids)} FROM {table_src}) AS _base"
-        else:
-            base_sql = "(SELECT 1) AS _base"
-
-        join_clauses: List[str] = []
-        for alias, ci_value in alias_list:
-            join_type = "INNER JOIN" if use_inner else "LEFT JOIN"
-            on_parts = [f"_base.{qid} = {alias}.{qid}" for qid in quoted_other_ids]
-            on_parts.append(f"{alias}.{quoted_rule_comp} = '{ci_value}'")
-            on_clause = " AND ".join(on_parts) if on_parts else "1=1"
-            join_clauses.append(f"{join_type} {table_src} AS {alias} ON {on_clause}")
-
-        from_clause = base_sql + " " + " ".join(join_clauses)
-
-        # Build L and R value expressions
-        l_val = self._build_hr_value_expr(left_alias, rule_comp, measure, mode)
-        r_val = self._build_hr_expr_sql(right_expr_node, code_item_map, rule_comp, measure, mode)
-
-        # Build comparison expression
+        # Comparison expression
         comp_op_sql_map = {"=": "=", ">": ">", "<": "<", ">=": ">=", "<=": "<="}
-        comp_op_sql = comp_op_sql_map[comp_op]
-
-        # bool_var: handles NULL propagation naturally in SQL
-        bool_expr = f"({l_val} {comp_op_sql} {r_val})"
+        bool_expr = f"({l_val} {comp_op_sql_map[comp_op]} {r_val})"
         imbalance_expr = f"({l_val} - {r_val})"
 
-        # Handle WHEN clause
+        # WHEN clause wrapping
         if has_when:
             when_sql = self._build_hr_when_sql(when_node, cond_mapping)
             bool_expr = f"CASE WHEN NOT ({when_sql}) THEN TRUE ELSE {bool_expr} END"
@@ -683,9 +717,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         ec_sql = f"'{rule.erCode}'" if rule.erCode else "NULL"
         el_sql = str(float(rule.erLevel)) if rule.erLevel is not None else "NULL"
 
-        # Build SELECT columns based on output mode
-        # Qualify other_ids with _base alias to avoid ambiguity
-        select_parts: List[str] = [f"_base.{qid}" for qid in quoted_other_ids]
+        # SELECT columns
+        quoted_rule_comp = quote_identifier(rule_comp)
+        quoted_measure = quote_identifier(measure)
+        select_parts: List[str] = [quote_identifier(c) for c in other_ids]
         select_parts.append(f"'{left_code_item}' AS {quoted_rule_comp}")
 
         if output == "invalid":
@@ -699,11 +734,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             select_parts.append(f"{imbalance_expr} AS {quote_identifier('imbalance')}")
             select_parts.append(f"'{rule_name}' AS {quote_identifier('ruleid')}")
             select_parts.append(
-                f"CASE WHEN {bool_expr} = FALSE THEN {ec_sql} ELSE NULL END "
+                f"CASE WHEN {bool_expr} = TRUE THEN NULL ELSE {ec_sql} END "
                 f"AS {quote_identifier('errorcode')}"
             )
             select_parts.append(
-                f"CASE WHEN {bool_expr} = FALSE THEN {el_sql} ELSE NULL END "
+                f"CASE WHEN {bool_expr} = TRUE THEN NULL ELSE {el_sql} END "
                 f"AS {quote_identifier('errorlevel')}"
             )
         else:  # all_measures
@@ -712,18 +747,18 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             select_parts.append(f"{imbalance_expr} AS {quote_identifier('imbalance')}")
             select_parts.append(f"'{rule_name}' AS {quote_identifier('ruleid')}")
             select_parts.append(
-                f"CASE WHEN {bool_expr} = FALSE THEN {ec_sql} ELSE NULL END "
+                f"CASE WHEN {bool_expr} = TRUE THEN NULL ELSE {ec_sql} END "
                 f"AS {quote_identifier('errorcode')}"
             )
             select_parts.append(
-                f"CASE WHEN {bool_expr} = FALSE THEN {el_sql} ELSE NULL END "
+                f"CASE WHEN {bool_expr} = TRUE THEN NULL ELSE {el_sql} END "
                 f"AS {quote_identifier('errorlevel')}"
             )
 
-        # Build WHERE clause
+        # WHERE clause
         where_parts: List[str] = []
 
-        # Output mode filter
+        # Output mode filter (invalid = only failing rows)
         if output == "invalid":
             if has_when:
                 when_sql_ref = self._build_hr_when_sql(when_node, cond_mapping)
@@ -731,46 +766,433 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             where_parts.append(f"({bool_expr}) = FALSE")
 
         # Validation mode filter
-        right_aliases = [code_item_map[ci] for ci in right_code_items]
         where_parts.extend(
-            self._build_hr_mode_filter(mode, left_alias, right_aliases, rule_comp, measure)
+            self._build_hr_mode_filter(
+                mode=mode,
+                left_code_item=left_code_item,
+                right_code_items=right_code_items,
+                left_val_expr=l_val,
+                right_val_expr=r_val,
+                is_hierarchy=False,
+            )
         )
 
         select_clause = ", ".join(select_parts)
         where_clause = f" WHERE {' AND '.join(where_parts)}" if where_parts else ""
 
-        return f"SELECT {select_clause} FROM {from_clause}{where_clause}"
+        return f"SELECT {select_clause} FROM _pivot{where_clause}"
+
+    def _build_hierarchy_sql(
+        self,
+        table_src: str,
+        ds: Dataset,
+        rules: list,  # type: ignore[type-arg]
+        rule_comp: str,
+        mode: str,
+        input_mode: str,
+        output: str,
+        cond_mapping: Dict[str, str],
+    ) -> str:
+        """Generate SQL for hierarchy operator using pivot CTE."""
+        measure_name = ds.get_measures_names()[0]
+        other_ids = [n for n in ds.get_identifiers_names() if n != rule_comp]
+
+        # Collect all code items across all rules
+        all_code_items: List[str] = []
+        for rule in rules:
+            rule_node: Any = rule.rule
+            comp_node = rule_node.right if rule_node.op == "when" else rule_node
+            all_code_items.append(comp_node.left.value)
+            all_code_items.extend(self._collect_hr_code_items(comp_node.right))
+        seen: Set[str] = set()
+        unique_items: List[str] = []
+        for ci in all_code_items:
+            if ci not in seen:
+                seen.add(ci)
+                unique_items.append(ci)
+
+        if not rules:
+            cols = [quote_identifier(c) for c in ds.get_components_names()]
+            return f"SELECT {', '.join(cols)} FROM {table_src} WHERE 1=0"
+
+        # Build pivot CTE
+        pivot_cte = self._build_hr_pivot_cte(
+            table_src=table_src,
+            code_items=unique_items,
+            rule_comp=rule_comp,
+            measure=measure_name,
+            other_ids=other_ids,
+            cond_mapping=cond_mapping,
+        )
+
+        # All input modes (dataset, rule, rule_priority) use CTE chain semantics
+        # to match the reference pandas interpreter behavior.
+        return self._build_hierarchy_rule_mode(
+            pivot_cte=pivot_cte,
+            table_src=table_src,
+            rules=rules,
+            rule_comp=rule_comp,
+            measure=measure_name,
+            other_ids=other_ids,
+            mode=mode,
+            input_mode=input_mode,
+            output=output,
+            cond_mapping=cond_mapping,
+            ds=ds,
+            unique_items=unique_items,
+        )
+
+    def _build_hierarchy_dataset_mode(
+        self,
+        pivot_cte: str,
+        table_src: str,
+        rules: list,  # type: ignore[type-arg]
+        rule_comp: str,
+        measure: str,
+        other_ids: List[str],
+        mode: str,
+        output: str,
+        cond_mapping: Dict[str, str],
+        ds: Dataset,
+    ) -> str:
+        """Hierarchy SQL for dataset input mode."""
+        rule_selects: List[str] = []
+        for rule in rules:
+            select_sql = self._build_hierarchy_rule_select(
+                rule=rule,
+                pivot_ref="_pivot",
+                other_ids=other_ids,
+                rule_comp=rule_comp,
+                measure=measure,
+                mode=mode,
+                cond_mapping=cond_mapping,
+            )
+            rule_selects.append(select_sql)
+
+        computed_sql = " UNION ALL ".join(rule_selects)
+
+        if output == "computed":
+            return f"WITH {pivot_cte}\n{computed_sql}"
+
+        # output == "all": union input + computed, dedup keeping computed
+        id_cols = [quote_identifier(c) for c in ds.get_identifiers_names()]
+        all_cols = [quote_identifier(c) for c in ds.get_components_names()]
+        return (
+            f"WITH {pivot_cte},\n"
+            f"_computed AS (\n{computed_sql}\n),\n"
+            f"_combined AS (\n"
+            f"  SELECT {', '.join(all_cols)}, 0 AS _src FROM {table_src}\n"
+            f"  UNION ALL\n"
+            f"  SELECT {', '.join(all_cols)}, 1 AS _src FROM _computed\n"
+            f")\n"
+            f"SELECT {', '.join(all_cols)} FROM (\n"
+            f"  SELECT *, ROW_NUMBER() OVER ("
+            f"PARTITION BY {', '.join(id_cols)} ORDER BY _src DESC) AS _rn\n"
+            f"  FROM _combined\n"
+            f") WHERE _rn = 1"
+        )
+
+    def _build_hierarchy_rule_select(
+        self,
+        rule: AST.HRule,
+        pivot_ref: str,
+        other_ids: List[str],
+        rule_comp: str,
+        measure: str,
+        mode: str,
+        cond_mapping: Dict[str, str],
+    ) -> str:
+        """Generate a SELECT for a single hierarchy rule from the pivot."""
+        rule_node: Any = rule.rule
+        has_when: bool = rule_node.op == "when"
+        when_node: Any = None
+        comparison_node: Any
+        if has_when:
+            when_node = rule_node.left
+            comparison_node = rule_node.right
+        else:
+            comparison_node = rule_node
+
+        left_code_item: str = comparison_node.left.value
+        right_expr_node: AST.AST = comparison_node.right
+        right_code_items = self._collect_hr_code_items(right_expr_node)
+
+        # Computed value expression (right side of EQ rule)
+        computed_expr = self._build_hr_expr_sql(right_expr_node, mode)
+
+        if has_when:
+            when_sql = self._build_hr_when_sql(when_node, cond_mapping)
+            computed_expr = f"CASE WHEN {when_sql} THEN {computed_expr} ELSE NULL END"
+
+        # SELECT columns
+        select_parts: List[str] = [quote_identifier(c) for c in other_ids]
+        select_parts.append(f"'{left_code_item}' AS {quote_identifier(rule_comp)}")
+        select_parts.append(f"{computed_expr} AS {quote_identifier(measure)}")
+
+        # WHERE: mode filter + result mode filter
+        where_parts: List[str] = []
+
+        # Validation mode filter
+        r_val = self._build_hr_expr_sql(right_expr_node, mode)
+        where_parts.extend(
+            self._build_hr_mode_filter(
+                mode=mode,
+                left_code_item=left_code_item,
+                right_code_items=right_code_items,
+                left_val_expr=self._build_hr_value_expr(left_code_item, mode),
+                right_val_expr=r_val,
+                is_hierarchy=True,
+            )
+        )
+
+        # Result mode filter (hierarchy-specific)
+        if mode == "non_null":
+            where_parts.append(f"({computed_expr}) IS NOT NULL")
+        elif mode == "non_zero":
+            where_parts.append(f"(({computed_expr}) IS NULL OR ({computed_expr}) != 0)")
+
+        where_clause = f" WHERE {' AND '.join(where_parts)}" if where_parts else ""
+        return f"SELECT {', '.join(select_parts)} FROM {pivot_ref}{where_clause}"
+
+    def _build_hierarchy_rule_mode(
+        self,
+        pivot_cte: str,
+        table_src: str,
+        rules: list,  # type: ignore[type-arg]
+        rule_comp: str,
+        measure: str,
+        other_ids: List[str],
+        mode: str,
+        input_mode: str,
+        output: str,
+        cond_mapping: Dict[str, str],
+        ds: Dataset,
+        unique_items: List[str],
+    ) -> str:
+        """Hierarchy SQL for rule/rule_priority input modes (CTE chain)."""
+        cte_parts: List[str] = [pivot_cte]
+        rule_result_refs: List[Tuple[str, str]] = []  # (cte_name, left_code_item)
+        current_pivot = "_pivot"
+
+        # Join keys for pivot updates
+        join_keys = [quote_identifier(c) for c in other_ids]
+        cond_cols = [quote_identifier(v) for v in cond_mapping.values()]
+        join_keys.extend(cond_cols)
+
+        for i, rule in enumerate(rules):
+            rule_node: Any = rule.rule
+            comp_node = rule_node.right if rule_node.op == "when" else rule_node
+            left_code_item: str = comp_node.left.value
+
+            # _rule_N: compute from current pivot
+            rule_cte_name = f"_rule_{i}"
+            rule_select = self._build_hierarchy_rule_cte(
+                rule=rule,
+                pivot_ref=current_pivot,
+                other_ids=other_ids,
+                rule_comp=rule_comp,
+                measure=measure,
+                mode=mode,
+                cond_mapping=cond_mapping,
+            )
+            cte_parts.append(f"{rule_cte_name} AS (\n{rule_select}\n)")
+            rule_result_refs.append((rule_cte_name, left_code_item))
+
+            # _pivot_N: update pivot with computed values for next rule
+            next_pivot = f"_pivot_{i}"
+            pivot_update = self._build_hierarchy_pivot_update(
+                prev_pivot=current_pivot,
+                rule_cte=rule_cte_name,
+                left_code_item=left_code_item,
+                join_keys=join_keys,
+                input_mode=input_mode,
+                unique_items=unique_items,
+            )
+            cte_parts.append(f"{next_pivot} AS (\n{pivot_update}\n)")
+            current_pivot = next_pivot
+
+        # Final SELECT: collect all computed results
+        final_selects: List[str] = []
+        quoted_rule_comp = quote_identifier(rule_comp)
+        quoted_measure = quote_identifier(measure)
+        for rule_cte, left_ci in rule_result_refs:
+            cols = [quote_identifier(c) for c in other_ids]
+            cols.append(f"'{left_ci}' AS {quoted_rule_comp}")
+            cols.append(f"_computed AS {quoted_measure}")
+
+            result_filter_parts: List[str] = []
+            if mode == "non_null":
+                result_filter_parts.append("_computed IS NOT NULL")
+            elif mode == "non_zero":
+                result_filter_parts.append("(_computed IS NULL OR _computed != 0)")
+
+            where = f" WHERE {' AND '.join(result_filter_parts)}" if result_filter_parts else ""
+            final_selects.append(f"SELECT {', '.join(cols)} FROM {rule_cte}{where}")
+
+        computed_sql = " UNION ALL ".join(final_selects)
+
+        if output == "computed":
+            cte_joined = ",\n".join(cte_parts)
+            return f"WITH {cte_joined}\n{computed_sql}"
+
+        # output == "all"
+        id_cols = [quote_identifier(c) for c in ds.get_identifiers_names()]
+        all_cols = [quote_identifier(c) for c in ds.get_components_names()]
+        cte_parts.append(f"_computed AS (\n{computed_sql}\n)")
+        cte_joined = ",\n".join(cte_parts)
+        return (
+            f"WITH {cte_joined},\n"
+            f"_combined AS (\n"
+            f"  SELECT {', '.join(all_cols)}, 0 AS _src FROM {table_src}\n"
+            f"  UNION ALL\n"
+            f"  SELECT {', '.join(all_cols)}, 1 AS _src FROM _computed\n"
+            f")\n"
+            f"SELECT {', '.join(all_cols)} FROM (\n"
+            f"  SELECT *, ROW_NUMBER() OVER ("
+            f"PARTITION BY {', '.join(id_cols)} ORDER BY _src DESC) AS _rn\n"
+            f"  FROM _combined\n"
+            f") WHERE _rn = 1"
+        )
+
+    def _build_hierarchy_rule_cte(
+        self,
+        rule: AST.HRule,
+        pivot_ref: str,
+        other_ids: List[str],
+        rule_comp: str,
+        measure: str,
+        mode: str,
+        cond_mapping: Dict[str, str],
+    ) -> str:
+        """Generate SELECT for _rule_N CTE in hierarchy CTE chain."""
+        rule_node: Any = rule.rule
+        has_when: bool = rule_node.op == "when"
+        when_node: Any = None
+        comparison_node: Any
+        if has_when:
+            when_node = rule_node.left
+            comparison_node = rule_node.right
+        else:
+            comparison_node = rule_node
+
+        left_code_item: str = comparison_node.left.value
+        right_expr_node: AST.AST = comparison_node.right
+        right_code_items = self._collect_hr_code_items(right_expr_node)
+
+        computed_expr = self._build_hr_expr_sql(right_expr_node, mode)
+        if has_when:
+            when_sql = self._build_hr_when_sql(when_node, cond_mapping)
+            computed_expr = f"CASE WHEN {when_sql} THEN {computed_expr} ELSE NULL END"
+
+        # SELECT: other ids + condition cols + computed value
+        select_parts = [quote_identifier(c) for c in other_ids]
+        cond_cols = [quote_identifier(v) for v in cond_mapping.values()]
+        select_parts.extend(cond_cols)
+        select_parts.append(f"{computed_expr} AS _computed")
+
+        # WHERE: mode filter only (result filter applied in final SELECT)
+        r_val = self._build_hr_expr_sql(right_expr_node, mode)
+        where_parts = self._build_hr_mode_filter(
+            mode=mode,
+            left_code_item=left_code_item,
+            right_code_items=right_code_items,
+            left_val_expr=self._build_hr_value_expr(left_code_item, mode),
+            right_val_expr=r_val,
+            is_hierarchy=True,
+        )
+        where_clause = f" WHERE {' AND '.join(where_parts)}" if where_parts else ""
+        return f"  SELECT {', '.join(select_parts)} FROM {pivot_ref}{where_clause}"
+
+    def _build_hierarchy_pivot_update(
+        self,
+        prev_pivot: str,
+        rule_cte: str,
+        left_code_item: str,
+        join_keys: List[str],
+        input_mode: str,
+        unique_items: List[str],
+    ) -> str:
+        """Generate _pivot_N CTE that updates pivot with a rule's computed value."""
+        val_col = f"_val_{left_code_item}"
+        has_col = f"_has_{left_code_item}"
+
+        # Build all columns from prev pivot, replacing val/has for the left code item
+        other_val_has = []
+        for ci in unique_items:
+            if ci != left_code_item:
+                other_val_has.append(f"p._val_{ci}")
+                other_val_has.append(f"p._has_{ci}")
+
+        # Join key columns from prev pivot
+        key_cols = [f"p.{k}" for k in join_keys]
+
+        first_key = join_keys[0] if join_keys else "_computed"
+
+        if input_mode == "rule_priority":
+            val_expr = (
+                f"CASE WHEN r._computed IS NOT NULL THEN r._computed "
+                f"ELSE p.{val_col} END AS {val_col}"
+            )
+        else:  # rule
+            val_expr = (
+                f"CASE WHEN r.{first_key} IS NOT NULL "
+                f"THEN r._computed ELSE p.{val_col} END AS {val_col}"
+            )
+
+        has_expr = f"CASE WHEN r.{first_key} IS NOT NULL THEN 1 ELSE p.{has_col} END AS {has_col}"
+
+        all_select = key_cols + other_val_has + [val_expr, has_expr]
+
+        using_clause = ", ".join(join_keys) if join_keys else "1=1"
+
+        return (
+            f"  SELECT {', '.join(all_select)}\n"
+            f"  FROM {prev_pivot} p\n"
+            f"  LEFT JOIN {rule_cte} r USING ({using_clause})"
+        )
 
     def _build_hr_mode_filter(
         self,
         mode: str,
-        left_alias: str,
-        right_aliases: List[str],
-        rule_comp: str,
-        measure: str,
+        left_code_item: str,
+        right_code_items: List[str],
+        left_val_expr: str,
+        right_val_expr: str,
+        is_hierarchy: bool,
     ) -> List[str]:
-        """Generate WHERE clauses for the validation mode."""
-        qm = quote_identifier(measure)
-        qrc = quote_identifier(rule_comp)
-        all_aliases = [left_alias] + right_aliases
+        """Generate WHERE filter clauses for the validation mode using pivot columns."""
+        all_items = [left_code_item] + right_code_items
         filters: List[str] = []
 
         if mode == "non_null":
-            for alias in all_aliases:
-                filters.append(f"{alias}.{qm} IS NOT NULL")
+            # For hierarchy: only check right-side operands (left is being computed)
+            # For check_hierarchy: check all operands
+            items_to_check = right_code_items if is_hierarchy else all_items
+            for ci in items_to_check:
+                filters.append(f"_val_{ci} IS NOT NULL")
 
         elif mode == "non_zero":
-            zero_checks = []
-            for alias in all_aliases:
-                val = f"CASE WHEN {alias}.{qrc} IS NULL THEN 0 ELSE {alias}.{qm} END"
-                zero_checks.append(f"COALESCE({val}, 0) = 0")
-            filters.append(f"NOT ({' AND '.join(zero_checks)})")
+            if is_hierarchy:
+                # For hierarchy: only check right-side operands are not all zero
+                zero_checks = []
+                for ci in right_code_items:
+                    val = self._build_hr_value_expr(ci, mode)
+                    zero_checks.append(f"COALESCE({val}, 0) = 0")
+                if zero_checks:
+                    filters.append(f"NOT ({' AND '.join(zero_checks)})")
+            else:
+                # For check_hierarchy: both sides must not both be zero
+                filters.append(
+                    f"NOT (COALESCE({left_val_expr}, 0) = 0 AND COALESCE({right_val_expr}, 0) = 0)"
+                )
 
         elif mode in ("partial_null", "partial_zero"):
-            not_null_checks = [f"{alias}.{qm} IS NOT NULL" for alias in right_aliases]
-            if not_null_checks:
-                filters.append(f"({' OR '.join(not_null_checks)})")
+            # At least one right-side operand must be present and non-null
+            checks = [f"(_has_{ci} = 1 AND _val_{ci} IS NOT NULL)" for ci in right_code_items]
+            if checks:
+                filters.append(f"({' OR '.join(checks)})")
 
+        # always_null, always_zero: no filter needed
         return filters
 
     def _build_hr_when_sql(self, node: AST.AST, cond_mapping: Dict[str, str]) -> str:
@@ -2503,13 +2925,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             cond_ids = set(cond_ds.get_identifiers_names())
             common = [id_ for id_ in source_ids if id_ in cond_ids]
             on_parts = [
-                f"{alias_src}.{quote_identifier(id_)} = "
-                f"{alias}.{quote_identifier(id_)}"
+                f"{alias_src}.{quote_identifier(id_)} = {alias}.{quote_identifier(id_)}"
                 for id_ in common
             ]
             if on_parts:
-                builder.join(cond_sql, alias, on=" AND ".join(on_parts),
-                             join_type="LEFT")
+                builder.join(cond_sql, alias, on=" AND ".join(on_parts), join_type="LEFT")
 
         # Build condition expression
         if isinstance(case_obj.condition, AST.VarID) and cond_ds is not None:
@@ -2545,8 +2965,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         ds_ids = set(ds.get_identifiers_names())
         common = [id_ for id_ in source_ids if id_ in ds_ids]
         on_parts = [
-            f"{alias_src}.{quote_identifier(id_)} = "
-            f"{alias}.{quote_identifier(id_)}"
+            f"{alias_src}.{quote_identifier(id_)} = {alias}.{quote_identifier(id_)}"
             for id_ in common
         ]
         if on_parts:
@@ -2567,7 +2986,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         output_ds = self._get_output_dataset()
         output_measures = (
-            list(output_ds.get_measures_names()) if output_ds is not None
+            list(output_ds.get_measures_names())
+            if output_ds is not None
             else list(source_ds.get_measures_names())
         )
 
@@ -2588,9 +3008,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             then_types.append(t_type)
             if t_type == _DATASET:
                 t_alias = f"t{i}"
-                self._join_dataset_operand(
-                    case_obj.thenOp, t_alias, source_ids, alias_src, builder
-                )
+                self._join_dataset_operand(case_obj.thenOp, t_alias, source_ids, alias_src, builder)
                 then_aliases.append(t_alias)
             else:
                 then_aliases.append(None)
@@ -2600,9 +3018,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         else_alias: Optional[str] = None
         if else_type == _DATASET:
             else_alias = "e"
-            self._join_dataset_operand(
-                node.elseOp, else_alias, source_ids, alias_src, builder
-            )
+            self._join_dataset_operand(node.elseOp, else_alias, source_ids, alias_src, builder)
 
         # Build SELECT: identifiers + CASE WHEN per measure (reversed for last-match-wins)
         cols: List[str] = [f"{alias_src}.{quote_identifier(id_)}" for id_ in source_ids]
@@ -2638,13 +3054,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                     match_check = "TRUE"
                 filter_parts.append(f"({cond_exprs[i]} AND {match_check})")
             # Else branch: applies when no condition is true
-            neg = " AND ".join(
-                f"(NOT {c} OR {c} IS NULL)" for c in cond_exprs
-            )
+            neg = " AND ".join(f"(NOT {c} OR {c} IS NULL)" for c in cond_exprs)
             if else_type == _DATASET:
-                filter_parts.append(
-                    f"(({neg}) AND {else_alias}.{id_col} IS NOT NULL)"
-                )
+                filter_parts.append(f"(({neg}) AND {else_alias}.{id_col} IS NOT NULL)")
             else:
                 filter_parts.append(f"({neg})")
             builder.where(" OR ".join(filter_parts))
