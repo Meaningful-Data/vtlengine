@@ -37,7 +37,9 @@ class Check(Operator):
         if measure.data_type != Boolean:
             raise SemanticError("1-1-10-1", op=cls.op, op_type="validation", me_type="Boolean")
         error_level_type = None
-        if error_level is None or isinstance(error_level, int):
+        if isinstance(error_level, bool):
+            error_level_type = Boolean
+        elif error_level is None or isinstance(error_level, int):
             error_level_type = Integer
         elif isinstance(error_level, str):
             error_level_type = String  # type: ignore[assignment]
@@ -121,8 +123,7 @@ class Check(Operator):
         errorlevel_dtype = result.components["errorlevel"].data_type.dtype()
         result.data["errorlevel"] = pd.Series(None, index=result.data.index, dtype=errorlevel_dtype)
         if error_level is not None:
-            el_value = int(error_level) if isinstance(error_level, bool) else error_level
-            result.data.loc[is_false, "errorlevel"] = el_value
+            result.data.loc[is_false, "errorlevel"] = error_level
 
         if invalid:
             result.data = result.data[result.data[validation_measure_name] == False]
@@ -160,7 +161,9 @@ class Validation(Operator):
         ]
         non_null_levels = [el for el in error_levels if el is not None]
 
-        if len(non_null_levels) == 0 or all(isinstance(el, int) for el in non_null_levels):
+        if all(isinstance(el, bool) for el in non_null_levels) and len(non_null_levels) > 0:
+            error_level_type = Boolean
+        elif len(non_null_levels) == 0 or all(isinstance(el, int) for el in non_null_levels):
             error_level_type = Number
         elif all(isinstance(el, str) for el in non_null_levels):
             error_level_type = String  # type: ignore[assignment]
