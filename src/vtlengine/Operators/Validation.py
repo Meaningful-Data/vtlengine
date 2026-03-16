@@ -26,8 +26,8 @@ class Check(Operator):
         cls,
         validation_element: Dataset,
         imbalance_element: Optional[Dataset],
-        error_code: Optional[str],
-        error_level: Optional[Union[int, str]],
+        error_code: Optional[Union[str, int, float, bool]],
+        error_level: Optional[Union[str, int, float, bool]],
         invalid: bool,
     ) -> Dataset:
         dataset_name = VirtualCounter._new_ds_name()
@@ -91,8 +91,8 @@ class Check(Operator):
         cls,
         validation_element: Dataset,
         imbalance_element: Optional[Dataset],
-        error_code: Optional[str],
-        error_level: Optional[Union[int, str]],
+        error_code: Optional[Union[str, int, float, bool]],
+        error_level: Optional[Union[str, int, float, bool]],
         invalid: bool,
     ) -> Dataset:
         result = cls.validate(
@@ -116,11 +116,13 @@ class Check(Operator):
         bool_col = result.data[validation_measure_name]
         is_false = bool_col.fillna(True) == False  # noqa: E712
         result.data["errorcode"] = pd.Series(None, index=result.data.index, dtype="string[pyarrow]")
-        result.data.loc[is_false, "errorcode"] = error_code
+        ec_value = str(error_code) if error_code is not None else None
+        result.data.loc[is_false, "errorcode"] = ec_value
         errorlevel_dtype = result.components["errorlevel"].data_type.dtype()
         result.data["errorlevel"] = pd.Series(None, index=result.data.index, dtype=errorlevel_dtype)
         if error_level is not None:
-            result.data.loc[is_false, "errorlevel"] = error_level
+            el_value = int(error_level) if isinstance(error_level, bool) else error_level
+            result.data.loc[is_false, "errorlevel"] = el_value
 
         if invalid:
             result.data = result.data[result.data[validation_measure_name] == False]
