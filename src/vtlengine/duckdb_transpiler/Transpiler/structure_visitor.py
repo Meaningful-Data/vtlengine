@@ -468,7 +468,21 @@ class StructureVisitor(ASTTemplate):
             return None
 
         if isinstance(node, AST.UnaryOp):
-            return self._get_dataset_structure(node.operand)
+            ds = self._get_dataset_structure(node.operand)
+            if ds is not None:
+                op = str(node.op).lower()
+                if op == tokens.ISNULL and len(ds.get_measures_names()) == 1:
+                    isnull_comps: Dict[str, Component] = {
+                        n: c for n, c in ds.components.items() if c.role == Role.IDENTIFIER
+                    }
+                    isnull_comps["bool_var"] = Component(
+                        name="bool_var",
+                        data_type=Boolean,
+                        role=Role.MEASURE,
+                        nullable=True,
+                    )
+                    return Dataset(name=ds.name, components=isnull_comps, data=None)
+            return ds
 
         if isinstance(node, AST.ParFunction):
             return self._get_dataset_structure(node.operand)

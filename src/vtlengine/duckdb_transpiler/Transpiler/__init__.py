@@ -327,13 +327,14 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         # Store the signature for DefIdentifier resolution
         self._dp_signature = signature
 
-        has_when = rule.rule.op == "when"
-        if has_when:
-            when_cond_sql = self._visit_dp_expr(rule.rule.left, signature)
-            then_expr_sql = self._visit_dp_expr(rule.rule.right, signature)
+        rule_node = rule.rule
+        has_when = isinstance(rule_node, AST.HRBinOp) and rule_node.op == "when"
+        if has_when and isinstance(rule_node, AST.HRBinOp):
+            when_cond_sql = self._visit_dp_expr(rule_node.left, signature)
+            then_expr_sql = self._visit_dp_expr(rule_node.right, signature)
         else:
             when_cond_sql = None
-            then_expr_sql = self._visit_dp_expr(rule.rule, signature)
+            then_expr_sql = self._visit_dp_expr(rule_node, signature)
 
         self._dp_signature = None
 
@@ -403,7 +404,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             cond_sql = self._visit_dp_expr(node.condition, signature)
             then_sql = self._visit_dp_expr(node.thenOp, signature)
             else_sql = self._visit_dp_expr(node.elseOp, signature)
-            return f"CASE WHEN ({cond_sql}) THEN ({then_sql}) ELSE ({else_sql}) END"
+            return (
+                f"CASE WHEN ({cond_sql}) THEN CAST(({then_sql}) AS BOOLEAN)"
+                f" ELSE CAST(({else_sql}) AS BOOLEAN) END"
+            )
         # Fallback: use the regular transpiler visitor, saving/restoring DP context
         saved_sig = self._dp_signature
         self._dp_signature = signature
@@ -557,15 +561,18 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     @staticmethod
     def _is_hr_eq_rule(rule: AST.HRule) -> bool:
         """Check if a hierarchical rule is an EQ rule (or WHEN-EQ)."""
-        rule_node: Any = rule.rule
+        rule_node = rule.rule
+        if not isinstance(rule_node, AST.HRBinOp):
+            return False
         if rule_node.op == "when":
-            return rule_node.right.op == "="
+            right = rule_node.right
+            return isinstance(right, AST.HRBinOp) and right.op == "="
         return rule_node.op == "="
 
     def _parse_hr_rule(self, rule: AST.HRule) -> _ParsedHRRule:
         """Parse a hierarchical rule into its constituent parts."""
         rule_node: Any = rule.rule
-        has_when = rule_node.op == "when"
+        has_when = isinstance(rule_node, AST.HRBinOp) and rule_node.op == "when"
         if has_when:
             when_node = rule_node.left
             comparison_node = rule_node.right
