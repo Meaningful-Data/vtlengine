@@ -65,7 +65,10 @@ class ASTVisitor(VtlVisitor):
             for statement in statements:
                 statements_nodes.append(self.visitStatement(statement))
 
-        token_info = extract_token_info(ctx)
+        if ctx.stop is None:
+            token_info = {"column_start": 0, "column_stop": 0, "line_start": 1, "line_stop": 1}
+        else:
+            token_info = extract_token_info(ctx)
 
         start_node = Start(children=statements_nodes, **token_info)
 
