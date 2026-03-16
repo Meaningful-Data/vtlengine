@@ -2021,7 +2021,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         keep_names: List[str] = [
             name for name, comp in ds.components.items() if comp.role == Role.IDENTIFIER
         ]
-        keep_names.extend(self._resolve_join_component_names(node.children))
+        keep_names.extend(self._extract_component_names(node.children, self._join_alias_map))
 
         # Track qualified names that are NOT kept (consumed by this clause)
         keep_set = set(keep_names)
@@ -2042,7 +2042,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return ""
 
         table_src = self._get_dataset_sql(node.dataset)  # ds not needed for drop
-        drop_names = self._resolve_join_component_names(node.children)
+        drop_names = self._extract_component_names(node.children, self._join_alias_map)
 
         # Track consumed qualified names
         for name in drop_names:

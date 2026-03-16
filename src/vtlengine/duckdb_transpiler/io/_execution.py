@@ -149,31 +149,12 @@ def cleanup_scheduled_datasets(
             # Drop global inputs without saving
             conn.execute(f'DROP TABLE IF EXISTS "{ds_name}"')
         elif not return_only_persistent or ds_name in persistent_datasets:
-            if ds_name in output_scalars:
-                # Handle scalar results
-                result_df = conn.execute(f'SELECT * FROM "{ds_name}"').fetchdf()
-                if len(result_df) == 1 and len(result_df.columns) == 1:
-                    scalar = output_scalars[ds_name]
-                    raw_value = _normalize_scalar_value(result_df.iloc[0, 0])
-                    scalar.value = raw_value
-                    results[ds_name] = scalar
-                else:
-                    ds = Dataset(name=ds_name, components={}, data=result_df)
-                    results[ds_name] = ds
-                conn.execute(f'DROP TABLE IF EXISTS "{ds_name}"')
-            elif output_folder:
-                # Save to CSV and drop table
-                save_datapoints_duckdb(conn, ds_name, output_folder)
-                ds = output_datasets.get(ds_name, Dataset(name=ds_name, components={}, data=None))
-                results[ds_name] = ds
-            else:
-                # Fetch data before dropping table
-                result_df = conn.execute(f'SELECT * FROM "{ds_name}"').fetchdf()
-                ds = output_datasets.get(ds_name, Dataset(name=ds_name, components={}, data=None))
-                ds.data = result_df
-                _project_columns(ds)
-                _convert_date_columns(ds)
-                results[ds_name] = ds
+            results[ds_name] = fetch_result(
+                conn, ds_name, output_folder, output_datasets, output_scalars
+            )
+            # Drop table if not already dropped by save_datapoints_duckdb
+            # (scalars and in-memory datasets are fetched without dropping)
+            if not output_folder or ds_name in output_scalars:
                 conn.execute(f'DROP TABLE IF EXISTS "{ds_name}"')
         else:
             # Drop non-persistent intermediate results
@@ -200,15 +181,9 @@ def fetch_result(
     Returns:
         Dataset or Scalar with result data
     """
-    if output_folder:
-        # Save to CSV
-        save_datapoints_duckdb(conn, result_name, output_folder)
-        return output_datasets.get(result_name, Dataset(name=result_name, components={}, data=None))
-
-    # Fetch as DataFrame
-    result_df = conn.execute(f'SELECT * FROM "{result_name}"').fetchdf()
-
+    # Scalars are always fetched in-memory (never saved to CSV)
     if result_name in output_scalars:
+        result_df = conn.execute(f'SELECT * FROM "{result_name}"').fetchdf()
         if len(result_df) == 1 and len(result_df.columns) == 1:
             scalar = output_scalars[result_name]
             raw_value = _normalize_scalar_value(result_df.iloc[0, 0])
@@ -216,6 +191,13 @@ def fetch_result(
             return scalar
         return Dataset(name=result_name, components={}, data=result_df)
 
+    if output_folder:
+        # Save to CSV (also drops the table)
+        save_datapoints_duckdb(conn, result_name, output_folder)
+        return output_datasets.get(result_name, Dataset(name=result_name, components={}, data=None))
+
+    # Fetch as DataFrame
+    result_df = conn.execute(f'SELECT * FROM "{result_name}"').fetchdf()
     ds = output_datasets.get(result_name, Dataset(name=result_name, components={}, data=None))
     ds.data = result_df
 

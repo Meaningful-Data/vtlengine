@@ -941,7 +941,7 @@ class StructureVisitor(ASTTemplate):
         input_ds = self._get_dataset_structure(node.dataset)
         if input_ds is None:
             return None
-        drop_names = self._resolve_clause_component_names(node.children, input_ds)
+        drop_names = set(self._extract_component_names(node.children, input_ds.components))
         comps = {name: comp for name, comp in input_ds.components.items() if name not in drop_names}
         return Dataset(name=input_ds.name, components=comps, data=None)
 
@@ -967,7 +967,7 @@ class StructureVisitor(ASTTemplate):
         keep_names = {
             name for name, comp in input_ds.components.items() if comp.role == Role.IDENTIFIER
         }
-        keep_names |= self._resolve_clause_component_names(node.children, input_ds)
+        keep_names |= set(self._extract_component_names(node.children, input_ds.components))
         comps = {name: comp for name, comp in input_ds.components.items() if name in keep_names}
         return Dataset(name=input_ds.name, components=comps, data=None)
 
@@ -1054,23 +1054,21 @@ class StructureVisitor(ASTTemplate):
     # Component name resolution helpers
     # =========================================================================
 
-    def _resolve_clause_component_names(
-        self, children: List[AST.AST], input_ds: Dataset
-    ) -> set[str]:
-        """Extract component names from clause children (keep/drop), resolving memberships."""
-        names: set[str] = set()
-        for child in children:
-            if isinstance(child, (AST.VarID, AST.Identifier)):
-                names.add(child.value)
-            elif isinstance(child, AST.BinOp) and str(child.op).lower() == tokens.MEMBERSHIP:
-                ds_alias = child.left.value if hasattr(child.left, "value") else str(child.left)
-                comp = child.right.value if hasattr(child.right, "value") else str(child.right)
-                qualified = f"{ds_alias}#{comp}"
-                names.add(qualified if qualified in input_ds.components else comp)
-        return names
+    def _extract_component_names(
+        self,
+        children: List[AST.AST],
+        lookup: Optional[Dict[str, Any]] = None,
+    ) -> List[str]:
+        """Extract component names from clause children, resolving memberships.
 
-    def _resolve_join_component_names(self, children: List[AST.AST]) -> List[str]:
-        """Extract component names from clause children, resolving via join alias map."""
+        Args:
+            children: AST children to extract names from.
+            lookup: Dict to check qualified names against (e.g. dataset components
+                    or join alias map).  When a qualified name is found in *lookup*
+                    the qualified form is kept; otherwise the bare component name
+                    is used.
+        """
+        ctx = lookup or {}
         names: List[str] = []
         for child in children:
             if isinstance(child, (AST.VarID, AST.Identifier)):
@@ -1079,7 +1077,7 @@ class StructureVisitor(ASTTemplate):
                 ds_alias = child.left.value if hasattr(child.left, "value") else str(child.left)
                 comp = child.right.value if hasattr(child.right, "value") else str(child.right)
                 qualified = f"{ds_alias}#{comp}"
-                names.append(qualified if qualified in self._join_alias_map else comp)
+                names.append(qualified if qualified in ctx else comp)
         return names
 
     # =========================================================================
@@ -1103,6 +1101,21 @@ class StructureVisitor(ASTTemplate):
             other_ids = all_ids[1:]
         return time_id, other_ids
 
+    def _resolve_grouping_names(self, grouping: List[AST.AST]) -> List[str]:
+        """Resolve grouping node names with UDO parameter lookup."""
+        names: List[str] = []
+        for g in grouping:
+            if isinstance(g, (AST.VarID, AST.Identifier)):
+                resolved = g.value
+                udo_val = self._get_udo_param(resolved)
+                if udo_val is not None:
+                    if isinstance(udo_val, (AST.VarID, AST.Identifier)):
+                        resolved = udo_val.value
+                    elif isinstance(udo_val, str):
+                        resolved = udo_val
+                names.append(resolved)
+        return names
+
     def _resolve_group_cols(
         self,
         node: AST.Aggregation,
@@ -1110,30 +1123,9 @@ class StructureVisitor(ASTTemplate):
     ) -> List[str]:
         """Resolve group-by columns from an Aggregation node."""
         if node.grouping and node.grouping_op == "group by":
-            group_cols: List[str] = []
-            for g in node.grouping:
-                if isinstance(g, (AST.VarID, AST.Identifier)):
-                    resolved = g.value
-                    udo_val = self._get_udo_param(resolved)
-                    if udo_val is not None:
-                        if isinstance(udo_val, (AST.VarID, AST.Identifier)):
-                            resolved = udo_val.value
-                        elif isinstance(udo_val, str):
-                            resolved = udo_val
-                    group_cols.append(resolved)
-            return group_cols
+            return self._resolve_grouping_names(node.grouping)
         if node.grouping and node.grouping_op == "group except":
-            except_cols: set[str] = set()
-            for g in node.grouping:
-                if isinstance(g, (AST.VarID, AST.Identifier)):
-                    resolved = g.value
-                    udo_val = self._get_udo_param(resolved)
-                    if udo_val is not None:
-                        if isinstance(udo_val, (AST.VarID, AST.Identifier)):
-                            resolved = udo_val.value
-                        elif isinstance(udo_val, str):
-                            resolved = udo_val
-                    except_cols.add(resolved)
+            except_cols = set(self._resolve_grouping_names(node.grouping))
             return [id_ for id_ in all_ids if id_ not in except_cols]
         if node.grouping_op is None and not node.grouping:
             return []
