@@ -901,7 +901,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         """Generate SQL for hierarchy operator using pivot CTE."""
         if not rules:
             cols = [quote_identifier(c) for c in ds.get_components_names()]
-            return f"SELECT {', '.join(cols)} FROM {table_src} WHERE 1=0"
+            return f"SELECT {', '.join(cols)} FROM {table_src}"
 
         pivot_cte, measure_name, other_ids, unique_items, _ = self._prepare_hr_pivot(
             table_src, ds, rules, rule_comp, cond_mapping
