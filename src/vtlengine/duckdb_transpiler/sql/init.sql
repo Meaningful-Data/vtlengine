@@ -5,10 +5,11 @@
 -- Loaded once when initializing a DuckDB connection for VTL.
 --
 -- Architecture:
--- 1. vtl_period_normalize: Any input VARCHAR -> canonical internal VARCHAR
--- 2. vtl_period_parse / vtl_period_to_string: Internal VARCHAR <-> STRUCT
--- 3. vtl_period_lt/le/gt/ge: STRUCT-based ordering with same-indicator check
+-- 1. vtl_period_normalize: VARCHAR -> VARCHAR (any input to canonical)
+-- 2. vtl_period_parse / vtl_period_to_string: VARCHAR <-> vtl_time_period
+-- 3. vtl_period_lt/le/gt/ge: vtl_time_period ordering with indicator check
 -- 4. Equality (=, <>): native VARCHAR comparison (no macros needed)
+-- 5. Representation macros: VARCHAR -> VARCHAR (canonical to output format)
 -- ============================================================================
 
 
@@ -34,12 +35,13 @@ CREATE TYPE vtl_time_interval AS STRUCT(
 
 
 -- ============================================================================
--- NORMALIZE: Any input format (#505) -> canonical internal VARCHAR
+-- NORMALIZE: VARCHAR -> VARCHAR
 -- ============================================================================
+-- Any input format (#505) -> canonical internal representation.
 -- Runs once at data load time. All subsequent operations use the normalized form.
 -- Reference: from_input_customer_support_to_internal (TimeHandling.py:79-110)
 
-CREATE OR REPLACE MACRO vtl_period_normalize(input) AS (
+CREATE OR REPLACE MACRO vtl_period_normalize(input VARCHAR) AS (
     CASE
         WHEN input IS NULL THEN NULL
         WHEN LENGTH(input) = 4 THEN
@@ -83,11 +85,11 @@ CREATE OR REPLACE MACRO vtl_period_normalize(input) AS (
 
 
 -- ============================================================================
--- PARSE: Internal VARCHAR -> vtl_time_period STRUCT
+-- PARSE: VARCHAR -> vtl_time_period
 -- ============================================================================
 -- Only handles the canonical format from TimePeriodHandler.__str__
 
-CREATE OR REPLACE MACRO vtl_period_parse(input) AS (
+CREATE OR REPLACE MACRO vtl_period_parse(input VARCHAR) AS (
     CASE
         WHEN input IS NULL THEN NULL
         WHEN SUBSTR(input, 5, 1) = '-' THEN
@@ -105,11 +107,11 @@ CREATE OR REPLACE MACRO vtl_period_parse(input) AS (
 
 
 -- ============================================================================
--- FORMAT: vtl_time_period STRUCT -> internal VARCHAR
+-- FORMAT: vtl_time_period -> VARCHAR
 -- ============================================================================
 -- Reference: TimePeriodHandler.__str__ (TimeHandling.py:173-182)
 
-CREATE OR REPLACE MACRO vtl_period_to_string(p) AS (
+CREATE OR REPLACE MACRO vtl_period_to_string(p vtl_time_period) AS (
     CASE
         WHEN p IS NULL THEN NULL
         WHEN p.period_indicator = 'A' THEN
@@ -133,7 +135,7 @@ CREATE OR REPLACE MACRO vtl_period_to_string(p) AS (
 -- TIMEINTERVAL PARSE/FORMAT
 -- ============================================================================
 
-CREATE OR REPLACE MACRO vtl_interval_parse(input) AS (
+CREATE OR REPLACE MACRO vtl_interval_parse(input VARCHAR) AS (
     CASE
         WHEN input IS NULL THEN NULL
         ELSE {
@@ -143,7 +145,7 @@ CREATE OR REPLACE MACRO vtl_interval_parse(input) AS (
     END
 );
 
-CREATE OR REPLACE MACRO vtl_interval_to_string(i) AS (
+CREATE OR REPLACE MACRO vtl_interval_to_string(i vtl_time_interval) AS (
     CASE
         WHEN i IS NULL THEN NULL
         ELSE CAST(i.date1 AS VARCHAR) || '/' || CAST(i.date2 AS VARCHAR)
@@ -152,60 +154,68 @@ CREATE OR REPLACE MACRO vtl_interval_to_string(i) AS (
 
 
 -- ============================================================================
--- COMPARISON MACROS (ordering only -- equality uses VARCHAR directly)
+-- COMPARISON MACROS: vtl_time_period ordering (equality uses VARCHAR directly)
 -- ============================================================================
 
-CREATE OR REPLACE MACRO vtl_period_check_indicator(a, b) AS (
+CREATE OR REPLACE MACRO vtl_period_check_indicator(
+    a vtl_time_period, b vtl_time_period
+) AS (
     CASE
         WHEN a IS NULL OR b IS NULL THEN TRUE
         WHEN a.period_indicator != b.period_indicator THEN
-            error('VTL Error 2-1-19-19: Cannot compare TimePeriods with different indicators: '
+            error('VTL Error 2-1-19-19: Cannot compare TimePeriods with '
+                  || 'different indicators: '
                   || a.period_indicator || ' vs ' || b.period_indicator)
         ELSE TRUE
     END
 );
 
-CREATE OR REPLACE MACRO vtl_period_lt(a, b) AS (
+CREATE OR REPLACE MACRO vtl_period_lt(
+    a vtl_time_period, b vtl_time_period
+) AS (
     CASE WHEN a IS NULL OR b IS NULL THEN NULL
          WHEN NOT vtl_period_check_indicator(a, b) THEN NULL
          ELSE a < b END
 );
 
-CREATE OR REPLACE MACRO vtl_period_le(a, b) AS (
+CREATE OR REPLACE MACRO vtl_period_le(
+    a vtl_time_period, b vtl_time_period
+) AS (
     CASE WHEN a IS NULL OR b IS NULL THEN NULL
          WHEN NOT vtl_period_check_indicator(a, b) THEN NULL
          ELSE a <= b END
 );
 
-CREATE OR REPLACE MACRO vtl_period_gt(a, b) AS (
+CREATE OR REPLACE MACRO vtl_period_gt(
+    a vtl_time_period, b vtl_time_period
+) AS (
     CASE WHEN a IS NULL OR b IS NULL THEN NULL
          WHEN NOT vtl_period_check_indicator(a, b) THEN NULL
          ELSE a > b END
 );
 
-CREATE OR REPLACE MACRO vtl_period_ge(a, b) AS (
+CREATE OR REPLACE MACRO vtl_period_ge(
+    a vtl_time_period, b vtl_time_period
+) AS (
     CASE WHEN a IS NULL OR b IS NULL THEN NULL
          WHEN NOT vtl_period_check_indicator(a, b) THEN NULL
          ELSE a >= b END
 );
 
+
 -- ============================================================================
--- OUTPUT REPRESENTATION MACROS (VARCHAR -> VARCHAR only)
+-- OUTPUT REPRESENTATION MACROS: VARCHAR -> VARCHAR
 -- ============================================================================
 -- Convert canonical internal VARCHAR to external representation format.
--- Input is always the canonical format (e.g. '2020-M06', '2020A').
--- All macros operate on VARCHAR only, no STRUCT or DATE types.
--- NULL inputs are handled by COALESCE/IF — no explicit CASE WHEN NULL checks.
 
--- Helper: convert day-of-year (1-366) + year to YYYY-MM-DD.
--- Uses DATE cast for simplicity and correctness (handles leap years natively).
-CREATE OR REPLACE MACRO vtl_doy_to_date(year_str, doy) AS (
+-- Helper: day-of-year + year -> YYYY-MM-DD
+CREATE OR REPLACE MACRO vtl_doy_to_date(year_str VARCHAR, doy INTEGER) AS (
     CAST(CAST(CAST(year_str || '-01-01' AS DATE)
          + INTERVAL (doy - 1) DAY AS DATE) AS VARCHAR)
 );
 
 -- VTL: YYYY, YYYYSn, YYYYQn, YYYYMm, YYYYWw, YYYYDd (no hyphens)
-CREATE OR REPLACE MACRO vtl_period_to_vtl(input) AS (
+CREATE OR REPLACE MACRO vtl_period_to_vtl(input VARCHAR) AS (
     CASE
         WHEN input IS NULL THEN NULL
         WHEN LENGTH(input) <= 5 THEN SUBSTR(input, 1, 4)
@@ -215,7 +225,7 @@ CREATE OR REPLACE MACRO vtl_period_to_vtl(input) AS (
 );
 
 -- SDMX Reporting: YYYY-A1, YYYY-Ss, YYYY-Qq, YYYY-Mmm, YYYY-Www, YYYY-Dddd
-CREATE OR REPLACE MACRO vtl_period_to_sdmx_reporting(input) AS (
+CREATE OR REPLACE MACRO vtl_period_to_sdmx_reporting(input VARCHAR) AS (
     CASE
         WHEN input IS NULL THEN NULL
         WHEN LENGTH(input) <= 5 THEN SUBSTR(input, 1, 4) || '-A1'
@@ -224,7 +234,7 @@ CREATE OR REPLACE MACRO vtl_period_to_sdmx_reporting(input) AS (
 );
 
 -- SDMX Gregorian: YYYY, YYYY-MM, YYYY-MM-DD (only A, M, D)
-CREATE OR REPLACE MACRO vtl_period_to_sdmx_gregorian(input) AS (
+CREATE OR REPLACE MACRO vtl_period_to_sdmx_gregorian(input VARCHAR) AS (
     CASE
         WHEN input IS NULL THEN NULL
         WHEN LENGTH(input) <= 5 THEN SUBSTR(input, 1, 4)
@@ -233,13 +243,13 @@ CREATE OR REPLACE MACRO vtl_period_to_sdmx_gregorian(input) AS (
         WHEN SUBSTR(input, 6, 1) = 'D' THEN
             vtl_doy_to_date(SUBSTR(input, 1, 4), TRY_CAST(SUBSTR(input, 7) AS INTEGER))
         ELSE
-            error('VTL Error 2-1-19-21: SDMX Gregorian only supports A, M, D indicators, got '
-                  || SUBSTR(input, 6, 1))
+            error('VTL Error 2-1-19-21: SDMX Gregorian only supports A, M, D '
+                  || 'indicators, got ' || SUBSTR(input, 6, 1))
     END
 );
 
 -- Natural: YYYY, YYYY-Sx, YYYY-Qx, YYYY-MM, YYYY-Wxx, YYYY-MM-DD
-CREATE OR REPLACE MACRO vtl_period_to_natural(input) AS (
+CREATE OR REPLACE MACRO vtl_period_to_natural(input VARCHAR) AS (
     CASE
         WHEN input IS NULL THEN NULL
         WHEN LENGTH(input) <= 5 THEN SUBSTR(input, 1, 4)
@@ -260,20 +270,25 @@ CREATE OR REPLACE MACRO vtl_period_to_natural(input) AS (
 -- =========================================================================
 
 -- VTL instr(string, pattern, start, occurrence)
-CREATE OR REPLACE MACRO vtl_instr(s, pat, start_pos_raw, occur_raw) AS (
+CREATE OR REPLACE MACRO vtl_instr(
+    s VARCHAR, pat VARCHAR, start_pos_raw INTEGER, occur_raw INTEGER
+) AS (
     CASE
         WHEN s IS NULL THEN NULL
         WHEN pat IS NULL THEN NULL
         WHEN COALESCE(occur_raw, 1) = 1 THEN
             CASE
                 WHEN INSTR(s[COALESCE(start_pos_raw, 1):], pat) = 0 THEN 0
-                ELSE INSTR(s[COALESCE(start_pos_raw, 1):], pat) + COALESCE(start_pos_raw, 1) - 1
+                ELSE INSTR(s[COALESCE(start_pos_raw, 1):], pat)
+                     + COALESCE(start_pos_raw, 1) - 1
             END
         ELSE (
             WITH RECURSIVE find_occ(pos, n) AS (
                 SELECT
-                    CASE WHEN INSTR(s[COALESCE(start_pos_raw, 1):], pat) = 0 THEN 0
-                         ELSE INSTR(s[COALESCE(start_pos_raw, 1):], pat) + COALESCE(start_pos_raw, 1) - 1
+                    CASE WHEN INSTR(s[COALESCE(start_pos_raw, 1):], pat) = 0
+                         THEN 0
+                         ELSE INSTR(s[COALESCE(start_pos_raw, 1):], pat)
+                              + COALESCE(start_pos_raw, 1) - 1
                     END,
                     1
                 UNION ALL
@@ -286,7 +301,9 @@ CREATE OR REPLACE MACRO vtl_instr(s, pat, start_pos_raw, occur_raw) AS (
                 FROM find_occ
                 WHERE n < COALESCE(occur_raw, 1) AND pos > 0
             )
-            SELECT COALESCE(MAX(CASE WHEN n = COALESCE(occur_raw, 1) THEN pos END), 0) FROM find_occ
+            SELECT COALESCE(
+                MAX(CASE WHEN n = COALESCE(occur_raw, 1) THEN pos END), 0
+            ) FROM find_occ
         )
     END
 );
