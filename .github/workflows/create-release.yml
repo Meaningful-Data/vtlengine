@@ -13,10 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Create release with notes
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const fs = require('fs');
@@ -114,6 +114,7 @@ jobs:
                 title
                 url
                 author { login }
+                labels(first: 10) { nodes { name } }
                 closingIssuesReferences(first: 10, userLinkedOnly: false) {
                   nodes {
                     number
@@ -223,6 +224,10 @@ jobs:
                 continue;
               }
               if (!isPrerelease && /^\(QA\b/i.test(title)) {
+                continue;
+              }
+              const labels = pr.labels?.nodes?.map(l => l.name) || [];
+              if (labels.includes('workflows')) {
                 continue;
               }
 

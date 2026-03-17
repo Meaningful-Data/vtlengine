@@ -484,8 +484,8 @@ class Validation(AST):
 
     op: str
     validation: AST
-    error_code: Optional[str]
-    error_level: Optional[Union[int, str]]
+    error_code: Optional[Union[str, int, float, bool]]
+    error_level: Optional[Union[str, int, float, bool]]
     imbalance: Optional[AST]
     invalid: bool
 
@@ -631,8 +631,8 @@ class HRule(AST):
 
     name: Optional[str]
     rule: HRBinOp
-    erCode: Optional[str]
-    erLevel: Optional[Union[int, str]]
+    erCode: Optional[Union[str, int, float, bool]]
+    erLevel: Optional[Union[str, int, float, bool]]
 
     __eq__ = AST.ast_equality
 
@@ -645,8 +645,8 @@ class DPRule(AST):
 
     name: Optional[str]
     rule: HRBinOp
-    erCode: Optional[str]
-    erLevel: Optional[Union[int, str]]
+    erCode: Optional[Union[str, int, float, bool]]
+    erLevel: Optional[Union[str, int, float, bool]]
 
     __eq__ = AST.ast_equality
 
