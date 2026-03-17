@@ -1,6 +1,8 @@
 from pathlib import Path
 
 from tests.Helper import TestHelper
+from vtlengine.API import create_ast
+from vtlengine.AST.ASTString import ASTString
 
 
 class ValidationHelper(TestHelper):
@@ -451,3 +453,39 @@ class ValidationOperatorsTests(ValidationHelper):
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_598_3(self):
+        """
+        Check with boolean errorcode and errorlevel constants.
+        Dataset --> Dataset
+        Status: OK
+
+        DS_r <- check(DS_1#Me_1 > 0 errorcode true errorlevel false invalid);
+
+        Git Branch: cr-596.
+        Goal: Verify boolean constants work as errorcode/errorlevel in the check
+        operator, including AST round-trip.
+        """
+        code = "GH_598_3"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_598_3_roundtrip(self):
+        """
+        AST round-trip for check with boolean errorcode/errorlevel.
+
+        Git Branch: cr-596.
+        Goal: Verify that rendering the AST back to VTL and re-parsing produces the
+        same result when boolean constants are used in errorcode/errorlevel.
+        """
+        code = "GH_598_3"
+        number_inputs = 1
+        references_names = ["1"]
+
+        text = self.LoadVTL(code)
+        rendered = ASTString().render(create_ast(text))
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names, text=rendered
+        )

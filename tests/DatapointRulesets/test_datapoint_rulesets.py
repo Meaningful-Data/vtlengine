@@ -1,6 +1,8 @@
 from pathlib import Path
 
 from tests.Helper import TestHelper
+from vtlengine.API import create_ast
+from vtlengine.AST.ASTString import ASTString
 
 
 class TestDataPointRuleset(TestHelper):
@@ -419,4 +421,45 @@ class DatapointRulesetTests(TestDataPointRuleset):
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_598_2(self):
+        """
+        check_datapoint with boolean errorcode and errorlevel constants.
+        Dataset --> Dataset
+        Status: OK
+
+        define datapoint ruleset dp_bool (variable Id_1 as X, Me_1 as M) is
+            rule_1: when X = "A" then M > 0 errorcode true errorlevel true;
+            rule_2: when X = "B" then M > 50 errorcode false errorlevel false
+        end datapoint ruleset;
+
+        DS_r <- check_datapoint(DS_1, dp_bool);
+
+        Git Branch: cr-596.
+        Goal: Verify boolean constants work as errorcode/errorlevel in datapoint
+        rulesets, including AST round-trip.
+        """
+        code = "GH_598_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_598_2_roundtrip(self):
+        """
+        AST round-trip for check_datapoint with boolean errorcode/errorlevel.
+
+        Git Branch: cr-596.
+        Goal: Verify that rendering the AST back to VTL and re-parsing produces the
+        same result when boolean constants are used in errorcode/errorlevel.
+        """
+        code = "GH_598_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        text = self.LoadVTL(code)
+        rendered = ASTString().render(create_ast(text))
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names, text=rendered
         )
