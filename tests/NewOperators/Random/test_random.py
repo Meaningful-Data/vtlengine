@@ -2,14 +2,13 @@ import warnings
 from pathlib import Path
 
 import pytest
-from pytest import mark
 
-from vtlengine.API import create_ast
+from tests.NewOperators.conftest import _build_run_inputs
+from vtlengine.API import run
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Interpreter import InterpreterAnalyzer
 
-pytestmark = mark.input_path(Path(__file__).parent / "data")
-
+base_path = Path(__file__).parent / "data"
+pytestmark = pytest.mark.input_path(base_path)
 
 ds_param = [
     ("1", "DS_r := DS_1[calc Me_1 := random(1, 1)];"),
@@ -28,22 +27,29 @@ error_param = [
 
 
 @pytest.mark.parametrize("code, expression", ds_param)
-def test_case_ds(load_input, load_reference, code, expression):
+def test_random(load_reference, code, expression):
     warnings.filterwarnings("ignore", category=FutureWarning)
-    ast = create_ast(expression)
-    interpreter = InterpreterAnalyzer(load_input)
-    result = interpreter.visit(ast)
+    data_structures, datapoints = _build_run_inputs(code, base_path)
+    result = run(
+        script=expression,
+        data_structures=data_structures,
+        datapoints=datapoints,
+        return_only_persistent=False,
+    )
     assert result == load_reference
 
 
 @pytest.mark.parametrize("code, expression, error_code", error_param)
-def test_errors(load_input, code, expression, error_code):
+def test_errors(code, expression, error_code):
     warnings.filterwarnings("ignore", category=FutureWarning)
-    datasets = load_input
+    data_structures, datapoints = _build_run_inputs(code, base_path)
     with pytest.raises(SemanticError) as context:
-        ast = create_ast(expression)
-        interpreter = InterpreterAnalyzer(datasets)
-        interpreter.visit(ast)
+        run(
+            script=expression,
+            data_structures=data_structures,
+            datapoints=datapoints,
+            return_only_persistent=False,
+        )
     result = error_code == str(context.value.args[1])
     if result is False:
         print(f"\n{error_code} != {context.value.args[1]}")

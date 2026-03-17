@@ -333,7 +333,11 @@ class TestGlobalRegistry:
             (INSTR, ('"str"', "'a'"), "vtl_instr(\"str\", 'a', NULL, NULL)"),
             (LOG, ('"x"', "10"), 'LOG(10, "x")'),  # Note: LOG has swapped args
             (POWER, ('"x"', "2"), 'POWER("x", 2)'),
-            (SUBSTR, ('"str"', "1", "5"), 'SUBSTR("str", COALESCE(1, 1), COALESCE(5, LENGTH("str")))'),
+            (
+                SUBSTR,
+                ('"str"', "1", "5"),
+                'SUBSTR("str", COALESCE(1, 1), COALESCE(5, LENGTH("str")))',
+            ),
             (REPLACE, ('"str"', "'a'", "'b'"), "REPLACE(\"str\", 'a', 'b')"),
         ],
     )
