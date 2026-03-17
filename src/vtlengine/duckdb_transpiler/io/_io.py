@@ -11,6 +11,7 @@ from typing import Dict, List, Optional, Tuple, Union
 import duckdb
 import pandas as pd
 
+from vtlengine.DataTypes import TimePeriod
 from vtlengine.duckdb_transpiler.io._validation import (
     build_create_table_sql,
     build_csv_column_types,
@@ -31,6 +32,25 @@ SKIP_LOAD_VALIDATION = os.environ.get("VTL_SKIP_LOAD_VALIDATION", "").lower() in
     "true",
     "yes",
 )
+
+
+def _normalize_time_period_columns(
+    conn: duckdb.DuckDBPyConnection,
+    table_name: str,
+    components: Dict[str, Component],
+) -> None:
+    """Normalize TimePeriod columns to the canonical internal representation.
+
+    Converts all accepted input formats (#505) to the canonical format
+    from TimePeriodHandler.__str__ using the vtl_period_normalize() macro.
+    """
+    for comp_name, comp in components.items():
+        if comp.data_type == TimePeriod:
+            conn.execute(
+                f'UPDATE "{table_name}" SET "{comp_name}" = '
+                f'vtl_period_normalize("{comp_name}") '
+                f'WHERE "{comp_name}" IS NOT NULL'
+            )
 
 
 def _detect_csv_format(conn: duckdb.DuckDBPyConnection, csv_path: Path) -> str:
@@ -180,11 +200,14 @@ def load_datapoints_duckdb(
         """
         conn.execute(insert_sql)
 
+        # 9. Normalize TimePeriod columns to canonical internal representation
+        _normalize_time_period_columns(conn, dataset_name, components)
+
     except duckdb.Error as e:
         conn.execute(f'DROP TABLE IF EXISTS "{dataset_name}"')
         raise map_duckdb_error(e, dataset_name, components)
 
-    # 8. Validate constraints (can be skipped via VTL_SKIP_LOAD_VALIDATION for benchmarking)
+    # 10. Validate constraints (can be skipped via VTL_SKIP_LOAD_VALIDATION for benchmarking)
     if not SKIP_LOAD_VALIDATION:
         try:
             # DWI: no identifiers → max 1 row
@@ -345,3 +368,6 @@ def register_dataframes(
         conn.register(temp_view, df)
         conn.execute(f'INSERT INTO "{name}" SELECT * FROM "{temp_view}"')
         conn.unregister(temp_view)
+
+        # Normalize TimePeriod columns to canonical internal representation
+        _normalize_time_period_columns(conn, name, components)

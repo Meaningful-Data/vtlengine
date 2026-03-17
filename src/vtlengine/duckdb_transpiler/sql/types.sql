@@ -6,15 +6,15 @@
 DROP TYPE IF EXISTS vtl_time_period;
 DROP TYPE IF EXISTS vtl_time_interval;
 
--- TimePeriod STRUCT: stores date range and period indicator
+-- Mirrors TimePeriodHandler: _year, _period_indicator, _period_number
 CREATE TYPE vtl_time_period AS STRUCT(
-    start_date DATE,
-    end_date DATE,
-    period_indicator VARCHAR
+    year INTEGER,
+    period_indicator VARCHAR,
+    period_number INTEGER
 );
 
--- TimeInterval STRUCT: stores date range
+-- Mirrors TimeIntervalHandler: _date1, _date2
 CREATE TYPE vtl_time_interval AS STRUCT(
-    start_date DATE,
-    end_date DATE
+    date1 DATE,
+    date2 DATE
 );

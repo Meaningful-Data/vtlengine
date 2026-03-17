@@ -150,9 +150,9 @@ class TestTimeshiftTimePeriod:
             INSERT INTO DS_1 VALUES ('2020-Q1', 10.0), ('2020-Q2', 20.0);
         """)
 
-        # Run the timeshift query
+        # Run the timeshift query (vtl_period_shift takes VARCHAR, returns VARCHAR)
         sql = """
-            SELECT vtl_period_to_string(vtl_period_shift(vtl_period_parse(time_id), 1)) AS time_id, Me_1
+            SELECT vtl_period_shift(time_id, 1) AS time_id, Me_1
             FROM DS_1
         """
         result = conn.execute(sql).fetchall()
@@ -199,10 +199,10 @@ class TestPeriodIndicator:
         conn = duckdb.connect(":memory:")
         initialize_time_types(conn)
 
-        # Create test data
+        # Create test data (using canonical internal format)
         conn.execute("""
             CREATE TABLE DS_1 (time_id VARCHAR);
-            INSERT INTO DS_1 VALUES ('2020-Q1'), ('2020M06'), ('2020');
+            INSERT INTO DS_1 VALUES ('2020-Q1'), ('2020-M06'), ('2020A');
         """)
 
         # Run the period_indicator query
@@ -240,14 +240,14 @@ class TestTimeAggTimePeriod:
 
         # Run time_agg to aggregate to annual
         sql = """
-            SELECT vtl_period_to_string(vtl_time_agg(vtl_period_parse(time_id), 'A')) AS time_id, Me_1
+            SELECT vtl_time_agg(time_id, 'A') AS time_id, Me_1
             FROM DS_1
         """
         result = conn.execute(sql).fetchall()
 
-        # All should aggregate to 2020 (annual)
+        # All should aggregate to 2020A (annual canonical format)
         for row in result:
-            assert row[0] == "2020"
+            assert row[0] == "2020A"
 
         conn.close()
 
@@ -278,18 +278,19 @@ class TestTimePeriodComparison:
         conn = duckdb.connect(":memory:")
         initialize_time_types(conn)
 
-        # Map operator to function
-        op_map = {
+        # Equality uses VARCHAR directly; ordering uses STRUCT comparison macros
+        ordering_map = {
             "<": "vtl_period_lt",
             "<=": "vtl_period_le",
             ">": "vtl_period_gt",
             ">=": "vtl_period_ge",
-            "=": "vtl_period_eq",
-            "<>": "vtl_period_ne",
         }
-        func = op_map[op]
-
-        sql = f"SELECT {func}(vtl_period_parse('{left}'), vtl_period_parse('{right}'))"
+        if op in ordering_map:
+            func = ordering_map[op]
+            sql = f"SELECT {func}(vtl_period_parse('{left}'), vtl_period_parse('{right}'))"
+        else:
+            # Equality/inequality: compare canonical VARCHAR directly
+            sql = f"SELECT '{left}' {op} '{right}'"
         result = conn.execute(sql).fetchone()[0]
 
         assert result == expected
@@ -319,18 +320,8 @@ class TestTimeIntervalComparison:
         conn = duckdb.connect(":memory:")
         initialize_time_types(conn)
 
-        # Map operator to function
-        op_map = {
-            "<": "vtl_interval_lt",
-            "<=": "vtl_interval_le",
-            ">": "vtl_interval_gt",
-            ">=": "vtl_interval_ge",
-            "=": "vtl_interval_eq",
-            "<>": "vtl_interval_ne",
-        }
-        func = op_map[op]
-
-        sql = f"SELECT {func}(vtl_interval_parse('{left}'), vtl_interval_parse('{right}'))"
+        # TimeInterval uses VARCHAR comparison directly
+        sql = f"SELECT '{left}' {op} '{right}'"
         result = conn.execute(sql).fetchone()[0]
 
         assert result == expected
@@ -351,9 +342,9 @@ class TestYearExtraction:
         conn = duckdb.connect(":memory:")
         initialize_time_types(conn)
 
-        # Test year extraction from various period formats
+        # Test year extraction from various period formats (canonical)
         test_cases = [
-            ("2020", 2020),
+            ("2020A", 2020),
             ("2020-Q1", 2020),
             ("2021-M06", 2021),
             ("2022-W15", 2022),
@@ -399,18 +390,17 @@ class TestSQLInitialization:
 
         # Test each function exists and works
         functions_to_test = [
-            "SELECT vtl_period_parse('2020-Q1').start_date",
+            "SELECT vtl_period_parse('2020-Q1').year",
             "SELECT vtl_period_to_string(vtl_period_parse('2020-Q1'))",
             "SELECT vtl_period_indicator(vtl_period_parse('2020-Q1'))",
             "SELECT vtl_period_year(vtl_period_parse('2020-Q1'))",
             "SELECT vtl_period_number(vtl_period_parse('2020-Q1'))",
             "SELECT vtl_period_lt(vtl_period_parse('2020-Q1'), vtl_period_parse('2020-Q2'))",
-            "SELECT vtl_period_shift(vtl_period_parse('2020-Q1'), 1).period_indicator",
-            "SELECT vtl_period_diff(vtl_period_parse('2020-Q1'), vtl_period_parse('2020-Q2'))",
-            "SELECT vtl_time_agg(vtl_period_parse('2020-Q1'), 'A').period_indicator",
-            "SELECT vtl_interval_parse('2020-01-01/2020-12-31').start_date",
+            "SELECT vtl_period_normalize('2020Q1')",
+            "SELECT vtl_period_shift('2020-Q1', 1)",
+            "SELECT vtl_period_diff('2020-Q1', '2020-Q2')",
+            "SELECT vtl_interval_parse('2020-01-01/2020-12-31').date1",
             "SELECT vtl_interval_to_string(vtl_interval_parse('2020-01-01/2020-12-31'))",
-            "SELECT vtl_interval_lt(vtl_interval_parse('2020-01-01/2020-12-31'), vtl_interval_parse('2021-01-01/2021-12-31'))",
         ]
 
         for sql in functions_to_test:

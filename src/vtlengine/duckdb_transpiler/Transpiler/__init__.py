@@ -14,7 +14,7 @@ from typing import Any, Callable, Dict, Generator, List, Optional, Set, Tuple, U
 import vtlengine.AST as AST
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.Grammar import tokens
-from vtlengine.DataTypes import COMP_NAME_MAPPING
+from vtlengine.DataTypes import COMP_NAME_MAPPING, Date, TimePeriod
 from vtlengine.duckdb_transpiler.Transpiler.operators import (
     get_duckdb_type,
     registry,
@@ -42,6 +42,15 @@ _DP_OP_MAP: Dict[str, str] = {
     "/": "/",
     "and": "AND",
     "or": "OR",
+}
+
+# Mapping from VTL ordering operators to vtl_period_* comparison macros.
+# Equality (=, <>) operates on VARCHAR directly — no macros needed.
+_PERIOD_COMPARISON_MACROS: Dict[str, str] = {
+    tokens.GT: "vtl_period_gt",
+    tokens.GTE: "vtl_period_ge",
+    tokens.LT: "vtl_period_lt",
+    tokens.LTE: "vtl_period_le",
 }
 
 
@@ -1419,7 +1428,16 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         for left_m, right_m in paired_measures:
             left_ref = f"{alias_a}.{quote_identifier(left_m)}"
             right_ref = f"{alias_b}.{quote_identifier(right_m)}"
-            expr = registry.binary.generate(op, left_ref, right_ref)
+
+            # TimePeriod ordering: use vtl_period_* macros with STRUCT comparison
+            left_comp = left_ds.components.get(left_m)
+            period_macro = _PERIOD_COMPARISON_MACROS.get(op)
+            if left_comp and left_comp.data_type == TimePeriod and period_macro:
+                expr = (
+                    f"{period_macro}(vtl_period_parse({left_ref}), vtl_period_parse({right_ref}))"
+                )
+            else:
+                expr = registry.binary.generate(op, left_ref, right_ref)
 
             out_name = left_m
             if (
@@ -1463,8 +1481,20 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 return registry.binary.generate(op, right_sql, left_sql)
 
         scalar_sql = self.visit(scalar_node)
+        period_macro = _PERIOD_COMPARISON_MACROS.get(op)
+
+        # Check if any measure is TimePeriod for ordering comparisons
+        has_time_period_measure = period_macro is not None and any(
+            c.data_type == TimePeriod for c in ds.components.values() if c.role == Role.MEASURE
+        )
 
         def _bin_expr(col_ref: str) -> str:
+            if has_time_period_measure:
+                left = f"vtl_period_parse({col_ref})"
+                right = f"vtl_period_parse({scalar_sql})"
+                if ds_on_left:
+                    return f"{period_macro}({left}, {right})"
+                return f"{period_macro}({right}, {left})"
             if ds_on_left:
                 return registry.binary.generate(op, col_ref, scalar_sql)
             return registry.binary.generate(op, scalar_sql, col_ref)
@@ -1654,10 +1684,13 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         for name, comp in ds.components.items():
             if comp.role == Role.IDENTIFIER:
                 if name == time_id:
-                    cols.append(
-                        f"vtl_period_shift({quote_identifier(name)}, {shift_sql})"
-                        f" AS {quote_identifier(name)}"
-                    )
+                    qn = quote_identifier(name)
+                    if comp.data_type == Date:
+                        # Date: use INTERVAL arithmetic
+                        cols.append(f"CAST({qn} + INTERVAL ({shift_sql}) DAY AS DATE) AS {qn}")
+                    else:
+                        # TimePeriod: use vtl_period_shift macro
+                        cols.append(f"vtl_period_shift({qn}, {shift_sql}) AS {qn}")
                 else:
                     cols.append(quote_identifier(name))
             elif comp.role == Role.MEASURE:
@@ -1671,8 +1704,29 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         # --- Special-case operators that need dedicated logic ---
         if op == tokens.PERIOD_INDICATOR:
-            operand_sql = self.visit(node.operand)
-            return f"vtl_period_indicator(vtl_period_parse({operand_sql}))"
+            if self._get_operand_type(node.operand) == _DATASET:
+                # Dataset-level: apply period_indicator to the time identifier
+                ds = self._get_dataset_structure(node.operand)
+                if ds is None:
+                    raise ValueError("Cannot resolve dataset for period_indicator")
+                table_src = self._get_dataset_sql(node.operand)
+                time_id, _ = self._split_time_identifier(ds)
+                cols: List[str] = []
+                for name, comp in ds.components.items():
+                    if comp.role == Role.IDENTIFIER:
+                        if name == time_id:
+                            cols.append(
+                                f"vtl_period_indicator(vtl_period_parse("
+                                f"{quote_identifier(name)})) AS {quote_identifier(name)}"
+                            )
+                        else:
+                            cols.append(quote_identifier(name))
+                    elif comp.role == Role.MEASURE:
+                        cols.append(quote_identifier(name))
+                return SQLBuilder().select(*cols).from_table(table_src).build()
+            else:
+                operand_sql = self.visit(node.operand)
+                return f"vtl_period_indicator(vtl_period_parse({operand_sql}))"
 
         if op in (tokens.FLOW_TO_STOCK, tokens.STOCK_TO_FLOW):
             return self._visit_time_window_op(node, op)
@@ -2372,11 +2426,18 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         else:
             measures = effective_ds.get_measures_names()
             for measure in measures:
-                if registry.aggregate.is_registered(op):
-                    expr = registry.aggregate.generate(op, quote_identifier(measure))
+                comp = effective_ds.components.get(measure)
+                is_time_period = comp is not None and comp.data_type == TimePeriod
+                qm = quote_identifier(measure)
+
+                if is_time_period and op in (tokens.MIN, tokens.MAX):
+                    # TimePeriod MIN/MAX: parse to STRUCT, aggregate, format back
+                    expr = f"vtl_period_to_string({op.upper()}(vtl_period_parse({qm})))"
+                elif registry.aggregate.is_registered(op):
+                    expr = registry.aggregate.generate(op, qm)
                 else:
-                    expr = f"{op.upper()}({quote_identifier(measure)})"
-                cols.append(f"{expr} AS {quote_identifier(measure)}")
+                    expr = f"{op.upper()}({qm})"
+                cols.append(f"{expr} AS {qm}")
 
         builder = SQLBuilder().select(*cols).from_table(table_src)
 
