@@ -64,13 +64,13 @@ CREATE OR REPLACE MACRO vtl_period_normalize(input) AS (
                     SUBSTR(input, 1, 4) || 'A'
                 WHEN UPPER(SUBSTR(input, 6, 1)) IN ('S', 'Q') THEN
                     SUBSTR(input, 1, 4) || '-' || UPPER(SUBSTR(input, 6, 1))
-                    || CAST(CAST(SUBSTR(input, 7) AS INTEGER) AS VARCHAR)
+                    || CAST(TRY_CAST(SUBSTR(input, 7) AS INTEGER) AS VARCHAR)
                 WHEN UPPER(SUBSTR(input, 6, 1)) IN ('M', 'W') THEN
                     SUBSTR(input, 1, 4) || '-' || UPPER(SUBSTR(input, 6, 1))
-                    || LPAD(CAST(CAST(SUBSTR(input, 7) AS INTEGER) AS VARCHAR), 2, '0')
+                    || LPAD(CAST(TRY_CAST(SUBSTR(input, 7) AS INTEGER) AS VARCHAR), 2, '0')
                 ELSE
                     SUBSTR(input, 1, 4) || '-D'
-                    || LPAD(CAST(CAST(SUBSTR(input, 7) AS INTEGER) AS VARCHAR), 3, '0')
+                    || LPAD(CAST(TRY_CAST(SUBSTR(input, 7) AS INTEGER) AS VARCHAR), 3, '0')
             END
         WHEN LENGTH(input) = 10 THEN
             SUBSTR(input, 1, 4) || '-D'
@@ -189,41 +189,46 @@ CREATE OR REPLACE MACRO vtl_period_ge(a, b) AS (
          ELSE a >= b END
 );
 
-
 -- ============================================================================
--- EXTRACTION MACROS
--- ============================================================================
-
-CREATE OR REPLACE MACRO vtl_period_year(p) AS (
-    CASE WHEN p IS NULL THEN CAST(NULL AS INTEGER) ELSE p.year END
-);
-
-CREATE OR REPLACE MACRO vtl_period_indicator(p) AS (
-    CASE WHEN p IS NULL THEN CAST(NULL AS VARCHAR) ELSE p.period_indicator END
-);
-
-CREATE OR REPLACE MACRO vtl_period_number(p) AS (
-    CASE WHEN p IS NULL THEN CAST(NULL AS INTEGER) ELSE p.period_number END
-);
-
-
--- ============================================================================
--- OUTPUT REPRESENTATION MACROS
+-- OUTPUT REPRESENTATION MACROS (VARCHAR -> VARCHAR only)
 -- ============================================================================
 -- Convert canonical internal VARCHAR to external representation format.
 -- Input is always the canonical format (e.g. '2020-M06', '2020A').
+-- All macros operate on VARCHAR only, no STRUCT or DATE types.
+-- NULL inputs are handled by COALESCE/IF — no explicit CASE WHEN NULL checks.
 
--- VTL representation: YYYY, YYYYSn, YYYYQn, YYYYMm, YYYYWw, YYYYDd (no hyphens)
+-- Helper: convert day-of-year (1-366) + year to YYYY-MM-DD using VARCHAR only.
+CREATE OR REPLACE MACRO vtl_doy_to_date(year_str, doy) AS (
+    SELECT year_str || '-'
+           || LPAD(CAST(m.month_num AS VARCHAR), 2, '0') || '-'
+           || LPAD(CAST(doy - m.month_start AS VARCHAR), 2, '0')
+    FROM (
+        SELECT months.m AS month_num,
+               IF(CAST(year_str AS INTEGER) % 4 = 0
+                  AND (CAST(year_str AS INTEGER) % 100 != 0
+                       OR CAST(year_str AS INTEGER) % 400 = 0),
+                  months.cum_leap, months.cum) AS month_start
+        FROM (
+            SELECT unnest([0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]) AS cum,
+                   unnest([0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335]) AS cum_leap,
+                   unnest([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]) AS m
+        ) months
+        WHERE IF(CAST(year_str AS INTEGER) % 4 = 0
+                 AND (CAST(year_str AS INTEGER) % 100 != 0
+                      OR CAST(year_str AS INTEGER) % 400 = 0),
+                 months.cum_leap, months.cum) < doy
+        ORDER BY months.m DESC
+        LIMIT 1
+    ) m
+);
+
+-- VTL: YYYY, YYYYSn, YYYYQn, YYYYMm, YYYYWw, YYYYDd (no hyphens)
 CREATE OR REPLACE MACRO vtl_period_to_vtl(input) AS (
     CASE
         WHEN input IS NULL THEN NULL
-        WHEN SUBSTR(input, 5, 1) != '-' THEN
-            -- Annual: YYYYA -> YYYY
-            SUBSTR(input, 1, 4)
-        ELSE
-            -- Remove dash: YYYY-Mnn -> YYYYMnn, strip leading zeros from number
-            SUBSTR(input, 1, 4) || SUBSTR(input, 6, 1)
-            || CAST(CAST(SUBSTR(input, 7) AS INTEGER) AS VARCHAR)
+        WHEN LENGTH(input) <= 5 THEN SUBSTR(input, 1, 4)
+        ELSE SUBSTR(input, 1, 4) || SUBSTR(input, 6, 1)
+             || CAST(TRY_CAST(SUBSTR(input, 7) AS INTEGER) AS VARCHAR)
     END
 );
 
@@ -231,29 +236,20 @@ CREATE OR REPLACE MACRO vtl_period_to_vtl(input) AS (
 CREATE OR REPLACE MACRO vtl_period_to_sdmx_reporting(input) AS (
     CASE
         WHEN input IS NULL THEN NULL
-        WHEN SUBSTR(input, 5, 1) != '-' THEN
-            -- Annual: YYYYA -> YYYY-A1
-            SUBSTR(input, 1, 4) || '-A1'
-        ELSE
-            -- Already in SDMX reporting format (YYYY-Xnn with proper padding)
-            input
+        WHEN LENGTH(input) <= 5 THEN SUBSTR(input, 1, 4) || '-A1'
+        ELSE input
     END
 );
 
--- SDMX Gregorian: YYYY, YYYY-MM, YYYY-MM-DD (only A, M, D supported)
+-- SDMX Gregorian: YYYY, YYYY-MM, YYYY-MM-DD (only A, M, D)
 CREATE OR REPLACE MACRO vtl_period_to_sdmx_gregorian(input) AS (
     CASE
         WHEN input IS NULL THEN NULL
-        WHEN SUBSTR(input, 5, 1) != '-' THEN
-            -- Annual: YYYYA -> YYYY
-            SUBSTR(input, 1, 4)
+        WHEN LENGTH(input) <= 5 THEN SUBSTR(input, 1, 4)
         WHEN SUBSTR(input, 6, 1) = 'M' THEN
-            -- Month: YYYY-Mnn -> YYYY-nn
             SUBSTR(input, 1, 4) || '-' || SUBSTR(input, 7)
         WHEN SUBSTR(input, 6, 1) = 'D' THEN
-            -- Day: YYYY-Dnnn -> YYYY-MM-DD via date arithmetic
-            CAST(CAST(CAST(SUBSTR(input, 1, 4) || '-01-01' AS DATE)
-                 + INTERVAL (CAST(SUBSTR(input, 7) AS INTEGER) - 1) DAY AS DATE) AS VARCHAR)
+            vtl_doy_to_date(SUBSTR(input, 1, 4), TRY_CAST(SUBSTR(input, 7) AS INTEGER))
         ELSE
             error('VTL Error 2-1-19-21: SDMX Gregorian only supports A, M, D indicators, got '
                   || SUBSTR(input, 6, 1))
@@ -264,23 +260,15 @@ CREATE OR REPLACE MACRO vtl_period_to_sdmx_gregorian(input) AS (
 CREATE OR REPLACE MACRO vtl_period_to_natural(input) AS (
     CASE
         WHEN input IS NULL THEN NULL
-        WHEN SUBSTR(input, 5, 1) != '-' THEN
-            -- Annual: YYYYA -> YYYY
-            SUBSTR(input, 1, 4)
+        WHEN LENGTH(input) <= 5 THEN SUBSTR(input, 1, 4)
         WHEN SUBSTR(input, 6, 1) = 'M' THEN
-            -- Month: YYYY-Mnn -> YYYY-nn
             SUBSTR(input, 1, 4) || '-' || SUBSTR(input, 7)
         WHEN SUBSTR(input, 6, 1) = 'D' THEN
-            -- Day: YYYY-Dnnn -> YYYY-MM-DD via date arithmetic
-            CAST(CAST(CAST(SUBSTR(input, 1, 4) || '-01-01' AS DATE)
-                 + INTERVAL (CAST(SUBSTR(input, 7) AS INTEGER) - 1) DAY AS DATE) AS VARCHAR)
-        WHEN SUBSTR(input, 6, 1) = 'W' THEN
-            -- Week: YYYY-Wnn -> YYYY-Wnn (keep as-is with padding)
-            input
+            vtl_doy_to_date(SUBSTR(input, 1, 4), TRY_CAST(SUBSTR(input, 7) AS INTEGER))
+        WHEN SUBSTR(input, 6, 1) = 'W' THEN input
         ELSE
-            -- S, Q: YYYY-Sx, YYYY-Qx -> YYYY-Sx, YYYY-Qx (keep as-is, strip leading zero)
             SUBSTR(input, 1, 4) || '-' || SUBSTR(input, 6, 1)
-            || CAST(CAST(SUBSTR(input, 7) AS INTEGER) AS VARCHAR)
+            || CAST(TRY_CAST(SUBSTR(input, 7) AS INTEGER) AS VARCHAR)
     END
 );
 

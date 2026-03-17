@@ -193,11 +193,10 @@ class TestYearExtraction:
     """Tests for YEAR extraction from TimePeriod."""
 
     def test_year_extraction_execution(self):
-        """Test that YEAR extraction works for TimePeriod."""
+        """Test that YEAR extraction works via STRUCT field access."""
         conn = duckdb.connect(":memory:")
         initialize_time_types(conn)
 
-        # Test year extraction from various period formats (canonical)
         test_cases = [
             ("2020A", 2020),
             ("2020-Q1", 2020),
@@ -206,7 +205,7 @@ class TestYearExtraction:
         ]
 
         for period, expected_year in test_cases:
-            sql = f"SELECT vtl_period_year(vtl_period_parse('{period}'))"
+            sql = f"SELECT vtl_period_parse('{period}').year"
             result = conn.execute(sql).fetchone()[0]
             assert result == expected_year, f"YEAR({period}) should be {expected_year}"
 
@@ -247,9 +246,9 @@ class TestSQLInitialization:
         functions_to_test = [
             "SELECT vtl_period_parse('2020-Q1').year",
             "SELECT vtl_period_to_string(vtl_period_parse('2020-Q1'))",
-            "SELECT vtl_period_indicator(vtl_period_parse('2020-Q1'))",
-            "SELECT vtl_period_year(vtl_period_parse('2020-Q1'))",
-            "SELECT vtl_period_number(vtl_period_parse('2020-Q1'))",
+            "SELECT vtl_period_parse('2020-Q1').period_indicator",
+            "SELECT vtl_period_parse('2020-Q1').year",
+            "SELECT vtl_period_parse('2020-Q1').period_number",
             "SELECT vtl_period_lt(vtl_period_parse('2020-Q1'), vtl_period_parse('2020-Q2'))",
             "SELECT vtl_period_normalize('2020Q1')",
             "SELECT vtl_interval_parse('2020-01-01/2020-12-31').date1",
