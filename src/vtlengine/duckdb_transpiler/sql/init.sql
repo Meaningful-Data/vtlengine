@@ -207,6 +207,84 @@ CREATE OR REPLACE MACRO vtl_period_number(p) AS (
 );
 
 
+-- ============================================================================
+-- OUTPUT REPRESENTATION MACROS
+-- ============================================================================
+-- Convert canonical internal VARCHAR to external representation format.
+-- Input is always the canonical format (e.g. '2020-M06', '2020A').
+
+-- VTL representation: YYYY, YYYYSn, YYYYQn, YYYYMm, YYYYWw, YYYYDd (no hyphens)
+CREATE OR REPLACE MACRO vtl_period_to_vtl(input) AS (
+    CASE
+        WHEN input IS NULL THEN NULL
+        WHEN SUBSTR(input, 5, 1) != '-' THEN
+            -- Annual: YYYYA -> YYYY
+            SUBSTR(input, 1, 4)
+        ELSE
+            -- Remove dash: YYYY-Mnn -> YYYYMnn, strip leading zeros from number
+            SUBSTR(input, 1, 4) || SUBSTR(input, 6, 1)
+            || CAST(CAST(SUBSTR(input, 7) AS INTEGER) AS VARCHAR)
+    END
+);
+
+-- SDMX Reporting: YYYY-A1, YYYY-Ss, YYYY-Qq, YYYY-Mmm, YYYY-Www, YYYY-Dddd
+CREATE OR REPLACE MACRO vtl_period_to_sdmx_reporting(input) AS (
+    CASE
+        WHEN input IS NULL THEN NULL
+        WHEN SUBSTR(input, 5, 1) != '-' THEN
+            -- Annual: YYYYA -> YYYY-A1
+            SUBSTR(input, 1, 4) || '-A1'
+        ELSE
+            -- Already in SDMX reporting format (YYYY-Xnn with proper padding)
+            input
+    END
+);
+
+-- SDMX Gregorian: YYYY, YYYY-MM, YYYY-MM-DD (only A, M, D supported)
+CREATE OR REPLACE MACRO vtl_period_to_sdmx_gregorian(input) AS (
+    CASE
+        WHEN input IS NULL THEN NULL
+        WHEN SUBSTR(input, 5, 1) != '-' THEN
+            -- Annual: YYYYA -> YYYY
+            SUBSTR(input, 1, 4)
+        WHEN SUBSTR(input, 6, 1) = 'M' THEN
+            -- Month: YYYY-Mnn -> YYYY-nn
+            SUBSTR(input, 1, 4) || '-' || SUBSTR(input, 7)
+        WHEN SUBSTR(input, 6, 1) = 'D' THEN
+            -- Day: YYYY-Dnnn -> YYYY-MM-DD via date arithmetic
+            CAST(CAST(CAST(SUBSTR(input, 1, 4) || '-01-01' AS DATE)
+                 + INTERVAL (CAST(SUBSTR(input, 7) AS INTEGER) - 1) DAY AS DATE) AS VARCHAR)
+        ELSE
+            error('VTL Error 2-1-19-21: SDMX Gregorian only supports A, M, D indicators, got '
+                  || SUBSTR(input, 6, 1))
+    END
+);
+
+-- Natural: YYYY, YYYY-Sx, YYYY-Qx, YYYY-MM, YYYY-Wxx, YYYY-MM-DD
+CREATE OR REPLACE MACRO vtl_period_to_natural(input) AS (
+    CASE
+        WHEN input IS NULL THEN NULL
+        WHEN SUBSTR(input, 5, 1) != '-' THEN
+            -- Annual: YYYYA -> YYYY
+            SUBSTR(input, 1, 4)
+        WHEN SUBSTR(input, 6, 1) = 'M' THEN
+            -- Month: YYYY-Mnn -> YYYY-nn
+            SUBSTR(input, 1, 4) || '-' || SUBSTR(input, 7)
+        WHEN SUBSTR(input, 6, 1) = 'D' THEN
+            -- Day: YYYY-Dnnn -> YYYY-MM-DD via date arithmetic
+            CAST(CAST(CAST(SUBSTR(input, 1, 4) || '-01-01' AS DATE)
+                 + INTERVAL (CAST(SUBSTR(input, 7) AS INTEGER) - 1) DAY AS DATE) AS VARCHAR)
+        WHEN SUBSTR(input, 6, 1) = 'W' THEN
+            -- Week: YYYY-Wnn -> YYYY-Wnn (keep as-is with padding)
+            input
+        ELSE
+            -- S, Q: YYYY-Sx, YYYY-Qx -> YYYY-Sx, YYYY-Qx (keep as-is, strip leading zero)
+            SUBSTR(input, 1, 4) || '-' || SUBSTR(input, 6, 1)
+            || CAST(CAST(SUBSTR(input, 7) AS INTEGER) AS VARCHAR)
+    END
+);
+
+
 -- =========================================================================
 -- VTL String Functions
 -- =========================================================================

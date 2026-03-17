@@ -29,8 +29,10 @@ from vtlengine.AST.ASTString import ASTString
 from vtlengine.AST.DAG import DAGAnalyzer
 from vtlengine.AST.Grammar.lexer import Lexer
 from vtlengine.AST.Grammar.parser import Parser
+from vtlengine.DataTypes import TimePeriod
 from vtlengine.duckdb_transpiler.Config.config import configure_duckdb_connection
 from vtlengine.duckdb_transpiler.io import execute_queries, extract_datapoint_paths
+from vtlengine.duckdb_transpiler.sql import initialize_time_types
 from vtlengine.duckdb_transpiler.Transpiler import SQLTranspiler
 from vtlengine.Exceptions import InputValidationException
 from vtlengine.files.output._time_period_representation import (
@@ -286,6 +288,54 @@ def semantic_analysis(
     return result
 
 
+_REPR_MACRO: Dict[TimePeriodRepresentation, str] = {
+    TimePeriodRepresentation.VTL: "vtl_period_to_vtl",
+    TimePeriodRepresentation.SDMX_REPORTING: "vtl_period_to_sdmx_reporting",
+    TimePeriodRepresentation.SDMX_GREGORIAN: "vtl_period_to_sdmx_gregorian",
+    TimePeriodRepresentation.NATURAL: "vtl_period_to_natural",
+}
+
+
+def _apply_duckdb_time_period_representation(
+    results: Dict[str, Union[Dataset, Scalar]],
+    representation: TimePeriodRepresentation,
+) -> None:
+    """Apply time period output representation using DuckDB SQL macros.
+
+    Converts internal canonical format to the requested output format
+    (VTL, SDMX Reporting, SDMX Gregorian, Natural) using vectorized
+    DuckDB macro execution instead of per-row Python formatting.
+    """
+    macro = _REPR_MACRO[representation]
+    conn = duckdb.connect()
+    initialize_time_types(conn)
+    try:
+        for obj in results.values():
+            if isinstance(obj, Scalar):
+                # Use Python formatting for scalar values (simpler, no DuckDB overhead)
+                format_time_period_external_representation(obj, representation)
+                continue
+
+            if obj.data is None or obj.data.empty:
+                continue
+
+            tp_cols = [c.name for c in obj.components.values() if c.data_type == TimePeriod]
+            if not tp_cols:
+                continue
+
+            conn.register("_repr_tmp", obj.data)
+            select_parts = []
+            for col in obj.data.columns:
+                if col in tp_cols:
+                    select_parts.append(f'{macro}("{col}") AS "{col}"')
+                else:
+                    select_parts.append(f'"{col}"')
+            obj.data = conn.execute(f"SELECT {', '.join(select_parts)} FROM _repr_tmp").fetchdf()
+            conn.unregister("_repr_tmp")
+    finally:
+        conn.close()
+
+
 def _run_with_duckdb(
     script: Union[str, TransformationScheme, Path],
     data_structures: Union[
@@ -305,6 +355,7 @@ def _run_with_duckdb(
     return_only_persistent: bool = True,
     scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
     output_folder: Optional[Union[str, Path]] = None,
+    time_period_output_format: str = "vtl",
 ) -> Dict[str, Union[Dataset, Scalar]]:
     """
     Run VTL script using DuckDB as the execution engine.
@@ -391,6 +442,11 @@ def _run_with_duckdb(
         )
     finally:
         conn.close()
+
+    # Apply time period output representation via DuckDB macros
+    if output_folder is None:
+        representation = TimePeriodRepresentation.check_value(time_period_output_format)
+        _apply_duckdb_time_period_representation(results, representation)
 
     return results
 
@@ -533,6 +589,7 @@ def run(
             return_only_persistent=return_only_persistent,
             scalar_values=scalar_values,
             output_folder=output_folder,
+            time_period_output_format=time_period_output_format,
         )
 
     # Convert sdmx_mappings to dict format for internal use
