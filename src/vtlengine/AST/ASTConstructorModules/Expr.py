@@ -1,6 +1,6 @@
 import re
 from copy import copy
-from typing import Any, Optional
+from typing import Any, List, Optional, Tuple
 
 from antlr4.tree.Tree import TerminalNodeImpl
 
@@ -1653,8 +1653,11 @@ class Expr(VtlVisitor):
     def visitGroupingClause(self, ctx: Parser.GroupingClauseContext):
         """
         groupingClause:
-            GROUP op=(BY | EXCEPT) componentID (COMMA componentID)*     # groupByOrExcept
-            | GROUP ALL exprComponent                                   # groupAll
+            GROUP op=(BY | EXCEPT) componentID (COMMA componentID)*
+                ( TIME_AGG LPAREN STRING_CONSTANT
+                  (COMMA delim=(FIRST|LAST))? RPAREN )?
+            | GROUP ALL ( TIME_AGG LPAREN STRING_CONSTANT
+                  (COMMA delim=(FIRST|LAST))? RPAREN )?
           ;
         """
         if isinstance(ctx, Parser.GroupByOrExceptContext):
@@ -1706,6 +1709,22 @@ class Expr(VtlVisitor):
             op=op_node, children=None, params=param_nodes, **extract_token_info(ctx)
         ), expr
 
+    @staticmethod
+    def _extract_time_agg_tokens(
+        ctx_list: List[Any],
+    ) -> Tuple[Optional[str], Optional[str]]:
+        """Extract TIME_AGG parameters (period_to, conf) from parse tree children."""
+        period_to: Optional[str] = None
+        conf: Optional[str] = None
+        for child in ctx_list:
+            if isinstance(child, TerminalNodeImpl):
+                token = child.getSymbol()
+                if token.type == Parser.STRING_CONSTANT:
+                    period_to = token.text[1:-1]
+                elif token.type in (Parser.FIRST, Parser.LAST):
+                    conf = token.text
+        return period_to, conf
+
     def visitGroupByOrExcept(self, ctx: Parser.GroupByOrExceptContext):
         ctx_list = list(ctx.getChildren())
 
@@ -1714,11 +1733,29 @@ class Expr(VtlVisitor):
 
         op_node = token_left + " " + token_right
 
-        children_nodes = [
-            Terminals().visitComponentID(identifier)
-            for identifier in ctx_list
-            if isinstance(identifier, Parser.ComponentIDContext)
-        ]
+        children_nodes: List[Any] = []
+        has_time_agg = False
+
+        for child in ctx_list:
+            if isinstance(child, Parser.ComponentIDContext):
+                children_nodes.append(Terminals().visitComponentID(child))
+            elif isinstance(child, TerminalNodeImpl) and child.getSymbol().type == Parser.TIME_AGG:
+                has_time_agg = True
+
+        if has_time_agg:
+            period_to, conf = self._extract_time_agg_tokens(ctx_list)
+            if period_to is None:
+                raise NotImplementedError
+            children_nodes.append(
+                TimeAggregation(
+                    op="time_agg",
+                    operand=None,
+                    period_to=period_to,
+                    period_from=None,
+                    conf=conf,
+                    **extract_token_info(ctx),
+                )
+            )
 
         return op_node, children_nodes
 
@@ -1734,34 +1771,14 @@ class Expr(VtlVisitor):
 
         # Check if TIME_AGG is present (more than just GROUP ALL)
         if len(ctx_list) > 2:
-            period_to = None
-            period_from = None
-            operand_node = None
-            conf = None
-
-            for child in ctx_list:
-                if isinstance(child, TerminalNodeImpl):
-                    token = child.getSymbol()
-                    if token.type == Parser.STRING_CONSTANT:
-                        if period_to is None:
-                            period_to = token.text[1:-1]
-                        else:
-                            period_from = token.text[1:-1]
-                    elif token.type in [Parser.FIRST, Parser.LAST]:
-                        conf = token.text
-                elif isinstance(child, Parser.OptionalExprContext):
-                    operand_node = self.visitOptionalExpr(child)
-                    if isinstance(operand_node, ID):
-                        operand_node = None
-                    elif isinstance(operand_node, Identifier):
-                        operand_node = VarID(value=operand_node.value, **extract_token_info(child))
+            period_to, conf = self._extract_time_agg_tokens(ctx_list)
 
             children_nodes = [
                 TimeAggregation(
                     op="time_agg",
-                    operand=operand_node,
+                    operand=None,
                     period_to=period_to,
-                    period_from=period_from,
+                    period_from=None,
                     conf=conf,
                     **extract_token_info(ctx),
                 )
