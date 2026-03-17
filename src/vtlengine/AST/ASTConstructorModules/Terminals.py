@@ -635,10 +635,7 @@ class Terminals(VtlVisitor):
         ctx_list = list(ctx.getChildren())
 
         try:
-            value = self.visitConstant(ctx_list[1]).value
-            if isinstance(value, bool):
-                return value
-            return str(value)
+            return str(self.visitConstant(ctx_list[1]).value)
         except Exception:
             raise Exception(f"Error code must be a string, line {ctx_list[1].getSymbol().line}")
 
