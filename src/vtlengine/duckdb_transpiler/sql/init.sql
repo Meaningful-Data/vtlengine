@@ -197,29 +197,11 @@ CREATE OR REPLACE MACRO vtl_period_ge(a, b) AS (
 -- All macros operate on VARCHAR only, no STRUCT or DATE types.
 -- NULL inputs are handled by COALESCE/IF — no explicit CASE WHEN NULL checks.
 
--- Helper: convert day-of-year (1-366) + year to YYYY-MM-DD using VARCHAR only.
+-- Helper: convert day-of-year (1-366) + year to YYYY-MM-DD.
+-- Uses DATE cast for simplicity and correctness (handles leap years natively).
 CREATE OR REPLACE MACRO vtl_doy_to_date(year_str, doy) AS (
-    SELECT year_str || '-'
-           || LPAD(CAST(m.month_num AS VARCHAR), 2, '0') || '-'
-           || LPAD(CAST(doy - m.month_start AS VARCHAR), 2, '0')
-    FROM (
-        SELECT months.m AS month_num,
-               IF(CAST(year_str AS INTEGER) % 4 = 0
-                  AND (CAST(year_str AS INTEGER) % 100 != 0
-                       OR CAST(year_str AS INTEGER) % 400 = 0),
-                  months.cum_leap, months.cum) AS month_start
-        FROM (
-            SELECT unnest([0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]) AS cum,
-                   unnest([0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335]) AS cum_leap,
-                   unnest([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]) AS m
-        ) months
-        WHERE IF(CAST(year_str AS INTEGER) % 4 = 0
-                 AND (CAST(year_str AS INTEGER) % 100 != 0
-                      OR CAST(year_str AS INTEGER) % 400 = 0),
-                 months.cum_leap, months.cum) < doy
-        ORDER BY months.m DESC
-        LIMIT 1
-    ) m
+    CAST(CAST(CAST(year_str || '-01-01' AS DATE)
+         + INTERVAL (doy - 1) DAY AS DATE) AS VARCHAR)
 );
 
 -- VTL: YYYY, YYYYSn, YYYYQn, YYYYMm, YYYYWw, YYYYDd (no hyphens)
