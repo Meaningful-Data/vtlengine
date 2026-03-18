@@ -2416,6 +2416,9 @@ FROM {src}, (
         # Normalize TimePeriod values on cast to ensure canonical format
         if target_type_str.lower() in ("time_period", "timeperiod"):
             return f"vtl_period_normalize(CAST({expr} AS VARCHAR))"
+        # VTL cast to Integer truncates toward zero; DuckDB CAST rounds.
+        if target_type_str == "Integer":
+            return f"CAST(TRUNC({expr}) AS {duckdb_type})"
         return f"CAST({expr} AS {duckdb_type})"
 
     def _visit_random_impl(
