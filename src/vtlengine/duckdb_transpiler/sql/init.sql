@@ -1,5 +1,6 @@
 -- ============================================================================
 -- VTL Time Types for DuckDB
+-- VTL Time Types for DuckDB
 -- ============================================================================
 -- Types and macros for TimePeriod and TimeInterval handling.
 -- Loaded once when initializing a DuckDB connection for VTL.

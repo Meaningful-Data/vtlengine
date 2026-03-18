@@ -9,6 +9,7 @@ if TYPE_CHECKING:
 
 _SQL_DIR = Path(__file__).parent
 _INIT_SQL = _SQL_DIR / "init.sql"
+_TIME_OPERATORS_SQL = _SQL_DIR / "time_operators.sql"
 
 # Use WeakSet to track initialized connections - entries are automatically
 # removed when the connection is garbage collected, preventing false positives
@@ -34,6 +35,10 @@ def initialize_time_types(conn: "duckdb.DuckDBPyConnection") -> None:
         raise FileNotFoundError(f"SQL init file not found: {_INIT_SQL}")
 
     conn.execute(_INIT_SQL.read_text())
+
+    if _TIME_OPERATORS_SQL.exists():
+        conn.execute(_TIME_OPERATORS_SQL.read_text())
+
     _initialized_connections.add(conn)
 
 
