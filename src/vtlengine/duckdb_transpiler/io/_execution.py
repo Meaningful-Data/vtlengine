@@ -115,6 +115,14 @@ def load_scheduled_datasets(
         elif ds_name in dataframe_dict:
             # Register DataFrame directly with proper schema
             register_dataframes(conn, {ds_name: dataframe_dict[ds_name]}, input_datasets)
+        else:
+            # No data provided - create empty table with proper schema
+            load_datapoints_duckdb(
+                conn=conn,
+                components=input_datasets[ds_name].components,
+                dataset_name=ds_name,
+                csv_path=None,
+            )
 
 
 def cleanup_scheduled_datasets(
