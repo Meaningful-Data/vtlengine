@@ -254,17 +254,28 @@ class StructureVisitor(ASTTemplate):
         return _SCALAR
 
     def _get_binop_type(self, node: AST.BinOp) -> str:
-        """Determine operand type for a BinOp."""
-        op = str(node.op).lower() if node.op else ""
-        # In clause context, membership resolves to a column reference
-        if self._in_clause and op == tokens.MEMBERSHIP:
-            return _COMPONENT
-        left_t = self._get_operand_type(node.left)
-        if left_t == _DATASET:
+        """Determine operand type for a BinOp.
+
+        Walks left-nested BinOp chains iteratively to avoid stack overflow
+        on expressions with hundreds of operands (e.g. ``A + B + C + ...``).
+        """
+        # Collect right operands while walking down the left BinOp spine.
+        rights: list[AST.AST] = []
+        current: AST.AST = node
+        while isinstance(current, AST.BinOp):
+            op = str(current.op).lower() if current.op else ""
+            if self._in_clause and op == tokens.MEMBERSHIP:
+                return _COMPONENT
+            rights.append(current.right)
+            current = current.left
+
+        # Check the leftmost (non-BinOp) operand.
+        if self._get_operand_type(current) == _DATASET:
             return _DATASET
-        right_t = self._get_operand_type(node.right)
-        if right_t == _DATASET:
-            return _DATASET
+        # Check all right operands.
+        for right in rights:
+            if self._get_operand_type(right) == _DATASET:
+                return _DATASET
         return _SCALAR
 
     def _get_mulop_type(self, node: AST.MulOp) -> str:
@@ -767,7 +778,16 @@ class StructureVisitor(ASTTemplate):
         comps = dict(input_ds.components)
         for child in node.children:
             assignment = child
+            calc_role: Optional[Role] = None
             if isinstance(child, AST.UnaryOp) and isinstance(child.operand, AST.Assignment):
+                # Role is encoded in UnaryOp.op: "identifier", "measure", "attribute"
+                op_str = str(child.op).lower()
+                if op_str == "identifier":
+                    calc_role = Role.IDENTIFIER
+                elif op_str == "attribute":
+                    calc_role = Role.ATTRIBUTE
+                else:
+                    calc_role = Role.MEASURE
                 assignment = child.operand
             if isinstance(assignment, AST.Assignment):
                 col_name = assignment.left.value if hasattr(assignment.left, "value") else ""
@@ -778,7 +798,21 @@ class StructureVisitor(ASTTemplate):
                         col_name = udo_val.value
                     elif isinstance(udo_val, str):
                         col_name = udo_val
-                if col_name not in comps and output_ds and col_name in output_ds.components:
+                # Update role if calc promotes an existing column (e.g.
+                # ``calc identifier severity := severity``).
+                if (
+                    col_name in comps
+                    and calc_role is not None
+                    and comps[col_name].role != calc_role
+                ):
+                    old = comps[col_name]
+                    comps[col_name] = Component(
+                        name=old.name,
+                        data_type=old.data_type,
+                        role=calc_role,
+                        nullable=old.nullable if calc_role != Role.IDENTIFIER else False,
+                    )
+                elif col_name not in comps and output_ds and col_name in output_ds.components:
                     comps[col_name] = output_ds.components[col_name]
                 elif col_name not in comps:
                     from vtlengine.DataTypes import Number as NumberType

@@ -1371,16 +1371,23 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         left_node: AST.AST,
         right_node: AST.AST,
         op: str,
+        left_sql_override: Optional[str] = None,
+        left_ds_override: Optional[Dataset] = None,
     ) -> str:
-        """Build SQL for dataset-dataset binary operation (requires JOIN)."""
-        left_ds = self._get_dataset_structure(left_node)
+        """Build SQL for dataset-dataset binary operation (requires JOIN).
+
+        When ``left_sql_override`` / ``left_ds_override`` are provided, they
+        are used instead of resolving the left node.  This allows iterative
+        chaining without recursion.
+        """
+        left_ds = left_ds_override or self._get_dataset_structure(left_node)
         right_ds = self._get_dataset_structure(right_node)
         output_ds = self._get_output_dataset()
 
         if left_ds is None or right_ds is None:
             raise ValueError("Cannot resolve dataset structures for binary operation")
 
-        left_src = self._get_dataset_sql(left_node)
+        left_src = left_sql_override or self._get_dataset_sql(left_node)
         right_src = self._get_dataset_sql(right_node)
 
         alias_a = "a"
@@ -1475,6 +1482,16 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     # Expression visitors
     # =========================================================================
 
+    # Arithmetic ops that can form long left-associative chains.
+    _ARITHMETIC_OPS = frozenset({"+", "-", "*", "/", "||"})
+
+    def _is_chainable_ds_binop(self, node: AST.AST) -> bool:
+        """Check if a node is a BinOp with an arithmetic op involving datasets."""
+        if not isinstance(node, AST.BinOp):
+            return False
+        op = str(node.op).lower() if node.op else ""
+        return op in self._ARITHMETIC_OPS and self._get_operand_type(node) == _DATASET
+
     def visit_BinOp(self, node: AST.BinOp) -> str:  # type: ignore[override]
         """Visit a binary operation."""
         op = str(node.op).lower() if node.op else ""
@@ -1504,6 +1521,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         has_dataset = left_type == _DATASET or right_type == _DATASET
 
         if has_dataset:
+            if op in self._ARITHMETIC_OPS and self._is_chainable_ds_binop(node.left):
+                return self._visit_dataset_binary_chain(node)
             return self._visit_dataset_binary(node.left, node.right, op)
 
         # Scalar-scalar: use registry
@@ -1513,6 +1532,67 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return registry.binary.generate(op, left_sql, right_sql)
         # Fallback for unregistered ops
         return f"{op.upper()}({left_sql}, {right_sql})"
+
+    def _visit_dataset_binary_chain(self, node: AST.BinOp) -> str:
+        """Iteratively fold a left-recursive chain of dataset binary operations."""
+        # Flatten the left spine: collect (op, right_node) pairs.
+        parts: list[tuple[str, AST.AST]] = []
+        current: AST.AST = node
+        while isinstance(current, AST.BinOp):
+            bin_op = str(current.op).lower() if current.op else ""
+            if bin_op not in self._ARITHMETIC_OPS:
+                break
+            if self._get_operand_type(current) != _DATASET:
+                break
+            parts.append((bin_op, current.right))
+            current = current.left
+
+        # ``current`` is the leftmost operand; ``parts`` is in reverse order.
+        parts.reverse()
+
+        # Resolve the leftmost operand's SQL and structure.
+        result_sql = self._get_dataset_sql(current)
+        result_ds = self._get_dataset_structure(current)
+
+        # Track whether result_sql is a subquery (needs wrapping) or a table name.
+        is_subquery = False
+
+        # Fold: start with the leftmost operand and apply each (op, right) pair.
+        for step_op, right_node in parts:
+            right_type = self._get_operand_type(right_node)
+            if right_type == _DATASET:
+                left_src = f"({result_sql})" if is_subquery else result_sql
+                result_sql = self._build_ds_ds_binary(
+                    right_node,  # unused for left when overrides given
+                    right_node,
+                    step_op,
+                    left_sql_override=left_src,
+                    left_ds_override=result_ds,
+                )
+                # After each step, the result structure is the output dataset.
+                result_ds = self._get_output_dataset() or result_ds
+                is_subquery = True
+            else:
+                # ds-scalar: visit scalar and wrap the accumulated SQL.
+                scalar_sql = self.visit(right_node)
+                measure_names = result_ds.get_measures_names() if result_ds else []
+                cols: list[str] = []
+                if result_ds:
+                    for id_name in result_ds.get_identifiers_names():
+                        cols.append(quote_identifier(id_name))
+                for m_name in measure_names:
+                    m_ref = quote_identifier(m_name)
+                    expr = registry.binary.generate(step_op, m_ref, scalar_sql)
+                    cols.append(f"{expr} AS {m_ref}")
+                if result_ds:
+                    for attr_name in result_ds.get_attributes_names():
+                        cols.append(quote_identifier(attr_name))
+                left_src = f"({result_sql})" if is_subquery else result_sql
+                select_clause = ", ".join(cols)
+                result_sql = f"SELECT {select_clause} FROM {left_src}"
+                is_subquery = True
+
+        return result_sql
 
     def _visit_dataset_binary(self, left: AST.AST, right: AST.AST, op: str) -> str:
         """Route to the correct dataset binary handler."""
@@ -2586,11 +2666,20 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             first_child = node.children[0]
             ds = self._get_dataset_structure(first_child)
             if ds:
-                id_names = ds.get_identifiers_names()
+                # Normalize column order across all branches to prevent
+                # positional type mismatches in UNION ALL.
+                output_ds = self._get_output_dataset()
+                order_ds = output_ds if output_ds else ds
+                col_order = list(order_ds.components.keys())
+                ordered_cols = ", ".join(quote_identifier(c) for c in col_order)
+                ordered_sqls = [f"SELECT {ordered_cols} FROM ({sql}) AS _ord" for sql in child_sqls]
+
+                id_names = order_ds.get_identifiers_names()
                 if id_names:
-                    inner_sql = registry.set_ops.generate(op, *child_sqls)
+                    inner_sql = registry.set_ops.generate(op, *ordered_sqls)
                     id_cols = ", ".join(quote_identifier(i) for i in id_names)
                     return f"SELECT DISTINCT ON ({id_cols}) * FROM ({inner_sql}) AS _union_t"
+                return registry.set_ops.generate(op, *ordered_sqls)
             return registry.set_ops.generate(op, *child_sqls)
 
         if len(child_sqls) < 2:
@@ -3019,7 +3108,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         else:
             imbalance_sql = None
             join_cond = None
-            cols.append('NULL AS "imbalance"')
+            cols.append('CAST(NULL AS DOUBLE) AS "imbalance"')
 
         # errorcode / errorlevel – set only when bool_var is explicitly FALSE.
         bool_ref = f"t.{quote_identifier(bool_measure)}"

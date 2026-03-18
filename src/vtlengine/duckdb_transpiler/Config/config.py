@@ -169,6 +169,9 @@ def configure_duckdb_connection(conn: duckdb.DuckDBPyConnection) -> None:
     # Enable progress bar for long operations
     conn.execute("SET enable_progress_bar = true")
 
+    # Increase max expression depth for deeply nested SQL (e.g. 225+ operand chains)
+    conn.execute("SET max_expression_depth TO 10000")
+
     # Performance optimizations for large data loads
     # Enable object cache for repeated query patterns
     conn.execute("SET enable_object_cache = true")
