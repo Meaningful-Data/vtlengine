@@ -397,6 +397,7 @@ class TestCastOperator:
     @pytest.mark.parametrize(
         "target_type,expected_duckdb_type",
         [
+            ("Integer", "BIGINT"),
             ("Number", "DOUBLE"),
             ("String", "VARCHAR"),
             ("Boolean", "BOOLEAN"),
@@ -422,7 +423,11 @@ class TestCastOperator:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = f'SELECT "Id_1", CAST("Me_1" AS {expected_duckdb_type}) AS "Me_1", CAST("Me_2" AS {expected_duckdb_type}) AS "Me_2" FROM "DS_1"'
+        if target_type == "Integer":
+            expected_sql = f'SELECT "Id_1", CAST(TRUNC("Me_1") AS {expected_duckdb_type}) AS "Me_1", CAST(TRUNC("Me_2") AS {expected_duckdb_type}) AS "Me_2" FROM "DS_1"'
+        else:
+            expected_sql = f'SELECT "Id_1", CAST("Me_1" AS {expected_duckdb_type}) AS "Me_1", CAST("Me_2" AS {expected_duckdb_type}) AS "Me_2" FROM "DS_1"'
+
         assert_sql_equal(sql, expected_sql)
 
     def test_cast_with_date_mask(self):
