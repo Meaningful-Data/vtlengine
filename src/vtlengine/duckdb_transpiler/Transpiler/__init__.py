@@ -1533,6 +1533,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if op == tokens.RANDOM:
             return self._visit_random_binop(node)
 
+        if op == tokens.TIMESHIFT:
+            return self._visit_timeshift(node)
+
         # Check operand types for dataset-level routing
         left_type = self._get_operand_type(node.left)
         right_type = self._get_operand_type(node.right)
@@ -1738,6 +1741,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if op == tokens.PERIOD_INDICATOR:
             return self._visit_period_indicator(node)
 
+        if op in (tokens.FLOW_TO_STOCK, tokens.STOCK_TO_FLOW):
+            return self._visit_flow_stock(node, op)
+
         # --- Generic path: registry-based unary ---
         operand_type = self._get_operand_type(node.operand)
 
@@ -1789,6 +1795,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if op == tokens.DATE_ADD:
             return self._visit_dateadd(node)
 
+        if op == tokens.FILL_TIME_SERIES:
+            return self._visit_fill_time_series(node)
+
         operand_type = self._get_operand_type(node.children[0]) if node.children else _SCALAR
 
         if operand_type == _DATASET:
@@ -1833,6 +1842,249 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return f"{op.upper()}({', '.join(all_args)})"
 
         return self._apply_to_measures(ds_node, _param_expr)
+
+    def _visit_fill_time_series(self, node: AST.ParamOp) -> str:
+        """Visit FILL_TIME_SERIES: fill missing time periods with NULL rows.
+
+        TimePeriod only. Uses recursive CTE to generate expected periods.
+        Carries max_tp through the recursion (DuckDB can't reference other CTEs
+        in recursive part).
+        """
+        ds_node = node.children[0]
+        fill_mode = "all"
+        if node.params:
+            mode_val = self.visit(node.params[0]) if node.params[0] is not None else "all"
+            if isinstance(mode_val, str):
+                fill_mode = mode_val.strip("'\"").lower()
+
+        ds = self._get_dataset_structure(ds_node)
+        src = self._get_dataset_sql(ds_node)
+        if ds is None:
+            raise ValueError("Cannot resolve structure for fill_time_series")
+
+        # Find time identifier (must be TimePeriod)
+        time_id = None
+        for comp in ds.components.values():
+            if comp.data_type == TimePeriod and comp.role == Role.IDENTIFIER:
+                time_id = comp.name
+                break
+        if time_id is None:
+            raise ValueError("No TimePeriod identifier found for fill_time_series")
+
+        time_col = quote_identifier(time_id)
+        other_ids = [c.name for c in ds.get_identifiers() if c.name != time_id]
+        other_id_cols = [quote_identifier(n) for n in other_ids]
+        measure_names = [c.name for c in ds.components.values() if c.role != Role.IDENTIFIER]
+        measure_cols = [quote_identifier(n) for n in measure_names]
+
+        # Build JOIN conditions
+        join_conds = [f"g.{time_col} = s.{time_col}"]
+        for oc in other_id_cols:
+            join_conds.append(f"g.{oc} = s.{oc}")
+        join_on = " AND ".join(join_conds)
+
+        # SELECT columns for final output
+        g_cols = [f"g.{oc}" for oc in other_id_cols] + [f"g.{time_col}"]
+        s_cols = [f"s.{mc}" for mc in measure_cols]
+        final_select = ", ".join(g_cols + s_cols)
+        order_by = ", ".join(g_cols)
+
+        if fill_mode == "single" and other_ids:
+            # Single mode: per-group bounds, carry max_tp + group keys through recursion
+            oid_select = ", ".join(other_id_cols)
+            oid_ep_refs = ", ".join(f"ep.{oc}" for oc in other_id_cols)
+
+            cte = f"""
+WITH RECURSIVE source AS (SELECT * FROM {src}),
+parsed AS (
+    SELECT *, vtl_period_parse({time_col}) AS tp FROM source
+),
+bounds AS (
+    SELECT {oid_select},
+        MIN(tp) AS min_tp,
+        MAX(tp) AS max_tp
+    FROM parsed
+    GROUP BY {oid_select}, tp.period_indicator
+),
+expected_periods(tp, max_tp, {oid_select}) AS (
+    SELECT min_tp, max_tp, {oid_select} FROM bounds
+    UNION ALL
+    SELECT CASE
+        WHEN ep.tp.period_number + 1 > vtl_period_limit(ep.tp.period_indicator)
+        THEN {{'year': ep.tp.year + 1, 'period_indicator': ep.tp.period_indicator,
+              'period_number': 1}}::vtl_time_period
+        ELSE {{'year': ep.tp.year, 'period_indicator': ep.tp.period_indicator,
+              'period_number': ep.tp.period_number + 1}}::vtl_time_period
+    END,
+    ep.max_tp,
+    {oid_ep_refs}
+    FROM expected_periods ep
+    WHERE ep.tp < ep.max_tp
+),
+full_grid AS (
+    SELECT {oid_select}, vtl_period_to_string(tp) AS {time_col}
+    FROM expected_periods
+)
+SELECT {final_select}
+FROM full_grid g
+LEFT JOIN source s ON {join_on}
+ORDER BY {order_by}"""
+        else:
+            # All mode: global bounds, carry max_tp through recursion
+            if other_ids:
+                oid_join = ", ".join(other_id_cols)
+                other_combos = f"""
+group_freq AS (
+    SELECT DISTINCT {oid_join},
+        vtl_period_parse({time_col}).period_indicator AS ind
+    FROM source
+),"""
+                grid_sql = (
+                    f"SELECT gf.{', gf.'.join(other_id_cols)}, ps.{time_col} "
+                    f"FROM group_freq gf "
+                    f"JOIN period_strings ps "
+                    f"ON vtl_period_parse(ps.{time_col}).period_indicator = gf.ind"
+                )
+            else:
+                other_combos = ""
+                grid_sql = f"SELECT {time_col} FROM period_strings"
+
+            cte = f"""
+WITH RECURSIVE source AS (SELECT * FROM {src}),
+parsed AS (
+    SELECT *, vtl_period_parse({time_col}) AS tp FROM source
+),
+year_range AS (
+    SELECT MIN(tp.year) AS min_year, MAX(tp.year) AS max_year FROM parsed
+),
+freq_list AS (
+    SELECT DISTINCT tp.period_indicator AS ind FROM parsed
+),
+bounds AS (
+    SELECT ind,
+        {{'year': min_year, 'period_indicator': ind,
+          'period_number': 1}}::vtl_time_period AS min_tp,
+        {{'year': max_year, 'period_indicator': ind,
+          'period_number': vtl_period_limit(ind)}}::vtl_time_period AS max_tp
+    FROM freq_list, year_range
+),
+expected_periods(tp, max_tp) AS (
+    SELECT min_tp, max_tp FROM bounds
+    UNION ALL
+    SELECT CASE
+        WHEN ep.tp.period_number + 1 > vtl_period_limit(ep.tp.period_indicator)
+        THEN {{'year': ep.tp.year + 1, 'period_indicator': ep.tp.period_indicator,
+              'period_number': 1}}::vtl_time_period
+        ELSE {{'year': ep.tp.year, 'period_indicator': ep.tp.period_indicator,
+              'period_number': ep.tp.period_number + 1}}::vtl_time_period
+    END,
+    ep.max_tp
+    FROM expected_periods ep
+    WHERE ep.tp < ep.max_tp
+),
+period_strings AS (
+    SELECT vtl_period_to_string(tp) AS {time_col} FROM expected_periods
+),{other_combos}
+full_grid AS (
+    {grid_sql}
+)
+SELECT {final_select}
+FROM full_grid g
+LEFT JOIN source s ON {join_on}
+ORDER BY {order_by}"""
+
+        return cte.strip()
+
+    def _visit_flow_stock(self, node: AST.UnaryOp, op: str) -> str:
+        """Visit FLOW_TO_STOCK or STOCK_TO_FLOW: window functions over time series."""
+        ds = self._get_dataset_structure(node.operand)
+        src = self._get_dataset_sql(node.operand)
+        if ds is None:
+            raise ValueError(f"Cannot resolve structure for {op}")
+
+        # Find time identifier
+        time_id = None
+        time_type = None
+        for comp in ds.components.values():
+            if comp.data_type in (TimePeriod, Date) and comp.role == Role.IDENTIFIER:
+                time_id = comp.name
+                time_type = comp.data_type
+                break
+        if time_id is None:
+            raise ValueError(f"No time identifier found for {op}")
+
+        # Other identifiers for PARTITION BY
+        other_ids = [quote_identifier(c.name) for c in ds.get_identifiers() if c.name != time_id]
+
+        # For TimePeriod, also partition by period_indicator
+        partition_parts = list(other_ids)
+        if time_type == TimePeriod:
+            partition_parts.append(
+                f"vtl_period_parse({quote_identifier(time_id)}).period_indicator"
+            )
+
+        partition_clause = f"PARTITION BY {', '.join(partition_parts)}" if partition_parts else ""
+        order_clause = f"ORDER BY {quote_identifier(time_id)}"
+        window = f"({partition_clause} {order_clause})"
+
+        # Build SELECT
+        cols = []
+        for comp in ds.components.values():
+            col = quote_identifier(comp.name)
+            if comp.role == Role.IDENTIFIER:
+                cols.append(col)
+            else:
+                # Apply window function to measures
+                if op == tokens.FLOW_TO_STOCK:
+                    cols.append(
+                        f"CASE WHEN {col} IS NULL THEN NULL ELSE "
+                        f"SUM({col}) OVER ({partition_clause} {order_clause} "
+                        f"ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) END AS {col}"
+                    )
+                else:  # STOCK_TO_FLOW
+                    cols.append(f"COALESCE({col} - LAG({col}) OVER {window}, {col}) AS {col}")
+
+        return f"SELECT {', '.join(cols)} FROM {src}"
+
+    def _visit_timeshift(self, node: AST.BinOp) -> str:
+        """Visit TIMESHIFT: shift time identifier by N periods."""
+        ds_node = node.left
+        shift_sql = self.visit(node.right)
+
+        ds = self._get_dataset_structure(ds_node)
+        src = self._get_dataset_sql(ds_node)
+        if ds is None:
+            raise ValueError("Cannot resolve structure for timeshift")
+
+        # Find time identifier and its type
+        time_id = None
+        time_type = None
+        for comp in ds.components.values():
+            if comp.data_type in (TimePeriod, Date) and comp.role == Role.IDENTIFIER:
+                time_id = comp.name
+                time_type = comp.data_type
+                break
+        if time_id is None:
+            raise ValueError("No time identifier found for timeshift")
+
+        time_col = quote_identifier(time_id)
+
+        # Build shifted time expression
+        if time_type == TimePeriod:
+            shifted = f"vtl_tp_shift(vtl_period_parse({time_col}), {shift_sql}) AS {time_col}"
+        else:
+            shifted = f"CAST({time_col} + INTERVAL ({shift_sql}) DAY AS DATE) AS {time_col}"
+
+        # SELECT all columns, replacing time_id with shifted version
+        cols = []
+        for comp in ds.components.values():
+            col = quote_identifier(comp.name)
+            if comp.name == time_id:
+                cols.append(shifted)
+            else:
+                cols.append(col)
+
+        return f"SELECT {', '.join(cols)} FROM {src}"
 
     def _visit_dateadd(self, node: AST.ParamOp) -> str:
         """Visit DATEADD operation: dateadd(op, shiftNumber, periodInd)."""
