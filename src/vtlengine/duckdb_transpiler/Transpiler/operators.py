@@ -390,11 +390,17 @@ def _create_default_registries() -> SQLOperatorRegistries:
     # Null check
     registries.unary.register_simple(tokens.ISNULL, "({0} IS NULL)")
 
-    # Time extraction functions
+    # Time extraction functions (Date only — TimePeriod dispatch handled in transpiler)
     registries.unary.register_simple(tokens.YEAR, "YEAR({0})")
     registries.unary.register_simple(tokens.MONTH, "MONTH({0})")
     registries.unary.register_simple(tokens.DAYOFMONTH, "DAY({0})")
     registries.unary.register_simple(tokens.DAYOFYEAR, "DAYOFYEAR({0})")
+
+    # Duration conversion functions
+    registries.unary.register_simple(tokens.DAYTOYEAR, "vtl_daytoyear({0})")
+    registries.unary.register_simple(tokens.DAYTOMONTH, "vtl_daytomonth({0})")
+    registries.unary.register_simple(tokens.YEARTODAY, "vtl_yeartoday({0})")
+    registries.unary.register_simple(tokens.MONTHTODAY, "vtl_monthtoday({0})")
 
     # =========================================================================
     # Aggregate Operators

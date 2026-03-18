@@ -14,7 +14,7 @@ from typing import Any, Callable, Dict, Generator, List, Optional, Set, Tuple, U
 import vtlengine.AST as AST
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.Grammar import tokens
-from vtlengine.DataTypes import COMP_NAME_MAPPING, TimePeriod
+from vtlengine.DataTypes import COMP_NAME_MAPPING, Date, TimePeriod
 from vtlengine.duckdb_transpiler.Transpiler.operators import (
     get_duckdb_type,
     registry,
@@ -51,6 +51,14 @@ _PERIOD_COMPARISON_MACROS: Dict[str, str] = {
     tokens.GTE: "vtl_period_ge",
     tokens.LT: "vtl_period_lt",
     tokens.LTE: "vtl_period_le",
+}
+
+# TimePeriod-specific SQL for extraction operators (struct-based)
+_TP_EXTRACTION_MAP: Dict[str, str] = {
+    tokens.YEAR: "CAST(vtl_period_parse({0}).year AS BIGINT)",
+    tokens.MONTH: "vtl_tp_getmonth(vtl_period_parse({0}))",
+    tokens.DAYOFMONTH: "vtl_tp_dayofmonth(vtl_period_parse({0}))",
+    tokens.DAYOFYEAR: "vtl_tp_dayofyear(vtl_period_parse({0}))",
 }
 
 
@@ -1536,6 +1544,13 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         # Scalar-scalar: use registry
         left_sql = self.visit(node.left)
         right_sql = self.visit(node.right)
+
+        # TimePeriod dispatch for datediff
+        if op == tokens.DATEDIFF and (
+            self._is_time_period_operand(node.left) or self._is_time_period_operand(node.right)
+        ):
+            return f"vtl_tp_datediff(vtl_period_parse({left_sql}), vtl_period_parse({right_sql}))"
+
         if registry.binary.is_registered(op):
             return registry.binary.generate(op, left_sql, right_sql)
         # Fallback for unregistered ops
@@ -1662,9 +1677,66 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         return f'SELECT {id_cols}, {exists_subq} AS "bool_var" FROM {left_subq} AS l'
 
+    def _is_time_period_operand(self, node: AST.AST) -> bool:
+        """Check if an operand resolves to a TimePeriod type."""
+        # Column reference in a clause context
+        if isinstance(node, AST.VarID) and self._in_clause and self._current_dataset:
+            comp = self._current_dataset.components.get(node.value)
+            if comp and comp.data_type == TimePeriod:
+                return True
+        # Named scalar
+        if isinstance(node, AST.VarID) and node.value in self.scalars:
+            sc = self.scalars[node.value]
+            if sc.data_type == TimePeriod:
+                return True
+        # CAST to time_period: ParamOp with op=cast and target type = time_period
+        if (
+            isinstance(node, AST.ParamOp)
+            and str(getattr(node, "op", "")).lower() == tokens.CAST
+            and len(node.children) >= 2
+        ):
+            type_node = node.children[1]
+            type_str = type_node.value if hasattr(type_node, "value") else str(type_node)
+            if type_str.lower() in ("time_period", "timeperiod"):
+                return True
+        return False
+
+    def _visit_period_indicator(self, node: AST.UnaryOp) -> str:
+        """Visit PERIOD_INDICATOR: extract period indicator from TimePeriod."""
+        operand_type = self._get_operand_type(node.operand)
+
+        if operand_type == _DATASET:
+            ds = self._get_dataset_structure(node.operand)
+            src = self._get_dataset_sql(node.operand)
+            if ds is None:
+                raise ValueError("Cannot resolve structure for period_indicator")
+
+            # Find time identifier
+            time_id = None
+            for comp in ds.components.values():
+                if comp.data_type == TimePeriod and comp.role == Role.IDENTIFIER:
+                    time_id = comp.name
+                    break
+            if time_id is None:
+                raise ValueError("No TimePeriod identifier found for period_indicator")
+
+            id_cols = [quote_identifier(c.name) for c in ds.get_identifiers()]
+            extract_expr = (
+                f'vtl_period_parse({quote_identifier(time_id)}).period_indicator AS "duration_var"'
+            )
+            cols_sql = ", ".join(id_cols) + ", " + extract_expr
+            return f"SELECT {cols_sql} FROM {src}"
+        else:
+            operand_sql = self.visit(node.operand)
+            return f"vtl_period_parse({operand_sql}).period_indicator"
+
     def visit_UnaryOp(self, node: AST.UnaryOp) -> str:  # type: ignore[override]
         """Visit a unary operation."""
         op = str(node.op).lower()
+
+        # Special-case operators
+        if op == tokens.PERIOD_INDICATOR:
+            return self._visit_period_indicator(node)
 
         # --- Generic path: registry-based unary ---
         operand_type = self._get_operand_type(node.operand)
@@ -1677,13 +1749,28 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 if ds and len(ds.get_measures_names()) == 1:
                     name_override = "bool_var"
 
+            # Check if dataset has TimePeriod measures for extraction dispatch
+            ds_for_tp = self._get_dataset_structure(node.operand)
+            has_tp_measures = ds_for_tp is not None and any(
+                c.data_type == TimePeriod
+                for c in ds_for_tp.components.values()
+                if c.role == Role.MEASURE
+            )
+
             def _unary_expr(col_ref: str) -> str:
+                if op in _TP_EXTRACTION_MAP and has_tp_measures:
+                    return _TP_EXTRACTION_MAP[op].format(col_ref)
                 if registry.unary.is_registered(op):
                     return registry.unary.generate(op, col_ref)
                 return f"{op.upper()}({col_ref})"
 
             return self._apply_to_measures(node.operand, _unary_expr, name_override)
         else:
+            # TimePeriod dispatch for extraction operators
+            if op in _TP_EXTRACTION_MAP and self._is_time_period_operand(node.operand):
+                operand_sql = self.visit(node.operand)
+                return _TP_EXTRACTION_MAP[op].format(operand_sql)
+
             operand_sql = self.visit(node.operand)
             if registry.unary.is_registered(op):
                 return registry.unary.generate(op, operand_sql)
@@ -1698,6 +1785,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         if op == tokens.RANDOM:
             return self._visit_random(node)
+
+        if op == tokens.DATE_ADD:
+            return self._visit_dateadd(node)
 
         operand_type = self._get_operand_type(node.children[0]) if node.children else _SCALAR
 
@@ -1744,6 +1834,35 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         return self._apply_to_measures(ds_node, _param_expr)
 
+    def _visit_dateadd(self, node: AST.ParamOp) -> str:
+        """Visit DATEADD operation: dateadd(op, shiftNumber, periodInd)."""
+        operand_node = node.children[0]
+        operand_type = self._get_operand_type(operand_node)
+
+        shift_sql = self.visit(node.params[0]) if node.params else "0"
+        period_sql = self.visit(node.params[1]) if len(node.params) > 1 else "'D'"
+
+        is_tp = self._is_time_period_operand(operand_node)
+
+        if operand_type == _DATASET:
+            ds_node = operand_node
+            ds = self._get_dataset_structure(ds_node)
+            has_tp = ds is not None and any(
+                c.data_type == TimePeriod for c in ds.components.values() if c.role == Role.MEASURE
+            )
+
+            def _dateadd_expr(col_ref: str) -> str:
+                if has_tp:
+                    return f"vtl_tp_dateadd(vtl_period_parse({col_ref}), {shift_sql}, {period_sql})"
+                return f"vtl_dateadd({col_ref}, {shift_sql}, {period_sql})"
+
+            return self._apply_to_measures(ds_node, _dateadd_expr)
+        else:
+            operand_sql = self.visit(operand_node)
+            if is_tp:
+                return f"vtl_tp_dateadd(vtl_period_parse({operand_sql}), {shift_sql}, {period_sql})"
+            return f"vtl_dateadd({operand_sql}, {shift_sql}, {period_sql})"
+
     def _visit_cast(self, node: AST.ParamOp) -> str:
         """Visit CAST operation."""
         if not node.children:
@@ -1780,6 +1899,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         """Generate a CAST expression for a single value."""
         if mask and target_type_str == "Date":
             return f"STRPTIME({expr}, '{mask}')::DATE"
+        # Normalize TimePeriod values on cast to ensure canonical format
+        if target_type_str.lower() in ("time_period", "timeperiod"):
+            return f"vtl_period_normalize(CAST({expr} AS VARCHAR))"
         return f"CAST({expr} AS {duckdb_type})"
 
     def _visit_random_impl(
@@ -3149,25 +3271,35 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     def visit_TimeAggregation(self, node: AST.TimeAggregation) -> str:  # type: ignore[override]
         """Visit TIME_AGG operation."""
-        period = node.period_to
-        operand_sql = self.visit(node.operand) if node.operand else ""
+        target = node.period_to
+        conf = node.conf  # "first", "last", or None
 
-        cast_date = f"CAST({operand_sql} AS DATE)"
+        if node.operand is not None:
+            is_tp = self._is_time_period_operand(node.operand)
+            operand_sql = self.visit(node.operand)
 
-        period_formats = {
-            "Y": f"STRFTIME({cast_date}, '%Y')",
-            "Q": (f"(STRFTIME({cast_date}, '%Y') || 'Q' || CAST(QUARTER({cast_date}) AS VARCHAR))"),
-            "M": (
-                f"(STRFTIME({cast_date}, '%Y') || 'M' || "
-                f"LPAD(CAST(MONTH({cast_date}) AS VARCHAR), 2, '0'))"
-            ),
-            "S": (
-                f"(STRFTIME({cast_date}, '%Y') || 'S' || "
-                f"CAST(CEIL(MONTH({cast_date}) / 6.0) AS INTEGER))"
-            ),
-            "D": f"STRFTIME({cast_date}, '%Y-%m-%d')",
-        }
-        return period_formats.get(period, f"STRFTIME({cast_date}, '%Y')")
+            if is_tp:
+                return f"vtl_time_agg_tp(vtl_period_parse({operand_sql}), '{target}')"
+            else:
+                agg_expr = f"vtl_time_agg_date({operand_sql}, '{target}')"
+                # For Date + conf, return start/end date of the computed period
+                if conf == "first":
+                    return f"vtl_tp_start_date(vtl_period_parse({agg_expr}))"
+                elif conf == "last":
+                    return f"vtl_tp_end_date(vtl_period_parse({agg_expr}))"
+                return agg_expr
+        else:
+            # Without-operand case: inside group all, applies to time identifier
+            if self._in_clause and self._current_dataset:
+                for comp in self._current_dataset.components.values():
+                    if comp.data_type == TimePeriod and comp.role == Role.IDENTIFIER:
+                        col = quote_identifier(comp.name)
+                        return f"vtl_time_agg_tp(vtl_period_parse({col}), '{target}')"
+                for comp in self._current_dataset.components.values():
+                    if comp.data_type == Date and comp.role == Role.IDENTIFIER:
+                        col = quote_identifier(comp.name)
+                        return f"vtl_time_agg_date({col}, '{target}')"
+            return f"vtl_time_agg_date(CURRENT_DATE, '{target}')"
 
     # =========================================================================
     # Eval operator visitor

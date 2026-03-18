@@ -6,7 +6,7 @@ import pytest
 from tests.NewOperators.conftest import _build_run_inputs, use_duckdb
 from vtlengine.API import run
 from vtlengine.DataTypes import Integer
-from vtlengine.Exceptions import RunTimeError, SemanticError
+from vtlengine.Exceptions import SemanticError
 
 base_path = Path(__file__).parent / "data"
 pytestmark = pytest.mark.input_path(base_path)
@@ -31,8 +31,8 @@ scalar_time_params = [
 ]
 
 scalar_time_error_params = [
-    ('datediff(cast("2022Q1",date),cast("2023Q2",time_period))', RunTimeError, "2-1-19-8"),
-    ('datediff(cast("2020D1",time_period),cast("2020D15",date))', RunTimeError, "2-1-19-8"),
+    ('datediff(cast("2022Q1",date),cast("2023Q2",time_period))', SemanticError, "1-1-1-2"),
+    ('datediff(cast("2020D1",time_period),cast("2020D15",date))', SemanticError, "1-1-1-2"),
     ('datediff(cast("2022-06-30",date),cast("2023Q2",time_period))', SemanticError, "1-1-1-2"),
     ('datediff(cast("2022Q2",time_period),cast("2023-06-30",date))', SemanticError, "1-1-1-2"),
 ]
