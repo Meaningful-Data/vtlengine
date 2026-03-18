@@ -1343,30 +1343,21 @@ class TestMembershipOperator:
 
 
 class TestTimeAggOperator:
-    """Tests for TIME_AGG operator."""
+    """Tests for TIME_AGG operator using vtl_time_agg_date macros."""
 
     @pytest.mark.parametrize(
         "period,expected_sql",
         [
-            ("Y", """STRFTIME(CAST("date_col" AS DATE), '%Y')"""),
-            (
-                "Q",
-                """(STRFTIME(CAST("date_col" AS DATE), '%Y') || 'Q' || """
-                """CAST(QUARTER(CAST("date_col" AS DATE)) AS VARCHAR))""",
-            ),
-            (
-                "M",
-                """(STRFTIME(CAST("date_col" AS DATE), '%Y') || 'M' || """
-                """LPAD(CAST(MONTH(CAST("date_col" AS DATE)) AS VARCHAR), 2, '0'))""",
-            ),
-            ("D", """STRFTIME(CAST("date_col" AS DATE), '%Y-%m-%d')"""),
+            ("A", """vtl_time_agg_date("date_col", 'A')"""),
+            ("Q", """vtl_time_agg_date("date_col", 'Q')"""),
+            ("M", """vtl_time_agg_date("date_col", 'M')"""),
+            ("D", """vtl_time_agg_date("date_col", 'D')"""),
         ],
     )
     def test_time_agg_scalar(self, period: str, expected_sql: str):
-        """Test TIME_AGG with scalar date."""
+        """Test TIME_AGG with scalar date operand."""
         transpiler = create_transpiler()
 
-        # Create AST: time_agg(period, date_col)
         date_col = VarID(**make_ast_node(value="date_col"))
         time_agg_op = TimeAggregation(
             **make_ast_node(op="time_agg", period_to=period, operand=date_col)
@@ -1374,21 +1365,20 @@ class TestTimeAggOperator:
 
         result = transpiler.visit_TimeAggregation(time_agg_op)
 
-        # Full SQL verification
         assert_sql_equal(result, expected_sql)
 
     def test_time_agg_year(self):
-        """Test TIME_AGG to year period with full SQL."""
+        """Test TIME_AGG to annual period with full SQL."""
         transpiler = create_transpiler()
 
         date_col = VarID(**make_ast_node(value="my_date"))
         time_agg_op = TimeAggregation(
-            **make_ast_node(op="time_agg", period_to="Y", operand=date_col)
+            **make_ast_node(op="time_agg", period_to="A", operand=date_col)
         )
 
         result = transpiler.visit_TimeAggregation(time_agg_op)
 
-        expected_sql = """STRFTIME(CAST("my_date" AS DATE), '%Y')"""
+        expected_sql = """vtl_time_agg_date("my_date", 'A')"""
         assert_sql_equal(result, expected_sql)
 
     def test_time_agg_quarter(self):
@@ -1402,10 +1392,7 @@ class TestTimeAggOperator:
 
         result = transpiler.visit_TimeAggregation(time_agg_op)
 
-        expected_sql = (
-            """(STRFTIME(CAST("my_date" AS DATE), '%Y') || 'Q' || """
-            """CAST(QUARTER(CAST("my_date" AS DATE)) AS VARCHAR))"""
-        )
+        expected_sql = """vtl_time_agg_date("my_date", 'Q')"""
         assert_sql_equal(result, expected_sql)
 
     def test_time_agg_month(self):
@@ -1419,10 +1406,7 @@ class TestTimeAggOperator:
 
         result = transpiler.visit_TimeAggregation(time_agg_op)
 
-        expected_sql = (
-            """(STRFTIME(CAST("my_date" AS DATE), '%Y') || 'M' || """
-            """LPAD(CAST(MONTH(CAST("my_date" AS DATE)) AS VARCHAR), 2, '0'))"""
-        )
+        expected_sql = """vtl_time_agg_date("my_date", 'M')"""
         assert_sql_equal(result, expected_sql)
 
     def test_time_agg_semester(self):
@@ -1436,10 +1420,7 @@ class TestTimeAggOperator:
 
         result = transpiler.visit_TimeAggregation(time_agg_op)
 
-        expected_sql = (
-            """(STRFTIME(CAST("my_date" AS DATE), '%Y') || 'S' || """
-            """CAST(CEIL(MONTH(CAST("my_date" AS DATE)) / 6.0) AS INTEGER))"""
-        )
+        expected_sql = """vtl_time_agg_date("my_date", 'S')"""
         assert_sql_equal(result, expected_sql)
 
 

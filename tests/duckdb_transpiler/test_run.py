@@ -104,7 +104,10 @@ def execute_vtl_with_duckdb(
     external_routines: Dict = None,
 ) -> Dict:
     """Execute VTL script using DuckDB transpiler and return results."""
+    from vtlengine.duckdb_transpiler.sql import initialize_time_types
+
     conn = duckdb.connect(":memory:")
+    initialize_time_types(conn)
 
     # Get column types from data structures
     ds_types = {}
@@ -867,13 +870,13 @@ class TestTimeOperators:
         [
             # Year extraction
             (
-                "DS_r := DS_1[calc year_val := year(date_col)];",
+                "DS_r := DS_1[calc year_val := getyear(date_col)];",
                 [["A", "2024-01-15"], ["B", "2023-06-30"]],
                 [2024, 2023],
             ),
             # Month extraction
             (
-                "DS_r := DS_1[calc month_val := month(date_col)];",
+                "DS_r := DS_1[calc month_val := getmonth(date_col)];",
                 [["A", "2024-01-15"], ["B", "2024-06-30"]],
                 [1, 6],
             ),
@@ -1839,10 +1842,10 @@ class TestTimeAggOperator:
 
         result_df = results["DS_r"].sort_values("Id_1").reset_index(drop=True)
 
-        # Check year extraction
-        assert result_df[result_df["Id_1"] == "A"]["Me_year"].iloc[0] == "2024"
-        assert result_df[result_df["Id_1"] == "B"]["Me_year"].iloc[0] == "2023"
-        assert result_df[result_df["Id_1"] == "C"]["Me_year"].iloc[0] == "2024"
+        # With conf=first, result is start date of the annual period
+        assert str(result_df[result_df["Id_1"] == "A"]["Me_year"].iloc[0])[:10] == "2024-01-01"
+        assert str(result_df[result_df["Id_1"] == "B"]["Me_year"].iloc[0])[:10] == "2023-01-01"
+        assert str(result_df[result_df["Id_1"] == "C"]["Me_year"].iloc[0])[:10] == "2024-01-01"
 
     def test_time_agg_to_quarter(self, temp_data_dir):
         """
@@ -1873,11 +1876,11 @@ class TestTimeAggOperator:
 
         result_df = results["DS_r"].sort_values("Id_1").reset_index(drop=True)
 
-        # Check quarter extraction
-        assert result_df[result_df["Id_1"] == "A"]["Me_quarter"].iloc[0] == "2024Q1"
-        assert result_df[result_df["Id_1"] == "B"]["Me_quarter"].iloc[0] == "2024Q2"
-        assert result_df[result_df["Id_1"] == "C"]["Me_quarter"].iloc[0] == "2024Q3"
-        assert result_df[result_df["Id_1"] == "D"]["Me_quarter"].iloc[0] == "2024Q4"
+        # With conf=first, result is start date of the quarterly period
+        assert str(result_df[result_df["Id_1"] == "A"]["Me_quarter"].iloc[0])[:10] == "2024-01-01"
+        assert str(result_df[result_df["Id_1"] == "B"]["Me_quarter"].iloc[0])[:10] == "2024-04-01"
+        assert str(result_df[result_df["Id_1"] == "C"]["Me_quarter"].iloc[0])[:10] == "2024-07-01"
+        assert str(result_df[result_df["Id_1"] == "D"]["Me_quarter"].iloc[0])[:10] == "2024-10-01"
 
     def test_time_agg_to_month(self, temp_data_dir):
         """
@@ -1907,10 +1910,10 @@ class TestTimeAggOperator:
 
         result_df = results["DS_r"].sort_values("Id_1").reset_index(drop=True)
 
-        # Check month extraction (format: YYYYM##)
-        assert result_df[result_df["Id_1"] == "A"]["Me_month"].iloc[0] == "2024M01"
-        assert result_df[result_df["Id_1"] == "B"]["Me_month"].iloc[0] == "2024M06"
-        assert result_df[result_df["Id_1"] == "C"]["Me_month"].iloc[0] == "2024M12"
+        # With conf=first, result is start date of the monthly period
+        assert str(result_df[result_df["Id_1"] == "A"]["Me_month"].iloc[0])[:10] == "2024-01-01"
+        assert str(result_df[result_df["Id_1"] == "B"]["Me_month"].iloc[0])[:10] == "2024-06-01"
+        assert str(result_df[result_df["Id_1"] == "C"]["Me_month"].iloc[0])[:10] == "2024-12-01"
 
     def test_time_agg_to_semester(self, temp_data_dir):
         """
@@ -1941,11 +1944,11 @@ class TestTimeAggOperator:
 
         result_df = results["DS_r"].sort_values("Id_1").reset_index(drop=True)
 
-        # Check semester extraction
-        assert result_df[result_df["Id_1"] == "A"]["Me_semester"].iloc[0] == "2024S1"
-        assert result_df[result_df["Id_1"] == "B"]["Me_semester"].iloc[0] == "2024S1"
-        assert result_df[result_df["Id_1"] == "C"]["Me_semester"].iloc[0] == "2024S2"
-        assert result_df[result_df["Id_1"] == "D"]["Me_semester"].iloc[0] == "2024S2"
+        # With conf=first, result is start date of the semester period
+        assert str(result_df[result_df["Id_1"] == "A"]["Me_semester"].iloc[0])[:10] == "2024-01-01"
+        assert str(result_df[result_df["Id_1"] == "B"]["Me_semester"].iloc[0])[:10] == "2024-01-01"
+        assert str(result_df[result_df["Id_1"] == "C"]["Me_semester"].iloc[0])[:10] == "2024-07-01"
+        assert str(result_df[result_df["Id_1"] == "D"]["Me_semester"].iloc[0])[:10] == "2024-07-01"
 
 
 # =============================================================================
