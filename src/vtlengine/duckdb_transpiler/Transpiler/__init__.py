@@ -44,32 +44,6 @@ _DP_OP_MAP: Dict[str, str] = {
     "or": "OR",
 }
 
-# Mapping from VTL ordering operators to vtl_period_* comparison macros.
-# Equality (=, <>) operates on VARCHAR directly — no macros needed.
-_PERIOD_COMPARISON_MACROS: Dict[str, str] = {
-    tokens.GT: "vtl_period_gt",
-    tokens.GTE: "vtl_period_ge",
-    tokens.LT: "vtl_period_lt",
-    tokens.LTE: "vtl_period_le",
-}
-
-# TimePeriod-specific SQL for extraction operators (struct-based)
-_TP_EXTRACTION_MAP: Dict[str, str] = {
-    tokens.YEAR: "CAST(vtl_period_parse({0}).year AS BIGINT)",
-    tokens.MONTH: "vtl_tp_getmonth(vtl_period_parse({0}))",
-    tokens.DAYOFMONTH: "vtl_tp_dayofmonth(vtl_period_parse({0}))",
-    tokens.DAYOFYEAR: "vtl_tp_dayofyear(vtl_period_parse({0}))",
-}
-
-# Mapping from VTL ordering operators to vtl_period_* comparison macros.
-# Equality (=, <>) operates on VARCHAR directly — no macros needed.
-_PERIOD_COMPARISON_MACROS: Dict[str, str] = {
-    tokens.GT: "vtl_period_gt",
-    tokens.GTE: "vtl_period_ge",
-    tokens.LT: "vtl_period_lt",
-    tokens.LTE: "vtl_period_le",
-}
-
 # TimePeriod-specific SQL for extraction operators (struct-based)
 _TP_EXTRACTION_MAP: Dict[str, str] = {
     tokens.YEAR: "CAST(vtl_period_parse({0}).year AS BIGINT)",
@@ -1959,7 +1933,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         ds_node = node.children[0]
         fill_mode = "all"
         if node.params:
-            mode_val = self.visit(node.params[0]) if node.params[0] is not None else "all"
+            mode_val = self.visit(node.params[0])
             if isinstance(mode_val, str):
                 fill_mode = mode_val.strip("'\"").lower()
 
@@ -2830,13 +2804,13 @@ FROM {src}, (
 
         cols: List[str] = []
         group_by_cols: List[str] = []
-        for g in group_cols:
-            if g == time_agg_id and time_agg_expr:
-                cols.append(f"{time_agg_expr} AS {quote_identifier(g)}")
+        for col_name in group_cols:
+            if col_name == time_agg_id and time_agg_expr:
+                cols.append(f"{time_agg_expr} AS {quote_identifier(col_name)}")
                 group_by_cols.append(time_agg_expr)
             else:
-                cols.append(quote_identifier(g))
-                group_by_cols.append(quote_identifier(g))
+                cols.append(quote_identifier(col_name))
+                group_by_cols.append(quote_identifier(col_name))
         return cols, group_by_cols
 
     def visit_Aggregation(self, node: AST.Aggregation) -> str:  # type: ignore[override]
@@ -3830,6 +3804,8 @@ FROM {src}, (
         self, node: AST.TimeAggregation, target: str, conf: Optional[str]
     ) -> str:
         """Visit TIME_AGG at dataset level: apply to time measure."""
+        if node.operand is None:
+            raise ValueError("Cannot resolve structure for time_agg dataset")
         ds = self._get_dataset_structure(node.operand)
         src = self._get_dataset_sql(node.operand)
         if ds is None:
