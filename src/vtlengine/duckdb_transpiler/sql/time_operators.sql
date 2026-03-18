@@ -31,8 +31,8 @@ CREATE OR REPLACE MACRO vtl_tp_end_date(p vtl_time_period) AS (
         WHEN 'M' THEN LAST_DAY(MAKE_DATE(p.year, p.period_number, 1))
         WHEN 'W' THEN CAST(STRPTIME(
             CAST(p.year AS VARCHAR) || '-W'
-            || LPAD(CAST(p.period_number AS VARCHAR), 2, '0') || '-0',
-            '%G-W%V-%w') AS DATE)
+            || LPAD(CAST(p.period_number AS VARCHAR), 2, '0') || '-7',
+            '%G-W%V-%u') AS DATE)
         WHEN 'D' THEN CAST(MAKE_DATE(p.year, 1, 1)
             + INTERVAL (p.period_number - 1) DAY AS DATE)
     END
@@ -131,12 +131,12 @@ CREATE OR REPLACE MACRO vtl_tp_dateadd(
 -- OPERATOR: daytoyear / daytomonth (Integer → Duration VARCHAR)
 -- ============================================================================
 
-CREATE OR REPLACE MACRO vtl_daytoyear(days INTEGER) AS (
+CREATE OR REPLACE MACRO vtl_daytoyear(days) AS (
     'P' || CAST(days // 365 AS VARCHAR) || 'Y'
     || CAST(days % 365 AS VARCHAR) || 'D'
 );
 
-CREATE OR REPLACE MACRO vtl_daytomonth(days INTEGER) AS (
+CREATE OR REPLACE MACRO vtl_daytomonth(days) AS (
     'P' || CAST(days // 30 AS VARCHAR) || 'M'
     || CAST(days % 30 AS VARCHAR) || 'D'
 );
@@ -146,12 +146,12 @@ CREATE OR REPLACE MACRO vtl_daytomonth(days INTEGER) AS (
 -- OPERATOR: yeartoday / monthtoday (Duration VARCHAR → Integer)
 -- ============================================================================
 
-CREATE OR REPLACE MACRO vtl_yeartoday(dur VARCHAR) AS (
+CREATE OR REPLACE MACRO vtl_yeartoday(dur) AS (
     COALESCE(TRY_CAST(REGEXP_EXTRACT(dur, '(\d+)Y', 1) AS INTEGER), 0) * 365
     + COALESCE(TRY_CAST(REGEXP_EXTRACT(dur, '(\d+)D', 1) AS INTEGER), 0)
 );
 
-CREATE OR REPLACE MACRO vtl_monthtoday(dur VARCHAR) AS (
+CREATE OR REPLACE MACRO vtl_monthtoday(dur) AS (
     COALESCE(TRY_CAST(REGEXP_EXTRACT(dur, '(\d+)M', 1) AS INTEGER), 0) * 30
     + COALESCE(TRY_CAST(REGEXP_EXTRACT(dur, '(\d+)D', 1) AS INTEGER), 0)
 );

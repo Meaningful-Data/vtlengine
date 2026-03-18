@@ -1968,14 +1968,20 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if ds is None:
             raise ValueError("Cannot resolve structure for fill_time_series")
 
-        # Find time identifier (must be TimePeriod)
+        # Find time identifier
         time_id = None
+        time_type = None
         for comp in ds.components.values():
-            if comp.data_type == TimePeriod and comp.role == Role.IDENTIFIER:
+            if comp.data_type in (TimePeriod, Date) and comp.role == Role.IDENTIFIER:
                 time_id = comp.name
+                time_type = comp.data_type
                 break
         if time_id is None:
-            raise ValueError("No TimePeriod identifier found for fill_time_series")
+            raise ValueError("No time identifier found for fill_time_series")
+
+        # Dispatch by type
+        if time_type == Date:
+            return self._fill_time_series_date(ds, src, time_id, fill_mode)
 
         time_col = quote_identifier(time_id)
         other_ids = [c.name for c in ds.get_identifiers() if c.name != time_id]
@@ -2101,6 +2107,94 @@ ORDER BY {order_by}"""
 
         return cte.strip()
 
+    def _fill_time_series_date(self, ds: Dataset, src: str, time_id: str, fill_mode: str) -> str:
+        """Fill time series for Date identifiers using frequency inference."""
+        time_col = quote_identifier(time_id)
+        other_ids = [c.name for c in ds.get_identifiers() if c.name != time_id]
+        other_id_cols = [quote_identifier(n) for n in other_ids]
+        measure_names = [c.name for c in ds.components.values() if c.role != Role.IDENTIFIER]
+        measure_cols = [quote_identifier(n) for n in measure_names]
+
+        join_conds = [f"g.{time_col} = s.{time_col}"]
+        for oc in other_id_cols:
+            join_conds.append(f"g.{oc} = s.{oc}")
+        join_on = " AND ".join(join_conds)
+
+        g_cols = [f"g.{oc}" for oc in other_id_cols] + [f"g.{time_col}"]
+        s_cols = [f"s.{mc}" for mc in measure_cols]
+        final_select = ", ".join(g_cols + s_cols)
+        order_by = ", ".join(g_cols)
+
+        partition = f"PARTITION BY {', '.join(other_id_cols)}" if other_id_cols else ""
+
+        if fill_mode == "single" and other_ids:
+            bounds_group = f"GROUP BY {', '.join(other_id_cols)}"
+            bounds_select = f"{', '.join(other_id_cols)},"
+        else:
+            bounds_group = ""
+            bounds_select = ""
+
+        freq_step = "(SELECT step FROM freq)"
+        if other_ids:
+            if fill_mode == "single":
+                grid_sql = f"""
+SELECT b.{", b.".join(other_id_cols)},
+    CAST(d AS DATE) AS {time_col}
+FROM bounds b, generate_series(b.min_d, b.max_d, {freq_step}) AS t(d)"""
+            else:
+                grid_sql = f"""
+SELECT gf.{", gf.".join(other_id_cols)},
+    CAST(d AS DATE) AS {time_col}
+FROM group_freq gf, generate_series(
+    (SELECT min_d FROM bounds), (SELECT max_d FROM bounds), {freq_step}
+) AS t(d)"""
+        else:
+            grid_sql = f"""
+SELECT CAST(d AS DATE) AS {time_col}
+FROM generate_series(
+    (SELECT min_d FROM bounds), (SELECT max_d FROM bounds), {freq_step}
+) AS t(d)"""
+
+        if fill_mode == "single" and other_ids:
+            extra_ctes = ""
+        elif other_ids:
+            extra_ctes = f"""
+group_freq AS (
+    SELECT DISTINCT {", ".join(other_id_cols)} FROM source
+),"""
+        else:
+            extra_ctes = ""
+
+        return f"""
+WITH source AS (SELECT * FROM {src}),
+freq AS (
+    SELECT CASE
+        WHEN MIN(diff_days) BETWEEN 1 AND 6 THEN INTERVAL 1 DAY
+        WHEN MIN(diff_days) BETWEEN 7 AND 27 THEN INTERVAL 7 DAY
+        WHEN MIN(diff_days) BETWEEN 28 AND 89 THEN INTERVAL 1 MONTH
+        WHEN MIN(diff_days) BETWEEN 90 AND 180 THEN INTERVAL 3 MONTH
+        WHEN MIN(diff_days) BETWEEN 181 AND 364 THEN INTERVAL 6 MONTH
+        ELSE INTERVAL 1 YEAR
+    END AS step
+    FROM (
+        SELECT ABS(DATE_DIFF('day',
+            LAG({time_col}) OVER ({partition} ORDER BY {time_col}),
+            {time_col})) AS diff_days
+        FROM source
+    ) WHERE diff_days IS NOT NULL AND diff_days > 0
+),
+bounds AS (
+    SELECT {bounds_select} MIN({time_col}) AS min_d, MAX({time_col}) AS max_d
+    FROM source
+    {bounds_group}
+),{extra_ctes}
+full_grid AS ({grid_sql}
+)
+SELECT {final_select}
+FROM full_grid g
+LEFT JOIN source s ON {join_on}
+ORDER BY {order_by}""".strip()
+
     def _visit_flow_stock(self, node: AST.UnaryOp, op: str) -> str:
         """Visit FLOW_TO_STOCK or STOCK_TO_FLOW: window functions over time series."""
         ds = self._get_dataset_structure(node.operand)
@@ -2175,22 +2269,45 @@ ORDER BY {order_by}"""
 
         time_col = quote_identifier(time_id)
 
-        # Build shifted time expression
         if time_type == TimePeriod:
             shifted = f"vtl_tp_shift(vtl_period_parse({time_col}), {shift_sql}) AS {time_col}"
+            cols = []
+            for comp in ds.components.values():
+                col = quote_identifier(comp.name)
+                cols.append(shifted if comp.name == time_id else col)
+            return f"SELECT {', '.join(cols)} FROM {src}"
         else:
-            shifted = f"CAST({time_col} + INTERVAL ({shift_sql}) DAY AS DATE) AS {time_col}"
+            # Date: infer frequency from date diffs, then shift by freq * N
+            other_ids = [
+                quote_identifier(c.name) for c in ds.get_identifiers() if c.name != time_id
+            ]
+            partition = f"PARTITION BY {', '.join(other_ids)}" if other_ids else ""
 
-        # SELECT all columns, replacing time_id with shifted version
-        cols = []
-        for comp in ds.components.values():
-            col = quote_identifier(comp.name)
-            if comp.name == time_id:
-                cols.append(shifted)
-            else:
-                cols.append(col)
+            cols = []
+            for comp in ds.components.values():
+                col = quote_identifier(comp.name)
+                if comp.name == time_id:
+                    cols.append(f"vtl_dateadd({col}, {shift_sql}, freq.period_ind) AS {col}")
+                else:
+                    cols.append(col)
 
-        return f"SELECT {', '.join(cols)} FROM {src}"
+            return f"""SELECT {", ".join(cols)}
+FROM {src}, (
+    SELECT CASE
+        WHEN MIN(diff_days) BETWEEN 1 AND 6 THEN 'D'
+        WHEN MIN(diff_days) BETWEEN 7 AND 27 THEN 'W'
+        WHEN MIN(diff_days) BETWEEN 28 AND 89 THEN 'M'
+        WHEN MIN(diff_days) BETWEEN 90 AND 180 THEN 'Q'
+        WHEN MIN(diff_days) BETWEEN 181 AND 364 THEN 'S'
+        ELSE 'A'
+    END AS period_ind
+    FROM (
+        SELECT ABS(DATE_DIFF('day',
+            LAG({time_col}) OVER ({partition} ORDER BY {time_col}),
+            {time_col})) AS diff_days
+        FROM {src}
+    ) WHERE diff_days IS NOT NULL AND diff_days > 0
+) AS freq"""
 
     def _visit_dateadd(self, node: AST.ParamOp) -> str:
         """Visit DATEADD operation: dateadd(op, shiftNumber, periodInd)."""
@@ -2692,6 +2809,36 @@ ORDER BY {order_by}"""
     # Aggregation visitor
     # =========================================================================
 
+    def _build_agg_group_cols(
+        self,
+        node: AST.Aggregation,
+        ds: Dataset,
+        group_cols: List[str],
+    ) -> Tuple[List[str], List[str]]:
+        """Build SELECT and GROUP BY column lists, handling group all time_agg."""
+        time_agg_expr: Optional[str] = None
+        time_agg_id: Optional[str] = None
+        if node.grouping and node.grouping_op == "group all":
+            for g in node.grouping:
+                if isinstance(g, AST.TimeAggregation):
+                    with self._clause_scope(ds):
+                        time_agg_expr = self.visit_TimeAggregation(g)
+                    for comp in ds.components.values():
+                        if comp.data_type in (TimePeriod, Date) and comp.role == Role.IDENTIFIER:
+                            time_agg_id = comp.name
+                            break
+
+        cols: List[str] = []
+        group_by_cols: List[str] = []
+        for g in group_cols:
+            if g == time_agg_id and time_agg_expr:
+                cols.append(f"{time_agg_expr} AS {quote_identifier(g)}")
+                group_by_cols.append(time_agg_expr)
+            else:
+                cols.append(quote_identifier(g))
+                group_by_cols.append(quote_identifier(g))
+        return cols, group_by_cols
+
     def visit_Aggregation(self, node: AST.Aggregation) -> str:  # type: ignore[override]
         """Visit a standalone aggregation: sum(DS group by Id)."""
         op = str(node.op).lower()
@@ -2741,7 +2888,7 @@ ORDER BY {order_by}"""
         all_ids = effective_ds.get_identifiers_names()
         group_cols = self._resolve_group_cols(node, all_ids)
 
-        cols: List[str] = [quote_identifier(g) for g in group_cols]
+        cols, group_by_cols = self._build_agg_group_cols(node, ds, group_cols)
 
         # count replaces all measures with a single int_var column.
         # VTL count() excludes rows where all measures are null.
@@ -2782,7 +2929,7 @@ ORDER BY {order_by}"""
         builder = SQLBuilder().select(*cols).from_table(table_src)
 
         if group_cols:
-            builder.group_by(*[quote_identifier(g) for g in group_cols])
+            builder.group_by(*group_by_cols)
 
         if node.having_clause:
             with self._clause_scope(ds):
@@ -3642,6 +3789,12 @@ ORDER BY {order_by}"""
         conf = node.conf  # "first", "last", or None
 
         if node.operand is not None:
+            operand_type = self._get_operand_type(node.operand)
+
+            # Dataset-level time_agg: apply to the time measure
+            if operand_type == _DATASET:
+                return self._visit_time_agg_dataset(node, target, conf)
+
             is_tp = self._is_time_period_operand(node.operand)
             operand_sql = self.visit(node.operand)
 
@@ -3665,8 +3818,44 @@ ORDER BY {order_by}"""
                 for comp in self._current_dataset.components.values():
                     if comp.data_type == Date and comp.role == Role.IDENTIFIER:
                         col = quote_identifier(comp.name)
-                        return f"vtl_time_agg_date({col}, '{target}')"
+                        agg = f"vtl_time_agg_date({col}, '{target}')"
+                        if conf == "first":
+                            return f"vtl_tp_start_date(vtl_period_parse({agg}))"
+                        elif conf == "last":
+                            return f"vtl_tp_end_date(vtl_period_parse({agg}))"
+                        return agg
             return f"vtl_time_agg_date(CURRENT_DATE, '{target}')"
+
+    def _visit_time_agg_dataset(
+        self, node: AST.TimeAggregation, target: str, conf: Optional[str]
+    ) -> str:
+        """Visit TIME_AGG at dataset level: apply to time measure."""
+        ds = self._get_dataset_structure(node.operand)
+        src = self._get_dataset_sql(node.operand)
+        if ds is None:
+            raise ValueError("Cannot resolve structure for time_agg dataset")
+
+        # Find time measures to transform
+        cols = []
+        for comp in ds.components.values():
+            col = quote_identifier(comp.name)
+            if comp.role == Role.IDENTIFIER:
+                cols.append(col)
+            elif comp.data_type == TimePeriod:
+                cols.append(f"vtl_time_agg_tp(vtl_period_parse({col}), '{target}') AS {col}")
+            elif comp.data_type == Date:
+                agg = f"vtl_time_agg_date({col}, '{target}')"
+                if conf == "first":
+                    expr = f"vtl_tp_start_date(vtl_period_parse({agg}))"
+                elif conf == "last":
+                    expr = f"vtl_tp_end_date(vtl_period_parse({agg}))"
+                else:
+                    expr = agg
+                cols.append(f"{expr} AS {col}")
+            else:
+                cols.append(col)
+
+        return f"SELECT {', '.join(cols)} FROM {src}"
 
     # =========================================================================
     # Eval operator visitor
