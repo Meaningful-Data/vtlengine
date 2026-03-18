@@ -24,6 +24,11 @@ from vtlengine.duckdb_transpiler.io._validation import (
     validate_temporal_columns,
 )
 from vtlengine.Exceptions import DataLoadError, InputValidationException
+from vtlengine.files.sdmx_handler import (
+    extract_sdmx_dataset_name,
+    is_sdmx_datapoint_file,
+    load_sdmx_datapoints,
+)
 from vtlengine.Model import Component, Dataset, Role
 
 # Environment variable to skip post-load validations (for benchmarking)
@@ -313,8 +318,17 @@ def extract_datapoint_paths(
                 # Store DataFrame for direct DuckDB registration
                 df_dict[name] = value
             elif isinstance(value, (str, Path)):
-                # Convert to Path and store
-                path_dict[name] = Path(value) if isinstance(value, str) else value
+                path = Path(value) if isinstance(value, str) else value
+                # Check if this is an SDMX file — load via pysdmx into DataFrame
+                if is_sdmx_datapoint_file(path):
+                    try:
+                        components = input_datasets[name].components
+                        sdmx_df = load_sdmx_datapoints(components, name, path)
+                        df_dict[name] = sdmx_df
+                        continue
+                    except Exception:  # noqa: S110
+                        pass  # Fall through to treat as regular file
+                path_dict[name] = path
             else:
                 raise InputValidationException(
                     f"Invalid datapoint for {name}. Must be DataFrame, Path, or string."
@@ -325,6 +339,17 @@ def extract_datapoint_paths(
     if isinstance(datapoints, list):
         for item in datapoints:
             path = Path(item) if isinstance(item, str) else item
+            # Check if this is an SDMX file — load via pysdmx into DataFrame
+            if is_sdmx_datapoint_file(path):
+                try:
+                    sdmx_name = extract_sdmx_dataset_name(path)
+                    if sdmx_name in input_datasets:
+                        components = input_datasets[sdmx_name].components
+                        sdmx_df = load_sdmx_datapoints(components, sdmx_name, path)
+                        df_dict[sdmx_name] = sdmx_df
+                        continue
+                except Exception:  # noqa: S110
+                    pass  # Fall through to treat as regular file
             # Extract dataset name from filename (without extension)
             name = path.stem
             if name in input_datasets:
@@ -333,6 +358,17 @@ def extract_datapoint_paths(
 
     # Handle single path
     path = Path(datapoints) if isinstance(datapoints, str) else datapoints
+    # Check if this is an SDMX file — load via pysdmx into DataFrame
+    if is_sdmx_datapoint_file(path):
+        try:
+            sdmx_name = extract_sdmx_dataset_name(path)
+            if sdmx_name in input_datasets:
+                components = input_datasets[sdmx_name].components
+                sdmx_df = load_sdmx_datapoints(components, sdmx_name, path)
+                df_dict[sdmx_name] = sdmx_df
+                return None, df_dict
+        except Exception:  # noqa: S110
+            pass  # Fall through to treat as regular file
     name = path.stem
     if name in input_datasets:
         path_dict[name] = path
@@ -363,11 +399,29 @@ def register_dataframes(
         # Create table with proper schema
         conn.execute(build_create_table_sql(name, components))
 
-        # Register DataFrame and insert data
+        # Register DataFrame and insert data with explicit column names
         temp_view = f"_temp_{name}"
         conn.register(temp_view, df)
-        conn.execute(f'INSERT INTO "{name}" SELECT * FROM "{temp_view}"')
+        col_list = ", ".join(f'"{c}"' for c in components)
+        conn.execute(f'INSERT INTO "{name}" ({col_list}) SELECT {col_list} FROM "{temp_view}"')
         conn.unregister(temp_view)
 
         # Normalize TimePeriod columns to canonical internal representation
         _normalize_time_period_columns(conn, name, components)
+
+        # Post-load validation (matching load_datapoints_duckdb behavior)
+        if not SKIP_LOAD_VALIDATION:
+            try:
+                id_columns = [n for n, c in components.items() if c.role == Role.IDENTIFIER]
+                # DWI: no identifiers → max 1 row
+                if not id_columns:
+                    result = conn.execute(f'SELECT COUNT(*) FROM "{name}"').fetchone()
+                    if result and result[0] > 1:
+                        raise DataLoadError("0-3-1-4", name=name)
+                # Duplicate check (GROUP BY HAVING)
+                validate_no_duplicates(conn, name, id_columns)
+                # Temporal type validation
+                validate_temporal_columns(conn, name, components)
+            except DataLoadError:
+                conn.execute(f'DROP TABLE IF EXISTS "{name}"')
+                raise
