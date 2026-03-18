@@ -1,5 +1,6 @@
 -- ============================================================================
 -- VTL Time Types for DuckDB
+-- VTL Time Types for DuckDB
 -- ============================================================================
 -- Types and macros for TimePeriod and TimeInterval handling.
 -- Loaded once when initializing a DuckDB connection for VTL.
@@ -271,7 +272,7 @@ CREATE OR REPLACE MACRO vtl_period_to_natural(input VARCHAR) AS (
 
 -- VTL instr(string, pattern, start, occurrence)
 CREATE OR REPLACE MACRO vtl_instr(
-    s VARCHAR, pat VARCHAR, start_pos_raw INTEGER, occur_raw INTEGER
+    s VARCHAR, pat VARCHAR, start_pos_raw BIGINT, occur_raw BIGINT
 ) AS (
     CASE
         WHEN s IS NULL THEN NULL
