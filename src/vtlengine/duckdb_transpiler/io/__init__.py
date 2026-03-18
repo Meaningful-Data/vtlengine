@@ -16,6 +16,7 @@ from ._io import (
     register_dataframes,
     save_datapoints_duckdb,
 )
+from ._time_handling import apply_time_period_representation, format_time_period_scalar
 
 __all__ = [
     "load_datapoints_duckdb",
@@ -23,4 +24,6 @@ __all__ = [
     "execute_queries",
     "extract_datapoint_paths",
     "register_dataframes",
+    "apply_time_period_representation",
+    "format_time_period_scalar",
 ]

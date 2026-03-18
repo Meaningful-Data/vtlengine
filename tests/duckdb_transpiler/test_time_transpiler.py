@@ -12,15 +12,8 @@ import pytest
 
 from vtlengine.AST import (
     Assignment,
-    BinOp,
-    Constant,
     Start,
-    UnaryOp,
     VarID,
-)
-from vtlengine.AST.Grammar.tokens import (
-    PERIOD_INDICATOR,
-    TIMESHIFT,
 )
 from vtlengine.DataTypes import Number, TimeInterval, TimePeriod
 from vtlengine.duckdb_transpiler.sql import initialize_time_types
@@ -109,147 +102,9 @@ def transpile_and_get_sql(transpiler: SQLTranspiler, ast: Start) -> list:
     return transpiler.transpile(ast)
 
 
-# =============================================================================
-# Tests: TIMESHIFT with TimePeriod
-# =============================================================================
-
-
-class TestTimeshiftTimePeriod:
-    """Tests for TIMESHIFT operation with TimePeriod identifiers."""
-
-    def test_timeshift_generates_vtl_period_shift(self):
-        """Verify TIMESHIFT uses vtl_period_shift for TimePeriod columns."""
-        ds = create_time_period_dataset("DS_1", "time_id", ["Me_1"])
-        transpiler = create_transpiler(
-            input_datasets={"DS_1": ds},
-            output_datasets={"DS_r": ds},
-        )
-
-        # Create AST: DS_r := timeshift(DS_1, 1)
-        dataset_ref = VarID(**make_ast_node(value="DS_1"))
-        shift_val = Constant(**make_ast_node(type_="INTEGER_CONSTANT", value=1))
-        expr = BinOp(**make_ast_node(left=dataset_ref, op=TIMESHIFT, right=shift_val))
-        ast = create_start_with_assignment("DS_r", expr)
-
-        results = transpile_and_get_sql(transpiler, ast)
-
-        assert len(results) == 1
-        _, sql, _ = results[0]
-
-        # Should use vtl_period_shift function
-        assert "vtl_period_shift" in sql
-
-    def test_timeshift_execution(self):
-        """Test that TIMESHIFT SQL actually executes correctly."""
-        conn = duckdb.connect(":memory:")
-        initialize_time_types(conn)
-
-        # Create test data
-        conn.execute("""
-            CREATE TABLE DS_1 (time_id VARCHAR, Me_1 DOUBLE);
-            INSERT INTO DS_1 VALUES ('2020-Q1', 10.0), ('2020-Q2', 20.0);
-        """)
-
-        # Run the timeshift query
-        sql = """
-            SELECT vtl_period_to_string(vtl_period_shift(vtl_period_parse(time_id), 1)) AS time_id, Me_1
-            FROM DS_1
-        """
-        result = conn.execute(sql).fetchall()
-
-        # Should shift by 1 quarter
-        assert result[0][0] == "2020-Q2"
-        assert result[1][0] == "2020-Q3"
-
-        conn.close()
-
-
-# =============================================================================
-# Tests: PERIOD_INDICATOR
-# =============================================================================
-
-
-class TestPeriodIndicator:
-    """Tests for PERIOD_INDICATOR operation."""
-
-    def test_period_indicator_generates_vtl_function(self):
-        """Verify PERIOD_INDICATOR uses vtl_period_indicator function."""
-        ds = create_time_period_dataset("DS_1", "time_id", ["Me_1"])
-        transpiler = create_transpiler(
-            input_datasets={"DS_1": ds},
-            output_datasets={"DS_r": ds},
-        )
-
-        # Create AST: DS_r := period_indicator(DS_1)
-        dataset_ref = VarID(**make_ast_node(value="DS_1"))
-        expr = UnaryOp(**make_ast_node(op=PERIOD_INDICATOR, operand=dataset_ref))
-        ast = create_start_with_assignment("DS_r", expr)
-
-        results = transpile_and_get_sql(transpiler, ast)
-
-        assert len(results) == 1
-        _, sql, _ = results[0]
-
-        # Should use vtl_period_indicator function
-        assert "vtl_period_indicator" in sql
-        assert "vtl_period_parse" in sql
-
-    def test_period_indicator_execution(self):
-        """Test that PERIOD_INDICATOR SQL actually executes correctly."""
-        conn = duckdb.connect(":memory:")
-        initialize_time_types(conn)
-
-        # Create test data
-        conn.execute("""
-            CREATE TABLE DS_1 (time_id VARCHAR);
-            INSERT INTO DS_1 VALUES ('2020-Q1'), ('2020M06'), ('2020');
-        """)
-
-        # Run the period_indicator query
-        sql = """
-            SELECT time_id, vtl_period_indicator(vtl_period_parse(time_id)) AS indicator
-            FROM DS_1
-        """
-        result = conn.execute(sql).fetchall()
-
-        assert result[0][1] == "Q"
-        assert result[1][1] == "M"
-        assert result[2][1] == "A"
-
-        conn.close()
-
-
-# =============================================================================
-# Tests: TIME_AGG with TimePeriod
-# =============================================================================
-
-
-class TestTimeAggTimePeriod:
-    """Tests for TIME_AGG operation with TimePeriod."""
-
-    def test_time_agg_execution_with_time_period(self):
-        """Test that TIME_AGG SQL executes correctly for TimePeriod input."""
-        conn = duckdb.connect(":memory:")
-        initialize_time_types(conn)
-
-        # Create test data
-        conn.execute("""
-            CREATE TABLE DS_1 (time_id VARCHAR, Me_1 DOUBLE);
-            INSERT INTO DS_1 VALUES ('2020-Q1', 10.0), ('2020-Q2', 20.0), ('2020-Q3', 30.0);
-        """)
-
-        # Run time_agg to aggregate to annual
-        sql = """
-            SELECT vtl_period_to_string(vtl_time_agg(vtl_period_parse(time_id), 'A')) AS time_id, Me_1
-            FROM DS_1
-        """
-        result = conn.execute(sql).fetchall()
-
-        # All should aggregate to 2020 (annual)
-        for row in result:
-            assert row[0] == "2020"
-
-        conn.close()
+# NOTE: Time operator tests (timeshift, period_indicator, time_agg,
+# flow_to_stock, stock_to_flow, fill_time_series, duration conversions)
+# are deferred to #519: (Duckdb) Implement time operators.
 
 
 # =============================================================================
@@ -278,18 +133,19 @@ class TestTimePeriodComparison:
         conn = duckdb.connect(":memory:")
         initialize_time_types(conn)
 
-        # Map operator to function
-        op_map = {
+        # Equality uses VARCHAR directly; ordering uses STRUCT comparison macros
+        ordering_map = {
             "<": "vtl_period_lt",
             "<=": "vtl_period_le",
             ">": "vtl_period_gt",
             ">=": "vtl_period_ge",
-            "=": "vtl_period_eq",
-            "<>": "vtl_period_ne",
         }
-        func = op_map[op]
-
-        sql = f"SELECT {func}(vtl_period_parse('{left}'), vtl_period_parse('{right}'))"
+        if op in ordering_map:
+            func = ordering_map[op]
+            sql = f"SELECT {func}(vtl_period_parse('{left}'), vtl_period_parse('{right}'))"
+        else:
+            # Equality/inequality: compare canonical VARCHAR directly
+            sql = f"SELECT '{left}' {op} '{right}'"
         result = conn.execute(sql).fetchone()[0]
 
         assert result == expected
@@ -319,18 +175,8 @@ class TestTimeIntervalComparison:
         conn = duckdb.connect(":memory:")
         initialize_time_types(conn)
 
-        # Map operator to function
-        op_map = {
-            "<": "vtl_interval_lt",
-            "<=": "vtl_interval_le",
-            ">": "vtl_interval_gt",
-            ">=": "vtl_interval_ge",
-            "=": "vtl_interval_eq",
-            "<>": "vtl_interval_ne",
-        }
-        func = op_map[op]
-
-        sql = f"SELECT {func}(vtl_interval_parse('{left}'), vtl_interval_parse('{right}'))"
+        # TimeInterval uses VARCHAR comparison directly
+        sql = f"SELECT '{left}' {op} '{right}'"
         result = conn.execute(sql).fetchone()[0]
 
         assert result == expected
@@ -347,20 +193,19 @@ class TestYearExtraction:
     """Tests for YEAR extraction from TimePeriod."""
 
     def test_year_extraction_execution(self):
-        """Test that YEAR extraction works for TimePeriod."""
+        """Test that YEAR extraction works via STRUCT field access."""
         conn = duckdb.connect(":memory:")
         initialize_time_types(conn)
 
-        # Test year extraction from various period formats
         test_cases = [
-            ("2020", 2020),
+            ("2020A", 2020),
             ("2020-Q1", 2020),
             ("2021-M06", 2021),
             ("2022-W15", 2022),
         ]
 
         for period, expected_year in test_cases:
-            sql = f"SELECT vtl_period_year(vtl_period_parse('{period}'))"
+            sql = f"SELECT vtl_period_parse('{period}').year"
             result = conn.execute(sql).fetchone()[0]
             assert result == expected_year, f"YEAR({period}) should be {expected_year}"
 
@@ -399,18 +244,15 @@ class TestSQLInitialization:
 
         # Test each function exists and works
         functions_to_test = [
-            "SELECT vtl_period_parse('2020-Q1').start_date",
+            "SELECT vtl_period_parse('2020-Q1').year",
             "SELECT vtl_period_to_string(vtl_period_parse('2020-Q1'))",
-            "SELECT vtl_period_indicator(vtl_period_parse('2020-Q1'))",
-            "SELECT vtl_period_year(vtl_period_parse('2020-Q1'))",
-            "SELECT vtl_period_number(vtl_period_parse('2020-Q1'))",
+            "SELECT vtl_period_parse('2020-Q1').period_indicator",
+            "SELECT vtl_period_parse('2020-Q1').year",
+            "SELECT vtl_period_parse('2020-Q1').period_number",
             "SELECT vtl_period_lt(vtl_period_parse('2020-Q1'), vtl_period_parse('2020-Q2'))",
-            "SELECT vtl_period_shift(vtl_period_parse('2020-Q1'), 1).period_indicator",
-            "SELECT vtl_period_diff(vtl_period_parse('2020-Q1'), vtl_period_parse('2020-Q2'))",
-            "SELECT vtl_time_agg(vtl_period_parse('2020-Q1'), 'A').period_indicator",
-            "SELECT vtl_interval_parse('2020-01-01/2020-12-31').start_date",
+            "SELECT vtl_period_normalize('2020Q1')",
+            "SELECT vtl_interval_parse('2020-01-01/2020-12-31').date1",
             "SELECT vtl_interval_to_string(vtl_interval_parse('2020-01-01/2020-12-31'))",
-            "SELECT vtl_interval_lt(vtl_interval_parse('2020-01-01/2020-12-31'), vtl_interval_parse('2021-01-01/2021-12-31'))",
         ]
 
         for sql in functions_to_test:

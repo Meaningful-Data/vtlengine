@@ -305,6 +305,7 @@ def _run_with_duckdb(
     return_only_persistent: bool = True,
     scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
     output_folder: Optional[Union[str, Path]] = None,
+    time_period_output_format: str = "vtl",
 ) -> Dict[str, Union[Dataset, Scalar]]:
     """
     Run VTL script using DuckDB as the execution engine.
@@ -388,6 +389,7 @@ def _run_with_duckdb(
             output_scalars=output_scalars,
             output_folder=output_folder_path,
             return_only_persistent=return_only_persistent,
+            time_period_output_format=time_period_output_format,
         )
     finally:
         conn.close()
@@ -533,6 +535,7 @@ def run(
             return_only_persistent=return_only_persistent,
             scalar_values=scalar_values,
             output_folder=output_folder,
+            time_period_output_format=time_period_output_format,
         )
 
     # Convert sdmx_mappings to dict format for internal use
