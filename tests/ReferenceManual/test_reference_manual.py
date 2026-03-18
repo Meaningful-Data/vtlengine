@@ -214,17 +214,19 @@ def get_test_files(dataPoints, dataStructures, dp_dir, param):
 
 
 @pytest.mark.parametrize("param", params if VTL_ENGINE_BACKEND == "duckdb" else [])
-def test_reference_duckdb(input_datasets, reference_datasets, ast, param, value_domains):
+def test_reference_duckdb(input_datasets, reference_datasets, ast, param):
     warnings.filterwarnings("ignore", category=FutureWarning)
     reference_datasets = load_dataset(*reference_datasets, dp_dir=reference_dp_dir, param=param)
     if param in random_ref:
         reference_datasets["DS_r"].data = random_ref[param]
 
     vtl, ds, dp = get_test_files(*input_datasets, dp_dir=input_dp_dir, param=param)
+    vd_files = list(value_domain_dir.glob("*.json"))
     result = run(
         script=vtl,
         data_structures=ds,
         datapoints=dp,
+        value_domains=vd_files if vd_files else None,
         return_only_persistent=False,
         use_duckdb=True,
     )
