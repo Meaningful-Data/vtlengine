@@ -39,6 +39,48 @@ SKIP_LOAD_VALIDATION = os.environ.get("VTL_SKIP_LOAD_VALIDATION", "").lower() in
 )
 
 
+def _validate_loaded_table(
+    conn: duckdb.DuckDBPyConnection,
+    table_name: str,
+    components: Dict[str, Component],
+) -> None:
+    """Validate a loaded DuckDB table after data insertion.
+
+    Runs the shared post-load validation checks:
+    1. TimePeriod normalization to canonical format
+    2. DWI check (no identifiers → max 1 row)
+    3. Duplicate identifier check via GROUP BY HAVING
+    4. Temporal type regex validation (TimePeriod, TimeInterval, Duration)
+
+    On validation failure, drops the table and re-raises DataLoadError.
+    Respects VTL_SKIP_LOAD_VALIDATION (skips checks 2-4 when set).
+    """
+    # Normalize TimePeriod columns to canonical internal representation
+    _normalize_time_period_columns(conn, table_name, components)
+
+    if SKIP_LOAD_VALIDATION:
+        return
+
+    try:
+        id_columns = [n for n, c in components.items() if c.role == Role.IDENTIFIER]
+
+        # DWI: no identifiers → max 1 row
+        if not id_columns:
+            result = conn.execute(f'SELECT COUNT(*) FROM "{table_name}"').fetchone()
+            if result and result[0] > 1:
+                raise DataLoadError("0-3-1-4", name=table_name)
+
+        # Duplicate check (GROUP BY HAVING)
+        validate_no_duplicates(conn, table_name, id_columns)
+
+        # Temporal type validation
+        validate_temporal_columns(conn, table_name, components)
+
+    except DataLoadError:
+        conn.execute(f'DROP TABLE IF EXISTS "{table_name}"')
+        raise
+
+
 def _normalize_time_period_columns(
     conn: duckdb.DuckDBPyConnection,
     table_name: str,
@@ -205,31 +247,12 @@ def load_datapoints_duckdb(
         """
         conn.execute(insert_sql)
 
-        # 9. Normalize TimePeriod columns to canonical internal representation
-        _normalize_time_period_columns(conn, dataset_name, components)
-
     except duckdb.Error as e:
         conn.execute(f'DROP TABLE IF EXISTS "{dataset_name}"')
         raise map_duckdb_error(e, dataset_name, components)
 
-    # 10. Validate constraints (can be skipped via VTL_SKIP_LOAD_VALIDATION for benchmarking)
-    if not SKIP_LOAD_VALIDATION:
-        try:
-            # DWI: no identifiers → max 1 row
-            if not id_columns:
-                result = conn.execute(f'SELECT COUNT(*) FROM "{dataset_name}"').fetchone()
-                if result and result[0] > 1:
-                    raise DataLoadError("0-3-1-4", name=dataset_name)
-
-            # Duplicate check (GROUP BY HAVING)
-            validate_no_duplicates(conn, dataset_name, id_columns)
-
-            # Temporal type validation
-            validate_temporal_columns(conn, dataset_name, components)
-
-        except DataLoadError:
-            conn.execute(f'DROP TABLE IF EXISTS "{dataset_name}"')
-            raise
+    # Post-load: normalize TimePeriod + validate constraints
+    _validate_loaded_table(conn, dataset_name, components)
 
     return conn.table(dataset_name)
 
@@ -406,22 +429,5 @@ def register_dataframes(
         conn.execute(f'INSERT INTO "{name}" ({col_list}) SELECT {col_list} FROM "{temp_view}"')
         conn.unregister(temp_view)
 
-        # Normalize TimePeriod columns to canonical internal representation
-        _normalize_time_period_columns(conn, name, components)
-
-        # Post-load validation (matching load_datapoints_duckdb behavior)
-        if not SKIP_LOAD_VALIDATION:
-            try:
-                id_columns = [n for n, c in components.items() if c.role == Role.IDENTIFIER]
-                # DWI: no identifiers → max 1 row
-                if not id_columns:
-                    result = conn.execute(f'SELECT COUNT(*) FROM "{name}"').fetchone()
-                    if result and result[0] > 1:
-                        raise DataLoadError("0-3-1-4", name=name)
-                # Duplicate check (GROUP BY HAVING)
-                validate_no_duplicates(conn, name, id_columns)
-                # Temporal type validation
-                validate_temporal_columns(conn, name, components)
-            except DataLoadError:
-                conn.execute(f'DROP TABLE IF EXISTS "{name}"')
-                raise
+        # Post-load: normalize TimePeriod + validate constraints
+        _validate_loaded_table(conn, name, components)
