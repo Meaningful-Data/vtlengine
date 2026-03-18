@@ -14,7 +14,7 @@ from typing import Any, Callable, Dict, Generator, List, Optional, Set, Tuple, U
 import vtlengine.AST as AST
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.Grammar import tokens
-from vtlengine.DataTypes import COMP_NAME_MAPPING
+from vtlengine.DataTypes import COMP_NAME_MAPPING, TimePeriod
 from vtlengine.duckdb_transpiler.Transpiler.operators import (
     get_duckdb_type,
     registry,
@@ -42,6 +42,15 @@ _DP_OP_MAP: Dict[str, str] = {
     "/": "/",
     "and": "AND",
     "or": "OR",
+}
+
+# Mapping from VTL ordering operators to vtl_period_* comparison macros.
+# Equality (=, <>) operates on VARCHAR directly — no macros needed.
+_PERIOD_COMPARISON_MACROS: Dict[str, str] = {
+    tokens.GT: "vtl_period_gt",
+    tokens.GTE: "vtl_period_ge",
+    tokens.LT: "vtl_period_lt",
+    tokens.LTE: "vtl_period_le",
 }
 
 
@@ -1419,7 +1428,16 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         for left_m, right_m in paired_measures:
             left_ref = f"{alias_a}.{quote_identifier(left_m)}"
             right_ref = f"{alias_b}.{quote_identifier(right_m)}"
-            expr = registry.binary.generate(op, left_ref, right_ref)
+
+            # TimePeriod ordering: use vtl_period_* macros with STRUCT comparison
+            left_comp = left_ds.components.get(left_m)
+            period_macro = _PERIOD_COMPARISON_MACROS.get(op)
+            if left_comp and left_comp.data_type == TimePeriod and period_macro:
+                expr = (
+                    f"{period_macro}(vtl_period_parse({left_ref}), vtl_period_parse({right_ref}))"
+                )
+            else:
+                expr = registry.binary.generate(op, left_ref, right_ref)
 
             out_name = left_m
             if (
@@ -1463,8 +1481,20 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 return registry.binary.generate(op, right_sql, left_sql)
 
         scalar_sql = self.visit(scalar_node)
+        period_macro = _PERIOD_COMPARISON_MACROS.get(op)
+
+        # Check if any measure is TimePeriod for ordering comparisons
+        has_time_period_measure = period_macro is not None and any(
+            c.data_type == TimePeriod for c in ds.components.values() if c.role == Role.MEASURE
+        )
 
         def _bin_expr(col_ref: str) -> str:
+            if has_time_period_measure:
+                left = f"vtl_period_parse({col_ref})"
+                right = f"vtl_period_parse({scalar_sql})"
+                if ds_on_left:
+                    return f"{period_macro}({left}, {right})"
+                return f"{period_macro}({right}, {left})"
             if ds_on_left:
                 return registry.binary.generate(op, col_ref, scalar_sql)
             return registry.binary.generate(op, scalar_sql, col_ref)
@@ -1491,9 +1521,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         if op == tokens.CHARSET_MATCH:
             return self._visit_match_characters(node)
-
-        if op == tokens.TIMESHIFT:
-            return self._visit_timeshift(node)
 
         if op == tokens.RANDOM:
             return self._visit_random_binop(node)
@@ -1635,53 +1662,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         return f'SELECT {id_cols}, {exists_subq} AS "bool_var" FROM {left_subq} AS l'
 
-    def _visit_timeshift(self, node: AST.BinOp) -> str:
-        """Visit TIMESHIFT: shift time identifiers by n periods."""
-        if not self._is_dataset(node.left):
-            left_sql = self.visit(node.left)
-            right_sql = self.visit(node.right)
-            return f"vtl_period_shift({left_sql}, {right_sql})"
-
-        ds = self._get_dataset_structure(node.left)
-        if ds is None:
-            raise ValueError("Cannot resolve dataset for timeshift")
-
-        table_src = self._get_dataset_sql(node.left)
-        shift_sql = self.visit(node.right)
-        time_id, _ = self._split_time_identifier(ds)
-
-        cols: List[str] = []
-        for name, comp in ds.components.items():
-            if comp.role == Role.IDENTIFIER:
-                if name == time_id:
-                    cols.append(
-                        f"vtl_period_shift({quote_identifier(name)}, {shift_sql})"
-                        f" AS {quote_identifier(name)}"
-                    )
-                else:
-                    cols.append(quote_identifier(name))
-            elif comp.role == Role.MEASURE:
-                cols.append(quote_identifier(name))
-
-        return SQLBuilder().select(*cols).from_table(table_src).build()
-
     def visit_UnaryOp(self, node: AST.UnaryOp) -> str:  # type: ignore[override]
         """Visit a unary operation."""
         op = str(node.op).lower()
-
-        # --- Special-case operators that need dedicated logic ---
-        if op == tokens.PERIOD_INDICATOR:
-            operand_sql = self.visit(node.operand)
-            return f"vtl_period_indicator(vtl_period_parse({operand_sql}))"
-
-        if op in (tokens.FLOW_TO_STOCK, tokens.STOCK_TO_FLOW):
-            return self._visit_time_window_op(node, op)
-
-        if op in (tokens.DAYTOYEAR, tokens.DAYTOMONTH, tokens.YEARTODAY, tokens.MONTHTODAY):
-            return self._visit_duration_conversion(node, op)
-
-        if op == tokens.FILL_TIME_SERIES:
-            return self._visit_fill_time_series(node)
 
         # --- Generic path: registry-based unary ---
         operand_type = self._get_operand_type(node.operand)
@@ -1705,75 +1688,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             if registry.unary.is_registered(op):
                 return registry.unary.generate(op, operand_sql)
             return f"{op.upper()}({operand_sql})"
-
-    def _visit_time_window_op(self, node: AST.UnaryOp, op_name: str) -> str:
-        """Visit a time-based window operation (flow_to_stock or stock_to_flow).
-
-        Both operations share the same pattern: iterate dataset components,
-        pass identifiers through, and apply a window function over the time
-        identifier to each measure.
-        """
-        if not self._is_dataset(node.operand):
-            raise ValueError(f"{op_name} requires a dataset operand")
-
-        ds = self._get_dataset_structure(node.operand)
-        if ds is None:
-            raise ValueError(f"Cannot resolve dataset for {op_name}")
-
-        time_id, other_ids = self._split_time_identifier(ds)
-
-        partition = ", ".join(quote_identifier(i) for i in other_ids)
-        partition_clause = f"PARTITION BY {partition} " if partition else ""
-        order_clause = f"ORDER BY {quote_identifier(time_id)}"
-        window = f"{partition_clause}{order_clause}"
-
-        def _measure_expr(col_ref: str) -> str:
-            if op_name == "flow_to_stock":
-                return f"SUM({col_ref}) OVER ({window})"
-            lag = f"LAG({col_ref}) OVER ({window})"
-            return f"COALESCE({col_ref} - {lag}, {col_ref})"
-
-        return self._apply_to_measures(node.operand, _measure_expr)
-
-    def _visit_duration_conversion(self, node: AST.UnaryOp, op: str) -> str:
-        """Visit duration conversion operators."""
-        operand_sql = self.visit(node.operand)
-
-        if op == tokens.DAYTOYEAR:
-            return (
-                f"'P' || CAST(FLOOR({operand_sql} / 365) AS VARCHAR) || 'Y' || "
-                f"CAST({operand_sql} % 365 AS VARCHAR) || 'D'"
-            )
-        elif op == tokens.DAYTOMONTH:
-            return (
-                f"'P' || CAST(FLOOR({operand_sql} / 30) AS VARCHAR) || 'M' || "
-                f"CAST({operand_sql} % 30 AS VARCHAR) || 'D'"
-            )
-        elif op == tokens.YEARTODAY:
-            return (
-                f"( CAST(REGEXP_EXTRACT({operand_sql}, 'P(\\d+)Y', 1) AS INTEGER) * 365"
-                f" + CAST(REGEXP_EXTRACT({operand_sql}, '(\\d+)D', 1) AS INTEGER) )"
-            )
-        elif op == tokens.MONTHTODAY:
-            return (
-                f"( CAST(REGEXP_EXTRACT({operand_sql}, 'P(\\d+)M', 1) AS INTEGER) * 30"
-                f" + CAST(REGEXP_EXTRACT({operand_sql}, '(\\d+)D', 1) AS INTEGER) )"
-            )
-        else:
-            raise ValueError(f"Unknown duration conversion: {op}")
-
-    def _visit_fill_time_series(self, node: AST.UnaryOp) -> str:
-        """Visit fill_time_series operation."""
-        if not self._is_dataset(node.operand):
-            operand_sql = self.visit(node.operand)
-            return f"fill_time_series({operand_sql})"
-
-        ds = self._get_dataset_structure(node.operand)
-        if ds is None:
-            raise ValueError("Cannot resolve dataset for fill_time_series")
-
-        table_src = self._get_dataset_sql(node.operand)
-        return f"SELECT * FROM fill_time_series({table_src})"
 
     def visit_ParamOp(self, node: AST.ParamOp) -> str:  # type: ignore[override]
         """Visit a parameterized operation."""
@@ -2372,11 +2286,18 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         else:
             measures = effective_ds.get_measures_names()
             for measure in measures:
-                if registry.aggregate.is_registered(op):
-                    expr = registry.aggregate.generate(op, quote_identifier(measure))
+                comp = effective_ds.components.get(measure)
+                is_time_period = comp is not None and comp.data_type == TimePeriod
+                qm = quote_identifier(measure)
+
+                if is_time_period and op in (tokens.MIN, tokens.MAX):
+                    # TimePeriod MIN/MAX: parse to STRUCT, aggregate, format back
+                    expr = f"vtl_period_to_string({op.upper()}(vtl_period_parse({qm})))"
+                elif registry.aggregate.is_registered(op):
+                    expr = registry.aggregate.generate(op, qm)
                 else:
-                    expr = f"{op.upper()}({quote_identifier(measure)})"
-                cols.append(f"{expr} AS {quote_identifier(measure)}")
+                    expr = f"{op.upper()}({qm})"
+                cols.append(f"{expr} AS {qm}")
 
         builder = SQLBuilder().select(*cols).from_table(table_src)
 

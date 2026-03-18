@@ -907,66 +907,8 @@ class TestTimeOperators:
         for rv, ev in zip(result_values, expected_values):
             assert rv == ev, f"Expected {ev}, got {rv}"
 
-    def test_flow_to_stock(self, temp_data_dir):
-        """Test flow_to_stock cumulative sum operation."""
-        vtl_script = "DS_r := flow_to_stock(DS_1);"
-
-        structure = create_dataset_structure(
-            "DS_1",
-            [("time_id", "Date"), ("region", "String")],
-            [("value", "Number", True)],
-        )
-
-        data_structures = create_data_structure([structure])
-        # Flow data: 10, 20, 30 for region A
-        input_data = [
-            ["2024-01-01", "A", 10],
-            ["2024-01-02", "A", 20],
-            ["2024-01-03", "A", 30],
-            ["2024-01-01", "B", 5],
-            ["2024-01-02", "B", 15],
-        ]
-        input_df = pd.DataFrame(input_data, columns=["time_id", "region", "value"])
-        input_df["time_id"] = pd.to_datetime(input_df["time_id"]).dt.date
-
-        results = execute_vtl_with_duckdb(vtl_script, data_structures, {"DS_1": input_df})
-
-        # Cumulative sum for region A: 10, 30, 60
-        # Cumulative sum for region B: 5, 20
-        result_df = results["DS_r"]
-        result_a = result_df[result_df["region"] == "A"].sort_values("time_id")["value"].tolist()
-        result_b = result_df[result_df["region"] == "B"].sort_values("time_id")["value"].tolist()
-
-        assert result_a == [10, 30, 60], f"Expected [10, 30, 60], got {result_a}"
-        assert result_b == [5, 20], f"Expected [5, 20], got {result_b}"
-
-    def test_stock_to_flow(self, temp_data_dir):
-        """Test stock_to_flow difference operation."""
-        vtl_script = "DS_r := stock_to_flow(DS_1);"
-
-        structure = create_dataset_structure(
-            "DS_1",
-            [("time_id", "Date"), ("region", "String")],
-            [("value", "Number", True)],
-        )
-
-        data_structures = create_data_structure([structure])
-        # Stock data: 10, 30, 60 for region A (cumulative)
-        input_data = [
-            ["2024-01-01", "A", 10],
-            ["2024-01-02", "A", 30],
-            ["2024-01-03", "A", 60],
-        ]
-        input_df = pd.DataFrame(input_data, columns=["time_id", "region", "value"])
-        input_df["time_id"] = pd.to_datetime(input_df["time_id"]).dt.date
-
-        results = execute_vtl_with_duckdb(vtl_script, data_structures, {"DS_1": input_df})
-
-        # Flow values: 10 (first), 20 (30-10), 30 (60-30)
-        result_df = results["DS_r"]
-        result_a = result_df.sort_values("time_id")["value"].tolist()
-
-        assert result_a == [10, 20, 30], f"Expected [10, 20, 30], got {result_a}"
+    # NOTE: Tests for flow_to_stock and stock_to_flow are deferred to
+    # #519: (Duckdb) Implement time operators.
 
 
 # =============================================================================
