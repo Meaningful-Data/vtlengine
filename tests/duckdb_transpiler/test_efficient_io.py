@@ -339,3 +339,93 @@ class TestRunWithOutputFolder:
         # Only DS_r (persistent) should be saved
         assert (output_dir / "DS_r.csv").exists()
         assert not (output_dir / "DS_temp.csv").exists()
+
+
+# =============================================================================
+# Tests for register_dataframes validation
+# =============================================================================
+
+
+class TestRegisterDataframesValidation:
+    """Tests for register_dataframes post-load validation."""
+
+    def test_validates_duplicates(self, duckdb_conn, sample_components):
+        """Test that register_dataframes detects duplicate identifier rows."""
+        from vtlengine.duckdb_transpiler.io._io import register_dataframes
+        from vtlengine.Exceptions import DataLoadError
+        from vtlengine.Model import Dataset
+
+        df = pd.DataFrame({"Id_1": ["A", "A"], "Me_1": [10.0, 20.0]})
+        input_datasets = {"DS_1": Dataset(name="DS_1", components=sample_components)}
+
+        with pytest.raises(DataLoadError):
+            register_dataframes(duckdb_conn, {"DS_1": df}, input_datasets)
+
+    def test_drops_table_on_validation_failure(self, duckdb_conn, sample_components):
+        """Test that table is dropped when validation fails."""
+        from vtlengine.duckdb_transpiler.io._io import register_dataframes
+        from vtlengine.Exceptions import DataLoadError
+        from vtlengine.Model import Dataset
+
+        df = pd.DataFrame({"Id_1": ["A", "A"], "Me_1": [10.0, 20.0]})
+        input_datasets = {"DS_1": Dataset(name="DS_1", components=sample_components)}
+
+        with pytest.raises(DataLoadError):
+            register_dataframes(duckdb_conn, {"DS_1": df}, input_datasets)
+
+        # Table should have been dropped on failure
+        result = duckdb_conn.execute(
+            "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'DS_1'"
+        ).fetchone()
+        assert result[0] == 0
+
+    def test_valid_dataframe_passes(self, duckdb_conn, sample_components):
+        """Test that valid DataFrames pass validation and create tables."""
+        from vtlengine.duckdb_transpiler.io._io import register_dataframes
+        from vtlengine.Model import Dataset
+
+        df = pd.DataFrame({"Id_1": ["A", "B"], "Me_1": [10.0, 20.0]})
+        input_datasets = {"DS_1": Dataset(name="DS_1", components=sample_components)}
+
+        register_dataframes(duckdb_conn, {"DS_1": df}, input_datasets)
+
+        result = duckdb_conn.execute('SELECT * FROM "DS_1" ORDER BY "Id_1"').fetchall()
+        assert result == [("A", 10.0), ("B", 20.0)]
+
+
+# =============================================================================
+# Tests for extract_datapoint_paths SDMX file detection
+# =============================================================================
+
+
+class TestExtractDatapointPathsSDMX:
+    """Tests for SDMX file detection in extract_datapoint_paths."""
+
+    def test_csv_file_routes_to_path_dict(self, sample_components, temp_output_dir):
+        """Test that CSV files still route to path_dict."""
+        from vtlengine.duckdb_transpiler.io._io import extract_datapoint_paths
+        from vtlengine.Model import Dataset
+
+        csv_path = temp_output_dir / "DS_1.csv"
+        pd.DataFrame({"Id_1": ["A"], "Me_1": [10.0]}).to_csv(csv_path, index=False)
+
+        input_datasets = {"DS_1": Dataset(name="DS_1", components=sample_components)}
+
+        path_dict, df_dict = extract_datapoint_paths({"DS_1": csv_path}, input_datasets)
+
+        assert path_dict is not None
+        assert "DS_1" in path_dict
+        assert len(df_dict) == 0
+
+    def test_dataframe_routes_to_df_dict(self, sample_components):
+        """Test that DataFrames route to df_dict."""
+        from vtlengine.duckdb_transpiler.io._io import extract_datapoint_paths
+        from vtlengine.Model import Dataset
+
+        df = pd.DataFrame({"Id_1": ["A"], "Me_1": [10.0]})
+        input_datasets = {"DS_1": Dataset(name="DS_1", components=sample_components)}
+
+        path_dict, df_dict = extract_datapoint_paths({"DS_1": df}, input_datasets)
+
+        assert path_dict is None
+        assert "DS_1" in df_dict
