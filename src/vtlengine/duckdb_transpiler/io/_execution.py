@@ -22,7 +22,12 @@ from vtlengine.duckdb_transpiler.io._io import (
     register_dataframes,
     save_datapoints_duckdb,
 )
+from vtlengine.duckdb_transpiler.io._time_handling import (
+    apply_time_period_representation,
+    format_time_period_scalar,
+)
 from vtlengine.duckdb_transpiler.sql import initialize_time_types
+from vtlengine.files.output._time_period_representation import TimePeriodRepresentation
 from vtlengine.Model import Dataset, Scalar
 
 
@@ -121,6 +126,7 @@ def cleanup_scheduled_datasets(
     output_scalars: Dict[str, Scalar],
     results: Dict[str, Union[Dataset, Scalar]],
     return_only_persistent: bool,
+    representation: Optional[TimePeriodRepresentation] = None,
 ) -> None:
     """
     Clean up datasets scheduled for deletion at a given statement.
@@ -134,9 +140,7 @@ def cleanup_scheduled_datasets(
         output_scalars: Dict of output scalar structures
         results: Dict to store results
         return_only_persistent: Only return persistent assignments
-        delete_key: Key in ds_analysis for deletion schedule
-        global_key: Key in ds_analysis for global inputs
-        persistent_key: Key in ds_analysis for persistent outputs
+        representation: TimePeriod output format
     """
     if statement_num not in ds_analysis.deletion:
         return
@@ -150,7 +154,12 @@ def cleanup_scheduled_datasets(
             conn.execute(f'DROP TABLE IF EXISTS "{ds_name}"')
         elif not return_only_persistent or ds_name in persistent_datasets:
             results[ds_name] = fetch_result(
-                conn, ds_name, output_folder, output_datasets, output_scalars
+                conn,
+                ds_name,
+                output_folder,
+                output_datasets,
+                output_scalars,
+                representation,
             )
             # Drop table if not already dropped by save_datapoints_duckdb
             # (scalars and in-memory datasets are fetched without dropping)
@@ -167,6 +176,7 @@ def fetch_result(
     output_folder: Optional[Path],
     output_datasets: Dict[str, Dataset],
     output_scalars: Dict[str, Scalar],
+    representation: Optional[TimePeriodRepresentation] = None,
 ) -> Union[Dataset, Scalar]:
     """
     Fetch a result from DuckDB and return as Dataset or Scalar.
@@ -177,10 +187,16 @@ def fetch_result(
         output_folder: Path to save CSV (None for in-memory mode)
         output_datasets: Dict of output dataset structures
         output_scalars: Dict of output scalar structures
+        representation: TimePeriod output format (applied before save/fetch)
 
     Returns:
         Dataset or Scalar with result data
     """
+    # Apply time period representation before saving/fetching
+    apply_time_period_representation(
+        conn, result_name, output_datasets, output_scalars, representation
+    )
+
     # Scalars are always fetched in-memory (never saved to CSV)
     if result_name in output_scalars:
         result_df = conn.execute(f'SELECT * FROM "{result_name}"').fetchdf()
@@ -188,6 +204,7 @@ def fetch_result(
             scalar = output_scalars[result_name]
             raw_value = _normalize_scalar_value(result_df.iloc[0, 0])
             scalar.value = raw_value
+            format_time_period_scalar(scalar, representation)
             return scalar
         return Dataset(name=result_name, components={}, data=result_df)
 
@@ -219,6 +236,7 @@ def execute_queries(
     output_scalars: Dict[str, Scalar],
     output_folder: Optional[Path],
     return_only_persistent: bool,
+    time_period_output_format: str = "vtl",
 ) -> Dict[str, Union[Dataset, Scalar]]:
     """
     Execute transpiled SQL queries with DAG-scheduled dataset loading/saving.
@@ -234,10 +252,12 @@ def execute_queries(
         output_scalars: Dict of output scalar structures
         output_folder: Path to save CSVs (None for in-memory mode)
         return_only_persistent: Only return persistent assignments
+        time_period_output_format: Output format for TimePeriod columns
     Returns:
         Dict of result_name -> Dataset or Scalar
     """
     results: Dict[str, Union[Dataset, Scalar]] = {}
+    representation = TimePeriodRepresentation.check_value(time_period_output_format)
 
     # Initialize VTL time type functions (idempotent - safe to call multiple times)
     initialize_time_types(conn)
@@ -278,6 +298,7 @@ def execute_queries(
             output_scalars=output_scalars,
             results=results,
             return_only_persistent=return_only_persistent,
+            representation=representation,
         )
 
     # Handle final results not yet processed
@@ -295,6 +316,7 @@ def execute_queries(
             output_folder=output_folder,
             output_datasets=output_datasets,
             output_scalars=output_scalars,
+            representation=representation,
         )
 
     return results
