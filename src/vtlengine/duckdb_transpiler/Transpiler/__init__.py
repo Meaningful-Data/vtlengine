@@ -88,13 +88,23 @@ _PERIOD_COMPARISON_MACROS: Dict[str, str] = {
 }
 
 # String operators that require VARCHAR input — Boolean measures must be cast first.
-_STRING_UNARY_OPS: frozenset[str] = frozenset({
-    tokens.UCASE, tokens.LCASE, tokens.LEN,
-    tokens.TRIM, tokens.LTRIM, tokens.RTRIM,
-})
-_STRING_PARAM_OPS: frozenset[str] = frozenset({
-    tokens.SUBSTR, tokens.REPLACE, tokens.INSTR,
-})
+_STRING_UNARY_OPS: frozenset[str] = frozenset(
+    {
+        tokens.UCASE,
+        tokens.LCASE,
+        tokens.LEN,
+        tokens.TRIM,
+        tokens.LTRIM,
+        tokens.RTRIM,
+    }
+)
+_STRING_PARAM_OPS: frozenset[str] = frozenset(
+    {
+        tokens.SUBSTR,
+        tokens.REPLACE,
+        tokens.INSTR,
+    }
+)
 
 
 def _bool_to_str(col_ref: str) -> str:
@@ -1571,7 +1581,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return registry.binary.generate(op, scalar_sql, col_ref)
 
         return self._apply_to_measures(
-            ds_node, _bin_expr,
+            ds_node,
+            _bin_expr,
             cast_bool_to_str=op == tokens.CONCAT,
         )
 
@@ -1910,7 +1921,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 return f"{op.upper()}({col_ref})"
 
             return self._apply_to_measures(
-                node.operand, _unary_expr, name_override,
+                node.operand,
+                _unary_expr,
+                name_override,
                 cast_bool_to_str=op in _STRING_UNARY_OPS,
             )
         else:
@@ -1984,7 +1997,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return f"{op.upper()}({', '.join(all_args)})"
 
         return self._apply_to_measures(
-            ds_node, _param_expr,
+            ds_node,
+            _param_expr,
             cast_bool_to_str=op in _STRING_PARAM_OPS,
         )
 

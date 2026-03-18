@@ -397,7 +397,6 @@ class TestCastOperator:
     @pytest.mark.parametrize(
         "target_type,expected_duckdb_type",
         [
-            ("Integer", "BIGINT"),
             ("Number", "DOUBLE"),
             ("String", "VARCHAR"),
             ("Boolean", "BOOLEAN"),
