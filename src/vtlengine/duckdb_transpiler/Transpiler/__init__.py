@@ -14,7 +14,7 @@ from typing import Any, Callable, Dict, Generator, List, Optional, Set, Tuple, U
 import vtlengine.AST as AST
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.Grammar import tokens
-from vtlengine.DataTypes import COMP_NAME_MAPPING, Date, TimePeriod
+from vtlengine.DataTypes import COMP_NAME_MAPPING, Boolean, Date, TimePeriod
 from vtlengine.duckdb_transpiler.Transpiler.operators import (
     get_duckdb_type,
     registry,
@@ -86,6 +86,20 @@ _PERIOD_COMPARISON_MACROS: Dict[str, str] = {
     tokens.LT: "vtl_period_lt",
     tokens.LTE: "vtl_period_le",
 }
+
+# String operators that require VARCHAR input — Boolean measures must be cast first.
+_STRING_UNARY_OPS: frozenset[str] = frozenset({
+    tokens.UCASE, tokens.LCASE, tokens.LEN,
+    tokens.TRIM, tokens.LTRIM, tokens.RTRIM,
+})
+_STRING_PARAM_OPS: frozenset[str] = frozenset({
+    tokens.SUBSTR, tokens.REPLACE, tokens.INSTR,
+})
+
+
+def _bool_to_str(col_ref: str) -> str:
+    """Wrap a Boolean column reference with a cast that matches Python's str(bool)."""
+    return f"CASE WHEN {col_ref} IS NULL THEN NULL WHEN {col_ref} THEN 'True' ELSE 'False' END"
 
 
 @dataclass
@@ -1350,6 +1364,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         ds_node: AST.AST,
         expr_fn: "Callable[[str], str]",
         output_name_override: Optional[str] = None,
+        cast_bool_to_str: bool = False,
     ) -> str:
         """Apply a SQL expression to each measure of a dataset, passing identifiers through.
 
@@ -1366,6 +1381,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                                   When ``None``, the output dataset from semantic
                                   analysis is consulted to remap single-measure
                                   names automatically.
+            cast_bool_to_str: When ``True``, Boolean measures are cast to
+                              VARCHAR before being passed to *expr_fn* so that
+                              DuckDB string functions receive the correct type.
 
         Returns:
             A complete ``SELECT … FROM …`` SQL string.
@@ -1384,7 +1402,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             if comp.role == Role.IDENTIFIER:
                 cols.append(quote_identifier(name))
             elif comp.role == Role.MEASURE:
-                expr = expr_fn(quote_identifier(name))
+                col_ref = quote_identifier(name)
+                if cast_bool_to_str and comp.data_type == Boolean:
+                    col_ref = _bool_to_str(col_ref)
+                expr = expr_fn(col_ref)
                 if output_name_override is not None:
                     out_name = output_name_override
                 elif (
@@ -1470,6 +1491,15 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             left_ref = f"{alias_a}.{quote_identifier(left_m)}"
             right_ref = f"{alias_b}.{quote_identifier(right_m)}"
 
+            # Boolean→String promotion for concat
+            if op == tokens.CONCAT:
+                left_comp_c = left_ds.components.get(left_m)
+                right_comp_c = right_ds.components.get(right_m)
+                if left_comp_c and left_comp_c.data_type == Boolean:
+                    left_ref = _bool_to_str(left_ref)
+                if right_comp_c and right_comp_c.data_type == Boolean:
+                    right_ref = _bool_to_str(right_ref)
+
             # TimePeriod ordering: use vtl_period_* macros with STRUCT comparison
             left_comp = left_ds.components.get(left_m)
             period_macro = _PERIOD_COMPARISON_MACROS.get(op)
@@ -1540,7 +1570,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 return registry.binary.generate(op, col_ref, scalar_sql)
             return registry.binary.generate(op, scalar_sql, col_ref)
 
-        return self._apply_to_measures(ds_node, _bin_expr)
+        return self._apply_to_measures(
+            ds_node, _bin_expr,
+            cast_bool_to_str=op == tokens.CONCAT,
+        )
 
     # =========================================================================
     # Expression visitors
@@ -1876,7 +1909,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                     return registry.unary.generate(op, col_ref)
                 return f"{op.upper()}({col_ref})"
 
-            return self._apply_to_measures(node.operand, _unary_expr, name_override)
+            return self._apply_to_measures(
+                node.operand, _unary_expr, name_override,
+                cast_bool_to_str=op in _STRING_UNARY_OPS,
+            )
         else:
             # TimePeriod dispatch for extraction operators
             if op in _TP_EXTRACTION_MAP and self._is_time_period_operand(node.operand):
@@ -1947,7 +1983,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             all_args = [col_ref] + [a for a in params_sql if a is not None]
             return f"{op.upper()}({', '.join(all_args)})"
 
-        return self._apply_to_measures(ds_node, _param_expr)
+        return self._apply_to_measures(
+            ds_node, _param_expr,
+            cast_bool_to_str=op in _STRING_PARAM_OPS,
+        )
 
     def _visit_fill_time_series(self, node: AST.ParamOp) -> str:
         """Visit FILL_TIME_SERIES: fill missing time periods with NULL rows.
