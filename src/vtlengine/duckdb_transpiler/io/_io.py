@@ -17,6 +17,7 @@ from vtlengine.duckdb_transpiler.io._validation import (
     build_csv_column_types,
     build_select_columns,
     check_missing_identifiers,
+    get_column_sql_type,
     handle_sdmx_columns,
     map_duckdb_error,
     validate_csv_path,
@@ -398,6 +399,18 @@ def extract_datapoint_paths(
     return path_dict if path_dict else None, df_dict
 
 
+def _build_dataframe_select_columns(components: Dict[str, Component]) -> List[str]:
+    """Build SELECT expressions with explicit CAST for DataFrame → DuckDB table insertion.
+
+    Ensures type enforcement matches the CSV loading path (load_datapoints_duckdb).
+    """
+    exprs: List[str] = []
+    for comp_name, comp in components.items():
+        target_type = get_column_sql_type(comp)
+        exprs.append(f'CAST("{comp_name}" AS {target_type}) AS "{comp_name}"')
+    return exprs
+
+
 def register_dataframes(
     conn: duckdb.DuckDBPyConnection,
     dataframes: Dict[str, pd.DataFrame],
@@ -422,12 +435,21 @@ def register_dataframes(
         # Create table with proper schema
         conn.execute(build_create_table_sql(name, components))
 
-        # Register DataFrame and insert data with explicit column names
+        # Register DataFrame and insert data with explicit type casting
         temp_view = f"_temp_{name}"
         conn.register(temp_view, df)
-        col_list = ", ".join(f'"{c}"' for c in components)
-        conn.execute(f'INSERT INTO "{name}" ({col_list}) SELECT {col_list} FROM "{temp_view}"')
-        conn.unregister(temp_view)
+        try:
+            select_exprs = _build_dataframe_select_columns(components)
+            col_list = ", ".join(f'"{c}"' for c in components)
+            conn.execute(
+                f'INSERT INTO "{name}" ({col_list}) '
+                f'SELECT {", ".join(select_exprs)} FROM "{temp_view}"'
+            )
+        except duckdb.Error as e:
+            conn.execute(f'DROP TABLE IF EXISTS "{name}"')
+            raise map_duckdb_error(e, name, components)
+        finally:
+            conn.unregister(temp_view)
 
         # Post-load: normalize TimePeriod + validate constraints
         _validate_loaded_table(conn, name, components)
