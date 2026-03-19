@@ -513,7 +513,7 @@ class StructureVisitor(ASTTemplate):
                     if comp.role == Role.IDENTIFIER:
                         if name in group_cols:
                             comps[name] = comp
-                    else:
+                    elif comp.role == Role.MEASURE:
                         comps[name] = comp
                 # count() replaces all measures with a single int_var
                 agg_op = str(node.op).lower() if node.op else ""
