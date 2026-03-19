@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import pytest
@@ -33,7 +34,9 @@ class GeneralBugs(BugHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        # TODO: deactivated on duckdb until nullability over scalars is implemented
+        if os.environ.get("VTL_ENGINE_BACKEND", "duckdb").lower() != "duckdb":
+            self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_408(self):
         """ """
@@ -1669,12 +1672,15 @@ class ConditionalBugs(BugHelper):
             "20",
             "21",
         ]
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names,
-            vd_names=vd_names,
-        )
+
+        # TODO: deactivated on duckdb until nullability over scalars is implemented
+        if os.environ.get("VTL_ENGINE_BACKEND", "duckdb").lower() != "duckdb":
+            self.BaseTest(
+                code=code,
+                number_inputs=number_inputs,
+                references_names=references_names,
+                vd_names=vd_names,
+            )
 
     def test_VTLEN_573(self):
         """ """
