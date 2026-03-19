@@ -132,13 +132,13 @@ CREATE OR REPLACE MACRO vtl_tp_dateadd(
 -- ============================================================================
 
 CREATE OR REPLACE MACRO vtl_daytoyear(days) AS (
-    'P' || CAST(days // 365 AS VARCHAR) || 'Y'
-    || CAST(days % 365 AS VARCHAR) || 'D'
+        'P' || CAST(days // 365 AS VARCHAR) || 'Y'
+        || CAST(days % 365 AS VARCHAR) || 'D'
 );
 
 CREATE OR REPLACE MACRO vtl_daytomonth(days) AS (
-    'P' || CAST(days // 30 AS VARCHAR) || 'M'
-    || CAST(days % 30 AS VARCHAR) || 'D'
+        'P' || CAST(days // 30 AS VARCHAR) || 'M'
+        || CAST(days % 30 AS VARCHAR) || 'D'
 );
 
 
@@ -147,16 +147,20 @@ CREATE OR REPLACE MACRO vtl_daytomonth(days) AS (
 -- ============================================================================
 
 CREATE OR REPLACE MACRO vtl_yeartoday(dur) AS (
-    CASE WHEN dur IS NULL THEN NULL ELSE
-    COALESCE(TRY_CAST(REGEXP_EXTRACT(dur, '(\d+)Y', 1) AS INTEGER), 0) * 365
-    + COALESCE(TRY_CAST(REGEXP_EXTRACT(dur, '(\d+)D', 1) AS INTEGER), 0)
+    CASE WHEN dur IS NULL THEN 
+        NULL 
+    ELSE
+        COALESCE(TRY_CAST(REGEXP_EXTRACT(dur, '(\d+)Y', 1) AS INTEGER), 0) * 365
+        + COALESCE(TRY_CAST(REGEXP_EXTRACT(dur, '(\d+)D', 1) AS INTEGER), 0)
     END
 );
 
 CREATE OR REPLACE MACRO vtl_monthtoday(dur) AS (
-    CASE WHEN dur IS NULL THEN NULL ELSE
-    COALESCE(TRY_CAST(REGEXP_EXTRACT(dur, '(\d+)M', 1) AS INTEGER), 0) * 30
-    + COALESCE(TRY_CAST(REGEXP_EXTRACT(dur, '(\d+)D', 1) AS INTEGER), 0)
+    CASE WHEN dur IS NULL THEN 
+        NULL 
+    ELSE
+        COALESCE(TRY_CAST(REGEXP_EXTRACT(dur, '(\d+)M', 1) AS INTEGER), 0) * 30
+        + COALESCE(TRY_CAST(REGEXP_EXTRACT(dur, '(\d+)D', 1) AS INTEGER), 0)
     END
 );
 
