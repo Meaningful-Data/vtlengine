@@ -406,7 +406,17 @@ class Apply(Operator):
         return op.evaluate(left_dataset, right_dataset)
 
     @classmethod
-    def validate(cls, dataset: Dataset, child: Any, op_map: Dict[str, Any]) -> None:
+    def validate(cls, dataset: Dataset, child: Any, op_map: Dict[str, Any]) -> Dataset:
+        if isinstance(child, list):
+            for c in child:
+                cls._check_bin_expr(dataset, c, op_map)
+        else:
+            cls._check_bin_expr(dataset, child, op_map)
+
+        return dataset
+
+    @classmethod
+    def _check_bin_expr(cls, dataset: Dataset, child: Any, op_map: Dict[str, Any]) -> None:
         if not isinstance(child, BinOp):
             raise Exception(
                 f"Invalid expression {child} on apply operator. Only BinOp are accepted"
