@@ -2920,8 +2920,8 @@ FROM {src}, (
                         or_parts = " OR ".join(
                             f"{quote_identifier(m)} IS NOT NULL" for m in measures
                         )
-                        return f"COUNT(CASE WHEN {or_parts} THEN 1 END)"
-                return "COUNT(*)"
+                        return f"NULLIF(COUNT(CASE WHEN {or_parts} THEN 1 END), 0)"
+                return "NULLIF(COUNT(*), 0)"
             return ""
 
         ds = self._get_dataset_structure(node.operand)
