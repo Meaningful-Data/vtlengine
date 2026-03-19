@@ -2223,6 +2223,10 @@ class ScalarTests(SemanticHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    @pytest.mark.skipif(
+        os.environ.get("VTL_ENGINE_BACKEND", "duckdb").lower() == "duckdb",
+        reason="deactivated on duckdb until nullability over scalars is implemented",
+    )
     def test_19(self):
         """
         Dataset --> Dataset
@@ -2237,10 +2241,12 @@ class ScalarTests(SemanticHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        # TODO: deactivated on duckdb until nullability over scalars is implemented
-        if os.environ.get("VTL_ENGINE_BACKEND", "duckdb").lower() != "duckdb":
-            self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    @pytest.mark.skipif(
+        os.environ.get("VTL_ENGINE_BACKEND", "duckdb").lower() == "duckdb",
+        reason="deactivated on duckdb until nullability over scalars is implemented",
+    )
     def test_20(self):
         """
         Dataset --> Dataset
@@ -2255,15 +2261,17 @@ class ScalarTests(SemanticHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        # TODO: deactivated on duckdb until nullability over scalars is implemented
-        if os.environ.get("VTL_ENGINE_BACKEND", "duckdb").lower() != "duckdb":
-            self.BaseTest(
-                code=code,
-                number_inputs=number_inputs,
-                references_names=references_names,
-                scalars={"sc_1": True},
-            )
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            scalars={"sc_1": True},
+        )
 
+    @pytest.mark.skipif(
+        os.environ.get("VTL_ENGINE_BACKEND", "duckdb").lower() == "duckdb",
+        reason="deactivated on duckdb until nullability over scalars is implemented",
+    )
     def test_21(self):
         """
         Dataset --> Dataset
@@ -2278,14 +2286,12 @@ class ScalarTests(SemanticHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        # TODO: deactivated on duckdb until nullability over scalars is implemented
-        if os.environ.get("VTL_ENGINE_BACKEND", "duckdb").lower() != "duckdb":
-            self.BaseTest(
-                code=code,
-                number_inputs=number_inputs,
-                references_names=references_names,
-                scalars={"sc_1": True},
-            )
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            scalars={"sc_1": True},
+        )
 
     def test_22(self):
         """

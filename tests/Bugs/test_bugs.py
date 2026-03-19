@@ -24,6 +24,10 @@ class GeneralBugs(BugHelper):
 
     classTest = "Bugs.GeneralBugs"
 
+    @pytest.mark.skipif(
+        os.environ.get("VTL_ENGINE_BACKEND", "duckdb").lower() == "duckdb",
+        reason="deactivated on duckdb until nullability over scalars is implemented",
+    )
     def test_GL_22(self):
         """
         Description: cast zero value to number-Integer.
@@ -34,9 +38,7 @@ class GeneralBugs(BugHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        # TODO: deactivated on duckdb until nullability over scalars is implemented
-        if os.environ.get("VTL_ENGINE_BACKEND", "duckdb").lower() != "duckdb":
-            self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_408(self):
         """ """
@@ -1644,6 +1646,10 @@ class ConditionalBugs(BugHelper):
 
     classTest = "Bugs.ConditionalOperatorsTest"
 
+    @pytest.mark.skipif(
+        os.environ.get("VTL_ENGINE_BACKEND", "duckdb").lower() == "duckdb",
+        reason="deactivated on duckdb until nullability over scalars is implemented",
+    )
     def test_VTLEN_476(self):
         """ """
         code = "VTLEN_476"
@@ -1673,14 +1679,12 @@ class ConditionalBugs(BugHelper):
             "21",
         ]
 
-        # TODO: deactivated on duckdb until nullability over scalars is implemented
-        if os.environ.get("VTL_ENGINE_BACKEND", "duckdb").lower() != "duckdb":
-            self.BaseTest(
-                code=code,
-                number_inputs=number_inputs,
-                references_names=references_names,
-                vd_names=vd_names,
-            )
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=vd_names,
+        )
 
     def test_VTLEN_573(self):
         """ """

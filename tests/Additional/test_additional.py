@@ -3,6 +3,8 @@ import warnings
 from pathlib import Path
 from typing import Union
 
+import pytest
+
 from tests.Helper import TestHelper
 from vtlengine.API import create_ast
 from vtlengine.Interpreter import InterpreterAnalyzer
@@ -4265,6 +4267,10 @@ class DefinedOperatorsTest(AdditionalHelper):
         )
 
 
+@pytest.mark.skipif(
+    os.environ.get("VTL_ENGINE_BACKEND", "duckdb").lower() == "duckdb",
+    reason="deactivated on duckdb until nullability over scalars is implemented",
+)
 class DatesTest(AdditionalHelper):
     """
     Group 16
@@ -4280,11 +4286,9 @@ class DatesTest(AdditionalHelper):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        # TODO: deactivated on duckdb until nullability over scalars is implemented
-        if os.environ.get("VTL_ENGINE_BACKEND", "duckdb").lower() != "duckdb":
-            self.BaseTest(
-                text=None,
-                code=code,
-                number_inputs=number_inputs,
-                references_names=references_names,
-            )
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
