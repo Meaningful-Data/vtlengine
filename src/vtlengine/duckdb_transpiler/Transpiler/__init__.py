@@ -3323,37 +3323,41 @@ FROM {src}, (
         then_type = self._get_operand_type(node.thenOp)
         else_type = self._get_operand_type(node.elseOp)
 
-        # Determine output measures from the semantic analysis output dataset,
-        # which reflects renames/transformations (e.g. comparison → bool_var).
+        # Determine output measures and attributes from the semantic analysis
+        # output dataset, which reflects renames/transformations.
         output_ds = self._get_output_dataset()
         if output_ds is not None:
             output_measures = list(output_ds.get_measures_names())
+            output_attributes = list(output_ds.get_attributes_names())
         elif then_type == _DATASET:
             ref_ds = self._get_dataset_structure(node.thenOp)
             output_measures = list(ref_ds.get_measures_names()) if ref_ds else []
+            output_attributes = list(ref_ds.get_attributes_names()) if ref_ds else []
         elif else_type == _DATASET:
             ref_ds = self._get_dataset_structure(node.elseOp)
             output_measures = list(ref_ds.get_measures_names()) if ref_ds else []
+            output_attributes = list(ref_ds.get_attributes_names()) if ref_ds else []
         else:
             output_measures = list(source_ds.get_measures_names())
+            output_attributes = list(source_ds.get_attributes_names())
 
         # Build SELECT columns
         cols: List[str] = [f"{alias_cond}.{quote_identifier(id_)}" for id_ in source_ids]
 
-        for measure in output_measures:
+        for col_name in output_measures + output_attributes:
             if then_type == _DATASET:
-                then_ref = f"t.{quote_identifier(measure)}"
+                then_ref = f"t.{quote_identifier(col_name)}"
             else:
                 then_ref = self.visit(node.thenOp)
 
             if else_type == _DATASET:
-                else_ref = f"e.{quote_identifier(measure)}"
+                else_ref = f"e.{quote_identifier(col_name)}"
             else:
                 else_ref = self.visit(node.elseOp)
 
             cols.append(
                 f"CASE WHEN {cond_expr} THEN {then_ref} "
-                f"ELSE {else_ref} END AS {quote_identifier(measure)}"
+                f"ELSE {else_ref} END AS {quote_identifier(col_name)}"
             )
 
         # Use from_subquery when the source is a SELECT (e.g., dataset-level condition)
