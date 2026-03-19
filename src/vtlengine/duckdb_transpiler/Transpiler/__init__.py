@@ -3021,7 +3021,11 @@ FROM {src}, (
 
         if node.having_clause:
             with self._clause_scope(ds):
-                having_sql = self.visit(node.having_clause)
+                hc = node.having_clause
+                if isinstance(hc, AST.ParamOp) and hc.params is not None:
+                    having_sql = self.visit(hc.params)
+                else:
+                    having_sql = self.visit(hc)
             builder.having(having_sql)
 
         return builder.build()
