@@ -6,6 +6,7 @@ Each top-level Assignment produces one SQL SELECT query. Queries are executed
 sequentially, with results registered as tables for subsequent queries.
 """
 
+import re
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import dataclass, field
@@ -3990,4 +3991,32 @@ FROM {src}, (
             )
 
         routine = self.external_routines[node.name]
-        return routine.query
+        query = routine.query
+
+        # Convert double-quoted strings to single-quoted strings.
+        # In standard SQL (and DuckDB), double quotes delimit identifiers,
+        # but external routines written for SQLite use them for string literals.
+        query = re.sub(r'"([^"]*)"', r"'\1'", query)
+
+        # Map SQL table names to actual DuckDB table names.
+        # Operands may have module prefixes (e.g. C07.MSMTCH_BL_DS) while
+        # the SQL query references the short name (MSMTCH_BL_DS).
+        operand_names: List[str] = []
+        for operand in node.operands:
+            if isinstance(operand, (AST.Identifier, AST.VarID)):
+                operand_names.append(operand.value)
+            else:
+                operand_names.append(str(self.visit(operand)))
+
+        for sql_table_name in routine.dataset_names:
+            for op_name in operand_names:
+                short_name = op_name.split(".")[-1] if "." in op_name else op_name
+                if short_name == sql_table_name:
+                    query = re.sub(
+                        rf"\b{re.escape(sql_table_name)}\b",
+                        quote_identifier(op_name),
+                        query,
+                    )
+                    break
+
+        return query

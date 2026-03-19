@@ -1070,7 +1070,9 @@ class TestEvalOperator:
         ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
         external_routine = ExternalRoutine(
             dataset_names=["DS_1"],
-            query='SELECT "Id_1", "Me_1" * 2 AS "Me_1" FROM "DS_1"',
+            query="""
+                SELECT Id_1, Me_1 * 2 AS Me_1 FROM DS_1
+            """,
             name="double_measure",
         )
 
@@ -1092,8 +1094,8 @@ class TestEvalOperator:
         )
 
         result = transpiler.visit_EvalOp(eval_op)
-        # The query should be returned as-is since DS_1 is a direct table reference
-        expected_sql = 'SELECT "Id_1", "Me_1" * 2 AS "Me_1" FROM "DS_1"'
+        # Table name is mapped to the actual DuckDB table name
+        expected_sql = 'SELECT Id_1, Me_1 * 2 AS Me_1 FROM "DS_1"'
         assert_sql_equal(result, expected_sql)
 
     def test_eval_op_routine_not_found(self):
@@ -1147,11 +1149,13 @@ class TestEvalOperator:
             transpiler.visit_EvalOp(eval_op)
 
     def test_eval_op_with_subquery_replacement(self):
-        """Test EVAL operator replaces table references with subqueries when needed."""
+        """Test EVAL operator replaces table references and converts double-quoted strings."""
         ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
         external_routine = ExternalRoutine(
             dataset_names=["DS_1"],
-            query='SELECT "Id_1", SUM("Me_1") AS "total" FROM DS_1 GROUP BY "Id_1"',
+            query="""
+                SELECT Id_1, SUM(Me_1) AS total, ifnull(Me_1, "N/A") FROM DS_1 GROUP BY Id_1
+            """,
             name="aggregate_routine",
         )
 
@@ -1173,8 +1177,11 @@ class TestEvalOperator:
         )
 
         result = transpiler.visit_EvalOp(eval_op)
-        # Should contain aggregate function
-        expected_sql = 'SELECT "Id_1", SUM("Me_1") AS "total" FROM DS_1 GROUP BY "Id_1"'
+        # Double-quoted strings are converted to single quotes (matching pandas backend)
+        # and table names are mapped to the actual DuckDB table names
+        expected_sql = (
+            "SELECT Id_1, SUM(Me_1) AS total, ifnull(Me_1, 'N/A') FROM \"DS_1\" GROUP BY Id_1"
+        )
         assert_sql_equal(result, expected_sql)
 
 
