@@ -15,7 +15,7 @@ from typing import Any, Callable, Dict, Generator, List, Optional, Set, Tuple, U
 import vtlengine.AST as AST
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.Grammar import tokens
-from vtlengine.DataTypes import COMP_NAME_MAPPING, Boolean, Date, TimePeriod
+from vtlengine.DataTypes import COMP_NAME_MAPPING, Boolean, Date, Duration, TimePeriod
 from vtlengine.duckdb_transpiler.Transpiler.operators import (
     get_duckdb_type,
     registry,
@@ -2940,6 +2940,18 @@ FROM {src}, (
             operand_type = self._get_operand_type(node.operand)
             if operand_type in (_COMPONENT, _SCALAR):
                 operand_sql = self.visit(node.operand)
+                # Duration MIN/MAX: convert to int, aggregate, convert back
+                if (
+                    op in (tokens.MIN, tokens.MAX)
+                    and self._current_dataset
+                    and hasattr(node.operand, "value")
+                ):
+                    comp = self._current_dataset.components.get(node.operand.value)
+                    if comp is not None and comp.data_type == Duration:
+                        return (
+                            f"vtl_int_to_duration({op.upper()}"
+                            f"(vtl_duration_to_int({operand_sql})))"
+                        )
                 if registry.aggregate.is_registered(op):
                     return registry.aggregate.generate(op, operand_sql)
                 return f"{op.upper()}({operand_sql})"
@@ -3006,9 +3018,13 @@ FROM {src}, (
                 is_time_period = comp is not None and comp.data_type == TimePeriod
                 qm = quote_identifier(measure)
 
+                is_duration = comp is not None and comp.data_type == Duration
                 if is_time_period and op in (tokens.MIN, tokens.MAX):
                     # TimePeriod MIN/MAX: parse to STRUCT, aggregate, format back
                     expr = f"vtl_period_to_string({op.upper()}(vtl_period_parse({qm})))"
+                elif is_duration and op in (tokens.MIN, tokens.MAX):
+                    # Duration MIN/MAX: convert to int, aggregate, convert back
+                    expr = f"vtl_int_to_duration({op.upper()}(vtl_duration_to_int({qm})))"
                 elif registry.aggregate.is_registered(op):
                     expr = registry.aggregate.generate(op, qm)
                 else:

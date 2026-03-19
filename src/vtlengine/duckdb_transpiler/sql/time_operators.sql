@@ -126,6 +126,32 @@ CREATE OR REPLACE MACRO vtl_tp_dateadd(
     vtl_dateadd(vtl_tp_end_date(p), shift, period_ind)
 );
 
+-- Duration mapping
+
+CREATE OR REPLACE MACRO vtl_duration_to_int(d) AS (
+    CASE d
+        WHEN 'A' THEN 6
+        WHEN 'S' THEN 5
+        WHEN 'Q' THEN 4
+        WHEN 'M' THEN 3
+        WHEN 'W' THEN 2
+        WHEN 'D' THEN 1
+        ELSE NULL
+    END
+);
+
+CREATE OR REPLACE MACRO vtl_int_to_duration(i) AS (
+    CASE i
+        WHEN 6 THEN 'A'
+        WHEN 5 THEN 'S'
+        WHEN 4 THEN 'Q'
+        WHEN 3 THEN 'M'
+        WHEN 2 THEN 'W'
+        WHEN 1 THEN 'D'
+        ELSE NULL
+    END
+);
+
 
 -- ============================================================================
 -- OPERATOR: daytoyear / daytomonth (Integer → Duration VARCHAR)
