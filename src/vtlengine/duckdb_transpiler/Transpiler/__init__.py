@@ -3290,16 +3290,35 @@ FROM {src}, (
             return self._scalar_if_sql(node)
 
         source_ds = self._get_dataset_structure(source_node)
-        source_sql = self._get_dataset_sql(source_node)
         if source_ds is None:
             return self._scalar_if_sql(node)
 
-        # Evaluate condition as a column expression (not a full SELECT)
         alias_cond = "cond"
-        with self._clause_scope(source_ds, prefix=alias_cond):
-            cond_expr = self.visit(node.condition)
 
-        source_ids = list(source_ds.get_identifiers_names())
+        # When the condition is a binary op between two datasets (e.g. DS_1 > DS_2),
+        # it cannot be evaluated as a simple column expression — evaluate it as a
+        # subquery and reference its boolean measure column instead.
+        cond_is_ds_vs_ds = (
+            isinstance(node.condition, AST.BinOp)
+            and self._get_operand_type(node.condition.left) == _DATASET
+            and self._get_operand_type(node.condition.right) == _DATASET
+        )
+        cond_ds = self._get_dataset_structure(node.condition) if cond_is_ds_vs_ds else None
+        if cond_ds is not None:
+            source_sql = self.visit(node.condition)
+            source_ids = list(cond_ds.get_identifiers_names())
+            bool_measures = list(cond_ds.get_measures_names())
+            cond_expr = (
+                f"{alias_cond}.{quote_identifier(bool_measures[0])}"
+                if bool_measures
+                else "TRUE"
+            )
+        else:
+            source_sql = self._get_dataset_sql(source_node)
+            source_ids = list(source_ds.get_identifiers_names())
+            # Evaluate condition as a column expression (not a full SELECT)
+            with self._clause_scope(source_ds, prefix=alias_cond):
+                cond_expr = self.visit(node.condition)
 
         then_type = self._get_operand_type(node.thenOp)
         else_type = self._get_operand_type(node.elseOp)
@@ -3337,7 +3356,11 @@ FROM {src}, (
                 f"ELSE {else_ref} END AS {quote_identifier(measure)}"
             )
 
-        builder = SQLBuilder().select(*cols).from_table(source_sql, alias_cond)
+        # Use from_subquery when the source is a SELECT (e.g., dataset-level condition)
+        if source_sql.lstrip().upper().startswith("SELECT"):
+            builder = SQLBuilder().select(*cols).from_subquery(source_sql, alias_cond)
+        else:
+            builder = SQLBuilder().select(*cols).from_table(source_sql, alias_cond)
 
         # Use LEFT JOINs so empty datasets don't eliminate all rows
         then_join_id: Optional[str] = None

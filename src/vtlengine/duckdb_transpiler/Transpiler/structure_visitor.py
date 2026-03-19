@@ -15,7 +15,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 import vtlengine.AST as AST
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.Grammar import tokens
-from vtlengine.DataTypes import Boolean, Date, Integer, Number, TimePeriod
+from vtlengine.DataTypes import COMP_NAME_MAPPING, Boolean, Date, Integer, Number, TimePeriod
 from vtlengine.DataTypes import String as StringType
 from vtlengine.duckdb_transpiler.Transpiler.sql_builder import quote_identifier
 from vtlengine.Model import Component, Dataset, Role
@@ -916,16 +916,29 @@ class StructureVisitor(ASTTemplate):
 
         comp_name = node.right.value if hasattr(node.right, "value") else str(node.right)
 
+        # Resolve UDO parameter
+        udo_val = self._get_udo_param(comp_name)
+        if udo_val is not None:
+            if isinstance(udo_val, (AST.VarID, AST.Identifier)):
+                comp_name = udo_val.value
+            elif isinstance(udo_val, str):
+                comp_name = udo_val
+
         comps: Dict[str, Component] = {}
         for name, comp in parent_ds.components.items():
             if comp.role == Role.IDENTIFIER:
                 comps[name] = comp
 
-        # Add the extracted component as a measure
+        # Add the extracted component as a measure.
+        # When extracting an identifier or attribute, rename it using COMP_NAME_MAPPING
+        # to match the SQL generation in _visit_membership.
         if comp_name in parent_ds.components:
             orig = parent_ds.components[comp_name]
-            comps[comp_name] = Component(
-                name=comp_name, data_type=orig.data_type, role=Role.MEASURE, nullable=True
+            alias_name = comp_name
+            if orig.role in (Role.IDENTIFIER, Role.ATTRIBUTE):
+                alias_name = COMP_NAME_MAPPING.get(orig.data_type, comp_name)
+            comps[alias_name] = Component(
+                name=alias_name, data_type=orig.data_type, role=Role.MEASURE, nullable=True
             )
         else:
             from vtlengine.DataTypes import Number as NumberType
