@@ -505,7 +505,7 @@ class StructureVisitor(ASTTemplate):
 
         if isinstance(node, AST.Aggregation) and node.operand:
             ds = self._get_dataset_structure(node.operand)
-            if ds is not None and (node.grouping is not None or node.grouping_op is not None):
+            if ds is not None:
                 all_ids = ds.get_identifiers_names()
                 group_cols = set(self._resolve_group_cols(node, all_ids))
                 comps: Dict[str, Component] = {}
@@ -870,26 +870,34 @@ class StructureVisitor(ASTTemplate):
 
         comps: Dict[str, Component] = {}
 
-        # Determine group-by identifiers from children or default to all
+        # Determine group-by identifiers from children
+        all_input_ids = {n for n, c in input_ds.components.items() if c.role == Role.IDENTIFIER}
         group_ids: set[str] = set()
+        grouping_op: str = ""
         for child in node.children:
             assignment = child
             if isinstance(child, AST.UnaryOp) and isinstance(child.operand, AST.Assignment):
                 assignment = child.operand
             if isinstance(assignment, AST.Assignment):
                 agg_node = assignment.right
-                if (
-                    isinstance(agg_node, AST.Aggregation)
-                    and agg_node.grouping
-                    and agg_node.grouping_op == "group by"
-                ):
+                if isinstance(agg_node, AST.Aggregation) and agg_node.grouping:
+                    grouping_op = agg_node.grouping_op or ""
                     for g in agg_node.grouping:
                         if isinstance(g, (AST.VarID, AST.Identifier)):
                             group_ids.add(g.value)
 
+        # Resolve which identifiers survive the aggregation
+        if grouping_op == "group by":
+            kept_ids = group_ids
+        elif grouping_op == "group except":
+            kept_ids = all_input_ids - group_ids
+        else:
+            # No explicit grouping → all identifiers are kept
+            kept_ids = all_input_ids
+
         # Add group-by identifiers
         for name, comp in input_ds.components.items():
-            if comp.role == Role.IDENTIFIER and name in group_ids:
+            if comp.role == Role.IDENTIFIER and name in kept_ids:
                 comps[name] = comp
 
         # Add computed measures

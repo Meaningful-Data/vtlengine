@@ -2635,17 +2635,31 @@ FROM {src}, (
         for child in node.children:
             if isinstance(child, AST.RenameNode):
                 old = child.old_name
+                new = child.new_name
+                # Resolve UDO component parameters
+                udo_old = self._get_udo_param(old)
+                if udo_old is not None:
+                    if isinstance(udo_old, (AST.VarID, AST.Identifier)):
+                        old = udo_old.value
+                    elif isinstance(udo_old, str):
+                        old = udo_old
+                udo_new = self._get_udo_param(new)
+                if udo_new is not None:
+                    if isinstance(udo_new, (AST.VarID, AST.Identifier)):
+                        new = udo_new.value
+                    elif isinstance(udo_new, str):
+                        new = udo_new
                 # Check if alias-qualified name is in the join alias map
                 if "#" in old and old in self._join_alias_map:
-                    renames[old] = child.new_name
+                    renames[old] = new
                     # Track renamed qualified name as consumed
                     self._consumed_join_aliases.add(old)
                 elif "#" in old:
                     # Strip alias prefix from membership refs (e.g. d2#Me_2 -> Me_2)
                     old = old.split("#", 1)[1]
-                    renames[old] = child.new_name
+                    renames[old] = new
                 else:
-                    renames[old] = child.new_name
+                    renames[old] = new
 
         cols: List[str] = []
         for name in ds.components:
@@ -2713,26 +2727,32 @@ FROM {src}, (
         # Extract group-by identifiers from AST nodes to avoid using the
         # overall output dataset (which may represent a join result).
         group_ids: List[str] = []
+        grouping_op: str = ""
+        grouping_names: List[str] = []
         for child in node.children:
             assignment = child
             if isinstance(child, AST.UnaryOp) and isinstance(child.operand, AST.Assignment):
                 assignment = child.operand
             if isinstance(assignment, AST.Assignment):
                 agg_node = assignment.right
-                if (
-                    isinstance(agg_node, AST.Aggregation)
-                    and agg_node.grouping
-                    and agg_node.grouping_op == "group by"
-                ):
+                if isinstance(agg_node, AST.Aggregation) and agg_node.grouping:
+                    grouping_op = agg_node.grouping_op or ""
                     for g in agg_node.grouping:
-                        if isinstance(g, (AST.VarID, AST.Identifier)) and g.value not in group_ids:
-                            group_ids.append(g.value)
+                        if isinstance(g, (AST.VarID, AST.Identifier)):
+                            if g.value not in grouping_names:
+                                grouping_names.append(g.value)
 
-        # Fall back to output/input dataset identifiers when no explicit grouping
-        if not group_ids:
+        all_input_ids = list(ds.get_identifiers_names())
+        if grouping_op == "group by":
+            group_ids = grouping_names
+        elif grouping_op == "group except":
+            except_set = set(grouping_names)
+            group_ids = [n for n in all_input_ids if n not in except_set]
+        elif not grouping_names:
+            # No explicit grouping → fall back to output/input dataset identifiers
             output_ds = self._get_output_dataset()
             group_ids = list(
-                output_ds.get_identifiers_names() if output_ds else ds.get_identifiers_names()
+                output_ds.get_identifiers_names() if output_ds else all_input_ids
             )
 
         cols: List[str] = [quote_identifier(id_) for id_ in group_ids]
@@ -2833,12 +2853,27 @@ FROM {src}, (
         if len(node.children) < 2:
             raise ValueError("Unpivot clause requires two operands")
 
-        new_id_name = (
+        raw_id = (
             node.children[0].value if hasattr(node.children[0], "value") else str(node.children[0])
         )
-        new_measure_name = (
+        raw_measure = (
             node.children[1].value if hasattr(node.children[1], "value") else str(node.children[1])
         )
+        # Resolve UDO component parameters
+        udo_id = self._get_udo_param(raw_id)
+        if udo_id is not None:
+            if isinstance(udo_id, (AST.VarID, AST.Identifier)):
+                raw_id = udo_id.value
+            elif isinstance(udo_id, str):
+                raw_id = udo_id
+        udo_measure = self._get_udo_param(raw_measure)
+        if udo_measure is not None:
+            if isinstance(udo_measure, (AST.VarID, AST.Identifier)):
+                raw_measure = udo_measure.value
+            elif isinstance(udo_measure, str):
+                raw_measure = udo_measure
+        new_id_name = raw_id
+        new_measure_name = raw_measure
 
         id_names = ds.get_identifiers_names()
         measure_names = ds.get_measures_names()
@@ -2933,15 +2968,12 @@ FROM {src}, (
 
         table_src = self._get_dataset_sql(node.operand)
 
-        # Use the output dataset structure when available, as it reflects
-        # renames and other clause transformations applied to the operand.
-        if self._udo_params:
-            effective_ds = ds
-        else:
-            output_ds = self._get_output_dataset()
-            effective_ds = output_ds if output_ds is not None else ds
-
-        all_ids = effective_ds.get_identifiers_names()
+        # Resolve group columns from the input dataset's identifiers.
+        # The input dataset (ds) reflects the actual columns available in
+        # the source table.  The output dataset may include transformations
+        # (calc, keep) applied after this aggregation and should NOT be
+        # used for column references.
+        all_ids = ds.get_identifiers_names()
         group_cols = self._resolve_group_cols(node, all_ids)
 
         cols, group_by_cols = self._build_agg_group_cols(node, ds, group_cols)
@@ -2967,9 +2999,9 @@ FROM {src}, (
                 # No measures: count data points (rows)
                 cols.append(f"COUNT(*) AS {quote_identifier(alias)}")
         else:
-            measures = effective_ds.get_measures_names()
+            measures = ds.get_measures_names()
             for measure in measures:
-                comp = effective_ds.components.get(measure)
+                comp = ds.components.get(measure)
                 is_time_period = comp is not None and comp.data_type == TimePeriod
                 qm = quote_identifier(measure)
 
