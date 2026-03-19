@@ -2738,9 +2738,11 @@ FROM {src}, (
                 if isinstance(agg_node, AST.Aggregation) and agg_node.grouping:
                     grouping_op = agg_node.grouping_op or ""
                     for g in agg_node.grouping:
-                        if isinstance(g, (AST.VarID, AST.Identifier)):
-                            if g.value not in grouping_names:
-                                grouping_names.append(g.value)
+                        if (
+                            isinstance(g, (AST.VarID, AST.Identifier))
+                            and g.value not in grouping_names
+                        ):
+                            grouping_names.append(g.value)
 
         all_input_ids = list(ds.get_identifiers_names())
         if grouping_op == "group by":
@@ -2751,9 +2753,7 @@ FROM {src}, (
         elif not grouping_names:
             # No explicit grouping → fall back to output/input dataset identifiers
             output_ds = self._get_output_dataset()
-            group_ids = list(
-                output_ds.get_identifiers_names() if output_ds else all_input_ids
-            )
+            group_ids = list(output_ds.get_identifiers_names() if output_ds else all_input_ids)
 
         cols: List[str] = [quote_identifier(id_) for id_ in group_ids]
         for col_name, expr_sql in calc_exprs.items():
@@ -3345,9 +3345,7 @@ FROM {src}, (
             source_ids = list(cond_ds.get_identifiers_names())
             bool_measures = list(cond_ds.get_measures_names())
             cond_expr = (
-                f"{alias_cond}.{quote_identifier(bool_measures[0])}"
-                if bool_measures
-                else "TRUE"
+                f"{alias_cond}.{quote_identifier(bool_measures[0])}" if bool_measures else "TRUE"
             )
         else:
             source_sql = self._get_dataset_sql(source_node)
