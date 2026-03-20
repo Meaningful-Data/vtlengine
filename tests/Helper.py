@@ -31,7 +31,6 @@ from vtlengine.Model import (
     ValueDomain,
 )
 
-
 # VTL_ENGINE_BACKEND can be "pandas" (default) or "duckdb"
 VTL_ENGINE_BACKEND = os.environ.get("VTL_ENGINE_BACKEND", "pandas").lower()
 
@@ -162,15 +161,6 @@ class TestHelper(TestCase):
         if text is None:
             text = cls.LoadVTL(code)
 
-        reference_datasets = cls.LoadOutputs(code, references_names, only_semantic)
-        value_domains = None
-        if vd_names is not None:
-            value_domains = cls.LoadValueDomains(vd_names)
-
-        external_routines = None
-        if sql_names is not None:
-            external_routines = cls.LoadExternalRoutines(sql_names)
-
         # Use DuckDB backend if configured
         if _use_duckdb_backend() and not only_semantic:
             result = cls._run_with_duckdb_backend(
@@ -185,6 +175,14 @@ class TestHelper(TestCase):
             # Original Pandas/Interpreter backend
             ast = create_ast(text)
             input_datasets = cls.LoadInputs(code, number_inputs, only_semantic)
+
+            value_domains = None
+            if vd_names is not None:
+                value_domains = cls.LoadValueDomains(vd_names)
+
+            external_routines = None
+            if sql_names is not None:
+                external_routines = cls.LoadExternalRoutines(sql_names)
 
             if scalars is not None:
                 for scalar_name, scalar_value in scalars.items():
@@ -205,6 +203,8 @@ class TestHelper(TestCase):
                 only_semantic=only_semantic,
             )
             result = interpreter.visit(ast)
+
+        reference_datasets = cls.LoadOutputs(code, references_names, only_semantic)
 
         for dataset in result.values():
             format_time_period_external_representation(
