@@ -466,21 +466,19 @@ def run(
         name to be loaded correctly.
 
     .. important::
-        If pointing to a Path or an S3 URI, dataset_name will be taken from the file name.
+        If pointing to a Path, dataset_name will be taken from the file name.
         Example: If the path is 'path/to/data.csv', the dataset name will be 'data'.
 
     .. important::
-        If using an S3 URI, the path must be in the format:
-
-        s3://bucket-name/path/to/data.csv
+        S3 URIs (``s3://bucket-name/path/to/data.csv``) are only supported when
+        ``use_duckdb=True``. The DuckDB backend handles S3 access via the
+        `httpfs extension <https://duckdb.org/docs/extensions/httpfs/s3api.html>`_.
 
         The following environment variables must be set (from the AWS account):
 
-        - AWS_ACCESS_KEY_ID
-        - AWS_SECRET_ACCESS_KEY
-
-        For more details, see
-        `s3fs documentation <https://s3fs.readthedocs.io/en/latest/index.html#credentials>`_.
+        - ``AWS_ACCESS_KEY_ID``
+        - ``AWS_SECRET_ACCESS_KEY``
+        - ``AWS_DEFAULT_REGION`` (optional)
 
     Before the execution, the DAG analysis reviews if the VTL script is a direct acyclic graph.
 
@@ -496,13 +494,14 @@ def run(
         When datapoints contains HTTP/HTTPS URLs, data_structures must be a file path or URL \
         pointing to an SDMX structure file.
 
-        datapoints: Dict, Path, S3 URI or List of S3 URIs or Paths with data. \
+        datapoints: Dict, Path or List of Paths with data. \
         Supports plain CSV files and SDMX files (.xml for SDMX-ML, .json for SDMX-JSON, \
         and .csv for SDMX-CSV with embedded structure). SDMX files are automatically \
         detected by extension and loaded using pysdmx. For SDMX files requiring \
         external structure files, use the :obj:`run_sdmx` function instead. \
         You can also use a custom name for the dataset by passing a dictionary with \
-        the dataset name as key and the Path, S3 URI or DataFrame as value. \
+        the dataset name as key and the Path or DataFrame as value. \
+        S3 URIs are supported when ``use_duckdb=True``. \
         Check the following example: \
         :ref:`Example 6 <example_6_run_using_paths>`.
 
@@ -525,7 +524,8 @@ def run(
         return_only_persistent: If True, run function will only return the results of \
         Persistent Assignments. (default: True)
 
-        output_folder: Path or S3 URI to the output folder. (default: None)
+        output_folder: Path to the output folder. S3 URIs are supported when \
+        ``use_duckdb=True``. (default: None)
 
         scalar_values: Dict with the scalar values to be used in the VTL script.
 
@@ -535,7 +535,8 @@ def run(
 
         use_duckdb: If True, use DuckDB as the execution engine instead of pandas. \
         This transpiles VTL to SQL and executes it using DuckDB, which can be more \
-        efficient for large datasets. (default: False)
+        efficient for large datasets. S3 URIs for datapoints and output_folder \
+        are only supported with this option enabled. (default: False)
 
     Returns:
        The datasets are produced without data if the output folder is defined.
@@ -568,7 +569,7 @@ def run(
     vtl = load_vtl(script)
     ast = create_ast(vtl)
 
-    # Loading datasets and datapoints (handles URLs, S3 URIs, file paths, DataFrames)
+    # Loading datasets and datapoints (handles URLs, file paths, DataFrames)
     datasets, scalars, path_dict = load_datasets_with_data(
         data_structures,
         datapoints,
@@ -686,7 +687,7 @@ def run_sdmx(
         return_only_persistent: If True, run function will only return the results of \
         Persistent Assignments. (default: True)
 
-        output_folder: Path or S3 URI to the output folder. (default: None)
+        output_folder: Path to the output folder. (default: None)
 
         use_duckdb: If True, use DuckDB as the execution engine instead of pandas. \
         This transpiles VTL to SQL and executes it using DuckDB, which can be more \

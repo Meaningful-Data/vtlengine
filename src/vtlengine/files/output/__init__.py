@@ -25,17 +25,7 @@ def save_datapoints(
     float_format = get_float_format()
 
     if isinstance(output_path, str):
-        if "s3://" in output_path:
-            # S3 URI - handled via DuckDB httpfs extension
-            if output_path.endswith("/"):
-                s3_file_output = output_path + f"{dataset.name}.csv"
-            else:
-                s3_file_output = output_path + f"/{dataset.name}.csv"
-            dataset.data.to_csv(s3_file_output, index=False, float_format=float_format)
-        else:
-            # Local path as string - convert to Path and use local logic
-            output_file = Path(output_path) / f"{dataset.name}.csv"
-            dataset.data.to_csv(output_file, index=False, float_format=float_format)
-    else:
-        output_file = output_path / f"{dataset.name}.csv"
-        dataset.data.to_csv(output_file, index=False, float_format=float_format)
+        output_path = Path(output_path)
+
+    output_file = output_path / f"{dataset.name}.csv"
+    dataset.data.to_csv(output_file, index=False, float_format=float_format)
