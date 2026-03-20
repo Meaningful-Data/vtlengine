@@ -648,7 +648,7 @@ class TestCastInterpreter:
             # time_period → date (daily period only)
             ('cast(cast("2020D15", time_period), date)', "2020-01-15", Date),
             # time (time_interval) → time_period
-            ('cast(cast("2020-01-01/2020-12-31", time), time_period)', "2020A", TimePeriod),
+            ('cast(cast("2020-01-01/2020-12-31", time), time_period)', "2020", TimePeriod),
             # time (time_interval) → date (single-date interval only)
             ('cast(cast("2020-01-15/2020-01-15", time), date)', "2020-01-15", Date),
         ],
