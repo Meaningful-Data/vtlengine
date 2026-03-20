@@ -4,6 +4,7 @@ from typing import Any, List
 import pandas as pd
 import pytest
 
+from tests.Helper import _use_duckdb_backend
 from vtlengine import run
 from vtlengine.API import create_ast
 from vtlengine.DataTypes import Date, Integer
@@ -11,6 +12,22 @@ from vtlengine.DataTypes._time_checking import check_date
 from vtlengine.DataTypes.TimeHandling import check_max_date
 from vtlengine.Exceptions import InputValidationException, RunTimeError
 from vtlengine.Interpreter import InterpreterAnalyzer
+
+
+def _run_scalar(expression):
+    """Run a scalar VTL expression using the configured backend."""
+    if _use_duckdb_backend():
+        return run(
+            script=expression,
+            data_structures={"datasets": []},
+            datapoints={},
+            return_only_persistent=False,
+            use_duckdb=True,
+        )
+    else:
+        ast = create_ast(expression)
+        interpreter = InterpreterAnalyzer({})
+        return interpreter.visit(ast)
 
 
 def _to_pylist(series: pd.Series) -> List[Any]:  # type: ignore[type-arg]
@@ -505,9 +522,7 @@ def test_check_max_date_none():
 def test_unary_time_scalar_datetime(text, reference):
     warnings.filterwarnings("ignore", category=FutureWarning)
     expression = f"DS_r := {text};"
-    ast = create_ast(expression)
-    interpreter = InterpreterAnalyzer({})
-    result = interpreter.visit(ast)
+    result = _run_scalar(expression)
     assert result["DS_r"].value == reference
     assert result["DS_r"].data_type == Integer
 
@@ -516,9 +531,7 @@ def test_unary_time_scalar_datetime(text, reference):
 def test_datediff_datetime(text, reference):
     warnings.filterwarnings("ignore", category=FutureWarning)
     expression = f"DS_r := {text};"
-    ast = create_ast(expression)
-    interpreter = InterpreterAnalyzer({})
-    result = interpreter.visit(ast)
+    result = _run_scalar(expression)
     assert result["DS_r"].value == reference
     assert result["DS_r"].data_type == Integer
 
@@ -527,9 +540,7 @@ def test_datediff_datetime(text, reference):
 def test_dateadd_datetime(text, reference):
     warnings.filterwarnings("ignore", category=FutureWarning)
     expression = f"DS_r := {text};"
-    ast = create_ast(expression)
-    interpreter = InterpreterAnalyzer({})
-    result = interpreter.visit(ast)
+    result = _run_scalar(expression)
     assert result["DS_r"].value == reference
     assert result["DS_r"].data_type == Date
 
@@ -549,7 +560,12 @@ DS_1_Structure = {
 
 def _run_ds(script, input_values):
     data_df = pd.DataFrame({"Id_1": list(range(1, len(input_values) + 1)), "Me_1": input_values})
-    result = run(script=script, data_structures=DS_1_Structure, datapoints={"DS_1": data_df})
+    result = run(
+        script=script,
+        data_structures=DS_1_Structure,
+        datapoints={"DS_1": data_df},
+        use_duckdb=_use_duckdb_backend(),
+    )
     return _to_pylist(result["DS_r"].data["Me_1"])
 
 
@@ -600,7 +616,12 @@ def test_dataset_extraction_operator(op, input_values, expected):
             "Me_2": [0] * len(input_values),
         }
     )
-    result = run(script=script, data_structures=_DS_1_INT_MEASURE, datapoints={"DS_1": data_df})
+    result = run(
+        script=script,
+        data_structures=_DS_1_INT_MEASURE,
+        datapoints={"DS_1": data_df},
+        use_duckdb=_use_duckdb_backend(),
+    )
     assert _to_pylist(result["DS_r"].data["Me_2"]) == expected
 
 
@@ -629,7 +650,12 @@ def test_dataset_datediff_with_datetime():
             "Me_2": ["2020-01-10 23:59:59", "2020-06-15 23:59:59"],
         }
     )
-    result = run(script=script, data_structures=data_structures, datapoints={"DS_1": data_df})
+    result = run(
+        script=script,
+        data_structures=data_structures,
+        datapoints={"DS_1": data_df},
+        use_duckdb=_use_duckdb_backend(),
+    )
     assert _to_pylist(result["DS_r"].data["Me_2"]) == [9, 0]
 
 
@@ -641,6 +667,7 @@ def test_flow_to_stock_datetime(input_data, expected_Id_2, expected_Me_1):
         script=script,
         data_structures=Time_id_structure,
         datapoints={"DS_1": data_df},
+        use_duckdb=_use_duckdb_backend(),
     )
     result_data = result["DS_r"].data
     if expected_Id_2 is not None:
@@ -659,6 +686,7 @@ def test_fill_time_series(lim_method, Id_1, Id_2, Me_1, exp_Id_1, exp_Id_2, exp_
         script=script,
         data_structures=Time_id_str_structure,
         datapoints={"DS_1": data_df},
+        use_duckdb=_use_duckdb_backend(),
     )
     result_data = result["DS_r"].data.sort_values(["Id_1", "Id_2"]).reset_index(drop=True)
     assert _to_pylist(result_data["Id_1"]) == exp_Id_1
@@ -677,6 +705,7 @@ def test_fill_time_series_period(lim_method, Id_1, Id_2, Me_1, exp_Id_1, exp_Id_
         script=script,
         data_structures=Time_Period_structure,
         datapoints={"DS_1": data_df},
+        use_duckdb=_use_duckdb_backend(),
     )
     result_data = result["DS_r"].data.sort_values(["Id_1", "Id_2"]).reset_index(drop=True)
     assert _to_pylist(result_data["Id_1"]) == exp_Id_1
@@ -688,9 +717,7 @@ def test_fill_time_series_period(lim_method, Id_1, Id_2, Me_1, exp_Id_1, exp_Id_
 def test_time_agg_scalar_datetime(args, expected):
     warnings.filterwarnings("ignore", category=FutureWarning)
     expression = f"DS_r := time_agg({args});"
-    ast = create_ast(expression)
-    interpreter = InterpreterAnalyzer({})
-    result = interpreter.visit(ast)
+    result = _run_scalar(expression)
     assert result["DS_r"].value == expected
     assert result["DS_r"].data_type == Date
 
@@ -703,6 +730,7 @@ def test_time_agg_dataset_datetime(args, input_data, expected):
         script=script,
         data_structures=DS_1_Structure,
         datapoints={"DS_1": data_df},
+        use_duckdb=_use_duckdb_backend(),
     )
     assert _to_pylist(result["DS_r"].data["Me_1"]) == expected
 
@@ -712,7 +740,12 @@ def test_time_agg_dataset_datetime(args, input_data, expected):
 )
 def test_timeshift_datetime(script, Id_1, Id_2, Me_1, Id_2_reference, Me_1_reference):
     data_df = pd.DataFrame({"Id_1": Id_1, "Id_2": Id_2, "Me_1": Me_1})
-    result = run(script=script, data_structures=Time_id_structure, datapoints={"DS_1": data_df})
+    result = run(
+        script=script,
+        data_structures=Time_id_structure,
+        datapoints={"DS_1": data_df},
+        use_duckdb=_use_duckdb_backend(),
+    )
     result_data = result["DS_r"].data
     assert result_data["Id_2"].astype(str).tolist() == Id_2_reference
     assert _to_pylist(result_data["Me_1"]) == Me_1_reference

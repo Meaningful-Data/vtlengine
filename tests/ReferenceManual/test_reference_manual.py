@@ -7,7 +7,8 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from vtlengine.API import create_ast
+from tests.Helper import _use_duckdb_backend
+from vtlengine.API import create_ast, run
 from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.files.parser import load_datapoints
 from vtlengine.Interpreter import InterpreterAnalyzer
@@ -177,17 +178,51 @@ def load_dataset(dataPoints, dataStructures, dp_dir, param):
     return datasets
 
 
+def _run_rm_duckdb(vtl_path, param, value_domains=None):
+    """Run a Reference Manual test using the DuckDB backend."""
+    with open(vtl_path, "r") as f:
+        vtl = f.read()
+
+    prefix = f"{param}-"
+    data_structures = [
+        input_ds_dir / f for f in sorted(os.listdir(input_ds_dir)) if f.lower().startswith(prefix)
+    ]
+    vd_paths = None
+    if value_domains:
+        vd_paths = [value_domain_dir / f for f in os.listdir(value_domain_dir)]
+
+    datapoints = {}
+    for ds_file in data_structures:
+        with open(ds_file, "r") as f:
+            structure = json.load(f)
+        if "datasets" in structure:
+            for ds in structure["datasets"]:
+                csv_path = input_dp_dir / f"{param}-{ds['name']}.csv"
+                if csv_path.exists():
+                    datapoints[ds["name"]] = csv_path
+
+    return run(
+        script=vtl,
+        data_structures=data_structures,
+        datapoints=datapoints,
+        value_domains=vd_paths,
+        return_only_persistent=False,
+        use_duckdb=True,
+    )
+
+
 @pytest.mark.parametrize("param", params)
 def test_reference(input_datasets, reference_datasets, ast, param, value_domains):
-    # try:
     warnings.filterwarnings("ignore", category=FutureWarning)
-    input_datasets = load_dataset(*input_datasets, dp_dir=input_dp_dir, param=param)
     reference_datasets = load_dataset(*reference_datasets, dp_dir=reference_dp_dir, param=param)
-    interpreter = InterpreterAnalyzer(input_datasets, value_domains=value_domains)
-    result = interpreter.visit(ast)
+    if _use_duckdb_backend():
+        vtl_path = vtl_dir / f"RM{param:03d}.vtl"
+        result = _run_rm_duckdb(vtl_path, param, value_domains)
+    else:
+        input_datasets = load_dataset(*input_datasets, dp_dir=input_dp_dir, param=param)
+        interpreter = InterpreterAnalyzer(input_datasets, value_domains=value_domains)
+        result = interpreter.visit(ast)
     assert result == reference_datasets
-    # except NotImplementedError:
-    #     pass
 
 
 @pytest.mark.parametrize("param", params)
@@ -195,19 +230,26 @@ def test_reference_defined_operators(
     input_datasets, reference_datasets, ast_defined_operators, param, value_domains
 ):
     warnings.filterwarnings("ignore", category=FutureWarning)
-    input_datasets = load_dataset(*input_datasets, dp_dir=input_dp_dir, param=param)
     reference_datasets = load_dataset(*reference_datasets, dp_dir=reference_dp_dir, param=param)
-    interpreter = InterpreterAnalyzer(input_datasets, value_domains=value_domains)
-    result = interpreter.visit(ast_defined_operators)
+    if _use_duckdb_backend():
+        vtl_path = vtl_def_operators_dir / f"RM{param:03d}.vtl"
+        result = _run_rm_duckdb(vtl_path, param, value_domains)
+    else:
+        input_datasets = load_dataset(*input_datasets, dp_dir=input_dp_dir, param=param)
+        interpreter = InterpreterAnalyzer(input_datasets, value_domains=value_domains)
+        result = interpreter.visit(ast_defined_operators)
     assert result == reference_datasets
 
 
 @pytest.mark.parametrize("param", exceptions_tests)
 def test_reference_exceptions(input_datasets, reference_datasets, ast, param):
-    # try:
     warnings.filterwarnings("ignore", category=FutureWarning)
-    input_datasets = load_dataset(*input_datasets, dp_dir=input_dp_dir, param=param)
-    interpreter = InterpreterAnalyzer(input_datasets)
-    with pytest.raises(Exception, match="Operation not allowed for multimeasure Datasets"):
-        # result = interpreter.visit(ast) # to match with F841
-        interpreter.visit(ast)
+    if _use_duckdb_backend():
+        vtl_path = vtl_dir / f"RM{param:03d}.vtl"
+        with pytest.raises(Exception, match="Operation not allowed for multimeasure Datasets"):
+            _run_rm_duckdb(vtl_path, param)
+    else:
+        input_datasets = load_dataset(*input_datasets, dp_dir=input_dp_dir, param=param)
+        interpreter = InterpreterAnalyzer(input_datasets)
+        with pytest.raises(Exception, match="Operation not allowed for multimeasure Datasets"):
+            interpreter.visit(ast)

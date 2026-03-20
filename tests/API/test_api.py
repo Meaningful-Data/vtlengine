@@ -10,6 +10,7 @@ from pysdmx.model import (
 )
 
 import vtlengine.DataTypes as DataTypes
+from tests.Helper import _use_duckdb_backend
 from vtlengine.API import (
     prettify,
     run,
@@ -858,6 +859,7 @@ def test_run(script, data_structures, datapoints, value_domains, external_routin
         value_domains,
         external_routines,
         return_only_persistent=False,
+        use_duckdb=_use_duckdb_backend(),
     )
     reference = {
         "DS_r": Dataset(
@@ -937,6 +939,7 @@ def test_run_only_persistent_results(
         external_routines,
         output_folder=output_path,
         return_only_persistent=True,
+        use_duckdb=_use_duckdb_backend(),
     )
 
     reference = {
@@ -991,6 +994,7 @@ def test_run_only_persistent(script, data_structures, datapoints, value_domains,
         value_domains,
         external_routines,
         return_only_persistent=True,
+        use_duckdb=_use_duckdb_backend(),
     )
     reference = {
         "DS_r2": Dataset(
@@ -1062,6 +1066,7 @@ def test_readme_example():
         data_structures=data_structures,
         datapoints=datapoints,
         return_only_persistent=False,
+        use_duckdb=_use_duckdb_backend(),
     )
 
     assert run_result == {
@@ -1126,6 +1131,7 @@ def test_readme_run():
         data_structures=data_structures,
         datapoints=datapoints,
         return_only_persistent=False,
+        use_duckdb=_use_duckdb_backend(),
     )
 
     assert run_result == {
@@ -1240,6 +1246,7 @@ def test_non_mandatory_fill_at():
         data_structures=data_structures,
         datapoints=datapoints,
         return_only_persistent=False,
+        use_duckdb=_use_duckdb_backend(),
     )
 
     assert run_result == {
@@ -1335,6 +1342,7 @@ def test_non_mandatory_fill_me():
         data_structures=data_structures,
         datapoints=datapoints,
         return_only_persistent=False,
+        use_duckdb=_use_duckdb_backend(),
     )
 
     assert run_result == {
@@ -1583,6 +1591,7 @@ def test_run_with_scalars(data_structures, datapoints, tmp_path):
         scalar_values=scalars,
         output_folder=output_folder,
         return_only_persistent=True,
+        use_duckdb=_use_duckdb_backend(),
     )
     reference = {
         "DS_r": Dataset(
@@ -1655,6 +1664,7 @@ def test_run_with_scalar_being_none(data_structures, datapoints, tmp_path):
         scalar_values=scalars,
         output_folder=output_folder,
         return_only_persistent=True,
+        use_duckdb=_use_duckdb_backend(),
     )
     reference = {
         "DS_r": Dataset(
@@ -1871,6 +1881,7 @@ def test_with_multiple_vd_and_ext_routines():
         datapoints=datapoints,
         value_domains=value_domains,
         external_routines=external_routines,
+        use_duckdb=_use_duckdb_backend(),
     )
 
     reference = {
