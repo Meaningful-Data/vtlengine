@@ -7,7 +7,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from tests.Helper import VTL_ENGINE_BACKEND, _use_duckdb_backend
+from tests.Helper import _use_duckdb_backend
 from vtlengine.API import create_ast, run
 from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.files.parser import load_datapoints
@@ -216,7 +216,7 @@ def get_test_files(dataPoints, dataStructures, dp_dir, param):
     return vtl, ds, dp
 
 
-@pytest.mark.parametrize("param", params if VTL_ENGINE_BACKEND == "duckdb" else [])
+@pytest.mark.parametrize("param", params if _use_duckdb_backend else [])
 def test_reference_duckdb(input_datasets, reference_datasets, ast, param):
     warnings.filterwarnings("ignore", category=FutureWarning)
     reference_datasets = load_dataset(*reference_datasets, dp_dir=reference_dp_dir, param=param)
@@ -231,8 +231,10 @@ def test_reference_duckdb(input_datasets, reference_datasets, ast, param):
         datapoints=dp,
         value_domains=vd_files if vd_files else None,
         return_only_persistent=False,
-        use_duckdb=True,
+        use_duckdb=_use_duckdb_backend,
     )
+
+    assert result == reference_datasets
 
 
 @pytest.mark.parametrize("param", params)
