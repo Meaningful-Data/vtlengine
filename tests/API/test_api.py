@@ -1783,7 +1783,6 @@ def test_wrong_type_in_scalar_definition(wrong_type, correct_type):
         semantic_analysis(
             script=script,
             data_structures=data_structures,
-            datapoints=[]
         )
     assert wrong_type in e.value.args[0]
     assert correct_type in e.value.args[0]
