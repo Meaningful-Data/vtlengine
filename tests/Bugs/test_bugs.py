@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from tests.Helper import TestHelper, _use_duckdb_backend
-from vtlengine.API import create_ast, run
+from tests.Helper import TestHelper
+from vtlengine.API import create_ast
 from vtlengine.Interpreter import InterpreterAnalyzer
 
 
@@ -63,18 +63,9 @@ class GeneralBugs(BugHelper):
             "f": False,
         }
 
-        if _use_duckdb_backend():
-            result = run(
-                script=script,
-                data_structures={"datasets": []},
-                datapoints={},
-                return_only_persistent=False,
-                use_duckdb=True,
-            )
-        else:
-            ast = create_ast(script)
-            interpreter = InterpreterAnalyzer(datasets={})
-            result = interpreter.visit(ast)
+        ast = create_ast(script)
+        interpreter = InterpreterAnalyzer(datasets={})
+        result = interpreter.visit(ast)
         for sc in result.values():
             assert sc.persistent == references[sc.name]
 
@@ -2986,8 +2977,12 @@ class CastBugs(BugHelper):
         """
         code = "GL_449_3"
         number_inputs = 1
-        with pytest.raises((NotImplementedError, Exception)):
-            self.BaseTest(code=code, number_inputs=number_inputs, references_names=["1"])
+        text = self.LoadVTL(code)
+        ast = create_ast(text)
+        input_datasets = self.LoadInputs(code=code, number_inputs=number_inputs)
+        interpreter = InterpreterAnalyzer(datasets=input_datasets)
+        with pytest.raises(NotImplementedError):
+            interpreter.visit(ast)
 
     def test_GL_449_6(self):
         """
@@ -2998,8 +2993,12 @@ class CastBugs(BugHelper):
         """
         code = "GL_449_6"
         number_inputs = 1
-        with pytest.raises((NotImplementedError, Exception)):
-            self.BaseTest(code=code, number_inputs=number_inputs, references_names=["1"])
+        text = self.LoadVTL(code)
+        ast = create_ast(text)
+        input_datasets = self.LoadInputs(code=code, number_inputs=number_inputs)
+        interpreter = InterpreterAnalyzer(datasets=input_datasets)
+        with pytest.raises(NotImplementedError):
+            interpreter.visit(ast)
 
     def test_GL_449_7(self):
         """
@@ -3010,13 +3009,15 @@ class CastBugs(BugHelper):
         """
         code = "GL_449_7"
         number_inputs = 1
-        with pytest.raises((NotImplementedError, Exception)):
-            self.BaseTest(
-                code=code,
-                number_inputs=number_inputs,
-                references_names=["1"],
-                scalars={"sc_1": "2000Q2"},
-            )
+        text = self.LoadVTL(code)
+        ast = create_ast(text)
+        input_datasets = self.LoadInputs(code=code, number_inputs=number_inputs)
+        input_datasets["sc_1"].value = "2000Q2"
+        scalars = {k: v for k, v in input_datasets.items() if not hasattr(v, "components")}
+        datasets = {k: v for k, v in input_datasets.items() if hasattr(v, "components")}
+        interpreter = InterpreterAnalyzer(datasets=datasets, scalars=scalars)
+        with pytest.raises(NotImplementedError):
+            interpreter.visit(ast)
 
     def test_GL_448_1(self):
         """

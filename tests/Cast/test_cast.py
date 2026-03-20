@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from tests.Helper import TestHelper, _use_duckdb_backend
-from vtlengine.API import run
+from tests.Helper import TestHelper
+from vtlengine.API import create_ast
 from vtlengine.DataTypes import (
     Boolean,
     Date,
@@ -16,6 +16,7 @@ from vtlengine.DataTypes import (
     TimePeriod,
 )
 from vtlengine.Exceptions import RunTimeError, SemanticError
+from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Scalar
 from vtlengine.Operators.CastOperator import Cast
 
@@ -40,8 +41,13 @@ class CastExplicitWithoutMask(CastHelper):
         """Cast with mask raises NotImplementedError."""
         code = "GL_461_1"
         number_inputs = 1
-        with pytest.raises((NotImplementedError, Exception)):
-            self.BaseTest(code=code, number_inputs=number_inputs, references_names=["1"])
+
+        text = self.LoadVTL(code)
+        ast = create_ast(text)
+        input_datasets = self.LoadInputs(code=code, number_inputs=number_inputs)
+        interpreter = InterpreterAnalyzer(datasets=input_datasets)
+        with pytest.raises(NotImplementedError):
+            interpreter.visit(ast)
 
     def test_GL_563_1(self):
         """
@@ -615,13 +621,9 @@ class TestCastInterpreter:
     def _execute_expression(expr: str) -> Scalar:
         warnings.filterwarnings("ignore", category=FutureWarning)
         expression = f"DS_r := {expr};"
-        result = run(
-            script=expression,
-            data_structures={"datasets": []},
-            datapoints={},
-            return_only_persistent=False,
-            use_duckdb=_use_duckdb_backend(),
-        )
+        ast = create_ast(expression)
+        interpreter = InterpreterAnalyzer({})
+        result = interpreter.visit(ast)
         return result["DS_r"]
 
     @pytest.mark.parametrize(

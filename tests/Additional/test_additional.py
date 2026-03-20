@@ -2,8 +2,9 @@ import warnings
 from pathlib import Path
 from typing import Union
 
-from tests.Helper import TestHelper, _use_duckdb_backend
-from vtlengine.API import run
+from tests.Helper import TestHelper
+from vtlengine.API import create_ast
+from vtlengine.Interpreter import InterpreterAnalyzer
 
 
 class AdditionalHelper(TestHelper):
@@ -25,13 +26,9 @@ class AdditionalHelper(TestHelper):
         """ """
         if text is None:
             text = cls.LoadVTL(code)
-        result = run(
-            script=text,
-            data_structures={"datasets": []},
-            datapoints={},
-            return_only_persistent=False,
-            use_duckdb=_use_duckdb_backend(),
-        )
+        ast = create_ast(text)
+        interpreter = InterpreterAnalyzer({})
+        result = interpreter.visit(ast)
         assert result["DS_r"].value == reference_value
 
 

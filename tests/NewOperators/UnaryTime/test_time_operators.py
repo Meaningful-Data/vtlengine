@@ -63,17 +63,17 @@ def test_unary_time_scalar(text, reference):
 
 
 @pytest.mark.parametrize("code, expression", ds_param)
-def test_unary_time_ds(load_reference, input_paths, code, expression):
+def test_unary_time_ds(load_input, load_reference, duckdb_input, code, expression):
     warnings.filterwarnings("ignore", category=FutureWarning)
-    result = run_expression(expression, input_paths)
+    result = run_expression(expression, load_input, duckdb_input)
     assert result == load_reference
 
 
 @pytest.mark.parametrize("code, expression, type_error, error_code", error_param)
-def test_errors_ds(input_paths, code, expression, type_error, error_code):
+def test_errors_ds(load_input, duckdb_input, code, expression, type_error, error_code):
     warnings.filterwarnings("ignore", category=FutureWarning)
     with pytest.raises(type_error) as context:
-        run_expression(expression, input_paths)
+        run_expression(expression, load_input, duckdb_input)
     result = error_code == str(context.value.args[1])
     if result is False:
         print(f"\n{error_code} != {context.value.args[1]}")

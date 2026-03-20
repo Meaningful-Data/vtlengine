@@ -4,8 +4,7 @@ from pathlib import Path
 import pytest
 from pytest import mark
 
-from tests.Helper import _use_duckdb_backend
-from vtlengine.API import create_ast, run
+from vtlengine.API import create_ast
 from vtlengine.DataTypes import Date, TimePeriod
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Interpreter import InterpreterAnalyzer
@@ -64,43 +63,12 @@ error_param = [
 
 
 @pytest.mark.parametrize("code, expression", ds_param)
-def test_case_ds(request, load_input, load_reference, code, expression):
+def test_case_ds(load_input, load_reference, code, expression):
     warnings.filterwarnings("ignore", category=FutureWarning)
-    if _use_duckdb_backend():
-        base_path = request.node.get_closest_marker("input_path").args[0]
-        import os
-
-        ds_dir = base_path / "DataStructure" / "input"
-        prefix = f"{code}-"
-        data_structures = sorted(ds_dir / f for f in os.listdir(ds_dir) if f.startswith(prefix))
-
-        datapoints = {}
-        import json
-
-        for ds_file in data_structures:
-            with open(ds_file) as f:
-                structure = json.load(f)
-            if "datasets" in structure:
-                ds_name = structure["datasets"][0]["name"]
-                csv_path = (
-                    base_path / "DataSet" / "input" / f"{code}-{ds_file.stem.split('-')[-1]}.csv"
-                )
-                if csv_path.exists():
-                    datapoints[ds_name] = csv_path
-
-        result = run(
-            script=expression,
-            data_structures=data_structures,
-            datapoints=datapoints,
-            return_only_persistent=False,
-            use_duckdb=True,
-        )
-    else:
-        ast = create_ast(expression)
-        interpreter = InterpreterAnalyzer(datasets=load_input[0], scalars=load_input[1])
-        result = interpreter.visit(ast)
-    reference = {**load_reference[0], **load_reference[1]}
-    assert result == reference
+    ast = create_ast(expression)
+    interpreter = InterpreterAnalyzer(datasets=load_input[0], scalars=load_input[1])
+    result = interpreter.visit(ast)
+    assert result == {**load_reference[0], **load_reference[1]}
 
 
 @pytest.mark.parametrize("code, expression, error_code", error_param)

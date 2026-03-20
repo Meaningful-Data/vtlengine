@@ -38,9 +38,9 @@ scalar_time_error_params = [
 
 
 @pytest.mark.parametrize("code, expression", ds_param)
-def test_case_ds(load_reference, input_paths, code, expression):
+def test_case_ds(load_input, load_reference, duckdb_input, code, expression):
     warnings.filterwarnings("ignore", category=FutureWarning)
-    result = run_expression(expression, input_paths)
+    result = run_expression(expression, load_input, duckdb_input)
     assert result == load_reference
 
 
@@ -54,10 +54,10 @@ def test_unary_time_scalar(text, reference):
 
 
 @pytest.mark.parametrize("code, expression, error_code", error_param)
-def test_errors(input_paths, code, expression, error_code):
+def test_errors(load_input, duckdb_input, code, expression, error_code):
     warnings.filterwarnings("ignore", category=FutureWarning)
     with pytest.raises(SemanticError) as context:
-        run_expression(expression, input_paths)
+        run_expression(expression, load_input, duckdb_input)
     result = error_code == str(context.value.args[1])
     if result is False:
         print(f"\n{error_code} != {context.value.args[1]}")

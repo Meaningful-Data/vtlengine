@@ -20,7 +20,7 @@ from pysdmx.model import DataflowRef, Reference, Ruleset, TransformationScheme, 
 from pysdmx.model.dataflow import Dataflow, Schema
 from pysdmx.model.vtl import VtlDataflowMapping
 
-from tests.Helper import TestHelper, _use_duckdb_backend
+from tests.Helper import TestHelper
 from vtlengine.API import generate_sdmx, prettify, run, run_sdmx, semantic_analysis
 from vtlengine.API._InternalApi import _check_script, to_vtl_json
 from vtlengine.Exceptions import DataLoadError, InputValidationException
@@ -89,7 +89,6 @@ def test_run_sdmx_file_via_dict(sdmx_data_file, sdmx_data_structure, script, ds_
         data_structures=sdmx_data_structure,
         datapoints={ds_key: sdmx_data_file},
         return_only_persistent=False,
-        use_duckdb=_use_duckdb_backend(),
     )
 
     assert "DS_r" in result
@@ -105,7 +104,6 @@ def test_run_sdmx_file_via_list(sdmx_data_file, sdmx_data_structure):
         data_structures=sdmx_data_structure,
         datapoints=[sdmx_data_file],
         return_only_persistent=False,
-        use_duckdb=_use_duckdb_backend(),
     )
 
     assert "DS_r" in result
@@ -121,7 +119,6 @@ def test_run_sdmx_file_via_single_path(sdmx_data_file, sdmx_data_structure):
         data_structures=sdmx_data_structure,
         datapoints={"BIS_DER": sdmx_data_file},
         return_only_persistent=False,
-        use_duckdb=_use_duckdb_backend(),
     )
 
     assert "DS_r" in result
@@ -211,7 +208,6 @@ def test_run_mixed_sdmx_and_csv(sdmx_data_file, sdmx_data_structure):
             "DS_1": csv_file,
         },
         return_only_persistent=False,
-        use_duckdb=_use_duckdb_backend(),
     )
 
     assert "DS_r" in result
@@ -236,9 +232,7 @@ def test_run_sdmx_function(data, structure):
     """Test run_sdmx with basic SDMX data and structure files."""
     script = "DS_r := BIS_DER [calc Me_4 := OBS_VALUE];"
     datasets = get_datasets(data, structure)
-    result = run_sdmx(
-        script, datasets, return_only_persistent=False, use_duckdb=_use_duckdb_backend()
-    )
+    result = run_sdmx(script, datasets, return_only_persistent=False)
 
     assert isinstance(result, dict)
     assert all(isinstance(k, str) and isinstance(v, Dataset) for k, v in result.items())
@@ -300,13 +294,7 @@ def test_run_sdmx_function_with_mappings(data, structure, mappings):
     """Test run_sdmx with various mapping types."""
     script = "DS_r := DS_1 [calc Me_4 := OBS_VALUE];"
     datasets = get_datasets(data, structure)
-    result = run_sdmx(
-        script,
-        datasets,
-        mappings=mappings,
-        return_only_persistent=False,
-        use_duckdb=_use_duckdb_backend(),
-    )
+    result = run_sdmx(script, datasets, mappings=mappings, return_only_persistent=False)
 
     assert isinstance(result, dict)
     assert all(isinstance(k, str) and isinstance(v, Dataset) for k, v in result.items())
@@ -363,7 +351,7 @@ def test_run_sdmx_errors_with_mappings(datasets, mappings, expected_exception, m
     """Test run_sdmx error handling with invalid inputs."""
     script = "DS_r := BIS_DER [calc Me_4 := OBS_VALUE];"
     with pytest.raises(expected_exception, match=match):
-        run_sdmx(script, datasets, mappings=mappings, use_duckdb=_use_duckdb_backend())
+        run_sdmx(script, datasets, mappings=mappings)
 
 
 # =============================================================================
@@ -400,9 +388,7 @@ def test_to_vtl_json_exception(data, error_code):
     """Test to_vtl_json raises exception for data without structure."""
     datasets = get_datasets(data)
     with pytest.raises(InputValidationException, match=error_code):
-        run_sdmx(
-            "DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", datasets, use_duckdb=_use_duckdb_backend()
-        )
+        run_sdmx("DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", datasets)
 
 
 # =============================================================================
@@ -429,10 +415,7 @@ def test_run_sdmx_output_comparison(code, data, structure):
     """Test run_sdmx with output comparison to reference data."""
     datasets = get_datasets(data, structure)
     result = run_sdmx(
-        "DS_r := BIS_DER [calc Me_4 := OBS_VALUE];",
-        datasets,
-        return_only_persistent=False,
-        use_duckdb=_use_duckdb_backend(),
+        "DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", datasets, return_only_persistent=False
     )
     reference = SDMXTestHelper.LoadOutputs(code, ["DS_r"])
     assert result == reference
@@ -457,7 +440,6 @@ def test_plain_csv_still_works():
         data_structures=data_structure,
         datapoints={"DS_1": csv_file},
         return_only_persistent=False,
-        use_duckdb=_use_duckdb_backend(),
     )
 
     assert "DS_r" in result
@@ -477,7 +459,6 @@ def test_run_with_sdmx_structure_file(sdmx_data_file, sdmx_structure_file):
         data_structures=sdmx_structure_file,
         datapoints={"BIS_DER": sdmx_data_file},
         return_only_persistent=False,
-        use_duckdb=_use_duckdb_backend(),
     )
 
     assert "DS_r" in result
@@ -493,7 +474,6 @@ def test_run_with_sdmx_structure_file_list(sdmx_data_file, sdmx_structure_file):
         data_structures=[sdmx_structure_file],
         datapoints={"BIS_DER": sdmx_data_file},
         return_only_persistent=False,
-        use_duckdb=_use_duckdb_backend(),
     )
 
     assert "DS_r" in result
@@ -519,7 +499,6 @@ def test_run_with_schema_object(sdmx_data_file, sdmx_structure_file):
         data_structures=schema,
         datapoints={"BIS_DER": sdmx_data_file},
         return_only_persistent=False,
-        use_duckdb=_use_duckdb_backend(),
     )
 
     assert "DS_r" in result
@@ -552,7 +531,6 @@ def test_run_with_dsd_object(sdmx_structure_file):
             data_structures=dsd,
             datapoints={"BIS_DER": csv_path},
             return_only_persistent=False,
-            use_duckdb=_use_duckdb_backend(),
         )
 
         assert "DS_r" in result
@@ -574,7 +552,6 @@ def test_run_with_list_of_pysdmx_objects(sdmx_data_file, sdmx_structure_file):
         data_structures=[schema],
         datapoints={"BIS_DER": sdmx_data_file},
         return_only_persistent=False,
-        use_duckdb=_use_duckdb_backend(),
     )
 
     assert "DS_r" in result
@@ -612,7 +589,6 @@ def test_run_sdmx_structure_with_sdmx_datapoints(sdmx_data_file, sdmx_structure_
         data_structures=sdmx_structure_file,
         datapoints={"BIS_DER": sdmx_data_file},
         return_only_persistent=False,
-        use_duckdb=_use_duckdb_backend(),
     )
 
     assert "DS_r" in result
@@ -641,7 +617,6 @@ def test_run_schema_with_csv_datapoints(sdmx_data_file, sdmx_structure_file):
             data_structures=schema,
             datapoints={"BIS_DER": csv_path},
             return_only_persistent=False,
-            use_duckdb=_use_duckdb_backend(),
         )
 
         assert "DS_r" in result
@@ -790,7 +765,6 @@ def test_run_with_sdmx_mappings_dict(sdmx_data_file, sdmx_structure_file):
         datapoints={"DS_1": sdmx_data_file},
         sdmx_mappings={"DataStructure=BIS:BIS_DER(1.0)": "DS_1"},
         return_only_persistent=False,
-        use_duckdb=_use_duckdb_backend(),
     )
 
     assert "DS_r" in result
@@ -817,7 +791,6 @@ def test_run_with_sdmx_mappings_vtl_dataflow_mapping(sdmx_data_file, sdmx_struct
         datapoints={"DS_1": sdmx_data_file},
         sdmx_mappings=mapping,
         return_only_persistent=False,
-        use_duckdb=_use_duckdb_backend(),
     )
 
     assert "DS_r" in result
@@ -838,7 +811,6 @@ def test_run_with_sdmx_mappings_and_schema_object(sdmx_data_file, sdmx_structure
         datapoints={"CUSTOM_NAME": sdmx_data_file},
         sdmx_mappings={schema.short_urn: "CUSTOM_NAME"},
         return_only_persistent=False,
-        use_duckdb=_use_duckdb_backend(),
     )
 
     assert "DS_r" in result
@@ -866,7 +838,6 @@ def test_run_with_sdmx_datapoints_directory(sdmx_data_file, sdmx_data_structure)
             data_structures=sdmx_data_structure,
             datapoints=Path(tmpdir),
             return_only_persistent=False,
-            use_duckdb=_use_duckdb_backend(),
         )
 
         assert "DS_r" in result
@@ -881,7 +852,6 @@ def test_run_with_sdmx_datapoints_list_paths(sdmx_data_file, sdmx_data_structure
         data_structures=sdmx_data_structure,
         datapoints=[sdmx_data_file],
         return_only_persistent=False,
-        use_duckdb=_use_duckdb_backend(),
     )
 
     assert "DS_r" in result
@@ -902,7 +872,6 @@ def test_run_with_sdmx_datapoints_dataframe(sdmx_data_file, sdmx_structure_file)
         data_structures=schema,
         datapoints={"BIS_DER": df},
         return_only_persistent=False,
-        use_duckdb=_use_duckdb_backend(),
     )
 
     assert "DS_r" in result
@@ -927,13 +896,7 @@ def test_run_sdmx_with_dataflow_object_mapping():
     )
 
     script = "DS_r := DS_1 [calc Me_4 := OBS_VALUE];"
-    result = run_sdmx(
-        script,
-        datasets,
-        mappings=mapping,
-        return_only_persistent=False,
-        use_duckdb=_use_duckdb_backend(),
-    )
+    result = run_sdmx(script, datasets, mappings=mapping, return_only_persistent=False)
 
     assert "DS_r" in result
     assert isinstance(result["DS_r"].data, pd.DataFrame)
@@ -952,13 +915,7 @@ def test_run_sdmx_with_reference_mapping():
     )
 
     script = "DS_r := DS_1 [calc Me_4 := OBS_VALUE];"
-    result = run_sdmx(
-        script,
-        datasets,
-        mappings=mapping,
-        return_only_persistent=False,
-        use_duckdb=_use_duckdb_backend(),
-    )
+    result = run_sdmx(script, datasets, mappings=mapping, return_only_persistent=False)
 
     assert "DS_r" in result
     assert isinstance(result["DS_r"].data, pd.DataFrame)
@@ -977,13 +934,7 @@ def test_run_sdmx_with_dataflow_ref_mapping():
     )
 
     script = "DS_r := DS_1 [calc Me_4 := OBS_VALUE];"
-    result = run_sdmx(
-        script,
-        datasets,
-        mappings=mapping,
-        return_only_persistent=False,
-        use_duckdb=_use_duckdb_backend(),
-    )
+    result = run_sdmx(script, datasets, mappings=mapping, return_only_persistent=False)
 
     assert "DS_r" in result
     assert isinstance(result["DS_r"].data, pd.DataFrame)
@@ -1007,7 +958,7 @@ def test_run_sdmx_error_missing_mapping_for_multiple_datasets():
         ),
     ]
     with pytest.raises(InputValidationException, match="0-1-3-3"):
-        run_sdmx("DS_r := DS1;", datasets, use_duckdb=_use_duckdb_backend())
+        run_sdmx("DS_r := DS1;", datasets)
 
 
 def test_run_sdmx_error_invalid_mapping_type():
@@ -1019,9 +970,7 @@ def test_run_sdmx_error_invalid_mapping_type():
         )
     ]
     with pytest.raises(InputValidationException, match="Expected dict or VtlDataflowMapping"):
-        run_sdmx(
-            "DS_r := BIS_DER;", datasets, mappings="invalid_type", use_duckdb=_use_duckdb_backend()
-        )
+        run_sdmx("DS_r := BIS_DER;", datasets, mappings="invalid_type")
 
 
 def test_run_sdmx_error_invalid_dataflow_type_in_mapping():
@@ -1037,7 +986,7 @@ def test_run_sdmx_error_invalid_dataflow_type_in_mapping():
         InputValidationException,
         match="Expected str, Reference, DataflowRef or Dataflow type for dataflow",
     ):
-        run_sdmx("DS_r := BIS_DER;", datasets, mappings=mapping, use_duckdb=_use_duckdb_backend())
+        run_sdmx("DS_r := BIS_DER;", datasets, mappings=mapping)
 
 
 def test_run_sdmx_error_dataset_not_in_script():
@@ -1049,13 +998,13 @@ def test_run_sdmx_error_dataset_not_in_script():
     mapping = {"Dataflow=MD:TEST_DF(1.0)": "NONEXISTENT_NAME"}
 
     with pytest.raises(InputValidationException, match="0-1-3-5"):
-        run_sdmx("DS_r := DS_1;", datasets, mappings=mapping, use_duckdb=_use_duckdb_backend())
+        run_sdmx("DS_r := DS_1;", datasets, mappings=mapping)
 
 
 def test_run_sdmx_error_invalid_datasets_type():
     """Test run_sdmx() error when datasets is not a list of PandasDataset."""
     with pytest.raises(InputValidationException, match="0-1-3-7"):
-        run_sdmx("DS_r := TEST;", "not_a_list", use_duckdb=_use_duckdb_backend())
+        run_sdmx("DS_r := TEST;", "not_a_list")
 
 
 def test_run_sdmx_error_schema_not_in_mapping():
@@ -1069,7 +1018,7 @@ def test_run_sdmx_error_schema_not_in_mapping():
     mapping = {"Dataflow=MD:DIFFERENT(1.0)": "DS_1"}
 
     with pytest.raises(InputValidationException, match="0-1-3-4"):
-        run_sdmx("DS_r := DS_1;", datasets, mappings=mapping, use_duckdb=_use_duckdb_backend())
+        run_sdmx("DS_r := DS_1;", datasets, mappings=mapping)
 
 
 # =============================================================================
@@ -1141,7 +1090,6 @@ def test_run_full_sdmx_workflow_with_mappings(sdmx_data_file, sdmx_structure_fil
         datapoints={"CUSTOM_DS": sdmx_data_file},
         sdmx_mappings={"DataStructure=BIS:BIS_DER(1.0)": "CUSTOM_DS"},
         return_only_persistent=False,
-        use_duckdb=_use_duckdb_backend(),
     )
 
     assert "DS_r" in result
@@ -1163,7 +1111,6 @@ def test_run_with_dsd_and_sdmx_mappings(sdmx_data_file, sdmx_structure_file):
         datapoints={"MAPPED_NAME": sdmx_data_file},
         sdmx_mappings={dsd.short_urn: "MAPPED_NAME"},
         return_only_persistent=False,
-        use_duckdb=_use_duckdb_backend(),
     )
 
     assert "DS_r" in result
@@ -1402,7 +1349,6 @@ def test_sdmx_memory_efficient_with_output_folder(sdmx_data_file, sdmx_data_stru
             datapoints={"BIS_DER": sdmx_data_file},
             output_folder=tmpdir,
             return_only_persistent=False,
-            use_duckdb=_use_duckdb_backend(),
         )
 
         # Result should contain DS_r
@@ -1506,7 +1452,6 @@ def test_mixed_sdmx_csv_memory_efficient(sdmx_data_file, sdmx_data_structure):
             },
             output_folder=tmpdir,
             return_only_persistent=False,
-            use_duckdb=_use_duckdb_backend(),
         )
 
         # Both results should be present
@@ -1570,7 +1515,6 @@ def test_run_with_url_datapoints_and_local_structure(sdmx_data_file, sdmx_struct
             datapoints={"DS_1": data_url},
             sdmx_mappings={"DataStructure=BIS:BIS_DER(1.0)": "DS_1"},
             return_only_persistent=False,
-            use_duckdb=_use_duckdb_backend(),
         )
 
     assert "DS_r" in result
@@ -1597,7 +1541,6 @@ def test_run_with_url_data_structures(sdmx_data_file, sdmx_structure_file):
             datapoints={"DS_1": sdmx_data_file},
             sdmx_mappings={"DataStructure=BIS:BIS_DER(1.0)": "DS_1"},
             return_only_persistent=False,
-            use_duckdb=_use_duckdb_backend(),
         )
 
     assert "DS_r" in result
@@ -1630,7 +1573,6 @@ def test_run_with_url_data_structures_and_url_datapoints(sdmx_data_file, sdmx_st
             datapoints={"DS_1": data_url},
             sdmx_mappings={"DataStructure=BIS:BIS_DER(1.0)": "DS_1"},
             return_only_persistent=False,
-            use_duckdb=_use_duckdb_backend(),
         )
 
     assert "DS_r" in result
