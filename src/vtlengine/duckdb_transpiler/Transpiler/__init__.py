@@ -1425,6 +1425,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                     and len(output_measure_names) == 1
                     and name == input_measures[0]
                     and name != output_measure_names[0]
+                    and (
+                        ds.name not in self.input_datasets
+                        or name in self.input_datasets[ds.name].get_measures_names()
+                    )
                 ):
                     out_name = output_measure_names[0]
                 else:
@@ -1626,6 +1630,18 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         has_dataset = left_type == _DATASET or right_type == _DATASET
 
         if has_dataset:
+            # in/not_in at dataset level: produce bool_var measure
+            if op in (tokens.IN, tokens.NOT_IN) and left_type == _DATASET:
+                collection_sql = self.visit(node.right)
+
+                def _in_expr(col_ref: str) -> str:
+                    if op == tokens.NOT_IN:
+                        return f"({col_ref} NOT IN {collection_sql})"
+                    return f"({col_ref} IN {collection_sql})"
+
+                return self._apply_to_measures(
+                    node.left, _in_expr, output_name_override="bool_var"
+                )
             if op in self._ARITHMETIC_OPS and self._is_chainable_ds_binop(node.left):
                 return self._visit_dataset_binary_chain(node)
             return self._visit_dataset_binary(node.left, node.right, op)

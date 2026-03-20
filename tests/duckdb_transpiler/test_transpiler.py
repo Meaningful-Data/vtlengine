@@ -149,7 +149,7 @@ class TestInOperator:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = f'SELECT "Id_1", ("Me_1" {sql_op} (1, 2)) AS "Me_1", ("Me_2" {sql_op} (1, 2)) AS "Me_2" FROM "DS_1"'
+        expected_sql = f'SELECT "Id_1", ("Me_1" {sql_op} (1, 2)) AS "bool_var", ("Me_2" {sql_op} (1, 2)) AS "bool_var" FROM "DS_1"'
         assert_sql_equal(sql, expected_sql)
 
 

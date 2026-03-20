@@ -484,7 +484,11 @@ class StructureVisitor(ASTTemplate):
             if left_is_ds and right_is_ds:
                 return self._build_ds_ds_binop_structure(node)
             if left_is_ds:
-                return self._get_dataset_structure(node.left)
+                ds = self._get_dataset_structure(node.left)
+                # in/not_in produces bool_var measure from any input measure
+                if ds is not None and op in (tokens.IN, tokens.NOT_IN):
+                    return self._build_boolean_result_structure(ds)
+                return ds
             if right_is_ds:
                 return self._get_dataset_structure(node.right)
             return None
@@ -966,6 +970,21 @@ class StructureVisitor(ASTTemplate):
                 name=comp_name, data_type=NumberType, role=Role.MEASURE, nullable=True
             )
         return Dataset(name=parent_ds.name, components=comps, data=None)
+
+    @staticmethod
+    def _build_boolean_result_structure(ds: Dataset) -> Dataset:
+        """Replace all measures with a single ``bool_var`` Boolean measure.
+
+        Used for operators like ``in`` / ``not_in`` that produce a Boolean
+        result from any input measure type.
+        """
+        comps: Dict[str, Component] = {
+            n: c for n, c in ds.components.items() if c.role == Role.IDENTIFIER
+        }
+        comps["bool_var"] = Component(
+            name="bool_var", data_type=Boolean, role=Role.MEASURE, nullable=True
+        )
+        return Dataset(name=ds.name, components=comps, data=None)
 
     def _build_rename_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:
         """Build the output structure for a rename clause."""
