@@ -1,0 +1,6 @@
+define datapoint ruleset dp_bool (variable Id_1 as X, Me_1 as M) is
+    rule_1: when X = "A" then M > 0 errorcode true errorlevel true;
+    rule_2: when X = "B" then M > 50 errorcode false errorlevel false
+end datapoint ruleset;
+
+DS_r <- check_datapoint(DS_1, dp_bool);

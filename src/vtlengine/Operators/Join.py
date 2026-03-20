@@ -406,7 +406,20 @@ class Apply(Operator):
         return op.evaluate(left_dataset, right_dataset)
 
     @classmethod
-    def validate(cls, dataset: Dataset, child: Any, op_map: Dict[str, Any]) -> None:
+    def validate(cls, dataset: Dataset, child: Any, op_map: Dict[str, Any]) -> Dataset:
+        if isinstance(child, list):
+            for c in child:
+                dataset = cls.validate(dataset, c, op_map)
+        else:
+            cls._check_bin_expr(dataset, child, op_map)
+            left_dataset = cls.create_dataset("left", child.left.value, dataset)
+            right_dataset = cls.create_dataset("right", child.right.value, dataset)
+            dataset, _ = cls.get_common_components(left_dataset, right_dataset)
+
+        return dataset
+
+    @classmethod
+    def _check_bin_expr(cls, dataset: Dataset, child: Any, op_map: Dict[str, Any]) -> None:
         if not isinstance(child, BinOp):
             raise Exception(
                 f"Invalid expression {child} on apply operator. Only BinOp are accepted"
@@ -438,7 +451,12 @@ class Apply(Operator):
             for component in dataset.components.values()
             if component.name.startswith(prefix) or component.role is Role.IDENTIFIER
         }
-        data = dataset.data[list(components.keys())] if dataset.data is not None else pd.DataFrame()
+        comp_names = list(components.keys())
+        data = (
+            dataset.data[comp_names]
+            if dataset.data is not None
+            else pd.DataFrame(columns=comp_names)
+        )
 
         for component in components.values():
             component.name = (

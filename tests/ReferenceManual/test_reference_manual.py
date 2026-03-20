@@ -70,7 +70,11 @@ validation_operators.remove(159)
 # duckdb random references
 random_ref = {
     184: pd.DataFrame(
-        {"Id_1": [10, 10, 11], "Id_2": ["A", "B", "A"], "Me_1": [0.408996, 0.845376, 0.957396]}
+        {
+            "Id_1": [10, 10, 11],
+            "Id_2": ["A", "B", "A"],
+            "Me_1": [0.408996, 0.845376, 0.957396],
+        }
     ),
     185: pd.DataFrame(
         {
@@ -140,7 +144,9 @@ def input_datasets(param):
         if f.lower().startswith(prefix)
     ]
     datastructures = [
-        f"{input_ds_dir}/{f}" for f in os.listdir(input_ds_dir) if f.lower().startswith(prefix)
+        f"{input_ds_dir}/{f}"
+        for f in os.listdir(input_ds_dir)
+        if f.lower().startswith(prefix)
     ]
     return datapoints, datastructures
 
@@ -188,7 +194,9 @@ def load_dataset(dataPoints, dataStructures, dp_dir, param):
                     csv_path=Path(f"{dp_dir}/{param}-{dataset_name}.csv"),
                 )
 
-            datasets[dataset_name] = Dataset(name=dataset_name, components=components, data=data)
+            datasets[dataset_name] = Dataset(
+                name=dataset_name, components=components, data=data
+            )
     if len(datasets) == 0:
         raise FileNotFoundError("No datasets found")
     return datasets
@@ -216,7 +224,9 @@ def get_test_files(dataPoints, dataStructures, dp_dir, param):
 @pytest.mark.parametrize("param", params if VTL_ENGINE_BACKEND == "duckdb" else [])
 def test_reference_duckdb(input_datasets, reference_datasets, ast, param):
     warnings.filterwarnings("ignore", category=FutureWarning)
-    reference_datasets = load_dataset(*reference_datasets, dp_dir=reference_dp_dir, param=param)
+    reference_datasets = load_dataset(
+        *reference_datasets, dp_dir=reference_dp_dir, param=param
+    )
     if param in random_ref:
         reference_datasets["DS_r"].data = random_ref[param]
 
@@ -238,7 +248,9 @@ def test_reference_duckdb(input_datasets, reference_datasets, ast, param):
 def test_reference(input_datasets, reference_datasets, ast, param, value_domains):
     warnings.filterwarnings("ignore", category=FutureWarning)
     input_datasets = load_dataset(*input_datasets, dp_dir=input_dp_dir, param=param)
-    reference_datasets = load_dataset(*reference_datasets, dp_dir=reference_dp_dir, param=param)
+    reference_datasets = load_dataset(
+        *reference_datasets, dp_dir=reference_dp_dir, param=param
+    )
     interpreter = InterpreterAnalyzer(input_datasets, value_domains=value_domains)
     result = interpreter.visit(ast)
     assert result == reference_datasets
@@ -250,7 +262,9 @@ def test_reference_defined_operators(
 ):
     warnings.filterwarnings("ignore", category=FutureWarning)
     input_datasets = load_dataset(*input_datasets, dp_dir=input_dp_dir, param=param)
-    reference_datasets = load_dataset(*reference_datasets, dp_dir=reference_dp_dir, param=param)
+    reference_datasets = load_dataset(
+        *reference_datasets, dp_dir=reference_dp_dir, param=param
+    )
     interpreter = InterpreterAnalyzer(input_datasets, value_domains=value_domains)
     result = interpreter.visit(ast_defined_operators)
     assert result == reference_datasets
@@ -262,6 +276,8 @@ def test_reference_exceptions(input_datasets, reference_datasets, ast, param):
     warnings.filterwarnings("ignore", category=FutureWarning)
     input_datasets = load_dataset(*input_datasets, dp_dir=input_dp_dir, param=param)
     interpreter = InterpreterAnalyzer(input_datasets)
-    with pytest.raises(Exception, match="Operation not allowed for multimeasure Datasets"):
+    with pytest.raises(
+        Exception, match="Operation not allowed for multimeasure Datasets"
+    ):
         # result = interpreter.visit(ast) # to match with F841
         interpreter.visit(ast)

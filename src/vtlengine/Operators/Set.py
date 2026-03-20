@@ -149,18 +149,15 @@ class Setdiff(Set):
             else:
                 if data is None:
                     data = pd.DataFrame(columns=result.get_identifiers_names())
-                result.data = result.data.merge(data, how="left", on=result.get_identifiers_names())
-                if len(result.data) > 0:
-                    result.data = result.data[result.data.isnull().any(axis=1)]
-
-                not_identifiers = result.get_measures_names() + result.get_attributes_names()
-                for col in not_identifiers:
-                    if col + "_x" in result.data:
-                        result.data[col] = result.data[col + "_x"]
-                        del result.data[col + "_x"]
-                    if col + "_y" in result.data:
-                        del result.data[col + "_y"]
-                result.data = result.data[result.get_identifiers_names() + not_identifiers]
+                id_names = result.get_identifiers_names()
+                result.data = result.data.merge(
+                    data[id_names].drop_duplicates(),
+                    how="left",
+                    on=id_names,
+                    indicator=True,
+                )
+                result.data = result.data[result.data["_merge"] == "left_only"]
+                result.data = result.data.drop(columns=["_merge"])
         if result.data is not None:
             result.data.reset_index(drop=True, inplace=True)
         return result

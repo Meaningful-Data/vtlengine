@@ -1,5 +1,5 @@
 from copy import copy
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Type, Union
 
 import pandas as pd
 
@@ -8,6 +8,7 @@ from vtlengine.DataTypes import (
     Boolean,
     Integer,
     Number,
+    ScalarType,
     String,
     check_unary_implicit_promotion,
 )
@@ -26,8 +27,8 @@ class Check(Operator):
         cls,
         validation_element: Dataset,
         imbalance_element: Optional[Dataset],
-        error_code: Optional[str],
-        error_level: Optional[Union[int, str]],
+        error_code: Optional[Union[str, int, float, bool]],
+        error_level: Optional[Union[str, int, float, bool]],
         invalid: bool,
     ) -> Dataset:
         dataset_name = VirtualCounter._new_ds_name()
@@ -36,11 +37,13 @@ class Check(Operator):
         measure = validation_element.get_measures()[0]
         if measure.data_type != Boolean:
             raise SemanticError("1-1-10-1", op=cls.op, op_type="validation", me_type="Boolean")
-        error_level_type = None
-        if error_level is None or isinstance(error_level, int):
+        error_level_type: Optional[Type[ScalarType]] = None
+        if isinstance(error_level, bool):
+            error_level_type = Boolean
+        elif error_level is None or isinstance(error_level, int):
             error_level_type = Integer
         elif isinstance(error_level, str):
-            error_level_type = String  # type: ignore[assignment]
+            error_level_type = String
         else:
             error_level_type = String
 
@@ -79,7 +82,7 @@ class Check(Operator):
 
         result_components["errorlevel"] = Component(
             name="errorlevel",
-            data_type=error_level_type,  # type: ignore[arg-type]
+            data_type=error_level_type,
             role=Role.MEASURE,
             nullable=True,
         )
@@ -91,8 +94,8 @@ class Check(Operator):
         cls,
         validation_element: Dataset,
         imbalance_element: Optional[Dataset],
-        error_code: Optional[str],
-        error_level: Optional[Union[int, str]],
+        error_code: Optional[Union[str, int, float, bool]],
+        error_level: Optional[Union[str, int, float, bool]],
         invalid: bool,
     ) -> Dataset:
         result = cls.validate(
@@ -116,7 +119,8 @@ class Check(Operator):
         bool_col = result.data[validation_measure_name]
         is_false = bool_col.fillna(True) == False  # noqa: E712
         result.data["errorcode"] = pd.Series(None, index=result.data.index, dtype="string[pyarrow]")
-        result.data.loc[is_false, "errorcode"] = error_code
+        ec_value = str(error_code) if error_code is not None else None
+        result.data.loc[is_false, "errorcode"] = ec_value
         errorlevel_dtype = result.components["errorlevel"].data_type.dtype()
         result.data["errorlevel"] = pd.Series(None, index=result.data.index, dtype=errorlevel_dtype)
         if error_level is not None:
@@ -150,7 +154,7 @@ class Validation(Operator):
 
     @classmethod
     def validate(cls, dataset_element: Dataset, rule_info: Dict[str, Any], output: str) -> Dataset:
-        error_level_type = None
+        error_level_type: Optional[Type[ScalarType]] = None
         error_levels = [
             rule_data.get("errorlevel")
             for rule_data in rule_info.values()
@@ -158,12 +162,14 @@ class Validation(Operator):
         ]
         non_null_levels = [el for el in error_levels if el is not None]
 
-        if len(non_null_levels) == 0 or all(isinstance(el, int) for el in non_null_levels):
+        if all(isinstance(el, bool) for el in non_null_levels) and len(non_null_levels) > 0:
+            error_level_type = Boolean
+        elif len(non_null_levels) == 0 or all(isinstance(el, int) for el in non_null_levels):
             error_level_type = Number
         elif all(isinstance(el, str) for el in non_null_levels):
-            error_level_type = String  # type: ignore[assignment]
+            error_level_type = String
         else:
-            error_level_type = String  # type: ignore[assignment]
+            error_level_type = String
         dataset_name = VirtualCounter._new_ds_name()
         result_components = {comp.name: comp for comp in dataset_element.get_identifiers()}
         result_components["ruleid"] = Component(
@@ -191,7 +197,7 @@ class Validation(Operator):
         )
         result_components["errorlevel"] = Component(
             name="errorlevel",
-            data_type=error_level_type,  # type: ignore[arg-type]
+            data_type=error_level_type,
             role=Role.MEASURE,
             nullable=True,
         )
