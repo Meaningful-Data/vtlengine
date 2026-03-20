@@ -1639,9 +1639,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                         return f"({col_ref} NOT IN {collection_sql})"
                     return f"({col_ref} IN {collection_sql})"
 
-                return self._apply_to_measures(
-                    node.left, _in_expr, output_name_override="bool_var"
-                )
+                return self._apply_to_measures(node.left, _in_expr, output_name_override="bool_var")
             if op in self._ARITHMETIC_OPS and self._is_chainable_ds_binop(node.left):
                 return self._visit_dataset_binary_chain(node)
             return self._visit_dataset_binary(node.left, node.right, op)
@@ -2976,8 +2974,7 @@ FROM {src}, (
                     comp = self._current_dataset.components.get(node.operand.value)
                     if comp is not None and comp.data_type == Duration:
                         return (
-                            f"vtl_int_to_duration({op.upper()}"
-                            f"(vtl_duration_to_int({operand_sql})))"
+                            f"vtl_int_to_duration({op.upper()}(vtl_duration_to_int({operand_sql})))"
                         )
                 if registry.aggregate.is_registered(op):
                     return registry.aggregate.generate(op, operand_sql)
@@ -3062,9 +3059,7 @@ FROM {src}, (
 
         if group_cols:
             builder.group_by(*group_by_cols)
-        else:
-            # "group all" aggregation: SQL returns 1 row with NULLs on empty
-            # input, but VTL expects 0 rows. Filter out empty aggregations.
+        elif all_ids:
             builder.having("COUNT(*) > 0")
 
         if node.having_clause:
@@ -3405,23 +3400,26 @@ FROM {src}, (
         then_type = self._get_operand_type(node.thenOp)
         else_type = self._get_operand_type(node.elseOp)
 
-        # Determine output measures and attributes from the semantic analysis
-        # output dataset, which reflects renames/transformations.
-        output_ds = self._get_output_dataset()
-        if output_ds is not None:
-            output_measures = list(output_ds.get_measures_names())
-            output_attributes = list(output_ds.get_attributes_names())
-        elif then_type == _DATASET:
+        # Determine output measures and attributes.
+        def _is_plain_dataset(n: AST.AST) -> bool:
+            return isinstance(n, AST.VarID) and self._get_operand_type(n) == _DATASET
+
+        if then_type == _DATASET and _is_plain_dataset(node.thenOp):
             ref_ds = self._get_dataset_structure(node.thenOp)
             output_measures = list(ref_ds.get_measures_names()) if ref_ds else []
             output_attributes = list(ref_ds.get_attributes_names()) if ref_ds else []
-        elif else_type == _DATASET:
+        elif else_type == _DATASET and _is_plain_dataset(node.elseOp):
             ref_ds = self._get_dataset_structure(node.elseOp)
             output_measures = list(ref_ds.get_measures_names()) if ref_ds else []
             output_attributes = list(ref_ds.get_attributes_names()) if ref_ds else []
         else:
-            output_measures = list(source_ds.get_measures_names())
-            output_attributes = list(source_ds.get_attributes_names())
+            output_ds = self._get_output_dataset()
+            if output_ds is not None:
+                output_measures = list(output_ds.get_measures_names())
+                output_attributes = list(output_ds.get_attributes_names())
+            else:
+                output_measures = list(source_ds.get_measures_names())
+                output_attributes = list(source_ds.get_attributes_names())
 
         # Build SELECT columns
         cols: List[str] = [f"{alias_cond}.{quote_identifier(id_)}" for id_ in source_ids]
