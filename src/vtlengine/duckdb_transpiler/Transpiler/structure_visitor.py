@@ -174,6 +174,17 @@ class StructureVisitor(ASTTemplate):
         if node.grouping is not None or node.grouping_op is not None:
             all_ids = ds.get_identifiers_names()
             group_cols = set(self._resolve_group_cols(node, all_ids))
+            # When time_agg is present, the time identifier must be included
+            # in the output even if not explicitly listed in group by.
+            if node.grouping:
+                has_time_agg = any(
+                    isinstance(g, AST.TimeAggregation) for g in node.grouping
+                )
+                if has_time_agg and node.grouping_op != "group except":
+                    for comp in ds.components.values():
+                        if comp.data_type in (TimePeriod, Date) and comp.role == Role.IDENTIFIER:
+                            group_cols.add(comp.name)
+                            break
             comps: Dict[str, Component] = {}
             for name, comp in ds.components.items():
                 if comp.role == Role.IDENTIFIER:

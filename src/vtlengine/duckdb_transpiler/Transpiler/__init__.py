@@ -2907,10 +2907,10 @@ FROM {src}, (
         ds: Dataset,
         group_cols: List[str],
     ) -> Tuple[List[str], List[str]]:
-        """Build SELECT and GROUP BY column lists, handling group all time_agg."""
+        """Build SELECT and GROUP BY column lists, handling time_agg."""
         time_agg_expr: Optional[str] = None
         time_agg_id: Optional[str] = None
-        if node.grouping and node.grouping_op == "group all":
+        if node.grouping:
             for g in node.grouping:
                 if isinstance(g, AST.TimeAggregation):
                     with self._clause_scope(ds):
@@ -2919,6 +2919,16 @@ FROM {src}, (
                         if comp.data_type in (TimePeriod, Date) and comp.role == Role.IDENTIFIER:
                             time_agg_id = comp.name
                             break
+
+        # For group by/group all with time_agg, ensure the time identifier
+        # is included in group_cols (it may not be listed explicitly).
+        if (
+            time_agg_id
+            and time_agg_expr
+            and node.grouping_op != "group except"
+            and time_agg_id not in group_cols
+        ):
+            group_cols = list(group_cols) + [time_agg_id]
 
         cols: List[str] = []
         group_by_cols: List[str] = []
