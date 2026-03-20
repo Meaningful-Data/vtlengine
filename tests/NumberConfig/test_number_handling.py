@@ -335,6 +335,7 @@ def test_output_formatting(env_value: str, expected_substring: str) -> None:
                 data_structures=ds_structure,
                 datapoints={"DS_1": datapoints},
                 output_folder=Path(tmpdir),
+                use_duckdb=_use_duckdb_backend(),
             )
             content = (Path(tmpdir) / "DS_r.csv").read_text()
             assert expected_substring in content
