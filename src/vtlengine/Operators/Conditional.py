@@ -256,11 +256,7 @@ class Nvl(Binary):
                     "types on right (applicable) side"
                 )
             cls.type_validation(left.data_type, right.data_type)
-            return Scalar(
-                name="result",
-                value=None,
-                data_type=left.data_type if left.data_type is not Null else right.data_type,
-            )
+            return Scalar(name="result", value=None, data_type=left.data_type)
         if isinstance(left, DataComponent):
             if isinstance(right, Dataset):
                 raise ValueError(

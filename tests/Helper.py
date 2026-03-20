@@ -32,7 +32,7 @@ from vtlengine.Model import (
 )
 
 # VTL_ENGINE_BACKEND can be "pandas" (default) or "duckdb"
-VTL_ENGINE_BACKEND = os.environ.get("VTL_ENGINE_BACKEND", "duckdb").lower()
+VTL_ENGINE_BACKEND = os.environ.get("VTL_ENGINE_BACKEND", "pandas").lower()
 
 
 def _use_duckdb_backend() -> bool:
@@ -161,15 +161,6 @@ class TestHelper(TestCase):
         if text is None:
             text = cls.LoadVTL(code)
 
-        reference_datasets = cls.LoadOutputs(code, references_names, only_semantic)
-        value_domains = None
-        if vd_names is not None:
-            value_domains = cls.LoadValueDomains(vd_names)
-
-        external_routines = None
-        if sql_names is not None:
-            external_routines = cls.LoadExternalRoutines(sql_names)
-
         # Use DuckDB backend if configured
         if _use_duckdb_backend() and not only_semantic:
             result = cls._run_with_duckdb_backend(
@@ -184,6 +175,14 @@ class TestHelper(TestCase):
             # Original Pandas/Interpreter backend
             ast = create_ast(text)
             input_datasets = cls.LoadInputs(code, number_inputs, only_semantic)
+
+            value_domains = None
+            if vd_names is not None:
+                value_domains = cls.LoadValueDomains(vd_names)
+
+            external_routines = None
+            if sql_names is not None:
+                external_routines = cls.LoadExternalRoutines(sql_names)
 
             if scalars is not None:
                 for scalar_name, scalar_value in scalars.items():
@@ -204,6 +203,8 @@ class TestHelper(TestCase):
                 only_semantic=only_semantic,
             )
             result = interpreter.visit(ast)
+
+        reference_datasets = cls.LoadOutputs(code, references_names, only_semantic)
 
         for dataset in result.values():
             format_time_period_external_representation(
@@ -421,6 +422,10 @@ class TestHelper(TestCase):
 
     @classmethod
     def DataLoadTest(cls, code: str, number_inputs: int, references_names: List[str] = None):
+        if _use_duckdb_backend():
+            cls._DataLoadTestDuckDB(code, number_inputs, references_names)
+            return
+
         # Data Loading.--------------------------------------------------------
         inputs = cls.LoadInputs(code=code, number_inputs=number_inputs)
 
@@ -431,6 +436,42 @@ class TestHelper(TestCase):
         assert True
 
     @classmethod
+    def _DataLoadTestDuckDB(cls, code: str, number_inputs: int, references_names: List[str] = None):
+        """Execute DataLoadTest using DuckDB backend with identity scripts."""
+        data_structures = []
+        datapoints = {}
+        dataset_names = []
+        for i in range(number_inputs):
+            json_file = cls.filepath_json / f"{code}-{cls.ds_input_prefix}{str(i + 1)}{cls.JSON}"
+            csv_file = cls.filepath_csv / f"{code}-{cls.ds_input_prefix}{str(i + 1)}{cls.CSV}"
+            data_structures.append(json_file)
+            with open(json_file, "r") as f:
+                structure = json.load(f)
+            if "datasets" in structure:
+                for ds in structure["datasets"]:
+                    datapoints[ds["name"]] = csv_file
+                    dataset_names.append(ds["name"])
+
+        # Build identity script: DS_name <- DS_name; for each dataset
+        script = "\n".join(f"{name} <- {name};" for name in dataset_names)
+
+        result = run(
+            script=script,
+            data_structures=data_structures,
+            datapoints=datapoints,
+            return_only_persistent=False,
+            use_duckdb=True,
+        )
+
+        if references_names:
+            references = cls.LoadOutputs(code=code, references_names=references_names)
+            for dataset in result.values():
+                format_time_period_external_representation(
+                    dataset, TimePeriodRepresentation.SDMX_REPORTING
+                )
+            assert result == references
+
+    @classmethod
     def DataLoadExceptionTest(
         cls,
         code: str,
@@ -438,6 +479,10 @@ class TestHelper(TestCase):
         exception_message: Optional[str] = None,
         exception_code: Optional[str] = None,
     ):
+        if _use_duckdb_backend():
+            cls._DataLoadExceptionTestDuckDB(code, number_inputs, exception_message, exception_code)
+            return
+
         if exception_code is not None:
             with pytest.raises(VTLEngineException) as context:
                 cls.LoadInputs(code=code, number_inputs=number_inputs)
@@ -445,6 +490,56 @@ class TestHelper(TestCase):
             with pytest.raises(Exception, match=exception_message) as context:
                 cls.LoadInputs(code=code, number_inputs=number_inputs)
         # Test Assertion.------------------------------------------------------
+
+        if len(context.value.args) > 1 and exception_code is not None:
+            assert exception_code == str(context.value.args[1])
+        else:
+            if exception_message is not None:
+                assert exception_message in str(context.value.args[0])
+
+    @classmethod
+    def _DataLoadExceptionTestDuckDB(
+        cls,
+        code: str,
+        number_inputs: int,
+        exception_message: Optional[str] = None,
+        exception_code: Optional[str] = None,
+    ):
+        """Execute DataLoadExceptionTest using DuckDB backend."""
+        data_structures = []
+        datapoints = {}
+        dataset_names = []
+        for i in range(number_inputs):
+            json_file = cls.filepath_json / f"{code}-{cls.ds_input_prefix}{str(i + 1)}{cls.JSON}"
+            csv_file = cls.filepath_csv / f"{code}-{cls.ds_input_prefix}{str(i + 1)}{cls.CSV}"
+            data_structures.append(json_file)
+            with open(json_file, "r") as f:
+                structure = json.load(f)
+            if "datasets" in structure:
+                for ds in structure["datasets"]:
+                    datapoints[ds["name"]] = csv_file
+                    dataset_names.append(ds["name"])
+
+        script = "\n".join(f"{name} <- {name};" for name in dataset_names)
+
+        if exception_code is not None:
+            with pytest.raises(VTLEngineException) as context:
+                run(
+                    script=script,
+                    data_structures=data_structures,
+                    datapoints=datapoints,
+                    return_only_persistent=False,
+                    use_duckdb=True,
+                )
+        else:
+            with pytest.raises(Exception, match=exception_message) as context:
+                run(
+                    script=script,
+                    data_structures=data_structures,
+                    datapoints=datapoints,
+                    return_only_persistent=False,
+                    use_duckdb=True,
+                )
 
         if len(context.value.args) > 1 and exception_code is not None:
             assert exception_code == str(context.value.args[1])

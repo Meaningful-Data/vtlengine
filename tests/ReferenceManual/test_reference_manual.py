@@ -7,13 +7,11 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from vtlengine.API import create_ast, run
+from vtlengine.API import create_ast
 from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.files.parser import load_datapoints
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Component, Dataset, Role, ValueDomain
-
-VTL_ENGINE_BACKEND = os.environ.get("VTL_ENGINE_BACKEND", "duckdb").lower()
 
 base_path = Path(__file__).parent
 input_dp_dir = base_path / "data/DataSet/input"
@@ -66,21 +64,6 @@ time_operators.remove(100)
 
 # Remove HR Rules cyclic graph
 validation_operators.remove(159)
-
-# duckdb random references
-random_ref = {
-    184: pd.DataFrame(
-        {"Id_1": [10, 10, 11], "Id_2": ["A", "B", "A"], "Me_1": [0.408996, 0.845376, 0.957396]}
-    ),
-    185: pd.DataFrame(
-        {
-            "Id_1": [10, 10, 11],
-            "Id_2": ["A", "B", "A"],
-            "Me_1": [16.0, 4.0, 7.2],
-            "Me_2": [0.851794, 0.519602, 0.346913],
-        }
-    ),
-}
 
 # Multimeasures on specific operators that must raise errors
 exceptions_tests = [27, 31]
@@ -194,52 +177,17 @@ def load_dataset(dataPoints, dataStructures, dp_dir, param):
     return datasets
 
 
-def get_test_files(dataPoints, dataStructures, dp_dir, param):
-    vtl = Path(f"{vtl_dir}/RM{param:03d}.vtl")
-    ds = []
-    dp = {}
-    for f in dataStructures:
-        ds.append(Path(f))
-        with open(f, "r") as file:
-            structures = json.load(file)
-
-        for dataset_json in structures["datasets"]:
-            dataset_name = dataset_json["name"]
-            if dataset_name not in dataPoints:
-                dp[dataset_name] = None
-            else:
-                dp[dataset_name] = Path(f"{dp_dir}/{param}-{dataset_name}.csv")
-
-    return vtl, ds, dp
-
-
-@pytest.mark.parametrize("param", params if VTL_ENGINE_BACKEND == "duckdb" else [])
-def test_reference_duckdb(input_datasets, reference_datasets, ast, param, value_domains):
-    warnings.filterwarnings("ignore", category=FutureWarning)
-    reference_datasets = load_dataset(*reference_datasets, dp_dir=reference_dp_dir, param=param)
-    if param in random_ref:
-        reference_datasets["DS_r"].data = random_ref[param]
-
-    vtl, ds, dp = get_test_files(*input_datasets, dp_dir=input_dp_dir, param=param)
-    result = run(
-        script=vtl,
-        data_structures=ds,
-        datapoints=dp,
-        return_only_persistent=False,
-        use_duckdb=True,
-    )
-
-    assert result == reference_datasets
-
-
 @pytest.mark.parametrize("param", params)
 def test_reference(input_datasets, reference_datasets, ast, param, value_domains):
+    # try:
     warnings.filterwarnings("ignore", category=FutureWarning)
     input_datasets = load_dataset(*input_datasets, dp_dir=input_dp_dir, param=param)
     reference_datasets = load_dataset(*reference_datasets, dp_dir=reference_dp_dir, param=param)
     interpreter = InterpreterAnalyzer(input_datasets, value_domains=value_domains)
     result = interpreter.visit(ast)
     assert result == reference_datasets
+    # except NotImplementedError:
+    #     pass
 
 
 @pytest.mark.parametrize("param", params)

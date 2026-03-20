@@ -492,13 +492,35 @@ class InterpreterAnalyzer(ASTTemplate):
             return ROLE_SETTER_MAPPING[node.op].analyze(operand, data_size)
         return UNARY_MAPPING[node.op].analyze(operand)
 
-    def visit_Aggregation(self, node: AST.Aggregation) -> None:
-        # Having takes precedence as it is lower in the AST
+    @staticmethod
+    def _apply_time_agg_grouping(
+        operand: Dataset,
+        groupings: List[Any],
+        grouping_op: Optional[str],
+    ) -> List[Any]:
+        """Extract TimeAggregation DataComponent from groupings and merge into operand."""
+        time_comp = None
+        regular_groupings: List[Any] = []
+        for g in groupings:
+            if isinstance(g, DataComponent):
+                time_comp = g
+            else:
+                regular_groupings.append(g)
+        if time_comp is not None:
+            if operand.data is not None and time_comp.data is not None and len(time_comp.data) > 0:
+                operand.data = operand.data.copy()
+                operand.data[time_comp.name] = time_comp.data
+            if grouping_op != "group except":
+                regular_groupings.append(time_comp.name)
+        return regular_groupings
+
+    def _resolve_aggregation_operand(self, node: AST.Aggregation) -> Any:
+        """Resolve the operand for an aggregation node."""
         if self.is_from_having:
             if node.operand is not None:
                 self.visit(node.operand)
-            operand = self.aggregation_dataset
-        elif self.is_from_regular_aggregation and self.regular_aggregation_dataset is not None:
+            return self.aggregation_dataset
+        if self.is_from_regular_aggregation and self.regular_aggregation_dataset is not None:
             operand = self.regular_aggregation_dataset
             if node.operand is not None and operand is not None:
                 op_comp: DataComponent = self.visit(node.operand)
@@ -520,9 +542,12 @@ class InterpreterAnalyzer(ASTTemplate):
                     data_to_keep[op_comp.name] = op_comp.data
                 else:
                     data_to_keep = None
-                operand = Dataset(name=operand.name, components=comps_to_keep, data=data_to_keep)
-        else:
-            operand = self.visit(node.operand)
+                return Dataset(name=operand.name, components=comps_to_keep, data=data_to_keep)
+            return operand
+        return self.visit(node.operand)
+
+    def visit_Aggregation(self, node: AST.Aggregation) -> None:
+        operand = self._resolve_aggregation_operand(node)
 
         if not isinstance(operand, Dataset):
             raise SemanticError("2-3-4", op=node.op, comp="dataset")
@@ -538,7 +563,8 @@ class InterpreterAnalyzer(ASTTemplate):
         having = None
         grouping_op = node.grouping_op
         if node.grouping is not None:
-            if grouping_op == "group all":
+            has_time_agg = any(isinstance(x, AST.TimeAggregation) for x in node.grouping)
+            if grouping_op == "group all" or has_time_agg:
                 data = None if self.only_semantic else copy(operand.data)
                 self.aggregation_dataset = Dataset(
                     name=operand.name, components=operand.components, data=data
@@ -548,17 +574,8 @@ class InterpreterAnalyzer(ASTTemplate):
             for x in node.grouping:
                 groupings.append(self.visit(x))
             self.is_from_grouping = False
-            if grouping_op == "group all":
-                comp_grouped = groupings[0]
-                if (
-                    operand.data is not None
-                    and comp_grouped.data is not None
-                    and len(comp_grouped.data) > 0
-                ):
-                    # Deep copy the data to avoid modifying the original dataset
-                    operand.data = operand.data.copy()
-                    operand.data[comp_grouped.name] = comp_grouped.data
-                groupings = [comp_grouped.name]
+            if grouping_op == "group all" or has_time_agg:
+                groupings = self._apply_time_agg_grouping(operand, groupings, grouping_op)
                 self.aggregation_dataset = None
             if node.having_clause is not None:
                 self.aggregation_dataset = Dataset(
@@ -836,42 +853,47 @@ class InterpreterAnalyzer(ASTTemplate):
                     if node.value in self.regular_aggregation_dataset.components:
                         raise SemanticError("1-1-6-11", comp_name=node.value)
                     return copy(self.scalars[node.value])
-                # Resolve aliased component references (e.g. d1#Me_1 -> Me_1)
-                # in join context, regardless of whether data is present.
-                if (
-                    self.is_from_join
-                    and node.value not in self.regular_aggregation_dataset.get_components_names()
-                ):
-                    is_partial_present = 0
-                    found_comp = None
-                    for comp_name in self.regular_aggregation_dataset.get_components_names():
-                        if (
-                            "#" in comp_name
-                            and comp_name.split("#")[1] == node.value
-                            or "#" in node.value
-                            and node.value.split("#")[1] == comp_name
-                        ):
-                            is_partial_present += 1
-                            found_comp = comp_name
-                    if is_partial_present == 0:
+                if self.regular_aggregation_dataset.data is not None:
+                    if (
+                        self.is_from_join
+                        and node.value
+                        not in self.regular_aggregation_dataset.get_components_names()
+                    ):
+                        is_partial_present = 0
+                        found_comp = None
+                        for comp_name in self.regular_aggregation_dataset.get_components_names():
+                            if (
+                                "#" in comp_name
+                                and comp_name.split("#")[1] == node.value
+                                or "#" in node.value
+                                and node.value.split("#")[1] == comp_name
+                            ):
+                                is_partial_present += 1
+                                found_comp = comp_name
+                        if is_partial_present == 0:
+                            raise SemanticError(
+                                "1-1-1-10",
+                                comp_name=node.value,
+                                dataset_name=self.regular_aggregation_dataset.name,
+                            )
+                        elif is_partial_present == 2:
+                            raise SemanticError("1-1-13-9", comp_name=node.value)
+                        node.value = found_comp  # type:ignore[assignment]
+                    if node.value not in self.regular_aggregation_dataset.components:
                         raise SemanticError(
                             "1-1-1-10",
                             comp_name=node.value,
                             dataset_name=self.regular_aggregation_dataset.name,
                         )
-                    elif is_partial_present == 2:
-                        raise SemanticError("1-1-13-9", comp_name=node.value)
-                    node.value = found_comp  # type:ignore[assignment]
+                    data = copy(self.regular_aggregation_dataset.data[node.value])
+                else:
+                    data = None
                 if node.value not in self.regular_aggregation_dataset.components:
                     raise SemanticError(
                         "1-1-1-10",
                         comp_name=node.value,
                         dataset_name=self.regular_aggregation_dataset.name,
                     )
-                if self.regular_aggregation_dataset.data is not None:
-                    data = copy(self.regular_aggregation_dataset.data[node.value])
-                else:
-                    data = None
                 return DataComponent(
                     name=node.value,
                     data=data,

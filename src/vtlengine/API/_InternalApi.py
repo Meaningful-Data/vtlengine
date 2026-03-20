@@ -17,7 +17,6 @@ from pysdmx.model.vtl import (
 )
 
 from vtlengine import AST as AST
-from vtlengine.__extras_check import __check_s3_extra
 from vtlengine.AST import Assignment, DPRuleset, HRuleset, Operator, PersistentAssignment, Start
 from vtlengine.AST.ASTString import ASTString
 from vtlengine.DataTypes import SCALAR_TYPES
@@ -215,7 +214,6 @@ def _load_single_datapoint(
     # Handling of str values
     if isinstance(datapoint, str):
         if "s3://" in datapoint:
-            __check_s3_extra()
             dataset_name = datapoint.split("/")[-1].removesuffix(".csv")
             return {dataset_name: datapoint}
         # Converting to Path object if it is not an S3 URI
@@ -735,7 +733,6 @@ def _check_output_folder(output_folder: Union[str, Path]) -> None:
     """
     if isinstance(output_folder, str):
         if "s3://" in output_folder:
-            __check_s3_extra()
             if not output_folder.endswith("/"):
                 raise DataLoadError("0-3-1-2", folder=str(output_folder))
             return

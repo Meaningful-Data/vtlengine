@@ -1,4 +1,3 @@
-import os
 import warnings
 from pathlib import Path
 
@@ -12,13 +11,6 @@ from vtlengine.DataTypes import Boolean, Integer, Null, Number, String
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Component, Dataset, Role, Scalar
-
-VTL_ENGINE_BACKEND = os.environ.get("VTL_ENGINE_BACKEND", "duckdb").lower()
-
-
-def _use_duckdb_backend() -> bool:
-    """Check if DuckDB backend should be used."""
-    return VTL_ENGINE_BACKEND == "duckdb"
 
 
 class AdditionalScalarsTests(TestHelper):
@@ -440,7 +432,6 @@ def test_run_scalars_operations(script, reference, tmp_path):
         scalar_values=scalar_values,
         output_folder=tmp_path,
         return_only_persistent=True,
-        use_duckdb=_use_duckdb_backend(),
     )
     for k, expected_scalar in reference.items():
         assert k in run_result
@@ -489,6 +480,5 @@ def test_filter_op(script, reference):
         datapoints=datapoints,
         scalar_values=scalar_values,
         return_only_persistent=True,
-        use_duckdb=_use_duckdb_backend(),
     )
     assert run_result == reference

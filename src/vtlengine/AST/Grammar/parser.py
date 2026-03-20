@@ -8015,12 +8015,6 @@ class Parser(ANTLRParser):
             else:
                 return visitor.visitChildren(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitTimeAggAtom"):
-                return visitor.visitTimeAggAtom(self)
-            else:
-                return visitor.visitChildren(self)
-
     class DateDiffAtomContext(TimeOperatorsContext):
         def __init__(
             self, parser, ctx: ParserRuleContext
@@ -8644,62 +8638,6 @@ class Parser(ANTLRParser):
             else:
                 return visitor.visitChildren(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitTimeShiftAtomComponent"):
-                return visitor.visitTimeShiftAtomComponent(self)
-            else:
-                return visitor.visitChildren(self)
-
-    class MonthTodayAtomComponentContext(TimeOperatorsComponentContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.TimeOperatorsComponentContext
-            super().__init__(parser)
-            self.copyFrom(ctx)
-
-        def MONTHTODAY(self):
-            return self.getToken(Parser.MONTHTODAY, 0)
-
-        def LPAREN(self):
-            return self.getToken(Parser.LPAREN, 0)
-
-        def exprComponent(self):
-            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
-
-        def RPAREN(self):
-            return self.getToken(Parser.RPAREN, 0)
-
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitTimeShiftAtomComponent"):
-                return visitor.visitTimeShiftAtomComponent(self)
-            else:
-                return visitor.visitChildren(self)
-
-    class MonthTodayAtomComponentContext(TimeOperatorsComponentContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.TimeOperatorsComponentContext
-            super().__init__(parser)
-            self.copyFrom(ctx)
-
-        def MONTHTODAY(self):
-            return self.getToken(Parser.MONTHTODAY, 0)
-
-        def LPAREN(self):
-            return self.getToken(Parser.LPAREN, 0)
-
-        def exprComponent(self):
-            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
-
-        def RPAREN(self):
-            return self.getToken(Parser.RPAREN, 0)
-
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitMonthTodayAtomComponent"):
-                return visitor.visitMonthTodayAtomComponent(self)
-            else:
-                return visitor.visitChildren(self)
-
     class TimeAggAtomComponentContext(TimeOperatorsComponentContext):
         def __init__(
             self, parser, ctx: ParserRuleContext
@@ -8743,12 +8681,6 @@ class Parser(ANTLRParser):
 
         def LAST(self):
             return self.getToken(Parser.LAST, 0)
-
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitTimeAggAtomComponent"):
-                return visitor.visitTimeAggAtomComponent(self)
-            else:
-                return visitor.visitChildren(self)
 
         def accept(self, visitor: ParseTreeVisitor):
             if hasattr(visitor, "visitTimeAggAtomComponent"):

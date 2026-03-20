@@ -2,14 +2,14 @@ import warnings
 from pathlib import Path
 
 import pytest
+from pytest import mark
 
-from tests.NewOperators.conftest import _build_run_inputs, use_duckdb
-from vtlengine.API import run
+from vtlengine.API import create_ast
 from vtlengine.DataTypes import Integer
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import RunTimeError, SemanticError
+from vtlengine.Interpreter import InterpreterAnalyzer
 
-base_path = Path(__file__).parent / "data"
-pytestmark = pytest.mark.input_path(base_path)
+pytestmark = mark.input_path(Path(__file__).parent / "data")
 
 ds_param = [
     ("21", "DS_r := DS_1[calc Me_3 := datediff(Me_1, Me_2)];"),
@@ -31,24 +31,19 @@ scalar_time_params = [
 ]
 
 scalar_time_error_params = [
-    ('datediff(cast("2022Q1",date),cast("2023Q2",time_period))', SemanticError, "1-1-1-2"),
-    ('datediff(cast("2020D1",time_period),cast("2020D15",date))', SemanticError, "1-1-1-2"),
+    ('datediff(cast("2022Q1",date),cast("2023Q2",time_period))', RunTimeError, "2-1-19-8"),
+    ('datediff(cast("2020D1",time_period),cast("2020D15",date))', RunTimeError, "2-1-19-8"),
     ('datediff(cast("2022-06-30",date),cast("2023Q2",time_period))', SemanticError, "1-1-1-2"),
     ('datediff(cast("2022Q2",time_period),cast("2023-06-30",date))', SemanticError, "1-1-1-2"),
 ]
 
 
 @pytest.mark.parametrize("code, expression", ds_param)
-def test_case_ds(load_reference, code, expression):
+def test_case_ds(load_input, load_reference, code, expression):
     warnings.filterwarnings("ignore", category=FutureWarning)
-    data_structures, datapoints = _build_run_inputs(code, base_path)
-    result = run(
-        script=expression,
-        data_structures=data_structures,
-        datapoints=datapoints,
-        return_only_persistent=False,
-        use_duckdb=use_duckdb,
-    )
+    ast = create_ast(expression)
+    interpreter = InterpreterAnalyzer(load_input)
+    result = interpreter.visit(ast)
     assert result == load_reference
 
 
@@ -56,28 +51,21 @@ def test_case_ds(load_reference, code, expression):
 def test_unary_time_scalar(text, reference):
     warnings.filterwarnings("ignore", category=FutureWarning)
     expression = f"DS_r := {text};"
-    result = run(
-        script=expression,
-        data_structures=[],
-        datapoints=[],
-        return_only_persistent=False,
-        use_duckdb=use_duckdb,
-    )
+    ast = create_ast(expression)
+    interpreter = InterpreterAnalyzer({})
+    result = interpreter.visit(ast)
     assert result["DS_r"].value == reference
     assert result["DS_r"].data_type == Integer
 
 
 @pytest.mark.parametrize("code, expression, error_code", error_param)
-def test_errors(code, expression, error_code):
+def test_errors(load_input, code, expression, error_code):
     warnings.filterwarnings("ignore", category=FutureWarning)
-    data_structures, datapoints = _build_run_inputs(code, base_path)
+    datasets = load_input
     with pytest.raises(SemanticError) as context:
-        run(
-            script=expression,
-            data_structures=data_structures,
-            datapoints=datapoints,
-            return_only_persistent=False,
-        )
+        ast = create_ast(expression)
+        interpreter = InterpreterAnalyzer(datasets)
+        interpreter.visit(ast)
     result = error_code == str(context.value.args[1])
     if result is False:
         print(f"\n{error_code} != {context.value.args[1]}")
@@ -88,11 +76,7 @@ def test_errors(code, expression, error_code):
 def test_errors_time_scalar(text, exception_type, exception_message):
     warnings.filterwarnings("ignore", category=FutureWarning)
     expression = f"DS_r := {text};"
+    ast = create_ast(expression)
+    interpreter = InterpreterAnalyzer({})
     with pytest.raises(exception_type, match=f".*{exception_message}"):
-        run(
-            script=expression,
-            data_structures=[],
-            datapoints=[],
-            return_only_persistent=False,
-            use_duckdb=use_duckdb,
-        )
+        interpreter.visit(ast)
