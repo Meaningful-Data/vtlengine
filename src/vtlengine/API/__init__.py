@@ -469,6 +469,17 @@ def run(
         If pointing to a Path, dataset_name will be taken from the file name.
         Example: If the path is 'path/to/data.csv', the dataset name will be 'data'.
 
+    .. important::
+        S3 URIs (``s3://bucket-name/path/to/data.csv``) are only supported when
+        ``use_duckdb=True``. The DuckDB backend handles S3 access via the
+        `httpfs extension <https://duckdb.org/docs/extensions/httpfs/s3api.html>`_.
+
+        The following environment variables must be set (from the AWS account):
+
+        - ``AWS_ACCESS_KEY_ID``
+        - ``AWS_SECRET_ACCESS_KEY``
+        - ``AWS_DEFAULT_REGION`` (optional)
+
     Before the execution, the DAG analysis reviews if the VTL script is a direct acyclic graph.
 
     This function has the following params:
@@ -490,6 +501,7 @@ def run(
         external structure files, use the :obj:`run_sdmx` function instead. \
         You can also use a custom name for the dataset by passing a dictionary with \
         the dataset name as key and the Path or DataFrame as value. \
+        S3 URIs are supported when ``use_duckdb=True``. \
         Check the following example: \
         :ref:`Example 6 <example_6_run_using_paths>`.
 
@@ -512,7 +524,8 @@ def run(
         return_only_persistent: If True, run function will only return the results of \
         Persistent Assignments. (default: True)
 
-        output_folder: Path to the output folder. (default: None)
+        output_folder: Path to the output folder. S3 URIs are supported when \
+        ``use_duckdb=True``. (default: None)
 
         scalar_values: Dict with the scalar values to be used in the VTL script.
 
@@ -522,7 +535,8 @@ def run(
 
         use_duckdb: If True, use DuckDB as the execution engine instead of pandas. \
         This transpiles VTL to SQL and executes it using DuckDB, which can be more \
-        efficient for large datasets. (default: False)
+        efficient for large datasets. S3 URIs for datapoints and output_folder \
+        are only supported with this option enabled. (default: False)
 
     Returns:
        The datasets are produced without data if the output folder is defined.
