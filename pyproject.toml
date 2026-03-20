@@ -38,10 +38,6 @@ dependencies = [
     "psutil>=7.2.2,<8.0.0",
 ]
 
-[project.optional-dependencies]
-s3 = ["s3fs>=2022.11.0"]
-all = ["s3fs>=2022.11.0"]
-
 [project.urls]
 Repository = 'https://github.com/Meaningful-Data/vtlengine'
 Documentation = 'https://docs.vtlengine.meaningfuldata.eu'

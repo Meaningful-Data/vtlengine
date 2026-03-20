@@ -3,7 +3,6 @@ from typing import Optional, Union
 
 import pandas as pd
 
-from vtlengine.__extras_check import __check_s3_extra
 from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
     format_time_period_external_representation,
@@ -27,8 +26,7 @@ def save_datapoints(
 
     if isinstance(output_path, str):
         if "s3://" in output_path:
-            # S3 URI - requires fsspec extra
-            __check_s3_extra()
+            # S3 URI - handled via DuckDB httpfs extension
             if output_path.endswith("/"):
                 s3_file_output = output_path + f"{dataset.name}.csv"
             else:
