@@ -2,13 +2,13 @@ import warnings
 from pathlib import Path
 
 import pytest
+from pytest import mark
 
-from tests.NewOperators.conftest import _build_run_inputs
-from vtlengine.API import run
+from tests.NewOperators.conftest import run_expression
 from vtlengine.Exceptions import SemanticError
 
-base_path = Path(__file__).parent / "data"
-pytestmark = pytest.mark.input_path(base_path)
+pytestmark = mark.input_path(Path(__file__).parent / "data")
+
 
 ds_param = [
     ("1", "DS_r := DS_1[calc Me_1 := random(1, 1)];"),
@@ -27,29 +27,17 @@ error_param = [
 
 
 @pytest.mark.parametrize("code, expression", ds_param)
-def test_random(load_reference, code, expression):
+def test_case_ds(load_input, load_reference, duckdb_input, code, expression):
     warnings.filterwarnings("ignore", category=FutureWarning)
-    data_structures, datapoints = _build_run_inputs(code, base_path)
-    result = run(
-        script=expression,
-        data_structures=data_structures,
-        datapoints=datapoints,
-        return_only_persistent=False,
-    )
+    result = run_expression(expression, load_input, duckdb_input)
     assert result == load_reference
 
 
 @pytest.mark.parametrize("code, expression, error_code", error_param)
-def test_errors(code, expression, error_code):
+def test_errors(load_input, duckdb_input, code, expression, error_code):
     warnings.filterwarnings("ignore", category=FutureWarning)
-    data_structures, datapoints = _build_run_inputs(code, base_path)
     with pytest.raises(SemanticError) as context:
-        run(
-            script=expression,
-            data_structures=data_structures,
-            datapoints=datapoints,
-            return_only_persistent=False,
-        )
+        run_expression(expression, load_input, duckdb_input)
     result = error_code == str(context.value.args[1])
     if result is False:
         print(f"\n{error_code} != {context.value.args[1]}")

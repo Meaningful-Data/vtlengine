@@ -14,6 +14,8 @@ from pysdmx.model.vtl import VtlDataflowMapping
 from vtlengine.API._InternalApi import (
     _check_output_folder,
     _check_script,
+    _handle_url_datapoints,
+    _is_url,
     _return_only_persistent_datasets,
     ast_to_sdmx,
     load_datasets,
@@ -306,6 +308,7 @@ def _run_with_duckdb(
     scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
     output_folder: Optional[Union[str, Path]] = None,
     time_period_output_format: str = "vtl",
+    sdmx_mappings: Optional[Union[VtlDataflowMapping, Dict[str, str]]] = None,
 ) -> Dict[str, Union[Dataset, Scalar]]:
     """
     Run VTL script using DuckDB as the execution engine.
@@ -314,6 +317,9 @@ def _run_with_duckdb(
     Always uses DAG analysis for efficient dataset loading/saving scheduling.
     When output_folder is provided, saves results as CSV files.
     """
+    # Convert sdmx_mappings to dict format for internal use
+    mapping_dict = _convert_sdmx_mappings(sdmx_mappings)
+
     # AST generation
     script = _check_script(script)
     vtl = load_vtl(script)
@@ -321,7 +327,7 @@ def _run_with_duckdb(
     dag = DAGAnalyzer.create_dag(ast)
 
     # Load datasets structure (without data)
-    input_datasets, input_scalars = load_datasets(data_structures)
+    input_datasets, input_scalars = load_datasets(data_structures, sdmx_mappings=mapping_dict)
 
     # Apply scalar values if provided
     if scalar_values:
@@ -354,6 +360,21 @@ def _run_with_duckdb(
 
     # Get DAG analysis for efficient load/save scheduling
     ds_analysis = DAGAnalyzer.ds_structure(ast)
+
+    # Handle URL datapoints: load via pysdmx and merge into datapoints as DataFrames
+    # URL datapoints require data_structures to be a file path or URL string
+    if isinstance(datapoints, dict) and isinstance(data_structures, (str, Path)):
+        url_datapoints = {k: v for k, v in datapoints.items() if isinstance(v, str) and _is_url(v)}
+        if url_datapoints:
+            url_ds, _, url_dfs = _handle_url_datapoints(
+                url_datapoints, data_structures, mapping_dict
+            )
+            input_datasets.update(url_ds)
+            for url_name, url_df in url_dfs.items():
+                datapoints[url_name] = url_df
+            for url_name in url_datapoints:
+                if url_name in datapoints and isinstance(datapoints[url_name], str):
+                    del datapoints[url_name]
 
     # Extract paths without pandas validation (DuckDB-optimized)
     # This avoids the double CSV read that load_datasets_with_data causes
@@ -445,21 +466,19 @@ def run(
         name to be loaded correctly.
 
     .. important::
-        If pointing to a Path or an S3 URI, dataset_name will be taken from the file name.
+        If pointing to a Path, dataset_name will be taken from the file name.
         Example: If the path is 'path/to/data.csv', the dataset name will be 'data'.
 
     .. important::
-        If using an S3 URI, the path must be in the format:
-
-        s3://bucket-name/path/to/data.csv
+        S3 URIs (``s3://bucket-name/path/to/data.csv``) are only supported when
+        ``use_duckdb=True``. The DuckDB backend handles S3 access via the
+        `httpfs extension <https://duckdb.org/docs/extensions/httpfs/s3api.html>`_.
 
         The following environment variables must be set (from the AWS account):
 
-        - AWS_ACCESS_KEY_ID
-        - AWS_SECRET_ACCESS_KEY
-
-        For more details, see
-        `s3fs documentation <https://s3fs.readthedocs.io/en/latest/index.html#credentials>`_.
+        - ``AWS_ACCESS_KEY_ID``
+        - ``AWS_SECRET_ACCESS_KEY``
+        - ``AWS_DEFAULT_REGION`` (optional)
 
     Before the execution, the DAG analysis reviews if the VTL script is a direct acyclic graph.
 
@@ -475,13 +494,14 @@ def run(
         When datapoints contains HTTP/HTTPS URLs, data_structures must be a file path or URL \
         pointing to an SDMX structure file.
 
-        datapoints: Dict, Path, S3 URI or List of S3 URIs or Paths with data. \
+        datapoints: Dict, Path or List of Paths with data. \
         Supports plain CSV files and SDMX files (.xml for SDMX-ML, .json for SDMX-JSON, \
         and .csv for SDMX-CSV with embedded structure). SDMX files are automatically \
         detected by extension and loaded using pysdmx. For SDMX files requiring \
         external structure files, use the :obj:`run_sdmx` function instead. \
         You can also use a custom name for the dataset by passing a dictionary with \
-        the dataset name as key and the Path, S3 URI or DataFrame as value. \
+        the dataset name as key and the Path or DataFrame as value. \
+        S3 URIs are supported when ``use_duckdb=True``. \
         Check the following example: \
         :ref:`Example 6 <example_6_run_using_paths>`.
 
@@ -504,7 +524,8 @@ def run(
         return_only_persistent: If True, run function will only return the results of \
         Persistent Assignments. (default: True)
 
-        output_folder: Path or S3 URI to the output folder. (default: None)
+        output_folder: Path to the output folder. S3 URIs are supported when \
+        ``use_duckdb=True``. (default: None)
 
         scalar_values: Dict with the scalar values to be used in the VTL script.
 
@@ -514,7 +535,8 @@ def run(
 
         use_duckdb: If True, use DuckDB as the execution engine instead of pandas. \
         This transpiles VTL to SQL and executes it using DuckDB, which can be more \
-        efficient for large datasets. (default: False)
+        efficient for large datasets. S3 URIs for datapoints and output_folder \
+        are only supported with this option enabled. (default: False)
 
     Returns:
        The datasets are produced without data if the output folder is defined.
@@ -536,6 +558,7 @@ def run(
             scalar_values=scalar_values,
             output_folder=output_folder,
             time_period_output_format=time_period_output_format,
+            sdmx_mappings=sdmx_mappings,
         )
 
     # Convert sdmx_mappings to dict format for internal use
@@ -546,7 +569,7 @@ def run(
     vtl = load_vtl(script)
     ast = create_ast(vtl)
 
-    # Loading datasets and datapoints (handles URLs, S3 URIs, file paths, DataFrames)
+    # Loading datasets and datapoints (handles URLs, file paths, DataFrames)
     datasets, scalars, path_dict = load_datasets_with_data(
         data_structures,
         datapoints,
@@ -609,6 +632,7 @@ def run_sdmx(
     time_period_output_format: str = "vtl",
     return_only_persistent: bool = True,
     output_folder: Optional[Union[str, Path]] = None,
+    use_duckdb: bool = False,
 ) -> Dict[str, Union[Dataset, Scalar]]:
     """
     Executes a VTL script using a list of pysdmx `PandasDataset` objects.
@@ -663,7 +687,11 @@ def run_sdmx(
         return_only_persistent: If True, run function will only return the results of \
         Persistent Assignments. (default: True)
 
-        output_folder: Path or S3 URI to the output folder. (default: None)
+        output_folder: Path to the output folder. (default: None)
+
+        use_duckdb: If True, use DuckDB as the execution engine instead of pandas. \
+        This transpiles VTL to SQL and executes it using DuckDB, which can be more \
+        efficient for large datasets. (default: False)
 
     Returns:
        The datasets are produced without data if the output folder is defined.
@@ -723,6 +751,7 @@ def run_sdmx(
         return_only_persistent=return_only_persistent,
         output_folder=output_folder,
         sdmx_mappings=mappings,
+        use_duckdb=use_duckdb,
     )
 
 

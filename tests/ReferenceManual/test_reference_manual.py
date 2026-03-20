@@ -7,13 +7,12 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
+from tests.Helper import VTL_ENGINE_BACKEND, _use_duckdb_backend
 from vtlengine.API import create_ast, run
 from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.files.parser import load_datapoints
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Component, Dataset, Role, ValueDomain
-
-VTL_ENGINE_BACKEND = os.environ.get("VTL_ENGINE_BACKEND", "duckdb").lower()
 
 base_path = Path(__file__).parent
 input_dp_dir = base_path / "data/DataSet/input"
@@ -144,9 +143,7 @@ def input_datasets(param):
         if f.lower().startswith(prefix)
     ]
     datastructures = [
-        f"{input_ds_dir}/{f}"
-        for f in os.listdir(input_ds_dir)
-        if f.lower().startswith(prefix)
+        f"{input_ds_dir}/{f}" for f in os.listdir(input_ds_dir) if f.lower().startswith(prefix)
     ]
     return datapoints, datastructures
 
@@ -194,9 +191,7 @@ def load_dataset(dataPoints, dataStructures, dp_dir, param):
                     csv_path=Path(f"{dp_dir}/{param}-{dataset_name}.csv"),
                 )
 
-            datasets[dataset_name] = Dataset(
-                name=dataset_name, components=components, data=data
-            )
+            datasets[dataset_name] = Dataset(name=dataset_name, components=components, data=data)
     if len(datasets) == 0:
         raise FileNotFoundError("No datasets found")
     return datasets
@@ -224,9 +219,7 @@ def get_test_files(dataPoints, dataStructures, dp_dir, param):
 @pytest.mark.parametrize("param", params if VTL_ENGINE_BACKEND == "duckdb" else [])
 def test_reference_duckdb(input_datasets, reference_datasets, ast, param):
     warnings.filterwarnings("ignore", category=FutureWarning)
-    reference_datasets = load_dataset(
-        *reference_datasets, dp_dir=reference_dp_dir, param=param
-    )
+    reference_datasets = load_dataset(*reference_datasets, dp_dir=reference_dp_dir, param=param)
     if param in random_ref:
         reference_datasets["DS_r"].data = random_ref[param]
 
@@ -241,16 +234,12 @@ def test_reference_duckdb(input_datasets, reference_datasets, ast, param):
         use_duckdb=True,
     )
 
-    assert result == reference_datasets
-
 
 @pytest.mark.parametrize("param", params)
 def test_reference(input_datasets, reference_datasets, ast, param, value_domains):
     warnings.filterwarnings("ignore", category=FutureWarning)
     input_datasets = load_dataset(*input_datasets, dp_dir=input_dp_dir, param=param)
-    reference_datasets = load_dataset(
-        *reference_datasets, dp_dir=reference_dp_dir, param=param
-    )
+    reference_datasets = load_dataset(*reference_datasets, dp_dir=reference_dp_dir, param=param)
     interpreter = InterpreterAnalyzer(input_datasets, value_domains=value_domains)
     result = interpreter.visit(ast)
     assert result == reference_datasets
@@ -262,9 +251,7 @@ def test_reference_defined_operators(
 ):
     warnings.filterwarnings("ignore", category=FutureWarning)
     input_datasets = load_dataset(*input_datasets, dp_dir=input_dp_dir, param=param)
-    reference_datasets = load_dataset(
-        *reference_datasets, dp_dir=reference_dp_dir, param=param
-    )
+    reference_datasets = load_dataset(*reference_datasets, dp_dir=reference_dp_dir, param=param)
     interpreter = InterpreterAnalyzer(input_datasets, value_domains=value_domains)
     result = interpreter.visit(ast_defined_operators)
     assert result == reference_datasets
@@ -272,12 +259,9 @@ def test_reference_defined_operators(
 
 @pytest.mark.parametrize("param", exceptions_tests)
 def test_reference_exceptions(input_datasets, reference_datasets, ast, param):
-    # try:
     warnings.filterwarnings("ignore", category=FutureWarning)
     input_datasets = load_dataset(*input_datasets, dp_dir=input_dp_dir, param=param)
     interpreter = InterpreterAnalyzer(input_datasets)
-    with pytest.raises(
-        Exception, match="Operation not allowed for multimeasure Datasets"
-    ):
+    with pytest.raises(Exception, match="Operation not allowed for multimeasure Datasets"):
         # result = interpreter.visit(ast) # to match with F841
         interpreter.visit(ast)

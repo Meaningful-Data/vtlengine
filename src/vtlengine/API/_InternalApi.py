@@ -17,7 +17,6 @@ from pysdmx.model.vtl import (
 )
 
 from vtlengine import AST as AST
-from vtlengine.__extras_check import __check_s3_extra
 from vtlengine.AST import Assignment, DPRuleset, HRuleset, Operator, PersistentAssignment, Start
 from vtlengine.AST.ASTString import ASTString
 from vtlengine.DataTypes import SCALAR_TYPES
@@ -205,25 +204,27 @@ def _load_single_datapoint(
     plain CSV, SDMX-CSV, and SDMX-ML file formats.
 
     Args:
-        datapoint: Path or S3 URI to the datapoint file.
+        datapoint: Path to the datapoint file.
         sdmx_mappings: Optional mapping from SDMX URNs to VTL dataset names.
     """
     if not isinstance(datapoint, (str, Path)):
         raise InputValidationException(
-            code="0-1-1-2", input=datapoint, message="Input must be a Path or an S3 URI"
+            code="0-1-1-2", input=datapoint, message="Input must be a Path"
         )
     # Handling of str values
     if isinstance(datapoint, str):
         if "s3://" in datapoint:
-            __check_s3_extra()
-            dataset_name = datapoint.split("/")[-1].removesuffix(".csv")
-            return {dataset_name: datapoint}
-        # Converting to Path object if it is not an S3 URI
+            raise InputValidationException(
+                code="0-1-1-2",
+                input=datapoint,
+                message="S3 URIs are only supported with use_duckdb=True.",
+            )
+        # Converting to Path object
         try:
             datapoint = Path(datapoint)
         except Exception:
             raise InputValidationException(
-                code="0-1-1-2", input=datapoint, message="Input must refer to a Path or an S3 URI"
+                code="0-1-1-2", input=datapoint, message="Input must refer to a Path"
             )
     # Validation of Path object
     if not datapoint.exists():
@@ -268,7 +269,7 @@ def _load_datapoints_path(
     happens in load_datapoints() which supports both formats.
 
     Args:
-        datapoints: Dict, List, or single Path/S3 URI with datapoints.
+        datapoints: Dict, List, or single Path with datapoints.
         sdmx_mappings: Optional mapping from SDMX URNs to VTL dataset names.
 
     Returns:
@@ -288,11 +289,17 @@ def _load_datapoints_path(
                 raise InputValidationException(
                     code="0-1-1-2",
                     input=datapoint,
-                    message="Datapoints dictionary values must be Paths or S3 URIs.",
+                    message="Datapoints dictionary values must be Paths.",
                 )
 
             # Convert string to Path if not S3 or URL
-            if isinstance(datapoint, str) and "s3://" not in datapoint and not _is_url(datapoint):
+            if isinstance(datapoint, str) and _is_s3_uri(datapoint):
+                raise InputValidationException(
+                    code="0-1-1-2",
+                    input=datapoint,
+                    message="S3 URIs are only supported with use_duckdb=True.",
+                )
+            if isinstance(datapoint, str) and not _is_url(datapoint):
                 datapoint = Path(datapoint)
 
             # Validate file exists
@@ -516,14 +523,14 @@ def load_datasets_with_data(
         not isinstance(v, (str, Path)) for v in datapoints.values()
     ):
         raise InputValidationException(
-            "Invalid datapoints. All values in the dictionary must be Paths or S3 URIs, "
+            "Invalid datapoints. All values in the dictionary must be Paths, "
             "or all values must be Pandas Dataframes."
         )
 
-    # Handling Individual, List or Dict of Paths, S3 URIs, or URLs
+    # Handling Individual, List or Dict of Paths or URLs
     # At this point, datapoints is narrowed to exclude None and Dict[str, DataFrame]
     # All file types (CSV, SDMX) are returned as paths for lazy loading
-    # URLs are preserved as strings (like S3 URIs)
+    # URLs are preserved as strings
     datapoints_paths = _load_datapoints_path(
         cast(Union[Dict[str, Union[str, Path]], List[Union[str, Path]], str, Path], datapoints),
         sdmx_mappings=sdmx_mappings,
@@ -735,10 +742,11 @@ def _check_output_folder(output_folder: Union[str, Path]) -> None:
     """
     if isinstance(output_folder, str):
         if "s3://" in output_folder:
-            __check_s3_extra()
-            if not output_folder.endswith("/"):
-                raise DataLoadError("0-3-1-2", folder=str(output_folder))
-            return
+            raise InputValidationException(
+                code="0-1-1-2",
+                input=output_folder,
+                message="S3 URIs are only supported with use_duckdb=True.",
+            )
         try:
             output_folder = Path(output_folder)
         except Exception:
@@ -892,6 +900,11 @@ def ast_to_sdmx(ast: AST.Start, agency_id: str, id: str, version: str) -> Transf
     )
 
     return transformation_scheme
+
+
+def _is_s3_uri(value: Any) -> bool:
+    """Check if a value is an S3 URI."""
+    return isinstance(value, str) and "s3://" in value
 
 
 def _is_url(value: Any) -> bool:

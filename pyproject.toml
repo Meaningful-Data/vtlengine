@@ -35,12 +35,8 @@ dependencies = [
     "pyarrow>=14.0,<20.0",
     "numpy>=2.0.2,<2.1; python_version < '3.10'",
     "numpy>=2.2.0,<2.3; python_version >= '3.10'",
-    "psutil (>=7.2.2,<8.0.0)"
+    "psutil>=7.2.2,<8.0.0",
 ]
-
-[project.optional-dependencies]
-s3 = ["s3fs>=2022.11.0"]
-all = ["s3fs>=2022.11.0"]
 
 [project.urls]
 Repository = 'https://github.com/Meaningful-Data/vtlengine'
@@ -63,7 +59,6 @@ pandas-stubs = ">=2.2.2,<3.0"
 pyarrow-stubs = ">=19.0,<21.0"
 ruff = ">=0.14,<1.0.0"
 types-jsonschema = ">=4.25.1,<5.0"
-psutil = "^7.2.1"
 
 [tool.poetry.group.docs.dependencies]
 sphinx = ">=7.4.7,<8.0"
@@ -91,7 +86,7 @@ lint.exclude = ["*/Grammar/*", "*/main.py", "*/dev.py"]
 
 [tool.mypy]
 files = "src"
-exclude = "src/vtlengine/AST/.*|src/dev.py|src/duckdb_transpiler/AST/.*|src/duckdb_transpiler/dev.py|src/duckdb_transpiler/Transpiler/.*"
+exclude = "src/vtlengine/AST/.*|src/dev.py|src/vtlengine/duckdb_transpiler/.*"
 disallow_untyped_defs = true
 disallow_untyped_calls = true
 ignore_errors = false
