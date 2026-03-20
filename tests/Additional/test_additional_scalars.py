@@ -4,13 +4,29 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from tests.Helper import TestHelper
+from tests.Helper import TestHelper, _use_duckdb_backend
 from vtlengine import DataTypes
 from vtlengine.API import create_ast, run
 from vtlengine.DataTypes import Boolean, Integer, Null, Number, String
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Component, Dataset, Role, Scalar
+
+
+def _run_scalar(expression):
+    """Run a scalar VTL expression using the configured backend."""
+    if _use_duckdb_backend():
+        return run(
+            script=expression,
+            data_structures={"datasets": []},
+            datapoints={},
+            return_only_persistent=False,
+            use_duckdb=True,
+        )
+    else:
+        ast = create_ast(expression)
+        interpreter = InterpreterAnalyzer({})
+        return interpreter.visit(ast)
 
 
 class AdditionalScalarsTests(TestHelper):
@@ -313,9 +329,7 @@ params_filter_operations = [
 def test_string_operators(text, reference):
     warnings.filterwarnings("ignore", category=FutureWarning)
     expression = f"DS_r := {text};"
-    ast = create_ast(expression)
-    interpreter = InterpreterAnalyzer({})
-    result = interpreter.visit(ast)
+    result = _run_scalar(expression)
     assert result["DS_r"].value == reference
     assert result["DS_r"].data_type == String
 
@@ -324,9 +338,7 @@ def test_string_operators(text, reference):
 def test_instr_op_test(text, reference):
     warnings.filterwarnings("ignore", category=FutureWarning)
     expression = f"DS_r := {text};"
-    ast = create_ast(expression)
-    interpreter = InterpreterAnalyzer({})
-    result = interpreter.visit(ast)
+    result = _run_scalar(expression)
     assert result["DS_r"].value == reference
     assert result["DS_r"].data_type == Integer
 
@@ -335,19 +347,15 @@ def test_instr_op_test(text, reference):
 def test_exception_string_op(text, exception_message):
     warnings.filterwarnings("ignore", category=FutureWarning)
     expression = f"DS_r := {text};"
-    ast = create_ast(expression)
-    interpreter = InterpreterAnalyzer({})
     with pytest.raises(SemanticError, match=f".*{exception_message}"):
-        interpreter.visit(ast)
+        _run_scalar(expression)
 
 
 @pytest.mark.parametrize("text, reference", numeric_params)
 def test_numeric_operators(text, reference):
     warnings.filterwarnings("ignore", category=FutureWarning)
     expression = f"DS_r := {text};"
-    ast = create_ast(expression)
-    interpreter = InterpreterAnalyzer({})
-    result = interpreter.visit(ast)
+    result = _run_scalar(expression)
     if reference is None:
         assert result["DS_r"].value is None
     else:
@@ -359,31 +367,27 @@ def test_numeric_operators(text, reference):
 def test_exception_numeric_op(text, exception_message):
     warnings.filterwarnings("ignore", category=FutureWarning)
     expression = f"DS_r := {text};"
-    ast = create_ast(expression)
-    interpreter = InterpreterAnalyzer({})
     with pytest.raises(Exception, match=exception_message):
-        interpreter.visit(ast)
+        _run_scalar(expression)
 
 
 @pytest.mark.parametrize("code, text", ds_param)
 def test_datasets_params(code, text):
     warnings.filterwarnings("ignore", category=FutureWarning)
-    datasets = AdditionalScalarsTests.LoadInputs(code, 1)
-    reference = AdditionalScalarsTests.LoadOutputs(code, ["DS_r"])
     expression = f"DS_r := {text};"
-    ast = create_ast(expression)
-    interpreter = InterpreterAnalyzer(datasets)
-    result = interpreter.visit(ast)
-    assert result == reference
+    AdditionalScalarsTests.BaseTest(
+        code=code,
+        number_inputs=1,
+        references_names=["DS_r"],
+        text=expression,
+    )
 
 
 @pytest.mark.parametrize("text, reference", boolean_params)
 def test_bool_op_test(text, reference):
     warnings.filterwarnings("ignore", category=FutureWarning)
     expression = f"DS_r := {text};"
-    ast = create_ast(expression)
-    interpreter = InterpreterAnalyzer({})
-    result = interpreter.visit(ast)
+    result = _run_scalar(expression)
     assert result["DS_r"].value == reference
 
 
@@ -391,9 +395,7 @@ def test_bool_op_test(text, reference):
 def test_comp_op_test(text, reference):
     warnings.filterwarnings("ignore", category=FutureWarning)
     expression = f"DS_r := {text};"
-    ast = create_ast(expression)
-    interpreter = InterpreterAnalyzer({})
-    result = interpreter.visit(ast)
+    result = _run_scalar(expression)
     assert result["DS_r"].value == reference
 
 
@@ -432,6 +434,7 @@ def test_run_scalars_operations(script, reference, tmp_path):
         scalar_values=scalar_values,
         output_folder=tmp_path,
         return_only_persistent=True,
+        use_duckdb=_use_duckdb_backend(),
     )
     for k, expected_scalar in reference.items():
         assert k in run_result
@@ -480,5 +483,6 @@ def test_filter_op(script, reference):
         datapoints=datapoints,
         scalar_values=scalar_values,
         return_only_persistent=True,
+        use_duckdb=_use_duckdb_backend(),
     )
     assert run_result == reference
