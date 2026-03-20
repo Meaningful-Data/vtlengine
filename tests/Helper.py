@@ -249,7 +249,8 @@ class TestHelper(TestCase):
                 structure = json.load(f)
             if "datasets" in structure:
                 for ds in structure["datasets"]:
-                    datapoints[ds["name"]] = csv_file
+                    # If CSV doesn't exist (semantic-only test), pass None
+                    datapoints[ds["name"]] = csv_file if csv_file.exists() else None
             # Scalars don't need datapoints
 
         # Load value domains if specified

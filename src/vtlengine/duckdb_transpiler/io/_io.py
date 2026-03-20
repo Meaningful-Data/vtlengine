@@ -309,7 +309,10 @@ def extract_datapoint_paths(
             if name not in input_datasets:
                 raise InputValidationException(f"Not found dataset {name} in datastructures.")
 
-            if isinstance(value, pd.DataFrame):
+            if value is None:
+                # No datapoints for this dataset (e.g. semantic-only test)
+                continue
+            elif isinstance(value, pd.DataFrame):
                 # Store DataFrame for direct DuckDB registration
                 df_dict[name] = value
             elif isinstance(value, (str, Path)):

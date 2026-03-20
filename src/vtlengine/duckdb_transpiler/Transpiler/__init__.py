@@ -2676,8 +2676,13 @@ FROM {src}, (
 
         cols: List[str] = []
         for name in ds.components:
-            if name in renames:
-                cols.append(f"{quote_identifier(name)} AS {quote_identifier(renames[name])}")
+            # Check direct match first, then try matching via qualified name
+            matched_new = renames.get(name)
+            if matched_new is None and "#" in name:
+                unqual = name.split("#", 1)[1]
+                matched_new = renames.get(unqual)
+            if matched_new is not None:
+                cols.append(f"{quote_identifier(name)} AS {quote_identifier(matched_new)}")
             else:
                 cols.append(quote_identifier(name))
 

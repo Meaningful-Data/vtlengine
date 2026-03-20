@@ -177,9 +177,7 @@ class StructureVisitor(ASTTemplate):
             # When time_agg is present, the time identifier must be included
             # in the output even if not explicitly listed in group by.
             if node.grouping:
-                has_time_agg = any(
-                    isinstance(g, AST.TimeAggregation) for g in node.grouping
-                )
+                has_time_agg = any(isinstance(g, AST.TimeAggregation) for g in node.grouping)
                 if has_time_agg and node.grouping_op != "group except":
                     for comp in ds.components.values():
                         if comp.data_type in (TimePeriod, Date) and comp.role == Role.IDENTIFIER:
@@ -1006,12 +1004,22 @@ class StructureVisitor(ASTTemplate):
                 else:
                     renames[old] = child.new_name
 
+        unqualified_to_qualified: Dict[str, str] = {}
+        for comp_name in input_ds.components:
+            if "#" in comp_name:
+                unqual = comp_name.split("#", 1)[1]
+                unqualified_to_qualified[unqual] = comp_name
+
         comps: Dict[str, Component] = {}
         for name, comp in input_ds.components.items():
-            if name in renames:
-                new_name = renames[name]
-                comps[new_name] = Component(
-                    name=new_name,
+            # Check direct match first, then try matching via qualified name
+            matched_new = renames.get(name)
+            if matched_new is None and "#" in name:
+                unqual = name.split("#", 1)[1]
+                matched_new = renames.get(unqual)
+            if matched_new is not None:
+                comps[matched_new] = Component(
+                    name=matched_new,
                     data_type=comp.data_type,
                     role=comp.role,
                     nullable=comp.nullable,
