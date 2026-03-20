@@ -10,6 +10,7 @@ from unittest import mock
 import pandas as pd
 import pytest
 
+from tests.Helper import _use_duckdb_backend
 from vtlengine.API import run
 from vtlengine.Utils._number_config import (
     DEFAULT_SIGNIFICANT_DIGITS,
@@ -257,7 +258,12 @@ def test_vtl_comparison_with_tolerance(
 ) -> None:
     with mock.patch.dict(os.environ, {ENV_COMPARISON_THRESHOLD: "10"}):
         datapoints = pd.DataFrame({"Id_1": list(range(1, len(me_values) + 1)), "Me_1": me_values})
-        result = run(script=script, data_structures=ds_structure, datapoints={"DS_1": datapoints})
+        result = run(
+            script=script,
+            data_structures=ds_structure,
+            datapoints={"DS_1": datapoints},
+            use_duckdb=_use_duckdb_backend(),
+        )
         assert result["DS_r"].data["bool_var"].tolist() == expected
 
 
@@ -268,6 +274,7 @@ def test_vtl_equal_disabled(ds_structure) -> None:
             script="DS_r <- DS_1 = 1.0;",
             data_structures=ds_structure,
             datapoints={"DS_1": datapoints},
+            use_duckdb=_use_duckdb_backend(),
         )
         assert result["DS_r"].data["bool_var"].tolist()[0]
 
@@ -284,6 +291,7 @@ def test_vtl_between_with_tolerance(ds_structure) -> None:
             script="DS_r <- between(DS_1, 1.0, 2.0);",
             data_structures=ds_structure,
             datapoints={"DS_1": datapoints},
+            use_duckdb=_use_duckdb_backend(),
         )
         assert result["DS_r"].data["bool_var"].tolist() == [True, True, True, False, False]
 
