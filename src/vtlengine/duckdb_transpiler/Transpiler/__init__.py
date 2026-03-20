@@ -3062,6 +3062,10 @@ FROM {src}, (
 
         if group_cols:
             builder.group_by(*group_by_cols)
+        else:
+            # "group all" aggregation: SQL returns 1 row with NULLs on empty
+            # input, but VTL expects 0 rows. Filter out empty aggregations.
+            builder.having("COUNT(*) > 0")
 
         if node.having_clause:
             with self._clause_scope(ds):
