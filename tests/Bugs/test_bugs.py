@@ -2584,8 +2584,7 @@ class OtherBugs(BugHelper):
         """ """
         code = "GL_67_Fail"
         number_inputs = 39
-        message = "1-1-1-10"
-        # TODO: test error code has been changed until revision
+        message = "1-1-6-10"
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
