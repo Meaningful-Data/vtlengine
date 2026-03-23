@@ -1749,6 +1749,7 @@ def test_script_with_component_working_as_scalar_and_component():
             data_structures=data_structures,
             datapoints=datapoints,
             return_only_persistent=True,
+            use_duckdb=_use_duckdb_backend(),
         )
 
 
@@ -1779,10 +1780,9 @@ def test_wrong_type_in_scalar_definition(wrong_type, correct_type):
     }
 
     with pytest.raises(SemanticError, match="0-1-1-13") as e:
-        run(
+        semantic_analysis(
             script=script,
             data_structures=data_structures,
-            datapoints=[],
         )
     assert wrong_type in e.value.args[0]
     assert correct_type in e.value.args[0]

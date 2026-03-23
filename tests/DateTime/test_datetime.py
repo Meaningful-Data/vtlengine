@@ -6,28 +6,21 @@ import pytest
 
 from tests.Helper import _use_duckdb_backend
 from vtlengine import run
-from vtlengine.API import create_ast
 from vtlengine.DataTypes import Date, Integer
 from vtlengine.DataTypes._time_checking import check_date
 from vtlengine.DataTypes.TimeHandling import check_max_date
 from vtlengine.Exceptions import InputValidationException, RunTimeError
-from vtlengine.Interpreter import InterpreterAnalyzer
 
 
 def _run_scalar(expression):
     """Run a scalar VTL expression using the configured backend."""
-    if _use_duckdb_backend():
-        return run(
-            script=expression,
-            data_structures={"datasets": []},
-            datapoints={},
-            return_only_persistent=False,
-            use_duckdb=True,
-        )
-    else:
-        ast = create_ast(expression)
-        interpreter = InterpreterAnalyzer({})
-        return interpreter.visit(ast)
+    return run(
+        script=expression,
+        data_structures={"datasets": []},
+        datapoints={},
+        return_only_persistent=False,
+        use_duckdb=_use_duckdb_backend(),
+    )
 
 
 def _to_pylist(series: pd.Series) -> List[Any]:  # type: ignore[type-arg]
