@@ -855,8 +855,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     return copy(self.scalars[node.value])
                 if (
                     self.is_from_join
-                    and node.value
-                    not in self.regular_aggregation_dataset.get_components_names()
+                    and node.value not in self.regular_aggregation_dataset.get_components_names()
                 ):
                     is_partial_present = 0
                     found_comp = None

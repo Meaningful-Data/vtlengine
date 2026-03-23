@@ -1994,9 +1994,7 @@ class Parser(ANTLRParser):
     class StartContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2056,9 +2054,7 @@ class Parser(ANTLRParser):
     class StatementContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2069,9 +2065,7 @@ class Parser(ANTLRParser):
             super().copyFrom(ctx)
 
     class DefineExpressionContext(StatementContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.StatementContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.StatementContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -2085,9 +2079,7 @@ class Parser(ANTLRParser):
                 return visitor.visitChildren(self)
 
     class TemporaryAssignmentContext(StatementContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.StatementContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.StatementContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -2107,9 +2099,7 @@ class Parser(ANTLRParser):
                 return visitor.visitChildren(self)
 
     class PersistAssignmentContext(StatementContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.StatementContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.StatementContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -2176,9 +2166,7 @@ class Parser(ANTLRParser):
     class ExprContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2189,9 +2177,7 @@ class Parser(ANTLRParser):
             super().copyFrom(ctx)
 
     class VarIdExprContext(ExprContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.ExprContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.ExprContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -2205,9 +2191,7 @@ class Parser(ANTLRParser):
                 return visitor.visitChildren(self)
 
     class MembershipExprContext(ExprContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.ExprContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.ExprContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -2227,9 +2211,7 @@ class Parser(ANTLRParser):
                 return visitor.visitChildren(self)
 
     class InNotInExprContext(ExprContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.ExprContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.ExprContext
             super().__init__(parser)
             self.left = None  # ExprContext
             self.op = None  # Token
@@ -2257,9 +2239,7 @@ class Parser(ANTLRParser):
                 return visitor.visitChildren(self)
 
     class BooleanExprContext(ExprContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.ExprContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.ExprContext
             super().__init__(parser)
             self.left = None  # ExprContext
             self.op = None  # Token
@@ -2288,9 +2268,7 @@ class Parser(ANTLRParser):
                 return visitor.visitChildren(self)
 
     class ComparisonExprContext(ExprContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.ExprContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.ExprContext
             super().__init__(parser)
             self.left = None  # ExprContext
             self.op = None  # ComparisonOperandContext
@@ -2313,9 +2291,7 @@ class Parser(ANTLRParser):
                 return visitor.visitChildren(self)
 
     class UnaryExprContext(ExprContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.ExprContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.ExprContext
             super().__init__(parser)
             self.op = None  # Token
             self.right = None  # ExprContext
@@ -2340,9 +2316,7 @@ class Parser(ANTLRParser):
                 return visitor.visitChildren(self)
 
     class FunctionsExpressionContext(ExprContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.ExprContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.ExprContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -2356,9 +2330,7 @@ class Parser(ANTLRParser):
                 return visitor.visitChildren(self)
 
     class IfExprContext(ExprContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.ExprContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.ExprContext
             super().__init__(parser)
             self.conditionalExpr = None  # ExprContext
             self.thenExpr = None  # ExprContext
@@ -2387,9 +2359,7 @@ class Parser(ANTLRParser):
                 return visitor.visitChildren(self)
 
     class ClauseExprContext(ExprContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.ExprContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.ExprContext
             super().__init__(parser)
             self.dataset = None  # ExprContext
             self.clause = None  # DatasetClauseContext
@@ -2414,9 +2384,7 @@ class Parser(ANTLRParser):
                 return visitor.visitChildren(self)
 
     class CaseExprContext(ExprContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.ExprContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.ExprContext
             super().__init__(parser)
             self._expr = None  # ExprContext
             self.condExpr = []  # of ExprContexts
@@ -2455,9 +2423,7 @@ class Parser(ANTLRParser):
                 return visitor.visitChildren(self)
 
     class ArithmeticExprContext(ExprContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.ExprContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.ExprContext
             super().__init__(parser)
             self.left = None  # ExprContext
             self.op = None  # Token
@@ -2483,9 +2449,7 @@ class Parser(ANTLRParser):
                 return visitor.visitChildren(self)
 
     class ParenthesisExprContext(ExprContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.ExprContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.ExprContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -2505,9 +2469,7 @@ class Parser(ANTLRParser):
                 return visitor.visitChildren(self)
 
     class ConstantExprContext(ExprContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.ExprContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.ExprContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -2521,9 +2483,7 @@ class Parser(ANTLRParser):
                 return visitor.visitChildren(self)
 
     class ArithmeticExprOrConcatContext(ExprContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.ExprContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.ExprContext
             super().__init__(parser)
             self.left = None  # ExprContext
             self.op = None  # Token
@@ -2595,8 +2555,7 @@ class Parser(ANTLRParser):
                 if not (
                     ((_la) & ~0x3F) == 0
                     and (
-                        (1 << _la)
-                        & ((1 << Parser.PLUS) | (1 << Parser.MINUS) | (1 << Parser.NOT))
+                        (1 << _la) & ((1 << Parser.PLUS) | (1 << Parser.MINUS) | (1 << Parser.NOT))
                     )
                     != 0
                 ):
@@ -2691,16 +2650,12 @@ class Parser(ANTLRParser):
                             self, Parser.ExprContext(self, _parentctx, _parentState)
                         )
                         localctx.left = _prevctx
-                        self.pushNewRecursionContext(
-                            localctx, _startState, self.RULE_expr
-                        )
+                        self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 275
                         if not self.precpred(self._ctx, 10):
                             from antlr4.error.Errors import FailedPredicateException
 
-                            raise FailedPredicateException(
-                                self, "self.precpred(self._ctx, 10)"
-                            )
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 10)")
                         self.state = 276
                         localctx.op = self._input.LT(1)
                         _la = self._input.LA(1)
@@ -2718,24 +2673,16 @@ class Parser(ANTLRParser):
                             self, Parser.ExprContext(self, _parentctx, _parentState)
                         )
                         localctx.left = _prevctx
-                        self.pushNewRecursionContext(
-                            localctx, _startState, self.RULE_expr
-                        )
+                        self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 278
                         if not self.precpred(self._ctx, 9):
                             from antlr4.error.Errors import FailedPredicateException
 
-                            raise FailedPredicateException(
-                                self, "self.precpred(self._ctx, 9)"
-                            )
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 9)")
                         self.state = 279
                         localctx.op = self._input.LT(1)
                         _la = self._input.LA(1)
-                        if not (
-                            _la == Parser.PLUS
-                            or _la == Parser.MINUS
-                            or _la == Parser.CONCAT
-                        ):
+                        if not (_la == Parser.PLUS or _la == Parser.MINUS or _la == Parser.CONCAT):
                             localctx.op = self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)
@@ -2749,16 +2696,12 @@ class Parser(ANTLRParser):
                             self, Parser.ExprContext(self, _parentctx, _parentState)
                         )
                         localctx.left = _prevctx
-                        self.pushNewRecursionContext(
-                            localctx, _startState, self.RULE_expr
-                        )
+                        self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 281
                         if not self.precpred(self._ctx, 8):
                             from antlr4.error.Errors import FailedPredicateException
 
-                            raise FailedPredicateException(
-                                self, "self.precpred(self._ctx, 8)"
-                            )
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 8)")
                         self.state = 282
                         localctx.op = self.comparisonOperand()
                         self.state = 283
@@ -2770,16 +2713,12 @@ class Parser(ANTLRParser):
                             self, Parser.ExprContext(self, _parentctx, _parentState)
                         )
                         localctx.left = _prevctx
-                        self.pushNewRecursionContext(
-                            localctx, _startState, self.RULE_expr
-                        )
+                        self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 285
                         if not self.precpred(self._ctx, 6):
                             from antlr4.error.Errors import FailedPredicateException
 
-                            raise FailedPredicateException(
-                                self, "self.precpred(self._ctx, 6)"
-                            )
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 6)")
                         self.state = 286
                         localctx.op = self.match(Parser.AND)
                         self.state = 287
@@ -2791,16 +2730,12 @@ class Parser(ANTLRParser):
                             self, Parser.ExprContext(self, _parentctx, _parentState)
                         )
                         localctx.left = _prevctx
-                        self.pushNewRecursionContext(
-                            localctx, _startState, self.RULE_expr
-                        )
+                        self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 288
                         if not self.precpred(self._ctx, 5):
                             from antlr4.error.Errors import FailedPredicateException
 
-                            raise FailedPredicateException(
-                                self, "self.precpred(self._ctx, 5)"
-                            )
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 5)")
                         self.state = 289
                         localctx.op = self._input.LT(1)
                         _la = self._input.LA(1)
@@ -2818,16 +2753,12 @@ class Parser(ANTLRParser):
                             self, Parser.ExprContext(self, _parentctx, _parentState)
                         )
                         localctx.dataset = _prevctx
-                        self.pushNewRecursionContext(
-                            localctx, _startState, self.RULE_expr
-                        )
+                        self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 291
                         if not self.precpred(self._ctx, 13):
                             from antlr4.error.Errors import FailedPredicateException
 
-                            raise FailedPredicateException(
-                                self, "self.precpred(self._ctx, 13)"
-                            )
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 13)")
                         self.state = 292
                         self.match(Parser.QLPAREN)
                         self.state = 293
@@ -2840,16 +2771,12 @@ class Parser(ANTLRParser):
                         localctx = Parser.MembershipExprContext(
                             self, Parser.ExprContext(self, _parentctx, _parentState)
                         )
-                        self.pushNewRecursionContext(
-                            localctx, _startState, self.RULE_expr
-                        )
+                        self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 296
                         if not self.precpred(self._ctx, 12):
                             from antlr4.error.Errors import FailedPredicateException
 
-                            raise FailedPredicateException(
-                                self, "self.precpred(self._ctx, 12)"
-                            )
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 12)")
                         self.state = 297
                         self.match(Parser.MEMBERSHIP)
                         self.state = 298
@@ -2861,16 +2788,12 @@ class Parser(ANTLRParser):
                             self, Parser.ExprContext(self, _parentctx, _parentState)
                         )
                         localctx.left = _prevctx
-                        self.pushNewRecursionContext(
-                            localctx, _startState, self.RULE_expr
-                        )
+                        self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 299
                         if not self.precpred(self._ctx, 7):
                             from antlr4.error.Errors import FailedPredicateException
 
-                            raise FailedPredicateException(
-                                self, "self.precpred(self._ctx, 7)"
-                            )
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 7)")
                         self.state = 300
                         localctx.op = self._input.LT(1)
                         _la = self._input.LA(1)
@@ -2910,9 +2833,7 @@ class Parser(ANTLRParser):
     class ExprComponentContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -3279,8 +3200,7 @@ class Parser(ANTLRParser):
                 if not (
                     ((_la) & ~0x3F) == 0
                     and (
-                        (1 << _la)
-                        & ((1 << Parser.PLUS) | (1 << Parser.MINUS) | (1 << Parser.NOT))
+                        (1 << _la) & ((1 << Parser.PLUS) | (1 << Parser.MINUS) | (1 << Parser.NOT))
                     )
                     != 0
                 ):
@@ -3376,16 +3296,12 @@ class Parser(ANTLRParser):
                             Parser.ExprComponentContext(self, _parentctx, _parentState),
                         )
                         localctx.left = _prevctx
-                        self.pushNewRecursionContext(
-                            localctx, _startState, self.RULE_exprComponent
-                        )
+                        self.pushNewRecursionContext(localctx, _startState, self.RULE_exprComponent)
                         self.state = 342
                         if not self.precpred(self._ctx, 10):
                             from antlr4.error.Errors import FailedPredicateException
 
-                            raise FailedPredicateException(
-                                self, "self.precpred(self._ctx, 10)"
-                            )
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 10)")
                         self.state = 343
                         localctx.op = self._input.LT(1)
                         _la = self._input.LA(1)
@@ -3404,24 +3320,16 @@ class Parser(ANTLRParser):
                             Parser.ExprComponentContext(self, _parentctx, _parentState),
                         )
                         localctx.left = _prevctx
-                        self.pushNewRecursionContext(
-                            localctx, _startState, self.RULE_exprComponent
-                        )
+                        self.pushNewRecursionContext(localctx, _startState, self.RULE_exprComponent)
                         self.state = 345
                         if not self.precpred(self._ctx, 9):
                             from antlr4.error.Errors import FailedPredicateException
 
-                            raise FailedPredicateException(
-                                self, "self.precpred(self._ctx, 9)"
-                            )
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 9)")
                         self.state = 346
                         localctx.op = self._input.LT(1)
                         _la = self._input.LA(1)
-                        if not (
-                            _la == Parser.PLUS
-                            or _la == Parser.MINUS
-                            or _la == Parser.CONCAT
-                        ):
+                        if not (_la == Parser.PLUS or _la == Parser.MINUS or _la == Parser.CONCAT):
                             localctx.op = self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)
@@ -3436,16 +3344,12 @@ class Parser(ANTLRParser):
                             Parser.ExprComponentContext(self, _parentctx, _parentState),
                         )
                         localctx.left = _prevctx
-                        self.pushNewRecursionContext(
-                            localctx, _startState, self.RULE_exprComponent
-                        )
+                        self.pushNewRecursionContext(localctx, _startState, self.RULE_exprComponent)
                         self.state = 348
                         if not self.precpred(self._ctx, 8):
                             from antlr4.error.Errors import FailedPredicateException
 
-                            raise FailedPredicateException(
-                                self, "self.precpred(self._ctx, 8)"
-                            )
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 8)")
                         self.state = 349
                         self.comparisonOperand()
                         self.state = 350
@@ -3458,16 +3362,12 @@ class Parser(ANTLRParser):
                             Parser.ExprComponentContext(self, _parentctx, _parentState),
                         )
                         localctx.left = _prevctx
-                        self.pushNewRecursionContext(
-                            localctx, _startState, self.RULE_exprComponent
-                        )
+                        self.pushNewRecursionContext(localctx, _startState, self.RULE_exprComponent)
                         self.state = 352
                         if not self.precpred(self._ctx, 6):
                             from antlr4.error.Errors import FailedPredicateException
 
-                            raise FailedPredicateException(
-                                self, "self.precpred(self._ctx, 6)"
-                            )
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 6)")
                         self.state = 353
                         localctx.op = self.match(Parser.AND)
                         self.state = 354
@@ -3480,16 +3380,12 @@ class Parser(ANTLRParser):
                             Parser.ExprComponentContext(self, _parentctx, _parentState),
                         )
                         localctx.left = _prevctx
-                        self.pushNewRecursionContext(
-                            localctx, _startState, self.RULE_exprComponent
-                        )
+                        self.pushNewRecursionContext(localctx, _startState, self.RULE_exprComponent)
                         self.state = 355
                         if not self.precpred(self._ctx, 5):
                             from antlr4.error.Errors import FailedPredicateException
 
-                            raise FailedPredicateException(
-                                self, "self.precpred(self._ctx, 5)"
-                            )
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 5)")
                         self.state = 356
                         localctx.op = self._input.LT(1)
                         _la = self._input.LA(1)
@@ -3508,16 +3404,12 @@ class Parser(ANTLRParser):
                             Parser.ExprComponentContext(self, _parentctx, _parentState),
                         )
                         localctx.left = _prevctx
-                        self.pushNewRecursionContext(
-                            localctx, _startState, self.RULE_exprComponent
-                        )
+                        self.pushNewRecursionContext(localctx, _startState, self.RULE_exprComponent)
                         self.state = 358
                         if not self.precpred(self._ctx, 7):
                             from antlr4.error.Errors import FailedPredicateException
 
-                            raise FailedPredicateException(
-                                self, "self.precpred(self._ctx, 7)"
-                            )
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 7)")
                         self.state = 359
                         localctx.op = self._input.LT(1)
                         _la = self._input.LA(1)
@@ -3557,9 +3449,7 @@ class Parser(ANTLRParser):
     class FunctionsComponentsContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -3609,9 +3499,7 @@ class Parser(ANTLRParser):
             self.copyFrom(ctx)
 
         def comparisonOperatorsComponent(self):
-            return self.getTypedRuleContext(
-                Parser.ComparisonOperatorsComponentContext, 0
-            )
+            return self.getTypedRuleContext(Parser.ComparisonOperatorsComponentContext, 0)
 
         def accept(self, visitor: ParseTreeVisitor):
             if hasattr(visitor, "visitComparisonFunctionsComponents"):
@@ -3675,9 +3563,7 @@ class Parser(ANTLRParser):
             self.copyFrom(ctx)
 
         def conditionalOperatorsComponent(self):
-            return self.getTypedRuleContext(
-                Parser.ConditionalOperatorsComponentContext, 0
-            )
+            return self.getTypedRuleContext(Parser.ConditionalOperatorsComponentContext, 0)
 
         def accept(self, visitor: ParseTreeVisitor):
             if hasattr(visitor, "visitConditionalFunctionsComponents"):
@@ -3776,9 +3662,7 @@ class Parser(ANTLRParser):
     class FunctionsContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -3789,9 +3673,7 @@ class Parser(ANTLRParser):
             super().copyFrom(ctx)
 
     class HierarchyFunctionsContext(FunctionsContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.FunctionsContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.FunctionsContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -3805,9 +3687,7 @@ class Parser(ANTLRParser):
                 return visitor.visitChildren(self)
 
     class StringFunctionsContext(FunctionsContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.FunctionsContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.FunctionsContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -3821,9 +3701,7 @@ class Parser(ANTLRParser):
                 return visitor.visitChildren(self)
 
     class ValidationFunctionsContext(FunctionsContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.FunctionsContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.FunctionsContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -3837,9 +3715,7 @@ class Parser(ANTLRParser):
                 return visitor.visitChildren(self)
 
     class GenericFunctionsContext(FunctionsContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.FunctionsContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.FunctionsContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -3853,9 +3729,7 @@ class Parser(ANTLRParser):
                 return visitor.visitChildren(self)
 
     class ConditionalFunctionsContext(FunctionsContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.FunctionsContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.FunctionsContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -3869,9 +3743,7 @@ class Parser(ANTLRParser):
                 return visitor.visitChildren(self)
 
     class AggregateFunctionsContext(FunctionsContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.FunctionsContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.FunctionsContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -3885,9 +3757,7 @@ class Parser(ANTLRParser):
                 return visitor.visitChildren(self)
 
     class JoinFunctionsContext(FunctionsContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.FunctionsContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.FunctionsContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -3901,9 +3771,7 @@ class Parser(ANTLRParser):
                 return visitor.visitChildren(self)
 
     class ComparisonFunctionsContext(FunctionsContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.FunctionsContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.FunctionsContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -3917,9 +3785,7 @@ class Parser(ANTLRParser):
                 return visitor.visitChildren(self)
 
     class NumericFunctionsContext(FunctionsContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.FunctionsContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.FunctionsContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -3933,9 +3799,7 @@ class Parser(ANTLRParser):
                 return visitor.visitChildren(self)
 
     class TimeFunctionsContext(FunctionsContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.FunctionsContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.FunctionsContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -3949,9 +3813,7 @@ class Parser(ANTLRParser):
                 return visitor.visitChildren(self)
 
     class SetFunctionsContext(FunctionsContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.FunctionsContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.FunctionsContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -3965,9 +3827,7 @@ class Parser(ANTLRParser):
                 return visitor.visitChildren(self)
 
     class AnalyticFunctionsContext(FunctionsContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.FunctionsContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.FunctionsContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -4083,9 +3943,7 @@ class Parser(ANTLRParser):
     class DatasetClauseContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -4176,9 +4034,7 @@ class Parser(ANTLRParser):
     class RenameClauseContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -4240,9 +4096,7 @@ class Parser(ANTLRParser):
     class AggrClauseContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -4302,9 +4156,7 @@ class Parser(ANTLRParser):
     class FilterClauseContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -4344,9 +4196,7 @@ class Parser(ANTLRParser):
     class CalcClauseContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -4408,9 +4258,7 @@ class Parser(ANTLRParser):
     class KeepOrDropClauseContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
             self.op = None  # Token
@@ -4482,9 +4330,7 @@ class Parser(ANTLRParser):
     class PivotOrUnpivotClauseContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
             self.op = None  # Token
@@ -4547,9 +4393,7 @@ class Parser(ANTLRParser):
     class CustomPivotClauseContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
             self.id_ = None  # ComponentIDContext
@@ -4630,9 +4474,7 @@ class Parser(ANTLRParser):
     class SubspaceClauseContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -4694,9 +4536,7 @@ class Parser(ANTLRParser):
     class JoinOperatorsContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -4810,9 +4650,7 @@ class Parser(ANTLRParser):
     class DefOperatorsContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -4823,9 +4661,7 @@ class Parser(ANTLRParser):
             super().copyFrom(ctx)
 
     class DefOperatorContext(DefOperatorsContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.DefOperatorsContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.DefOperatorsContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -4881,9 +4717,7 @@ class Parser(ANTLRParser):
                 return visitor.visitChildren(self)
 
     class DefHierarchicalContext(DefOperatorsContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.DefOperatorsContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.DefOperatorsContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -4930,9 +4764,7 @@ class Parser(ANTLRParser):
                 return visitor.visitChildren(self)
 
     class DefDatapointRulesetContext(DefOperatorsContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.DefOperatorsContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.DefOperatorsContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -5107,9 +4939,7 @@ class Parser(ANTLRParser):
     class GenericOperatorsContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -5565,9 +5395,7 @@ class Parser(ANTLRParser):
     class GenericOperatorsComponentContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -5630,9 +5458,7 @@ class Parser(ANTLRParser):
             return self.getToken(Parser.RETURNS, 0)
 
         def outputParameterTypeComponent(self):
-            return self.getTypedRuleContext(
-                Parser.OutputParameterTypeComponentContext, 0
-            )
+            return self.getTypedRuleContext(Parser.OutputParameterTypeComponentContext, 0)
 
         def accept(self, visitor: ParseTreeVisitor):
             if hasattr(visitor, "visitEvalAtomComponent"):
@@ -6013,9 +5839,7 @@ class Parser(ANTLRParser):
     class ParameterComponentContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -6139,9 +5963,7 @@ class Parser(ANTLRParser):
     class ParameterContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -6277,9 +6099,7 @@ class Parser(ANTLRParser):
     class StringOperatorsContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -6610,9 +6430,7 @@ class Parser(ANTLRParser):
     class StringOperatorsComponentContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -6943,9 +6761,7 @@ class Parser(ANTLRParser):
     class NumericOperatorsContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -7197,9 +7013,7 @@ class Parser(ANTLRParser):
     class NumericOperatorsComponentContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -7377,9 +7191,7 @@ class Parser(ANTLRParser):
                 self.match(Parser.RPAREN)
                 pass
             elif token in [Parser.TRUNC, Parser.ROUND]:
-                localctx = Parser.UnaryWithOptionalNumericComponentContext(
-                    self, localctx
-                )
+                localctx = Parser.UnaryWithOptionalNumericComponentContext(self, localctx)
                 self.enterOuterAlt(localctx, 2)
                 self.state = 787
                 localctx.op = self._input.LT(1)
@@ -7453,9 +7265,7 @@ class Parser(ANTLRParser):
     class ComparisonOperatorsContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -7695,9 +7505,7 @@ class Parser(ANTLRParser):
     class ComparisonOperatorsComponentContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -7804,9 +7612,7 @@ class Parser(ANTLRParser):
 
     def comparisonOperatorsComponent(self):
 
-        localctx = Parser.ComparisonOperatorsComponentContext(
-            self, self._ctx, self.state
-        )
+        localctx = Parser.ComparisonOperatorsComponentContext(self, self._ctx, self.state)
         self.enterRule(localctx, 52, self.RULE_comparisonOperatorsComponent)
         try:
             self.state = 860
@@ -7874,9 +7680,7 @@ class Parser(ANTLRParser):
     class TimeOperatorsContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -8763,9 +8567,7 @@ class Parser(ANTLRParser):
     class TimeOperatorsComponentContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -9640,9 +9442,7 @@ class Parser(ANTLRParser):
     class SetOperatorsContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -9653,9 +9453,7 @@ class Parser(ANTLRParser):
             super().copyFrom(ctx)
 
     class SetOrSYmDiffAtomContext(SetOperatorsContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.SetOperatorsContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.SetOperatorsContext
             super().__init__(parser)
             self.op = None  # Token
             self.left = None  # ExprContext
@@ -9690,9 +9488,7 @@ class Parser(ANTLRParser):
                 return visitor.visitChildren(self)
 
     class IntersectAtomContext(SetOperatorsContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.SetOperatorsContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.SetOperatorsContext
             super().__init__(parser)
             self.left = None  # ExprContext
             self.copyFrom(ctx)
@@ -9725,9 +9521,7 @@ class Parser(ANTLRParser):
                 return visitor.visitChildren(self)
 
     class UnionAtomContext(SetOperatorsContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.SetOperatorsContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.SetOperatorsContext
             super().__init__(parser)
             self.left = None  # ExprContext
             self.copyFrom(ctx)
@@ -9856,9 +9650,7 @@ class Parser(ANTLRParser):
     class HierarchyOperatorsContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
             self.op = None  # ExprContext
@@ -9963,11 +9755,7 @@ class Parser(ANTLRParser):
             self.state = 1117
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (
-                _la == Parser.DATASET
-                or _la == Parser.RULE
-                or _la == Parser.RULE_PRIORITY
-            ):
+            if _la == Parser.DATASET or _la == Parser.RULE or _la == Parser.RULE_PRIORITY:
                 self.state = 1116
                 self.inputModeHierarchy()
 
@@ -9991,9 +9779,7 @@ class Parser(ANTLRParser):
     class ValidationOperatorsContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -10191,11 +9977,7 @@ class Parser(ANTLRParser):
                 self.state = 1141
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (
-                    _la == Parser.ALL
-                    or _la == Parser.INVALID
-                    or _la == Parser.ALL_MEASURES
-                ):
+                if _la == Parser.ALL or _la == Parser.INVALID or _la == Parser.ALL_MEASURES:
                     self.state = 1140
                     self.validationOutput()
 
@@ -10258,11 +10040,7 @@ class Parser(ANTLRParser):
                 self.state = 1164
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (
-                    _la == Parser.ALL
-                    or _la == Parser.INVALID
-                    or _la == Parser.ALL_MEASURES
-                ):
+                if _la == Parser.ALL or _la == Parser.INVALID or _la == Parser.ALL_MEASURES:
                     self.state = 1163
                     self.validationOutput()
 
@@ -10329,9 +10107,7 @@ class Parser(ANTLRParser):
     class ConditionalOperatorsContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -10404,9 +10180,7 @@ class Parser(ANTLRParser):
     class ConditionalOperatorsComponentContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -10451,9 +10225,7 @@ class Parser(ANTLRParser):
 
     def conditionalOperatorsComponent(self):
 
-        localctx = Parser.ConditionalOperatorsComponentContext(
-            self, self._ctx, self.state
-        )
+        localctx = Parser.ConditionalOperatorsComponentContext(self, self._ctx, self.state)
         self.enterRule(localctx, 66, self.RULE_conditionalOperatorsComponent)
         try:
             localctx = Parser.NvlAtomComponentContext(self, localctx)
@@ -10481,9 +10253,7 @@ class Parser(ANTLRParser):
     class AggrOperatorsContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -10636,9 +10406,7 @@ class Parser(ANTLRParser):
     class AggrOperatorsGroupingContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -10771,9 +10539,7 @@ class Parser(ANTLRParser):
     class AnFunctionContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -10784,9 +10550,7 @@ class Parser(ANTLRParser):
             super().copyFrom(ctx)
 
     class LagOrLeadAnContext(AnFunctionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.AnFunctionContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.AnFunctionContext
             super().__init__(parser)
             self.op = None  # Token
             self.offset = None  # SignedIntegerContext
@@ -10844,9 +10608,7 @@ class Parser(ANTLRParser):
                 return visitor.visitChildren(self)
 
     class RatioToReportAnContext(AnFunctionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.AnFunctionContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.AnFunctionContext
             super().__init__(parser)
             self.op = None  # Token
             self.partition = None  # PartitionByClauseContext
@@ -10883,9 +10645,7 @@ class Parser(ANTLRParser):
                 return visitor.visitChildren(self)
 
     class AnSimpleFunctionContext(AnFunctionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.AnFunctionContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.AnFunctionContext
             super().__init__(parser)
             self.op = None  # Token
             self.partition = None  # PartitionByClauseContext
@@ -11138,9 +10898,7 @@ class Parser(ANTLRParser):
     class AnFunctionComponentContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -11590,9 +11348,7 @@ class Parser(ANTLRParser):
     class RenameClauseItemContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
             self.fromName = None  # ComponentIDContext
@@ -11639,9 +11395,7 @@ class Parser(ANTLRParser):
     class AggregateClauseContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -11698,9 +11452,7 @@ class Parser(ANTLRParser):
     class AggrFunctionClauseContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -11768,9 +11520,7 @@ class Parser(ANTLRParser):
     class CalcClauseItemContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -11838,9 +11588,7 @@ class Parser(ANTLRParser):
     class SubspaceClauseItemContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -11885,9 +11633,7 @@ class Parser(ANTLRParser):
     class ScalarItemContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -11898,9 +11644,7 @@ class Parser(ANTLRParser):
             super().copyFrom(ctx)
 
     class ScalarWithCastContext(ScalarItemContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.ScalarItemContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.ScalarItemContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -11935,9 +11679,7 @@ class Parser(ANTLRParser):
                 return visitor.visitChildren(self)
 
     class SimpleScalarContext(ScalarItemContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.ScalarItemContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.ScalarItemContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -12013,9 +11755,7 @@ class Parser(ANTLRParser):
     class JoinClauseWithoutUsingContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -12072,9 +11812,7 @@ class Parser(ANTLRParser):
     class JoinClauseContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -12160,9 +11898,7 @@ class Parser(ANTLRParser):
     class JoinClauseItemContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -12213,9 +11949,7 @@ class Parser(ANTLRParser):
     class JoinBodyContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -12304,9 +12038,7 @@ class Parser(ANTLRParser):
     class JoinApplyClauseContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -12346,9 +12078,7 @@ class Parser(ANTLRParser):
     class PartitionByClauseContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -12415,9 +12145,7 @@ class Parser(ANTLRParser):
     class OrderByClauseContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -12484,9 +12212,7 @@ class Parser(ANTLRParser):
     class OrderByItemContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -12540,9 +12266,7 @@ class Parser(ANTLRParser):
     class WindowingClauseContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
             self.from_ = None  # LimitClauseItemContext
@@ -12619,9 +12343,7 @@ class Parser(ANTLRParser):
     class SignedIntegerContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -12675,9 +12397,7 @@ class Parser(ANTLRParser):
     class SignedNumberContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -12731,9 +12451,7 @@ class Parser(ANTLRParser):
     class LimitClauseItemContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
             self.limitDir = None  # Token
@@ -12829,9 +12547,7 @@ class Parser(ANTLRParser):
     class GroupingClauseContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -13050,9 +12766,7 @@ class Parser(ANTLRParser):
     class HavingClauseContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -13092,9 +12806,7 @@ class Parser(ANTLRParser):
     class ParameterItemContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -13150,9 +12862,7 @@ class Parser(ANTLRParser):
     class OutputParameterTypeContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -13228,9 +12938,7 @@ class Parser(ANTLRParser):
     class OutputParameterTypeComponentContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -13251,9 +12959,7 @@ class Parser(ANTLRParser):
 
     def outputParameterTypeComponent(self):
 
-        localctx = Parser.OutputParameterTypeComponentContext(
-            self, self._ctx, self.state
-        )
+        localctx = Parser.OutputParameterTypeComponentContext(self, self._ctx, self.state)
         self.enterRule(localctx, 120, self.RULE_outputParameterTypeComponent)
         try:
             self.state = 1533
@@ -13300,9 +13006,7 @@ class Parser(ANTLRParser):
     class InputParameterTypeContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -13402,9 +13106,7 @@ class Parser(ANTLRParser):
     class RulesetTypeContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -13471,9 +13173,7 @@ class Parser(ANTLRParser):
     class ScalarTypeContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -13564,9 +13264,7 @@ class Parser(ANTLRParser):
     class ComponentTypeContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -13622,9 +13320,7 @@ class Parser(ANTLRParser):
     class DatasetTypeContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -13701,9 +13397,7 @@ class Parser(ANTLRParser):
     class EvalDatasetTypeContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -13765,9 +13459,7 @@ class Parser(ANTLRParser):
     class ScalarSetTypeContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -13823,9 +13515,7 @@ class Parser(ANTLRParser):
     class DpRulesetContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -13836,9 +13526,7 @@ class Parser(ANTLRParser):
             super().copyFrom(ctx)
 
     class DataPointVdContext(DpRulesetContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.DpRulesetContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.DpRulesetContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -13870,9 +13558,7 @@ class Parser(ANTLRParser):
                 return visitor.visitChildren(self)
 
     class DataPointVarContext(DpRulesetContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.DpRulesetContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.DpRulesetContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -13904,9 +13590,7 @@ class Parser(ANTLRParser):
                 return visitor.visitChildren(self)
 
     class DataPointContext(DpRulesetContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.DpRulesetContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.DpRulesetContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -14006,9 +13690,7 @@ class Parser(ANTLRParser):
     class HrRulesetContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -14019,9 +13701,7 @@ class Parser(ANTLRParser):
             super().copyFrom(ctx)
 
     class HrRulesetVdTypeContext(HrRulesetContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.HrRulesetContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.HrRulesetContext
             super().__init__(parser)
             self.vdName = None  # Token
             self.copyFrom(ctx)
@@ -14063,9 +13743,7 @@ class Parser(ANTLRParser):
                 return visitor.visitChildren(self)
 
     class HrRulesetVarTypeContext(HrRulesetContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.HrRulesetContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.HrRulesetContext
             super().__init__(parser)
             self.varName = None  # VarIDContext
             self.copyFrom(ctx)
@@ -14104,9 +13782,7 @@ class Parser(ANTLRParser):
                 return visitor.visitChildren(self)
 
     class HrRulesetTypeContext(HrRulesetContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a Parser.HrRulesetContext
+        def __init__(self, parser, ctx: ParserRuleContext):  # actually a Parser.HrRulesetContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -14228,9 +13904,7 @@ class Parser(ANTLRParser):
     class ValueDomainNameContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -14265,9 +13939,7 @@ class Parser(ANTLRParser):
     class RulesetIDContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -14302,9 +13974,7 @@ class Parser(ANTLRParser):
     class RulesetSignatureContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -14374,9 +14044,7 @@ class Parser(ANTLRParser):
     class SignatureContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -14427,9 +14095,7 @@ class Parser(ANTLRParser):
     class RuleClauseDatapointContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -14486,9 +14152,7 @@ class Parser(ANTLRParser):
     class RuleItemDatapointContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
             self.ruleName = None  # Token
@@ -14582,9 +14246,7 @@ class Parser(ANTLRParser):
     class RuleClauseHierarchicalContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -14641,9 +14303,7 @@ class Parser(ANTLRParser):
     class RuleItemHierarchicalContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
             self.ruleName = None  # Token
@@ -14715,9 +14375,7 @@ class Parser(ANTLRParser):
     class HierRuleSignatureContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -14786,9 +14444,7 @@ class Parser(ANTLRParser):
     class ValueDomainSignatureContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -14845,9 +14501,7 @@ class Parser(ANTLRParser):
     class CodeItemRelationContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
             self.codetemRef = None  # ValueDomainValueContext
@@ -14957,9 +14611,7 @@ class Parser(ANTLRParser):
     class CodeItemRelationClauseContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
             self.opAdd = None  # Token
@@ -15037,9 +14689,7 @@ class Parser(ANTLRParser):
     class ValueDomainValueContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -15098,9 +14748,7 @@ class Parser(ANTLRParser):
     class ScalarTypeConstraintContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -15218,9 +14866,7 @@ class Parser(ANTLRParser):
     class CompConstraintContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -15275,9 +14921,7 @@ class Parser(ANTLRParser):
     class MultModifierContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -15331,9 +14975,7 @@ class Parser(ANTLRParser):
     class ValidationOutputContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -15364,9 +15006,7 @@ class Parser(ANTLRParser):
             self.enterOuterAlt(localctx, 1)
             self.state = 1801
             _la = self._input.LA(1)
-            if not (
-                _la == Parser.ALL or _la == Parser.INVALID or _la == Parser.ALL_MEASURES
-            ):
+            if not (_la == Parser.ALL or _la == Parser.INVALID or _la == Parser.ALL_MEASURES):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -15382,9 +15022,7 @@ class Parser(ANTLRParser):
     class ValidationModeContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -15454,9 +15092,7 @@ class Parser(ANTLRParser):
     class ConditionClauseContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -15518,9 +15154,7 @@ class Parser(ANTLRParser):
     class InputModeContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -15564,9 +15198,7 @@ class Parser(ANTLRParser):
     class ImbalanceExprContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -15606,9 +15238,7 @@ class Parser(ANTLRParser):
     class InputModeHierarchyContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -15639,11 +15269,7 @@ class Parser(ANTLRParser):
             self.enterOuterAlt(localctx, 1)
             self.state = 1819
             _la = self._input.LA(1)
-            if not (
-                _la == Parser.DATASET
-                or _la == Parser.RULE
-                or _la == Parser.RULE_PRIORITY
-            ):
+            if not (_la == Parser.DATASET or _la == Parser.RULE or _la == Parser.RULE_PRIORITY):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -15659,9 +15285,7 @@ class Parser(ANTLRParser):
     class OutputModeHierarchyContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -15705,9 +15329,7 @@ class Parser(ANTLRParser):
     class AliasContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -15742,9 +15364,7 @@ class Parser(ANTLRParser):
     class VarIDContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -15779,9 +15399,7 @@ class Parser(ANTLRParser):
     class SimpleComponentIdContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -15816,9 +15434,7 @@ class Parser(ANTLRParser):
     class ComponentIDContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -15868,9 +15484,7 @@ class Parser(ANTLRParser):
     class ListsContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -15937,9 +15551,7 @@ class Parser(ANTLRParser):
     class ErCodeContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -15979,9 +15591,7 @@ class Parser(ANTLRParser):
     class ErLevelContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -16021,9 +15631,7 @@ class Parser(ANTLRParser):
     class ComparisonOperandContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -16093,9 +15701,7 @@ class Parser(ANTLRParser):
     class OptionalExprContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -16231,9 +15837,7 @@ class Parser(ANTLRParser):
     class OptionalExprComponentContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -16357,9 +15961,7 @@ class Parser(ANTLRParser):
     class ComponentRoleContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -16434,9 +16036,7 @@ class Parser(ANTLRParser):
     class ViralAttributeContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -16476,9 +16076,7 @@ class Parser(ANTLRParser):
     class ValueDomainIDContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -16513,9 +16111,7 @@ class Parser(ANTLRParser):
     class OperatorIDContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -16550,9 +16146,7 @@ class Parser(ANTLRParser):
     class RoutineNameContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -16587,9 +16181,7 @@ class Parser(ANTLRParser):
     class ConstantContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -16666,9 +16258,7 @@ class Parser(ANTLRParser):
     class BasicScalarTypeContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -16752,9 +16342,7 @@ class Parser(ANTLRParser):
     class RetainTypeContext(ParserRuleContext):
         __slots__ = "parser"
 
-        def __init__(
-            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
-        ):
+        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
