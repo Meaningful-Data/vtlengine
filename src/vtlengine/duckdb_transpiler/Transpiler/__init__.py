@@ -2398,6 +2398,13 @@ FROM {src}, (
                 c.data_type == TimePeriod for c in ds.components.values() if c.role == Role.MEASURE
             )
 
+            if has_tp and self.current_assignment:
+                out_ds = self.output_datasets.get(self.current_assignment)
+                if out_ds is not None:
+                    for comp in out_ds.components.values():
+                        if comp.data_type == TimePeriod:
+                            comp.data_type = Date
+
             def _dateadd_expr(col_ref: str) -> str:
                 if has_tp:
                     return f"vtl_tp_dateadd(vtl_period_parse({col_ref}), {shift_sql}, {period_sql})"
