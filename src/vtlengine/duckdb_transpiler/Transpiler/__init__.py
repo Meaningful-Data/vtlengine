@@ -62,6 +62,11 @@ _PERIOD_COMPARISON_MACROS: Dict[str, str] = {
     tokens.LTE: "vtl_period_le",
 }
 
+# Duration comparison operators that need vtl_duration_to_int for magnitude ordering.
+_DURATION_COMPARISON_OPS: frozenset[str] = frozenset(
+    {tokens.GT, tokens.GTE, tokens.LT, tokens.LTE, tokens.EQ, tokens.NEQ}
+)
+
 # String operators that require VARCHAR input — Boolean measures must be cast first.
 _STRING_UNARY_OPS: frozenset[str] = frozenset(
     {
@@ -1628,6 +1633,14 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         ):
             return f"vtl_tp_datediff(vtl_period_parse({left_sql}), vtl_period_parse({right_sql}))"
 
+        # Duration comparisons: use vtl_duration_to_int for magnitude ordering
+        if op in _DURATION_COMPARISON_OPS and (
+            self._is_duration_operand(node.left) or self._is_duration_operand(node.right)
+        ):
+            left_int = f"vtl_duration_to_int({left_sql})"
+            right_int = f"vtl_duration_to_int({right_sql})"
+            return registry.binary.generate(op, left_int, right_int)
+
         if registry.binary.is_registered(op):
             return registry.binary.generate(op, left_sql, right_sql)
         # Fallback for unregistered ops
@@ -1836,6 +1849,27 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             type_node = node.children[1]
             type_str = type_node.value if hasattr(type_node, "value") else str(type_node)
             if type_str.lower() in ("time_period", "timeperiod"):
+                return True
+        return False
+
+    def _is_duration_operand(self, node: AST.AST) -> bool:
+        """Check if an operand resolves to a Duration type."""
+        if isinstance(node, AST.VarID) and self._in_clause and self._current_dataset:
+            comp = self._current_dataset.components.get(node.value)
+            if comp and comp.data_type == Duration:
+                return True
+        if isinstance(node, AST.VarID) and node.value in self.scalars:
+            sc = self.scalars[node.value]
+            if sc.data_type == Duration:
+                return True
+        if (
+            isinstance(node, AST.ParamOp)
+            and str(getattr(node, "op", "")).lower() == tokens.CAST
+            and len(node.children) >= 2
+        ):
+            type_node = node.children[1]
+            type_str = type_node.value if hasattr(type_node, "value") else str(type_node)
+            if type_str.lower() == "duration":
                 return True
         return False
 

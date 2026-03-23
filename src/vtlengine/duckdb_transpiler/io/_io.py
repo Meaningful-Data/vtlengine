@@ -439,7 +439,7 @@ def _build_dataframe_select_columns(
     for comp_name, comp in components.items():
         target_type = get_column_sql_type(comp)
         if df_col_set is not None and comp_name not in df_col_set:
-            exprs.append(f"CAST(NULL AS {target_type}) AS \"{comp_name}\"")
+            exprs.append(f'CAST(NULL AS {target_type}) AS "{comp_name}"')
         else:
             exprs.append(f'CAST("{comp_name}" AS {target_type}) AS "{comp_name}"')
     return exprs
