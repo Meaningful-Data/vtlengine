@@ -57,15 +57,19 @@ def _exec_block(source: str, filename: str, capture_results: bool = False) -> di
     """Execute a code block and return the resulting namespace."""
     if capture_results:
         source = _preprocess_for_result_capture(source)
-    # When DuckDB backend is active, patch run() calls to include use_duckdb=True
+    # When DuckDB backend is active, patch run/run_sdmx calls to include use_duckdb=True
     if _use_duckdb_backend():
-        source = source.replace(
-            "run(script=script,",
-            "run(script=script, use_duckdb=True,",
+        import re
+
+        source = re.sub(
+            r"\brun\((\s*script=)",
+            r"run(use_duckdb=True, \1",
+            source,
         )
-        source = source.replace(
-            "run(script, data_structures",
-            "run(script, data_structures",
+        source = re.sub(
+            r"\brun_sdmx\(([^)]+)\)",
+            r"run_sdmx(\1, use_duckdb=True)",
+            source,
         )
     namespace: dict[str, object] = {}
     exec(compile(source, filename, "exec"), namespace)  # noqa: S102

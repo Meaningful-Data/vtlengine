@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from tests.Helper import TestHelper
+from tests.Helper import TestHelper, _use_duckdb_backend
 from vtlengine import run
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Operators.General import Eval
@@ -220,6 +220,7 @@ def test_eval_julian_with_date_columns():
         data_structures=data_structures,
         datapoints=datapoints,
         external_routines=er,
+        use_duckdb=_use_duckdb_backend(),
     )
 
     assert result["DS_r"] is not None

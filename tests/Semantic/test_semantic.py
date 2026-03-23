@@ -841,10 +841,12 @@ class ClauseClauseTests(SemanticHelper):
         number_inputs = 1
 
         text = self.LoadVTL(code)
-        input_datasets = self.LoadInputs(code=code, number_inputs=number_inputs)
+        input_datasets = self.LoadInputs(code=code, number_inputs=number_inputs, only_semantic=True)
         datasets = {k: v for k, v in input_datasets.items() if isinstance(v, Dataset)}
         scalars_obj = {k: v for k, v in input_datasets.items() if isinstance(v, Scalar)}
-        interpreter = InterpreterAnalyzer(datasets=datasets, scalars=scalars_obj)
+        interpreter = InterpreterAnalyzer(
+            datasets=datasets, scalars=scalars_obj, only_semantic=True
+        )
         result = interpreter.visit(create_ast(text))
         assert "DS_r" in result
 

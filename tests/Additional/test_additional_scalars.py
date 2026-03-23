@@ -6,27 +6,21 @@ import pytest
 
 from tests.Helper import TestHelper, _use_duckdb_backend
 from vtlengine import DataTypes
-from vtlengine.API import create_ast, run
+from vtlengine.API import run
 from vtlengine.DataTypes import Boolean, Integer, Null, Number, String
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Component, Dataset, Role, Scalar
 
 
 def _run_scalar(expression):
     """Run a scalar VTL expression using the configured backend."""
-    if _use_duckdb_backend():
-        return run(
-            script=expression,
-            data_structures={"datasets": []},
-            datapoints={},
-            return_only_persistent=False,
-            use_duckdb=True,
-        )
-    else:
-        ast = create_ast(expression)
-        interpreter = InterpreterAnalyzer({})
-        return interpreter.visit(ast)
+    return run(
+        script=expression,
+        data_structures={"datasets": []},
+        datapoints={},
+        return_only_persistent=False,
+        use_duckdb=_use_duckdb_backend(),
+    )
 
 
 class AdditionalScalarsTests(TestHelper):
