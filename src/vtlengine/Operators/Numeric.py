@@ -469,9 +469,9 @@ class Random(Parameterized):
     def validate(cls, seed: Any, index: Any = None) -> Any:
         if index.data_type != Integer:
             index.data_type = binary_implicit_promotion(index.data_type, Integer)
-        if index.value < 0:
+        if index.value is not None and index.value < 0:
             raise SemanticError("2-1-15-2", op=cls.op, value=index)
-        if index.value > 10000:
+        if index.value is not None and index.value > 10000:
             warnings.warn(
                 "Random: The value of 'index' is very big. This can affect performance.",
                 UserWarning,

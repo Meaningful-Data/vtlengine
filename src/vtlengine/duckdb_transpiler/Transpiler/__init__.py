@@ -2461,12 +2461,25 @@ FROM {src}, (
             return f"CAST(TRUNC({expr}) AS {duckdb_type})"
         return f"CAST({expr} AS {duckdb_type})"
 
+    @staticmethod
+    def _check_random_negative_index(index_node: Optional[AST.AST]) -> None:
+        """Raise SemanticError if the index is a negative literal."""
+        if (
+            isinstance(index_node, AST.UnaryOp)
+            and index_node.op == "-"
+            and isinstance(index_node.operand, AST.Constant)
+        ):
+            from vtlengine.Exceptions import SemanticError
+
+            raise SemanticError("2-1-15-2", op="random", value=index_node.operand.value)
+
     def _visit_random_impl(
         self,
         seed_node: Optional[AST.AST],
         index_node: Optional[AST.AST],
     ) -> str:
         """Generate SQL for RANDOM (shared by ParamOp and BinOp forms)."""
+        self._check_random_negative_index(index_node)
         seed_type = self._get_operand_type(seed_node) if seed_node else _SCALAR
 
         if seed_type == _DATASET and seed_node is not None:
