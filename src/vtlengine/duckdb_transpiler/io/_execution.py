@@ -32,17 +32,51 @@ from vtlengine.files.output._time_period_representation import TimePeriodReprese
 from vtlengine.Model import Dataset, Scalar
 
 
+def _format_timestamp(ts: Any) -> str:
+    """Format a pandas Timestamp / datetime to a VTL date string.
+
+    Preserves time components when present:
+    - ``2020-01-15 00:00:00`` → ``'2020-01-15'``
+    - ``2020-01-15 10:30:00`` → ``'2020-01-15 10:30:00'``
+    - ``2020-01-15 10:30:00.123456`` → ``'2020-01-15 10:30:00.123456'``
+    """
+    if hasattr(ts, "microsecond") and ts.microsecond:
+        return ts.strftime("%Y-%m-%d %H:%M:%S.%f")
+    if hasattr(ts, "hour") and (ts.hour or ts.minute or ts.second):
+        return ts.strftime("%Y-%m-%d %H:%M:%S")
+    return ts.strftime("%Y-%m-%d")
+
+
+def _format_timestamp_with_time(ts: Any) -> str:
+    """Format a timestamp always including time (for columns with mixed values).
+
+    - ``2020-01-15 00:00:00`` → ``'2020-01-15 00:00:00'``
+    - ``2020-01-15 10:30:00`` → ``'2020-01-15 10:30:00'``
+    - ``2020-01-15 10:30:00.123456`` → ``'2020-01-15 10:30:00.123456'``
+    """
+    if hasattr(ts, "microsecond") and ts.microsecond:
+        return ts.strftime("%Y-%m-%d %H:%M:%S.%f")
+    return ts.strftime("%Y-%m-%d %H:%M:%S")
+
+
 def _normalize_scalar_value(raw_value: Any) -> Any:
-    """Convert pandas/numpy null types to Python ``None``.
+    """Convert pandas/numpy types to plain Python values.
 
     DuckDB's ``fetchdf()`` may return ``pd.NA``, ``pd.NaT`` or
     ``numpy.nan`` for SQL NULLs.  The rest of the engine expects
-    plain ``None``.
+    plain ``None``.  Timestamps are converted to VTL date strings.
     """
     if hasattr(raw_value, "item"):
         raw_value = raw_value.item()
     if pd.isna(raw_value):
         return None
+    # Convert datetime/Timestamp to VTL date string
+    if isinstance(raw_value, pd.Timestamp):
+        return _format_timestamp(raw_value)
+    import datetime
+
+    if isinstance(raw_value, (datetime.datetime, datetime.date)):
+        return _format_timestamp(raw_value)
     return raw_value
 
 
@@ -60,10 +94,13 @@ def _project_columns(ds: Dataset) -> None:
 
 
 def _convert_date_columns(ds: Dataset) -> None:
-    """Convert DuckDB datetime columns to string format.
+    """Convert DuckDB datetime columns to VTL string format.
 
     DuckDB returns Timestamp/NaT for date columns but the VTL engine
-    (Pandas backend) uses string dates ('YYYY-MM-DD') and None for nulls.
+    (Pandas backend) uses string dates and None for nulls.
+    Preserves time components when present (e.g. '2020-01-15 10:30:00').
+    If any non-null value has a non-midnight time, all values in the column
+    are formatted with time to preserve consistency.
     Only converts columns that actually have datetime dtype (not already strings).
     """
     if ds.components and ds.data is not None:
@@ -73,9 +110,21 @@ def _convert_date_columns(ds: Dataset) -> None:
                 and comp_name in ds.data.columns
                 and pd.api.types.is_datetime64_any_dtype(ds.data[comp_name])
             ):
-                ds.data[comp_name] = ds.data[comp_name].apply(
-                    lambda x: x.strftime("%Y-%m-%d") if pd.notna(x) else None  # type: ignore[redundant-expr,unused-ignore]
-                )
+                col = ds.data[comp_name]
+                non_null = col.dropna()
+                has_time = False
+                if len(non_null) > 0:
+                    has_time = bool(
+                        any(v.hour or v.minute or v.second or v.microsecond for v in non_null)
+                    )
+                if has_time:
+                    ds.data[comp_name] = col.apply(
+                        lambda x: _format_timestamp_with_time(x) if pd.notna(x) else None  # type: ignore[redundant-expr,unused-ignore]
+                    )
+                else:
+                    ds.data[comp_name] = col.apply(
+                        lambda x: x.strftime("%Y-%m-%d") if pd.notna(x) else None  # type: ignore[redundant-expr,unused-ignore]
+                    )
 
 
 def load_scheduled_datasets(

@@ -142,7 +142,7 @@ def get_column_sql_type(comp: Component) -> str:
     elif comp.data_type == Boolean:
         return "BOOLEAN"
     elif comp.data_type == Date:
-        return "DATE"
+        return "TIMESTAMP"
     else:
         # String, TimePeriod, TimeInterval, Duration → VARCHAR
         return "VARCHAR"
@@ -165,7 +165,7 @@ def get_csv_read_type(comp: Component) -> str:
     elif comp.data_type == Boolean:
         return "BOOLEAN"
     elif comp.data_type == Date:
-        return "DATE"
+        return "TIMESTAMP"
     else:
         return "VARCHAR"
 

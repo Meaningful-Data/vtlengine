@@ -111,12 +111,12 @@ CREATE OR REPLACE MACRO vtl_tp_datediff(a vtl_time_period, b vtl_time_period) AS
 
 CREATE OR REPLACE MACRO vtl_dateadd(d, shift INTEGER, period_ind VARCHAR) AS (
     CASE period_ind
-        WHEN 'D' THEN CAST(d + INTERVAL (shift) DAY AS DATE)
-        WHEN 'W' THEN CAST(d + INTERVAL (shift * 7) DAY AS DATE)
-        WHEN 'M' THEN CAST(d + INTERVAL (shift) MONTH AS DATE)
-        WHEN 'Q' THEN CAST(d + INTERVAL (shift * 3) MONTH AS DATE)
-        WHEN 'S' THEN CAST(d + INTERVAL (shift * 6) MONTH AS DATE)
-        WHEN 'A' THEN CAST(d + INTERVAL (shift) YEAR AS DATE)
+        WHEN 'D' THEN CAST(d AS TIMESTAMP) + INTERVAL (shift) DAY
+        WHEN 'W' THEN CAST(d AS TIMESTAMP) + INTERVAL (shift * 7) DAY
+        WHEN 'M' THEN CAST(d AS TIMESTAMP) + INTERVAL (shift) MONTH
+        WHEN 'Q' THEN CAST(d AS TIMESTAMP) + INTERVAL (shift * 3) MONTH
+        WHEN 'S' THEN CAST(d AS TIMESTAMP) + INTERVAL (shift * 6) MONTH
+        WHEN 'A' THEN CAST(d AS TIMESTAMP) + INTERVAL (shift) YEAR
     END
 );
 

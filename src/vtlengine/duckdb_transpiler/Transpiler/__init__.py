@@ -2211,18 +2211,18 @@ ORDER BY {order_by}"""
             if fill_mode == "single":
                 grid_sql = f"""
 SELECT b.{", b.".join(other_id_cols)},
-    CAST(d AS DATE) AS {time_col}
+    CAST(d AS TIMESTAMP) AS {time_col}
 FROM bounds b, generate_series(b.min_d, b.max_d, {freq_step}) AS t(d)"""
             else:
                 grid_sql = f"""
 SELECT gf.{", gf.".join(other_id_cols)},
-    CAST(d AS DATE) AS {time_col}
+    CAST(d AS TIMESTAMP) AS {time_col}
 FROM group_freq gf, generate_series(
     (SELECT min_d FROM bounds), (SELECT max_d FROM bounds), {freq_step}
 ) AS t(d)"""
         else:
             grid_sql = f"""
-SELECT CAST(d AS DATE) AS {time_col}
+SELECT CAST(d AS TIMESTAMP) AS {time_col}
 FROM generate_series(
     (SELECT min_d FROM bounds), (SELECT max_d FROM bounds), {freq_step}
 ) AS t(d)"""
@@ -2445,7 +2445,7 @@ FROM {src}, (
     ) -> str:
         """Generate a CAST expression for a single value."""
         if mask and target_type_str == "Date":
-            return f"STRPTIME({expr}, '{mask}')::DATE"
+            return f"STRFTIME(STRPTIME({expr}, '{mask}'), '%Y-%m-%d %H:%M:%S')"
         # Normalize TimePeriod values on cast to ensure canonical format
         if target_type_str.lower() in ("time_period", "timeperiod"):
             return f"vtl_period_normalize(CAST({expr} AS VARCHAR))"
