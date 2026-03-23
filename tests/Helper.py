@@ -453,8 +453,8 @@ class TestHelper(TestCase):
                     datapoints[ds["name"]] = csv_file
                     dataset_names.append(ds["name"])
 
-        # Build identity script: DS_name <- DS_name; for each dataset
-        script = "\n".join(f"{name} <- {name};" for name in dataset_names)
+        # Use renamed outputs to avoid DAG cycles (DS_1 <- DS_1 creates a cycle)
+        script = "\n".join(f"DS_r_{name} <- {name};" for name in dataset_names)
 
         result = run(
             script=script,
@@ -470,7 +470,12 @@ class TestHelper(TestCase):
                 format_time_period_external_representation(
                     dataset, TimePeriodRepresentation.SDMX_REPORTING
                 )
-            assert result == references
+            # Map renamed outputs back for comparison
+            mapped_result = {}
+            for key, value in result.items():
+                original = key.replace("DS_r_", "", 1) if key.startswith("DS_r_") else key
+                mapped_result[original] = value
+            assert mapped_result == references
 
     @classmethod
     def DataLoadExceptionTest(
@@ -521,7 +526,8 @@ class TestHelper(TestCase):
                     datapoints[ds["name"]] = csv_file
                     dataset_names.append(ds["name"])
 
-        script = "\n".join(f"{name} <- {name};" for name in dataset_names)
+        # Use renamed outputs to avoid DAG cycles (DS_1 <- DS_1 creates a cycle)
+        script = "\n".join(f"DS_r_{name} <- {name};" for name in dataset_names)
 
         if exception_code is not None:
             with pytest.raises(VTLEngineException) as context:
