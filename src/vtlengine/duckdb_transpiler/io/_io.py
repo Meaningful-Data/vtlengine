@@ -4,6 +4,7 @@ Internal IO functions for DuckDB-based CSV loading and saving.
 This module contains the core load/save implementations to avoid circular imports.
 """
 
+import csv
 import os
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
@@ -30,7 +31,7 @@ from vtlengine.files.sdmx_handler import (
     is_sdmx_datapoint_file,
     load_sdmx_datapoints,
 )
-from vtlengine.Model import Component, Dataset, Role
+from vtlengine.Model import Component, Dataset, Role, Scalar
 
 # Environment variable to skip post-load validations (for benchmarking)
 SKIP_LOAD_VALIDATION = os.environ.get("VTL_SKIP_LOAD_VALIDATION", "").lower() in (
@@ -302,6 +303,28 @@ def save_datapoints_duckdb(
         conn.execute(f'DROP TABLE IF EXISTS "{dataset_name}"')
 
 
+def save_scalars_duckdb(
+    scalars: Dict[str, Scalar],
+    output_path: Union[Path, str],
+) -> None:
+    """Save scalar results to a _scalars.csv file.
+
+    Args:
+        scalars: Dict mapping scalar names to Scalar objects
+        output_path: Directory path where _scalars.csv will be saved
+    """
+    if not scalars:
+        return
+    output_path = Path(output_path) if isinstance(output_path, str) else output_path
+    file_path = output_path / "_scalars.csv"
+    with open(file_path, "w", newline="", encoding="utf-8") as csv_file:
+        writer = csv.writer(csv_file)
+        writer.writerow(["name", "value"])
+        for name, scalar in sorted(scalars.items(), key=lambda item: item[0]):
+            value_to_write = "" if scalar.value is None else scalar.value
+            writer.writerow([name, str(value_to_write)])
+
+
 def extract_datapoint_paths(
     datapoints: Optional[
         Union[Dict[str, Union[pd.DataFrame, str, Path]], List[Union[str, Path]], str, Path]
@@ -402,15 +425,23 @@ def extract_datapoint_paths(
     return path_dict if path_dict else None, df_dict
 
 
-def _build_dataframe_select_columns(components: Dict[str, Component]) -> List[str]:
+def _build_dataframe_select_columns(
+    components: Dict[str, Component],
+    df_columns: Optional[List[str]] = None,
+) -> List[str]:
     """Build SELECT expressions with explicit CAST for DataFrame → DuckDB table insertion.
 
     Ensures type enforcement matches the CSV loading path (load_datapoints_duckdb).
+    Columns missing from the DataFrame are filled with NULL.
     """
+    df_col_set = set(df_columns) if df_columns is not None else None
     exprs: List[str] = []
     for comp_name, comp in components.items():
         target_type = get_column_sql_type(comp)
-        exprs.append(f'CAST("{comp_name}" AS {target_type}) AS "{comp_name}"')
+        if df_col_set is not None and comp_name not in df_col_set:
+            exprs.append(f"CAST(NULL AS {target_type}) AS \"{comp_name}\"")
+        else:
+            exprs.append(f'CAST("{comp_name}" AS {target_type}) AS "{comp_name}"')
     return exprs
 
 
@@ -442,7 +473,7 @@ def register_dataframes(
         temp_view = f"_temp_{name}"
         conn.register(temp_view, df)
         try:
-            select_exprs = _build_dataframe_select_columns(components)
+            select_exprs = _build_dataframe_select_columns(components, list(df.columns))
             col_list = ", ".join(f'"{c}"' for c in components)
             conn.execute(
                 f'INSERT INTO "{name}" ({col_list}) '

@@ -21,6 +21,7 @@ from vtlengine.duckdb_transpiler.io._io import (
     load_datapoints_duckdb,
     register_dataframes,
     save_datapoints_duckdb,
+    save_scalars_duckdb,
 )
 from vtlengine.duckdb_transpiler.io._time_handling import (
     apply_time_period_representation,
@@ -169,10 +170,7 @@ def cleanup_scheduled_datasets(
                 output_scalars,
                 representation,
             )
-            # Drop table if not already dropped by save_datapoints_duckdb
-            # (scalars and in-memory datasets are fetched without dropping)
-            if not output_folder or ds_name in output_scalars:
-                conn.execute(f'DROP TABLE IF EXISTS "{ds_name}"')
+            conn.execute(f'DROP TABLE IF EXISTS "{ds_name}"')
         else:
             # Drop non-persistent intermediate results
             conn.execute(f'DROP TABLE IF EXISTS "{ds_name}"')
@@ -216,17 +214,14 @@ def fetch_result(
             return scalar
         return Dataset(name=result_name, components={}, data=result_df)
 
+    # Save to CSV if output folder provided (table kept alive for fetch)
     if output_folder:
-        # Save to CSV (also drops the table)
-        save_datapoints_duckdb(conn, result_name, output_folder)
-        return output_datasets.get(result_name, Dataset(name=result_name, components={}, data=None))
+        save_datapoints_duckdb(conn, result_name, output_folder, delete_after_save=False)
 
     # Fetch as DataFrame
     result_df = conn.execute(f'SELECT * FROM "{result_name}"').fetchdf()
     ds = output_datasets.get(result_name, Dataset(name=result_name, components={}, data=None))
     ds.data = result_df
-
-    # Post-process: project columns and convert DuckDB datetime columns
     _project_columns(ds)
     _convert_date_columns(ds)
 
@@ -326,5 +321,10 @@ def execute_queries(
             output_scalars=output_scalars,
             representation=representation,
         )
+
+    # Save scalars to CSV when output_folder is provided
+    if output_folder:
+        result_scalars = {k: v for k, v in results.items() if isinstance(v, Scalar)}
+        save_scalars_duckdb(result_scalars, output_folder)
 
     return results
