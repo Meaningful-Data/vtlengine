@@ -27,7 +27,7 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
     _SCALAR,
     StructureVisitor,
 )
-from vtlengine.Model import Dataset, ExternalRoutine, Role, Scalar, ValueDomain
+from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 
 # Datapoint rule operator mappings (module-level to avoid dataclass mutable default)
 _DP_OP_MAP: Dict[str, str] = {
@@ -66,6 +66,44 @@ _PERIOD_COMPARISON_MACROS: Dict[str, str] = {
 _DURATION_COMPARISON_OPS: frozenset[str] = frozenset(
     {tokens.GT, tokens.GTE, tokens.LT, tokens.LTE, tokens.EQ, tokens.NEQ}
 )
+
+def _is_date_timeperiod_pair(left_comp: Component, right_comp: Component) -> bool:
+    """Check if two components form a Date↔TimePeriod cross-type pair."""
+    types = {left_comp.data_type, right_comp.data_type}
+    return types == {Date, TimePeriod}
+
+
+def _date_tp_compare_expr(
+    left_ref: str,
+    right_ref: str,
+    left_comp: Component,
+    right_comp: Component,
+    op: str,
+) -> str:
+    """Build SQL expression for Date vs TimePeriod comparison via TimeInterval promotion."""
+    # Convert each side to vtl_time_interval struct
+    if left_comp.data_type == Date:
+        left_interval = (
+            f"{{'date1': CAST({left_ref} AS DATE),"
+            f" 'date2': CAST({left_ref} AS DATE)}}::vtl_time_interval"
+        )
+        parsed = f"vtl_period_parse({right_ref})"
+        right_interval = (
+            f"{{'date1': vtl_tp_start_date({parsed}),"
+            f" 'date2': vtl_tp_end_date({parsed})}}::vtl_time_interval"
+        )
+    else:
+        parsed = f"vtl_period_parse({left_ref})"
+        left_interval = (
+            f"{{'date1': vtl_tp_start_date({parsed}),"
+            f" 'date2': vtl_tp_end_date({parsed})}}::vtl_time_interval"
+        )
+        right_interval = (
+            f"{{'date1': CAST({right_ref} AS DATE),"
+            f" 'date2': CAST({right_ref} AS DATE)}}::vtl_time_interval"
+        )
+    return registry.binary.generate(op, left_interval, right_interval)
+
 
 # String operators that require VARCHAR input — Boolean measures must be cast first.
 _STRING_UNARY_OPS: frozenset[str] = frozenset(
@@ -1492,11 +1530,24 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
             # TimePeriod ordering: use vtl_period_* macros with STRUCT comparison
             left_comp = left_ds.components.get(left_m)
+            right_comp = right_ds.components.get(right_m)
             period_macro = _PERIOD_COMPARISON_MACROS.get(op)
             if left_comp and left_comp.data_type == TimePeriod and period_macro:
                 expr = (
                     f"{period_macro}(vtl_period_parse({left_ref}), vtl_period_parse({right_ref}))"
                 )
+            # Duration ordering: use vtl_duration_to_int for magnitude ordering
+            elif (
+                left_comp
+                and left_comp.data_type == Duration
+                and op in _DURATION_COMPARISON_OPS
+            ):
+                left_int = f"vtl_duration_to_int({left_ref})"
+                right_int = f"vtl_duration_to_int({right_ref})"
+                expr = registry.binary.generate(op, left_int, right_int)
+            # Date vs TimePeriod cross-type: promote both to vtl_time_interval
+            elif left_comp and right_comp and _is_date_timeperiod_pair(left_comp, right_comp):
+                expr = _date_tp_compare_expr(left_ref, right_ref, left_comp, right_comp, op)
             else:
                 expr = registry.binary.generate(op, left_ref, right_ref)
 
@@ -1549,6 +1600,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             c.data_type == TimePeriod for c in ds.components.values() if c.role == Role.MEASURE
         )
 
+        # Check if any measure is Duration for magnitude ordering
+        has_duration_measure = op in _DURATION_COMPARISON_OPS and any(
+            c.data_type == Duration for c in ds.components.values() if c.role == Role.MEASURE
+        )
+
         def _bin_expr(col_ref: str) -> str:
             if has_time_period_measure:
                 left = f"vtl_period_parse({col_ref})"
@@ -1556,6 +1612,12 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 if ds_on_left:
                     return f"{period_macro}({left}, {right})"
                 return f"{period_macro}({right}, {left})"
+            if has_duration_measure:
+                left = f"vtl_duration_to_int({col_ref})"
+                right = f"vtl_duration_to_int({scalar_sql})"
+                if ds_on_left:
+                    return registry.binary.generate(op, left, right)
+                return registry.binary.generate(op, right, left)
             if ds_on_left:
                 return registry.binary.generate(op, col_ref, scalar_sql)
             return registry.binary.generate(op, scalar_sql, col_ref)
