@@ -198,7 +198,12 @@ class Aggregation(Operator.Unary):
                 )
             else:
                 query = f"SELECT COUNT() AS int_var from df {grouping}"
-            return duckdb.query(query).to_df()
+            conn = duckdb.connect(database=":memory:", read_only=False)
+            try:
+                conn.register("df", df)
+                return conn.execute(query).fetchdf()
+            finally:
+                conn.close()
 
         if measure_names is not None and len(measure_names) > 0:
             functions = ""
@@ -226,13 +231,17 @@ class Aggregation(Operator.Unary):
                 f"SELECT {', '.join(grouping_names or [])} from df {grouping} {having_expression}"
             )
 
+        conn = duckdb.connect(database=":memory:", read_only=False)
         try:
-            result = duckdb.query(query).to_df()
+            conn.register("df", df)
+            result = conn.execute(query).fetchdf()
         except RuntimeError as e:
             if "Conversion" in e.args[0]:
                 raise RunTimeError("2-3-8", op=cls.op, msg=e.args[0].split(":")[-1])
             else:
                 raise RunTimeError("2-1-1-1", op=cls.op, error=e)
+        finally:
+            conn.close()
         return result
 
     @classmethod
