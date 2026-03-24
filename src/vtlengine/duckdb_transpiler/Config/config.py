@@ -24,7 +24,7 @@ from typing import Tuple, Union
 import duckdb
 import psutil
 
-from vtlengine.Exceptions import VTLEngineException  # type: ignore[import-untyped]
+from vtlengine.Exceptions import RunTimeError  # type: ignore[import-untyped]
 
 # =============================================================================
 # Decimal Configuration
@@ -44,8 +44,8 @@ MIN_DECIMAL_SCALE = 6
 
 DISABLE_VALUE = -1
 
-DECIMAL_WIDTH: int = int(os.getenv(DECIMAL_WIDTH_ENV_VAR, DEFAULT_DECIMAL_WIDTH))
-DECIMAL_SCALE: int = int(os.getenv(DECIMAL_SCALE_ENV_VAR, DEFAULT_DECIMAL_SCALE))
+DECIMAL_WIDTH = DEFAULT_DECIMAL_WIDTH
+DECIMAL_SCALE = DEFAULT_DECIMAL_SCALE
 
 
 def get_decimal_type() -> str:
@@ -78,11 +78,16 @@ def set_decimal_config() -> None:
         scale: Number of decimal places
     """
     global DECIMAL_WIDTH, DECIMAL_SCALE
+    DECIMAL_WIDTH = int(os.getenv(DECIMAL_WIDTH_ENV_VAR, DECIMAL_WIDTH))
+    DECIMAL_SCALE = int(os.getenv(DECIMAL_SCALE_ENV_VAR, DECIMAL_SCALE))
 
-    if DECIMAL_SCALE != DISABLE_VALUE and (
-        DECIMAL_SCALE < MIN_DECIMAL_SCALE or DECIMAL_SCALE > MAX_DECIMAL_SCALE
-    ):
-        raise VTLEngineException(
+    if DECIMAL_WIDTH == DISABLE_VALUE:
+        DECIMAL_WIDTH = MAX_DECIMAL_WIDTH
+    if DECIMAL_SCALE == DISABLE_VALUE:
+        DECIMAL_SCALE = MAX_DECIMAL_SCALE
+
+    if DECIMAL_SCALE < MIN_DECIMAL_SCALE or DECIMAL_SCALE > MAX_DECIMAL_SCALE:
+        raise RunTimeError(
             code="0-4-1-1",
             env_var=DECIMAL_SCALE_ENV_VAR,
             value=DECIMAL_SCALE,
@@ -91,10 +96,8 @@ def set_decimal_config() -> None:
             disable_value=DISABLE_VALUE,
         )
 
-    if DECIMAL_WIDTH != DISABLE_VALUE and (
-        DECIMAL_WIDTH < MIN_DECIMAL_WIDTH or DECIMAL_SCALE > MAX_DECIMAL_WIDTH
-    ):
-        raise VTLEngineException(
+    if DECIMAL_WIDTH < MIN_DECIMAL_WIDTH or DECIMAL_SCALE > MAX_DECIMAL_WIDTH:
+        raise RunTimeError(
             code="0-4-1-1",
             env_var=DECIMAL_WIDTH_ENV_VAR,
             value=DECIMAL_WIDTH,
@@ -102,9 +105,6 @@ def set_decimal_config() -> None:
             max_value=MAX_DECIMAL_WIDTH,
             disable_value=DISABLE_VALUE,
         )
-
-
-set_decimal_config()
 
 
 # =============================================================================
@@ -208,6 +208,9 @@ def configure_duckdb_connection(conn: duckdb.DuckDBPyConnection) -> None:
     # Performance optimizations for large data loads
     # Enable object cache for repeated query patterns
     conn.execute("SET enable_object_cache = true")
+
+    # Configure decimal handler
+    set_decimal_config()
 
 
 def create_configured_connection(database: str = ":memory:") -> duckdb.DuckDBPyConnection:

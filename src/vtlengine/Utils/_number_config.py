@@ -8,7 +8,7 @@ that control Number type behavior in numeric operations, comparisons, and output
 import os
 from typing import Optional
 
-from vtlengine.Exceptions import VTLEngineException
+from vtlengine.Exceptions import RunTimeError
 
 # Environment variable names
 ENV_COMPARISON_THRESHOLD = "COMPARISON_ABSOLUTE_THRESHOLD"
@@ -48,7 +48,7 @@ def _parse_env_value(env_var: str) -> Optional[int]:
     try:
         int_value = int(value)
     except ValueError:
-        raise VTLEngineException(
+        raise RunTimeError(
             code="0-4-1-1",
             env_var=env_var,
             value=value,
@@ -61,7 +61,7 @@ def _parse_env_value(env_var: str) -> Optional[int]:
         return DISABLED_VALUE
 
     if int_value < MIN_SIGNIFICANT_DIGITS or int_value > MAX_SIGNIFICANT_DIGITS:
-        raise VTLEngineException(
+        raise RunTimeError(
             code="0-4-1-1",
             env_var=env_var,
             value=value,
