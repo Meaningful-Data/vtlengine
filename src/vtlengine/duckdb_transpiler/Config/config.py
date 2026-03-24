@@ -2,8 +2,8 @@
 DuckDB Transpiler Configuration.
 
 Configuration values can be set via environment variables:
-- VTL_DECIMAL_PRECISION: Total number of digits for DECIMAL type (default: 18)
-- VTL_DECIMAL_SCALE: Number of decimal places for DECIMAL type (default: 6)
+- VTL_DECIMAL_PRECISION: Total number of digits for DECIMAL type (default: 18, -1 to disable)
+- VTL_DECIMAL_SCALE: Number of decimal places for DECIMAL type (default: 8, -1 to disable)
 - VTL_MEMORY_LIMIT: Max memory for DuckDB (e.g., "8GB", "80%") (default: "80%")
 - VTL_THREADS: Number of threads for DuckDB (default: system cores)
 - VTL_TEMP_DIRECTORY: Directory for spill-to-disk (default: system temp)
@@ -28,17 +28,20 @@ import psutil  # type: ignore[import-untyped]
 # Decimal Configuration
 # =============================================================================
 
-DECIMAL_PRECISION: int = int(os.getenv("VTL_DECIMAL_PRECISION", "18"))
-DECIMAL_SCALE: int = int(os.getenv("VTL_DECIMAL_SCALE", "6"))
+DECIMAL_PRECISION: int = int(os.getenv("VTL_DECIMAL_PRECISION", "24"))
+DECIMAL_SCALE: int = int(os.getenv("VTL_DECIMAL_SCALE", "8"))
 
 
 def get_decimal_type() -> str:
     """
-    Get the DuckDB DECIMAL type string with configured precision and scale.
+    Get the DuckDB type string for Number columns.
 
     Returns:
-        DECIMAL type string, e.g., "DECIMAL(12,6)"
+        "DOUBLE" if disabled (scale or precision is -1),
+        otherwise DECIMAL type string, e.g., "DECIMAL(18,8)"
     """
+    if DECIMAL_SCALE == -1:
+        return "DOUBLE"
     return f"DECIMAL({DECIMAL_PRECISION},{DECIMAL_SCALE})"
 
 
@@ -65,6 +68,10 @@ def set_decimal_config(precision: int, scale: int) -> None:
     """
     global DECIMAL_PRECISION, DECIMAL_SCALE
 
+    if precision == -1 or scale == -1:
+        DECIMAL_PRECISION = precision
+        DECIMAL_SCALE = scale
+        return
     if precision < 1 or precision > 38:
         raise ValueError("Precision must be between 1 and 38")
     if scale < 0 or scale > precision:
