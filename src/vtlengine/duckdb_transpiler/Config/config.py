@@ -11,7 +11,7 @@ Configuration values can be set via environment variables:
   (e.g., "100GB") (default: available disk space)
 
 Example:
-    export VTL_DECIMAL_PRECISION=18
+    export VTL_DECIMAL_PRECISION=28
     export VTL_DECIMAL_SCALE=8
     export VTL_MEMORY_LIMIT=16GB
     export VTL_THREADS=4
@@ -28,8 +28,18 @@ import psutil  # type: ignore[import-untyped]
 # Decimal Configuration
 # =============================================================================
 
-DECIMAL_PRECISION: int = int(os.getenv("VTL_DECIMAL_PRECISION", "24"))
-DECIMAL_SCALE: int = int(os.getenv("VTL_DECIMAL_SCALE", "8"))
+DECIMAL_SCALE_ENV_VAR = "OUTPUT_NUMBER_SIGNIFICANT_DIGITS"
+
+DEFAULT_DECIMAL_PRECISION = 28
+DEFAULT_DECIMAL_SCALE = 8
+
+MAX_DECIMAL_SCALE = 15
+MIN_DECIMAL_SCALE = 6
+
+DISABLED_VALUE = -1
+
+DECIMAL_PRECISION: int = DEFAULT_DECIMAL_PRECISION
+DECIMAL_SCALE: int = int(os.getenv(DECIMAL_SCALE_ENV_VAR, MIN_DECIMAL_SCALE))
 
 
 def get_decimal_type() -> str:
@@ -38,10 +48,8 @@ def get_decimal_type() -> str:
 
     Returns:
         "DOUBLE" if disabled (scale or precision is -1),
-        otherwise DECIMAL type string, e.g., "DECIMAL(18,8)"
+        otherwise DECIMAL type string, e.g., "DECIMAL(28,15)"
     """
-    if DECIMAL_SCALE == -1:
-        return "DOUBLE"
     return f"DECIMAL({DECIMAL_PRECISION},{DECIMAL_SCALE})"
 
 
@@ -55,30 +63,27 @@ def get_decimal_config() -> Tuple[int, int]:
     return (DECIMAL_PRECISION, DECIMAL_SCALE)
 
 
-def set_decimal_config(precision: int, scale: int) -> None:
+def set_decimal_config() -> None:
     """
     Set decimal precision and scale at runtime.
 
     Args:
         precision: Total number of digits
         scale: Number of decimal places
-
-    Raises:
-        ValueError: If scale > precision or values are invalid
     """
     global DECIMAL_PRECISION, DECIMAL_SCALE
 
-    if precision == -1 or scale == -1:
-        DECIMAL_PRECISION = precision
-        DECIMAL_SCALE = scale
+    if DECIMAL_SCALE == DISABLED_VALUE:
         return
-    if precision < 1 or precision > 38:
-        raise ValueError("Precision must be between 1 and 38")
-    if scale < 0 or scale > precision:
-        raise ValueError("Scale must be between 0 and precision")
+    if DECIMAL_SCALE < MIN_DECIMAL_SCALE or DECIMAL_SCALE > MAX_DECIMAL_SCALE:
+        raise ValueError(
+            f"Invalid value for {DECIMAL_SCALE_ENV_VAR}: {DECIMAL_SCALE}. "
+            f"Expected an integer between {MIN_DECIMAL_SCALE} and {MAX_DECIMAL_SCALE}, "
+            f"or {DISABLED_VALUE} to disable."
+        )
 
-    DECIMAL_PRECISION = precision
-    DECIMAL_SCALE = scale
+
+set_decimal_config()
 
 
 # =============================================================================
