@@ -66,24 +66,10 @@ time_operators.remove(100)
 # Remove HR Rules cyclic graph
 validation_operators.remove(159)
 
-# duckdb random references
-random_ref = {
-    184: pd.DataFrame(
-        {
-            "Id_1": [10, 10, 11],
-            "Id_2": ["A", "B", "A"],
-            "Me_1": [0.533038, 0.873391, 0.557233],
-        }
-    ),
-    185: pd.DataFrame(
-        {
-            "Id_1": [10, 10, 11],
-            "Id_2": ["A", "B", "A"],
-            "Me_1": [16.0, 4.0, 7.2],
-            "Me_2": [0.476689, 0.229716, 0.105162],
-        }
-    ),
-}
+# Remove random tests if duckdb
+if _use_duckdb_backend:
+    new_operators.remove(184)
+    new_operators.remove(185)
 
 # Multimeasures on specific operators that must raise errors
 exceptions_tests = [27, 31]
@@ -220,8 +206,6 @@ def get_test_files(dataPoints, dataStructures, dp_dir, param):
 def test_reference_duckdb(input_datasets, reference_datasets, ast, param):
     warnings.filterwarnings("ignore", category=FutureWarning)
     reference_datasets = load_dataset(*reference_datasets, dp_dir=reference_dp_dir, param=param)
-    if param in random_ref:
-        reference_datasets["DS_r"].data = random_ref[param]
 
     vtl, ds, dp = get_test_files(*input_datasets, dp_dir=input_dp_dir, param=param)
     vd_files = list(value_domain_dir.glob("*.json"))
