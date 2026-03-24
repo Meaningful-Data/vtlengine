@@ -2,7 +2,7 @@
 DuckDB Transpiler Configuration.
 
 Configuration values can be set via environment variables:
-- VTL_DECIMAL_PRECISION: Total number of digits for DECIMAL type (default: 18, -1 to disable)
+- VTL_DECIMAL_WIDTH: Total number of digits for DECIMAL type (default: 18, -1 to disable)
 - VTL_DECIMAL_SCALE: Number of decimal places for DECIMAL type (default: 8, -1 to disable)
 - VTL_MEMORY_LIMIT: Max memory for DuckDB (e.g., "8GB", "80%") (default: "80%")
 - VTL_THREADS: Number of threads for DuckDB (default: system cores)
@@ -11,8 +11,8 @@ Configuration values can be set via environment variables:
   (e.g., "100GB") (default: available disk space)
 
 Example:
-    export VTL_DECIMAL_PRECISION=28
-    export VTL_DECIMAL_SCALE=8
+    export VTL_DECIMAL_WIDTH=28
+    export VTL_DECIMAL_SCALE=10
     export VTL_MEMORY_LIMIT=16GB
     export VTL_THREADS=4
 """
@@ -29,17 +29,18 @@ import psutil  # type: ignore[import-untyped]
 # =============================================================================
 
 DECIMAL_SCALE_ENV_VAR = "OUTPUT_NUMBER_SIGNIFICANT_DIGITS"
+DECIMAL_WIDTH_ENV_VAR = "DUCKDB_DECIMAL_WIDTH"
 
-DEFAULT_DECIMAL_PRECISION = 28
-DEFAULT_DECIMAL_SCALE = 8
+DEFAULT_DECIMAL_WIDTH = 28
+DEFAULT_DECIMAL_SCALE = 10
 
 MAX_DECIMAL_SCALE = 15
 MIN_DECIMAL_SCALE = 6
 
 DISABLED_VALUE = -1
 
-DECIMAL_PRECISION: int = DEFAULT_DECIMAL_PRECISION
-DECIMAL_SCALE: int = int(os.getenv(DECIMAL_SCALE_ENV_VAR, MIN_DECIMAL_SCALE))
+DECIMAL_WIDTH: int = int(os.getenv(DECIMAL_WIDTH_ENV_VAR, DEFAULT_DECIMAL_WIDTH))
+DECIMAL_SCALE: int = int(os.getenv(DECIMAL_SCALE_ENV_VAR, DEFAULT_DECIMAL_SCALE))
 
 
 def get_decimal_type() -> str:
@@ -50,7 +51,7 @@ def get_decimal_type() -> str:
         "DOUBLE" if disabled (scale or precision is -1),
         otherwise DECIMAL type string, e.g., "DECIMAL(28,15)"
     """
-    return f"DECIMAL({DECIMAL_PRECISION},{DECIMAL_SCALE})"
+    return f"DECIMAL({DECIMAL_WIDTH},{DECIMAL_SCALE})"
 
 
 def get_decimal_config() -> Tuple[int, int]:
@@ -60,7 +61,7 @@ def get_decimal_config() -> Tuple[int, int]:
     Returns:
         Tuple of (precision, scale)
     """
-    return (DECIMAL_PRECISION, DECIMAL_SCALE)
+    return (DECIMAL_WIDTH, DECIMAL_SCALE)
 
 
 def set_decimal_config() -> None:
@@ -71,7 +72,7 @@ def set_decimal_config() -> None:
         precision: Total number of digits
         scale: Number of decimal places
     """
-    global DECIMAL_PRECISION, DECIMAL_SCALE
+    global DECIMAL_WIDTH, DECIMAL_SCALE
 
     if DECIMAL_SCALE == DISABLED_VALUE:
         return
