@@ -22,22 +22,27 @@ import tempfile
 from typing import Tuple, Union
 
 import duckdb
-import psutil  # type: ignore[import-untyped]
+import psutil
+
+from vtlengine.Exceptions import VTLEngineException  # type: ignore[import-untyped]
 
 # =============================================================================
 # Decimal Configuration
 # =============================================================================
 
-DECIMAL_SCALE_ENV_VAR = "OUTPUT_NUMBER_SIGNIFICANT_DIGITS"
 DECIMAL_WIDTH_ENV_VAR = "DUCKDB_DECIMAL_WIDTH"
+DECIMAL_SCALE_ENV_VAR = "OUTPUT_NUMBER_SIGNIFICANT_DIGITS"
 
 DEFAULT_DECIMAL_WIDTH = 28
 DEFAULT_DECIMAL_SCALE = 10
 
+MAX_DECIMAL_WIDTH = 38
+MIN_DECIMAL_WIDTH = 6
+
 MAX_DECIMAL_SCALE = 15
 MIN_DECIMAL_SCALE = 6
 
-DISABLED_VALUE = -1
+DISABLE_VALUE = -1
 
 DECIMAL_WIDTH: int = int(os.getenv(DECIMAL_WIDTH_ENV_VAR, DEFAULT_DECIMAL_WIDTH))
 DECIMAL_SCALE: int = int(os.getenv(DECIMAL_SCALE_ENV_VAR, DEFAULT_DECIMAL_SCALE))
@@ -74,13 +79,28 @@ def set_decimal_config() -> None:
     """
     global DECIMAL_WIDTH, DECIMAL_SCALE
 
-    if DECIMAL_SCALE == DISABLED_VALUE:
-        return
-    if DECIMAL_SCALE < MIN_DECIMAL_SCALE or DECIMAL_SCALE > MAX_DECIMAL_SCALE:
-        raise ValueError(
-            f"Invalid value for {DECIMAL_SCALE_ENV_VAR}: {DECIMAL_SCALE}. "
-            f"Expected an integer between {MIN_DECIMAL_SCALE} and {MAX_DECIMAL_SCALE}, "
-            f"or {DISABLED_VALUE} to disable."
+    if DECIMAL_SCALE != DISABLE_VALUE and (
+        DECIMAL_SCALE < MIN_DECIMAL_SCALE or DECIMAL_SCALE > MAX_DECIMAL_SCALE
+    ):
+        raise VTLEngineException(
+            code="0-4-1-1",
+            env_var=DECIMAL_SCALE_ENV_VAR,
+            value=DECIMAL_SCALE,
+            min_value=MIN_DECIMAL_SCALE,
+            max_value=MAX_DECIMAL_SCALE,
+            disable_value=DISABLE_VALUE,
+        )
+
+    if DECIMAL_WIDTH != DISABLE_VALUE and (
+        DECIMAL_WIDTH < MIN_DECIMAL_WIDTH or DECIMAL_SCALE > MAX_DECIMAL_WIDTH
+    ):
+        raise VTLEngineException(
+            code="0-4-1-1",
+            env_var=DECIMAL_WIDTH_ENV_VAR,
+            value=DECIMAL_WIDTH,
+            min_value=MIN_DECIMAL_WIDTH,
+            max_value=MAX_DECIMAL_WIDTH,
+            disable_value=DISABLE_VALUE,
         )
 
 

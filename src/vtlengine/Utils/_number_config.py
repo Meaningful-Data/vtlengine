@@ -8,6 +8,8 @@ that control Number type behavior in numeric operations, comparisons, and output
 import os
 from typing import Optional
 
+from vtlengine.Exceptions import VTLEngineException
+
 # Environment variable names
 ENV_COMPARISON_THRESHOLD = "COMPARISON_ABSOLUTE_THRESHOLD"
 ENV_OUTPUT_SIGNIFICANT_DIGITS = "OUTPUT_NUMBER_SIGNIFICANT_DIGITS"
@@ -46,20 +48,26 @@ def _parse_env_value(env_var: str) -> Optional[int]:
     try:
         int_value = int(value)
     except ValueError:
-        raise ValueError(
-            f"Invalid value for {env_var}: '{value}'. "
-            f"Expected an integer between {MIN_SIGNIFICANT_DIGITS} and {MAX_SIGNIFICANT_DIGITS}, "
-            f"or {DISABLED_VALUE} to disable."
-        ) from None
+        raise VTLEngineException(
+            code="0-4-1-1",
+            env_var=env_var,
+            value=value,
+            min_value=MIN_SIGNIFICANT_DIGITS,
+            max_value=MAX_SIGNIFICANT_DIGITS,
+            disable_value=DISABLED_VALUE,
+        )
 
     if int_value == DISABLED_VALUE:
         return DISABLED_VALUE
 
     if int_value < MIN_SIGNIFICANT_DIGITS or int_value > MAX_SIGNIFICANT_DIGITS:
-        raise ValueError(
-            f"Invalid value for {env_var}: {int_value}. "
-            f"Expected an integer between {MIN_SIGNIFICANT_DIGITS} and {MAX_SIGNIFICANT_DIGITS}, "
-            f"or {DISABLED_VALUE} to disable."
+        raise VTLEngineException(
+            code="0-4-1-1",
+            env_var=env_var,
+            value=value,
+            min_value=MIN_SIGNIFICANT_DIGITS,
+            max_value=MAX_SIGNIFICANT_DIGITS,
+            disable_value=DISABLED_VALUE,
         )
 
     return int_value

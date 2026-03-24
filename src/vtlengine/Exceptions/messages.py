@@ -224,6 +224,14 @@ centralised_messages = {
         "description": "Raised when URL datapoints are provided but data_structures is not a "
         "file path or URL for fetching the SDMX structure definition.",
     },
+    # Env var errors
+    "0-4-1-1": {
+        "message": "Invalid value for {env_var}: {value}. "
+        "Expected an integer between {min_value} and {max_value}, "
+        "or {disable_value} to disable.",
+        "description": "Raised when the provided time period output format "
+        "is not one of the supported representations.",
+    },
     # ------------Operators-------------
     # General Semantic errors
     "1-1-1-1": {
