@@ -75,7 +75,8 @@ class TestHelper(TestCase):
                 components = {}
 
                 for component in dataset_json["DataStructure"]:
-                    check_key("data_type", SCALAR_TYPES.keys(), component["type"])
+                    type_key = "type" if "type" in component else "data_type"
+                    check_key(type_key, SCALAR_TYPES.keys(), component[type_key])
                     check_key("role", Role_keys, component["role"])
                     components[component["name"]] = Component(
                         name=component["name"],

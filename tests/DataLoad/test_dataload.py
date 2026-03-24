@@ -883,7 +883,7 @@ class DataLoadTest(DataLoadHelper):
         """ """
         code = "IK-3"
         number_inputs = 1
-        message = "Invalid key on data_type field: Numver. Did you mean Number?."
+        message = "Invalid key on type field: Numver. Did you mean Number?."
 
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_message=message
@@ -893,7 +893,7 @@ class DataLoadTest(DataLoadHelper):
         """ """
         code = "IK-4"
         number_inputs = 1
-        message = "Invalid key on data_type field: boolean. Did you mean Boolean?."
+        message = "Invalid key on type field: boolean. Did you mean Boolean?."
 
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_message=message
@@ -903,7 +903,7 @@ class DataLoadTest(DataLoadHelper):
         """ """
         code = "IK-5"
         number_inputs = 1
-        message = "Invalid key on data_type field: TimePeriod. Did you mean Time_Period?."
+        message = "Invalid key on type field: TimePeriod. Did you mean Time_Period?."
 
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_message=message
@@ -913,7 +913,7 @@ class DataLoadTest(DataLoadHelper):
         """ """
         code = "IK-6"
         number_inputs = 1
-        message = "Invalid key on data_type field: TimPerod. Did you mean Time_Period?."
+        message = "Invalid key on type field: TimPerod. Did you mean Time_Period?."
 
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_message=message
@@ -923,7 +923,7 @@ class DataLoadTest(DataLoadHelper):
         """ """
         code = "IK-7"
         number_inputs = 1
-        message = "Invalid key on data_type field: jbhfae."
+        message = "Invalid key on type field: jbhfae."
 
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_message=message
