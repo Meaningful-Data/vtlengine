@@ -451,7 +451,9 @@ class TestCastOperator:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = 'SELECT "Id_1", STRPTIME("Me_1", \'%Y-%m-%d\')::DATE AS "Me_1" FROM "DS_1"'
+        expected_sql = """
+            SELECT "Id_1", STRFTIME(STRPTIME("Me_1", '%Y-%m-%d'), '%Y-%m-%d %H:%M:%S') AS "Me_1" FROM "DS_1"
+        """
         assert_sql_equal(sql, expected_sql)
 
 

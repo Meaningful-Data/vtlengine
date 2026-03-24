@@ -410,7 +410,7 @@ class TestTypeMappings:
             ("Number", "DOUBLE"),
             ("String", "VARCHAR"),
             ("Boolean", "BOOLEAN"),
-            ("Date", "DATE"),
+            ("Date", "TIMESTAMP"),
             ("TimePeriod", "VARCHAR"),
             ("TimeInterval", "VARCHAR"),
             ("Duration", "VARCHAR"),
