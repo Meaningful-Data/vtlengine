@@ -245,7 +245,8 @@ class InterpreterAnalyzer(ASTTemplate):
                 vtlengine.Exceptions.dataset_output = child.left.value  # type: ignore[attr-defined]
                 self._load_datapoints_efficient(statement_num)
             if not isinstance(
-                child, (AST.HRuleset, AST.DPRuleset, AST.Operator)
+                child,
+                (AST.HRuleset, AST.DPRuleset, AST.Operator, AST.ViralPropagationDef),
             ) and not isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
                 raise SemanticError("1-2-5")
             result = self.visit(child)
@@ -411,6 +412,11 @@ class InterpreterAnalyzer(ASTTemplate):
         }
 
         self.hrs[node.name] = ruleset_data
+
+    def visit_ViralPropagationDef(self, node: AST.ViralPropagationDef) -> None:
+        """Store the viral propagation definition for later use by operators."""
+        # Storage will be wired in Task 7 (ViralPropagationRegistry)
+        pass
 
     # Execution Language
     def visit_Assignment(self, node: AST.Assignment) -> Any:

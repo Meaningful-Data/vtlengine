@@ -134,6 +134,7 @@ IDENTIFIER = "identifier"
 MEASURE = "measure"
 ATTRIBUTE = "attribute"
 VIRAL_ATTRIBUTE = "viral attribute"
+PROPAGATION = "propagation"
 # Other Operators.
 TO = "to"
 AS = "as"

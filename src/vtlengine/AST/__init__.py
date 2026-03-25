@@ -733,6 +733,44 @@ class DPRuleset(AST):
 
 
 @dataclass
+class EnumeratedVpClause(AST):
+    """A single enumerated clause: when "A" [and "B"] then "C"."""
+
+    name: Optional[str]
+    values: List[str]
+    result: str
+
+    __eq__ = AST.ast_equality
+
+
+@dataclass
+class AggregateVpClause(AST):
+    """An aggregate clause: aggregate min|max|sum|avg"""
+
+    function: str
+
+    __eq__ = AST.ast_equality
+
+
+@dataclass
+class ViralPropagationDef(AST):
+    """
+    define viral propagation name (valuedomain|variable target) is
+        clauses
+    end viral propagation
+    """
+
+    name: str
+    signature_type: str
+    target: str
+    enumerated_clauses: List[EnumeratedVpClause]
+    aggregate_clause: Optional[AggregateVpClause]
+    default_value: Optional[str]
+
+    __eq__ = AST.ast_equality
+
+
+@dataclass
 class EvalOp(AST):
     """
     EvalOp: (name, children, output, language)

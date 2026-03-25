@@ -115,6 +115,7 @@ lexer grammar VtlTokens;
   EXP               : 'exp';
   ROLE              : 'componentRole';
   VIRAL             : 'viral';
+  PROPAGATION       : 'propagation';
   CHARSET_MATCH     : 'match_characters';
   TYPE              : 'type';
   NVL               : 'nvl';
