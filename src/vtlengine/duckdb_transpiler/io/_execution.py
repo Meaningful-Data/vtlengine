@@ -6,7 +6,7 @@ handling dataset loading/saving with DAG scheduling for memory efficiency.
 """
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import duckdb
 import pandas as pd
@@ -93,16 +93,26 @@ def _project_columns(ds: Dataset) -> None:
             ds.data = ds.data[expected_cols]
 
 
-def _convert_date_columns(ds: Dataset) -> None:
+def _convert_date_columns(
+    ds: Dataset, timestamp_columns: Optional[Set[str]] = None
+) -> None:
     """Convert DuckDB datetime columns to VTL string format.
 
     DuckDB returns Timestamp/NaT for date columns but the VTL engine
     (Pandas backend) uses string dates and None for nulls.
-    Preserves time components when present (e.g. '2020-01-15 10:30:00').
-    If any non-null value has a non-midnight time, all values in the column
-    are formatted with time to preserve consistency.
-    Only converts columns that actually have datetime dtype (not already strings).
+
+    Formatting depends on the DuckDB column type and actual values:
+    - DATE columns → always "YYYY-MM-DD" (date-only)
+    - TIMESTAMP columns with any non-midnight value → all with time
+      (preserves midnight "00:00:00" for columns that originally had datetimes)
+    - TIMESTAMP columns with all-midnight values → "YYYY-MM-DD" (date-only)
+      (result of date arithmetic on DATE inputs, e.g. DATE + INTERVAL)
+
+    Args:
+        timestamp_columns: Set of column names that are TIMESTAMP in DuckDB.
+            DATE columns (not in this set) are formatted as date-only.
     """
+    ts_cols = timestamp_columns or set()
     if ds.components and ds.data is not None:
         for comp_name, comp in ds.components.items():
             if (
@@ -110,19 +120,22 @@ def _convert_date_columns(ds: Dataset) -> None:
                 and comp_name in ds.data.columns
                 and pd.api.types.is_datetime64_any_dtype(ds.data[comp_name])
             ):
-                col = ds.data[comp_name]
-                non_null = col.dropna()
-                has_time = False
-                if len(non_null) > 0:
-                    has_time = bool(
+                if comp_name in ts_cols:
+                    # TIMESTAMP: check if any non-null value has non-midnight time
+                    non_null = ds.data[comp_name].dropna()
+                    has_time = len(non_null) > 0 and bool(
                         any(v.hour or v.minute or v.second or v.microsecond for v in non_null)
                     )
-                if has_time:
-                    ds.data[comp_name] = col.apply(
-                        lambda x: _format_timestamp_with_time(x) if pd.notna(x) else None  # type: ignore[redundant-expr,unused-ignore]
-                    )
+                    if has_time:
+                        ds.data[comp_name] = ds.data[comp_name].apply(
+                            lambda x: _format_timestamp_with_time(x) if pd.notna(x) else None  # type: ignore[redundant-expr,unused-ignore]
+                        )
+                    else:
+                        ds.data[comp_name] = ds.data[comp_name].apply(
+                            lambda x: x.strftime("%Y-%m-%d") if pd.notna(x) else None  # type: ignore[redundant-expr,unused-ignore]
+                        )
                 else:
-                    ds.data[comp_name] = col.apply(
+                    ds.data[comp_name] = ds.data[comp_name].apply(
                         lambda x: x.strftime("%Y-%m-%d") if pd.notna(x) else None  # type: ignore[redundant-expr,unused-ignore]
                     )
 
@@ -267,12 +280,22 @@ def fetch_result(
     if output_folder:
         save_datapoints_duckdb(conn, result_name, output_folder, delete_after_save=False)
 
+    # Detect TIMESTAMP columns before fetching (DATE vs TIMESTAMP distinction)
+    rel = conn.execute(f'SELECT * FROM "{result_name}"')
+    timestamp_cols: Set[str] = set()
+    if rel.description:
+        for col_desc in rel.description:
+            col_name = col_desc[0]
+            col_type_name = str(col_desc[1])
+            if "TIMESTAMP" in col_type_name:
+                timestamp_cols.add(col_name)
+
     # Fetch as DataFrame
-    result_df = conn.execute(f'SELECT * FROM "{result_name}"').fetchdf()
+    result_df = rel.fetchdf()
     ds = output_datasets.get(result_name, Dataset(name=result_name, components={}, data=None))
     ds.data = result_df
     _project_columns(ds)
-    _convert_date_columns(ds)
+    _convert_date_columns(ds, timestamp_cols)
 
     return ds
 

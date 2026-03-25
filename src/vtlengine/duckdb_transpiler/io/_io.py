@@ -12,7 +12,7 @@ from typing import Dict, List, Optional, Tuple, Union
 import duckdb
 import pandas as pd
 
-from vtlengine.DataTypes import TimePeriod
+from vtlengine.DataTypes import Date, TimePeriod
 from vtlengine.duckdb_transpiler.io._validation import (
     build_create_table_sql,
     build_csv_column_types,
@@ -191,8 +191,13 @@ def load_datapoints_duckdb(
     # Get identifier columns (needed for duplicate validation)
     id_columns = [n for n, c in components.items() if c.role == Role.IDENTIFIER]
 
+    # For CSV, Date columns use TIMESTAMP as safe default (can't inspect values cheaply)
+    csv_date_overrides = {
+        n: "TIMESTAMP" for n, c in components.items() if c.data_type == Date
+    }
+
     # 1. Create table (NOT NULL only, no PRIMARY KEY)
-    conn.execute(build_create_table_sql(dataset_name, components))
+    conn.execute(build_create_table_sql(dataset_name, components, csv_date_overrides))
 
     try:
         # 2. Detect CSV format (delimiter, quote, escape) using sniff_csv
@@ -213,7 +218,9 @@ def load_datapoints_duckdb(
 
         # 5. Build column type mapping and SELECT expressions
         csv_dtypes = build_csv_column_types(components, keep_columns)
-        select_cols = build_select_columns(components, keep_columns, csv_dtypes, dataset_name)
+        select_cols = build_select_columns(
+            components, keep_columns, csv_dtypes, dataset_name, csv_date_overrides
+        )
 
         # 6. Build type string for read_csv (must include ALL CSV columns)
         # Include extra SDMX columns (DATAFLOW, ACTION, etc.) as VARCHAR so
@@ -425,9 +432,30 @@ def extract_datapoint_paths(
     return path_dict if path_dict else None, df_dict
 
 
+def _detect_date_type_overrides(
+    df: pd.DataFrame, components: Dict[str, Component]
+) -> Dict[str, str]:
+    """Determine which Date columns need TIMESTAMP instead of DATE.
+
+    Inspects actual string values: if any value in a Date column has a time
+    component (length > 10 with 'T' or ' ' separator), the column is stored
+    as TIMESTAMP to preserve the time part. Otherwise DATE is used.
+    """
+    overrides: Dict[str, str] = {}
+    for comp_name, comp in components.items():
+        if comp.data_type != Date or comp_name not in df.columns:
+            continue
+        for val in df[comp_name].dropna():
+            if isinstance(val, str) and len(val) > 10 and val[10] in ("T", " "):
+                overrides[comp_name] = "TIMESTAMP"
+                break
+    return overrides
+
+
 def _build_dataframe_select_columns(
     components: Dict[str, Component],
     df_columns: Optional[List[str]] = None,
+    type_overrides: Optional[Dict[str, str]] = None,
 ) -> List[str]:
     """Build SELECT expressions with explicit CAST for DataFrame → DuckDB table insertion.
 
@@ -435,9 +463,10 @@ def _build_dataframe_select_columns(
     Columns missing from the DataFrame are filled with NULL.
     """
     df_col_set = set(df_columns) if df_columns is not None else None
+    overrides = type_overrides or {}
     exprs: List[str] = []
     for comp_name, comp in components.items():
-        target_type = get_column_sql_type(comp)
+        target_type = overrides.get(comp_name, get_column_sql_type(comp))
         if df_col_set is not None and comp_name not in df_col_set:
             exprs.append(f'CAST(NULL AS {target_type}) AS "{comp_name}"')
         else:
@@ -466,14 +495,19 @@ def register_dataframes(
 
         components = input_datasets[name].components
 
+        # Detect Date columns that contain time values → TIMESTAMP instead of DATE
+        type_overrides = _detect_date_type_overrides(df, components)
+
         # Create table with proper schema
-        conn.execute(build_create_table_sql(name, components))
+        conn.execute(build_create_table_sql(name, components, type_overrides))
 
         # Register DataFrame and insert data with explicit type casting
         temp_view = f"_temp_{name}"
         conn.register(temp_view, df)
         try:
-            select_exprs = _build_dataframe_select_columns(components, list(df.columns))
+            select_exprs = _build_dataframe_select_columns(
+                components, list(df.columns), type_overrides
+            )
             col_list = ", ".join(f'"{c}"' for c in components)
             conn.execute(
                 f'INSERT INTO "{name}" ({col_list}) '

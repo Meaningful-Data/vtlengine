@@ -9,7 +9,7 @@ This module contains:
 """
 
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import duckdb
 
@@ -132,7 +132,7 @@ def get_column_sql_type(comp: Component) -> str:
     - Integer → BIGINT
     - Number → DECIMAL(precision, scale) from config
     - Boolean → BOOLEAN
-    - Date → DATE
+    - Date → DATE (may be overridden to TIMESTAMP when values contain time)
     - TimePeriod, TimeInterval, Duration, String → VARCHAR
     """
     if comp.data_type == Integer:
@@ -142,7 +142,7 @@ def get_column_sql_type(comp: Component) -> str:
     elif comp.data_type == Boolean:
         return "BOOLEAN"
     elif comp.data_type == Date:
-        return "TIMESTAMP"
+        return "DATE"
     else:
         # String, TimePeriod, TimeInterval, Duration → VARCHAR
         return "VARCHAR"
@@ -157,6 +157,7 @@ def get_csv_read_type(comp: Component) -> str:
 
     Note: Integer columns are read as DOUBLE to enable strict validation
     that rejects non-integer values (e.g., 1.5) instead of silently rounding.
+    Date columns are read as VARCHAR to preserve original format (date-only vs datetime).
     """
     if comp.data_type == Integer:
         return "DOUBLE"  # Read as DOUBLE to validate no decimal component
@@ -165,7 +166,7 @@ def get_csv_read_type(comp: Component) -> str:
     elif comp.data_type == Boolean:
         return "BOOLEAN"
     elif comp.data_type == Date:
-        return "TIMESTAMP"
+        return "VARCHAR"  # Read as string; cast to DATE or TIMESTAMP during INSERT
     else:
         return "VARCHAR"
 
@@ -175,17 +176,27 @@ def get_csv_read_type(comp: Component) -> str:
 # =============================================================================
 
 
-def build_create_table_sql(table_name: str, components: Dict[str, Component]) -> str:
+def build_create_table_sql(
+    table_name: str,
+    components: Dict[str, Component],
+    type_overrides: Optional[Dict[str, str]] = None,
+) -> str:
     """
     Build CREATE TABLE statement with NOT NULL constraints only.
 
     No PRIMARY KEY - duplicate validation is done post-hoc via GROUP BY.
     This is more memory-efficient for large datasets.
+
+    Args:
+        type_overrides: Optional dict mapping column names to SQL types,
+            used to override the default type (e.g. Date → TIMESTAMP when
+            values contain time components).
     """
     col_defs: List[str] = []
+    overrides = type_overrides or {}
 
     for comp_name, comp in components.items():
-        sql_type = get_column_sql_type(comp)
+        sql_type = overrides.get(comp_name, get_column_sql_type(comp))
 
         if comp.role == Role.IDENTIFIER or not comp.nullable:
             col_defs.append(f'"{comp_name}" {sql_type} NOT NULL')
@@ -348,14 +359,16 @@ def build_select_columns(
     keep_columns: List[str],
     csv_dtypes: Dict[str, str],
     dataset_name: str,
+    type_overrides: Optional[Dict[str, str]] = None,
 ) -> List[str]:
     """Build SELECT column expressions with type casting and validation."""
     select_cols = []
+    overrides = type_overrides or {}
 
     for comp_name, comp in components.items():
         if comp_name in keep_columns:
             csv_type = csv_dtypes.get(comp_name, "VARCHAR")
-            table_type = get_column_sql_type(comp)
+            table_type = overrides.get(comp_name, get_column_sql_type(comp))
 
             # Strict Integer validation: reject non-integer values (e.g., 1.5)
             # Read as DOUBLE, validate no decimal component, then cast to BIGINT
@@ -374,6 +387,16 @@ def build_select_columns(
             # Cast DOUBLE → DECIMAL for Number type
             elif csv_type == "DOUBLE" and "DECIMAL" in table_type:
                 select_cols.append(f'CAST("{comp_name}" AS {table_type}) AS "{comp_name}"')
+            # Date columns: read as VARCHAR, cast to DATE or TIMESTAMP
+            elif csv_type == "VARCHAR" and comp.data_type == Date:
+                if comp.nullable:
+                    select_cols.append(
+                        f'CAST(NULLIF("{comp_name}", \'\') AS {table_type}) AS "{comp_name}"'
+                    )
+                else:
+                    select_cols.append(
+                        f'CAST("{comp_name}" AS {table_type}) AS "{comp_name}"'
+                    )
             elif csv_type == "VARCHAR" and comp.data_type == String:
                 # Strip double quotes from String values (match pandas loader behavior)
                 expr = f"""REPLACE("{comp_name}", '"', '')"""
@@ -388,7 +411,7 @@ def build_select_columns(
         else:
             # Missing column → NULL (only allowed for nullable)
             if comp.nullable:
-                table_type = get_column_sql_type(comp)
+                table_type = overrides.get(comp_name, get_column_sql_type(comp))
                 select_cols.append(f'NULL::{table_type} AS "{comp_name}"')
             else:
                 raise DataLoadError("0-3-1-5", name=dataset_name, comp_name=comp_name)
