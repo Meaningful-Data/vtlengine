@@ -71,3 +71,7 @@ class Attribute(RoleSetter):
 
 class Measure(RoleSetter):
     role = Role.MEASURE
+
+
+class ViralAttribute(RoleSetter):
+    role = Role.VIRAL_ATTRIBUTE

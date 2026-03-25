@@ -133,7 +133,7 @@ CHECK = "check"
 IDENTIFIER = "identifier"
 MEASURE = "measure"
 ATTRIBUTE = "attribute"
-VIRAL_ATTRIBUTE = "viral"
+VIRAL_ATTRIBUTE = "viral attribute"
 # Other Operators.
 TO = "to"
 AS = "as"
