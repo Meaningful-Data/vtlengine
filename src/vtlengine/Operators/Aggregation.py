@@ -35,6 +35,7 @@ from vtlengine.DataTypes.TimeHandling import (
 )
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, Dataset, Role
+from vtlengine.ViralPropagation import get_current_registry
 
 
 def extract_grouping_identifiers(
@@ -257,6 +258,9 @@ class Aggregation(Operator.Unary):
         grouping_keys = result.get_identifiers_names()
         result_df = operand.data.copy() if operand.data is not None else pd.DataFrame()
         measure_names = operand.get_measures_names()
+        viral_attr_names = operand.get_viral_attributes_names()
+        # Keep a copy of viral attrs for post-aggregation propagation
+        viral_df = result_df[grouping_keys + viral_attr_names].copy() if viral_attr_names else None
         result_df = result_df[grouping_keys + measure_names]
         if cls.op == COUNT:
             result_df = result_df.dropna(subset=measure_names, how="any")
@@ -285,6 +289,21 @@ class Aggregation(Operator.Unary):
             aux_df = pd.merge(aux_df, result_df, how="left", on=grouping_keys)
         if having_expr is not None:
             aux_df.dropna(subset=result.get_measures_names(), how="any", inplace=True)
+        # Propagate viral attributes using the registry
+        if viral_df is not None and viral_attr_names:
+            registry = get_current_registry()
+            if grouping_keys:
+                grouped = viral_df.groupby(grouping_keys, sort=False)
+                for va_name in viral_attr_names:
+                    aux_df[va_name] = (
+                        grouped[va_name]
+                        .agg(lambda vals: registry.resolve_group(va_name, list(vals)))
+                        .values
+                    )
+            else:
+                for va_name in viral_attr_names:
+                    aux_df[va_name] = registry.resolve_group(va_name, list(viral_df[va_name]))
+
         for comp_name, comp in result.components.items():
             if comp_name in aux_df.columns:
                 aux_df[comp_name] = aux_df[comp_name].astype(comp.data_type.dtype())  # type: ignore[call-overload]

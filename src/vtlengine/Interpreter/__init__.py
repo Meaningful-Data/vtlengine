@@ -102,6 +102,12 @@ from vtlengine.Utils import (
     UNARY_MAPPING,
 )
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.ViralPropagation import (
+    ViralPropagationRegistry,
+    ViralPropagationRule,
+    get_current_registry,
+    set_current_registry,
+)
 
 
 # noinspection PyTypeChecker
@@ -231,6 +237,9 @@ class InterpreterAnalyzer(ASTTemplate):
     # **********************************
 
     def visit_Start(self, node: AST.Start) -> Any:
+        # Initialize fresh viral propagation registry for this run
+        set_current_registry(ViralPropagationRegistry())
+
         statement_num = 1
         if self.only_semantic:
             Operators.only_semantic = True
@@ -414,9 +423,23 @@ class InterpreterAnalyzer(ASTTemplate):
         self.hrs[node.name] = ruleset_data
 
     def visit_ViralPropagationDef(self, node: AST.ViralPropagationDef) -> None:
-        """Store the viral propagation definition for later use by operators."""
-        # Storage will be wired in Task 7 (ViralPropagationRegistry)
-        pass
+        """Store the viral propagation definition in the registry."""
+        registry = get_current_registry()
+
+        enumerated_clauses = [
+            {"values": clause.values, "result": clause.result} for clause in node.enumerated_clauses
+        ]
+        aggregate_function = node.aggregate_clause.function if node.aggregate_clause else None
+
+        rule = ViralPropagationRule(
+            name=node.name,
+            signature_type=node.signature_type,
+            target=node.target,
+            enumerated_clauses=enumerated_clauses,
+            aggregate_function=aggregate_function,
+            default_value=node.default_value,
+        )
+        registry.register(rule)
 
     # Execution Language
     def visit_Assignment(self, node: AST.Assignment) -> Any:

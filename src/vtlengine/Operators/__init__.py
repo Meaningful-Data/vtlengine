@@ -34,6 +34,7 @@ from vtlengine.DataTypes.TimeHandling import (
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.ViralPropagation import get_current_registry
 
 ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
 
@@ -540,6 +541,7 @@ class Binary(Operator):
                 result_data = result_data.drop(att + "_y", axis=1)
 
         # Handle viral attribute merge suffixes
+        registry = get_current_registry()
         left_viral = set(left_operand.get_viral_attributes_names())
         right_viral = set(right_operand.get_viral_attributes_names())
         all_viral = left_viral | right_viral
@@ -547,8 +549,11 @@ class Binary(Operator):
             has_x = va + "_x" in result_data.columns
             has_y = va + "_y" in result_data.columns
             if has_x and has_y:
-                # Both operands have this viral attr; keep left value
-                result_data[va] = result_data[va + "_x"]
+                # Both operands have this viral attr — apply propagation rule
+                result_data[va] = result_data[[va + "_x", va + "_y"]].apply(
+                    lambda row: registry.resolve_pair(va, row.iloc[0], row.iloc[1]),
+                    axis=1,
+                )
                 result_data = result_data.drop([va + "_x", va + "_y"], axis=1)
             elif has_x:
                 result_data = result_data.rename(columns={va + "_x": va})
