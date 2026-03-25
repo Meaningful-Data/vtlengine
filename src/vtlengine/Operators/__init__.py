@@ -323,11 +323,16 @@ class Binary(Operator):
         # Deleting extra identifiers that we do not need anymore
 
         base_operand = right_operand if use_right_components else left_operand
+        other_operand = left_operand if use_right_components else right_operand
         result_components = {
             component_name: copy(component)
             for component_name, component in base_operand.components.items()
-            if component.role in [Role.IDENTIFIER, Role.MEASURE]
+            if component.role in [Role.IDENTIFIER, Role.MEASURE, Role.VIRAL_ATTRIBUTE]
         }
+        # Also include viral attributes from the other operand
+        for comp_name, comp in other_operand.components.items():
+            if comp.role == Role.VIRAL_ATTRIBUTE and comp_name not in result_components:
+                result_components[comp_name] = copy(comp)
 
         for comp in [x for x in result_components.values() if x.role == Role.MEASURE]:
             if comp.name in left_operand.components and comp.name in right_operand.components:
@@ -348,7 +353,7 @@ class Binary(Operator):
         result_components = {
             comp_name: copy(comp)
             for comp_name, comp in dataset.components.items()
-            if comp.role in [Role.IDENTIFIER, Role.MEASURE]
+            if comp.role in [Role.IDENTIFIER, Role.MEASURE, Role.VIRAL_ATTRIBUTE]
         }
         result_dataset = Dataset(name=dataset_name, components=result_components, data=None)
         cls.apply_return_type_dataset(result_dataset, dataset, scalar)
@@ -413,7 +418,7 @@ class Binary(Operator):
         result_components = {
             comp_name: copy(comp)
             for comp_name, comp in dataset.components.items()
-            if comp.role in [Role.IDENTIFIER, Role.MEASURE]
+            if comp.role in [Role.IDENTIFIER, Role.MEASURE, Role.VIRAL_ATTRIBUTE]
         }
 
         result_dataset = Dataset(name=dataset_name, components=result_components, data=None)
@@ -515,6 +520,42 @@ class Binary(Operator):
             else:
                 measure.data_type = result_data_type
 
+    @staticmethod
+    def _cleanup_attributes_after_merge(
+        result_data: pd.DataFrame,
+        left_operand: Dataset,
+        right_operand: Dataset,
+    ) -> pd.DataFrame:
+        """Remove non-viral attributes and resolve viral attribute merge suffixes."""
+        # Delete non-viral attributes from the result data
+        attributes = list(
+            set(left_operand.get_attributes_names()).union(right_operand.get_attributes_names())
+        )
+        for att in attributes:
+            if att in result_data.columns:
+                result_data = result_data.drop(att, axis=1)
+            if att + "_x" in result_data.columns:
+                result_data = result_data.drop(att + "_x", axis=1)
+            if att + "_y" in result_data.columns:
+                result_data = result_data.drop(att + "_y", axis=1)
+
+        # Handle viral attribute merge suffixes
+        left_viral = set(left_operand.get_viral_attributes_names())
+        right_viral = set(right_operand.get_viral_attributes_names())
+        all_viral = left_viral | right_viral
+        for va in all_viral:
+            has_x = va + "_x" in result_data.columns
+            has_y = va + "_y" in result_data.columns
+            if has_x and has_y:
+                # Both operands have this viral attr; keep left value
+                result_data[va] = result_data[va + "_x"]
+                result_data = result_data.drop([va + "_x", va + "_y"], axis=1)
+            elif has_x:
+                result_data = result_data.rename(columns={va + "_x": va})
+            elif has_y:
+                result_data = result_data.rename(columns={va + "_y": va})
+        return result_data
+
     @classmethod
     def dataset_evaluation(cls, left_operand: Dataset, right_operand: Dataset) -> Dataset:
         result_dataset = cls.dataset_validation(left_operand, right_operand)
@@ -611,17 +652,7 @@ class Binary(Operator):
                     result_data[measure.name] = result_data[measure.name].astype(target)  # type: ignore[call-overload]
             result_data = result_data.drop([measure.name + "_x", measure.name + "_y"], axis=1)
 
-        # Delete attributes from the result data
-        attributes = list(
-            set(left_operand.get_attributes_names()).union(right_operand.get_attributes_names())
-        )
-        for att in attributes:
-            if att in result_data.columns:
-                result_data = result_data.drop(att, axis=1)
-            if att + "_x" in result_data.columns:
-                result_data = result_data.drop(att + "_x", axis=1)
-            if att + "_y" in result_data.columns:
-                result_data = result_data.drop(att + "_y", axis=1)
+        result_data = cls._cleanup_attributes_after_merge(result_data, left_operand, right_operand)
 
         result_dataset.data = result_data
         cls.modify_measure_column(result_dataset)
@@ -666,7 +697,11 @@ class Binary(Operator):
                     ].astype(target)
 
         result_dataset.data = result_data
-        cols_to_keep = dataset.get_identifiers_names() + dataset.get_measures_names()
+        cols_to_keep = (
+            dataset.get_identifiers_names()
+            + dataset.get_measures_names()
+            + dataset.get_viral_attributes_names()
+        )
         result_dataset.data = result_dataset.data[cols_to_keep]
         cls.modify_measure_column(result_dataset)
         return result_dataset
@@ -821,7 +856,7 @@ class Unary(Operator):
         result_components = {
             comp_name: copy(comp)
             for comp_name, comp in operand.components.items()
-            if comp.role in [Role.IDENTIFIER, Role.MEASURE]
+            if comp.role in [Role.IDENTIFIER, Role.MEASURE, Role.VIRAL_ATTRIBUTE]
         }
 
         result_dataset = Dataset(name=dataset_name, components=result_components, data=None)
@@ -930,7 +965,11 @@ class Unary(Operator):
                 if str(result_data[measure_name].dtype) != target:
                     result_data[measure_name] = result_data[measure_name].astype(target)  # type: ignore[call-overload]
 
-        cols_to_keep = operand.get_identifiers_names() + operand.get_measures_names()
+        cols_to_keep = (
+            operand.get_identifiers_names()
+            + operand.get_measures_names()
+            + operand.get_viral_attributes_names()
+        )
         result_data = result_data[cols_to_keep]
 
         result_dataset.data = result_data
