@@ -1,0 +1,18 @@
+define viral propagation CONF_priority (variable At_1) is
+    when "C" then "C";
+    when "N" then "N";
+    else "F"
+end viral propagation;
+
+define viral propagation OBS_default (valuedomain CL_OBS_STATUS) is
+    when "M" then "M";
+    when "L" then "L";
+    when "Q" and "P" then "Q";
+    else "A"
+end viral propagation;
+
+define viral propagation EMBARGO_time (variable EMBARGO_TIME) is
+    aggr max
+end viral propagation;
+
+DS_r <- DS_1 + DS_2;
