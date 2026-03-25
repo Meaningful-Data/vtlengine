@@ -85,17 +85,19 @@ Role_keys = [
     "Identifier",
     "Attribute",
     "Measure",
+    "Viral Attribute",
 ]
 
 
 class Role(Enum):
     """
-    Enum class for the role of a component  (Identifier, Attribute, Measure)
+    Enum class for the role of a component  (Identifier, Attribute, Measure, Viral Attribute)
     """
 
     IDENTIFIER = "Identifier"
     ATTRIBUTE = "Attribute"
     MEASURE = "Measure"
+    VIRAL_ATTRIBUTE = "Viral Attribute"
 
 
 @dataclass
@@ -372,6 +374,20 @@ class Dataset:
     def get_measures_names(self) -> List[str]:
         return [
             name for name, component in self.components.items() if component.role == Role.MEASURE
+        ]
+
+    def get_viral_attributes(self) -> List[Component]:
+        return [
+            component
+            for component in self.components.values()
+            if component.role == Role.VIRAL_ATTRIBUTE
+        ]
+
+    def get_viral_attributes_names(self) -> List[str]:
+        return [
+            name
+            for name, component in self.components.items()
+            if component.role == Role.VIRAL_ATTRIBUTE
         ]
 
     def get_components_names(self) -> List[str]:

@@ -1515,7 +1515,7 @@ def test_load_data_structure_with_new_schema(data_structure):
             "At_1": Component(
                 name="At_1",
                 data_type=DataTypes.String,
-                role=Role.ATTRIBUTE,
+                role=Role.VIRAL_ATTRIBUTE,
                 nullable=True,
             ),
         },
