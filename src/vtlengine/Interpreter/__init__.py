@@ -423,8 +423,26 @@ class InterpreterAnalyzer(ASTTemplate):
         self.hrs[node.name] = ruleset_data
 
     def visit_ViralPropagationDef(self, node: AST.ViralPropagationDef) -> None:
-        """Store the viral propagation definition in the registry."""
+        """Validate and store the viral propagation definition in the registry."""
         registry = get_current_registry()
+
+        # Validate: cannot mix enumerated and aggregate clauses
+        if node.enumerated_clauses and node.aggregate_clause:
+            raise SemanticError("1-3-3-3", name=node.name)
+
+        # Validate: no duplicate enumeration combinations
+        seen_values: Set[frozenset[str]] = set()
+        for clause in node.enumerated_clauses:
+            key = frozenset(clause.values)
+            if key in seen_values:
+                raise SemanticError("1-3-3-4", values=clause.values, name=node.name)
+            seen_values.add(key)
+
+        # Validate: no duplicate rules for the same target
+        existing = registry.get_rule_for_variable(node.target)
+        if existing is not None and node.signature_type == existing.signature_type:
+            code = "1-3-3-1" if node.signature_type == "variable" else "1-3-3-2"
+            raise SemanticError(code, name=node.target)
 
         enumerated_clauses = [
             {"values": clause.values, "result": clause.result} for clause in node.enumerated_clauses
