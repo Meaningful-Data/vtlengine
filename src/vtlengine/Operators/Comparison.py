@@ -367,7 +367,7 @@ class Between(Operator.Operator):
             result_components = {
                 comp_name: copy(comp)
                 for comp_name, comp in operand.components.items()
-                if comp.role == Role.IDENTIFIER or comp.role == Role.MEASURE
+                if comp.role in [Role.IDENTIFIER, Role.MEASURE, Role.VIRAL_ATTRIBUTE]
             }
             result = Dataset(name=operand.name, components=result_components, data=None)
         elif isinstance(operand, DataComponent):

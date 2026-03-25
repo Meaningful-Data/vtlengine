@@ -66,7 +66,7 @@ class Check(Operator):
         result_components = {
             comp.name: comp
             for comp in validation_element.components.values()
-            if comp.role in [Role.IDENTIFIER, Role.MEASURE]
+            if comp.role in [Role.IDENTIFIER, Role.MEASURE, Role.VIRAL_ATTRIBUTE]
         }
         if imbalance_measure is None:
             result_components["imbalance"] = Component(

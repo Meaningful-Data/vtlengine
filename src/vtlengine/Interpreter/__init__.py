@@ -1263,7 +1263,8 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.aggregation_dataset.components = {
                     comp_name: deepcopy(comp)
                     for comp_name, comp in self.aggregation_dataset.components.items()
-                    if comp_name in self.aggregation_grouping or comp.role == Role.MEASURE
+                    if comp_name in self.aggregation_grouping
+                    or comp.role in [Role.MEASURE, Role.VIRAL_ATTRIBUTE]
                 }
 
                 self.aggregation_dataset.data = (

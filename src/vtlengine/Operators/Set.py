@@ -85,7 +85,11 @@ class Intersection(Set):
                     data, how="inner", on=result.get_identifiers_names()
                 )
 
-                not_identifiers = result.get_measures_names() + result.get_attributes_names()
+                not_identifiers = (
+                    result.get_measures_names()
+                    + result.get_attributes_names()
+                    + result.get_viral_attributes_names()
+                )
 
                 for col in not_identifiers:
                     result.data[col] = result.data[col + "_x"]
@@ -121,7 +125,11 @@ class Symdiff(Set):
                     merge_col = merge_col.where(~y_null, "left_only")
                     result.data["_merge"] = merge_col
 
-                not_identifiers = result.get_measures_names() + result.get_attributes_names()
+                not_identifiers = (
+                    result.get_measures_names()
+                    + result.get_attributes_names()
+                    + result.get_viral_attributes_names()
+                )
                 left_mask = result.data["_merge"] == "left_only"
                 right_mask = result.data["_merge"] == "right_only"
                 for col in not_identifiers:
