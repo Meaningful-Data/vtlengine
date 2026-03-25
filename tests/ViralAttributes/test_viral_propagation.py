@@ -10,7 +10,7 @@ from vtlengine.Model import Role
 # -- Shared propagation rules --
 
 CONF_RULE = """
-    define viral propagation CONF (variable At_1) is
+    define viral propagation CONF (variable VAt_1) is
         when "C" then "C";
         when "N" then "N";
         else "F"
@@ -18,7 +18,7 @@ CONF_RULE = """
 """
 
 CONF_BINARY_RULE = """
-    define viral propagation COMP_mix (variable At_1) is
+    define viral propagation COMP_mix (variable VAt_1) is
         when "C" and "M" then "N";
         when "M" then "M";
         else " "
@@ -26,18 +26,18 @@ CONF_BINARY_RULE = """
 """
 
 TWO_RULES = """
-    define viral propagation R1 (variable At_1) is
+    define viral propagation R1 (variable VAt_1) is
         when "C" then "C";
         when "N" then "N";
         else "F"
     end viral propagation;
-    define viral propagation R2 (variable At_2) is
+    define viral propagation R2 (variable VAt_2) is
         aggr max
     end viral propagation;
 """
 
 AGGR_MAX_RULE = """
-    define viral propagation S (variable At_1) is
+    define viral propagation S (variable VAt_1) is
         aggr max
     end viral propagation;
 """
@@ -49,7 +49,7 @@ DS_1VA = {
     "DataStructure": [
         {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
         {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
-        {"name": "At_1", "type": "String", "role": "Viral Attribute", "nullable": True},
+        {"name": "VAt_1", "type": "String", "role": "Viral Attribute", "nullable": True},
     ],
 }
 
@@ -58,8 +58,8 @@ DS_2VA = {
     "DataStructure": [
         {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
         {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
-        {"name": "At_1", "type": "String", "role": "Viral Attribute", "nullable": True},
-        {"name": "At_2", "type": "Integer", "role": "Viral Attribute", "nullable": True},
+        {"name": "VAt_1", "type": "String", "role": "Viral Attribute", "nullable": True},
+        {"name": "VAt_2", "type": "Integer", "role": "Viral Attribute", "nullable": True},
     ],
 }
 
@@ -89,30 +89,30 @@ class TestViralPropagationParsing:
         result = run(
             script=CONF_RULE + "DS_r <- DS_1;",
             data_structures={"datasets": [DS_1VA]},
-            datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "At_1": ["A"]})},
+            datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "VAt_1": ["A"]})},
         )
-        assert result["DS_r"].components["At_1"].role == Role.VIRAL_ATTRIBUTE
+        assert result["DS_r"].components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
 
     def test_parse_aggregate(self) -> None:
         ds = {
             **DS_NO_VA,
             "DataStructure": [
                 *DS_NO_VA["DataStructure"],
-                {"name": "At_1", "type": "Integer", "role": "Viral Attribute", "nullable": True},
+                {"name": "VAt_1", "type": "Integer", "role": "Viral Attribute", "nullable": True},
             ],
         }
         result = run(
             script=AGGR_MAX_RULE + "DS_r <- DS_1;",
             data_structures={"datasets": [ds]},
-            datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "At_1": [5]})},
+            datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "VAt_1": [5]})},
         )
-        assert "At_1" in result["DS_r"].components
+        assert "VAt_1" in result["DS_r"].components
 
     def test_parse_binary_clause(self) -> None:
         result = run(
             script=CONF_BINARY_RULE + "DS_r <- DS_1;",
             data_structures={"datasets": [DS_1VA]},
-            datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "At_1": ["C"]})},
+            datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "VAt_1": ["C"]})},
         )
         assert "DS_r" in result
 
@@ -146,15 +146,15 @@ class TestViralPropagationEndToEnd:
             data_structures=_ds_pair(DS_1VA),
             datapoints={
                 "DS_1": pd.DataFrame(
-                    {"Id_1": [1, 2, 3], "Me_1": [10.0, 20.0, 30.0], "At_1": ["C", "N", "F"]}
+                    {"Id_1": [1, 2, 3], "Me_1": [10.0, 20.0, 30.0], "VAt_1": ["C", "N", "F"]}
                 ),
                 "DS_2": pd.DataFrame(
-                    {"Id_1": [1, 2, 3], "Me_1": [5.0, 15.0, 25.0], "At_1": ["N", "F", "F"]}
+                    {"Id_1": [1, 2, 3], "Me_1": [5.0, 15.0, 25.0], "VAt_1": ["N", "F", "F"]}
                 ),
             },
         )
         # C+N→C (unary "C"); N+F→N (unary "N"); F+F→F (else)
-        assert list(result["DS_r"].data["At_1"]) == ["C", "N", "F"]
+        assert list(result["DS_r"].data["VAt_1"]) == ["C", "N", "F"]
 
     def test_binary_clause_precedence(self) -> None:
         """Binary clauses take precedence over unary clauses."""
@@ -163,15 +163,15 @@ class TestViralPropagationEndToEnd:
             data_structures=_ds_pair(DS_1VA),
             datapoints={
                 "DS_1": pd.DataFrame(
-                    {"Id_1": [1, 2, 3], "Me_1": [10.0, 20.0, 30.0], "At_1": ["C", "M", "X"]}
+                    {"Id_1": [1, 2, 3], "Me_1": [10.0, 20.0, 30.0], "VAt_1": ["C", "M", "X"]}
                 ),
                 "DS_2": pd.DataFrame(
-                    {"Id_1": [1, 2, 3], "Me_1": [5.0, 15.0, 25.0], "At_1": ["M", "F", "Y"]}
+                    {"Id_1": [1, 2, 3], "Me_1": [5.0, 15.0, 25.0], "VAt_1": ["M", "F", "Y"]}
                 ),
             },
         )
         # C+M→N (binary); M+F→M (unary "M"); X+Y→" " (else)
-        assert list(result["DS_r"].data["At_1"]) == ["N", "M", " "]
+        assert list(result["DS_r"].data["VAt_1"]) == ["N", "M", " "]
 
     def test_no_rule_gives_null(self) -> None:
         """Both operands viral but no rule defined → null."""
@@ -179,11 +179,11 @@ class TestViralPropagationEndToEnd:
             script="DS_r <- DS_1 + DS_2;",
             data_structures=_ds_pair(DS_1VA),
             datapoints={
-                "DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "At_1": ["A"]}),
-                "DS_2": pd.DataFrame({"Id_1": [1], "Me_1": [5.0], "At_1": ["B"]}),
+                "DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "VAt_1": ["A"]}),
+                "DS_2": pd.DataFrame({"Id_1": [1], "Me_1": [5.0], "VAt_1": ["B"]}),
             },
         )
-        assert pd.isna(result["DS_r"].data["At_1"].iloc[0])
+        assert pd.isna(result["DS_r"].data["VAt_1"].iloc[0])
 
     def test_aggregate_max_in_aggregation(self) -> None:
         """Aggregate max propagation in group by."""
@@ -193,7 +193,7 @@ class TestViralPropagationEndToEnd:
                 {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
                 {"name": "Id_2", "type": "Integer", "role": "Identifier", "nullable": False},
                 {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
-                {"name": "At_1", "type": "Integer", "role": "Viral Attribute", "nullable": True},
+                {"name": "VAt_1", "type": "Integer", "role": "Viral Attribute", "nullable": True},
             ],
         }
         result = run(
@@ -205,13 +205,13 @@ class TestViralPropagationEndToEnd:
                         "Id_1": [1, 1, 2],
                         "Id_2": [1, 2, 1],
                         "Me_1": [10.0, 20.0, 30.0],
-                        "At_1": [3, 7, 5],
+                        "VAt_1": [3, 7, 5],
                     }
                 )
             },
         )
         sorted_data = result["DS_r"].data.sort_values("Id_1").reset_index(drop=True)
-        assert list(sorted_data["At_1"]) == [7, 5]
+        assert list(sorted_data["VAt_1"]) == [7, 5]
 
 
 # -- Multi-attribute propagation (enumerated + aggregate in one script) --
@@ -220,7 +220,7 @@ class TestViralPropagationEndToEnd:
 class TestViralPropagationMultiAttribute:
     @pytest.mark.parametrize("expr", propagation_binary_params)
     def test_two_rules_two_attrs_binary(self, expr: str) -> None:
-        """TWO_RULES: At_1 enumerated + At_2 aggr max, applied to binary ops."""
+        """TWO_RULES: VAt_1 enumerated + VAt_2 aggr max, applied to binary ops."""
         result = run(
             script=TWO_RULES + f"DS_r <- {expr};",
             data_structures=_ds_pair(DS_2VA),
@@ -229,25 +229,25 @@ class TestViralPropagationMultiAttribute:
                     {
                         "Id_1": [1, 2, 3],
                         "Me_1": [10.0, 20.0, 30.0],
-                        "At_1": ["C", "N", "F"],
-                        "At_2": [3, 5, 1],
+                        "VAt_1": ["C", "N", "F"],
+                        "VAt_2": [3, 5, 1],
                     }
                 ),
                 "DS_2": pd.DataFrame(
                     {
                         "Id_1": [1, 2, 3],
                         "Me_1": [5.0, 15.0, 25.0],
-                        "At_1": ["N", "F", "F"],
-                        "At_2": [7, 2, 4],
+                        "VAt_1": ["N", "F", "F"],
+                        "VAt_2": [7, 2, 4],
                     }
                 ),
             },
         )
         ds_r = result["DS_r"]
-        # At_1 enumerated: C+N→C, N+F→N, F+F→F
-        assert list(ds_r.data["At_1"]) == ["C", "N", "F"]
-        # At_2 aggr max: max(3,7)=7, max(5,2)=5, max(1,4)=4
-        assert list(ds_r.data["At_2"]) == [7, 5, 4]
+        # VAt_1 enumerated: C+N→C, N+F→N, F+F→F
+        assert list(ds_r.data["VAt_1"]) == ["C", "N", "F"]
+        # VAt_2 aggr max: max(3,7)=7, max(5,2)=5, max(1,4)=4
+        assert list(ds_r.data["VAt_2"]) == [7, 5, 4]
 
 
 # -- Semantic validation --
@@ -256,10 +256,10 @@ class TestViralPropagationMultiAttribute:
 class TestViralPropagationValidation:
     def test_duplicate_variable_rule_raises_error(self) -> None:
         script = """
-            define viral propagation r1 (variable At_1) is
+            define viral propagation r1 (variable VAt_1) is
                 when "C" then "C"
             end viral propagation;
-            define viral propagation r2 (variable At_1) is
+            define viral propagation r2 (variable VAt_1) is
                 when "N" then "N"
             end viral propagation;
             DS_r <- DS_1;
@@ -269,7 +269,7 @@ class TestViralPropagationValidation:
 
     def test_duplicate_enumeration_raises_error(self) -> None:
         script = """
-            define viral propagation dup (variable At_1) is
+            define viral propagation dup (variable VAt_1) is
                 when "C" then "C";
                 when "C" then "N"
             end viral propagation;

@@ -13,12 +13,12 @@ BASE_COMPS = [
     {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
 ]
 
-VA_1 = {"name": "At_1", "type": "String", "role": "Viral Attribute", "nullable": True}
-VA_2 = {"name": "At_2", "type": "String", "role": "Viral Attribute", "nullable": True}
-VA_3 = {"name": "At_3", "type": "String", "role": "Viral Attribute", "nullable": True}
+VA_1 = {"name": "VAt_1", "type": "String", "role": "Viral Attribute", "nullable": True}
+VA_2 = {"name": "VAt_2", "type": "String", "role": "Viral Attribute", "nullable": True}
+VA_3 = {"name": "VAt_3", "type": "String", "role": "Viral Attribute", "nullable": True}
 
 VA_COMPONENTS = [VA_1, VA_2, VA_3]
-VA_NAMES = ["At_1", "At_2", "At_3"]
+VA_NAMES = ["VAt_1", "VAt_2", "VAt_3"]
 VA_VALUES = [["A", "B"], ["X", "Y"], ["P", "Q"]]
 
 
@@ -169,41 +169,41 @@ class TestViralAttributeSpecialCases:
             "name": "DS_1",
             "DataStructure": [
                 *BASE_COMPS,
-                {"name": "At_1", "type": "String", "role": "Attribute", "nullable": True},
+                {"name": "VAt_1", "type": "String", "role": "Attribute", "nullable": True},
             ],
         }
         result = run(
             script="DS_r <- DS_1 + DS_2;",
             data_structures={"datasets": [ds, {"name": "DS_2", "DataStructure": BASE_COMPS}]},
             datapoints={
-                "DS_1": pd.DataFrame({"Id_1": [1, 2], "Me_1": [10.0, 20.0], "At_1": ["A", "B"]}),
+                "DS_1": pd.DataFrame({"Id_1": [1, 2], "Me_1": [10.0, 20.0], "VAt_1": ["A", "B"]}),
                 "DS_2": pd.DataFrame({"Id_1": [1, 2], "Me_1": [5.0, 15.0]}),
             },
         )
-        assert "At_1" not in result["DS_r"].components
+        assert "VAt_1" not in result["DS_r"].components
 
     def test_calc_viral_attribute(self) -> None:
         result = run(
-            script='DS_r <- DS_1 [calc viral attribute At_1 := "X"];',
+            script='DS_r <- DS_1 [calc viral attribute VAt_1 := "X"];',
             data_structures={"datasets": [{"name": "DS_1", "DataStructure": BASE_COMPS}]},
             datapoints={"DS_1": pd.DataFrame({"Id_1": [1, 2], "Me_1": [10.0, 20.0]})},
         )
-        assert result["DS_r"].components["At_1"].role == Role.VIRAL_ATTRIBUTE
+        assert result["DS_r"].components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
 
     def test_input_viral_attribute_legacy_format(self) -> None:
         ds = {
             "name": "DS_1",
             "DataStructure": [
                 *BASE_COMPS,
-                {"name": "At_1", "type": "String", "role": "ViralAttribute", "nullable": True},
+                {"name": "VAt_1", "type": "String", "role": "ViralAttribute", "nullable": True},
             ],
         }
         result = run(
             script="DS_r <- DS_1;",
             data_structures={"datasets": [ds]},
-            datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "At_1": ["A"]})},
+            datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "VAt_1": ["A"]})},
         )
-        assert result["DS_r"].components["At_1"].role == Role.VIRAL_ATTRIBUTE
+        assert result["DS_r"].components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
 
     def test_binary_one_operand_viral(self) -> None:
         """Only DS_1 has viral attr, DS_2 doesn't — viral attr propagated from DS_1."""
@@ -216,5 +216,5 @@ class TestViralAttributeSpecialCases:
             },
         )
         _assert_viral_attrs(result, 2)
-        assert list(result["DS_r"].data["At_1"]) == ["A", "B"]
-        assert list(result["DS_r"].data["At_2"]) == ["X", "Y"]
+        assert list(result["DS_r"].data["VAt_1"]) == ["A", "B"]
+        assert list(result["DS_r"].data["VAt_2"]) == ["X", "Y"]
