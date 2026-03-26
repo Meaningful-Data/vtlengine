@@ -424,7 +424,7 @@ class TestCastOperator:
         assert name == "DS_r"
 
         if target_type == "Integer":
-            expected_sql = f'SELECT "Id_1", CAST(TRUNC("Me_1") AS {expected_duckdb_type}) AS "Me_1", CAST(TRUNC("Me_2") AS {expected_duckdb_type}) AS "Me_2" FROM "DS_1"'
+            expected_sql = f'SELECT "Id_1", CAST(TRUNC(CAST("Me_1" AS DOUBLE)) AS {expected_duckdb_type}) AS "Me_1", CAST(TRUNC(CAST("Me_2" AS DOUBLE)) AS {expected_duckdb_type}) AS "Me_2" FROM "DS_1"'
         else:
             expected_sql = f'SELECT "Id_1", CAST("Me_1" AS {expected_duckdb_type}) AS "Me_1", CAST("Me_2" AS {expected_duckdb_type}) AS "Me_2" FROM "DS_1"'
 

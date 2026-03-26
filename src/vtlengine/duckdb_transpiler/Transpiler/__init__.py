@@ -15,7 +15,15 @@ from typing import Any, Callable, Dict, Generator, List, Optional, Set, Tuple, U
 import vtlengine.AST as AST
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.Grammar import tokens
-from vtlengine.DataTypes import COMP_NAME_MAPPING, Boolean, Date, Duration, TimePeriod
+from vtlengine.DataTypes import (
+    COMP_NAME_MAPPING,
+    Boolean,
+    Date,
+    Duration,
+    Integer,
+    Number,
+    TimePeriod,
+)
 from vtlengine.duckdb_transpiler.Transpiler.operators import (
     get_duckdb_type,
     registry,
@@ -1936,8 +1944,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         """Visit PERIOD_INDICATOR: extract period indicator from TimePeriod."""
         operand_type = self._get_operand_type(node.operand)
 
-        if operand_type == _DATASET:
-            ds = self._get_dataset_structure(node.operand)
+        # Try to resolve dataset structure even if type detection says scalar
+        # (UDO calls may not be recognized as datasets by type detection)
+        ds = self._get_dataset_structure(node.operand)
+
+        if operand_type == _DATASET or ds is not None:
             src = self._get_dataset_sql(node.operand)
             if ds is None:
                 raise ValueError("Cannot resolve structure for period_indicator")
@@ -1956,6 +1967,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 f'vtl_period_parse({quote_identifier(time_id)}).period_indicator AS "duration_var"'
             )
             cols_sql = ", ".join(id_cols) + ", " + extract_expr
+
+            # Wrap SELECT sources as subqueries
+            if src.strip().upper().startswith("SELECT"):
+                return f"SELECT {cols_sql} FROM ({src}) AS _pi"
             return f"SELECT {cols_sql} FROM {src}"
         else:
             operand_sql = self.visit(node.operand)
@@ -2358,14 +2373,14 @@ ORDER BY {order_by}""".strip()
         order_clause = f"ORDER BY {quote_identifier(time_id)}"
         window = f"({partition_clause} {order_clause})"
 
-        # Build SELECT
+        # Build SELECT — only apply window function to numeric measures
         cols = []
         for comp in ds.components.values():
             col = quote_identifier(comp.name)
             if comp.role == Role.IDENTIFIER:
                 cols.append(col)
-            else:
-                # Apply window function to measures
+            elif comp.data_type in (Integer, Number, Boolean):
+                # Apply window function to numeric measures only
                 if op == tokens.FLOW_TO_STOCK:
                     cols.append(
                         f"CASE WHEN {col} IS NULL THEN NULL ELSE "
@@ -2374,6 +2389,9 @@ ORDER BY {order_by}""".strip()
                     )
                 else:  # STOCK_TO_FLOW
                     cols.append(f"COALESCE({col} - LAG({col}) OVER {window}, {col}) AS {col}")
+            else:
+                # Non-numeric measures pass through unchanged
+                cols.append(col)
 
         return f"SELECT {', '.join(cols)} FROM {src}"
 
@@ -2476,6 +2494,31 @@ FROM {src}, (
                 return f"vtl_tp_dateadd(vtl_period_parse({operand_sql}), {shift_sql}, {period_sql})"
             return f"vtl_dateadd({operand_sql}, {shift_sql}, {period_sql})"
 
+    @staticmethod
+    def _get_source_vtl_type(node: "AST.AST") -> Optional[str]:
+        """Determine the VTL data type name produced by an AST node.
+
+        Used to generate correct cross-type CAST SQL (e.g. Date→TimePeriod).
+        Returns None when the type cannot be determined statically.
+        """
+        if isinstance(node, AST.Constant):
+            if isinstance(node.value, bool):
+                return "Boolean"
+            if isinstance(node.value, int):
+                return "Integer"
+            if isinstance(node.value, float):
+                return "Number"
+            if isinstance(node.value, str):
+                return "String"
+        if (
+            isinstance(node, AST.ParamOp)
+            and str(getattr(node, "op", "")).lower() == "cast"
+            and len(node.children) >= 2
+        ):
+            type_node = node.children[1]
+            return type_node.value if hasattr(type_node, "value") else str(type_node)
+        return None
+
     def _visit_cast(self, node: AST.ParamOp) -> str:
         """Visit CAST operation."""
         if not node.children:
@@ -2504,20 +2547,53 @@ FROM {src}, (
             )
         else:
             operand_sql = self.visit(operand)
-            return self._cast_expr(operand_sql, duckdb_type, target_type_str, mask)
+            source_type = self._get_source_vtl_type(operand)
+            return self._cast_expr(operand_sql, duckdb_type, target_type_str, mask, source_type)
 
     def _cast_expr(
-        self, expr: str, duckdb_type: str, target_type_str: str, mask: Optional[str]
+        self,
+        expr: str,
+        duckdb_type: str,
+        target_type_str: str,
+        mask: Optional[str],
+        source_type_str: Optional[str] = None,
     ) -> str:
         """Generate a CAST expression for a single value."""
+        target_lower = target_type_str.lower()
+        source_lower = (source_type_str or "").lower()
+
+        # Date with mask → parse then format
         if mask and target_type_str == "Date":
             return f"STRFTIME(STRPTIME({expr}, '{mask}'), '%Y-%m-%d %H:%M:%S')"
-        # Normalize TimePeriod values on cast to ensure canonical format
-        if target_type_str.lower() in ("time_period", "timeperiod"):
-            return f"vtl_period_normalize(CAST({expr} AS VARCHAR))"
-        # VTL cast to Integer truncates toward zero; DuckDB CAST rounds.
+
+        # === Boolean target ===
+        if target_type_str == "Boolean" and source_lower == "string":
+            # VTL: only "true" → true, everything else → false
+            return f"(LOWER(TRIM(CAST({expr} AS VARCHAR))) = 'true')"
+
+        # === Integer target ===
         if target_type_str == "Integer":
-            return f"CAST(TRUNC({expr}) AS {duckdb_type})"
+            if source_lower == "boolean":
+                # DuckDB handles BOOLEAN → BIGINT natively (TRUE→1, FALSE→0)
+                return f"CAST({expr} AS {duckdb_type})"
+            # Cast to DOUBLE first so TRUNC works on String/Number/unknown
+            return f"CAST(TRUNC(CAST({expr} AS DOUBLE)) AS {duckdb_type})"
+
+        # === TimePeriod target ===
+        if target_lower in ("time_period", "timeperiod"):
+            if source_lower == "date":
+                return f"vtl_date_to_period({expr})"
+            if source_lower in ("time", "timeinterval"):
+                return f"vtl_interval_to_period({expr})"
+            return f"vtl_period_normalize(CAST({expr} AS VARCHAR))"
+
+        # === Date target from temporal types ===
+        if target_type_str == "Date":
+            if source_lower in ("time_period", "timeperiod"):
+                return f"vtl_period_to_date({expr})"
+            if source_lower in ("time", "timeinterval"):
+                return f"vtl_interval_to_date({expr})"
+
         return f"CAST({expr} AS {duckdb_type})"
 
     @staticmethod
@@ -2649,6 +2725,12 @@ FROM {src}, (
                             col_name = udo_val
                     expr_sql = self.visit(assignment.right)
                     calc_exprs[col_name] = expr_sql
+                    # dateadd on TimePeriod returns Date (TIMESTAMP), update output type
+                    if "vtl_tp_dateadd" in expr_sql and self.current_assignment:
+                        out_ds = self.output_datasets.get(self.current_assignment)
+                        if out_ds and col_name in out_ds.components:
+                            if out_ds.components[col_name].data_type == TimePeriod:
+                                out_ds.components[col_name].data_type = Date
 
         # Build SELECT: keep original columns that are NOT being overwritten,
         # then add the calc expressions (possibly replacing originals).

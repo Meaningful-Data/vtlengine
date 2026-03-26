@@ -75,9 +75,11 @@ CREATE OR REPLACE MACRO vtl_period_normalize(input VARCHAR) AS (
                     SUBSTR(input, 1, 4) || '-D'
                     || LPAD(CAST(TRY_CAST(SUBSTR(input, 7) AS INTEGER) AS VARCHAR), 3, '0')
             END
-        WHEN LENGTH(input) = 10 THEN
+        WHEN LENGTH(input) >= 10 AND SUBSTR(input, 5, 1) = '-'
+             AND SUBSTR(input, 8, 1) = '-' THEN
+            -- Full date (2020-01-15) or timestamp (2020-01-15 00:00:00) → daily period
             SUBSTR(input, 1, 4) || '-D'
-            || LPAD(CAST(DAYOFYEAR(CAST(input AS DATE)) AS VARCHAR), 3, '0')
+            || LPAD(CAST(DAYOFYEAR(CAST(SUBSTR(input, 1, 10) AS DATE)) AS VARCHAR), 3, '0')
         ELSE
             SUBSTR(input, 1, 4) || '-M'
             || LPAD(CAST(CAST(SUBSTR(input, 6) AS INTEGER) AS VARCHAR), 2, '0')
@@ -150,6 +152,97 @@ CREATE OR REPLACE MACRO vtl_interval_to_string(i vtl_time_interval) AS (
     CASE
         WHEN i IS NULL THEN NULL
         ELSE CAST(i.date1 AS VARCHAR) || '/' || CAST(i.date2 AS VARCHAR)
+    END
+);
+
+
+-- ============================================================================
+-- CAST MACROS: Cross-type conversions for VTL cast operator
+-- ============================================================================
+
+-- Date (TIMESTAMP) -> TimePeriod (VARCHAR): always daily period
+-- Reference: date_to_period_str(value, 'D') in TimeHandling.py
+CREATE OR REPLACE MACRO vtl_date_to_period(d) AS (
+    CASE
+        WHEN d IS NULL THEN NULL
+        ELSE vtl_period_normalize(STRFTIME(CAST(d AS DATE), '%Y-%m-%d'))
+    END
+);
+
+-- TimePeriod (VARCHAR) -> Date (TIMESTAMP): only daily periods allowed
+-- Reference: Date.explicit_cast from TimePeriod in DataTypes/__init__.py
+CREATE OR REPLACE MACRO vtl_period_to_date(tp VARCHAR) AS (
+    CASE
+        WHEN tp IS NULL THEN NULL
+        -- Normalized daily format: 'YYYY-DXXX'
+        WHEN LENGTH(tp) >= 6 AND SUBSTR(tp, 6, 1) = 'D' THEN
+            CAST(MAKE_DATE(
+                CAST(SUBSTR(tp, 1, 4) AS INTEGER), 1, 1
+            ) + INTERVAL (CAST(SUBSTR(tp, 7) AS INTEGER) - 1) DAY AS TIMESTAMP)
+        -- Non-normalized daily format: 'YYYYDXXX'
+        WHEN LENGTH(tp) >= 5 AND UPPER(SUBSTR(tp, 5, 1)) = 'D' THEN
+            CAST(MAKE_DATE(
+                CAST(SUBSTR(tp, 1, 4) AS INTEGER), 1, 1
+            ) + INTERVAL (CAST(SUBSTR(tp, 6) AS INTEGER) - 1) DAY AS TIMESTAMP)
+        ELSE error('Cannot cast non-daily TimePeriod to Date: ' || tp)
+    END
+);
+
+-- TimeInterval (VARCHAR) -> Date (TIMESTAMP): only same-date intervals
+-- Reference: Date.explicit_cast from TimeInterval in DataTypes/__init__.py
+CREATE OR REPLACE MACRO vtl_interval_to_date(interval_str VARCHAR) AS (
+    CASE
+        WHEN interval_str IS NULL THEN NULL
+        WHEN SPLIT_PART(interval_str, '/', 1) = SPLIT_PART(interval_str, '/', 2) THEN
+            CAST(SPLIT_PART(interval_str, '/', 1) AS TIMESTAMP)
+        ELSE error('Cannot cast TimeInterval to Date: dates differ in ' || interval_str)
+    END
+);
+
+-- TimeInterval (VARCHAR) -> TimePeriod (VARCHAR): match interval to period
+-- Reference: interval_to_period_str in TimeHandling.py
+-- Tries A, S, Q, M, W, D period indicators to find a match.
+CREATE OR REPLACE MACRO vtl_interval_to_period(interval_str VARCHAR) AS (
+    CASE
+        WHEN interval_str IS NULL THEN NULL
+        ELSE (SELECT CASE
+            -- Day: same date
+            WHEN d1 = d2 THEN
+                vtl_period_normalize(CAST(d1 AS VARCHAR))
+            -- Annual: Jan 1 to Dec 31
+            WHEN MONTH(d1) = 1 AND DAY(d1) = 1
+                 AND MONTH(d2) = 12 AND DAY(d2) = 31
+                 AND YEAR(d1) = YEAR(d2)
+            THEN CAST(YEAR(d1) AS VARCHAR) || 'A'
+            -- Semester 1: Jan 1 to Jun 30
+            WHEN MONTH(d1) = 1 AND DAY(d1) = 1
+                 AND MONTH(d2) = 6 AND DAY(d2) = 30
+                 AND YEAR(d1) = YEAR(d2)
+            THEN CAST(YEAR(d1) AS VARCHAR) || '-S1'
+            -- Semester 2: Jul 1 to Dec 31
+            WHEN MONTH(d1) = 7 AND DAY(d1) = 1
+                 AND MONTH(d2) = 12 AND DAY(d2) = 31
+                 AND YEAR(d1) = YEAR(d2)
+            THEN CAST(YEAR(d1) AS VARCHAR) || '-S2'
+            -- Quarter
+            WHEN DAY(d1) = 1 AND YEAR(d1) = YEAR(d2)
+                 AND MONTH(d1) IN (1, 4, 7, 10)
+                 AND d2 = LAST_DAY(d1 + INTERVAL 2 MONTH)
+            THEN CAST(YEAR(d1) AS VARCHAR) || '-Q'
+                 || CAST(((MONTH(d1) - 1) / 3 + 1) AS VARCHAR)
+            -- Month
+            WHEN DAY(d1) = 1 AND d2 = LAST_DAY(d1)
+                 AND YEAR(d1) = YEAR(d2)
+            THEN CAST(YEAR(d1) AS VARCHAR) || '-M'
+                 || LPAD(CAST(MONTH(d1) AS VARCHAR), 2, '0')
+            -- Week (ISO)
+            WHEN ISODOW(d1) = 1 AND d2 = d1 + INTERVAL 6 DAY
+            THEN CAST(ISOYEAR(d1) AS VARCHAR) || '-W'
+                 || LPAD(CAST(WEEKOFYEAR(d1) AS VARCHAR), 2, '0')
+            ELSE error('Cannot determine period for interval: ' || interval_str)
+        END
+        FROM (SELECT CAST(SPLIT_PART(interval_str, '/', 1) AS DATE) AS d1,
+                     CAST(SPLIT_PART(interval_str, '/', 2) AS DATE) AS d2) AS _iv)
     END
 );
 
