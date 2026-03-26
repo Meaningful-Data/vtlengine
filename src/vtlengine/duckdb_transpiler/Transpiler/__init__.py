@@ -67,6 +67,7 @@ _DURATION_COMPARISON_OPS: frozenset[str] = frozenset(
     {tokens.GT, tokens.GTE, tokens.LT, tokens.LTE, tokens.EQ, tokens.NEQ}
 )
 
+
 def _is_date_timeperiod_pair(left_comp: Component, right_comp: Component) -> bool:
     """Check if two components form a Date↔TimePeriod cross-type pair."""
     types = {left_comp.data_type, right_comp.data_type}
@@ -1537,11 +1538,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                     f"{period_macro}(vtl_period_parse({left_ref}), vtl_period_parse({right_ref}))"
                 )
             # Duration ordering: use vtl_duration_to_int for magnitude ordering
-            elif (
-                left_comp
-                and left_comp.data_type == Duration
-                and op in _DURATION_COMPARISON_OPS
-            ):
+            elif left_comp and left_comp.data_type == Duration and op in _DURATION_COMPARISON_OPS:
                 left_int = f"vtl_duration_to_int({left_ref})"
                 right_int = f"vtl_duration_to_int({right_ref})"
                 expr = registry.binary.generate(op, left_int, right_int)

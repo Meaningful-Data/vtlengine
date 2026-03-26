@@ -93,9 +93,7 @@ def _project_columns(ds: Dataset) -> None:
             ds.data = ds.data[expected_cols]
 
 
-def _convert_date_columns(
-    ds: Dataset, timestamp_columns: Optional[Set[str]] = None
-) -> None:
+def _convert_date_columns(ds: Dataset, timestamp_columns: Optional[Set[str]] = None) -> None:
     """Convert DuckDB datetime columns to VTL string format.
 
     DuckDB returns Timestamp/NaT for date columns but the VTL engine
