@@ -1229,9 +1229,7 @@ class InterpreterAnalyzer(ASTTemplate):
             self.regular_aggregation_dataset is not None
             and node.old_name in self.regular_aggregation_dataset.components
         ):
-            node.old_name = self.regular_aggregation_dataset.resolve_component_name(
-                node.old_name
-            )
+            node.old_name = self.regular_aggregation_dataset.resolve_component_name(node.old_name)
 
         return node
 
