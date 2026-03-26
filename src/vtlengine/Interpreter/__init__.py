@@ -67,6 +67,7 @@ from vtlengine.Model import (
     ScalarSet,
     ValueDomain,
 )
+from vtlengine.Model._case_insensitive_dict import CaseInsensitiveDict
 from vtlengine.Operators.Aggregation import extract_grouping_identifiers
 from vtlengine.Operators.Assignment import Assignment
 from vtlengine.Operators.CastOperator import Cast
@@ -155,6 +156,15 @@ class InterpreterAnalyzer(ASTTemplate):
     signature_values: Optional[Dict[str, Any]] = None
 
     def __post_init__(self) -> None:
+        # Ensure case-insensitive lookups for datasets, scalars, and value_domains
+        if not isinstance(self.datasets, CaseInsensitiveDict):
+            self.datasets = CaseInsensitiveDict(self.datasets)
+        if self.scalars is not None and not isinstance(self.scalars, CaseInsensitiveDict):
+            self.scalars = CaseInsensitiveDict(self.scalars)
+        if self.value_domains is not None and not isinstance(
+            self.value_domains, CaseInsensitiveDict
+        ):
+            self.value_domains = CaseInsensitiveDict(self.value_domains)
         self.datasets_inputs = set(self.datasets.keys())
         self.scalars_inputs = set(self.scalars.keys()) if self.scalars else set()
 
@@ -236,7 +246,7 @@ class InterpreterAnalyzer(ASTTemplate):
             Operators.only_semantic = True
         else:
             Operators.only_semantic = False
-        results = {}
+        results: CaseInsensitiveDict[Any] = CaseInsensitiveDict()
         scalars_to_save = set()
         invalid_dataset_outputs = []
         invalid_scalar_outputs = []
@@ -279,7 +289,7 @@ class InterpreterAnalyzer(ASTTemplate):
             if isinstance(result, Scalar):
                 scalars_to_save.add(result.name)
                 if self.scalars is None:
-                    self.scalars = {}
+                    self.scalars = CaseInsensitiveDict()
                 self.scalars[result.name] = copy(result)
             self._save_datapoints_efficient(statement_num)
             statement_num += 1
@@ -834,16 +844,17 @@ class InterpreterAnalyzer(ASTTemplate):
                     comp_name=node.value,
                     dataset_name=self.aggregation_dataset.name,
                 )
+            canon = self.aggregation_dataset.resolve_component_name(node.value)
             if self.aggregation_dataset.data is None:
                 data = None
             else:
-                data = copy(self.aggregation_dataset.data[node.value])
+                data = copy(self.aggregation_dataset.data[canon])
             return DataComponent(
-                name=node.value,
+                name=canon,
                 data=data,
-                data_type=self.aggregation_dataset.components[node.value].data_type,
-                role=self.aggregation_dataset.components[node.value].role,
-                nullable=self.aggregation_dataset.components[node.value].nullable,
+                data_type=self.aggregation_dataset.components[canon].data_type,
+                role=self.aggregation_dataset.components[canon].role,
+                nullable=self.aggregation_dataset.components[canon].nullable,
             )
         if self.is_from_regular_aggregation:
             if self.is_from_join and node.value in self.datasets:
@@ -883,16 +894,17 @@ class InterpreterAnalyzer(ASTTemplate):
                         comp_name=node.value,
                         dataset_name=self.regular_aggregation_dataset.name,
                     )
+                canon = self.regular_aggregation_dataset.resolve_component_name(node.value)
                 if self.regular_aggregation_dataset.data is not None:
-                    data = copy(self.regular_aggregation_dataset.data[node.value])
+                    data = copy(self.regular_aggregation_dataset.data[canon])
                 else:
                     data = None
                 return DataComponent(
-                    name=node.value,
+                    name=canon,
                     data=data,
-                    data_type=self.regular_aggregation_dataset.components[node.value].data_type,
-                    role=self.regular_aggregation_dataset.components[node.value].role,
-                    nullable=self.regular_aggregation_dataset.components[node.value].nullable,
+                    data_type=self.regular_aggregation_dataset.components[canon].data_type,
+                    role=self.regular_aggregation_dataset.components[canon].role,
+                    nullable=self.regular_aggregation_dataset.components[canon].nullable,
                 )
         if (
             self.is_from_rule
@@ -982,11 +994,13 @@ class InterpreterAnalyzer(ASTTemplate):
             dataset = copy(operands[0])
             if self.regular_aggregation_dataset is not None:
                 dataset.name = self.regular_aggregation_dataset.name
-            dataset.components = {
-                comp_name: comp
-                for comp_name, comp in dataset.components.items()
-                if comp.role != Role.MEASURE
-            }
+            dataset.components = CaseInsensitiveDict(
+                {
+                    comp_name: comp
+                    for comp_name, comp in dataset.components.items()
+                    if comp.role != Role.MEASURE
+                }
+            )
             if dataset.data is not None:
                 dataset.data = dataset.data[dataset.get_identifiers_names()]
             aux_operands = []
@@ -1056,10 +1070,12 @@ class InterpreterAnalyzer(ASTTemplate):
                         columns={col: col[col.find("#") + 1 :] for col in result.data.columns},
                         inplace=True,
                     )
-                result.components = {
-                    comp_name[comp_name.find("#") + 1 :]: comp
-                    for comp_name, comp in result.components.items()
-                }
+                result.components = CaseInsensitiveDict(
+                    {
+                        comp_name[comp_name.find("#") + 1 :]: comp
+                        for comp_name, comp in result.components.items()
+                    }
+                )
                 for comp in result.components.values():
                     comp.name = comp.name[comp.name.find("#") + 1 :]
                 if result.data is not None:
@@ -1260,11 +1276,13 @@ class InterpreterAnalyzer(ASTTemplate):
                 if len(self.aggregation_dataset.get_measures()) != 1:
                     raise ValueError("Only one measure is allowed")
                 # Deepcopy is necessary for components to avoid changing the original dataset
-                self.aggregation_dataset.components = {
-                    comp_name: deepcopy(comp)
-                    for comp_name, comp in self.aggregation_dataset.components.items()
-                    if comp_name in self.aggregation_grouping or comp.role == Role.MEASURE
-                }
+                self.aggregation_dataset.components = CaseInsensitiveDict(
+                    {
+                        comp_name: deepcopy(comp)
+                        for comp_name, comp in self.aggregation_dataset.components.items()
+                        if comp_name in self.aggregation_grouping or comp.role == Role.MEASURE
+                    }
+                )
 
                 self.aggregation_dataset.data = (
                     self.aggregation_dataset.data[

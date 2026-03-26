@@ -15,6 +15,7 @@ import vtlengine.DataTypes as DataTypes
 from vtlengine.DataTypes import SCALAR_TYPES, ScalarType
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.Exceptions import InputValidationException, SemanticError
+from vtlengine.Model._case_insensitive_dict import CaseInsensitiveDict
 
 
 @dataclass
@@ -205,6 +206,9 @@ class Dataset:
     persistent: bool = False
 
     def __post_init__(self) -> None:
+        # Ensure components is always a CaseInsensitiveDict
+        if not isinstance(self.components, CaseInsensitiveDict):
+            self.components = CaseInsensitiveDict(self.components)
         if self.data is not None:
             if len(self.components) != len(self.data.columns):
                 raise ValueError(
@@ -331,15 +335,26 @@ class Dataset:
     def get_component(self, component_name: str) -> Component:
         return self.components[component_name]
 
+    def resolve_component_name(self, name: str) -> str:
+        """Return the canonical (original-case) component name for a case-insensitive match."""
+        if isinstance(self.components, CaseInsensitiveDict):
+            return self.components.canonical_key(name)
+        return name
+
     def add_component(self, component: Component) -> None:
         if component.name in self.components:
             raise ValueError(f"Component with name {component.name} already exists")
         self.components[component.name] = component
 
     def delete_component(self, component_name: str) -> None:
-        self.components.pop(component_name, None)
+        # Resolve to canonical name for DataFrame column access
+        try:
+            canonical = self.resolve_component_name(component_name)
+        except KeyError:
+            return
+        del self.components[canonical]
         if self.data is not None:
-            self.data.drop(columns=[component_name], inplace=True)
+            self.data.drop(columns=[canonical], inplace=True)
 
     def get_components(self) -> List[Component]:
         return list(self.components.values())

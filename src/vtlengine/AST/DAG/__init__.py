@@ -180,14 +180,15 @@ class DAGAnalyzer(ASTTemplate):
             for key, statement in self.dependencies.items():
                 reference = statement.outputs + statement.persistent
                 if reference:
-                    ref_to_keys[reference[0]] = key
+                    ref_to_keys[reference[0].casefold()] = key
 
             for sub_key, sub_statement in self.dependencies.items():
                 for input_val in sub_statement.inputs:
-                    if input_val in ref_to_keys:
-                        key = ref_to_keys[input_val]
-                        self.edges[count_edges] = (key, sub_key)
-                        count_edges += 1
+                    if input_val.casefold() in ref_to_keys:
+                        key = ref_to_keys[input_val.casefold()]
+                        if key != sub_key:  # Skip self-edges (e.g. a <- A)
+                            self.edges[count_edges] = (key, sub_key)
+                            count_edges += 1
 
     def sort_elements(self, statements: list) -> list:
         return [statements[x - 1] for x in self.sorting]  # type: ignore[union-attr]
@@ -195,9 +196,11 @@ class DAGAnalyzer(ASTTemplate):
     def check_overwriting(self, statements: list) -> None:
         seen: Set[str] = set()
         for statement in statements:
-            if statement.left.value in seen:
+            # Case-insensitive check: regular VTL names are case-insensitive
+            normalized = statement.left.value.casefold()
+            if normalized in seen:
                 raise SemanticError("1-2-2", varId_value=statement.left.value)
-            seen.add(statement.left.value)
+            seen.add(normalized)
 
     def sort_ast(self, ast: AST) -> None:
         statements_nodes = ast.children
