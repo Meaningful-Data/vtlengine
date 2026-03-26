@@ -394,9 +394,7 @@ def build_select_columns(
                         f'CAST(NULLIF("{comp_name}", \'\') AS {table_type}) AS "{comp_name}"'
                     )
                 else:
-                    select_cols.append(
-                        f'CAST("{comp_name}" AS {table_type}) AS "{comp_name}"'
-                    )
+                    select_cols.append(f'CAST("{comp_name}" AS {table_type}) AS "{comp_name}"')
             elif csv_type == "VARCHAR" and comp.data_type == String:
                 # Strip double quotes from String values (match pandas loader behavior)
                 expr = f"""REPLACE("{comp_name}", '"', '')"""

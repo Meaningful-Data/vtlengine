@@ -4368,7 +4368,7 @@ class DefinedOperatorsTest(AdditionalHelper):
 
 
 @pytest.mark.skipif(
-    os.environ.get("VTL_ENGINE_BACKEND", "duckdb").lower() == "duckdb",
+    _use_duckdb_backend,
     reason="deactivated on duckdb until nullability over scalars is implemented",
 )
 class DatesTest(AdditionalHelper):

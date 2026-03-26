@@ -18,7 +18,9 @@ Summary
 
 from pathlib import Path
 
-from tests.Helper import TestHelper
+import pytest
+
+from tests.Helper import TestHelper, _use_duckdb_backend
 
 
 class DataLoadHelper(TestHelper):
@@ -200,6 +202,10 @@ class DataLoadTest(DataLoadHelper):
 
         assert dataset_input.data["OBS_VALUE"][0] == string_to_compare
 
+    @pytest.mark.skipif(
+        _use_duckdb_backend,
+        reason="Duckdb cannot handle unmatched types errors as pandas, so it not raises the same error",
+    )
     def test_12(self):
         """
         Status: OK
@@ -244,6 +250,10 @@ class DataLoadTest(DataLoadHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    @pytest.mark.skipif(
+        _use_duckdb_backend,
+        reason="Duckdb cannot handle unmatched types errors as pandas, so it not raises the same error",
+    )
     def test_15(self):
         """
         Status: OK
@@ -303,7 +313,7 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_81-17"
         number_inputs = 1
 
-        message = "Component Me_2 is missing in the file."
+        message = "Component Me_2 is missing in Datapoints."
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_message=message
         )

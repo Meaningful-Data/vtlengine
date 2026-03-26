@@ -192,9 +192,7 @@ def load_datapoints_duckdb(
     id_columns = [n for n, c in components.items() if c.role == Role.IDENTIFIER]
 
     # For CSV, Date columns use TIMESTAMP as safe default (can't inspect values cheaply)
-    csv_date_overrides = {
-        n: "TIMESTAMP" for n, c in components.items() if c.data_type == Date
-    }
+    csv_date_overrides = {n: "TIMESTAMP" for n, c in components.items() if c.data_type == Date}
 
     # 1. Create table (NOT NULL only, no PRIMARY KEY)
     conn.execute(build_create_table_sql(dataset_name, components, csv_date_overrides))
@@ -203,12 +201,19 @@ def load_datapoints_duckdb(
         # 2. Detect CSV format (delimiter, quote, escape) using sniff_csv
         _sniffed_fmt = _detect_csv_format(conn, csv_path)
 
-        # 3. Read CSV header with auto_detect to get column names
-        header_rel = conn.sql(
-            f"SELECT * FROM read_csv('{csv_path}', header=true, auto_detect=true,"
-            f" null_padding=true) LIMIT 0"
-        )
-        csv_columns = header_rel.columns
+        # 3. Read CSV header and check for duplicate columns
+        sniffed_delim = _sniffed_fmt.split("'")[1] if "delim=" in _sniffed_fmt else ","
+        with open(csv_path, newline="", encoding="utf-8") as f:
+            reader = csv.reader(f, delimiter=sniffed_delim)
+            csv_columns = next(reader, [])
+
+        if len(set(csv_columns)) != len(csv_columns):
+            duplicates = list({item for item in csv_columns if csv_columns.count(item) > 1})
+            raise InputValidationException(
+                code="0-1-2-3",
+                element_type="Columns",
+                element=f"{', '.join(duplicates)}",
+            )
 
         # 4. Handle SDMX-CSV special columns
         keep_columns = handle_sdmx_columns(csv_columns, components)

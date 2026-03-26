@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.Helper import TestHelper
+from tests.Helper import TestHelper, _use_duckdb_backend
 from vtlengine import semantic_analysis
 from vtlengine.API import create_ast
 from vtlengine.Exceptions import SemanticError
@@ -796,7 +796,7 @@ class ClauseClauseTests(SemanticHelper):
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     @pytest.mark.skipif(
-        os.environ.get("VTL_ENGINE_BACKEND", "duckdb").lower() == "duckdb",
+        _use_duckdb_backend,
         reason="DuckDB is case-insensitive for column names",
     )
     def test_46(self):
@@ -2243,7 +2243,7 @@ class ScalarTests(SemanticHelper):
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     @pytest.mark.skipif(
-        os.environ.get("VTL_ENGINE_BACKEND", "duckdb").lower() == "duckdb",
+        _use_duckdb_backend,
         reason="deactivated on duckdb until nullability over scalars is implemented",
     )
     def test_19(self):
@@ -2263,7 +2263,7 @@ class ScalarTests(SemanticHelper):
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     @pytest.mark.skipif(
-        os.environ.get("VTL_ENGINE_BACKEND", "duckdb").lower() == "duckdb",
+        _use_duckdb_backend,
         reason="deactivated on duckdb until nullability over scalars is implemented",
     )
     def test_20(self):
@@ -2288,7 +2288,7 @@ class ScalarTests(SemanticHelper):
         )
 
     @pytest.mark.skipif(
-        os.environ.get("VTL_ENGINE_BACKEND", "duckdb").lower() == "duckdb",
+        _use_duckdb_backend,
         reason="deactivated on duckdb until nullability over scalars is implemented",
     )
     def test_21(self):
