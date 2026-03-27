@@ -28,8 +28,60 @@ from vtlengine.duckdb_transpiler.io._time_handling import (
     format_time_period_scalar,
 )
 from vtlengine.duckdb_transpiler.sql import initialize_time_types
+from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.files.output._time_period_representation import TimePeriodRepresentation
 from vtlengine.Model import Dataset, Scalar
+
+
+def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
+    """Map a DuckDB query execution error to a VTL exception.
+
+    Patterns:
+    - Conversion errors on timestamp/date → RunTimeError 2-1-19-8
+    - Division by zero → RunTimeError 2-1-3-1
+    - Cast errors → SemanticError 1-1-5-1
+    """
+    msg = str(error)
+    msg_lower = msg.lower()
+
+    # Custom VTL macro errors: non-daily TimePeriod → Date cast
+    if "cannot cast non-daily timeperiod to date" in msg_lower:
+        # Extract the value from "Cannot cast non-daily TimePeriod to Date: <value>"
+        value = msg.split(": ", 1)[-1] if ": " in msg else "unknown"
+        return RunTimeError("2-1-5-1", value=value, type_1="Time_Period", type_2="Date")
+
+    # Custom VTL macro errors: TimeInterval → Date with different dates
+    if "cannot cast timeinterval to date" in msg_lower:
+        value = msg.split(": ", 1)[-1] if ": " in msg else "unknown"
+        return RunTimeError("2-1-5-1", value=value, type_1="Time", type_2="Date")
+
+    # Custom VTL macro errors: cannot determine period
+    if "cannot determine period for interval" in msg_lower:
+        value = msg.split(": ", 1)[-1] if ": " in msg else "unknown"
+        return RunTimeError("2-1-5-1", value=value, type_1="Time", type_2="Time_Period")
+
+    # Invalid date/timestamp format (e.g. casting interval string to timestamp)
+    if "conversion" in msg_lower and (
+        "timestamp" in msg_lower or "date" in msg_lower
+    ):
+        # Extract the problematic value from the error message
+        date_val = "unknown"
+        if '"' in msg:
+            parts = msg.split('"')
+            if len(parts) >= 2:
+                date_val = parts[1]
+        return RunTimeError("2-1-19-8", date=date_val)
+
+    # Division by zero
+    if "division by zero" in msg_lower or "divide by zero" in msg_lower:
+        return RunTimeError("2-1-3-1", op="division")
+
+    # Math domain error (e.g. log(0))
+    if "logarithm of zero" in msg_lower or "logarithm of negative" in msg_lower:
+        return ValueError("math domain error")
+
+    # Return original error if no mapping found
+    return error
 
 
 def _format_timestamp(ts: Any) -> str:
@@ -354,11 +406,12 @@ def execute_queries(
         # Execute query and create table
         try:
             conn.execute(f'CREATE TABLE "{result_name}" AS {sql_query}')
+        except duckdb.Error as e:
+            mapped = _map_query_error(e, sql_query)
+            if mapped is not e:
+                raise mapped from e
+            raise
         except Exception:
-            import sys
-
-            print(f"FAILED at query {statement_num}: {result_name}", file=sys.stderr)
-            print(f"SQL: {str(sql_query)[:2000]}", file=sys.stderr)
             raise
 
         # Clean up datasets scheduled for deletion

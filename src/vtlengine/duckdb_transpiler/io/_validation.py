@@ -91,6 +91,31 @@ def map_duckdb_error(
         # Generic null error for identifier
         return DataLoadError("0-3-1-3", null_identifier="unknown", name=dataset_name)
 
+    # Date/timestamp range error (e.g. 2014-02-31)
+    if "timestamp field value out of range" in error_msg:
+        import re
+
+        match = re.search(r'"(\d{4}-\d{2}-\d{2})"', str(error))
+        date_val = match.group(1) if match else "unknown"
+        friendly_msg = f"Date {date_val} is out of range for the month."
+        # Find the Date column
+        for comp_name, comp in components.items():
+            if comp.data_type == Date:
+                return DataLoadError(
+                    "0-3-1-6",
+                    name=dataset_name,
+                    column=comp_name,
+                    type="Date",
+                    error=friendly_msg,
+                )
+        return DataLoadError(
+            "0-3-1-6",
+            name=dataset_name,
+            column="unknown",
+            type="Date",
+            error=friendly_msg,
+        )
+
     # Type conversion error
     if "convert" in error_msg or "conversion" in error_msg or "cast" in error_msg:
         # Try to extract column and type info
@@ -158,13 +183,14 @@ def get_csv_read_type(comp: Component) -> str:
     Note: Integer columns are read as DOUBLE to enable strict validation
     that rejects non-integer values (e.g., 1.5) instead of silently rounding.
     Date columns are read as VARCHAR to preserve original format (date-only vs datetime).
+    Boolean columns are read as VARCHAR to handle quoted values (e.g., ``"TRUE"``).
     """
     if comp.data_type == Integer:
         return "DOUBLE"  # Read as DOUBLE to validate no decimal component
     elif comp.data_type == Number:
         return "DOUBLE"  # Read as DOUBLE, then cast to DECIMAL in table
     elif comp.data_type == Boolean:
-        return "BOOLEAN"
+        return "VARCHAR"  # Read as VARCHAR to handle quoted values; cast during INSERT
     elif comp.data_type == Date:
         return "VARCHAR"  # Read as string; cast to DATE or TIMESTAMP during INSERT
     else:
@@ -387,14 +413,35 @@ def build_select_columns(
             # Cast DOUBLE → DECIMAL for Number type
             elif csv_type == "DOUBLE" and "DECIMAL" in table_type:
                 select_cols.append(f'CAST("{comp_name}" AS {table_type}) AS "{comp_name}"')
-            # Date columns: read as VARCHAR, cast to DATE or TIMESTAMP
+            # Date columns: read as VARCHAR, validate format, cast to DATE or TIMESTAMP
             elif csv_type == "VARCHAR" and comp.data_type == Date:
+                # VTL accepts hyphen-separated dates: YYYY-M-D or YYYY-MM-DD HH:MM:SS[.f]
+                date_regex = r"^\d{4}-\d{1,2}-\d{1,2}( \d{2}:\d{2}:\d{2}(\.\d+)?)?$"
+                null_check = f'"{comp_name}" IS NOT NULL'
                 if comp.nullable:
-                    select_cols.append(
-                        f'CAST(NULLIF("{comp_name}", \'\') AS {table_type}) AS "{comp_name}"'
-                    )
-                else:
-                    select_cols.append(f'CAST("{comp_name}" AS {table_type}) AS "{comp_name}"')
+                    null_check += f""" AND "{comp_name}" != ''"""
+                format_err = (
+                    f"'Date ' || \"{comp_name}\" || "
+                    f"' is not in the correct format. "
+                    f"Use YYYY-MM-DD or YYYY-MM-DD HH:MM:SS.'"
+                )
+                val_expr = f'NULLIF("{comp_name}", \'\')' if comp.nullable else f'"{comp_name}"'
+                select_cols.append(
+                    f"""CASE
+                        WHEN {null_check}
+                             AND NOT regexp_matches("{comp_name}", '{date_regex}')
+                        THEN error({format_err})
+                        ELSE CAST({val_expr} AS {table_type})
+                    END AS "{comp_name}\""""
+                )
+            elif csv_type == "VARCHAR" and comp.data_type == Boolean:
+                # Strip double quotes and cast to BOOLEAN (handles """TRUE""" from CSV)
+                stripped = f"""REPLACE("{comp_name}", '"', '')"""
+                if comp.nullable:
+                    stripped = f"NULLIF({stripped}, '')"
+                select_cols.append(
+                    f'CAST({stripped} AS BOOLEAN) AS "{comp_name}"'
+                )
             elif csv_type == "VARCHAR" and comp.data_type == String:
                 # Strip double quotes from String values (match pandas loader behavior)
                 expr = f"""REPLACE("{comp_name}", '"', '')"""

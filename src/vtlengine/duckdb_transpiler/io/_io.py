@@ -95,11 +95,20 @@ def _normalize_time_period_columns(
     """
     for comp_name, comp in components.items():
         if comp.data_type == TimePeriod:
-            conn.execute(
-                f'UPDATE "{table_name}" SET "{comp_name}" = '
-                f'vtl_period_normalize("{comp_name}") '
-                f'WHERE "{comp_name}" IS NOT NULL'
-            )
+            try:
+                conn.execute(
+                    f'UPDATE "{table_name}" SET "{comp_name}" = '
+                    f'vtl_period_normalize("{comp_name}") '
+                    f'WHERE "{comp_name}" IS NOT NULL AND "{comp_name}" != \'\''
+                )
+            except duckdb.Error as e:
+                raise DataLoadError(
+                    "0-3-1-6",
+                    name=table_name,
+                    column=comp_name,
+                    type="Time_Period",
+                    error=str(e),
+                )
 
 
 def _detect_csv_format(conn: duckdb.DuckDBPyConnection, csv_path: Path) -> str:

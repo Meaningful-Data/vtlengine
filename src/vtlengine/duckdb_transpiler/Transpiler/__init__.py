@@ -2494,8 +2494,7 @@ FROM {src}, (
                 return f"vtl_tp_dateadd(vtl_period_parse({operand_sql}), {shift_sql}, {period_sql})"
             return f"vtl_dateadd({operand_sql}, {shift_sql}, {period_sql})"
 
-    @staticmethod
-    def _get_source_vtl_type(node: "AST.AST") -> Optional[str]:
+    def _get_source_vtl_type(self, node: "AST.AST") -> Optional[str]:
         """Determine the VTL data type name produced by an AST node.
 
         Used to generate correct cross-type CAST SQL (e.g. Date→TimePeriod).
@@ -2517,6 +2516,12 @@ FROM {src}, (
         ):
             type_node = node.children[1]
             return type_node.value if hasattr(type_node, "value") else str(type_node)
+        # Resolve component type from current dataset context (e.g. inside calc)
+        if isinstance(node, AST.VarID) and self._current_dataset:
+            comp = self._current_dataset.components.get(node.value)
+            if comp and comp.data_type:
+                type_name = getattr(comp.data_type, "__name__", str(comp.data_type))
+                return type_name
         return None
 
     def _visit_cast(self, node: AST.ParamOp) -> str:
@@ -2541,10 +2546,23 @@ FROM {src}, (
         operand_type = self._get_operand_type(operand)
 
         if operand_type == _DATASET:
-            return self._apply_to_measures(
-                operand,
-                lambda col: self._cast_expr(col, duckdb_type, target_type_str, mask),
-            )
+            ds = self._get_dataset_structure(operand)
+            # Build per-component type map for source-aware casting
+            comp_types: Dict[str, str] = {}
+            if ds:
+                for cname, comp in ds.components.items():
+                    if comp.data_type:
+                        comp_types[cname] = getattr(
+                            comp.data_type, "__name__", str(comp.data_type)
+                        )
+
+            def _cast_measure(col: str) -> str:
+                # Extract component name from quoted col ref
+                col_name = col.strip('"')
+                src_type = comp_types.get(col_name)
+                return self._cast_expr(col, duckdb_type, target_type_str, mask, src_type)
+
+            return self._apply_to_measures(operand, _cast_measure)
         else:
             operand_sql = self.visit(operand)
             source_type = self._get_source_vtl_type(operand)
