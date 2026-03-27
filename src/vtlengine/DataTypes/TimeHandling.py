@@ -348,9 +348,9 @@ class TimePeriodHandler:
         ).period_number
 
     def vtl_representation(self) -> str:
-        """VTL representation: YYYYA, YYYYSn, YYYYQn, YYYYMm, YYYYWw, YYYYDd (no hyphens)."""
+        """VTL representation: YYYY, YYYYSn, YYYYQn, YYYYMm, YYYYWw, YYYYDd (no hyphens)."""
         if self.period_indicator == "A":
-            return f"{self.year}A"
+            return f"{self.year}"
         return f"{self.year}{self.period_indicator}{self.period_number}"
 
     def sdmx_gregorian_representation(self) -> str:

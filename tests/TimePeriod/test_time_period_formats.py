@@ -178,7 +178,7 @@ def test_check_time_period_all_formats_consistent(expected: str, inputs: list) -
 
 
 vtl_repr_params = [
-    ("2020A", "2020A", "annual"),
+    ("2020A", "2020", "annual"),
     ("2020S1", "2020S1", "semester 1"),
     ("2020S2", "2020S2", "semester 2"),
     ("2020Q1", "2020Q1", "quarter 1"),
@@ -312,7 +312,7 @@ def get_tp_scalar(value: Optional[str]) -> Scalar:
 format_dataset_params = [
     # (internal_value, mode, expected_output, id)
     # VTL
-    ("2020A", TimePeriodRepresentation.VTL, "2020A", "vtl annual"),
+    ("2020A", TimePeriodRepresentation.VTL, "2020", "vtl annual"),
     ("2020-M01", TimePeriodRepresentation.VTL, "2020M1", "vtl month"),
     ("2020-Q3", TimePeriodRepresentation.VTL, "2020Q3", "vtl quarter"),
     ("2020-S2", TimePeriodRepresentation.VTL, "2020S2", "vtl semester"),
@@ -411,7 +411,7 @@ def test_format_external_multiple_values() -> None:
     format_time_period_external_representation(ds, TimePeriodRepresentation.VTL)
     assert len(ds.data["Id_1"]) == 3
     assert ds.data["Id_1"].equals(
-        pd.Series(["2020A", "2020M6", "2020Q2"], name="Id_1", dtype="string[pyarrow]")
+        pd.Series(["2020", "2020M6", "2020Q2"], name="Id_1", dtype="string[pyarrow]")
     )
 
 
@@ -457,7 +457,7 @@ gh_635_params = [
     pytest.param(
         ["2020", "2021", "2022"],
         "vtl",
-        ["2020A", "2021A", "2022A"],
+        ["2020", "2021", "2022"],
         id="GH_635_2-annual_vtl",
     ),
     pytest.param(
