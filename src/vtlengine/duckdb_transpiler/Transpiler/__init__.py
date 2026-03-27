@@ -14,6 +14,7 @@ from typing import Any, Callable, Dict, Generator, List, Optional, Set, Tuple, U
 
 import vtlengine.AST as AST
 from vtlengine.AST.ASTTemplate import ASTTemplate
+from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.AST.Grammar import tokens
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
@@ -22,6 +23,7 @@ from vtlengine.DataTypes import (
     Duration,
     Integer,
     Number,
+    TimeInterval,
     TimePeriod,
 )
 from vtlengine.duckdb_transpiler.Transpiler.operators import (
@@ -74,6 +76,40 @@ _PERIOD_COMPARISON_MACROS: Dict[str, str] = {
 _DURATION_COMPARISON_OPS: frozenset[str] = frozenset(
     {tokens.GT, tokens.GTE, tokens.LT, tokens.LTE, tokens.EQ, tokens.NEQ}
 )
+
+# Ordering-only comparison operators (excludes = and <>).
+_ORDERING_OPS: frozenset[str] = frozenset(
+    {tokens.GT, tokens.GTE, tokens.LT, tokens.LTE}
+)
+
+
+def _add_tp_indicator_check(
+    sql: str, table_src: str, tp_cols: List[tuple[str, str]]
+) -> str:
+    """Inject a TimePeriod indicator uniformity check into an aggregate query.
+
+    Uses a subquery joined with WHERE to force DuckDB to evaluate the check.
+    """
+    checks: List[str] = []
+    for col_name, agg_op in tp_cols:
+        qc = quote_identifier(col_name)
+        normalized = f"vtl_period_normalize({qc})"
+        indicator = f"vtl_period_parse({normalized}).period_indicator"
+        err = (
+            f"'VTL Error 2-1-19-20: Time Period operands with "
+            f"different period indicators do not support < and > "
+            f"Comparison operations, unable to get the {agg_op}'"
+        )
+        checks.append(
+            f"CASE WHEN COUNT(DISTINCT {indicator}) "
+            f"FILTER (WHERE {qc} IS NOT NULL) > 1 "
+            f"THEN error({err}) ELSE 1 END"
+        )
+    check_cols = ", ".join(f"{c} AS _ok{i}" for i, c in enumerate(checks))
+    subquery = f"(SELECT {check_cols} FROM {table_src}) AS _vtl_tp_check"
+    where_conds = " AND ".join(f"_vtl_tp_check._ok{i} = 1" for i in range(len(checks)))
+    from_pattern = f"FROM {table_src}"
+    return sql.replace(from_pattern, f"FROM {table_src}, {subquery} WHERE {where_conds}", 1)
 
 
 def _is_date_timeperiod_pair(left_comp: Component, right_comp: Component) -> bool:
@@ -1537,9 +1573,17 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 if right_comp_c and right_comp_c.data_type == Boolean:
                     right_ref = _bool_to_str(right_ref)
 
-            # TimePeriod ordering: use vtl_period_* macros with STRUCT comparison
+            # TimeInterval: only = and <> are supported
             left_comp = left_ds.components.get(left_m)
             right_comp = right_ds.components.get(right_m)
+            if (
+                op in _ORDERING_OPS
+                and left_comp
+                and left_comp.data_type == TimeInterval
+            ):
+                raise RunTimeError("2-1-19-17", op=op)
+
+            # TimePeriod ordering: use vtl_period_* macros with STRUCT comparison
             period_macro = _PERIOD_COMPARISON_MACROS.get(op)
             if left_comp and left_comp.data_type == TimePeriod and period_macro:
                 expr = (
@@ -1598,6 +1642,15 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 return registry.binary.generate(op, right_sql, left_sql)
 
         scalar_sql = self.visit(scalar_node)
+
+        # TimeInterval: only = and <> are supported
+        if op in _ORDERING_OPS and any(
+            c.data_type == TimeInterval
+            for c in ds.components.values()
+            if c.role == Role.MEASURE
+        ):
+            raise RunTimeError("2-1-19-17", op=op)
+
         period_macro = _PERIOD_COMPARISON_MACROS.get(op)
 
         # Check if any measure is TimePeriod for ordering comparisons
@@ -1693,6 +1746,23 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         # Scalar-scalar: use registry
         left_sql = self.visit(node.left)
         right_sql = self.visit(node.right)
+
+        # TimeInterval: only = and <> are supported
+        if op in _ORDERING_OPS and (
+            self._is_time_interval_operand(node.left)
+            or self._is_time_interval_operand(node.right)
+        ):
+            raise RunTimeError("2-1-19-17", op=op)
+
+        # TimePeriod ordering: use vtl_period_* macros (includes indicator check)
+        period_macro = _PERIOD_COMPARISON_MACROS.get(op)
+        if period_macro and (
+            self._is_time_period_operand(node.left)
+            or self._is_time_period_operand(node.right)
+        ):
+            left_p = f"vtl_period_parse(vtl_period_normalize({left_sql}))"
+            right_p = f"vtl_period_parse(vtl_period_normalize({right_sql}))"
+            return f"{period_macro}({left_p}, {right_p})"
 
         # TimePeriod dispatch for datediff
         if op == tokens.DATEDIFF and (
@@ -1937,6 +2007,27 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             type_node = node.children[1]
             type_str = type_node.value if hasattr(type_node, "value") else str(type_node)
             if type_str.lower() == "duration":
+                return True
+        return False
+
+    def _is_time_interval_operand(self, node: AST.AST) -> bool:
+        """Check if an operand resolves to a TimeInterval (Time) type."""
+        if isinstance(node, AST.VarID) and self._in_clause and self._current_dataset:
+            comp = self._current_dataset.components.get(node.value)
+            if comp and comp.data_type == TimeInterval:
+                return True
+        if isinstance(node, AST.VarID) and node.value in self.scalars:
+            sc = self.scalars[node.value]
+            if sc.data_type == TimeInterval:
+                return True
+        if (
+            isinstance(node, AST.ParamOp)
+            and str(getattr(node, "op", "")).lower() == tokens.CAST
+            and len(node.children) >= 2
+        ):
+            type_node = node.children[1]
+            type_str = type_node.value if hasattr(type_node, "value") else str(type_node)
+            if type_str.lower() in ("time", "timeinterval", "time_interval"):
                 return True
         return False
 
@@ -2909,6 +3000,8 @@ FROM {src}, (
 
         calc_exprs: Dict[str, str] = {}
         having_sql: Optional[str] = None
+        # Track TimePeriod measures used with MIN/MAX for indicator validation
+        tp_minmax_cols: List[tuple[str, str]] = []
 
         with self._clause_scope(ds):
             for child in node.children:
@@ -2924,8 +3017,42 @@ FROM {src}, (
                         if isinstance(hc, AST.ParamOp) and hc.params is not None:
                             having_sql = self.visit(hc.params)
 
+                    # Detect TimePeriod MIN/MAX for indicator validation
+                    if (
+                        isinstance(agg_node, AST.Aggregation)
+                        and str(agg_node.op).lower() in (tokens.MIN, tokens.MAX)
+                        and agg_node.operand
+                        and hasattr(agg_node.operand, "value")
+                    ):
+                        src_comp = ds.components.get(agg_node.operand.value)
+                        if src_comp and src_comp.data_type == TimePeriod:
+                            tp_minmax_cols.append(
+                                (agg_node.operand.value, str(agg_node.op).lower())
+                            )
+
                     expr_sql = self.visit(agg_node)
                     calc_exprs[col_name] = expr_sql
+
+        # Build validation CTE for TimePeriod MIN/MAX with mixed indicators
+        tp_check_cte: Optional[str] = None
+        if tp_minmax_cols:
+            checks: List[str] = []
+            for col_name, agg_op in tp_minmax_cols:
+                qc = quote_identifier(col_name)
+                normalized = f"vtl_period_normalize({qc})"
+                indicator = f"vtl_period_parse({normalized}).period_indicator"
+                err = (
+                    f"'VTL Error 2-1-19-20: Time Period operands with "
+                    f"different period indicators do not support < and > "
+                    f"Comparison operations, unable to get the {agg_op}'"
+                )
+                checks.append(
+                    f"CASE WHEN COUNT(DISTINCT {indicator}) "
+                    f"FILTER (WHERE {qc} IS NOT NULL) > 1 "
+                    f"THEN error({err}) END"
+                )
+            check_cols = ", ".join(checks)
+            tp_check_cte = f"SELECT {check_cols} FROM {table_src}"
 
         # Extract group-by identifiers from AST nodes to avoid using the
         # overall output dataset (which may represent a join result).
@@ -2969,7 +3096,13 @@ FROM {src}, (
         if having_sql:
             builder.having(having_sql)
 
-        return builder.build()
+        main_sql = builder.build()
+
+        # Prepend subquery for TimePeriod indicator validation
+        if tp_minmax_cols:
+            main_sql = _add_tp_indicator_check(main_sql, table_src, tp_minmax_cols)
+
+        return main_sql
 
     def _visit_apply(self, node: AST.RegularAggregation) -> str:
         """Visit apply clause: inner_join(... apply d1 op d2).
@@ -3163,6 +3296,10 @@ FROM {src}, (
                         return (
                             f"vtl_int_to_duration({op.upper()}(vtl_duration_to_int({operand_sql})))"
                         )
+                    # TimePeriod MIN/MAX: use ARG_MIN/ARG_MAX for correct ordering
+                    if comp is not None and comp.data_type == TimePeriod:
+                        parsed = f"vtl_period_parse({operand_sql})"
+                        return f"ARG_{op.upper()}({operand_sql}, {parsed})"
                 if registry.aggregate.is_registered(op):
                     return registry.aggregate.generate(op, operand_sql)
                 return f"{op.upper()}({operand_sql})"
@@ -3202,6 +3339,8 @@ FROM {src}, (
 
         cols, group_by_cols = self._build_agg_group_cols(node, ds, group_cols)
 
+        ds_tp_minmax_cols: List[tuple[str, str]] = []
+
         # count replaces all measures with a single int_var column.
         # VTL count() excludes rows where all measures are null.
         if op == tokens.COUNT:
@@ -3231,8 +3370,11 @@ FROM {src}, (
 
                 is_duration = comp is not None and comp.data_type == Duration
                 if is_time_period and op in (tokens.MIN, tokens.MAX):
-                    # TimePeriod MIN/MAX: parse to STRUCT, aggregate, format back
-                    expr = f"vtl_period_to_string({op.upper()}(vtl_period_parse({qm})))"
+                    # TimePeriod MIN/MAX: record for CTE validation
+                    ds_tp_minmax_cols.append((measure, op))
+                    normalized = f"vtl_period_normalize({qm})"
+                    parsed = f"vtl_period_parse({normalized})"
+                    expr = f"vtl_period_to_string({op.upper()}({parsed}))"
                 elif is_duration and op in (tokens.MIN, tokens.MAX):
                     # Duration MIN/MAX: convert to int, aggregate, convert back
                     expr = f"vtl_int_to_duration({op.upper()}(vtl_duration_to_int({qm})))"
@@ -3258,7 +3400,13 @@ FROM {src}, (
                     having_sql = self.visit(hc)
             builder.having(having_sql)
 
-        return builder.build()
+        main_sql = builder.build()
+
+        # Prepend subquery for TimePeriod indicator validation (dataset-level)
+        if ds_tp_minmax_cols:
+            main_sql = _add_tp_indicator_check(main_sql, table_src, ds_tp_minmax_cols)
+
+        return main_sql
 
     # =========================================================================
     # Analytic visitor
@@ -3327,6 +3475,44 @@ FROM {src}, (
         """Visit a dataset-level analytic: applies the window function to each measure."""
         over_clause = self._build_over_clause(node)
 
+        # Validate TimePeriod MIN/MAX: mixed indicators across all rows
+        if op in (tokens.MIN, tokens.MAX) and node.operand:
+            ds = self._get_dataset_structure(node.operand)
+            if ds:
+                tp_cols = [
+                    (m, op)
+                    for m in ds.get_measures_names()
+                    if ds.components[m].data_type == TimePeriod
+                ]
+                if tp_cols:
+                    table_src = self._get_dataset_sql(node.operand)
+                    # Run indicator check as a subquery in the generated SQL
+                    checks: List[str] = []
+                    for col_name, agg_op in tp_cols:
+                        qc = quote_identifier(col_name)
+                        normalized = f"vtl_period_normalize({qc})"
+                        indicator = f"vtl_period_parse({normalized}).period_indicator"
+                        err = (
+                            f"'VTL Error 2-1-19-20: Time Period operands with "
+                            f"different period indicators do not support < and > "
+                            f"Comparison operations, unable to get the {agg_op}'"
+                        )
+                        checks.append(
+                            f"CASE WHEN COUNT(DISTINCT {indicator}) "
+                            f"FILTER (WHERE {qc} IS NOT NULL) > 1 "
+                            f"THEN error({err}) ELSE 1 END"
+                        )
+                    check_cols = ", ".join(
+                        f"{c} AS _ok{i}" for i, c in enumerate(checks)
+                    )
+                    # Store the validation subquery for _apply_to_measures to inject
+                    self._analytic_tp_check = (
+                        f"(SELECT {check_cols} FROM {table_src}) AS _vtl_tp_check"
+                    )
+                    self._analytic_tp_where = " AND ".join(
+                        f"_vtl_tp_check._ok{i} = 1" for i in range(len(checks))
+                    )
+
         def _analytic_expr(col_ref: str) -> str:
             func_sql = self._build_analytic_expr(op, col_ref, node)
             if op == tokens.RATIO_TO_REPORT:
@@ -3337,7 +3523,22 @@ FROM {src}, (
         name_override = "int_var" if op == tokens.COUNT else None
         if node.operand is None:
             raise ValueError("Analytic node must have an operand")
-        return self._apply_to_measures(node.operand, _analytic_expr, name_override)
+        result = self._apply_to_measures(node.operand, _analytic_expr, name_override)
+
+        # Inject TimePeriod indicator validation if needed
+        if hasattr(self, "_analytic_tp_check"):
+            table_src = self._get_dataset_sql(node.operand)
+            from_pattern = f"FROM {table_src}"
+            where_clause = self._analytic_tp_where
+            result = result.replace(
+                from_pattern,
+                f"FROM {table_src}, {self._analytic_tp_check} WHERE {where_clause}",
+                1,
+            )
+            del self._analytic_tp_check
+            del self._analytic_tp_where
+
+        return result
 
     def visit_Windowing(self, node: AST.Windowing) -> str:  # type: ignore[override]
         """Visit a windowing specification."""

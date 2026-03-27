@@ -44,6 +44,25 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
     msg = str(error)
     msg_lower = msg.lower()
 
+    # VTL macro: TimePeriod aggregation with mixed indicators (max/min)
+    if "vtl error 2-1-19-20" in msg_lower:
+        # Extract op from "unable to get the max/min"
+        agg_op = "max"
+        if "unable to get the min" in msg_lower:
+            agg_op = "min"
+        return RunTimeError("2-1-19-20", op=agg_op)
+
+    # VTL macro: TimePeriod comparison with different period indicators
+    if "vtl error 2-1-19-19" in msg_lower:
+        # Extract indicators from "... different indicators: M vs Q"
+        indicators = ""
+        if "different indicators:" in msg_lower:
+            indicators = msg.split("different indicators:")[-1].strip()
+        parts = indicators.split(" vs ") if " vs " in indicators else ["", ""]
+        return RunTimeError(
+            "2-1-19-19", value1=parts[0].strip(), op="comparison", value2=parts[1].strip()
+        )
+
     # Custom VTL macro errors: non-daily TimePeriod → Date cast
     if "cannot cast non-daily timeperiod to date" in msg_lower:
         # Extract the value from "Cannot cast non-daily TimePeriod to Date: <value>"
@@ -79,6 +98,10 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
     # Math domain error (e.g. log(0))
     if "logarithm of zero" in msg_lower or "logarithm of negative" in msg_lower:
         return ValueError("math domain error")
+
+    # Logarithm of a negative number (log(x, negative_base))
+    if "cannot take logarithm of a negative number" in msg_lower:
+        return RunTimeError("2-1-15-3", op="log", value="negative")
 
     # Return original error if no mapping found
     return error

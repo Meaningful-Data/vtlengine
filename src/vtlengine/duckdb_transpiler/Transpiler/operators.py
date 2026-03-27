@@ -29,6 +29,7 @@ from enum import Enum, auto
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import vtlengine.AST.Grammar.tokens as tokens
+from vtlengine.Exceptions import SemanticError
 
 
 class OperatorCategory(Enum):
@@ -302,6 +303,21 @@ class SQLOperatorRegistries:
         return None
 
 
+def _validate_int_param(
+    value: Optional[str], *, op: str, param_name: str, min_val: int
+) -> None:
+    """Validate a scalar integer parameter against a minimum value."""
+    if value is None or value == "NULL":
+        return
+    try:
+        if int(value) < min_val:
+            raise SemanticError(
+                "1-1-18-4", op=op, param_type=param_name, correct_type=f">= {min_val}"
+            )
+    except (ValueError, TypeError):
+        pass  # Column reference, not a constant
+
+
 def _create_default_registries() -> SQLOperatorRegistries:
     """
     Create and populate the default operator registries.
@@ -490,8 +506,12 @@ def _create_default_registries() -> SQLOperatorRegistries:
         params = []
         params.append(str(args[0]) if len(args) > 0 and args[0] is not None else "NULL")
         params.append(str(args[1]) if len(args) > 1 and args[1] is not None else "NULL")
-        params.append(str(args[2]) if len(args) > 2 and args[2] is not None else "NULL")
-        params.append(str(args[3]) if len(args) > 3 and args[3] is not None else "NULL")
+        start_arg = args[2] if len(args) > 2 and args[2] is not None else None
+        _validate_int_param(start_arg, op="instr", param_name="Start", min_val=1)
+        params.append(str(start_arg) if start_arg is not None else "NULL")
+        occur_arg = args[3] if len(args) > 3 and args[3] is not None else None
+        _validate_int_param(occur_arg, op="instr", param_name="Occurrence", min_val=1)
+        params.append(str(occur_arg) if occur_arg is not None else "NULL")
 
         return f"vtl_instr({', '.join(params)})"
 
@@ -517,11 +537,11 @@ def _create_default_registries() -> SQLOperatorRegistries:
         if len(args) == 1:
             return str(args[0])
         string_arg = str(args[0])
-        # Start: default to 1 if missing, null, or runtime NULL
         start = args[1] if len(args) > 1 else None
+        _validate_int_param(start, op="substr", param_name="Start", min_val=1)
         start_sql = "1" if start is None or start == "NULL" else f"COALESCE({start}, 1)"
-        # Length: if missing, null, or runtime NULL → omit (return rest of string)
         length = args[2] if len(args) > 2 else None
+        _validate_int_param(length, op="substr", param_name="Length", min_val=0)
         if length is None or length == "NULL":
             return f"SUBSTR({string_arg}, {start_sql})"
         return f"SUBSTR({string_arg}, {start_sql}, COALESCE({length}, LENGTH({string_arg})))"
