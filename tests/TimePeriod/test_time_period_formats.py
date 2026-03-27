@@ -14,6 +14,7 @@ from typing import List, Optional
 import pandas as pd
 import pytest
 
+from vtlengine import run
 from vtlengine.DataTypes import TimePeriod
 from vtlengine.DataTypes._time_checking import check_time_period
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
@@ -177,7 +178,7 @@ def test_check_time_period_all_formats_consistent(expected: str, inputs: list) -
 
 
 vtl_repr_params = [
-    ("2020A", "2020", "annual"),
+    ("2020A", "2020A", "annual"),
     ("2020S1", "2020S1", "semester 1"),
     ("2020S2", "2020S2", "semester 2"),
     ("2020Q1", "2020Q1", "quarter 1"),
@@ -311,7 +312,7 @@ def get_tp_scalar(value: Optional[str]) -> Scalar:
 format_dataset_params = [
     # (internal_value, mode, expected_output, id)
     # VTL
-    ("2020A", TimePeriodRepresentation.VTL, "2020", "vtl annual"),
+    ("2020A", TimePeriodRepresentation.VTL, "2020A", "vtl annual"),
     ("2020-M01", TimePeriodRepresentation.VTL, "2020M1", "vtl month"),
     ("2020-Q3", TimePeriodRepresentation.VTL, "2020Q3", "vtl quarter"),
     ("2020-S2", TimePeriodRepresentation.VTL, "2020S2", "vtl semester"),
@@ -410,5 +411,89 @@ def test_format_external_multiple_values() -> None:
     format_time_period_external_representation(ds, TimePeriodRepresentation.VTL)
     assert len(ds.data["Id_1"]) == 3
     assert ds.data["Id_1"].equals(
-        pd.Series(["2020", "2020M6", "2020Q2"], name="Id_1", dtype="string[pyarrow]")
+        pd.Series(["2020A", "2020M6", "2020Q2"], name="Id_1", dtype="string[pyarrow]")
     )
+
+
+# GH-635: cast(TimePeriod, String) uses the configured external representation
+
+
+def _run_cast_tp_to_string(tp_values: List[str], time_period_output_format: str) -> Dataset:
+    from vtlengine.DataTypes.TimeHandling import TimePeriodConfig
+
+    original = TimePeriodConfig.get_representation()
+    script = "DS_r <- DS_1[calc Me_2 := cast(Me_1, string)];"
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Time_Period", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    data_df = pd.DataFrame({"Id_1": list(range(1, len(tp_values) + 1)), "Me_1": tp_values})
+    try:
+        result = run(
+            script=script,
+            data_structures=data_structures,
+            datapoints={"DS_1": data_df},
+            time_period_output_format=time_period_output_format,
+        )
+        return result["DS_r"]
+    finally:
+        TimePeriodConfig.set_representation(original)
+
+
+gh_635_params = [
+    pytest.param(
+        ["2020", "2021", "2022"],
+        "natural",
+        ["2020", "2021", "2022"],
+        id="GH_635_1-annual_natural",
+    ),
+    pytest.param(
+        ["2020", "2021", "2022"],
+        "vtl",
+        ["2020A", "2021A", "2022A"],
+        id="GH_635_2-annual_vtl",
+    ),
+    pytest.param(
+        ["2020M1", "2020M6", "2020M12"],
+        "natural",
+        ["2020-01", "2020-06", "2020-12"],
+        id="GH_635_3-monthly_natural",
+    ),
+    pytest.param(
+        ["2020M1", "2020M6", "2020M12"],
+        "vtl",
+        ["2020M1", "2020M6", "2020M12"],
+        id="GH_635_4-monthly_vtl",
+    ),
+    pytest.param(
+        ["2020Q1", "2020Q4"],
+        "sdmx_reporting",
+        ["2020-Q1", "2020-Q4"],
+        id="GH_635_5-quarterly_sdmx_reporting",
+    ),
+    pytest.param(
+        ["2020", "2020M6", "2020Q3"],
+        "natural",
+        ["2020", "2020-06", "2020-Q3"],
+        id="GH_635_6-mixed_natural",
+    ),
+    pytest.param(
+        ["2020", "2021"],
+        "sdmx_reporting",
+        ["2020-A1", "2021-A1"],
+        id="GH_635_7-annual_sdmx_reporting",
+    ),
+]
+
+
+@pytest.mark.parametrize("tp_values, output_format, expected", gh_635_params)
+def test_GH_635(tp_values: List[str], output_format: str, expected: List[str]) -> None:
+    ds = _run_cast_tp_to_string(tp_values, output_format)
+    assert list(ds.data["Me_2"]) == expected
