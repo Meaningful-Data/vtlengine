@@ -17,6 +17,18 @@ PERIOD_IND_MAPPING_REVERSE = {6: "A", 5: "S", 4: "Q", 3: "M", 2: "W", 1: "D"}
 PERIOD_INDICATORS = ["A", "S", "Q", "M", "W", "D"]
 
 
+class TimePeriodConfig:
+    _representation = "vtl"  # Default representation
+
+    @classmethod
+    def set_representation(cls, representation: str) -> None:
+        cls._representation = representation
+
+    @classmethod
+    def get_representation(cls) -> str:
+        return cls._representation
+
+
 def date_to_period(date_value: date, period_indicator: str) -> Any:
     if period_indicator == "A":
         return TimePeriodHandler(f"{date_value.year}A")
@@ -336,9 +348,9 @@ class TimePeriodHandler:
         ).period_number
 
     def vtl_representation(self) -> str:
-        """VTL representation: YYYY, YYYYSn, YYYYQn, YYYYMm, YYYYWw, YYYYDd (no hyphens)."""
+        """VTL representation: YYYYA, YYYYSn, YYYYQn, YYYYMm, YYYYWw, YYYYDd (no hyphens)."""
         if self.period_indicator == "A":
-            return f"{self.year}"
+            return f"{self.year}A"
         return f"{self.year}{self.period_indicator}{self.period_number}"
 
     def sdmx_gregorian_representation(self) -> str:
@@ -386,6 +398,18 @@ class TimePeriodHandler:
         else:
             period_number_str = str(self.period_number)
         return f"{self.year}-{self.period_indicator}{period_number_str}"
+
+    def external_representation(self) -> str:
+        """Return the representation based on the configured TimePeriodConfig."""
+        representation = TimePeriodConfig.get_representation()
+        if representation == "vtl":
+            return self.vtl_representation()
+        elif representation == "sdmx_gregorian":
+            return self.sdmx_gregorian_representation()
+        elif representation == "sdmx_reporting":
+            return self.sdmx_reporting_representation()
+        else:
+            return self.natural_representation()
 
 
 class TimeIntervalHandler:
