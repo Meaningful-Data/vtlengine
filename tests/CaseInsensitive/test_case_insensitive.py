@@ -118,6 +118,29 @@ def test_calc_case_insensitive(script, expected_comps):
         assert comp in result["DS_r"].components
 
 
+calc_override_params = [
+    pytest.param(
+        "DS_r <- DS_1[calc ME_1 := Me_1 * 2];",
+        ["Id_1", "Id_2", "ME_1"],
+        id="calc_override_upper",
+    ),
+    pytest.param(
+        "DS_r <- DS_1[calc me_1 := Me_1 * 2];",
+        ["Id_1", "Id_2", "me_1"],
+        id="calc_override_lower",
+    ),
+]
+
+
+@pytest.mark.parametrize("script, expected_cols", calc_override_params)
+def test_calc_output_columns_case_insensitive(script, expected_cols):
+    """Output DataFrame columns must match component names (no duplicates)."""
+    result = _run(script)
+    ds = result["DS_r"]
+    assert list(ds.components.keys()) == expected_cols
+    assert list(ds.data.columns) == expected_cols
+
+
 filter_params = [
     pytest.param("DS_r <- ds_1[filter me_1 > 15];", 2, id="lowercase_measure"),
     pytest.param("DS_r <- ds_1[filter ME_1 > 15];", 2, id="uppercase_measure"),
@@ -260,6 +283,29 @@ def test_aggregation_case_insensitive(expr, expected_comps):
     assert "DS_r" in result
     for comp in expected_comps:
         assert comp in result["DS_r"].components
+
+
+aggr_override_params = [
+    pytest.param(
+        "DS_r <- DS_1[aggr ME_1 := sum(Me_1) group by Id_1];",
+        ["Id_1", "ME_1"],
+        id="aggr_override_upper",
+    ),
+    pytest.param(
+        "DS_r <- DS_1[aggr me_1 := sum(Me_1) group by Id_1];",
+        ["Id_1", "me_1"],
+        id="aggr_override_lower",
+    ),
+]
+
+
+@pytest.mark.parametrize("script, expected_cols", aggr_override_params)
+def test_aggr_output_columns_case_insensitive(script, expected_cols):
+    """Output DataFrame columns must match component names (no duplicates)."""
+    result = _run(script)
+    ds = result["DS_r"]
+    assert list(ds.components.keys()) == expected_cols
+    assert list(ds.data.columns) == expected_cols
 
 
 # ---------------------------------------------------------------------------

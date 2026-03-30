@@ -39,6 +39,13 @@ from vtlengine.Model import Dataset, Scalar
 pd.options.mode.chained_assignment = None
 
 
+def _convert_to_regular_dicts(result: Dict[str, Any]) -> None:
+    """Convert CaseInsensitiveDict components back to regular dict for external consumers."""
+    for obj in result.values():
+        if isinstance(obj, Dataset):
+            obj.components = dict(obj.components)
+
+
 class __VTLSingleErrorListener(ErrorListener):  # type: ignore[misc]
     """ """
 
@@ -278,6 +285,7 @@ def semantic_analysis(
         only_semantic=True,
     )
     result = interpreter.visit(ast)
+    _convert_to_regular_dicts(result)
     return result
 
 
@@ -457,6 +465,9 @@ def run(
         for obj in result.values():
             if isinstance(obj, (Dataset, Scalar)):
                 format_time_period_external_representation(obj, time_period_representation)
+
+    # Convert internal CaseInsensitiveDict to regular dict for external consumers
+    _convert_to_regular_dicts(result)
 
     # Returning only persistent datasets
     if return_only_persistent:

@@ -60,6 +60,14 @@ class Calc(Operator):
         result_dataset = cls.validate(operands, dataset)
         result_dataset.data = dataset.data.copy() if dataset.data is not None else pd.DataFrame()
         for operand in operands:
+            # Drop old column if it matches case-insensitively but differs in case
+            old_cols = [
+                c
+                for c in result_dataset.data.columns
+                if c.casefold() == operand.name.casefold() and c != operand.name
+            ]
+            if old_cols:
+                result_dataset.data.drop(columns=old_cols, inplace=True)
             if isinstance(operand, Scalar):
                 result_dataset.data[operand.name] = operand.value
             else:
