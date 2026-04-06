@@ -1097,6 +1097,11 @@ centralised_messages = {
         "description": "Raised when trying to convert a time period with Semester (S), "
         "Quarter (Q), or Week (W) indicator to SDMX Gregorian format.",
     },
+    "2-1-19-22": {
+        "message": "At op {op}: Invalid ISO 8601 duration format '{value}', expected {expected}",
+        "description": "Raised when a duration string does not match the expected "
+        "format for the operator.",
+    },
     # ----------- Interpreter Common ------
     "2-3-4": {
         "message": "{op} operator must have a {comp}",
