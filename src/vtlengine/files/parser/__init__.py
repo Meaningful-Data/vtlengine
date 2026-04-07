@@ -167,6 +167,20 @@ def _parse_boolean(value: str) -> bool:
     return result
 
 
+def _drop_extra_columns(
+    components: Dict[str, Component], data: pd.DataFrame, dataset_name: str
+) -> None:
+    extra_columns = list(set(data.columns) - set(components))
+    if extra_columns:
+        warnings.warn(
+            f"Dataset {dataset_name}: dropping extra columns not defined "
+            f"in the DataStructure: {', '.join(sorted(extra_columns))}",
+            UserWarning,
+            stacklevel=3,
+        )
+        data.drop(columns=extra_columns, inplace=True)
+
+
 def _validate_pandas(
     components: Dict[str, Component], data: pd.DataFrame, dataset_name: str
 ) -> pd.DataFrame:
@@ -183,7 +197,7 @@ def _validate_pandas(
             data[name] = None
 
     # Drop any extra columns not defined in the DataStructure
-    data.drop(columns=list(set(data.columns) - set(components)), inplace=True)
+    _drop_extra_columns(components, data, dataset_name)
 
     for id_name in id_names:
         if data[id_name].isnull().any():

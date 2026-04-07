@@ -2106,6 +2106,7 @@ def test_run_drops_extra_dataframe_columns():
         )
     }
 
-    result = run(script=script, data_structures=data_structures, datapoints=datapoints)
+    with pytest.warns(UserWarning, match="dropping extra columns.*Extra_Col"):
+        result = run(script=script, data_structures=data_structures, datapoints=datapoints)
 
     assert result["DS_r"].data.columns.tolist() == ["Id_1", "Me_1"]
