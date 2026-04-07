@@ -15,7 +15,16 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 import vtlengine.AST as AST
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.Grammar import tokens
-from vtlengine.DataTypes import COMP_NAME_MAPPING, Boolean, Date, Integer, Number, TimePeriod
+from vtlengine.DataTypes import (
+    _DUCKDB_TYPE_TO_VTL,
+    COMP_NAME_MAPPING,
+    SCALAR_TYPES,
+    Boolean,
+    Date,
+    Integer,
+    Number,
+    TimePeriod,
+)
 from vtlengine.DataTypes import String as StringType
 from vtlengine.duckdb_transpiler.Transpiler.sql_builder import quote_identifier
 from vtlengine.Model import Component, Dataset, Role
@@ -24,14 +33,6 @@ from vtlengine.Model import Component, Dataset, Role
 _DATASET = "Dataset"
 _COMPONENT = "Component"
 _SCALAR = "Scalar"
-
-# VTL type name → Python DataType mapping (for cast structure resolution)
-_VTL_TYPE_MAP: Dict[str, Any] = {
-    "Integer": Integer,
-    "Number": Number,
-    "String": StringType,
-    "Boolean": Boolean,
-}
 
 
 class StructureVisitor(ASTTemplate):
@@ -140,7 +141,9 @@ class StructureVisitor(ASTTemplate):
                 return None
             type_node = node.children[1]
             target_str = type_node.value if hasattr(type_node, "value") else str(type_node)
-            target_type = _VTL_TYPE_MAP.get(target_str, Number)
+            target_type = SCALAR_TYPES.get(
+                target_str, _DUCKDB_TYPE_TO_VTL.get(target_str.upper(), Number)
+            )
             comps: Dict[str, Component] = {}
             for name, comp in ds.components.items():
                 if comp.role == Role.MEASURE:

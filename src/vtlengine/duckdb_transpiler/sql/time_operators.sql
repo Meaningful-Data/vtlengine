@@ -158,13 +158,19 @@ CREATE OR REPLACE MACRO vtl_int_to_duration(i) AS (
 -- ============================================================================
 
 CREATE OR REPLACE MACRO vtl_daytoyear(days) AS (
-        'P' || CAST(days // 365 AS VARCHAR) || 'Y'
-        || CAST(days % 365 AS VARCHAR) || 'D'
+    CASE
+        WHEN days IS NULL THEN NULL
+        WHEN days < 0 THEN error('vtl error 2-1-19-16: negative value for daytoyear')
+        ELSE 'P' || CAST(days // 365 AS VARCHAR) || 'Y' || CAST(days % 365 AS VARCHAR) || 'D'
+    END
 );
 
 CREATE OR REPLACE MACRO vtl_daytomonth(days) AS (
-        'P' || CAST(days // 30 AS VARCHAR) || 'M'
-        || CAST(days % 30 AS VARCHAR) || 'D'
+    CASE
+        WHEN days IS NULL THEN NULL
+        WHEN days < 0 THEN error('vtl error 2-1-19-16: negative value for daytomonth')
+        ELSE 'P' || CAST(days // 30 AS VARCHAR) || 'M' || CAST(days % 30 AS VARCHAR) || 'D'
+    END
 );
 
 
@@ -212,9 +218,21 @@ CREATE OR REPLACE MACRO vtl_time_agg_date(d, target VARCHAR) AS (
     END
 );
 
+-- Map period indicator to numeric rank (higher = coarser)
+CREATE OR REPLACE MACRO vtl_period_rank(ind VARCHAR) AS (
+    CASE ind
+        WHEN 'A' THEN 6  WHEN 'S' THEN 5  WHEN 'Q' THEN 4
+        WHEN 'M' THEN 3  WHEN 'W' THEN 2  WHEN 'D' THEN 1
+        ELSE 0
+    END
+);
+
 -- TimePeriod → TimePeriod (convert via end_date)
 CREATE OR REPLACE MACRO vtl_time_agg_tp(p vtl_time_period, target VARCHAR) AS (
     CASE
+        WHEN vtl_period_rank(p.period_indicator) > vtl_period_rank(target)
+            THEN error('VTL Error 2-1-19-1: Cannot aggregate period indicator '
+                || p.period_indicator || ' to finer target ' || target)
         WHEN p.period_indicator = target THEN vtl_period_to_string(p)
         ELSE vtl_time_agg_date(vtl_tp_end_date(p), target)
     END

@@ -1412,8 +1412,33 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         """Visit a Collection (Set or ValueDomain reference)."""
         if node.kind == "ValueDomain":
             return self._visit_value_domain(node)
-        values = [self.visit(child) for child in node.children]
+        values = [self._visit_collection_element(child) for child in node.children]
         return f"({', '.join(values)})"
+
+    def _visit_collection_element(self, child: AST.AST) -> str:
+        """Visit a set-literal element.
+
+        For cast(string_literal, time_period) inside a set, use a raw CAST to
+        VARCHAR without vtl_period_normalize.  This matches the Python core
+        engine's In.apply_operation_two_series, which uses isin() with the
+        un-normalised cast value, so that e.g.
+          TIME_PERIOD in {cast("2020-01", time_period)}
+        returns False when the column contains the normalised form "2020-M01".
+        """
+        if (
+            isinstance(child, AST.ParamOp)
+            and str(getattr(child, "op", "")).lower() == tokens.CAST
+            and len(child.children) >= 2
+        ):
+            type_node = child.children[1]
+            target_type_str = type_node.value if hasattr(type_node, "value") else str(type_node)
+            if target_type_str.lower() in ("time_period", "timeperiod"):
+                source_type = self._get_source_vtl_type(child.children[0])
+                source_lower = (source_type or "").lower()
+                if source_lower not in ("date", "time", "timeinterval"):
+                    operand_sql = self.visit(child.children[0])
+                    return f"CAST({operand_sql} AS VARCHAR)"
+        return self.visit(child)
 
     def _visit_value_domain(self, node: AST.Collection) -> str:
         """Resolve a ValueDomain reference to SQL literal list."""
@@ -3424,7 +3449,14 @@ FROM {src}, (
             )
             over_parts.append(f"ORDER BY {order_cols}")
         if node.window:
-            window_sql = self.visit_Windowing(node.window)
+            # Check if ORDER BY column is a Date type for RANGE windows
+            order_is_date = False
+            if node.order_by and self._current_dataset:
+                ob_name = node.order_by[0].component
+                comp = self._current_dataset.components.get(ob_name)
+                if comp and comp.data_type == Date:
+                    order_is_date = True
+            window_sql = self.visit_Windowing(node.window, order_is_date=order_is_date)
             over_parts.append(window_sql)
         return " ".join(over_parts)
 
@@ -3436,7 +3468,16 @@ FROM {src}, (
         """
         if op == tokens.RATIO_TO_REPORT:
             over_clause = self._build_over_clause(node)
-            return f"CAST({operand_sql} AS DOUBLE) / SUM({operand_sql}) OVER ({over_clause})"
+            partition_sum = f"SUM({operand_sql}) OVER ({over_clause})"
+            err_msg = (
+                "'VTL Error 2-1-3-1: Division by zero produced infinite values "
+                "in ratio_to_report'"
+            )
+            return (
+                f"CASE WHEN {partition_sum} = 0 THEN "
+                f"CAST(error({err_msg}) AS DOUBLE) "
+                f"ELSE CAST({operand_sql} AS DOUBLE) / {partition_sum} END"
+            )
         if op == tokens.RANK:
             return "RANK()"
         if op in (tokens.LAG, tokens.LEAD) and node.params:
@@ -3540,7 +3581,9 @@ FROM {src}, (
 
         return result
 
-    def visit_Windowing(self, node: AST.Windowing) -> str:  # type: ignore[override]
+    def visit_Windowing(  # type: ignore[override]
+        self, node: AST.Windowing, *, order_is_date: bool = False
+    ) -> str:
         """Visit a windowing specification."""
         type_str = str(node.type_).upper() if node.type_ else "ROWS"
         # Map VTL types to SQL: DATA POINTS → ROWS
@@ -3549,6 +3592,8 @@ FROM {src}, (
         elif "RANGE" in type_str:
             type_str = "RANGE"
 
+        is_range_date = type_str == "RANGE" and order_is_date
+
         def bound_str(value: Union[int, str], mode: str) -> str:
             mode_up = mode.upper()
             val_str = str(value).upper()
@@ -3556,6 +3601,8 @@ FROM {src}, (
                 return "CURRENT ROW"
             if val_str == "UNBOUNDED" or (isinstance(value, int) and value < 0):
                 return f"UNBOUNDED {mode_up}"
+            if is_range_date and isinstance(value, int):
+                return f"INTERVAL '{value}' DAY {mode_up}"
             return f"{value} {mode_up}"
 
         start = bound_str(node.start, node.start_mode)

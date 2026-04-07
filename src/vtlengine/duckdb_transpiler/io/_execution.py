@@ -13,7 +13,9 @@ import pandas as pd
 
 from vtlengine.AST.DAG._models import DatasetSchedule
 from vtlengine.DataTypes import (
+    _DUCKDB_TYPE_TO_VTL,
     Date,
+    Null,
     TimeInterval,
     TimePeriod,
 )
@@ -28,9 +30,25 @@ from vtlengine.duckdb_transpiler.io._time_handling import (
     format_time_period_scalar,
 )
 from vtlengine.duckdb_transpiler.sql import initialize_time_types
-from vtlengine.Exceptions import RunTimeError, SemanticError
+from vtlengine.Exceptions import RunTimeError
 from vtlengine.files.output._time_period_representation import TimePeriodRepresentation
 from vtlengine.Model import Dataset, Scalar
+from vtlengine.Utils._number_config import get_effective_numeric_digits
+
+
+def _map_time_agg_error(msg: str, msg_lower: str) -> RunTimeError:
+    """Extract source indicator and target from a vtl error 2-1-19-1 message."""
+    value = "unknown"
+    new_indicator = "unknown"
+    if "period indicator " in msg_lower:
+        parts = msg.split("period indicator ")
+        if len(parts) >= 2:
+            value = parts[1].split(" ")[0]
+    if "target " in msg_lower:
+        parts = msg.split("target ")
+        if len(parts) >= 2:
+            new_indicator = parts[-1].strip()
+    return RunTimeError("2-1-19-1", value=value, new_indicator=new_indicator)
 
 
 def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
@@ -46,15 +64,11 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
 
     # VTL macro: TimePeriod aggregation with mixed indicators (max/min)
     if "vtl error 2-1-19-20" in msg_lower:
-        # Extract op from "unable to get the max/min"
-        agg_op = "max"
-        if "unable to get the min" in msg_lower:
-            agg_op = "min"
+        agg_op = "min" if "unable to get the min" in msg_lower else "max"
         return RunTimeError("2-1-19-20", op=agg_op)
 
     # VTL macro: TimePeriod comparison with different period indicators
     if "vtl error 2-1-19-19" in msg_lower:
-        # Extract indicators from "... different indicators: M vs Q"
         indicators = ""
         if "different indicators:" in msg_lower:
             indicators = msg.split("different indicators:")[-1].strip()
@@ -63,9 +77,17 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
             "2-1-19-19", value1=parts[0].strip(), op="comparison", value2=parts[1].strip()
         )
 
+    # daytoyear / daytomonth: negative input value (check before 2-1-19-1 prefix match)
+    if "vtl error 2-1-19-16" in msg_lower:
+        op = "daytoyear" if "daytoyear" in msg_lower else "daytomonth"
+        return RunTimeError("2-1-19-16", op=op)
+
+    # time_agg: period indicator too coarse for target
+    if "vtl error 2-1-19-1" in msg_lower:
+        return _map_time_agg_error(msg, msg_lower)
+
     # Custom VTL macro errors: non-daily TimePeriod → Date cast
     if "cannot cast non-daily timeperiod to date" in msg_lower:
-        # Extract the value from "Cannot cast non-daily TimePeriod to Date: <value>"
         value = msg.split(": ", 1)[-1] if ": " in msg else "unknown"
         return RunTimeError("2-1-5-1", value=value, type_1="Time_Period", type_2="Date")
 
@@ -80,10 +102,7 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
         return RunTimeError("2-1-5-1", value=value, type_1="Time", type_2="Time_Period")
 
     # Invalid date/timestamp format (e.g. casting interval string to timestamp)
-    if "conversion" in msg_lower and (
-        "timestamp" in msg_lower or "date" in msg_lower
-    ):
-        # Extract the problematic value from the error message
+    if "conversion" in msg_lower and ("timestamp" in msg_lower or "date" in msg_lower):
         date_val = "unknown"
         if '"' in msg:
             parts = msg.split('"')
@@ -91,9 +110,11 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
                 date_val = parts[1]
         return RunTimeError("2-1-19-8", date=date_val)
 
-    # Division by zero
+    # Division by zero (explicit DuckDB error or VTL error from ratio_to_report)
     if "division by zero" in msg_lower or "divide by zero" in msg_lower:
         return RunTimeError("2-1-3-1", op="division")
+    if "vtl error 2-1-3-1" in msg_lower:
+        return RunTimeError("2-1-3-1", op="ratio_to_report")
 
     # Math domain error (e.g. log(0))
     if "logarithm of zero" in msg_lower or "logarithm of negative" in msg_lower:
@@ -134,12 +155,35 @@ def _format_timestamp_with_time(ts: Any) -> str:
     return ts.strftime("%Y-%m-%d %H:%M:%S")
 
 
+def _infer_scalar_type_from_duckdb(col_description: Any) -> Any:
+    """Infer VTL data type from DuckDB column description when semantic type is Null."""
+    if col_description is None:
+        return None
+    type_str = str(col_description).upper()
+    for prefix, vtl_type in _DUCKDB_TYPE_TO_VTL.items():
+        if type_str.startswith(prefix):
+            return vtl_type
+    return None
+
+
+def _round_significant(value: float, sig_digits: int) -> float:
+    """Round a float to a given number of significant digits."""
+    import math
+
+    if value == 0.0:
+        return 0.0
+    d = math.ceil(math.log10(abs(value)))
+    return round(value, sig_digits - d)
+
+
 def _normalize_scalar_value(raw_value: Any) -> Any:
     """Convert pandas/numpy types to plain Python values.
 
     DuckDB's ``fetchdf()`` may return ``pd.NA``, ``pd.NaT`` or
     ``numpy.nan`` for SQL NULLs.  The rest of the engine expects
     plain ``None``.  Timestamps are converted to VTL date strings.
+    Float results are rounded to match the Decimal precision used by
+    the core engine (OUTPUT_NUMBER_SIGNIFICANT_DIGITS, default 15).
     """
     if hasattr(raw_value, "item"):
         raw_value = raw_value.item()
@@ -152,6 +196,10 @@ def _normalize_scalar_value(raw_value: Any) -> Any:
 
     if isinstance(raw_value, (datetime.datetime, datetime.date)):
         return _format_timestamp(raw_value)
+    if isinstance(raw_value, float):
+        precision = get_effective_numeric_digits()
+        if precision is not None:
+            raw_value = _round_significant(raw_value, precision)
     return raw_value
 
 
@@ -182,6 +230,7 @@ def _convert_date_columns(ds: Dataset, timestamp_columns: Optional[Set[str]] = N
       (result of date arithmetic on DATE inputs, e.g. DATE + INTERVAL)
 
     Args:
+        ds: Dataset whose data columns will be converted in-place.
         timestamp_columns: Set of column names that are TIMESTAMP in DuckDB.
             DATE columns (not in this set) are formatted as date-only.
     """
@@ -340,11 +389,20 @@ def fetch_result(
 
     # Scalars are always fetched in-memory (never saved to CSV)
     if result_name in output_scalars:
-        result_df = conn.execute(f'SELECT * FROM "{result_name}"').fetchdf()
+        rel = conn.execute(f'SELECT * FROM "{result_name}"')
+        result_df = rel.fetchdf()
         if len(result_df) == 1 and len(result_df.columns) == 1:
             scalar = output_scalars[result_name]
             raw_value = _normalize_scalar_value(result_df.iloc[0, 0])
             scalar.value = raw_value
+            # When semantic analysis produced Null type but DuckDB resolved a concrete
+            # type (e.g. nvl(null, 3) → INTEGER), override with the DuckDB type.
+            # Only override when the actual value is non-null (DuckDB defaults NULL
+            # expressions to INTEGER even when the result is NULL).
+            if scalar.data_type is Null and raw_value is not None and rel.description:
+                inferred = _infer_scalar_type_from_duckdb(rel.description[0][1])
+                if inferred is not None:
+                    scalar.data_type = inferred
             format_time_period_scalar(scalar, representation)
             return scalar
         return Dataset(name=result_name, components={}, data=result_df)

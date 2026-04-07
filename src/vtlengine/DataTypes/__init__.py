@@ -711,6 +711,17 @@ BASIC_TYPES: Dict[type, Type[ScalarType]] = {
     type(None): Null,
 }
 
+_DUCKDB_TYPE_TO_VTL = {
+    "INTEGER": Integer,
+    "BIGINT": Integer,
+    "DOUBLE": Number,
+    "FLOAT": Number,
+    "DECIMAL": Number,
+    "VARCHAR": String,
+    "BOOLEAN": Boolean,
+    "DATE": Date,
+}
+
 COMP_NAME_MAPPING: Dict[Type[ScalarType], str] = {
     String: "str_var",
     Number: "num_var",
