@@ -110,6 +110,10 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
                 date_val = parts[1]
         return RunTimeError("2-1-19-8", date=date_val)
 
+    # VTL macro vtl_div: denominator was 0 (mirrors Python engine error 2-1-15-6)
+    if "vtl 2-1-15-6" in msg_lower:
+        return RunTimeError("2-1-15-6", op="/")
+
     # Division by zero (explicit DuckDB error or VTL error from ratio_to_report)
     if "division by zero" in msg_lower or "divide by zero" in msg_lower:
         return RunTimeError("2-1-3-1", op="division")

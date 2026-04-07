@@ -401,3 +401,9 @@ CREATE OR REPLACE MACRO vtl_instr(
         )
     END
 );
+
+
+-- Division that mirrors VTL error 2-1-15-6: raise when denominator is 0.
+CREATE OR REPLACE MACRO vtl_div(a, b) AS (
+    CASE WHEN b = 0 THEN error('VTL 2-1-15-6: Scalar division by Zero') ELSE a / b END
+);

@@ -335,7 +335,7 @@ def _create_default_registries() -> SQLOperatorRegistries:
     registries.binary.register_simple(tokens.PLUS, "({0} + {1})")
     registries.binary.register_simple(tokens.MINUS, "({0} - {1})")
     registries.binary.register_simple(tokens.MULT, "({0} * {1})")
-    registries.binary.register_simple(tokens.DIV, "({0} / {1})")
+    registries.binary.register_simple(tokens.DIV, "vtl_div({0}, {1})")
     registries.binary.register_simple(tokens.MOD, "({0} % {1})")
 
     # Comparison
