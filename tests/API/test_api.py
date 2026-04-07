@@ -2106,7 +2106,7 @@ def test_run_error_on_extra_dataframe_columns():
         )
     }
 
-    with pytest.raises(DataLoadError, match="Extra_Col"):
+    with pytest.raises(DataLoadError, match="0-3-1-15"):
         run(script=script, data_structures=data_structures, datapoints=datapoints)
 
 
