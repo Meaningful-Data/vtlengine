@@ -569,7 +569,11 @@ def run_sdmx(
         dataset_name = mapping_dict[schema.short_urn]
         vtl_structure = to_vtl_json(schema, dataset_name)
         data_structures_list.append(vtl_structure)
-        datapoints_dict[dataset_name] = dataset.data
+        # Filter DataFrame to only include columns defined in the VTL structure
+        expected_columns = [comp["name"] for comp in vtl_structure["datasets"][0]["DataStructure"]]
+        datapoints_dict[dataset_name] = dataset.data[
+            [col for col in dataset.data.columns if col in expected_columns]
+        ]
 
     # Validate all script inputs are mapped
     missing = [name for name in input_names if name not in mapping_dict.values()]
