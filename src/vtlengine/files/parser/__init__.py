@@ -182,6 +182,9 @@ def _validate_pandas(
                 raise DataLoadError("0-3-1-5", name=dataset_name, comp_name=name)
             data[name] = None
 
+    # Drop any extra columns not defined in the DataStructure
+    data.drop(columns=set(data.columns) - set(components), inplace=True)
+
     for id_name in id_names:
         if data[id_name].isnull().any():
             raise DataLoadError("0-3-1-3", null_identifier=id_name, name=dataset_name)
