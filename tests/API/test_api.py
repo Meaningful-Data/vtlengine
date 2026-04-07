@@ -2108,3 +2108,23 @@ def test_run_error_on_extra_dataframe_columns():
 
     with pytest.raises(DataLoadError, match="Extra_Col"):
         run(script=script, data_structures=data_structures, datapoints=datapoints)
+
+
+def test_run_error_on_missing_non_nullable_column():
+    """Missing non-nullable columns in the input DataFrame raise an error."""
+    script = "DS_r <- DS_1;"
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": False},
+                ],
+            }
+        ]
+    }
+    datapoints = {"DS_1": pd.DataFrame({"Id_1": [1, 2, 3]})}
+
+    with pytest.raises(DataLoadError, match="0-3-1-5"):
+        run(script=script, data_structures=data_structures, datapoints=datapoints)
