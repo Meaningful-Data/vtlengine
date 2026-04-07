@@ -183,7 +183,7 @@ def _validate_pandas(
             data[name] = None
 
     # Drop any extra columns not defined in the DataStructure
-    data.drop(columns=set(data.columns) - set(components), inplace=True)
+    data.drop(columns=list(set(data.columns) - set(components)), inplace=True)
 
     for id_name in id_names:
         if data[id_name].isnull().any():
