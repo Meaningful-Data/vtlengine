@@ -190,8 +190,6 @@ def _validate_pandas(
                 raise DataLoadError("0-3-1-5", name=dataset_name, comp_name=name)
             data[name] = None
 
-    _check_extra_columns(components, data, dataset_name)
-
     for id_name in id_names:
         if data[id_name].isnull().any():
             raise DataLoadError("0-3-1-3", null_identifier=id_name, name=dataset_name)
