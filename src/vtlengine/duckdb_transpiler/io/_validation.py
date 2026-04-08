@@ -188,7 +188,7 @@ def get_csv_read_type(comp: Component) -> str:
     if comp.data_type == Integer:
         return "DOUBLE"  # Read as DOUBLE to validate no decimal component
     elif comp.data_type == Number:
-        return "DOUBLE"  # Read as DOUBLE, then cast to DECIMAL in table
+        return get_decimal_type()  # Read directly as DECIMAL to preserve exact precision
     elif comp.data_type == Boolean:
         return "VARCHAR"  # Read as VARCHAR to handle quoted values; cast during INSERT
     elif comp.data_type == Date:
@@ -410,7 +410,6 @@ def build_select_columns(
                         ELSE CAST("{comp_name}" AS BIGINT)
                     END AS "{comp_name}\""""
                 )
-            # Cast DOUBLE → DECIMAL for Number type
             elif csv_type == "DOUBLE" and "DECIMAL" in table_type:
                 select_cols.append(f'CAST("{comp_name}" AS {table_type}) AS "{comp_name}"')
             # Date columns: read as VARCHAR, validate format, cast to DATE or TIMESTAMP
@@ -425,7 +424,7 @@ def build_select_columns(
                     f"' is not in the correct format. "
                     f"Use YYYY-MM-DD or YYYY-MM-DD HH:MM:SS.'"
                 )
-                val_expr = f'NULLIF("{comp_name}", \'\')' if comp.nullable else f'"{comp_name}"'
+                val_expr = f"NULLIF(\"{comp_name}\", '')" if comp.nullable else f'"{comp_name}"'
                 select_cols.append(
                     f"""CASE
                         WHEN {null_check}
@@ -439,9 +438,7 @@ def build_select_columns(
                 stripped = f"""REPLACE("{comp_name}", '"', '')"""
                 if comp.nullable:
                     stripped = f"NULLIF({stripped}, '')"
-                select_cols.append(
-                    f'CAST({stripped} AS BOOLEAN) AS "{comp_name}"'
-                )
+                select_cols.append(f'CAST({stripped} AS BOOLEAN) AS "{comp_name}"')
             elif csv_type == "VARCHAR" and comp.data_type == String:
                 # Strip double quotes from String values (match pandas loader behavior)
                 expr = f"""REPLACE("{comp_name}", '"', '')"""

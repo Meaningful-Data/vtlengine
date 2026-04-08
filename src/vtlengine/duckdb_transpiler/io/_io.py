@@ -12,7 +12,7 @@ from typing import Dict, List, Optional, Tuple, Union
 import duckdb
 import pandas as pd
 
-from vtlengine.DataTypes import Date, TimePeriod
+from vtlengine.DataTypes import Date, Number, TimePeriod
 from vtlengine.duckdb_transpiler.io._validation import (
     build_create_table_sql,
     build_csv_column_types,
@@ -483,6 +483,8 @@ def _build_dataframe_select_columns(
         target_type = overrides.get(comp_name, get_column_sql_type(comp))
         if df_col_set is not None and comp_name not in df_col_set:
             exprs.append(f'CAST(NULL AS {target_type}) AS "{comp_name}"')
+        elif comp.data_type == Number:
+            exprs.append(f'CAST(CAST("{comp_name}" AS VARCHAR) AS {target_type}) AS "{comp_name}"')
         else:
             exprs.append(f'CAST("{comp_name}" AS {target_type}) AS "{comp_name}"')
     return exprs

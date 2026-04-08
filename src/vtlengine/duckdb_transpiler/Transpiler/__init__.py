@@ -14,7 +14,6 @@ from typing import Any, Callable, Dict, Generator, List, Optional, Set, Tuple, U
 
 import vtlengine.AST as AST
 from vtlengine.AST.ASTTemplate import ASTTemplate
-from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.AST.Grammar import tokens
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
@@ -37,6 +36,7 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
     _SCALAR,
     StructureVisitor,
 )
+from vtlengine.Exceptions import RunTimeError
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 
 # Datapoint rule operator mappings (module-level to avoid dataclass mutable default)
@@ -78,14 +78,10 @@ _DURATION_COMPARISON_OPS: frozenset[str] = frozenset(
 )
 
 # Ordering-only comparison operators (excludes = and <>).
-_ORDERING_OPS: frozenset[str] = frozenset(
-    {tokens.GT, tokens.GTE, tokens.LT, tokens.LTE}
-)
+_ORDERING_OPS: frozenset[str] = frozenset({tokens.GT, tokens.GTE, tokens.LT, tokens.LTE})
 
 
-def _add_tp_indicator_check(
-    sql: str, table_src: str, tp_cols: List[tuple[str, str]]
-) -> str:
+def _add_tp_indicator_check(sql: str, table_src: str, tp_cols: List[tuple[str, str]]) -> str:
     """Inject a TimePeriod indicator uniformity check into an aggregate query.
 
     Uses a subquery joined with WHERE to force DuckDB to evaluate the check.
@@ -1601,11 +1597,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             # TimeInterval: only = and <> are supported
             left_comp = left_ds.components.get(left_m)
             right_comp = right_ds.components.get(right_m)
-            if (
-                op in _ORDERING_OPS
-                and left_comp
-                and left_comp.data_type == TimeInterval
-            ):
+            if op in _ORDERING_OPS and left_comp and left_comp.data_type == TimeInterval:
                 raise RunTimeError("2-1-19-17", op=op)
 
             # TimePeriod ordering: use vtl_period_* macros with STRUCT comparison
@@ -1670,9 +1662,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         # TimeInterval: only = and <> are supported
         if op in _ORDERING_OPS and any(
-            c.data_type == TimeInterval
-            for c in ds.components.values()
-            if c.role == Role.MEASURE
+            c.data_type == TimeInterval for c in ds.components.values() if c.role == Role.MEASURE
         ):
             raise RunTimeError("2-1-19-17", op=op)
 
@@ -1774,16 +1764,14 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         # TimeInterval: only = and <> are supported
         if op in _ORDERING_OPS and (
-            self._is_time_interval_operand(node.left)
-            or self._is_time_interval_operand(node.right)
+            self._is_time_interval_operand(node.left) or self._is_time_interval_operand(node.right)
         ):
             raise RunTimeError("2-1-19-17", op=op)
 
         # TimePeriod ordering: use vtl_period_* macros (includes indicator check)
         period_macro = _PERIOD_COMPARISON_MACROS.get(op)
         if period_macro and (
-            self._is_time_period_operand(node.left)
-            or self._is_time_period_operand(node.right)
+            self._is_time_period_operand(node.left) or self._is_time_period_operand(node.right)
         ):
             left_p = f"vtl_period_parse(vtl_period_normalize({left_sql}))"
             right_p = f"vtl_period_parse(vtl_period_normalize({right_sql}))"
@@ -2668,9 +2656,7 @@ FROM {src}, (
             if ds:
                 for cname, comp in ds.components.items():
                     if comp.data_type:
-                        comp_types[cname] = getattr(
-                            comp.data_type, "__name__", str(comp.data_type)
-                        )
+                        comp_types[cname] = getattr(comp.data_type, "__name__", str(comp.data_type))
 
             def _cast_measure(col: str) -> str:
                 # Extract component name from quoted col ref
@@ -2862,9 +2848,12 @@ FROM {src}, (
                     # dateadd on TimePeriod returns Date (TIMESTAMP), update output type
                     if "vtl_tp_dateadd" in expr_sql and self.current_assignment:
                         out_ds = self.output_datasets.get(self.current_assignment)
-                        if out_ds and col_name in out_ds.components:
-                            if out_ds.components[col_name].data_type == TimePeriod:
-                                out_ds.components[col_name].data_type = Date
+                        if (
+                            out_ds
+                            and col_name in out_ds.components
+                            and out_ds.components[col_name].data_type == TimePeriod
+                        ):
+                            out_ds.components[col_name].data_type = Date
 
         # Build SELECT: keep original columns that are NOT being overwritten,
         # then add the calc expressions (possibly replacing originals).
@@ -3470,8 +3459,7 @@ FROM {src}, (
             over_clause = self._build_over_clause(node)
             partition_sum = f"SUM({operand_sql}) OVER ({over_clause})"
             err_msg = (
-                "'VTL Error 2-1-3-1: Division by zero produced infinite values "
-                "in ratio_to_report'"
+                "'VTL Error 2-1-3-1: Division by zero produced infinite values in ratio_to_report'"
             )
             return (
                 f"CASE WHEN {partition_sum} = 0 THEN "
@@ -3543,9 +3531,7 @@ FROM {src}, (
                             f"FILTER (WHERE {qc} IS NOT NULL) > 1 "
                             f"THEN error({err}) ELSE 1 END"
                         )
-                    check_cols = ", ".join(
-                        f"{c} AS _ok{i}" for i, c in enumerate(checks)
-                    )
+                    check_cols = ", ".join(f"{c} AS _ok{i}" for i, c in enumerate(checks))
                     # Store the validation subquery for _apply_to_measures to inject
                     self._analytic_tp_check = (
                         f"(SELECT {check_cols} FROM {table_src}) AS _vtl_tp_check"

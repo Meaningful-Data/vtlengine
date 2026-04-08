@@ -303,9 +303,7 @@ class SQLOperatorRegistries:
         return None
 
 
-def _validate_int_param(
-    value: Optional[str], *, op: str, param_name: str, min_val: int
-) -> None:
+def _validate_int_param(value: Optional[str], *, op: str, param_name: str, min_val: int) -> None:
     """Validate a scalar integer parameter against a minimum value."""
     if value is None or value == "NULL":
         return

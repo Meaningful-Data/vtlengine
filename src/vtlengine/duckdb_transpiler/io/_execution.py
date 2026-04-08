@@ -6,7 +6,7 @@ handling dataset loading/saving with DAG scheduling for memory efficiency.
 """
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import duckdb
 import pandas as pd
@@ -14,10 +14,7 @@ import pandas as pd
 from vtlengine.AST.DAG._models import DatasetSchedule
 from vtlengine.DataTypes import (
     _DUCKDB_TYPE_TO_VTL,
-    Date,
     Null,
-    TimeInterval,
-    TimePeriod,
 )
 from vtlengine.duckdb_transpiler.io._io import (
     load_datapoints_duckdb,
@@ -147,18 +144,6 @@ def _format_timestamp(ts: Any) -> str:
     return ts.strftime("%Y-%m-%d")
 
 
-def _format_timestamp_with_time(ts: Any) -> str:
-    """Format a timestamp always including time (for columns with mixed values).
-
-    - ``2020-01-15 00:00:00`` → ``'2020-01-15 00:00:00'``
-    - ``2020-01-15 10:30:00`` → ``'2020-01-15 10:30:00'``
-    - ``2020-01-15 10:30:00.123456`` → ``'2020-01-15 10:30:00.123456'``
-    """
-    if hasattr(ts, "microsecond") and ts.microsecond:
-        return ts.strftime("%Y-%m-%d %H:%M:%S.%f")
-    return ts.strftime("%Y-%m-%d %H:%M:%S")
-
-
 def _infer_scalar_type_from_duckdb(col_description: Any) -> Any:
     """Infer VTL data type from DuckDB column description when semantic type is Null."""
     if col_description is None:
@@ -207,63 +192,71 @@ def _normalize_scalar_value(raw_value: Any) -> Any:
     return raw_value
 
 
-def _project_columns(ds: Dataset) -> None:
-    """Project DataFrame columns to match the dataset's component structure.
+def _build_dataset_fetch_select(
+    conn: duckdb.DuckDBPyConnection,
+    result_name: str,
+    ds: Dataset,
+) -> str:
+    """Build a SELECT query with column projection and in-SQL date/timestamp formatting.
 
-    DuckDB tables may retain extra columns from upstream operations (e.g. filter
-    preserves all columns from the source table).  The semantic analysis already
-    determines the correct components, so we just select those columns.
+    Moves all post-fetch pandas processing into DuckDB SQL so that fetchdf()
+    receives data already in the correct shape and format:
+    - Column projection: only the columns declared in ds.components (in order)
+    - DATE columns → strftime('%Y-%m-%d', col) → 'YYYY-MM-DD' strings
+    - TIMESTAMP with any non-midnight value → formatted with time component
+    - TIMESTAMP with all-midnight values → formatted as date-only
+    - Other columns → passed through unchanged
+
+    The non-midnight check uses LIMIT 1 so DuckDB stops at the first match.
     """
-    if ds.components and ds.data is not None:
-        expected_cols = [c for c in ds.components if c in ds.data.columns]
-        if expected_cols and set(expected_cols) != set(ds.data.columns):
-            ds.data = ds.data[expected_cols]
+    # Inspect schema without fetching data
+    schema_rel = conn.execute(f'SELECT * FROM "{result_name}" LIMIT 0')
+    col_types: Dict[str, str] = {}
+    if schema_rel.description:
+        for col_desc in schema_rel.description:
+            col_types[col_desc[0]] = str(col_desc[1]).upper()
 
+    # Column projection: follow component order, or all columns when unspecified
+    if ds.components:
+        ordered_cols = [c for c in ds.components if c in col_types]
+    else:
+        ordered_cols = list(col_types.keys())
 
-def _convert_date_columns(ds: Dataset, timestamp_columns: Optional[Set[str]] = None) -> None:
-    """Convert DuckDB datetime columns to VTL string format.
+    if not ordered_cols:
+        return f'SELECT * FROM "{result_name}"'
 
-    DuckDB returns Timestamp/NaT for date columns but the VTL engine
-    (Pandas backend) uses string dates and None for nulls.
+    exprs = []
+    for col in ordered_cols:
+        col_type = col_types.get(col, "")
 
-    Formatting depends on the DuckDB column type and actual values:
-    - DATE columns → always "YYYY-MM-DD" (date-only)
-    - TIMESTAMP columns with any non-midnight value → all with time
-      (preserves midnight "00:00:00" for columns that originally had datetimes)
-    - TIMESTAMP columns with all-midnight values → "YYYY-MM-DD" (date-only)
-      (result of date arithmetic on DATE inputs, e.g. DATE + INTERVAL)
+        if "TIMESTAMP" in col_type:
+            has_time = (
+                conn.execute(
+                    f'SELECT 1 FROM "{result_name}" '
+                    f'WHERE "{col}" IS NOT NULL '
+                    f'AND (hour("{col}") != 0 OR minute("{col}") != 0 '
+                    f'OR second("{col}") != 0 OR microsecond("{col}") % 1000000 != 0) '
+                    f"LIMIT 1"
+                ).fetchone()
+                is not None
+            )
+            if has_time:
+                exprs.append(
+                    f'CASE WHEN "{col}" IS NULL THEN NULL'
+                    f' WHEN microsecond("{col}") % 1000000 != 0'
+                    f" THEN strftime('%Y-%m-%d %H:%M:%S', \"{col}\")"
+                    f" || '.' || printf('%06d', microsecond(\"{col}\") % 1000000)"
+                    f" ELSE strftime('%Y-%m-%d %H:%M:%S', \"{col}\")"
+                    f' END AS "{col}"'
+                )
+            else:
+                exprs.append(f'strftime(\'%Y-%m-%d\', "{col}") AS "{col}"')
+        elif col_type == "DATE":
+            exprs.append(f'strftime(\'%Y-%m-%d\', "{col}") AS "{col}"')
+        else:
+            exprs.append(f'"{col}"')
 
-    Args:
-        ds: Dataset whose data columns will be converted in-place.
-        timestamp_columns: Set of column names that are TIMESTAMP in DuckDB.
-            DATE columns (not in this set) are formatted as date-only.
-    """
-    ts_cols = timestamp_columns or set()
-    if ds.components and ds.data is not None:
-        for comp_name, comp in ds.components.items():
-            if (
-                comp.data_type in (Date, TimePeriod, TimeInterval)
-                and comp_name in ds.data.columns
-                and pd.api.types.is_datetime64_any_dtype(ds.data[comp_name])
-            ):
-                if comp_name in ts_cols:
-                    # TIMESTAMP: check if any non-null value has non-midnight time
-                    non_null = ds.data[comp_name].dropna()
-                    has_time = len(non_null) > 0 and bool(
-                        any(v.hour or v.minute or v.second or v.microsecond for v in non_null)
-                    )
-                    if has_time:
-                        ds.data[comp_name] = ds.data[comp_name].apply(
-                            lambda x: _format_timestamp_with_time(x) if pd.notna(x) else None  # type: ignore[redundant-expr,unused-ignore]
-                        )
-                    else:
-                        ds.data[comp_name] = ds.data[comp_name].apply(
-                            lambda x: x.strftime("%Y-%m-%d") if pd.notna(x) else None  # type: ignore[redundant-expr,unused-ignore]
-                        )
-                else:
-                    ds.data[comp_name] = ds.data[comp_name].apply(
-                        lambda x: x.strftime("%Y-%m-%d") if pd.notna(x) else None  # type: ignore[redundant-expr,unused-ignore]
-                    )
+    return f'SELECT {", ".join(exprs)} FROM "{result_name}"'
 
 
 def load_scheduled_datasets(
@@ -415,22 +408,10 @@ def fetch_result(
     if output_folder:
         save_datapoints_duckdb(conn, result_name, output_folder, delete_after_save=False)
 
-    # Detect TIMESTAMP columns before fetching (DATE vs TIMESTAMP distinction)
-    rel = conn.execute(f'SELECT * FROM "{result_name}"')
-    timestamp_cols: Set[str] = set()
-    if rel.description:
-        for col_desc in rel.description:
-            col_name = col_desc[0]
-            col_type_name = str(col_desc[1])
-            if "TIMESTAMP" in col_type_name:
-                timestamp_cols.add(col_name)
-
-    # Fetch as DataFrame
-    result_df = rel.fetchdf()
+    # Build fetch query: column projection + date/timestamp formatting inside DuckDB
     ds = output_datasets.get(result_name, Dataset(name=result_name, components={}, data=None))
-    ds.data = result_df
-    _project_columns(ds)
-    _convert_date_columns(ds, timestamp_cols)
+    fetch_sql = _build_dataset_fetch_select(conn, result_name, ds)
+    ds.data = conn.execute(fetch_sql).fetchdf()
 
     return ds
 
