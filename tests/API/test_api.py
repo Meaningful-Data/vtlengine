@@ -497,7 +497,7 @@ params_validate_ds = [
         filepath_json / "DS_1.json",
         {"DS_1": pd.DataFrame({"wrong_col": [1, 2]})},
         False,
-        "0-3-1-15",
+        "0-3-1-5",
     ),
     (filepath_json / "DS_1.json", None, True, None),
     (
@@ -534,7 +534,7 @@ params_validate_ds = [
         [filepath_json / "DS_1.json"],
         {"DS_1": pd.DataFrame({"wrong": [1]})},
         False,
-        "0-3-1-15",
+        "0-3-1-5",
     ),
     (
         [filepath_json / "DS_1.json", filepath_json / "DS_2.json"],
