@@ -1,3 +1,4 @@
+import re
 from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional, Type, Union
 
@@ -1144,18 +1145,22 @@ class Day_to_Month(Operators.Unary):
 class Year_to_Day(Operators.Unary):
     op = YEARTODAY
     return_type = Integer
+    _duration_pattern = re.compile(r"^P(?=\d)(\d+Y)?(\d+D)?$")
 
     @classmethod
     def py_op(cls, value: str) -> int:
-        days = cls.to_days(value)
-        return days
+        if not cls._duration_pattern.match(value):
+            raise RunTimeError("2-1-19-22", op=cls.op, value=value, expected="PnYnD")
+        return cls.to_days(value)
 
 
 class Month_to_Day(Operators.Unary):
     op = MONTHTODAY
     return_type = Integer
+    _duration_pattern = re.compile(r"^P(?=\d)(\d+M)?(\d+D)?$")
 
     @classmethod
     def py_op(cls, value: str) -> int:
-        days = cls.to_days(value)
-        return days
+        if not cls._duration_pattern.match(value):
+            raise RunTimeError("2-1-19-22", op=cls.op, value=value, expected="PnMnD")
+        return cls.to_days(value)
