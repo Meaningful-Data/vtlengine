@@ -27,7 +27,6 @@ from vtlengine.Exceptions import (
     check_key,
 )
 from vtlengine.files.parser import (
-    _check_extra_columns,
     _fill_dataset_empty_data,
     _validate_pandas,
     load_datapoints,
@@ -504,7 +503,6 @@ def load_datasets_with_data(
                 raise InputValidationException(
                     f"Invalid datapoint for dataset {dataset_name}. Must be a Pandas Dataframe."
                 )
-            _check_extra_columns(datasets[dataset_name].components, data, dataset_name)
             datasets[dataset_name].data = _validate_pandas(
                 datasets[dataset_name].components, data, dataset_name
             )
