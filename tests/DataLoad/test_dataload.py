@@ -1079,3 +1079,39 @@ class TestBOMHandling:
         content = load_vtl(vtl_path)
         assert not content.startswith("\ufeff")
         assert content == "DS_r <- DS_1;"
+
+    def test_bom_dataframe_columns(self) -> None:
+        """DataFrame with BOM in column names is handled transparently."""
+        script = "DS_r <- DS_1;"
+        data_structures = {
+            "datasets": [
+                {
+                    "name": "DS_1",
+                    "DataStructure": [
+                        {
+                            "name": "Id_1",
+                            "type": "Integer",
+                            "role": "Identifier",
+                            "nullable": False,
+                        },
+                        {
+                            "name": "Me_1",
+                            "type": "Number",
+                            "role": "Measure",
+                            "nullable": True,
+                        },
+                    ],
+                }
+            ]
+        }
+        # Simulate a DataFrame read from a BOM-encoded CSV without utf-8-sig
+        data_df = pd.DataFrame({"\ufeffId_1": [1, 2, 3], "Me_1": [10.0, 20.0, 30.0]})
+
+        result = run(
+            script=script,
+            data_structures=data_structures,
+            datapoints={"DS_1": data_df},
+        )
+        ds = result["DS_r"]
+        assert "Id_1" in ds.data.columns
+        assert "\ufeffId_1" not in ds.data.columns

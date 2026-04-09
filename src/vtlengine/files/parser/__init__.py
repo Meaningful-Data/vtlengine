@@ -180,8 +180,12 @@ def _validate_pandas(
     components: Dict[str, Component], data: pd.DataFrame, dataset_name: str
 ) -> pd.DataFrame:
     warnings.filterwarnings("ignore", category=FutureWarning)
-    # Identifier checking
 
+    # Strip UTF-8 BOM from column names (e.g. DataFrames read from BOM-encoded CSVs)
+    bom_stripped = [str(col).lstrip("\ufeff") for col in data.columns]
+    data.columns = pd.Index(bom_stripped)
+
+    # Identifier checking
     id_names = [comp_name for comp_name, comp in components.items() if comp.role == Role.IDENTIFIER]
 
     missing_columns = [name for name in components if name not in data.columns.tolist()]
