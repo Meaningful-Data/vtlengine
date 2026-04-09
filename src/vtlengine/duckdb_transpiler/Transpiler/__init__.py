@@ -206,6 +206,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     # DAG of dataset dependencies for execution order
     dag: Any = field(default=None)
 
+    # Output format for cast(time_period, string)
+    time_period_output_format: str = field(default="vtl")
+
     # RunTime context
     current_assignment: str = ""
     inputs: List[str] = field(default_factory=list)
@@ -2627,6 +2630,9 @@ FROM {src}, (
         ):
             type_node = node.children[1]
             return type_node.value if hasattr(type_node, "value") else str(type_node)
+        # time_agg always produces a TimePeriod internal representation
+        if isinstance(node, AST.TimeAggregation):
+            return "TimePeriod"
         # Resolve component type from current dataset context (e.g. inside calc)
         if isinstance(node, AST.VarID) and self._current_dataset:
             comp = self._current_dataset.components.get(node.value)
@@ -2705,6 +2711,17 @@ FROM {src}, (
                 return f"CAST({expr} AS {duckdb_type})"
             # Cast to DOUBLE first so TRUNC works on String/Number/unknown
             return f"CAST(TRUNC(CAST({expr} AS DOUBLE)) AS {duckdb_type})"
+
+        # === String target from TimePeriod ===
+        if target_type_str == "String" and source_lower in ("time_period", "timeperiod"):
+            _tp_string_macros = {
+                "vtl": "vtl_period_to_vtl",
+                "sdmx_reporting": "vtl_period_to_sdmx_reporting",
+                "sdmx_gregorian": "vtl_period_to_sdmx_gregorian",
+                "natural": "vtl_period_to_natural",
+            }
+            macro = _tp_string_macros.get(self.time_period_output_format, "vtl_period_to_vtl")
+            return f"{macro}({expr})"
 
         # === TimePeriod target ===
         if target_lower in ("time_period", "timeperiod"):
