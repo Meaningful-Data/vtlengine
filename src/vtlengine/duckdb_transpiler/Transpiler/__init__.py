@@ -1319,6 +1319,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             elif param_info.get("default") is not None:
                 # Use the default value AST node when argument is not provided
                 bindings[param_name] = param_info["default"]
+            # Store declared param type under a synthetic key for context-aware resolution
+            bindings[f"__type__{param_name}"] = param_info.get("type")
 
         self._push_udo_params(bindings)
         try:
@@ -1341,7 +1343,12 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             # a UDO param name matches its argument name (e.g., DS → VarID('DS')).
             if isinstance(udo_val, AST.VarID):
                 resolved_name = udo_val.value
-                if resolved_name in self.available_tables:
+                # If this param was declared as Component,
+                # it's a column reference — never a dataset,
+                # even when a dataset with the same name exists in available_tables.
+                param_decl_type = self._get_udo_param(f"__type__{name}")
+                is_component_param = isinstance(param_decl_type, Component)
+                if resolved_name in self.available_tables and not is_component_param:
                     return f"SELECT * FROM {quote_identifier(resolved_name)}"
                 if resolved_name in self.scalars:
                     sc = self.scalars[resolved_name]
@@ -3003,7 +3010,7 @@ FROM {src}, (
             builder.where(wp)
         return builder.build()
 
-    def _visit_clause_aggregate(self, node: AST.RegularAggregation) -> str:
+    def _visit_clause_aggregate(self, node: AST.RegularAggregation) -> str:  # noqa: C901
         """Visit aggregate clause: DS[aggr Me := sum(Me) group by Id, ... having ...]."""
         resolved = self._resolve_clause_dataset(node)
         if resolved is None:
@@ -3048,7 +3055,6 @@ FROM {src}, (
                     calc_exprs[col_name] = expr_sql
 
         # Build validation CTE for TimePeriod MIN/MAX with mixed indicators
-        tp_check_cte: Optional[str] = None
         if tp_minmax_cols:
             checks: List[str] = []
             for col_name, agg_op in tp_minmax_cols:
@@ -3065,8 +3071,7 @@ FROM {src}, (
                     f"FILTER (WHERE {qc} IS NOT NULL) > 1 "
                     f"THEN error({err}) END"
                 )
-            check_cols = ", ".join(checks)
-            tp_check_cte = f"SELECT {check_cols} FROM {table_src}"
+            ", ".join(checks)
 
         # Extract group-by identifiers from AST nodes to avoid using the
         # overall output dataset (which may represent a join result).
@@ -3290,7 +3295,7 @@ FROM {src}, (
                 group_by_cols.append(quote_identifier(col_name))
         return cols, group_by_cols
 
-    def visit_Aggregation(self, node: AST.Aggregation) -> str:  # type: ignore[override]
+    def visit_Aggregation(self, node: AST.Aggregation) -> str:  # type: ignore[override]  # noqa: C901
         """Visit a standalone aggregation: sum(DS group by Id)."""
         op = str(node.op).lower()
 
@@ -3702,7 +3707,15 @@ FROM {src}, (
                 if id_names:
                     inner_sql = registry.set_ops.generate(op, *ordered_sqls)
                     id_cols = ", ".join(quote_identifier(i) for i in id_names)
-                    return f"SELECT DISTINCT ON ({id_cols}) * FROM ({inner_sql}) AS _union_t"
+                    # Preserve UNION ALL row order to match pandas drop_duplicates(keep="first").
+                    # QUALIFY keeps the first occurrence per identifier group by insertion order.
+                    return (
+                        f"SELECT {ordered_cols} FROM ("
+                        f"SELECT *, ROW_NUMBER() OVER () AS _rn "
+                        f"FROM ({inner_sql}) AS _union_inner"
+                        f") AS _union_t "
+                        f"QUALIFY ROW_NUMBER() OVER (PARTITION BY {id_cols} ORDER BY _rn) = 1"
+                    )
                 return registry.set_ops.generate(op, *ordered_sqls)
             return registry.set_ops.generate(op, *child_sqls)
 

@@ -548,7 +548,10 @@ class TestBinaryOperations:
             ("+", 'SELECT "Id_1", ("Me_1" + 10) AS "Me_1", ("Me_2" + 10) AS "Me_2" FROM "DS_1"'),
             ("-", 'SELECT "Id_1", ("Me_1" - 10) AS "Me_1", ("Me_2" - 10) AS "Me_2" FROM "DS_1"'),
             ("*", 'SELECT "Id_1", ("Me_1" * 10) AS "Me_1", ("Me_2" * 10) AS "Me_2" FROM "DS_1"'),
-            ("/", 'SELECT "Id_1", vtl_div("Me_1", 10) AS "Me_1", vtl_div("Me_2", 10) AS "Me_2" FROM "DS_1"'),
+            (
+                "/",
+                'SELECT "Id_1", vtl_div("Me_1", 10) AS "Me_1", vtl_div("Me_2", 10) AS "Me_2" FROM "DS_1"',
+            ),
         ],
     )
     def test_dataset_scalar_binary_op(self, op: str, expected_sql: str):
