@@ -331,20 +331,6 @@ class DataLoadTest(DataLoadHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    def test_20(self):
-        """
-        Status: OK
-        Description: Data Load, with ñ in a latin-1(ISO-8859-1) encoding.
-        Git issue: 81-triple-doble-quote-commas-data-loading-and-intermediate-results.
-        Git Branch: bug-81-triple-doble-quote-commas-data-loading-and-intermediate-results.
-        Goal: Check Exception.
-        """
-        # code = "GL_81-19"
-        # number_inputs = 1
-        # message = "0-1-2-5"
-        # self.DataLoadExceptionTest(code=code, number_inputs=number_inputs,
-        #                            exception_code=message)
-
     def test_21(self):
         """
         Status: OK

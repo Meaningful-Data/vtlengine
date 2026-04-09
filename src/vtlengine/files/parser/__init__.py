@@ -182,7 +182,7 @@ def _validate_pandas(
     warnings.filterwarnings("ignore", category=FutureWarning)
 
     # Strip UTF-8 BOM from column names (e.g. DataFrames read from BOM-encoded CSVs)
-    bom_stripped = [str(col).lstrip("\ufeff") for col in data.columns]
+    bom_stripped = [str(col).removeprefix("\ufeff") for col in data.columns]
     data.columns = pd.Index(bom_stripped)
 
     # Identifier checking
