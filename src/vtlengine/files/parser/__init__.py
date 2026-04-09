@@ -125,7 +125,7 @@ def _sanitize_pandas_columns(
         if comp_name not in data:
             if not comp.nullable:
                 name = Path(csv_path).stem
-                raise InputValidationException("0-3-1-5", name=name, comp_name=comp_name)
+                raise InputValidationException(code="0-3-1-5", name=name, comp_name=comp_name)
             data[comp_name] = None
     return data
 
