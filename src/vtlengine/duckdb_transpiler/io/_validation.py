@@ -214,6 +214,8 @@ def build_create_table_sql(
     This is more memory-efficient for large datasets.
 
     Args:
+        table_name: Name of the table to create.
+        components: Mapping of component names to Component definitions.
         type_overrides: Optional dict mapping column names to SQL types,
             used to override the default type (e.g. Date → TIMESTAMP when
             values contain time components).
