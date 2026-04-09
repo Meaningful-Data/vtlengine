@@ -258,7 +258,7 @@ class TestGlobalRegistry:
             (PLUS, '("a" + "b")'),
             (MINUS, '("a" - "b")'),
             (MULT, '("a" * "b")'),
-            (DIV, '("a" / "b")'),
+            (DIV, 'vtl_div("a", "b")'),
             (MOD, '("a" % "b")'),
             (EQ, '("a" = "b")'),
             (NEQ, '("a" <> "b")'),

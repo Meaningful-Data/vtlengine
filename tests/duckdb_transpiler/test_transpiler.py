@@ -377,7 +377,8 @@ class TestSetOperations:
         assert_sql_contains(
             sql,
             [
-                "SELECT DISTINCT ON",
+                "QUALIFY",
+                "ROW_NUMBER() OVER",
                 '"Id_1"',
                 "UNION ALL",
                 '"DS_1"',
@@ -542,15 +543,15 @@ class TestBinaryOperations:
         assert_sql_equal(sql, expected_sql)
 
     @pytest.mark.parametrize(
-        "op,sql_op",
+        "op,expected_sql",
         [
-            ("+", "+"),
-            ("-", "-"),
-            ("*", "*"),
-            ("/", "/"),
+            ("+", 'SELECT "Id_1", ("Me_1" + 10) AS "Me_1", ("Me_2" + 10) AS "Me_2" FROM "DS_1"'),
+            ("-", 'SELECT "Id_1", ("Me_1" - 10) AS "Me_1", ("Me_2" - 10) AS "Me_2" FROM "DS_1"'),
+            ("*", 'SELECT "Id_1", ("Me_1" * 10) AS "Me_1", ("Me_2" * 10) AS "Me_2" FROM "DS_1"'),
+            ("/", 'SELECT "Id_1", vtl_div("Me_1", 10) AS "Me_1", vtl_div("Me_2", 10) AS "Me_2" FROM "DS_1"'),
         ],
     )
-    def test_dataset_scalar_binary_op(self, op: str, sql_op: str):
+    def test_dataset_scalar_binary_op(self, op: str, expected_sql: str):
         """Test dataset-scalar binary operation with complete SQL output."""
         ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1", "Me_2"])
         transpiler = create_transpiler(
@@ -570,7 +571,6 @@ class TestBinaryOperations:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = f'SELECT "Id_1", ("Me_1" {sql_op} 10) AS "Me_1", ("Me_2" {sql_op} 10) AS "Me_2" FROM "DS_1"'
         assert_sql_equal(sql, expected_sql)
 
 

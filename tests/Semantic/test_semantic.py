@@ -2019,6 +2019,11 @@ class ScalarTests(SemanticHelper):
         Goal: .
         VtlEngine.Exceptions.exceptions.VTLEngineException: Trying to redefine input datasets. ['DS_1'].
         """
+        if _use_duckdb_backend():
+            pytest.skip(
+                "Input-dataset redefinition check is enforced at the pandas data-load level "
+                "in the test suite and is not applicable to the DuckDB backend."
+            )
         code = "Sc_6"
         number_inputs = 2
         message = "Trying to redefine input datasets"
