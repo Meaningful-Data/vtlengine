@@ -127,7 +127,9 @@ class Analytic(Operator.Unary):
                     context="analytic",
                 )
         else:
-            if any(me.data_type is TimeInterval for me in operand.get_measures()):
+            if cls.op != RANK and any(
+                me.data_type is TimeInterval for me in operand.get_measures()
+            ):
                 raise SemanticError(
                     "1-1-19-12",
                     op=cls.op,
