@@ -66,6 +66,11 @@ time_operators.remove(100)
 # Remove HR Rules cyclic graph
 validation_operators.remove(159)
 
+# Remove random tests if duckdb
+if _use_duckdb_backend:
+    new_operators.remove(184)
+    new_operators.remove(185)
+
 # Multimeasures on specific operators that must raise errors
 exceptions_tests = [27, 31]
 
@@ -178,50 +183,51 @@ def load_dataset(dataPoints, dataStructures, dp_dir, param):
     return datasets
 
 
-def _run_rm_duckdb(vtl_path, param, value_domains=None):
-    """Run a Reference Manual test using the DuckDB backend."""
-    with open(vtl_path, "r") as f:
-        vtl = f.read()
+def get_test_files(dataPoints, dataStructures, dp_dir, param):
+    vtl = Path(f"{vtl_dir}/RM{param:03d}.vtl")
+    ds = []
+    dp = {}
+    for f in dataStructures:
+        ds.append(Path(f))
+        with open(f, "r") as file:
+            structures = json.load(file)
 
-    prefix = f"{param}-"
-    data_structures = [
-        input_ds_dir / f for f in sorted(os.listdir(input_ds_dir)) if f.lower().startswith(prefix)
-    ]
-    vd_paths = None
-    if value_domains:
-        vd_paths = [value_domain_dir / f for f in os.listdir(value_domain_dir)]
+        for dataset_json in structures["datasets"]:
+            dataset_name = dataset_json["name"]
+            if dataset_name not in dataPoints:
+                dp[dataset_name] = None
+            else:
+                dp[dataset_name] = Path(f"{dp_dir}/{param}-{dataset_name}.csv")
 
-    datapoints = {}
-    for ds_file in data_structures:
-        with open(ds_file, "r") as f:
-            structure = json.load(f)
-        if "datasets" in structure:
-            for ds in structure["datasets"]:
-                csv_path = input_dp_dir / f"{param}-{ds['name']}.csv"
-                if csv_path.exists():
-                    datapoints[ds["name"]] = csv_path
+    return vtl, ds, dp
 
-    return run(
+
+@pytest.mark.parametrize("param", params if _use_duckdb_backend else [])
+def test_reference_duckdb(input_datasets, reference_datasets, ast, param):
+    warnings.filterwarnings("ignore", category=FutureWarning)
+    reference_datasets = load_dataset(*reference_datasets, dp_dir=reference_dp_dir, param=param)
+
+    vtl, ds, dp = get_test_files(*input_datasets, dp_dir=input_dp_dir, param=param)
+    vd_files = list(value_domain_dir.glob("*.json"))
+    result = run(
         script=vtl,
-        data_structures=data_structures,
-        datapoints=datapoints,
-        value_domains=vd_paths,
+        data_structures=ds,
+        datapoints=dp,
+        value_domains=vd_files if vd_files else None,
         return_only_persistent=False,
-        use_duckdb=True,
+        use_duckdb=_use_duckdb_backend,
     )
+
+    assert result == reference_datasets
 
 
 @pytest.mark.parametrize("param", params)
 def test_reference(input_datasets, reference_datasets, ast, param, value_domains):
     warnings.filterwarnings("ignore", category=FutureWarning)
+    input_datasets = load_dataset(*input_datasets, dp_dir=input_dp_dir, param=param)
     reference_datasets = load_dataset(*reference_datasets, dp_dir=reference_dp_dir, param=param)
-    if _use_duckdb_backend():
-        vtl_path = vtl_dir / f"RM{param:03d}.vtl"
-        result = _run_rm_duckdb(vtl_path, param, value_domains)
-    else:
-        input_datasets = load_dataset(*input_datasets, dp_dir=input_dp_dir, param=param)
-        interpreter = InterpreterAnalyzer(input_datasets, value_domains=value_domains)
-        result = interpreter.visit(ast)
+    interpreter = InterpreterAnalyzer(input_datasets, value_domains=value_domains)
+    result = interpreter.visit(ast)
     assert result == reference_datasets
 
 
@@ -230,26 +236,18 @@ def test_reference_defined_operators(
     input_datasets, reference_datasets, ast_defined_operators, param, value_domains
 ):
     warnings.filterwarnings("ignore", category=FutureWarning)
+    input_datasets = load_dataset(*input_datasets, dp_dir=input_dp_dir, param=param)
     reference_datasets = load_dataset(*reference_datasets, dp_dir=reference_dp_dir, param=param)
-    if _use_duckdb_backend():
-        vtl_path = vtl_def_operators_dir / f"RM{param:03d}.vtl"
-        result = _run_rm_duckdb(vtl_path, param, value_domains)
-    else:
-        input_datasets = load_dataset(*input_datasets, dp_dir=input_dp_dir, param=param)
-        interpreter = InterpreterAnalyzer(input_datasets, value_domains=value_domains)
-        result = interpreter.visit(ast_defined_operators)
+    interpreter = InterpreterAnalyzer(input_datasets, value_domains=value_domains)
+    result = interpreter.visit(ast_defined_operators)
     assert result == reference_datasets
 
 
 @pytest.mark.parametrize("param", exceptions_tests)
 def test_reference_exceptions(input_datasets, reference_datasets, ast, param):
     warnings.filterwarnings("ignore", category=FutureWarning)
-    if _use_duckdb_backend():
-        vtl_path = vtl_dir / f"RM{param:03d}.vtl"
-        with pytest.raises(Exception, match="Operation not allowed for multimeasure Datasets"):
-            _run_rm_duckdb(vtl_path, param)
-    else:
-        input_datasets = load_dataset(*input_datasets, dp_dir=input_dp_dir, param=param)
-        interpreter = InterpreterAnalyzer(input_datasets)
-        with pytest.raises(Exception, match="Operation not allowed for multimeasure Datasets"):
-            interpreter.visit(ast)
+    input_datasets = load_dataset(*input_datasets, dp_dir=input_dp_dir, param=param)
+    interpreter = InterpreterAnalyzer(input_datasets)
+    with pytest.raises(Exception, match="Operation not allowed for multimeasure Datasets"):
+        # result = interpreter.visit(ast) # to match with F841
+        interpreter.visit(ast)

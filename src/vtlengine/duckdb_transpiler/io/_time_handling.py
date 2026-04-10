@@ -56,9 +56,21 @@ def apply_time_period_representation(
     if not tp_cols:
         return
 
+    # Check actual DuckDB column types — only apply to VARCHAR columns
+    # (dateadd on TimePeriod returns TIMESTAMP which should not be formatted)
+    col_types = {}
+    rel = conn.execute(f'SELECT * FROM "{table_name}" LIMIT 0')
+    if rel.description:
+        for col_desc in rel.description:
+            col_types[col_desc[0]] = str(col_desc[1])
+
+    varchar_tp_cols = [c for c in tp_cols if "VARCHAR" in col_types.get(c, "VARCHAR")]
+    if not varchar_tp_cols:
+        return
+
     macro = _REPR_MACRO[representation]
-    set_clauses = ", ".join(f'"{col}" = {macro}("{col}")' for col in tp_cols)
-    where_clauses = " OR ".join(f'"{col}" IS NOT NULL' for col in tp_cols)
+    set_clauses = ", ".join(f'"{col}" = {macro}("{col}")' for col in varchar_tp_cols)
+    where_clauses = " OR ".join(f'"{col}" IS NOT NULL' for col in varchar_tp_cols)
     conn.execute(f'UPDATE "{table_name}" SET {set_clauses} WHERE {where_clauses}')
 
 

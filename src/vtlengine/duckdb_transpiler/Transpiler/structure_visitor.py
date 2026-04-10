@@ -15,7 +15,16 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 import vtlengine.AST as AST
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.Grammar import tokens
-from vtlengine.DataTypes import Boolean, Date, Integer, Number, TimePeriod
+from vtlengine.DataTypes import (
+    _DUCKDB_TYPE_TO_VTL,
+    COMP_NAME_MAPPING,
+    SCALAR_TYPES,
+    Boolean,
+    Date,
+    Integer,
+    Number,
+    TimePeriod,
+)
 from vtlengine.DataTypes import String as StringType
 from vtlengine.duckdb_transpiler.Transpiler.sql_builder import quote_identifier
 from vtlengine.Model import Component, Dataset, Role
@@ -24,14 +33,6 @@ from vtlengine.Model import Component, Dataset, Role
 _DATASET = "Dataset"
 _COMPONENT = "Component"
 _SCALAR = "Scalar"
-
-# VTL type name → Python DataType mapping (for cast structure resolution)
-_VTL_TYPE_MAP: Dict[str, Any] = {
-    "Integer": Integer,
-    "Number": Number,
-    "String": StringType,
-    "Boolean": Boolean,
-}
 
 
 class StructureVisitor(ASTTemplate):
@@ -140,7 +141,9 @@ class StructureVisitor(ASTTemplate):
                 return None
             type_node = node.children[1]
             target_str = type_node.value if hasattr(type_node, "value") else str(type_node)
-            target_type = _VTL_TYPE_MAP.get(target_str, Number)
+            target_type = SCALAR_TYPES.get(
+                target_str, _DUCKDB_TYPE_TO_VTL.get(target_str.upper(), Number)
+            )
             comps: Dict[str, Component] = {}
             for name, comp in ds.components.items():
                 if comp.role == Role.MEASURE:
@@ -174,6 +177,15 @@ class StructureVisitor(ASTTemplate):
         if node.grouping is not None or node.grouping_op is not None:
             all_ids = ds.get_identifiers_names()
             group_cols = set(self._resolve_group_cols(node, all_ids))
+            # When time_agg is present, the time identifier must be included
+            # in the output even if not explicitly listed in group by.
+            if node.grouping:
+                has_time_agg = any(isinstance(g, AST.TimeAggregation) for g in node.grouping)
+                if has_time_agg and node.grouping_op != "group except":
+                    for comp in ds.components.values():
+                        if comp.data_type in (TimePeriod, Date) and comp.role == Role.IDENTIFIER:
+                            group_cols.add(comp.name)
+                            break
             comps: Dict[str, Component] = {}
             for name, comp in ds.components.items():
                 if comp.role == Role.IDENTIFIER:
@@ -473,7 +485,11 @@ class StructureVisitor(ASTTemplate):
             if left_is_ds and right_is_ds:
                 return self._build_ds_ds_binop_structure(node)
             if left_is_ds:
-                return self._get_dataset_structure(node.left)
+                ds = self._get_dataset_structure(node.left)
+                # in/not_in produces bool_var measure from any input measure
+                if ds is not None and op in (tokens.IN, tokens.NOT_IN):
+                    return self._build_boolean_result_structure(ds)
+                return ds
             if right_is_ds:
                 return self._get_dataset_structure(node.right)
             return None
@@ -505,7 +521,7 @@ class StructureVisitor(ASTTemplate):
 
         if isinstance(node, AST.Aggregation) and node.operand:
             ds = self._get_dataset_structure(node.operand)
-            if ds is not None and (node.grouping is not None or node.grouping_op is not None):
+            if ds is not None:
                 all_ids = ds.get_identifiers_names()
                 group_cols = set(self._resolve_group_cols(node, all_ids))
                 comps: Dict[str, Component] = {}
@@ -513,7 +529,7 @@ class StructureVisitor(ASTTemplate):
                     if comp.role == Role.IDENTIFIER:
                         if name in group_cols:
                             comps[name] = comp
-                    else:
+                    elif comp.role == Role.MEASURE:
                         comps[name] = comp
                 # count() replaces all measures with a single int_var
                 agg_op = str(node.op).lower() if node.op else ""
@@ -870,26 +886,34 @@ class StructureVisitor(ASTTemplate):
 
         comps: Dict[str, Component] = {}
 
-        # Determine group-by identifiers from children or default to all
+        # Determine group-by identifiers from children
+        all_input_ids = {n for n, c in input_ds.components.items() if c.role == Role.IDENTIFIER}
         group_ids: set[str] = set()
+        grouping_op: str = ""
         for child in node.children:
             assignment = child
             if isinstance(child, AST.UnaryOp) and isinstance(child.operand, AST.Assignment):
                 assignment = child.operand
             if isinstance(assignment, AST.Assignment):
                 agg_node = assignment.right
-                if (
-                    isinstance(agg_node, AST.Aggregation)
-                    and agg_node.grouping
-                    and agg_node.grouping_op == "group by"
-                ):
+                if isinstance(agg_node, AST.Aggregation) and agg_node.grouping:
+                    grouping_op = agg_node.grouping_op or ""
                     for g in agg_node.grouping:
                         if isinstance(g, (AST.VarID, AST.Identifier)):
                             group_ids.add(g.value)
 
+        # Resolve which identifiers survive the aggregation
+        if grouping_op == "group by":
+            kept_ids = group_ids
+        elif grouping_op == "group except":
+            kept_ids = all_input_ids - group_ids
+        else:
+            # No explicit grouping → all identifiers are kept
+            kept_ids = all_input_ids
+
         # Add group-by identifiers
         for name, comp in input_ds.components.items():
-            if comp.role == Role.IDENTIFIER and name in group_ids:
+            if comp.role == Role.IDENTIFIER and name in kept_ids:
                 comps[name] = comp
 
         # Add computed measures
@@ -916,16 +940,29 @@ class StructureVisitor(ASTTemplate):
 
         comp_name = node.right.value if hasattr(node.right, "value") else str(node.right)
 
+        # Resolve UDO parameter
+        udo_val = self._get_udo_param(comp_name)
+        if udo_val is not None:
+            if isinstance(udo_val, (AST.VarID, AST.Identifier)):
+                comp_name = udo_val.value
+            elif isinstance(udo_val, str):
+                comp_name = udo_val
+
         comps: Dict[str, Component] = {}
         for name, comp in parent_ds.components.items():
             if comp.role == Role.IDENTIFIER:
                 comps[name] = comp
 
-        # Add the extracted component as a measure
+        # Add the extracted component as a measure.
+        # When extracting an identifier or attribute, rename it using COMP_NAME_MAPPING
+        # to match the SQL generation in _visit_membership.
         if comp_name in parent_ds.components:
             orig = parent_ds.components[comp_name]
-            comps[comp_name] = Component(
-                name=comp_name, data_type=orig.data_type, role=Role.MEASURE, nullable=True
+            alias_name = comp_name
+            if orig.role in (Role.IDENTIFIER, Role.ATTRIBUTE):
+                alias_name = COMP_NAME_MAPPING.get(orig.data_type, comp_name)
+            comps[alias_name] = Component(
+                name=alias_name, data_type=orig.data_type, role=Role.MEASURE, nullable=True
             )
         else:
             from vtlengine.DataTypes import Number as NumberType
@@ -934,6 +971,21 @@ class StructureVisitor(ASTTemplate):
                 name=comp_name, data_type=NumberType, role=Role.MEASURE, nullable=True
             )
         return Dataset(name=parent_ds.name, components=comps, data=None)
+
+    @staticmethod
+    def _build_boolean_result_structure(ds: Dataset) -> Dataset:
+        """Replace all measures with a single ``bool_var`` Boolean measure.
+
+        Used for operators like ``in`` / ``not_in`` that produce a Boolean
+        result from any input measure type.
+        """
+        comps: Dict[str, Component] = {
+            n: c for n, c in ds.components.items() if c.role == Role.IDENTIFIER
+        }
+        comps["bool_var"] = Component(
+            name="bool_var", data_type=Boolean, role=Role.MEASURE, nullable=True
+        )
+        return Dataset(name=ds.name, components=comps, data=None)
 
     def _build_rename_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:
         """Build the output structure for a rename clause."""
@@ -955,12 +1007,22 @@ class StructureVisitor(ASTTemplate):
                 else:
                     renames[old] = child.new_name
 
+        unqualified_to_qualified: Dict[str, str] = {}
+        for comp_name in input_ds.components:
+            if "#" in comp_name:
+                unqual = comp_name.split("#", 1)[1]
+                unqualified_to_qualified[unqual] = comp_name
+
         comps: Dict[str, Component] = {}
         for name, comp in input_ds.components.items():
-            if name in renames:
-                new_name = renames[name]
-                comps[new_name] = Component(
-                    name=new_name,
+            # Check direct match first, then try matching via qualified name
+            matched_new = renames.get(name)
+            if matched_new is None and "#" in name:
+                unqual = name.split("#", 1)[1]
+                matched_new = renames.get(unqual)
+            if matched_new is not None:
+                comps[matched_new] = Component(
+                    name=matched_new,
                     data_type=comp.data_type,
                     role=comp.role,
                     nullable=comp.nullable,

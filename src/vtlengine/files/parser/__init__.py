@@ -124,7 +124,8 @@ def _sanitize_pandas_columns(
     for comp_name, comp in components.items():
         if comp_name not in data:
             if not comp.nullable:
-                raise InputValidationException(f"Component {comp_name} is missing in the file.")
+                name = Path(csv_path).stem
+                raise InputValidationException(code="0-3-1-5", name=name, comp_name=comp_name)
             data[comp_name] = None
     return data
 
@@ -167,6 +168,14 @@ def _parse_boolean(value: str) -> bool:
     return result
 
 
+def _check_extra_columns(
+    components: Dict[str, Component], data: pd.DataFrame, dataset_name: str
+) -> None:
+    extra_columns = sorted(set(data.columns) - set(components))
+    if extra_columns:
+        raise DataLoadError("0-3-1-15", name=dataset_name, extra_columns=", ".join(extra_columns))
+
+
 def _validate_pandas(
     components: Dict[str, Component], data: pd.DataFrame, dataset_name: str
 ) -> pd.DataFrame:
@@ -181,6 +190,8 @@ def _validate_pandas(
             if components[name].nullable is False:
                 raise DataLoadError("0-3-1-5", name=dataset_name, comp_name=name)
             data[name] = None
+
+    _check_extra_columns(components, data, dataset_name)
 
     for id_name in id_names:
         if data[id_name].isnull().any():

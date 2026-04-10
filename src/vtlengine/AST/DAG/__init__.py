@@ -377,6 +377,8 @@ class HRDAGAnalyzer(DAGAnalyzer):
         Modifies node.rules in place: removes rules whose comparison operator is not '='
         and re-sorts the remaining rules based on the dependency DAG.
         """
+        if getattr(node, "_hr_sorted", False):
+            return
         dag = cls()
         dag.visit(node)
         dag.load_vertex()
@@ -384,6 +386,7 @@ class HRDAGAnalyzer(DAGAnalyzer):
         if len(dag.edges) != 0:
             dag._build_and_sort_graph("hierarchy")
             node.rules = dag.sort_elements(node.rules)
+        node._hr_sorted = True  # type: ignore[attr-defined]
 
     def visit_HRuleset(self, node: HRuleset) -> None:
         """

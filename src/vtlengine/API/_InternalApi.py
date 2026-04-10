@@ -76,15 +76,9 @@ def _extract_data_type(component: Dict[str, Any]) -> Tuple[str, Any]:
     Raises:
         InputValidationException: If the data type key or value is invalid
     """
-    if "type" in component:
-        key = "type"
-        value = component["type"]
-    else:
-        key = "data_type"
-        value = component["data_type"]
-
-    check_key(key, _SCALAR_TYPE_KEYS, value)
-    return key, SCALAR_TYPES[value]
+    key = "type" if "type" in component else "data_type"
+    check_key(key, _SCALAR_TYPE_KEYS, component[key])
+    return key, SCALAR_TYPES[component[key]]
 
 
 def _load_dataset_from_structure(

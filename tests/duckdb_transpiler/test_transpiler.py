@@ -149,7 +149,7 @@ class TestInOperator:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = f'SELECT "Id_1", ("Me_1" {sql_op} (1, 2)) AS "Me_1", ("Me_2" {sql_op} (1, 2)) AS "Me_2" FROM "DS_1"'
+        expected_sql = f'SELECT "Id_1", ("Me_1" {sql_op} (1, 2)) AS "bool_var", ("Me_2" {sql_op} (1, 2)) AS "bool_var" FROM "DS_1"'
         assert_sql_equal(sql, expected_sql)
 
 
@@ -377,7 +377,8 @@ class TestSetOperations:
         assert_sql_contains(
             sql,
             [
-                "SELECT DISTINCT ON",
+                "QUALIFY",
+                "ROW_NUMBER() OVER",
                 '"Id_1"',
                 "UNION ALL",
                 '"DS_1"',
@@ -423,7 +424,11 @@ class TestCastOperator:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = f'SELECT "Id_1", CAST("Me_1" AS {expected_duckdb_type}) AS "Me_1", CAST("Me_2" AS {expected_duckdb_type}) AS "Me_2" FROM "DS_1"'
+        if target_type == "Integer":
+            expected_sql = f'SELECT "Id_1", CAST(TRUNC(CAST("Me_1" AS DOUBLE)) AS {expected_duckdb_type}) AS "Me_1", CAST(TRUNC(CAST("Me_2" AS DOUBLE)) AS {expected_duckdb_type}) AS "Me_2" FROM "DS_1"'
+        else:
+            expected_sql = f'SELECT "Id_1", CAST("Me_1" AS {expected_duckdb_type}) AS "Me_1", CAST("Me_2" AS {expected_duckdb_type}) AS "Me_2" FROM "DS_1"'
+
         assert_sql_equal(sql, expected_sql)
 
     def test_cast_with_date_mask(self):
@@ -447,7 +452,9 @@ class TestCastOperator:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = 'SELECT "Id_1", STRPTIME("Me_1", \'%Y-%m-%d\')::DATE AS "Me_1" FROM "DS_1"'
+        expected_sql = """
+            SELECT "Id_1", STRFTIME(STRPTIME("Me_1", '%Y-%m-%d'), '%Y-%m-%d %H:%M:%S') AS "Me_1" FROM "DS_1"
+        """
         assert_sql_equal(sql, expected_sql)
 
 
@@ -536,15 +543,18 @@ class TestBinaryOperations:
         assert_sql_equal(sql, expected_sql)
 
     @pytest.mark.parametrize(
-        "op,sql_op",
+        "op,expected_sql",
         [
-            ("+", "+"),
-            ("-", "-"),
-            ("*", "*"),
-            ("/", "/"),
+            ("+", 'SELECT "Id_1", ("Me_1" + 10) AS "Me_1", ("Me_2" + 10) AS "Me_2" FROM "DS_1"'),
+            ("-", 'SELECT "Id_1", ("Me_1" - 10) AS "Me_1", ("Me_2" - 10) AS "Me_2" FROM "DS_1"'),
+            ("*", 'SELECT "Id_1", ("Me_1" * 10) AS "Me_1", ("Me_2" * 10) AS "Me_2" FROM "DS_1"'),
+            (
+                "/",
+                'SELECT "Id_1", vtl_div("Me_1", 10) AS "Me_1", vtl_div("Me_2", 10) AS "Me_2" FROM "DS_1"',
+            ),
         ],
     )
-    def test_dataset_scalar_binary_op(self, op: str, sql_op: str):
+    def test_dataset_scalar_binary_op(self, op: str, expected_sql: str):
         """Test dataset-scalar binary operation with complete SQL output."""
         ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1", "Me_2"])
         transpiler = create_transpiler(
@@ -564,7 +574,6 @@ class TestBinaryOperations:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = f'SELECT "Id_1", ("Me_1" {sql_op} 10) AS "Me_1", ("Me_2" {sql_op} 10) AS "Me_2" FROM "DS_1"'
         assert_sql_equal(sql, expected_sql)
 
 
@@ -1066,7 +1075,9 @@ class TestEvalOperator:
         ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
         external_routine = ExternalRoutine(
             dataset_names=["DS_1"],
-            query='SELECT "Id_1", "Me_1" * 2 AS "Me_1" FROM "DS_1"',
+            query="""
+                SELECT Id_1, Me_1 * 2 AS Me_1 FROM DS_1
+            """,
             name="double_measure",
         )
 
@@ -1088,8 +1099,8 @@ class TestEvalOperator:
         )
 
         result = transpiler.visit_EvalOp(eval_op)
-        # The query should be returned as-is since DS_1 is a direct table reference
-        expected_sql = 'SELECT "Id_1", "Me_1" * 2 AS "Me_1" FROM "DS_1"'
+        # Table name is mapped to the actual DuckDB table name
+        expected_sql = 'SELECT Id_1, Me_1 * 2 AS Me_1 FROM "DS_1"'
         assert_sql_equal(result, expected_sql)
 
     def test_eval_op_routine_not_found(self):
@@ -1143,11 +1154,13 @@ class TestEvalOperator:
             transpiler.visit_EvalOp(eval_op)
 
     def test_eval_op_with_subquery_replacement(self):
-        """Test EVAL operator replaces table references with subqueries when needed."""
+        """Test EVAL operator replaces table references and converts double-quoted strings."""
         ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
         external_routine = ExternalRoutine(
             dataset_names=["DS_1"],
-            query='SELECT "Id_1", SUM("Me_1") AS "total" FROM DS_1 GROUP BY "Id_1"',
+            query="""
+                SELECT Id_1, SUM(Me_1) AS total, ifnull(Me_1, "N/A") FROM DS_1 GROUP BY Id_1
+            """,
             name="aggregate_routine",
         )
 
@@ -1169,8 +1182,11 @@ class TestEvalOperator:
         )
 
         result = transpiler.visit_EvalOp(eval_op)
-        # Should contain aggregate function
-        expected_sql = 'SELECT "Id_1", SUM("Me_1") AS "total" FROM DS_1 GROUP BY "Id_1"'
+        # Double-quoted strings are converted to single quotes (matching pandas backend)
+        # and table names are mapped to the actual DuckDB table names
+        expected_sql = (
+            "SELECT Id_1, SUM(Me_1) AS total, ifnull(Me_1, 'N/A') FROM \"DS_1\" GROUP BY Id_1"
+        )
         assert_sql_equal(result, expected_sql)
 
 

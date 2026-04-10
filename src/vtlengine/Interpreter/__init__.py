@@ -855,8 +855,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     return copy(self.scalars[node.value])
                 if (
                     self.is_from_join
-                    and node.value
-                    not in self.regular_aggregation_dataset.get_components_names()
+                    and node.value not in self.regular_aggregation_dataset.get_components_names()
                 ):
                     is_partial_present = 0
                     found_comp = None
@@ -944,7 +943,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     raise Exception("All elements in a set must be of the same type")
             if len(elements) == 0:
                 raise Exception("A set must contain at least one element")
-            if len(elements) != len(set(elements)):
+            if not any(e is None for e in elements) and len(elements) != len(set(elements)):
                 raise Exception("A set must not contain duplicates")
             set_type = scalar_data_type or BASIC_TYPES[type(elements[0])]
             return ScalarSet(data_type=set_type, values=elements)

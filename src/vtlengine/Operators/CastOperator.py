@@ -10,7 +10,9 @@ from vtlengine.DataTypes import (
     EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING,
     IMPLICIT_TYPE_PROMOTION_MAPPING,
     SCALAR_TYPES_CLASS_REVERSE,
+    Date,
     ScalarType,
+    String,
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
@@ -144,6 +146,8 @@ class Cast(Operator.Unary):
         """This method validates the operation when the operand is a Scalar."""
         from_type = operand.data_type
         cls.check_cast(from_type, to_type, mask)
+        if from_type == String and to_type == Date and operand.value is not None:
+            Date.explicit_cast(operand.value, String)
         return Scalar(name=operand.name, data_type=to_type, value=None)
 
     @classmethod

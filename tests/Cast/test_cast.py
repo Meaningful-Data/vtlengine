@@ -377,9 +377,9 @@ class TestCastTimePeriodToString:
     @pytest.mark.parametrize(
         "input_val, expected",
         [
-            ("2024A", "2024A"),
-            ("2024-Q1", "2024-Q1"),
-            ("2020A", "2020A"),
+            ("2024A", "2024"),
+            ("2024-Q1", "2024Q1"),
+            ("2020A", "2020"),
             ("2020Q1", "2020Q1"),
             (None, None),
         ],

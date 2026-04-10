@@ -85,14 +85,7 @@ def check_results(run_result, reference_datasets, reference_scalars):
         if isinstance(result, Dataset):
             assert result.name in reference_datasets
             reference = reference_datasets[result.name]
-
-            assert len(result.components) == len(reference.components)
-            assert result.components == reference.components
-
-            sorted_columns = sorted(result.data.columns)
-            dataset_data = result.data[sorted_columns].reset_index(drop=True)
-            reference_data = reference.data[sorted_columns].reset_index(drop=True)
-            assert all(dataset_data == reference_data)
+            assert result == reference
 
         else:
             assert result.name in reference_scalars

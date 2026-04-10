@@ -12,6 +12,7 @@ import pytest
 
 from tests.Helper import _use_duckdb_backend
 from vtlengine.API import run
+from vtlengine.Exceptions import RunTimeError
 from vtlengine.Utils._number_config import (
     DEFAULT_SIGNIFICANT_DIGITS,
     DISABLED_VALUE,
@@ -61,7 +62,7 @@ def test_parse_env_value_valid(env_value: str, expected: int) -> None:
 def test_parse_env_value_invalid(env_value: str) -> None:
     with (
         mock.patch.dict(os.environ, {ENV_COMPARISON_THRESHOLD: env_value}),
-        pytest.raises(ValueError, match="Invalid value"),
+        pytest.raises(RunTimeError, match="Invalid value"),
     ):
         _parse_env_value(ENV_COMPARISON_THRESHOLD)
 

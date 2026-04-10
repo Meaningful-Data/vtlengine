@@ -14,7 +14,7 @@ from vtlengine.Operators.Conditional import Nvl
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
 pytestmark = pytest.mark.skipif(
-    _use_duckdb_backend(), reason="VirtualCounter not supported on DuckDB backend"
+    _use_duckdb_backend, reason="VirtualCounter not supported on DuckDB backend"
 )
 
 base_path = Path(__file__).parent

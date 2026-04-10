@@ -144,12 +144,13 @@ class String(ScalarType):
             Boolean,
             String,
             Date,
-            TimePeriod,
             TimeInterval,
         }:
             return str(value)
         if from_type == Duration:
             return _SHORTCODE_TO_ISO.get(str(value), str(value))
+        elif from_type == TimePeriod:
+            return TimePeriodHandler(str(value)).external_representation()
 
         raise RunTimeError(
             "2-1-5-1",
@@ -709,6 +710,17 @@ BASIC_TYPES: Dict[type, Type[ScalarType]] = {
     float: Number,
     bool: Boolean,
     type(None): Null,
+}
+
+_DUCKDB_TYPE_TO_VTL = {
+    "INTEGER": Integer,
+    "BIGINT": Integer,
+    "DOUBLE": Number,
+    "FLOAT": Number,
+    "DECIMAL": Number,
+    "VARCHAR": String,
+    "BOOLEAN": Boolean,
+    "DATE": Date,
 }
 
 COMP_NAME_MAPPING: Dict[Type[ScalarType], str] = {

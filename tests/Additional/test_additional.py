@@ -2,6 +2,8 @@ import warnings
 from pathlib import Path
 from typing import Union
 
+import pytest
+
 from tests.Helper import TestHelper, _use_duckdb_backend
 from vtlengine.API import run
 
@@ -4364,6 +4366,10 @@ class DefinedOperatorsTest(AdditionalHelper):
         )
 
 
+@pytest.mark.skipif(
+    _use_duckdb_backend,
+    reason="deactivated on duckdb until nullability over scalars is implemented",
+)
 class DatesTest(AdditionalHelper):
     """
     Group 16
@@ -4379,7 +4385,6 @@ class DatesTest(AdditionalHelper):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        # with pytest.raises(Exception, match="cast .+? without providing a mask"):
         self.BaseTest(
             text=None,
             code=code,

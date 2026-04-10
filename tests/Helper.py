@@ -32,7 +32,7 @@ from vtlengine.Model import (
 )
 
 # VTL_ENGINE_BACKEND can be "pandas" (default) or "duckdb"
-VTL_ENGINE_BACKEND = os.environ.get("VTL_ENGINE_BACKEND", "pandas").lower()
+VTL_ENGINE_BACKEND = os.environ.get("VTL_ENGINE_BACKEND", "duckdb").lower()
 
 
 def _use_duckdb_backend() -> bool:
@@ -75,7 +75,8 @@ class TestHelper(TestCase):
                 components = {}
 
                 for component in dataset_json["DataStructure"]:
-                    check_key("data_type", SCALAR_TYPES.keys(), component["type"])
+                    type_key = "type" if "type" in component else "data_type"
+                    check_key(type_key, SCALAR_TYPES.keys(), component[type_key])
                     check_key("role", Role_keys, component["role"])
                     components[component["name"]] = Component(
                         name=component["name"],
@@ -250,7 +251,8 @@ class TestHelper(TestCase):
                 structure = json.load(f)
             if "datasets" in structure:
                 for ds in structure["datasets"]:
-                    datapoints[ds["name"]] = csv_file
+                    # If CSV doesn't exist (semantic-only test), pass None
+                    datapoints[ds["name"]] = csv_file if csv_file.exists() else None
             # Scalars don't need datapoints
 
         # Load value domains if specified
@@ -422,8 +424,8 @@ class TestHelper(TestCase):
                     datapoints[ds["name"]] = csv_file
                     dataset_names.append(ds["name"])
 
-        # Build identity script: DS_name <- DS_name; for each dataset
-        script = "\n".join(f"{name} <- {name};" for name in dataset_names)
+        # Use renamed outputs to avoid DAG cycles (DS_1 <- DS_1 creates a cycle)
+        script = "\n".join(f"DS_r_{name} <- {name};" for name in dataset_names)
 
         result = run(
             script=script,
@@ -439,7 +441,12 @@ class TestHelper(TestCase):
                 format_time_period_external_representation(
                     dataset, TimePeriodRepresentation.SDMX_REPORTING
                 )
-            assert result == references
+            # Map renamed outputs back for comparison
+            mapped_result = {}
+            for key, value in result.items():
+                original = key.replace("DS_r_", "", 1) if key.startswith("DS_r_") else key
+                mapped_result[original] = value
+            assert mapped_result == references
 
     @classmethod
     def DataLoadExceptionTest(
@@ -490,7 +497,8 @@ class TestHelper(TestCase):
                     datapoints[ds["name"]] = csv_file
                     dataset_names.append(ds["name"])
 
-        script = "\n".join(f"{name} <- {name};" for name in dataset_names)
+        # Use renamed outputs to avoid DAG cycles (DS_1 <- DS_1 creates a cycle)
+        script = "\n".join(f"DS_r_{name} <- {name};" for name in dataset_names)
 
         if exception_code is not None:
             with pytest.raises(VTLEngineException) as context:

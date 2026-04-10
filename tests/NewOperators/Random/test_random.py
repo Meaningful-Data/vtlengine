@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 from pytest import mark
 
+from tests.Helper import _use_duckdb_backend
 from tests.NewOperators.conftest import run_expression
 from vtlengine.Exceptions import SemanticError
 
@@ -30,7 +31,22 @@ error_param = [
 def test_case_ds(load_reference, input_paths, code, expression):
     warnings.filterwarnings("ignore", category=FutureWarning)
     result = run_expression(expression, input_paths)
-    assert result == load_reference
+    if _use_duckdb_backend():
+        # DuckDB uses a different random algorithm (hash-based), so values differ.
+        # Verify structure matches and values are in [0, 1).
+        ref_ds = load_reference["DS_r"]
+        res_ds = result["DS_r"]
+        assert set(res_ds.components) == set(ref_ds.components)
+        for comp_name in ref_ds.components:
+            assert res_ds.components[comp_name].data_type == ref_ds.components[comp_name].data_type
+            assert res_ds.components[comp_name].role == ref_ds.components[comp_name].role
+        assert list(res_ds.data.columns) == list(ref_ds.data.columns)
+        assert len(res_ds.data) == len(ref_ds.data)
+        for col in ref_ds.data.columns:
+            if ref_ds.data[col].dtype == float:
+                assert (res_ds.data[col] >= 0 and res_ds.data[col] < 1).all()
+    else:
+        assert result == load_reference
 
 
 @pytest.mark.parametrize("code, expression, error_code", error_param)
