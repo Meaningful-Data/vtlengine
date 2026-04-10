@@ -165,8 +165,8 @@ class InterpreterAnalyzer(ASTTemplate):
             self.value_domains, CaseInsensitiveDict
         ):
             self.value_domains = CaseInsensitiveDict(self.value_domains)
-        self.datasets_inputs = set(self.datasets.keys())
-        self.scalars_inputs = set(self.scalars.keys()) if self.scalars else set()
+        self.datasets_inputs = {k.casefold() for k in self.datasets}
+        self.scalars_inputs = {k.casefold() for k in self.scalars} if self.scalars else set()
 
     # **********************************
     # *                                *
@@ -259,9 +259,9 @@ class InterpreterAnalyzer(ASTTemplate):
             ) and not isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
                 raise SemanticError("1-2-5")
             result = self.visit(child)
-            if isinstance(result, Dataset) and result.name in self.datasets_inputs:
+            if isinstance(result, Dataset) and result.name.casefold() in self.datasets_inputs:
                 invalid_dataset_outputs.append(result.name)
-            if isinstance(result, Scalar) and result.name in self.scalars_inputs:
+            if isinstance(result, Scalar) and result.name.casefold() in self.scalars_inputs:
                 invalid_scalar_outputs.append(result.name)
 
             # Reset some handlers (joins and if)
