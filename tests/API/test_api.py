@@ -2084,3 +2084,47 @@ def test_validate_dataset(ds_input, dp_input, is_valid, message):
     else:
         with pytest.raises(Exception, match=message):
             validate_dataset(ds_data, dp_input)
+
+
+def test_run_error_on_extra_dataframe_columns():
+    """Extra columns in the input DataFrame that are not in the DataStructure raise an error."""
+    script = "DS_r <- DS_1;"
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    datapoints = {
+        "DS_1": pd.DataFrame(
+            {"Id_1": [1, 2, 3], "Me_1": [10.0, 20.0, 30.0], "Extra_Col": ["a", "b", "c"]}
+        )
+    }
+
+    with pytest.raises(DataLoadError, match="0-3-1-15"):
+        run(script=script, data_structures=data_structures, datapoints=datapoints)
+
+
+def test_run_error_on_missing_non_nullable_column():
+    """Missing non-nullable columns in the input DataFrame raise an error."""
+    script = "DS_r <- DS_1;"
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": False},
+                ],
+            }
+        ]
+    }
+    datapoints = {"DS_1": pd.DataFrame({"Id_1": [1, 2, 3]})}
+
+    with pytest.raises(DataLoadError, match="0-3-1-5"):
+        run(script=script, data_structures=data_structures, datapoints=datapoints)

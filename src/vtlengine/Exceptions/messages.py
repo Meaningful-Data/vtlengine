@@ -217,6 +217,12 @@ centralised_messages = {
         "message": "Failed to fetch SDMX structure from URL '{url}': {error}",
         "description": "Raised when fetching SDMX structure from an HTTP/HTTPS URL fails.",
     },
+    "0-3-1-15": {
+        "message": "On Dataset {name} loading: Found columns not defined "
+        "in the DataStructure: {extra_columns}.",
+        "description": "Raised when the input data contains columns that are not "
+        "defined in the DataStructure.",
+    },
     # Input validation errors for URL datapoints
     "0-1-3-8": {
         "message": "data_structures must be a file path or URL "
@@ -1096,6 +1102,11 @@ centralised_messages = {
         "'{period}'. Only Annual (A), Month (M), and Day (D) are supported.",
         "description": "Raised when trying to convert a time period with Semester (S), "
         "Quarter (Q), or Week (W) indicator to SDMX Gregorian format.",
+    },
+    "2-1-19-22": {
+        "message": "At op {op}: Invalid ISO 8601 duration format '{value}', expected {expected}",
+        "description": "Raised when a duration string does not match the expected "
+        "format for the operator.",
     },
     # ----------- Interpreter Common ------
     "2-3-4": {
