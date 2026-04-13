@@ -830,15 +830,15 @@ centralised_messages = {
         "over a Date type.",
     },
     "1-1-19-12": {
-        "message": "At op {op}: TimeInterval data type is not supported for {context} operations.",
-        "description": "Raised when a TimeInterval data type is used in an Analytic or "
+        "message": "At op {op}: Time data type is not supported for {context} operations.",
+        "description": "Raised when a Time data type is used in an Analytic or "
         "Aggregate operation, which does not support it.",
     },
     "1-1-19-13": {
         "message": "At op {op}: RANGE window is not supported for {data_type} "
         "data type in component {comp_name}.",
         "description": "Raised when a RANGE window is applied to a component with an "
-        "incompatible data type (String, Duration, TimePeriod, TimeInterval).",
+        "incompatible data type (String, Duration, TimePeriod, Time).",
     },
     # ---------Semantic Analyzer Common----
     "1-2-1": {
