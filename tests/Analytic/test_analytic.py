@@ -620,6 +620,48 @@ class AnalyticOperatorsTest(AnalyticHelper):
             code=code, number_inputs=number_inputs, exception_code=exception_code
         )
 
+    def test_GH_658_1(self):
+        """
+        Rank: rank
+        Dataset --> Dataset
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_rank := rank(over(partition by Id_1 order by Id_2))];
+                    DS_1 Dataset
+
+        Description: Fix #658: Rank operator must not fail when a TimeInterval measure
+                     exists in the dataset but is not referenced in the order clause.
+
+        Goal: Check that rank works correctly when the dataset has a TimeInterval measure
+              that is not part of the order clause.
+        """
+        code = "GH_658_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_658_2(self):
+        """
+        Rank: rank
+        Dataset --> Dataset
+        Status: SemanticError
+        Expression: DS_r <- DS_1[calc Me_rank := rank(over(partition by Id_1 order by Id_2))];
+                    DS_1 Dataset
+
+        Description: Fix #658: Rank operator must still raise a SemanticError when a
+                     TimeInterval component is used in the order clause.
+
+        Goal: Check that a SemanticError is raised when a TimeInterval identifier
+              is used in the order clause of a rank operation.
+        """
+        code = "GH_658_2"
+        number_inputs = 1
+        exception_code = "1-1-19-12"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
 
 class AnalyticOperatorsWithCalcTest(AnalyticHelper):
     """
