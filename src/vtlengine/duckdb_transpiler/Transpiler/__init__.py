@@ -1,10 +1,4 @@
-"""
-SQL Transpiler for VTL AST.
-
-Converts VTL AST nodes into DuckDB SQL queries using the visitor pattern.
-Each top-level Assignment produces one SQL SELECT query. Queries are executed
-sequentially, with results registered as tables for subsequent queries.
-"""
+"""Transpile VTL AST nodes into DuckDB SQL."""
 
 import re
 from contextlib import contextmanager
@@ -39,7 +33,7 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
 from vtlengine.Exceptions import RunTimeError
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 
-# Datapoint rule operator mappings (module-level to avoid dataclass mutable default)
+# Datapoint rule operator map.
 _DP_OP_MAP: Dict[str, str] = {
     "=": "=",
     ">": ">",
@@ -55,7 +49,7 @@ _DP_OP_MAP: Dict[str, str] = {
     "or": "OR",
 }
 
-# TimePeriod-specific SQL for extraction operators (struct-based)
+# TimePeriod extraction SQL.
 _TP_EXTRACTION_MAP: Dict[str, str] = {
     tokens.YEAR: "CAST(vtl_period_parse({0}).year AS BIGINT)",
     tokens.MONTH: "vtl_tp_getmonth(vtl_period_parse({0}))",
@@ -63,8 +57,7 @@ _TP_EXTRACTION_MAP: Dict[str, str] = {
     tokens.DAYOFYEAR: "vtl_tp_dayofyear(vtl_period_parse({0}))",
 }
 
-# Mapping from VTL ordering operators to vtl_period_* comparison macros.
-# Equality (=, <>) operates on VARCHAR directly — no macros needed.
+# Ordering ops that use vtl_period_* macros.
 _PERIOD_COMPARISON_MACROS: Dict[str, str] = {
     tokens.GT: "vtl_period_gt",
     tokens.GTE: "vtl_period_ge",
@@ -72,20 +65,17 @@ _PERIOD_COMPARISON_MACROS: Dict[str, str] = {
     tokens.LTE: "vtl_period_le",
 }
 
-# Duration comparison operators that need vtl_duration_to_int for magnitude ordering.
+# Duration comparisons that use vtl_duration_to_int.
 _DURATION_COMPARISON_OPS: frozenset[str] = frozenset(
     {tokens.GT, tokens.GTE, tokens.LT, tokens.LTE, tokens.EQ, tokens.NEQ}
 )
 
-# Ordering-only comparison operators (excludes = and <>).
+# Ordering-only comparisons.
 _ORDERING_OPS: frozenset[str] = frozenset({tokens.GT, tokens.GTE, tokens.LT, tokens.LTE})
 
 
 def _add_tp_indicator_check(sql: str, table_src: str, tp_cols: List[tuple[str, str]]) -> str:
-    """Inject a TimePeriod indicator uniformity check into an aggregate query.
-
-    Uses a subquery joined with WHERE to force DuckDB to evaluate the check.
-    """
+    """Add a TimePeriod indicator consistency check to an aggregate query."""
     checks: List[str] = []
     for col_name, agg_op in tp_cols:
         qc = quote_identifier(col_name)
@@ -109,7 +99,7 @@ def _add_tp_indicator_check(sql: str, table_src: str, tp_cols: List[tuple[str, s
 
 
 def _is_date_timeperiod_pair(left_comp: Component, right_comp: Component) -> bool:
-    """Check if two components form a Date↔TimePeriod cross-type pair."""
+    """Return True when components are a Date and a TimePeriod."""
     types = {left_comp.data_type, right_comp.data_type}
     return types == {Date, TimePeriod}
 
@@ -121,8 +111,7 @@ def _date_tp_compare_expr(
     right_comp: Component,
     op: str,
 ) -> str:
-    """Build SQL expression for Date vs TimePeriod comparison via TimeInterval promotion."""
-    # Convert each side to vtl_time_interval struct
+    """Build SQL for Date vs TimePeriod comparison using TimeInterval promotion."""
     if left_comp.data_type == Date:
         left_interval = (
             f"{{'date1': CAST({left_ref} AS DATE),"
@@ -146,7 +135,7 @@ def _date_tp_compare_expr(
     return registry.binary.generate(op, left_interval, right_interval)
 
 
-# String operators that require VARCHAR input — Boolean measures must be cast first.
+# String operators needing VARCHAR input.
 _STRING_UNARY_OPS: frozenset[str] = frozenset(
     {
         tokens.UCASE,
@@ -167,13 +156,13 @@ _STRING_PARAM_OPS: frozenset[str] = frozenset(
 
 
 def _bool_to_str(col_ref: str) -> str:
-    """Wrap a Boolean column reference with a cast that matches Python's str(bool)."""
+    """Cast a Boolean expression to Python-style string values."""
     return f"CASE WHEN {col_ref} IS NULL THEN NULL WHEN {col_ref} THEN 'True' ELSE 'False' END"
 
 
 @dataclass
 class _ParsedHRRule:
-    """Parsed components of a hierarchical rule (shared across check/hierarchy methods)."""
+    """Parsed pieces of a hierarchical rule."""
 
     has_when: bool
     when_node: Any  # AST node for the WHEN condition, or None
@@ -185,65 +174,59 @@ class _ParsedHRRule:
 
 @dataclass
 class SQLTranspiler(StructureVisitor, ASTTemplate):
-    """
-    Transpiler that converts VTL AST to SQL queries.
+    """Transpiler that converts VTL AST nodes to SQL queries."""
 
-    Generates one SQL query per top-level Assignment. Each query can be
-    executed sequentially, with results registered as tables for subsequent queries.
-    """
-
-    # Input structures from data_structures
+    # Input structures
     input_datasets: Dict[str, Dataset] = field(default_factory=dict)
     input_scalars: Dict[str, Scalar] = field(default_factory=dict)
 
-    # Output structures from semantic analysis
+    # Output structures
     output_datasets: Dict[str, Dataset] = field(default_factory=dict)
     output_scalars: Dict[str, Scalar] = field(default_factory=dict)
 
     value_domains: Dict[str, ValueDomain] = field(default_factory=dict)
     external_routines: Dict[str, ExternalRoutine] = field(default_factory=dict)
 
-    # DAG of dataset dependencies for execution order
+    # Dependency graph
     dag: Any = field(default=None)
 
-    # Output format for cast(time_period, string)
+    # cast(time_period, string) format
     time_period_output_format: str = field(default="vtl")
 
-    # RunTime context
+    # Runtime context
     current_assignment: str = ""
     inputs: List[str] = field(default_factory=list)
     clause_context: List[str] = field(default_factory=list)
 
-    # Merged lookup tables (populated in __post_init__)
+    # Merged lookups
     datasets: Dict[str, Dataset] = field(default_factory=dict, init=False)
     scalars: Dict[str, Scalar] = field(default_factory=dict, init=False)
     available_tables: Dict[str, Dataset] = field(default_factory=dict, init=False)
 
-    # Clause context for component-level resolution
+    # Clause context
     _in_clause: bool = field(default=False, init=False)
     _current_dataset: Optional[Dataset] = field(default=None, init=False)
     _column_prefix: Optional[str] = field(default=None, init=False)
 
-    # Join context: maps "alias#comp" -> aliased column name in SQL output
-    # e.g. {"d2#Me_2": "d2#Me_2"} for duplicate non-identifier columns
+    # Join context: "alias#comp" -> SQL column name
     _join_alias_map: Dict[str, str] = field(default_factory=dict, init=False)
 
-    # Set of qualified names consumed (renamed/removed) by join body clauses
+    # Qualified names consumed by join clauses
     _consumed_join_aliases: Set[str] = field(default_factory=set, init=False)
 
-    # UDO definitions: name -> Operator node info
+    # UDO definitions
     _udos: Dict[str, Dict[str, Any]] = field(default_factory=dict, init=False)
 
     # UDO parameter stack
     _udo_params: Optional[List[Dict[str, Any]]] = field(default=None, init=False)
 
-    # Datapoint ruleset definitions
+    # Datapoint rulesets
     _dprs: Dict[str, Dict[str, Any]] = field(default_factory=dict, init=False)
 
     # Datapoint ruleset context
     _dp_signature: Optional[Dict[str, str]] = field(default=None, init=False)
 
-    # Hierarchical ruleset definitions
+    # Hierarchical rulesets
     _hrs: Dict[str, Dict[str, Any]] = field(default_factory=dict, init=False)
 
     def __post_init__(self) -> None:
@@ -252,9 +235,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         self.scalars = {**self.input_scalars, **self.output_scalars}
         self.available_tables = dict(self.datasets)
 
-    # =========================================================================
     # Helper methods
-    # =========================================================================
 
     @contextmanager
     def _clause_scope(
@@ -262,13 +243,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         ds: Optional[Dataset] = None,
         prefix: Optional[str] = None,
     ) -> Generator[None, None, None]:
-        """Save/restore clause state (_in_clause, _current_dataset, _column_prefix).
-
-        Usage::
-
-            with self._clause_scope(ds):
-                expr_sql = self.visit(node)
-        """
+        """Temporarily set clause state and restore it on exit."""
         old_in_clause = self._in_clause
         old_current_ds = self._current_dataset
         old_prefix = self._column_prefix
@@ -285,11 +260,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     def _resolve_clause_dataset(
         self, node: AST.RegularAggregation
     ) -> Optional[Tuple[Dataset, str]]:
-        """Resolve the dataset and SQL source for a clause node.
-
-        Returns ``(dataset, table_src)`` or ``None`` when the clause has
-        no dataset or the dataset structure cannot be resolved.
-        """
+        """Resolve and return (dataset, table_src) for a clause node."""
         if not node.dataset:
             return None
         ds = self._get_dataset_structure(node.dataset)
@@ -307,16 +278,14 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                     return deps.inputs
         return []
 
-    # =========================================================================
     # Top-level visitors
-    # =========================================================================
 
     def transpile(self, node: AST.Start) -> List[Tuple[str, str, bool]]:
-        """Transpile the AST to a list of (name, SQL query, is_persistent) tuples."""
+        """Return (name, sql, is_persistent) tuples for the script."""
         return self.visit(node)
 
     def visit_Start(self, node: AST.Start) -> List[Tuple[str, str, bool]]:
-        """Process the entire script, generating SQL for each top-level assignment."""
+        """Generate SQL for top-level nodes."""
         queries: List[Tuple[str, str, bool]] = []
 
         for child in node.children:
@@ -331,38 +300,25 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 self.current_assignment = name
                 self.inputs = self._get_assignment_inputs(name)
 
-                # Check if this is a scalar assignment
                 if name in self.output_scalars:
-                    # Scalar assignments produce a literal value, wrap in SELECT
                     is_persistent = isinstance(child, AST.PersistentAssignment)
                     value_sql = self.visit(child)
-                    # Ensure it's a valid SQL query
                     if not value_sql.strip().upper().startswith("SELECT"):
                         value_sql = f"SELECT {value_sql} AS value"
                     queries.append((name, value_sql, is_persistent))
                 else:
                     is_persistent = isinstance(child, AST.PersistentAssignment)
                     query = self.visit(child)
-                    # Post-process: unqualify any remaining "alias#comp" column
-                    # names back to plain "comp" to match the expected output
-                    # structure from semantic analysis.
                     query = self._unqualify_join_columns(name, query)
                     queries.append((name, query, is_persistent))
 
-                # Reset join alias map after each assignment
                 self._join_alias_map = {}
                 self._consumed_join_aliases = set()
 
         return queries
 
     def _unqualify_join_columns(self, ds_name: str, query: str) -> str:
-        """Wrap the query to rename any remaining alias#comp columns to comp.
-
-        After join clauses (calc/drop/keep/rename) are applied, some columns
-        may still have qualified names like ``d1#Me_2``.  The output dataset
-        (from semantic analysis) expects plain names like ``Me_2``.  This
-        method adds a wrapping SELECT to rename them.
-        """
+        """Rename remaining alias#comp columns to plain component names."""
         if not self._join_alias_map:
             return query
 
@@ -370,8 +326,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if output_ds is None:
             return query
 
-        # Build a mapping from unqualified name -> list of qualified candidates,
-        # excluding any that were consumed (renamed/removed) by join body clauses
         output_comp_names = set(output_ds.components.keys())
         candidates: Dict[str, List[str]] = {}
 
@@ -386,19 +340,15 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if not candidates:
             return query
 
-        # For each unqualified name, pick the surviving qualified name
         renames: Dict[str, str] = {}
         for unqualified, quals in candidates.items():
-            # Use the first (and typically only) surviving candidate
             renames[quals[0]] = unqualified
 
         if not renames:
             return query
 
-        # Build a wrapping SELECT with renames
         cols: List[str] = []
         for comp_name in output_ds.components:
-            # Check if this component comes from a qualified name
             reverse_found = False
             for qual, unqual in renames.items():
                 if unqual == comp_name:
@@ -417,20 +367,16 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     visit_PersistentAssignment = visit_Assignment
 
-    # =========================================================================
-    # Datapoint Ruleset definition and validation
-    # =========================================================================
+    # Datapoint ruleset and validation
 
     def visit_DPRuleset(self, node: AST.DPRuleset) -> None:
         """Register a datapoint ruleset definition."""
-        # Build signature: alias -> actual column name
         signature: Dict[str, str] = {}
         if not isinstance(node.params, AST.DefIdentifier):
             for param in node.params:
                 alias = param.alias if param.alias is not None else param.value
                 signature[alias] = param.value
 
-        # Auto-number unnamed rules
         rule_names = [r.name for r in node.rules if r.name is not None]
         if not rule_names:
             for i, rule in enumerate(node.rules):
@@ -448,7 +394,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         dpr_info = self._dprs[dpr_name]
         signature = dpr_info["signature"]
 
-        # Get input dataset SQL and structure
         ds = self._get_dataset_structure(node.dataset)
         table_src = self._get_dataset_sql(node.dataset)
 
@@ -461,7 +406,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         id_cols = ds.get_identifiers_names()
         measure_cols = ds.get_measures_names()
 
-        # Build SQL for each rule and UNION ALL
         rule_queries: List[str] = []
         for rule in dpr_info["rules"]:
             rule_sql = self._build_dp_rule_sql(
@@ -475,7 +419,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             rule_queries.append(rule_sql)
 
         if not rule_queries:
-            # Empty ruleset — return empty select
             cols = [quote_identifier(c) for c in id_cols]
             return f"SELECT {', '.join(cols)} FROM {table_src} WHERE 1=0"
 
@@ -494,7 +437,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         """Build SQL for a single datapoint rule."""
         rule_name = rule.name or ""
 
-        # Store the signature for DefIdentifier resolution
         self._dp_signature = signature
 
         rule_node = rule.rule
@@ -513,7 +455,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         self._dp_signature = None
 
-        # Common parts — use typed NULLs for DuckDB type inference
         if rule.erCode:
             escaped_ec = rule.erCode.replace("'", "''")
             ec_sql = f"'{escaped_ec}'"
@@ -529,14 +470,12 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         select_parts: List[str] = [quote_identifier(c) for c in id_cols]
 
         if output_mode == "invalid":
-            # Include measures, filter to failing rows only
             select_parts.extend(quote_identifier(m) for m in measure_cols)
             select_parts.append(f"'{rule_name}' AS {quote_identifier('ruleid')}")
             select_parts.append(f"{ec_sql} AS {quote_identifier('errorcode')}")
             select_parts.append(f"{el_sql} AS {quote_identifier('errorlevel')}")
             return f"SELECT {', '.join(select_parts)} FROM {table_src} WHERE {fail_cond}"
 
-        # "all" and "all_measures" share the same structure
         if output_mode == "all_measures":
             select_parts.extend(quote_identifier(m) for m in measure_cols)
 
@@ -557,19 +496,13 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         return f"SELECT {', '.join(select_parts)} FROM {table_src}"
 
     def _visit_dp_expr(self, node: AST.AST, signature: Dict[str, str]) -> str:
-        """Visit an expression node in the context of a datapoint rule.
-
-        Resolves DefIdentifier/VarID aliases via the signature mapping and
-        delegates to the regular visitor for other node types.
-        """
-        # Binary nodes (HRBinOp and BinOp share left/right structure)
+        """Visit an expression in datapoint-rule context."""
         if isinstance(node, (AST.HRBinOp, AST.BinOp)):
             left_sql = self._visit_dp_expr(node.left, signature)
             right_sql = self._visit_dp_expr(node.right, signature)
             if isinstance(node, AST.HRBinOp) and node.op == "when":
                 return f"CASE WHEN ({left_sql}) THEN ({right_sql}) ELSE TRUE END"
             return self._dp_binary_sql(node.op, left_sql, right_sql)
-        # Unary nodes (HRUnOp and UnaryOp share operand structure)
         if isinstance(node, (AST.HRUnOp, AST.UnaryOp)):
             operand_sql = self._visit_dp_expr(node.operand, signature)
             return self._dp_unary_sql(node.op, operand_sql)
@@ -586,7 +519,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 f"CASE WHEN ({cond_sql}) THEN CAST(({then_sql}) AS BOOLEAN)"
                 f" ELSE CAST(({else_sql}) AS BOOLEAN) END"
             )
-        # Fallback: use the regular transpiler visitor, saving/restoring DP context
         saved_sig = self._dp_signature
         self._dp_signature = signature
         result = self.visit(node)
@@ -614,19 +546,15 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return registry.unary.generate(op, operand_sql)
         return f"{op}({operand_sql})"
 
-    # =========================================================================
-    # Hierarchical Ruleset definition and check_hierarchy
-    # =========================================================================
+    # Hierarchical ruleset and check_hierarchy
 
     def _visit_HRuleset(self, node: AST.HRuleset) -> None:
         """Register a hierarchical ruleset definition."""
-        # Auto-number unnamed rules (same logic as interpreter)
         rule_names = [r.name for r in node.rules if r.name is not None]
         if not rule_names:
             for i, rule in enumerate(node.rules):
                 rule.name = str(i + 1)
 
-        # Extract condition components and signature
         cond_comp: List[str] = []
         signature_value: str
         if isinstance(node.element, list):
@@ -648,7 +576,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         hr_name = node.ruleset_name
         hr_info = self._hrs[hr_name]
 
-        # Resolve dataset
         ds = self._get_dataset_structure(node.dataset)
         table_src = self._get_dataset_sql(node.dataset)
         if ds is None:
@@ -656,14 +583,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         self._get_output_dataset()
 
-        # Get rule component name: for valuedomain rulesets, use the actual column
-        # from the invocation (node.rule_component), not the valuedomain name
         if hr_info["signature_type"] == "valuedomain" and node.rule_component is not None:
             component: str = node.rule_component.value  # type: ignore[attr-defined]
         else:
             component = hr_info["signature"]
 
-        # Condition mapping: ruleset param -> dataset column (raw names, not quoted)
         cond_mapping: Dict[str, str] = {}
         if node.conditions and hr_info["condition"]:
             for i, cond_node in enumerate(node.conditions):
@@ -675,7 +599,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             mode = node.validation_mode.value if node.validation_mode else "non_null"
             input_mode = node.input_mode.value if node.input_mode else "rule"
             output = node.output.value if node.output else "computed"
-            # Filter to EQ/WHEN-EQ rules only
             rules = [r for r in hr_info["rules"] if self._is_hr_eq_rule(r)]
             return self._build_hierarchy_sql(
                 table_src=table_src,
@@ -746,23 +669,18 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         rules: list,  # type: ignore[type-arg]
         cond_mapping: Dict[str, str],
     ) -> Tuple[List[str], Dict[str, str]]:
-        """Collect and deduplicate all code items and their conditions across rules.
-
-        Returns (unique_items, code_item_conditions).
-        """
+        """Collect deduplicated code items and conditions across rules."""
         all_items: List[str] = []
         all_conds: Dict[str, str] = {}
         for rule in rules:
             parsed = self._parse_hr_rule(rule)
             all_items.append(parsed.left_code_item)
             all_items.extend(parsed.right_code_items)
-            # Collect right-side conditions (e.g. [Time >= cast("1958-01-01", date)])
             rc = getattr(parsed.comparison_node.left, "_right_condition", None)
             if rc is not None:
                 all_conds[parsed.left_code_item] = self._build_hr_when_sql(rc, cond_mapping)
             _, right_conds = self._collect_hr_code_items(parsed.right_expr_node, cond_mapping)
             all_conds.update(right_conds)
-        # Deduplicate preserving order
         seen: Set[str] = set()
         unique: List[str] = []
         for ci in all_items:
@@ -779,9 +697,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         rule_comp: str,
         cond_mapping: Dict[str, str],
     ) -> Tuple[str, str, List[str], List[str], Dict[str, str]]:
-        """Shared setup for hierarchy / check_hierarchy: returns
-        (pivot_cte, measure_name, other_ids, unique_items, item_conds).
-        """
+        """Build shared pivot setup for hierarchy/check_hierarchy."""
         measure_name = ds.get_measures_names()[0]
         other_ids = [n for n in ds.get_identifiers_names() if n != rule_comp]
         unique_items, item_conds = self._collect_all_hr_items(rules, cond_mapping)
@@ -836,11 +752,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         node: AST.AST,
         cond_mapping: Optional[Dict[str, str]] = None,
     ) -> Tuple[List[str], Dict[str, str]]:
-        """Extract all code item names and their right-side conditions from an HR expression.
-
-        When *cond_mapping* is provided, also resolves ``_right_condition``
-        attributes on DefIdentifier nodes into SQL WHERE fragments.
-        """
+        """Extract code-item names and right-side conditions from an HR expression."""
         if isinstance(node, AST.DefIdentifier):
             conds: Dict[str, str] = {}
             if cond_mapping is not None:
@@ -933,11 +845,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         parsed = self._parse_hr_rule(rule)
         rule_name = rule.name or ""
 
-        # Build value expressions from pivot columns
         l_val = self._build_hr_value_expr(parsed.left_code_item, mode)
         r_val = self._build_hr_expr_sql(parsed.right_expr_node, mode)
 
-        # Comparison and imbalance expressions
         comp_op: str = parsed.comparison_node.op
         bool_expr = f"({l_val} {comp_op} {r_val})"
         imbalance_expr = f"({l_val} - {r_val})"
@@ -950,7 +860,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 f"CASE WHEN NOT ({when_sql}) THEN CAST(NULL AS DOUBLE) ELSE {imbalance_expr} END"
             )
 
-        # Errorcode / errorlevel
         if rule.erCode:
             ec_sql = f"'{rule.erCode.replace(chr(39), chr(39) * 2)}'"
         else:
@@ -958,7 +867,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         el_sql = self._error_level_sql(rule.erLevel)
         el_null = self._error_level_null_sql(rule.erLevel)
 
-        # SELECT columns
         q_rc = quote_identifier(rule_comp)
         q_m = quote_identifier(measure)
         select_parts: List[str] = [quote_identifier(c) for c in other_ids]
@@ -985,7 +893,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 f"ELSE {el_sql} END AS {quote_identifier('errorlevel')}"
             )
 
-        # WHERE clause
         where_parts: List[str] = []
         if output == "invalid":
             if when_sql is not None:
@@ -1100,7 +1007,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             cte_parts.append(f"{next_pivot} AS (\n{pivot_update}\n)")
             current_pivot = next_pivot
 
-        # Final SELECT: collect all computed results
         final_selects: List[str] = []
         q_rc = quote_identifier(rule_comp)
         q_m = quote_identifier(measure)
@@ -1123,7 +1029,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if output == "computed":
             return f"WITH {','.join(cte_parts)}\n{computed_sql}"
 
-        # output == "all"
         id_cols = [quote_identifier(c) for c in ds.get_identifiers_names()]
         all_cols = [quote_identifier(c) for c in ds.get_components_names()]
         cte_parts.append(f"_computed AS (\n{computed_sql}\n)")
@@ -1286,12 +1191,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             if node.op.lower() == "between":
                 return f"({children_sql[0]} BETWEEN {children_sql[1]} AND {children_sql[2]})"
             return f"{node.op}({', '.join(children_sql)})"
-        # Fallback: delegate to the general visitor (handles ParamOp/cast, etc.)
+        # Fallback to general visitor.
         return self.visit(node)
 
-    # =========================================================================
     # UDO definition and call
-    # =========================================================================
 
     def visit_Operator(self, node: AST.Operator) -> None:
         """Register a UDO definition."""
@@ -1320,9 +1223,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             if i < len(node.params):
                 bindings[param_name] = node.params[i]
             elif param_info.get("default") is not None:
-                # Use the default value AST node when argument is not provided
                 bindings[param_name] = param_info["default"]
-            # Store declared param type under a synthetic key for context-aware resolution
             bindings[f"__type__{param_name}"] = param_info.get("type")
 
         self._push_udo_params(bindings)
@@ -1333,22 +1234,16 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         return result
 
-    # =========================================================================
     # Leaf visitors
-    # =========================================================================
 
     def visit_VarID(self, node: AST.VarID) -> str:  # type: ignore[override]
         """Visit a variable identifier."""
         name = node.value
         udo_val = self._get_udo_param(name)
         if udo_val is not None:
-            # Handle VarID specifically to avoid infinite recursion when
-            # a UDO param name matches its argument name (e.g., DS → VarID('DS')).
+            # Guard recursion when a UDO param resolves to itself.
             if isinstance(udo_val, AST.VarID):
                 resolved_name = udo_val.value
-                # If this param was declared as Component,
-                # it's a column reference — never a dataset,
-                # even when a dataset with the same name exists in available_tables.
                 param_decl_type = self._get_udo_param(f"__type__{name}")
                 is_component_param = isinstance(param_decl_type, Component)
                 if resolved_name in self.available_tables and not is_component_param:
@@ -1371,8 +1266,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if self._in_clause and self._current_dataset and name in self._current_dataset.components:
             return quote_identifier(name)
 
-        # In clause context, check if the variable matches a qualified column
-        # (e.g., "Me_2" → "d1#Me_2" when datasets share that column name).
+        # In clause context, resolve qualified duplicate columns.
         if (
             self._in_clause
             and self._current_dataset
@@ -1406,7 +1300,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     def visit_ID(self, node: AST.ID) -> str:  # type: ignore[override]
         """Visit an ID node (used for type names, placeholders like '_', etc.)."""
         if node.value == "_":
-            # VTL underscore means "use default" - return None marker
             return ""
         return node.value
 
@@ -1422,15 +1315,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         return f"({', '.join(values)})"
 
     def _visit_collection_element(self, child: AST.AST) -> str:
-        """Visit a set-literal element.
-
-        For cast(string_literal, time_period) inside a set, use a raw CAST to
-        VARCHAR without vtl_period_normalize.  This matches the Python core
-        engine's In.apply_operation_two_series, which uses isin() with the
-        un-normalised cast value, so that e.g.
-          TIME_PERIOD in {cast("2020-01", time_period)}
-        returns False when the column contains the normalised form "2020-M01".
-        """
+        """Visit a set element, preserving raw CAST behavior for time_period literals."""
         if (
             isinstance(child, AST.ParamOp)
             and str(getattr(child, "op", "")).lower() == tokens.CAST
@@ -1459,9 +1344,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         literals = [self._to_sql_literal(v, type_name) for v in vd.setlist]
         return f"({', '.join(literals)})"
 
-    # =========================================================================
     # Generic dataset-level helpers
-    # =========================================================================
 
     def _apply_to_measures(
         self,
@@ -1470,28 +1353,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         output_name_override: Optional[str] = None,
         cast_bool_to_str: bool = False,
     ) -> str:
-        """Apply a SQL expression to each measure of a dataset, passing identifiers through.
-
-        This factors out the very common pattern of:
-          SELECT id1, id2, f(Me_1) AS Me_1, f(Me_2) AS Me_2 FROM ...
-
-        Args:
-            ds_node: The AST node for the dataset operand.
-            expr_fn: A callable that receives a quoted column reference
-                     (e.g. ``'"Me_1"'``) and returns the SQL expression
-                     to use for that measure.
-            output_name_override: When set, forces all measures to use this
-                                  name (used for mono-measure → bool_var etc.).
-                                  When ``None``, the output dataset from semantic
-                                  analysis is consulted to remap single-measure
-                                  names automatically.
-            cast_bool_to_str: When ``True``, Boolean measures are cast to
-                              VARCHAR before being passed to *expr_fn* so that
-                              DuckDB string functions receive the correct type.
-
-        Returns:
-            A complete ``SELECT … FROM …`` SQL string.
-        """
+        """Apply an expression to each dataset measure and pass identifiers through."""
         ds = self._get_dataset_structure(ds_node)
         if ds is None:
             raise ValueError("Cannot resolve dataset structure for dataset-level operation")
@@ -1530,9 +1392,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         return SQLBuilder().select(*cols).from_table(table_src).build()
 
-    # =========================================================================
-    # Dataset-level binary operation helpers
-    # =========================================================================
+    # Dataset-level binary helpers
 
     def _build_ds_ds_binary(
         self,
@@ -1542,12 +1402,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         left_sql_override: Optional[str] = None,
         left_ds_override: Optional[Dataset] = None,
     ) -> str:
-        """Build SQL for dataset-dataset binary operation (requires JOIN).
-
-        When ``left_sql_override`` / ``left_ds_override`` are provided, they
-        are used instead of resolving the left node.  This allows iterative
-        chaining without recursion.
-        """
+        """Build SQL for dataset-dataset binary operations using JOIN."""
         left_ds = left_ds_override or self._get_dataset_structure(left_node)
         right_ds = self._get_dataset_structure(right_node)
         output_ds = self._get_output_dataset()
@@ -1571,13 +1426,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         right_measures = right_ds.get_measures_names()
         common_measures = [m for m in left_measures if m in right_measures]
 
-        # VTL: mono-measure datasets pair by position even if names differ
         paired_measures: List[Tuple[str, str]] = []
         if common_measures:
             paired_measures = [(m, m) for m in common_measures]
         elif len(left_measures) == 1 and len(right_measures) == 1:
-            # When the output dataset has a single measure, inner visits rename
-            # both sides to match the output name in the generated SQL.
             if output_measure_names and len(output_measure_names) == 1:
                 out_m = output_measure_names[0]
                 paired_measures = [(out_m, out_m)]
@@ -1595,7 +1447,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             left_ref = f"{alias_a}.{quote_identifier(left_m)}"
             right_ref = f"{alias_b}.{quote_identifier(right_m)}"
 
-            # Boolean→String promotion for concat
             if op == tokens.CONCAT:
                 left_comp_c = left_ds.components.get(left_m)
                 right_comp_c = right_ds.components.get(right_m)
@@ -1604,24 +1455,20 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 if right_comp_c and right_comp_c.data_type == Boolean:
                     right_ref = _bool_to_str(right_ref)
 
-            # TimeInterval: only = and <> are supported
             left_comp = left_ds.components.get(left_m)
             right_comp = right_ds.components.get(right_m)
             if op in _ORDERING_OPS and left_comp and left_comp.data_type == TimeInterval:
                 raise RunTimeError("2-1-19-17", op=op)
 
-            # TimePeriod ordering: use vtl_period_* macros with STRUCT comparison
             period_macro = _PERIOD_COMPARISON_MACROS.get(op)
             if left_comp and left_comp.data_type == TimePeriod and period_macro:
                 expr = (
                     f"{period_macro}(vtl_period_parse({left_ref}), vtl_period_parse({right_ref}))"
                 )
-            # Duration ordering: use vtl_duration_to_int for magnitude ordering
             elif left_comp and left_comp.data_type == Duration and op in _DURATION_COMPARISON_OPS:
                 left_int = f"vtl_duration_to_int({left_ref})"
                 right_int = f"vtl_duration_to_int({right_ref})"
                 expr = registry.binary.generate(op, left_int, right_int)
-            # Date vs TimePeriod cross-type: promote both to vtl_time_interval
             elif left_comp and right_comp and _is_date_timeperiod_pair(left_comp, right_comp):
                 expr = _date_tp_compare_expr(left_ref, right_ref, left_comp, right_comp, op)
             else:
@@ -1660,7 +1507,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         """Build SQL for dataset-scalar binary operation."""
         ds = self._get_dataset_structure(ds_node)
         if ds is None or not isinstance(ds, Dataset):
-            # Fallback: both sides are scalar-like (e.g. filter with scalar variables)
             left_sql = self.visit(ds_node)
             right_sql = self.visit(scalar_node)
             if ds_on_left:
@@ -1670,7 +1516,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         scalar_sql = self.visit(scalar_node)
 
-        # TimeInterval: only = and <> are supported
         if op in _ORDERING_OPS and any(
             c.data_type == TimeInterval for c in ds.components.values() if c.role == Role.MEASURE
         ):
@@ -1678,12 +1523,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         period_macro = _PERIOD_COMPARISON_MACROS.get(op)
 
-        # Check if any measure is TimePeriod for ordering comparisons
         has_time_period_measure = period_macro is not None and any(
             c.data_type == TimePeriod for c in ds.components.values() if c.role == Role.MEASURE
         )
 
-        # Check if any measure is Duration for magnitude ordering
         has_duration_measure = op in _DURATION_COMPARISON_OPS and any(
             c.data_type == Duration for c in ds.components.values() if c.role == Role.MEASURE
         )
@@ -1711,9 +1554,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             cast_bool_to_str=op == tokens.CONCAT,
         )
 
-    # =========================================================================
     # Expression visitors
-    # =========================================================================
 
     # Arithmetic ops that can form long left-associative chains.
     _ARITHMETIC_OPS = frozenset({"+", "-", "*", "/", "||"})
@@ -1729,7 +1570,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         """Visit a binary operation."""
         op = str(node.op).lower() if node.op else ""
 
-        # Normalize 'not in' to 'not_in'
         if op == "not in":
             op = tokens.NOT_IN
 
@@ -1748,13 +1588,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if op == tokens.TIMESHIFT:
             return self._visit_timeshift(node)
 
-        # Check operand types for dataset-level routing
         left_type = self._get_operand_type(node.left)
         right_type = self._get_operand_type(node.right)
         has_dataset = left_type == _DATASET or right_type == _DATASET
 
         if has_dataset:
-            # in/not_in at dataset level: produce bool_var measure
             if op in (tokens.IN, tokens.NOT_IN) and left_type == _DATASET:
                 collection_sql = self.visit(node.right)
 
@@ -1768,17 +1606,14 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 return self._visit_dataset_binary_chain(node)
             return self._visit_dataset_binary(node.left, node.right, op)
 
-        # Scalar-scalar: use registry
         left_sql = self.visit(node.left)
         right_sql = self.visit(node.right)
 
-        # TimeInterval: only = and <> are supported
         if op in _ORDERING_OPS and (
             self._is_time_interval_operand(node.left) or self._is_time_interval_operand(node.right)
         ):
             raise RunTimeError("2-1-19-17", op=op)
 
-        # TimePeriod ordering: use vtl_period_* macros (includes indicator check)
         period_macro = _PERIOD_COMPARISON_MACROS.get(op)
         if period_macro and (
             self._is_time_period_operand(node.left) or self._is_time_period_operand(node.right)
@@ -1787,13 +1622,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             right_p = f"vtl_period_parse(vtl_period_normalize({right_sql}))"
             return f"{period_macro}({left_p}, {right_p})"
 
-        # TimePeriod dispatch for datediff
         if op == tokens.DATEDIFF and (
             self._is_time_period_operand(node.left) or self._is_time_period_operand(node.right)
         ):
             return f"vtl_tp_datediff(vtl_period_parse({left_sql}), vtl_period_parse({right_sql}))"
 
-        # Duration comparisons: use vtl_duration_to_int for magnitude ordering
         if op in _DURATION_COMPARISON_OPS and (
             self._is_duration_operand(node.left) or self._is_duration_operand(node.right)
         ):
@@ -1803,12 +1636,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         if registry.binary.is_registered(op):
             return registry.binary.generate(op, left_sql, right_sql)
-        # Fallback for unregistered ops
         return f"{op.upper()}({left_sql}, {right_sql})"
 
     def _visit_dataset_binary_chain(self, node: AST.BinOp) -> str:
         """Iteratively fold a left-recursive chain of dataset binary operations."""
-        # Flatten the left spine: collect (op, right_node) pairs.
         parts: list[tuple[str, AST.AST]] = []
         current: AST.AST = node
         while isinstance(current, AST.BinOp):
@@ -1820,17 +1651,13 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             parts.append((bin_op, current.right))
             current = current.left
 
-        # ``current`` is the leftmost operand; ``parts`` is in reverse order.
         parts.reverse()
 
-        # Resolve the leftmost operand's SQL and structure.
         result_sql = self._get_dataset_sql(current)
         result_ds = self._get_dataset_structure(current)
 
-        # Track whether result_sql is a subquery (needs wrapping) or a table name.
         is_subquery = False
 
-        # Fold: start with the leftmost operand and apply each (op, right) pair.
         for step_op, right_node in parts:
             right_type = self._get_operand_type(right_node)
             if right_type == _DATASET:
@@ -1842,11 +1669,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                     left_sql_override=left_src,
                     left_ds_override=result_ds,
                 )
-                # After each step, the result structure is the output dataset.
                 result_ds = self._get_output_dataset() or result_ds
                 is_subquery = True
             else:
-                # ds-scalar: visit scalar and wrap the accumulated SQL.
                 scalar_sql = self.visit(right_node)
                 measure_names = result_ds.get_measures_names() if result_ds else []
                 cols: list[str] = []
@@ -1889,16 +1714,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             elif isinstance(udo_val, str):
                 comp_name = udo_val
 
-        # Inside a clause context (e.g., join body calc/filter/keep/drop/rename),
-        # membership just references a column name — but when there are duplicate
-        # columns across joined datasets, use the qualified "alias#comp" name.
         if self._in_clause:
             ds_name = node.left.value if hasattr(node.left, "value") else str(node.left)
             qualified = f"{ds_name}#{comp_name}"
             if qualified in self._join_alias_map:
                 return quote_identifier(qualified)
-            # Check if the component exists without qualification in the dataset
-            # (i.e. it's not duplicated across datasets)
             col = quote_identifier(comp_name)
             if self._column_prefix:
                 col = f"{self._column_prefix}.{col}"
@@ -1911,7 +1731,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             ds_name = self._resolve_dataset_name(node.left)
             return f"SELECT {quote_identifier(comp_name)} FROM {quote_identifier(ds_name)}"
 
-        # Determine if the component needs renaming (identifiers/attributes become measures)
         target_comp = ds.components.get(comp_name)
         alias_name = comp_name
         if target_comp and target_comp.role in (Role.IDENTIFIER, Role.ATTRIBUTE):
@@ -1921,15 +1740,12 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         for name, comp in ds.components.items():
             if comp.role == Role.IDENTIFIER:
                 cols.append(quote_identifier(name))
-        # Add the target component, with rename if needed
         if alias_name != comp_name:
             cols.append(f"{quote_identifier(comp_name)} AS {quote_identifier(alias_name)}")
         else:
-            # For measures, just select the component (avoid duplicates with identifiers)
             if comp_name not in [n for n, c in ds.components.items() if c.role == Role.IDENTIFIER]:
                 cols.append(quote_identifier(comp_name))
             else:
-                # Component is an identifier but no mapping found, still select it aliased
                 cols.append(quote_identifier(comp_name))
 
         return SQLBuilder().select(*cols).from_table(table_src).build()
@@ -1974,14 +1790,12 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         id_cols = ", ".join([f"l.{quote_identifier(id_)}" for id_ in left_ids])
 
-        # Use subquery for right side, wrapping in SELECT * FROM if needed
         right_subq = right_src
         if not right_src.strip().upper().startswith("("):
             right_subq = f"(SELECT * FROM {right_src})"
 
         exists_subq = f"EXISTS(SELECT 1 FROM {right_subq} AS r WHERE {where_clause})"
 
-        # Wrap left side similarly
         left_subq = left_src
         if not left_src.strip().upper().startswith("("):
             left_subq = f"(SELECT * FROM {left_src})"
@@ -1990,17 +1804,14 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     def _is_time_period_operand(self, node: AST.AST) -> bool:
         """Check if an operand resolves to a TimePeriod type."""
-        # Column reference in a clause context
         if isinstance(node, AST.VarID) and self._in_clause and self._current_dataset:
             comp = self._current_dataset.components.get(node.value)
             if comp and comp.data_type == TimePeriod:
                 return True
-        # Named scalar
         if isinstance(node, AST.VarID) and node.value in self.scalars:
             sc = self.scalars[node.value]
             if sc.data_type == TimePeriod:
                 return True
-        # CAST to time_period: ParamOp with op=cast and target type = time_period
         if (
             isinstance(node, AST.ParamOp)
             and str(getattr(node, "op", "")).lower() == tokens.CAST
@@ -2058,8 +1869,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         """Visit PERIOD_INDICATOR: extract period indicator from TimePeriod."""
         operand_type = self._get_operand_type(node.operand)
 
-        # Try to resolve dataset structure even if type detection says scalar
-        # (UDO calls may not be recognized as datasets by type detection)
         ds = self._get_dataset_structure(node.operand)
 
         if operand_type == _DATASET or ds is not None:
@@ -2067,7 +1876,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             if ds is None:
                 raise ValueError("Cannot resolve structure for period_indicator")
 
-            # Find time identifier
             time_id = None
             for comp in ds.components.values():
                 if comp.data_type == TimePeriod and comp.role == Role.IDENTIFIER:
@@ -2082,7 +1890,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             )
             cols_sql = ", ".join(id_cols) + ", " + extract_expr
 
-            # Wrap SELECT sources as subqueries
             if src.strip().upper().startswith("SELECT"):
                 return f"SELECT {cols_sql} FROM ({src}) AS _pi"
             return f"SELECT {cols_sql} FROM {src}"
@@ -2094,25 +1901,21 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         """Visit a unary operation."""
         op = str(node.op).lower()
 
-        # Special-case operators
         if op == tokens.PERIOD_INDICATOR:
             return self._visit_period_indicator(node)
 
         if op in (tokens.FLOW_TO_STOCK, tokens.STOCK_TO_FLOW):
             return self._visit_flow_stock(node, op)
 
-        # --- Generic path: registry-based unary ---
         operand_type = self._get_operand_type(node.operand)
 
         if operand_type == _DATASET:
-            # isnull on mono-measure dataset produces "bool_var"
             name_override: Optional[str] = None
             if op == tokens.ISNULL:
                 ds = self._get_dataset_structure(node.operand)
                 if ds and len(ds.get_measures_names()) == 1:
                     name_override = "bool_var"
 
-            # Check if dataset has TimePeriod measures for extraction dispatch
             ds_for_tp = self._get_dataset_structure(node.operand)
             has_tp_measures = ds_for_tp is not None and any(
                 c.data_type == TimePeriod
@@ -2134,7 +1937,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 cast_bool_to_str=op in _STRING_UNARY_OPS,
             )
         else:
-            # TimePeriod dispatch for extraction operators
             if op in _TP_EXTRACTION_MAP and self._is_time_period_operand(node.operand):
                 operand_sql = self.visit(node.operand)
                 return _TP_EXTRACTION_MAP[op].format(operand_sql)
@@ -2167,7 +1969,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         else:
             children_sql = [self.visit(c) for c in node.children]
             params_sql = self._visit_params(node.params)
-            # Default precision for ROUND/TRUNC when no parameter given
             if op in (tokens.ROUND, tokens.TRUNC) and not params_sql:
                 params_sql = ["0"]
             all_args = children_sql + params_sql
@@ -2193,7 +1994,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         ds_node = node.children[0]
         params_sql = self._visit_params(node.params)
 
-        # Default precision for ROUND/TRUNC when no parameter given
         if op in (tokens.ROUND, tokens.TRUNC) and not params_sql:
             params_sql = ["0"]
 
@@ -2210,12 +2010,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         )
 
     def _visit_fill_time_series(self, node: AST.ParamOp) -> str:
-        """Visit FILL_TIME_SERIES: fill missing time periods with NULL rows.
-
-        TimePeriod only. Uses recursive CTE to generate expected periods.
-        Carries max_tp through the recursion (DuckDB can't reference other CTEs
-        in recursive part).
-        """
+        """Fill missing time periods/dates with NULL rows."""
         ds_node = node.children[0]
         fill_mode = "all"
         if node.params:
@@ -2228,7 +2023,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if ds is None:
             raise ValueError("Cannot resolve structure for fill_time_series")
 
-        # Find time identifier
         time_id = None
         time_type = None
         for comp in ds.components.values():
@@ -2239,7 +2033,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if time_id is None:
             raise ValueError("No time identifier found for fill_time_series")
 
-        # Dispatch by type
         if time_type == Date:
             return self._fill_time_series_date(ds, src, time_id, fill_mode)
 
@@ -2249,20 +2042,17 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         measure_names = [c.name for c in ds.components.values() if c.role != Role.IDENTIFIER]
         measure_cols = [quote_identifier(n) for n in measure_names]
 
-        # Build JOIN conditions
         join_conds = [f"g.{time_col} = s.{time_col}"]
         for oc in other_id_cols:
             join_conds.append(f"g.{oc} = s.{oc}")
         join_on = " AND ".join(join_conds)
 
-        # SELECT columns for final output
         g_cols = [f"g.{oc}" for oc in other_id_cols] + [f"g.{time_col}"]
         s_cols = [f"s.{mc}" for mc in measure_cols]
         final_select = ", ".join(g_cols + s_cols)
         order_by = ", ".join(g_cols)
 
         if fill_mode == "single" and other_ids:
-            # Single mode: per-group bounds, carry max_tp + group keys through recursion
             oid_select = ", ".join(other_id_cols)
             oid_ep_refs = ", ".join(f"ep.{oc}" for oc in other_id_cols)
 
@@ -2302,7 +2092,6 @@ FROM full_grid g
 LEFT JOIN source s ON {join_on}
 ORDER BY {order_by}"""
         else:
-            # All mode: global bounds, carry max_tp through recursion
             if other_ids:
                 oid_join = ", ".join(other_id_cols)
                 other_combos = f"""
@@ -2462,7 +2251,6 @@ ORDER BY {order_by}""".strip()
         if ds is None:
             raise ValueError(f"Cannot resolve structure for {op}")
 
-        # Find time identifier
         time_id = None
         time_type = None
         for comp in ds.components.values():
@@ -2473,10 +2261,8 @@ ORDER BY {order_by}""".strip()
         if time_id is None:
             raise ValueError(f"No time identifier found for {op}")
 
-        # Other identifiers for PARTITION BY
         other_ids = [quote_identifier(c.name) for c in ds.get_identifiers() if c.name != time_id]
 
-        # For TimePeriod, also partition by period_indicator
         partition_parts = list(other_ids)
         if time_type == TimePeriod:
             partition_parts.append(
@@ -2487,14 +2273,12 @@ ORDER BY {order_by}""".strip()
         order_clause = f"ORDER BY {quote_identifier(time_id)}"
         window = f"({partition_clause} {order_clause})"
 
-        # Build SELECT — only apply window function to numeric measures
         cols = []
         for comp in ds.components.values():
             col = quote_identifier(comp.name)
             if comp.role == Role.IDENTIFIER:
                 cols.append(col)
             elif comp.data_type in (Integer, Number, Boolean):
-                # Apply window function to numeric measures only
                 if op == tokens.FLOW_TO_STOCK:
                     cols.append(
                         f"CASE WHEN {col} IS NULL THEN NULL ELSE "
@@ -2504,7 +2288,6 @@ ORDER BY {order_by}""".strip()
                 else:  # STOCK_TO_FLOW
                     cols.append(f"COALESCE({col} - LAG({col}) OVER {window}, {col}) AS {col}")
             else:
-                # Non-numeric measures pass through unchanged
                 cols.append(col)
 
         return f"SELECT {', '.join(cols)} FROM {src}"
@@ -2519,7 +2302,6 @@ ORDER BY {order_by}""".strip()
         if ds is None:
             raise ValueError("Cannot resolve structure for timeshift")
 
-        # Find time identifier and its type
         time_id = None
         time_type = None
         for comp in ds.components.values():
@@ -2540,7 +2322,6 @@ ORDER BY {order_by}""".strip()
                 cols.append(shifted if comp.name == time_id else col)
             return f"SELECT {', '.join(cols)} FROM {src}"
         else:
-            # Date: infer frequency from date diffs, then shift by freq * N
             other_ids = [
                 quote_identifier(c.name) for c in ds.get_identifiers() if c.name != time_id
             ]
@@ -2609,11 +2390,7 @@ FROM {src}, (
             return f"vtl_dateadd({operand_sql}, {shift_sql}, {period_sql})"
 
     def _get_source_vtl_type(self, node: "AST.AST") -> Optional[str]:
-        """Determine the VTL data type name produced by an AST node.
-
-        Used to generate correct cross-type CAST SQL (e.g. Date→TimePeriod).
-        Returns None when the type cannot be determined statically.
-        """
+        """Return the VTL type name produced by an AST node when known."""
         if isinstance(node, AST.Constant):
             if isinstance(node.value, bool):
                 return "Boolean"
@@ -2630,10 +2407,8 @@ FROM {src}, (
         ):
             type_node = node.children[1]
             return type_node.value if hasattr(type_node, "value") else str(type_node)
-        # time_agg always produces a TimePeriod internal representation
         if isinstance(node, AST.TimeAggregation):
             return "TimePeriod"
-        # Resolve component type from current dataset context (e.g. inside calc)
         if isinstance(node, AST.VarID) and self._current_dataset:
             comp = self._current_dataset.components.get(node.value)
             if comp and comp.data_type:
@@ -2664,7 +2439,6 @@ FROM {src}, (
 
         if operand_type == _DATASET:
             ds = self._get_dataset_structure(operand)
-            # Build per-component type map for source-aware casting
             comp_types: Dict[str, str] = {}
             if ds:
                 for cname, comp in ds.components.items():
@@ -2672,7 +2446,6 @@ FROM {src}, (
                         comp_types[cname] = getattr(comp.data_type, "__name__", str(comp.data_type))
 
             def _cast_measure(col: str) -> str:
-                # Extract component name from quoted col ref
                 col_name = col.strip('"')
                 src_type = comp_types.get(col_name)
                 return self._cast_expr(col, duckdb_type, target_type_str, mask, src_type)
@@ -2695,24 +2468,17 @@ FROM {src}, (
         target_lower = target_type_str.lower()
         source_lower = (source_type_str or "").lower()
 
-        # Date with mask → parse then format
         if mask and target_type_str == "Date":
             return f"STRFTIME(STRPTIME({expr}, '{mask}'), '%Y-%m-%d %H:%M:%S')"
 
-        # === Boolean target ===
         if target_type_str == "Boolean" and source_lower == "string":
-            # VTL: only "true" → true, everything else → false
             return f"(LOWER(TRIM(CAST({expr} AS VARCHAR))) = 'true')"
 
-        # === Integer target ===
         if target_type_str == "Integer":
             if source_lower == "boolean":
-                # DuckDB handles BOOLEAN → BIGINT natively (TRUE→1, FALSE→0)
                 return f"CAST({expr} AS {duckdb_type})"
-            # Cast to DOUBLE first so TRUNC works on String/Number/unknown
             return f"CAST(TRUNC(CAST({expr} AS DOUBLE)) AS {duckdb_type})"
 
-        # === String target from TimePeriod ===
         if target_type_str == "String" and source_lower in ("time_period", "timeperiod"):
             _tp_string_macros = {
                 "vtl": "vtl_period_to_vtl",
@@ -2723,7 +2489,6 @@ FROM {src}, (
             macro = _tp_string_macros.get(self.time_period_output_format, "vtl_period_to_vtl")
             return f"{macro}({expr})"
 
-        # === TimePeriod target ===
         if target_lower in ("time_period", "timeperiod"):
             if source_lower == "date":
                 return f"vtl_date_to_period({expr})"
@@ -2731,7 +2496,6 @@ FROM {src}, (
                 return f"vtl_interval_to_period({expr})"
             return f"vtl_period_normalize(CAST({expr} AS VARCHAR))"
 
-        # === Date target from temporal types ===
         if target_type_str == "Date":
             if source_lower in ("time_period", "timeperiod"):
                 return f"vtl_period_to_date({expr})"
@@ -2790,9 +2554,7 @@ FROM {src}, (
             f"CAST({index_sql} AS VARCHAR))) % 1000000) / 1000000.0"
         )
 
-    # =========================================================================
-    # Clause visitor (RegularAggregation)
-    # =========================================================================
+    # Clause visitor
 
     def visit_RegularAggregation(self, node: AST.RegularAggregation) -> str:  # type: ignore[override]
         """Visit clause operations: filter, calc, keep, drop, rename, subspace, aggr."""
@@ -2860,7 +2622,6 @@ FROM {src}, (
 
                 if isinstance(assignment, AST.Assignment):
                     col_name = assignment.left.value if hasattr(assignment.left, "value") else ""
-                    # Resolve UDO component parameters for column names
                     udo_val = self._get_udo_param(col_name)
                     if udo_val is not None:
                         if isinstance(udo_val, (AST.VarID, AST.Identifier)):
@@ -2869,7 +2630,6 @@ FROM {src}, (
                             col_name = udo_val
                     expr_sql = self.visit(assignment.right)
                     calc_exprs[col_name] = expr_sql
-                    # dateadd on TimePeriod returns Date (TIMESTAMP), update output type
                     if "vtl_tp_dateadd" in expr_sql and self.current_assignment:
                         out_ds = self.output_datasets.get(self.current_assignment)
                         if (
@@ -2879,8 +2639,6 @@ FROM {src}, (
                         ):
                             out_ds.components[col_name].data_type = Date
 
-        # Build SELECT: keep original columns that are NOT being overwritten,
-        # then add the calc expressions (possibly replacing originals).
         select_cols: List[str] = []
         for name in ds.components:
             if name in calc_exprs:
@@ -2888,13 +2646,10 @@ FROM {src}, (
             else:
                 select_cols.append(quote_identifier(name))
 
-        # Add any new columns (not in original dataset)
         for col_name, expr_sql in calc_exprs.items():
             if col_name not in ds.components:
                 select_cols.append(f"{expr_sql} AS {quote_identifier(col_name)}")
 
-        # Wrap inner query as subquery: if it's already a SELECT, wrap in parens;
-        # if it's a table name, use SELECT * FROM name
         if table_src.strip().upper().startswith("SELECT"):
             inner_src = f"({table_src})"
         else:
@@ -2911,13 +2666,11 @@ FROM {src}, (
             return ""
         ds, table_src = resolved
 
-        # Identifiers are always kept
         keep_names: List[str] = [
             name for name, comp in ds.components.items() if comp.role == Role.IDENTIFIER
         ]
         keep_names.extend(self._extract_component_names(node.children, self._join_alias_map))
 
-        # Track qualified names that are NOT kept (consumed by this clause)
         keep_set = set(keep_names)
         for qualified in self._join_alias_map:
             if qualified not in keep_set:
@@ -2927,18 +2680,13 @@ FROM {src}, (
         return SQLBuilder().select(*cols).from_table(table_src).build()
 
     def _visit_drop(self, node: AST.RegularAggregation) -> str:
-        """Visit drop clause.
-
-        Uses DuckDB's ``SELECT * EXCLUDE (...)`` to avoid relying on column
-        names that may have been changed by preceding clauses in a chain.
-        """
+        """Visit drop clause."""
         if not node.dataset:
             return ""
 
-        table_src = self._get_dataset_sql(node.dataset)  # ds not needed for drop
+        table_src = self._get_dataset_sql(node.dataset)
         drop_names = self._extract_component_names(node.children, self._join_alias_map)
 
-        # Track consumed qualified names
         for name in drop_names:
             if name in self._join_alias_map:
                 self._consumed_join_aliases.add(name)
@@ -2963,7 +2711,6 @@ FROM {src}, (
             if isinstance(child, AST.RenameNode):
                 old = child.old_name
                 new = child.new_name
-                # Resolve UDO component parameters
                 udo_old = self._get_udo_param(old)
                 if udo_old is not None:
                     if isinstance(udo_old, (AST.VarID, AST.Identifier)):
@@ -2976,13 +2723,10 @@ FROM {src}, (
                         new = udo_new.value
                     elif isinstance(udo_new, str):
                         new = udo_new
-                # Check if alias-qualified name is in the join alias map
                 if "#" in old and old in self._join_alias_map:
                     renames[old] = new
-                    # Track renamed qualified name as consumed
                     self._consumed_join_aliases.add(old)
                 elif "#" in old:
-                    # Strip alias prefix from membership refs (e.g. d2#Me_2 -> Me_2)
                     old = old.split("#", 1)[1]
                     renames[old] = new
                 else:
@@ -2990,7 +2734,6 @@ FROM {src}, (
 
         cols: List[str] = []
         for name in ds.components:
-            # Check direct match first, then try matching via qualified name
             matched_new = renames.get(name)
             if matched_new is None and "#" in name:
                 unqual = name.split("#", 1)[1]
@@ -3038,7 +2781,6 @@ FROM {src}, (
 
         calc_exprs: Dict[str, str] = {}
         having_sql: Optional[str] = None
-        # Track TimePeriod measures used with MIN/MAX for indicator validation
         tp_minmax_cols: List[tuple[str, str]] = []
 
         with self._clause_scope(ds):
@@ -3048,14 +2790,12 @@ FROM {src}, (
                     assignment = child.operand
                 if isinstance(assignment, AST.Assignment):
                     col_name = assignment.left.value if hasattr(assignment.left, "value") else ""
-                    # Check for having clause on the Aggregation node
                     agg_node = assignment.right
                     if isinstance(agg_node, AST.Aggregation) and agg_node.having_clause is not None:
                         hc = agg_node.having_clause
                         if isinstance(hc, AST.ParamOp) and hc.params is not None:
                             having_sql = self.visit(hc.params)
 
-                    # Detect TimePeriod MIN/MAX for indicator validation
                     if (
                         isinstance(agg_node, AST.Aggregation)
                         and str(agg_node.op).lower() in (tokens.MIN, tokens.MAX)
@@ -3071,7 +2811,6 @@ FROM {src}, (
                     expr_sql = self.visit(agg_node)
                     calc_exprs[col_name] = expr_sql
 
-        # Build validation CTE for TimePeriod MIN/MAX with mixed indicators
         if tp_minmax_cols:
             checks: List[str] = []
             for col_name, agg_op in tp_minmax_cols:
@@ -3090,8 +2829,6 @@ FROM {src}, (
                 )
             ", ".join(checks)
 
-        # Extract group-by identifiers from AST nodes to avoid using the
-        # overall output dataset (which may represent a join result).
         group_ids: List[str] = []
         grouping_op: str = ""
         grouping_names: List[str] = []
@@ -3117,7 +2854,6 @@ FROM {src}, (
             except_set = set(grouping_names)
             group_ids = [n for n in all_input_ids if n not in except_set]
         elif not grouping_names:
-            # No explicit grouping → fall back to output/input dataset identifiers
             output_ds = self._get_output_dataset()
             group_ids = list(output_ds.get_identifiers_names() if output_ds else all_input_ids)
 
@@ -3134,19 +2870,13 @@ FROM {src}, (
 
         main_sql = builder.build()
 
-        # Prepend subquery for TimePeriod indicator validation
         if tp_minmax_cols:
             main_sql = _add_tp_indicator_check(main_sql, table_src, tp_minmax_cols)
 
         return main_sql
 
     def _visit_apply(self, node: AST.RegularAggregation) -> str:
-        """Visit apply clause: inner_join(... apply d1 op d2).
-
-        For each BinOp child, applies the operator to common measures
-        between the left and right aliases, producing a single output
-        column per common measure.
-        """
+        """Visit apply clause."""
         resolved = self._resolve_clause_dataset(node)
         if resolved is None:
             if node.dataset:
@@ -3154,13 +2884,10 @@ FROM {src}, (
             return ""
         ds, table_src = resolved
 
-        # Get the output structure (post-apply)
         output_ds = self.output_datasets.get(self.current_assignment)
 
-        # Collect identifier columns
         id_names = ds.get_identifiers_names()
 
-        # Build computed measure expressions from BinOp children
         computed: Dict[str, str] = {}
         for child in node.children:
             if not isinstance(child, AST.BinOp):
@@ -3169,7 +2896,6 @@ FROM {src}, (
             right_alias = child.right.value if hasattr(child.right, "value") else str(child.right)
             op = str(child.op).lower() if child.op else ""
 
-            # Find common measures: components that exist as both alias#comp in the join
             left_measures: Dict[str, str] = {}
             right_measures: Dict[str, str] = {}
             for qualified in self._join_alias_map:
@@ -3189,11 +2915,9 @@ FROM {src}, (
                 else:
                     expr = f"{left_col} {op} {right_col}"
                 computed[measure] = expr
-                # Mark both qualified names as consumed
                 self._consumed_join_aliases.add(left_measures[measure])
                 self._consumed_join_aliases.add(right_measures[measure])
 
-        # Build SELECT: identifiers + computed measures
         cols: List[str] = [quote_identifier(id_) for id_ in id_names]
         if output_ds:
             for comp_name in output_ds.get_measures_names():
@@ -3208,13 +2932,7 @@ FROM {src}, (
         return SQLBuilder().select(*cols).from_table(table_src).build()
 
     def _visit_unpivot(self, node: AST.RegularAggregation) -> str:
-        """Visit unpivot clause: DS[unpivot new_id, new_measure].
-
-        Transforms measures into rows.  For each measure column, produces one
-        row per data point with the measure *name* as the new identifier value
-        and the measure *value* as the new measure value.  Rows where the
-        measure value is NULL are dropped (VTL 2.1 RM line 7200).
-        """
+        """Visit unpivot clause."""
         resolved = self._resolve_clause_dataset(node)
         if resolved is None:
             if node.dataset:
@@ -3231,7 +2949,6 @@ FROM {src}, (
         raw_measure = (
             node.children[1].value if hasattr(node.children[1], "value") else str(node.children[1])
         )
-        # Resolve UDO component parameters
         udo_id = self._get_udo_param(raw_id)
         if udo_id is not None:
             if isinstance(udo_id, (AST.VarID, AST.Identifier)):
@@ -3253,7 +2970,6 @@ FROM {src}, (
         if not measure_names:
             return f"SELECT * FROM {table_src}"
 
-        # Build one SELECT per measure, filtering NULLs, then UNION ALL
         parts: List[str] = []
         for measure in measure_names:
             cols: List[str] = [quote_identifier(i) for i in id_names]
@@ -3268,9 +2984,7 @@ FROM {src}, (
 
         return " UNION ALL ".join(parts)
 
-    # =========================================================================
     # Aggregation visitor
-    # =========================================================================
 
     def _build_agg_group_cols(
         self,
@@ -3291,8 +3005,6 @@ FROM {src}, (
                             time_agg_id = comp.name
                             break
 
-        # For group by/group all with time_agg, ensure the time identifier
-        # is included in group_cols (it may not be listed explicitly).
         if (
             time_agg_id
             and time_agg_expr
@@ -3340,12 +3052,9 @@ FROM {src}, (
                     return registry.aggregate.generate(op, operand_sql)
                 return f"{op.upper()}({operand_sql})"
 
-        # count() with no operand -> COUNT excluding all-null measure rows
+        # count() without operand
         if node.operand is None:
             if op == tokens.COUNT:
-                # VTL count() without operand counts data points where at least
-                # one measure is not null.  Build a CASE expression to skip rows
-                # where all measures are null.
                 if self._in_clause and self._current_dataset:
                     measures = self._current_dataset.get_measures_names()
                     if measures:
@@ -3365,11 +3074,7 @@ FROM {src}, (
 
         table_src = self._get_dataset_sql(node.operand)
 
-        # Resolve group columns from the input dataset's identifiers.
-        # The input dataset (ds) reflects the actual columns available in
-        # the source table.  The output dataset may include transformations
-        # (calc, keep) applied after this aggregation and should NOT be
-        # used for column references.
+        # Resolve group columns from input identifiers.
         all_ids = ds.get_identifiers_names()
         group_cols = self._resolve_group_cols(node, all_ids)
 
@@ -3377,25 +3082,19 @@ FROM {src}, (
 
         ds_tp_minmax_cols: List[tuple[str, str]] = []
 
-        # count replaces all measures with a single int_var column.
-        # VTL count() excludes rows where all measures are null.
+        # count() produces a single int_var measure.
         if op == tokens.COUNT:
-            # VTL spec: count() always produces a single measure "int_var"
             alias = "int_var"
-            # Build conditional count excluding all-null measure rows
             source_measures = ds.get_measures_names()
             if source_measures:
                 and_parts = " AND ".join(
                     f"{quote_identifier(m)} IS NOT NULL" for m in source_measures
                 )
                 count_expr = f"COUNT(CASE WHEN {and_parts} THEN 1 END)"
-                # When there are group columns, return NULL for groups with zero
-                # matching rows; for DWI (no group cols), return 0 directly.
                 if group_cols:
                     count_expr = f"NULLIF({count_expr}, 0)"
                 cols.append(f"{count_expr} AS {quote_identifier(alias)}")
             else:
-                # No measures: count data points (rows)
                 cols.append(f"COUNT(*) AS {quote_identifier(alias)}")
         else:
             measures = ds.get_measures_names()
@@ -3406,13 +3105,11 @@ FROM {src}, (
 
                 is_duration = comp is not None and comp.data_type == Duration
                 if is_time_period and op in (tokens.MIN, tokens.MAX):
-                    # TimePeriod MIN/MAX: record for CTE validation
                     ds_tp_minmax_cols.append((measure, op))
                     normalized = f"vtl_period_normalize({qm})"
                     parsed = f"vtl_period_parse({normalized})"
                     expr = f"vtl_period_to_string({op.upper()}({parsed}))"
                 elif is_duration and op in (tokens.MIN, tokens.MAX):
-                    # Duration MIN/MAX: convert to int, aggregate, convert back
                     expr = f"vtl_int_to_duration({op.upper()}(vtl_duration_to_int({qm})))"
                 elif registry.aggregate.is_registered(op):
                     expr = registry.aggregate.generate(op, qm)
@@ -3438,7 +3135,6 @@ FROM {src}, (
 
         main_sql = builder.build()
 
-        # Prepend subquery for TimePeriod indicator validation (dataset-level)
         if ds_tp_minmax_cols:
             main_sql = _add_tp_indicator_check(main_sql, table_src, ds_tp_minmax_cols)
 

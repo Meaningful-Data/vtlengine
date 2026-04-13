@@ -1,14 +1,4 @@
-"""
-Structure visitor for the SQL Transpiler.
-
-Resolves dataset structures, operand types, UDO parameters, component names,
-SQL literals, and time/group columns from VTL AST nodes.
-
-Can be used **standalone** (instantiated directly) to compute output dataset
-structures from AST nodes, or as a **base class** for ``SQLTranspiler`` which
-inherits these resolution methods while overriding the ``visit_*`` methods
-with SQL-generating implementations.
-"""
+"""Resolve VTL dataset structures for the DuckDB transpiler."""
 
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -29,24 +19,17 @@ from vtlengine.DataTypes import String as StringType
 from vtlengine.duckdb_transpiler.Transpiler.sql_builder import quote_identifier
 from vtlengine.Model import Component, Dataset, Role
 
-# Operand type constants
+# Operand type tags
 _DATASET = "Dataset"
 _COMPONENT = "Component"
 _SCALAR = "Scalar"
 
 
 class StructureVisitor(ASTTemplate):
-    """Visitor that resolves dataset structures from VTL AST nodes.
+    """Visitor that resolves dataset structures from VTL AST nodes."""
 
-    When used standalone, the ``visit_*`` methods return ``Optional[Dataset]``.
-    When inherited by ``SQLTranspiler``, the transpiler's own ``visit_*``
-    methods (returning SQL strings) take precedence via normal MRO.
-    """
-
-    # -- Standalone constructor -----------------------------------------------
-    # When used as a base class for the SQLTranspiler dataclass, this __init__
-    # is NOT called — the dataclass-generated __init__ + __post_init__ set up
-    # the same attributes.
+    # Standalone constructor. SQLTranspiler (dataclass) sets these fields in
+    # its generated __init__ and __post_init__ instead.
 
     def __init__(
         self,
@@ -68,7 +51,7 @@ class StructureVisitor(ASTTemplate):
         self._udos: Dict[str, Dict[str, Any]] = {}
         self._structure_context: Dict[int, Dataset] = {}
 
-    # -- Public API for standalone usage --------------------------------------
+    # Public API for standalone usage
 
     @property
     def udos(self) -> Dict[str, Dict[str, Any]]:
@@ -80,27 +63,23 @@ class StructureVisitor(ASTTemplate):
         self._udos = value
 
     def get_udo_param(self, name: str) -> Any:
-        """Public wrapper around :meth:`_get_udo_param`."""
+        """Return a UDO parameter from the current scope."""
         return self._get_udo_param(name)
 
     def push_udo_params(self, params: Dict[str, Any]) -> None:
-        """Public wrapper around :meth:`_push_udo_params`."""
+        """Push a UDO parameter scope."""
         self._push_udo_params(params)
 
     def pop_udo_params(self) -> None:
-        """Public wrapper around :meth:`_pop_udo_params`."""
+        """Pop the innermost UDO parameter scope."""
         self._pop_udo_params()
 
     def clear_context(self) -> None:
         """Clear the structure cache."""
         self._structure_context.clear()
 
-    # =========================================================================
-    # Standalone visit_* methods (return Optional[Dataset])
-    #
-    # These are overridden by SQLTranspiler's visit_* methods (returning str)
-    # when the class is used as a base class.
-    # =========================================================================
+    # Standalone visit_* methods (Optional[Dataset]).
+    # SQLTranspiler overrides these with SQL-generating versions.
 
     def visit_VarID(self, node: AST.VarID) -> Optional[Dataset]:
         """Return dataset structure for a VarID."""
@@ -111,10 +90,7 @@ class StructureVisitor(ASTTemplate):
         return self._get_dataset_structure(node)
 
     def visit_UnaryOp(self, node: AST.UnaryOp) -> Optional[Dataset]:
-        """Return dataset structure for a UnaryOp.
-
-        ``isnull`` replaces all measures with a single ``bool_var`` measure.
-        """
+        """Return dataset structure for a unary op."""
         ds = self._get_dataset_structure(node.operand)
         if ds is None:
             return None
@@ -130,10 +106,7 @@ class StructureVisitor(ASTTemplate):
         return ds
 
     def visit_ParamOp(self, node: AST.ParamOp) -> Optional[Dataset]:  # type: ignore[override]
-        """Return dataset structure for a ParamOp.
-
-        ``cast`` updates measure data types to the target type.
-        """
+        """Return dataset structure for a parameterized op."""
         op = str(node.op).lower()
         if op == tokens.CAST and len(node.children) >= 2:
             ds = self._get_dataset_structure(node.children[0])
@@ -164,11 +137,7 @@ class StructureVisitor(ASTTemplate):
     def visit_Aggregation(  # type: ignore[override]
         self, node: AST.Aggregation
     ) -> Optional[Dataset]:
-        """Return dataset structure for an aggregation.
-
-        Handles ``group by``, ``group except``, and scalar aggregation
-        (no grouping → all identifiers removed).
-        """
+        """Return dataset structure for an aggregation."""
         if node.operand is None:
             return None
         ds = self._get_dataset_structure(node.operand)
@@ -177,8 +146,7 @@ class StructureVisitor(ASTTemplate):
         if node.grouping is not None or node.grouping_op is not None:
             all_ids = ds.get_identifiers_names()
             group_cols = set(self._resolve_group_cols(node, all_ids))
-            # When time_agg is present, the time identifier must be included
-            # in the output even if not explicitly listed in group by.
+            # Keep the time identifier when using time_agg with group by.
             if node.grouping:
                 has_time_agg = any(isinstance(g, AST.TimeAggregation) for g in node.grouping)
                 if has_time_agg and node.grouping_op != "group except":
@@ -194,7 +162,7 @@ class StructureVisitor(ASTTemplate):
                 else:
                     comps[name] = comp
             return Dataset(name=ds.name, components=comps, data=None)
-        # No grouping → scalar aggregation → remove all identifiers
+        # No grouping: remove identifiers.
         comps = {n: c for n, c in ds.components.items() if c.role != Role.IDENTIFIER}
         return Dataset(name=ds.name, components=comps, data=None)
 
@@ -210,9 +178,7 @@ class StructureVisitor(ASTTemplate):
         """Return None for any unhandled node type."""
         return None
 
-    # =========================================================================
     # Operand type resolution
-    # =========================================================================
 
     def _get_operand_type(self, node: AST.AST) -> str:  # noqa: C901
         """Determine the operand type of a node."""
@@ -266,12 +232,8 @@ class StructureVisitor(ASTTemplate):
         return _SCALAR
 
     def _get_binop_type(self, node: AST.BinOp) -> str:
-        """Determine operand type for a BinOp.
-
-        Walks left-nested BinOp chains iteratively to avoid stack overflow
-        on expressions with hundreds of operands (e.g. ``A + B + C + ...``).
-        """
-        # Collect right operands while walking down the left BinOp spine.
+        """Determine operand type for a BinOp."""
+        # Walk left-nested chains iteratively.
         rights: list[AST.AST] = []
         current: AST.AST = node
         while isinstance(current, AST.BinOp):
@@ -281,10 +243,8 @@ class StructureVisitor(ASTTemplate):
             rights.append(current.right)
             current = current.left
 
-        # Check the leftmost (non-BinOp) operand.
         if self._get_operand_type(current) == _DATASET:
             return _DATASET
-        # Check all right operands.
         for right in rights:
             if self._get_operand_type(right) == _DATASET:
                 return _DATASET
@@ -304,8 +264,7 @@ class StructureVisitor(ASTTemplate):
         name = node.value
         udo_val = self._get_udo_param(name)
         if udo_val is not None:
-            # Check VarID specifically to avoid infinite recursion when
-            # a UDO param name matches its argument name.
+            # Guard against recursion when param name matches argument name.
             if isinstance(udo_val, AST.VarID):
                 if udo_val.value in self.available_tables:
                     return _DATASET
@@ -329,17 +288,13 @@ class StructureVisitor(ASTTemplate):
         """Check if a node represents a dataset-level operand."""
         return self._get_operand_type(node) == _DATASET
 
-    # =========================================================================
     # Output dataset resolution
-    # =========================================================================
 
     def _get_output_dataset(self) -> Optional[Dataset]:
         """Get the current assignment's output dataset."""
         return self.output_datasets.get(self.current_assignment)
 
-    # =========================================================================
     # SQL literal conversion
-    # =========================================================================
 
     def _to_sql_literal(self, value: Any, type_name: str = "") -> str:
         """Convert a Python value to a SQL literal string."""
@@ -365,9 +320,7 @@ class StructureVisitor(ASTTemplate):
                 type_name = "Date"
         return self._to_sql_literal(node.value, type_name)
 
-    # =========================================================================
     # Dataset SQL source resolution
-    # =========================================================================
 
     def _get_dataset_sql(self, node: AST.AST) -> str:
         """Get the SQL FROM source for a dataset node."""
@@ -400,9 +353,7 @@ class StructureVisitor(ASTTemplate):
             return self._resolve_dataset_name(node.dataset)
         return ""
 
-    # =========================================================================
     # UDO parameter handling
-    # =========================================================================
 
     def _get_udo_param(self, name: str) -> Any:
         """Look up a UDO parameter by name from the current scope."""
@@ -426,9 +377,7 @@ class StructureVisitor(ASTTemplate):
             if len(self._udo_params) == 0:
                 self._udo_params = None
 
-    # =========================================================================
     # Dataset structure resolution
-    # =========================================================================
 
     def _get_dataset_structure(self, node: Optional[AST.AST]) -> Optional[Dataset]:  # noqa: C901
         """Get dataset structure for a node, tracing to the source dataset."""
@@ -437,12 +386,11 @@ class StructureVisitor(ASTTemplate):
         if isinstance(node, AST.VarID):
             udo_val = self._get_udo_param(node.value)
             if udo_val is not None:
-                # Check VarID specifically to avoid infinite recursion when
-                # a UDO param name matches its argument name (e.g., DS → VarID('DS')).
+                # Guard against recursion when a UDO param resolves to itself.
                 if isinstance(udo_val, AST.VarID):
                     if udo_val.value in self.available_tables:
                         return self.available_tables[udo_val.value]
-                    # Avoid recursing with same name (would loop)
+                    # Avoid recursive loop.
                     if udo_val.value != node.value:
                         return self._get_dataset_structure(udo_val)
                     return None
