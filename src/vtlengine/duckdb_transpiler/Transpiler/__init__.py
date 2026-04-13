@@ -2009,6 +2009,79 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             cast_bool_to_str=op in _STRING_PARAM_OPS,
         )
 
+    def _resolve_time_identifier(self, ds: Dataset, op_name: str) -> Tuple[str, type]:
+        """Return the time identifier name and type for time-based operators."""
+        for comp in ds.components.values():
+            if comp.data_type in (TimePeriod, Date) and comp.role == Role.IDENTIFIER:
+                return comp.name, comp.data_type
+        raise ValueError(f"No time identifier found for {op_name}")
+
+    def _build_time_grid_parts(
+        self,
+        ds: Dataset,
+        time_id: str,
+    ) -> Tuple[List[str], List[str], str, str, str, str]:
+        """Build common JOIN/select fragments for fill-time-series queries."""
+        time_col = quote_identifier(time_id)
+        other_id_cols = [
+            quote_identifier(c.name) for c in ds.get_identifiers() if c.name != time_id
+        ]
+        measure_cols = [
+            quote_identifier(c.name) for c in ds.components.values() if c.role != Role.IDENTIFIER
+        ]
+
+        join_conds = [f"g.{time_col} = s.{time_col}"]
+        join_conds.extend(f"g.{oc} = s.{oc}" for oc in other_id_cols)
+        join_on = " AND ".join(join_conds)
+
+        g_cols = [f"g.{oc}" for oc in other_id_cols] + [f"g.{time_col}"]
+        s_cols = [f"s.{mc}" for mc in measure_cols]
+        final_select = ", ".join(g_cols + s_cols)
+        order_by = ", ".join(g_cols)
+        return time_col, other_id_cols, measure_cols, join_on, final_select, order_by
+
+    def _build_date_frequency_subquery(self, src: str, time_col: str, partition: str) -> str:
+        """Build SQL that infers date frequency from observed date differences."""
+        freq_case = self._build_date_frequency_case(as_period_indicator=False)
+        return f"""
+SELECT {freq_case} AS step
+FROM (
+    SELECT ABS(DATE_DIFF('day',
+        LAG({time_col}) OVER ({partition} ORDER BY {time_col}),
+        {time_col})) AS diff_days
+    FROM {src}
+) WHERE diff_days IS NOT NULL AND diff_days > 0""".strip()
+
+    def _build_date_period_indicator_subquery(self, src: str, time_col: str, partition: str) -> str:
+        """Build SQL that infers a period indicator literal (D/W/M/Q/S/A) from dates."""
+        freq_case = self._build_date_frequency_case(as_period_indicator=True)
+        return f"""
+SELECT {freq_case} AS period_ind
+FROM (
+    SELECT ABS(DATE_DIFF('day',
+        LAG({time_col}) OVER ({partition} ORDER BY {time_col}),
+        {time_col})) AS diff_days
+    FROM {src}
+) WHERE diff_days IS NOT NULL AND diff_days > 0""".strip()
+
+    @staticmethod
+    def _build_date_frequency_case(as_period_indicator: bool) -> str:
+        """Return a CASE expression for inferred date frequency output."""
+        periods = {
+            7: "'D'" if as_period_indicator else "INTERVAL 1 DAY",
+            28: "'W'" if as_period_indicator else "INTERVAL 7 DAY",
+            90: "'M'" if as_period_indicator else "INTERVAL 1 MONTH",
+            181: "'Q'" if as_period_indicator else "INTERVAL 3 MONTH",
+            365: "'S'" if as_period_indicator else "INTERVAL 6 MONTH",
+            "'Inf'::DOUBLE": "'A'" if as_period_indicator else "INTERVAL 1 YEAR",
+        }
+
+        cases = "\n".join(
+            f"WHEN MIN(diff_days) < {value} THEN {period}" for value, period in periods.items()
+        )
+
+        return f"CASE\n{cases}\nEND".strip()
+
     def _visit_fill_time_series(self, node: AST.ParamOp) -> str:
         """Fill missing time periods/dates with NULL rows."""
         ds_node = node.children[0]
@@ -2023,34 +2096,15 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if ds is None:
             raise ValueError("Cannot resolve structure for fill_time_series")
 
-        time_id = None
-        time_type = None
-        for comp in ds.components.values():
-            if comp.data_type in (TimePeriod, Date) and comp.role == Role.IDENTIFIER:
-                time_id = comp.name
-                time_type = comp.data_type
-                break
-        if time_id is None:
-            raise ValueError("No time identifier found for fill_time_series")
+        time_id, time_type = self._resolve_time_identifier(ds, "fill_time_series")
 
         if time_type == Date:
             return self._fill_time_series_date(ds, src, time_id, fill_mode)
 
-        time_col = quote_identifier(time_id)
+        time_col, other_id_cols, _, join_on, final_select, order_by = self._build_time_grid_parts(
+            ds, time_id
+        )
         other_ids = [c.name for c in ds.get_identifiers() if c.name != time_id]
-        other_id_cols = [quote_identifier(n) for n in other_ids]
-        measure_names = [c.name for c in ds.components.values() if c.role != Role.IDENTIFIER]
-        measure_cols = [quote_identifier(n) for n in measure_names]
-
-        join_conds = [f"g.{time_col} = s.{time_col}"]
-        for oc in other_id_cols:
-            join_conds.append(f"g.{oc} = s.{oc}")
-        join_on = " AND ".join(join_conds)
-
-        g_cols = [f"g.{oc}" for oc in other_id_cols] + [f"g.{time_col}"]
-        s_cols = [f"s.{mc}" for mc in measure_cols]
-        final_select = ", ".join(g_cols + s_cols)
-        order_by = ", ".join(g_cols)
 
         if fill_mode == "single" and other_ids:
             oid_select = ", ".join(other_id_cols)
@@ -2158,21 +2212,10 @@ ORDER BY {order_by}"""
 
     def _fill_time_series_date(self, ds: Dataset, src: str, time_id: str, fill_mode: str) -> str:
         """Fill time series for Date identifiers using frequency inference."""
-        time_col = quote_identifier(time_id)
+        time_col, other_id_cols, _, join_on, final_select, order_by = self._build_time_grid_parts(
+            ds, time_id
+        )
         other_ids = [c.name for c in ds.get_identifiers() if c.name != time_id]
-        other_id_cols = [quote_identifier(n) for n in other_ids]
-        measure_names = [c.name for c in ds.components.values() if c.role != Role.IDENTIFIER]
-        measure_cols = [quote_identifier(n) for n in measure_names]
-
-        join_conds = [f"g.{time_col} = s.{time_col}"]
-        for oc in other_id_cols:
-            join_conds.append(f"g.{oc} = s.{oc}")
-        join_on = " AND ".join(join_conds)
-
-        g_cols = [f"g.{oc}" for oc in other_id_cols] + [f"g.{time_col}"]
-        s_cols = [f"s.{mc}" for mc in measure_cols]
-        final_select = ", ".join(g_cols + s_cols)
-        order_by = ", ".join(g_cols)
 
         partition = f"PARTITION BY {', '.join(other_id_cols)}" if other_id_cols else ""
 
@@ -2217,20 +2260,7 @@ group_freq AS (
         return f"""
 WITH source AS (SELECT * FROM {src}),
 freq AS (
-    SELECT CASE
-        WHEN MIN(diff_days) BETWEEN 1 AND 6 THEN INTERVAL 1 DAY
-        WHEN MIN(diff_days) BETWEEN 7 AND 27 THEN INTERVAL 7 DAY
-        WHEN MIN(diff_days) BETWEEN 28 AND 89 THEN INTERVAL 1 MONTH
-        WHEN MIN(diff_days) BETWEEN 90 AND 180 THEN INTERVAL 3 MONTH
-        WHEN MIN(diff_days) BETWEEN 181 AND 364 THEN INTERVAL 6 MONTH
-        ELSE INTERVAL 1 YEAR
-    END AS step
-    FROM (
-        SELECT ABS(DATE_DIFF('day',
-            LAG({time_col}) OVER ({partition} ORDER BY {time_col}),
-            {time_col})) AS diff_days
-        FROM source
-    ) WHERE diff_days IS NOT NULL AND diff_days > 0
+    {self._build_date_frequency_subquery("source", time_col, partition)}
 ),
 bounds AS (
     SELECT {bounds_select} MIN({time_col}) AS min_d, MAX({time_col}) AS max_d
@@ -2251,15 +2281,7 @@ ORDER BY {order_by}""".strip()
         if ds is None:
             raise ValueError(f"Cannot resolve structure for {op}")
 
-        time_id = None
-        time_type = None
-        for comp in ds.components.values():
-            if comp.data_type in (TimePeriod, Date) and comp.role == Role.IDENTIFIER:
-                time_id = comp.name
-                time_type = comp.data_type
-                break
-        if time_id is None:
-            raise ValueError(f"No time identifier found for {op}")
+        time_id, time_type = self._resolve_time_identifier(ds, op)
 
         other_ids = [quote_identifier(c.name) for c in ds.get_identifiers() if c.name != time_id]
 
@@ -2290,7 +2312,7 @@ ORDER BY {order_by}""".strip()
             else:
                 cols.append(col)
 
-        return f"SELECT {', '.join(cols)} FROM {src}"
+        return SQLBuilder().select(*cols).from_table(src).build()
 
     def _visit_timeshift(self, node: AST.BinOp) -> str:
         """Visit TIMESHIFT: shift time identifier by N periods."""
@@ -2302,15 +2324,7 @@ ORDER BY {order_by}""".strip()
         if ds is None:
             raise ValueError("Cannot resolve structure for timeshift")
 
-        time_id = None
-        time_type = None
-        for comp in ds.components.values():
-            if comp.data_type in (TimePeriod, Date) and comp.role == Role.IDENTIFIER:
-                time_id = comp.name
-                time_type = comp.data_type
-                break
-        if time_id is None:
-            raise ValueError("No time identifier found for timeshift")
+        time_id, time_type = self._resolve_time_identifier(ds, "timeshift")
 
         time_col = quote_identifier(time_id)
 
@@ -2320,7 +2334,7 @@ ORDER BY {order_by}""".strip()
             for comp in ds.components.values():
                 col = quote_identifier(comp.name)
                 cols.append(shifted if comp.name == time_id else col)
-            return f"SELECT {', '.join(cols)} FROM {src}"
+            return SQLBuilder().select(*cols).from_table(src).build()
         else:
             other_ids = [
                 quote_identifier(c.name) for c in ds.get_identifiers() if c.name != time_id
@@ -2335,22 +2349,11 @@ ORDER BY {order_by}""".strip()
                 else:
                     cols.append(col)
 
+            freq_sql = self._build_date_period_indicator_subquery(src, time_col, partition)
+
             return f"""SELECT {", ".join(cols)}
 FROM {src}, (
-    SELECT CASE
-        WHEN MIN(diff_days) BETWEEN 1 AND 6 THEN 'D'
-        WHEN MIN(diff_days) BETWEEN 7 AND 27 THEN 'W'
-        WHEN MIN(diff_days) BETWEEN 28 AND 89 THEN 'M'
-        WHEN MIN(diff_days) BETWEEN 90 AND 180 THEN 'Q'
-        WHEN MIN(diff_days) BETWEEN 181 AND 364 THEN 'S'
-        ELSE 'A'
-    END AS period_ind
-    FROM (
-        SELECT ABS(DATE_DIFF('day',
-            LAG({time_col}) OVER ({partition} ORDER BY {time_col}),
-            {time_col})) AS diff_days
-        FROM {src}
-    ) WHERE diff_days IS NOT NULL AND diff_days > 0
+    {freq_sql}
 ) AS freq"""
 
     def _visit_dateadd(self, node: AST.ParamOp) -> str:
@@ -4188,13 +4191,9 @@ FROM {src}, (
         query = routine.query
 
         # Convert double-quoted strings to single-quoted strings.
-        # In standard SQL (and DuckDB), double quotes delimit identifiers,
-        # but external routines written for SQLite use them for string literals.
         query = re.sub(r'"([^"]*)"', r"'\1'", query)
 
         # Map SQL table names to actual DuckDB table names.
-        # Operands may have module prefixes (e.g. C07.MSMTCH_BL_DS) while
-        # the SQL query references the short name (MSMTCH_BL_DS).
         operand_names: List[str] = []
         for operand in node.operands:
             if isinstance(operand, (AST.Identifier, AST.VarID)):
