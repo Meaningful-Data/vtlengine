@@ -693,7 +693,7 @@ class TestParameterizedOperations:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = 'SELECT "Id_1", NVL("Me_1", 0) AS "Me_1" FROM "DS_1"'
+        expected_sql = 'SELECT "Id_1", COALESCE("Me_1", 0) AS "Me_1" FROM "DS_1"'
         assert_sql_equal(sql, expected_sql)
 
 
