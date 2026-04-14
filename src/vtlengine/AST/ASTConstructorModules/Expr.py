@@ -1672,19 +1672,7 @@ class Expr(VtlVisitor):
         """
         ctx_list = list(ctx.getChildren())
         op_node = ctx_list[0].getSymbol().text
-
-        text = ctx_list[1].start.source[1].strdata
-        expr = text[ctx.start.start : ctx.stop.stop + 1].strip()
-
-        if "]" in expr:
-            index = expr.index("]")
-            expr = expr[:index]
-        if "end" in expr:
-            index = expr.index("end")
-            expr = expr[:index]
-        if expr.count(")") > expr.count("("):
-            index = expr.rindex(")")
-            expr = expr[:index]
+        expr = self._tokens_text(ctx)
 
         if "{" in expr or "}" in expr:
             expr = expr.replace("{", "(")
@@ -1706,6 +1694,13 @@ class Expr(VtlVisitor):
         return ParamOp(
             op=op_node, children=None, params=param_nodes, **extract_token_info(ctx)
         ), expr
+
+    @staticmethod
+    def _tokens_text(ctx: Any) -> str:
+        """Reconstruct text from parse tree by joining leaf tokens with spaces."""
+        if isinstance(ctx, TerminalNodeImpl):
+            return str(ctx.getSymbol().text)
+        return " ".join(Expr._tokens_text(child) for child in ctx.getChildren())
 
     @staticmethod
     def _extract_time_agg_tokens(
