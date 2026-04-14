@@ -1,4 +1,3 @@
-import re
 from copy import copy
 from typing import Any, List, Optional, Tuple
 
@@ -1675,8 +1674,7 @@ class Expr(VtlVisitor):
         op_node = ctx_list[0].getSymbol().text
 
         text = ctx_list[1].start.source[1].strdata
-        expr = re.split("having", text)[1]
-        expr = "having " + expr[:-2].strip()
+        expr = text[ctx.start.start : ctx.stop.stop + 1].strip()
 
         if "]" in expr:
             index = expr.index("]")
