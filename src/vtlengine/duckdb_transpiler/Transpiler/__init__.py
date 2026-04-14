@@ -104,7 +104,7 @@ def _date_tp_compare_expr(
             f"{{'date1': CAST({right_ref} AS DATE),"
             f" 'date2': CAST({right_ref} AS DATE)}}::vtl_time_interval"
         )
-    return registry.binary.generate(op, left_interval, right_interval)
+    return registry.generate(op, left_interval, right_interval)
 
 
 # String operators needing VARCHAR input.
@@ -474,10 +474,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             right_sql = self._visit_dp_expr(node.right, signature)
             if isinstance(node, AST.HRBinOp) and node.op == "when":
                 return f"CASE WHEN ({left_sql}) THEN ({right_sql}) ELSE TRUE END"
-            return registry.binary.generate(node.op, left_sql, right_sql)
+            return registry.generate(node.op, left_sql, right_sql)
         if isinstance(node, (AST.HRUnOp, AST.UnaryOp)):
             operand_sql = self._visit_dp_expr(node.operand, signature)
-            return registry.unary.generate(node.op, operand_sql)
+            return registry.generate(node.op, operand_sql)
         if isinstance(node, (AST.DefIdentifier, AST.VarID)):
             col_name = signature.get(node.value, node.value)
             return quote_identifier(col_name)
@@ -1124,7 +1124,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if isinstance(node, (AST.HRBinOp, AST.BinOp)):
             left_sql = self._build_hr_when_sql(node.left, cond_mapping)
             right_sql = self._build_hr_when_sql(node.right, cond_mapping)
-            return registry.binary.generate(node.op, left_sql, right_sql)
+            return registry.generate(node.op, left_sql, right_sql)
         if isinstance(node, (AST.DefIdentifier, AST.VarID)):
             col_name = cond_mapping.get(node.value, node.value)
             return quote_identifier(col_name)
@@ -1379,16 +1379,14 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             right_ref = _datediff_to_date(right_ref, right_type)
             return f"ABS(DATE_DIFF('day', {left_ref}, {right_ref}))"
         # Scalar TimePeriod path: normalize before typed dispatch
-        if normalize_period and dt == TimePeriod and registry.binary.has_typed(op, TimePeriod):
+        if normalize_period and dt == TimePeriod and registry.has_typed(op, TimePeriod):
             left_ref = f"vtl_period_normalize({left_ref})"
             right_ref = f"vtl_period_normalize({right_ref})"
         # Date↔TimePeriod cross-type promotion
         if left_type and right_type and _is_date_timeperiod_pair(left_type, right_type):
             return _date_tp_compare_expr(left_ref, right_ref, left_type, right_type, op)
         # Typed or generic registry lookup, with function-call fallback
-        if registry.binary.is_registered(op) or (dt and registry.binary.has_typed(op, dt)):
-            return registry.binary.generate(op, left_ref, right_ref, data_type=dt)
-        return f"{op.upper()}({left_ref}, {right_ref})"
+        return registry.generate(op, left_ref, right_ref, data_type=dt)
 
     def _build_ds_ds_binary(
         self,
@@ -1494,9 +1492,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             left_sql = self.visit(ds_node)
             right_sql = self.visit(scalar_node)
             if ds_on_left:
-                return registry.binary.generate(op, left_sql, right_sql)
-            else:
-                return registry.binary.generate(op, right_sql, left_sql)
+                return registry.generate(op, left_sql, right_sql)
+            return registry.generate(op, right_sql, left_sql)
 
         scalar_sql = self.visit(scalar_node)
 
@@ -1616,7 +1613,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                         cols.append(quote_identifier(id_name))
                 for m_name in measure_names:
                     m_ref = quote_identifier(m_name)
-                    expr = registry.binary.generate(step_op, m_ref, scalar_sql)
+                    expr = registry.generate(step_op, m_ref, scalar_sql)
                     cols.append(f"{expr} AS {m_ref}")
                 if result_ds:
                     for attr_name in result_ds.get_attributes_names():
@@ -1694,11 +1691,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if left_type == _DATASET:
             return self._apply_to_measures(
                 node.left,
-                lambda col: registry.binary.generate(tokens.CHARSET_MATCH, col, pattern_sql),
+                lambda col: registry.generate(tokens.CHARSET_MATCH, col, pattern_sql),
             )
         else:
             left_sql = self.visit(node.left)
-            return registry.binary.generate(tokens.CHARSET_MATCH, left_sql, pattern_sql)
+            return registry.generate(tokens.CHARSET_MATCH, left_sql, pattern_sql)
 
     def _build_exists_in_sql(
         self,
@@ -1864,9 +1861,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             def _unary_expr(col_ref: str) -> str:
                 comp = ds.components.get(col_ref.strip('"')) if ds else None
                 dt = comp.data_type if comp else None
-                if registry.unary.is_registered(op) or (dt and registry.unary.has_typed(op, dt)):
-                    return registry.unary.generate(op, col_ref, data_type=dt)
-                return f"{op.upper()}({col_ref})"
+                return registry.generate(op, col_ref, data_type=dt)
 
             return self._apply_to_measures(
                 node.operand,
@@ -1877,9 +1872,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         else:
             dt = self._detect_scalar_type(node.operand)
             operand_sql = self.visit(node.operand)
-            if registry.unary.is_registered(op) or (dt and registry.unary.has_typed(op, dt)):
-                return registry.unary.generate(op, operand_sql, data_type=dt)
-            return f"{op.upper()}({operand_sql})"
+            return registry.generate(op, operand_sql, data_type=dt)
 
     def visit_ParamOp(self, node: AST.ParamOp) -> str:  # type: ignore[override]
         """Visit a parameterized operation."""
@@ -1907,10 +1900,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             if op in (tokens.ROUND, tokens.TRUNC) and not params_sql:
                 params_sql = ["0"]
             all_args = children_sql + params_sql
-            if registry.parameterized.is_registered(op):
-                return registry.parameterized.generate(op, *all_args)
-            non_none = [a for a in all_args if a is not None]
-            return f"{op.upper()}({', '.join(non_none)})"
+            return registry.generate(op, *all_args)
 
     def _visit_params(self, params: List[Any]) -> List[Optional[str]]:
         """Visit param nodes, converting VTL '_' to None and VTL null to 'NULL'."""
@@ -1933,10 +1923,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             params_sql = ["0"]
 
         def _param_expr(col_ref: str) -> str:
-            if registry.parameterized.is_registered(op):
-                return registry.parameterized.generate(op, col_ref, *params_sql)  # type:ignore[arg-type]
-            all_args = [col_ref] + [a for a in params_sql if a is not None]
-            return f"{op.upper()}({', '.join(all_args)})"
+            return registry.generate(op, col_ref, *params_sql)
 
         return self._apply_to_measures(
             ds_node,
@@ -2848,10 +2835,7 @@ FROM {src}, (
             for measure in common_measures:
                 left_col = quote_identifier(left_measures[measure])
                 right_col = quote_identifier(right_measures[measure])
-                if registry.binary.is_registered(op):
-                    expr = registry.binary.generate(op, left_col, right_col)
-                else:
-                    expr = f"{left_col} {op} {right_col}"
+                expr = registry.generate(op, left_col, right_col)
                 computed[measure] = expr
                 self._consumed_join_aliases.add(left_measures[measure])
                 self._consumed_join_aliases.add(right_measures[measure])
@@ -2986,9 +2970,10 @@ FROM {src}, (
                     if comp is not None and comp.data_type == TimePeriod:
                         parsed = f"vtl_period_parse({operand_sql})"
                         return f"ARG_{op.upper()}({operand_sql}, {parsed})"
-                if registry.aggregate.is_registered(op):
-                    return registry.aggregate.generate(op, operand_sql)
-                return f"{op.upper()}({operand_sql})"
+                expr = registry.generate(op, operand_sql)
+                if op == tokens.COUNT:
+                    expr = f"NULLIF({expr}, 0)"
+                return expr
 
         # count() without operand
         if node.operand is None:
@@ -3006,9 +2991,7 @@ FROM {src}, (
         ds = self._get_dataset_structure(node.operand)
         if ds is None:
             operand_sql = self.visit(node.operand)
-            if registry.aggregate.is_registered(op):
-                return registry.aggregate.generate(op, operand_sql)
-            return f"{op.upper()}({operand_sql})"
+            return registry.generate(op, operand_sql)
 
         table_src = self._get_dataset_sql(node.operand)
 
@@ -3049,10 +3032,8 @@ FROM {src}, (
                     expr = f"vtl_period_to_string({op.upper()}({parsed}))"
                 elif is_duration and op in (tokens.MIN, tokens.MAX):
                     expr = f"vtl_int_to_duration({op.upper()}(vtl_duration_to_int({qm})))"
-                elif registry.aggregate.is_registered(op):
-                    expr = registry.aggregate.generate(op, qm)
                 else:
-                    expr = f"{op.upper()}({qm})"
+                    expr = registry.generate(op, qm)
                 cols.append(f"{expr} AS {qm}")
 
         builder = SQLBuilder().select(*cols).from_table(table_src)
@@ -3135,9 +3116,7 @@ FROM {src}, (
                     default_sql = str(default_val)
                 func_sql += f", {default_sql}"
             return func_sql + ")"
-        if registry.analytic.is_registered(op):
-            return registry.analytic.generate(op, operand_sql)
-        return f"{op.upper()}({operand_sql})"
+        return registry.generate(op, operand_sql)
 
     def visit_Analytic(self, node: AST.Analytic) -> str:  # type: ignore[override]
         """Visit an analytic (window) function."""
@@ -3356,7 +3335,7 @@ FROM {src}, (
 
                 id_names = order_ds.get_identifiers_names()
                 if id_names:
-                    inner_sql = registry.set_ops.generate(op, *ordered_sqls)
+                    inner_sql = registry.generate(op, *ordered_sqls)
                     id_cols = ", ".join(quote_identifier(i) for i in id_names)
                     # Preserve UNION ALL row order to match pandas drop_duplicates(keep="first").
                     # QUALIFY keeps the first occurrence per identifier group by insertion order.
@@ -3367,15 +3346,15 @@ FROM {src}, (
                         f") AS _union_t "
                         f"QUALIFY ROW_NUMBER() OVER (PARTITION BY {id_cols} ORDER BY _rn) = 1"
                     )
-                return registry.set_ops.generate(op, *ordered_sqls)
-            return registry.set_ops.generate(op, *child_sqls)
+                return registry.generate(op, *ordered_sqls)
+            return registry.generate(op, *child_sqls)
 
         if len(child_sqls) < 2:
             return child_sqls[0] if child_sqls else ""
 
         first_ds = self._get_dataset_structure(node.children[0])
         if first_ds is None:
-            return registry.set_ops.generate(op, *child_sqls)
+            return registry.generate(op, *child_sqls)
 
         id_names = first_ds.get_identifiers_names()
         a_sql = child_sqls[0]
@@ -3411,7 +3390,7 @@ FROM {src}, (
                 f"WHERE NOT EXISTS (SELECT 1 FROM ({a_sql}) AS d WHERE {on_clause_rev}))"
             )
 
-        return registry.set_ops.generate(op, *child_sqls)
+        return registry.generate(op, *child_sqls)
 
     # =========================================================================
     # Conditional visitors (If, Case)
