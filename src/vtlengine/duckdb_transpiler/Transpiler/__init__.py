@@ -53,6 +53,16 @@ _DP_OP_MAP: Dict[str, str] = {
 _ORDERING_OPS: frozenset[str] = frozenset({tokens.GT, tokens.GTE, tokens.LT, tokens.LTE})
 
 
+def _datediff_to_date(ref: str, dt: Optional[type]) -> str:
+    """Convert a datediff operand to a DATE expression based on its VTL type."""
+    if dt == TimePeriod:
+        return f"vtl_tp_end_date(vtl_period_parse({ref}))"
+    if dt == Date:
+        return f"CAST({ref} AS DATE)"
+    # TimeInterval or unknown: pass through (NULL propagates, non-null errors at runtime)
+    return f"CAST({ref} AS DATE)"
+
+
 def _add_tp_indicator_check(sql: str, table_src: str, tp_cols: List[tuple[str, str]]) -> str:
     """Add a TimePeriod indicator consistency check to an aggregate query."""
     checks: List[str] = []
@@ -1401,6 +1411,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         # TimeInterval: ordering not supported
         if op in _ORDERING_OPS and dt == TimeInterval:
             raise RunTimeError("2-1-19-17", op=op)
+        # datediff: convert each operand to DATE individually based on its type
+        if op == tokens.DATEDIFF and dt in (TimePeriod, TimeInterval, Date):
+            left_ref = _datediff_to_date(left_ref, left_type)
+            right_ref = _datediff_to_date(right_ref, right_type)
+            return f"ABS(DATE_DIFF('day', {left_ref}, {right_ref}))"
         # Scalar TimePeriod path: normalize before typed dispatch
         if normalize_period and dt == TimePeriod and registry.binary.has_typed(op, TimePeriod):
             left_ref = f"vtl_period_normalize({left_ref})"
