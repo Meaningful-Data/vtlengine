@@ -1344,6 +1344,45 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     # Dataset-level binary helpers
 
+    @staticmethod
+    def _build_agg_expr(
+        op: str, col_ref: str, data_type: Optional[type], *, dataset_level: bool = False
+    ) -> Optional[str]:
+        """Build a type-aware aggregate expression for MIN/MAX on Duration/TimePeriod.
+
+        Returns None when the standard ``registry.generate`` path should be used.
+
+        Args:
+            op: Aggregate operator token (e.g. ``tokens.MIN``).
+            col_ref: Quoted column reference.
+            data_type: Component data type, or None.
+            dataset_level: True for dataset-level aggregation (normalizes TimePeriod
+                and wraps with ``vtl_period_to_string``); False for clause-context
+                aggregation (uses ``ARG_MIN``/``ARG_MAX``).
+        """
+        if op not in (tokens.MIN, tokens.MAX) or data_type is None:
+            return None
+        if data_type == Duration:
+            return f"vtl_int_to_duration({op.upper()}(vtl_duration_to_int({col_ref})))"
+        if data_type == TimePeriod:
+            if dataset_level:
+                normalized = f"vtl_period_normalize({col_ref})"
+                parsed = f"vtl_period_parse({normalized})"
+                return f"vtl_period_to_string({op.upper()}({parsed}))"
+            parsed = f"vtl_period_parse({col_ref})"
+            return f"ARG_{op.upper()}({col_ref}, {parsed})"
+        return None
+
+    @staticmethod
+    def _join_on_clause(common_ids: List[str], left_alias: str, right_alias: str) -> str:
+        """Build ``a."Id" = b."Id" AND ...`` for a JOIN ON or WHERE clause."""
+        if not common_ids:
+            return "1=1"
+        return " AND ".join(
+            f"{left_alias}.{quote_identifier(i)} = {right_alias}.{quote_identifier(i)}"
+            for i in common_ids
+        )
+
     def _make_binary_expr(
         self,
         left_ref: str,
@@ -1465,14 +1504,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 out_name = output_measure_names[0]
             cols.append(f"{expr} AS {quote_identifier(out_name)}")
 
-        on_parts = [
-            f"{alias_a}.{quote_identifier(id_)} = {alias_b}.{quote_identifier(id_)}"
-            for id_ in common_ids
-        ]
-        on_clause = " AND ".join(on_parts)
+        on_clause = self._join_on_clause(common_ids, alias_a, alias_b)
 
         builder = SQLBuilder().select(*cols).from_table(left_src, alias_a)
-        if on_clause:
+        if on_clause != "1=1":
             builder.join(right_src, alias_b, on=on_clause, join_type="INNER")
         else:
             builder.cross_join(right_src, alias_b)
@@ -1560,7 +1595,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 return self._apply_to_measures(node.left, _in_expr, output_name_override="bool_var")
             if op in self._ARITHMETIC_OPS and self._is_chainable_ds_binop(node.left):
                 return self._visit_dataset_binary_chain(node)
-            return self._visit_dataset_binary(node.left, node.right, op)
+            if left_type == _DATASET and right_type == _DATASET:
+                return self._build_ds_ds_binary(node.left, node.right, op)
+            if left_type == _DATASET:
+                return self._build_ds_scalar_binary(node.left, node.right, op, ds_on_left=True)
+            return self._build_ds_scalar_binary(node.right, node.left, op, ds_on_left=False)
 
         # Scalar-scalar binary: detect types and delegate to _make_binary_expr
         left_sql = self.visit(node.left)
@@ -1624,18 +1663,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 is_subquery = True
 
         return result_sql
-
-    def _visit_dataset_binary(self, left: AST.AST, right: AST.AST, op: str) -> str:
-        """Route to the correct dataset binary handler."""
-        left_type = self._get_operand_type(left)
-        right_type = self._get_operand_type(right)
-
-        if left_type == _DATASET and right_type == _DATASET:
-            return self._build_ds_ds_binary(left, right, op)
-        elif left_type == _DATASET:
-            return self._build_ds_scalar_binary(left, right, op, ds_on_left=True)
-        else:
-            return self._build_ds_scalar_binary(right, left, op, ds_on_left=False)
 
     def _visit_membership(self, node: AST.BinOp) -> str:
         """Visit MEMBERSHIP (#): DS#comp -> SELECT ids, comp FROM DS."""
@@ -1716,10 +1743,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         right_ids = right_ds.get_identifiers_names()
         common_ids = [id_ for id_ in left_ids if id_ in right_ids]
 
-        where_parts = [
-            f"l.{quote_identifier(id_)} = r.{quote_identifier(id_)}" for id_ in common_ids
-        ]
-        where_clause = " AND ".join(where_parts)
+        where_clause = self._join_on_clause(common_ids, "l", "r")
 
         id_cols = ", ".join([f"l.{quote_identifier(id_)}" for id_ in left_ids])
 
@@ -1890,17 +1914,25 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if op == tokens.FILL_TIME_SERIES:
             return self._visit_fill_time_series(node)
 
+        params_sql = self._visit_params(node.params)
+        if op in (tokens.ROUND, tokens.TRUNC) and not params_sql:
+            params_sql = ["0"]
+
         operand_type = self._get_operand_type(node.children[0]) if node.children else _SCALAR
 
         if operand_type == _DATASET:
-            return self._visit_paramop_dataset(node, op)
-        else:
-            children_sql = [self.visit(c) for c in node.children]
-            params_sql = self._visit_params(node.params)
-            if op in (tokens.ROUND, tokens.TRUNC) and not params_sql:
-                params_sql = ["0"]
-            all_args = children_sql + params_sql
-            return registry.generate(op, *all_args)
+            ds_node = node.children[0]
+
+            def _param_expr(col_ref: str) -> str:
+                return registry.generate(op, col_ref, *params_sql)
+
+            return self._apply_to_measures(
+                ds_node, _param_expr, cast_bool_to_str=op in _STRING_PARAM_OPS
+            )
+
+        children_sql = [self.visit(c) for c in node.children]
+        all_args = children_sql + params_sql
+        return registry.generate(op, *all_args)
 
     def _visit_params(self, params: List[Any]) -> List[Optional[str]]:
         """Visit param nodes, converting VTL '_' to None and VTL null to 'NULL'."""
@@ -1913,23 +1945,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             else:
                 result.append(self.visit(p))
         return result
-
-    def _visit_paramop_dataset(self, node: AST.ParamOp, op: str) -> str:
-        """Visit a dataset-level parameterized operation."""
-        ds_node = node.children[0]
-        params_sql = self._visit_params(node.params)
-
-        if op in (tokens.ROUND, tokens.TRUNC) and not params_sql:
-            params_sql = ["0"]
-
-        def _param_expr(col_ref: str) -> str:
-            return registry.generate(op, col_ref, *params_sql)
-
-        return self._apply_to_measures(
-            ds_node,
-            _param_expr,
-            cast_bool_to_str=op in _STRING_PARAM_OPS,
-        )
 
     def _resolve_time_identifier(self, ds: Dataset, op_name: str) -> Tuple[str, type]:
         """Return the time identifier name and type for time-based operators."""
@@ -2955,21 +2970,13 @@ FROM {src}, (
             operand_type = self._get_operand_type(node.operand)
             if operand_type in (_COMPONENT, _SCALAR):
                 operand_sql = self.visit(node.operand)
-                # Duration MIN/MAX: convert to int, aggregate, convert back
-                if (
-                    op in (tokens.MIN, tokens.MAX)
-                    and self._current_dataset
-                    and hasattr(node.operand, "value")
-                ):
+                # Type-aware MIN/MAX for Duration/TimePeriod
+                if self._current_dataset and hasattr(node.operand, "value"):
                     comp = self._current_dataset.components.get(node.operand.value)
-                    if comp is not None and comp.data_type == Duration:
-                        return (
-                            f"vtl_int_to_duration({op.upper()}(vtl_duration_to_int({operand_sql})))"
-                        )
-                    # TimePeriod MIN/MAX: use ARG_MIN/ARG_MAX for correct ordering
-                    if comp is not None and comp.data_type == TimePeriod:
-                        parsed = f"vtl_period_parse({operand_sql})"
-                        return f"ARG_{op.upper()}({operand_sql}, {parsed})"
+                    dt = comp.data_type if comp else None
+                    agg = self._build_agg_expr(op, operand_sql, dt)
+                    if agg is not None:
+                        return agg
                 expr = registry.generate(op, operand_sql)
                 if op == tokens.COUNT:
                     expr = f"NULLIF({expr}, 0)"
@@ -3021,19 +3028,13 @@ FROM {src}, (
             measures = ds.get_measures_names()
             for measure in measures:
                 comp = ds.components.get(measure)
-                is_time_period = comp is not None and comp.data_type == TimePeriod
+                dt = comp.data_type if comp else None
                 qm = quote_identifier(measure)
 
-                is_duration = comp is not None and comp.data_type == Duration
-                if is_time_period and op in (tokens.MIN, tokens.MAX):
+                if dt == TimePeriod and op in (tokens.MIN, tokens.MAX):
                     ds_tp_minmax_cols.append((measure, op))
-                    normalized = f"vtl_period_normalize({qm})"
-                    parsed = f"vtl_period_parse({normalized})"
-                    expr = f"vtl_period_to_string({op.upper()}({parsed}))"
-                elif is_duration and op in (tokens.MIN, tokens.MAX):
-                    expr = f"vtl_int_to_duration({op.upper()}(vtl_duration_to_int({qm})))"
-                else:
-                    expr = registry.generate(op, qm)
+                agg = self._build_agg_expr(op, qm, dt, dataset_level=True)
+                expr = agg if agg is not None else registry.generate(op, qm)
                 cols.append(f"{expr} AS {qm}")
 
         builder = SQLBuilder().select(*cols).from_table(table_src)
@@ -3139,7 +3140,18 @@ FROM {src}, (
         """Visit a dataset-level analytic: applies the window function to each measure."""
         over_clause = self._build_over_clause(node)
 
-        # Validate TimePeriod MIN/MAX: mixed indicators across all rows
+        def _analytic_expr(col_ref: str) -> str:
+            func_sql = self._build_analytic_expr(op, col_ref, node)
+            if op == tokens.RATIO_TO_REPORT:
+                return func_sql
+            return f"{func_sql} OVER ({over_clause})"
+
+        name_override = "int_var" if op == tokens.COUNT else None
+        if node.operand is None:
+            raise ValueError("Analytic node must have an operand")
+        result = self._apply_to_measures(node.operand, _analytic_expr, name_override)
+
+        # Inject TimePeriod indicator validation for MIN/MAX
         if op in (tokens.MIN, tokens.MAX) and node.operand:
             ds = self._get_dataset_structure(node.operand)
             if ds:
@@ -3150,55 +3162,7 @@ FROM {src}, (
                 ]
                 if tp_cols:
                     table_src = self._get_dataset_sql(node.operand)
-                    # Run indicator check as a subquery in the generated SQL
-                    checks: List[str] = []
-                    for col_name, agg_op in tp_cols:
-                        qc = quote_identifier(col_name)
-                        normalized = f"vtl_period_normalize({qc})"
-                        indicator = f"vtl_period_parse({normalized}).period_indicator"
-                        err = (
-                            f"'VTL Error 2-1-19-20: Time Period operands with "
-                            f"different period indicators do not support < and > "
-                            f"Comparison operations, unable to get the {agg_op}'"
-                        )
-                        checks.append(
-                            f"CASE WHEN COUNT(DISTINCT {indicator}) "
-                            f"FILTER (WHERE {qc} IS NOT NULL) > 1 "
-                            f"THEN error({err}) ELSE 1 END"
-                        )
-                    check_cols = ", ".join(f"{c} AS _ok{i}" for i, c in enumerate(checks))
-                    # Store the validation subquery for _apply_to_measures to inject
-                    self._analytic_tp_check = (
-                        f"(SELECT {check_cols} FROM {table_src}) AS _vtl_tp_check"
-                    )
-                    self._analytic_tp_where = " AND ".join(
-                        f"_vtl_tp_check._ok{i} = 1" for i in range(len(checks))
-                    )
-
-        def _analytic_expr(col_ref: str) -> str:
-            func_sql = self._build_analytic_expr(op, col_ref, node)
-            if op == tokens.RATIO_TO_REPORT:
-                return func_sql
-            return f"{func_sql} OVER ({over_clause})"
-
-        # VTL count always produces a single "int_var" measure
-        name_override = "int_var" if op == tokens.COUNT else None
-        if node.operand is None:
-            raise ValueError("Analytic node must have an operand")
-        result = self._apply_to_measures(node.operand, _analytic_expr, name_override)
-
-        # Inject TimePeriod indicator validation if needed
-        if hasattr(self, "_analytic_tp_check"):
-            table_src = self._get_dataset_sql(node.operand)
-            from_pattern = f"FROM {table_src}"
-            where_clause = self._analytic_tp_where
-            result = result.replace(
-                from_pattern,
-                f"FROM {table_src}, {self._analytic_tp_check} WHERE {where_clause}",
-                1,
-            )
-            del self._analytic_tp_check
-            del self._analytic_tp_where
+                    result = _add_tp_indicator_check(result, table_src, tp_cols)
 
         return result
 
@@ -3360,8 +3324,7 @@ FROM {src}, (
         a_sql = child_sqls[0]
         b_sql = child_sqls[1]
 
-        on_parts = [f"a.{quote_identifier(id_)} = b.{quote_identifier(id_)}" for id_ in id_names]
-        on_clause = " AND ".join(on_parts) if on_parts else "1=1"
+        on_clause = self._join_on_clause(id_names, "a", "b")
 
         if op == tokens.INTERSECT:
             return (
@@ -3378,10 +3341,7 @@ FROM {src}, (
         if op == tokens.SYMDIFF:
             second_ds = self._get_dataset_structure(node.children[1])
             second_ids = second_ds.get_identifiers_names() if second_ds else id_names
-            on_parts_rev = [
-                f"c.{quote_identifier(id_)} = d.{quote_identifier(id_)}" for id_ in second_ids
-            ]
-            on_clause_rev = " AND ".join(on_parts_rev) if on_parts_rev else "1=1"
+            on_clause_rev = self._join_on_clause(second_ids, "c", "d")
             return (
                 f"(SELECT a.* FROM ({a_sql}) AS a "
                 f"WHERE NOT EXISTS (SELECT 1 FROM ({b_sql}) AS b WHERE {on_clause})) "
@@ -3517,12 +3477,9 @@ FROM {src}, (
             then_ds = self._get_dataset_structure(node.thenOp)
             then_ids = set(then_ds.get_identifiers_names()) if then_ds else set()
             common = [id_ for id_ in source_ids if id_ in then_ids]
-            on_parts = [
-                f"{alias_cond}.{quote_identifier(id_)} = t.{quote_identifier(id_)}"
-                for id_ in common
-            ]
-            if on_parts:
-                builder.join(then_sql, "t", on=" AND ".join(on_parts), join_type="LEFT")
+            if common:
+                on = self._join_on_clause(common, alias_cond, "t")
+                builder.join(then_sql, "t", on=on, join_type="LEFT")
                 then_join_id = f"t.{quote_identifier(common[0])}"
 
         else_join_id: Optional[str] = None
@@ -3531,12 +3488,9 @@ FROM {src}, (
             else_ds = self._get_dataset_structure(node.elseOp)
             else_ids = set(else_ds.get_identifiers_names()) if else_ds else set()
             common = [id_ for id_ in source_ids if id_ in else_ids]
-            on_parts = [
-                f"{alias_cond}.{quote_identifier(id_)} = e.{quote_identifier(id_)}"
-                for id_ in common
-            ]
-            if on_parts:
-                builder.join(else_sql, "e", on=" AND ".join(on_parts), join_type="LEFT")
+            if common:
+                on = self._join_on_clause(common, alias_cond, "e")
+                builder.join(else_sql, "e", on=on, join_type="LEFT")
                 else_join_id = f"e.{quote_identifier(common[0])}"
 
         # Filter: only keep rows where the selected side has a match.
@@ -3602,12 +3556,9 @@ FROM {src}, (
             cond_sql = self._get_dataset_sql(cond_source)
             cond_ids = set(cond_ds.get_identifiers_names())
             common = [id_ for id_ in source_ids if id_ in cond_ids]
-            on_parts = [
-                f"{alias_src}.{quote_identifier(id_)} = {alias}.{quote_identifier(id_)}"
-                for id_ in common
-            ]
-            if on_parts:
-                builder.join(cond_sql, alias, on=" AND ".join(on_parts), join_type="LEFT")
+            if common:
+                on = self._join_on_clause(common, alias_src, alias)
+                builder.join(cond_sql, alias, on=on, join_type="LEFT")
 
         # Build condition expression
         if isinstance(case_obj.condition, AST.VarID) and cond_ds is not None:
@@ -3633,12 +3584,9 @@ FROM {src}, (
         sql = self._get_dataset_sql(operand)
         ds_ids = set(ds.get_identifiers_names())
         common = [id_ for id_ in source_ids if id_ in ds_ids]
-        on_parts = [
-            f"{alias_src}.{quote_identifier(id_)} = {alias}.{quote_identifier(id_)}"
-            for id_ in common
-        ]
-        if on_parts:
-            builder.join(sql, alias, on=" AND ".join(on_parts), join_type="LEFT")
+        if common:
+            on = self._join_on_clause(common, alias_src, alias)
+            builder.join(sql, alias, on=on, join_type="LEFT")
 
     def _build_dataset_case(self, node: AST.Case) -> str:
         """Build SQL for dataset-level CASE with JOINs."""
