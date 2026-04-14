@@ -5,6 +5,7 @@ from enum import Enum, auto
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import vtlengine.AST.Grammar.tokens as tokens
+from vtlengine.DataTypes import Duration, TimePeriod
 from vtlengine.Exceptions import SemanticError
 
 
@@ -68,6 +69,7 @@ class OperatorRegistry:
 
     category: OperatorCategory
     _operators: Dict[str, SQLOperator] = field(default_factory=dict)
+    _typed_overrides: Dict[Tuple[str, type], SQLOperator] = field(default_factory=dict)
 
     def register(self, vtl_token: str, operator: SQLOperator) -> "OperatorRegistry":
         """
@@ -108,36 +110,39 @@ class OperatorRegistry:
         self._operators[vtl_token] = operator
         return self
 
+    def register_typed(
+        self,
+        vtl_token: str,
+        data_type: type,
+        sql_template: str,
+    ) -> "OperatorRegistry":
+        """Register a type-specific operator variant.
+
+        When ``generate`` is called with a matching ``data_type``, this
+        override takes precedence over the generic registration.
+        """
+        op = SQLOperator(sql_template=sql_template, category=self.category)
+        self._typed_overrides[(vtl_token, data_type)] = op
+        return self
+
+    def has_typed(self, vtl_token: str, data_type: type) -> bool:
+        """Check if a type-specific override exists."""
+        return (vtl_token, data_type) in self._typed_overrides
+
     def get(self, vtl_token: str) -> Optional[SQLOperator]:
-        """
-        Get an operator by VTL token.
-
-        Args:
-            vtl_token: The VTL operator token.
-
-        Returns:
-            The SQLOperator or None if not registered.
-        """
+        """Get a generic operator by VTL token."""
         return self._operators.get(vtl_token)
 
     def is_registered(self, vtl_token: str) -> bool:
-        """Check if an operator is registered."""
+        """Check if an operator is registered (generic only)."""
         return vtl_token in self._operators
 
-    def generate(self, vtl_token: str, *operands: str) -> str:
-        """
-        Generate SQL for an operator.
-
-        Args:
-            vtl_token: The VTL operator token.
-            *operands: The SQL expressions for operands.
-
-        Returns:
-            The generated SQL.
-
-        Raises:
-            ValueError: If operator is not registered.
-        """
+    def generate(self, vtl_token: str, *operands: str, data_type: Optional[type] = None) -> str:
+        """Generate SQL, checking type-specific overrides first."""
+        if data_type is not None:
+            typed_op = self._typed_overrides.get((vtl_token, data_type))
+            if typed_op:
+                return typed_op.generate(*operands)
         operator = self.get(vtl_token)
         if not operator:
             raise ValueError(f"Unknown operator: {vtl_token}")
@@ -295,6 +300,40 @@ def _create_default_registries() -> SQLOperatorRegistries:
     # String matching
     registries.binary.register_simple(tokens.CHARSET_MATCH, "regexp_full_match({0}, {1})")
 
+    # TimePeriod ordering — vtl_period_* comparison macros
+    registries.binary.register_typed(
+        tokens.GT, TimePeriod, "vtl_period_gt(vtl_period_parse({0}), vtl_period_parse({1}))"
+    )
+    registries.binary.register_typed(
+        tokens.GTE, TimePeriod, "vtl_period_ge(vtl_period_parse({0}), vtl_period_parse({1}))"
+    )
+    registries.binary.register_typed(
+        tokens.LT, TimePeriod, "vtl_period_lt(vtl_period_parse({0}), vtl_period_parse({1}))"
+    )
+    registries.binary.register_typed(
+        tokens.LTE, TimePeriod, "vtl_period_le(vtl_period_parse({0}), vtl_period_parse({1}))"
+    )
+    # TimePeriod datediff
+    registries.binary.register_typed(
+        tokens.DATEDIFF,
+        TimePeriod,
+        "vtl_tp_datediff(vtl_period_parse({0}), vtl_period_parse({1}))",
+    )
+    # Duration comparison — magnitude ordering via vtl_duration_to_int
+    for _tok, _sym in [
+        (tokens.GT, ">"),
+        (tokens.GTE, ">="),
+        (tokens.LT, "<"),
+        (tokens.LTE, "<="),
+        (tokens.EQ, "="),
+        (tokens.NEQ, "<>"),
+    ]:
+        registries.binary.register_typed(
+            _tok,
+            Duration,
+            f"(vtl_duration_to_int({{0}}) {_sym} vtl_duration_to_int({{1}}))",
+        )
+
     # Unary operators
 
     # Arithmetic prefix
@@ -323,11 +362,23 @@ def _create_default_registries() -> SQLOperatorRegistries:
     # Null check
     registries.unary.register_simple(tokens.ISNULL, "({0} IS NULL)")
 
-    # Date extraction (TimePeriod is handled in the transpiler)
+    # Date extraction — generic (Date) and TimePeriod overrides
     registries.unary.register_simple(tokens.YEAR, "YEAR({0})")
     registries.unary.register_simple(tokens.MONTH, "MONTH({0})")
     registries.unary.register_simple(tokens.DAYOFMONTH, "DAY({0})")
     registries.unary.register_simple(tokens.DAYOFYEAR, "DAYOFYEAR({0})")
+    registries.unary.register_typed(
+        tokens.YEAR, TimePeriod, "CAST(vtl_period_parse({0}).year AS BIGINT)"
+    )
+    registries.unary.register_typed(
+        tokens.MONTH, TimePeriod, "vtl_tp_getmonth(vtl_period_parse({0}))"
+    )
+    registries.unary.register_typed(
+        tokens.DAYOFMONTH, TimePeriod, "vtl_tp_dayofmonth(vtl_period_parse({0}))"
+    )
+    registries.unary.register_typed(
+        tokens.DAYOFYEAR, TimePeriod, "vtl_tp_dayofyear(vtl_period_parse({0}))"
+    )
 
     # Duration conversion functions
     registries.unary.register_simple(tokens.DAYTOYEAR, "vtl_daytoyear({0})")

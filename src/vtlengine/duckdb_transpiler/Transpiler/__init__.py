@@ -49,28 +49,7 @@ _DP_OP_MAP: Dict[str, str] = {
     "or": "OR",
 }
 
-# TimePeriod extraction SQL.
-_TP_EXTRACTION_MAP: Dict[str, str] = {
-    tokens.YEAR: "CAST(vtl_period_parse({0}).year AS BIGINT)",
-    tokens.MONTH: "vtl_tp_getmonth(vtl_period_parse({0}))",
-    tokens.DAYOFMONTH: "vtl_tp_dayofmonth(vtl_period_parse({0}))",
-    tokens.DAYOFYEAR: "vtl_tp_dayofyear(vtl_period_parse({0}))",
-}
-
-# Ordering ops that use vtl_period_* macros.
-_PERIOD_COMPARISON_MACROS: Dict[str, str] = {
-    tokens.GT: "vtl_period_gt",
-    tokens.GTE: "vtl_period_ge",
-    tokens.LT: "vtl_period_lt",
-    tokens.LTE: "vtl_period_le",
-}
-
-# Duration comparisons that use vtl_duration_to_int.
-_DURATION_COMPARISON_OPS: frozenset[str] = frozenset(
-    {tokens.GT, tokens.GTE, tokens.LT, tokens.LTE, tokens.EQ, tokens.NEQ}
-)
-
-# Ordering-only comparisons.
+# Ordering-only comparisons (TimeInterval ordering is forbidden).
 _ORDERING_OPS: frozenset[str] = frozenset({tokens.GT, tokens.GTE, tokens.LT, tokens.LTE})
 
 
@@ -98,21 +77,20 @@ def _add_tp_indicator_check(sql: str, table_src: str, tp_cols: List[tuple[str, s
     return sql.replace(from_pattern, f"FROM {table_src}, {subquery} WHERE {where_conds}", 1)
 
 
-def _is_date_timeperiod_pair(left_comp: Component, right_comp: Component) -> bool:
-    """Return True when components are a Date and a TimePeriod."""
-    types = {left_comp.data_type, right_comp.data_type}
-    return types == {Date, TimePeriod}
+def _is_date_timeperiod_pair(left_type: Optional[type], right_type: Optional[type]) -> bool:
+    """Return True when types are a Date and a TimePeriod."""
+    return {left_type, right_type} == {Date, TimePeriod}
 
 
 def _date_tp_compare_expr(
     left_ref: str,
     right_ref: str,
-    left_comp: Component,
-    right_comp: Component,
+    left_type: type,
+    right_type: type,
     op: str,
 ) -> str:
     """Build SQL for Date vs TimePeriod comparison using TimeInterval promotion."""
-    if left_comp.data_type == Date:
+    if left_type == Date:
         left_interval = (
             f"{{'date1': CAST({left_ref} AS DATE),"
             f" 'date2': CAST({left_ref} AS DATE)}}::vtl_time_interval"
@@ -1394,6 +1372,47 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     # Dataset-level binary helpers
 
+    def _make_binary_expr(
+        self,
+        left_ref: str,
+        right_ref: str,
+        op: str,
+        left_type: Optional[type] = None,
+        right_type: Optional[type] = None,
+        *,
+        normalize_period: bool = False,
+    ) -> str:
+        """Build a binary SQL expression with type-aware registry dispatch.
+
+        Type-specific SQL (TimePeriod macros, Duration wrapping, etc.) is
+        resolved through the registry's typed overrides.  Only TimeInterval
+        error-checking and Date↔TimePeriod cross-type promotion remain here.
+
+        Args:
+            left_ref: SQL expression for the left operand.
+            right_ref: SQL expression for the right operand.
+            op: VTL operator token (lowercased).
+            left_type: Data type of the left operand, or None.
+            right_type: Data type of the right operand, or None.
+            normalize_period: When True (scalar path), wrap TimePeriod operands
+                with ``vtl_period_normalize`` before the comparison macro.
+        """
+        dt = left_type or right_type
+        # TimeInterval: ordering not supported
+        if op in _ORDERING_OPS and dt == TimeInterval:
+            raise RunTimeError("2-1-19-17", op=op)
+        # Scalar TimePeriod path: normalize before typed dispatch
+        if normalize_period and dt == TimePeriod and registry.binary.has_typed(op, TimePeriod):
+            left_ref = f"vtl_period_normalize({left_ref})"
+            right_ref = f"vtl_period_normalize({right_ref})"
+        # Date↔TimePeriod cross-type promotion
+        if left_type and right_type and _is_date_timeperiod_pair(left_type, right_type):
+            return _date_tp_compare_expr(left_ref, right_ref, left_type, right_type, op)
+        # Typed or generic registry lookup, with function-call fallback
+        if registry.binary.is_registered(op) or (dt and registry.binary.has_typed(op, dt)):
+            return registry.binary.generate(op, left_ref, right_ref, data_type=dt)
+        return f"{op.upper()}({left_ref}, {right_ref})"
+
     def _build_ds_ds_binary(
         self,
         left_node: AST.AST,
@@ -1447,6 +1466,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             left_ref = f"{alias_a}.{quote_identifier(left_m)}"
             right_ref = f"{alias_b}.{quote_identifier(right_m)}"
 
+            # Boolean→String promotion for concat
             if op == tokens.CONCAT:
                 left_comp_c = left_ds.components.get(left_m)
                 right_comp_c = right_ds.components.get(right_m)
@@ -1457,22 +1477,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
             left_comp = left_ds.components.get(left_m)
             right_comp = right_ds.components.get(right_m)
-            if op in _ORDERING_OPS and left_comp and left_comp.data_type == TimeInterval:
-                raise RunTimeError("2-1-19-17", op=op)
-
-            period_macro = _PERIOD_COMPARISON_MACROS.get(op)
-            if left_comp and left_comp.data_type == TimePeriod and period_macro:
-                expr = (
-                    f"{period_macro}(vtl_period_parse({left_ref}), vtl_period_parse({right_ref}))"
-                )
-            elif left_comp and left_comp.data_type == Duration and op in _DURATION_COMPARISON_OPS:
-                left_int = f"vtl_duration_to_int({left_ref})"
-                right_int = f"vtl_duration_to_int({right_ref})"
-                expr = registry.binary.generate(op, left_int, right_int)
-            elif left_comp and right_comp and _is_date_timeperiod_pair(left_comp, right_comp):
-                expr = _date_tp_compare_expr(left_ref, right_ref, left_comp, right_comp, op)
-            else:
-                expr = registry.binary.generate(op, left_ref, right_ref)
+            left_dt = left_comp.data_type if left_comp else None
+            right_dt = right_comp.data_type if right_comp else None
+            expr = self._make_binary_expr(left_ref, right_ref, op, left_dt, right_dt)
 
             out_name = left_m
             if (
@@ -1516,37 +1523,12 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         scalar_sql = self.visit(scalar_node)
 
-        if op in _ORDERING_OPS and any(
-            c.data_type == TimeInterval for c in ds.components.values() if c.role == Role.MEASURE
-        ):
-            raise RunTimeError("2-1-19-17", op=op)
-
-        period_macro = _PERIOD_COMPARISON_MACROS.get(op)
-
-        has_time_period_measure = period_macro is not None and any(
-            c.data_type == TimePeriod for c in ds.components.values() if c.role == Role.MEASURE
-        )
-
-        has_duration_measure = op in _DURATION_COMPARISON_OPS and any(
-            c.data_type == Duration for c in ds.components.values() if c.role == Role.MEASURE
-        )
-
         def _bin_expr(col_ref: str) -> str:
-            if has_time_period_measure:
-                left = f"vtl_period_parse({col_ref})"
-                right = f"vtl_period_parse({scalar_sql})"
-                if ds_on_left:
-                    return f"{period_macro}({left}, {right})"
-                return f"{period_macro}({right}, {left})"
-            if has_duration_measure:
-                left = f"vtl_duration_to_int({col_ref})"
-                right = f"vtl_duration_to_int({scalar_sql})"
-                if ds_on_left:
-                    return registry.binary.generate(op, left, right)
-                return registry.binary.generate(op, right, left)
+            comp = ds.components.get(col_ref.strip('"'))
+            dt = comp.data_type if comp else None
             if ds_on_left:
-                return registry.binary.generate(op, col_ref, scalar_sql)
-            return registry.binary.generate(op, scalar_sql, col_ref)
+                return self._make_binary_expr(col_ref, scalar_sql, op, dt, None)
+            return self._make_binary_expr(scalar_sql, col_ref, op, None, dt)
 
         return self._apply_to_measures(
             ds_node,
@@ -1606,37 +1588,14 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 return self._visit_dataset_binary_chain(node)
             return self._visit_dataset_binary(node.left, node.right, op)
 
+        # Scalar-scalar binary: detect types and delegate to _make_binary_expr
         left_sql = self.visit(node.left)
         right_sql = self.visit(node.right)
-
-        if op in _ORDERING_OPS and (
-            self._is_time_interval_operand(node.left) or self._is_time_interval_operand(node.right)
-        ):
-            raise RunTimeError("2-1-19-17", op=op)
-
-        period_macro = _PERIOD_COMPARISON_MACROS.get(op)
-        if period_macro and (
-            self._is_time_period_operand(node.left) or self._is_time_period_operand(node.right)
-        ):
-            left_p = f"vtl_period_parse(vtl_period_normalize({left_sql}))"
-            right_p = f"vtl_period_parse(vtl_period_normalize({right_sql}))"
-            return f"{period_macro}({left_p}, {right_p})"
-
-        if op == tokens.DATEDIFF and (
-            self._is_time_period_operand(node.left) or self._is_time_period_operand(node.right)
-        ):
-            return f"vtl_tp_datediff(vtl_period_parse({left_sql}), vtl_period_parse({right_sql}))"
-
-        if op in _DURATION_COMPARISON_OPS and (
-            self._is_duration_operand(node.left) or self._is_duration_operand(node.right)
-        ):
-            left_int = f"vtl_duration_to_int({left_sql})"
-            right_int = f"vtl_duration_to_int({right_sql})"
-            return registry.binary.generate(op, left_int, right_int)
-
-        if registry.binary.is_registered(op):
-            return registry.binary.generate(op, left_sql, right_sql)
-        return f"{op.upper()}({left_sql}, {right_sql})"
+        left_dt = self._detect_scalar_type(node.left)
+        right_dt = self._detect_scalar_type(node.right)
+        return self._make_binary_expr(
+            left_sql, right_sql, op, left_dt, right_dt, normalize_period=True
+        )
 
     def _visit_dataset_binary_chain(self, node: AST.BinOp) -> str:
         """Iteratively fold a left-recursive chain of dataset binary operations."""
@@ -1865,6 +1824,16 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 return True
         return False
 
+    def _detect_scalar_type(self, node: AST.AST) -> Optional[type]:
+        """Detect the data type of a scalar operand for typed dispatch."""
+        if self._is_time_period_operand(node):
+            return TimePeriod
+        if self._is_duration_operand(node):
+            return Duration
+        if self._is_time_interval_operand(node):
+            return TimeInterval
+        return None
+
     def _visit_period_indicator(self, node: AST.UnaryOp) -> str:
         """Visit PERIOD_INDICATOR: extract period indicator from TimePeriod."""
         operand_type = self._get_operand_type(node.operand)
@@ -1910,24 +1879,16 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         operand_type = self._get_operand_type(node.operand)
 
         if operand_type == _DATASET:
+            ds = self._get_dataset_structure(node.operand)
             name_override: Optional[str] = None
-            if op == tokens.ISNULL:
-                ds = self._get_dataset_structure(node.operand)
-                if ds and len(ds.get_measures_names()) == 1:
-                    name_override = "bool_var"
-
-            ds_for_tp = self._get_dataset_structure(node.operand)
-            has_tp_measures = ds_for_tp is not None and any(
-                c.data_type == TimePeriod
-                for c in ds_for_tp.components.values()
-                if c.role == Role.MEASURE
-            )
+            if op == tokens.ISNULL and ds and len(ds.get_measures_names()) == 1:
+                name_override = "bool_var"
 
             def _unary_expr(col_ref: str) -> str:
-                if op in _TP_EXTRACTION_MAP and has_tp_measures:
-                    return _TP_EXTRACTION_MAP[op].format(col_ref)
-                if registry.unary.is_registered(op):
-                    return registry.unary.generate(op, col_ref)
+                comp = ds.components.get(col_ref.strip('"')) if ds else None
+                dt = comp.data_type if comp else None
+                if registry.unary.is_registered(op) or (dt and registry.unary.has_typed(op, dt)):
+                    return registry.unary.generate(op, col_ref, data_type=dt)
                 return f"{op.upper()}({col_ref})"
 
             return self._apply_to_measures(
@@ -1937,13 +1898,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 cast_bool_to_str=op in _STRING_UNARY_OPS,
             )
         else:
-            if op in _TP_EXTRACTION_MAP and self._is_time_period_operand(node.operand):
-                operand_sql = self.visit(node.operand)
-                return _TP_EXTRACTION_MAP[op].format(operand_sql)
-
+            dt = self._detect_scalar_type(node.operand)
             operand_sql = self.visit(node.operand)
-            if registry.unary.is_registered(op):
-                return registry.unary.generate(op, operand_sql)
+            if registry.unary.is_registered(op) or (dt and registry.unary.has_typed(op, dt)):
+                return registry.unary.generate(op, operand_sql, data_type=dt)
             return f"{op.upper()}({operand_sql})"
 
     def visit_ParamOp(self, node: AST.ParamOp) -> str:  # type: ignore[override]
