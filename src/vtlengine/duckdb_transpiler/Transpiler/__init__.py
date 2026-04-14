@@ -33,22 +33,6 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
 from vtlengine.Exceptions import RunTimeError
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 
-# Datapoint rule operator map.
-_DP_OP_MAP: Dict[str, str] = {
-    "=": "=",
-    ">": ">",
-    "<": "<",
-    ">=": ">=",
-    "<=": "<=",
-    "<>": "!=",
-    "+": "+",
-    "-": "-",
-    "*": "*",
-    "/": "/",
-    "and": "AND",
-    "or": "OR",
-}
-
 # Ordering-only comparisons (TimeInterval ordering is forbidden).
 _ORDERING_OPS: frozenset[str] = frozenset({tokens.GT, tokens.GTE, tokens.LT, tokens.LTE})
 
@@ -490,10 +474,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             right_sql = self._visit_dp_expr(node.right, signature)
             if isinstance(node, AST.HRBinOp) and node.op == "when":
                 return f"CASE WHEN ({left_sql}) THEN ({right_sql}) ELSE TRUE END"
-            return self._dp_binary_sql(node.op, left_sql, right_sql)
+            return registry.binary.generate(node.op, left_sql, right_sql)
         if isinstance(node, (AST.HRUnOp, AST.UnaryOp)):
             operand_sql = self._visit_dp_expr(node.operand, signature)
-            return self._dp_unary_sql(node.op, operand_sql)
+            return registry.unary.generate(node.op, operand_sql)
         if isinstance(node, (AST.DefIdentifier, AST.VarID)):
             col_name = signature.get(node.value, node.value)
             return quote_identifier(col_name)
@@ -512,27 +496,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         result = self.visit(node)
         self._dp_signature = saved_sig
         return result
-
-    def _dp_binary_sql(self, op: str, left_sql: str, right_sql: str) -> str:
-        """Generate SQL for a binary operation in datapoint rule context."""
-        if op == "nvl":
-            return f"COALESCE({left_sql}, {right_sql})"
-        if registry.binary.is_registered(op):
-            return registry.binary.generate(op, left_sql, right_sql)
-        sql_op = _DP_OP_MAP.get(op, op)
-        return f"({left_sql} {sql_op} {right_sql})"
-
-    def _dp_unary_sql(self, op: str, operand_sql: str) -> str:
-        """Generate SQL for a unary operation in datapoint rule context."""
-        if op == "not":
-            return f"NOT ({operand_sql})"
-        if op == "-":
-            return f"-({operand_sql})"
-        if op == tokens.ISNULL:
-            return f"({operand_sql} IS NULL)"
-        if registry.unary.is_registered(op):
-            return registry.unary.generate(op, operand_sql)
-        return f"{op}({operand_sql})"
 
     # Hierarchical ruleset and check_hierarchy
 
@@ -1161,8 +1124,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if isinstance(node, (AST.HRBinOp, AST.BinOp)):
             left_sql = self._build_hr_when_sql(node.left, cond_mapping)
             right_sql = self._build_hr_when_sql(node.right, cond_mapping)
-            sql_op = _DP_OP_MAP.get(node.op, node.op)
-            return f"({left_sql} {sql_op} {right_sql})"
+            return registry.binary.generate(node.op, left_sql, right_sql)
         if isinstance(node, (AST.DefIdentifier, AST.VarID)):
             col_name = cond_mapping.get(node.value, node.value)
             return quote_identifier(col_name)
