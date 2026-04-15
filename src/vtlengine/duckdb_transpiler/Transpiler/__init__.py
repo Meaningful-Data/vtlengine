@@ -1410,18 +1410,16 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         left_node: AST.AST,
         right_node: AST.AST,
         op: str,
-        left_sql_override: Optional[str] = None,
-        left_ds_override: Optional[Dataset] = None,
     ) -> str:
         """Build SQL for dataset-dataset binary operations using JOIN."""
-        left_ds = left_ds_override or self._get_dataset_structure(left_node)
+        left_ds = self._get_dataset_structure(left_node)
         right_ds = self._get_dataset_structure(right_node)
         output_ds = self._get_output_dataset()
 
         if left_ds is None or right_ds is None:
             raise ValueError("Cannot resolve dataset structures for binary operation")
 
-        left_src = left_sql_override or self._get_dataset_sql(left_node)
+        left_src = self._get_dataset_sql(left_node)
         right_src = self._get_dataset_sql(right_node)
 
         alias_a = "a"
@@ -1525,16 +1523,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     # Expression visitors
 
-    # Arithmetic ops that can form long left-associative chains.
-    _ARITHMETIC_OPS = frozenset({"+", "-", "*", "/", "||"})
-
-    def _is_chainable_ds_binop(self, node: AST.AST) -> bool:
-        """Check if a node is a BinOp with an arithmetic op involving datasets."""
-        if not isinstance(node, AST.BinOp):
-            return False
-        op = str(node.op).lower() if node.op else ""
-        return op in self._ARITHMETIC_OPS and self._get_operand_type(node) == _DATASET
-
     def visit_BinOp(self, node: AST.BinOp) -> str:  # type: ignore[override]
         """Visit a binary operation."""
         op = str(node.op).lower() if node.op else ""
@@ -1571,8 +1559,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                     return f"({col_ref} IN {collection_sql})"
 
                 return self._apply_to_measures(node.left, _in_expr, output_name_override="bool_var")
-            if op in self._ARITHMETIC_OPS and self._is_chainable_ds_binop(node.left):
-                return self._visit_dataset_binary_chain(node)
             if left_type == _DATASET and right_type == _DATASET:
                 return self._build_ds_ds_binary(node.left, node.right, op)
             if left_type == _DATASET:
@@ -1585,60 +1571,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         left_dt = self._detect_scalar_type(node.left)
         right_dt = self._detect_scalar_type(node.right)
         return self._make_binary_expr(left_sql, right_sql, op, left_dt, right_dt)
-
-    def _visit_dataset_binary_chain(self, node: AST.BinOp) -> str:
-        """Iteratively fold a left-recursive chain of dataset binary operations."""
-        parts: list[tuple[str, AST.AST]] = []
-        current: AST.AST = node
-        while isinstance(current, AST.BinOp):
-            bin_op = str(current.op).lower() if current.op else ""
-            if bin_op not in self._ARITHMETIC_OPS:
-                break
-            if self._get_operand_type(current) != _DATASET:
-                break
-            parts.append((bin_op, current.right))
-            current = current.left
-
-        parts.reverse()
-
-        result_sql = self._get_dataset_sql(current)
-        result_ds = self._get_dataset_structure(current)
-
-        is_subquery = False
-
-        for step_op, right_node in parts:
-            right_type = self._get_operand_type(right_node)
-            if right_type == _DATASET:
-                left_src = f"({result_sql})" if is_subquery else result_sql
-                result_sql = self._build_ds_ds_binary(
-                    right_node,  # unused for left when overrides given
-                    right_node,
-                    step_op,
-                    left_sql_override=left_src,
-                    left_ds_override=result_ds,
-                )
-                result_ds = self._get_output_dataset() or result_ds
-                is_subquery = True
-            else:
-                scalar_sql = self.visit(right_node)
-                measure_names = result_ds.get_measures_names() if result_ds else []
-                cols: list[str] = []
-                if result_ds:
-                    for id_name in result_ds.get_identifiers_names():
-                        cols.append(quote_identifier(id_name))
-                for m_name in measure_names:
-                    m_ref = quote_identifier(m_name)
-                    expr = registry.generate(step_op, m_ref, scalar_sql)
-                    cols.append(f"{expr} AS {m_ref}")
-                if result_ds:
-                    for attr_name in result_ds.get_attributes_names():
-                        cols.append(quote_identifier(attr_name))
-                left_src = f"({result_sql})" if is_subquery else result_sql
-                select_clause = ", ".join(cols)
-                result_sql = f"SELECT {select_clause} FROM {left_src}"
-                is_subquery = True
-
-        return result_sql
 
     def _visit_membership(self, node: AST.BinOp) -> str:
         """Visit MEMBERSHIP (#): DS#comp -> SELECT ids, comp FROM DS."""
