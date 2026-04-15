@@ -1419,8 +1419,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return f"ABS(DATE_DIFF('day', {left_ref}, {right_ref}))"
         # Scalar TimePeriod path: normalize before typed dispatch
         if normalize_period and dt == TimePeriod and registry.has_typed(op, TimePeriod):
-            left_ref = f"vtl_period_normalize({left_ref})"
-            right_ref = f"vtl_period_normalize({right_ref})"
+            if not left_ref.startswith("vtl_period_normalize("):
+                left_ref = f"vtl_period_normalize({left_ref})"
+            if not right_ref.startswith("vtl_period_normalize("):
+                right_ref = f"vtl_period_normalize({right_ref})"
         # Date↔TimePeriod cross-type promotion
         if left_type and right_type and _is_date_timeperiod_pair(left_type, right_type):
             return _date_tp_compare_expr(left_ref, right_ref, left_type, right_type, op)
