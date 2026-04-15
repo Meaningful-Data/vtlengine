@@ -52,8 +52,7 @@ def _add_tp_indicator_check(sql: str, table_src: str, tp_cols: List[tuple[str, s
     checks: List[str] = []
     for col_name, agg_op in tp_cols:
         qc = quote_identifier(col_name)
-        normalized = f"vtl_period_normalize({qc})"
-        indicator = f"vtl_period_parse({normalized}).period_indicator"
+        indicator = f"vtl_period_parse({qc}).period_indicator"
         err = (
             f"'VTL Error 2-1-19-20: Time Period operands with "
             f"different period indicators do not support < and > "
@@ -1200,7 +1199,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                     return f"SELECT * FROM {quote_identifier(resolved_name)}"
                 if resolved_name in self.scalars:
                     sc = self.scalars[resolved_name]
-                    return self._to_sql_literal(sc.value, type(sc.data_type).__name__)
+                    return self._to_sql_literal(sc.value, getattr(sc.data_type, "__name__", ""))
                 if resolved_name != name:
                     return self.visit(udo_val)
                 return quote_identifier(resolved_name)
@@ -1211,7 +1210,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         if name in self.scalars:
             sc = self.scalars[name]
-            return self._to_sql_literal(sc.value, type(sc.data_type).__name__)
+            return self._to_sql_literal(sc.value, getattr(sc.data_type, "__name__", ""))
 
         if self._in_clause and self._current_dataset and name in self._current_dataset.components:
             return quote_identifier(name)
@@ -1366,8 +1365,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return f"vtl_int_to_duration({op.upper()}(vtl_duration_to_int({col_ref})))"
         if data_type == TimePeriod:
             if dataset_level:
-                normalized = f"vtl_period_normalize({col_ref})"
-                parsed = f"vtl_period_parse({normalized})"
+                parsed = f"vtl_period_parse({col_ref})"
                 return f"vtl_period_to_string({op.upper()}({parsed}))"
             parsed = f"vtl_period_parse({col_ref})"
             return f"ARG_{op.upper()}({col_ref}, {parsed})"
@@ -1390,24 +1388,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         op: str,
         left_type: Optional[type] = None,
         right_type: Optional[type] = None,
-        *,
-        normalize_period: bool = False,
     ) -> str:
-        """Build a binary SQL expression with type-aware registry dispatch.
-
-        Type-specific SQL (TimePeriod macros, Duration wrapping, etc.) is
-        resolved through the registry's typed overrides.  Only TimeInterval
-        error-checking and Date↔TimePeriod cross-type promotion remain here.
-
-        Args:
-            left_ref: SQL expression for the left operand.
-            right_ref: SQL expression for the right operand.
-            op: VTL operator token (lowercased).
-            left_type: Data type of the left operand, or None.
-            right_type: Data type of the right operand, or None.
-            normalize_period: When True (scalar path), wrap TimePeriod operands
-                with ``vtl_period_normalize`` before the comparison macro.
-        """
+        """Build a binary SQL expression with type-aware registry dispatch."""
         dt = left_type or right_type
         # TimeInterval: ordering not supported
         if op in _ORDERING_OPS and dt == TimeInterval:
@@ -1417,12 +1399,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             left_ref = _datediff_to_date(left_ref, left_type)
             right_ref = _datediff_to_date(right_ref, right_type)
             return f"ABS(DATE_DIFF('day', {left_ref}, {right_ref}))"
-        # Scalar TimePeriod path: normalize before typed dispatch
-        if normalize_period and dt == TimePeriod and registry.has_typed(op, TimePeriod):
-            if not left_ref.startswith("vtl_period_normalize("):
-                left_ref = f"vtl_period_normalize({left_ref})"
-            if not right_ref.startswith("vtl_period_normalize("):
-                right_ref = f"vtl_period_normalize({right_ref})"
         # Date↔TimePeriod cross-type promotion
         if left_type and right_type and _is_date_timeperiod_pair(left_type, right_type):
             return _date_tp_compare_expr(left_ref, right_ref, left_type, right_type, op)
@@ -1608,9 +1584,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         right_sql = self.visit(node.right)
         left_dt = self._detect_scalar_type(node.left)
         right_dt = self._detect_scalar_type(node.right)
-        return self._make_binary_expr(
-            left_sql, right_sql, op, left_dt, right_dt, normalize_period=True
-        )
+        return self._make_binary_expr(left_sql, right_sql, op, left_dt, right_dt)
 
     def _visit_dataset_binary_chain(self, node: AST.BinOp) -> str:
         """Iteratively fold a left-recursive chain of dataset binary operations."""
@@ -2757,8 +2731,7 @@ FROM {src}, (
             checks: List[str] = []
             for col_name, agg_op in tp_minmax_cols:
                 qc = quote_identifier(col_name)
-                normalized = f"vtl_period_normalize({qc})"
-                indicator = f"vtl_period_parse({normalized}).period_indicator"
+                indicator = f"vtl_period_parse({qc}).period_indicator"
                 err = (
                     f"'VTL Error 2-1-19-20: Time Period operands with "
                     f"different period indicators do not support < and > "

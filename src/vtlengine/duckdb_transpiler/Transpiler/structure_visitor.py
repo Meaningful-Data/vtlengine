@@ -306,6 +306,8 @@ class StructureVisitor(ASTTemplate):
             if type_name == "Date":
                 return f"DATE '{value}'"
             escaped = value.replace("'", "''")
+            if type_name == "TimePeriod":
+                return f"vtl_period_normalize('{escaped}')"
             return f"'{escaped}'"
         if isinstance(value, (int, float)):
             return str(value)
