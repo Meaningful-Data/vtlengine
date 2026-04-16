@@ -706,21 +706,15 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         pivot_sql, measure_name, other_ids, _, _ = self._build_hr_pivot(
             table_src, ds, rules, rule_comp, cond_mapping
         )
-
+        cte = CTEBuilder()
+        cte.cte("_pivot", pivot_sql)
         rule_queries = [
             self._build_check_hr_rule_select(
-                rule=rule,
-                other_ids=other_ids,
-                rule_comp=rule_comp,
-                measure=measure_name,
-                mode=mode,
-                output=output,
-                cond_mapping=cond_mapping,
+                rule=rule, other_ids=other_ids, rule_comp=rule_comp,
+                measure=measure_name, mode=mode, output=output, cond_mapping=cond_mapping,
             )
             for rule in rules
         ]
-        cte = CTEBuilder()
-        cte.cte("_pivot", pivot_sql)
         return cte.select(" UNION ALL ".join(rule_queries))
 
     def _collect_hr_code_items(
@@ -866,46 +860,14 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         output: str,
         cond_mapping: Dict[str, str],
     ) -> str:
-        """Generate SQL for hierarchy operator using pivot CTE."""
+        """Generate SQL for hierarchy operator using CTE chain."""
         if not rules:
             cols = [quote_identifier(c) for c in ds.get_components_names()]
             return f"SELECT {', '.join(cols)} FROM {table_src}"
 
-        pivot_sql, measure_name, other_ids, unique_items, _ = self._build_hr_pivot(
+        pivot_sql, measure, other_ids, unique_items, _ = self._build_hr_pivot(
             table_src, ds, rules, rule_comp, cond_mapping
         )
-
-        return self._build_hierarchy_cte_chain(
-            pivot_sql=pivot_sql,
-            table_src=table_src,
-            rules=rules,
-            rule_comp=rule_comp,
-            measure=measure_name,
-            other_ids=other_ids,
-            mode=mode,
-            input_mode=input_mode,
-            output=output,
-            cond_mapping=cond_mapping,
-            ds=ds,
-            unique_items=unique_items,
-        )
-
-    def _build_hierarchy_cte_chain(
-        self,
-        pivot_sql: str,
-        table_src: str,
-        rules: list,  # type: ignore[type-arg]
-        rule_comp: str,
-        measure: str,
-        other_ids: List[str],
-        mode: str,
-        input_mode: str,
-        output: str,
-        cond_mapping: Dict[str, str],
-        ds: Dataset,
-        unique_items: List[str],
-    ) -> str:
-        """Hierarchy SQL using CTE chain (rule/rule_priority/dataset modes)."""
         cte = CTEBuilder()
         cte.cte("_pivot", pivot_sql)
         rule_result_refs: List[Tuple[str, str]] = []
