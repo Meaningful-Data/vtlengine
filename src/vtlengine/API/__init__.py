@@ -28,6 +28,7 @@ from vtlengine.AST.DAG import DAGAnalyzer
 from vtlengine.AST.Grammar.lexer import Lexer
 from vtlengine.AST.Grammar.parser import Parser
 from vtlengine.Exceptions import InputValidationException
+from vtlengine.files.output import format_date_iso8601
 from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
     format_time_period_external_representation,
@@ -452,10 +453,11 @@ def run(
     )
     result = interpreter.visit(ast)
 
-    # Applying time period output format
+    # Applying output format (Date ISO 8601 T separator, TimePeriod representation)
     if output_folder is None:
         for obj in result.values():
             if isinstance(obj, (Dataset, Scalar)):
+                format_date_iso8601(obj)
                 format_time_period_external_representation(obj, time_period_representation)
 
     # Returning only persistent datasets
