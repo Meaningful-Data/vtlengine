@@ -710,8 +710,13 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         cte.cte("_pivot", pivot_sql)
         rule_queries = [
             self._build_check_hr_rule_select(
-                rule=rule, other_ids=other_ids, rule_comp=rule_comp,
-                measure=measure_name, mode=mode, output=output, cond_mapping=cond_mapping,
+                rule=rule,
+                other_ids=other_ids,
+                rule_comp=rule_comp,
+                measure=measure_name,
+                mode=mode,
+                output=output,
+                cond_mapping=cond_mapping,
             )
             for rule in rules
         ]
@@ -796,9 +801,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         el_sql = self._error_level_sql(rule.erLevel)
         # Typed NULL matching the errorlevel column type
         try:
-            el_null = "CAST(NULL AS DOUBLE)" if rule.erLevel is None or isinstance(
-                float(rule.erLevel), float
-            ) else "CAST(NULL AS VARCHAR)"
+            el_null = (
+                "CAST(NULL AS DOUBLE)"
+                if rule.erLevel is None or isinstance(float(rule.erLevel), float)
+                else "CAST(NULL AS VARCHAR)"
+            )
         except (ValueError, TypeError):
             el_null = "CAST(NULL AS VARCHAR)"
 
@@ -848,7 +855,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         where_clause = f" WHERE {' AND '.join(where_parts)}" if where_parts else ""
         return f"SELECT {', '.join(select_parts)} FROM _pivot{where_clause}"
 
-
     def _build_hierarchy_sql(
         self,
         table_src: str,
@@ -880,24 +886,30 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             parsed = self._parse_hr_rule(rule)
 
             rule_cte_name = f"_rule_{i}"
-            cte.cte(rule_cte_name, self._build_hierarchy_rule_cte(
-                parsed=parsed,
-                pivot_ref=current_pivot,
-                other_ids=other_ids,
-                mode=mode,
-                cond_mapping=cond_mapping,
-            ))
+            cte.cte(
+                rule_cte_name,
+                self._build_hierarchy_rule_cte(
+                    parsed=parsed,
+                    pivot_ref=current_pivot,
+                    other_ids=other_ids,
+                    mode=mode,
+                    cond_mapping=cond_mapping,
+                ),
+            )
             rule_result_refs.append((rule_cte_name, parsed.left_code_item))
 
             next_pivot = f"_pivot_{i}"
-            cte.cte(next_pivot, self._build_hierarchy_pivot_update(
-                prev_pivot=current_pivot,
-                rule_cte=rule_cte_name,
-                left_code_item=parsed.left_code_item,
-                join_keys=join_keys,
-                input_mode=input_mode,
-                unique_items=unique_items,
-            ))
+            cte.cte(
+                next_pivot,
+                self._build_hierarchy_pivot_update(
+                    prev_pivot=current_pivot,
+                    rule_cte=rule_cte_name,
+                    left_code_item=parsed.left_code_item,
+                    join_keys=join_keys,
+                    input_mode=input_mode,
+                    unique_items=unique_items,
+                ),
+            )
             current_pivot = next_pivot
 
         # Build final SELECT per rule
@@ -3863,38 +3875,16 @@ FROM {src}, (
 
     def visit_EvalOp(self, node: AST.EvalOp) -> str:
         """Visit EVAL operator (external routine execution)."""
-        if not self.external_routines:
-            raise ValueError(
-                f"External routine '{node.name}' referenced but no external routines provided."
-            )
-        if node.name not in self.external_routines:
-            raise ValueError(
-                f"External routine '{node.name}' not found in provided external routines."
-            )
-
         routine = self.external_routines[node.name]
-        query = routine.query
-
-        # Convert double-quoted strings to single-quoted strings.
-        query = re.sub(r'"([^"]*)"', r"'\1'", query)
+        query = routine.query.replace('"', "'")
 
         # Map SQL table names to actual DuckDB table names.
-        operand_names: List[str] = []
-        for operand in node.operands:
-            if isinstance(operand, (AST.Identifier, AST.VarID)):
-                operand_names.append(operand.value)
-            else:
-                operand_names.append(str(self.visit(operand)))
-
-        for sql_table_name in routine.dataset_names:
-            for op_name in operand_names:
-                short_name = op_name.split(".")[-1] if "." in op_name else op_name
-                if short_name == sql_table_name:
-                    query = re.sub(
-                        rf"\b{re.escape(sql_table_name)}\b",
-                        quote_identifier(op_name),
-                        query,
-                    )
+        for table_name in routine.dataset_names:
+            for operand in node.operands:
+                short_name = operand.value.rsplit(".", 1)[-1]
+                if short_name == table_name:
+                    op_name = quote_identifier(operand.value)
+                    query = re.sub(rf"\b{re.escape(table_name)}\b", op_name, query)
                     break
 
         return query

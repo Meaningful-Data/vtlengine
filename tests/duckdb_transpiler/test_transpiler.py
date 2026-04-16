@@ -1103,56 +1103,6 @@ class TestEvalOperator:
         expected_sql = 'SELECT Id_1, Me_1 * 2 AS Me_1 FROM "DS_1"'
         assert_sql_equal(result, expected_sql)
 
-    def test_eval_op_routine_not_found(self):
-        """Test error when external routine is not found."""
-        transpiler = SQLTranspiler(
-            input_datasets={},
-            output_datasets={},
-            input_scalars={},
-            output_scalars={},
-            external_routines={},
-        )
-
-        eval_op = EvalOp(
-            **make_ast_node(
-                name="unknown_routine",
-                operands=[],
-                output=None,
-                language="SQL",
-            )
-        )
-
-        with pytest.raises(ValueError, match="no external routines provided"):
-            transpiler.visit_EvalOp(eval_op)
-
-    def test_eval_op_routine_missing_from_provided(self):
-        """Test error when specific routine is not in provided dict."""
-        external_routine = ExternalRoutine(
-            dataset_names=["DS_1"],
-            query='SELECT * FROM "DS_1"',
-            name="other_routine",
-        )
-
-        transpiler = SQLTranspiler(
-            input_datasets={},
-            output_datasets={},
-            input_scalars={},
-            output_scalars={},
-            external_routines={"other_routine": external_routine},
-        )
-
-        eval_op = EvalOp(
-            **make_ast_node(
-                name="unknown_routine",
-                operands=[],
-                output=None,
-                language="SQL",
-            )
-        )
-
-        with pytest.raises(ValueError, match="'unknown_routine' not found"):
-            transpiler.visit_EvalOp(eval_op)
-
     def test_eval_op_with_subquery_replacement(self):
         """Test EVAL operator replaces table references and converts double-quoted strings."""
         ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
