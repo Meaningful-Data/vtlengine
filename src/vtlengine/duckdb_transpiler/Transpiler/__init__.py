@@ -23,7 +23,11 @@ from vtlengine.duckdb_transpiler.Transpiler.operators import (
     get_duckdb_type,
     registry,
 )
-from vtlengine.duckdb_transpiler.Transpiler.sql_builder import SQLBuilder, quote_identifier
+from vtlengine.duckdb_transpiler.Transpiler.sql_builder import (
+    CTEBuilder,
+    SQLBuilder,
+    quote_identifier,
+)
 from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
     _COMPONENT,
     _DATASET,
@@ -1381,6 +1385,89 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             for i in common_ids
         )
 
+    def visit_UnaryOp(self, node: AST.UnaryOp) -> str:  # type: ignore[override]
+        """Visit a unary operation."""
+        op = str(node.op).lower()
+
+        if op == tokens.PERIOD_INDICATOR:
+            return self._visit_period_indicator(node)
+
+        if op in (tokens.FLOW_TO_STOCK, tokens.STOCK_TO_FLOW):
+            return self._visit_flow_stock(node, op)
+
+        operand_type = self._get_operand_type(node.operand)
+
+        if operand_type == _DATASET:
+            ds = self._get_dataset_structure(node.operand)
+            name_override: Optional[str] = None
+            if op == tokens.ISNULL and ds and len(ds.get_measures_names()) == 1:
+                name_override = "bool_var"
+
+            def _unary_expr(col_ref: str) -> str:
+                comp = ds.components.get(col_ref.strip('"')) if ds else None
+                dt = comp.data_type if comp else None
+                return registry.generate(op, col_ref, data_type=dt)
+
+            return self._apply_to_measures(
+                node.operand,
+                _unary_expr,
+                name_override,
+                cast_bool_to_str=op in _STRING_UNARY_OPS,
+            )
+        else:
+            dt = self._detect_scalar_type(node.operand)
+            operand_sql = self.visit(node.operand)
+            return registry.generate(op, operand_sql, data_type=dt)
+
+    def visit_BinOp(self, node: AST.BinOp) -> str:  # type: ignore[override]
+        """Visit a binary operation."""
+        op = str(node.op).lower() if node.op else ""
+
+        if op == "not in":
+            op = tokens.NOT_IN
+
+        if op == tokens.MEMBERSHIP:
+            return self._visit_membership(node)
+
+        if op == tokens.EXISTS_IN:
+            return self._build_exists_in_sql(node.left, node.right)
+
+        if op == tokens.CHARSET_MATCH:
+            return self._visit_match_characters(node)
+
+        if op == tokens.RANDOM:
+            return self._visit_random_binop(node)
+
+        if op == tokens.TIMESHIFT:
+            return self._visit_timeshift(node)
+
+        left_type = self._get_operand_type(node.left)
+        right_type = self._get_operand_type(node.right)
+        has_dataset = left_type == _DATASET or right_type == _DATASET
+
+        if has_dataset:
+            if op in (tokens.IN, tokens.NOT_IN) and left_type == _DATASET:
+                collection_sql = self.visit(node.right)
+
+                def _in_expr(col_ref: str) -> str:
+                    if op == tokens.NOT_IN:
+                        return f"({col_ref} NOT IN {collection_sql})"
+                    return f"({col_ref} IN {collection_sql})"
+
+                return self._apply_to_measures(node.left, _in_expr, output_name_override="bool_var")
+            if left_type == _DATASET and right_type == _DATASET:
+                return self._build_ds_ds_binary(node.left, node.right, op)
+            if left_type == _DATASET:
+                return self._build_ds_scalar_binary(node.left, node.right, op, ds_on_left=True)
+            return self._build_ds_scalar_binary(node.right, node.left, op, ds_on_left=False)
+
+        # Scalar-scalar binary: detect types and delegate to _make_binary_expr
+        left_sql = self.visit(node.left)
+        right_sql = self.visit(node.right)
+        left_dt = self._detect_scalar_type(node.left)
+        right_dt = self._detect_scalar_type(node.right)
+        return self._make_binary_expr(left_sql, right_sql, op, left_dt, right_dt)
+
     def _make_binary_expr(
         self,
         left_ref: str,
@@ -1520,57 +1607,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             _bin_expr,
             cast_bool_to_str=op == tokens.CONCAT,
         )
-
-    # Expression visitors
-
-    def visit_BinOp(self, node: AST.BinOp) -> str:  # type: ignore[override]
-        """Visit a binary operation."""
-        op = str(node.op).lower() if node.op else ""
-
-        if op == "not in":
-            op = tokens.NOT_IN
-
-        if op == tokens.MEMBERSHIP:
-            return self._visit_membership(node)
-
-        if op == tokens.EXISTS_IN:
-            return self._build_exists_in_sql(node.left, node.right)
-
-        if op == tokens.CHARSET_MATCH:
-            return self._visit_match_characters(node)
-
-        if op == tokens.RANDOM:
-            return self._visit_random_binop(node)
-
-        if op == tokens.TIMESHIFT:
-            return self._visit_timeshift(node)
-
-        left_type = self._get_operand_type(node.left)
-        right_type = self._get_operand_type(node.right)
-        has_dataset = left_type == _DATASET or right_type == _DATASET
-
-        if has_dataset:
-            if op in (tokens.IN, tokens.NOT_IN) and left_type == _DATASET:
-                collection_sql = self.visit(node.right)
-
-                def _in_expr(col_ref: str) -> str:
-                    if op == tokens.NOT_IN:
-                        return f"({col_ref} NOT IN {collection_sql})"
-                    return f"({col_ref} IN {collection_sql})"
-
-                return self._apply_to_measures(node.left, _in_expr, output_name_override="bool_var")
-            if left_type == _DATASET and right_type == _DATASET:
-                return self._build_ds_ds_binary(node.left, node.right, op)
-            if left_type == _DATASET:
-                return self._build_ds_scalar_binary(node.left, node.right, op, ds_on_left=True)
-            return self._build_ds_scalar_binary(node.right, node.left, op, ds_on_left=False)
-
-        # Scalar-scalar binary: detect types and delegate to _make_binary_expr
-        left_sql = self.visit(node.left)
-        right_sql = self.visit(node.right)
-        left_dt = self._detect_scalar_type(node.left)
-        right_dt = self._detect_scalar_type(node.right)
-        return self._make_binary_expr(left_sql, right_sql, op, left_dt, right_dt)
 
     def _visit_membership(self, node: AST.BinOp) -> str:
         """Visit MEMBERSHIP (#): DS#comp -> SELECT ids, comp FROM DS."""
@@ -1772,40 +1808,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             operand_sql = self.visit(node.operand)
             return f"vtl_period_parse({operand_sql}).period_indicator"
 
-    def visit_UnaryOp(self, node: AST.UnaryOp) -> str:  # type: ignore[override]
-        """Visit a unary operation."""
-        op = str(node.op).lower()
-
-        if op == tokens.PERIOD_INDICATOR:
-            return self._visit_period_indicator(node)
-
-        if op in (tokens.FLOW_TO_STOCK, tokens.STOCK_TO_FLOW):
-            return self._visit_flow_stock(node, op)
-
-        operand_type = self._get_operand_type(node.operand)
-
-        if operand_type == _DATASET:
-            ds = self._get_dataset_structure(node.operand)
-            name_override: Optional[str] = None
-            if op == tokens.ISNULL and ds and len(ds.get_measures_names()) == 1:
-                name_override = "bool_var"
-
-            def _unary_expr(col_ref: str) -> str:
-                comp = ds.components.get(col_ref.strip('"')) if ds else None
-                dt = comp.data_type if comp else None
-                return registry.generate(op, col_ref, data_type=dt)
-
-            return self._apply_to_measures(
-                node.operand,
-                _unary_expr,
-                name_override,
-                cast_bool_to_str=op in _STRING_UNARY_OPS,
-            )
-        else:
-            dt = self._detect_scalar_type(node.operand)
-            operand_sql = self.visit(node.operand)
-            return registry.generate(op, operand_sql, data_type=dt)
-
     def visit_ParamOp(self, node: AST.ParamOp) -> str:  # type: ignore[override]
         """Visit a parameterized operation."""
         op = str(node.op).lower()
@@ -1927,6 +1929,16 @@ FROM (
 
         return f"CASE\n{cases}\nEND".strip()
 
+    # Shared SQL fragment for the RECURSIVE step that increments a vtl_time_period.
+    _TP_NEXT_PERIOD = (
+        "CASE"
+        " WHEN ep.tp.period_number + 1 > vtl_period_limit(ep.tp.period_indicator)"
+        " THEN {'year': ep.tp.year + 1, 'period_indicator': ep.tp.period_indicator,"
+        " 'period_number': 1}::vtl_time_period"
+        " ELSE {'year': ep.tp.year, 'period_indicator': ep.tp.period_indicator,"
+        " 'period_number': ep.tp.period_number + 1}::vtl_time_period END"
+    )
+
     def _visit_fill_time_series(self, node: AST.ParamOp) -> str:
         """Fill missing time periods/dates with NULL rows."""
         ds_node = node.children[0]
@@ -1945,115 +1957,88 @@ FROM (
 
         if time_type == Date:
             return self._fill_time_series_date(ds, src, time_id, fill_mode)
+        return self._fill_time_series_period(ds, src, time_id, fill_mode)
 
+    def _fill_time_series_period(self, ds: Dataset, src: str, time_id: str, fill_mode: str) -> str:
+        """Fill time series for TimePeriod identifiers using RECURSIVE CTE."""
         time_col, other_id_cols, _, join_on, final_select, order_by = self._build_time_grid_parts(
             ds, time_id
         )
         other_ids = [c.name for c in ds.get_identifiers() if c.name != time_id]
+        oid_select = ", ".join(other_id_cols)
+        per_group = fill_mode == "single" and bool(other_ids)
 
-        if fill_mode == "single" and other_ids:
-            oid_select = ", ".join(other_id_cols)
+        cte = CTEBuilder()
+        cte.cte("source", f"SELECT * FROM {src}")
+        cte.cte("parsed", f"SELECT *, vtl_period_parse({time_col}) AS tp FROM source")
+
+        if per_group:
+            cte.cte(
+                "bounds",
+                f"SELECT {oid_select}, MIN(tp) AS min_tp, MAX(tp) AS max_tp "
+                f"FROM parsed GROUP BY {oid_select}, tp.period_indicator",
+            )
             oid_ep_refs = ", ".join(f"ep.{oc}" for oc in other_id_cols)
-
-            cte = f"""
-WITH RECURSIVE source AS (SELECT * FROM {src}),
-parsed AS (
-    SELECT *, vtl_period_parse({time_col}) AS tp FROM source
-),
-bounds AS (
-    SELECT {oid_select},
-        MIN(tp) AS min_tp,
-        MAX(tp) AS max_tp
-    FROM parsed
-    GROUP BY {oid_select}, tp.period_indicator
-),
-expected_periods(tp, max_tp, {oid_select}) AS (
-    SELECT min_tp, max_tp, {oid_select} FROM bounds
-    UNION ALL
-    SELECT CASE
-        WHEN ep.tp.period_number + 1 > vtl_period_limit(ep.tp.period_indicator)
-        THEN {{'year': ep.tp.year + 1, 'period_indicator': ep.tp.period_indicator,
-              'period_number': 1}}::vtl_time_period
-        ELSE {{'year': ep.tp.year, 'period_indicator': ep.tp.period_indicator,
-              'period_number': ep.tp.period_number + 1}}::vtl_time_period
-    END,
-    ep.max_tp,
-    {oid_ep_refs}
-    FROM expected_periods ep
-    WHERE ep.tp < ep.max_tp
-),
-full_grid AS (
-    SELECT {oid_select}, vtl_period_to_string(tp) AS {time_col}
-    FROM expected_periods
-)
-SELECT {final_select}
-FROM full_grid g
-LEFT JOIN source s ON {join_on}
-ORDER BY {order_by}"""
+            cte.recursive_cte(
+                "expected_periods",
+                f"tp, max_tp, {oid_select}",
+                seed=f"SELECT min_tp, max_tp, {oid_select} FROM bounds",
+                step=f"SELECT {self._TP_NEXT_PERIOD}, ep.max_tp, {oid_ep_refs} "
+                f"FROM expected_periods ep WHERE ep.tp < ep.max_tp",
+            )
+            cte.cte(
+                "full_grid",
+                f"SELECT {oid_select}, vtl_period_to_string(tp) AS {time_col} "
+                f"FROM expected_periods",
+            )
         else:
+            cte.cte(
+                "year_range",
+                "SELECT MIN(tp.year) AS min_year, MAX(tp.year) AS max_year FROM parsed",
+            )
+            cte.cte("freq_list", "SELECT DISTINCT tp.period_indicator AS ind FROM parsed")
+            cte.cte(
+                "bounds",
+                "SELECT ind, "
+                "{'year': min_year, 'period_indicator': ind, "
+                "'period_number': 1}::vtl_time_period AS min_tp, "
+                "{'year': max_year, 'period_indicator': ind, "
+                "'period_number': vtl_period_limit(ind)}::vtl_time_period AS max_tp "
+                "FROM freq_list, year_range",
+            )
+            cte.recursive_cte(
+                "expected_periods",
+                "tp, max_tp",
+                seed="SELECT min_tp, max_tp FROM bounds",
+                step=f"SELECT {self._TP_NEXT_PERIOD}, ep.max_tp "
+                f"FROM expected_periods ep WHERE ep.tp < ep.max_tp",
+            )
+            cte.cte(
+                "period_strings",
+                f"SELECT vtl_period_to_string(tp) AS {time_col} FROM expected_periods",
+            )
             if other_ids:
-                oid_join = ", ".join(other_id_cols)
-                other_combos = f"""
-group_freq AS (
-    SELECT DISTINCT {oid_join},
-        vtl_period_parse({time_col}).period_indicator AS ind
-    FROM source
-),"""
-                grid_sql = (
-                    f"SELECT gf.{', gf.'.join(other_id_cols)}, ps.{time_col} "
-                    f"FROM group_freq gf "
-                    f"JOIN period_strings ps "
-                    f"ON vtl_period_parse(ps.{time_col}).period_indicator = gf.ind"
+                cte.cte(
+                    "group_freq",
+                    f"SELECT DISTINCT {oid_select}, "
+                    f"vtl_period_parse({time_col}).period_indicator AS ind FROM source",
+                )
+                cte.cte(
+                    "full_grid",
+                    "SELECT gf.{gf_cols}, ps.{tc} FROM group_freq gf "
+                    "JOIN period_strings ps "
+                    "ON vtl_period_parse(ps.{tc}).period_indicator = gf.ind".format(
+                        gf_cols=", gf.".join(other_id_cols), tc=time_col
+                    ),
                 )
             else:
-                other_combos = ""
-                grid_sql = f"SELECT {time_col} FROM period_strings"
+                cte.cte("full_grid", f"SELECT {time_col} FROM period_strings")
 
-            cte = f"""
-WITH RECURSIVE source AS (SELECT * FROM {src}),
-parsed AS (
-    SELECT *, vtl_period_parse({time_col}) AS tp FROM source
-),
-year_range AS (
-    SELECT MIN(tp.year) AS min_year, MAX(tp.year) AS max_year FROM parsed
-),
-freq_list AS (
-    SELECT DISTINCT tp.period_indicator AS ind FROM parsed
-),
-bounds AS (
-    SELECT ind,
-        {{'year': min_year, 'period_indicator': ind,
-          'period_number': 1}}::vtl_time_period AS min_tp,
-        {{'year': max_year, 'period_indicator': ind,
-          'period_number': vtl_period_limit(ind)}}::vtl_time_period AS max_tp
-    FROM freq_list, year_range
-),
-expected_periods(tp, max_tp) AS (
-    SELECT min_tp, max_tp FROM bounds
-    UNION ALL
-    SELECT CASE
-        WHEN ep.tp.period_number + 1 > vtl_period_limit(ep.tp.period_indicator)
-        THEN {{'year': ep.tp.year + 1, 'period_indicator': ep.tp.period_indicator,
-              'period_number': 1}}::vtl_time_period
-        ELSE {{'year': ep.tp.year, 'period_indicator': ep.tp.period_indicator,
-              'period_number': ep.tp.period_number + 1}}::vtl_time_period
-    END,
-    ep.max_tp
-    FROM expected_periods ep
-    WHERE ep.tp < ep.max_tp
-),
-period_strings AS (
-    SELECT vtl_period_to_string(tp) AS {time_col} FROM expected_periods
-),{other_combos}
-full_grid AS (
-    {grid_sql}
-)
-SELECT {final_select}
-FROM full_grid g
-LEFT JOIN source s ON {join_on}
-ORDER BY {order_by}"""
-
-        return cte.strip()
+        final = (
+            f"SELECT {final_select} FROM full_grid g "
+            f"LEFT JOIN source s ON {join_on} ORDER BY {order_by}"
+        )
+        return cte.select(final)
 
     def _fill_time_series_date(self, ds: Dataset, src: str, time_id: str, fill_mode: str) -> str:
         """Fill time series for Date identifiers using frequency inference."""
@@ -2061,63 +2046,53 @@ ORDER BY {order_by}"""
             ds, time_id
         )
         other_ids = [c.name for c in ds.get_identifiers() if c.name != time_id]
-
-        partition = f"PARTITION BY {', '.join(other_id_cols)}" if other_id_cols else ""
-
-        if fill_mode == "single" and other_ids:
-            bounds_group = f"GROUP BY {', '.join(other_id_cols)}"
-            bounds_select = f"{', '.join(other_id_cols)},"
-        else:
-            bounds_group = ""
-            bounds_select = ""
-
+        partition = "PARTITION BY {}".format(", ".join(other_id_cols)) if other_id_cols else ""
+        per_group = fill_mode == "single" and bool(other_ids)
         freq_step = "(SELECT step FROM freq)"
-        if other_ids:
-            if fill_mode == "single":
-                grid_sql = f"""
-SELECT b.{", b.".join(other_id_cols)},
-    CAST(d AS TIMESTAMP) AS {time_col}
-FROM bounds b, generate_series(b.min_d, b.max_d, {freq_step}) AS t(d)"""
+
+        cte = CTEBuilder()
+        cte.cte("source", f"SELECT * FROM {src}")
+        cte.cte("freq", self._build_date_frequency_subquery("source", time_col, partition))
+
+        if per_group:
+            oid_csv = ", ".join(other_id_cols)
+            cte.cte(
+                "bounds",
+                f"SELECT {oid_csv}, MIN({time_col}) AS min_d, MAX({time_col}) AS max_d "
+                f"FROM source GROUP BY {oid_csv}",
+            )
+            b_cols = ", ".join(f"b.{oc}" for oc in other_id_cols)
+            cte.cte(
+                "full_grid",
+                f"SELECT {b_cols}, CAST(d AS TIMESTAMP) AS {time_col} "
+                f"FROM bounds b, generate_series(b.min_d, b.max_d, {freq_step}) AS t(d)",
+            )
+        else:
+            cte.cte(
+                "bounds",
+                f"SELECT MIN({time_col}) AS min_d, MAX({time_col}) AS max_d FROM source",
+            )
+            gen = (
+                f"generate_series("
+                f"(SELECT min_d FROM bounds), (SELECT max_d FROM bounds), {freq_step}) AS t(d)"
+            )
+            if other_ids:
+                oid_csv = ", ".join(other_id_cols)
+                cte.cte("group_freq", f"SELECT DISTINCT {oid_csv} FROM source")
+                gf_cols = ", ".join(f"gf.{oc}" for oc in other_id_cols)
+                cte.cte(
+                    "full_grid",
+                    f"SELECT {gf_cols}, CAST(d AS TIMESTAMP) AS {time_col} "
+                    f"FROM group_freq gf, {gen}",
+                )
             else:
-                grid_sql = f"""
-SELECT gf.{", gf.".join(other_id_cols)},
-    CAST(d AS TIMESTAMP) AS {time_col}
-FROM group_freq gf, generate_series(
-    (SELECT min_d FROM bounds), (SELECT max_d FROM bounds), {freq_step}
-) AS t(d)"""
-        else:
-            grid_sql = f"""
-SELECT CAST(d AS TIMESTAMP) AS {time_col}
-FROM generate_series(
-    (SELECT min_d FROM bounds), (SELECT max_d FROM bounds), {freq_step}
-) AS t(d)"""
+                cte.cte("full_grid", f"SELECT CAST(d AS TIMESTAMP) AS {time_col} FROM {gen}")
 
-        if fill_mode == "single" and other_ids:
-            extra_ctes = ""
-        elif other_ids:
-            extra_ctes = f"""
-group_freq AS (
-    SELECT DISTINCT {", ".join(other_id_cols)} FROM source
-),"""
-        else:
-            extra_ctes = ""
-
-        return f"""
-WITH source AS (SELECT * FROM {src}),
-freq AS (
-    {self._build_date_frequency_subquery("source", time_col, partition)}
-),
-bounds AS (
-    SELECT {bounds_select} MIN({time_col}) AS min_d, MAX({time_col}) AS max_d
-    FROM source
-    {bounds_group}
-),{extra_ctes}
-full_grid AS ({grid_sql}
-)
-SELECT {final_select}
-FROM full_grid g
-LEFT JOIN source s ON {join_on}
-ORDER BY {order_by}""".strip()
+        final = (
+            f"SELECT {final_select} FROM full_grid g "
+            f"LEFT JOIN source s ON {join_on} ORDER BY {order_by}"
+        )
+        return cte.select(final)
 
     def _visit_flow_stock(self, node: AST.UnaryOp, op: str) -> str:
         """Visit FLOW_TO_STOCK or STOCK_TO_FLOW: window functions over time series."""
