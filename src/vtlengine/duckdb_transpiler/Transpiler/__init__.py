@@ -643,7 +643,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 unique.append(ci)
         return unique, all_conds
 
-    def _prepare_hr_pivot(
+    def _build_hr_pivot(
         self,
         table_src: str,
         ds: Dataset,
@@ -651,21 +651,41 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         rule_comp: str,
         cond_mapping: Dict[str, str],
     ) -> Tuple[str, str, List[str], List[str], Dict[str, str]]:
-        """Build shared pivot setup for hierarchy/check_hierarchy."""
+        """Build the pivot SELECT SQL and metadata for hierarchy operations.
+
+        Returns (pivot_sql, measure_name, other_ids, unique_items, item_conds).
+        The pivot_sql is a plain SELECT (not wrapped in CTE syntax).
+        """
         measure_name = ds.get_measures_names()[0]
         other_ids = [n for n in ds.get_identifiers_names() if n != rule_comp]
         unique_items, item_conds = self._collect_all_hr_items(rules, cond_mapping)
 
-        pivot_cte = self._build_hr_pivot_cte(
-            table_src=table_src,
-            code_items=unique_items,
-            rule_comp=rule_comp,
-            measure=measure_name,
-            other_ids=other_ids,
-            cond_mapping=cond_mapping,
-            code_item_conditions=item_conds,
+        qrc = quote_identifier(rule_comp)
+        qm = quote_identifier(measure_name)
+
+        group_cols = [quote_identifier(c) for c in other_ids]
+        group_cols.extend(quote_identifier(v) for v in cond_mapping.values())
+
+        select_parts = list(group_cols)
+        for ci in unique_items:
+            ci_cond = ""
+            if item_conds and ci in item_conds:
+                ci_cond = f" AND {item_conds[ci]}"
+            select_parts.append(
+                f"MAX(CASE WHEN {qrc} = '{ci}'{ci_cond} THEN {qm} END) AS _val_{ci}"
+            )
+            select_parts.append(
+                f"MAX(CASE WHEN {qrc} = '{ci}'{ci_cond} THEN 1 ELSE 0 END) AS _has_{ci}"
+            )
+
+        in_list = ", ".join(f"'{ci}'" for ci in unique_items)
+        group_by = f" GROUP BY {', '.join(group_cols)}" if group_cols else ""
+
+        pivot_sql = (
+            f"SELECT {', '.join(select_parts)} "
+            f"FROM {table_src} WHERE {qrc} IN ({in_list}){group_by}"
         )
-        return pivot_cte, measure_name, other_ids, unique_items, item_conds
+        return pivot_sql, measure_name, other_ids, unique_items, item_conds
 
     def _build_check_hierarchy_sql(
         self,
@@ -683,7 +703,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             cols = [quote_identifier(c) for c in (out_ds.components if out_ds else ds.components)]
             return f"SELECT {', '.join(cols)} FROM {table_src} WHERE 1=0"
 
-        pivot_cte, measure_name, other_ids, _, _ = self._prepare_hr_pivot(
+        pivot_sql, measure_name, other_ids, _, _ = self._build_hr_pivot(
             table_src, ds, rules, rule_comp, cond_mapping
         )
 
@@ -699,7 +719,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             )
             for rule in rules
         ]
-        return f"WITH {pivot_cte}\n" + " UNION ALL ".join(rule_queries)
+        cte = CTEBuilder()
+        cte.cte("_pivot", pivot_sql)
+        return cte.select(" UNION ALL ".join(rule_queries))
 
     def _collect_hr_code_items(
         self,
@@ -744,47 +766,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return f"({node.op}{operand_sql})"
         raise ValueError(f"Unexpected node type in HR expression: {type(node).__name__}")
 
-    def _build_hr_pivot_cte(
-        self,
-        table_src: str,
-        code_items: List[str],
-        rule_comp: str,
-        measure: str,
-        other_ids: List[str],
-        cond_mapping: Dict[str, str],
-        code_item_conditions: Optional[Dict[str, str]] = None,
-    ) -> str:
-        """Generate the shared pivot CTE for hierarchy operations."""
-        qrc = quote_identifier(rule_comp)
-        qm = quote_identifier(measure)
-
-        group_cols = [quote_identifier(c) for c in other_ids]
-        group_cols.extend(quote_identifier(v) for v in cond_mapping.values())
-
-        select_parts = list(group_cols)
-        for ci in code_items:
-            ci_cond = ""
-            if code_item_conditions and ci in code_item_conditions:
-                ci_cond = f" AND {code_item_conditions[ci]}"
-            select_parts.append(
-                f"MAX(CASE WHEN {qrc} = '{ci}'{ci_cond} THEN {qm} END) AS _val_{ci}"
-            )
-            select_parts.append(
-                f"MAX(CASE WHEN {qrc} = '{ci}'{ci_cond} THEN 1 ELSE 0 END) AS _has_{ci}"
-            )
-
-        in_list = ", ".join(f"'{ci}'" for ci in code_items)
-        group_by = f"GROUP BY {', '.join(group_cols)}" if group_cols else ""
-
-        return (
-            f"_pivot AS (\n"
-            f"  SELECT {', '.join(select_parts)}\n"
-            f"  FROM {table_src}\n"
-            f"  WHERE {qrc} IN ({in_list})\n"
-            f"  {group_by}\n"
-            f")"
-        )
-
     def _build_check_hr_rule_select(
         self,
         rule: AST.HRule,
@@ -819,7 +800,13 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         else:
             ec_sql = "CAST(NULL AS VARCHAR)"
         el_sql = self._error_level_sql(rule.erLevel)
-        el_null = self._error_level_null_sql(rule.erLevel)
+        # Typed NULL matching the errorlevel column type
+        try:
+            el_null = "CAST(NULL AS DOUBLE)" if rule.erLevel is None or isinstance(
+                float(rule.erLevel), float
+            ) else "CAST(NULL AS VARCHAR)"
+        except (ValueError, TypeError):
+            el_null = "CAST(NULL AS VARCHAR)"
 
         q_rc = quote_identifier(rule_comp)
         q_m = quote_identifier(measure)
@@ -867,15 +854,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         where_clause = f" WHERE {' AND '.join(where_parts)}" if where_parts else ""
         return f"SELECT {', '.join(select_parts)} FROM _pivot{where_clause}"
 
-    @staticmethod
-    def _error_level_null_sql(er_level: Any) -> str:
-        """Return the appropriate typed NULL for errorlevel columns."""
-        if er_level is not None:
-            try:
-                float(er_level)
-            except (ValueError, TypeError):
-                return "CAST(NULL AS VARCHAR)"
-        return "CAST(NULL AS DOUBLE)"
 
     def _build_hierarchy_sql(
         self,
@@ -893,12 +871,12 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             cols = [quote_identifier(c) for c in ds.get_components_names()]
             return f"SELECT {', '.join(cols)} FROM {table_src}"
 
-        pivot_cte, measure_name, other_ids, unique_items, _ = self._prepare_hr_pivot(
+        pivot_sql, measure_name, other_ids, unique_items, _ = self._build_hr_pivot(
             table_src, ds, rules, rule_comp, cond_mapping
         )
 
         return self._build_hierarchy_cte_chain(
-            pivot_cte=pivot_cte,
+            pivot_sql=pivot_sql,
             table_src=table_src,
             rules=rules,
             rule_comp=rule_comp,
@@ -914,7 +892,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     def _build_hierarchy_cte_chain(
         self,
-        pivot_cte: str,
+        pivot_sql: str,
         table_src: str,
         rules: list,  # type: ignore[type-arg]
         rule_comp: str,
@@ -928,7 +906,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         unique_items: List[str],
     ) -> str:
         """Hierarchy SQL using CTE chain (rule/rule_priority/dataset modes)."""
-        cte_parts: List[str] = [pivot_cte]
+        cte = CTEBuilder()
+        cte.cte("_pivot", pivot_sql)
         rule_result_refs: List[Tuple[str, str]] = []
         current_pivot = "_pivot"
 
@@ -939,28 +918,27 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             parsed = self._parse_hr_rule(rule)
 
             rule_cte_name = f"_rule_{i}"
-            rule_select = self._build_hierarchy_rule_cte(
+            cte.cte(rule_cte_name, self._build_hierarchy_rule_cte(
                 parsed=parsed,
                 pivot_ref=current_pivot,
                 other_ids=other_ids,
                 mode=mode,
                 cond_mapping=cond_mapping,
-            )
-            cte_parts.append(f"{rule_cte_name} AS (\n{rule_select}\n)")
+            ))
             rule_result_refs.append((rule_cte_name, parsed.left_code_item))
 
             next_pivot = f"_pivot_{i}"
-            pivot_update = self._build_hierarchy_pivot_update(
+            cte.cte(next_pivot, self._build_hierarchy_pivot_update(
                 prev_pivot=current_pivot,
                 rule_cte=rule_cte_name,
                 left_code_item=parsed.left_code_item,
                 join_keys=join_keys,
                 input_mode=input_mode,
                 unique_items=unique_items,
-            )
-            cte_parts.append(f"{next_pivot} AS (\n{pivot_update}\n)")
+            ))
             current_pivot = next_pivot
 
+        # Build final SELECT per rule
         final_selects: List[str] = []
         q_rc = quote_identifier(rule_comp)
         q_m = quote_identifier(measure)
@@ -981,23 +959,24 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         computed_sql = " UNION ALL ".join(final_selects)
 
         if output == "computed":
-            return f"WITH {','.join(cte_parts)}\n{computed_sql}"
+            return cte.select(computed_sql)
 
+        # output == "all": union(setdiff(op, computed), computed)
         id_cols = [quote_identifier(c) for c in ds.get_identifiers_names()]
         all_cols = [quote_identifier(c) for c in ds.get_components_names()]
-        cte_parts.append(f"_computed AS (\n{computed_sql}\n)")
-        return (
-            f"WITH {','.join(cte_parts)},\n"
-            f"_combined AS (\n"
-            f"  SELECT {', '.join(all_cols)}, 0 AS _src FROM {table_src}\n"
-            f"  UNION ALL\n"
-            f"  SELECT {', '.join(all_cols)}, 1 AS _src FROM _computed\n"
-            f")\n"
-            f"SELECT {', '.join(all_cols)} FROM (\n"
-            f"  SELECT *, ROW_NUMBER() OVER ("
-            f"PARTITION BY {', '.join(id_cols)} ORDER BY _src DESC) AS _rn\n"
-            f"  FROM _combined\n"
-            f") WHERE _rn = 1"
+        all_cols_csv = ", ".join(all_cols)
+        id_cols_csv = ", ".join(id_cols)
+        cte.cte("_computed", computed_sql)
+        cte.cte(
+            "_combined",
+            f"SELECT {all_cols_csv}, 0 AS _src FROM {table_src} "
+            f"UNION ALL SELECT {all_cols_csv}, 1 AS _src FROM _computed",
+        )
+        return cte.select(
+            f"SELECT {all_cols_csv} FROM ("
+            f"SELECT *, ROW_NUMBER() OVER ("
+            f"PARTITION BY {id_cols_csv} ORDER BY _src DESC) AS _rn "
+            f"FROM _combined) WHERE _rn = 1"
         )
 
     def _build_hierarchy_rule_cte(
