@@ -61,7 +61,8 @@ class SQLBuilder:
         join_type: str = "INNER",
     ) -> "SQLBuilder":
         """Add a JOIN clause."""
-        join_sql = f"{join_type} JOIN {table} AS {alias}"
+        op = join_type.replace("_join", "").upper()
+        join_sql = f"{op} JOIN {table} AS {alias}"
         if using:
             using_cols = ", ".join([f'"{c}"' for c in using])
             join_sql += f" USING ({using_cols})"

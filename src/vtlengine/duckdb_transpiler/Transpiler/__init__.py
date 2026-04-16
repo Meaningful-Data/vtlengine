@@ -3614,21 +3614,12 @@ FROM {src}, (
 
     def visit_JoinOp(self, node: AST.JoinOp) -> str:  # type: ignore[override]  # noqa: C901
         """Visit a join operation."""
-        op = str(node.op).lower()
-        join_type_map = {
-            tokens.INNER_JOIN: "INNER",
-            tokens.LEFT_JOIN: "LEFT",
-            tokens.FULL_JOIN: "FULL",
-            tokens.CROSS_JOIN: "CROSS",
-        }
-        join_type = join_type_map.get(op, "INNER")
-
         clause_info: List[Dict[str, Any]] = []
         for i, clause in enumerate(node.clauses):
             alias: Optional[str] = None
             actual_node = clause
 
-            if isinstance(clause, AST.BinOp) and str(clause.op).lower() == "as":
+            if isinstance(clause, AST.BinOp) and clause.op == tokens.AS:
                 actual_node = clause.left
                 alias = clause.right.value if hasattr(clause.right, "value") else str(clause.right)
 
@@ -3687,7 +3678,7 @@ FROM {src}, (
         # For cross joins, identifiers from different datasets must be qualified
         # (e.g. d1#Id_1, d2#Id_1), so we skip all identifier deduplication.
         all_join_ids: Set[str] = set()
-        if join_type != "CROSS":
+        if node.op != tokens.CROSS_JOIN:
             for keys in pairwise_keys:
                 all_join_ids.update(keys)
             for info in clause_info:
@@ -3705,9 +3696,6 @@ FROM {src}, (
                         comp_count[comp_name] = comp_count.get(comp_name, 0) + 1
 
         duplicate_comps = {name for name, cnt in comp_count.items() if cnt >= 2}
-        is_cross = join_type == "CROSS"
-        is_full = join_type == "FULL"
-
         first_sql_alias = clause_info[0]["sql_alias"]
         builder = SQLBuilder()
 
@@ -3722,12 +3710,12 @@ FROM {src}, (
             sa = info["sql_alias"]
             for comp_name, comp in info["ds"].components.items():
                 is_join_id = (
-                    comp.role == Role.IDENTIFIER and not is_cross
+                    comp.role == Role.IDENTIFIER and node.op != tokens.CROSS_JOIN
                 ) or comp_name in all_join_ids
                 if is_join_id:
                     if comp_name not in seen_identifiers:
                         seen_identifiers.add(comp_name)
-                        if is_full and comp_name in all_join_ids:
+                        if node.op == tokens.FULL_JOIN and comp_name in all_join_ids:
                             # For FULL JOIN identifiers, use COALESCE to pick
                             # the non-NULL value from either side.
                             coalesce_parts = [
@@ -3760,7 +3748,7 @@ FROM {src}, (
 
         for idx, info in enumerate(clause_info[1:]):
             join_keys = pairwise_keys[idx]
-            if is_cross:
+            if node.op == tokens.CROSS_JOIN:
                 builder.cross_join(info["table_src"], info["sql_alias"])
             else:
                 on_parts = []
@@ -3784,7 +3772,7 @@ FROM {src}, (
                     info["table_src"],
                     info["sql_alias"],
                     on=on_clause,
-                    join_type=join_type,
+                    join_type=node.op,
                 )
 
         return builder.build()
@@ -3840,12 +3828,8 @@ FROM {src}, (
         self, node: AST.TimeAggregation, target: str, conf: Optional[str]
     ) -> str:
         """Visit TIME_AGG at dataset level: apply to time measure."""
-        if node.operand is None:
-            raise ValueError("Cannot resolve structure for time_agg dataset")
         ds = self._get_dataset_structure(node.operand)
         src = self._get_dataset_sql(node.operand)
-        if ds is None:
-            raise ValueError("Cannot resolve structure for time_agg dataset")
 
         # Find time measures to transform
         cols = []
@@ -3856,13 +3840,11 @@ FROM {src}, (
             elif comp.data_type == TimePeriod:
                 cols.append(f"vtl_time_agg_tp(vtl_period_parse({col}), '{target}') AS {col}")
             elif comp.data_type == Date:
-                agg = f"vtl_time_agg_date({col}, '{target}')"
+                expr = f"vtl_time_agg_date({col}, '{target}')"
                 if conf == "first":
-                    expr = f"vtl_tp_start_date(vtl_period_parse({agg}))"
+                    expr = f"vtl_tp_start_date(vtl_period_parse({expr}))"
                 elif conf == "last":
-                    expr = f"vtl_tp_end_date(vtl_period_parse({agg}))"
-                else:
-                    expr = agg
+                    expr = f"vtl_tp_end_date(vtl_period_parse({expr}))"
                 cols.append(f"{expr} AS {col}")
             else:
                 cols.append(col)
