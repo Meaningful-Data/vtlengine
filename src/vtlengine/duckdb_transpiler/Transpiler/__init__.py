@@ -244,6 +244,12 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return None
         return ds, table_src
 
+    def _clause_fallback_sql(self, node: AST.RegularAggregation) -> str:
+        """Return ``SELECT * FROM <dataset>`` or empty when the clause cannot resolve."""
+        if node.dataset:
+            return f"SELECT * FROM {self._get_dataset_sql(node.dataset)}"
+        return ""
+
     def _get_assignment_inputs(self, name: str) -> List[str]:
         if self.dag is None:
             return []
@@ -579,6 +585,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if er_code:
             return f"'{str(er_code).replace(chr(39), chr(39) * 2)}'"
         return "CAST(NULL AS VARCHAR)"
+
+    @staticmethod
+    def _get_node_value(node: Any) -> str:
+        """Extract ``.value`` from an AST node, falling back to ``str(node)``."""
+        return node.value if hasattr(node, "value") else str(node)
 
     @staticmethod
     def _error_level_sql(er_level: Any) -> str:
@@ -1243,17 +1254,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     def _visit_collection_element(self, child: AST.AST) -> str:
         """Visit a set element, preserving raw CAST behavior for time_period literals."""
-        if (
-            isinstance(child, AST.ParamOp)
-            and str(getattr(child, "op", "")).lower() == tokens.CAST
-            and len(child.children) >= 2
-        ):
+        if isinstance(child, AST.ParamOp) and child.op == tokens.CAST:
             type_node = child.children[1]
-            target_type_str = type_node.value if hasattr(type_node, "value") else str(type_node)
-            if target_type_str.lower() in ("time_period", "timeperiod"):
+            if type_node == TimePeriod:
                 source_type = self._get_source_vtl_type(child.children[0])
-                source_lower = (source_type or "").lower()
-                if source_lower not in ("date", "time", "timeinterval"):
+                if source_type not in (Date, TimeInterval):
                     operand_sql = self.visit(child.children[0])
                     return f"CAST({operand_sql} AS VARCHAR)"
         return self.visit(child)
@@ -1347,6 +1352,28 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             f"{left_alias}.{quote_identifier(i)} = {right_alias}.{quote_identifier(i)}"
             for i in common_ids
         )
+
+    def _left_join_dataset(
+        self,
+        operand: AST.AST,
+        operand_type: str,
+        alias: str,
+        source_ids: List[str],
+        source_alias: str,
+        builder: "SQLBuilder",
+    ) -> Optional[str]:
+        """LEFT JOIN a dataset operand and return a ref to its first ID (for filtering)."""
+        if operand_type != _DATASET:
+            return None
+        sql = self._get_dataset_sql(operand)
+        ds = self._get_dataset_structure(operand)
+        ds_ids = set(ds.get_identifiers_names()) if ds else set()
+        common = [id_ for id_ in source_ids if id_ in ds_ids]
+        if not common:
+            return None
+        on = self._join_on_clause(common, source_alias, alias)
+        builder.join(sql, alias, on=on, join_type="LEFT")
+        return f"{alias}.{quote_identifier(common[0])}"
 
     def visit_UnaryOp(self, node: AST.UnaryOp) -> str:  # type: ignore[override]
         """Visit a unary operation."""
@@ -1573,11 +1600,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     def _visit_membership(self, node: AST.BinOp) -> str:
         """Visit MEMBERSHIP (#): DS#comp -> SELECT ids, comp FROM DS."""
-        comp_name = node.right.value if hasattr(node.right, "value") else str(node.right)
-        comp_name = self._resolve_udo_name(comp_name)
+        comp_name = self._resolve_udo_name(self._get_node_value(node.right))
 
         if self._in_clause:
-            ds_name = node.left.value if hasattr(node.left, "value") else str(node.left)
+            ds_name = self._get_node_value(node.left)
             qualified = f"{ds_name}#{comp_name}"
             if qualified in self._join_alias_map:
                 return quote_identifier(qualified)
@@ -1660,7 +1686,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if isinstance(node, AST.VarID):
             if self._in_clause and self._current_dataset:
                 comp = self._current_dataset.components.get(node.value)
-                return comp and comp.data_type == target_type
+                return comp is not None and comp.data_type == target_type
             return node.value in self.scalars and self.scalars[node.value].data_type == target_type
 
         elif isinstance(node, AST.ParamOp) and node.op == tokens.CAST:
@@ -2129,7 +2155,7 @@ FROM {src}, (
             and len(node.children) >= 2
         ):
             type_node = node.children[1]
-            return type_node.value if hasattr(type_node, "value") else str(type_node)
+            return self._get_node_value(type_node)
         if isinstance(node, AST.TimeAggregation):
             return "TimePeriod"
         if isinstance(node, AST.VarID) and self._current_dataset:
@@ -2148,7 +2174,7 @@ FROM {src}, (
         target_type_str = ""
         if len(node.children) >= 2:
             type_node = node.children[1]
-            target_type_str = type_node.value if hasattr(type_node, "value") else str(type_node)
+            target_type_str = self._get_node_value(type_node)
 
         duckdb_type = get_duckdb_type(target_type_str)
 
@@ -2310,9 +2336,7 @@ FROM {src}, (
         """Visit filter clause: DS[filter condition]."""
         resolved = self._resolve_clause_dataset(node)
         if resolved is None:
-            if node.dataset:
-                return f"SELECT * FROM {self._get_dataset_sql(node.dataset)}"
-            return ""
+            return self._clause_fallback_sql(node)
         ds, table_src = resolved
 
         with self._clause_scope(ds):
@@ -2327,9 +2351,7 @@ FROM {src}, (
         """Visit calc clause: DS[calc new_col := expr, ...]."""
         resolved = self._resolve_clause_dataset(node)
         if resolved is None:
-            if node.dataset:
-                return f"SELECT * FROM {self._get_dataset_sql(node.dataset)}"
-            return ""
+            return self._clause_fallback_sql(node)
         ds, table_src = resolved
 
         calc_exprs: Dict[str, str] = {}
@@ -2344,8 +2366,7 @@ FROM {src}, (
                     assignment = child.operand
 
                 if isinstance(assignment, AST.Assignment):
-                    col_name = assignment.left.value if hasattr(assignment.left, "value") else ""
-                    col_name = self._resolve_udo_name(col_name)
+                    col_name = self._resolve_udo_name(self._get_node_value(assignment.left))
                     expr_sql = self.visit(assignment.right)
                     calc_exprs[col_name] = expr_sql
                     if "vtl_tp_dateadd" in expr_sql and self.current_assignment:
@@ -2376,9 +2397,7 @@ FROM {src}, (
         """Visit keep clause."""
         resolved = self._resolve_clause_dataset(node)
         if resolved is None:
-            if node.dataset:
-                return f"SELECT * FROM {self._get_dataset_sql(node.dataset)}"
-            return ""
+            return self._clause_fallback_sql(node)
         ds, table_src = resolved
 
         keep_names: List[str] = [
@@ -2416,9 +2435,7 @@ FROM {src}, (
         """Visit rename clause."""
         resolved = self._resolve_clause_dataset(node)
         if resolved is None:
-            if node.dataset:
-                return f"SELECT * FROM {self._get_dataset_sql(node.dataset)}"
-            return ""
+            return self._clause_fallback_sql(node)
         ds, table_src = resolved
 
         renames: Dict[str, str] = {}
@@ -2426,14 +2443,12 @@ FROM {src}, (
             if isinstance(child, AST.RenameNode):
                 old = self._resolve_udo_name(child.old_name)
                 new = self._resolve_udo_name(child.new_name)
-                if "#" in old and old in self._join_alias_map:
-                    renames[old] = new
-                    self._consumed_join_aliases.add(old)
-                elif "#" in old:
-                    old = old.split("#", 1)[1]
-                    renames[old] = new
-                else:
-                    renames[old] = new
+                if "#" in old:
+                    if old in self._join_alias_map:
+                        self._consumed_join_aliases.add(old)
+                    else:
+                        old = old.split("#", 1)[1]
+                renames[old] = new
 
         cols: List[str] = []
         for name in ds.components:
@@ -2452,16 +2467,14 @@ FROM {src}, (
         """Visit subspace clause."""
         resolved = self._resolve_clause_dataset(node)
         if resolved is None:
-            if node.dataset:
-                return f"SELECT * FROM {self._get_dataset_sql(node.dataset)}"
-            return ""
+            return self._clause_fallback_sql(node)
         ds, table_src = resolved
 
         where_parts: List[str] = []
         remove_ids: set[str] = set()
         for child in node.children:
             if isinstance(child, AST.BinOp):
-                col_name = child.left.value if hasattr(child.left, "value") else ""
+                col_name = self._get_node_value(child.left)
                 remove_ids.add(col_name)
                 val_sql = self.visit(child.right)
                 where_parts.append(f"{quote_identifier(col_name)} = {val_sql}")
@@ -2477,9 +2490,7 @@ FROM {src}, (
         """Visit aggregate clause: DS[aggr Me := sum(Me) group by Id, ... having ...]."""
         resolved = self._resolve_clause_dataset(node)
         if resolved is None:
-            if node.dataset:
-                return f"SELECT * FROM {self._get_dataset_sql(node.dataset)}"
-            return ""
+            return self._clause_fallback_sql(node)
         ds, table_src = resolved
 
         calc_exprs: Dict[str, str] = {}
@@ -2492,7 +2503,7 @@ FROM {src}, (
                 if isinstance(child, AST.UnaryOp) and isinstance(child.operand, AST.Assignment):
                     assignment = child.operand
                 if isinstance(assignment, AST.Assignment):
-                    col_name = assignment.left.value if hasattr(assignment.left, "value") else ""
+                    col_name = self._get_node_value(assignment.left)
                     agg_node = assignment.right
                     if isinstance(agg_node, AST.Aggregation) and agg_node.having_clause is not None:
                         hc = agg_node.having_clause
@@ -2513,23 +2524,6 @@ FROM {src}, (
 
                     expr_sql = self.visit(agg_node)
                     calc_exprs[col_name] = expr_sql
-
-        if tp_minmax_cols:
-            checks: List[str] = []
-            for col_name, agg_op in tp_minmax_cols:
-                qc = quote_identifier(col_name)
-                indicator = f"vtl_period_parse({qc}).period_indicator"
-                err = (
-                    f"'VTL Error 2-1-19-20: Time Period operands with "
-                    f"different period indicators do not support < and > "
-                    f"Comparison operations, unable to get the {agg_op}'"
-                )
-                checks.append(
-                    f"CASE WHEN COUNT(DISTINCT {indicator}) "
-                    f"FILTER (WHERE {qc} IS NOT NULL) > 1 "
-                    f"THEN error({err}) END"
-                )
-            ", ".join(checks)
 
         group_ids: List[str] = []
         grouping_op: str = ""
@@ -2581,9 +2575,7 @@ FROM {src}, (
         """Visit apply clause."""
         resolved = self._resolve_clause_dataset(node)
         if resolved is None:
-            if node.dataset:
-                return f"SELECT * FROM {self._get_dataset_sql(node.dataset)}"
-            return ""
+            return self._clause_fallback_sql(node)
         ds, table_src = resolved
 
         output_ds = self.output_datasets.get(self.current_assignment)
@@ -2594,8 +2586,8 @@ FROM {src}, (
         for child in node.children:
             if not isinstance(child, AST.BinOp):
                 continue
-            left_alias = child.left.value if hasattr(child.left, "value") else str(child.left)
-            right_alias = child.right.value if hasattr(child.right, "value") else str(child.right)
+            left_alias = self._get_node_value(child.left)
+            right_alias = self._get_node_value(child.right)
             op = str(child.op).lower() if child.op else ""
 
             left_measures: Dict[str, str] = {}
@@ -2634,22 +2626,14 @@ FROM {src}, (
         """Visit unpivot clause."""
         resolved = self._resolve_clause_dataset(node)
         if resolved is None:
-            if node.dataset:
-                return f"SELECT * FROM {self._get_dataset_sql(node.dataset)}"
-            return ""
+            return self._clause_fallback_sql(node)
         ds, table_src = resolved
 
         if len(node.children) < 2:
             raise ValueError("Unpivot clause requires two operands")
 
-        raw_id = (
-            node.children[0].value if hasattr(node.children[0], "value") else str(node.children[0])
-        )
-        raw_measure = (
-            node.children[1].value if hasattr(node.children[1], "value") else str(node.children[1])
-        )
-        new_id_name = self._resolve_udo_name(raw_id)
-        new_measure_name = self._resolve_udo_name(raw_measure)
+        new_id_name = self._resolve_udo_name(self._get_node_value(node.children[0]))
+        new_measure_name = self._resolve_udo_name(self._get_node_value(node.children[1]))
 
         id_names = ds.get_identifiers_names()
         measure_names = ds.get_measures_names()
@@ -3221,27 +3205,12 @@ FROM {src}, (
             builder = SQLBuilder().select(*cols).from_table(source_sql, alias_cond)
 
         # Use LEFT JOINs so empty datasets don't eliminate all rows
-        then_join_id: Optional[str] = None
-        if then_type == _DATASET:
-            then_sql = self._get_dataset_sql(node.thenOp)
-            then_ds = self._get_dataset_structure(node.thenOp)
-            then_ids = set(then_ds.get_identifiers_names()) if then_ds else set()
-            common = [id_ for id_ in source_ids if id_ in then_ids]
-            if common:
-                on = self._join_on_clause(common, alias_cond, "t")
-                builder.join(then_sql, "t", on=on, join_type="LEFT")
-                then_join_id = f"t.{quote_identifier(common[0])}"
-
-        else_join_id: Optional[str] = None
-        if else_type == _DATASET:
-            else_sql = self._get_dataset_sql(node.elseOp)
-            else_ds = self._get_dataset_structure(node.elseOp)
-            else_ids = set(else_ds.get_identifiers_names()) if else_ds else set()
-            common = [id_ for id_ in source_ids if id_ in else_ids]
-            if common:
-                on = self._join_on_clause(common, alias_cond, "e")
-                builder.join(else_sql, "e", on=on, join_type="LEFT")
-                else_join_id = f"e.{quote_identifier(common[0])}"
+        then_join_id = self._left_join_dataset(
+            node.thenOp, then_type, "t", source_ids, alias_cond, builder
+        )
+        else_join_id = self._left_join_dataset(
+            node.elseOp, else_type, "e", source_ids, alias_cond, builder
+        )
 
         # Filter: only keep rows where the selected side has a match.
         # Scalar sides always match; dataset sides need a LEFT JOIN hit.
@@ -3536,7 +3505,7 @@ FROM {src}, (
 
             if isinstance(clause, AST.BinOp) and clause.op == tokens.AS:
                 actual_node = clause.left
-                alias = clause.right.value if hasattr(clause.right, "value") else str(clause.right)
+                alias = self._get_node_value(clause.right)
 
             ds = self._get_dataset_structure(actual_node)
             table_src = self._get_dataset_sql(actual_node)
