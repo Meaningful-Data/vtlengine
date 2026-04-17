@@ -430,11 +430,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         self._dp_signature = None
 
-        if rule.erCode:
-            escaped_ec = rule.erCode.replace("'", "''")
-            ec_sql = f"'{escaped_ec}'"
-        else:
-            ec_sql = "CAST(NULL AS VARCHAR)"
+        ec_sql = self._error_code_sql(rule.erCode)
         el_sql = self._error_level_sql(rule.erLevel)
         fail_cond = (
             f"({when_cond_sql}) AND NOT ({then_expr_sql})"
@@ -578,6 +574,13 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             )
 
     @staticmethod
+    def _error_code_sql(er_code: Any) -> str:
+        """Convert an errorcode value to a SQL literal."""
+        if er_code:
+            return f"'{str(er_code).replace(chr(39), chr(39) * 2)}'"
+        return "CAST(NULL AS VARCHAR)"
+
+    @staticmethod
     def _error_level_sql(er_level: Any) -> str:
         """Convert an errorlevel value to a SQL literal (numeric or string)."""
         if er_level is None:
@@ -587,6 +590,27 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         except (ValueError, TypeError):
             escaped = str(er_level).replace("'", "''")
             return f"'{escaped}'"
+
+    @staticmethod
+    def _as_subquery(src: str) -> str:
+        """Wrap *src* as a parenthesized subquery, adding ``SELECT *`` if needed."""
+        stripped = src.strip().upper()
+        if stripped.startswith("("):
+            return src
+        if stripped.startswith("SELECT"):
+            return f"({src})"
+        return f"(SELECT * FROM {src})"
+
+    def _resolve_udo_name(self, raw_name: str) -> str:
+        """Resolve a potential UDO parameter to its actual name."""
+        udo_val = self._get_udo_param(raw_name)
+        if udo_val is None:
+            return raw_name
+        if isinstance(udo_val, (AST.VarID, AST.Identifier)):
+            return udo_val.value
+        if isinstance(udo_val, str):
+            return udo_val
+        return raw_name
 
     @staticmethod
     def _is_hr_eq_rule(rule: AST.HRule) -> bool:
@@ -794,10 +818,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 f"CASE WHEN NOT ({when_sql}) THEN CAST(NULL AS DOUBLE) ELSE {imbalance_expr} END"
             )
 
-        if rule.erCode:
-            ec_sql = f"'{rule.erCode.replace(chr(39), chr(39) * 2)}'"
-        else:
-            ec_sql = "CAST(NULL AS VARCHAR)"
+        ec_sql = self._error_code_sql(rule.erCode)
         el_sql = self._error_level_sql(rule.erLevel)
         # Typed NULL matching the errorlevel column type
         try:
@@ -1553,12 +1574,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     def _visit_membership(self, node: AST.BinOp) -> str:
         """Visit MEMBERSHIP (#): DS#comp -> SELECT ids, comp FROM DS."""
         comp_name = node.right.value if hasattr(node.right, "value") else str(node.right)
-        udo_val = self._get_udo_param(comp_name)
-        if udo_val is not None:
-            if isinstance(udo_val, (AST.VarID, AST.Identifier)):
-                comp_name = udo_val.value
-            elif isinstance(udo_val, str):
-                comp_name = udo_val
+        comp_name = self._resolve_udo_name(comp_name)
 
         if self._in_clause:
             ds_name = node.left.value if hasattr(node.left, "value") else str(node.left)
@@ -1633,89 +1649,31 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         id_cols = ", ".join([f"l.{quote_identifier(id_)}" for id_ in left_ids])
 
-        right_subq = right_src
-        if not right_src.strip().upper().startswith("("):
-            right_subq = f"(SELECT * FROM {right_src})"
-
+        right_subq = self._as_subquery(right_src)
         exists_subq = f"EXISTS(SELECT 1 FROM {right_subq} AS r WHERE {where_clause})"
-
-        left_subq = left_src
-        if not left_src.strip().upper().startswith("("):
-            left_subq = f"(SELECT * FROM {left_src})"
+        left_subq = self._as_subquery(left_src)
 
         return f'SELECT {id_cols}, {exists_subq} AS "bool_var" FROM {left_subq} AS l'
 
-    def _is_time_period_operand(self, node: AST.AST) -> bool:
-        """Check if an operand resolves to a TimePeriod type."""
-        if isinstance(node, AST.VarID) and self._in_clause and self._current_dataset:
-            comp = self._current_dataset.components.get(node.value)
-            if comp and comp.data_type == TimePeriod:
-                return True
-        if isinstance(node, AST.VarID) and node.value in self.scalars:
-            sc = self.scalars[node.value]
-            if sc.data_type == TimePeriod:
-                return True
-        if (
-            isinstance(node, AST.ParamOp)
-            and str(getattr(node, "op", "")).lower() == tokens.CAST
-            and len(node.children) >= 2
-        ):
-            type_node = node.children[1]
-            type_str = type_node.value if hasattr(type_node, "value") else str(type_node)
-            if type_str.lower() in ("time_period", "timeperiod"):
-                return True
-        return False
+    def _is_operand_type(self, node: AST.AST, target_type: type) -> bool:
+        """Check if an operand resolves to *target_type*."""
+        if isinstance(node, AST.VarID):
+            if self._in_clause and self._current_dataset:
+                comp = self._current_dataset.components.get(node.value)
+                return comp and comp.data_type == target_type
+            return node.value in self.scalars and self.scalars[node.value].data_type == target_type
 
-    def _is_duration_operand(self, node: AST.AST) -> bool:
-        """Check if an operand resolves to a Duration type."""
-        if isinstance(node, AST.VarID) and self._in_clause and self._current_dataset:
-            comp = self._current_dataset.components.get(node.value)
-            if comp and comp.data_type == Duration:
-                return True
-        if isinstance(node, AST.VarID) and node.value in self.scalars:
-            sc = self.scalars[node.value]
-            if sc.data_type == Duration:
-                return True
-        if (
-            isinstance(node, AST.ParamOp)
-            and str(getattr(node, "op", "")).lower() == tokens.CAST
-            and len(node.children) >= 2
-        ):
+        elif isinstance(node, AST.ParamOp) and node.op == tokens.CAST:
             type_node = node.children[1]
-            type_str = type_node.value if hasattr(type_node, "value") else str(type_node)
-            if type_str.lower() == "duration":
-                return True
-        return False
+            return type_node == target_type
 
-    def _is_time_interval_operand(self, node: AST.AST) -> bool:
-        """Check if an operand resolves to a TimeInterval (Time) type."""
-        if isinstance(node, AST.VarID) and self._in_clause and self._current_dataset:
-            comp = self._current_dataset.components.get(node.value)
-            if comp and comp.data_type == TimeInterval:
-                return True
-        if isinstance(node, AST.VarID) and node.value in self.scalars:
-            sc = self.scalars[node.value]
-            if sc.data_type == TimeInterval:
-                return True
-        if (
-            isinstance(node, AST.ParamOp)
-            and str(getattr(node, "op", "")).lower() == tokens.CAST
-            and len(node.children) >= 2
-        ):
-            type_node = node.children[1]
-            type_str = type_node.value if hasattr(type_node, "value") else str(type_node)
-            if type_str.lower() in ("time", "timeinterval", "time_interval"):
-                return True
         return False
 
     def _detect_scalar_type(self, node: AST.AST) -> Optional[type]:
         """Detect the data type of a scalar operand for typed dispatch."""
-        if self._is_time_period_operand(node):
-            return TimePeriod
-        if self._is_duration_operand(node):
-            return Duration
-        if self._is_time_interval_operand(node):
-            return TimeInterval
+        for tp in (TimePeriod, Duration, TimeInterval):
+            if self._is_operand_type(node, tp):
+                return tp
         return None
 
     def _visit_period_indicator(self, node: AST.UnaryOp) -> str:
@@ -2126,7 +2084,7 @@ FROM {src}, (
         shift_sql = self.visit(node.params[0]) if node.params else "0"
         period_sql = self.visit(node.params[1]) if len(node.params) > 1 else "'D'"
 
-        is_tp = self._is_time_period_operand(operand_node)
+        is_tp = self._is_operand_type(operand_node, TimePeriod)
 
         if operand_type == _DATASET:
             ds_node = operand_node
@@ -2387,12 +2345,7 @@ FROM {src}, (
 
                 if isinstance(assignment, AST.Assignment):
                     col_name = assignment.left.value if hasattr(assignment.left, "value") else ""
-                    udo_val = self._get_udo_param(col_name)
-                    if udo_val is not None:
-                        if isinstance(udo_val, (AST.VarID, AST.Identifier)):
-                            col_name = udo_val.value
-                        elif isinstance(udo_val, str):
-                            col_name = udo_val
+                    col_name = self._resolve_udo_name(col_name)
                     expr_sql = self.visit(assignment.right)
                     calc_exprs[col_name] = expr_sql
                     if "vtl_tp_dateadd" in expr_sql and self.current_assignment:
@@ -2415,10 +2368,7 @@ FROM {src}, (
             if col_name not in ds.components:
                 select_cols.append(f"{expr_sql} AS {quote_identifier(col_name)}")
 
-        if table_src.strip().upper().startswith("SELECT"):
-            inner_src = f"({table_src})"
-        else:
-            inner_src = f"(SELECT * FROM {table_src})"
+        inner_src = self._as_subquery(table_src)
 
         return SQLBuilder().select(*select_cols).from_table(inner_src, "t").build()
 
@@ -2474,20 +2424,8 @@ FROM {src}, (
         renames: Dict[str, str] = {}
         for child in node.children:
             if isinstance(child, AST.RenameNode):
-                old = child.old_name
-                new = child.new_name
-                udo_old = self._get_udo_param(old)
-                if udo_old is not None:
-                    if isinstance(udo_old, (AST.VarID, AST.Identifier)):
-                        old = udo_old.value
-                    elif isinstance(udo_old, str):
-                        old = udo_old
-                udo_new = self._get_udo_param(new)
-                if udo_new is not None:
-                    if isinstance(udo_new, (AST.VarID, AST.Identifier)):
-                        new = udo_new.value
-                    elif isinstance(udo_new, str):
-                        new = udo_new
+                old = self._resolve_udo_name(child.old_name)
+                new = self._resolve_udo_name(child.new_name)
                 if "#" in old and old in self._join_alias_map:
                     renames[old] = new
                     self._consumed_join_aliases.add(old)
@@ -2710,20 +2648,8 @@ FROM {src}, (
         raw_measure = (
             node.children[1].value if hasattr(node.children[1], "value") else str(node.children[1])
         )
-        udo_id = self._get_udo_param(raw_id)
-        if udo_id is not None:
-            if isinstance(udo_id, (AST.VarID, AST.Identifier)):
-                raw_id = udo_id.value
-            elif isinstance(udo_id, str):
-                raw_id = udo_id
-        udo_measure = self._get_udo_param(raw_measure)
-        if udo_measure is not None:
-            if isinstance(udo_measure, (AST.VarID, AST.Identifier)):
-                raw_measure = udo_measure.value
-            elif isinstance(udo_measure, str):
-                raw_measure = udo_measure
-        new_id_name = raw_id
-        new_measure_name = raw_measure
+        new_id_name = self._resolve_udo_name(raw_id)
+        new_measure_name = self._resolve_udo_name(raw_measure)
 
         id_names = ds.get_identifiers_names()
         measure_names = ds.get_measures_names()
@@ -3782,19 +3708,14 @@ FROM {src}, (
             if operand_type == _DATASET:
                 return self._visit_time_agg_dataset(node, target, conf)
 
-            is_tp = self._is_time_period_operand(node.operand)
+            is_tp = self._is_operand_type(node.operand, TimePeriod)
             operand_sql = self.visit(node.operand)
 
             if is_tp:
                 return f"vtl_time_agg_tp(vtl_period_parse({operand_sql}), '{target}')"
             else:
                 agg_expr = f"vtl_time_agg_date({operand_sql}, '{target}')"
-                # For Date + conf, return start/end date of the computed period
-                if conf == "first":
-                    return f"vtl_tp_start_date(vtl_period_parse({agg_expr}))"
-                elif conf == "last":
-                    return f"vtl_tp_end_date(vtl_period_parse({agg_expr}))"
-                return agg_expr
+                return self._apply_time_agg_conf(agg_expr, conf)
         else:
             # Without-operand case: inside group all, applies to time identifier
             if self._in_clause and self._current_dataset:
@@ -3806,12 +3727,17 @@ FROM {src}, (
                     if comp.data_type == Date and comp.role == Role.IDENTIFIER:
                         col = quote_identifier(comp.name)
                         agg = f"vtl_time_agg_date({col}, '{target}')"
-                        if conf == "first":
-                            return f"vtl_tp_start_date(vtl_period_parse({agg}))"
-                        elif conf == "last":
-                            return f"vtl_tp_end_date(vtl_period_parse({agg}))"
-                        return agg
+                        return self._apply_time_agg_conf(agg, conf)
             return f"vtl_time_agg_date(CURRENT_DATE, '{target}')"
+
+    @staticmethod
+    def _apply_time_agg_conf(expr: str, conf: Optional[str]) -> str:
+        """Apply time_agg conf (first/last) modifier to a Date aggregation expression."""
+        if conf == "first":
+            return f"vtl_tp_start_date(vtl_period_parse({expr}))"
+        if conf == "last":
+            return f"vtl_tp_end_date(vtl_period_parse({expr}))"
+        return expr
 
     def _visit_time_agg_dataset(
         self, node: AST.TimeAggregation, target: str, conf: Optional[str]
@@ -3829,11 +3755,7 @@ FROM {src}, (
             elif comp.data_type == TimePeriod:
                 cols.append(f"vtl_time_agg_tp(vtl_period_parse({col}), '{target}') AS {col}")
             elif comp.data_type == Date:
-                expr = f"vtl_time_agg_date({col}, '{target}')"
-                if conf == "first":
-                    expr = f"vtl_tp_start_date(vtl_period_parse({expr}))"
-                elif conf == "last":
-                    expr = f"vtl_tp_end_date(vtl_period_parse({expr}))"
+                expr = self._apply_time_agg_conf(f"vtl_time_agg_date({col}, '{target}')", conf)
                 cols.append(f"{expr} AS {col}")
             else:
                 cols.append(col)
