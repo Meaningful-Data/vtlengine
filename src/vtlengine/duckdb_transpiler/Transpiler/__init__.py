@@ -38,7 +38,19 @@ from vtlengine.Exceptions import RunTimeError
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 
 # Ordering-only comparisons (TimeInterval ordering is forbidden).
-_ORDERING_OPS: frozenset[str] = frozenset({tokens.GT, tokens.GTE, tokens.LT, tokens.LTE})
+_ORDERING_OPS: Set[str] = {tokens.GT, tokens.GTE, tokens.LT, tokens.LTE}
+
+# String operators needing VARCHAR input.
+_STRING_UNARY_OPS: Set[str] = {
+    tokens.UCASE,
+    tokens.LCASE,
+    tokens.LEN,
+    tokens.TRIM,
+    tokens.LTRIM,
+    tokens.RTRIM,
+}
+
+_STRING_PARAM_OPS: Set[str] = {tokens.SUBSTR, tokens.REPLACE, tokens.INSTR}
 
 
 def _datediff_to_date(ref: str, dt: Optional[type]) -> str:
@@ -108,26 +120,6 @@ def _date_tp_compare_expr(
             f" 'date2': CAST({right_ref} AS DATE)}}::vtl_time_interval"
         )
     return registry.generate(op, left_interval, right_interval)
-
-
-# String operators needing VARCHAR input.
-_STRING_UNARY_OPS: frozenset[str] = frozenset(
-    {
-        tokens.UCASE,
-        tokens.LCASE,
-        tokens.LEN,
-        tokens.TRIM,
-        tokens.LTRIM,
-        tokens.RTRIM,
-    }
-)
-_STRING_PARAM_OPS: frozenset[str] = frozenset(
-    {
-        tokens.SUBSTR,
-        tokens.REPLACE,
-        tokens.INSTR,
-    }
-)
 
 
 def _bool_to_str(col_ref: str) -> str:
@@ -1034,10 +1026,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         has_col = f"_has_{left_code_item}"
 
         other_val_has = []
-        for ci in unique_items:
-            if ci != left_code_item:
-                other_val_has.append(f"p._val_{ci}")
-                other_val_has.append(f"p._has_{ci}")
+        for i in unique_items:
+            if i != left_code_item:
+                other_val_has.append(f"p._val_{i}")
+                other_val_has.append(f"p._has_{i}")
 
         key_cols = [f"p.{k}" for k in join_keys]
         first_key = join_keys[0] if join_keys else "_computed"
@@ -1274,7 +1266,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     # Generic dataset-level helpers
 
-    def _apply_to_measures(
+    def _apply_measures(
         self,
         ds_node: AST.AST,
         expr_fn: "Callable[[str], str]",
@@ -1391,12 +1383,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 dt = comp.data_type if comp else None
                 return registry.generate(op, col_ref, data_type=dt)
 
-            return self._apply_to_measures(
-                node.operand,
-                _unary_expr,
-                name_override,
-                cast_bool_to_str=op in _STRING_UNARY_OPS,
-            )
+            bool_to_str = op in _STRING_UNARY_OPS
+            return self._apply_measures(node.operand, _unary_expr, name_override, bool_to_str)
         else:
             dt = self._detect_scalar_type(node.operand)
             operand_sql = self.visit(node.operand)
@@ -1425,7 +1413,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 def _in_expr(col_ref: str) -> str:
                     return f"({col_ref} {'IN' if op == tokens.IN else 'NOT IN'} {collection})"
 
-                return self._apply_to_measures(node.left, _in_expr, output_name_override="bool_var")
+                return self._apply_measures(node.left, _in_expr, output_name_override="bool_var")
             if left_type == _DATASET and right_type == _DATASET:
                 return self._build_ds_ds_binary(node.left, node.right, op)
             if left_type == _DATASET:
@@ -1573,7 +1561,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 return self._make_binary_expr(col_ref, scalar_sql, op, dt, None)
             return self._make_binary_expr(scalar_sql, col_ref, op, None, dt)
 
-        return self._apply_to_measures(
+        return self._apply_measures(
             ds_node,
             _bin_expr,
             cast_bool_to_str=op == tokens.CONCAT,
@@ -1622,7 +1610,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         pattern_sql = self.visit(node.right)
 
         if left_type == _DATASET:
-            return self._apply_to_measures(
+            return self._apply_measures(
                 node.left,
                 lambda col: registry.generate(tokens.CHARSET_MATCH, col, pattern_sql),
             )
@@ -1733,7 +1721,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             def _param_expr(col_ref: str) -> str:
                 return registry.generate(op, col_ref, *params_sql)
 
-            return self._apply_to_measures(ds_node, _param_expr, cast_bool_to_str=to_str)
+            return self._apply_measures(ds_node, _param_expr, cast_bool_to_str=to_str)
 
         children_sql = [self.visit(c) for c in node.children]
         all_args = children_sql + params_sql
@@ -2100,7 +2088,7 @@ FROM {src}, (
                     return f"vtl_tp_dateadd(vtl_period_parse({col_ref}), {shift_sql}, {period_sql})"
                 return f"vtl_dateadd({col_ref}, {shift_sql}, {period_sql})"
 
-            return self._apply_to_measures(ds_node, _dateadd_expr)
+            return self._apply_measures(ds_node, _dateadd_expr)
         else:
             operand_sql = self.visit(operand_node)
             if is_tp:
@@ -2168,7 +2156,7 @@ FROM {src}, (
                 src_type = comp_types.get(col_name)
                 return self._cast_expr(col, duckdb_type, target_type_str, mask, src_type)
 
-            return self._apply_to_measures(operand, _cast_measure)
+            return self._apply_measures(operand, _cast_measure)
         else:
             operand_sql = self.visit(operand)
             source_type = self._get_source_vtl_type(operand)
@@ -2245,7 +2233,7 @@ FROM {src}, (
 
         if seed_type == _DATASET and seed_node is not None:
             index_sql = self.visit(index_node) if index_node else "0"
-            return self._apply_to_measures(
+            return self._apply_measures(
                 seed_node,
                 lambda col: self._random_hash_expr(col, index_sql),
             )
@@ -2852,7 +2840,7 @@ FROM {src}, (
         name_override = "int_var" if op == tokens.COUNT else None
         if node.operand is None:
             raise ValueError("Analytic node must have an operand")
-        result = self._apply_to_measures(node.operand, _analytic_expr, name_override)
+        result = self._apply_measures(node.operand, _analytic_expr, name_override)
 
         # Inject TimePeriod indicator validation for MIN/MAX
         if op in (tokens.MIN, tokens.MAX) and node.operand:
@@ -2945,7 +2933,7 @@ FROM {src}, (
         high_sql = self.visit(node.children[2])
 
         if operand_type == _DATASET:
-            return self._apply_to_measures(
+            return self._apply_measures(
                 node.children[0],
                 lambda col: self._between_expr(col, low_sql, high_sql),
             )
