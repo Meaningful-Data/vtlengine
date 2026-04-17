@@ -1411,38 +1411,26 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     def visit_BinOp(self, node: AST.BinOp) -> str:  # type: ignore[override]
         """Visit a binary operation."""
-        op = str(node.op).lower() if node.op else ""
-
-        if op == "not in":
-            op = tokens.NOT_IN
-
+        op = node.op
         if op == tokens.MEMBERSHIP:
             return self._visit_membership(node)
-
         if op == tokens.EXISTS_IN:
-            return self._build_exists_in_sql(node.left, node.right)
-
+            return self._visit_exists_in(node.left, node.right)
         if op == tokens.CHARSET_MATCH:
             return self._visit_match_characters(node)
-
         if op == tokens.RANDOM:
             return self._visit_random_binop(node)
-
         if op == tokens.TIMESHIFT:
             return self._visit_timeshift(node)
 
         left_type = self._get_operand_type(node.left)
         right_type = self._get_operand_type(node.right)
-        has_dataset = left_type == _DATASET or right_type == _DATASET
-
-        if has_dataset:
+        if left_type == _DATASET or right_type == _DATASET:
             if op in (tokens.IN, tokens.NOT_IN) and left_type == _DATASET:
-                collection_sql = self.visit(node.right)
+                collection = self.visit(node.right)
 
                 def _in_expr(col_ref: str) -> str:
-                    if op == tokens.NOT_IN:
-                        return f"({col_ref} NOT IN {collection_sql})"
-                    return f"({col_ref} IN {collection_sql})"
+                    return f"({col_ref} {'IN' if op == tokens.IN else 'NOT IN'} {collection})"
 
                 return self._apply_to_measures(node.left, _in_expr, output_name_override="bool_var")
             if left_type == _DATASET and right_type == _DATASET:
@@ -1652,11 +1640,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             left_sql = self.visit(node.left)
             return registry.generate(tokens.CHARSET_MATCH, left_sql, pattern_sql)
 
-    def _build_exists_in_sql(
-        self,
-        left_node: AST.AST,
-        right_node: AST.AST,
-    ) -> str:
+    def _visit_exists_in(self, left_node: AST.AST, right_node: AST.AST) -> str:
         """Build SQL for exists_in operation."""
         left_ds = self._get_dataset_structure(left_node)
         right_ds = self._get_dataset_structure(right_node)
@@ -1736,17 +1720,13 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     def visit_ParamOp(self, node: AST.ParamOp) -> str:  # type: ignore[override]
         """Visit a parameterized operation."""
-        op = str(node.op).lower()
-
+        op = node.op
         if op == tokens.CAST:
             return self._visit_cast(node)
-
         if op == tokens.RANDOM:
             return self._visit_random(node)
-
         if op == tokens.DATE_ADD:
             return self._visit_dateadd(node)
-
         if op == tokens.FILL_TIME_SERIES:
             return self._visit_fill_time_series(node)
 
@@ -1758,13 +1738,12 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         if operand_type == _DATASET:
             ds_node = node.children[0]
+            to_str = op in _STRING_PARAM_OPS
 
             def _param_expr(col_ref: str) -> str:
                 return registry.generate(op, col_ref, *params_sql)
 
-            return self._apply_to_measures(
-                ds_node, _param_expr, cast_bool_to_str=op in _STRING_PARAM_OPS
-            )
+            return self._apply_to_measures(ds_node, _param_expr, cast_bool_to_str=to_str)
 
         children_sql = [self.visit(c) for c in node.children]
         all_args = children_sql + params_sql
@@ -2989,7 +2968,7 @@ FROM {src}, (
         if len(node.children) < 2:
             raise ValueError("exists_in requires at least 2 operands")
 
-        base_sql = self._build_exists_in_sql(node.children[0], node.children[1])
+        base_sql = self._visit_exists_in(node.children[0], node.children[1])
 
         # Check for retain parameter (true / false / all)
         if len(node.children) >= 3:

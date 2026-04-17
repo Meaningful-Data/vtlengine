@@ -117,7 +117,6 @@ class TestInOperator:
         [
             ("in", "IN"),
             ("not_in", "NOT IN"),
-            ("not in", "NOT IN"),
         ],
     )
     def test_dataset_in_collection(self, op: str, sql_op: str):
