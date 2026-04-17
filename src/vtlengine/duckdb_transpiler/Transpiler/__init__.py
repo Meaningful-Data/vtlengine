@@ -1261,13 +1261,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     ) -> str:
         """Apply an expression to each dataset measure and pass identifiers through."""
         ds = self._get_dataset_structure(ds_node)
-        if ds is None:
-            raise ValueError("Cannot resolve dataset structure for dataset-level operation")
-
         table_src = self._get_dataset_sql(ds_node)
         output_ds = self._get_output_dataset()
-        output_measure_names = list(output_ds.get_measures_names()) if output_ds else []
-        input_measures = ds.get_measures_names()
+        output_measures = list(output_ds.get_measures_names()) if output_ds else []
 
         cols: List[str] = []
         for name, comp in ds.components.items():
@@ -1278,22 +1274,15 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 if cast_bool_to_str and comp.data_type == Boolean:
                     col_ref = _bool_to_str(col_ref)
                 expr = expr_fn(col_ref)
+
+                out_name = name
                 if output_name_override is not None:
                     out_name = output_name_override
-                elif (
-                    output_measure_names
-                    and len(input_measures) == 1
-                    and len(output_measure_names) == 1
-                    and name == input_measures[0]
-                    and name != output_measure_names[0]
-                    and (
-                        ds.name not in self.input_datasets
-                        or name in self.input_datasets[ds.name].get_measures_names()
-                    )
+                elif len(output_measures) == 1 and (
+                    ds.name not in self.input_datasets
+                    or name in self.input_datasets[ds.name].get_measures_names()
                 ):
-                    out_name = output_measure_names[0]
-                else:
-                    out_name = name
+                    out_name = output_measures[0]
                 cols.append(f"{expr} AS {quote_identifier(out_name)}")
 
         return SQLBuilder().select(*cols).from_table(table_src).build()
