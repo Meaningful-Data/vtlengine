@@ -232,6 +232,16 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             self._current_dataset = old_current_ds
             self._column_prefix = old_prefix
 
+    @contextmanager
+    def _stash_assignment(self) -> Generator[None, None, None]:
+        """Temporarily stash the ``current_assignment`` and restore it on exit."""
+        saved = self.current_assignment
+        self.current_assignment = ""
+        try:
+            yield
+        finally:
+            self.current_assignment = saved
+
     def _resolve_clause_dataset(
         self, node: AST.RegularAggregation
     ) -> Optional[Tuple[Dataset, str]]:
@@ -281,14 +291,13 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 self.current_assignment = name
                 self.inputs = self._get_assignment_inputs(name)
 
+                is_persistent = isinstance(child, AST.PersistentAssignment)
                 if name in self.output_scalars:
-                    is_persistent = isinstance(child, AST.PersistentAssignment)
                     value_sql = self.visit(child)
                     if not value_sql.strip().upper().startswith("SELECT"):
                         value_sql = f"SELECT {value_sql} AS value"
                     queries.append((name, value_sql, is_persistent))
                 else:
-                    is_persistent = isinstance(child, AST.PersistentAssignment)
                     query = self.visit(child)
                     query = self._unqualify_join_columns(name, query)
                     queries.append((name, query, is_persistent))
@@ -321,26 +330,18 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if not candidates:
             return query
 
-        renames: Dict[str, str] = {}
-        for unqualified, quals in candidates.items():
-            renames[quals[0]] = unqualified
-
-        if not renames:
-            return query
+        # Map unqualified name → first qualified name that matches.
+        unqual_to_qual = {unqual: quals[0] for unqual, quals in candidates.items()}
 
         cols: List[str] = []
         for comp_name in output_ds.components:
-            reverse_found = False
-            for qual, unqual in renames.items():
-                if unqual == comp_name:
-                    cols.append(f"{quote_identifier(qual)} AS {quote_identifier(comp_name)}")
-                    reverse_found = True
-                    break
-            if not reverse_found:
+            qual = unqual_to_qual.get(comp_name)
+            if qual is not None:
+                cols.append(f"{quote_identifier(qual)} AS {quote_identifier(comp_name)}")
+            else:
                 cols.append(quote_identifier(comp_name))
 
-        select_clause = ", ".join(cols)
-        return f"SELECT {select_clause} FROM ({query})"
+        return f"SELECT {', '.join(cols)} FROM ({query})"
 
     def visit_Assignment(self, node: AST.Assignment) -> str:
         """Visit an assignment and return the SQL for its right-hand side."""
@@ -1619,10 +1620,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if alias_name != comp_name:
             cols.append(f"{quote_identifier(comp_name)} AS {quote_identifier(alias_name)}")
         else:
-            if comp_name not in [n for n, c in ds.components.items() if c.role == Role.IDENTIFIER]:
-                cols.append(quote_identifier(comp_name))
-            else:
-                cols.append(quote_identifier(comp_name))
+            cols.append(quote_identifier(comp_name))
 
         return SQLBuilder().select(*cols).from_table(table_src).build()
 
@@ -3141,22 +3139,15 @@ FROM {src}, (
         def _is_plain_dataset(n: AST.AST) -> bool:
             return isinstance(n, AST.VarID) and self._get_operand_type(n) == _DATASET
 
+        ref_ds: Optional[Dataset] = None
         if then_type == _DATASET and _is_plain_dataset(node.thenOp):
             ref_ds = self._get_dataset_structure(node.thenOp)
-            output_measures = list(ref_ds.get_measures_names()) if ref_ds else []
-            output_attributes = list(ref_ds.get_attributes_names()) if ref_ds else []
         elif else_type == _DATASET and _is_plain_dataset(node.elseOp):
             ref_ds = self._get_dataset_structure(node.elseOp)
-            output_measures = list(ref_ds.get_measures_names()) if ref_ds else []
-            output_attributes = list(ref_ds.get_attributes_names()) if ref_ds else []
-        else:
-            output_ds = self._get_output_dataset()
-            if output_ds is not None:
-                output_measures = list(output_ds.get_measures_names())
-                output_attributes = list(output_ds.get_attributes_names())
-            else:
-                output_measures = list(source_ds.get_measures_names())
-                output_attributes = list(source_ds.get_attributes_names())
+        if ref_ds is None:
+            ref_ds = self._get_output_dataset() or source_ds
+        output_measures = list(ref_ds.get_measures_names())
+        output_attributes = list(ref_ds.get_attributes_names())
 
         # Build SELECT columns
         cols: List[str] = [f"{alias_cond}.{quote_identifier(id_)}" for id_ in source_ids]
@@ -3393,12 +3384,8 @@ FROM {src}, (
         """
         # Temporarily clear output dataset to prevent _build_ds_ds_binary
         # from renaming measures to match the outer assignment.
-        saved_assignment = self.current_assignment
-        self.current_assignment = ""
-        try:
+        with self._stash_assignment():
             validation_sql = self.visit(node.validation)
-        finally:
-            self.current_assignment = saved_assignment
 
         error_code = f"'{node.error_code}'" if node.error_code else "CAST(NULL AS VARCHAR)"
         error_level = (
@@ -3430,11 +3417,8 @@ FROM {src}, (
 
         # Handle imbalance (also with cleared output to prevent renaming).
         if node.imbalance is not None:
-            self.current_assignment = ""
-            try:
+            with self._stash_assignment():
                 imbalance_sql = self.visit(node.imbalance)
-            finally:
-                self.current_assignment = saved_assignment
             imb_ds = self._get_dataset_structure(node.imbalance)
             if imb_ds is not None:
                 imb_measure = imb_ds.get_measures_names()[0]
