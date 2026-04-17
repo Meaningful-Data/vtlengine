@@ -1078,14 +1078,14 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         if mode == "non_null":
             items = right_code_items if is_hierarchy else all_items
-            for ci in items:
-                filters.append(f"_val_{ci} IS NOT NULL")
+            for i in items:
+                filters.append(f"_val_{i} IS NOT NULL")
 
         elif mode == "non_zero":
             if is_hierarchy:
                 zero_checks = []
-                for ci in right_code_items:
-                    val = self._build_hr_value_expr(ci, mode)
+                for i in right_code_items:
+                    val = self._build_hr_value_expr(i, mode)
                     zero_checks.append(f"({val} IS NOT NULL AND {val} = 0)")
                 if zero_checks:
                     filters.append(f"NOT ({' AND '.join(zero_checks)})")
@@ -1098,38 +1098,33 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         elif mode in ("partial_null", "partial_zero"):
             items = right_code_items if is_hierarchy else all_items
-            checks = [f"(_has_{ci} = 1 AND _val_{ci} IS NOT NULL)" for ci in items]
+            checks = [f"(_has_{i} = 1 AND _val_{i} IS NOT NULL)" for i in items]
             if checks:
                 filters.append(f"({' OR '.join(checks)})")
 
         elif mode in ("always_null", "always_zero"):
-            presence = [f"_has_{ci} = 1" for ci in all_items]
+            presence = [f"_has_{i} = 1" for i in all_items]
             filters.append(f"({' OR '.join(presence)})")
 
         return filters
 
     def _build_hr_when_sql(self, node: AST.AST, cond_mapping: Dict[str, str]) -> str:
         """Generate SQL for a WHEN condition in a hierarchical rule."""
-        if isinstance(node, (AST.HRBinOp, AST.BinOp)):
-            left_sql = self._build_hr_when_sql(node.left, cond_mapping)
-            right_sql = self._build_hr_when_sql(node.right, cond_mapping)
-            return registry.generate(node.op, left_sql, right_sql)
         if isinstance(node, (AST.DefIdentifier, AST.VarID)):
             col_name = cond_mapping.get(node.value, node.value)
             return quote_identifier(col_name)
         if isinstance(node, AST.Constant):
             return self._to_sql_literal(node.value)
-        if isinstance(node, AST.HRUnOp):
+        if isinstance(node, (AST.HRUnOp, AST.UnaryOp)):
             operand_sql = self._build_hr_when_sql(node.operand, cond_mapping)
-            return f"({node.op}{operand_sql})"
-        if isinstance(node, AST.UnaryOp):
-            operand_sql = self._build_hr_when_sql(node.operand, cond_mapping)
-            return f"({node.op}({operand_sql}))"
+            return registry.generate(node.op, operand_sql)
+        if isinstance(node, (AST.HRBinOp, AST.BinOp)):
+            left_sql = self._build_hr_when_sql(node.left, cond_mapping)
+            right_sql = self._build_hr_when_sql(node.right, cond_mapping)
+            return registry.generate(node.op, left_sql, right_sql)
         if isinstance(node, AST.MulOp):
             children_sql = [self._build_hr_when_sql(c, cond_mapping) for c in node.children]
-            if node.op.lower() == "between":
-                return f"({children_sql[0]} BETWEEN {children_sql[1]} AND {children_sql[2]})"
-            return f"{node.op}({', '.join(children_sql)})"
+            return registry.generate(node.op, *children_sql)
         # Fallback to general visitor.
         return self.visit(node)
 
