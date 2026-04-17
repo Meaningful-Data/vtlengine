@@ -1378,16 +1378,13 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     def visit_UnaryOp(self, node: AST.UnaryOp) -> str:  # type: ignore[override]
         """Visit a unary operation."""
-        op = str(node.op).lower()
-
+        op = node.op
         if op == tokens.PERIOD_INDICATOR:
             return self._visit_period_indicator(node)
-
         if op in (tokens.FLOW_TO_STOCK, tokens.STOCK_TO_FLOW):
             return self._visit_flow_stock(node, op)
 
         operand_type = self._get_operand_type(node.operand)
-
         if operand_type == _DATASET:
             ds = self._get_dataset_structure(node.operand)
             name_override: Optional[str] = None
