@@ -600,6 +600,13 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return cls._sql_string_literal(er_level)
 
     @staticmethod
+    def _unwrap_assignment(child: AST.AST) -> AST.AST:
+        """Return the inner ``Assignment`` from ``UnaryOp(Assignment)`` wrappers."""
+        if isinstance(child, AST.UnaryOp) and isinstance(child.operand, AST.Assignment):
+            return child.operand
+        return child
+
+    @staticmethod
     def _as_subquery(src: str) -> str:
         """Wrap *src* as a parenthesized subquery, adding ``SELECT *`` if needed."""
         stripped = src.strip().upper()
@@ -1764,23 +1771,14 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         order_by = ", ".join(g_cols)
         return time_col, other_id_cols, measure_cols, join_on, final_select, order_by
 
-    def _build_date_frequency_subquery(self, src: str, time_col: str, partition: str) -> str:
-        """Build SQL that infers date frequency from observed date differences."""
-        freq_case = self._build_date_frequency_case(as_period_indicator=False)
+    def _build_date_frequency_subquery(
+        self, src: str, time_col: str, partition: str, *, as_period_indicator: bool = False
+    ) -> str:
+        """Build SQL that infers date frequency (or its period indicator) from date diffs."""
+        freq_case = self._build_date_frequency_case(as_period_indicator=as_period_indicator)
+        alias = "period_ind" if as_period_indicator else "step"
         return f"""
-SELECT {freq_case} AS step
-FROM (
-    SELECT ABS(DATE_DIFF('day',
-        LAG({time_col}) OVER ({partition} ORDER BY {time_col}),
-        {time_col})) AS diff_days
-    FROM {src}
-) WHERE diff_days IS NOT NULL AND diff_days > 0""".strip()
-
-    def _build_date_period_indicator_subquery(self, src: str, time_col: str, partition: str) -> str:
-        """Build SQL that infers a period indicator literal (D/W/M/Q/S/A) from dates."""
-        freq_case = self._build_date_frequency_case(as_period_indicator=True)
-        return f"""
-SELECT {freq_case} AS period_ind
+SELECT {freq_case} AS {alias}
 FROM (
     SELECT ABS(DATE_DIFF('day',
         LAG({time_col}) OVER ({partition} ORDER BY {time_col}),
@@ -1841,9 +1839,8 @@ FROM (
         time_col, other_id_cols, _, join_on, final_select, order_by = self._build_time_grid_parts(
             ds, time_id
         )
-        other_ids = [c.name for c in ds.get_identifiers() if c.name != time_id]
         oid_select = ", ".join(other_id_cols)
-        per_group = fill_mode == "single" and bool(other_ids)
+        per_group = fill_mode == "single" and bool(other_id_cols)
 
         cte = CTEBuilder()
         cte.cte("source", f"SELECT * FROM {src}")
@@ -1894,7 +1891,7 @@ FROM (
                 "period_strings",
                 f"SELECT vtl_period_to_string(tp) AS {time_col} FROM expected_periods",
             )
-            if other_ids:
+            if other_id_cols:
                 cte.cte(
                     "group_freq",
                     f"SELECT DISTINCT {oid_select}, "
@@ -1922,9 +1919,8 @@ FROM (
         time_col, other_id_cols, _, join_on, final_select, order_by = self._build_time_grid_parts(
             ds, time_id
         )
-        other_ids = [c.name for c in ds.get_identifiers() if c.name != time_id]
         partition = "PARTITION BY {}".format(", ".join(other_id_cols)) if other_id_cols else ""
-        per_group = fill_mode == "single" and bool(other_ids)
+        per_group = fill_mode == "single" and bool(other_id_cols)
         freq_step = "(SELECT step FROM freq)"
 
         cte = CTEBuilder()
@@ -1953,7 +1949,7 @@ FROM (
                 f"generate_series("
                 f"(SELECT min_d FROM bounds), (SELECT max_d FROM bounds), {freq_step}) AS t(d)"
             )
-            if other_ids:
+            if other_id_cols:
                 oid_csv = ", ".join(other_id_cols)
                 cte.cte("group_freq", f"SELECT DISTINCT {oid_csv} FROM source")
                 gf_cols = ", ".join(f"gf.{oc}" for oc in other_id_cols)
@@ -2046,7 +2042,9 @@ FROM (
                 else:
                     cols.append(col)
 
-            freq_sql = self._build_date_period_indicator_subquery(src, time_col, partition)
+            freq_sql = self._build_date_frequency_subquery(
+                src, time_col, partition, as_period_indicator=True
+            )
 
             return f"""SELECT {", ".join(cols)}
 FROM {src}, (
@@ -2308,14 +2306,7 @@ FROM {src}, (
         calc_exprs: Dict[str, str] = {}
         with self._clause_scope(ds):
             for child in node.children:
-                assignment = child
-                if (
-                    isinstance(child, AST.UnaryOp)
-                    and hasattr(child, "operand")
-                    and isinstance(child.operand, AST.Assignment)
-                ):
-                    assignment = child.operand
-
+                assignment = self._unwrap_assignment(child)
                 if isinstance(assignment, AST.Assignment):
                     col_name = self._resolve_udo_name(self._get_node_value(assignment.left))
                     expr_sql = self.visit(assignment.right)
@@ -2450,9 +2441,7 @@ FROM {src}, (
 
         with self._clause_scope(ds):
             for child in node.children:
-                assignment = child
-                if isinstance(child, AST.UnaryOp) and isinstance(child.operand, AST.Assignment):
-                    assignment = child.operand
+                assignment = self._unwrap_assignment(child)
                 if isinstance(assignment, AST.Assignment):
                     col_name = self._get_node_value(assignment.left)
                     agg_node = assignment.right
@@ -2480,9 +2469,7 @@ FROM {src}, (
         grouping_op: str = ""
         grouping_names: List[str] = []
         for child in node.children:
-            assignment = child
-            if isinstance(child, AST.UnaryOp) and isinstance(child.operand, AST.Assignment):
-                assignment = child.operand
+            assignment = self._unwrap_assignment(child)
             if isinstance(assignment, AST.Assignment):
                 agg_node = assignment.right
                 if isinstance(agg_node, AST.Aggregation) and agg_node.grouping:
@@ -3232,25 +3219,6 @@ FROM {src}, (
         with self._clause_scope(cond_ds, prefix=alias):
             return self.visit(case_obj.condition)
 
-    def _join_dataset_operand(
-        self,
-        operand: AST.AST,
-        alias: str,
-        source_ids: List[str],
-        alias_src: str,
-        builder: SQLBuilder,
-    ) -> None:
-        """LEFT JOIN a dataset operand (then or else branch)."""
-        ds = self._get_dataset_structure(operand)
-        if ds is None:
-            return
-        sql = self._get_dataset_sql(operand)
-        ds_ids = set(ds.get_identifiers_names())
-        common = [id_ for id_ in source_ids if id_ in ds_ids]
-        if common:
-            on = self._join_on_clause(common, alias_src, alias)
-            builder.join(sql, alias, on=on, join_type="LEFT")
-
     def _build_dataset_case(self, node: AST.Case) -> str:
         """Build SQL for dataset-level CASE with JOINs."""
         source_node = self._find_condition_source(node.cases[0].condition)
@@ -3288,7 +3256,9 @@ FROM {src}, (
             then_types.append(t_type)
             if t_type == _DATASET:
                 t_alias = f"t{i}"
-                self._join_dataset_operand(case_obj.thenOp, t_alias, source_ids, alias_src, builder)
+                self._left_join_dataset(
+                    case_obj.thenOp, _DATASET, t_alias, source_ids, alias_src, builder
+                )
                 then_aliases.append(t_alias)
             else:
                 then_aliases.append(None)
@@ -3298,7 +3268,9 @@ FROM {src}, (
         else_alias: Optional[str] = None
         if else_type == _DATASET:
             else_alias = "e"
-            self._join_dataset_operand(node.elseOp, else_alias, source_ids, alias_src, builder)
+            self._left_join_dataset(
+                node.elseOp, _DATASET, else_alias, source_ids, alias_src, builder
+            )
 
         # Build SELECT: identifiers + CASE WHEN per measure (reversed for last-match-wins)
         cols: List[str] = [f"{alias_src}.{quote_identifier(id_)}" for id_ in source_ids]
@@ -3361,7 +3333,7 @@ FROM {src}, (
         with self._stash_assignment():
             validation_sql = self.visit(node.validation)
 
-        error_code = f"'{node.error_code}'" if node.error_code else "CAST(NULL AS VARCHAR)"
+        error_code = self._error_code_sql(node.error_code)
         error_level = (
             str(node.error_level) if node.error_level is not None else "CAST(NULL AS BIGINT)"
         )
@@ -3396,10 +3368,7 @@ FROM {src}, (
             imb_ds = self._get_dataset_structure(node.imbalance)
             if imb_ds is not None:
                 imb_measure = imb_ds.get_measures_names()[0]
-                # Join with the imbalance source on identifiers.
-                join_cond = " AND ".join(
-                    f"t.{quote_identifier(n)} = i.{quote_identifier(n)}" for n in id_names
-                )
+                join_cond = self._join_on_clause(id_names, "t", "i")
                 cols.append(f'i.{quote_identifier(imb_measure)} AS "imbalance"')
             else:
                 join_cond = None
