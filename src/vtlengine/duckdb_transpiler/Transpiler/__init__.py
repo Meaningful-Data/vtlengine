@@ -573,10 +573,15 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             )
 
     @staticmethod
-    def _error_code_sql(er_code: Any) -> str:
+    def _sql_string_literal(value: Any) -> str:
+        """Quote a Python value as a single-quoted SQL string literal."""
+        return f"'{str(value).replace(chr(39), chr(39) * 2)}'"
+
+    @classmethod
+    def _error_code_sql(cls, er_code: Any) -> str:
         """Convert an errorcode value to a SQL literal."""
         if er_code:
-            return f"'{str(er_code).replace(chr(39), chr(39) * 2)}'"
+            return cls._sql_string_literal(er_code)
         return "CAST(NULL AS VARCHAR)"
 
     @staticmethod
@@ -584,16 +589,15 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         """Extract ``.value`` from an AST node, falling back to ``str(node)``."""
         return node.value if hasattr(node, "value") else str(node)
 
-    @staticmethod
-    def _error_level_sql(er_level: Any) -> str:
+    @classmethod
+    def _error_level_sql(cls, er_level: Any) -> str:
         """Convert an errorlevel value to a SQL literal (numeric or string)."""
         if er_level is None:
             return "CAST(NULL AS VARCHAR)"
         try:
             return str(float(er_level))
         except (ValueError, TypeError):
-            escaped = str(er_level).replace("'", "''")
-            return f"'{escaped}'"
+            return cls._sql_string_literal(er_level)
 
     @staticmethod
     def _as_subquery(src: str) -> str:
@@ -663,13 +667,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 all_conds[parsed.left_code_item] = self._build_hr_when_sql(rc, cond_mapping)
             _, right_conds = self._collect_hr_code_items(parsed.right_expr_node, cond_mapping)
             all_conds.update(right_conds)
-        seen: Set[str] = set()
-        unique: List[str] = []
-        for ci in all_items:
-            if ci not in seen:
-                seen.add(ci)
-                unique.append(ci)
-        return unique, all_conds
+        return list(dict.fromkeys(all_items)), all_conds
 
     def _build_hr_pivot(
         self,
@@ -691,8 +689,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         qrc = quote_identifier(rule_comp)
         qm = quote_identifier(measure_name)
 
-        group_cols = [quote_identifier(c) for c in other_ids]
-        group_cols.extend(quote_identifier(v) for v in cond_mapping.values())
+        group_cols = [quote_identifier(c) for c in (*other_ids, *cond_mapping.values())]
 
         select_parts = list(group_cols)
         for ci in unique_items:
@@ -904,8 +901,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         rule_result_refs: List[Tuple[str, str]] = []
         current_pivot = "_pivot"
 
-        join_keys = [quote_identifier(c) for c in other_ids]
-        join_keys.extend(quote_identifier(v) for v in cond_mapping.values())
+        join_keys = [quote_identifier(c) for c in (*other_ids, *cond_mapping.values())]
 
         for i, rule in enumerate(rules):
             parsed = self._parse_hr_rule(rule)
@@ -993,8 +989,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             when_sql = self._build_hr_when_sql(parsed.when_node, cond_mapping)
             computed_expr = f"CASE WHEN {when_sql} THEN {computed_expr} ELSE NULL END"
 
-        select_parts = [quote_identifier(c) for c in other_ids]
-        select_parts.extend(quote_identifier(v) for v in cond_mapping.values())
+        select_parts = [quote_identifier(c) for c in (*other_ids, *cond_mapping.values())]
         select_parts.append(f"{computed_expr} AS _computed")
 
         where_parts = self._build_hr_mode_filter(
@@ -1324,10 +1319,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if data_type == Duration:
             return f"vtl_int_to_duration({op.upper()}(vtl_duration_to_int({col_ref})))"
         if data_type == TimePeriod:
-            if dataset_level:
-                parsed = f"vtl_period_parse({col_ref})"
-                return f"vtl_period_to_string({op.upper()}({parsed}))"
             parsed = f"vtl_period_parse({col_ref})"
+            if dataset_level:
+                return f"vtl_period_to_string({op.upper()}({parsed}))"
             return f"ARG_{op.upper()}({col_ref}, {parsed})"
         return None
 
