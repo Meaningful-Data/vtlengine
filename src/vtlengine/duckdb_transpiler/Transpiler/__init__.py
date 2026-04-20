@@ -309,21 +309,17 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return query
 
         output_comp_names = set(output_ds.components.keys())
-        candidates: Dict[str, List[str]] = {}
-
+        unqual_to_qual: Dict[str, str] = {}
         for qualified in self._join_alias_map:
-            if qualified in self._consumed_join_aliases:
+            if qualified in self._consumed_join_aliases or qualified in output_comp_names:
                 continue
-            if qualified not in output_comp_names and "#" in qualified:
+            if "#" in qualified:
                 unqualified = qualified.split("#", 1)[1]
-                if unqualified in output_comp_names:
-                    candidates.setdefault(unqualified, []).append(qualified)
+                if unqualified in output_comp_names and unqualified not in unqual_to_qual:
+                    unqual_to_qual[unqualified] = qualified
 
-        if not candidates:
+        if not unqual_to_qual:
             return query
-
-        # Map unqualified name → first qualified name that matches.
-        unqual_to_qual = {unqual: quals[0] for unqual, quals in candidates.items()}
 
         cols: List[str] = []
         for comp_name in output_ds.components:
@@ -607,6 +603,17 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         return child
 
     @staticmethod
+    def _is_numeric(value: Any) -> bool:
+        """Return True if ``value`` is ``None`` or coerces to ``float`` without error."""
+        if value is None:
+            return True
+        try:
+            float(value)
+        except (ValueError, TypeError):
+            return False
+        return True
+
+    @staticmethod
     def _as_subquery(src: str) -> str:
         """Wrap *src* as a parenthesized subquery, adding ``SELECT *`` if needed."""
         stripped = src.strip().upper()
@@ -828,15 +835,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         ec_sql = self._error_code_sql(rule.erCode)
         el_sql = self._error_level_sql(rule.erLevel)
-        # Typed NULL matching the errorlevel column type
-        try:
-            el_null = (
-                "CAST(NULL AS DOUBLE)"
-                if rule.erLevel is None or isinstance(float(rule.erLevel), float)
-                else "CAST(NULL AS VARCHAR)"
-            )
-        except (ValueError, TypeError):
-            el_null = "CAST(NULL AS VARCHAR)"
+        el_null = (
+            "CAST(NULL AS DOUBLE)" if self._is_numeric(rule.erLevel) else "CAST(NULL AS VARCHAR)"
+        )
 
         q_rc = quote_identifier(rule_comp)
         q_m = quote_identifier(measure)
@@ -2538,7 +2539,7 @@ FROM {src}, (
                     elif alias == right_alias:
                         right_measures[comp] = qualified
 
-            common_measures = set(left_measures.keys()) & set(right_measures.keys())
+            common_measures = left_measures.keys() & right_measures.keys()
             for measure in common_measures:
                 left_col = quote_identifier(left_measures[measure])
                 right_col = quote_identifier(right_measures[measure])
@@ -2620,7 +2621,7 @@ FROM {src}, (
             and node.grouping_op != "group except"
             and time_agg_id not in group_cols
         ):
-            group_cols = list(group_cols) + [time_agg_id]
+            group_cols = [*group_cols, time_agg_id]
 
         cols: List[str] = []
         group_by_cols: List[str] = []
@@ -2748,13 +2749,10 @@ FROM {src}, (
             )
             over_parts.append(f"ORDER BY {order_cols}")
         if node.window:
-            # Check if ORDER BY column is a Date type for RANGE windows
             order_is_date = False
             if node.order_by and self._current_dataset:
-                ob_name = node.order_by[0].component
-                comp = self._current_dataset.components.get(ob_name)
-                if comp and comp.data_type == Date:
-                    order_is_date = True
+                comp = self._current_dataset.components.get(node.order_by[0].component)
+                order_is_date = comp is not None and comp.data_type == Date
             window_sql = self.visit_Windowing(node.window, order_is_date=order_is_date)
             over_parts.append(window_sql)
         return " ".join(over_parts)
@@ -2929,14 +2927,12 @@ FROM {src}, (
 
         base_sql = self._visit_exists_in(node.children[0], node.children[1])
 
-        # Check for retain parameter (true / false / all)
+        # Check for retain parameter (true / false / all); "all" keeps every row.
         if len(node.children) >= 3:
             retain_node = node.children[2]
-            if isinstance(retain_node, AST.Constant) and retain_node.value is True:
-                return f'SELECT * FROM ({base_sql}) AS _ei WHERE "bool_var" = TRUE'
-            if isinstance(retain_node, AST.Constant) and retain_node.value is False:
-                return f'SELECT * FROM ({base_sql}) AS _ei WHERE "bool_var" = FALSE'
-            # "all" or any other value → return all rows (default behaviour)
+            if isinstance(retain_node, AST.Constant) and isinstance(retain_node.value, bool):
+                bool_literal = "TRUE" if retain_node.value else "FALSE"
+                return f'SELECT * FROM ({base_sql}) AS _ei WHERE "bool_var" = {bool_literal}'
 
         return base_sql
 
@@ -3200,17 +3196,9 @@ FROM {src}, (
         """Join a CASE condition dataset and return the SQL condition expression."""
         cond_source = self._find_condition_source(case_obj.condition)
         cond_ds = self._get_dataset_structure(cond_source) if cond_source else None
+        if cond_source is not None:
+            self._left_join_dataset(cond_source, _DATASET, alias, source_ids, alias_src, builder)
 
-        # JOIN condition dataset
-        if cond_source is not None and cond_ds is not None:
-            cond_sql = self._get_dataset_sql(cond_source)
-            cond_ids = set(cond_ds.get_identifiers_names())
-            common = [id_ for id_ in source_ids if id_ in cond_ids]
-            if common:
-                on = self._join_on_clause(common, alias_src, alias)
-                builder.join(cond_sql, alias, on=on, join_type="LEFT")
-
-        # Build condition expression
         if isinstance(case_obj.condition, AST.VarID) and cond_ds is not None:
             # Bare dataset VarID: reference its boolean measure column
             bool_measure = list(cond_ds.get_measures_names())[0]
