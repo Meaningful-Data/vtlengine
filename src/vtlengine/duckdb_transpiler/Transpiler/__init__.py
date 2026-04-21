@@ -393,36 +393,26 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         output_mode: str,
     ) -> str:
         """Build SQL for a single datapoint rule."""
-        rule_name = rule.name or ""
-
         self._dp_signature = signature
-
+        rule_name = rule.name or ""
         rule_node = rule.rule
-        has_when = (
-            isinstance(  # type: ignore[redundant-expr]
-                rule_node, AST.HRBinOp
-            )
-            and rule_node.op == "when"
-        )
-        if has_when:
-            when_cond_sql: Optional[str] = self._visit_dp_expr(rule_node.left, signature)
-            then_expr_sql = self._visit_dp_expr(rule_node.right, signature)
-        else:
-            when_cond_sql = None
-            then_expr_sql = self._visit_dp_expr(rule_node, signature)
-
-        self._dp_signature = None
-
         ec_sql = self._error_code_sql(rule.erCode)
         el_sql = self._error_code_sql(rule.erLevel)
-        fail_cond = (
-            f"({when_cond_sql}) AND NOT ({then_expr_sql})"
-            if when_cond_sql
-            else f"NOT ({then_expr_sql})"
-        )
+        if isinstance(rule_node, AST.HRBinOp) and rule_node.op == tokens.WHEN:
+            when_cond_sql = self._visit_dp_expr(rule_node.left, signature)
+            then_expr_sql = self._visit_dp_expr(rule_node.right, signature)
+            fail_cond = f"({when_cond_sql}) AND NOT ({then_expr_sql})"
+            bool_expr = (
+                f"CASE WHEN ({when_cond_sql}) THEN ({then_expr_sql})"
+                f" WHEN NOT ({when_cond_sql}) THEN TRUE ELSE NULL END"
+            )
+        else:
+            then_expr_sql = self._visit_dp_expr(rule_node, signature)
+            fail_cond = f"NOT ({then_expr_sql})"
+            bool_expr = f"({then_expr_sql})"
 
-        select_parts: List[str] = [quote_name(c) for c in id_cols]
-
+        self._dp_signature = None
+        select_parts = [quote_name(c) for c in id_cols]
         if output_mode == "invalid":
             select_parts.extend(quote_name(m) for m in measure_cols)
             select_parts.append(f"'{rule_name}' AS {quote_name('ruleid')}")
@@ -433,20 +423,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if output_mode == "all_measures":
             select_parts.extend(quote_name(m) for m in measure_cols)
 
-        bool_expr = (
-            f"CASE WHEN ({when_cond_sql}) THEN ({then_expr_sql})"
-            f" WHEN NOT ({when_cond_sql}) THEN TRUE ELSE NULL END"
-            if when_cond_sql
-            else f"({then_expr_sql})"
-        )
         select_parts.append(f"{bool_expr} AS {quote_name('bool_var')}")
         select_parts.append(f"'{rule_name}' AS {quote_name('ruleid')}")
-        select_parts.append(
-            f"CASE WHEN {fail_cond} THEN {ec_sql} ELSE NULL END AS {quote_name('errorcode')}"
-        )
-        select_parts.append(
-            f"CASE WHEN {fail_cond} THEN {el_sql} ELSE NULL END AS {quote_name('errorlevel')}"
-        )
+        for val, col in [(ec_sql, quote_name("errorcode")), (el_sql, quote_name("errorlevel"))]:
+            select_parts.append(f"CASE WHEN {fail_cond} THEN {val} ELSE NULL END AS {col}")
         return f"SELECT {', '.join(select_parts)} FROM {table_src}"
 
     def _visit_dp_expr(self, node: AST.AST, signature: Dict[str, str]) -> str:
@@ -454,7 +434,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if isinstance(node, (AST.HRBinOp, AST.BinOp)):
             left_sql = self._visit_dp_expr(node.left, signature)
             right_sql = self._visit_dp_expr(node.right, signature)
-            if isinstance(node, AST.HRBinOp) and node.op == "when":
+            if isinstance(node, AST.HRBinOp) and node.op == tokens.WHEN:
                 return f"CASE WHEN ({left_sql}) THEN ({right_sql}) ELSE TRUE END"
             return registry.generate(node.op, left_sql, right_sql)
         if isinstance(node, (AST.HRUnOp, AST.UnaryOp)):
