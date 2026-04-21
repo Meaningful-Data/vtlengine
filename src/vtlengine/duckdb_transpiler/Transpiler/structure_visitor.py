@@ -16,7 +16,7 @@ from vtlengine.DataTypes import (
     TimePeriod,
 )
 from vtlengine.DataTypes import String as StringType
-from vtlengine.duckdb_transpiler.Transpiler.sql_builder import quote_identifier
+from vtlengine.duckdb_transpiler.Transpiler.sql_builder import quote_name
 from vtlengine.Model import Component, Dataset, Role
 
 # Operand type tags
@@ -331,11 +331,11 @@ class StructureVisitor(ASTTemplate):
             udo_val = self._get_udo_param(name)
             if udo_val is not None:
                 if isinstance(udo_val, AST.VarID):
-                    return quote_identifier(udo_val.value)
+                    return quote_name(udo_val.value)
                 if isinstance(udo_val, AST.AST):
                     inner_sql = self.visit(udo_val)
                     return f"({inner_sql})"
-            return quote_identifier(name)
+            return quote_name(name)
         inner_sql = self.visit(node)
         return f"({inner_sql})"
 

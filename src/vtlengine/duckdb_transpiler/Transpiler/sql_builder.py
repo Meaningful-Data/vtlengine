@@ -211,14 +211,14 @@ class CTEBuilder:
         return "{} {}\n{}".format(keyword, sep.join(parts), final_sql.strip())
 
 
-def quote_identifier(name: str) -> str:
+def quote_name(name: str) -> str:
     """Quote a SQL identifier."""
     return f'"{name}"'
 
 
 def quote_identifiers(names: List[str]) -> List[str]:
     """Quote multiple SQL identifiers."""
-    return [quote_identifier(n) for n in names]
+    return [quote_name(n) for n in names]
 
 
 def build_column_expr(col: str, alias: str = "", table_alias: str = "") -> str:
@@ -240,6 +240,4 @@ def build_function_expr(func: str, col: str, alias: str = "") -> str:
 def build_binary_expr(left: str, op: str, right: str, alias: str = "") -> str:
     """Build a binary expression."""
     expr = f"({left} {op} {right})"
-    if alias:
-        return f'{expr} AS "{alias}"'
-    return expr
+    return f'{expr} AS "{alias}"' if alias else expr

@@ -26,7 +26,7 @@ from vtlengine.duckdb_transpiler.Transpiler.operators import (
 from vtlengine.duckdb_transpiler.Transpiler.sql_builder import (
     CTEBuilder,
     SQLBuilder,
-    quote_identifier,
+    quote_name,
 )
 from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
     _COMPONENT,
@@ -67,7 +67,7 @@ def _add_tp_indicator_check(sql: str, table_src: str, tp_cols: List[tuple[str, s
     """Add a TimePeriod indicator consistency check to an aggregate query."""
     checks: List[str] = []
     for col_name, agg_op in tp_cols:
-        qc = quote_identifier(col_name)
+        qc = quote_name(col_name)
         indicator = f"vtl_period_parse({qc}).period_indicator"
         err = (
             f"'VTL Error 2-1-19-20: Time Period operands with "
@@ -325,9 +325,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         for comp_name in output_ds.components:
             qual = unqual_to_qual.get(comp_name)
             if qual is not None:
-                cols.append(f"{quote_identifier(qual)} AS {quote_identifier(comp_name)}")
+                cols.append(f"{quote_name(qual)} AS {quote_name(comp_name)}")
             else:
-                cols.append(quote_identifier(comp_name))
+                cols.append(quote_name(comp_name))
 
         return f"SELECT {', '.join(cols)} FROM ({query})"
 
@@ -389,7 +389,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             rule_queries.append(rule_sql)
 
         if not rule_queries:
-            cols = [quote_identifier(c) for c in id_cols]
+            cols = [quote_name(c) for c in id_cols]
             return f"SELECT {', '.join(cols)} FROM {table_src} WHERE 1=0"
 
         combined = " UNION ALL ".join(rule_queries)
@@ -426,24 +426,24 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         self._dp_signature = None
 
         ec_sql = self._error_code_sql(rule.erCode)
-        el_sql = self._error_level_sql(rule.erLevel)
+        el_sql = self._error_code_sql(rule.erLevel)
         fail_cond = (
             f"({when_cond_sql}) AND NOT ({then_expr_sql})"
             if when_cond_sql
             else f"NOT ({then_expr_sql})"
         )
 
-        select_parts: List[str] = [quote_identifier(c) for c in id_cols]
+        select_parts: List[str] = [quote_name(c) for c in id_cols]
 
         if output_mode == "invalid":
-            select_parts.extend(quote_identifier(m) for m in measure_cols)
-            select_parts.append(f"'{rule_name}' AS {quote_identifier('ruleid')}")
-            select_parts.append(f"{ec_sql} AS {quote_identifier('errorcode')}")
-            select_parts.append(f"{el_sql} AS {quote_identifier('errorlevel')}")
+            select_parts.extend(quote_name(m) for m in measure_cols)
+            select_parts.append(f"'{rule_name}' AS {quote_name('ruleid')}")
+            select_parts.append(f"{ec_sql} AS {quote_name('errorcode')}")
+            select_parts.append(f"{el_sql} AS {quote_name('errorlevel')}")
             return f"SELECT {', '.join(select_parts)} FROM {table_src} WHERE {fail_cond}"
 
         if output_mode == "all_measures":
-            select_parts.extend(quote_identifier(m) for m in measure_cols)
+            select_parts.extend(quote_name(m) for m in measure_cols)
 
         bool_expr = (
             f"CASE WHEN ({when_cond_sql}) THEN ({then_expr_sql})"
@@ -451,13 +451,13 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             if when_cond_sql
             else f"({then_expr_sql})"
         )
-        select_parts.append(f"{bool_expr} AS {quote_identifier('bool_var')}")
-        select_parts.append(f"'{rule_name}' AS {quote_identifier('ruleid')}")
+        select_parts.append(f"{bool_expr} AS {quote_name('bool_var')}")
+        select_parts.append(f"'{rule_name}' AS {quote_name('ruleid')}")
         select_parts.append(
-            f"CASE WHEN {fail_cond} THEN {ec_sql} ELSE NULL END AS {quote_identifier('errorcode')}"
+            f"CASE WHEN {fail_cond} THEN {ec_sql} ELSE NULL END AS {quote_name('errorcode')}"
         )
         select_parts.append(
-            f"CASE WHEN {fail_cond} THEN {el_sql} ELSE NULL END AS {quote_identifier('errorlevel')}"
+            f"CASE WHEN {fail_cond} THEN {el_sql} ELSE NULL END AS {quote_name('errorlevel')}"
         )
         return f"SELECT {', '.join(select_parts)} FROM {table_src}"
 
@@ -474,7 +474,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return registry.generate(node.op, operand_sql)
         if isinstance(node, (AST.DefIdentifier, AST.VarID)):
             col_name = signature.get(node.value, node.value)
-            return quote_identifier(col_name)
+            return quote_name(col_name)
         if isinstance(node, AST.Constant):
             return self._to_sql_literal(node.value)
         if isinstance(node, AST.If):
@@ -568,53 +568,29 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 cond_mapping=cond_mapping,
             )
 
-    @staticmethod
-    def _sql_string_literal(value: Any) -> str:
-        """Quote a Python value as a single-quoted SQL string literal."""
-        return f"'{str(value).replace(chr(39), chr(39) * 2)}'"
-
-    @classmethod
-    def _error_code_sql(cls, er_code: Any) -> str:
+    def _error_code_sql(self, value: Any) -> str:
         """Convert an errorcode value to a SQL literal."""
-        if er_code:
-            return cls._sql_string_literal(er_code)
-        return "CAST(NULL AS VARCHAR)"
+        return "CAST(NULL AS VARCHAR)" if value is None else self._to_sql_literal(value=value)
 
-    @staticmethod
-    def _get_node_value(node: Any) -> str:
+    def _get_node_value(self, node: Any) -> str:
         """Extract ``.value`` from an AST node, falling back to ``str(node)``."""
         return node.value if hasattr(node, "value") else str(node)
 
-    @classmethod
-    def _error_level_sql(cls, er_level: Any) -> str:
-        """Convert an errorlevel value to a SQL literal (numeric or string)."""
-        if er_level is None:
-            return "CAST(NULL AS VARCHAR)"
-        try:
-            return str(float(er_level))
-        except (ValueError, TypeError):
-            return cls._sql_string_literal(er_level)
-
-    @staticmethod
-    def _unwrap_assignment(child: AST.AST) -> AST.AST:
+    def _unwrap_assignment(self, child: AST.AST) -> AST.AST:
         """Return the inner ``Assignment`` from ``UnaryOp(Assignment)`` wrappers."""
         if isinstance(child, AST.UnaryOp) and isinstance(child.operand, AST.Assignment):
             return child.operand
         return child
 
-    @staticmethod
-    def _is_numeric(value: Any) -> bool:
+    def _is_numeric(self, value: Any) -> bool:
         """Return True if ``value`` is ``None`` or coerces to ``float`` without error."""
-        if value is None:
-            return True
         try:
             float(value)
         except (ValueError, TypeError):
             return False
         return True
 
-    @staticmethod
-    def _as_subquery(src: str) -> str:
+    def _as_subquery(self, src: str) -> str:
         """Wrap *src* as a parenthesized subquery, adding ``SELECT *`` if needed."""
         stripped = src.strip().upper()
         if stripped.startswith("("):
@@ -626,29 +602,25 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     def _resolve_udo_name(self, raw_name: str) -> str:
         """Resolve a potential UDO parameter to its actual name."""
         udo_val = self._get_udo_param(raw_name)
-        if udo_val is None:
-            return raw_name
         if isinstance(udo_val, (AST.VarID, AST.Identifier)):
             return udo_val.value
         if isinstance(udo_val, str):
             return udo_val
         return raw_name
 
-    @staticmethod
-    def _is_hr_eq_rule(rule: AST.HRule) -> bool:
+    def _is_hr_eq_rule(self, rule: AST.HRule) -> bool:
         """Check if a hierarchical rule is an EQ rule (or WHEN-EQ)."""
-        rule_node = rule.rule
-        if not isinstance(rule_node, AST.HRBinOp):
+        node = rule.rule
+        if not isinstance(node, AST.HRBinOp):
             return False
-        if rule_node.op == "when":
-            right = rule_node.right
-            return isinstance(right, AST.HRBinOp) and right.op == "="
-        return rule_node.op == "="
+        if node.op == tokens.WHEN and isinstance(node.right, AST.HRBinOp):
+            return node.right.op == tokens.EQ
+        return node.op == tokens.EQ
 
     def _parse_hr_rule(self, rule: AST.HRule) -> _ParsedHRRule:
         """Parse a hierarchical rule into its constituent parts."""
         rule_node: Any = rule.rule
-        has_when = isinstance(rule_node, AST.HRBinOp) and rule_node.op == "when"
+        has_when = isinstance(rule_node, AST.HRBinOp) and rule_node.op == tokens.WHEN
         if has_when:
             when_node = rule_node.left
             comparison_node = rule_node.right
@@ -700,10 +672,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         other_ids = [n for n in ds.get_identifiers_names() if n != rule_comp]
         unique_items, item_conds = self._collect_all_hr_items(rules, cond_mapping)
 
-        qrc = quote_identifier(rule_comp)
-        qm = quote_identifier(measure_name)
+        qrc = quote_name(rule_comp)
+        qm = quote_name(measure_name)
 
-        group_cols = [quote_identifier(c) for c in (*other_ids, *cond_mapping.values())]
+        group_cols = [quote_name(c) for c in (*other_ids, *cond_mapping.values())]
 
         select_parts = list(group_cols)
         for ci in unique_items:
@@ -739,7 +711,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         """Generate SQL for check_hierarchy using pivot CTE."""
         if not rules:
             out_ds = self._get_output_dataset()
-            cols = [quote_identifier(c) for c in (out_ds.components if out_ds else ds.components)]
+            cols = [quote_name(c) for c in (out_ds.components if out_ds else ds.components)]
             return f"SELECT {', '.join(cols)} FROM {table_src} WHERE 1=0"
 
         pivot_sql, measure_name, other_ids, _, _ = self._build_hr_pivot(
@@ -786,8 +758,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     def _build_hr_value_expr(self, code_item: str, mode: str) -> str:
         """Generate the value expression for a code item from pivot columns, per mode."""
         val_col = f"_val_{code_item}"
-        has_col = f"_has_{code_item}"
         if mode in ("always_zero", "non_zero", "partial_zero"):
+            has_col = f"_has_{code_item}"
             return f"CASE WHEN {has_col} = 0 THEN 0 ELSE {val_col} END"
         return val_col
 
@@ -834,35 +806,35 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             )
 
         ec_sql = self._error_code_sql(rule.erCode)
-        el_sql = self._error_level_sql(rule.erLevel)
+        el_sql = self._error_code_sql(rule.erLevel)
         el_null = (
             "CAST(NULL AS DOUBLE)" if self._is_numeric(rule.erLevel) else "CAST(NULL AS VARCHAR)"
         )
 
-        q_rc = quote_identifier(rule_comp)
-        q_m = quote_identifier(measure)
-        select_parts: List[str] = [quote_identifier(c) for c in other_ids]
+        q_rc = quote_name(rule_comp)
+        q_m = quote_name(measure)
+        select_parts: List[str] = [quote_name(c) for c in other_ids]
         select_parts.append(f"'{parsed.left_code_item}' AS {q_rc}")
 
         if output != "all":
             select_parts.append(f"{l_val} AS {q_m}")
         if output != "invalid":
-            select_parts.append(f"{bool_expr} AS {quote_identifier('bool_var')}")
+            select_parts.append(f"{bool_expr} AS {quote_name('bool_var')}")
 
-        select_parts.append(f"{imbalance_expr} AS {quote_identifier('imbalance')}")
-        select_parts.append(f"'{rule_name}' AS {quote_identifier('ruleid')}")
+        select_parts.append(f"{imbalance_expr} AS {quote_name('imbalance')}")
+        select_parts.append(f"'{rule_name}' AS {quote_name('ruleid')}")
 
         if output == "invalid":
-            select_parts.append(f"{ec_sql} AS {quote_identifier('errorcode')}")
-            select_parts.append(f"{el_sql} AS {quote_identifier('errorlevel')}")
+            select_parts.append(f"{ec_sql} AS {quote_name('errorcode')}")
+            select_parts.append(f"{el_sql} AS {quote_name('errorlevel')}")
         else:
             select_parts.append(
                 f"CASE WHEN {bool_expr} IS NOT FALSE THEN CAST(NULL AS VARCHAR) "
-                f"ELSE {ec_sql} END AS {quote_identifier('errorcode')}"
+                f"ELSE {ec_sql} END AS {quote_name('errorcode')}"
             )
             select_parts.append(
                 f"CASE WHEN {bool_expr} IS NOT FALSE THEN {el_null} "
-                f"ELSE {el_sql} END AS {quote_identifier('errorlevel')}"
+                f"ELSE {el_sql} END AS {quote_name('errorlevel')}"
             )
 
         where_parts: List[str] = []
@@ -898,7 +870,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     ) -> str:
         """Generate SQL for hierarchy operator using CTE chain."""
         if not rules:
-            cols = [quote_identifier(c) for c in ds.get_components_names()]
+            cols = [quote_name(c) for c in ds.get_components_names()]
             return f"SELECT {', '.join(cols)} FROM {table_src}"
 
         pivot_sql, measure, other_ids, unique_items, _ = self._build_hr_pivot(
@@ -909,7 +881,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         rule_result_refs: List[Tuple[str, str]] = []
         current_pivot = "_pivot"
 
-        join_keys = [quote_identifier(c) for c in (*other_ids, *cond_mapping.values())]
+        join_keys = [quote_name(c) for c in (*other_ids, *cond_mapping.values())]
 
         for i, rule in enumerate(rules):
             parsed = self._parse_hr_rule(rule)
@@ -943,10 +915,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         # Build final SELECT per rule
         final_selects: List[str] = []
-        q_rc = quote_identifier(rule_comp)
-        q_m = quote_identifier(measure)
+        q_rc = quote_name(rule_comp)
+        q_m = quote_name(measure)
         for rule_cte, left_ci in rule_result_refs:
-            cols = [quote_identifier(c) for c in other_ids]
+            cols = [quote_name(c) for c in other_ids]
             cols.append(f"'{left_ci}' AS {q_rc}")
             cols.append(f"_computed AS {q_m}")
 
@@ -965,8 +937,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return cte.select(computed_sql)
 
         # output == "all": union(setdiff(op, computed), computed)
-        id_cols = [quote_identifier(c) for c in ds.get_identifiers_names()]
-        all_cols = [quote_identifier(c) for c in ds.get_components_names()]
+        id_cols = [quote_name(c) for c in ds.get_identifiers_names()]
+        all_cols = [quote_name(c) for c in ds.get_components_names()]
         all_cols_csv = ", ".join(all_cols)
         id_cols_csv = ", ".join(id_cols)
         cte.cte("_computed", computed_sql)
@@ -997,7 +969,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             when_sql = self._build_hr_when_sql(parsed.when_node, cond_mapping)
             computed_expr = f"CASE WHEN {when_sql} THEN {computed_expr} ELSE NULL END"
 
-        select_parts = [quote_identifier(c) for c in (*other_ids, *cond_mapping.values())]
+        select_parts = [quote_name(c) for c in (*other_ids, *cond_mapping.values())]
         select_parts.append(f"{computed_expr} AS _computed")
 
         where_parts = self._build_hr_mode_filter(
@@ -1107,7 +1079,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         """Generate SQL for a WHEN condition in a hierarchical rule."""
         if isinstance(node, (AST.DefIdentifier, AST.VarID)):
             col_name = cond_mapping.get(node.value, node.value)
-            return quote_identifier(col_name)
+            return quote_name(col_name)
         if isinstance(node, AST.Constant):
             return self._to_sql_literal(node.value)
         if isinstance(node, (AST.HRUnOp, AST.UnaryOp)):
@@ -1176,24 +1148,24 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 param_decl_type = self._get_udo_param(f"__type__{name}")
                 is_component_param = isinstance(param_decl_type, Component)
                 if resolved_name in self.available_tables and not is_component_param:
-                    return f"SELECT * FROM {quote_identifier(resolved_name)}"
+                    return f"SELECT * FROM {quote_name(resolved_name)}"
                 if resolved_name in self.scalars:
                     sc = self.scalars[resolved_name]
                     return self._to_sql_literal(sc.value, getattr(sc.data_type, "__name__", ""))
                 if resolved_name != name:
                     return self.visit(udo_val)
-                return quote_identifier(resolved_name)
+                return quote_name(resolved_name)
             if isinstance(udo_val, AST.AST):
                 return self.visit(udo_val)
             if isinstance(udo_val, str):
-                return quote_identifier(udo_val)
+                return quote_name(udo_val)
 
         if name in self.scalars:
             sc = self.scalars[name]
             return self._to_sql_literal(sc.value, getattr(sc.data_type, "__name__", ""))
 
         if self._in_clause and self._current_dataset and name in self._current_dataset.components:
-            return quote_identifier(name)
+            return quote_name(name)
 
         # In clause context, resolve qualified duplicate columns.
         if (
@@ -1207,12 +1179,12 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 if "#" in comp_name and comp_name.split("#", 1)[1] == name
             ]
             if len(matches) == 1:
-                return quote_identifier(matches[0])
+                return quote_name(matches[0])
 
         if name in self.available_tables:
-            return f"SELECT * FROM {quote_identifier(name)}"
+            return f"SELECT * FROM {quote_name(name)}"
 
-        return quote_identifier(name)
+        return quote_name(name)
 
     def visit_Constant(self, node: AST.Constant) -> str:  # type: ignore[override]
         """Visit a constant literal."""
@@ -1224,7 +1196,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     def visit_Identifier(self, node: AST.Identifier) -> str:
         """Visit an identifier node."""
-        return quote_identifier(node.value)
+        return quote_name(node.value)
 
     def visit_ID(self, node: AST.ID) -> str:  # type: ignore[override]
         """Visit an ID node (used for type names, placeholders like '_', etc.)."""
@@ -1285,9 +1257,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         cols: List[str] = []
         for name, comp in ds.components.items():
             if comp.role == Role.IDENTIFIER:
-                cols.append(quote_identifier(name))
+                cols.append(quote_name(name))
             elif comp.role == Role.MEASURE:
-                col_ref = quote_identifier(name)
+                col_ref = quote_name(name)
                 if cast_bool_to_str and comp.data_type == Boolean:
                     col_ref = _bool_to_str(col_ref)
                 expr = expr_fn(col_ref)
@@ -1300,7 +1272,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                     or name in self.input_datasets[ds.name].get_measures_names()
                 ):
                     out_name = output_measures[0]
-                cols.append(f"{expr} AS {quote_identifier(out_name)}")
+                cols.append(f"{expr} AS {quote_name(out_name)}")
 
         return SQLBuilder().select(*cols).from_table(table_src).build()
 
@@ -1339,8 +1311,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if not common_ids:
             return "1=1"
         return " AND ".join(
-            f"{left_alias}.{quote_identifier(i)} = {right_alias}.{quote_identifier(i)}"
-            for i in common_ids
+            f"{left_alias}.{quote_name(i)} = {right_alias}.{quote_name(i)}" for i in common_ids
         )
 
     def _left_join_dataset(
@@ -1363,7 +1334,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return None
         on = self._join_on_clause(common, source_alias, alias)
         builder.join(sql, alias, on=on, join_type="LEFT")
-        return f"{alias}.{quote_identifier(common[0])}"
+        return f"{alias}.{quote_name(common[0])}"
 
     def visit_UnaryOp(self, node: AST.UnaryOp) -> str:  # type: ignore[override]
         """Visit a unary operation."""
@@ -1496,13 +1467,13 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         cols: List[str] = []
         for id_name in all_ids:
             if id_name in left_ids:
-                cols.append(f"{alias_a}.{quote_identifier(id_name)}")
+                cols.append(f"{alias_a}.{quote_name(id_name)}")
             else:
-                cols.append(f"{alias_b}.{quote_identifier(id_name)}")
+                cols.append(f"{alias_b}.{quote_name(id_name)}")
 
         for left_m, right_m in paired_measures:
-            left_ref = f"{alias_a}.{quote_identifier(left_m)}"
-            right_ref = f"{alias_b}.{quote_identifier(right_m)}"
+            left_ref = f"{alias_a}.{quote_name(left_m)}"
+            right_ref = f"{alias_b}.{quote_name(right_m)}"
 
             # Boolean→String promotion for concat
             if op == tokens.CONCAT:
@@ -1526,7 +1497,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 and len(output_measure_names) == 1
             ):
                 out_name = output_measure_names[0]
-            cols.append(f"{expr} AS {quote_identifier(out_name)}")
+            cols.append(f"{expr} AS {quote_name(out_name)}")
 
         on_clause = self._join_on_clause(common_ids, alias_a, alias_b)
 
@@ -1577,8 +1548,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             ds_name = self._get_node_value(node.left)
             qualified = f"{ds_name}#{comp_name}"
             if qualified in self._join_alias_map:
-                return quote_identifier(qualified)
-            col = quote_identifier(comp_name)
+                return quote_name(qualified)
+            col = quote_name(comp_name)
             if self._column_prefix:
                 col = f"{self._column_prefix}.{col}"
             return col
@@ -1588,7 +1559,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         if ds is None:
             ds_name = self._resolve_dataset_name(node.left)
-            return f"SELECT {quote_identifier(comp_name)} FROM {quote_identifier(ds_name)}"
+            return f"SELECT {quote_name(comp_name)} FROM {quote_name(ds_name)}"
 
         target_comp = ds.components.get(comp_name)
         alias_name = comp_name
@@ -1598,11 +1569,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         cols: List[str] = []
         for name, comp in ds.components.items():
             if comp.role == Role.IDENTIFIER:
-                cols.append(quote_identifier(name))
+                cols.append(quote_name(name))
         if alias_name != comp_name:
-            cols.append(f"{quote_identifier(comp_name)} AS {quote_identifier(alias_name)}")
+            cols.append(f"{quote_name(comp_name)} AS {quote_name(alias_name)}")
         else:
-            cols.append(quote_identifier(comp_name))
+            cols.append(quote_name(comp_name))
 
         return SQLBuilder().select(*cols).from_table(table_src).build()
 
@@ -1637,7 +1608,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         where_clause = self._join_on_clause(common_ids, "l", "r")
 
-        id_cols = ", ".join([f"l.{quote_identifier(id_)}" for id_ in left_ids])
+        id_cols = ", ".join([f"l.{quote_name(id_)}" for id_ in left_ids])
 
         right_subq = self._as_subquery(right_src)
         exists_subq = f"EXISTS(SELECT 1 FROM {right_subq} AS r WHERE {where_clause})"
@@ -1685,9 +1656,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             if time_id is None:
                 raise ValueError("No TimePeriod identifier found for period_indicator")
 
-            id_cols = [quote_identifier(c.name) for c in ds.get_identifiers()]
+            id_cols = [quote_name(c.name) for c in ds.get_identifiers()]
             extract_expr = (
-                f'vtl_period_parse({quote_identifier(time_id)}).period_indicator AS "duration_var"'
+                f'vtl_period_parse({quote_name(time_id)}).period_indicator AS "duration_var"'
             )
             cols_sql = ", ".join(id_cols) + ", " + extract_expr
 
@@ -1754,12 +1725,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         time_id: str,
     ) -> Tuple[List[str], List[str], str, str, str, str]:
         """Build common JOIN/select fragments for fill-time-series queries."""
-        time_col = quote_identifier(time_id)
-        other_id_cols = [
-            quote_identifier(c.name) for c in ds.get_identifiers() if c.name != time_id
-        ]
+        time_col = quote_name(time_id)
+        other_id_cols = [quote_name(c.name) for c in ds.get_identifiers() if c.name != time_id]
         measure_cols = [
-            quote_identifier(c.name) for c in ds.components.values() if c.role != Role.IDENTIFIER
+            quote_name(c.name) for c in ds.components.values() if c.role != Role.IDENTIFIER
         ]
 
         join_conds = [f"g.{time_col} = s.{time_col}"]
@@ -1977,21 +1946,19 @@ FROM (
 
         time_id, time_type = self._resolve_time_identifier(ds, op)
 
-        other_ids = [quote_identifier(c.name) for c in ds.get_identifiers() if c.name != time_id]
+        other_ids = [quote_name(c.name) for c in ds.get_identifiers() if c.name != time_id]
 
         partition_parts = list(other_ids)
         if time_type == TimePeriod:
-            partition_parts.append(
-                f"vtl_period_parse({quote_identifier(time_id)}).period_indicator"
-            )
+            partition_parts.append(f"vtl_period_parse({quote_name(time_id)}).period_indicator")
 
         partition_clause = f"PARTITION BY {', '.join(partition_parts)}" if partition_parts else ""
-        order_clause = f"ORDER BY {quote_identifier(time_id)}"
+        order_clause = f"ORDER BY {quote_name(time_id)}"
         window = f"({partition_clause} {order_clause})"
 
         cols = []
         for comp in ds.components.values():
-            col = quote_identifier(comp.name)
+            col = quote_name(comp.name)
             if comp.role == Role.IDENTIFIER:
                 cols.append(col)
             elif comp.data_type in (Integer, Number, Boolean):
@@ -2020,24 +1987,22 @@ FROM (
 
         time_id, time_type = self._resolve_time_identifier(ds, "timeshift")
 
-        time_col = quote_identifier(time_id)
+        time_col = quote_name(time_id)
 
         if time_type == TimePeriod:
             shifted = f"vtl_tp_shift(vtl_period_parse({time_col}), {shift_sql}) AS {time_col}"
             cols = []
             for comp in ds.components.values():
-                col = quote_identifier(comp.name)
+                col = quote_name(comp.name)
                 cols.append(shifted if comp.name == time_id else col)
             return SQLBuilder().select(*cols).from_table(src).build()
         else:
-            other_ids = [
-                quote_identifier(c.name) for c in ds.get_identifiers() if c.name != time_id
-            ]
+            other_ids = [quote_name(c.name) for c in ds.get_identifiers() if c.name != time_id]
             partition = f"PARTITION BY {', '.join(other_ids)}" if other_ids else ""
 
             cols = []
             for comp in ds.components.values():
-                col = quote_identifier(comp.name)
+                col = quote_name(comp.name)
                 if comp.name == time_id:
                     cols.append(f"vtl_dateadd({col}, {shift_sql}, freq.period_ind) AS {col}")
                 else:
@@ -2324,13 +2289,13 @@ FROM {src}, (
         select_cols: List[str] = []
         for name in ds.components:
             if name in calc_exprs:
-                select_cols.append(f"{calc_exprs[name]} AS {quote_identifier(name)}")
+                select_cols.append(f"{calc_exprs[name]} AS {quote_name(name)}")
             else:
-                select_cols.append(quote_identifier(name))
+                select_cols.append(quote_name(name))
 
         for col_name, expr_sql in calc_exprs.items():
             if col_name not in ds.components:
-                select_cols.append(f"{expr_sql} AS {quote_identifier(col_name)}")
+                select_cols.append(f"{expr_sql} AS {quote_name(col_name)}")
 
         inner_src = self._as_subquery(table_src)
 
@@ -2353,7 +2318,7 @@ FROM {src}, (
             if qualified not in keep_set:
                 self._consumed_join_aliases.add(qualified)
 
-        cols = [quote_identifier(name) for name in keep_names]
+        cols = [quote_name(name) for name in keep_names]
         return SQLBuilder().select(*cols).from_table(table_src).build()
 
     def _visit_drop(self, node: AST.RegularAggregation) -> str:
@@ -2371,7 +2336,7 @@ FROM {src}, (
         if not drop_names:
             return f"SELECT * FROM {table_src}"
 
-        exclude = ", ".join(quote_identifier(n) for n in drop_names)
+        exclude = ", ".join(quote_name(n) for n in drop_names)
         return SQLBuilder().select(f"* EXCLUDE ({exclude})").from_table(table_src).build()
 
     def _visit_rename(self, node: AST.RegularAggregation) -> str:
@@ -2400,9 +2365,9 @@ FROM {src}, (
                 unqual = name.split("#", 1)[1]
                 matched_new = renames.get(unqual)
             if matched_new is not None:
-                cols.append(f"{quote_identifier(name)} AS {quote_identifier(matched_new)}")
+                cols.append(f"{quote_name(name)} AS {quote_name(matched_new)}")
             else:
-                cols.append(quote_identifier(name))
+                cols.append(quote_name(name))
 
         return SQLBuilder().select(*cols).from_table(table_src).build()
 
@@ -2420,9 +2385,9 @@ FROM {src}, (
                 col_name = self._get_node_value(child.left)
                 remove_ids.add(col_name)
                 val_sql = self.visit(child.right)
-                where_parts.append(f"{quote_identifier(col_name)} = {val_sql}")
+                where_parts.append(f"{quote_name(col_name)} = {val_sql}")
 
-        cols = [quote_identifier(name) for name in ds.components if name not in remove_ids]
+        cols = [quote_name(name) for name in ds.components if name not in remove_ids]
 
         builder = SQLBuilder().select(*cols).from_table(table_src)
         for wp in where_parts:
@@ -2492,13 +2457,13 @@ FROM {src}, (
             output_ds = self._get_output_dataset()
             group_ids = list(output_ds.get_identifiers_names() if output_ds else all_input_ids)
 
-        cols: List[str] = [quote_identifier(id_) for id_ in group_ids]
+        cols: List[str] = [quote_name(id_) for id_ in group_ids]
         for col_name, expr_sql in calc_exprs.items():
-            cols.append(f"{expr_sql} AS {quote_identifier(col_name)}")
+            cols.append(f"{expr_sql} AS {quote_name(col_name)}")
 
         builder = SQLBuilder().select(*cols).from_table(table_src)
         if group_ids:
-            builder.group_by(*[quote_identifier(id_) for id_ in group_ids])
+            builder.group_by(*[quote_name(id_) for id_ in group_ids])
 
         if having_sql:
             builder.having(having_sql)
@@ -2541,23 +2506,23 @@ FROM {src}, (
 
             common_measures = left_measures.keys() & right_measures.keys()
             for measure in common_measures:
-                left_col = quote_identifier(left_measures[measure])
-                right_col = quote_identifier(right_measures[measure])
+                left_col = quote_name(left_measures[measure])
+                right_col = quote_name(right_measures[measure])
                 expr = registry.generate(op, left_col, right_col)
                 computed[measure] = expr
                 self._consumed_join_aliases.add(left_measures[measure])
                 self._consumed_join_aliases.add(right_measures[measure])
 
-        cols: List[str] = [quote_identifier(id_) for id_ in id_names]
+        cols: List[str] = [quote_name(id_) for id_ in id_names]
         if output_ds:
             for comp_name in output_ds.get_measures_names():
                 if comp_name in computed:
-                    cols.append(f"{computed[comp_name]} AS {quote_identifier(comp_name)}")
+                    cols.append(f"{computed[comp_name]} AS {quote_name(comp_name)}")
                 else:
-                    cols.append(quote_identifier(comp_name))
+                    cols.append(quote_name(comp_name))
         else:
             for measure, expr in computed.items():
-                cols.append(f"{expr} AS {quote_identifier(measure)}")
+                cols.append(f"{expr} AS {quote_name(measure)}")
 
         return SQLBuilder().select(*cols).from_table(table_src).build()
 
@@ -2582,13 +2547,12 @@ FROM {src}, (
 
         parts: List[str] = []
         for measure in measure_names:
-            cols: List[str] = [quote_identifier(i) for i in id_names]
-            cols.append(f"'{measure}' AS {quote_identifier(new_id_name)}")
-            cols.append(f"{quote_identifier(measure)} AS {quote_identifier(new_measure_name)}")
+            cols: List[str] = [quote_name(i) for i in id_names]
+            cols.append(f"'{measure}' AS {quote_name(new_id_name)}")
+            cols.append(f"{quote_name(measure)} AS {quote_name(new_measure_name)}")
             select_clause = ", ".join(cols)
             part = (
-                f"SELECT {select_clause} FROM {table_src} "
-                f"WHERE {quote_identifier(measure)} IS NOT NULL"
+                f"SELECT {select_clause} FROM {table_src} WHERE {quote_name(measure)} IS NOT NULL"
             )
             parts.append(part)
 
@@ -2627,11 +2591,11 @@ FROM {src}, (
         group_by_cols: List[str] = []
         for col_name in group_cols:
             if col_name == time_agg_id and time_agg_expr:
-                cols.append(f"{time_agg_expr} AS {quote_identifier(col_name)}")
+                cols.append(f"{time_agg_expr} AS {quote_name(col_name)}")
                 group_by_cols.append(time_agg_expr)
             else:
-                cols.append(quote_identifier(col_name))
-                group_by_cols.append(quote_identifier(col_name))
+                cols.append(quote_name(col_name))
+                group_by_cols.append(quote_name(col_name))
         return cols, group_by_cols
 
     def visit_Aggregation(self, node: AST.Aggregation) -> str:  # type: ignore[override]  # noqa: C901
@@ -2661,9 +2625,7 @@ FROM {src}, (
                 if self._in_clause and self._current_dataset:
                     measures = self._current_dataset.get_measures_names()
                     if measures:
-                        or_parts = " OR ".join(
-                            f"{quote_identifier(m)} IS NOT NULL" for m in measures
-                        )
+                        or_parts = " OR ".join(f"{quote_name(m)} IS NOT NULL" for m in measures)
                         return f"NULLIF(COUNT(CASE WHEN {or_parts} THEN 1 END), 0)"
                 return "NULLIF(COUNT(*), 0)"
             return ""
@@ -2688,21 +2650,19 @@ FROM {src}, (
             alias = "int_var"
             source_measures = ds.get_measures_names()
             if source_measures:
-                and_parts = " AND ".join(
-                    f"{quote_identifier(m)} IS NOT NULL" for m in source_measures
-                )
+                and_parts = " AND ".join(f"{quote_name(m)} IS NOT NULL" for m in source_measures)
                 count_expr = f"COUNT(CASE WHEN {and_parts} THEN 1 END)"
                 if group_cols:
                     count_expr = f"NULLIF({count_expr}, 0)"
-                cols.append(f"{count_expr} AS {quote_identifier(alias)}")
+                cols.append(f"{count_expr} AS {quote_name(alias)}")
             else:
-                cols.append(f"COUNT(*) AS {quote_identifier(alias)}")
+                cols.append(f"COUNT(*) AS {quote_name(alias)}")
         else:
             measures = ds.get_measures_names()
             for measure in measures:
                 comp = ds.components.get(measure)
                 dt = comp.data_type if comp else None
-                qm = quote_identifier(measure)
+                qm = quote_name(measure)
 
                 if dt == TimePeriod and op in (tokens.MIN, tokens.MAX):
                     ds_tp_minmax_cols.append((measure, op))
@@ -2741,12 +2701,10 @@ FROM {src}, (
         """Build the OVER (...) clause for an analytic function."""
         over_parts: List[str] = []
         if node.partition_by:
-            partition_cols = ", ".join(quote_identifier(p) for p in node.partition_by)
+            partition_cols = ", ".join(quote_name(p) for p in node.partition_by)
             over_parts.append(f"PARTITION BY {partition_cols}")
         if node.order_by:
-            order_cols = ", ".join(
-                f"{quote_identifier(o.component)} {o.order}" for o in node.order_by
-            )
+            order_cols = ", ".join(f"{quote_name(o.component)} {o.order}" for o in node.order_by)
             over_parts.append(f"ORDER BY {order_cols}")
         if node.window:
             order_is_date = False
@@ -2949,7 +2907,7 @@ FROM {src}, (
             if not child_sql.strip().upper().startswith("SELECT"):
                 child_sql = (
                     f"SELECT * FROM "
-                    f"{quote_identifier(child.value if hasattr(child, 'value') else child_sql)}"
+                    f"{quote_name(child.value if hasattr(child, 'value') else child_sql)}"
                 )
             child_sqls.append(child_sql)
 
@@ -2962,13 +2920,13 @@ FROM {src}, (
                 output_ds = self._get_output_dataset()
                 order_ds = output_ds if output_ds else ds
                 col_order = list(order_ds.components.keys())
-                ordered_cols = ", ".join(quote_identifier(c) for c in col_order)
+                ordered_cols = ", ".join(quote_name(c) for c in col_order)
                 ordered_sqls = [f"SELECT {ordered_cols} FROM ({sql}) AS _ord" for sql in child_sqls]
 
                 id_names = order_ds.get_identifiers_names()
                 if id_names:
                     inner_sql = registry.generate(op, *ordered_sqls)
-                    id_cols = ", ".join(quote_identifier(i) for i in id_names)
+                    id_cols = ", ".join(quote_name(i) for i in id_names)
                     # Preserve UNION ALL row order to match pandas drop_duplicates(keep="first").
                     # QUALIFY keeps the first occurrence per identifier group by insertion order.
                     return (
@@ -3079,9 +3037,7 @@ FROM {src}, (
             source_sql = self.visit(node.condition)
             source_ids = list(cond_ds.get_identifiers_names())
             bool_measures = list(cond_ds.get_measures_names())
-            cond_expr = (
-                f"{alias_cond}.{quote_identifier(bool_measures[0])}" if bool_measures else "TRUE"
-            )
+            cond_expr = f"{alias_cond}.{quote_name(bool_measures[0])}" if bool_measures else "TRUE"
         else:
             source_sql = self._get_dataset_sql(source_node)
             source_ids = list(source_ds.get_identifiers_names())
@@ -3107,22 +3063,22 @@ FROM {src}, (
         output_attributes = list(ref_ds.get_attributes_names())
 
         # Build SELECT columns
-        cols: List[str] = [f"{alias_cond}.{quote_identifier(id_)}" for id_ in source_ids]
+        cols: List[str] = [f"{alias_cond}.{quote_name(id_)}" for id_ in source_ids]
 
         for col_name in output_measures + output_attributes:
             if then_type == _DATASET:
-                then_ref = f"t.{quote_identifier(col_name)}"
+                then_ref = f"t.{quote_name(col_name)}"
             else:
                 then_ref = self.visit(node.thenOp)
 
             if else_type == _DATASET:
-                else_ref = f"e.{quote_identifier(col_name)}"
+                else_ref = f"e.{quote_name(col_name)}"
             else:
                 else_ref = self.visit(node.elseOp)
 
             cols.append(
                 f"CASE WHEN {cond_expr} THEN {then_ref} "
-                f"ELSE {else_ref} END AS {quote_identifier(col_name)}"
+                f"ELSE {else_ref} END AS {quote_name(col_name)}"
             )
 
         # Use from_subquery when the source is a SELECT (e.g., dataset-level condition)
@@ -3202,7 +3158,7 @@ FROM {src}, (
         if isinstance(case_obj.condition, AST.VarID) and cond_ds is not None:
             # Bare dataset VarID: reference its boolean measure column
             bool_measure = list(cond_ds.get_measures_names())[0]
-            return f"{alias}.{quote_identifier(bool_measure)}"
+            return f"{alias}.{quote_name(bool_measure)}"
 
         with self._clause_scope(cond_ds, prefix=alias):
             return self.visit(case_obj.condition)
@@ -3261,23 +3217,23 @@ FROM {src}, (
             )
 
         # Build SELECT: identifiers + CASE WHEN per measure (reversed for last-match-wins)
-        cols: List[str] = [f"{alias_src}.{quote_identifier(id_)}" for id_ in source_ids]
+        cols: List[str] = [f"{alias_src}.{quote_name(id_)}" for id_ in source_ids]
         for measure in output_measures:
             case_parts = ["CASE"]
             for i in reversed(range(len(node.cases))):
                 then_ref = (
-                    f"{then_aliases[i]}.{quote_identifier(measure)}"
+                    f"{then_aliases[i]}.{quote_name(measure)}"
                     if then_types[i] == _DATASET
                     else self.visit(node.cases[i].thenOp)
                 )
                 case_parts.append(f"WHEN {cond_exprs[i]} THEN {then_ref}")
             else_ref = (
-                f"{else_alias}.{quote_identifier(measure)}"
+                f"{else_alias}.{quote_name(measure)}"
                 if else_type == _DATASET
                 else self.visit(node.elseOp)
             )
             case_parts.append(f"ELSE {else_ref} END")
-            cols.append(f"{' '.join(case_parts)} AS {quote_identifier(measure)}")
+            cols.append(f"{' '.join(case_parts)} AS {quote_name(measure)}")
 
         builder.select(*cols)
 
@@ -3285,7 +3241,7 @@ FROM {src}, (
         # Scalar/null branches always match; dataset branches need a LEFT JOIN hit.
         has_ds_branch = any(t == _DATASET for t in then_types) or else_type == _DATASET
         if has_ds_branch:
-            id_col = quote_identifier(source_ids[0])
+            id_col = quote_name(source_ids[0])
             filter_parts: List[str] = []
             for i in range(len(node.cases)):
                 if then_types[i] == _DATASET:
@@ -3322,9 +3278,7 @@ FROM {src}, (
             validation_sql = self.visit(node.validation)
 
         error_code = self._error_code_sql(node.error_code)
-        error_level = (
-            str(node.error_level) if node.error_level is not None else "CAST(NULL AS BIGINT)"
-        )
+        error_level = self._error_code_sql(node.error_level)
 
         # Discover the measure name produced by the inner comparison.
         ds = self._get_dataset_structure(node.validation)
@@ -3344,30 +3298,26 @@ FROM {src}, (
         # Build explicit SELECT list with proper renaming.
         cols: List[str] = []
         for id_name in id_names:
-            cols.append(f"t.{quote_identifier(id_name)}")
+            cols.append(f"t.{quote_name(id_name)}")
 
         # Rename the comparison measure to bool_var.
-        cols.append(f't.{quote_identifier(bool_measure)} AS "bool_var"')
+        cols.append(f't.{quote_name(bool_measure)} AS "bool_var"')
 
         # Handle imbalance (also with cleared output to prevent renaming).
+        join_cond = None
+        imbalance_sql = None
+        imbalance_col = 'CAST(NULL AS DOUBLE) AS "imbalance"'
         if node.imbalance is not None:
             with self._stash_assignment():
                 imbalance_sql = self.visit(node.imbalance)
             imb_ds = self._get_dataset_structure(node.imbalance)
             if imb_ds is not None:
-                imb_measure = imb_ds.get_measures_names()[0]
                 join_cond = self._join_on_clause(id_names, "t", "i")
-                cols.append(f'i.{quote_identifier(imb_measure)} AS "imbalance"')
-            else:
-                join_cond = None
-                cols.append('CAST(NULL AS DOUBLE) AS "imbalance"')
-        else:
-            imbalance_sql = None
-            join_cond = None
-            cols.append('CAST(NULL AS DOUBLE) AS "imbalance"')
+                imbalance_col = f'i.{quote_name(imb_ds.get_measures_names()[0])} AS "imbalance"'
+        cols.append(imbalance_col)
 
         # errorcode / errorlevel – set only when bool_var is explicitly FALSE.
-        bool_ref = f"t.{quote_identifier(bool_measure)}"
+        bool_ref = f"t.{quote_name(bool_measure)}"
         cols.append(f'CASE WHEN {bool_ref} IS FALSE THEN {error_code} ELSE NULL END AS "errorcode"')
         cols.append(
             f'CASE WHEN {bool_ref} IS FALSE THEN {error_level} ELSE NULL END AS "errorlevel"'
@@ -3409,7 +3359,7 @@ FROM {src}, (
                 alias = ds.name if ds else chr(ord("a") + i)
 
             # Quote alias for SQL if it contains special characters
-            sql_alias = quote_identifier(alias) if ("." in alias or " " in alias) else alias
+            sql_alias = quote_name(alias) if ("." in alias or " " in alias) else alias
 
             clause_info.append(
                 {
@@ -3497,25 +3447,22 @@ FROM {src}, (
                             # For FULL JOIN identifiers, use COALESCE to pick
                             # the non-NULL value from either side.
                             coalesce_parts = [
-                                f"{ci['sql_alias']}.{quote_identifier(comp_name)}"
+                                f"{ci['sql_alias']}.{quote_name(comp_name)}"
                                 for ci in clause_info
                                 if ci["ds"] and comp_name in ci["ds"].components
                             ]
                             cols.append(
-                                f"COALESCE({', '.join(coalesce_parts)})"
-                                f" AS {quote_identifier(comp_name)}"
+                                f"COALESCE({', '.join(coalesce_parts)}) AS {quote_name(comp_name)}"
                             )
                         else:
-                            cols.append(f"{sa}.{quote_identifier(comp_name)}")
+                            cols.append(f"{sa}.{quote_name(comp_name)}")
                 elif comp_name in duplicate_comps:
                     # Duplicate non-identifier: alias with "alias#comp" convention
                     qualified_name = f"{info['alias']}#{comp_name}"
-                    cols.append(
-                        f"{sa}.{quote_identifier(comp_name)} AS {quote_identifier(qualified_name)}"
-                    )
+                    cols.append(f"{sa}.{quote_name(comp_name)} AS {quote_name(qualified_name)}")
                     self._join_alias_map[qualified_name] = qualified_name
                 else:
-                    cols.append(f"{sa}.{quote_identifier(comp_name)}")
+                    cols.append(f"{sa}.{quote_name(comp_name)}")
 
         if not cols:
             builder.select_all()
@@ -3542,8 +3489,7 @@ FROM {src}, (
                             left_alias = prev_info["sql_alias"]
                             break
                     on_parts.append(
-                        f"{left_alias}.{quote_identifier(id_)} = "
-                        f"{info['sql_alias']}.{quote_identifier(id_)}"
+                        f"{left_alias}.{quote_name(id_)} = {info['sql_alias']}.{quote_name(id_)}"
                     )
                 on_clause = " AND ".join(on_parts) if on_parts else "1=1"
                 builder.join(
@@ -3584,11 +3530,11 @@ FROM {src}, (
             if self._in_clause and self._current_dataset:
                 for comp in self._current_dataset.components.values():
                     if comp.data_type == TimePeriod and comp.role == Role.IDENTIFIER:
-                        col = quote_identifier(comp.name)
+                        col = quote_name(comp.name)
                         return f"vtl_time_agg_tp(vtl_period_parse({col}), '{target}')"
                 for comp in self._current_dataset.components.values():
                     if comp.data_type == Date and comp.role == Role.IDENTIFIER:
-                        col = quote_identifier(comp.name)
+                        col = quote_name(comp.name)
                         agg = f"vtl_time_agg_date({col}, '{target}')"
                         return self._apply_time_agg_conf(agg, conf)
             return f"vtl_time_agg_date(CURRENT_DATE, '{target}')"
@@ -3612,7 +3558,7 @@ FROM {src}, (
         # Find time measures to transform
         cols = []
         for comp in ds.components.values():
-            col = quote_identifier(comp.name)
+            col = quote_name(comp.name)
             if comp.role == Role.IDENTIFIER:
                 cols.append(col)
             elif comp.data_type == TimePeriod:
@@ -3639,7 +3585,7 @@ FROM {src}, (
             for operand in node.operands:
                 short_name = operand.value.rsplit(".", 1)[-1]
                 if short_name == table_name:
-                    op_name = quote_identifier(operand.value)
+                    op_name = quote_name(operand.value)
                     query = re.sub(rf"\b{re.escape(table_name)}\b", op_name, query)
                     break
 
