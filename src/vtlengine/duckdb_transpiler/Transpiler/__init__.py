@@ -1125,21 +1125,22 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     # Leaf visitors
 
+    def _scalar_literal(self, name: str) -> str:
+        sc = self.scalars[name]
+        return self._to_sql_literal(sc.value, getattr(sc.data_type, "__name__", ""))
+
     def visit_VarID(self, node: AST.VarID) -> str:  # type: ignore[override]
         """Visit a variable identifier."""
         name = node.value
         udo_val = self._get_udo_param(name)
         if udo_val is not None:
-            # Guard recursion when a UDO param resolves to itself.
             if isinstance(udo_val, AST.VarID):
                 resolved_name = udo_val.value
-                param_decl_type = self._get_udo_param(f"__type__{name}")
-                is_component_param = isinstance(param_decl_type, Component)
-                if resolved_name in self.available_tables and not is_component_param:
+                is_component = isinstance(self._get_udo_param(f"__type__{name}"), Component)
+                if resolved_name in self.available_tables and not is_component:
                     return f"SELECT * FROM {quote_name(resolved_name)}"
                 if resolved_name in self.scalars:
-                    sc = self.scalars[resolved_name]
-                    return self._to_sql_literal(sc.value, getattr(sc.data_type, "__name__", ""))
+                    return self._scalar_literal(resolved_name)
                 if resolved_name != name:
                     return self.visit(udo_val)
                 return quote_name(resolved_name)
@@ -1148,18 +1149,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return quote_name(udo_val)
 
         if name in self.scalars:
-            sc = self.scalars[name]
-            return self._to_sql_literal(sc.value, getattr(sc.data_type, "__name__", ""))
+            return self._scalar_literal(name)
 
-        if self._in_clause and self._current_dataset and name in self._current_dataset.components:
-            return quote_name(name)
-
-        # In clause context, resolve qualified duplicate columns.
-        if (
-            self._in_clause
-            and self._current_dataset
-            and name not in self._current_dataset.components
-        ):
+        if self._in_clause and self._current_dataset:
+            if name in self._current_dataset.components:
+                return quote_name(name)
             matches = [
                 comp_name
                 for comp_name in self._current_dataset.components
