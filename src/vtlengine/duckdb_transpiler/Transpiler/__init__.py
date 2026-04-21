@@ -1129,38 +1129,43 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         sc = self.scalars[name]
         return self._to_sql_literal(sc.value, getattr(sc.data_type, "__name__", ""))
 
+    def _resolve_udo_param(self, name: str, udo_val: Any) -> str:
+        if not isinstance(udo_val, AST.VarID):
+            return self.visit(udo_val) if isinstance(udo_val, AST.AST) else quote_name(udo_val)
+        resolved = udo_val.value
+        is_component = isinstance(self._get_udo_param(f"__type__{name}"), Component)
+        if resolved in self.available_tables and not is_component:
+            return f"SELECT * FROM {quote_name(resolved)}"
+        if resolved in self.scalars:
+            return self._scalar_literal(resolved)
+        if resolved != name:
+            return self.visit(udo_val)
+        return quote_name(resolved)
+
+    def _resolve_clause_component(self, name: str) -> Optional[str]:
+        if not (self._in_clause and self._current_dataset):
+            return None
+        if name in self._current_dataset.components:
+            return quote_name(name)
+        matches = [
+            c for c in self._current_dataset.components if "#" in c and c.split("#", 1)[1] == name
+        ]
+        return quote_name(matches[0]) if len(matches) == 1 else None
+
     def visit_VarID(self, node: AST.VarID) -> str:  # type: ignore[override]
         """Visit a variable identifier."""
         name = node.value
+
         udo_val = self._get_udo_param(name)
         if udo_val is not None:
-            if isinstance(udo_val, AST.VarID):
-                resolved_name = udo_val.value
-                is_component = isinstance(self._get_udo_param(f"__type__{name}"), Component)
-                if resolved_name in self.available_tables and not is_component:
-                    return f"SELECT * FROM {quote_name(resolved_name)}"
-                if resolved_name in self.scalars:
-                    return self._scalar_literal(resolved_name)
-                if resolved_name != name:
-                    return self.visit(udo_val)
-                return quote_name(resolved_name)
-            if isinstance(udo_val, AST.AST):
-                return self.visit(udo_val)
-            return quote_name(udo_val)
+            return self._resolve_udo_param(name, udo_val)
 
         if name in self.scalars:
             return self._scalar_literal(name)
 
-        if self._in_clause and self._current_dataset:
-            if name in self._current_dataset.components:
-                return quote_name(name)
-            matches = [
-                comp_name
-                for comp_name in self._current_dataset.components
-                if "#" in comp_name and comp_name.split("#", 1)[1] == name
-            ]
-            if len(matches) == 1:
-                return quote_name(matches[0])
+        clause_match = self._resolve_clause_component(name)
+        if clause_match is not None:
+            return clause_match
 
         if name in self.available_tables:
             return f"SELECT * FROM {quote_name(name)}"
