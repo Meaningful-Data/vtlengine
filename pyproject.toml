@@ -51,23 +51,26 @@ Authors = 'https://github.com/Meaningful-Data/vtlengine/graphs/contributors'
 [tool.poetry.dependencies]
 python = ">=3.9,<4.0"
 
-[tool.poetry.group.dev.dependencies]
-pytest = ">=8.4,<9.0"
-pytest-cov = ">=7.0.0,<8.0"
-coverage = ">=7.0,!=7.13.0,<8.0"
-pytest-xdist = ">=3.8.0,<4.0"
-line-profiler-pycharm = ">=1.2.0,<2.0"
-mypy = ">=1.18,<2.0"
-pandas-stubs = ">=2.2.2,<3.0"
-pyarrow-stubs = ">=19.0,<21.0"
-ruff = ">=0.14,<1.0.0"
-types-jsonschema = ">=4.25.1,<5.0"
-
-[tool.poetry.group.docs.dependencies]
-sphinx = ">=7.4.7,<8.0"
-sphinx-rtd-theme = ">=3.0.2,<4.0"
-sphinx-multiversion = ">=0.2.4,<0.3.0"
-toml = ">=0.10.2,<0.11.0"
+# Dependency groups follow PEP 735 (https://peps.python.org/pep-0735/).
+[dependency-groups]
+dev = [
+    "pytest>=8.4,<9.0",
+    "pytest-cov>=7.0.0,<8.0",
+    "coverage>=7.0,!=7.13.0,<8.0",
+    "pytest-xdist>=3.8.0,<4.0",
+    "line-profiler-pycharm>=1.2.0,<2.0",
+    "mypy>=1.18,<2.0",
+    "pandas-stubs>=2.2.2,<3.0",
+    "pyarrow-stubs>=19.0,<21.0",
+    "ruff>=0.14,<1.0.0",
+    "types-jsonschema>=4.25.1,<5.0",
+]
+docs = [
+    "sphinx>=7.4.7,<8.0",
+    "sphinx-rtd-theme>=3.0.2,<4.0",
+    "sphinx-multiversion>=0.2.4,<0.3.0",
+    "toml>=0.10.2,<0.11.0",
+]
 
 
 
