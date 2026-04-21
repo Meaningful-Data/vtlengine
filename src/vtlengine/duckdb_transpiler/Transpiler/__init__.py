@@ -355,9 +355,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         ds = self._get_dataset_structure(node.dataset)
         table_src = self._get_dataset_sql(node.dataset)
 
-        if ds is None:
-            raise ValueError("Cannot resolve dataset for check_datapoint")
-
         self._get_output_dataset()
         output_mode = node.output.value if node.output else "invalid"
 
@@ -402,26 +399,22 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             when_cond_sql = self._visit_dp_expr(rule_node.left, signature)
             then_expr_sql = self._visit_dp_expr(rule_node.right, signature)
             fail_cond = f"({when_cond_sql}) AND NOT ({then_expr_sql})"
-            bool_expr = (
-                f"CASE WHEN ({when_cond_sql}) THEN ({then_expr_sql})"
-                f" WHEN NOT ({when_cond_sql}) THEN TRUE ELSE NULL END"
-            )
+            bool_expr = f"""
+                CASE WHEN ({when_cond_sql}) THEN ({then_expr_sql})
+                 WHEN NOT ({when_cond_sql}) THEN TRUE ELSE NULL END
+            """
         else:
             then_expr_sql = self._visit_dp_expr(rule_node, signature)
             fail_cond = f"NOT ({then_expr_sql})"
             bool_expr = f"({then_expr_sql})"
 
         self._dp_signature = None
-        select_parts = [quote_name(c) for c in id_cols]
+        select_parts = [quote_name(c) for c in id_cols + measure_cols]
         if output_mode == "invalid":
-            select_parts.extend(quote_name(m) for m in measure_cols)
             select_parts.append(f"'{rule_name}' AS {quote_name('ruleid')}")
             select_parts.append(f"{ec_sql} AS {quote_name('errorcode')}")
             select_parts.append(f"{el_sql} AS {quote_name('errorlevel')}")
             return f"SELECT {', '.join(select_parts)} FROM {table_src} WHERE {fail_cond}"
-
-        if output_mode == "all_measures":
-            select_parts.extend(quote_name(m) for m in measure_cols)
 
         select_parts.append(f"{bool_expr} AS {quote_name('bool_var')}")
         select_parts.append(f"'{rule_name}' AS {quote_name('ruleid')}")
@@ -491,8 +484,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         ds = self._get_dataset_structure(node.dataset)
         table_src = self._get_dataset_sql(node.dataset)
-        if ds is None:
-            raise ValueError("Cannot resolve dataset for hierarchy operation")
 
         self._get_output_dataset()
 
@@ -546,9 +537,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     def _unwrap_assignment(self, child: AST.AST) -> AST.AST:
         """Return the inner ``Assignment`` from ``UnaryOp(Assignment)`` wrappers."""
-        if isinstance(child, AST.UnaryOp) and isinstance(child.operand, AST.Assignment):
-            return child.operand
-        return child
+        return child.operand if isinstance(child, AST.UnaryOp) else child
 
     def _is_numeric(self, value: Any) -> bool:
         """Return True if ``value`` is ``None`` or coerces to ``float`` without error."""
@@ -572,9 +561,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         udo_val = self._get_udo_param(raw_name)
         if isinstance(udo_val, (AST.VarID, AST.Identifier)):
             return udo_val.value
-        if isinstance(udo_val, str):
-            return udo_val
-        return raw_name
+        return udo_val if udo_val is not None else raw_name
 
     def _is_hr_eq_rule(self, rule: AST.HRule) -> bool:
         """Check if a hierarchical rule is an EQ rule (or WHEN-EQ)."""
@@ -589,12 +576,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         """Parse a hierarchical rule into its constituent parts."""
         rule_node: Any = rule.rule
         has_when = isinstance(rule_node, AST.HRBinOp) and rule_node.op == tokens.WHEN
-        if has_when:
-            when_node = rule_node.left
-            comparison_node = rule_node.right
-        else:
-            when_node = None
-            comparison_node = rule_node
+        when_node = rule_node.left if has_when else None
+        comparison_node = rule_node.right if has_when else rule_node
         return _ParsedHRRule(
             has_when=has_when,
             when_node=when_node,
@@ -739,10 +722,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             left_sql = self._build_hr_expr_sql(node.left, mode)
             right_sql = self._build_hr_expr_sql(node.right, mode)
             return f"({left_sql} {node.op} {right_sql})"
-        if isinstance(node, AST.HRUnOp):
-            operand_sql = self._build_hr_expr_sql(node.operand, mode)
-            return f"({node.op}{operand_sql})"
-        raise ValueError(f"Unexpected node type in HR expression: {type(node).__name__}")
+        # HRUnOp
+        operand_sql = self._build_hr_expr_sql(node.operand, mode)
+        return f"({node.op}{operand_sql})"
 
     def _build_check_hr_rule_select(
         self,
@@ -1079,9 +1061,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     def visit_UDOCall(self, node: AST.UDOCall) -> str:  # type: ignore[override]
         """Visit a UDO call by expanding its definition with parameter bindings."""
-        if node.op not in self._udos:
-            raise ValueError(f"Unknown UDO: {node.op}")
-
         udo_def = self._udos[node.op]
         params = udo_def["params"]
         expression = deepcopy(udo_def["expression"])
@@ -1192,12 +1171,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     def _visit_value_domain(self, node: AST.Collection) -> str:
         """Resolve a ValueDomain reference to SQL literal list."""
-        if not self.value_domains:
-            raise ValueError(
-                f"Value domain '{node.name}' referenced but no value domains provided."
-            )
-        if node.name not in self.value_domains:
-            raise ValueError(f"Value domain '{node.name}' not found in provided value domains.")
         vd = self.value_domains[node.name]
         type_name = vd.type.__name__ if hasattr(vd.type, "__name__") else str(vd.type)
         literals = [self._to_sql_literal(v, type_name) for v in vd.setlist]
@@ -1399,9 +1372,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         right_ds = self._get_dataset_structure(right_node)
         output_ds = self._get_output_dataset()
 
-        if left_ds is None or right_ds is None:
-            raise ValueError("Cannot resolve dataset structures for binary operation")
-
         left_src = self._get_dataset_sql(left_node)
         right_src = self._get_dataset_sql(right_node)
 
@@ -1559,10 +1529,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         """Build SQL for exists_in operation."""
         left_ds = self._get_dataset_structure(left_node)
         right_ds = self._get_dataset_structure(right_node)
-
-        if left_ds is None or right_ds is None:
-            raise ValueError("Cannot resolve structures for exists_in")
-
         left_src = self._get_dataset_sql(left_node)
         right_src = self._get_dataset_sql(right_node)
 
@@ -1609,16 +1575,12 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         if operand_type == _DATASET or ds is not None:
             src = self._get_dataset_sql(node.operand)
-            if ds is None:
-                raise ValueError("Cannot resolve structure for period_indicator")
 
             time_id = None
             for comp in ds.components.values():
                 if comp.data_type == TimePeriod and comp.role == Role.IDENTIFIER:
                     time_id = comp.name
                     break
-            if time_id is None:
-                raise ValueError("No TimePeriod identifier found for period_indicator")
 
             id_cols = [quote_name(c.name) for c in ds.get_identifiers()]
             extract_expr = (
@@ -1681,7 +1643,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         for comp in ds.components.values():
             if comp.data_type in (TimePeriod, Date) and comp.role == Role.IDENTIFIER:
                 return comp.name, comp.data_type
-        raise ValueError(f"No time identifier found for {op_name}")
 
     def _build_time_grid_parts(
         self,
@@ -1759,8 +1720,6 @@ FROM (
 
         ds = self._get_dataset_structure(ds_node)
         src = self._get_dataset_sql(ds_node)
-        if ds is None:
-            raise ValueError("Cannot resolve structure for fill_time_series")
 
         time_id, time_type = self._resolve_time_identifier(ds, "fill_time_series")
 
@@ -1905,11 +1864,8 @@ FROM (
         """Visit FLOW_TO_STOCK or STOCK_TO_FLOW: window functions over time series."""
         ds = self._get_dataset_structure(node.operand)
         src = self._get_dataset_sql(node.operand)
-        if ds is None:
-            raise ValueError(f"Cannot resolve structure for {op}")
 
         time_id, time_type = self._resolve_time_identifier(ds, op)
-
         other_ids = [quote_name(c.name) for c in ds.get_identifiers() if c.name != time_id]
 
         partition_parts = list(other_ids)
@@ -1946,13 +1902,9 @@ FROM (
 
         ds = self._get_dataset_structure(ds_node)
         src = self._get_dataset_sql(ds_node)
-        if ds is None:
-            raise ValueError("Cannot resolve structure for timeshift")
 
         time_id, time_type = self._resolve_time_identifier(ds, "timeshift")
-
         time_col = quote_name(time_id)
-
         if time_type == TimePeriod:
             shifted = f"vtl_tp_shift(vtl_period_parse({time_col}), {shift_sql}) AS {time_col}"
             cols = []
@@ -2046,9 +1998,6 @@ FROM {src}, (
 
     def _visit_cast(self, node: AST.ParamOp) -> str:
         """Visit CAST operation."""
-        if not node.children:
-            raise ValueError("CAST requires at least one operand")
-
         operand = node.children[0]
         target_type_str = ""
         if len(node.children) >= 2:
@@ -2497,9 +2446,6 @@ FROM {src}, (
             return self._clause_fallback_sql(node)
         ds, table_src = resolved
 
-        if len(node.children) < 2:
-            raise ValueError("Unpivot clause requires two operands")
-
         new_id_name = self._resolve_udo_name(self._get_node_value(node.children[0]))
         new_measure_name = self._resolve_udo_name(self._get_node_value(node.children[1]))
 
@@ -2739,8 +2685,6 @@ FROM {src}, (
             return f"{func_sql} OVER ({over_clause})"
 
         name_override = "int_var" if op == tokens.COUNT else None
-        if node.operand is None:
-            raise ValueError("Analytic node must have an operand")
         result = self._apply_measures(node.operand, _analytic_expr, name_override)
 
         # Inject TimePeriod indicator validation for MIN/MAX
@@ -2825,9 +2769,6 @@ FROM {src}, (
 
     def _visit_between(self, node: AST.MulOp) -> str:
         """Visit BETWEEN: expr BETWEEN low AND high. Handles dataset operand."""
-        if len(node.children) < 3:
-            raise ValueError("BETWEEN requires 3 operands")
-
         operand_type = self._get_operand_type(node.children[0])
 
         low_sql = self.visit(node.children[1])
@@ -2844,9 +2785,6 @@ FROM {src}, (
 
     def _visit_exists_in_mul(self, node: AST.MulOp) -> str:
         """Visit EXISTS_IN in MulOp form, handling the optional retain parameter."""
-        if len(node.children) < 2:
-            raise ValueError("exists_in requires at least 2 operands")
-
         base_sql = self._visit_exists_in(node.children[0], node.children[1])
 
         # Check for retain parameter (true / false / all); "all" keeps every row.

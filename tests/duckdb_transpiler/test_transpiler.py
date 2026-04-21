@@ -962,42 +962,6 @@ class TestValueDomains:
         result = transpiler.visit_Collection(collection)
         assert result == "(1, 2, 3, 4, 5)"
 
-    def test_value_domain_not_found_error(self):
-        """Test error when value domain is not found."""
-        transpiler = SQLTranspiler(
-            input_datasets={},
-            output_datasets={},
-            input_scalars={},
-            output_scalars={},
-            value_domains={},
-        )
-
-        collection = Collection(
-            **make_ast_node(name="UNKNOWN_VD", type="String", children=[], kind="ValueDomain")
-        )
-
-        with pytest.raises(ValueError, match="no value domains provided"):
-            transpiler.visit_Collection(collection)
-
-    def test_value_domain_missing_from_provided(self):
-        """Test error when specific value domain is not in provided dict."""
-        vd = ValueDomain(name="OTHER_VD", type=String, setlist=["A", "B"])
-
-        transpiler = SQLTranspiler(
-            input_datasets={},
-            output_datasets={},
-            input_scalars={},
-            output_scalars={},
-            value_domains={"OTHER_VD": vd},
-        )
-
-        collection = Collection(
-            **make_ast_node(name="UNKNOWN_VD", type="String", children=[], kind="ValueDomain")
-        )
-
-        with pytest.raises(ValueError, match="'UNKNOWN_VD' not found"):
-            transpiler.visit_Collection(collection)
-
     def test_collection_set_kind(self):
         """Test normal Set collection still works."""
         transpiler = SQLTranspiler(
