@@ -1,11 +1,44 @@
 """Operator registry used by the DuckDB transpiler."""
 
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, Optional, Tuple
+from typing import Any, Callable, Dict, Optional, Set, Tuple
 
 import vtlengine.AST.Grammar.tokens as tokens
 from vtlengine.DataTypes import Duration, TimePeriod
 from vtlengine.Exceptions import SemanticError
+
+# Ordering-only comparisons (TimeInterval ordering is forbidden).
+_ORDERING_OPS: Set[str] = {tokens.GT, tokens.GTE, tokens.LT, tokens.LTE}
+
+# String operators needing VARCHAR input.
+_STRING_UNARY_OPS: Set[str] = {
+    tokens.UCASE,
+    tokens.LCASE,
+    tokens.LEN,
+    tokens.TRIM,
+    tokens.LTRIM,
+    tokens.RTRIM,
+}
+
+_STRING_PARAM_OPS: Set[str] = {tokens.SUBSTR, tokens.REPLACE, tokens.INSTR}
+
+# Type mappings
+VTL_TO_DUCKDB_TYPES: Dict[str, str] = {
+    "Integer": "BIGINT",
+    "Number": "DOUBLE",
+    "String": "VARCHAR",
+    "Boolean": "BOOLEAN",
+    "Date": "TIMESTAMP",
+    "TimePeriod": "VARCHAR",
+    "TimeInterval": "VARCHAR",
+    "Duration": "VARCHAR",
+    "Null": "VARCHAR",
+}
+
+
+def get_duckdb_type(vtl_type: str) -> str:
+    """Map a VTL type name to a DuckDB SQL type."""
+    return VTL_TO_DUCKDB_TYPES.get(vtl_type, "VARCHAR")
 
 
 @dataclass
@@ -173,19 +206,9 @@ def _create_default_registry() -> None:
         "vtl_tp_datediff(vtl_period_parse({0}), vtl_period_parse({1}))",
     )
     # Duration comparison — magnitude ordering via vtl_duration_to_int
-    for _tok, _sym in [
-        (tokens.GT, ">"),
-        (tokens.GTE, ">="),
-        (tokens.LT, "<"),
-        (tokens.LTE, "<="),
-        (tokens.EQ, "="),
-        (tokens.NEQ, "<>"),
-    ]:
-        registry.register_typed(
-            _tok,
-            Duration,
-            f"(vtl_duration_to_int({{0}}) {_sym} vtl_duration_to_int({{1}}))",
-        )
+    for _tok in [tokens.GT, tokens.GTE, tokens.LT, tokens.LTE, tokens.EQ, tokens.NEQ]:
+        for dt, parsing in [(Duration, "vtl_duration_to_int")]:
+            registry.register_typed(_tok, dt, f"({parsing}({{0}}) {_tok} {parsing}({{1}}))")
 
     # Unary operators
     # Arithmetic functions
@@ -369,22 +392,3 @@ def _create_default_registry() -> None:
 
 # Global registry instance
 registry = _create_default_registry()
-
-
-# Type mappings
-VTL_TO_DUCKDB_TYPES: Dict[str, str] = {
-    "Integer": "BIGINT",
-    "Number": "DOUBLE",
-    "String": "VARCHAR",
-    "Boolean": "BOOLEAN",
-    "Date": "TIMESTAMP",
-    "TimePeriod": "VARCHAR",
-    "TimeInterval": "VARCHAR",
-    "Duration": "VARCHAR",
-    "Null": "VARCHAR",
-}
-
-
-def get_duckdb_type(vtl_type: str) -> str:
-    """Map a VTL type name to a DuckDB SQL type."""
-    return VTL_TO_DUCKDB_TYPES.get(vtl_type, "VARCHAR")

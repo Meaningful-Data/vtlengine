@@ -20,6 +20,9 @@ from vtlengine.DataTypes import (
     TimePeriod,
 )
 from vtlengine.duckdb_transpiler.Transpiler.operators import (
+    _ORDERING_OPS,
+    _STRING_PARAM_OPS,
+    _STRING_UNARY_OPS,
     get_duckdb_type,
     registry,
 )
@@ -36,21 +39,6 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
 )
 from vtlengine.Exceptions import RunTimeError
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
-
-# Ordering-only comparisons (TimeInterval ordering is forbidden).
-_ORDERING_OPS: Set[str] = {tokens.GT, tokens.GTE, tokens.LT, tokens.LTE}
-
-# String operators needing VARCHAR input.
-_STRING_UNARY_OPS: Set[str] = {
-    tokens.UCASE,
-    tokens.LCASE,
-    tokens.LEN,
-    tokens.TRIM,
-    tokens.LTRIM,
-    tokens.RTRIM,
-}
-
-_STRING_PARAM_OPS: Set[str] = {tokens.SUBSTR, tokens.REPLACE, tokens.INSTR}
 
 
 def _datediff_to_date(ref: str, dt: Optional[type]) -> str:
@@ -1157,8 +1145,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 return quote_name(resolved_name)
             if isinstance(udo_val, AST.AST):
                 return self.visit(udo_val)
-            if isinstance(udo_val, str):
-                return quote_name(udo_val)
+            return quote_name(udo_val)
 
         if name in self.scalars:
             sc = self.scalars[name]
@@ -1199,9 +1186,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         return quote_name(node.value)
 
     def visit_ID(self, node: AST.ID) -> str:  # type: ignore[override]
-        """Visit an ID node (used for type names, placeholders like '_', etc.)."""
-        if node.value == "_":
-            return ""
+        """Visit an ID node."""
         return node.value
 
     def visit_ParFunction(self, node: AST.ParFunction) -> str:  # type: ignore[override]

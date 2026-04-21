@@ -359,11 +359,10 @@ class StructureVisitor(ASTTemplate):
 
     def _get_udo_param(self, name: str) -> Any:
         """Look up a UDO parameter by name from the current scope."""
-        if self._udo_params is None:
-            return None
-        for scope in reversed(self._udo_params):
-            if name in scope:
-                return scope[name]
+        if self._udo_params:
+            for scope in reversed(self._udo_params):
+                if name in scope:
+                    return scope[name]
         return None
 
     def _push_udo_params(self, params: Dict[str, Any]) -> None:
