@@ -109,8 +109,8 @@ class StructureVisitor(ASTTemplate):
             comps: Dict[str, Component] = {}
             for name, comp in ds.components.items():
                 if comp.role == Role.MEASURE:
-                    comps[name] = Component(
-                        name=name, data_type=target_type, role=comp.role, nullable=comp.nullable
+                    comps[name] = self._make_comp(
+                        name, target_type, role=comp.role, nullable=comp.nullable
                     )
                 else:
                     comps[name] = comp
@@ -432,12 +432,7 @@ class StructureVisitor(ASTTemplate):
                 # count() replaces all measures with a single int_var
                 if node.op == tokens.COUNT:
                     comps = {n: c for n, c in comps.items() if c.role == Role.IDENTIFIER}
-                    comps["int_var"] = Component(
-                        name="int_var",
-                        data_type=Integer,
-                        role=Role.MEASURE,
-                        nullable=True,
-                    )
+                    comps["int_var"] = self._make_comp("int_var", Integer)
                 return Dataset(name=ds.name, components=comps, data=None)
             return ds
 
@@ -471,33 +466,12 @@ class StructureVisitor(ASTTemplate):
         if isinstance(node, AST.Validation):
             inner_ds = self._get_dataset_structure(node.validation)
             if inner_ds is not None:
-                val_comps: Dict[str, Component] = {}
-                for name, comp in inner_ds.components.items():
-                    if comp.role == Role.IDENTIFIER:
-                        val_comps[name] = comp
-                val_comps["bool_var"] = Component(
-                    name="bool_var",
-                    data_type=Boolean,
-                    role=Role.MEASURE,
-                    nullable=True,
-                )
-                val_comps["imbalance"] = Component(
-                    name="imbalance",
-                    data_type=Number,
-                    role=Role.MEASURE,
-                    nullable=True,
-                )
-                val_comps["errorcode"] = Component(
-                    name="errorcode",
-                    data_type=StringType,
-                    role=Role.MEASURE,
-                    nullable=True,
-                )
-                val_comps["errorlevel"] = Component(
-                    name="errorlevel",
-                    data_type=Integer,
-                    role=Role.MEASURE,
-                    nullable=True,
+                val_comps = self._identifiers_dict(inner_ds)
+                self._add_error_measures(
+                    val_comps,
+                    errorlevel_type=Integer,
+                    with_ruleid=False,
+                    with_bool_var=True,
                 )
                 return Dataset(name="", components=val_comps, data=None)
             return None
@@ -520,6 +494,46 @@ class StructureVisitor(ASTTemplate):
         return None
 
     # =========================================================================
+    # Component construction helpers
+    # =========================================================================
+
+    @staticmethod
+    def _make_comp(
+        name: str,
+        dtype: Any,
+        role: Role = Role.MEASURE,
+        nullable: bool = True,
+    ) -> Component:
+        """Build a ``Component`` with the common field ordering."""
+        return Component(name=name, data_type=dtype, role=role, nullable=nullable)
+
+    @staticmethod
+    def _identifiers_dict(ds: Dataset) -> Dict[str, Component]:
+        """Return a new dict containing only the identifier components of ``ds``."""
+        return {n: c for n, c in ds.components.items() if c.role == Role.IDENTIFIER}
+
+    def _add_error_measures(
+        self,
+        comps: Dict[str, Component],
+        *,
+        errorlevel_type: Any = Number,
+        with_ruleid: bool = True,
+        with_imbalance: bool = True,
+        with_bool_var: bool = False,
+    ) -> None:
+        """Append the standard validation/hierarchy error-reporting measures."""
+        if with_bool_var:
+            comps["bool_var"] = self._make_comp("bool_var", Boolean)
+        if with_imbalance:
+            comps["imbalance"] = self._make_comp("imbalance", Number)
+        if with_ruleid:
+            comps["ruleid"] = self._make_comp(
+                "ruleid", StringType, role=Role.IDENTIFIER, nullable=False
+            )
+        comps["errorcode"] = self._make_comp("errorcode", StringType)
+        comps["errorlevel"] = self._make_comp("errorlevel", errorlevel_type)
+
+    # =========================================================================
     # Structure builders for validation/hierarchy operations
     # =========================================================================
 
@@ -529,10 +543,7 @@ class StructureVisitor(ASTTemplate):
         if inner_ds is None:
             return None
 
-        comps: Dict[str, Component] = {}
-        for name, comp in inner_ds.components.items():
-            if comp.role == Role.IDENTIFIER:
-                comps[name] = comp
+        comps = self._identifiers_dict(inner_ds)
 
         measure_name = inner_ds.get_measures_names()[0] if inner_ds.get_measures_names() else ""
         if node.op == tokens.HIERARCHY:
@@ -545,39 +556,10 @@ class StructureVisitor(ASTTemplate):
             output_mode = node.output.value if node.output else "invalid"
             if output_mode == "all_measures" and measure_name:
                 comps[measure_name] = inner_ds.components[measure_name]
-            if output_mode in ("all", "all_measures"):
-                comps["bool_var"] = Component(
-                    name="bool_var",
-                    data_type=Boolean,
-                    role=Role.MEASURE,
-                    nullable=True,
-                )
+            with_bool_var = output_mode in ("all", "all_measures")
             if output_mode == "invalid" and measure_name:
                 comps[measure_name] = inner_ds.components[measure_name]
-            comps["imbalance"] = Component(
-                name="imbalance",
-                data_type=Number,
-                role=Role.MEASURE,
-                nullable=True,
-            )
-            comps["ruleid"] = Component(
-                name="ruleid",
-                data_type=StringType,
-                role=Role.IDENTIFIER,
-                nullable=False,
-            )
-            comps["errorcode"] = Component(
-                name="errorcode",
-                data_type=StringType,
-                role=Role.MEASURE,
-                nullable=True,
-            )
-            comps["errorlevel"] = Component(
-                name="errorlevel",
-                data_type=Number,
-                role=Role.MEASURE,
-                nullable=True,
-            )
+            self._add_error_measures(comps, with_bool_var=with_bool_var)
         return Dataset(name="", components=comps, data=None)
 
     def _build_dp_validation_structure(self, node: AST.DPValidation) -> Optional[Dataset]:
@@ -586,10 +568,7 @@ class StructureVisitor(ASTTemplate):
         if inner_ds is None:
             return None
 
-        comps: Dict[str, Component] = {}
-        for name, comp in inner_ds.components.items():
-            if comp.role == Role.IDENTIFIER:
-                comps[name] = comp
+        comps = self._identifiers_dict(inner_ds)
 
         output_mode = node.output.value if node.output else "invalid"
         if output_mode in ("invalid", "all_measures"):
@@ -597,30 +576,10 @@ class StructureVisitor(ASTTemplate):
                 if comp.role == Role.MEASURE:
                     comps[name] = comp
 
-        if output_mode in ("all", "all_measures"):
-            comps["bool_var"] = Component(
-                name="bool_var",
-                data_type=Boolean,
-                role=Role.MEASURE,
-                nullable=True,
-            )
-        comps["ruleid"] = Component(
-            name="ruleid",
-            data_type=StringType,
-            role=Role.IDENTIFIER,
-            nullable=False,
-        )
-        comps["errorcode"] = Component(
-            name="errorcode",
-            data_type=StringType,
-            role=Role.MEASURE,
-            nullable=True,
-        )
-        comps["errorlevel"] = Component(
-            name="errorlevel",
-            data_type=Number,
-            role=Role.MEASURE,
-            nullable=True,
+        self._add_error_measures(
+            comps,
+            with_imbalance=False,
+            with_bool_var=output_mode in ("all", "all_measures"),
         )
         return Dataset(name="", components=comps, data=None)
 
@@ -630,17 +589,8 @@ class StructureVisitor(ASTTemplate):
         if left_ds is None:
             return None
 
-        comps: Dict[str, Component] = {}
-        for name, comp in left_ds.components.items():
-            if comp.role == Role.IDENTIFIER:
-                comps[name] = comp
-
-        comps["bool_var"] = Component(
-            name="bool_var",
-            data_type=Boolean,
-            role=Role.MEASURE,
-            nullable=True,
-        )
+        comps = self._identifiers_dict(left_ds)
+        comps["bool_var"] = self._make_comp("bool_var", Boolean)
         return Dataset(name="", components=comps, data=None)
 
     # Structure builders for clause operations
@@ -657,19 +607,13 @@ class StructureVisitor(ASTTemplate):
         new_measure = (
             node.children[1].value if hasattr(node.children[1], "value") else str(node.children[1])
         )
-        comps = {
-            name: comp for name, comp in input_ds.components.items() if comp.role == Role.IDENTIFIER
-        }
-        comps[new_id] = Component(
-            name=new_id, data_type=StringType, role=Role.IDENTIFIER, nullable=False
-        )
+        comps = self._identifiers_dict(input_ds)
+        comps[new_id] = self._make_comp(new_id, StringType, role=Role.IDENTIFIER, nullable=False)
         measure_types = [
             c.data_type for c in input_ds.components.values() if c.role == Role.MEASURE
         ]
         m_type = measure_types[0] if measure_types else StringType
-        comps[new_measure] = Component(
-            name=new_measure, data_type=m_type, role=Role.MEASURE, nullable=True
-        )
+        comps[new_measure] = self._make_comp(new_measure, m_type)
         return Dataset(name="_unpivot", components=comps, data=None)
 
     def _build_calc_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:
@@ -707,18 +651,16 @@ class StructureVisitor(ASTTemplate):
                     and comps[col_name].role != calc_role
                 ):
                     old = comps[col_name]
-                    comps[col_name] = Component(
-                        name=old.name,
-                        data_type=old.data_type,
+                    comps[col_name] = self._make_comp(
+                        old.name,
+                        old.data_type,
                         role=calc_role,
                         nullable=old.nullable if calc_role != Role.IDENTIFIER else False,
                     )
                 elif col_name not in comps and output_ds and col_name in output_ds.components:
                     comps[col_name] = output_ds.components[col_name]
                 elif col_name not in comps:
-                    comps[col_name] = Component(
-                        name=col_name, data_type=Number, role=Role.MEASURE, nullable=True
-                    )
+                    comps[col_name] = self._make_comp(col_name, Number)
         return Dataset(name=input_ds.name, components=comps, data=None)
 
     def _build_ds_ds_binop_structure(self, node: AST.BinOp) -> Optional[Dataset]:
@@ -791,9 +733,7 @@ class StructureVisitor(ASTTemplate):
                 assignment = child.operand
             if isinstance(assignment, AST.Assignment):
                 col_name = assignment.left.value if hasattr(assignment.left, "value") else ""
-                comps[col_name] = Component(
-                    name=col_name, data_type=Number, role=Role.MEASURE, nullable=True
-                )
+                comps[col_name] = self._make_comp(col_name, Number)
 
         return Dataset(name=input_ds.name, components=comps, data=None)
 
@@ -806,10 +746,7 @@ class StructureVisitor(ASTTemplate):
         comp_name = node.right.value if hasattr(node.right, "value") else str(node.right)
         comp_name = self._resolve_udo_name(comp_name)
 
-        comps: Dict[str, Component] = {}
-        for name, comp in parent_ds.components.items():
-            if comp.role == Role.IDENTIFIER:
-                comps[name] = comp
+        comps = self._identifiers_dict(parent_ds)
 
         # Add the extracted component as a measure.
         # When extracting an identifier or attribute, rename it using COMP_NAME_MAPPING
@@ -819,24 +756,15 @@ class StructureVisitor(ASTTemplate):
             alias_name = comp_name
             if orig.role in (Role.IDENTIFIER, Role.ATTRIBUTE):
                 alias_name = COMP_NAME_MAPPING.get(orig.data_type, comp_name)
-            comps[alias_name] = Component(
-                name=alias_name, data_type=orig.data_type, role=Role.MEASURE, nullable=True
-            )
+            comps[alias_name] = self._make_comp(alias_name, orig.data_type)
         else:
-            comps[comp_name] = Component(
-                name=comp_name, data_type=Number, role=Role.MEASURE, nullable=True
-            )
+            comps[comp_name] = self._make_comp(comp_name, Number)
         return Dataset(name=parent_ds.name, components=comps, data=None)
 
-    @staticmethod
-    def _build_boolean_result_structure(ds: Dataset) -> Dataset:
+    def _build_boolean_result_structure(self, ds: Dataset) -> Dataset:
         """Replace all measures with a single ``bool_var`` Boolean measure."""
-        comps: Dict[str, Component] = {
-            n: c for n, c in ds.components.items() if c.role == Role.IDENTIFIER
-        }
-        comps["bool_var"] = Component(
-            name="bool_var", data_type=Boolean, role=Role.MEASURE, nullable=True
-        )
+        comps = self._identifiers_dict(ds)
+        comps["bool_var"] = self._make_comp("bool_var", Boolean)
         return Dataset(name=ds.name, components=comps, data=None)
 
     def _build_rename_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:
@@ -873,11 +801,8 @@ class StructureVisitor(ASTTemplate):
                 unqual = name.split("#", 1)[1]
                 matched_new = renames.get(unqual)
             if matched_new is not None:
-                comps[matched_new] = Component(
-                    name=matched_new,
-                    data_type=comp.data_type,
-                    role=comp.role,
-                    nullable=comp.nullable,
+                comps[matched_new] = self._make_comp(
+                    matched_new, comp.data_type, role=comp.role, nullable=comp.nullable
                 )
             else:
                 comps[name] = comp
@@ -981,13 +906,9 @@ class StructureVisitor(ASTTemplate):
                 is_join_id = comp.role == Role.IDENTIFIER or comp_name in all_join_ids
                 if comp_name in duplicate_comps and (not is_join_id or is_cross):
                     qualified = f"{alias}#{comp_name}"
-                    new_comp = Component(
-                        name=qualified,
-                        data_type=comp.data_type,
-                        role=comp.role,
-                        nullable=comp.nullable,
+                    comps[qualified] = self._make_comp(
+                        qualified, comp.data_type, role=comp.role, nullable=comp.nullable
                     )
-                    comps[qualified] = new_comp
                 elif comp_name not in comps:
                     comps[comp_name] = comp
         if not comps:
