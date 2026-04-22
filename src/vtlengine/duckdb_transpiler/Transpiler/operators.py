@@ -179,18 +179,13 @@ def _create_default_registry() -> OperatorRegistry:
     # String matching
     ops.register(tokens.CHARSET_MATCH, "regexp_full_match({0}, {1})")
     # TimePeriod ordering — vtl_period_* comparison macros
-    ops.register_typed(
-        tokens.GT, TimePeriod, "vtl_period_gt(vtl_period_parse({0}), vtl_period_parse({1}))"
-    )
-    ops.register_typed(
-        tokens.GTE, TimePeriod, "vtl_period_ge(vtl_period_parse({0}), vtl_period_parse({1}))"
-    )
-    ops.register_typed(
-        tokens.LT, TimePeriod, "vtl_period_lt(vtl_period_parse({0}), vtl_period_parse({1}))"
-    )
-    ops.register_typed(
-        tokens.LTE, TimePeriod, "vtl_period_le(vtl_period_parse({0}), vtl_period_parse({1}))"
-    )
+    _tp_ordering = [(tokens.GT, "gt"), (tokens.GTE, "ge"), (tokens.LT, "lt"), (tokens.LTE, "le")]
+    for _tok, _suffix in _tp_ordering:
+        ops.register_typed(
+            _tok,
+            TimePeriod,
+            f"vtl_period_{_suffix}(vtl_period_parse({{0}}), vtl_period_parse({{1}}))",
+        )
     # TimePeriod datediff
     ops.register_typed(
         tokens.DATEDIFF,
@@ -199,8 +194,11 @@ def _create_default_registry() -> OperatorRegistry:
     )
     # Duration comparison — magnitude ordering via vtl_duration_to_int
     for _tok in [tokens.GT, tokens.GTE, tokens.LT, tokens.LTE, tokens.EQ, tokens.NEQ]:
-        for dt, parsing in [(Duration, "vtl_duration_to_int")]:
-            ops.register_typed(_tok, dt, f"({parsing}({{0}}) {_tok} {parsing}({{1}}))")
+        ops.register_typed(
+            _tok,
+            Duration,
+            f"(vtl_duration_to_int({{0}}) {_tok} vtl_duration_to_int({{1}}))",
+        )
 
     # Unary operators
     # Arithmetic functions
@@ -262,29 +260,21 @@ def _create_default_registry() -> OperatorRegistry:
     ops.register(tokens.BETWEEN, "({0} BETWEEN {1} AND {2})")
 
     # ROUND/TRUNC require DOUBLE when precision is not constant in DuckDB.
-    def _round_generator(*args: Optional[str]) -> str:
-        precision = "0" if (len(args) < 2 or args[1] is None) else str(args[1])
-        return f"ROUND(CAST({args[0]} AS DOUBLE), COALESCE(CAST({precision} AS INTEGER), 0))"
+    def _precision_generator(sql_fn: str) -> Callable[..., str]:
+        def gen(*args: Optional[str]) -> str:
+            precision = "0" if (len(args) < 2 or args[1] is None) else str(args[1])
+            return f"{sql_fn}(CAST({args[0]} AS DOUBLE), COALESCE(CAST({precision} AS INTEGER), 0))"
 
-    ops.register_custom(
-        tokens.ROUND,
-        SQLOperator(
-            sql_template="ROUND({0}, CAST({1} AS INTEGER))",
-            custom_generator=_round_generator,
-        ),
-    )
+        return gen
 
-    def _trunc_generator(*args: Optional[str]) -> str:
-        precision = "0" if (len(args) < 2 or args[1] is None) else str(args[1])
-        return f"TRUNC(CAST({args[0]} AS DOUBLE), COALESCE(CAST({precision} AS INTEGER), 0))"
-
-    ops.register_custom(
-        tokens.TRUNC,
-        SQLOperator(
-            sql_template="TRUNC({0}, CAST({1} AS INTEGER))",
-            custom_generator=_trunc_generator,
-        ),
-    )
+    for _tok, _fn in [(tokens.ROUND, "ROUND"), (tokens.TRUNC, "TRUNC")]:
+        ops.register_custom(
+            _tok,
+            SQLOperator(
+                sql_template=f"{_fn}({{0}}, CAST({{1}} AS INTEGER))",
+                custom_generator=_precision_generator(_fn),
+            ),
+        )
 
     def _instr_generator(*args: Optional[str]) -> str:
         """Generate SQL for VTL instr(string, pattern, start, occurrence)."""
