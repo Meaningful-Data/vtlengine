@@ -91,21 +91,13 @@ class StructureVisitor(ASTTemplate):
         ds = self._get_dataset_structure(node.operand)
         if ds is None:
             return None
-        op = str(node.op).lower()
-        if op == tokens.ISNULL:
-            comps: Dict[str, Component] = {
-                n: c for n, c in ds.components.items() if c.role == Role.IDENTIFIER
-            }
-            comps["bool_var"] = Component(
-                name="bool_var", data_type=Boolean, role=Role.MEASURE, nullable=True
-            )
-            return Dataset(name=ds.name, components=comps, data=None)
+        if node.op == tokens.ISNULL:
+            return self._build_boolean_result_structure(ds)
         return ds
 
     def visit_ParamOp(self, node: AST.ParamOp) -> Optional[Dataset]:  # type: ignore[override]
         """Return dataset structure for a parameterized op."""
-        op = str(node.op).lower()
-        if op == tokens.CAST and len(node.children) >= 2:
+        if node.op == tokens.CAST and len(node.children) >= 2:
             ds = self._get_dataset_structure(node.children[0])
             if ds is None:
                 return None
@@ -181,6 +173,8 @@ class StructureVisitor(ASTTemplate):
         """Determine the operand type for a list of nodes (e.g. function args)."""
         result = _SCALAR
         for node in nodes:
+            if node is None:
+                continue
             operand_type = self._get_node_type(node)
             if operand_type == _DATASET:
                 return _DATASET
@@ -220,20 +214,20 @@ class StructureVisitor(ASTTemplate):
     def _get_varid_type(self, node: AST.VarID) -> str:
         """Determine operand type for a VarID."""
         name = node.value
-        udo_val = self._get_udo_param(name)
-        if udo_val is not None:
-            if isinstance(udo_val, AST.VarID):
-                if udo_val.value in self.available_tables:
-                    return _DATASET
-                if udo_val.value != name:
-                    return self._get_node_type(udo_val)
-            elif isinstance(udo_val, AST.AST):
-                return self._get_node_type(udo_val)
-            elif isinstance(udo_val, str) and udo_val in self.available_tables:
+        kind, val = self._resolve_udo_var(name)
+        if kind == "varid":
+            if val.value in self.available_tables:
                 return _DATASET
-        elif self._in_clause and self._current_dataset and name in self._current_dataset.components:
+            if val.value != name:
+                return self._get_node_type(val)
+            return _SCALAR
+        if kind == "ast":
+            return self._get_node_type(val)
+        if kind == "str":
+            return _DATASET if val in self.available_tables else _SCALAR
+        if self._in_clause and self._current_dataset and name in self._current_dataset.components:
             return _COMPONENT
-        elif name in self.available_tables:
+        if name in self.available_tables:
             return _DATASET
         return _SCALAR
 
@@ -280,29 +274,24 @@ class StructureVisitor(ASTTemplate):
     def _get_dataset_sql(self, node: AST.AST) -> str:
         """Get the SQL FROM source for a dataset node."""
         if isinstance(node, AST.VarID):
-            name = node.value
-            udo_val = self._get_udo_param(name)
-            if udo_val is not None:
-                if isinstance(udo_val, AST.VarID):
-                    return quote_name(udo_val.value)
-                if isinstance(udo_val, AST.AST):
-                    inner_sql = self.visit(udo_val)
-                    return f"({inner_sql})"
-            return quote_name(name)
-        inner_sql = self.visit(node)
-        return f"({inner_sql})"
+            kind, val = self._resolve_udo_var(node.value)
+            if kind == "varid":
+                return quote_name(val.value)
+            if kind == "ast":
+                return f"({self.visit(val)})"
+            return quote_name(node.value)
+        return f"({self.visit(node)})"
 
     def _resolve_dataset_name(self, node: AST.AST) -> str:
         """Resolve a VarID to its actual dataset name (handles UDO params)."""
         if isinstance(node, AST.VarID):
-            udo_val = self._get_udo_param(node.value)
-            if udo_val is not None:
-                if isinstance(udo_val, AST.VarID):
-                    return udo_val.value
-                if isinstance(udo_val, AST.AST):
-                    return self._resolve_dataset_name(udo_val)
-                if isinstance(udo_val, str):
-                    return udo_val
+            kind, val = self._resolve_udo_var(node.value)
+            if kind == "varid":
+                return val.value
+            if kind == "ast":
+                return self._resolve_dataset_name(val)
+            if kind == "str":
+                return val
             return node.value
         if isinstance(node, AST.RegularAggregation) and node.dataset:
             return self._resolve_dataset_name(node.dataset)
@@ -317,6 +306,26 @@ class StructureVisitor(ASTTemplate):
                 if name in scope:
                     return scope[name]
         return None
+
+    def _resolve_udo_var(self, name: str) -> Tuple[str, Any]:
+        """Resolve a UDO parameter binding by name."""
+        udo_val = self._get_udo_param(name)
+        if isinstance(udo_val, AST.VarID):
+            return "varid", udo_val
+        if isinstance(udo_val, AST.AST):
+            return "ast", udo_val
+        if isinstance(udo_val, str):
+            return "str", udo_val
+        return "unbound", name
+
+    def _resolve_udo_name(self, name: str) -> str:
+        """Unwrap a UDO binding to a bare name (for rename/component contexts)."""
+        udo_val = self._get_udo_param(name)
+        if isinstance(udo_val, (AST.VarID, AST.Identifier)):
+            return udo_val.value
+        if isinstance(udo_val, str):
+            return udo_val
+        return name
 
     def _push_udo_params(self, params: Dict[str, Any]) -> None:
         """Push a new UDO parameter scope onto the stack."""
@@ -338,24 +347,22 @@ class StructureVisitor(ASTTemplate):
         if node is None:
             return None
         if isinstance(node, AST.VarID):
-            udo_val = self._get_udo_param(node.value)
-            if udo_val is not None:
-                # Guard against recursion when a UDO param resolves to itself.
-                if isinstance(udo_val, AST.VarID):
-                    if udo_val.value in self.available_tables:
-                        return self.available_tables[udo_val.value]
-                    # Avoid recursive loop.
-                    if udo_val.value != node.value:
-                        return self._get_dataset_structure(udo_val)
-                    return None
-                if isinstance(udo_val, AST.AST):
-                    return self._get_dataset_structure(udo_val)
-                if isinstance(udo_val, str) and udo_val in self.available_tables:
-                    return self.available_tables[udo_val]
+            kind, val = self._resolve_udo_var(node.value)
+            if kind == "varid":
+                if val.value in self.available_tables:
+                    return self.available_tables[val.value]
+                # Guard against recursion when param name matches argument name.
+                if val.value != node.value:
+                    return self._get_dataset_structure(val)
+                return None
+            if kind == "ast":
+                return self._get_dataset_structure(val)
+            if kind == "str" and val in self.available_tables:
+                return self.available_tables[val]
             return self.available_tables.get(node.value)
 
         if isinstance(node, AST.RegularAggregation) and node.dataset:
-            op = str(node.op).lower() if node.op else ""
+            op = node.op
             if op == tokens.UNPIVOT and len(node.children) >= 2:
                 result = self._build_unpivot_structure(node)
                 if result is not None:
@@ -377,10 +384,10 @@ class StructureVisitor(ASTTemplate):
             return self._get_dataset_structure(node.dataset)
 
         if isinstance(node, AST.BinOp):
-            op = str(node.op).lower()
+            op = node.op
             if op == tokens.MEMBERSHIP:
                 return self._build_membership_structure(node)
-            if op == "as":
+            if op == tokens.AS:
                 return self._get_dataset_structure(node.left)
             left_is_ds = self._get_node_type(node.left) == _DATASET
             right_is_ds = self._get_node_type(node.right) == _DATASET
@@ -398,19 +405,8 @@ class StructureVisitor(ASTTemplate):
 
         if isinstance(node, AST.UnaryOp):
             ds = self._get_dataset_structure(node.operand)
-            if ds is not None:
-                op = str(node.op).lower()
-                if op == tokens.ISNULL and len(ds.get_measures_names()) == 1:
-                    isnull_comps: Dict[str, Component] = {
-                        n: c for n, c in ds.components.items() if c.role == Role.IDENTIFIER
-                    }
-                    isnull_comps["bool_var"] = Component(
-                        name="bool_var",
-                        data_type=Boolean,
-                        role=Role.MEASURE,
-                        nullable=True,
-                    )
-                    return Dataset(name=ds.name, components=isnull_comps, data=None)
+            if ds is not None and node.op == tokens.ISNULL and len(ds.get_measures_names()) == 1:
+                return self._build_boolean_result_structure(ds)
             return ds
 
         if isinstance(node, AST.ParFunction):
@@ -434,14 +430,11 @@ class StructureVisitor(ASTTemplate):
                     elif comp.role == Role.MEASURE:
                         comps[name] = comp
                 # count() replaces all measures with a single int_var
-                agg_op = str(node.op).lower() if node.op else ""
-                if agg_op == tokens.COUNT:
-                    from vtlengine.DataTypes import Integer as IntegerType
-
+                if node.op == tokens.COUNT:
                     comps = {n: c for n, c in comps.items() if c.role == Role.IDENTIFIER}
                     comps["int_var"] = Component(
                         name="int_var",
-                        data_type=IntegerType,
+                        data_type=Integer,
                         role=Role.MEASURE,
                         nullable=True,
                     )
@@ -471,8 +464,7 @@ class StructureVisitor(ASTTemplate):
             return self._get_output_dataset()
 
         if isinstance(node, AST.MulOp) and node.children:
-            op = str(node.op).lower() if node.op else ""
-            if op == tokens.EXISTS_IN:
+            if node.op == tokens.EXISTS_IN:
                 return self._build_exists_in_structure(node)
             return self._get_dataset_structure(node.children[0])
 
@@ -543,7 +535,6 @@ class StructureVisitor(ASTTemplate):
                 comps[name] = comp
 
         measure_name = inner_ds.get_measures_names()[0] if inner_ds.get_measures_names() else ""
-
         if node.op == tokens.HIERARCHY:
             # hierarchy: same structure as input (identifiers + measures)
             for name, comp in inner_ds.components.items():
@@ -699,25 +690,17 @@ class StructureVisitor(ASTTemplate):
             calc_role: Optional[Role] = None
             if isinstance(child, AST.UnaryOp) and isinstance(child.operand, AST.Assignment):
                 # Role is encoded in UnaryOp.op: "identifier", "measure", "attribute"
-                op_str = str(child.op).lower()
-                if op_str == "identifier":
+                if child.op == tokens.IDENTIFIER:
                     calc_role = Role.IDENTIFIER
-                elif op_str == "attribute":
+                elif child.op == tokens.ATTRIBUTE:
                     calc_role = Role.ATTRIBUTE
                 else:
                     calc_role = Role.MEASURE
                 assignment = child.operand
             if isinstance(assignment, AST.Assignment):
                 col_name = assignment.left.value if hasattr(assignment.left, "value") else ""
-                # Resolve UDO component parameters for column names
-                udo_val = self._get_udo_param(col_name)
-                if udo_val is not None:
-                    if isinstance(udo_val, (AST.VarID, AST.Identifier)):
-                        col_name = udo_val.value
-                    elif isinstance(udo_val, str):
-                        col_name = udo_val
-                # Update role if calc promotes an existing column (e.g.
-                # ``calc identifier severity := severity``).
+                col_name = self._resolve_udo_name(col_name)
+                # Update role if calc promotes an existing column
                 if (
                     col_name in comps
                     and calc_role is not None
@@ -733,32 +716,21 @@ class StructureVisitor(ASTTemplate):
                 elif col_name not in comps and output_ds and col_name in output_ds.components:
                     comps[col_name] = output_ds.components[col_name]
                 elif col_name not in comps:
-                    from vtlengine.DataTypes import Number as NumberType
-
                     comps[col_name] = Component(
-                        name=col_name, data_type=NumberType, role=Role.MEASURE, nullable=True
+                        name=col_name, data_type=Number, role=Role.MEASURE, nullable=True
                     )
         return Dataset(name=input_ds.name, components=comps, data=None)
 
     def _build_ds_ds_binop_structure(self, node: AST.BinOp) -> Optional[Dataset]:
-        """Build structure for dataset-dataset binary ops (e.g. DS_1 * DS_2).
-
-        Arithmetic between datasets produces identifiers + common measures only,
-        no attributes — matching what the SQL transpiler actually generates.
-        """
+        """Build structure for dataset-dataset binary ops."""
         left_ds = self._get_dataset_structure(node.left)
         right_ds = self._get_dataset_structure(node.right)
         if left_ds is None or right_ds is None:
             return left_ds or right_ds
 
-        str(node.op).lower() if node.op else ""
-        # For comparison ops between datasets, the result keeps measures
-        # but they become boolean.  For arithmetic, measures stay numeric.
-        # In either case, only identifiers + common measures survive.
         left_ids = set(left_ds.get_identifiers_names())
         right_ids = set(right_ds.get_identifiers_names())
         all_ids = left_ids | right_ids
-
         right_measures = set(right_ds.get_measures_names())
 
         comps: Dict[str, Component] = {}
@@ -775,16 +747,10 @@ class StructureVisitor(ASTTemplate):
         return Dataset(name=left_ds.name, components=comps, data=None)
 
     def _build_aggregate_clause_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:
-        """Build the output dataset structure for an aggregate clause.
-
-        After ``[aggr Me := func() group by Id]``, the result contains only
-        the group-by identifiers and the computed measures.
-        """
+        """Build the output dataset structure for an aggregate clause."""
         input_ds = self._get_dataset_structure(node.dataset)
         if input_ds is None:
             return None
-
-        from vtlengine.DataTypes import Number as NumberType
 
         comps: Dict[str, Component] = {}
 
@@ -826,29 +792,19 @@ class StructureVisitor(ASTTemplate):
             if isinstance(assignment, AST.Assignment):
                 col_name = assignment.left.value if hasattr(assignment.left, "value") else ""
                 comps[col_name] = Component(
-                    name=col_name, data_type=NumberType, role=Role.MEASURE, nullable=True
+                    name=col_name, data_type=Number, role=Role.MEASURE, nullable=True
                 )
 
         return Dataset(name=input_ds.name, components=comps, data=None)
 
     def _build_membership_structure(self, node: AST.BinOp) -> Optional[Dataset]:
-        """Build the output structure for a membership (#) operation.
-
-        ``DS#comp`` returns identifiers + the single extracted component.
-        """
+        """Build the output structure for a membership (#) operation."""
         parent_ds = self._get_dataset_structure(node.left)
         if parent_ds is None:
             return None
 
         comp_name = node.right.value if hasattr(node.right, "value") else str(node.right)
-
-        # Resolve UDO parameter
-        udo_val = self._get_udo_param(comp_name)
-        if udo_val is not None:
-            if isinstance(udo_val, (AST.VarID, AST.Identifier)):
-                comp_name = udo_val.value
-            elif isinstance(udo_val, str):
-                comp_name = udo_val
+        comp_name = self._resolve_udo_name(comp_name)
 
         comps: Dict[str, Component] = {}
         for name, comp in parent_ds.components.items():
@@ -867,20 +823,14 @@ class StructureVisitor(ASTTemplate):
                 name=alias_name, data_type=orig.data_type, role=Role.MEASURE, nullable=True
             )
         else:
-            from vtlengine.DataTypes import Number as NumberType
-
             comps[comp_name] = Component(
-                name=comp_name, data_type=NumberType, role=Role.MEASURE, nullable=True
+                name=comp_name, data_type=Number, role=Role.MEASURE, nullable=True
             )
         return Dataset(name=parent_ds.name, components=comps, data=None)
 
     @staticmethod
     def _build_boolean_result_structure(ds: Dataset) -> Dataset:
-        """Replace all measures with a single ``bool_var`` Boolean measure.
-
-        Used for operators like ``in`` / ``not_in`` that produce a Boolean
-        result from any input measure type.
-        """
+        """Replace all measures with a single ``bool_var`` Boolean measure."""
         comps: Dict[str, Component] = {
             n: c for n, c in ds.components.items() if c.role == Role.IDENTIFIER
         }
@@ -986,7 +936,7 @@ class StructureVisitor(ASTTemplate):
         for i, clause in enumerate(node.clauses):
             actual_node = clause
             alias: Optional[str] = None
-            if isinstance(clause, AST.BinOp) and str(clause.op).lower() == "as":
+            if isinstance(clause, AST.BinOp) and clause.op == tokens.AS:
                 actual_node = clause.left
                 alias = clause.right.value if hasattr(clause.right, "value") else str(clause.right)
             ds = self._get_dataset_structure(actual_node)
@@ -999,14 +949,11 @@ class StructureVisitor(ASTTemplate):
         if not clause_datasets:
             return self._get_output_dataset()
 
-        is_cross = str(node.op).lower() == tokens.CROSS_JOIN
-
         # Determine common identifiers if no USING specified
-        # Use pairwise accumulation (same as visit_JoinOp) so that multi-
-        # dataset joins where secondary datasets share different identifiers
-        # work correctly.
+        # Use pairwise accumulation (same as visit_JoinOp) so that multi-dataset
+        # joins where secondary datasets share different identifiers work correctly.
         # For cross joins, identifiers from different datasets must be qualified
-        # (e.g. d1#Id_1, d2#Id_1), so we skip identifier deduplication.
+        is_cross = node.op == tokens.CROSS_JOIN
         if using_ids is None:
             if is_cross:
                 all_join_ids: Set[str] = set()
@@ -1027,9 +974,8 @@ class StructureVisitor(ASTTemplate):
                 if comp_name not in all_join_ids:
                     comp_count[comp_name] = comp_count.get(comp_name, 0) + 1
 
-        duplicate_comps = {name for name, cnt in comp_count.items() if cnt >= 2}
-
         comps: Dict[str, Component] = {}
+        duplicate_comps = {name for name, cnt in comp_count.items() if cnt >= 2}
         for alias, ds in clause_datasets:
             for comp_name, comp in ds.components.items():
                 is_join_id = comp.role == Role.IDENTIFIER or comp_name in all_join_ids
@@ -1053,25 +999,15 @@ class StructureVisitor(ASTTemplate):
     # =========================================================================
 
     def _extract_component_names(
-        self,
-        children: List[AST.AST],
-        lookup: Optional[Dict[str, Any]] = None,
+        self, children: List[AST.AST], lookup: Optional[Dict[str, Any]] = None
     ) -> List[str]:
-        """Extract component names from clause children, resolving memberships.
-
-        Args:
-            children: AST children to extract names from.
-            lookup: Dict to check qualified names against (e.g. dataset components
-                    or join alias map).  When a qualified name is found in *lookup*
-                    the qualified form is kept; otherwise the bare component name
-                    is used.
-        """
+        """Extract component names from clause children, resolving memberships."""
         ctx = lookup or {}
         names: List[str] = []
         for child in children:
             if isinstance(child, (AST.VarID, AST.Identifier)):
                 names.append(child.value)
-            elif isinstance(child, AST.BinOp) and str(child.op).lower() == tokens.MEMBERSHIP:
+            elif isinstance(child, AST.BinOp) and child.op == tokens.MEMBERSHIP:
                 ds_alias = child.left.value if hasattr(child.left, "value") else str(child.left)
                 comp = child.right.value if hasattr(child.right, "value") else str(child.right)
                 qualified = f"{ds_alias}#{comp}"
@@ -1101,24 +1037,13 @@ class StructureVisitor(ASTTemplate):
 
     def _resolve_grouping_names(self, grouping: List[AST.AST]) -> List[str]:
         """Resolve grouping node names with UDO parameter lookup."""
-        names: List[str] = []
-        for g in grouping:
-            if isinstance(g, (AST.VarID, AST.Identifier)):
-                resolved = g.value
-                udo_val = self._get_udo_param(resolved)
-                if udo_val is not None:
-                    if isinstance(udo_val, (AST.VarID, AST.Identifier)):
-                        resolved = udo_val.value
-                    elif isinstance(udo_val, str):
-                        resolved = udo_val
-                names.append(resolved)
-        return names
+        return [
+            self._resolve_udo_name(g.value)
+            for g in grouping
+            if isinstance(g, (AST.VarID, AST.Identifier))
+        ]
 
-    def _resolve_group_cols(
-        self,
-        node: AST.Aggregation,
-        all_ids: List[str],
-    ) -> List[str]:
+    def _resolve_group_cols(self, node: AST.Aggregation, all_ids: List[str]) -> List[str]:
         """Resolve group-by columns from an Aggregation node."""
         if node.grouping and node.grouping_op == "group by":
             return self._resolve_grouping_names(node.grouping)
