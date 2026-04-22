@@ -48,6 +48,17 @@ class StructureVisitor(ASTTemplate):
         self._udos: Dict[str, Dict[str, Any]] = {}
         self._structure_context: Dict[int, Dataset] = {}
 
+    # Dispatcher: two-level visit — first ``visit_{Class}_{op}``, then ``visit_{Class}``
+
+    def visit(self, node: Any) -> Any:
+        """Dispatch by node class and, if present, by ``node.op``."""
+        op = getattr(node, "op", None)
+        if isinstance(op, str) and op.isidentifier():
+            handler = getattr(self, f"visit_{type(node).__name__}_{op}", None)
+            if handler is not None:
+                return handler(node)
+        return super().visit(node)
+
     # Public API for standalone usage
 
     @property

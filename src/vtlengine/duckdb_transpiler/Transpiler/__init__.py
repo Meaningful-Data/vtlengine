@@ -1301,18 +1301,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return registry.sql(op, operand_sql, data_type=dt)
 
     def visit_BinOp(self, node: AST.BinOp) -> str:  # type: ignore[override]
-        """Visit a binary operation."""
+        """Visit a binary operation"""
         op = node.op
         if op == tokens.MEMBERSHIP:
-            return self._visit_membership(node)
-        if op == tokens.EXISTS_IN:
-            return self._visit_exists_in(node.left, node.right)
-        if op == tokens.CHARSET_MATCH:
-            return self._visit_match_characters(node)
-        if op == tokens.RANDOM:
-            return self._visit_random_binop(node)
-        if op == tokens.TIMESHIFT:
-            return self._visit_timeshift(node)
+            return self._visit_binop_membership(node)
 
         left_type = self._get_node_type(node.left)
         right_type = self._get_node_type(node.right)
@@ -1474,7 +1466,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             cast_bool_to_str=op == tokens.CONCAT,
         )
 
-    def _visit_membership(self, node: AST.BinOp) -> str:
+    def _visit_binop_membership(self, node: AST.BinOp) -> str:
         """Visit MEMBERSHIP (#): DS#comp -> SELECT ids, comp FROM DS."""
         comp_name = self._resolve_udo_name(self._get_node_value(node.right))
 
@@ -1511,7 +1503,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         return SQLBuilder().select(*cols).from_table(table_src).build()
 
-    def _visit_match_characters(self, node: AST.BinOp) -> str:
+    def visit_BinOp_match_characters(self, node: AST.BinOp) -> str:
         """Visit match_characters operator using registry."""
         left_type = self._get_node_type(node.left)
         pattern_sql = self.visit(node.right)
@@ -1524,7 +1516,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             left_sql = self.visit(node.left)
             return registry.sql(tokens.CHARSET_MATCH, left_sql, pattern_sql)
 
-    def _visit_exists_in(self, left_node: AST.AST, right_node: AST.AST) -> str:
+    def visit_BinOp_exists_in(self, node: AST.BinOp) -> str:
+        """Visit EXISTS_IN BinOp."""
+        return self._exists_in_sql(node.left, node.right)
+
+    def _exists_in_sql(self, left_node: AST.AST, right_node: AST.AST) -> str:
         """Build SQL for exists_in operation."""
         left_ds = self._get_dataset_structure(left_node)
         right_ds = self._get_dataset_structure(right_node)
@@ -1595,17 +1591,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return f"vtl_period_parse({operand_sql}).period_indicator"
 
     def visit_ParamOp(self, node: AST.ParamOp) -> str:  # type: ignore[override]
-        """Visit a parameterized operation."""
+        """Visit a parameterized operation (default handling)."""
         op = node.op
-        if op == tokens.CAST:
-            return self._visit_cast(node)
-        if op == tokens.RANDOM:
-            return self._visit_random(node)
-        if op == tokens.DATE_ADD:
-            return self._visit_dateadd(node)
-        if op == tokens.FILL_TIME_SERIES:
-            return self._visit_fill_time_series(node)
-
         params_sql = self._visit_params(node.params)
         if op in (tokens.ROUND, tokens.TRUNC) and not params_sql:
             params_sql = ["0"]
@@ -1708,7 +1695,7 @@ FROM (
         " 'period_number': ep.tp.period_number + 1}::vtl_time_period END"
     )
 
-    def _visit_fill_time_series(self, node: AST.ParamOp) -> str:
+    def visit_ParamOp_fill_time_series(self, node: AST.ParamOp) -> str:
         """Fill missing time periods/dates with NULL rows."""
         ds_node = node.children[0]
         fill_mode = "all"
@@ -1894,7 +1881,7 @@ FROM (
 
         return SQLBuilder().select(*cols).from_table(src).build()
 
-    def _visit_timeshift(self, node: AST.BinOp) -> str:
+    def visit_BinOp_timeshift(self, node: AST.BinOp) -> str:
         """Visit TIMESHIFT: shift time identifier by N periods."""
         ds_node = node.left
         shift_sql = self.visit(node.right)
@@ -1932,7 +1919,7 @@ FROM {src}, (
     {freq_sql}
 ) AS freq"""
 
-    def _visit_dateadd(self, node: AST.ParamOp) -> str:
+    def visit_ParamOp_dateadd(self, node: AST.ParamOp) -> str:
         """Visit DATEADD operation: dateadd(op, shiftNumber, periodInd)."""
         operand_node = node.children[0]
         operand_type = self._get_node_type(operand_node)
@@ -1995,7 +1982,7 @@ FROM {src}, (
                 return type_name
         return None
 
-    def _visit_cast(self, node: AST.ParamOp) -> str:
+    def visit_ParamOp_cast(self, node: AST.ParamOp) -> str:
         """Visit CAST operation."""
         operand = node.children[0]
         target_type_str = ""
@@ -2112,13 +2099,13 @@ FROM {src}, (
         index_sql = self.visit(index_node) if index_node else "0"
         return self._random_hash_expr(seed_sql, index_sql)
 
-    def _visit_random(self, node: AST.ParamOp) -> str:
+    def visit_ParamOp_random(self, node: AST.ParamOp) -> str:
         """Visit RANDOM operator (ParamOp form)."""
         seed_node = node.children[0] if node.children else None
         index_node = node.params[0] if node.params else None
         return self._visit_random_impl(seed_node, index_node)
 
-    def _visit_random_binop(self, node: AST.BinOp) -> str:
+    def visit_BinOp_random(self, node: AST.BinOp) -> str:
         """Visit RANDOM operator (BinOp form, e.g. inside calc)."""
         return self._visit_random_impl(node.left, node.right)
 
@@ -2133,31 +2120,10 @@ FROM {src}, (
     # Clause visitor
 
     def visit_RegularAggregation(self, node: AST.RegularAggregation) -> str:  # type: ignore[override]
-        """Visit clause operations: filter, calc, keep, drop, rename, subspace, aggr."""
-        op = node.op
-        if op == tokens.FILTER:
-            return self._visit_filter(node)
-        elif op == tokens.CALC:
-            return self._visit_calc(node)
-        elif op == tokens.KEEP:
-            return self._visit_keep(node)
-        elif op == tokens.DROP:
-            return self._visit_drop(node)
-        elif op == tokens.RENAME:
-            return self._visit_rename(node)
-        elif op == tokens.SUBSPACE:
-            return self._visit_subspace(node)
-        elif op == tokens.AGGREGATE:
-            return self._visit_clause_aggregate(node)
-        elif op == tokens.APPLY:
-            return self._visit_apply(node)
-        elif op == tokens.UNPIVOT:
-            return self._visit_unpivot(node)
-        elif node.dataset:
-            return self.visit(node.dataset)
-        return ""
+        """Fallback for clause ops without a ``visit_RegularAggregation_{op}`` method."""
+        return str(self.visit(node.dataset))
 
-    def _visit_filter(self, node: AST.RegularAggregation) -> str:
+    def visit_RegularAggregation_filter(self, node: AST.RegularAggregation) -> str:
         """Visit filter clause: DS[filter condition]."""
         resolved = self._resolve_clause_dataset(node)
         if resolved is None:
@@ -2172,7 +2138,7 @@ FROM {src}, (
             builder.where(" AND ".join(conditions))
         return builder.build()
 
-    def _visit_calc(self, node: AST.RegularAggregation) -> str:
+    def visit_RegularAggregation_calc(self, node: AST.RegularAggregation) -> str:
         """Visit calc clause: DS[calc new_col := expr, ...]."""
         resolved = self._resolve_clause_dataset(node)
         if resolved is None:
@@ -2211,7 +2177,7 @@ FROM {src}, (
 
         return SQLBuilder().select(*select_cols).from_table(inner_src, "t").build()
 
-    def _visit_keep(self, node: AST.RegularAggregation) -> str:
+    def visit_RegularAggregation_keep(self, node: AST.RegularAggregation) -> str:
         """Visit keep clause."""
         resolved = self._resolve_clause_dataset(node)
         if resolved is None:
@@ -2231,7 +2197,7 @@ FROM {src}, (
         cols = [quote_name(name) for name in keep_names]
         return SQLBuilder().select(*cols).from_table(table_src).build()
 
-    def _visit_drop(self, node: AST.RegularAggregation) -> str:
+    def visit_RegularAggregation_drop(self, node: AST.RegularAggregation) -> str:
         """Visit drop clause."""
         if not node.dataset:
             return ""
@@ -2244,12 +2210,12 @@ FROM {src}, (
                 self._consumed_join_aliases.add(name)
 
         if not drop_names:
-            return f"SELECT * FROM {table_src}"
+            return SQLBuilder().select_all().from_table(table_src).build()
 
         exclude = ", ".join(quote_name(n) for n in drop_names)
         return SQLBuilder().select(f"* EXCLUDE ({exclude})").from_table(table_src).build()
 
-    def _visit_rename(self, node: AST.RegularAggregation) -> str:
+    def visit_RegularAggregation_rename(self, node: AST.RegularAggregation) -> str:
         """Visit rename clause."""
         resolved = self._resolve_clause_dataset(node)
         if resolved is None:
@@ -2281,7 +2247,7 @@ FROM {src}, (
 
         return SQLBuilder().select(*cols).from_table(table_src).build()
 
-    def _visit_subspace(self, node: AST.RegularAggregation) -> str:
+    def visit_RegularAggregation_sub(self, node: AST.RegularAggregation) -> str:
         """Visit subspace clause."""
         resolved = self._resolve_clause_dataset(node)
         if resolved is None:
@@ -2304,7 +2270,7 @@ FROM {src}, (
             builder.where(wp)
         return builder.build()
 
-    def _visit_clause_aggregate(self, node: AST.RegularAggregation) -> str:  # noqa: C901
+    def visit_RegularAggregation_aggr(self, node: AST.RegularAggregation) -> str:  # noqa: C901
         """Visit aggregate clause: DS[aggr Me := sum(Me) group by Id, ... having ...]."""
         resolved = self._resolve_clause_dataset(node)
         if resolved is None:
@@ -2385,7 +2351,7 @@ FROM {src}, (
 
         return main_sql
 
-    def _visit_apply(self, node: AST.RegularAggregation) -> str:
+    def visit_RegularAggregation_apply(self, node: AST.RegularAggregation) -> str:
         """Visit apply clause."""
         resolved = self._resolve_clause_dataset(node)
         if resolved is None:
@@ -2435,7 +2401,7 @@ FROM {src}, (
 
         return SQLBuilder().select(*cols).from_table(table_src).build()
 
-    def _visit_unpivot(self, node: AST.RegularAggregation) -> str:
+    def visit_RegularAggregation_unpivot(self, node: AST.RegularAggregation) -> str:
         """Visit unpivot clause."""
         resolved = self._resolve_clause_dataset(node)
         if resolved is None:
@@ -2732,19 +2698,29 @@ FROM {src}, (
     # =========================================================================
 
     def visit_MulOp(self, node: AST.MulOp) -> str:  # type: ignore[override]
-        """Visit a multi-operand operation."""
-        op = node.op
-        if op == tokens.CURRENT_DATE:
-            return "CURRENT_DATE"
-        elif op == tokens.BETWEEN:
-            return self._visit_between(node)
-        elif op == tokens.EXISTS_IN:
-            return self._visit_exists_in_mul(node)
-        elif op in (tokens.UNION, tokens.INTERSECT, tokens.SETDIFF, tokens.SYMDIFF):
-            return self._visit_set_operation(node, op)
+        """Fallback for MulOp ops without a ``visit_MulOp_{op}`` method."""
+        return ", ".join(self.visit(c) for c in node.children)
 
-        child_sqls = [self.visit(c) for c in node.children]
-        return ", ".join(child_sqls)
+    @staticmethod
+    def visit_MulOp_current_date(_node: AST.MulOp) -> str:
+        """Visit CURRENT_DATE — returns the SQL literal."""
+        return "CURRENT_DATE"
+
+    def visit_MulOp_union(self, node: AST.MulOp) -> str:
+        """Visit UNION set operation."""
+        return self._visit_set_operation(node, tokens.UNION)
+
+    def visit_MulOp_intersect(self, node: AST.MulOp) -> str:
+        """Visit INTERSECT set operation."""
+        return self._visit_set_operation(node, tokens.INTERSECT)
+
+    def visit_MulOp_setdiff(self, node: AST.MulOp) -> str:
+        """Visit SETDIFF set operation."""
+        return self._visit_set_operation(node, tokens.SETDIFF)
+
+    def visit_MulOp_symdiff(self, node: AST.MulOp) -> str:
+        """Visit SYMDIFF set operation."""
+        return self._visit_set_operation(node, tokens.SYMDIFF)
 
     @staticmethod
     def _between_expr(operand: str, low: str, high: str) -> str:
@@ -2759,7 +2735,7 @@ FROM {src}, (
             f"THEN NULL ELSE ({operand} BETWEEN {low} AND {high}) END"
         )
 
-    def _visit_between(self, node: AST.MulOp) -> str:
+    def visit_MulOp_between(self, node: AST.MulOp) -> str:
         """Visit BETWEEN: expr BETWEEN low AND high. Handles dataset operand."""
         operand_type = self._get_node_type(node.children[0])
 
@@ -2775,9 +2751,9 @@ FROM {src}, (
         operand_sql = self.visit(node.children[0])
         return self._between_expr(operand_sql, low_sql, high_sql)
 
-    def _visit_exists_in_mul(self, node: AST.MulOp) -> str:
+    def visit_MulOp_exists_in(self, node: AST.MulOp) -> str:
         """Visit EXISTS_IN in MulOp form, handling the optional retain parameter."""
-        base_sql = self._visit_exists_in(node.children[0], node.children[1])
+        base_sql = self._exists_in_sql(node.children[0], node.children[1])
 
         # Check for retain parameter (true / false / all); "all" keeps every row.
         if len(node.children) >= 3:
@@ -3445,7 +3421,6 @@ FROM {src}, (
         self, node: AST.TimeAggregation, target: str, conf: Optional[str]
     ) -> str:
         """Visit TIME_AGG at dataset level: apply to time measure."""
-        builder = SQLBuilder()
         ds = self._get_dataset_structure(node.operand)
         src = self._get_dataset_sql(node.operand)
 
@@ -3462,7 +3437,8 @@ FROM {src}, (
                 cols.append(f"{expr} AS {col}")
             else:
                 cols.append(col)
-        return builder.select(*cols).from_table(src).build()
+
+        return SQLBuilder().select(*cols).from_table(src).build()
 
     # =========================================================================
     # Eval operator visitor

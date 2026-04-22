@@ -1121,7 +1121,7 @@ class TestTimeOperators:
         )
 
         mul_op = MulOp(**make_ast_node(op=CURRENT_DATE, children=[]))
-        result = transpiler.visit_MulOp(mul_op)
+        result = transpiler.visit(mul_op)
         assert result == "CURRENT_DATE"
 
     @pytest.mark.parametrize(
@@ -1195,7 +1195,7 @@ class TestRandomOperator:
         index = Constant(**make_ast_node(type_="INTEGER_CONSTANT", value=5))
         random_op = ParamOp(**make_ast_node(op="random", children=[seed], params=[index]))
 
-        result = transpiler.visit_ParamOp(random_op)
+        result = transpiler.visit(random_op)
 
         # Full SQL: hash-based deterministic random
         expected_sql = (
@@ -1213,7 +1213,7 @@ class TestRandomOperator:
         index = Constant(**make_ast_node(type_="INTEGER_CONSTANT", value=3))
         random_op = ParamOp(**make_ast_node(op="random", children=[dataset_ref], params=[index]))
 
-        result = transpiler.visit_ParamOp(random_op)
+        result = transpiler.visit(random_op)
 
         # Full SQL: applies random to each measure
         expected_sql = (
