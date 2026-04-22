@@ -51,7 +51,7 @@ class SQLOperator:
     requires_context: bool = False
     custom_generator: Optional[Callable[..., str]] = None
 
-    def generate(self, *operands: str) -> str:
+    def sql(self, *operands: str) -> str:
         if self.custom_generator:
             return self.custom_generator(*operands)
         return self.sql_template.format(*operands)
@@ -59,17 +59,9 @@ class SQLOperator:
 
 @dataclass
 class OperatorRegistry:
-    """Unified registry for SQL operators.
+    """Unified registry for SQL operators. ``(vtl_token, arity/dtype)``"""
 
-    Operators are keyed by ``(vtl_token, arity)`` so that the same token
-    (e.g. ``"+"``) can have both a binary and a unary template.  The public
-    ``register`` / ``generate`` API resolves the arity automatically from
-    the number of operands.
-    """
-
-    # (vtl_token, arity) → SQLOperator.  arity=0 means "any/default".
     _operators: Dict[Tuple[str, int], SQLOperator] = field(default_factory=dict)
-    # (vtl_token, data_type) → SQLOperator  (type-conditioned overrides)
     _typed_overrides: Dict[Tuple[str, type], SQLOperator] = field(default_factory=dict)
 
     def register(
@@ -115,7 +107,7 @@ class OperatorRegistry:
         """Check if any operator variant is registered for this token."""
         return any(tok == vtl_token for tok, _ in self._operators)
 
-    def generate(self, vtl_token: str, *operands: str, data_type: Optional[type] = None) -> str:
+    def sql(self, vtl_token: str, *operands: str, data_type: Optional[type] = None) -> str:
         """Generate SQL, resolving by type override → arity → fallback.
 
         For unregistered operators, falls back to ``TOKEN(operands)`` style.
@@ -123,12 +115,12 @@ class OperatorRegistry:
         if data_type is not None:
             typed_op = self._typed_overrides.get((vtl_token, data_type))
             if typed_op:
-                return typed_op.generate(*operands)
+                return typed_op.sql(*operands)
         n = len(operands)
         # Try exact arity match first, then arity-0 (default / custom)
         operator = self._operators.get((vtl_token, n)) or self._operators.get((vtl_token, 0))
         if operator is not None:
-            return operator.generate(*operands)
+            return operator.sql(*operands)
         # Fallback: function-call syntax for unregistered operators
         return f"{vtl_token.upper()}({', '.join(operands)})"
 

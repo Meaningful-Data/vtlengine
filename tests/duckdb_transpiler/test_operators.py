@@ -61,17 +61,17 @@ class TestSQLOperator:
     def test_template_generate(self):
         """Test SQL generation from template."""
         op = SQLOperator(sql_template="({0} + {1})")
-        assert op.generate('"a"', '"b"') == '("a" + "b")'
+        assert op.sql('"a"', '"b"') == '("a" + "b")'
 
     def test_unary_template(self):
         """Test unary function template."""
         op = SQLOperator(sql_template="CEIL({0})")
-        assert op.generate('"x"') == 'CEIL("x")'
+        assert op.sql('"x"') == 'CEIL("x")'
 
     def test_prefix_template(self):
         """Test prefix template."""
         op = SQLOperator(sql_template="-{0}", is_prefix=True)
-        assert op.generate('"x"') == '-"x"'
+        assert op.sql('"x"') == '-"x"'
 
     def test_custom_generator(self):
         """Test operator with custom generator function."""
@@ -80,7 +80,7 @@ class TestSQLOperator:
             return f"CUSTOM_FUNC({a}, {b})"
 
         op = SQLOperator(sql_template="", custom_generator=custom_gen)
-        result = op.generate("x", "y")
+        result = op.sql("x", "y")
         assert result == "CUSTOM_FUNC(x, y)"
 
     def test_custom_generator_takes_precedence(self):
@@ -89,7 +89,7 @@ class TestSQLOperator:
             sql_template="({0} + {1})",
             custom_generator=lambda a, b: f"CUSTOM({a}, {b})",
         )
-        assert op.generate("a", "b") == "CUSTOM(a, b)"
+        assert op.sql("a", "b") == "CUSTOM(a, b)"
 
 
 class TestOperatorRegistry:
@@ -99,7 +99,7 @@ class TestOperatorRegistry:
         """Test registering and generating an operator."""
         reg = OperatorRegistry()
         reg.register("plus", "({0} + {1})")
-        assert reg.generate("plus", '"a"', '"b"') == '("a" + "b")'
+        assert reg.sql("plus", '"a"', '"b"') == '("a" + "b")'
 
     def test_arity_disambiguation(self):
         """Test same token with different arities."""
@@ -107,8 +107,8 @@ class TestOperatorRegistry:
         reg.register("op", "({0} + {1})")  # arity=2 (auto-detected)
         reg.register("op", "-{0}")  # arity=1 (auto-detected)
 
-        assert reg.generate("op", "a", "b") == "(a + b)"
-        assert reg.generate("op", "x") == "-x"
+        assert reg.sql("op", "a", "b") == "(a + b)"
+        assert reg.sql("op", "x") == "-x"
 
     def test_is_registered(self):
         """Test checking if operator is registered."""
@@ -121,7 +121,7 @@ class TestOperatorRegistry:
     def test_fallback_for_unknown(self):
         """Test that unknown operators get function-call fallback."""
         reg = OperatorRegistry()
-        result = reg.generate("year", "x")
+        result = reg.sql("year", "x")
         assert result == "YEAR(x)"
 
     def test_typed_override(self):
@@ -130,8 +130,8 @@ class TestOperatorRegistry:
         reg.register("gt", "({0} > {1})")
         reg.register_typed("gt", int, "CUSTOM_GT({0}, {1})")
 
-        assert reg.generate("gt", "a", "b") == "(a > b)"
-        assert reg.generate("gt", "a", "b", data_type=int) == "CUSTOM_GT(a, b)"
+        assert reg.sql("gt", "a", "b") == "(a > b)"
+        assert reg.sql("gt", "a", "b", data_type=int) == "CUSTOM_GT(a, b)"
 
     def test_has_typed(self):
         """Test has_typed check."""
@@ -151,7 +151,7 @@ class TestOperatorRegistry:
                 custom_generator=lambda a, b: f"({a} XOR {b})",
             ),
         )
-        assert reg.generate("xor", "a", "b") == "(a XOR b)"
+        assert reg.sql("xor", "a", "b") == "(a XOR b)"
 
     def test_chaining(self):
         """Test that registration methods return self for chaining."""
@@ -183,7 +183,7 @@ class TestGlobalRegistry:
     )
     def test_binary_operators(self, token, expected_output):
         """Test all binary operators produce correct SQL with 2 operands."""
-        result = registry.generate(token, '"a"', '"b"')
+        result = registry.sql(token, '"a"', '"b"')
         assert result == expected_output
 
     @pytest.mark.parametrize(
@@ -203,7 +203,7 @@ class TestGlobalRegistry:
     )
     def test_unary_operators(self, token, expected_output):
         """Test unary operators produce correct SQL with 1 operand."""
-        result = registry.generate(token, '"x"')
+        result = registry.sql(token, '"x"')
         assert result == expected_output
 
     @pytest.mark.parametrize(
@@ -222,7 +222,7 @@ class TestGlobalRegistry:
     )
     def test_aggregate_and_analytic_operators(self, token, expected_output):
         """Test aggregate/analytic operators (shared templates)."""
-        result = registry.generate(token, '"Me_1"')
+        result = registry.sql(token, '"Me_1"')
         assert result == expected_output
 
     @pytest.mark.parametrize(
@@ -243,7 +243,7 @@ class TestGlobalRegistry:
     )
     def test_parameterized_operators(self, token, args, expected_output):
         """Test parameterized operators."""
-        result = registry.generate(token, *args)
+        result = registry.sql(token, *args)
         assert result == expected_output
 
     @pytest.mark.parametrize(
@@ -256,7 +256,7 @@ class TestGlobalRegistry:
     )
     def test_set_operators(self, token, expected_keyword):
         """Test set operators join subqueries correctly."""
-        result = registry.generate(token, "SELECT * FROM a", "SELECT * FROM b")
+        result = registry.sql(token, "SELECT * FROM a", "SELECT * FROM b")
         assert expected_keyword in result
         assert "(SELECT * FROM a)" in result
         assert "(SELECT * FROM b)" in result
