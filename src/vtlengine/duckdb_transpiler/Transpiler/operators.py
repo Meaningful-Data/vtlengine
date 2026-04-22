@@ -138,61 +138,61 @@ def _validate_int_param(value: Optional[str], *, op: str, param_name: str, min_v
         pass  # Column reference, not a constant
 
 
-def _create_default_registry() -> None:
-    registry = OperatorRegistry()
+def _create_default_registry() -> OperatorRegistry:
+    ops = OperatorRegistry()
 
     # Binary operators
     # Arithmetic
-    registry.register(tokens.PLUS, "({0} + {1})")
-    registry.register(tokens.MINUS, "({0} - {1})")
-    registry.register(tokens.MULT, "({0} * {1})")
-    registry.register(tokens.DIV, "vtl_div({0}, {1})")
-    registry.register(tokens.MOD, "({0} % {1})")
+    ops.register(tokens.PLUS, "({0} + {1})")
+    ops.register(tokens.MINUS, "({0} - {1})")
+    ops.register(tokens.MULT, "({0} * {1})")
+    ops.register(tokens.DIV, "vtl_div({0}, {1})")
+    ops.register(tokens.MOD, "({0} % {1})")
     # Comparison
-    registry.register(tokens.EQ, "({0} = {1})")
-    registry.register(tokens.NEQ, "({0} <> {1})")
-    registry.register(tokens.GT, "({0} > {1})")
-    registry.register(tokens.LT, "({0} < {1})")
-    registry.register(tokens.GTE, "({0} >= {1})")
-    registry.register(tokens.LTE, "({0} <= {1})")
+    ops.register(tokens.EQ, "({0} = {1})")
+    ops.register(tokens.NEQ, "({0} <> {1})")
+    ops.register(tokens.GT, "({0} > {1})")
+    ops.register(tokens.LT, "({0} < {1})")
+    ops.register(tokens.GTE, "({0} >= {1})")
+    ops.register(tokens.LTE, "({0} <= {1})")
     # Logical
-    registry.register(tokens.AND, "({0} AND {1})")
-    registry.register(tokens.OR, "({0} OR {1})")
-    registry.register_custom(
+    ops.register(tokens.AND, "({0} AND {1})")
+    ops.register(tokens.OR, "({0} OR {1})")
+    ops.register_custom(
         tokens.XOR,
         SQLOperator(
             sql_template="",
             custom_generator=lambda a, b: f"(({a} AND NOT {b}) OR (NOT {a} AND {b}))",
         ),
     )
-    registry.register(tokens.IN, "({0} IN {1})")
-    registry.register(tokens.NOT_IN, "({0} NOT IN {1})")
+    ops.register(tokens.IN, "({0} IN {1})")
+    ops.register(tokens.NOT_IN, "({0} NOT IN {1})")
     # String
-    registry.register(tokens.CONCAT, "({0} || {1})")
+    ops.register(tokens.CONCAT, "({0} || {1})")
     # Numeric functions (come through BinOp AST)
-    registry.register(tokens.POWER, "POWER({0}, {1})")
-    registry.register(tokens.LOG, "LOG({1}, {0})")  # DuckDB: LOG(base, value)
+    ops.register(tokens.POWER, "POWER({0}, {1})")
+    ops.register(tokens.LOG, "LOG({1}, {0})")  # DuckDB: LOG(base, value)
     # Conditional (come through BinOp AST)
-    registry.register(tokens.NVL, "COALESCE({0}, {1})")
+    ops.register(tokens.NVL, "COALESCE({0}, {1})")
     # Date/Time
-    registry.register(tokens.DATEDIFF, "ABS(DATE_DIFF('day', {0}, {1}))")
+    ops.register(tokens.DATEDIFF, "ABS(DATE_DIFF('day', {0}, {1}))")
     # String matching
-    registry.register(tokens.CHARSET_MATCH, "regexp_full_match({0}, {1})")
+    ops.register(tokens.CHARSET_MATCH, "regexp_full_match({0}, {1})")
     # TimePeriod ordering — vtl_period_* comparison macros
-    registry.register_typed(
+    ops.register_typed(
         tokens.GT, TimePeriod, "vtl_period_gt(vtl_period_parse({0}), vtl_period_parse({1}))"
     )
-    registry.register_typed(
+    ops.register_typed(
         tokens.GTE, TimePeriod, "vtl_period_ge(vtl_period_parse({0}), vtl_period_parse({1}))"
     )
-    registry.register_typed(
+    ops.register_typed(
         tokens.LT, TimePeriod, "vtl_period_lt(vtl_period_parse({0}), vtl_period_parse({1}))"
     )
-    registry.register_typed(
+    ops.register_typed(
         tokens.LTE, TimePeriod, "vtl_period_le(vtl_period_parse({0}), vtl_period_parse({1}))"
     )
     # TimePeriod datediff
-    registry.register_typed(
+    ops.register_typed(
         tokens.DATEDIFF,
         TimePeriod,
         "vtl_tp_datediff(vtl_period_parse({0}), vtl_period_parse({1}))",
@@ -200,75 +200,73 @@ def _create_default_registry() -> None:
     # Duration comparison — magnitude ordering via vtl_duration_to_int
     for _tok in [tokens.GT, tokens.GTE, tokens.LT, tokens.LTE, tokens.EQ, tokens.NEQ]:
         for dt, parsing in [(Duration, "vtl_duration_to_int")]:
-            registry.register_typed(_tok, dt, f"({parsing}({{0}}) {_tok} {parsing}({{1}}))")
+            ops.register_typed(_tok, dt, f"({parsing}({{0}}) {_tok} {parsing}({{1}}))")
 
     # Unary operators
     # Arithmetic functions
-    registry.register(tokens.PLUS, "+{0}", is_prefix=True)
-    registry.register(tokens.MINUS, "-{0}", is_prefix=True)
-    registry.register(tokens.CEIL, "CEIL({0})")
-    registry.register(tokens.FLOOR, "FLOOR({0})")
-    registry.register(tokens.ABS, "ABS({0})")
-    registry.register(tokens.EXP, "EXP({0})")
-    registry.register(tokens.LN, "LN({0})")
-    registry.register(tokens.SQRT, "SQRT({0})")
+    ops.register(tokens.PLUS, "+{0}", is_prefix=True)
+    ops.register(tokens.MINUS, "-{0}", is_prefix=True)
+    ops.register(tokens.CEIL, "CEIL({0})")
+    ops.register(tokens.FLOOR, "FLOOR({0})")
+    ops.register(tokens.ABS, "ABS({0})")
+    ops.register(tokens.EXP, "EXP({0})")
+    ops.register(tokens.LN, "LN({0})")
+    ops.register(tokens.SQRT, "SQRT({0})")
     # Logical
-    registry.register(tokens.NOT, "NOT {0}", is_prefix=True)
+    ops.register(tokens.NOT, "NOT {0}", is_prefix=True)
     # String functions
-    registry.register(tokens.LEN, "LENGTH({0})")
-    registry.register(tokens.TRIM, "TRIM({0})")
-    registry.register(tokens.LTRIM, "LTRIM({0})")
-    registry.register(tokens.RTRIM, "RTRIM({0})")
-    registry.register(tokens.UCASE, "UPPER({0})")
-    registry.register(tokens.LCASE, "LOWER({0})")
+    ops.register(tokens.LEN, "LENGTH({0})")
+    ops.register(tokens.TRIM, "TRIM({0})")
+    ops.register(tokens.LTRIM, "LTRIM({0})")
+    ops.register(tokens.RTRIM, "RTRIM({0})")
+    ops.register(tokens.UCASE, "UPPER({0})")
+    ops.register(tokens.LCASE, "LOWER({0})")
     # Null check
-    registry.register(tokens.ISNULL, "({0} IS NULL)")
+    ops.register(tokens.ISNULL, "({0} IS NULL)")
     # Date extraction — generic (Date) and TimePeriod overrides
-    registry.register(tokens.YEAR, "YEAR({0})")
-    registry.register(tokens.MONTH, "MONTH({0})")
-    registry.register(tokens.DAYOFMONTH, "DAY({0})")
-    registry.register(tokens.DAYOFYEAR, "DAYOFYEAR({0})")
-    registry.register_typed(tokens.YEAR, TimePeriod, "CAST(vtl_period_parse({0}).year AS BIGINT)")
-    registry.register_typed(tokens.MONTH, TimePeriod, "vtl_tp_getmonth(vtl_period_parse({0}))")
-    registry.register_typed(
-        tokens.DAYOFMONTH, TimePeriod, "vtl_tp_dayofmonth(vtl_period_parse({0}))"
-    )
-    registry.register_typed(tokens.DAYOFYEAR, TimePeriod, "vtl_tp_dayofyear(vtl_period_parse({0}))")
+    ops.register(tokens.YEAR, "YEAR({0})")
+    ops.register(tokens.MONTH, "MONTH({0})")
+    ops.register(tokens.DAYOFMONTH, "DAY({0})")
+    ops.register(tokens.DAYOFYEAR, "DAYOFYEAR({0})")
+    ops.register_typed(tokens.YEAR, TimePeriod, "CAST(vtl_period_parse({0}).year AS BIGINT)")
+    ops.register_typed(tokens.MONTH, TimePeriod, "vtl_tp_getmonth(vtl_period_parse({0}))")
+    ops.register_typed(tokens.DAYOFMONTH, TimePeriod, "vtl_tp_dayofmonth(vtl_period_parse({0}))")
+    ops.register_typed(tokens.DAYOFYEAR, TimePeriod, "vtl_tp_dayofyear(vtl_period_parse({0}))")
     # Duration conversion functions
-    registry.register(tokens.DAYTOYEAR, "vtl_daytoyear({0})")
-    registry.register(tokens.DAYTOMONTH, "vtl_daytomonth({0})")
-    registry.register(tokens.YEARTODAY, "vtl_yeartoday({0})")
-    registry.register(tokens.MONTHTODAY, "vtl_monthtoday({0})")
+    ops.register(tokens.DAYTOYEAR, "vtl_daytoyear({0})")
+    ops.register(tokens.DAYTOMONTH, "vtl_daytomonth({0})")
+    ops.register(tokens.YEARTODAY, "vtl_yeartoday({0})")
+    ops.register(tokens.MONTHTODAY, "vtl_monthtoday({0})")
 
     # Aggregate and Analytic operators
-    registry.register(tokens.SUM, "SUM({0})")
-    registry.register(tokens.AVG, "AVG({0})")
-    registry.register(tokens.COUNT, "COUNT({0})")
-    registry.register(tokens.MIN, "MIN({0})")
-    registry.register(tokens.MAX, "MAX({0})")
-    registry.register(tokens.MEDIAN, "MEDIAN({0})")
-    registry.register(tokens.STDDEV_POP, "STDDEV_POP({0})")
-    registry.register(tokens.STDDEV_SAMP, "STDDEV_SAMP({0})")
-    registry.register(tokens.VAR_POP, "VAR_POP({0})")
-    registry.register(tokens.VAR_SAMP, "VAR_SAMP({0})")
+    ops.register(tokens.SUM, "SUM({0})")
+    ops.register(tokens.AVG, "AVG({0})")
+    ops.register(tokens.COUNT, "COUNT({0})")
+    ops.register(tokens.MIN, "MIN({0})")
+    ops.register(tokens.MAX, "MAX({0})")
+    ops.register(tokens.MEDIAN, "MEDIAN({0})")
+    ops.register(tokens.STDDEV_POP, "STDDEV_POP({0})")
+    ops.register(tokens.STDDEV_SAMP, "STDDEV_SAMP({0})")
+    ops.register(tokens.VAR_POP, "VAR_POP({0})")
+    ops.register(tokens.VAR_SAMP, "VAR_SAMP({0})")
     # Window-only analytics
-    registry.register(tokens.FIRST_VALUE, "FIRST_VALUE({0})")
-    registry.register(tokens.LAST_VALUE, "LAST_VALUE({0})")
-    registry.register(tokens.LAG, "LAG({0})")
-    registry.register(tokens.LEAD, "LEAD({0})")
-    registry.register(tokens.RANK, "RANK()")
-    registry.register(tokens.RATIO_TO_REPORT, "RATIO_TO_REPORT({0})")
+    ops.register(tokens.FIRST_VALUE, "FIRST_VALUE({0})")
+    ops.register(tokens.LAST_VALUE, "LAST_VALUE({0})")
+    ops.register(tokens.LAG, "LAG({0})")
+    ops.register(tokens.LEAD, "LEAD({0})")
+    ops.register(tokens.RANK, "RANK()")
+    ops.register(tokens.RATIO_TO_REPORT, "RATIO_TO_REPORT({0})")
 
     # Parameterized operators
     # Comparison
-    registry.register(tokens.BETWEEN, "({0} BETWEEN {1} AND {2})")
+    ops.register(tokens.BETWEEN, "({0} BETWEEN {1} AND {2})")
 
     # ROUND/TRUNC require DOUBLE when precision is not constant in DuckDB.
     def _round_generator(*args: Optional[str]) -> str:
         precision = "0" if (len(args) < 2 or args[1] is None) else str(args[1])
         return f"ROUND(CAST({args[0]} AS DOUBLE), COALESCE(CAST({precision} AS INTEGER), 0))"
 
-    registry.register_custom(
+    ops.register_custom(
         tokens.ROUND,
         SQLOperator(
             sql_template="ROUND({0}, CAST({1} AS INTEGER))",
@@ -280,7 +278,7 @@ def _create_default_registry() -> None:
         precision = "0" if (len(args) < 2 or args[1] is None) else str(args[1])
         return f"TRUNC(CAST({args[0]} AS DOUBLE), COALESCE(CAST({precision} AS INTEGER), 0))"
 
-    registry.register_custom(
+    ops.register_custom(
         tokens.TRUNC,
         SQLOperator(
             sql_template="TRUNC({0}, CAST({1} AS INTEGER))",
@@ -302,15 +300,15 @@ def _create_default_registry() -> None:
 
         return f"vtl_instr({', '.join(params)})"
 
-    registry.register_custom(
+    ops.register_custom(
         tokens.INSTR,
         SQLOperator(
             sql_template="INSTR({0}, {1})",
             custom_generator=_instr_generator,
         ),
     )
-    registry.register(tokens.LOG, "LOG({1}, {0})")
-    registry.register(tokens.POWER, "POWER({0}, {1})")
+    ops.register(tokens.LOG, "LOG({1}, {0})")
+    ops.register(tokens.POWER, "POWER({0}, {1})")
 
     # Multi-parameter operations
     def _substr_generator(*args: Optional[str]) -> str:
@@ -327,7 +325,7 @@ def _create_default_registry() -> None:
             return f"SUBSTR({string_arg}, {start_sql})"
         return f"SUBSTR({string_arg}, {start_sql}, COALESCE({length}, LENGTH({string_arg})))"
 
-    registry.register_custom(
+    ops.register_custom(
         tokens.SUBSTR,
         SQLOperator(
             sql_template="SUBSTR({0}, {1}, {2})",
@@ -347,7 +345,7 @@ def _create_default_registry() -> None:
             return f"REPLACE({string_arg}, {pattern_arg}, '')"
         return f"REPLACE({string_arg}, {pattern_arg}, {args[2]})"
 
-    registry.register_custom(
+    ops.register_custom(
         tokens.REPLACE,
         SQLOperator(
             sql_template="REPLACE({0}, {1}, {2})",
@@ -362,24 +360,24 @@ def _create_default_registry() -> None:
 
         return gen
 
-    registry.register_custom(
+    ops.register_custom(
         tokens.UNION,
         SQLOperator(sql_template="", custom_generator=_set_op_generator("UNION ALL")),
     )
-    registry.register_custom(
+    ops.register_custom(
         tokens.INTERSECT,
         SQLOperator(sql_template="", custom_generator=_set_op_generator("INTERSECT")),
     )
-    registry.register_custom(
+    ops.register_custom(
         tokens.SETDIFF,
         SQLOperator(sql_template="", custom_generator=_set_op_generator("EXCEPT")),
     )
-    registry.register_custom(
+    ops.register_custom(
         tokens.SYMDIFF,
         SQLOperator(sql_template="SYMDIFF", requires_context=True),
     )
 
-    return registry
+    return ops
 
 
 # Global registry instance

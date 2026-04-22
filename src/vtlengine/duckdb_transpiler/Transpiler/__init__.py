@@ -1518,8 +1518,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         if left_type == _DATASET:
             return self._apply_measures(
-                node.left,
-                lambda col: registry.sql(tokens.CHARSET_MATCH, col, pattern_sql),
+                node.left, lambda col: registry.sql(tokens.CHARSET_MATCH, col, pattern_sql)
             )
         else:
             left_sql = self.visit(node.left)
@@ -2403,7 +2402,6 @@ FROM {src}, (
                 continue
             left_alias = self._get_node_value(child.left)
             right_alias = self._get_node_value(child.right)
-            op = str(child.op).lower() if child.op else ""
 
             left_measures: Dict[str, str] = {}
             right_measures: Dict[str, str] = {}
@@ -2419,7 +2417,7 @@ FROM {src}, (
             for measure in common_measures:
                 left_col = quote_name(left_measures[measure])
                 right_col = quote_name(right_measures[measure])
-                expr = registry.sql(op, left_col, right_col)
+                expr = registry.sql(child.op, left_col, right_col)
                 computed[measure] = expr
                 self._consumed_join_aliases.add(left_measures[measure])
                 self._consumed_join_aliases.add(right_measures[measure])
@@ -2508,7 +2506,7 @@ FROM {src}, (
 
     def visit_Aggregation(self, node: AST.Aggregation) -> str:  # type: ignore[override]  # noqa: C901
         """Visit a standalone aggregation: sum(DS group by Id)."""
-        op = str(node.op).lower()
+        op = node.op
 
         # Component-level aggregation in clause context
         if self._in_clause and node.operand:
@@ -2657,7 +2655,7 @@ FROM {src}, (
 
     def visit_Analytic(self, node: AST.Analytic) -> str:  # type: ignore[override]
         """Visit an analytic (window) function."""
-        op = str(node.op).lower()
+        op = node.op
 
         # Check if operand is a dataset — needs dataset-level handling
         if node.operand and self._get_node_type(node.operand) == _DATASET:
@@ -2894,8 +2892,7 @@ FROM {src}, (
     def _find_condition_source(self, node: AST.AST) -> Optional[AST.AST]:
         """Find the source dataset AST node from a condition expression."""
         if isinstance(node, AST.BinOp):
-            op = str(node.op).lower() if node.op else ""
-            if op == tokens.MEMBERSHIP:
+            if node.op == tokens.MEMBERSHIP:
                 return node.left
             left = self._find_condition_source(node.left)
             if left is not None:
@@ -3448,6 +3445,7 @@ FROM {src}, (
         self, node: AST.TimeAggregation, target: str, conf: Optional[str]
     ) -> str:
         """Visit TIME_AGG at dataset level: apply to time measure."""
+        builder = SQLBuilder()
         ds = self._get_dataset_structure(node.operand)
         src = self._get_dataset_sql(node.operand)
 
@@ -3464,8 +3462,7 @@ FROM {src}, (
                 cols.append(f"{expr} AS {col}")
             else:
                 cols.append(col)
-
-        return f"SELECT {', '.join(cols)} FROM {src}"
+        return builder.select(*cols).from_table(src).build()
 
     # =========================================================================
     # Eval operator visitor
