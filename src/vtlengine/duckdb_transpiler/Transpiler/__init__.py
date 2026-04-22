@@ -1281,7 +1281,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if op in (tokens.FLOW_TO_STOCK, tokens.STOCK_TO_FLOW):
             return self._visit_flow_stock(node, op)
 
-        operand_type = self._get_operand_type(node.operand)
+        operand_type = self._get_node_type(node.operand)
         if operand_type == _DATASET:
             ds = self._get_dataset_structure(node.operand)
             name_override: Optional[str] = None
@@ -1314,8 +1314,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if op == tokens.TIMESHIFT:
             return self._visit_timeshift(node)
 
-        left_type = self._get_operand_type(node.left)
-        right_type = self._get_operand_type(node.right)
+        left_type = self._get_node_type(node.left)
+        right_type = self._get_node_type(node.right)
         if left_type == _DATASET or right_type == _DATASET:
             if op in (tokens.IN, tokens.NOT_IN) and left_type == _DATASET:
                 collection = self.visit(node.right)
@@ -1513,7 +1513,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     def _visit_match_characters(self, node: AST.BinOp) -> str:
         """Visit match_characters operator using registry."""
-        left_type = self._get_operand_type(node.left)
+        left_type = self._get_node_type(node.left)
         pattern_sql = self.visit(node.right)
 
         if left_type == _DATASET:
@@ -1569,7 +1569,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     def _visit_period_indicator(self, node: AST.UnaryOp) -> str:
         """Visit PERIOD_INDICATOR: extract period indicator from TimePeriod."""
-        operand_type = self._get_operand_type(node.operand)
+        operand_type = self._get_node_type(node.operand)
 
         ds = self._get_dataset_structure(node.operand)
 
@@ -1611,7 +1611,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if op in (tokens.ROUND, tokens.TRUNC) and not params_sql:
             params_sql = ["0"]
 
-        operand_type = self._get_operand_type(node.children[0]) if node.children else _SCALAR
+        operand_type = self._get_node_type(node.children[0]) if node.children else _SCALAR
 
         if operand_type == _DATASET:
             ds_node = node.children[0]
@@ -1936,7 +1936,7 @@ FROM {src}, (
     def _visit_dateadd(self, node: AST.ParamOp) -> str:
         """Visit DATEADD operation: dateadd(op, shiftNumber, periodInd)."""
         operand_node = node.children[0]
-        operand_type = self._get_operand_type(operand_node)
+        operand_type = self._get_node_type(operand_node)
 
         shift_sql = self.visit(node.params[0]) if node.params else "0"
         period_sql = self.visit(node.params[1]) if len(node.params) > 1 else "'D'"
@@ -2012,7 +2012,7 @@ FROM {src}, (
             if hasattr(mask_node, "value"):
                 mask = mask_node.value
 
-        operand_type = self._get_operand_type(operand)
+        operand_type = self._get_node_type(operand)
 
         if operand_type == _DATASET:
             ds = self._get_dataset_structure(operand)
@@ -2100,7 +2100,7 @@ FROM {src}, (
     ) -> str:
         """Generate SQL for RANDOM (shared by ParamOp and BinOp forms)."""
         self._check_random_negative_index(index_node)
-        seed_type = self._get_operand_type(seed_node) if seed_node else _SCALAR
+        seed_type = self._get_node_type(seed_node) if seed_node else _SCALAR
 
         if seed_type == _DATASET and seed_node is not None:
             index_sql = self.visit(index_node) if index_node else "0"
@@ -2514,7 +2514,7 @@ FROM {src}, (
 
         # Component-level aggregation in clause context
         if self._in_clause and node.operand:
-            operand_type = self._get_operand_type(node.operand)
+            operand_type = self._get_node_type(node.operand)
             if operand_type in (_COMPONENT, _SCALAR):
                 operand_sql = self.visit(node.operand)
                 # Type-aware MIN/MAX for Duration/TimePeriod
@@ -2662,7 +2662,7 @@ FROM {src}, (
         op = str(node.op).lower()
 
         # Check if operand is a dataset — needs dataset-level handling
-        if node.operand and self._get_operand_type(node.operand) == _DATASET:
+        if node.operand and self._get_node_type(node.operand) == _DATASET:
             return self._visit_analytic_dataset(node, op)
 
         # Component-level: single expression with OVER
@@ -2769,7 +2769,7 @@ FROM {src}, (
 
     def _visit_between(self, node: AST.MulOp) -> str:
         """Visit BETWEEN: expr BETWEEN low AND high. Handles dataset operand."""
-        operand_type = self._get_operand_type(node.children[0])
+        operand_type = self._get_node_type(node.children[0])
 
         low_sql = self.visit(node.children[1])
         high_sql = self.visit(node.children[2])
@@ -2893,7 +2893,7 @@ FROM {src}, (
 
     def visit_If(self, node: AST.If) -> str:
         """Visit IF-THEN-ELSE."""
-        if self._get_operand_type(node.condition) != _DATASET:
+        if self._get_node_type(node.condition) != _DATASET:
             return self._scalar_if_sql(node)
         return self._build_dataset_if(node)
 
@@ -2909,7 +2909,7 @@ FROM {src}, (
             return self._find_condition_source(node.right)
         if isinstance(node, (AST.UnaryOp, AST.ParFunction)):
             return self._find_condition_source(node.operand)
-        if isinstance(node, AST.VarID) and self._get_operand_type(node) == _DATASET:
+        if isinstance(node, AST.VarID) and self._get_node_type(node) == _DATASET:
             return node
         return None
 
@@ -2931,8 +2931,8 @@ FROM {src}, (
         # subquery and reference its boolean measure column instead.
         cond_is_ds_vs_ds = (
             isinstance(node.condition, AST.BinOp)
-            and self._get_operand_type(node.condition.left) == _DATASET
-            and self._get_operand_type(node.condition.right) == _DATASET
+            and self._get_node_type(node.condition.left) == _DATASET
+            and self._get_node_type(node.condition.right) == _DATASET
         )
         cond_ds = self._get_dataset_structure(node.condition) if cond_is_ds_vs_ds else None
         if cond_ds is not None:
@@ -2947,12 +2947,12 @@ FROM {src}, (
             with self._clause_scope(source_ds, prefix=alias_cond):
                 cond_expr = self.visit(node.condition)
 
-        then_type = self._get_operand_type(node.thenOp)
-        else_type = self._get_operand_type(node.elseOp)
+        then_type = self._get_node_type(node.thenOp)
+        else_type = self._get_node_type(node.elseOp)
 
         # Determine output measures and attributes.
         def _is_plain_dataset(n: AST.AST) -> bool:
-            return isinstance(n, AST.VarID) and self._get_operand_type(n) == _DATASET
+            return isinstance(n, AST.VarID) and self._get_node_type(n) == _DATASET
 
         ref_ds: Optional[Dataset] = None
         if then_type == _DATASET and _is_plain_dataset(node.thenOp):
@@ -3037,7 +3037,7 @@ FROM {src}, (
         For dataset-level CASE (where conditions are boolean datasets), we build
         JOINs similar to ``_build_dataset_if``.
         """
-        cond_types = [self._get_operand_type(c.condition) for c in node.cases]
+        cond_types = [self._get_node_type(c.condition) for c in node.cases]
         if any(t == _DATASET for t in cond_types):
             return self._build_dataset_case(node)
 
@@ -3098,7 +3098,7 @@ FROM {src}, (
             )
             cond_exprs.append(cond_expr)
 
-            t_type = self._get_operand_type(case_obj.thenOp)
+            t_type = self._get_node_type(case_obj.thenOp)
             then_types.append(t_type)
             if t_type == _DATASET:
                 t_alias = f"t{i}"
@@ -3110,7 +3110,7 @@ FROM {src}, (
                 then_aliases.append(None)
 
         # Handle else-operand
-        else_type = self._get_operand_type(node.elseOp)
+        else_type = self._get_node_type(node.elseOp)
         else_alias: Optional[str] = None
         if else_type == _DATASET:
             else_alias = "e"
@@ -3413,7 +3413,7 @@ FROM {src}, (
         conf = node.conf  # "first", "last", or None
 
         if node.operand is not None:
-            operand_type = self._get_operand_type(node.operand)
+            operand_type = self._get_node_type(node.operand)
 
             # Dataset-level time_agg: apply to the time measure
             if operand_type == _DATASET:

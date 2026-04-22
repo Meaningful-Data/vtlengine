@@ -28,9 +28,6 @@ _SCALAR = "Scalar"
 class StructureVisitor(ASTTemplate):
     """Visitor that resolves dataset structures from VTL AST nodes."""
 
-    # Standalone constructor. SQLTranspiler (dataclass) sets these fields in
-    # its generated __init__ and __post_init__ instead.
-
     def __init__(
         self,
         available_tables: Optional[Dict[str, Dataset]] = None,
@@ -180,113 +177,69 @@ class StructureVisitor(ASTTemplate):
 
     # Operand type resolution
 
-    def _get_operand_type(self, node: AST.AST) -> str:  # noqa: C901
+    def _get_op_type(self, nodes: List[Optional[AST.AST]]) -> str:
+        """Determine the operand type for a list of nodes (e.g. function args)."""
+        result = _SCALAR
+        for node in nodes:
+            operand_type = self._get_node_type(node)
+            if operand_type == _DATASET:
+                return _DATASET
+            if operand_type == _COMPONENT:
+                result = _COMPONENT
+        return result
+
+    def _get_node_type(self, node: AST.AST) -> str:  # noqa: C901
         """Determine the operand type of a node."""
-        if isinstance(node, AST.VarID):
-            return self._get_varid_type(node)
-        if isinstance(node, (AST.Constant, AST.ParamConstant, AST.Collection)):
-            return _SCALAR
-        if isinstance(node, (AST.RegularAggregation, AST.JoinOp)):
-            return _DATASET
-        if isinstance(node, AST.Aggregation):
-            if self._in_clause:
-                return _SCALAR
-            if node.operand:
-                return self._get_operand_type(node.operand)
-            return _SCALAR
-        if isinstance(node, AST.Analytic):
+        if isinstance(node, (AST.Analytic, AST.Identifier)) or (
+            isinstance(node, AST.BinOp) and self._in_clause
+        ):
             return _COMPONENT
-        if isinstance(node, AST.BinOp):
-            return self._get_binop_type(node)
-        if isinstance(node, AST.UnaryOp):
-            return self._get_operand_type(node.operand)
-        if isinstance(node, AST.ParFunction):
-            return self._get_operand_type(node.operand)
-        if isinstance(node, AST.ParamOp):
-            if node.children:
-                return self._get_operand_type(node.children[0])
+        elif isinstance(
+            node,
+            (AST.RegularAggregation, AST.JoinOp, AST.Validation, AST.HROperation, AST.DPValidation),
+        ):
+            return _DATASET
+        elif isinstance(node, AST.VarID):
+            return self._get_varid_type(node)
+        elif isinstance(node, (AST.ParFunction, AST.UnaryOp, AST.Aggregation)):
+            children = [node.operand]
+        elif isinstance(node, AST.BinOp):
+            children = [node.left, node.right]
+        elif isinstance(node, (AST.MulOp, AST.ParamOp)):
+            children = list(node.children)
+        elif isinstance(node, AST.If):
+            children = [node.condition, node.thenOp, node.elseOp]
+        elif isinstance(node, AST.Case):
+            children = [c.thenOp for c in node.cases]
+        elif isinstance(node, AST.UDOCall) and node.op in self._udos:
+            children = [self._udos[node.op]["expression"]]
+        else:
             return _SCALAR
-        if isinstance(node, AST.MulOp):
-            return self._get_mulop_type(node)
-        if isinstance(node, AST.If):
-            then_t = self._get_operand_type(node.thenOp)
-            if then_t == _DATASET:
-                return _DATASET
-            else_t = self._get_operand_type(node.elseOp)
-            if else_t == _DATASET:
-                return _DATASET
-            cond_t = self._get_operand_type(node.condition)
-            if cond_t == _DATASET:
-                return _DATASET
-            return then_t
-        if isinstance(node, AST.Case):
-            if node.cases:
-                return self._get_operand_type(node.cases[0].thenOp)
-            return _SCALAR
-        if isinstance(node, AST.UDOCall):
-            if node.op in self._udos:
-                return self._get_operand_type(self._udos[node.op]["expression"])
-            return _SCALAR
-        if isinstance(node, (AST.Validation, AST.DPValidation, AST.HROperation)):
-            return _DATASET
-        return _SCALAR
-
-    def _get_binop_type(self, node: AST.BinOp) -> str:
-        """Determine operand type for a BinOp."""
-        # Walk left-nested chains iteratively.
-        rights: list[AST.AST] = []
-        current: AST.AST = node
-        while isinstance(current, AST.BinOp):
-            op = str(current.op).lower() if current.op else ""
-            if self._in_clause and op == tokens.MEMBERSHIP:
-                return _COMPONENT
-            rights.append(current.right)
-            current = current.left
-
-        if self._get_operand_type(current) == _DATASET:
-            return _DATASET
-        for right in rights:
-            if self._get_operand_type(right) == _DATASET:
-                return _DATASET
-        return _SCALAR
-
-    def _get_mulop_type(self, node: AST.MulOp) -> str:
-        """Determine operand type for a MulOp."""
-        op = str(node.op).lower()
-        if op in (tokens.UNION, tokens.INTERSECT, tokens.SETDIFF, tokens.SYMDIFF):
-            return _DATASET
-        if op == tokens.EXISTS_IN:
-            return _DATASET
-        return _SCALAR
+        return self._get_op_type(children)
 
     def _get_varid_type(self, node: AST.VarID) -> str:
         """Determine operand type for a VarID."""
         name = node.value
         udo_val = self._get_udo_param(name)
         if udo_val is not None:
-            # Guard against recursion when param name matches argument name.
             if isinstance(udo_val, AST.VarID):
                 if udo_val.value in self.available_tables:
                     return _DATASET
                 if udo_val.value != name:
-                    return self._get_operand_type(udo_val)
-                return _SCALAR
-            if isinstance(udo_val, AST.AST):
-                return self._get_operand_type(udo_val)
-            if isinstance(udo_val, str) and udo_val in self.available_tables:
+                    return self._get_node_type(udo_val)
+            elif isinstance(udo_val, AST.AST):
+                return self._get_node_type(udo_val)
+            elif isinstance(udo_val, str) and udo_val in self.available_tables:
                 return _DATASET
-            return _SCALAR
-        if self._in_clause and self._current_dataset and name in self._current_dataset.components:
+        elif self._in_clause and self._current_dataset and name in self._current_dataset.components:
             return _COMPONENT
-        if name in self.available_tables:
+        elif name in self.available_tables:
             return _DATASET
-        if name in self.scalars:
-            return _SCALAR
         return _SCALAR
 
     def _is_dataset(self, node: AST.AST) -> bool:
         """Check if a node represents a dataset-level operand."""
-        return self._get_operand_type(node) == _DATASET
+        return self._get_node_type(node) == _DATASET
 
     # Output dataset resolution
 
@@ -429,8 +382,8 @@ class StructureVisitor(ASTTemplate):
                 return self._build_membership_structure(node)
             if op == "as":
                 return self._get_dataset_structure(node.left)
-            left_is_ds = self._get_operand_type(node.left) == _DATASET
-            right_is_ds = self._get_operand_type(node.right) == _DATASET
+            left_is_ds = self._get_node_type(node.left) == _DATASET
+            right_is_ds = self._get_node_type(node.right) == _DATASET
             if left_is_ds and right_is_ds:
                 return self._build_ds_ds_binop_structure(node)
             if left_is_ds:
