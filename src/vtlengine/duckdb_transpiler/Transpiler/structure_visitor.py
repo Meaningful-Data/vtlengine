@@ -478,19 +478,27 @@ class StructureVisitor(ASTTemplate):
             comps["int_var"] = self._make_comp("int_var", Integer)
         return Dataset(name=ds.name, components=comps, data=None)
 
+    def _build_udo_bindings(
+        self, udo_def: Dict[str, Any], call_params: List[Any], include_types: bool = False
+    ) -> Dict[str, Any]:
+        """Bind a UDO call's arguments (positional + defaults) to parameter names."""
+        bindings: Dict[str, Any] = {}
+        for i, param_info in enumerate(udo_def["params"]):
+            param_name = param_info["name"]
+            if i < len(call_params):
+                bindings[param_name] = call_params[i]
+            elif param_info.get("default") is not None:
+                bindings[param_name] = param_info["default"]
+            if include_types:
+                bindings[f"__type__{param_name}"] = param_info.get("type")
+        return bindings
+
     def _resolve_udocall_structure(self, node: AST.UDOCall) -> Optional[Dataset]:
         """Resolve a UDO call by binding its parameters and visiting the body."""
         if node.op not in self._udos:
             return self._get_output_dataset()
         udo_def = self._udos[node.op]
-        bindings: Dict[str, Any] = {}
-        for i, param_info in enumerate(udo_def["params"]):
-            param_name = param_info["name"]
-            if i < len(node.params):
-                bindings[param_name] = node.params[i]
-            elif param_info.get("default") is not None:
-                bindings[param_name] = param_info["default"]
-        self._push_udo_params(bindings)
+        self._push_udo_params(self._build_udo_bindings(udo_def, node.params))
         try:
             return self._get_dataset_structure(udo_def["expression"])
         finally:
