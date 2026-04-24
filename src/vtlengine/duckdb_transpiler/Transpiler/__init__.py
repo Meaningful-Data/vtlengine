@@ -3026,7 +3026,6 @@ FROM {src}, (
             self._left_join_dataset(cond_source, _DATASET, alias, source_ids, alias_src, builder)
 
         if isinstance(case_obj.condition, AST.VarID) and cond_ds is not None:
-            # Bare dataset VarID: reference its boolean measure column
             bool_measure = list(cond_ds.get_measures_names())[0]
             return f"{alias}.{quote_name(bool_measure)}"
 
@@ -3036,55 +3035,37 @@ FROM {src}, (
     def _build_dataset_case(self, node: AST.Case) -> str:
         """Build SQL for dataset-level CASE with JOINs."""
         source_node = self._find_condition_source(node.cases[0].condition)
-        if source_node is None:
-            return self._build_case_when_sql(node.cases, node.elseOp)
         source_ds = self._get_dataset_structure(source_node)
         source_sql = self._get_dataset_sql(source_node)
-        if source_ds is None:
-            return self._build_case_when_sql(node.cases, node.elseOp)
-
         source_ids = list(source_ds.get_identifiers_names())
         alias_src = "src"
 
-        output_ds = self._get_output_dataset()
-        output_measures = (
-            list(output_ds.get_measures_names())
-            if output_ds is not None
-            else list(source_ds.get_measures_names())
-        )
-
+        output_ds = self._get_output_dataset() or source_ds
+        output_measures = output_ds.get_measures_names()
         builder = SQLBuilder().from_table(source_sql, alias_src)
 
         # Process each WHEN branch
         cond_exprs: List[str] = []
         then_aliases: List[Optional[str]] = []
         then_types: List[str] = []
-
-        for i, case_obj in enumerate(node.cases):
-            cond_expr = self._build_case_condition(
-                case_obj, f"c{i}", source_ids, alias_src, builder
-            )
+        for i, case in enumerate(node.cases):
+            cond_expr = self._build_case_condition(case, f"c{i}", source_ids, alias_src, builder)
             cond_exprs.append(cond_expr)
 
-            t_type = self._get_node_type(case_obj.thenOp)
+            t_type = self._get_node_type(case.thenOp)
             then_types.append(t_type)
             if t_type == _DATASET:
-                t_alias = f"t{i}"
-                self._left_join_dataset(
-                    case_obj.thenOp, _DATASET, t_alias, source_ids, alias_src, builder
-                )
-                then_aliases.append(t_alias)
+                alias = f"t{i}"
+                self._left_join_dataset(case.thenOp, t_type, alias, source_ids, alias_src, builder)
+                then_aliases.append(alias)
             else:
                 then_aliases.append(None)
 
         # Handle else-operand
-        else_type = self._get_node_type(node.elseOp)
-        else_alias: Optional[str] = None
-        if else_type == _DATASET:
-            else_alias = "e"
-            self._left_join_dataset(
-                node.elseOp, _DATASET, else_alias, source_ids, alias_src, builder
-            )
+        e_type = self._get_node_type(node.elseOp)
+        e_alias = "e"
+        if e_type == _DATASET:
+            self._left_join_dataset(node.elseOp, e_type, e_alias, source_ids, alias_src, builder)
 
         # Build SELECT: identifiers + CASE WHEN per measure (reversed for last-match-wins)
         cols: List[str] = [f"{alias_src}.{quote_name(id_)}" for id_ in source_ids]
@@ -3098,8 +3079,8 @@ FROM {src}, (
                 )
                 case_parts.append(f"WHEN {cond_exprs[i]} THEN {then_ref}")
             else_ref = (
-                f"{else_alias}.{quote_name(measure)}"
-                if else_type == _DATASET
+                f"{e_alias}.{quote_name(measure)}"
+                if e_type == _DATASET
                 else self.visit(node.elseOp)
             )
             case_parts.append(f"ELSE {else_ref} END")
@@ -3109,7 +3090,7 @@ FROM {src}, (
 
         # Filter: only keep rows where the selected branch has a matching row.
         # Scalar/null branches always match; dataset branches need a LEFT JOIN hit.
-        has_ds_branch = any(t == _DATASET for t in then_types) or else_type == _DATASET
+        has_ds_branch = any(t == _DATASET for t in then_types) or e_type == _DATASET
         if has_ds_branch:
             id_col = quote_name(source_ids[0])
             filter_parts: List[str] = []
@@ -3121,8 +3102,8 @@ FROM {src}, (
                 filter_parts.append(f"({cond_exprs[i]} AND {match_check})")
             # Else branch: applies when no condition is true
             neg = " AND ".join(f"(NOT {c} OR {c} IS NULL)" for c in cond_exprs)
-            if else_type == _DATASET:
-                filter_parts.append(f"(({neg}) AND {else_alias}.{id_col} IS NOT NULL)")
+            if e_type == _DATASET:
+                filter_parts.append(f"(({neg}) AND {e_alias}.{id_col} IS NOT NULL)")
             else:
                 filter_parts.append(f"({neg})")
             builder.where(" OR ".join(filter_parts))
@@ -3134,14 +3115,7 @@ FROM {src}, (
     # =========================================================================
 
     def visit_Validation(self, node: AST.Validation) -> str:
-        """Visit CHECK validation operator.
-
-        Produces the standard CHECK output structure:
-          identifiers, bool_var, imbalance, errorcode, errorlevel
-
-        The inner validation expression (a comparison) produces a boolean
-        measure that must be renamed to ``bool_var``.
-        """
+        """Visit CHECK validation operator."""
         # Temporarily clear output dataset to prevent _build_ds_ds_binary
         # from renaming measures to match the outer assignment.
         with self._stash_assignment():
