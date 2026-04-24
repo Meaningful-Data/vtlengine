@@ -692,7 +692,7 @@ class Time_Aggregation(Time):
         result_components = {
             comp.name: comp
             for comp in operand.components.values()
-            if comp.role in [Role.IDENTIFIER, Role.MEASURE]
+            if comp.role in [Role.IDENTIFIER, Role.MEASURE, Role.VIRAL_ATTRIBUTE]
         }
 
         return Dataset(name=operand.name, components=result_components, data=None)

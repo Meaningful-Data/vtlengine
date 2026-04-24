@@ -94,6 +94,7 @@ from vtlengine.AST.Grammar.tokens import (
     UNPIVOT,
     VAR_POP,
     VAR_SAMP,
+    VIRAL_ATTRIBUTE,
     XOR,
     YEAR,
     YEARTODAY,
@@ -206,7 +207,7 @@ from vtlengine.Operators.Numeric import (
     UnMinus,
     UnPlus,
 )
-from vtlengine.Operators.RoleSetter import Attribute, Identifier, Measure
+from vtlengine.Operators.RoleSetter import Attribute, Identifier, Measure, ViralAttribute
 from vtlengine.Operators.Set import Intersection, Setdiff, Symdiff, Union
 from vtlengine.Operators.String import (
     Concatenate,
@@ -326,6 +327,7 @@ ROLE_SETTER_MAPPING = {
     IDENTIFIER: Identifier,
     ATTRIBUTE: Attribute,
     MEASURE: Measure,
+    VIRAL_ATTRIBUTE: ViralAttribute,
 }
 
 REGULAR_AGGREGATION_MAPPING = {

@@ -263,11 +263,7 @@ class Terminals(VtlVisitor):
         """
         viralAttribute: VIRAL ATTRIBUTE;
         """
-        # ctx_list = list(ctx.getChildren())
-        # c = ctx_list[0]
-        # token = c.getSymbol()
-
-        raise NotImplementedError
+        return Role.VIRAL_ATTRIBUTE
 
     def visitLists(self, ctx: Parser.ListsContext):
         """

@@ -35,6 +35,7 @@ from vtlengine.AST import (
     Start,
     UDOCall,
     VarID,
+    ViralPropagationDef,
 )
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.DAG._models import DatasetSchedule, StatementDeps
@@ -132,7 +133,9 @@ class DAGAnalyzer(ASTTemplate):
                 dag.sort_ast(ast)
             else:
                 ml_statements: list = [
-                    ml for ml in ast.children if not isinstance(ml, (HRuleset, DPRuleset, Operator))
+                    ml
+                    for ml in ast.children
+                    if not isinstance(ml, (HRuleset, DPRuleset, Operator, ViralPropagationDef))
                 ]
                 dag.check_overwriting(ml_statements)
             return dag
@@ -207,7 +210,7 @@ class DAGAnalyzer(ASTTemplate):
         ml_statements: list = [
             node
             for node in statements_nodes
-            if not isinstance(node, (HRuleset, DPRuleset, Operator))
+            if not isinstance(node, (HRuleset, DPRuleset, Operator, ViralPropagationDef))
         ]
 
         intermediate = self.sort_elements(ml_statements)

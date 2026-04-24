@@ -902,5 +902,33 @@ class VtlVisitor(ParseTreeVisitor):
     def visitRetainType(self, ctx: Parser.RetainTypeContext):
         return self.visitChildren(ctx)
 
+    # Visit a parse tree produced by Parser#defViralPropagation.
+    def visitDefViralPropagation(self, ctx: Parser.DefViralPropagationContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by Parser#vpSignature.
+    def visitVpSignature(self, ctx: Parser.VpSignatureContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by Parser#vpBody.
+    def visitVpBody(self, ctx: Parser.VpBodyContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by Parser#enumeratedVpClause.
+    def visitEnumeratedVpClause(self, ctx: Parser.EnumeratedVpClauseContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by Parser#aggregationVpClause.
+    def visitAggregationVpClause(self, ctx: Parser.AggregationVpClauseContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by Parser#defaultVpClause.
+    def visitDefaultVpClause(self, ctx: Parser.DefaultVpClauseContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by Parser#vpCondition.
+    def visitVpCondition(self, ctx: Parser.VpConditionContext):
+        return self.visitChildren(ctx)
+
 
 del Parser

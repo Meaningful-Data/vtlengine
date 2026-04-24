@@ -7,14 +7,18 @@ Description
 Node Creator.
 """
 
+from typing import List, Optional
+
 from antlr4.tree.Tree import TerminalNodeImpl
 
 from vtlengine.AST import (
+    AggregateVpClause,
     Argument,
     Assignment,
     DefIdentifier,
     DPRule,
     DPRuleset,
+    EnumeratedVpClause,
     HRBinOp,
     HRule,
     HRuleset,
@@ -22,6 +26,7 @@ from vtlengine.AST import (
     Operator,
     PersistentAssignment,
     Start,
+    ViralPropagationDef,
 )
 from vtlengine.AST.ASTConstructorModules import extract_token_info
 from vtlengine.AST.ASTConstructorModules.Expr import Expr
@@ -149,6 +154,102 @@ class ASTVisitor(VtlVisitor):
 
         elif isinstance(ctx, Parser.DefHierarchicalContext):
             return self.visitDefHierarchical(ctx)
+
+        elif isinstance(ctx, Parser.DefViralPropagationContext):
+            return self.visitDefViralPropagation(ctx)
+
+    def visitDefViralPropagation(self, ctx: Parser.DefViralPropagationContext):
+        """
+        DEFINE VIRAL PROPAGATION varID LPAREN vpSignature RPAREN IS
+        vpBody END VIRAL PROPAGATION  # defViralPropagation
+        """
+        ctx_list = list(ctx.getChildren())
+
+        propagation_name = Terminals().visitVarID(ctx_list[3]).value
+        signature_type, target = self.visitVpSignature(ctx_list[5])
+        enumerated_clauses, aggregate_clause, default_value = self.visitVpBody(ctx_list[8])
+
+        token_info = extract_token_info(ctx)
+
+        return ViralPropagationDef(
+            name=propagation_name,
+            signature_type=signature_type,
+            target=target,
+            enumerated_clauses=enumerated_clauses,
+            aggregate_clause=aggregate_clause,
+            default_value=default_value,
+            **token_info,
+        )
+
+    def visitVpSignature(self, ctx: Parser.VpSignatureContext):
+        """vpSignature: VALUE_DOMAIN varID | VARIABLE varID ;"""
+        ctx_list = list(ctx.getChildren())
+        signature_type = ctx_list[0].getSymbol().text
+        target = Terminals().visitVarID(ctx_list[1]).value
+        return signature_type, target
+
+    def visitVpBody(self, ctx: Parser.VpBodyContext):
+        """vpBody: vpClause (EOL vpClause)* ;"""
+        ctx_list = list(ctx.getChildren())
+        enumerated_clauses: List[EnumeratedVpClause] = []
+        aggregate_clause: Optional[AggregateVpClause] = None
+        default_value: Optional[str] = None
+
+        for child in ctx_list:
+            if isinstance(child, Parser.EnumeratedVpClauseContext):
+                enumerated_clauses.append(self.visitEnumeratedVpClause(child))
+            elif isinstance(child, Parser.AggregationVpClauseContext):
+                aggregate_clause = self.visitAggregationVpClause(child)
+            elif isinstance(child, Parser.DefaultVpClauseContext):
+                default_value = self.visitDefaultVpClause(child)
+
+        return enumerated_clauses, aggregate_clause, default_value
+
+    def visitEnumeratedVpClause(self, ctx: Parser.EnumeratedVpClauseContext):
+        """enumeratedVpClause: (IDENTIFIER COLON)? WHEN vpCondition THEN constant ;"""
+        ctx_list = list(ctx.getChildren())
+        rule_name: Optional[str] = None
+        values: List[str] = []
+        result: str = ""
+
+        i = 0
+        # Optional rule name: IDENTIFIER COLON
+        if ctx_list[i].getSymbol().type == Parser.IDENTIFIER:
+            rule_name = ctx_list[i].getSymbol().text
+            i += 2  # skip IDENTIFIER and COLON
+
+        i += 1  # skip WHEN
+        # vpCondition
+        values = self.visitVpCondition(ctx_list[i])
+        i += 1
+
+        i += 1  # skip THEN
+        # constant (result)
+        result = Terminals().visitConstant(ctx_list[i]).value
+
+        token_info = extract_token_info(ctx)
+        return EnumeratedVpClause(name=rule_name, values=values, result=result, **token_info)
+
+    def visitAggregationVpClause(self, ctx: Parser.AggregationVpClauseContext):
+        """aggregationVpClause: AGGREGATE (MIN | MAX | SUM | AVG) ;"""
+        ctx_list = list(ctx.getChildren())
+        function = ctx_list[1].getSymbol().text
+        token_info = extract_token_info(ctx)
+        return AggregateVpClause(function=function, **token_info)
+
+    def visitDefaultVpClause(self, ctx: Parser.DefaultVpClauseContext):
+        """defaultVpClause: ELSE constant ;"""
+        ctx_list = list(ctx.getChildren())
+        return Terminals().visitConstant(ctx_list[1]).value
+
+    def visitVpCondition(self, ctx: Parser.VpConditionContext):
+        """vpCondition: constant (AND constant)? ;"""
+        ctx_list = list(ctx.getChildren())
+        values = []
+        for child in ctx_list:
+            if isinstance(child, Parser.ConstantContext):
+                values.append(Terminals().visitConstant(child).value)
+        return values
 
     def visitDefOperator(self, ctx: Parser.DefOperatorContext):
         """
