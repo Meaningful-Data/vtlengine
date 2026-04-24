@@ -2397,35 +2397,27 @@ FROM {src}, (
 
     def visit_DPValidation(self, node: AST.DPValidation) -> str:  # type: ignore[override]
         """Generate SQL for check_datapoint operator."""
-        dpr_name = node.ruleset_name
-        dpr_info = self._dprs[dpr_name]
-        signature = dpr_info["signature"]
-
+        dpr_info = self._dprs[node.ruleset_name]
         ds = self._get_dataset_structure(node.dataset)
         table_src = self._get_dataset_sql(node.dataset)
-
-        output_mode = node.output.value if node.output else "invalid"
         id_cols = ds.get_identifiers_names()
-        measure_cols = ds.get_measures_names()
 
-        rule_queries: List[str] = []
-        for rule in dpr_info["rules"]:
-            rule_sql = self._build_dp_rule_sql(
-                rule=rule,
-                table_src=table_src,
-                signature=signature,
-                id_cols=id_cols,
-                measure_cols=measure_cols,
-                output_mode=output_mode,
-            )
-            rule_queries.append(rule_sql)
-
-        if not rule_queries:
+        if not dpr_info["rules"]:
             cols = [quote_name(c) for c in id_cols]
             return f"SELECT {', '.join(cols)} FROM {table_src} WHERE 1=0"
 
-        combined = " UNION ALL ".join(rule_queries)
-        return combined
+        rule_queries = [
+            self._build_dp_rule_sql(
+                rule=rule,
+                table_src=table_src,
+                signature=dpr_info["signature"],
+                id_cols=id_cols,
+                measure_cols=ds.get_measures_names(),
+                output_mode=node.output.value if node.output else "invalid",
+            )
+            for rule in dpr_info["rules"]
+        ]
+        return " UNION ALL ".join(rule_queries)
 
     def _build_dp_rule_sql(
         self,
@@ -2526,14 +2518,14 @@ FROM {src}, (
         table_src = self._get_dataset_sql(node.dataset)
 
         if hr_info["signature_type"] == "valuedomain" and node.rule_component is not None:
-            component: str = node.rule_component.value  # type: ignore[attr-defined]
+            component = self._get_node_value(node.rule_component)
         else:
             component = hr_info["signature"]
 
         cond_mapping: Dict[str, str] = {}
         if node.conditions and hr_info["condition"]:
             for i, cond_node in enumerate(node.conditions):
-                cond_mapping[hr_info["condition"][i]] = cond_node.value  # type: ignore[attr-defined]
+                cond_mapping[hr_info["condition"][i]] = self._get_node_value(cond_node)
 
         mode = node.validation_mode.value if node.validation_mode else "non_null"
         parsed_rules = [self._parse_hr_rule(r, cond_mapping) for r in hr_info["rules"]]
@@ -2756,18 +2748,17 @@ FROM {src}, (
         select_parts.append(f"{imbalance_expr} AS {quote_name('imbalance')}")
         select_parts.append(f"'{rule_name}' AS {quote_name('ruleid')}")
 
-        if output == "invalid":
-            select_parts.append(f"{ec_sql} AS {quote_name('errorcode')}")
-            select_parts.append(f"{el_sql} AS {quote_name('errorlevel')}")
-        else:
-            select_parts.append(
-                f"CASE WHEN {bool_expr} IS NOT FALSE THEN CAST(NULL AS VARCHAR) "
-                f"ELSE {ec_sql} END AS {quote_name('errorcode')}"
-            )
-            select_parts.append(
-                f"CASE WHEN {bool_expr} IS NOT FALSE THEN {el_null} "
-                f"ELSE {el_sql} END AS {quote_name('errorlevel')}"
-            )
+        for val, null_expr, col in (
+            (ec_sql, "CAST(NULL AS VARCHAR)", "errorcode"),
+            (el_sql, el_null, "errorlevel"),
+        ):
+            if output == "invalid":
+                select_parts.append(f"{val} AS {quote_name(col)}")
+            else:
+                select_parts.append(
+                    f"CASE WHEN {bool_expr} IS NOT FALSE THEN {null_expr} "
+                    f"ELSE {val} END AS {quote_name(col)}"
+                )
 
         where_parts: List[str] = []
         if output == "invalid":
@@ -2886,7 +2877,7 @@ FROM {src}, (
 
     def _build_hierarchy_rule_cte(
         self,
-        parsed: "_ParsedHRRule",
+        parsed: _ParsedHRRule,
         pivot_ref: str,
         other_ids: List[str],
         mode: str,
@@ -3023,18 +3014,16 @@ FROM {src}, (
 
     def visit_Validation(self, node: AST.Validation) -> str:
         """Visit CHECK validation operator."""
-        # Temporarily clear output dataset to prevent _build_ds_ds_binary
-        # from renaming measures to match the outer assignment.
+        # Stash ``current_assignment`` so _build_ds_ds_binary doesn't rename the
+        # inner comparison's measures to match the outer assignment target.
         with self._stash_assignment():
             validation_sql = self.visit(node.validation)
 
         error_code = self._error_code_sql(node.error_code)
         error_level = self._error_code_sql(node.error_level)
 
-        # Discover the measure name produced by the inner comparison.
         ds = self._get_dataset_structure(node.validation)
         if ds is None:
-            # Fallback: cannot determine structure – wrap as before.
             return (
                 f'SELECT t.*, CAST(NULL AS DOUBLE) AS "imbalance", '
                 f'{error_code} AS "errorcode", '
@@ -3043,18 +3032,14 @@ FROM {src}, (
             )
 
         id_names = ds.get_identifiers_names()
-        measure_names = ds.get_measures_names()
-        bool_measure = measure_names[0]
+        bool_measure = ds.get_measures_names()[0]
+        bool_ref = f"t.{quote_name(bool_measure)}"
 
-        # Build explicit SELECT list with proper renaming.
-        cols: List[str] = []
-        for id_name in id_names:
-            cols.append(f"t.{quote_name(id_name)}")
-        cols.append(f't.{quote_name(bool_measure)} AS "bool_var"')
+        cols: List[str] = [f"t.{quote_name(n)}" for n in id_names]
+        cols.append(f'{bool_ref} AS "bool_var"')
 
-        # Handle imbalance (also with cleared output to prevent renaming).
-        join_cond = None
-        imbalance_sql = None
+        imbalance_sql: Optional[str] = None
+        join_cond: Optional[str] = None
         imbalance_col = 'CAST(NULL AS DOUBLE) AS "imbalance"'
         if node.imbalance is not None:
             with self._stash_assignment():
@@ -3065,24 +3050,14 @@ FROM {src}, (
                 imbalance_col = f'i.{quote_name(imb_ds.get_measures_names()[0])} AS "imbalance"'
         cols.append(imbalance_col)
 
-        # errorcode / errorlevel – set only when bool_var is explicitly FALSE.
-        bool_ref = f"t.{quote_name(bool_measure)}"
-        cols.append(f'CASE WHEN {bool_ref} IS FALSE THEN {error_code} ELSE NULL END AS "errorcode"')
-        cols.append(
-            f'CASE WHEN {bool_ref} IS FALSE THEN {error_level} ELSE NULL END AS "errorlevel"'
-        )
+        for val, col in ((error_code, "errorcode"), (error_level, "errorlevel")):
+            cols.append(f'CASE WHEN {bool_ref} IS FALSE THEN {val} ELSE NULL END AS "{col}"')
 
-        select_clause = ", ".join(cols)
-        sql = f"SELECT {select_clause} FROM ({validation_sql}) AS t"
-
-        # Join with imbalance source if present.
+        sql = f"SELECT {', '.join(cols)} FROM ({validation_sql}) AS t"
         if imbalance_sql is not None and join_cond is not None:
             sql += f" JOIN ({imbalance_sql}) AS i ON {join_cond}"
-
-        # invalid mode: keep only rows where the condition is FALSE.
         if node.invalid:
             sql += f" WHERE {bool_ref} IS FALSE"
-
         return sql
 
     # =========================================================================
