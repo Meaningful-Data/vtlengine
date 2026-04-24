@@ -380,7 +380,7 @@ def _load_datastructure_single(
             except DataLoadError:
                 # Not SDMX-JSON, try as VTL JSON
                 pass
-            with open(data_structure, "r") as file:
+            with open(data_structure, "r", encoding="utf-8-sig") as file:
                 structures = json.load(file)
             return _load_dataset_from_structure(structures)
         # Unsupported extension
@@ -594,7 +594,7 @@ def load_vtl(input: Union[str, Path]) -> str:
         raise DataLoadError(code="0-3-1-1", file=input)
     if input.suffix != ".vtl":
         raise InputValidationException(code="0-1-1-3", expected_ext=".vtl", ext=input.suffix)
-    with open(input, "r") as f:
+    with open(input, "r", encoding="utf-8-sig") as f:
         return f.read()
 
 
@@ -608,7 +608,7 @@ def _validate_json(data: Dict[str, Any], schema: Dict[str, Any]) -> None:
 def _load_single_value_domain(input: Path) -> Dict[str, ValueDomain]:
     if input.suffix != ".json":
         raise InputValidationException(code="0-1-1-3", expected_ext=".json", ext=input.suffix)
-    with open(input, "r") as f:
+    with open(input, "r", encoding="utf-8-sig") as f:
         data = json.load(f)
     _validate_json(data, vd_schema)
     vd = ValueDomain.from_dict(data)
@@ -722,7 +722,7 @@ def _load_single_external_routine_from_file(input: Path) -> Any:
     if input.suffix != ".json":
         raise InputValidationException(code="0-1-1-3", expected_ext=".json", ext=input.suffix)
     routine_name = input.stem
-    with open(input, "r") as f:
+    with open(input, "r", encoding="utf-8-sig") as f:
         data = json.load(f)
     _validate_json(data, external_routine_schema)
     ext_rout = ExternalRoutine.from_sql_query(routine_name, data["query"])

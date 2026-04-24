@@ -86,10 +86,6 @@ centralised_messages = {
         "description": "Occurs when an element (e.g., Identifier or component) "
         "appears more than once.",
     },
-    "0-1-2-5": {
-        "message": "File {file} must be encoded in utf-8 (without BOM).",
-        "description": "Raised when the file encoding is not UTF-8 without BOM.",
-    },
     "0-1-2-6": {
         "message": "Not found scalar {name} in datastructures",
         "description": "Occurs when a scalar value expected in the data structures is missing.",
