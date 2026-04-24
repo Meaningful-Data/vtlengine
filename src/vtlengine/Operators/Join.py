@@ -9,6 +9,7 @@ from vtlengine.AST.Grammar.tokens import CROSS_JOIN, FULL_JOIN, INNER_JOIN, LEFT
 from vtlengine.DataTypes import SCALAR_TYPES_CLASS_REVERSE, binary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
+from vtlengine.Model._case_insensitive_dict import CaseInsensitiveDict
 from vtlengine.Operators import Operator, _id_type_promotion_join_keys
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
@@ -478,12 +479,12 @@ class Apply(Operator):
     @classmethod
     def get_common_components(cls, left: Dataset, right: Dataset) -> (Dataset, Dataset):  # type: ignore[syntax]
         common = set(left.get_components_names()) & set(right.get_components_names())
-        left.components = {
-            comp.name: comp for comp in left.components.values() if comp.name in common
-        }
-        right.components = {
-            comp.name: comp for comp in right.components.values() if comp.name in common
-        }
+        left.components = CaseInsensitiveDict(
+            {comp.name: comp for comp in left.components.values() if comp.name in common}
+        )
+        right.components = CaseInsensitiveDict(
+            {comp.name: comp for comp in right.components.values() if comp.name in common}
+        )
         left.data = left.data[list(common)] if left.data is not None else pd.DataFrame()
         right.data = right.data[list(common)] if right.data is not None else pd.DataFrame()
         return left, right

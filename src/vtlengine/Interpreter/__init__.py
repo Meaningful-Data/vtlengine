@@ -67,6 +67,7 @@ from vtlengine.Model import (
     ScalarSet,
     ValueDomain,
 )
+from vtlengine.Model._case_insensitive_dict import CaseInsensitiveDict
 from vtlengine.Operators.Aggregation import extract_grouping_identifiers
 from vtlengine.Operators.Assignment import Assignment
 from vtlengine.Operators.CastOperator import Cast
@@ -155,8 +156,17 @@ class InterpreterAnalyzer(ASTTemplate):
     signature_values: Optional[Dict[str, Any]] = None
 
     def __post_init__(self) -> None:
-        self.datasets_inputs = set(self.datasets.keys())
-        self.scalars_inputs = set(self.scalars.keys()) if self.scalars else set()
+        # Ensure case-insensitive lookups for datasets, scalars, and value_domains
+        if not isinstance(self.datasets, CaseInsensitiveDict):
+            self.datasets = CaseInsensitiveDict(self.datasets)
+        if self.scalars is not None and not isinstance(self.scalars, CaseInsensitiveDict):
+            self.scalars = CaseInsensitiveDict(self.scalars)
+        if self.value_domains is not None and not isinstance(
+            self.value_domains, CaseInsensitiveDict
+        ):
+            self.value_domains = CaseInsensitiveDict(self.value_domains)
+        self.datasets_inputs = {k.casefold() for k in self.datasets}
+        self.scalars_inputs = {k.casefold() for k in self.scalars} if self.scalars else set()
 
     # **********************************
     # *                                *
@@ -236,7 +246,7 @@ class InterpreterAnalyzer(ASTTemplate):
             Operators.only_semantic = True
         else:
             Operators.only_semantic = False
-        results = {}
+        results: CaseInsensitiveDict[Any] = CaseInsensitiveDict()
         scalars_to_save = set()
         invalid_dataset_outputs = []
         invalid_scalar_outputs = []
@@ -249,9 +259,9 @@ class InterpreterAnalyzer(ASTTemplate):
             ) and not isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
                 raise SemanticError("1-2-5")
             result = self.visit(child)
-            if isinstance(result, Dataset) and result.name in self.datasets_inputs:
+            if isinstance(result, Dataset) and result.name.casefold() in self.datasets_inputs:
                 invalid_dataset_outputs.append(result.name)
-            if isinstance(result, Scalar) and result.name in self.scalars_inputs:
+            if isinstance(result, Scalar) and result.name.casefold() in self.scalars_inputs:
                 invalid_scalar_outputs.append(result.name)
 
             # Reset some handlers (joins and if)
@@ -279,7 +289,7 @@ class InterpreterAnalyzer(ASTTemplate):
             if isinstance(result, Scalar):
                 scalars_to_save.add(result.name)
                 if self.scalars is None:
-                    self.scalars = {}
+                    self.scalars = CaseInsensitiveDict()
                 self.scalars[result.name] = copy(result)
             self._save_datapoints_efficient(statement_num)
             statement_num += 1
@@ -305,7 +315,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
     def visit_Operator(self, node: AST.Operator) -> None:
         if self.udos is None:
-            self.udos = {}
+            self.udos = CaseInsensitiveDict()
         elif node.op in self.udos:
             raise ValueError(f"User Defined Operator {node.op} already exists")
 
@@ -355,7 +365,7 @@ class InterpreterAnalyzer(ASTTemplate):
             )
 
         # Signature has the actual parameters names or aliases if provided
-        signature_actual_names = {}
+        signature_actual_names: Dict[str, str] = CaseInsensitiveDict()
         if not isinstance(node.params, AST.DefIdentifier):
             for param in node.params:
                 if param.alias is not None:
@@ -376,7 +386,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
         # Adding the ruleset to the dprs dictionary
         if self.dprs is None:
-            self.dprs = {}
+            self.dprs = CaseInsensitiveDict()
         elif node.name in self.dprs:
             raise ValueError(f"Datapoint Ruleset {node.name} already exists")
 
@@ -384,7 +394,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
     def visit_HRuleset(self, node: AST.HRuleset) -> None:
         if self.hrs is None:
-            self.hrs = {}
+            self.hrs = CaseInsensitiveDict()
 
         if node.name in self.hrs:
             raise ValueError(f"Hierarchical Ruleset {node.name} already exists")
@@ -574,6 +584,13 @@ class InterpreterAnalyzer(ASTTemplate):
             for x in node.grouping:
                 groupings.append(self.visit(x))
             self.is_from_grouping = False
+            # Resolve grouping names to canonical (original-case) component names
+            groupings = [
+                operand.resolve_component_name(g)
+                if isinstance(g, str) and g in operand.components
+                else g
+                for g in groupings
+            ]
             if grouping_op == "group all" or has_time_agg:
                 groupings = self._apply_time_agg_grouping(operand, groupings, grouping_op)
                 self.aggregation_dataset = None
@@ -834,16 +851,17 @@ class InterpreterAnalyzer(ASTTemplate):
                     comp_name=node.value,
                     dataset_name=self.aggregation_dataset.name,
                 )
+            canon = self.aggregation_dataset.resolve_component_name(node.value)
             if self.aggregation_dataset.data is None:
                 data = None
             else:
-                data = copy(self.aggregation_dataset.data[node.value])
+                data = copy(self.aggregation_dataset.data[canon])
             return DataComponent(
-                name=node.value,
+                name=canon,
                 data=data,
-                data_type=self.aggregation_dataset.components[node.value].data_type,
-                role=self.aggregation_dataset.components[node.value].role,
-                nullable=self.aggregation_dataset.components[node.value].nullable,
+                data_type=self.aggregation_dataset.components[canon].data_type,
+                role=self.aggregation_dataset.components[canon].role,
+                nullable=self.aggregation_dataset.components[canon].nullable,
             )
         if self.is_from_regular_aggregation:
             if self.is_from_join and node.value in self.datasets:
@@ -883,16 +901,17 @@ class InterpreterAnalyzer(ASTTemplate):
                         comp_name=node.value,
                         dataset_name=self.regular_aggregation_dataset.name,
                     )
+                canon = self.regular_aggregation_dataset.resolve_component_name(node.value)
                 if self.regular_aggregation_dataset.data is not None:
-                    data = copy(self.regular_aggregation_dataset.data[node.value])
+                    data = copy(self.regular_aggregation_dataset.data[canon])
                 else:
                     data = None
                 return DataComponent(
-                    name=node.value,
+                    name=canon,
                     data=data,
-                    data_type=self.regular_aggregation_dataset.components[node.value].data_type,
-                    role=self.regular_aggregation_dataset.components[node.value].role,
-                    nullable=self.regular_aggregation_dataset.components[node.value].nullable,
+                    data_type=self.regular_aggregation_dataset.components[canon].data_type,
+                    role=self.regular_aggregation_dataset.components[canon].role,
+                    nullable=self.regular_aggregation_dataset.components[canon].nullable,
                 )
         if (
             self.is_from_rule
@@ -908,6 +927,8 @@ class InterpreterAnalyzer(ASTTemplate):
                     comp_name=node.value,
                     dataset_name=self.ruleset_dataset.name,
                 )
+            # Resolve to canonical (original-case) name for DataFrame access
+            comp_name = self.ruleset_dataset.resolve_component_name(comp_name)
             data = None if self.rule_data is None else self.rule_data[comp_name]
             return DataComponent(
                 name=comp_name,
@@ -982,11 +1003,13 @@ class InterpreterAnalyzer(ASTTemplate):
             dataset = copy(operands[0])
             if self.regular_aggregation_dataset is not None:
                 dataset.name = self.regular_aggregation_dataset.name
-            dataset.components = {
-                comp_name: comp
-                for comp_name, comp in dataset.components.items()
-                if comp.role != Role.MEASURE
-            }
+            dataset.components = CaseInsensitiveDict(
+                {
+                    comp_name: comp
+                    for comp_name, comp in dataset.components.items()
+                    if comp.role != Role.MEASURE
+                }
+            )
             if dataset.data is not None:
                 dataset.data = dataset.data[dataset.get_identifiers_names()]
             aux_operands = []
@@ -1056,10 +1079,12 @@ class InterpreterAnalyzer(ASTTemplate):
                         columns={col: col[col.find("#") + 1 :] for col in result.data.columns},
                         inplace=True,
                     )
-                result.components = {
-                    comp_name[comp_name.find("#") + 1 :]: comp
-                    for comp_name, comp in result.components.items()
-                }
+                result.components = CaseInsensitiveDict(
+                    {
+                        comp_name[comp_name.find("#") + 1 :]: comp
+                        for comp_name, comp in result.components.items()
+                    }
+                )
                 for comp in result.components.values():
                     comp.name = comp.name[comp.name.find("#") + 1 :]
                 if result.data is not None:
@@ -1199,6 +1224,13 @@ class InterpreterAnalyzer(ASTTemplate):
         ):
             node.old_name = node.old_name.split("#")[1]
 
+        # Resolve old_name to canonical (original-case) component name
+        if (
+            self.regular_aggregation_dataset is not None
+            and node.old_name in self.regular_aggregation_dataset.components
+        ):
+            node.old_name = self.regular_aggregation_dataset.resolve_component_name(node.old_name)
+
         return node
 
     def visit_Constant(self, node: AST.Constant) -> Any:
@@ -1260,11 +1292,13 @@ class InterpreterAnalyzer(ASTTemplate):
                 if len(self.aggregation_dataset.get_measures()) != 1:
                     raise ValueError("Only one measure is allowed")
                 # Deepcopy is necessary for components to avoid changing the original dataset
-                self.aggregation_dataset.components = {
-                    comp_name: deepcopy(comp)
-                    for comp_name, comp in self.aggregation_dataset.components.items()
-                    if comp_name in self.aggregation_grouping or comp.role == Role.MEASURE
-                }
+                self.aggregation_dataset.components = CaseInsensitiveDict(
+                    {
+                        comp_name: deepcopy(comp)
+                        for comp_name, comp in self.aggregation_dataset.components.items()
+                        if comp_name in self.aggregation_grouping or comp.role == Role.MEASURE
+                    }
+                )
 
                 self.aggregation_dataset.data = (
                     self.aggregation_dataset.data[
@@ -1335,7 +1369,10 @@ class InterpreterAnalyzer(ASTTemplate):
             if len(cond_components) != len(hr_info["condition"]):
                 raise SemanticError("1-1-10-2", op=node.op)
 
-            if hr_info["node"].signature_type == "variable" and hr_info["signature"] != component:
+            if (
+                hr_info["node"].signature_type == "variable"
+                and hr_info["signature"].casefold() != component.casefold()  # type: ignore[union-attr]
+            ):
                 raise SemanticError(
                     "1-1-10-3",
                     op=node.op,
@@ -1392,6 +1429,9 @@ class InterpreterAnalyzer(ASTTemplate):
                 HRDAGAnalyzer().visit(hierarchy_ast)
 
             Check_Hierarchy.validate_hr_dataset(dataset, component)
+
+            # Resolve to canonical (original-case) component name for DataFrame access
+            component = dataset.resolve_component_name(component)
 
             # Set up interpreter state for rule processing
             self.ruleset_dataset = dataset
@@ -1463,7 +1503,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     )
             if dpr_info is not None and dpr_info["signature_type"] == "variable":
                 for i, comp_name in enumerate(node.components):
-                    if comp_name != dpr_info["params"][i]:
+                    if comp_name.casefold() != dpr_info["params"][i].casefold():
                         raise SemanticError(
                             "1-1-10-3",
                             op=CHECK_DATAPOINT,
