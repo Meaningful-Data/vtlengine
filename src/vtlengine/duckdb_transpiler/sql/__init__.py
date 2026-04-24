@@ -1,6 +1,7 @@
 """SQL initialization for VTL time types in DuckDB."""
 
 import weakref
+from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -17,6 +18,22 @@ _TIME_OPERATORS_SQL = _SQL_DIR / "time_operators.sql"
 _initialized_connections: "weakref.WeakSet[duckdb.DuckDBPyConnection]" = weakref.WeakSet()
 
 
+@lru_cache(maxsize=1)
+def _read_init_sql() -> str:
+    """Read and cache the SQL script that defines VTL time types."""
+    if not _INIT_SQL.exists():
+        raise FileNotFoundError(f"SQL init file not found: {_INIT_SQL}")
+    return _INIT_SQL.read_text()
+
+
+@lru_cache(maxsize=1)
+def _read_time_operators_sql() -> str:
+    """Read and cache optional SQL operators for time handling."""
+    if not _TIME_OPERATORS_SQL.exists():
+        return ""
+    return _TIME_OPERATORS_SQL.read_text()
+
+
 def initialize_time_types(conn: "duckdb.DuckDBPyConnection") -> None:
     """
     Initialize VTL time types and functions in a DuckDB connection.
@@ -31,13 +48,11 @@ def initialize_time_types(conn: "duckdb.DuckDBPyConnection") -> None:
     if conn in _initialized_connections:
         return
 
-    if not _INIT_SQL.exists():
-        raise FileNotFoundError(f"SQL init file not found: {_INIT_SQL}")
+    conn.execute(_read_init_sql())
 
-    conn.execute(_INIT_SQL.read_text())
-
-    if _TIME_OPERATORS_SQL.exists():
-        conn.execute(_TIME_OPERATORS_SQL.read_text())
+    time_operators_sql = _read_time_operators_sql()
+    if time_operators_sql:
+        conn.execute(time_operators_sql)
 
     _initialized_connections.add(conn)
 
@@ -51,4 +66,4 @@ def get_init_sql() -> str:
     Returns:
         SQL string containing all type and function definitions
     """
-    return _INIT_SQL.read_text()
+    return _read_init_sql()

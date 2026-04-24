@@ -14,7 +14,10 @@ import pandas as pd
 from vtlengine.AST.DAG._models import DatasetSchedule
 from vtlengine.DataTypes import (
     _DUCKDB_TYPE_TO_VTL,
+    Duration,
     Null,
+    TimeInterval,
+    TimePeriod,
 )
 from vtlengine.duckdb_transpiler.io._io import (
     load_datapoints_duckdb,
@@ -31,6 +34,39 @@ from vtlengine.Exceptions import RunTimeError
 from vtlengine.files.output._time_period_representation import TimePeriodRepresentation
 from vtlengine.Model import Dataset, Scalar
 from vtlengine.Utils._number_config import get_effective_numeric_digits
+
+_TIME_SQL_MARKERS = ("vtl_",)
+
+
+def _contains_time_components(datasets: Dict[str, Dataset]) -> bool:
+    """Return True when any dataset contains VTL time-related components."""
+    for ds in datasets.values():
+        for comp in ds.components.values():
+            if comp.data_type in (TimePeriod, TimeInterval, Duration):
+                return True
+    return False
+
+
+def _requires_time_types_initialization(
+    queries: List[Tuple[str, str, bool]],
+    input_datasets: Dict[str, Dataset],
+    output_datasets: Dict[str, Dataset],
+    output_scalars: Dict[str, Scalar],
+) -> bool:
+    """Return True when execution paths may need VTL time macros/types."""
+    if _contains_time_components(input_datasets) or _contains_time_components(output_datasets):
+        return True
+
+    for scalar in output_scalars.values():
+        if scalar.data_type in (TimePeriod, TimeInterval, Duration):
+            return True
+
+    for _, sql_query, _ in queries:
+        sql_lower = sql_query.lower()
+        if any(marker in sql_lower for marker in _TIME_SQL_MARKERS):
+            return True
+
+    return False
 
 
 def _map_time_agg_error(msg: str, msg_lower: str) -> RunTimeError:
@@ -450,8 +486,14 @@ def execute_queries(
     results: Dict[str, Union[Dataset, Scalar]] = {}
     representation = TimePeriodRepresentation.check_value(time_period_output_format)
 
-    # Initialize VTL time type functions (idempotent - safe to call multiple times)
-    initialize_time_types(conn)
+    # Initialize VTL time types/macros only when required by inputs/outputs/SQL.
+    if _requires_time_types_initialization(
+        queries,
+        input_datasets,
+        output_datasets,
+        output_scalars,
+    ):
+        initialize_time_types(conn)
 
     # Ensure output folder exists if provided
     if output_folder:
