@@ -195,9 +195,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     @contextmanager
     def _clause_scope(
-        self,
-        ds: Optional[Dataset] = None,
-        prefix: Optional[str] = None,
+        self, ds: Optional[Dataset] = None, prefix: Optional[str] = None
     ) -> Generator[None, None, None]:
         """Temporarily set clause state and restore it on exit."""
         old_in_clause = self._in_clause
@@ -320,212 +318,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     visit_PersistentAssignment = visit_Assignment
 
-    # Datapoint ruleset and validation
-
-    def visit_DPRuleset(self, node: AST.DPRuleset) -> None:
-        """Register a datapoint ruleset definition."""
-        signature: Dict[str, str] = {}
-        if not isinstance(node.params, AST.DefIdentifier):
-            for param in node.params:
-                alias = param.alias if param.alias is not None else param.value
-                signature[alias] = param.value
-
-        rule_names = [r.name for r in node.rules if r.name is not None]
-        if not rule_names:
-            for i, rule in enumerate(node.rules):
-                rule.name = str(i + 1)
-
-        self._dprs[node.name] = {
-            "rules": node.rules,
-            "signature": signature,
-            "signature_type": node.signature_type,
-        }
-
-    def visit_DPValidation(self, node: AST.DPValidation) -> str:  # type: ignore[override]
-        """Generate SQL for check_datapoint operator."""
-        dpr_name = node.ruleset_name
-        dpr_info = self._dprs[dpr_name]
-        signature = dpr_info["signature"]
-
-        ds = self._get_dataset_structure(node.dataset)
-        table_src = self._get_dataset_sql(node.dataset)
-
-        self._get_output_dataset()
-        output_mode = node.output.value if node.output else "invalid"
-
-        id_cols = ds.get_identifiers_names()
-        measure_cols = ds.get_measures_names()
-
-        rule_queries: List[str] = []
-        for rule in dpr_info["rules"]:
-            rule_sql = self._build_dp_rule_sql(
-                rule=rule,
-                table_src=table_src,
-                signature=signature,
-                id_cols=id_cols,
-                measure_cols=measure_cols,
-                output_mode=output_mode,
-            )
-            rule_queries.append(rule_sql)
-
-        if not rule_queries:
-            cols = [quote_name(c) for c in id_cols]
-            return f"SELECT {', '.join(cols)} FROM {table_src} WHERE 1=0"
-
-        combined = " UNION ALL ".join(rule_queries)
-        return combined
-
-    def _build_dp_rule_sql(
-        self,
-        rule: AST.DPRule,
-        table_src: str,
-        signature: Dict[str, str],
-        id_cols: List[str],
-        measure_cols: List[str],
-        output_mode: str,
-    ) -> str:
-        """Build SQL for a single datapoint rule."""
-        self._dp_signature = signature
-        rule_name = rule.name or ""
-        rule_node = rule.rule
-        ec_sql = self._error_code_sql(rule.erCode)
-        el_sql = self._error_code_sql(rule.erLevel)
-        if isinstance(rule_node, AST.HRBinOp) and rule_node.op == tokens.WHEN:
-            when_cond_sql = self._visit_dp_expr(rule_node.left, signature)
-            then_expr_sql = self._visit_dp_expr(rule_node.right, signature)
-            fail_cond = f"({when_cond_sql}) AND NOT ({then_expr_sql})"
-            bool_expr = f"""
-                CASE WHEN ({when_cond_sql}) THEN ({then_expr_sql})
-                 WHEN NOT ({when_cond_sql}) THEN TRUE ELSE NULL END
-            """
-        else:
-            then_expr_sql = self._visit_dp_expr(rule_node, signature)
-            fail_cond = f"NOT ({then_expr_sql})"
-            bool_expr = f"({then_expr_sql})"
-
-        self._dp_signature = None
-        select_parts = [quote_name(c) for c in id_cols + measure_cols]
-        if output_mode == "invalid":
-            select_parts.append(f"'{rule_name}' AS {quote_name('ruleid')}")
-            select_parts.append(f"{ec_sql} AS {quote_name('errorcode')}")
-            select_parts.append(f"{el_sql} AS {quote_name('errorlevel')}")
-            return f"SELECT {', '.join(select_parts)} FROM {table_src} WHERE {fail_cond}"
-
-        select_parts.append(f"{bool_expr} AS {quote_name('bool_var')}")
-        select_parts.append(f"'{rule_name}' AS {quote_name('ruleid')}")
-        for val, col in [(ec_sql, quote_name("errorcode")), (el_sql, quote_name("errorlevel"))]:
-            select_parts.append(f"CASE WHEN {fail_cond} THEN {val} ELSE NULL END AS {col}")
-        return f"SELECT {', '.join(select_parts)} FROM {table_src}"
-
-    def _visit_dp_expr(self, node: AST.AST, signature: Dict[str, str]) -> str:
-        """Visit an expression in datapoint-rule context."""
-        if isinstance(node, (AST.HRBinOp, AST.BinOp)):
-            left_sql = self._visit_dp_expr(node.left, signature)
-            right_sql = self._visit_dp_expr(node.right, signature)
-            if isinstance(node, AST.HRBinOp) and node.op == tokens.WHEN:
-                return f"CASE WHEN ({left_sql}) THEN ({right_sql}) ELSE TRUE END"
-            return registry.sql(node.op, left_sql, right_sql)
-        if isinstance(node, (AST.HRUnOp, AST.UnaryOp)):
-            operand_sql = self._visit_dp_expr(node.operand, signature)
-            return registry.sql(node.op, operand_sql)
-        if isinstance(node, (AST.DefIdentifier, AST.VarID)):
-            col_name = signature.get(node.value, node.value)
-            return quote_name(col_name)
-        if isinstance(node, AST.Constant):
-            return self._to_sql_literal(node.value)
-        if isinstance(node, AST.If):
-            cond_sql = self._visit_dp_expr(node.condition, signature)
-            then_sql = self._visit_dp_expr(node.thenOp, signature)
-            else_sql = self._visit_dp_expr(node.elseOp, signature)
-            return (
-                f"CASE WHEN ({cond_sql}) THEN CAST(({then_sql}) AS BOOLEAN)"
-                f" ELSE CAST(({else_sql}) AS BOOLEAN) END"
-            )
-        saved_sig = self._dp_signature
-        self._dp_signature = signature
-        result = self.visit(node)
-        self._dp_signature = saved_sig
-        return result
-
-    # Hierarchical ruleset and check_hierarchy
-
-    def _visit_HRuleset(self, node: AST.HRuleset) -> None:
-        """Register a hierarchical ruleset definition."""
-        rule_names = [r.name for r in node.rules if r.name is not None]
-        if not rule_names:
-            for i, rule in enumerate(node.rules):
-                rule.name = str(i + 1)
-
-        cond_comp: List[str] = []
-        signature_value: str
-        if isinstance(node.element, list):
-            cond_comp = [x.value for x in node.element[:-1]]
-            signature_value = node.element[-1].value
-        else:
-            signature_value = node.element.value
-
-        self._hrs[node.name] = {
-            "rules": node.rules,
-            "signature": signature_value,
-            "condition": cond_comp,
-            "signature_type": node.signature_type,
-            "node": node,
-        }
-
-    def visit_HROperation(self, node: AST.HROperation) -> str:  # type: ignore[override]
-        """Generate SQL for hierarchy or check_hierarchy operator."""
-        hr_name = node.ruleset_name
-        hr_info = self._hrs[hr_name]
-
-        ds = self._get_dataset_structure(node.dataset)
-        table_src = self._get_dataset_sql(node.dataset)
-
-        self._get_output_dataset()
-
-        if hr_info["signature_type"] == "valuedomain" and node.rule_component is not None:
-            component: str = node.rule_component.value  # type: ignore[attr-defined]
-        else:
-            component = hr_info["signature"]
-
-        cond_mapping: Dict[str, str] = {}
-        if node.conditions and hr_info["condition"]:
-            for i, cond_node in enumerate(node.conditions):
-                param_name = hr_info["condition"][i]
-                actual_col = cond_node.value  # type: ignore[attr-defined]
-                cond_mapping[param_name] = actual_col
-
-        if node.op == tokens.HIERARCHY:
-            mode = node.validation_mode.value if node.validation_mode else "non_null"
-            input_mode = node.input_mode.value if node.input_mode else "rule"
-            output = node.output.value if node.output else "computed"
-            rules = [r for r in hr_info["rules"] if self._is_hr_eq_rule(r)]
-            return self._build_hierarchy_sql(
-                table_src=table_src,
-                ds=ds,
-                rules=rules,
-                rule_comp=component,
-                mode=mode,
-                input_mode=input_mode,
-                output=output,
-                cond_mapping=cond_mapping,
-            )
-        else:  # check_hierarchy
-            mode = node.validation_mode.value if node.validation_mode else "non_null"
-            output = node.output.value if node.output else "invalid"
-            return self._build_check_hierarchy_sql(
-                table_src=table_src,
-                ds=ds,
-                rules=hr_info["rules"],
-                rule_comp=component,
-                mode=mode,
-                output=output,
-                cond_mapping=cond_mapping,
-            )
-
-    def _error_code_sql(self, value: Any) -> str:
-        """Convert an errorcode value to a SQL literal."""
-        return "CAST(NULL AS VARCHAR)" if value is None else self._to_sql_literal(value=value)
-
     def _get_node_value(self, node: Any) -> str:
         """Extract ``.value`` from an AST node, falling back to ``str(node)``."""
         return node.value if hasattr(node, "value") else str(node)
@@ -550,532 +342,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if stripped.startswith("SELECT"):
             return f"({src})"
         return f"(SELECT * FROM {src})"
-
-    def _resolve_udo_name(self, raw_name: str) -> str:
-        """Resolve a potential UDO parameter to its actual name."""
-        udo_val = self._get_udo_param(raw_name)
-        if isinstance(udo_val, (AST.VarID, AST.Identifier)):
-            return udo_val.value
-        return udo_val if udo_val is not None else raw_name
-
-    def _is_hr_eq_rule(self, rule: AST.HRule) -> bool:
-        """Check if a hierarchical rule is an EQ rule (or WHEN-EQ)."""
-        node = rule.rule
-        if not isinstance(node, AST.HRBinOp):
-            return False
-        if node.op == tokens.WHEN and isinstance(node.right, AST.HRBinOp):
-            return node.right.op == tokens.EQ
-        return node.op == tokens.EQ
-
-    def _parse_hr_rule(self, rule: AST.HRule) -> _ParsedHRRule:
-        """Parse a hierarchical rule into its constituent parts."""
-        rule_node: Any = rule.rule
-        has_when = isinstance(rule_node, AST.HRBinOp) and rule_node.op == tokens.WHEN
-        when_node = rule_node.left if has_when else None
-        comparison_node = rule_node.right if has_when else rule_node
-        return _ParsedHRRule(
-            has_when=has_when,
-            when_node=when_node,
-            comparison_node=comparison_node,
-            left_code_item=comparison_node.left.value,
-            right_expr_node=comparison_node.right,
-            right_code_items=self._collect_hr_code_items(comparison_node.right)[0],
-        )
-
-    def _collect_all_hr_items(
-        self,
-        rules: list,  # type: ignore[type-arg]
-        cond_mapping: Dict[str, str],
-    ) -> Tuple[List[str], Dict[str, str]]:
-        """Collect deduplicated code items and conditions across rules."""
-        all_items: List[str] = []
-        all_conds: Dict[str, str] = {}
-        for rule in rules:
-            parsed = self._parse_hr_rule(rule)
-            all_items.append(parsed.left_code_item)
-            all_items.extend(parsed.right_code_items)
-            rc = getattr(parsed.comparison_node.left, "_right_condition", None)
-            if rc is not None:
-                all_conds[parsed.left_code_item] = self._build_hr_when_sql(rc, cond_mapping)
-            _, right_conds = self._collect_hr_code_items(parsed.right_expr_node, cond_mapping)
-            all_conds.update(right_conds)
-        return list(dict.fromkeys(all_items)), all_conds
-
-    def _build_hr_pivot(
-        self,
-        table_src: str,
-        ds: Dataset,
-        rules: list,  # type: ignore[type-arg]
-        rule_comp: str,
-        cond_mapping: Dict[str, str],
-    ) -> Tuple[str, str, List[str], List[str], Dict[str, str]]:
-        """Build the pivot SELECT SQL and metadata for hierarchy operations.
-
-        Returns (pivot_sql, measure_name, other_ids, unique_items, item_conds).
-        The pivot_sql is a plain SELECT (not wrapped in CTE syntax).
-        """
-        measure_name = ds.get_measures_names()[0]
-        other_ids = [n for n in ds.get_identifiers_names() if n != rule_comp]
-        unique_items, item_conds = self._collect_all_hr_items(rules, cond_mapping)
-
-        qrc = quote_name(rule_comp)
-        qm = quote_name(measure_name)
-
-        group_cols = [quote_name(c) for c in (*other_ids, *cond_mapping.values())]
-
-        select_parts = list(group_cols)
-        for ci in unique_items:
-            ci_cond = ""
-            if item_conds and ci in item_conds:
-                ci_cond = f" AND {item_conds[ci]}"
-            select_parts.append(
-                f"MAX(CASE WHEN {qrc} = '{ci}'{ci_cond} THEN {qm} END) AS _val_{ci}"
-            )
-            select_parts.append(
-                f"MAX(CASE WHEN {qrc} = '{ci}'{ci_cond} THEN 1 ELSE 0 END) AS _has_{ci}"
-            )
-
-        in_list = ", ".join(f"'{ci}'" for ci in unique_items)
-        group_by = f" GROUP BY {', '.join(group_cols)}" if group_cols else ""
-
-        pivot_sql = (
-            f"SELECT {', '.join(select_parts)} "
-            f"FROM {table_src} WHERE {qrc} IN ({in_list}){group_by}"
-        )
-        return pivot_sql, measure_name, other_ids, unique_items, item_conds
-
-    def _build_check_hierarchy_sql(
-        self,
-        table_src: str,
-        ds: Dataset,
-        rules: list,  # type: ignore[type-arg]
-        rule_comp: str,
-        mode: str,
-        output: str,
-        cond_mapping: Dict[str, str],
-    ) -> str:
-        """Generate SQL for check_hierarchy using pivot CTE."""
-        if not rules:
-            out_ds = self._get_output_dataset()
-            cols = [quote_name(c) for c in (out_ds.components if out_ds else ds.components)]
-            return f"SELECT {', '.join(cols)} FROM {table_src} WHERE 1=0"
-
-        pivot_sql, measure_name, other_ids, _, _ = self._build_hr_pivot(
-            table_src, ds, rules, rule_comp, cond_mapping
-        )
-        cte = CTEBuilder()
-        cte.cte("_pivot", pivot_sql)
-        rule_queries = [
-            self._build_check_hr_rule_select(
-                rule=rule,
-                other_ids=other_ids,
-                rule_comp=rule_comp,
-                measure=measure_name,
-                mode=mode,
-                output=output,
-                cond_mapping=cond_mapping,
-            )
-            for rule in rules
-        ]
-        return cte.select(" UNION ALL ".join(rule_queries))
-
-    def _collect_hr_code_items(
-        self,
-        node: AST.AST,
-        cond_mapping: Optional[Dict[str, str]] = None,
-    ) -> Tuple[List[str], Dict[str, str]]:
-        """Extract code-item names and right-side conditions from an HR expression."""
-        if isinstance(node, AST.DefIdentifier):
-            conds: Dict[str, str] = {}
-            if cond_mapping is not None:
-                rc = getattr(node, "_right_condition", None)
-                if rc is not None:
-                    conds[node.value] = self._build_hr_when_sql(rc, cond_mapping)
-            return [node.value], conds
-        if isinstance(node, AST.HRBinOp):
-            li, lc = self._collect_hr_code_items(node.left, cond_mapping)
-            ri, rc = self._collect_hr_code_items(node.right, cond_mapping)
-            lc.update(rc)
-            return li + ri, lc
-        if isinstance(node, AST.HRUnOp):
-            return self._collect_hr_code_items(node.operand, cond_mapping)
-        return [], {}
-
-    def _build_hr_value_expr(self, code_item: str, mode: str) -> str:
-        """Generate the value expression for a code item from pivot columns, per mode."""
-        val_col = f"_val_{code_item}"
-        if mode in ("always_zero", "non_zero", "partial_zero"):
-            has_col = f"_has_{code_item}"
-            return f"CASE WHEN {has_col} = 0 THEN 0 ELSE {val_col} END"
-        return val_col
-
-    def _build_hr_expr_sql(self, node: AST.AST, mode: str) -> str:
-        """Generate SQL for a hierarchical rule arithmetic expression using pivot columns."""
-        if isinstance(node, AST.DefIdentifier):
-            return self._build_hr_value_expr(node.value, mode)
-        if isinstance(node, AST.HRBinOp):
-            left_sql = self._build_hr_expr_sql(node.left, mode)
-            right_sql = self._build_hr_expr_sql(node.right, mode)
-            return f"({left_sql} {node.op} {right_sql})"
-        # HRUnOp
-        operand_sql = self._build_hr_expr_sql(node.operand, mode)
-        return f"({node.op}{operand_sql})"
-
-    def _build_check_hr_rule_select(
-        self,
-        rule: AST.HRule,
-        other_ids: List[str],
-        rule_comp: str,
-        measure: str,
-        mode: str,
-        output: str,
-        cond_mapping: Dict[str, str],
-    ) -> str:
-        """Generate a SELECT for a single check_hierarchy rule from the pivot CTE."""
-        parsed = self._parse_hr_rule(rule)
-        rule_name = rule.name or ""
-
-        l_val = self._build_hr_value_expr(parsed.left_code_item, mode)
-        r_val = self._build_hr_expr_sql(parsed.right_expr_node, mode)
-
-        comp_op: str = parsed.comparison_node.op
-        bool_expr = f"({l_val} {comp_op} {r_val})"
-        imbalance_expr = f"({l_val} - {r_val})"
-
-        when_sql: Optional[str] = None
-        if parsed.has_when:
-            when_sql = self._build_hr_when_sql(parsed.when_node, cond_mapping)
-            bool_expr = f"CASE WHEN NOT ({when_sql}) THEN TRUE ELSE {bool_expr} END"
-            imbalance_expr = (
-                f"CASE WHEN NOT ({when_sql}) THEN CAST(NULL AS DOUBLE) ELSE {imbalance_expr} END"
-            )
-
-        ec_sql = self._error_code_sql(rule.erCode)
-        el_sql = self._error_code_sql(rule.erLevel)
-        el_null = (
-            "CAST(NULL AS DOUBLE)" if self._is_numeric(rule.erLevel) else "CAST(NULL AS VARCHAR)"
-        )
-
-        q_rc = quote_name(rule_comp)
-        q_m = quote_name(measure)
-        select_parts: List[str] = [quote_name(c) for c in other_ids]
-        select_parts.append(f"'{parsed.left_code_item}' AS {q_rc}")
-
-        if output != "all":
-            select_parts.append(f"{l_val} AS {q_m}")
-        if output != "invalid":
-            select_parts.append(f"{bool_expr} AS {quote_name('bool_var')}")
-
-        select_parts.append(f"{imbalance_expr} AS {quote_name('imbalance')}")
-        select_parts.append(f"'{rule_name}' AS {quote_name('ruleid')}")
-
-        if output == "invalid":
-            select_parts.append(f"{ec_sql} AS {quote_name('errorcode')}")
-            select_parts.append(f"{el_sql} AS {quote_name('errorlevel')}")
-        else:
-            select_parts.append(
-                f"CASE WHEN {bool_expr} IS NOT FALSE THEN CAST(NULL AS VARCHAR) "
-                f"ELSE {ec_sql} END AS {quote_name('errorcode')}"
-            )
-            select_parts.append(
-                f"CASE WHEN {bool_expr} IS NOT FALSE THEN {el_null} "
-                f"ELSE {el_sql} END AS {quote_name('errorlevel')}"
-            )
-
-        where_parts: List[str] = []
-        if output == "invalid":
-            if when_sql is not None:
-                where_parts.append(f"({when_sql})")
-            where_parts.append(f"({bool_expr}) = FALSE")
-
-        where_parts.extend(
-            self._build_hr_mode_filter(
-                mode=mode,
-                left_code_item=parsed.left_code_item,
-                right_code_items=parsed.right_code_items,
-                left_val_expr=l_val,
-                right_val_expr=r_val,
-                is_hierarchy=False,
-            )
-        )
-
-        where_clause = f" WHERE {' AND '.join(where_parts)}" if where_parts else ""
-        return f"SELECT {', '.join(select_parts)} FROM _pivot{where_clause}"
-
-    def _build_hierarchy_sql(
-        self,
-        table_src: str,
-        ds: Dataset,
-        rules: list,  # type: ignore[type-arg]
-        rule_comp: str,
-        mode: str,
-        input_mode: str,
-        output: str,
-        cond_mapping: Dict[str, str],
-    ) -> str:
-        """Generate SQL for hierarchy operator using CTE chain."""
-        if not rules:
-            cols = [quote_name(c) for c in ds.get_components_names()]
-            return f"SELECT {', '.join(cols)} FROM {table_src}"
-
-        pivot_sql, measure, other_ids, unique_items, _ = self._build_hr_pivot(
-            table_src, ds, rules, rule_comp, cond_mapping
-        )
-        cte = CTEBuilder()
-        cte.cte("_pivot", pivot_sql)
-        rule_result_refs: List[Tuple[str, str]] = []
-        current_pivot = "_pivot"
-
-        join_keys = [quote_name(c) for c in (*other_ids, *cond_mapping.values())]
-
-        for i, rule in enumerate(rules):
-            parsed = self._parse_hr_rule(rule)
-
-            rule_cte_name = f"_rule_{i}"
-            cte.cte(
-                rule_cte_name,
-                self._build_hierarchy_rule_cte(
-                    parsed=parsed,
-                    pivot_ref=current_pivot,
-                    other_ids=other_ids,
-                    mode=mode,
-                    cond_mapping=cond_mapping,
-                ),
-            )
-            rule_result_refs.append((rule_cte_name, parsed.left_code_item))
-
-            next_pivot = f"_pivot_{i}"
-            cte.cte(
-                next_pivot,
-                self._build_hierarchy_pivot_update(
-                    prev_pivot=current_pivot,
-                    rule_cte=rule_cte_name,
-                    left_code_item=parsed.left_code_item,
-                    join_keys=join_keys,
-                    input_mode=input_mode,
-                    unique_items=unique_items,
-                ),
-            )
-            current_pivot = next_pivot
-
-        # Build final SELECT per rule
-        final_selects: List[str] = []
-        q_rc = quote_name(rule_comp)
-        q_m = quote_name(measure)
-        for rule_cte, left_ci in rule_result_refs:
-            cols = [quote_name(c) for c in other_ids]
-            cols.append(f"'{left_ci}' AS {q_rc}")
-            cols.append(f"_computed AS {q_m}")
-
-            result_filter: List[str] = []
-            if mode == "non_null":
-                result_filter.append("_computed IS NOT NULL")
-            elif mode == "non_zero":
-                result_filter.append("(_computed IS NULL OR _computed != 0)")
-
-            where = f" WHERE {' AND '.join(result_filter)}" if result_filter else ""
-            final_selects.append(f"SELECT {', '.join(cols)} FROM {rule_cte}{where}")
-
-        computed_sql = " UNION ALL ".join(final_selects)
-
-        if output == "computed":
-            return cte.select(computed_sql)
-
-        # output == "all": union(setdiff(op, computed), computed)
-        id_cols = [quote_name(c) for c in ds.get_identifiers_names()]
-        all_cols = [quote_name(c) for c in ds.get_components_names()]
-        all_cols_csv = ", ".join(all_cols)
-        id_cols_csv = ", ".join(id_cols)
-        cte.cte("_computed", computed_sql)
-        cte.cte(
-            "_combined",
-            f"SELECT {all_cols_csv}, 0 AS _src FROM {table_src} "
-            f"UNION ALL SELECT {all_cols_csv}, 1 AS _src FROM _computed",
-        )
-        return cte.select(
-            f"SELECT {all_cols_csv} FROM ("
-            f"SELECT *, ROW_NUMBER() OVER ("
-            f"PARTITION BY {id_cols_csv} ORDER BY _src DESC) AS _rn "
-            f"FROM _combined) WHERE _rn = 1"
-        )
-
-    def _build_hierarchy_rule_cte(
-        self,
-        parsed: "_ParsedHRRule",
-        pivot_ref: str,
-        other_ids: List[str],
-        mode: str,
-        cond_mapping: Dict[str, str],
-    ) -> str:
-        """Generate SELECT for _rule_N CTE in hierarchy CTE chain."""
-        r_val = self._build_hr_expr_sql(parsed.right_expr_node, mode)
-        computed_expr = r_val
-        if parsed.has_when:
-            when_sql = self._build_hr_when_sql(parsed.when_node, cond_mapping)
-            computed_expr = f"CASE WHEN {when_sql} THEN {computed_expr} ELSE NULL END"
-
-        select_parts = [quote_name(c) for c in (*other_ids, *cond_mapping.values())]
-        select_parts.append(f"{computed_expr} AS _computed")
-
-        where_parts = self._build_hr_mode_filter(
-            mode=mode,
-            left_code_item=parsed.left_code_item,
-            right_code_items=parsed.right_code_items,
-            left_val_expr=self._build_hr_value_expr(parsed.left_code_item, mode),
-            right_val_expr=r_val,
-            is_hierarchy=True,
-        )
-        right_presence = [f"_has_{ci} = 1" for ci in parsed.right_code_items]
-        if right_presence:
-            where_parts.append(f"({' OR '.join(right_presence)})")
-
-        where_clause = f" WHERE {' AND '.join(where_parts)}" if where_parts else ""
-        return f"  SELECT {', '.join(select_parts)} FROM {pivot_ref}{where_clause}"
-
-    def _build_hierarchy_pivot_update(
-        self,
-        prev_pivot: str,
-        rule_cte: str,
-        left_code_item: str,
-        join_keys: List[str],
-        input_mode: str,
-        unique_items: List[str],
-    ) -> str:
-        """Generate _pivot_N CTE that updates pivot with a rule's computed value."""
-        val_col = f"_val_{left_code_item}"
-        has_col = f"_has_{left_code_item}"
-
-        other_val_has = []
-        for i in unique_items:
-            if i != left_code_item:
-                other_val_has.append(f"p._val_{i}")
-                other_val_has.append(f"p._has_{i}")
-
-        key_cols = [f"p.{k}" for k in join_keys]
-        first_key = join_keys[0] if join_keys else "_computed"
-
-        if input_mode == "rule_priority":
-            val_expr = (
-                f"CASE WHEN r._computed IS NOT NULL THEN r._computed "
-                f"ELSE p.{val_col} END AS {val_col}"
-            )
-        else:
-            val_expr = (
-                f"CASE WHEN r.{first_key} IS NOT NULL "
-                f"THEN r._computed ELSE p.{val_col} END AS {val_col}"
-            )
-        has_expr = f"CASE WHEN r.{first_key} IS NOT NULL THEN 1 ELSE p.{has_col} END AS {has_col}"
-
-        all_select = key_cols + other_val_has + [val_expr, has_expr]
-        using_clause = ", ".join(join_keys) if join_keys else "1=1"
-
-        return (
-            f"  SELECT {', '.join(all_select)}\n"
-            f"  FROM {prev_pivot} p\n"
-            f"  LEFT JOIN {rule_cte} r USING ({using_clause})"
-        )
-
-    def _build_hr_mode_filter(
-        self,
-        mode: str,
-        left_code_item: str,
-        right_code_items: List[str],
-        left_val_expr: str,
-        right_val_expr: str,
-        is_hierarchy: bool,
-    ) -> List[str]:
-        """Generate WHERE filter clauses for the validation mode using pivot columns."""
-        all_items = [left_code_item] + right_code_items
-        filters: List[str] = []
-
-        if mode == "non_null":
-            items = right_code_items if is_hierarchy else all_items
-            for i in items:
-                filters.append(f"_val_{i} IS NOT NULL")
-
-        elif mode == "non_zero":
-            if is_hierarchy:
-                zero_checks = []
-                for i in right_code_items:
-                    val = self._build_hr_value_expr(i, mode)
-                    zero_checks.append(f"({val} IS NOT NULL AND {val} = 0)")
-                if zero_checks:
-                    filters.append(f"NOT ({' AND '.join(zero_checks)})")
-            else:
-                filters.append(
-                    f"NOT ("
-                    f"({left_val_expr} IS NOT NULL AND {left_val_expr} = 0) AND "
-                    f"({right_val_expr} IS NOT NULL AND {right_val_expr} = 0))"
-                )
-
-        elif mode in ("partial_null", "partial_zero"):
-            items = right_code_items if is_hierarchy else all_items
-            checks = [f"(_has_{i} = 1 AND _val_{i} IS NOT NULL)" for i in items]
-            if checks:
-                filters.append(f"({' OR '.join(checks)})")
-
-        elif mode in ("always_null", "always_zero"):
-            presence = [f"_has_{i} = 1" for i in all_items]
-            filters.append(f"({' OR '.join(presence)})")
-
-        return filters
-
-    def _build_hr_when_sql(self, node: AST.AST, cond_mapping: Dict[str, str]) -> str:
-        """Generate SQL for a WHEN condition in a hierarchical rule."""
-        if isinstance(node, (AST.DefIdentifier, AST.VarID)):
-            col_name = cond_mapping.get(node.value, node.value)
-            return quote_name(col_name)
-        if isinstance(node, AST.Constant):
-            return self._to_sql_literal(node.value)
-        if isinstance(node, (AST.HRUnOp, AST.UnaryOp)):
-            operand_sql = self._build_hr_when_sql(node.operand, cond_mapping)
-            return registry.sql(node.op, operand_sql)
-        if isinstance(node, (AST.HRBinOp, AST.BinOp)):
-            left_sql = self._build_hr_when_sql(node.left, cond_mapping)
-            right_sql = self._build_hr_when_sql(node.right, cond_mapping)
-            return registry.sql(node.op, left_sql, right_sql)
-        if isinstance(node, AST.MulOp):
-            children_sql = [self._build_hr_when_sql(c, cond_mapping) for c in node.children]
-            return registry.sql(node.op, *children_sql)
-        # Fallback to general visitor.
-        return self.visit(node)
-
-    # UDO definition and call
-
-    def visit_Operator(self, node: AST.Operator) -> None:
-        """Register a UDO definition."""
-        params_list: List[Dict[str, Any]] = []
-        for p in node.parameters:
-            params_list.append({"name": p.name, "type": p.type_, "default": p.default})
-
-        self._udos[node.op] = {
-            "params": params_list,
-            "output": node.output_type,
-            "expression": node.expression,
-        }
-
-    def visit_UDOCall(self, node: AST.UDOCall) -> str:  # type: ignore[override]
-        """Visit a UDO call by expanding its definition with parameter bindings."""
-        udo_def = self._udos[node.op]
-        params = udo_def["params"]
-        expression = deepcopy(udo_def["expression"])
-
-        bindings: Dict[str, Any] = {}
-        for i, param_info in enumerate(params):
-            param_name = param_info["name"]
-            if i < len(node.params):
-                bindings[param_name] = node.params[i]
-            elif param_info.get("default") is not None:
-                bindings[param_name] = param_info["default"]
-            bindings[f"__type__{param_name}"] = param_info.get("type")
-
-        self._push_udo_params(bindings)
-        try:
-            result = self.visit(expression)
-        finally:
-            self._pop_udo_params()
-
-        return result
 
     # Leaf visitors
 
@@ -1524,11 +790,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         left_ids = left_ds.get_identifiers_names()
         right_ids = right_ds.get_identifiers_names()
-        common_ids = [id_ for id_ in left_ids if id_ in right_ids]
-
-        where_clause = self._join_on_clause(common_ids, "l", "r")
-
         id_cols = ", ".join([f"l.{quote_name(id_)}" for id_ in left_ids])
+        common_ids = [id_ for id_ in left_ids if id_ in right_ids]
+        where_clause = self._join_on_clause(common_ids, "l", "r")
 
         right_subq = self._as_subquery(right_src)
         exists_subq = f"EXISTS(SELECT 1 FROM {right_subq} AS r WHERE {where_clause})"
@@ -2410,8 +1674,8 @@ FROM {src}, (
     # Aggregation visitor
 
     def _build_agg_group_cols(
-            self, node: AST.Aggregation, ds: Dataset, group_cols: List[str]
-        ) -> Tuple[List[str], List[str]]:
+        self, node: AST.Aggregation, ds: Dataset, group_cols: List[str]
+    ) -> Tuple[List[str], List[str]]:
         """Build SELECT and GROUP BY column lists, handling time_agg."""
         time_agg_expr: Optional[str] = None
         time_agg_id: Optional[str] = None
@@ -2895,8 +2159,7 @@ FROM {src}, (
             t_ref = f"t.{quote_name(col_name)}" if t_type == _DATASET else self.visit(node.thenOp)
             e_ref = f"e.{quote_name(col_name)}" if e_type == _DATASET else self.visit(node.elseOp)
             cols.append(
-                f"CASE WHEN {cond_expr} THEN {t_ref} "
-                f"ELSE {e_ref} END AS {quote_name(col_name)}"
+                f"CASE WHEN {cond_expr} THEN {t_ref} ELSE {e_ref} END AS {quote_name(col_name)}"
             )
 
         # Use from_subquery when the source is a SELECT (e.g., dataset-level condition)
@@ -3055,8 +2318,734 @@ FROM {src}, (
         return builder.build()
 
     # =========================================================================
-    # Validation visitor
+    # Rulesets
     # =========================================================================
+
+    # UDO definition and call
+
+    def _resolve_udo_name(self, raw_name: str) -> str:
+        """Resolve a potential UDO parameter to its actual name."""
+        udo_val = self._get_udo_param(raw_name)
+        if isinstance(udo_val, (AST.VarID, AST.Identifier)):
+            return udo_val.value
+        return udo_val if udo_val is not None else raw_name
+
+    def visit_Operator(self, node: AST.Operator) -> None:
+        """Register a UDO definition."""
+        params_list: List[Dict[str, Any]] = []
+        for p in node.parameters:
+            params_list.append({"name": p.name, "type": p.type_, "default": p.default})
+
+        self._udos[node.op] = {
+            "params": params_list,
+            "output": node.output_type,
+            "expression": node.expression,
+        }
+
+    def visit_UDOCall(self, node: AST.UDOCall) -> str:  # type: ignore[override]
+        """Visit a UDO call by expanding its definition with parameter bindings."""
+        udo_def = self._udos[node.op]
+        params = udo_def["params"]
+        expression = deepcopy(udo_def["expression"])
+
+        bindings: Dict[str, Any] = {}
+        for i, param_info in enumerate(params):
+            param_name = param_info["name"]
+            if i < len(node.params):
+                bindings[param_name] = node.params[i]
+            elif param_info.get("default") is not None:
+                bindings[param_name] = param_info["default"]
+            bindings[f"__type__{param_name}"] = param_info.get("type")
+
+        self._push_udo_params(bindings)
+        try:
+            result = self.visit(expression)
+        finally:
+            self._pop_udo_params()
+
+        return result
+
+    # Datapoint rulesets
+
+    def visit_DPRuleset(self, node: AST.DPRuleset) -> None:
+        """Register a datapoint ruleset definition."""
+        signature: Dict[str, str] = {}
+        if not isinstance(node.params, AST.DefIdentifier):
+            for param in node.params:
+                alias = param.alias if param.alias is not None else param.value
+                signature[alias] = param.value
+
+        rule_names = [r.name for r in node.rules if r.name is not None]
+        if not rule_names:
+            for i, rule in enumerate(node.rules):
+                rule.name = str(i + 1)
+
+        self._dprs[node.name] = {
+            "rules": node.rules,
+            "signature": signature,
+            "signature_type": node.signature_type,
+        }
+
+    def visit_DPValidation(self, node: AST.DPValidation) -> str:  # type: ignore[override]
+        """Generate SQL for check_datapoint operator."""
+        dpr_name = node.ruleset_name
+        dpr_info = self._dprs[dpr_name]
+        signature = dpr_info["signature"]
+
+        ds = self._get_dataset_structure(node.dataset)
+        table_src = self._get_dataset_sql(node.dataset)
+
+        output_mode = node.output.value if node.output else "invalid"
+        id_cols = ds.get_identifiers_names()
+        measure_cols = ds.get_measures_names()
+
+        rule_queries: List[str] = []
+        for rule in dpr_info["rules"]:
+            rule_sql = self._build_dp_rule_sql(
+                rule=rule,
+                table_src=table_src,
+                signature=signature,
+                id_cols=id_cols,
+                measure_cols=measure_cols,
+                output_mode=output_mode,
+            )
+            rule_queries.append(rule_sql)
+
+        if not rule_queries:
+            cols = [quote_name(c) for c in id_cols]
+            return f"SELECT {', '.join(cols)} FROM {table_src} WHERE 1=0"
+
+        combined = " UNION ALL ".join(rule_queries)
+        return combined
+
+    def _build_dp_rule_sql(
+        self,
+        rule: AST.DPRule,
+        table_src: str,
+        signature: Dict[str, str],
+        id_cols: List[str],
+        measure_cols: List[str],
+        output_mode: str,
+    ) -> str:
+        """Build SQL for a single datapoint rule."""
+        self._dp_signature = signature
+        rule_name = rule.name or ""
+        rule_node = rule.rule
+        ec_sql = self._error_code_sql(rule.erCode)
+        el_sql = self._error_code_sql(rule.erLevel)
+        if isinstance(rule_node, AST.HRBinOp) and rule_node.op == tokens.WHEN:
+            when_cond_sql = self._visit_dp_expr(rule_node.left, signature)
+            then_expr_sql = self._visit_dp_expr(rule_node.right, signature)
+            fail_cond = f"({when_cond_sql}) AND NOT ({then_expr_sql})"
+            bool_expr = f"""
+                CASE WHEN ({when_cond_sql}) THEN ({then_expr_sql})
+                 WHEN NOT ({when_cond_sql}) THEN TRUE ELSE NULL END
+            """
+        else:
+            then_expr_sql = self._visit_dp_expr(rule_node, signature)
+            fail_cond = f"NOT ({then_expr_sql})"
+            bool_expr = f"({then_expr_sql})"
+
+        self._dp_signature = None
+        select_parts = [quote_name(c) for c in id_cols + measure_cols]
+        if output_mode == "invalid":
+            select_parts.append(f"'{rule_name}' AS {quote_name('ruleid')}")
+            select_parts.append(f"{ec_sql} AS {quote_name('errorcode')}")
+            select_parts.append(f"{el_sql} AS {quote_name('errorlevel')}")
+            return f"SELECT {', '.join(select_parts)} FROM {table_src} WHERE {fail_cond}"
+
+        select_parts.append(f"{bool_expr} AS {quote_name('bool_var')}")
+        select_parts.append(f"'{rule_name}' AS {quote_name('ruleid')}")
+        for val, col in [(ec_sql, quote_name("errorcode")), (el_sql, quote_name("errorlevel"))]:
+            select_parts.append(f"CASE WHEN {fail_cond} THEN {val} ELSE NULL END AS {col}")
+        return f"SELECT {', '.join(select_parts)} FROM {table_src}"
+
+    def _visit_dp_expr(self, node: AST.AST, signature: Dict[str, str]) -> str:
+        """Visit an expression in datapoint-rule context."""
+        if isinstance(node, (AST.HRBinOp, AST.BinOp)):
+            left_sql = self._visit_dp_expr(node.left, signature)
+            right_sql = self._visit_dp_expr(node.right, signature)
+            if isinstance(node, AST.HRBinOp) and node.op == tokens.WHEN:
+                return f"CASE WHEN ({left_sql}) THEN ({right_sql}) ELSE TRUE END"
+            return registry.sql(node.op, left_sql, right_sql)
+        if isinstance(node, (AST.HRUnOp, AST.UnaryOp)):
+            operand_sql = self._visit_dp_expr(node.operand, signature)
+            return registry.sql(node.op, operand_sql)
+        if isinstance(node, (AST.DefIdentifier, AST.VarID)):
+            col_name = signature.get(node.value, node.value)
+            return quote_name(col_name)
+        if isinstance(node, AST.Constant):
+            return self._to_sql_literal(node.value)
+        if isinstance(node, AST.If):
+            cond_sql = self._visit_dp_expr(node.condition, signature)
+            then_sql = self._visit_dp_expr(node.thenOp, signature)
+            else_sql = self._visit_dp_expr(node.elseOp, signature)
+            return (
+                f"CASE WHEN ({cond_sql}) THEN CAST(({then_sql}) AS BOOLEAN)"
+                f" ELSE CAST(({else_sql}) AS BOOLEAN) END"
+            )
+        saved_sig = self._dp_signature
+        self._dp_signature = signature
+        result = self.visit(node)
+        self._dp_signature = saved_sig
+        return result
+
+    # Hierarchical ruleset
+
+    def _visit_HRuleset(self, node: AST.HRuleset) -> None:
+        """Register a hierarchical ruleset definition."""
+        rule_names = [r.name for r in node.rules if r.name is not None]
+        if not rule_names:
+            for i, rule in enumerate(node.rules):
+                rule.name = str(i + 1)
+
+        cond_comp: List[str] = []
+        signature_value: str
+        if isinstance(node.element, list):
+            cond_comp = [x.value for x in node.element[:-1]]
+            signature_value = node.element[-1].value
+        else:
+            signature_value = node.element.value
+
+        self._hrs[node.name] = {
+            "rules": node.rules,
+            "signature": signature_value,
+            "condition": cond_comp,
+            "signature_type": node.signature_type,
+            "node": node,
+        }
+
+    def visit_HROperation(self, node: AST.HROperation) -> str:  # type: ignore[override]
+        """Generate SQL for hierarchy or check_hierarchy operator."""
+        hr_name = node.ruleset_name
+        hr_info = self._hrs[hr_name]
+
+        ds = self._get_dataset_structure(node.dataset)
+        table_src = self._get_dataset_sql(node.dataset)
+
+        if hr_info["signature_type"] == "valuedomain" and node.rule_component is not None:
+            component: str = node.rule_component.value  # type: ignore[attr-defined]
+        else:
+            component = hr_info["signature"]
+
+        cond_mapping: Dict[str, str] = {}
+        if node.conditions and hr_info["condition"]:
+            for i, cond_node in enumerate(node.conditions):
+                param_name = hr_info["condition"][i]
+                actual_col = cond_node.value  # type: ignore[attr-defined]
+                cond_mapping[param_name] = actual_col
+
+        if node.op == tokens.HIERARCHY:
+            mode = node.validation_mode.value if node.validation_mode else "non_null"
+            input_mode = node.input_mode.value if node.input_mode else "rule"
+            output = node.output.value if node.output else "computed"
+            rules = [r for r in hr_info["rules"] if self._is_hr_eq_rule(r)]
+            return self._build_hierarchy_sql(
+                table_src=table_src,
+                ds=ds,
+                rules=rules,
+                rule_comp=component,
+                mode=mode,
+                input_mode=input_mode,
+                output=output,
+                cond_mapping=cond_mapping,
+            )
+        else:  # check_hierarchy
+            mode = node.validation_mode.value if node.validation_mode else "non_null"
+            output = node.output.value if node.output else "invalid"
+            return self._build_check_hierarchy_sql(
+                table_src=table_src,
+                ds=ds,
+                rules=hr_info["rules"],
+                rule_comp=component,
+                mode=mode,
+                output=output,
+                cond_mapping=cond_mapping,
+            )
+
+    def _is_hr_eq_rule(self, rule: AST.HRule) -> bool:
+        """Check if a hierarchical rule is an EQ rule (or WHEN-EQ)."""
+        node = rule.rule
+        if not isinstance(node, AST.HRBinOp):
+            return False
+        if node.op == tokens.WHEN and isinstance(node.right, AST.HRBinOp):
+            return node.right.op == tokens.EQ
+        return node.op == tokens.EQ
+
+    def _parse_hr_rule(self, rule: AST.HRule) -> _ParsedHRRule:
+        """Parse a hierarchical rule into its constituent parts."""
+        rule_node: Any = rule.rule
+        has_when = isinstance(rule_node, AST.HRBinOp) and rule_node.op == tokens.WHEN
+        when_node = rule_node.left if has_when else None
+        comparison_node = rule_node.right if has_when else rule_node
+        return _ParsedHRRule(
+            has_when=has_when,
+            when_node=when_node,
+            comparison_node=comparison_node,
+            left_code_item=comparison_node.left.value,
+            right_expr_node=comparison_node.right,
+            right_code_items=self._collect_hr_code_items(comparison_node.right)[0],
+        )
+
+    def _collect_all_hr_items(
+        self,
+        rules: list,  # type: ignore[type-arg]
+        cond_mapping: Dict[str, str],
+    ) -> Tuple[List[str], Dict[str, str]]:
+        """Collect deduplicated code items and conditions across rules."""
+        all_items: List[str] = []
+        all_conds: Dict[str, str] = {}
+        for rule in rules:
+            parsed = self._parse_hr_rule(rule)
+            all_items.append(parsed.left_code_item)
+            all_items.extend(parsed.right_code_items)
+            rc = getattr(parsed.comparison_node.left, "_right_condition", None)
+            if rc is not None:
+                all_conds[parsed.left_code_item] = self._build_hr_when_sql(rc, cond_mapping)
+            _, right_conds = self._collect_hr_code_items(parsed.right_expr_node, cond_mapping)
+            all_conds.update(right_conds)
+        return list(dict.fromkeys(all_items)), all_conds
+
+    def _build_hr_pivot(
+        self,
+        table_src: str,
+        ds: Dataset,
+        rules: list,  # type: ignore[type-arg]
+        rule_comp: str,
+        cond_mapping: Dict[str, str],
+    ) -> Tuple[str, str, List[str], List[str], Dict[str, str]]:
+        """Build the pivot SELECT SQL and metadata for hierarchy operations.
+
+        Returns (pivot_sql, measure_name, other_ids, unique_items, item_conds).
+        The pivot_sql is a plain SELECT (not wrapped in CTE syntax).
+        """
+        measure_name = ds.get_measures_names()[0]
+        other_ids = [n for n in ds.get_identifiers_names() if n != rule_comp]
+        unique_items, item_conds = self._collect_all_hr_items(rules, cond_mapping)
+
+        qrc = quote_name(rule_comp)
+        qm = quote_name(measure_name)
+
+        group_cols = [quote_name(c) for c in (*other_ids, *cond_mapping.values())]
+
+        select_parts = list(group_cols)
+        for ci in unique_items:
+            ci_cond = ""
+            if item_conds and ci in item_conds:
+                ci_cond = f" AND {item_conds[ci]}"
+            select_parts.append(
+                f"MAX(CASE WHEN {qrc} = '{ci}'{ci_cond} THEN {qm} END) AS _val_{ci}"
+            )
+            select_parts.append(
+                f"MAX(CASE WHEN {qrc} = '{ci}'{ci_cond} THEN 1 ELSE 0 END) AS _has_{ci}"
+            )
+
+        in_list = ", ".join(f"'{ci}'" for ci in unique_items)
+        group_by = f" GROUP BY {', '.join(group_cols)}" if group_cols else ""
+
+        pivot_sql = (
+            f"SELECT {', '.join(select_parts)} "
+            f"FROM {table_src} WHERE {qrc} IN ({in_list}){group_by}"
+        )
+        return pivot_sql, measure_name, other_ids, unique_items, item_conds
+
+    def _build_check_hierarchy_sql(
+        self,
+        table_src: str,
+        ds: Dataset,
+        rules: list,  # type: ignore[type-arg]
+        rule_comp: str,
+        mode: str,
+        output: str,
+        cond_mapping: Dict[str, str],
+    ) -> str:
+        """Generate SQL for check_hierarchy using pivot CTE."""
+        if not rules:
+            out_ds = self._get_output_dataset()
+            cols = [quote_name(c) for c in (out_ds.components if out_ds else ds.components)]
+            return f"SELECT {', '.join(cols)} FROM {table_src} WHERE 1=0"
+
+        pivot_sql, measure_name, other_ids, _, _ = self._build_hr_pivot(
+            table_src, ds, rules, rule_comp, cond_mapping
+        )
+        cte = CTEBuilder()
+        cte.cte("_pivot", pivot_sql)
+        rule_queries = [
+            self._build_check_hr_rule_select(
+                rule=rule,
+                other_ids=other_ids,
+                rule_comp=rule_comp,
+                measure=measure_name,
+                mode=mode,
+                output=output,
+                cond_mapping=cond_mapping,
+            )
+            for rule in rules
+        ]
+        return cte.select(" UNION ALL ".join(rule_queries))
+
+    def _collect_hr_code_items(
+        self, node: AST.AST, cond_mapping: Optional[Dict[str, str]] = None
+    ) -> Tuple[List[str], Dict[str, str]]:
+        """Extract code-item names and right-side conditions from an HR expression."""
+        if isinstance(node, AST.DefIdentifier):
+            conds: Dict[str, str] = {}
+            if cond_mapping is not None:
+                rc = getattr(node, "_right_condition", None)
+                if rc is not None:
+                    conds[node.value] = self._build_hr_when_sql(rc, cond_mapping)
+            return [node.value], conds
+        if isinstance(node, AST.HRBinOp):
+            li, lc = self._collect_hr_code_items(node.left, cond_mapping)
+            ri, rc = self._collect_hr_code_items(node.right, cond_mapping)
+            lc.update(rc)
+            return li + ri, lc
+        if isinstance(node, AST.HRUnOp):
+            return self._collect_hr_code_items(node.operand, cond_mapping)
+        return [], {}
+
+    def _build_hr_value_expr(self, code_item: str, mode: str) -> str:
+        """Generate the value expression for a code item from pivot columns, per mode."""
+        val_col = f"_val_{code_item}"
+        if mode in ("always_zero", "non_zero", "partial_zero"):
+            has_col = f"_has_{code_item}"
+            return f"CASE WHEN {has_col} = 0 THEN 0 ELSE {val_col} END"
+        return val_col
+
+    def _build_hr_expr_sql(self, node: AST.AST, mode: str) -> str:
+        """Generate SQL for a hierarchical rule arithmetic expression using pivot columns."""
+        if isinstance(node, AST.DefIdentifier):
+            return self._build_hr_value_expr(node.value, mode)
+        if isinstance(node, AST.HRBinOp):
+            left_sql = self._build_hr_expr_sql(node.left, mode)
+            right_sql = self._build_hr_expr_sql(node.right, mode)
+            return f"({left_sql} {node.op} {right_sql})"
+        # HRUnOp
+        operand_sql = self._build_hr_expr_sql(node.operand, mode)
+        return f"({node.op}{operand_sql})"
+
+    def _build_check_hr_rule_select(
+        self,
+        rule: AST.HRule,
+        other_ids: List[str],
+        rule_comp: str,
+        measure: str,
+        mode: str,
+        output: str,
+        cond_mapping: Dict[str, str],
+    ) -> str:
+        """Generate a SELECT for a single check_hierarchy rule from the pivot CTE."""
+        parsed = self._parse_hr_rule(rule)
+        rule_name = rule.name or ""
+
+        l_val = self._build_hr_value_expr(parsed.left_code_item, mode)
+        r_val = self._build_hr_expr_sql(parsed.right_expr_node, mode)
+
+        comp_op: str = parsed.comparison_node.op
+        bool_expr = f"({l_val} {comp_op} {r_val})"
+        imbalance_expr = f"({l_val} - {r_val})"
+
+        when_sql: Optional[str] = None
+        if parsed.has_when:
+            when_sql = self._build_hr_when_sql(parsed.when_node, cond_mapping)
+            bool_expr = f"CASE WHEN NOT ({when_sql}) THEN TRUE ELSE {bool_expr} END"
+            imbalance_expr = (
+                f"CASE WHEN NOT ({when_sql}) THEN CAST(NULL AS DOUBLE) ELSE {imbalance_expr} END"
+            )
+
+        ec_sql = self._error_code_sql(rule.erCode)
+        el_sql = self._error_code_sql(rule.erLevel)
+        el_null = (
+            "CAST(NULL AS DOUBLE)" if self._is_numeric(rule.erLevel) else "CAST(NULL AS VARCHAR)"
+        )
+
+        q_rc = quote_name(rule_comp)
+        q_m = quote_name(measure)
+        select_parts: List[str] = [quote_name(c) for c in other_ids]
+        select_parts.append(f"'{parsed.left_code_item}' AS {q_rc}")
+
+        if output != "all":
+            select_parts.append(f"{l_val} AS {q_m}")
+        if output != "invalid":
+            select_parts.append(f"{bool_expr} AS {quote_name('bool_var')}")
+
+        select_parts.append(f"{imbalance_expr} AS {quote_name('imbalance')}")
+        select_parts.append(f"'{rule_name}' AS {quote_name('ruleid')}")
+
+        if output == "invalid":
+            select_parts.append(f"{ec_sql} AS {quote_name('errorcode')}")
+            select_parts.append(f"{el_sql} AS {quote_name('errorlevel')}")
+        else:
+            select_parts.append(
+                f"CASE WHEN {bool_expr} IS NOT FALSE THEN CAST(NULL AS VARCHAR) "
+                f"ELSE {ec_sql} END AS {quote_name('errorcode')}"
+            )
+            select_parts.append(
+                f"CASE WHEN {bool_expr} IS NOT FALSE THEN {el_null} "
+                f"ELSE {el_sql} END AS {quote_name('errorlevel')}"
+            )
+
+        where_parts: List[str] = []
+        if output == "invalid":
+            if when_sql is not None:
+                where_parts.append(f"({when_sql})")
+            where_parts.append(f"({bool_expr}) = FALSE")
+
+        where_parts.extend(
+            self._build_hr_mode_filter(
+                mode=mode,
+                left_code_item=parsed.left_code_item,
+                right_code_items=parsed.right_code_items,
+                left_val_expr=l_val,
+                right_val_expr=r_val,
+                is_hierarchy=False,
+            )
+        )
+
+        where_clause = f" WHERE {' AND '.join(where_parts)}" if where_parts else ""
+        return f"SELECT {', '.join(select_parts)} FROM _pivot{where_clause}"
+
+    def _build_hierarchy_sql(
+        self,
+        table_src: str,
+        ds: Dataset,
+        rules: list,  # type: ignore[type-arg]
+        rule_comp: str,
+        mode: str,
+        input_mode: str,
+        output: str,
+        cond_mapping: Dict[str, str],
+    ) -> str:
+        """Generate SQL for hierarchy operator using CTE chain."""
+        if not rules:
+            cols = [quote_name(c) for c in ds.get_components_names()]
+            return f"SELECT {', '.join(cols)} FROM {table_src}"
+
+        pivot_sql, measure, other_ids, unique_items, _ = self._build_hr_pivot(
+            table_src, ds, rules, rule_comp, cond_mapping
+        )
+        cte = CTEBuilder()
+        cte.cte("_pivot", pivot_sql)
+        rule_result_refs: List[Tuple[str, str]] = []
+        current_pivot = "_pivot"
+
+        join_keys = [quote_name(c) for c in (*other_ids, *cond_mapping.values())]
+
+        for i, rule in enumerate(rules):
+            parsed = self._parse_hr_rule(rule)
+
+            rule_cte_name = f"_rule_{i}"
+            cte.cte(
+                rule_cte_name,
+                self._build_hierarchy_rule_cte(
+                    parsed=parsed,
+                    pivot_ref=current_pivot,
+                    other_ids=other_ids,
+                    mode=mode,
+                    cond_mapping=cond_mapping,
+                ),
+            )
+            rule_result_refs.append((rule_cte_name, parsed.left_code_item))
+
+            next_pivot = f"_pivot_{i}"
+            cte.cte(
+                next_pivot,
+                self._build_hierarchy_pivot_update(
+                    prev_pivot=current_pivot,
+                    rule_cte=rule_cte_name,
+                    left_code_item=parsed.left_code_item,
+                    join_keys=join_keys,
+                    input_mode=input_mode,
+                    unique_items=unique_items,
+                ),
+            )
+            current_pivot = next_pivot
+
+        # Build final SELECT per rule
+        final_selects: List[str] = []
+        q_rc = quote_name(rule_comp)
+        q_m = quote_name(measure)
+        for rule_cte, left_ci in rule_result_refs:
+            cols = [quote_name(c) for c in other_ids]
+            cols.append(f"'{left_ci}' AS {q_rc}")
+            cols.append(f"_computed AS {q_m}")
+
+            result_filter: List[str] = []
+            if mode == "non_null":
+                result_filter.append("_computed IS NOT NULL")
+            elif mode == "non_zero":
+                result_filter.append("(_computed IS NULL OR _computed != 0)")
+
+            where = f" WHERE {' AND '.join(result_filter)}" if result_filter else ""
+            final_selects.append(f"SELECT {', '.join(cols)} FROM {rule_cte}{where}")
+
+        computed_sql = " UNION ALL ".join(final_selects)
+
+        if output == "computed":
+            return cte.select(computed_sql)
+
+        # output == "all": union(setdiff(op, computed), computed)
+        id_cols = [quote_name(c) for c in ds.get_identifiers_names()]
+        all_cols = [quote_name(c) for c in ds.get_components_names()]
+        all_cols_csv = ", ".join(all_cols)
+        id_cols_csv = ", ".join(id_cols)
+        cte.cte("_computed", computed_sql)
+        cte.cte(
+            "_combined",
+            f"SELECT {all_cols_csv}, 0 AS _src FROM {table_src} "
+            f"UNION ALL SELECT {all_cols_csv}, 1 AS _src FROM _computed",
+        )
+        return cte.select(
+            f"SELECT {all_cols_csv} FROM ("
+            f"SELECT *, ROW_NUMBER() OVER ("
+            f"PARTITION BY {id_cols_csv} ORDER BY _src DESC) AS _rn "
+            f"FROM _combined) WHERE _rn = 1"
+        )
+
+    def _build_hierarchy_rule_cte(
+        self,
+        parsed: "_ParsedHRRule",
+        pivot_ref: str,
+        other_ids: List[str],
+        mode: str,
+        cond_mapping: Dict[str, str],
+    ) -> str:
+        """Generate SELECT for _rule_N CTE in hierarchy CTE chain."""
+        r_val = self._build_hr_expr_sql(parsed.right_expr_node, mode)
+        computed_expr = r_val
+        if parsed.has_when:
+            when_sql = self._build_hr_when_sql(parsed.when_node, cond_mapping)
+            computed_expr = f"CASE WHEN {when_sql} THEN {computed_expr} ELSE NULL END"
+
+        select_parts = [quote_name(c) for c in (*other_ids, *cond_mapping.values())]
+        select_parts.append(f"{computed_expr} AS _computed")
+
+        where_parts = self._build_hr_mode_filter(
+            mode=mode,
+            left_code_item=parsed.left_code_item,
+            right_code_items=parsed.right_code_items,
+            left_val_expr=self._build_hr_value_expr(parsed.left_code_item, mode),
+            right_val_expr=r_val,
+            is_hierarchy=True,
+        )
+        right_presence = [f"_has_{ci} = 1" for ci in parsed.right_code_items]
+        if right_presence:
+            where_parts.append(f"({' OR '.join(right_presence)})")
+
+        where_clause = f" WHERE {' AND '.join(where_parts)}" if where_parts else ""
+        return f"  SELECT {', '.join(select_parts)} FROM {pivot_ref}{where_clause}"
+
+    def _build_hierarchy_pivot_update(
+        self,
+        prev_pivot: str,
+        rule_cte: str,
+        left_code_item: str,
+        join_keys: List[str],
+        input_mode: str,
+        unique_items: List[str],
+    ) -> str:
+        """Generate _pivot_N CTE that updates pivot with a rule's computed value."""
+        val_col = f"_val_{left_code_item}"
+        has_col = f"_has_{left_code_item}"
+
+        other_val_has = []
+        for i in unique_items:
+            if i != left_code_item:
+                other_val_has.append(f"p._val_{i}")
+                other_val_has.append(f"p._has_{i}")
+
+        key_cols = [f"p.{k}" for k in join_keys]
+        first_key = join_keys[0] if join_keys else "_computed"
+
+        if input_mode == "rule_priority":
+            val_expr = (
+                f"CASE WHEN r._computed IS NOT NULL THEN r._computed "
+                f"ELSE p.{val_col} END AS {val_col}"
+            )
+        else:
+            val_expr = (
+                f"CASE WHEN r.{first_key} IS NOT NULL "
+                f"THEN r._computed ELSE p.{val_col} END AS {val_col}"
+            )
+        has_expr = f"CASE WHEN r.{first_key} IS NOT NULL THEN 1 ELSE p.{has_col} END AS {has_col}"
+
+        all_select = key_cols + other_val_has + [val_expr, has_expr]
+        using_clause = ", ".join(join_keys) if join_keys else "1=1"
+
+        return (
+            f"  SELECT {', '.join(all_select)}\n"
+            f"  FROM {prev_pivot} p\n"
+            f"  LEFT JOIN {rule_cte} r USING ({using_clause})"
+        )
+
+    def _build_hr_mode_filter(
+        self,
+        mode: str,
+        left_code_item: str,
+        right_code_items: List[str],
+        left_val_expr: str,
+        right_val_expr: str,
+        is_hierarchy: bool,
+    ) -> List[str]:
+        """Generate WHERE filter clauses for the validation mode using pivot columns."""
+        all_items = [left_code_item] + right_code_items
+        filters: List[str] = []
+
+        if mode == "non_null":
+            items = right_code_items if is_hierarchy else all_items
+            for i in items:
+                filters.append(f"_val_{i} IS NOT NULL")
+
+        elif mode == "non_zero":
+            if is_hierarchy:
+                zero_checks = []
+                for i in right_code_items:
+                    val = self._build_hr_value_expr(i, mode)
+                    zero_checks.append(f"({val} IS NOT NULL AND {val} = 0)")
+                if zero_checks:
+                    filters.append(f"NOT ({' AND '.join(zero_checks)})")
+            else:
+                filters.append(
+                    f"NOT ("
+                    f"({left_val_expr} IS NOT NULL AND {left_val_expr} = 0) AND "
+                    f"({right_val_expr} IS NOT NULL AND {right_val_expr} = 0))"
+                )
+
+        elif mode in ("partial_null", "partial_zero"):
+            items = right_code_items if is_hierarchy else all_items
+            checks = [f"(_has_{i} = 1 AND _val_{i} IS NOT NULL)" for i in items]
+            if checks:
+                filters.append(f"({' OR '.join(checks)})")
+
+        elif mode in ("always_null", "always_zero"):
+            presence = [f"_has_{i} = 1" for i in all_items]
+            filters.append(f"({' OR '.join(presence)})")
+
+        return filters
+
+    def _build_hr_when_sql(self, node: AST.AST, cond_mapping: Dict[str, str]) -> str:
+        """Generate SQL for a WHEN condition in a hierarchical rule."""
+        if isinstance(node, (AST.DefIdentifier, AST.VarID)):
+            col_name = cond_mapping.get(node.value, node.value)
+            return quote_name(col_name)
+        if isinstance(node, AST.Constant):
+            return self._to_sql_literal(node.value)
+        if isinstance(node, (AST.HRUnOp, AST.UnaryOp)):
+            operand_sql = self._build_hr_when_sql(node.operand, cond_mapping)
+            return registry.sql(node.op, operand_sql)
+        if isinstance(node, (AST.HRBinOp, AST.BinOp)):
+            left_sql = self._build_hr_when_sql(node.left, cond_mapping)
+            right_sql = self._build_hr_when_sql(node.right, cond_mapping)
+            return registry.sql(node.op, left_sql, right_sql)
+        if isinstance(node, AST.MulOp):
+            children_sql = [self._build_hr_when_sql(c, cond_mapping) for c in node.children]
+            return registry.sql(node.op, *children_sql)
+        # Fallback to general visitor.
+        return self.visit(node)
+
+    def _error_code_sql(self, value: Any) -> str:
+        """Convert an errorcode value to a SQL literal."""
+        return "CAST(NULL AS VARCHAR)" if value is None else self._to_sql_literal(value=value)
 
     def visit_Validation(self, node: AST.Validation) -> str:
         """Visit CHECK validation operator."""
