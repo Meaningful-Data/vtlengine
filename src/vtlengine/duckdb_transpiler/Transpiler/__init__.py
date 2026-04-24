@@ -235,12 +235,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return None
         return ds, table_src
 
-    def _clause_fallback_sql(self, node: AST.RegularAggregation) -> str:
-        """Return ``SELECT * FROM <dataset>`` or empty when the clause cannot resolve."""
-        if node.dataset:
-            return f"SELECT * FROM {self._get_dataset_sql(node.dataset)}"
-        return ""
-
     def _get_assignment_inputs(self, name: str) -> List[str]:
         if self.dag is None:
             return []
@@ -2127,8 +2121,6 @@ FROM {src}, (
     def visit_RegularAggregation_filter(self, node: AST.RegularAggregation) -> str:
         """Visit filter clause: DS[filter condition]."""
         resolved = self._resolve_clause_dataset(node)
-        if resolved is None:
-            return self._clause_fallback_sql(node)
         ds, table_src = resolved
 
         with self._clause_scope(ds):
@@ -2142,8 +2134,6 @@ FROM {src}, (
     def visit_RegularAggregation_calc(self, node: AST.RegularAggregation) -> str:
         """Visit calc clause: DS[calc new_col := expr, ...]."""
         resolved = self._resolve_clause_dataset(node)
-        if resolved is None:
-            return self._clause_fallback_sql(node)
         ds, table_src = resolved
 
         calc_exprs: Dict[str, str] = {}
@@ -2181,8 +2171,6 @@ FROM {src}, (
     def visit_RegularAggregation_keep(self, node: AST.RegularAggregation) -> str:
         """Visit keep clause."""
         resolved = self._resolve_clause_dataset(node)
-        if resolved is None:
-            return self._clause_fallback_sql(node)
         ds, table_src = resolved
 
         keep_names: List[str] = [
@@ -2219,8 +2207,6 @@ FROM {src}, (
     def visit_RegularAggregation_rename(self, node: AST.RegularAggregation) -> str:
         """Visit rename clause."""
         resolved = self._resolve_clause_dataset(node)
-        if resolved is None:
-            return self._clause_fallback_sql(node)
         ds, table_src = resolved
 
         renames: Dict[str, str] = {}
@@ -2251,8 +2237,6 @@ FROM {src}, (
     def visit_RegularAggregation_sub(self, node: AST.RegularAggregation) -> str:
         """Visit subspace clause."""
         resolved = self._resolve_clause_dataset(node)
-        if resolved is None:
-            return self._clause_fallback_sql(node)
         ds, table_src = resolved
 
         where_parts: List[str] = []
@@ -2274,8 +2258,6 @@ FROM {src}, (
     def visit_RegularAggregation_aggr(self, node: AST.RegularAggregation) -> str:  # noqa: C901
         """Visit aggregate clause: DS[aggr Me := sum(Me) group by Id, ... having ...]."""
         resolved = self._resolve_clause_dataset(node)
-        if resolved is None:
-            return self._clause_fallback_sql(node)
         ds, table_src = resolved
 
         calc_exprs: Dict[str, str] = {}
@@ -2355,12 +2337,9 @@ FROM {src}, (
     def visit_RegularAggregation_apply(self, node: AST.RegularAggregation) -> str:
         """Visit apply clause."""
         resolved = self._resolve_clause_dataset(node)
-        if resolved is None:
-            return self._clause_fallback_sql(node)
         ds, table_src = resolved
 
         output_ds = self.output_datasets.get(self.current_assignment)
-
         id_names = ds.get_identifiers_names()
 
         computed: Dict[str, str] = {}
@@ -2405,13 +2384,10 @@ FROM {src}, (
     def visit_RegularAggregation_unpivot(self, node: AST.RegularAggregation) -> str:
         """Visit unpivot clause."""
         resolved = self._resolve_clause_dataset(node)
-        if resolved is None:
-            return self._clause_fallback_sql(node)
         ds, table_src = resolved
 
         new_id_name = self._resolve_udo_name(self._get_node_value(node.children[0]))
         new_measure_name = self._resolve_udo_name(self._get_node_value(node.children[1]))
-
         id_names = ds.get_identifiers_names()
         measure_names = ds.get_measures_names()
 
@@ -2434,11 +2410,8 @@ FROM {src}, (
     # Aggregation visitor
 
     def _build_agg_group_cols(
-        self,
-        node: AST.Aggregation,
-        ds: Dataset,
-        group_cols: List[str],
-    ) -> Tuple[List[str], List[str]]:
+            self, node: AST.Aggregation, ds: Dataset, group_cols: List[str]
+        ) -> Tuple[List[str], List[str]]:
         """Build SELECT and GROUP BY column lists, handling time_agg."""
         time_agg_expr: Optional[str] = None
         time_agg_id: Optional[str] = None
@@ -2513,9 +2486,7 @@ FROM {src}, (
         # Resolve group columns from input identifiers.
         all_ids = ds.get_identifiers_names()
         group_cols = self._resolve_group_cols(node, all_ids)
-
         cols, group_by_cols = self._build_agg_group_cols(node, ds, group_cols)
-
         ds_tp_minmax_cols: List[tuple[str, str]] = []
 
         # count() produces a single int_var measure.
@@ -2739,7 +2710,6 @@ FROM {src}, (
     def visit_MulOp_between(self, node: AST.MulOp) -> str:
         """Visit BETWEEN: expr BETWEEN low AND high. Handles dataset operand."""
         operand_type = self._get_node_type(node.children[0])
-
         low_sql = self.visit(node.children[1])
         high_sql = self.visit(node.children[2])
 
@@ -2814,13 +2784,9 @@ FROM {src}, (
             return child_sqls[0] if child_sqls else ""
 
         first_ds = self._get_dataset_structure(node.children[0])
-        if first_ds is None:
-            return registry.sql(op, *child_sqls)
-
         id_names = first_ds.get_identifiers_names()
         a_sql = child_sqls[0]
         b_sql = child_sqls[1]
-
         on_clause = self._join_on_clause(id_names, "a", "b")
 
         if op == tokens.INTERSECT:
@@ -2828,14 +2794,12 @@ FROM {src}, (
                 f"SELECT a.* FROM ({a_sql}) AS a "
                 f"WHERE EXISTS (SELECT 1 FROM ({b_sql}) AS b WHERE {on_clause})"
             )
-
-        if op == tokens.SETDIFF:
+        elif op == tokens.SETDIFF:
             return (
                 f"SELECT a.* FROM ({a_sql}) AS a "
                 f"WHERE NOT EXISTS (SELECT 1 FROM ({b_sql}) AS b WHERE {on_clause})"
             )
-
-        if op == tokens.SYMDIFF:
+        elif op == tokens.SYMDIFF:
             second_ds = self._get_dataset_structure(node.children[1])
             second_ids = second_ds.get_identifiers_names() if second_ds else id_names
             on_clause_rev = self._join_on_clause(second_ids, "c", "d")
@@ -2888,9 +2852,8 @@ FROM {src}, (
         source_ds = self._get_dataset_structure(source_node)
         alias = "cond"
 
-        # When the condition is a binary op between two datasets (e.g. DS_1 > DS_2),
-        # it cannot be evaluated as a simple column expression — evaluate it as a
-        # subquery and reference its boolean measure column instead.
+        # When the condition is a binary op between two datasets is evaluated
+        # as a subquery and reference its boolean measure column instead.
         cond_is_ds_vs_ds = (
             isinstance(node.condition, AST.BinOp)
             and self._get_node_type(node.condition.left) == _DATASET
@@ -2943,9 +2906,7 @@ FROM {src}, (
             builder = SQLBuilder().select(*cols).from_table(source_sql, alias)
 
         # Use LEFT JOINs so empty datasets don't eliminate all rows
-        then_join_id = self._left_join_dataset(
-            node.thenOp, t_type, "t", source_ids, alias, builder
-        )
+        then_join_id = self._left_join_dataset(node.thenOp, t_type, "t", source_ids, alias, builder)
         e_join_id = self._left_join_dataset(node.elseOp, e_type, "e", source_ids, alias, builder)
 
         # Filter: only keep rows where the selected side has a match.
@@ -3284,20 +3245,16 @@ FROM {src}, (
 
     def visit_TimeAggregation(self, node: AST.TimeAggregation) -> str:  # type: ignore[override]
         """Visit TIME_AGG operation."""
+        conf = node.conf
         target = node.period_to
-        conf = node.conf  # "first", "last", or None
 
         if node.operand is not None:
             operand_type = self._get_node_type(node.operand)
-
-            # Dataset-level time_agg: apply to the time measure
             if operand_type == _DATASET:
                 return self._visit_time_agg_dataset(node, target, conf)
 
-            is_tp = self._is_operand_type(node.operand, TimePeriod)
             operand_sql = self.visit(node.operand)
-
-            if is_tp:
+            if self._is_operand_type(node.operand, TimePeriod):
                 return f"vtl_time_agg_tp(vtl_period_parse({operand_sql}), '{target}')"
             else:
                 agg_expr = f"vtl_time_agg_date({operand_sql}, '{target}')"
