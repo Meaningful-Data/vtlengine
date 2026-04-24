@@ -1,6 +1,7 @@
 """Transpile VTL AST nodes into DuckDB SQL."""
 
 import re
+from collections import Counter
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import dataclass, field
@@ -3209,92 +3210,93 @@ FROM {src}, (
     # Join visitor
     # =========================================================================
 
-    def visit_JoinOp(self, node: AST.JoinOp) -> str:  # type: ignore[override]  # noqa: C901
+    def visit_JoinOp(self, node: AST.JoinOp) -> str:  # type: ignore[override]
         """Visit a join operation."""
         clause_info: List[Dict[str, Any]] = []
         for clause in node.clauses:
             alias: Optional[str] = None
             actual_node = clause
-
             if isinstance(clause, AST.BinOp) and clause.op == tokens.AS:
                 actual_node = clause.left
                 alias = self._get_node_value(clause.right)
 
             ds = self._get_dataset_structure(actual_node)
-            table_src = self._get_dataset_sql(actual_node)
             alias = alias or ds.name
-            sql_alias = quote_name(alias) if ("." in alias or " " in alias) else alias
-
             clause_info.append(
                 {
                     "node": actual_node,
                     "ds": ds,
-                    "table_src": table_src,
+                    "table_src": self._get_dataset_sql(actual_node),
                     "alias": alias,
-                    "sql_alias": sql_alias,
+                    "sql_alias": quote_name(alias) if ("." in alias or " " in alias) else alias,
+                    "id_names": set(ds.get_identifiers_names()),
                 }
             )
 
-        first_ds = clause_info[0]["ds"]
-        first_ids = set(first_ds.get_identifiers_names())
+        is_cross_join = node.op == tokens.CROSS_JOIN
         explicit_using = list(node.using) if node.using else None
 
-        # Compute pairwise join keys for each secondary dataset.
+        # Pairwise keys: for each secondary dataset, the identifiers it shares with any
+        # preceding dataset (or the explicit USING list).
         if explicit_using is not None:
-            accumulated_ids = set(explicit_using)
-            pairwise_keys = [explicit_using] * (len(clause_info) - 1)
+            pairwise_keys: List[List[str]] = [explicit_using] * (len(clause_info) - 1)
         else:
-            accumulated_ids = set(first_ids)
             pairwise_keys = []
+            accumulated_ids: Set[str] = set(clause_info[0]["id_names"])
             for info in clause_info[1:]:
-                ds_ids = set(info["ds"].get_identifiers_names()) if info["ds"] else set()
-                common = sorted(accumulated_ids & ds_ids)
-                pairwise_keys.append(common)
-                accumulated_ids |= ds_ids
+                pairwise_keys.append(sorted(accumulated_ids & info["id_names"]))
+                accumulated_ids |= info["id_names"]
 
-        # Flatten all join keys for the purpose of determining which components
-        # are treated as identifiers (not aliased as duplicates) but for cross joins.
-        is_cross_join = node.op == tokens.CROSS_JOIN
-        all_join_ids = set()
+        # Non-cross joins: any identifier (and explicit USING key) is treated as a join
+        # column — emitted once and not aliased as a duplicate.
+        all_join_ids: Set[str] = set()
         if not is_cross_join:
-            all_join_ids.union(*pairwise_keys)
+            all_join_ids.update(*pairwise_keys)
             for info in clause_info:
-                all_join_ids |= set(info["ds"].get_identifiers_names())
+                all_join_ids |= info["id_names"]
 
-        # Detect duplicate non-identifier component names across datasets
-        comp_count = {}
-        for info in clause_info:
-            for name in info["ds"].get_components_names():
-                if name not in all_join_ids:
-                    comp_count[name] = comp_count.get(name, 0) + 1
-
+        comp_count: Counter[str] = Counter(
+            name
+            for info in clause_info
+            for name in info["ds"].get_components_names()
+            if name not in all_join_ids
+        )
         duplicate_comps = {name for name, cnt in comp_count.items() if cnt >= 2}
+
+        # First alias that exposes each component — used to pick the left side of ON
+        # clauses. A USING key may be a measure in one dataset and an identifier in
+        # another, so we track components (not just identifiers).
+        comp_to_alias: Dict[str, str] = {}
+        for info in clause_info:
+            for name in info["ds"].components:
+                comp_to_alias.setdefault(name, info["sql_alias"])
+
         first_sql_alias = clause_info[0]["sql_alias"]
 
-        # Build columns, aliasing duplicates with "alias#comp" convention
         cols: List[str] = []
         self._join_alias_map = {}
-        seen_identifiers: set[str] = set()
+        seen_identifiers: Set[str] = set()
         for info in clause_info:
             sa = info["sql_alias"]
             for name, comp in info["ds"].components.items():
-                if (comp.role == Role.IDENTIFIER and not is_cross_join) or name in all_join_ids:
-                    if name not in seen_identifiers:
-                        seen_identifiers.add(name)
-                        if node.op == tokens.FULL_JOIN and name in all_join_ids:
-                            # For FULL JOIN identifiers, use COALESCE to pick the non-NULL values.
-                            coalesce_parts = [
-                                f"{i['sql_alias']}.{quote_name(name)}"
-                                for i in clause_info
-                                if i["ds"] and name in i["ds"].components
-                            ]
-                            cols.append(
-                                f"COALESCE({', '.join(coalesce_parts)}) AS {quote_name(name)}"
-                            )
-                        else:
-                            cols.append(f"{sa}.{quote_name(name)}")
+                is_join_col = (
+                    comp.role == Role.IDENTIFIER and not is_cross_join
+                ) or name in all_join_ids
+                if is_join_col:
+                    if name in seen_identifiers:
+                        continue
+                    seen_identifiers.add(name)
+                    if node.op == tokens.FULL_JOIN and name in all_join_ids:
+                        # FULL JOIN: COALESCE across sides to pick the non-NULL value.
+                        coalesce_parts = [
+                            f"{i['sql_alias']}.{quote_name(name)}"
+                            for i in clause_info
+                            if name in i["ds"].components
+                        ]
+                        cols.append(f"COALESCE({', '.join(coalesce_parts)}) AS {quote_name(name)}")
+                    else:
+                        cols.append(f"{sa}.{quote_name(name)}")
                 elif name in duplicate_comps:
-                    # Duplicate non-identifier: alias with "alias#comp" convention
                     qualified_name = f"{info['alias']}#{name}"
                     cols.append(f"{sa}.{quote_name(name)} AS {quote_name(qualified_name)}")
                     self._join_alias_map[qualified_name] = qualified_name
@@ -3302,37 +3304,22 @@ FROM {src}, (
                     cols.append(f"{sa}.{quote_name(name)}")
 
         builder = SQLBuilder()
-        if not cols:
-            builder.select_all()
-        else:
-            builder.select(*cols)
+        builder.select(*cols) if cols else builder.select_all()
         builder.from_table(clause_info[0]["table_src"], first_sql_alias)
 
         for idx, info in enumerate(clause_info[1:]):
-            join_keys = pairwise_keys[idx]
             if is_cross_join:
                 builder.cross_join(info["table_src"], info["sql_alias"])
-            else:
-                on_parts = []
-                for id_ in join_keys:
-                    if id_ not in (info["ds"].components if info["ds"] else {}):
-                        continue
-                    # Find which preceding dataset alias has this identifier
-                    left_alias = first_sql_alias
-                    for prev_info in clause_info[: idx + 1]:
-                        if prev_info["ds"] and id_ in prev_info["ds"].components:
-                            left_alias = prev_info["sql_alias"]
-                            break
-                    on_parts.append(
-                        f"{left_alias}.{quote_name(id_)} = {info['sql_alias']}.{quote_name(id_)}"
-                    )
-                on_clause = " AND ".join(on_parts) if on_parts else "1=1"
-                builder.join(
-                    info["table_src"],
-                    info["sql_alias"],
-                    on=on_clause,
-                    join_type=node.op,
-                )
+                continue
+            right_alias = info["sql_alias"]
+            on_parts = [
+                f"{comp_to_alias.get(k, first_sql_alias)}.{quote_name(k)} = "
+                f"{right_alias}.{quote_name(k)}"
+                for k in pairwise_keys[idx]
+                if k in info["ds"].components
+            ]
+            on_clause = " AND ".join(on_parts) if on_parts else "1=1"
+            builder.join(info["table_src"], right_alias, on=on_clause, join_type=node.op)
 
         return builder.build()
 
