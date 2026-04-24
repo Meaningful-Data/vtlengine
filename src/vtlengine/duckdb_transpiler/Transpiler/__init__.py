@@ -3212,7 +3212,7 @@ FROM {src}, (
     def visit_JoinOp(self, node: AST.JoinOp) -> str:  # type: ignore[override]  # noqa: C901
         """Visit a join operation."""
         clause_info: List[Dict[str, Any]] = []
-        for i, clause in enumerate(node.clauses):
+        for clause in node.clauses:
             alias: Optional[str] = None
             actual_node = clause
 
@@ -3222,12 +3222,7 @@ FROM {src}, (
 
             ds = self._get_dataset_structure(actual_node)
             table_src = self._get_dataset_sql(actual_node)
-
-            if alias is None:
-                # Use dataset name as alias (mirrors interpreter convention)
-                alias = ds.name if ds else chr(ord("a") + i)
-
-            # Quote alias for SQL if it contains special characters
+            alias = alias or ds.name
             sql_alias = quote_name(alias) if ("." in alias or " " in alias) else alias
 
             clause_info.append(
@@ -3240,57 +3235,37 @@ FROM {src}, (
                 }
             )
 
-        if not clause_info:
-            return ""
-
         first_ds = clause_info[0]["ds"]
-        if first_ds is None:
-            return ""
-
         first_ids = set(first_ds.get_identifiers_names())
-        self._get_output_dataset()
-
-        explicit_using: Optional[List[str]] = None
-        if node.using:
-            explicit_using = list(node.using)
+        explicit_using = list(node.using) if node.using else None
 
         # Compute pairwise join keys for each secondary dataset.
-        # When explicit using is given, all secondary datasets use the same
-        # keys.  Otherwise, each secondary dataset is joined on the identifiers
-        # it shares with the accumulated result (mirroring the interpreter).
-        accumulated_ids = set(first_ids)
-        pairwise_keys: List[List[str]] = []
-        for info in clause_info[1:]:
-            if explicit_using is not None:
-                pairwise_keys.append(list(explicit_using))
-            else:
+        if explicit_using is not None:
+            accumulated_ids = set(explicit_using)
+            pairwise_keys = [explicit_using] * (len(clause_info) - 1)
+        else:
+            accumulated_ids = set(first_ids)
+            pairwise_keys = []
+            for info in clause_info[1:]:
                 ds_ids = set(info["ds"].get_identifiers_names()) if info["ds"] else set()
                 common = sorted(accumulated_ids & ds_ids)
                 pairwise_keys.append(common)
-                # Accumulate identifiers from this dataset for the next pairwise join
                 accumulated_ids |= ds_ids
 
         # Flatten all join keys for the purpose of determining which components
-        # are treated as identifiers (not aliased as duplicates).
-        # For cross joins, identifiers from different datasets must be qualified
-        # (e.g. d1#Id_1, d2#Id_1), so we skip all identifier deduplication.
-        all_join_ids: Set[str] = set()
+        # are treated as identifiers (not aliased as duplicates) but for cross joins.
+        all_join_ids = set()
         if node.op != tokens.CROSS_JOIN:
-            for keys in pairwise_keys:
-                all_join_ids.update(keys)
+            all_join_ids.union(*pairwise_keys)
             for info in clause_info:
-                if info["ds"]:
-                    for comp_name, comp in info["ds"].components.items():
-                        if comp.role == Role.IDENTIFIER:
-                            all_join_ids.add(comp_name)
+                all_join_ids |= set(info["ds"].get_identifiers_names())
 
         # Detect duplicate non-identifier component names across datasets
-        comp_count: Dict[str, int] = {}
+        comp_count = {}
         for info in clause_info:
-            if info["ds"]:
-                for comp_name, _comp in info["ds"].components.items():
-                    if comp_name not in all_join_ids:
-                        comp_count[comp_name] = comp_count.get(comp_name, 0) + 1
+            for comp_name in info["ds"].get_components_names():
+                if comp_name not in all_join_ids:
+                    comp_count[comp_name] = comp_count.get(comp_name, 0) + 1
 
         duplicate_comps = {name for name, cnt in comp_count.items() if cnt >= 2}
         first_sql_alias = clause_info[0]["sql_alias"]
@@ -3305,7 +3280,8 @@ FROM {src}, (
             if not info["ds"]:
                 continue
             sa = info["sql_alias"]
-            for comp_name, comp in info["ds"].components.items():
+            for comp_name in info["ds"].get_components_names():
+                comp = info["ds"].components.get(comp_name)
                 is_join_id = (
                     comp.role == Role.IDENTIFIER and node.op != tokens.CROSS_JOIN
                 ) or comp_name in all_join_ids
