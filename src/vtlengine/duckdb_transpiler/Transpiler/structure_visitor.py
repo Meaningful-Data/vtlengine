@@ -46,7 +46,6 @@ class StructureVisitor(ASTTemplate):
         self._join_alias_map: Dict[str, str] = {}
         self._udo_params: Optional[List[Dict[str, Any]]] = None
         self._udos: Dict[str, Dict[str, Any]] = {}
-        self._structure_context: Dict[int, Dataset] = {}
 
     # Dispatcher: two-level visit — first ``visit_{Class}_{op}``, then ``visit_{Class}``
 
@@ -82,10 +81,6 @@ class StructureVisitor(ASTTemplate):
         """Pop the innermost UDO parameter scope."""
         self._pop_udo_params()
 
-    def clear_context(self) -> None:
-        """Clear the structure cache."""
-        self._structure_context.clear()
-
     # Standalone visit_* methods (Optional[Dataset]).
     # SQLTranspiler overrides these with SQL-generating versions.
 
@@ -112,8 +107,7 @@ class StructureVisitor(ASTTemplate):
             ds = self._get_dataset_structure(node.children[0])
             if ds is None:
                 return None
-            type_node = node.children[1]
-            target_str = type_node.value if hasattr(type_node, "value") else str(type_node)
+            target_str = self._resolve_name(node.children[1])
             target_type = SCALAR_TYPES.get(
                 target_str, _DUCKDB_TYPE_TO_VTL.get(target_str.upper(), Number)
             )
@@ -267,8 +261,6 @@ class StructureVisitor(ASTTemplate):
             if type_name == "TimePeriod":
                 return f"vtl_period_normalize('{escaped}')"
             return f"'{escaped}'"
-        if isinstance(value, (int, float)):
-            return str(value)
         return str(value)
 
     def _constant_to_sql(self, node: AST.Constant) -> str:
@@ -509,11 +501,13 @@ class StructureVisitor(ASTTemplate):
     # =========================================================================
 
     @staticmethod
+    def _resolve_name(node: Any) -> str:
+        """Return ``node.value`` if present, else ``str(node)``."""
+        return node.value if hasattr(node, "value") else str(node)
+
+    @staticmethod
     def _make_comp(
-        name: str,
-        dtype: Any,
-        role: Role = Role.MEASURE,
-        nullable: bool = True,
+        name: str, dtype: Any, role: Role = Role.MEASURE, nullable: bool = True
     ) -> Component:
         """Build a ``Component`` with the common field ordering."""
         return Component(name=name, data_type=dtype, role=role, nullable=nullable)
@@ -604,6 +598,7 @@ class StructureVisitor(ASTTemplate):
         comps["bool_var"] = self._make_comp("bool_var", Boolean)
         return Dataset(name="", components=comps, data=None)
 
+    # =========================================================================
     # Structure builders for clause operations
     # =========================================================================
 
@@ -612,12 +607,8 @@ class StructureVisitor(ASTTemplate):
         input_ds = self._get_dataset_structure(node.dataset)
         if input_ds is None:
             return None
-        new_id = (
-            node.children[0].value if hasattr(node.children[0], "value") else str(node.children[0])
-        )
-        new_measure = (
-            node.children[1].value if hasattr(node.children[1], "value") else str(node.children[1])
-        )
+        new_id = self._resolve_name(node.children[0])
+        new_measure = self._resolve_name(node.children[1])
         comps = self._identifiers_dict(input_ds)
         comps[new_id] = self._make_comp(new_id, StringType, role=Role.IDENTIFIER, nullable=False)
         measure_types = [
@@ -628,12 +619,7 @@ class StructureVisitor(ASTTemplate):
         return Dataset(name="_unpivot", components=comps, data=None)
 
     def _build_calc_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:
-        """Build the output dataset structure for a calc clause.
-
-        The result contains all input columns plus any new columns defined
-        by the calc assignments.  This is needed when a calc is used as an
-        intermediate result (e.g. chained ``[calc A][calc B]``).
-        """
+        """Build the output dataset structure for a calc clause."""
         input_ds = self._get_dataset_structure(node.dataset)
         if input_ds is None:
             return None
@@ -642,36 +628,22 @@ class StructureVisitor(ASTTemplate):
         comps = dict(input_ds.components)
         for child in node.children:
             assignment = child
-            calc_role: Optional[Role] = None
+            calc_role = Role.MEASURE
             if isinstance(child, AST.UnaryOp) and isinstance(child.operand, AST.Assignment):
-                # Role is encoded in UnaryOp.op: "identifier", "measure", "attribute"
-                if child.op == tokens.IDENTIFIER:
-                    calc_role = Role.IDENTIFIER
-                elif child.op == tokens.ATTRIBUTE:
-                    calc_role = Role.ATTRIBUTE
-                else:
-                    calc_role = Role.MEASURE
+                if child.op in (tokens.IDENTIFIER, tokens.ATTRIBUTE):
+                    calc_role = child.op.capitalize()
                 assignment = child.operand
             if isinstance(assignment, AST.Assignment):
-                col_name = assignment.left.value if hasattr(assignment.left, "value") else ""
-                col_name = self._resolve_udo_name(col_name)
+                col = self._resolve_udo_name(self._resolve_name(assignment.left))
                 # Update role if calc promotes an existing column
-                if (
-                    col_name in comps
-                    and calc_role is not None
-                    and comps[col_name].role != calc_role
-                ):
-                    old = comps[col_name]
-                    comps[col_name] = self._make_comp(
-                        old.name,
-                        old.data_type,
-                        role=calc_role,
-                        nullable=old.nullable if calc_role != Role.IDENTIFIER else False,
-                    )
-                elif col_name not in comps and output_ds and col_name in output_ds.components:
-                    comps[col_name] = output_ds.components[col_name]
-                elif col_name not in comps:
-                    comps[col_name] = self._make_comp(col_name, Number)
+                if col in comps and calc_role is not None and comps[col].role != calc_role:
+                    old = comps[col]
+                    nullable = old.nullable if calc_role != Role.IDENTIFIER else False
+                    comps[col] = self._make_comp(old.name, old.data_type, calc_role, nullable)
+                elif col not in comps and output_ds and col in output_ds.components:
+                    comps[col] = output_ds.components[col]
+                elif col not in comps:
+                    comps[col] = self._make_comp(col, Number)
         return Dataset(name=input_ds.name, components=comps, data=None)
 
     def _build_ds_ds_binop_structure(self, node: AST.BinOp) -> Optional[Dataset]:
@@ -699,52 +671,51 @@ class StructureVisitor(ASTTemplate):
 
         return Dataset(name=left_ds.name, components=comps, data=None)
 
+    @staticmethod
+    def _iter_assignments(children: List[AST.AST]) -> List[AST.Assignment]:
+        """Unwrap a clause's children into their ``Assignment`` nodes."""
+        result: List[AST.Assignment] = []
+        for child in children:
+            if isinstance(child, AST.UnaryOp) and isinstance(child.operand, AST.Assignment):
+                result.append(child.operand)
+            elif isinstance(child, AST.Assignment):
+                result.append(child)
+        return result
+
     def _build_aggregate_clause_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:
         """Build the output dataset structure for an aggregate clause."""
         input_ds = self._get_dataset_structure(node.dataset)
         if input_ds is None:
             return None
 
-        comps: Dict[str, Component] = {}
-
-        # Determine group-by identifiers from children
         all_input_ids = {n for n, c in input_ds.components.items() if c.role == Role.IDENTIFIER}
-        group_ids: set[str] = set()
+        group_ids: Set[str] = set()
         grouping_op: str = ""
-        for child in node.children:
-            assignment = child
-            if isinstance(child, AST.UnaryOp) and isinstance(child.operand, AST.Assignment):
-                assignment = child.operand
-            if isinstance(assignment, AST.Assignment):
-                agg_node = assignment.right
-                if isinstance(agg_node, AST.Aggregation) and agg_node.grouping:
-                    grouping_op = agg_node.grouping_op or ""
-                    for g in agg_node.grouping:
-                        if isinstance(g, (AST.VarID, AST.Identifier)):
-                            group_ids.add(g.value)
+        measure_names: List[str] = []
 
-        # Resolve which identifiers survive the aggregation
+        for assignment in self._iter_assignments(node.children):
+            agg_node = assignment.right
+            if isinstance(agg_node, AST.Aggregation) and agg_node.grouping:
+                grouping_op = agg_node.grouping_op or ""
+                for g in agg_node.grouping:
+                    if isinstance(g, (AST.VarID, AST.Identifier)):
+                        group_ids.add(g.value)
+            measure_names.append(self._resolve_name(assignment.left))
+
         if grouping_op == "group by":
             kept_ids = group_ids
         elif grouping_op == "group except":
             kept_ids = all_input_ids - group_ids
         else:
-            # No explicit grouping → all identifiers are kept
             kept_ids = all_input_ids
 
-        # Add group-by identifiers
-        for name, comp in input_ds.components.items():
-            if comp.role == Role.IDENTIFIER and name in kept_ids:
-                comps[name] = comp
-
-        # Add computed measures
-        for child in node.children:
-            assignment = child
-            if isinstance(child, AST.UnaryOp) and isinstance(child.operand, AST.Assignment):
-                assignment = child.operand
-            if isinstance(assignment, AST.Assignment):
-                col_name = assignment.left.value if hasattr(assignment.left, "value") else ""
-                comps[col_name] = self._make_comp(col_name, Number)
+        comps: Dict[str, Component] = {
+            name: comp
+            for name, comp in input_ds.components.items()
+            if comp.role == Role.IDENTIFIER and name in kept_ids
+        }
+        for col_name in measure_names:
+            comps[col_name] = self._make_comp(col_name, Number)
 
         return Dataset(name=input_ds.name, components=comps, data=None)
 
@@ -754,22 +725,21 @@ class StructureVisitor(ASTTemplate):
         if parent_ds is None:
             return None
 
-        comp_name = node.right.value if hasattr(node.right, "value") else str(node.right)
-        comp_name = self._resolve_udo_name(comp_name)
-
+        comp_name = self._resolve_udo_name(self._resolve_name(node.right))
         comps = self._identifiers_dict(parent_ds)
 
-        # Add the extracted component as a measure.
-        # When extracting an identifier or attribute, rename it using COMP_NAME_MAPPING
-        # to match the SQL generation in _visit_membership.
-        if comp_name in parent_ds.components:
-            orig = parent_ds.components[comp_name]
-            alias_name = comp_name
-            if orig.role in (Role.IDENTIFIER, Role.ATTRIBUTE):
-                alias_name = COMP_NAME_MAPPING.get(orig.data_type, comp_name)
-            comps[alias_name] = self._make_comp(alias_name, orig.data_type)
-        else:
+        orig = parent_ds.components.get(comp_name)
+        if orig is None:
             comps[comp_name] = self._make_comp(comp_name, Number)
+        else:
+            # Identifier/attribute extractions are aliased via COMP_NAME_MAPPING
+            # to match the SQL emitted by _visit_membership.
+            alias_name = (
+                COMP_NAME_MAPPING.get(orig.data_type, comp_name)
+                if orig.role in (Role.IDENTIFIER, Role.ATTRIBUTE)
+                else comp_name
+            )
+            comps[alias_name] = self._make_comp(alias_name, orig.data_type)
         return Dataset(name=parent_ds.name, components=comps, data=None)
 
     def _build_boolean_result_structure(self, ds: Dataset) -> Dataset:
@@ -788,15 +758,10 @@ class StructureVisitor(ASTTemplate):
         for child in node.children:
             if isinstance(child, AST.RenameNode):
                 old = child.old_name
-                # Check if alias-qualified name exists in input dataset
-                if "#" in old and old in input_ds.components:
-                    renames[old] = child.new_name
-                elif "#" in old:
-                    # Strip alias prefix from membership refs (e.g. d2#Me_2 -> Me_2)
+                # Strip alias prefix from membership refs.
+                if "#" in old and old not in input_ds.components:
                     old = old.split("#", 1)[1]
-                    renames[old] = child.new_name
-                else:
-                    renames[old] = child.new_name
+                renames[old] = child.new_name
 
         unqualified_to_qualified: Dict[str, str] = {}
         for comp_name in input_ds.components:
@@ -820,48 +785,44 @@ class StructureVisitor(ASTTemplate):
 
         return Dataset(name=input_ds.name, components=comps, data=None)
 
+    def _build_filtered_structure(self, input_ds: Dataset, keep: Set[str]) -> Dataset:
+        """Return a Dataset containing only components whose names are in ``keep``."""
+        comps = {name: comp for name, comp in input_ds.components.items() if name in keep}
+        return Dataset(name=input_ds.name, components=comps, data=None)
+
     def _build_drop_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:
         """Build the output structure for a drop clause."""
         input_ds = self._get_dataset_structure(node.dataset)
         if input_ds is None:
             return None
         drop_names = set(self._extract_component_names(node.children, input_ds.components))
-        comps = {name: comp for name, comp in input_ds.components.items() if name not in drop_names}
-        return Dataset(name=input_ds.name, components=comps, data=None)
+        keep = {name for name in input_ds.components if name not in drop_names}
+        return self._build_filtered_structure(input_ds, keep)
 
     def _build_subspace_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:
         """Build the output structure for a subspace clause."""
         input_ds = self._get_dataset_structure(node.dataset)
         if input_ds is None:
             return None
-        remove_ids: set[str] = set()
-        for child in node.children:
-            if isinstance(child, AST.BinOp):
-                col_name = child.left.value if hasattr(child.left, "value") else ""
-                remove_ids.add(col_name)
-        comps = {name: comp for name, comp in input_ds.components.items() if name not in remove_ids}
-        return Dataset(name=input_ds.name, components=comps, data=None)
+        remove_ids = {
+            self._resolve_name(child.left)
+            for child in node.children
+            if isinstance(child, AST.BinOp)
+        }
+        keep = {name for name in input_ds.components if name not in remove_ids}
+        return self._build_filtered_structure(input_ds, keep)
 
     def _build_keep_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:
         """Build the output structure for a keep clause."""
         input_ds = self._get_dataset_structure(node.dataset)
         if input_ds is None:
             return None
-        # Identifiers are always kept
-        keep_names = {
-            name for name, comp in input_ds.components.items() if comp.role == Role.IDENTIFIER
-        }
-        keep_names |= set(self._extract_component_names(node.children, input_ds.components))
-        comps = {name: comp for name, comp in input_ds.components.items() if name in keep_names}
-        return Dataset(name=input_ds.name, components=comps, data=None)
+        keep = {name for name, comp in input_ds.components.items() if comp.role == Role.IDENTIFIER}
+        keep |= set(self._extract_component_names(node.children, input_ds.components))
+        return self._build_filtered_structure(input_ds, keep)
 
     def _build_join_structure(self, node: AST.JoinOp) -> Optional[Dataset]:
-        """Build the output structure for a join operation from its clauses.
-
-        Merges all components from all joined datasets.  When multiple datasets
-        share a non-identifier column name the duplicates are qualified with
-        ``alias#comp`` – mirroring the VDS convention used by the interpreter.
-        """
+        """Build the output structure for a join operation from its clauses."""
         # Determine the using identifiers for this join
         using_ids: Optional[List[str]] = None
         if node.using:
@@ -874,7 +835,7 @@ class StructureVisitor(ASTTemplate):
             alias: Optional[str] = None
             if isinstance(clause, AST.BinOp) and clause.op == tokens.AS:
                 actual_node = clause.left
-                alias = clause.right.value if hasattr(clause.right, "value") else str(clause.right)
+                alias = self._resolve_name(clause.right)
             ds = self._get_dataset_structure(actual_node)
             if alias is None:
                 # Use the dataset name as alias (same convention as interpreter)
@@ -886,9 +847,6 @@ class StructureVisitor(ASTTemplate):
             return self._get_output_dataset()
 
         # Determine common identifiers if no USING specified
-        # Use pairwise accumulation (same as visit_JoinOp) so that multi-dataset
-        # joins where secondary datasets share different identifiers work correctly.
-        # For cross joins, identifiers from different datasets must be qualified
         is_cross = node.op == tokens.CROSS_JOIN
         if using_ids is None:
             if is_cross:
@@ -940,8 +898,8 @@ class StructureVisitor(ASTTemplate):
             if isinstance(child, (AST.VarID, AST.Identifier)):
                 names.append(child.value)
             elif isinstance(child, AST.BinOp) and child.op == tokens.MEMBERSHIP:
-                ds_alias = child.left.value if hasattr(child.left, "value") else str(child.left)
-                comp = child.right.value if hasattr(child.right, "value") else str(child.right)
+                ds_alias = self._resolve_name(child.left)
+                comp = self._resolve_name(child.right)
                 qualified = f"{ds_alias}#{comp}"
                 names.append(qualified if qualified in ctx else comp)
         return names
@@ -961,10 +919,11 @@ class StructureVisitor(ASTTemplate):
                     time_id = name
                 else:
                     other_ids.append(name)
-        if not time_id and ds.get_identifiers_names():
+        if not time_id:
             all_ids = ds.get_identifiers_names()
-            time_id = all_ids[0]
-            other_ids = all_ids[1:]
+            if all_ids:
+                time_id = all_ids[0]
+                other_ids = all_ids[1:]
         return time_id, other_ids
 
     def _resolve_grouping_names(self, grouping: List[AST.AST]) -> List[str]:

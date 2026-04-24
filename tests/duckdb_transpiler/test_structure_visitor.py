@@ -49,21 +49,6 @@ class TestStructureVisitorBasics:
         )
         assert visitor is not None
 
-    def test_visitor_clear_context_resets_structure_cache(self):
-        """Test that clear_context removes cached structures."""
-        ds1 = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
-        visitor = StructureVisitor(
-            available_tables={"DS_1": ds1},
-            output_datasets={},
-        )
-        # Manually add something to context
-        visitor._structure_context[123] = ds1
-        assert len(visitor._structure_context) == 1
-
-        visitor.clear_context()
-
-        assert len(visitor._structure_context) == 0
-
 
 class TestStructureVisitorUDOParams:
     """Test UDO parameter handling in StructureVisitor."""
