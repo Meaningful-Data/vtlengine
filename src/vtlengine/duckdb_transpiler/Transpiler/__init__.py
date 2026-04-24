@@ -2885,14 +2885,8 @@ FROM {src}, (
         """Build SQL for dataset-level IF-THEN-ELSE with JOINs."""
         # Find the source dataset that the condition references
         source_node = self._find_condition_source(node.condition)
-        if source_node is None:
-            return self._scalar_if_sql(node)
-
         source_ds = self._get_dataset_structure(source_node)
-        if source_ds is None:
-            return self._scalar_if_sql(node)
-
-        alias_cond = "cond"
+        alias = "cond"
 
         # When the condition is a binary op between two datasets (e.g. DS_1 > DS_2),
         # it cannot be evaluated as a simple column expression — evaluate it as a
@@ -2907,25 +2901,25 @@ FROM {src}, (
             source_sql = self.visit(node.condition)
             source_ids = list(cond_ds.get_identifiers_names())
             bool_measures = list(cond_ds.get_measures_names())
-            cond_expr = f"{alias_cond}.{quote_name(bool_measures[0])}" if bool_measures else "TRUE"
+            cond_expr = f"{alias}.{quote_name(bool_measures[0])}" if bool_measures else "TRUE"
         else:
             source_sql = self._get_dataset_sql(source_node)
             source_ids = list(source_ds.get_identifiers_names())
             # Evaluate condition as a column expression (not a full SELECT)
-            with self._clause_scope(source_ds, prefix=alias_cond):
+            with self._clause_scope(source_ds, prefix=alias):
                 cond_expr = self.visit(node.condition)
 
-        then_type = self._get_node_type(node.thenOp)
-        else_type = self._get_node_type(node.elseOp)
+        t_type = self._get_node_type(node.thenOp)
+        e_type = self._get_node_type(node.elseOp)
 
         # Determine output measures and attributes.
         def _is_plain_dataset(n: AST.AST) -> bool:
             return isinstance(n, AST.VarID) and self._get_node_type(n) == _DATASET
 
         ref_ds: Optional[Dataset] = None
-        if then_type == _DATASET and _is_plain_dataset(node.thenOp):
+        if t_type == _DATASET and _is_plain_dataset(node.thenOp):
             ref_ds = self._get_dataset_structure(node.thenOp)
-        elif else_type == _DATASET and _is_plain_dataset(node.elseOp):
+        elif e_type == _DATASET and _is_plain_dataset(node.elseOp):
             ref_ds = self._get_dataset_structure(node.elseOp)
         if ref_ds is None:
             ref_ds = self._get_output_dataset() or source_ds
@@ -2933,51 +2927,40 @@ FROM {src}, (
         output_attributes = list(ref_ds.get_attributes_names())
 
         # Build SELECT columns
-        cols: List[str] = [f"{alias_cond}.{quote_name(id_)}" for id_ in source_ids]
-
+        cols: List[str] = [f"{alias}.{quote_name(id_)}" for id_ in source_ids]
         for col_name in output_measures + output_attributes:
-            if then_type == _DATASET:
-                then_ref = f"t.{quote_name(col_name)}"
-            else:
-                then_ref = self.visit(node.thenOp)
-
-            if else_type == _DATASET:
-                else_ref = f"e.{quote_name(col_name)}"
-            else:
-                else_ref = self.visit(node.elseOp)
-
+            t_ref = f"t.{quote_name(col_name)}" if t_type == _DATASET else self.visit(node.thenOp)
+            e_ref = f"e.{quote_name(col_name)}" if e_type == _DATASET else self.visit(node.elseOp)
             cols.append(
-                f"CASE WHEN {cond_expr} THEN {then_ref} "
-                f"ELSE {else_ref} END AS {quote_name(col_name)}"
+                f"CASE WHEN {cond_expr} THEN {t_ref} "
+                f"ELSE {e_ref} END AS {quote_name(col_name)}"
             )
 
         # Use from_subquery when the source is a SELECT (e.g., dataset-level condition)
         if source_sql.lstrip().upper().startswith("SELECT"):
-            builder = SQLBuilder().select(*cols).from_subquery(source_sql, alias_cond)
+            builder = SQLBuilder().select(*cols).from_subquery(source_sql, alias)
         else:
-            builder = SQLBuilder().select(*cols).from_table(source_sql, alias_cond)
+            builder = SQLBuilder().select(*cols).from_table(source_sql, alias)
 
         # Use LEFT JOINs so empty datasets don't eliminate all rows
         then_join_id = self._left_join_dataset(
-            node.thenOp, then_type, "t", source_ids, alias_cond, builder
+            node.thenOp, t_type, "t", source_ids, alias, builder
         )
-        else_join_id = self._left_join_dataset(
-            node.elseOp, else_type, "e", source_ids, alias_cond, builder
-        )
+        e_join_id = self._left_join_dataset(node.elseOp, e_type, "e", source_ids, alias, builder)
 
         # Filter: only keep rows where the selected side has a match.
         # Scalar sides always match; dataset sides need a LEFT JOIN hit.
-        if then_join_id and else_join_id:
+        if then_join_id and e_join_id:
             builder.where(
                 f"CASE WHEN {cond_expr} THEN {then_join_id} IS NOT NULL "
-                f"ELSE {else_join_id} IS NOT NULL END"
+                f"ELSE {e_join_id} IS NOT NULL END"
             )
         elif then_join_id:
             # then=dataset, else=scalar: filter when condition is true
             builder.where(f"NOT ({cond_expr}) OR {then_join_id} IS NOT NULL")
-        elif else_join_id:
+        elif e_join_id:
             # then=scalar, else=dataset: filter when condition is false
-            builder.where(f"({cond_expr}) OR {else_join_id} IS NOT NULL")
+            builder.where(f"({cond_expr}) OR {e_join_id} IS NOT NULL")
 
         return builder.build()
 
@@ -3137,14 +3120,12 @@ FROM {src}, (
 
         id_names = ds.get_identifiers_names()
         measure_names = ds.get_measures_names()
-        bool_measure = measure_names[0] if measure_names else "Me_1"
+        bool_measure = measure_names[0]
 
         # Build explicit SELECT list with proper renaming.
         cols: List[str] = []
         for id_name in id_names:
             cols.append(f"t.{quote_name(id_name)}")
-
-        # Rename the comparison measure to bool_var.
         cols.append(f't.{quote_name(bool_measure)} AS "bool_var"')
 
         # Handle imbalance (also with cleared output to prevent renaming).
