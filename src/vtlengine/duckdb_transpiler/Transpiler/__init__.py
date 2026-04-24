@@ -2717,10 +2717,8 @@ FROM {src}, (
         l_val = self._build_hr_value_expr(parsed.left_code_item, mode)
         r_val = self._build_hr_expr_sql(parsed.right_expr_node, mode)
 
-        comp_op: str = parsed.comparison_node.op
-        bool_expr = f"({l_val} {comp_op} {r_val})"
+        bool_expr = f"({l_val} {parsed.comparison_node.op} {r_val})"
         imbalance_expr = f"({l_val} - {r_val})"
-
         when_sql: Optional[str] = None
         if parsed.has_when:
             when_sql = self._build_hr_when_sql(parsed.when_node, cond_mapping)
@@ -2728,6 +2726,24 @@ FROM {src}, (
             imbalance_expr = (
                 f"CASE WHEN NOT ({when_sql}) THEN CAST(NULL AS DOUBLE) ELSE {imbalance_expr} END"
             )
+
+        inner_cols = [quote_name(c) for c in other_ids]
+        inner_cols.append(f"{l_val} AS _lv")
+        inner_cols.append(f"{bool_expr} AS _bv")
+        inner_cols.append(f"{imbalance_expr} AS _imb")
+
+        inner_where = self._build_hr_mode_filter(
+            mode=mode,
+            left_code_item=parsed.left_code_item,
+            right_code_items=parsed.right_code_items,
+            left_val_expr=l_val,
+            right_val_expr=r_val,
+            is_hierarchy=False,
+        )
+        if output == "invalid" and when_sql is not None:
+            inner_where.append(f"({when_sql})")
+        inner_where_clause = f" WHERE {' AND '.join(inner_where)}" if inner_where else ""
+        inner_sql = f"SELECT {', '.join(inner_cols)} FROM _pivot{inner_where_clause}"
 
         ec_sql = self._error_code_sql(rule.erCode)
         el_sql = self._error_code_sql(rule.erLevel)
@@ -2737,48 +2753,29 @@ FROM {src}, (
 
         q_rc = quote_name(rule_comp)
         q_m = quote_name(measure)
-        select_parts: List[str] = [quote_name(c) for c in other_ids]
-        select_parts.append(f"'{parsed.left_code_item}' AS {q_rc}")
-
+        outer_cols: List[str] = [quote_name(c) for c in other_ids]
+        outer_cols.append(f"'{parsed.left_code_item}' AS {q_rc}")
         if output != "all":
-            select_parts.append(f"{l_val} AS {q_m}")
+            outer_cols.append(f"_lv AS {q_m}")
         if output != "invalid":
-            select_parts.append(f"{bool_expr} AS {quote_name('bool_var')}")
-
-        select_parts.append(f"{imbalance_expr} AS {quote_name('imbalance')}")
-        select_parts.append(f"'{rule_name}' AS {quote_name('ruleid')}")
+            outer_cols.append(f"_bv AS {quote_name('bool_var')}")
+        outer_cols.append(f"_imb AS {quote_name('imbalance')}")
+        outer_cols.append(f"'{rule_name}' AS {quote_name('ruleid')}")
 
         for val, null_expr, col in (
             (ec_sql, "CAST(NULL AS VARCHAR)", "errorcode"),
             (el_sql, el_null, "errorlevel"),
         ):
             if output == "invalid":
-                select_parts.append(f"{val} AS {quote_name(col)}")
+                outer_cols.append(f"{val} AS {quote_name(col)}")
             else:
-                select_parts.append(
-                    f"CASE WHEN {bool_expr} IS NOT FALSE THEN {null_expr} "
+                outer_cols.append(
+                    f"CASE WHEN _bv IS NOT FALSE THEN {null_expr} "
                     f"ELSE {val} END AS {quote_name(col)}"
                 )
 
-        where_parts: List[str] = []
-        if output == "invalid":
-            if when_sql is not None:
-                where_parts.append(f"({when_sql})")
-            where_parts.append(f"({bool_expr}) = FALSE")
-
-        where_parts.extend(
-            self._build_hr_mode_filter(
-                mode=mode,
-                left_code_item=parsed.left_code_item,
-                right_code_items=parsed.right_code_items,
-                left_val_expr=l_val,
-                right_val_expr=r_val,
-                is_hierarchy=False,
-            )
-        )
-
-        where_clause = f" WHERE {' AND '.join(where_parts)}" if where_parts else ""
-        return f"SELECT {', '.join(select_parts)} FROM _pivot{where_clause}"
+        outer_where = " WHERE _bv = FALSE" if output == "invalid" else ""
+        return f"SELECT {', '.join(outer_cols)} FROM ({inner_sql}) _r{outer_where}"
 
     def _build_hierarchy_sql(
         self,
