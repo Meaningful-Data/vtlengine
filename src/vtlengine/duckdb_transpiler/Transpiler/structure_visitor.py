@@ -13,6 +13,7 @@ from vtlengine.DataTypes import (
     Date,
     Integer,
     Number,
+    TimeInterval,
     TimePeriod,
 )
 from vtlengine.DataTypes import String as StringType
@@ -23,6 +24,13 @@ from vtlengine.Model import Component, Dataset, Role
 _DATASET = "Dataset"
 _COMPONENT = "Component"
 _SCALAR = "Scalar"
+
+# Role encoded in UnaryOp.op for calc clauses.
+_CALC_ROLE_BY_TOKEN: Dict[str, Role] = {
+    tokens.IDENTIFIER: Role.IDENTIFIER,
+    tokens.ATTRIBUTE: Role.ATTRIBUTE,
+    tokens.MEASURE: Role.MEASURE,
+}
 
 
 class StructureVisitor(ASTTemplate):
@@ -114,9 +122,7 @@ class StructureVisitor(ASTTemplate):
             comps: Dict[str, Component] = {}
             for name, comp in ds.components.items():
                 if comp.role == Role.MEASURE:
-                    comps[name] = self._make_comp(
-                        name, target_type, role=comp.role, nullable=comp.nullable
-                    )
+                    comps[name] = self._make_comp(name, target_type, comp.role, comp.nullable)
                 else:
                     comps[name] = comp
             return Dataset(name=ds.name, components=comps, data=None)
@@ -345,156 +351,164 @@ class StructureVisitor(ASTTemplate):
 
     # Dataset structure resolution
 
-    def _get_dataset_structure(self, node: Optional[AST.AST]) -> Optional[Dataset]:  # noqa: C901
+    def _get_dataset_structure(self, node: Optional[AST.AST]) -> Optional[Dataset]:
         """Get dataset structure for a node, tracing to the source dataset."""
         if node is None:
             return None
         if isinstance(node, AST.VarID):
-            kind, val = self._resolve_udo_var(node.value)
-            if kind == "varid":
-                if val.value in self.available_tables:
-                    return self.available_tables[val.value]
-                # Guard against recursion when param name matches argument name.
-                if val.value != node.value:
-                    return self._get_dataset_structure(val)
-                return None
-            if kind == "ast":
-                return self._get_dataset_structure(val)
-            if kind == "str" and val in self.available_tables:
-                return self.available_tables[val]
-            return self.available_tables.get(node.value)
-
+            return self._resolve_varid_structure(node)
         if isinstance(node, AST.RegularAggregation) and node.dataset:
-            op = node.op
-            if op == tokens.UNPIVOT and len(node.children) >= 2:
-                result = self._build_unpivot_structure(node)
-                if result is not None:
-                    return result
-            if op == tokens.CALC:
-                result = self._build_calc_structure(node)
-                if result is not None:
-                    return result
-            if op == tokens.AGGREGATE:
-                return self._build_aggregate_clause_structure(node)
-            if op == tokens.RENAME:
-                return self._build_rename_structure(node)
-            if op == tokens.DROP:
-                return self._build_drop_structure(node)
-            if op == tokens.KEEP:
-                return self._build_keep_structure(node)
-            if op == tokens.SUBSPACE:
-                return self._build_subspace_structure(node)
-            return self._get_dataset_structure(node.dataset)
-
+            return self._resolve_regular_aggregation_structure(node)
         if isinstance(node, AST.BinOp):
-            op = node.op
-            if op == tokens.MEMBERSHIP:
-                return self._build_membership_structure(node)
-            if op == tokens.AS:
-                return self._get_dataset_structure(node.left)
-            left_is_ds = self._get_node_type(node.left) == _DATASET
-            right_is_ds = self._get_node_type(node.right) == _DATASET
-            if left_is_ds and right_is_ds:
-                return self._build_ds_ds_binop_structure(node)
-            if left_is_ds:
-                ds = self._get_dataset_structure(node.left)
-                # in/not_in produces bool_var measure from any input measure
-                if ds is not None and op in (tokens.IN, tokens.NOT_IN):
-                    return self._build_boolean_result_structure(ds)
-                return ds
-            if right_is_ds:
-                return self._get_dataset_structure(node.right)
-            return None
-
+            return self._resolve_binop_structure(node)
         if isinstance(node, AST.UnaryOp):
-            ds = self._get_dataset_structure(node.operand)
-            if ds is not None and node.op == tokens.ISNULL and len(ds.get_measures_names()) == 1:
-                return self._build_boolean_result_structure(ds)
-            return ds
-
+            return self._resolve_unaryop_structure(node)
         if isinstance(node, AST.ParFunction):
             return self._get_dataset_structure(node.operand)
-
         if isinstance(node, AST.ParamOp):
-            if node.children:
-                return self._get_dataset_structure(node.children[0])
-            return None
-
+            return self._get_dataset_structure(node.children[0]) if node.children else None
         if isinstance(node, AST.Aggregation) and node.operand:
-            ds = self._get_dataset_structure(node.operand)
-            if ds is not None:
-                all_ids = ds.get_identifiers_names()
-                group_cols = set(self._resolve_group_cols(node, all_ids))
-                comps: Dict[str, Component] = {}
-                for name, comp in ds.components.items():
-                    if comp.role == Role.IDENTIFIER:
-                        if name in group_cols:
-                            comps[name] = comp
-                    elif comp.role == Role.MEASURE:
-                        comps[name] = comp
-                # count() replaces all measures with a single int_var
-                if node.op == tokens.COUNT:
-                    comps = {n: c for n, c in comps.items() if c.role == Role.IDENTIFIER}
-                    comps["int_var"] = self._make_comp("int_var", Integer)
-                return Dataset(name=ds.name, components=comps, data=None)
-            return ds
-
+            return self._build_aggregation_structure(node)
         if isinstance(node, AST.JoinOp):
             return self._build_join_structure(node)
-
         if isinstance(node, AST.UDOCall):
-            if node.op in self._udos:
-                udo_def = self._udos[node.op]
-                expression = udo_def["expression"]
-                bindings: Dict[str, Any] = {}
-                for i, param_info in enumerate(udo_def["params"]):
-                    param_name = param_info["name"]
-                    if i < len(node.params):
-                        bindings[param_name] = node.params[i]
-                    elif param_info.get("default") is not None:
-                        bindings[param_name] = param_info["default"]
-                self._push_udo_params(bindings)
-                try:
-                    result = self._get_dataset_structure(expression)
-                finally:
-                    self._pop_udo_params()
-                return result
-            return self._get_output_dataset()
-
+            return self._resolve_udocall_structure(node)
         if isinstance(node, AST.MulOp) and node.children:
             if node.op == tokens.EXISTS_IN:
                 return self._build_exists_in_structure(node)
             return self._get_dataset_structure(node.children[0])
-
         if isinstance(node, AST.Validation):
-            inner_ds = self._get_dataset_structure(node.validation)
-            if inner_ds is not None:
-                val_comps = self._identifiers_dict(inner_ds)
-                self._add_error_measures(
-                    val_comps,
-                    errorlevel_type=Integer,
-                    with_ruleid=False,
-                    with_bool_var=True,
-                )
-                return Dataset(name="", components=val_comps, data=None)
-            return None
-
+            return self._build_validation_structure(node)
         if isinstance(node, AST.HROperation):
             return self._build_hr_operation_structure(node)
-
         if isinstance(node, AST.DPValidation):
             return self._build_dp_validation_structure(node)
-
         if isinstance(node, AST.If):
-            ds = self._get_dataset_structure(node.thenOp)
-            if ds is not None:
-                return ds
-            return self._get_dataset_structure(node.elseOp)
-
+            return self._get_dataset_structure(node.thenOp) or self._get_dataset_structure(
+                node.elseOp
+            )
         if isinstance(node, AST.Case) and node.cases:
             return self._get_dataset_structure(node.cases[0].thenOp)
-
         return None
+
+    def _resolve_varid_structure(self, node: AST.VarID) -> Optional[Dataset]:
+        """Resolve a VarID (including UDO bindings) to its dataset structure."""
+        kind, val = self._resolve_udo_var(node.value)
+        if kind == "varid":
+            if val.value in self.available_tables:
+                return self.available_tables[val.value]
+            # Guard against recursion when param name matches argument name.
+            if val.value != node.value:
+                return self._get_dataset_structure(val)
+            return None
+        if kind == "ast":
+            return self._get_dataset_structure(val)
+        if kind == "str" and val in self.available_tables:
+            return self.available_tables[val]
+        return self.available_tables.get(node.value)
+
+    _CLAUSE_BUILDER_ATTRS: Dict[str, str] = {
+        tokens.AGGREGATE: "_build_aggregate_clause_structure",
+        tokens.RENAME: "_build_rename_structure",
+        tokens.DROP: "_build_drop_structure",
+        tokens.KEEP: "_build_keep_structure",
+        tokens.SUBSPACE: "_build_subspace_structure",
+    }
+
+    def _resolve_regular_aggregation_structure(
+        self, node: AST.RegularAggregation
+    ) -> Optional[Dataset]:
+        """Resolve a clause-carrying RegularAggregation to its output structure."""
+        op = node.op
+        # unpivot/calc fall through to the source dataset when the builder returns None.
+        if op == tokens.UNPIVOT and len(node.children) >= 2:
+            result = self._build_unpivot_structure(node)
+            if result is not None:
+                return result
+        elif op == tokens.CALC:
+            result = self._build_calc_structure(node)
+            if result is not None:
+                return result
+        builder_attr = self._CLAUSE_BUILDER_ATTRS.get(op)
+        if builder_attr is not None:
+            return getattr(self, builder_attr)(node)
+        return self._get_dataset_structure(node.dataset)
+
+    def _resolve_binop_structure(self, node: AST.BinOp) -> Optional[Dataset]:
+        """Resolve a BinOp to its dataset structure."""
+        op = node.op
+        if op == tokens.MEMBERSHIP:
+            return self._build_membership_structure(node)
+        if op == tokens.AS:
+            return self._get_dataset_structure(node.left)
+        left_is_ds = self._get_node_type(node.left) == _DATASET
+        right_is_ds = self._get_node_type(node.right) == _DATASET
+        if left_is_ds and right_is_ds:
+            return self._build_ds_ds_binop_structure(node)
+        if left_is_ds:
+            ds = self._get_dataset_structure(node.left)
+            if ds is not None and op in (tokens.IN, tokens.NOT_IN):
+                return self._build_boolean_result_structure(ds)
+            return ds
+        if right_is_ds:
+            return self._get_dataset_structure(node.right)
+        return None
+
+    def _resolve_unaryop_structure(self, node: AST.UnaryOp) -> Optional[Dataset]:
+        """Resolve a UnaryOp to its dataset structure."""
+        ds = self._get_dataset_structure(node.operand)
+        if ds is not None and node.op == tokens.ISNULL and len(ds.get_measures_names()) == 1:
+            return self._build_boolean_result_structure(ds)
+        return ds
+
+    def _build_aggregation_structure(self, node: AST.Aggregation) -> Optional[Dataset]:
+        """Resolve an Aggregation (count/sum/avg/…) to its output structure."""
+        ds = self._get_dataset_structure(node.operand)
+        if ds is None:
+            return None
+        group_cols = set(self._resolve_group_cols(node, ds.get_identifiers_names()))
+        is_count = node.op == tokens.COUNT
+        comps: Dict[str, Component] = {}
+        for name, comp in ds.components.items():
+            is_kept_id = comp.role == Role.IDENTIFIER and name in group_cols
+            is_kept_measure = comp.role == Role.MEASURE and not is_count
+            if is_kept_id or is_kept_measure:
+                comps[name] = comp
+        if is_count:
+            comps["int_var"] = self._make_comp("int_var", Integer)
+        return Dataset(name=ds.name, components=comps, data=None)
+
+    def _resolve_udocall_structure(self, node: AST.UDOCall) -> Optional[Dataset]:
+        """Resolve a UDO call by binding its parameters and visiting the body."""
+        if node.op not in self._udos:
+            return self._get_output_dataset()
+        udo_def = self._udos[node.op]
+        bindings: Dict[str, Any] = {}
+        for i, param_info in enumerate(udo_def["params"]):
+            param_name = param_info["name"]
+            if i < len(node.params):
+                bindings[param_name] = node.params[i]
+            elif param_info.get("default") is not None:
+                bindings[param_name] = param_info["default"]
+        self._push_udo_params(bindings)
+        try:
+            return self._get_dataset_structure(udo_def["expression"])
+        finally:
+            self._pop_udo_params()
+
+    def _build_validation_structure(self, node: AST.Validation) -> Optional[Dataset]:
+        """Build the output structure for a Validation node."""
+        inner_ds = self._get_dataset_structure(node.validation)
+        if inner_ds is None:
+            return None
+        val_comps = self._identifiers_dict(inner_ds)
+        self._add_error_measures(
+            val_comps,
+            errorlevel_type=Integer,
+            with_ruleid=False,
+            with_bool_var=True,
+        )
+        return Dataset(name="", components=val_comps, data=None)
 
     # =========================================================================
     # Component construction helpers
@@ -532,9 +546,7 @@ class StructureVisitor(ASTTemplate):
         if with_imbalance:
             comps["imbalance"] = self._make_comp("imbalance", Number)
         if with_ruleid:
-            comps["ruleid"] = self._make_comp(
-                "ruleid", StringType, role=Role.IDENTIFIER, nullable=False
-            )
+            comps["ruleid"] = self._make_comp("ruleid", StringType, Role.IDENTIFIER, False)
         comps["errorcode"] = self._make_comp("errorcode", StringType)
         comps["errorlevel"] = self._make_comp("errorlevel", errorlevel_type)
 
@@ -549,7 +561,6 @@ class StructureVisitor(ASTTemplate):
             return None
 
         comps = self._identifiers_dict(inner_ds)
-
         measure_name = inner_ds.get_measures_names()[0] if inner_ds.get_measures_names() else ""
         if node.op == tokens.HIERARCHY:
             # hierarchy: same structure as input (identifiers + measures)
@@ -574,7 +585,6 @@ class StructureVisitor(ASTTemplate):
             return None
 
         comps = self._identifiers_dict(inner_ds)
-
         output_mode = node.output.value if node.output else "invalid"
         if output_mode in ("invalid", "all_measures"):
             for name, comp in inner_ds.components.items():
@@ -630,13 +640,11 @@ class StructureVisitor(ASTTemplate):
             assignment = child
             calc_role = Role.MEASURE
             if isinstance(child, AST.UnaryOp) and isinstance(child.operand, AST.Assignment):
-                if child.op in (tokens.IDENTIFIER, tokens.ATTRIBUTE):
-                    calc_role = child.op.capitalize()
+                calc_role = _CALC_ROLE_BY_TOKEN.get(child.op, Role.MEASURE)
                 assignment = child.operand
             if isinstance(assignment, AST.Assignment):
                 col = self._resolve_udo_name(self._resolve_name(assignment.left))
-                # Update role if calc promotes an existing column
-                if col in comps and calc_role is not None and comps[col].role != calc_role:
+                if col in comps and comps[col].role != calc_role:
                     old = comps[col]
                     nullable = old.nullable if calc_role != Role.IDENTIFIER else False
                     comps[col] = self._make_comp(old.name, old.data_type, calc_role, nullable)
@@ -702,9 +710,9 @@ class StructureVisitor(ASTTemplate):
                         group_ids.add(g.value)
             measure_names.append(self._resolve_name(assignment.left))
 
-        if grouping_op == "group by":
+        if grouping_op == tokens.GROUP_BY:
             kept_ids = group_ids
-        elif grouping_op == "group except":
+        elif grouping_op == tokens.GROUP_EXCEPT:
             kept_ids = all_input_ids - group_ids
         else:
             kept_ids = all_input_ids
@@ -725,20 +733,13 @@ class StructureVisitor(ASTTemplate):
         if parent_ds is None:
             return None
 
-        comp_name = self._resolve_udo_name(self._resolve_name(node.right))
+        name = self._resolve_udo_name(self._resolve_name(node.right))
         comps = self._identifiers_dict(parent_ds)
-
-        orig = parent_ds.components.get(comp_name)
+        orig = parent_ds.components.get(name)
         if orig is None:
-            comps[comp_name] = self._make_comp(comp_name, Number)
+            comps[name] = self._make_comp(name, Number)
         else:
-            # Identifier/attribute extractions are aliased via COMP_NAME_MAPPING
-            # to match the SQL emitted by _visit_membership.
-            alias_name = (
-                COMP_NAME_MAPPING.get(orig.data_type, comp_name)
-                if orig.role in (Role.IDENTIFIER, Role.ATTRIBUTE)
-                else comp_name
-            )
+            alias_name = COMP_NAME_MAPPING[orig.data_type] if orig.role != Role.MEASURE else name
             comps[alias_name] = self._make_comp(alias_name, orig.data_type)
         return Dataset(name=parent_ds.name, components=comps, data=None)
 
@@ -908,31 +909,19 @@ class StructureVisitor(ASTTemplate):
     # Time and group column helpers
     # =========================================================================
 
-    def _split_time_identifier(self, ds: Dataset) -> Tuple[str, List[str]]:
+    def _get_time_id(self, ds: Dataset) -> Tuple[str, List[str]]:
         """Split identifiers into time identifier and other identifiers."""
-        time_types = (Date, TimePeriod)
-        time_id = ""
-        other_ids: List[str] = []
-        for name, comp in ds.components.items():
-            if comp.role == Role.IDENTIFIER:
-                if comp.data_type in time_types:
-                    time_id = name
-                else:
-                    other_ids.append(name)
-        if not time_id:
-            all_ids = ds.get_identifiers_names()
-            if all_ids:
-                time_id = all_ids[0]
-                other_ids = all_ids[1:]
+        for name, comp in ds.get_identifiers():
+            if comp.data_type in (Date, TimeInterval, TimePeriod):
+                time_id = name
+                break
+        other_ids = [name for name, comp in ds.get_identifiers() if name != time_id]
         return time_id, other_ids
 
     def _resolve_grouping_names(self, grouping: List[AST.AST]) -> List[str]:
         """Resolve grouping node names with UDO parameter lookup."""
-        return [
-            self._resolve_udo_name(g.value)
-            for g in grouping
-            if isinstance(g, (AST.VarID, AST.Identifier))
-        ]
+        grouping_nodes = (AST.VarID, AST.Identifier)
+        return [self._resolve_udo_name(g.value) for g in grouping if isinstance(g, grouping_nodes)]
 
     def _resolve_group_cols(self, node: AST.Aggregation, all_ids: List[str]) -> List[str]:
         """Resolve group-by columns from an Aggregation node."""
