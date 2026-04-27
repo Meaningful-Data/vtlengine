@@ -17,8 +17,18 @@ from vtlengine.DataTypes import (
     TimePeriod,
 )
 from vtlengine.DataTypes import String as StringType
+from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.duckdb_transpiler.Transpiler.sql_builder import quote_name
 from vtlengine.Model import Component, Dataset, Role
+
+
+def _try_normalize_time_period(value: str) -> Optional[str]:
+    """Return the canonical TimePeriod string, or None if the handler rejects it."""
+    try:
+        return str(TimePeriodHandler(value))
+    except Exception:
+        return None
+
 
 # Operand type tags
 _DATASET = "Dataset"
@@ -265,6 +275,9 @@ class StructureVisitor(ASTTemplate):
                 return f"DATE '{value}'"
             escaped = value.replace("'", "''")
             if type_name == "TimePeriod":
+                canonical = _try_normalize_time_period(value)
+                if canonical is not None:
+                    return f"'{canonical.replace(chr(39), chr(39) * 2)}'"
                 return f"vtl_period_normalize('{escaped}')"
             return f"'{escaped}'"
         return str(value)

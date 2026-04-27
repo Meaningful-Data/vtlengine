@@ -37,9 +37,52 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
     _DATASET,
     _SCALAR,
     StructureVisitor,
+    _try_normalize_time_period,
 )
 from vtlengine.Exceptions import RunTimeError
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
+
+# Matches a pure single-quoted SQL string literal: 'foo' (no embedded quotes).
+_SQL_PLAIN_STRING_LITERAL = re.compile(r"^'([^'\\]*)'$")
+
+# Matches ``vtl_period_parse('canonical_form')`` where the argument is a literal
+# in canonical form (YYYYA or YYYY-INNN).
+_VTL_PERIOD_PARSE_LITERAL = re.compile(
+    r"vtl_period_parse\('"
+    r"(?P<year>\d{4})"  # year
+    r"(?:"
+    r"A"  # annual: YYYYA
+    r"|"
+    r"-(?P<ind>[SQMWD])(?P<num>\d{1,3})"  # YYYY-INNN
+    r")"
+    r"'\)"
+)
+
+
+def _match_plain_sql_string_literal(expr: str) -> Optional[str]:
+    """Return the inner string of a plain SQL literal, or None if not one."""
+    m = _SQL_PLAIN_STRING_LITERAL.match(expr)
+    return m.group(1) if m else None
+
+
+def _inline_period_parse_literals(sql: str) -> str:
+    """Replace ``vtl_period_parse('canonical')`` with an inline struct literal."""
+
+    def _replace(m: "re.Match[str]") -> str:
+        year = int(m.group("year"))
+        ind = m.group("ind")
+        num = m.group("num")
+        if ind is None:
+            return (
+                f"({{'year': {year}, 'period_indicator': 'A', "
+                f"'period_number': 1}}::vtl_time_period)"
+            )
+        return (
+            f"({{'year': {year}, 'period_indicator': '{ind}', "
+            f"'period_number': {int(num)}}}::vtl_time_period)"
+        )
+
+    return _VTL_PERIOD_PARSE_LITERAL.sub(_replace, sql)
 
 
 def _datediff_to_date(ref: str, dt: Optional[type]) -> str:
@@ -279,7 +322,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     def transpile(self, node: AST.Start) -> List[Tuple[str, str, bool]]:
         """Return (name, sql, is_persistent) tuples for the script."""
-        return self.visit(node)
+        queries = self.visit(node)
+        # Constant-fold ``vtl_period_parse('canonical')`` calls now that all
+        # nested macro expansion is in place.
+        return [(name, _inline_period_parse_literals(sql), p) for name, sql, p in queries]
 
     def visit_Start(self, node: AST.Start) -> List[Tuple[str, str, bool]]:
         """Generate SQL for top-level nodes."""
@@ -1349,6 +1395,14 @@ FROM {src}, (
                 return f"vtl_date_to_period({expr})"
             if source_lower in ("time", "timeinterval"):
                 return f"vtl_interval_to_period({expr})"
+            # Pre-normalize string literals at transpile time to avoid invoking
+            # the expensive ``vtl_period_normalize`` macro for every row when
+            # the input is a compile-time constant (e.g. cast("2022Q1", time_period)).
+            literal = _match_plain_sql_string_literal(expr)
+            if literal is not None:
+                canonical = _try_normalize_time_period(literal)
+                if canonical is not None:
+                    return f"'{canonical.replace(chr(39), chr(39) * 2)}'"
             return f"vtl_period_normalize(CAST({expr} AS VARCHAR))"
 
         if target_type_str == "Date":
