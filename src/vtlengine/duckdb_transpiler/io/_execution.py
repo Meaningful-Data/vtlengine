@@ -35,8 +35,6 @@ from vtlengine.files.output._time_period_representation import TimePeriodReprese
 from vtlengine.Model import Dataset, Scalar
 from vtlengine.Utils._number_config import get_effective_numeric_digits
 
-_TIME_SQL_MARKERS = ("vtl_",)
-
 
 def _contains_time_components(datasets: Dict[str, Dataset]) -> bool:
     """Return True when any dataset contains VTL time-related components."""
@@ -44,28 +42,6 @@ def _contains_time_components(datasets: Dict[str, Dataset]) -> bool:
         for comp in ds.components.values():
             if comp.data_type in (TimePeriod, TimeInterval, Duration):
                 return True
-    return False
-
-
-def _requires_time_types_initialization(
-    queries: List[Tuple[str, str, bool]],
-    input_datasets: Dict[str, Dataset],
-    output_datasets: Dict[str, Dataset],
-    output_scalars: Dict[str, Scalar],
-) -> bool:
-    """Return True when execution paths may need VTL time macros/types."""
-    if _contains_time_components(input_datasets) or _contains_time_components(output_datasets):
-        return True
-
-    for scalar in output_scalars.values():
-        if scalar.data_type in (TimePeriod, TimeInterval, Duration):
-            return True
-
-    for _, sql_query, _ in queries:
-        sql_lower = sql_query.lower()
-        if any(marker in sql_lower for marker in _TIME_SQL_MARKERS):
-            return True
-
     return False
 
 
@@ -486,14 +462,20 @@ def execute_queries(
     results: Dict[str, Union[Dataset, Scalar]] = {}
     representation = TimePeriodRepresentation.check_value(time_period_output_format)
 
-    # Initialize VTL time types/macros only when required by inputs/outputs/SQL.
-    if _requires_time_types_initialization(
-        queries,
-        input_datasets,
-        output_datasets,
-        output_scalars,
-    ):
-        initialize_time_types(conn)
+    # Install only the closure of VTL macros actually referenced by the
+    # transpiled queries plus those required for the load/output pipeline.
+    sql_fragments: List[str] = [sql for _, sql, _ in queries]
+    if _contains_time_components(input_datasets):
+        sql_fragments.append("vtl_period_normalize")
+    if _contains_time_components(output_datasets):
+        repr_macro = {
+            "vtl": "vtl_period_to_vtl",
+            "sdmx_reporting": "vtl_period_to_sdmx_reporting",
+            "sdmx_gregorian": "vtl_period_to_sdmx_gregorian",
+            "natural": "vtl_period_to_natural",
+        }.get(time_period_output_format, "vtl_period_to_vtl")
+        sql_fragments.append(repr_macro)
+    initialize_time_types(conn, sql_fragments=sql_fragments)
 
     # Ensure output folder exists if provided
     if output_folder:
