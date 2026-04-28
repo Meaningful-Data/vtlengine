@@ -51,9 +51,6 @@ def check_date(value: str) -> str:
                 value = value[:-1] + "0" + value[-1]
             iso_result = date.fromisoformat(value).isoformat()
     except ValueError:
-        # Python's ValueError message wording for date parsing changed in 3.14,
-        # so derive the user-facing error from the input itself rather than
-        # pattern-matching the upstream message.
         date_part_match = _DATE_PART_RE.match(value)
         if date_part_match:
             month = int(date_part_match.group("month"))

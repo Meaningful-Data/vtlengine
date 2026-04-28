@@ -15,13 +15,9 @@ from typing import Any, Dict, List, Optional, Type, Union
 from vtlengine.DataTypes import ScalarType
 from vtlengine.Model import Dataset, Role
 
-# inspect.get_annotations was added in Python 3.10. On 3.9 we fall back to
-# reading __dict__ directly (which works on 3.9 because PEP 649 lazy
-# evaluation does not apply). On 3.14+, get_annotations transparently
-# triggers PEP 649 lazy evaluation.
 if hasattr(inspect, "get_annotations"):
     _get_annotations = inspect.get_annotations
-else:  # pragma: no cover - Python 3.9 path
+else:  # pragma: no cover
 
     def _get_annotations(cls: type) -> Dict[str, Any]:
         return cls.__dict__.get("__annotations__") or {}
@@ -81,9 +77,6 @@ class AST:
 
     @classmethod
     def __all_annotations(cls) -> Dict[str, Any]:
-        # Python 3.14 (PEP 649) defers annotation evaluation, so __annotations__
-        # may not appear in c.__dict__ until first accessed via the class itself.
-        # _get_annotations handles this transparently across versions.
         class_attributes = {}
         for c in cls.__mro__:
             annotations = _get_annotations(c)
