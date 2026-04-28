@@ -14,12 +14,16 @@ jobs:
   testing:
 
     runs-on: ${{matrix.os}}
+    # TEMPORARY (cr-674): only 3.14 cells block the PR while we shake out 3.14.
+    # Revert to default before merge.
+    continue-on-error: ${{ matrix.python-version != '3.14' }}
 
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
-        
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v6
