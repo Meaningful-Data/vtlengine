@@ -5,6 +5,7 @@ Tests for the DuckDB data loading and validation functionality.
 Uses pytest parametrize to test different data types and validation scenarios.
 """
 
+import shutil
 import tempfile
 from pathlib import Path
 from typing import Dict
@@ -21,18 +22,31 @@ from vtlengine.Model import Component, Role
 
 
 @pytest.fixture
-def duckdb_connection():
-    """Create a DuckDB in-memory connection for testing."""
-    conn = duckdb.connect(":memory:")
-    yield conn
-    conn.close()
+def temp_csv_dir():
+    """Create a temporary directory for CSV files.
+
+    On Windows, DuckDB's read_csv may keep memory-mapped file handles open
+    until the connection is closed, so we rely on duckdb_connection being
+    torn down first (it depends on this fixture) and use ignore_errors as a
+    safety net.
+    """
+    tmpdir = tempfile.mkdtemp()
+    try:
+        yield tmpdir
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 @pytest.fixture
-def temp_csv_dir():
-    """Create a temporary directory for CSV files."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        yield tmpdir
+def duckdb_connection(temp_csv_dir):
+    """Create a DuckDB in-memory connection for testing.
+
+    Depends on temp_csv_dir so the connection is torn down (and any open CSV
+    file handles released) before the temporary directory is removed.
+    """
+    conn = duckdb.connect(":memory:")
+    yield conn
+    conn.close()
 
 
 def create_csv_file(directory: str, name: str, content: str) -> Path:
