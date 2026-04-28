@@ -729,6 +729,11 @@ centralised_messages = {
         "description": "Runtime error when an operator is incorrectly applied to a Dataset "
         "instead of allowed types.",
     },  # RunTimeError.
+    "2-1-15-8": {
+        "message": "At op {op}: Value {value} must be greater than 0.",
+        "description": "Runtime error when a value is less than or equal to zero for an "
+        "operator that requires a strictly positive input (e.g. log, ln).",
+    },  # RunTimeError.
     # Set Operators
     "1-1-17-1": {
         "message": "At op {op}: Datasets {dataset_1} and {dataset_2} have different number "
