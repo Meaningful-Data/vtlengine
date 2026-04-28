@@ -14,6 +14,8 @@ import pytest
 _skip_reason = "DuckDB transpiler tests require VTL_ENGINE_BACKEND=duckdb"
 _should_skip = os.environ.get("VTL_ENGINE_BACKEND", "duckdb") != "duckdb"
 
+_TIMEOUT_SUPPORTED = hasattr(signal, "SIGALRM")
+
 
 def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
     """Skip all duckdb_transpiler tests when VTL_ENGINE_BACKEND is not duckdb."""
@@ -56,6 +58,8 @@ def with_timeout(seconds: int = DEFAULT_TIMEOUT) -> Callable:
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
+            if not _TIMEOUT_SUPPORTED:
+                return func(*args, **kwargs)
             # Set up the signal handler
             old_handler = signal.signal(signal.SIGALRM, timeout_handler)
             signal.alarm(seconds)
@@ -87,6 +91,10 @@ def auto_timeout(request: pytest.FixtureRequest) -> Any:
     """
     # Check if test has no_timeout marker
     if request.node.get_closest_marker("no_timeout"):
+        yield
+        return
+
+    if not _TIMEOUT_SUPPORTED:
         yield
         return
 
