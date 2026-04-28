@@ -41,7 +41,7 @@ SEPARATORS = "".join([",", ";", ":", "|", "\t"])
 def _detect_delimiter(file_path: Union[str, Path], num_bytes: int = 4096) -> str:
     try:
         if _is_remote_path(file_path):
-            import fsspec  # type: ignore[import-untyped]
+            import fsspec  # type: ignore[import-untyped, unused-ignore]
 
             reader = fsspec.open
         else:
