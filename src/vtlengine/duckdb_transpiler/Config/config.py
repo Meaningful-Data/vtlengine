@@ -189,8 +189,7 @@ def configure_duckdb_connection(conn: duckdb.DuckDBPyConnection) -> None:
 
     conn.execute(";\n".join(statements))
 
-    # Module-level decimal config (read at SQL generation time, not on the
-    # DuckDB connection itself).
+    # Module-level decimal config
     set_decimal_config()
 
 
