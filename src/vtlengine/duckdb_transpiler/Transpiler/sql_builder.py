@@ -187,26 +187,34 @@ class CTEBuilder:
     """Builder for WITH ... SELECT queries using named CTEs."""
 
     def __init__(self) -> None:
-        self._ctes: List[tuple[str, str, bool]] = []  # (name, sql, recursive)
+        # (name, sql, recursive, materialized)
+        self._ctes: List[tuple[str, str, bool, bool]] = []
 
-    def cte(self, name: str, sql: str) -> "CTEBuilder":
-        """Add a regular CTE."""
-        self._ctes.append((name, sql.strip(), False))
+    def cte(self, name: str, sql: str, materialized: bool = False) -> "CTEBuilder":
+        """Add a regular CTE.
+
+        When ``materialized=True``, emits ``name AS MATERIALIZED (sql)`` so DuckDB
+        evaluates the CTE once even if it is referenced multiple times.
+        """
+        self._ctes.append((name, sql.strip(), False, materialized))
         return self
 
     def recursive_cte(self, name: str, columns: str, seed: str, step: str) -> "CTEBuilder":
         """Add a RECURSIVE CTE with seed UNION ALL step."""
         sql = f"{seed.strip()}\n    UNION ALL\n    {step.strip()}"
-        self._ctes.append((f"{name}({columns})", sql, True))
+        self._ctes.append((f"{name}({columns})", sql, True, False))
         return self
 
     def select(self, final_sql: str) -> str:
         """Build the full WITH ... SELECT statement."""
         if not self._ctes:
             return final_sql.strip()
-        has_recursive = any(r for _, _, r in self._ctes)
+        has_recursive = any(r for _, _, r, _ in self._ctes)
         keyword = "WITH RECURSIVE" if has_recursive else "WITH"
-        parts = ["{} AS (\n    {}\n)".format(name, sql) for name, sql, _ in self._ctes]
+        parts = [
+            "{} AS{} (\n    {}\n)".format(name, " MATERIALIZED" if mat else "", sql)
+            for name, sql, _, mat in self._ctes
+        ]
         sep = ",\n"
         return "{} {}\n{}".format(keyword, sep.join(parts), final_sql.strip())
 

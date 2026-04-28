@@ -2143,23 +2143,28 @@ FROM {src}, (
         if op == tokens.INTERSECT:
             return (
                 f"SELECT a.* FROM ({a_sql}) AS a "
-                f"WHERE EXISTS (SELECT 1 FROM ({b_sql}) AS b WHERE {on_clause})"
+                f"SEMI JOIN ({b_sql}) AS b ON {on_clause}"
             )
         elif op == tokens.SETDIFF:
             return (
                 f"SELECT a.* FROM ({a_sql}) AS a "
-                f"WHERE NOT EXISTS (SELECT 1 FROM ({b_sql}) AS b WHERE {on_clause})"
+                f"ANTI JOIN ({b_sql}) AS b ON {on_clause}"
             )
         elif op == tokens.SYMDIFF:
             second_ds = self._get_dataset_structure(node.children[1])
             second_ids = second_ds.get_identifiers_names() if second_ds else id_names
             on_clause_rev = self._join_on_clause(second_ids, "c", "d")
-            return (
-                f"(SELECT a.* FROM ({a_sql}) AS a "
-                f"WHERE NOT EXISTS (SELECT 1 FROM ({b_sql}) AS b WHERE {on_clause})) "
+            # Materialize each side once via CTEs so the two ANTI JOIN passes
+            # don't each re-evaluate the (potentially expensive) input subqueries.
+            cte = CTEBuilder()
+            cte.cte("_sd_a", a_sql, materialized=True)
+            cte.cte("_sd_b", b_sql, materialized=True)
+            return cte.select(
+                f"(SELECT a.* FROM _sd_a AS a "
+                f"ANTI JOIN _sd_b AS b ON {on_clause}) "
                 f"UNION ALL "
-                f"(SELECT c.* FROM ({b_sql}) AS c "
-                f"WHERE NOT EXISTS (SELECT 1 FROM ({a_sql}) AS d WHERE {on_clause_rev}))"
+                f"(SELECT c.* FROM _sd_b AS c "
+                f"ANTI JOIN _sd_a AS d ON {on_clause_rev})"
             )
 
         return registry.sql(op, *child_sqls)
@@ -2460,18 +2465,32 @@ FROM {src}, (
             cols = [quote_name(c) for c in id_cols]
             return f"SELECT {', '.join(cols)} FROM {table_src} WHERE 1=0"
 
+        # If the source is a non-trivial subquery and the ruleset has more than
+        # one rule, materialize it once so the UNION ALL below references a
+        # precomputed result instead of recomputing the source per rule.
+        rules = dpr_info["rules"]
+        stripped = table_src.strip()
+        use_cte = len(rules) > 1 and stripped.startswith("(") and stripped.endswith(")")
+        rule_table_src = "_dp_src" if use_cte else table_src
+
         rule_queries = [
             self._build_dp_rule_sql(
                 rule=rule,
-                table_src=table_src,
+                table_src=rule_table_src,
                 signature=dpr_info["signature"],
                 id_cols=id_cols,
                 measure_cols=ds.get_measures_names(),
                 output_mode=node.output.value if node.output else "invalid",
             )
-            for rule in dpr_info["rules"]
+            for rule in rules
         ]
-        return " UNION ALL ".join(rule_queries)
+        union_sql = " UNION ALL ".join(rule_queries)
+
+        if use_cte:
+            cte = CTEBuilder()
+            cte.cte("_dp_src", stripped[1:-1].strip(), materialized=True)
+            return cte.select(union_sql)
+        return union_sql
 
     def _build_dp_rule_sql(
         self,
@@ -2700,7 +2719,9 @@ FROM {src}, (
             table_src, ds, parsed_rules, rule_comp, cond_mapping
         )
         cte = CTEBuilder()
-        cte.cte("_pivot", pivot_sql)
+        # MATERIALIZED so the pivot aggregation is computed once, not once per
+        # rule branch in the UNION ALL below.
+        cte.cte("_pivot", pivot_sql, materialized=True)
         rule_queries = [
             self._build_check_hr_rule_select(
                 parsed=p,
@@ -2851,7 +2872,9 @@ FROM {src}, (
             table_src, ds, parsed_rules, rule_comp, cond_mapping
         )
         cte = CTEBuilder()
-        cte.cte("_pivot", pivot_sql)
+        # MATERIALIZED to avoid the optimizer re-inlining the pivot aggregation
+        # into every dependent CTE in the chain below.
+        cte.cte("_pivot", pivot_sql, materialized=True)
         rule_result_refs: List[Tuple[str, str]] = []
         current_pivot = "_pivot"
 
@@ -2859,6 +2882,8 @@ FROM {src}, (
 
         for i, parsed in enumerate(parsed_rules):
             rule_cte_name = f"_rule_{i}"
+            # Each _rule_i is referenced by the next _pivot_i AND by the final
+            # SELECT projecting the rule output. Materialize so we evaluate once.
             cte.cte(
                 rule_cte_name,
                 self._build_hierarchy_rule_cte(
@@ -2868,10 +2893,14 @@ FROM {src}, (
                     mode=mode,
                     cond_mapping=cond_mapping,
                 ),
+                materialized=True,
             )
             rule_result_refs.append((rule_cte_name, parsed.left_code_item))
 
             next_pivot = f"_pivot_{i}"
+            # Each _pivot_i is consumed by the next iteration's _rule_{i+1} and
+            # by the next _pivot_{i+1}. Without materialization the chain of N
+            # pivots gets re-inlined N times.
             cte.cte(
                 next_pivot,
                 self._build_hierarchy_pivot_update(
@@ -2882,6 +2911,7 @@ FROM {src}, (
                     input_mode=input_mode,
                     unique_items=unique_items,
                 ),
+                materialized=True,
             )
             current_pivot = next_pivot
 

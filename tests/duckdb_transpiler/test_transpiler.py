@@ -312,9 +312,8 @@ class TestSetOperations:
 
         expected_sql = (
             'SELECT a.* FROM (SELECT * FROM "DS_1") AS a '
-            "WHERE EXISTS ("
-            'SELECT 1 FROM (SELECT * FROM "DS_2") AS b '
-            'WHERE a."Id_1" = b."Id_1")'
+            'SEMI JOIN (SELECT * FROM "DS_2") AS b '
+            'ON a."Id_1" = b."Id_1"'
         )
         assert_sql_equal(sql, expected_sql)
 
@@ -343,9 +342,8 @@ class TestSetOperations:
 
         expected_sql = (
             'SELECT a.* FROM (SELECT * FROM "DS_1") AS a '
-            "WHERE NOT EXISTS ("
-            'SELECT 1 FROM (SELECT * FROM "DS_2") AS b '
-            'WHERE a."Id_1" = b."Id_1")'
+            'ANTI JOIN (SELECT * FROM "DS_2") AS b '
+            'ON a."Id_1" = b."Id_1"'
         )
         assert_sql_equal(sql, expected_sql)
 
