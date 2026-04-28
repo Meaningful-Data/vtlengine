@@ -1721,7 +1721,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 df = df.loc[condition.data]
                 keys = pd.MultiIndex.from_frame(df[other_ids].drop_duplicates())
                 mask = pd.MultiIndex.from_frame(code_data[other_ids]).isin(keys)
-                code_data = code_data.loc[mask]
+                code_data = code_data.loc[mask]  # type: ignore[index, unused-ignore]
 
         if node.value in df[hr_component].values:
             value_data = df[df[hr_component] == node.value]
