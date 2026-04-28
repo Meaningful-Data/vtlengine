@@ -237,22 +237,25 @@ def _build_dataset_fetch_select(
     if not ordered_cols:
         return f'SELECT * FROM "{result_name}"'
 
+    timestamp_cols = [c for c in ordered_cols if "TIMESTAMP" in col_types.get(c, "")]
+    has_time_cols: Dict[str, bool] = {}
+    if timestamp_cols:
+        exists_clauses = ", ".join(
+            f'EXISTS (SELECT 1 FROM "{result_name}" WHERE "{c}" IS NOT NULL '
+            f'AND (hour("{c}") != 0 OR minute("{c}") != 0 '
+            f'OR second("{c}") != 0 OR microsecond("{c}") % 1000000 != 0)) '
+            f'AS "{c}"'
+            for c in timestamp_cols
+        )
+        row = conn.execute(f"SELECT {exists_clauses}").fetchone()
+        if row is not None:
+            has_time_cols = dict(zip(timestamp_cols, row))
+
     exprs = []
     for col in ordered_cols:
         col_type = col_types.get(col, "")
-
         if "TIMESTAMP" in col_type:
-            has_time = (
-                conn.execute(
-                    f'SELECT 1 FROM "{result_name}" '
-                    f'WHERE "{col}" IS NOT NULL '
-                    f'AND (hour("{col}") != 0 OR minute("{col}") != 0 '
-                    f'OR second("{col}") != 0 OR microsecond("{col}") % 1000000 != 0) '
-                    f"LIMIT 1"
-                ).fetchone()
-                is not None
-            )
-            if has_time:
+            if has_time_cols.get(col, False):
                 exprs.append(
                     f'CASE WHEN "{col}" IS NULL THEN NULL'
                     f' WHEN microsecond("{col}") % 1000000 != 0'

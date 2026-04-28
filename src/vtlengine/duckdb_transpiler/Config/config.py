@@ -174,42 +174,23 @@ def get_memory_limit_str() -> str:
 
 
 def configure_duckdb_connection(conn: duckdb.DuckDBPyConnection) -> None:
-    """
-    Apply memory and performance settings to a DuckDB connection.
-
-    Args:
-        conn: DuckDB connection to configure
-    """
-    memory_limit = get_memory_limit_str()
-
-    # Set memory limit
-    conn.execute(f"SET memory_limit = '{memory_limit}'")
-
-    # Set temp directory for spill-to-disk
-    conn.execute(f"SET temp_directory = '{TEMP_DIRECTORY}'")
-
-    # Set max temp directory size if explicitly configured
+    """Apply memory and performance settings to a DuckDB connection."""
+    statements = [
+        f"SET memory_limit = '{get_memory_limit_str()}'",
+        f"SET temp_directory = '{TEMP_DIRECTORY}'",
+        "SET preserve_insertion_order = false",
+        "SET max_expression_depth TO 10000",
+        "SET enable_object_cache = true",
+    ]
     if MAX_TEMP_DIRECTORY_SIZE:
-        conn.execute(f"SET max_temp_directory_size = '{MAX_TEMP_DIRECTORY_SIZE}'")
-
-    # Set thread count if specified
+        statements.append(f"SET max_temp_directory_size = '{MAX_TEMP_DIRECTORY_SIZE}'")
     if THREADS is not None:
-        conn.execute(f"SET threads = {THREADS}")
+        statements.append(f"SET threads = {THREADS}")
 
-    # Disable insertion order preservation for better memory efficiency
-    conn.execute("SET preserve_insertion_order = false")
+    conn.execute(";\n".join(statements))
 
-    # Enable progress bar for long operations
-    conn.execute("SET enable_progress_bar = true")
-
-    # Increase max expression depth for deeply nested SQL (e.g. 225+ operand chains)
-    conn.execute("SET max_expression_depth TO 10000")
-
-    # Performance optimizations for large data loads
-    # Enable object cache for repeated query patterns
-    conn.execute("SET enable_object_cache = true")
-
-    # Configure decimal handler
+    # Module-level decimal config (read at SQL generation time, not on the
+    # DuckDB connection itself).
     set_decimal_config()
 
 
