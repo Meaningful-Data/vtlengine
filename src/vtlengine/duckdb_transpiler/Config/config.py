@@ -174,7 +174,23 @@ def get_memory_limit_str() -> str:
 
 
 def configure_duckdb_connection(conn: duckdb.DuckDBPyConnection) -> None:
-    """Apply memory and performance settings to a DuckDB connection."""
+    """
+    Apply memory and performance settings to a DuckDB connection.
+
+    Statements:
+    - Set memory limit: set the maximum memory DuckDB can use based on configuration
+    - Set temp directory: configure where DuckDB can spill to disk when memory is exceeded
+    - Set max temp directory size (if configured): limit how much disk space DuckDB can use for
+        spill-to-disk
+    - Set thread count: configure how many CPU threads DuckDB can use for query execution
+    - Set preserve_insertion_order to false for performance: DuckDB can reorder data for better
+        performance
+    - Set max_expression_depth to 10000 to avoid issues with complex queries: DuckDB has a default
+        expression depth limit which can be too low for complex VTL queries
+    - Enable object cache for better performance on repeated queries: DuckDB can cache query plans
+        and data structures to speed up repeated queries
+    - Set decimal configuration: Apply the configured decimal precision and scale
+    """
     statements = [
         f"SET memory_limit = '{get_memory_limit_str()}'",
         f"SET temp_directory = '{TEMP_DIRECTORY}'",
