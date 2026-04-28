@@ -2141,15 +2141,9 @@ FROM {src}, (
         on_clause = self._join_on_clause(id_names, "a", "b")
 
         if op == tokens.INTERSECT:
-            return (
-                f"SELECT a.* FROM ({a_sql}) AS a "
-                f"SEMI JOIN ({b_sql}) AS b ON {on_clause}"
-            )
+            return f"SELECT a.* FROM ({a_sql}) AS a SEMI JOIN ({b_sql}) AS b ON {on_clause}"
         elif op == tokens.SETDIFF:
-            return (
-                f"SELECT a.* FROM ({a_sql}) AS a "
-                f"ANTI JOIN ({b_sql}) AS b ON {on_clause}"
-            )
+            return f"SELECT a.* FROM ({a_sql}) AS a ANTI JOIN ({b_sql}) AS b ON {on_clause}"
         elif op == tokens.SYMDIFF:
             second_ds = self._get_dataset_structure(node.children[1])
             second_ids = second_ds.get_identifiers_names() if second_ds else id_names

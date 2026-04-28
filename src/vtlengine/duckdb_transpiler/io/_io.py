@@ -230,9 +230,7 @@ def load_datapoints_duckdb(
         # 2. Detect CSV format (delimiter, quote, escape) using sniff_csv.
         # Pass expected component names so the fast-path can skip sniffing
         # when the header already parses cleanly with a comma delimiter.
-        _sniffed_fmt = _detect_csv_format(
-            conn, csv_path, expected_columns=list(components.keys())
-        )
+        _sniffed_fmt = _detect_csv_format(conn, csv_path, expected_columns=list(components.keys()))
 
         # 3. Read CSV header and check for duplicate columns
         sniffed_delim = _sniffed_fmt.split("'")[1] if "delim=" in _sniffed_fmt else ","
