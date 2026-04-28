@@ -23,6 +23,8 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v6
+    - name: Upgrade pipx
+      run: pip install --upgrade pipx
     - name: Install poetry
       run: pipx install poetry
     - name: Set up Python ${{ matrix.python-version }}
