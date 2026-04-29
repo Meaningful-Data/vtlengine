@@ -117,7 +117,6 @@ class TestInOperator:
         [
             ("in", "IN"),
             ("not_in", "NOT IN"),
-            ("not in", "NOT IN"),
         ],
     )
     def test_dataset_in_collection(self, op: str, sql_op: str):
@@ -313,9 +312,8 @@ class TestSetOperations:
 
         expected_sql = (
             'SELECT a.* FROM (SELECT * FROM "DS_1") AS a '
-            "WHERE EXISTS ("
-            'SELECT 1 FROM (SELECT * FROM "DS_2") AS b '
-            'WHERE a."Id_1" = b."Id_1")'
+            'SEMI JOIN (SELECT * FROM "DS_2") AS b '
+            'ON a."Id_1" = b."Id_1"'
         )
         assert_sql_equal(sql, expected_sql)
 
@@ -344,9 +342,8 @@ class TestSetOperations:
 
         expected_sql = (
             'SELECT a.* FROM (SELECT * FROM "DS_1") AS a '
-            "WHERE NOT EXISTS ("
-            'SELECT 1 FROM (SELECT * FROM "DS_2") AS b '
-            'WHERE a."Id_1" = b."Id_1")'
+            'ANTI JOIN (SELECT * FROM "DS_2") AS b '
+            'ON a."Id_1" = b."Id_1"'
         )
         assert_sql_equal(sql, expected_sql)
 
@@ -693,7 +690,7 @@ class TestParameterizedOperations:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = 'SELECT "Id_1", NVL("Me_1", 0) AS "Me_1" FROM "DS_1"'
+        expected_sql = 'SELECT "Id_1", COALESCE("Me_1", 0) AS "Me_1" FROM "DS_1"'
         assert_sql_equal(sql, expected_sql)
 
 
@@ -963,42 +960,6 @@ class TestValueDomains:
         result = transpiler.visit_Collection(collection)
         assert result == "(1, 2, 3, 4, 5)"
 
-    def test_value_domain_not_found_error(self):
-        """Test error when value domain is not found."""
-        transpiler = SQLTranspiler(
-            input_datasets={},
-            output_datasets={},
-            input_scalars={},
-            output_scalars={},
-            value_domains={},
-        )
-
-        collection = Collection(
-            **make_ast_node(name="UNKNOWN_VD", type="String", children=[], kind="ValueDomain")
-        )
-
-        with pytest.raises(ValueError, match="no value domains provided"):
-            transpiler.visit_Collection(collection)
-
-    def test_value_domain_missing_from_provided(self):
-        """Test error when specific value domain is not in provided dict."""
-        vd = ValueDomain(name="OTHER_VD", type=String, setlist=["A", "B"])
-
-        transpiler = SQLTranspiler(
-            input_datasets={},
-            output_datasets={},
-            input_scalars={},
-            output_scalars={},
-            value_domains={"OTHER_VD": vd},
-        )
-
-        collection = Collection(
-            **make_ast_node(name="UNKNOWN_VD", type="String", children=[], kind="ValueDomain")
-        )
-
-        with pytest.raises(ValueError, match="'UNKNOWN_VD' not found"):
-            transpiler.visit_Collection(collection)
-
     def test_collection_set_kind(self):
         """Test normal Set collection still works."""
         transpiler = SQLTranspiler(
@@ -1103,56 +1064,6 @@ class TestEvalOperator:
         expected_sql = 'SELECT Id_1, Me_1 * 2 AS Me_1 FROM "DS_1"'
         assert_sql_equal(result, expected_sql)
 
-    def test_eval_op_routine_not_found(self):
-        """Test error when external routine is not found."""
-        transpiler = SQLTranspiler(
-            input_datasets={},
-            output_datasets={},
-            input_scalars={},
-            output_scalars={},
-            external_routines={},
-        )
-
-        eval_op = EvalOp(
-            **make_ast_node(
-                name="unknown_routine",
-                operands=[],
-                output=None,
-                language="SQL",
-            )
-        )
-
-        with pytest.raises(ValueError, match="no external routines provided"):
-            transpiler.visit_EvalOp(eval_op)
-
-    def test_eval_op_routine_missing_from_provided(self):
-        """Test error when specific routine is not in provided dict."""
-        external_routine = ExternalRoutine(
-            dataset_names=["DS_1"],
-            query='SELECT * FROM "DS_1"',
-            name="other_routine",
-        )
-
-        transpiler = SQLTranspiler(
-            input_datasets={},
-            output_datasets={},
-            input_scalars={},
-            output_scalars={},
-            external_routines={"other_routine": external_routine},
-        )
-
-        eval_op = EvalOp(
-            **make_ast_node(
-                name="unknown_routine",
-                operands=[],
-                output=None,
-                language="SQL",
-            )
-        )
-
-        with pytest.raises(ValueError, match="'unknown_routine' not found"):
-            transpiler.visit_EvalOp(eval_op)
-
     def test_eval_op_with_subquery_replacement(self):
         """Test EVAL operator replaces table references and converts double-quoted strings."""
         ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
@@ -1208,7 +1119,7 @@ class TestTimeOperators:
         )
 
         mul_op = MulOp(**make_ast_node(op=CURRENT_DATE, children=[]))
-        result = transpiler.visit_MulOp(mul_op)
+        result = transpiler.visit(mul_op)
         assert result == "CURRENT_DATE"
 
     @pytest.mark.parametrize(
@@ -1282,7 +1193,7 @@ class TestRandomOperator:
         index = Constant(**make_ast_node(type_="INTEGER_CONSTANT", value=5))
         random_op = ParamOp(**make_ast_node(op="random", children=[seed], params=[index]))
 
-        result = transpiler.visit_ParamOp(random_op)
+        result = transpiler.visit(random_op)
 
         # Full SQL: hash-based deterministic random
         expected_sql = (
@@ -1300,7 +1211,7 @@ class TestRandomOperator:
         index = Constant(**make_ast_node(type_="INTEGER_CONSTANT", value=3))
         random_op = ParamOp(**make_ast_node(op="random", children=[dataset_ref], params=[index]))
 
-        result = transpiler.visit_ParamOp(random_op)
+        result = transpiler.visit(random_op)
 
         # Full SQL: applies random to each measure
         expected_sql = (

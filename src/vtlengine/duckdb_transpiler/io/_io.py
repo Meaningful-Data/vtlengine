@@ -111,12 +111,32 @@ def _normalize_time_period_columns(
                 )
 
 
-def _detect_csv_format(conn: duckdb.DuckDBPyConnection, csv_path: Path) -> str:
+def _detect_csv_format(
+    conn: duckdb.DuckDBPyConnection,
+    csv_path: Path,
+    expected_columns: Optional[List[str]] = None,
+) -> str:
     """Detect CSV delimiter, quote and escape using sniff_csv.
 
     Returns a string of read_csv format options (e.g. "delim=',', quote='\"', escape='\"'").
     Falls back to defaults if sniffing fails or produces unreliable results.
+
+    Fast path: if every name in ``expected_columns`` appears in the header parsed
+    with the default ``,`` delimiter, skip the costly ``sniff_csv`` round-trips.
     """
+    if expected_columns:
+        try:
+            with open(csv_path, newline="", encoding="utf-8") as f:
+                reader = csv.reader(f, delimiter=",")
+                header = next(reader, [])
+            header_set = {h.strip() for h in header}
+            if len(header) >= 1 and all(col in header_set for col in expected_columns):
+                # Standard RFC 4180 format. Match what sniff_csv returns for
+                # well-formed CSVs (double-quote as both quote and escape).
+                return "delim=',', quote='\"', escape='\"'"
+        except (OSError, UnicodeDecodeError, StopIteration):
+            pass
+
     try:
         sniff_result = conn.sql(
             f'SELECT "Delimiter", "Quote", "Escape" FROM sniff_csv(\'{csv_path}\')'
@@ -207,8 +227,10 @@ def load_datapoints_duckdb(
     conn.execute(build_create_table_sql(dataset_name, components, csv_date_overrides))
 
     try:
-        # 2. Detect CSV format (delimiter, quote, escape) using sniff_csv
-        _sniffed_fmt = _detect_csv_format(conn, csv_path)
+        # 2. Detect CSV format (delimiter, quote, escape) using sniff_csv.
+        # Pass expected component names so the fast-path can skip sniffing
+        # when the header already parses cleanly with a comma delimiter.
+        _sniffed_fmt = _detect_csv_format(conn, csv_path, expected_columns=list(components.keys()))
 
         # 3. Read CSV header and check for duplicate columns
         sniffed_delim = _sniffed_fmt.split("'")[1] if "delim=" in _sniffed_fmt else ","

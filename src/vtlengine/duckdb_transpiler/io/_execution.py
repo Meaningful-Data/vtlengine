@@ -14,7 +14,10 @@ import pandas as pd
 from vtlengine.AST.DAG._models import DatasetSchedule
 from vtlengine.DataTypes import (
     _DUCKDB_TYPE_TO_VTL,
+    Duration,
     Null,
+    TimeInterval,
+    TimePeriod,
 )
 from vtlengine.duckdb_transpiler.io._io import (
     load_datapoints_duckdb,
@@ -31,6 +34,15 @@ from vtlengine.Exceptions import RunTimeError
 from vtlengine.files.output._time_period_representation import TimePeriodRepresentation
 from vtlengine.Model import Dataset, Scalar
 from vtlengine.Utils._number_config import get_effective_numeric_digits
+
+
+def _contains_time_components(datasets: Dict[str, Dataset]) -> bool:
+    """Return True when any dataset contains VTL time-related components."""
+    for ds in datasets.values():
+        for comp in ds.components.values():
+            if comp.data_type in (TimePeriod, TimeInterval, Duration):
+                return True
+    return False
 
 
 def _map_time_agg_error(msg: str, msg_lower: str) -> RunTimeError:
@@ -225,22 +237,25 @@ def _build_dataset_fetch_select(
     if not ordered_cols:
         return f'SELECT * FROM "{result_name}"'
 
+    timestamp_cols = [c for c in ordered_cols if "TIMESTAMP" in col_types.get(c, "")]
+    has_time_cols: Dict[str, bool] = {}
+    if timestamp_cols:
+        exists_clauses = ", ".join(
+            f'EXISTS (SELECT 1 FROM "{result_name}" WHERE "{c}" IS NOT NULL '
+            f'AND (hour("{c}") != 0 OR minute("{c}") != 0 '
+            f'OR second("{c}") != 0 OR microsecond("{c}") % 1000000 != 0)) '
+            f'AS "{c}"'
+            for c in timestamp_cols
+        )
+        row = conn.execute(f"SELECT {exists_clauses}").fetchone()
+        if row is not None:
+            has_time_cols = dict(zip(timestamp_cols, row))
+
     exprs = []
     for col in ordered_cols:
         col_type = col_types.get(col, "")
-
         if "TIMESTAMP" in col_type:
-            has_time = (
-                conn.execute(
-                    f'SELECT 1 FROM "{result_name}" '
-                    f'WHERE "{col}" IS NOT NULL '
-                    f'AND (hour("{col}") != 0 OR minute("{col}") != 0 '
-                    f'OR second("{col}") != 0 OR microsecond("{col}") % 1000000 != 0) '
-                    f"LIMIT 1"
-                ).fetchone()
-                is not None
-            )
-            if has_time:
+            if has_time_cols.get(col, False):
                 exprs.append(
                     f'CASE WHEN "{col}" IS NULL THEN NULL'
                     f' WHEN microsecond("{col}") % 1000000 != 0'
@@ -450,8 +465,20 @@ def execute_queries(
     results: Dict[str, Union[Dataset, Scalar]] = {}
     representation = TimePeriodRepresentation.check_value(time_period_output_format)
 
-    # Initialize VTL time type functions (idempotent - safe to call multiple times)
-    initialize_time_types(conn)
+    # Install only the closure of VTL macros actually referenced by the
+    # transpiled queries plus those required for the load/output pipeline.
+    sql_fragments: List[str] = [sql for _, sql, _ in queries]
+    if _contains_time_components(input_datasets):
+        sql_fragments.append("vtl_period_normalize")
+    if _contains_time_components(output_datasets):
+        repr_macro = {
+            "vtl": "vtl_period_to_vtl",
+            "sdmx_reporting": "vtl_period_to_sdmx_reporting",
+            "sdmx_gregorian": "vtl_period_to_sdmx_gregorian",
+            "natural": "vtl_period_to_natural",
+        }.get(time_period_output_format, "vtl_period_to_vtl")
+        sql_fragments.append(repr_macro)
+    initialize_time_types(conn, sql_fragments=sql_fragments)
 
     # Ensure output folder exists if provided
     if output_folder:
