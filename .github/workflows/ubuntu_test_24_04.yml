@@ -31,7 +31,8 @@ jobs:
             python3-jsonschema \
             python3-networkx \
             python3-sqlglot \
-            python3-pytest
+            python3-pytest \
+            python3-psutil
 
       - name: Install pip-only dependencies
         run: |
