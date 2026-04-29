@@ -41,7 +41,7 @@ jobs:
             sdmxschemas==1.0.0 \
             parsy==2.2 \
             msgspec==0.19.0 \
-            duckdb==1.1 \
+            duckdb==1.4.1 \
             pysdmx==1.9.0
 
       - name: Install Poetry
@@ -57,5 +57,12 @@ jobs:
         run: |
           pip install "./vtlengine-$(poetry version -s)-py3-none-any.whl" --no-dependencies --break-system-packages
 
-      - name: Run tests
+      - name: Run tests (pandas backend)
+        env:
+          VTL_ENGINE_BACKEND: pandas
+        run: pytest --verbose --tb=short --strict-markers --strict-config --durations=10
+
+      - name: Run tests (duckdb backend)
+        env:
+          VTL_ENGINE_BACKEND: duckdb
         run: pytest --verbose --tb=short --strict-markers --strict-config --durations=10
