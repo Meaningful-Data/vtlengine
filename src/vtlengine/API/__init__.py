@@ -2,7 +2,6 @@ import copy
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Union, cast
 
-import duckdb
 import pandas as pd
 from antlr4 import CommonTokenStream, InputStream  # type: ignore[import-untyped]
 from antlr4.error.ErrorListener import ErrorListener  # type: ignore[import-untyped]
@@ -31,7 +30,7 @@ from vtlengine.AST.ASTString import ASTString
 from vtlengine.AST.DAG import DAGAnalyzer
 from vtlengine.AST.Grammar.lexer import Lexer
 from vtlengine.AST.Grammar.parser import Parser
-from vtlengine.duckdb_transpiler.Config.config import configure_duckdb_connection
+from vtlengine.duckdb_transpiler.Config.config import configured_connection
 from vtlengine.duckdb_transpiler.io import execute_queries, extract_datapoint_paths
 from vtlengine.duckdb_transpiler.Transpiler import SQLTranspiler
 from vtlengine.Exceptions import InputValidationException
@@ -396,10 +395,8 @@ def _run_with_duckdb(
     # Normalize output folder path
     output_folder_path = Path(output_folder) if output_folder else None
 
-    # Create DuckDB connection and execute queries with DAG scheduling
-    conn = duckdb.connect()
-    configure_duckdb_connection(conn)
-    try:
+    # Create DuckDB connection and execute queries with DAG scheduling.
+    with configured_connection() as conn:
         results = execute_queries(
             conn=conn,
             queries=queries,
@@ -413,8 +410,6 @@ def _run_with_duckdb(
             return_only_persistent=return_only_persistent,
             time_period_output_format=time_period_output_format,
         )
-    finally:
-        conn.close()
 
     return results
 

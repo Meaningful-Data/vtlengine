@@ -18,8 +18,12 @@ Example:
 """
 
 import os
+import shutil
 import tempfile
-from typing import Tuple, Union
+import uuid
+from contextlib import contextmanager
+from pathlib import Path
+from typing import Iterator, Tuple, Union
 
 import duckdb
 import psutil
@@ -123,9 +127,6 @@ TEMP_DIRECTORY: str = os.getenv("VTL_TEMP_DIRECTORY", tempfile.gettempdir())
 # Max temp directory size for spill-to-disk (empty = use available disk space)
 MAX_TEMP_DIRECTORY_SIZE: str = os.getenv("VTL_MAX_TEMP_DIRECTORY_SIZE", "")
 
-# Use file-backed database instead of in-memory (better for large datasets)
-USE_FILE_DATABASE: bool = os.getenv("VTL_USE_FILE_DATABASE", "").lower() in ("1", "true", "yes")
-
 
 def get_memory_limit_bytes() -> int:
     """
@@ -179,7 +180,6 @@ def configure_duckdb_connection(conn: duckdb.DuckDBPyConnection) -> None:
 
     Statements:
     - Set memory limit: set the maximum memory DuckDB can use based on configuration
-    - Set temp directory: configure where DuckDB can spill to disk when memory is exceeded
     - Set max temp directory size (if configured): limit how much disk space DuckDB can use for
         spill-to-disk
     - Set thread count: configure how many CPU threads DuckDB can use for query execution
@@ -193,7 +193,6 @@ def configure_duckdb_connection(conn: duckdb.DuckDBPyConnection) -> None:
     """
     statements = [
         f"SET memory_limit = '{get_memory_limit_str()}'",
-        f"SET temp_directory = '{TEMP_DIRECTORY}'",
         "SET preserve_insertion_order = false",
         "SET max_expression_depth TO 10000",
         "SET enable_object_cache = true",
@@ -210,18 +209,28 @@ def configure_duckdb_connection(conn: duckdb.DuckDBPyConnection) -> None:
 
 
 def create_configured_connection(database: str = ":memory:") -> duckdb.DuckDBPyConnection:
-    """
-    Create a new DuckDB connection with configured limits.
-
-    Args:
-        database: Database path or ":memory:" for in-memory
-
-    Returns:
-        Configured DuckDB connection
-    """
+    """Create a new DuckDB connection with configured limits."""
     conn = duckdb.connect(database)
     configure_duckdb_connection(conn)
     return conn
+
+
+@contextmanager
+def configured_connection(database: str = ":memory:") -> Iterator[duckdb.DuckDBPyConnection]:
+    """Context manager that yields a configured DuckDB connection."""
+    Path(TEMP_DIRECTORY).mkdir(parents=True, exist_ok=True)
+    session_dir = Path(TEMP_DIRECTORY) / f"duckdb_tmp_{uuid.uuid4().hex}"
+    session_dir.mkdir(exist_ok=True)
+
+    conn = create_configured_connection(database)
+    conn.execute(f"SET temp_directory = '{session_dir}'")
+    try:
+        yield conn
+    finally:
+        try:
+            conn.close()
+        finally:
+            shutil.rmtree(session_dir, ignore_errors=True)
 
 
 def get_system_info() -> dict[str, Union[float, int, str, None]]:
