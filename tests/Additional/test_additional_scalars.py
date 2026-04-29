@@ -222,7 +222,7 @@ string_exception_param = [
 
 numeric_exception_param = [
     ("log(5.0, -8)", "2-1-15-3"),
-    ("log(0.0, 6)", "math domain error"),
+    ("log(0.0, 6)", "2-1-15-8"),
 ]
 
 ds_param = [

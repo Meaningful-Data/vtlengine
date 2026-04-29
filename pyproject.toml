@@ -1,6 +1,6 @@
 [project]
 name = "vtlengine"
-version = "1.6.2"
+version = "1.6.8"
 description = "Run and Validate VTL Scripts"
 license = "AGPL-3.0"
 readme = "README.md"
@@ -18,6 +18,14 @@ classifiers = [
     "Intended Audience :: Developers",
     "Intended Audience :: Information Technology",
     "Intended Audience :: Science/Research",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Typing :: Typed"
 ]
 keywords = ['vtl', 'sdmx', 'vtlengine', 'Validation and Transformation Language']
@@ -32,9 +40,9 @@ dependencies = [
     "antlr4-python3-runtime>=4.9,<4.10",
     "pandas>=2.1.4,<3.0",
     "networkx>=2.8,<3.0",
-    "pyarrow>=14.0,<20.0",
+    "pyarrow>=14.0,<25.0",
     "numpy>=2.0.2,<2.1; python_version < '3.10'",
-    "numpy>=2.2.0,<2.3; python_version >= '3.10'",
+    "numpy>=2.2.0,<2.5; python_version >= '3.10'",
 ]
 
 [project.optional-dependencies]
@@ -51,27 +59,31 @@ Authors = 'https://github.com/Meaningful-Data/vtlengine/graphs/contributors'
 [tool.poetry.dependencies]
 python = ">=3.9,<4.0"
 
-[tool.poetry.group.dev.dependencies]
-pytest = ">=8.4,<9.0"
-pytest-cov = ">=7.0.0,<8.0"
-coverage = ">=7.0,!=7.13.0,<8.0"
-pytest-xdist = ">=3.8.0,<4.0"
-line-profiler-pycharm = ">=1.2.0,<2.0"
-mypy = ">=1.18,<2.0"
-pandas-stubs = ">=2.2.2,<3.0"
-pyarrow-stubs = ">=19.0,<21.0"
-ruff = ">=0.14,<1.0.0"
-types-jsonschema = ">=4.25.1,<5.0"
-
-[tool.poetry.group.docs.dependencies]
-sphinx = ">=7.4.7,<8.0"
-sphinx-rtd-theme = ">=3.0.2,<4.0"
-sphinx-multiversion = ">=0.2.4,<0.3.0"
-toml = ">=0.10.2,<0.11.0"
+# Dependency groups follow PEP 735 (https://peps.python.org/pep-0735/).
+[dependency-groups]
+dev = [
+    "pytest>=8.4,<9.0",
+    "pytest-cov>=7.0.0,<8.0",
+    "coverage>=7.0,!=7.13.0,<8.0",
+    "pytest-xdist>=3.8.0,<4.0",
+    "line-profiler-pycharm>=1.2.0,<2.0",
+    "mypy>=1.18,<2.0",
+    "pandas-stubs>=2.2.2,<3.0",
+    "pyarrow-stubs>=19.0,<21.0",
+    "ruff>=0.15.12,<1.0.0",
+    "types-jsonschema>=4.25.1,<5.0",
+]
+docs = [
+    "sphinx>=7.4.7,<8.0",
+    "sphinx-rtd-theme>=3.0.2,<4.0",
+    "sphinx-multiversion>=0.2.4,<0.3.0",
+    "toml>=0.10.2,<0.11.0",
+]
 
 
 
 [tool.ruff]
+target-version = "py39"
 line-length = 100
 lint.mccabe.max-complexity = 20
 lint.select = [

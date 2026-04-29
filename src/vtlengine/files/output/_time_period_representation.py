@@ -2,7 +2,7 @@ from enum import Enum
 from typing import Union
 
 from vtlengine.DataTypes import TimePeriod
-from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
+from vtlengine.DataTypes.TimeHandling import TimePeriodConfig, TimePeriodHandler
 from vtlengine.Exceptions import InputValidationException
 from vtlengine.Model import Dataset, Scalar
 
@@ -21,6 +21,9 @@ class TimePeriodRepresentation(Enum):
             raise InputValidationException(
                 code="0-1-1-15", value=value, valid_options=valid_options
             )
+
+        TimePeriodConfig.set_representation(value)
+
         return cls(value)
 
 
