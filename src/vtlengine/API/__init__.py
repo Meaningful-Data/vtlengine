@@ -35,6 +35,7 @@ from vtlengine.duckdb_transpiler.Config.config import configure_duckdb_connectio
 from vtlengine.duckdb_transpiler.io import execute_queries, extract_datapoint_paths
 from vtlengine.duckdb_transpiler.Transpiler import SQLTranspiler
 from vtlengine.Exceptions import InputValidationException
+from vtlengine.files.output import format_date_iso8601
 from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
     format_time_period_external_representation,
@@ -416,6 +417,14 @@ def _run_with_duckdb(
     finally:
         conn.close()
 
+    # Applying output format (Date ISO 8601 T separator, TimePeriod representation)
+    if output_folder_path is None:
+        time_period_representation = TimePeriodRepresentation.check_value(time_period_output_format)
+        for obj in results.values():
+            if isinstance(obj, (Dataset, Scalar)):
+                format_date_iso8601(obj)
+                format_time_period_external_representation(obj, time_period_representation)
+
     return results
 
 
@@ -610,10 +619,11 @@ def run(
     )
     result = interpreter.visit(ast)
 
-    # Applying time period output format
+    # Applying output format (Date ISO 8601 T separator, TimePeriod representation)
     if output_folder is None:
         for obj in result.values():
             if isinstance(obj, (Dataset, Scalar)):
+                format_date_iso8601(obj)
                 format_time_period_external_representation(obj, time_period_representation)
 
     # Returning only persistent datasets

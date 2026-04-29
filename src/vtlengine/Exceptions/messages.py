@@ -737,6 +737,11 @@ centralised_messages = {
         "description": "Runtime error when an operator is incorrectly applied to a Dataset "
         "instead of allowed types.",
     },  # RunTimeError.
+    "2-1-15-8": {
+        "message": "At op {op}: Value {value} must be greater than 0.",
+        "description": "Runtime error when a value is less than or equal to zero for an "
+        "operator that requires a strictly positive input (e.g. log, ln).",
+    },  # RunTimeError.
     # Set Operators
     "1-1-17-1": {
         "message": "At op {op}: Datasets {dataset_1} and {dataset_2} have different number "
@@ -838,15 +843,15 @@ centralised_messages = {
         "over a Date type.",
     },
     "1-1-19-12": {
-        "message": "At op {op}: TimeInterval data type is not supported for {context} operations.",
-        "description": "Raised when a TimeInterval data type is used in an Analytic or "
+        "message": "At op {op}: Time data type is not supported for {context} operations.",
+        "description": "Raised when a Time data type is used in an Analytic or "
         "Aggregate operation, which does not support it.",
     },
     "1-1-19-13": {
         "message": "At op {op}: RANGE window is not supported for {data_type} "
         "data type in component {comp_name}.",
         "description": "Raised when a RANGE window is applied to a component with an "
-        "incompatible data type (String, Duration, TimePeriod, TimeInterval).",
+        "incompatible data type (String, Duration, TimePeriod, Time).",
     },
     # ---------Semantic Analyzer Common----
     "1-2-1": {

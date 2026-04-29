@@ -272,6 +272,10 @@ class Logarithm(Binary):
             return None
         if param <= 0:
             raise SemanticError("2-1-15-3", op=cls.op, value=param)
+        if pd.isnull(x):
+            return None
+        if x <= 0:
+            raise SemanticError("2-1-15-8", op=cls.op, value=x)
 
         return math.log(x, param)
 
