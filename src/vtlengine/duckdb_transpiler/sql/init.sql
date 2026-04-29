@@ -45,6 +45,15 @@ CREATE TYPE vtl_time_interval AS STRUCT(
 CREATE OR REPLACE MACRO vtl_period_normalize(input VARCHAR) AS (
     CASE
         WHEN input IS NULL THEN NULL
+        -- Fast path: input is already in the canonical internal representation
+        -- (the common case for well-formed inputs). Skip the per-row CAST/LPAD
+        -- work below and return as-is.
+        WHEN LENGTH(input) = 5 AND SUBSTR(input, 5, 1) = 'A' THEN input
+        WHEN SUBSTR(input, 5, 1) = '-' AND
+             ((LENGTH(input) = 7 AND SUBSTR(input, 6, 1) IN ('S', 'Q'))
+              OR (LENGTH(input) = 8 AND SUBSTR(input, 6, 1) IN ('M', 'W'))
+              OR (LENGTH(input) = 9 AND SUBSTR(input, 6, 1) = 'D'))
+        THEN input
         WHEN LENGTH(input) = 4 THEN
             input || 'A'
         WHEN SUBSTR(input, 5, 1) != '-' THEN

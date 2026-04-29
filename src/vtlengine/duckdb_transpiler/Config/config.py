@@ -177,39 +177,35 @@ def configure_duckdb_connection(conn: duckdb.DuckDBPyConnection) -> None:
     """
     Apply memory and performance settings to a DuckDB connection.
 
-    Args:
-        conn: DuckDB connection to configure
+    Statements:
+    - Set memory limit: set the maximum memory DuckDB can use based on configuration
+    - Set temp directory: configure where DuckDB can spill to disk when memory is exceeded
+    - Set max temp directory size (if configured): limit how much disk space DuckDB can use for
+        spill-to-disk
+    - Set thread count: configure how many CPU threads DuckDB can use for query execution
+    - Set preserve_insertion_order to false for performance: DuckDB can reorder data for better
+        performance
+    - Set max_expression_depth to 10000 to avoid issues with complex queries: DuckDB has a default
+        expression depth limit which can be too low for complex VTL queries
+    - Enable object cache for better performance on repeated queries: DuckDB can cache query plans
+        and data structures to speed up repeated queries
+    - Set decimal configuration: Apply the configured decimal precision and scale
     """
-    memory_limit = get_memory_limit_str()
-
-    # Set memory limit
-    conn.execute(f"SET memory_limit = '{memory_limit}'")
-
-    # Set temp directory for spill-to-disk
-    conn.execute(f"SET temp_directory = '{TEMP_DIRECTORY}'")
-
-    # Set max temp directory size if explicitly configured
+    statements = [
+        f"SET memory_limit = '{get_memory_limit_str()}'",
+        f"SET temp_directory = '{TEMP_DIRECTORY}'",
+        "SET preserve_insertion_order = false",
+        "SET max_expression_depth TO 10000",
+        "SET enable_object_cache = true",
+    ]
     if MAX_TEMP_DIRECTORY_SIZE:
-        conn.execute(f"SET max_temp_directory_size = '{MAX_TEMP_DIRECTORY_SIZE}'")
-
-    # Set thread count if specified
+        statements.append(f"SET max_temp_directory_size = '{MAX_TEMP_DIRECTORY_SIZE}'")
     if THREADS is not None:
-        conn.execute(f"SET threads = {THREADS}")
+        statements.append(f"SET threads = {THREADS}")
 
-    # Disable insertion order preservation for better memory efficiency
-    conn.execute("SET preserve_insertion_order = false")
+    conn.execute(";\n".join(statements))
 
-    # Enable progress bar for long operations
-    conn.execute("SET enable_progress_bar = true")
-
-    # Increase max expression depth for deeply nested SQL (e.g. 225+ operand chains)
-    conn.execute("SET max_expression_depth TO 10000")
-
-    # Performance optimizations for large data loads
-    # Enable object cache for repeated query patterns
-    conn.execute("SET enable_object_cache = true")
-
-    # Configure decimal handler
+    # Module-level decimal config
     set_decimal_config()
 
 

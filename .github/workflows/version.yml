@@ -2,9 +2,9 @@ name: Version Consistency Check
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main", "duckdb/main" ]
   pull_request:
-    branches: [ main ]
+    branches: [ "main", "duckdb/main" ]
 
 permissions:
   contents: read

@@ -7,8 +7,8 @@ from vtlengine.duckdb_transpiler.Transpiler.sql_builder import (
     build_binary_expr,
     build_column_expr,
     build_function_expr,
-    quote_identifier,
     quote_identifiers,
+    quote_name,
 )
 
 # =============================================================================
@@ -257,7 +257,7 @@ class TestQuoteIdentifier:
     )
     def test_quote_identifier(self, input_id, expected):
         """Test single identifier quoting."""
-        assert quote_identifier(input_id) == expected
+        assert quote_name(input_id) == expected
 
     def test_quote_identifiers(self):
         """Test multiple identifier quoting."""
