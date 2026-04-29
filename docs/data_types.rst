@@ -154,6 +154,9 @@ Date
       - Python ``str`` in ``"YYYY-MM-DD"`` or
         ``"YYYY-MM-DD HH:MM:SS"`` format,
         stored as ``string[pyarrow]``.
+    * - **Output format**
+      - ISO 8601 with ``T`` separator:
+        ``"YYYY-MM-DD"`` or ``"YYYY-MM-DDThh:mm:ss"``.
     * - **Output dtype**
       - ``string[pyarrow]``
 

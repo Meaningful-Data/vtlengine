@@ -117,9 +117,9 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
     if "vtl error 2-1-3-1" in msg_lower:
         return RunTimeError("2-1-3-1", op="ratio_to_report")
 
-    # Math domain error (e.g. log(0))
+    # Logarithm of a non-positive number (log(0) or log(x, negative_x))
     if "logarithm of zero" in msg_lower or "logarithm of negative" in msg_lower:
-        return ValueError("math domain error")
+        return RunTimeError("2-1-15-8", op="log", value=0)
 
     # Logarithm of a negative number (log(x, negative_base))
     if "cannot take logarithm of a negative number" in msg_lower:
