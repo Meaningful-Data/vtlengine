@@ -211,8 +211,8 @@ timeOperators:
     PERIOD_INDICATOR LPAREN expr? RPAREN                                                                                                # periodAtom
     | FILL_TIME_SERIES LPAREN expr (COMMA op=(SINGLE|ALL))? RPAREN                                                                         # fillTimeAtom
     | op=(FLOW_TO_STOCK | STOCK_TO_FLOW) LPAREN expr RPAREN	                                                                            # flowAtom
-    | TIMESHIFT LPAREN expr COMMA signedInteger RPAREN                                                                                  # timeShiftAtom
-    | TIME_AGG LPAREN periodIndTo=STRING_CONSTANT (COMMA periodIndFrom=(STRING_CONSTANT| OPTIONAL ))? (COMMA op=optionalExpr)? (COMMA delim=(FIRST|LAST))? RPAREN     # timeAggAtom
+    | TIMESHIFT LPAREN expr COMMA (intShift=signedInteger | varShift=varID) RPAREN                                                     # timeShiftAtom
+    | TIME_AGG LPAREN (periodIndToVar=varID | periodIndToConst=STRING_CONSTANT) (COMMA periodIndFrom=(STRING_CONSTANT| OPTIONAL ))? (COMMA op=optionalExpr)? (COMMA delim=(FIRST|LAST))? RPAREN     # timeAggAtom
     | CURRENT_DATE LPAREN RPAREN                                                                                                        # currentDateAtom
     | DATEDIFF LPAREN dateFrom=expr COMMA dateTo=expr RPAREN                    # dateDiffAtom
     | DATEADD LPAREN op=expr COMMA shiftNumber=expr COMMA periodInd=expr RPAREN # dateAddAtom
@@ -230,8 +230,8 @@ timeOperatorsComponent:
     PERIOD_INDICATOR LPAREN exprComponent? RPAREN                                                                                               # periodAtomComponent
     | FILL_TIME_SERIES LPAREN exprComponent (COMMA op=(SINGLE|ALL))? RPAREN                                                                        # fillTimeAtomComponent
     | op=(FLOW_TO_STOCK | STOCK_TO_FLOW) LPAREN exprComponent RPAREN	                                                                                    # flowAtomComponent
-    | TIMESHIFT LPAREN exprComponent COMMA signedInteger RPAREN                                                                                 # timeShiftAtomComponent
-    | TIME_AGG LPAREN periodIndTo=STRING_CONSTANT (COMMA periodIndFrom=(STRING_CONSTANT| OPTIONAL ))? (COMMA op=optionalExprComponent)? (COMMA delim=(FIRST|LAST))? RPAREN    # timeAggAtomComponent
+    | TIMESHIFT LPAREN exprComponent COMMA (intShift=signedInteger | varShift=varID) RPAREN                                                     # timeShiftAtomComponent
+    | TIME_AGG LPAREN (periodIndToVar=varID | periodIndToConst=STRING_CONSTANT) (COMMA periodIndFrom=(STRING_CONSTANT| OPTIONAL ))? (COMMA op=optionalExprComponent)? (COMMA delim=(FIRST|LAST))? RPAREN    # timeAggAtomComponent
     | CURRENT_DATE LPAREN RPAREN                                                                                                               # currentDateAtomComponent
     | DATEDIFF LPAREN dateFrom=exprComponent COMMA dateTo=expr RPAREN                    # dateDiffAtomComponent
     | DATEADD LPAREN op=exprComponent COMMA shiftNumber=exprComponent COMMA periodInd=exprComponent RPAREN # dateAddAtomComponent
@@ -313,7 +313,7 @@ aggrOperatorsGrouping:
         | FIRST_VALUE
         | LAST_VALUE)
         LPAREN expr OVER LPAREN (partition=partitionByClause? orderBy=orderByClause? windowing=windowingClause?)RPAREN RPAREN       #anSimpleFunction
-    | op=(LAG |LEAD)  LPAREN expr (COMMA offset=signedInteger(COMMA defaultValue=scalarItem)?)?  OVER  LPAREN (partition=partitionByClause? orderBy=orderByClause)   RPAREN RPAREN    # lagOrLeadAn
+    | op=(LAG |LEAD)  LPAREN expr (COMMA (intOffset=signedInteger | varOffset=varID)(COMMA defaultValue=scalarItem)?)?  OVER  LPAREN (partition=partitionByClause? orderBy=orderByClause)   RPAREN RPAREN    # lagOrLeadAn
     | op=RATIO_TO_REPORT LPAREN expr OVER  LPAREN (partition=partitionByClause) RPAREN RPAREN                                                                           # ratioToReportAn
 ;
 
@@ -331,7 +331,7 @@ aggrOperatorsGrouping:
          | FIRST_VALUE
          | LAST_VALUE)
          LPAREN exprComponent OVER LPAREN (partition=partitionByClause? orderBy=orderByClause? windowing=windowingClause?)RPAREN RPAREN       #anSimpleFunctionComponent
-    | op=(LAG |LEAD)  LPAREN exprComponent (COMMA offset=signedInteger(defaultValue=scalarItem)?)?  OVER  LPAREN (partition=partitionByClause? orderBy=orderByClause)   RPAREN RPAREN   # lagOrLeadAnComponent
+    | op=(LAG |LEAD)  LPAREN exprComponent (COMMA (intOffset=signedInteger | varOffset=varID)(defaultValue=scalarItem)?)?  OVER  LPAREN (partition=partitionByClause? orderBy=orderByClause)   RPAREN RPAREN   # lagOrLeadAnComponent
     | op=RANK LPAREN  OVER  LPAREN (partition=partitionByClause? orderBy=orderByClause) RPAREN RPAREN                                                                           # rankAnComponent
     | op=RATIO_TO_REPORT LPAREN exprComponent OVER  LPAREN (partition=partitionByClause) RPAREN RPAREN                                                                          # ratioToReportAnComponent
 ;
@@ -363,7 +363,7 @@ calcClauseItem:
 
 /*SUBSPACE CLAUSE*/
 subspaceClauseItem:
-  componentID  EQ  scalarItem
+  componentID  EQ  (varID | scalarItem)
 ;
 
 scalarItem:
@@ -426,8 +426,8 @@ signedNumber:
 ;
 
 limitClauseItem:
-    signedInteger limitDir=PRECEDING
-    | signedInteger limitDir=FOLLOWING
+    (intLimit=signedInteger | varLimit=varID) limitDir=PRECEDING
+    | (intLimit=signedInteger | varLimit=varID) limitDir=FOLLOWING
     | CURRENT DATA POINT
     | UNBOUNDED limitDir=PRECEDING
     | UNBOUNDED limitDir=FOLLOWING
@@ -436,8 +436,8 @@ limitClauseItem:
 /*--------------------------------------------END ANALYTIC CLAUSE -----------------------------------------------*/
 /* ------------------------------------------------------------ GROUPING CLAUSE ------------------------------------*/
 groupingClause:
-    GROUP op=(BY | EXCEPT) componentID (COMMA componentID)* ( TIME_AGG LPAREN STRING_CONSTANT (COMMA delim=(FIRST|LAST))? RPAREN )?     # groupByOrExcept
-    | GROUP ALL ( TIME_AGG LPAREN STRING_CONSTANT (COMMA delim=(FIRST|LAST))? RPAREN )?                                                 # groupAll
+    GROUP op=(BY | EXCEPT) componentID (COMMA componentID)* ( TIME_AGG LPAREN (periodVar=varID | periodConst=STRING_CONSTANT) (COMMA delim=(FIRST|LAST))? RPAREN )?     # groupByOrExcept
+    | GROUP ALL ( TIME_AGG LPAREN (periodVar=varID | periodConst=STRING_CONSTANT) (COMMA delim=(FIRST|LAST))? RPAREN )?                                                 # groupAll
   ;
 
 havingClause:

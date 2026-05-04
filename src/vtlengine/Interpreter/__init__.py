@@ -2,7 +2,7 @@ import csv
 from copy import copy, deepcopy
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Type, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Type, Union, cast
 
 import pandas as pd
 
@@ -708,14 +708,18 @@ class InterpreterAnalyzer(ASTTemplate):
             for param in node.params:
                 if isinstance(param, AST.Constant):
                     params.append(param.value)
+                elif isinstance(param, AST.VarID):
+                    params.append(self._resolve_scalar_var(param))
                 else:
                     params.append(param)
+
+        window = self._resolve_window_bounds(node.window) if node.window is not None else None
 
         result = ANALYTIC_MAPPING[node.op].analyze(
             operand=operand,
             partitioning=partitioning,
             ordering=ordering,
-            window=node.window,
+            window=window,
             params=params,
             component_name=component_name,
         )
@@ -1880,13 +1884,65 @@ class InterpreterAnalyzer(ASTTemplate):
             self.udo_params = None
         return result
 
+    def _resolve_scalar_var(self, var: AST.VarID) -> Any:
+        """Resolve a VarID directly against UDO params or top-level scalars.
+
+        Bypasses visit_VarID, which prioritises component/dataset lookup when the
+        interpreter is inside an aggregation/regular-aggregation context.
+        """
+        name = var.value
+        if self.udo_params is not None and name in self.udo_params[-1]:
+            value = self.udo_params[-1][name]
+            return value.value if isinstance(value, Scalar) else value
+        if self.scalars is not None and name in self.scalars:
+            return self.scalars[name].value
+        raise SemanticError("2-3-6", dataset_name=name)
+
+    def _resolve_period_indicator(self, period: Optional[Union[str, AST.VarID]]) -> Optional[str]:
+        """Resolve a TIME_AGG period indicator that may be a VarID into a string."""
+        if period is None or isinstance(period, str):
+            return period
+        resolved = self._resolve_scalar_var(period)
+        if not isinstance(resolved, str):
+            raise SemanticError("2-1-19-3", op="time_agg", value=resolved)
+        return resolved
+
+    def _resolve_window_bound(self, bound: Union[int, str, AST.VarID]) -> Union[int, str]:
+        """Resolve an analytic windowing bound that may be a VarID into an int/sentinel."""
+        if isinstance(bound, (int, str)):
+            return bound
+        resolved = self._resolve_scalar_var(bound)
+        if not isinstance(resolved, int):
+            raise SemanticError("2-1-19-3", op="windowing", value=resolved)
+        return resolved
+
+    def _resolve_window_bounds(self, window: AST.Windowing) -> AST.Windowing:
+        """Return a Windowing whose start/stop are concrete (resolving any VarID bounds)."""
+        start = self._resolve_window_bound(window.start)
+        stop = self._resolve_window_bound(window.stop)
+        if start is window.start and stop is window.stop:
+            return window
+        return AST.Windowing(
+            type_=window.type_,
+            start=start,
+            start_mode=window.start_mode,
+            stop=stop,
+            stop_mode=window.stop_mode,
+            line_start=window.line_start,
+            column_start=window.column_start,
+            line_stop=window.line_stop,
+            column_stop=window.column_stop,
+        )
+
     def visit_TimeAggregation(self, node: AST.TimeAggregation) -> None:
+        period_to = cast(str, self._resolve_period_indicator(node.period_to))
+        period_from = self._resolve_period_indicator(node.period_from)
         if node.operand is not None:
             operand = self.visit(node.operand)
             return Time_Aggregation.analyze(
                 operand=operand,
-                period_from=node.period_from,
-                period_to=node.period_to,
+                period_from=period_from,
+                period_to=period_to,
                 conf=node.conf,
             )
         # The aggregation dataset is mandatory here as is part of a group_all statement.
@@ -1895,7 +1951,7 @@ class InterpreterAnalyzer(ASTTemplate):
             raise SemanticError("1-3-2-4")
         return Time_Aggregation._execute_without_operand(
             aggregation_dataset=self.aggregation_dataset,
-            period_from=node.period_from,
-            period_to=node.period_to,
+            period_from=period_from,
+            period_to=period_to,
             conf=node.conf,
         )

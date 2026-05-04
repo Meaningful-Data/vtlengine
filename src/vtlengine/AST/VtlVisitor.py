@@ -901,6 +901,3 @@ class VtlVisitor(ParseTreeVisitor):
     # Visit a parse tree produced by Parser#retainType.
     def visitRetainType(self, ctx: Parser.RetainTypeContext):
         return self.visitChildren(ctx)
-
-
-del Parser

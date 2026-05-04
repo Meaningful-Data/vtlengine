@@ -342,9 +342,9 @@ class Windowing(AST):
     """
 
     type_: str
-    start: Union[int, str]
+    start: Union[int, str, "VarID"]
     start_mode: str
-    stop: Union[int, str]
+    stop: Union[int, str, "VarID"]
     stop_mode: str
 
     __eq__ = AST.ast_equality
@@ -446,7 +446,7 @@ class TimeAggregation(AST):
     """
 
     op: str
-    period_to: str
+    period_to: Union[str, "VarID"]
     period_from: Optional[str] = None
     operand: Optional[AST] = None
     conf: Optional[str] = None

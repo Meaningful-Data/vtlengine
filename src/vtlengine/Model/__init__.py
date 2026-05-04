@@ -73,6 +73,8 @@ class Scalar:
         return json.dumps(self.to_dict())
 
     def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, Scalar):
+            return NotImplemented
         same_name = self.name == other.name
         same_type = self.data_type == other.data_type
         x = None if not pd.isnull(self.value) else self.value

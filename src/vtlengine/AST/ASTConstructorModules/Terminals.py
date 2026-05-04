@@ -730,7 +730,11 @@ class Terminals(VtlVisitor):
         first = num_rows_1  # unbounded (default value)
         second = num_rows_2  # current data point (default value)
 
-        if (
+        # When either bound is a VarID, the value isn't known until interpretation;
+        # skip the numeric reorder/validation and resolve at runtime.
+        both_int = isinstance(num_rows_1, int) and isinstance(num_rows_2, int)
+
+        if both_int and (
             mode_2 == "preceding"
             and mode_1 == "preceding"
             and num_rows_1 == -1
@@ -741,7 +745,7 @@ class Terminals(VtlVisitor):
                 f"line {ctx_list[3].start.line}"
             )
 
-        if (
+        if both_int and (
             mode_1 == "following" and num_rows_1 == -1 and num_rows_2 == -1
         ):  # following and following (error)
             raise Exception(
@@ -749,7 +753,7 @@ class Terminals(VtlVisitor):
                 f"line {ctx_list[3].start.line}"
             )
 
-        if mode_1 == mode_2:
+        if both_int and mode_1 == mode_2:
             if mode_1 == "preceding" and first != -1 and second > first:  # 3 and 1: must be [-3:-1]
                 return create_windowing(win_mode, [second, first], [mode_2, mode_1], token_info)
             if mode_1 == "preceding" and second == -1:
@@ -778,19 +782,21 @@ class Terminals(VtlVisitor):
         )
 
     def visitLimitClauseItem(self, ctx: Parser.LimitClauseItemContext):
-        # limitClauseItem: signedInteger limitDir=PRECEDING
-        #     | signedInteger limitDir=FOLLOWING
+        # limitClauseItem:
+        #       (intLimit=signedInteger | varLimit=varID) limitDir=PRECEDING
+        #     | (intLimit=signedInteger | varLimit=varID) limitDir=FOLLOWING
         #     | CURRENT DATA POINT
         #     | UNBOUNDED limitDir=PRECEDING
         #     | UNBOUNDED limitDir=FOLLOWING
+        if ctx.intLimit is not None:
+            return self.visitSignedInteger(ctx.intLimit), ctx.limitDir.text
+        if ctx.varLimit is not None:
+            return self.visitVarID(ctx.varLimit), ctx.limitDir.text
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]
-        if isinstance(c, Parser.SignedIntegerContext):
-            result = self.visitSignedInteger(c)
-            return result, ctx.limitDir.text
-        elif c.getSymbol().text.lower() == "unbounded":
+        if c.getSymbol().text.lower() == "unbounded":
             return -1, ctx.limitDir.text
-        elif c.getSymbol().text == "current":
+        if c.getSymbol().text == "current":
             return 0, ctx_list[0].getSymbol().text
 
 

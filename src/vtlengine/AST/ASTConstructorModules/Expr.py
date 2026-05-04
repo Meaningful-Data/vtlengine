@@ -1,5 +1,5 @@
 from copy import copy
-from typing import Any, List, Optional, Tuple
+from typing import Any, List, Optional, Tuple, Union
 
 from antlr4.tree.Tree import TerminalNodeImpl
 
@@ -880,18 +880,22 @@ class Expr(VtlVisitor):
 
     def visitTimeShiftAtom(self, ctx: Parser.TimeShiftAtomContext):
         """
-        timeShiftExpr: TIMESHIFT '(' expr ',' INTEGER_CONSTANT ')' ;
+        TIMESHIFT LPAREN expr COMMA (intShift=signedInteger | varShift=varID) RPAREN ;
         """
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]
 
         op = c.getSymbol().text
         left_node = self.visitExpr(ctx_list[2])
-        right_node = Constant(
-            type_="INTEGER_CONSTANT",
-            value=Terminals().visitSignedInteger(ctx_list[4]),
-            **extract_token_info(ctx_list[4]),
-        )
+        right_node: Any
+        if ctx.intShift is not None:
+            right_node = Constant(
+                type_="INTEGER_CONSTANT",
+                value=Terminals().visitSignedInteger(ctx.intShift),
+                **extract_token_info(ctx.intShift),
+            )
+        else:
+            right_node = Terminals().visitVarID(ctx.varShift)
 
         return BinOp(left=left_node, op=op, right=right_node, **extract_token_info(ctx))
 
@@ -922,15 +926,22 @@ class Expr(VtlVisitor):
 
     def visitTimeAggAtom(self, ctx: Parser.TimeAggAtomContext):
         """
-        TIME_AGG LPAREN periodIndTo=STRING_CONSTANT (COMMA periodIndFrom=(STRING_CONSTANT| OPTIONAL ))? (COMMA op=optionalExpr)? (COMMA (FIRST|LAST))? RPAREN     # timeAggAtom
+        TIME_AGG LPAREN
+            (periodIndToVar=varID | periodIndToConst=STRING_CONSTANT)
+            (COMMA periodIndFrom=(STRING_CONSTANT|OPTIONAL))?
+            (COMMA op=optionalExpr)? (COMMA (FIRST|LAST))? RPAREN     # timeAggAtom
         """  # noqa E501
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]
 
         op = c.getSymbol().text
-        period_to = str(ctx.periodIndTo.text)[1:-1]
-        period_from = None
+        period_to: Union[str, VarID]
+        if ctx.periodIndToConst is not None:
+            period_to = str(ctx.periodIndToConst.text)[1:-1]
+        else:
+            period_to = Terminals().visitVarID(ctx.periodIndToVar)
 
+        period_from: Optional[str] = None
         if ctx.periodIndFrom is not None and ctx.periodIndFrom.type != Parser.OPTIONAL:
             period_from = str(ctx.periodIndFrom.text)[1:-1]
 
@@ -1422,30 +1433,30 @@ class Expr(VtlVisitor):
     def visitLagOrLeadAn(self, ctx: Parser.LagOrLeadAnContext):
         ctx_list = list(ctx.getChildren())
 
-        params = None
+        params: Optional[List[Any]] = None
         partition_by = None
         order_by = None
 
         op_node = ctx_list[0].getSymbol().text
         operand = self.visitExpr(ctx_list[2])
 
+        if ctx.intOffset is not None:
+            params = [Terminals().visitSignedInteger(ctx.intOffset)]
+        elif ctx.varOffset is not None:
+            params = [Terminals().visitVarID(ctx.varOffset)]
+
+        if ctx.defaultValue is not None:
+            if params is None:
+                params = []
+            params.append(Terminals().visitScalarItem(ctx.defaultValue))
+
         for c in ctx_list[4:-2]:
             if isinstance(c, Parser.PartitionByClauseContext):
                 partition_by = Terminals().visitPartitionByClause(c)
-                continue
             elif isinstance(c, Parser.OrderByClauseContext):
                 order_by = Terminals().visitOrderByClause(c)
-                continue
-            elif isinstance(c, (Parser.SignedIntegerContext, Parser.ScalarItemContext)):
-                if params is None:
-                    params = []
-                if isinstance(c, Parser.SignedIntegerContext):
-                    params.append(Terminals().visitSignedInteger(c))
-                else:
-                    params.append(Terminals().visitScalarItem(c))
-                continue
 
-        if len(params) == 0:
+        if params is None or len(params) == 0:
             # AST_ASTCONSTRUCTOR.16
             raise Exception(f"{op_node} requires an offset parameter.")
 
@@ -1703,20 +1714,17 @@ class Expr(VtlVisitor):
         ), expr
 
     @staticmethod
-    def _extract_time_agg_tokens(
-        ctx_list: List[Any],
-    ) -> Tuple[Optional[str], Optional[str]]:
-        """Extract TIME_AGG parameters (period_to, conf) from parse tree children."""
-        period_to: Optional[str] = None
-        conf: Optional[str] = None
-        for child in ctx_list:
-            if isinstance(child, TerminalNodeImpl):
-                token = child.getSymbol()
-                if token.type == Parser.STRING_CONSTANT:
-                    period_to = token.text[1:-1]
-                elif token.type in (Parser.FIRST, Parser.LAST):
-                    conf = token.text
-        return period_to, conf
+    def _extract_time_agg_period(
+        ctx: Any,
+    ) -> Tuple[Optional[Union[str, VarID]], Optional[str]]:
+        """Extract TIME_AGG period (str or VarID) and FIRST/LAST conf from a grouping context."""
+        period: Optional[Union[str, VarID]] = None
+        if getattr(ctx, "periodConst", None) is not None:
+            period = ctx.periodConst.text[1:-1]
+        elif getattr(ctx, "periodVar", None) is not None:
+            period = Terminals().visitVarID(ctx.periodVar)
+        conf = ctx.delim.text if getattr(ctx, "delim", None) is not None else None
+        return period, conf
 
     def visitGroupByOrExcept(self, ctx: Parser.GroupByOrExceptContext):
         ctx_list = list(ctx.getChildren())
@@ -1736,7 +1744,7 @@ class Expr(VtlVisitor):
                 has_time_agg = True
 
         if has_time_agg:
-            period_to, conf = self._extract_time_agg_tokens(ctx_list)
+            period_to, conf = self._extract_time_agg_period(ctx)
             if period_to is None:
                 raise NotImplementedError
             children_nodes.append(
@@ -1764,7 +1772,7 @@ class Expr(VtlVisitor):
 
         # Check if TIME_AGG is present (more than just GROUP ALL)
         if len(ctx_list) > 2:
-            period_to, conf = self._extract_time_agg_tokens(ctx_list)
+            period_to, conf = self._extract_time_agg_period(ctx)
 
             children_nodes = [
                 TimeAggregation(

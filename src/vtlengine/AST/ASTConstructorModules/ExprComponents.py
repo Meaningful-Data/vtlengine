@@ -1,3 +1,5 @@
+from typing import Any, Optional, Union
+
 from antlr4.tree.Tree import TerminalNodeImpl
 
 from vtlengine.AST import (
@@ -646,18 +648,22 @@ class ExprComp(VtlVisitor):
 
     def visitTimeShiftAtomComponent(self, ctx: Parser.TimeShiftAtomComponentContext):
         """
-        timeShiftExpr: TIMESHIFT '(' expr ',' INTEGER_CONSTANT ')' ;
+        TIMESHIFT LPAREN exprComponent COMMA (intShift=signedInteger | varShift=varID) RPAREN ;
         """
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]
 
         op = c.getSymbol().text
         left_node = self.visitExprComponent(ctx_list[2])
-        right_node = Constant(
-            type_="INTEGER_CONSTANT",
-            value=int(ctx_list[4].getSymbol().text),
-            **extract_token_info(ctx),
-        )
+        right_node: Any
+        if ctx.intShift is not None:
+            right_node = Constant(
+                type_="INTEGER_CONSTANT",
+                value=Terminals().visitSignedInteger(ctx.intShift),
+                **extract_token_info(ctx.intShift),
+            )
+        else:
+            right_node = Terminals().visitVarID(ctx.varShift)
 
         return BinOp(left=left_node, op=op, right=right_node, **extract_token_info(ctx))
 
@@ -688,18 +694,23 @@ class ExprComp(VtlVisitor):
 
     def visitTimeAggAtomComponent(self, ctx: Parser.TimeAggAtomComponentContext):
         """
-        TIME_AGG LPAREN periodIndTo=STRING_CONSTANT (COMMA periodIndFrom=(STRING_CONSTANT| OPTIONAL ))?
-        (COMMA op=optionalExprComponent)? (COMMA (FIRST|LAST))? RPAREN    # timeAggAtomComponent;
+        TIME_AGG LPAREN
+            (periodIndToVar=varID | periodIndToConst=STRING_CONSTANT)
+            (COMMA periodIndFrom=(STRING_CONSTANT|OPTIONAL))?
+            (COMMA op=optionalExprComponent)? (COMMA (FIRST|LAST))? RPAREN    # timeAggAtomComponent;
         """  # noqa E501
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]
 
         op = c.getSymbol().text
-        period_to = str(ctx.periodIndTo.text)[1:-1]
-        period_from = None
+        period_to: Union[str, VarID]
+        if ctx.periodIndToConst is not None:
+            period_to = str(ctx.periodIndToConst.text)[1:-1]
+        else:
+            period_to = Terminals().visitVarID(ctx.periodIndToVar)
 
+        period_from: Optional[str] = None
         if ctx.periodIndFrom is not None and ctx.periodIndFrom.type != Parser.OPTIONAL:
-            # raise SemanticError("periodIndFrom is not allowed in Time_agg")
             period_from = str(ctx.periodIndFrom.text)[1:-1]
 
         conf = [
@@ -920,28 +931,28 @@ class ExprComp(VtlVisitor):
     def visitLagOrLeadAnComponent(self, ctx: Parser.LagOrLeadAnComponentContext):
         ctx_list = list(ctx.getChildren())
 
-        params = None
+        params: Optional[list] = None
         partition_by = None
         order_by = None
 
         op_node = ctx_list[0].getSymbol().text
         operand = self.visitExprComponent(ctx_list[2])
 
+        if ctx.intOffset is not None:
+            params = [Terminals().visitSignedInteger(ctx.intOffset)]
+        elif ctx.varOffset is not None:
+            params = [Terminals().visitVarID(ctx.varOffset)]
+
+        if ctx.defaultValue is not None:
+            if params is None:
+                params = []
+            params.append(Terminals().visitScalarItem(ctx.defaultValue))
+
         for c in ctx_list[4:-2]:
             if isinstance(c, Parser.PartitionByClauseContext):
                 partition_by = Terminals().visitPartitionByClause(c)
-                continue
             elif isinstance(c, Parser.OrderByClauseContext):
                 order_by = Terminals().visitOrderByClause(c)
-                continue
-            elif isinstance(c, (Parser.SignedIntegerContext, Parser.ScalarItemContext)):
-                if params is None:
-                    params = []
-                if isinstance(c, Parser.SignedIntegerContext):
-                    params.append(Terminals().visitSignedInteger(c))
-                else:
-                    params.append(Terminals().visitScalarItem(c))
-                continue
 
         return Analytic(
             op=op_node,
