@@ -63,6 +63,13 @@ class CastExplicitWithoutMask(CastHelper):
 
         self.BaseTest(code, number_inputs, references_names=reference_names)
 
+    def test_GH_676_1_1_5_4(self):
+        code = "GH_676_1_1_5_4"
+        number_inputs = 1
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-5-4"
+        )
+
 
 # ===========================================================================
 # Comprehensive explicit cast tests (VTL 2.2) - Without mask

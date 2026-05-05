@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Tuple
 import pytest
 
 import vtlengine.DataTypes as DataTypes
+from vtlengine.Exceptions import InputValidationException
 from vtlengine.Model import (
     Component,
     DataComponent,
@@ -330,3 +331,17 @@ def test_scalar_to_json_format():
     assert parsed["name"] == "json_test"
     assert parsed["type"] == "Time_Period"
     assert parsed["value"] == "2025Q1"
+
+
+def test_GH_676_0_1_2_7_scalar_value_type_mismatch():
+    s = Scalar(name="s", data_type=DataTypes.Integer, value=None)
+    with pytest.raises(InputValidationException) as ctx:
+        s.value = "not_an_integer"
+    assert ctx.value.args[1] == "0-1-2-7"
+
+
+def test_GH_676_0_1_2_7_scalarset_values_type_mismatch():
+    s = ScalarSet(data_type=DataTypes.Integer, values=[1, 2, 3])
+    with pytest.raises(InputValidationException) as ctx:
+        s.values = ["not_an_integer"]
+    assert ctx.value.args[1] == "0-1-2-7"

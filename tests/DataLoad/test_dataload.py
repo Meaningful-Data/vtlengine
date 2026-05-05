@@ -938,3 +938,17 @@ class DataLoadTest(DataLoadHelper):
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_message=message
         )
+
+    @pytest.mark.skipif(
+        _use_duckdb_backend,
+        reason="DuckDB backend handles empty CSVs differently and does not surface 0-1-1-6.",
+    )
+    def test_GH_676_0_1_1_6(self):
+        code = "GH_676_0_1_1_6"
+        number_inputs = 1
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code="0-1-1-6")
+
+    def test_GH_676_0_1_1_8(self):
+        code = "GH_676_0_1_1_8"
+        number_inputs = 1
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code="0-1-1-8")
