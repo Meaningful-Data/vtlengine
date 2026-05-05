@@ -35,6 +35,9 @@ jobs:
         with:
           path: build/antlr4-prefix
           key: antlr4-runtime-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('scripts/setup_antlr4_runtime.sh', 'CMakeLists.txt') }}
+      - name: Set up MSVC environment (Windows)
+        if: runner.os == 'Windows' && steps.antlr4-cache.outputs.cache-hit != 'true'
+        uses: ilammy/msvc-dev-cmd@v1
       - name: Cache C++ parser wheel
         uses: actions/cache@v4
         id: cpp-cache
