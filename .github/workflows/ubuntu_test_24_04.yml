@@ -17,11 +17,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
+      - name: Cache C++ parser wheel
+        uses: actions/cache@v4
+        id: cpp-cache
+        with:
+          path: .cpp-wheel
+          key: cpp-parser-ubuntu2404-py3.12-${{ hashFiles('src/vtlengine/AST/Grammar/_cpp_parser/**', 'CMakeLists.txt', 'pyproject.toml', 'scripts/setup_antlr4_runtime.sh') }}
+
       - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            python3-antlr4 \
             python3-pip \
             python3-httpx \
             python3-pandas \
@@ -32,7 +38,10 @@ jobs:
             python3-networkx \
             python3-sqlglot \
             python3-pytest \
-            python3-psutil
+            python3-psutil \
+            cmake \
+            g++ \
+            pybind11-dev
 
       - name: Install pip-only dependencies
         run: |
@@ -44,25 +53,18 @@ jobs:
             duckdb==1.4.1 \
             pysdmx==1.9.0
 
-      - name: Install Poetry
-        run: |
-          pip install poetry
-          poetry config virtualenvs.create false
+      - name: Download ANTLR4 C++ runtime
+        if: steps.cpp-cache.outputs.cache-hit != 'true'
+        run: bash scripts/setup_antlr4_runtime.sh
 
-      - name: Build wheel
-        run: |
-          poetry build -f wheel -o .
-
-      - name: Install built package
-        run: |
-          pip install "./vtlengine-$(poetry version -s)-py3-none-any.whl" --no-dependencies --break-system-packages
-
-      - name: Run tests (pandas backend)
+      - name: Build C++ parser wheel
+        if: steps.cpp-cache.outputs.cache-hit != 'true'
+        run: pip wheel . -w .cpp-wheel --no-deps -v
         env:
-          VTL_ENGINE_BACKEND: pandas
-        run: pytest --verbose --tb=short --strict-markers --strict-config --durations=10
+          PIP_BREAK_SYSTEM_PACKAGES: "1"
 
-      - name: Run tests (duckdb backend)
-        env:
-          VTL_ENGINE_BACKEND: duckdb
+      - name: Install C++ parser
+        run: pip install --break-system-packages --no-deps .cpp-wheel/*.whl
+
+      - name: Run tests
         run: pytest --verbose --tb=short --strict-markers --strict-config --durations=10

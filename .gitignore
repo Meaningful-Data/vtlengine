@@ -187,6 +187,10 @@ docs/plans/
 !/CONTRIBUTING.md
 !/SECURITY.md
 
+# C++ parser build artifacts
+third_party/
+build/
+
 # Claude Code settings
 .claude/*
 !.claude/CLAUDE.md
