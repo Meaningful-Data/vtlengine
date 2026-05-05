@@ -613,3 +613,12 @@ class ASTTemplate(NodeVisitor):
         """
         Comment: (value)
         """
+
+    def visit_ViralPropagationDef(self, node: AST.ViralPropagationDef) -> None:
+        pass
+
+    def visit_EnumeratedVpClause(self, node: AST.EnumeratedVpClause) -> None:
+        pass
+
+    def visit_AggregateVpClause(self, node: AST.AggregateVpClause) -> None:
+        pass

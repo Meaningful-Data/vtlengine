@@ -48,7 +48,9 @@ class Membership(Binary):
         result_components = {
             name: comp
             for name, comp in left_operand.components.items()
-            if comp.role == Role.IDENTIFIER or comp.name == right_operand
+            if comp.role == Role.IDENTIFIER
+            or comp.name == right_operand
+            or comp.role == Role.VIRAL_ATTRIBUTE
         }
         result_dataset = Dataset(name=dataset_name, components=result_components, data=None)
         return result_dataset

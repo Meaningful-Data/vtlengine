@@ -9,7 +9,7 @@ from vtlengine.AST import (
     TimeAggregation,
 )
 from vtlengine.AST.ASTTemplate import ASTTemplate
-from vtlengine.AST.Grammar.lexer import Lexer
+from vtlengine.AST.Grammar._cpp_parser import LITERAL_NAMES
 from vtlengine.AST.Grammar.tokens import (
     AGGREGATE,
     APPLY,
@@ -58,7 +58,7 @@ from vtlengine.Model import Component, Dataset
 
 nl = "\n"
 tab = "\t"
-RESERVED_WORDS = {x.replace("'", ""): x for x in Lexer.literalNames}
+RESERVED_WORDS = {x.replace("'", ""): x for x in LITERAL_NAMES}
 
 
 def _handle_literal(value: Union[str, int, float, bool]):
@@ -237,6 +237,41 @@ class ASTString(ASTTemplate):
             self.vtl_script += (
                 f"define datapoint ruleset {node.name} "
                 f"({signature}) is {rules} end datapoint ruleset;"
+            )
+
+    # ---------------------- Viral Propagation ----------------------
+    def visit_ViralPropagationDef(self, node: AST.ViralPropagationDef) -> None:
+        clauses_strs: list[str] = []
+        for clause in node.enumerated_clauses:
+            clause_str = ""
+            if clause.name is not None:
+                clause_str += f"{clause.name} : "
+            values_str = " and ".join([f'"{v}"' for v in clause.values])
+            clause_str += f'when {values_str} then "{clause.result}"'
+            clauses_strs.append(clause_str)
+        if node.aggregate_clause is not None:
+            clauses_strs.append(f"aggr {node.aggregate_clause.function}")
+        if node.default_value is not None:
+            clauses_strs.append(f'else "{node.default_value}"')
+
+        if self.pretty:
+            self.vtl_script += (
+                f"define viral propagation {node.name}({node.signature_type} {node.target}) is{nl}"
+            )
+            for i, c in enumerate(clauses_strs):
+                self.vtl_script += f"{tab}{c}"
+                if i != len(clauses_strs) - 1:
+                    self.vtl_script += f";{nl}"
+                else:
+                    self.vtl_script += nl
+            self.vtl_script += f"end viral propagation;{nl}"
+        else:
+            clauses_joined = ";".join(clauses_strs)
+            self.vtl_script += (
+                f"define viral propagation {node.name} "
+                f"({node.signature_type} {node.target}) is "
+                f"{clauses_joined} "
+                f"end viral propagation;"
             )
 
     # ---------------------- User Defined Operators ----------------------
