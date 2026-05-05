@@ -4,8 +4,6 @@ from typing import Any, Dict, List, Optional, Sequence, Union, cast
 
 import duckdb
 import pandas as pd
-from antlr4 import CommonTokenStream, InputStream  # type: ignore[import-untyped]
-from antlr4.error.ErrorListener import ErrorListener  # type: ignore[import-untyped]
 from pysdmx.io.pd import PandasDataset
 from pysdmx.model import TransformationScheme
 from pysdmx.model.dataflow import Dataflow, DataStructureDefinition, Schema
@@ -29,8 +27,7 @@ from vtlengine.AST import Start
 from vtlengine.AST.ASTConstructor import ASTVisitor
 from vtlengine.AST.ASTString import ASTString
 from vtlengine.AST.DAG import DAGAnalyzer
-from vtlengine.AST.Grammar.lexer import Lexer
-from vtlengine.AST.Grammar.parser import Parser
+from vtlengine.AST.Grammar._cpp_parser import vtl_cpp_parser
 from vtlengine.duckdb_transpiler.Config.config import configure_duckdb_connection
 from vtlengine.duckdb_transpiler.io import execute_queries, extract_datapoint_paths
 from vtlengine.duckdb_transpiler.Transpiler import SQLTranspiler
@@ -45,46 +42,6 @@ from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Dataset, Scalar
 
 pd.options.mode.chained_assignment = None
-
-
-class __VTLSingleErrorListener(ErrorListener):  # type: ignore[misc]
-    """ """
-
-    def syntaxError(
-        self,
-        recognizer: Any,
-        offendingSymbol: str,
-        line: str,
-        column: str,
-        msg: str,
-        e: Any,
-    ) -> None:
-        raise Exception(
-            f"Not valid VTL Syntax \n "
-            f"offendingSymbol: {offendingSymbol} \n "
-            f"msg: {msg} \n "
-            f"line: {line}"
-        )
-
-
-def _lexer(text: str) -> CommonTokenStream:
-    """
-    Lexing
-    """
-    lexer_ = Lexer(InputStream(text))
-    lexer_._listeners = [__VTLSingleErrorListener()]
-    stream = CommonTokenStream(lexer_)
-
-    return stream
-
-
-def _parser(stream: CommonTokenStream) -> Any:
-    """
-    Parse the expression
-    """
-    vtl_parser = Parser(stream)
-    vtl_parser._listeners = [__VTLSingleErrorListener()]
-    return vtl_parser.start()
 
 
 def _extract_input_datasets(script: Union[str, TransformationScheme, Path]) -> List[str]:
@@ -133,8 +90,7 @@ def create_ast(text: str) -> Start:
         Exception: When the vtl syntax expression is wrong.
     """
     text = text + "\n"
-    stream = _lexer(text)
-    cst = _parser(stream)
+    cst = vtl_cpp_parser.parse(text)
     visitor = ASTVisitor()
     ast = visitor.visitStart(cst)
     DAGAnalyzer.create_dag(ast)
