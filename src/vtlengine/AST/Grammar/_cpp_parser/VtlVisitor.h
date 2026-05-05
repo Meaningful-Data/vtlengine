@@ -1,5 +1,5 @@
 
-// Generated from /home/javier/Programacion/vtlengine/src/vtlengine/AST/Grammar/Vtl.g4 by ANTLR 4.13.1
+// Generated from Vtl.g4 by ANTLR 4.13.2
 
 #pragma once
 
@@ -144,6 +144,20 @@ public:
     virtual std::any visitDefDatapointRuleset(VtlParser::DefDatapointRulesetContext *context) = 0;
 
     virtual std::any visitDefHierarchical(VtlParser::DefHierarchicalContext *context) = 0;
+
+    virtual std::any visitDefViralPropagation(VtlParser::DefViralPropagationContext *context) = 0;
+
+    virtual std::any visitVpSignature(VtlParser::VpSignatureContext *context) = 0;
+
+    virtual std::any visitVpBody(VtlParser::VpBodyContext *context) = 0;
+
+    virtual std::any visitEnumeratedVpClause(VtlParser::EnumeratedVpClauseContext *context) = 0;
+
+    virtual std::any visitAggregationVpClause(VtlParser::AggregationVpClauseContext *context) = 0;
+
+    virtual std::any visitDefaultVpClause(VtlParser::DefaultVpClauseContext *context) = 0;
+
+    virtual std::any visitVpCondition(VtlParser::VpConditionContext *context) = 0;
 
     virtual std::any visitCallDataset(VtlParser::CallDatasetContext *context) = 0;
 

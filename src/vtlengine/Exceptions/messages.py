@@ -86,10 +86,6 @@ centralised_messages = {
         "description": "Occurs when an element (e.g., Identifier or component) "
         "appears more than once.",
     },
-    "0-1-2-5": {
-        "message": "File {file} must be encoded in utf-8 (without BOM).",
-        "description": "Raised when the file encoding is not UTF-8 without BOM.",
-    },
     "0-1-2-6": {
         "message": "Not found scalar {name} in datastructures",
         "description": "Occurs when a scalar value expected in the data structures is missing.",
@@ -989,6 +985,29 @@ centralised_messages = {
         "aggregation.",
         "description": "Raised when a Time aggregation operator is missing the operand "
         "definition outside an aggregation context.",
+    },
+    # ---------- Viral Propagation ----------
+    "1-3-3-1": {
+        "message": "Duplicate viral propagation rule for variable {name}.",
+        "description": "Raised when two define viral propagation statements "
+        "target the same variable.",
+    },
+    "1-3-3-2": {
+        "message": "Duplicate viral propagation rule for value domain {name}.",
+        "description": "Raised when two define viral propagation statements "
+        "target the same value domain.",
+    },
+    "1-3-3-3": {
+        "message": "Cannot mix enumerated and aggregate clauses in viral "
+        "propagation definition {name}.",
+        "description": "Raised when a viral propagation definition contains both "
+        "enumerated (when/then) and aggregate clauses.",
+    },
+    "1-3-3-4": {
+        "message": "Duplicate enumeration combination {values} in viral "
+        "propagation definition {name}.",
+        "description": "Raised when the same value pair is described more than "
+        "once in an enumerated viral propagation.",
     },
     # ---------- Interpreter ----------
     "1-3-5": {

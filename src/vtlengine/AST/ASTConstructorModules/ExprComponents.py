@@ -319,7 +319,7 @@ class ExprComp:
         constant_nodes = [
             Terminals().visitScalarItem(scalar)
             for scalar in ctx_list
-            if not scalar.is_terminal and scalar.rule_index == 43
+            if not scalar.is_terminal and scalar.rule_index == 47
         ]
         children_nodes = var_ids_nodes + constant_nodes
 
@@ -944,11 +944,11 @@ class ExprComp:
             elif not c.is_terminal and c.ctx_id == RC.ORDER_BY_CLAUSE:
                 order_by = Terminals().visitOrderByClause(c)
                 continue
-            elif not c.is_terminal and c.rule_index in (53, 43):
-                # SignedInteger (rule 53) or ScalarItem (rule 43)
+            elif not c.is_terminal and c.rule_index in (57, 47):
+                # SignedInteger (rule 57) or ScalarItem (rule 47)
                 if params is None:
                     params = []
-                if c.rule_index == 53:
+                if c.rule_index == 57:
                     params.append(Terminals().visitSignedInteger(c))
                 else:
                     params.append(Terminals().visitScalarItem(c))

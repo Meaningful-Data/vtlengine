@@ -1,5 +1,5 @@
 
-// Generated from /home/javier/Programacion/vtlengine/src/vtlengine/AST/Grammar/Vtl.g4 by ANTLR 4.13.1
+// Generated from Vtl.g4 by ANTLR 4.13.2
 
 #pragma once
 
@@ -30,37 +30,37 @@ public:
     MOD = 92, LEN = 93, CONCAT = 94, TRIM = 95, UCASE = 96, LCASE = 97, 
     SUBSTR = 98, SUM = 99, AVG = 100, MEDIAN = 101, COUNT = 102, DIMENSION = 103, 
     MEASURE = 104, ATTRIBUTE = 105, FILTER = 106, MERGE = 107, EXP = 108, 
-    ROLE = 109, VIRAL = 110, CHARSET_MATCH = 111, TYPE = 112, NVL = 113, 
-    HIERARCHY = 114, OPTIONAL = 115, INVALID = 116, VALUE_DOMAIN = 117, 
-    VARIABLE = 118, DATA = 119, STRUCTURE = 120, DATASET = 121, OPERATOR = 122, 
-    DEFINE = 123, PUT_SYMBOL = 124, DATAPOINT = 125, HIERARCHICAL = 126, 
-    RULESET = 127, RULE = 128, END = 129, ALTER_DATASET = 130, LTRIM = 131, 
-    RTRIM = 132, INSTR = 133, REPLACE = 134, CEIL = 135, FLOOR = 136, SQRT = 137, 
-    ANY = 138, SETDIFF = 139, STDDEV_POP = 140, STDDEV_SAMP = 141, VAR_POP = 142, 
-    VAR_SAMP = 143, GROUP = 144, EXCEPT = 145, HAVING = 146, FIRST_VALUE = 147, 
-    LAST_VALUE = 148, LAG = 149, LEAD = 150, RATIO_TO_REPORT = 151, OVER = 152, 
-    PRECEDING = 153, FOLLOWING = 154, UNBOUNDED = 155, PARTITION = 156, 
-    ROWS = 157, RANGE = 158, CURRENT = 159, VALID = 160, FILL_TIME_SERIES = 161, 
-    FLOW_TO_STOCK = 162, STOCK_TO_FLOW = 163, TIMESHIFT = 164, MEASURES = 165, 
-    NO_MEASURES = 166, CONDITION = 167, BOOLEAN = 168, DATE = 169, TIME_PERIOD = 170, 
-    NUMBER = 171, STRING = 172, TIME = 173, INTEGER = 174, FLOAT = 175, 
-    LIST = 176, RECORD = 177, RESTRICT = 178, YYYY = 179, MM = 180, DD = 181, 
-    MAX_LENGTH = 182, REGEXP = 183, IS = 184, WHEN = 185, FROM = 186, AGGREGATES = 187, 
-    POINTS = 188, POINT = 189, TOTAL = 190, PARTIAL = 191, ALWAYS = 192, 
-    INNER_JOIN = 193, LEFT_JOIN = 194, CROSS_JOIN = 195, FULL_JOIN = 196, 
-    MAPS_FROM = 197, MAPS_TO = 198, MAP_TO = 199, MAP_FROM = 200, RETURNS = 201, 
-    PIVOT = 202, CUSTOMPIVOT = 203, UNPIVOT = 204, SUBSPACE = 205, APPLY = 206, 
-    CONDITIONED = 207, PERIOD_INDICATOR = 208, SINGLE = 209, DURATION = 210, 
-    TIME_AGG = 211, UNIT = 212, VALUE = 213, VALUEDOMAINS = 214, VARIABLES = 215, 
-    INPUT = 216, OUTPUT = 217, CAST = 218, RULE_PRIORITY = 219, DATASET_PRIORITY = 220, 
-    DEFAULT = 221, CHECK_DATAPOINT = 222, CHECK_HIERARCHY = 223, COMPUTED = 224, 
-    NON_NULL = 225, NON_ZERO = 226, PARTIAL_NULL = 227, PARTIAL_ZERO = 228, 
-    ALWAYS_NULL = 229, ALWAYS_ZERO = 230, COMPONENTS = 231, ALL_MEASURES = 232, 
-    SCALAR = 233, COMPONENT = 234, DATAPOINT_ON_VD = 235, DATAPOINT_ON_VAR = 236, 
-    HIERARCHICAL_ON_VD = 237, HIERARCHICAL_ON_VAR = 238, SET = 239, LANGUAGE = 240, 
-    INTEGER_CONSTANT = 241, NUMBER_CONSTANT = 242, BOOLEAN_CONSTANT = 243, 
-    STRING_CONSTANT = 244, IDENTIFIER = 245, WS = 246, EOL = 247, ML_COMMENT = 248, 
-    SL_COMMENT = 249
+    ROLE = 109, VIRAL = 110, PROPAGATION = 111, CHARSET_MATCH = 112, TYPE = 113, 
+    NVL = 114, HIERARCHY = 115, OPTIONAL = 116, INVALID = 117, VALUE_DOMAIN = 118, 
+    VARIABLE = 119, DATA = 120, STRUCTURE = 121, DATASET = 122, OPERATOR = 123, 
+    DEFINE = 124, PUT_SYMBOL = 125, DATAPOINT = 126, HIERARCHICAL = 127, 
+    RULESET = 128, RULE = 129, END = 130, ALTER_DATASET = 131, LTRIM = 132, 
+    RTRIM = 133, INSTR = 134, REPLACE = 135, CEIL = 136, FLOOR = 137, SQRT = 138, 
+    ANY = 139, SETDIFF = 140, STDDEV_POP = 141, STDDEV_SAMP = 142, VAR_POP = 143, 
+    VAR_SAMP = 144, GROUP = 145, EXCEPT = 146, HAVING = 147, FIRST_VALUE = 148, 
+    LAST_VALUE = 149, LAG = 150, LEAD = 151, RATIO_TO_REPORT = 152, OVER = 153, 
+    PRECEDING = 154, FOLLOWING = 155, UNBOUNDED = 156, PARTITION = 157, 
+    ROWS = 158, RANGE = 159, CURRENT = 160, VALID = 161, FILL_TIME_SERIES = 162, 
+    FLOW_TO_STOCK = 163, STOCK_TO_FLOW = 164, TIMESHIFT = 165, MEASURES = 166, 
+    NO_MEASURES = 167, CONDITION = 168, BOOLEAN = 169, DATE = 170, TIME_PERIOD = 171, 
+    NUMBER = 172, STRING = 173, TIME = 174, INTEGER = 175, FLOAT = 176, 
+    LIST = 177, RECORD = 178, RESTRICT = 179, YYYY = 180, MM = 181, DD = 182, 
+    MAX_LENGTH = 183, REGEXP = 184, IS = 185, WHEN = 186, FROM = 187, AGGREGATES = 188, 
+    POINTS = 189, POINT = 190, TOTAL = 191, PARTIAL = 192, ALWAYS = 193, 
+    INNER_JOIN = 194, LEFT_JOIN = 195, CROSS_JOIN = 196, FULL_JOIN = 197, 
+    MAPS_FROM = 198, MAPS_TO = 199, MAP_TO = 200, MAP_FROM = 201, RETURNS = 202, 
+    PIVOT = 203, CUSTOMPIVOT = 204, UNPIVOT = 205, SUBSPACE = 206, APPLY = 207, 
+    CONDITIONED = 208, PERIOD_INDICATOR = 209, SINGLE = 210, DURATION = 211, 
+    TIME_AGG = 212, UNIT = 213, VALUE = 214, VALUEDOMAINS = 215, VARIABLES = 216, 
+    INPUT = 217, OUTPUT = 218, CAST = 219, RULE_PRIORITY = 220, DATASET_PRIORITY = 221, 
+    DEFAULT = 222, CHECK_DATAPOINT = 223, CHECK_HIERARCHY = 224, COMPUTED = 225, 
+    NON_NULL = 226, NON_ZERO = 227, PARTIAL_NULL = 228, PARTIAL_ZERO = 229, 
+    ALWAYS_NULL = 230, ALWAYS_ZERO = 231, COMPONENTS = 232, ALL_MEASURES = 233, 
+    SCALAR = 234, COMPONENT = 235, DATAPOINT_ON_VD = 236, DATAPOINT_ON_VAR = 237, 
+    HIERARCHICAL_ON_VD = 238, HIERARCHICAL_ON_VAR = 239, SET = 240, LANGUAGE = 241, 
+    INTEGER_CONSTANT = 242, NUMBER_CONSTANT = 243, BOOLEAN_CONSTANT = 244, 
+    STRING_CONSTANT = 245, IDENTIFIER = 246, WS = 247, EOL = 248, ML_COMMENT = 249, 
+    SL_COMMENT = 250
   };
 
   enum {
@@ -69,37 +69,38 @@ public:
     RuleRenameClause = 7, RuleAggrClause = 8, RuleFilterClause = 9, RuleCalcClause = 10, 
     RuleKeepOrDropClause = 11, RulePivotOrUnpivotClause = 12, RuleCustomPivotClause = 13, 
     RuleSubspaceClause = 14, RuleJoinOperators = 15, RuleDefOperators = 16, 
-    RuleGenericOperators = 17, RuleGenericOperatorsComponent = 18, RuleParameterComponent = 19, 
-    RuleParameter = 20, RuleStringOperators = 21, RuleStringOperatorsComponent = 22, 
-    RuleNumericOperators = 23, RuleNumericOperatorsComponent = 24, RuleComparisonOperators = 25, 
-    RuleComparisonOperatorsComponent = 26, RuleTimeOperators = 27, RuleTimeOperatorsComponent = 28, 
-    RuleSetOperators = 29, RuleHierarchyOperators = 30, RuleValidationOperators = 31, 
-    RuleConditionalOperators = 32, RuleConditionalOperatorsComponent = 33, 
-    RuleAggrOperators = 34, RuleAggrOperatorsGrouping = 35, RuleAnFunction = 36, 
-    RuleAnFunctionComponent = 37, RuleRenameClauseItem = 38, RuleAggregateClause = 39, 
-    RuleAggrFunctionClause = 40, RuleCalcClauseItem = 41, RuleSubspaceClauseItem = 42, 
-    RuleScalarItem = 43, RuleJoinClauseWithoutUsing = 44, RuleJoinClause = 45, 
-    RuleJoinClauseItem = 46, RuleJoinBody = 47, RuleJoinApplyClause = 48, 
-    RulePartitionByClause = 49, RuleOrderByClause = 50, RuleOrderByItem = 51, 
-    RuleWindowingClause = 52, RuleSignedInteger = 53, RuleSignedNumber = 54, 
-    RuleLimitClauseItem = 55, RuleGroupingClause = 56, RuleHavingClause = 57, 
-    RuleParameterItem = 58, RuleOutputParameterType = 59, RuleOutputParameterTypeComponent = 60, 
-    RuleInputParameterType = 61, RuleRulesetType = 62, RuleScalarType = 63, 
-    RuleComponentType = 64, RuleDatasetType = 65, RuleEvalDatasetType = 66, 
-    RuleScalarSetType = 67, RuleDpRuleset = 68, RuleHrRuleset = 69, RuleValueDomainName = 70, 
-    RuleRulesetID = 71, RuleRulesetSignature = 72, RuleSignature = 73, RuleRuleClauseDatapoint = 74, 
-    RuleRuleItemDatapoint = 75, RuleRuleClauseHierarchical = 76, RuleRuleItemHierarchical = 77, 
-    RuleHierRuleSignature = 78, RuleValueDomainSignature = 79, RuleCodeItemRelation = 80, 
-    RuleCodeItemRelationClause = 81, RuleValueDomainValue = 82, RuleScalarTypeConstraint = 83, 
-    RuleCompConstraint = 84, RuleMultModifier = 85, RuleValidationOutput = 86, 
-    RuleValidationMode = 87, RuleConditionClause = 88, RuleInputMode = 89, 
-    RuleImbalanceExpr = 90, RuleInputModeHierarchy = 91, RuleOutputModeHierarchy = 92, 
-    RuleAlias = 93, RuleVarID = 94, RuleSimpleComponentId = 95, RuleComponentID = 96, 
-    RuleLists = 97, RuleErCode = 98, RuleErLevel = 99, RuleComparisonOperand = 100, 
-    RuleOptionalExpr = 101, RuleOptionalExprComponent = 102, RuleComponentRole = 103, 
-    RuleViralAttribute = 104, RuleValueDomainID = 105, RuleOperatorID = 106, 
-    RuleRoutineName = 107, RuleConstant = 108, RuleBasicScalarType = 109, 
-    RuleRetainType = 110
+    RuleVpSignature = 17, RuleVpBody = 18, RuleVpClause = 19, RuleVpCondition = 20, 
+    RuleGenericOperators = 21, RuleGenericOperatorsComponent = 22, RuleParameterComponent = 23, 
+    RuleParameter = 24, RuleStringOperators = 25, RuleStringOperatorsComponent = 26, 
+    RuleNumericOperators = 27, RuleNumericOperatorsComponent = 28, RuleComparisonOperators = 29, 
+    RuleComparisonOperatorsComponent = 30, RuleTimeOperators = 31, RuleTimeOperatorsComponent = 32, 
+    RuleSetOperators = 33, RuleHierarchyOperators = 34, RuleValidationOperators = 35, 
+    RuleConditionalOperators = 36, RuleConditionalOperatorsComponent = 37, 
+    RuleAggrOperators = 38, RuleAggrOperatorsGrouping = 39, RuleAnFunction = 40, 
+    RuleAnFunctionComponent = 41, RuleRenameClauseItem = 42, RuleAggregateClause = 43, 
+    RuleAggrFunctionClause = 44, RuleCalcClauseItem = 45, RuleSubspaceClauseItem = 46, 
+    RuleScalarItem = 47, RuleJoinClauseWithoutUsing = 48, RuleJoinClause = 49, 
+    RuleJoinClauseItem = 50, RuleJoinBody = 51, RuleJoinApplyClause = 52, 
+    RulePartitionByClause = 53, RuleOrderByClause = 54, RuleOrderByItem = 55, 
+    RuleWindowingClause = 56, RuleSignedInteger = 57, RuleSignedNumber = 58, 
+    RuleLimitClauseItem = 59, RuleGroupingClause = 60, RuleHavingClause = 61, 
+    RuleParameterItem = 62, RuleOutputParameterType = 63, RuleOutputParameterTypeComponent = 64, 
+    RuleInputParameterType = 65, RuleRulesetType = 66, RuleScalarType = 67, 
+    RuleComponentType = 68, RuleDatasetType = 69, RuleEvalDatasetType = 70, 
+    RuleScalarSetType = 71, RuleDpRuleset = 72, RuleHrRuleset = 73, RuleValueDomainName = 74, 
+    RuleRulesetID = 75, RuleRulesetSignature = 76, RuleSignature = 77, RuleRuleClauseDatapoint = 78, 
+    RuleRuleItemDatapoint = 79, RuleRuleClauseHierarchical = 80, RuleRuleItemHierarchical = 81, 
+    RuleHierRuleSignature = 82, RuleValueDomainSignature = 83, RuleCodeItemRelation = 84, 
+    RuleCodeItemRelationClause = 85, RuleValueDomainValue = 86, RuleScalarTypeConstraint = 87, 
+    RuleCompConstraint = 88, RuleMultModifier = 89, RuleValidationOutput = 90, 
+    RuleValidationMode = 91, RuleConditionClause = 92, RuleInputMode = 93, 
+    RuleImbalanceExpr = 94, RuleInputModeHierarchy = 95, RuleOutputModeHierarchy = 96, 
+    RuleAlias = 97, RuleVarID = 98, RuleSimpleComponentId = 99, RuleComponentID = 100, 
+    RuleLists = 101, RuleErCode = 102, RuleErLevel = 103, RuleComparisonOperand = 104, 
+    RuleOptionalExpr = 105, RuleOptionalExprComponent = 106, RuleComponentRole = 107, 
+    RuleViralAttribute = 108, RuleValueDomainID = 109, RuleOperatorID = 110, 
+    RuleRoutineName = 111, RuleConstant = 112, RuleBasicScalarType = 113, 
+    RuleRetainType = 114
   };
 
   explicit VtlParser(antlr4::TokenStream *input);
@@ -136,6 +137,10 @@ public:
   class SubspaceClauseContext;
   class JoinOperatorsContext;
   class DefOperatorsContext;
+  class VpSignatureContext;
+  class VpBodyContext;
+  class VpClauseContext;
+  class VpConditionContext;
   class GenericOperatorsContext;
   class GenericOperatorsComponentContext;
   class ParameterComponentContext;
@@ -1260,6 +1265,28 @@ public:
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
+  class  DefViralPropagationContext : public DefOperatorsContext {
+  public:
+    DefViralPropagationContext(DefOperatorsContext *ctx);
+
+    antlr4::tree::TerminalNode *DEFINE();
+    std::vector<antlr4::tree::TerminalNode *> VIRAL();
+    antlr4::tree::TerminalNode* VIRAL(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> PROPAGATION();
+    antlr4::tree::TerminalNode* PROPAGATION(size_t i);
+    VarIDContext *varID();
+    antlr4::tree::TerminalNode *LPAREN();
+    VpSignatureContext *vpSignature();
+    antlr4::tree::TerminalNode *RPAREN();
+    antlr4::tree::TerminalNode *IS();
+    VpBodyContext *vpBody();
+    antlr4::tree::TerminalNode *END();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
   class  DefDatapointRulesetContext : public DefOperatorsContext {
   public:
     DefDatapointRulesetContext(DefOperatorsContext *ctx);
@@ -1283,6 +1310,116 @@ public:
   };
 
   DefOperatorsContext* defOperators();
+
+  class  VpSignatureContext : public antlr4::ParserRuleContext {
+  public:
+    VpSignatureContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *VALUE_DOMAIN();
+    VarIDContext *varID();
+    antlr4::tree::TerminalNode *VARIABLE();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  VpSignatureContext* vpSignature();
+
+  class  VpBodyContext : public antlr4::ParserRuleContext {
+  public:
+    VpBodyContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    std::vector<VpClauseContext *> vpClause();
+    VpClauseContext* vpClause(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> EOL();
+    antlr4::tree::TerminalNode* EOL(size_t i);
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  VpBodyContext* vpBody();
+
+  class  VpClauseContext : public antlr4::ParserRuleContext {
+  public:
+    VpClauseContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+   
+    VpClauseContext() = default;
+    void copyFrom(VpClauseContext *context);
+    using antlr4::ParserRuleContext::copyFrom;
+
+    virtual size_t getRuleIndex() const override;
+
+   
+  };
+
+  class  AggregationVpClauseContext : public VpClauseContext {
+  public:
+    AggregationVpClauseContext(VpClauseContext *ctx);
+
+    antlr4::tree::TerminalNode *AGGREGATE();
+    antlr4::tree::TerminalNode *MIN();
+    antlr4::tree::TerminalNode *MAX();
+    antlr4::tree::TerminalNode *SUM();
+    antlr4::tree::TerminalNode *AVG();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  DefaultVpClauseContext : public VpClauseContext {
+  public:
+    DefaultVpClauseContext(VpClauseContext *ctx);
+
+    antlr4::tree::TerminalNode *ELSE();
+    ConstantContext *constant();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  EnumeratedVpClauseContext : public VpClauseContext {
+  public:
+    EnumeratedVpClauseContext(VpClauseContext *ctx);
+
+    antlr4::tree::TerminalNode *WHEN();
+    VpConditionContext *vpCondition();
+    antlr4::tree::TerminalNode *THEN();
+    ConstantContext *constant();
+    antlr4::tree::TerminalNode *IDENTIFIER();
+    antlr4::tree::TerminalNode *COLON();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  VpClauseContext* vpClause();
+
+  class  VpConditionContext : public antlr4::ParserRuleContext {
+  public:
+    VpConditionContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    std::vector<ConstantContext *> constant();
+    ConstantContext* constant(size_t i);
+    antlr4::tree::TerminalNode *AND();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  VpConditionContext* vpCondition();
 
   class  GenericOperatorsContext : public antlr4::ParserRuleContext {
   public:

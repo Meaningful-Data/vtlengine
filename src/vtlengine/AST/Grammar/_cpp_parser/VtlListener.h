@@ -1,5 +1,5 @@
 
-// Generated from /home/javier/Programacion/vtlengine/src/vtlengine/AST/Grammar/Vtl.g4 by ANTLR 4.13.1
+// Generated from Vtl.g4 by ANTLR 4.13.2
 
 #pragma once
 
@@ -202,6 +202,27 @@ public:
 
   virtual void enterDefHierarchical(VtlParser::DefHierarchicalContext *ctx) = 0;
   virtual void exitDefHierarchical(VtlParser::DefHierarchicalContext *ctx) = 0;
+
+  virtual void enterDefViralPropagation(VtlParser::DefViralPropagationContext *ctx) = 0;
+  virtual void exitDefViralPropagation(VtlParser::DefViralPropagationContext *ctx) = 0;
+
+  virtual void enterVpSignature(VtlParser::VpSignatureContext *ctx) = 0;
+  virtual void exitVpSignature(VtlParser::VpSignatureContext *ctx) = 0;
+
+  virtual void enterVpBody(VtlParser::VpBodyContext *ctx) = 0;
+  virtual void exitVpBody(VtlParser::VpBodyContext *ctx) = 0;
+
+  virtual void enterEnumeratedVpClause(VtlParser::EnumeratedVpClauseContext *ctx) = 0;
+  virtual void exitEnumeratedVpClause(VtlParser::EnumeratedVpClauseContext *ctx) = 0;
+
+  virtual void enterAggregationVpClause(VtlParser::AggregationVpClauseContext *ctx) = 0;
+  virtual void exitAggregationVpClause(VtlParser::AggregationVpClauseContext *ctx) = 0;
+
+  virtual void enterDefaultVpClause(VtlParser::DefaultVpClauseContext *ctx) = 0;
+  virtual void exitDefaultVpClause(VtlParser::DefaultVpClauseContext *ctx) = 0;
+
+  virtual void enterVpCondition(VtlParser::VpConditionContext *ctx) = 0;
+  virtual void exitVpCondition(VtlParser::VpConditionContext *ctx) = 0;
 
   virtual void enterCallDataset(VtlParser::CallDatasetContext *ctx) = 0;
   virtual void exitCallDataset(VtlParser::CallDatasetContext *ctx) = 0;

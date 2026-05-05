@@ -1,5 +1,5 @@
 
-// Generated from /home/javier/Programacion/vtlengine/src/vtlengine/AST/Grammar/Vtl.g4 by ANTLR 4.13.1
+// Generated from Vtl.g4 by ANTLR 4.13.2
 
 #pragma once
 
@@ -204,6 +204,27 @@ public:
 
   virtual void enterDefHierarchical(VtlParser::DefHierarchicalContext * /*ctx*/) override { }
   virtual void exitDefHierarchical(VtlParser::DefHierarchicalContext * /*ctx*/) override { }
+
+  virtual void enterDefViralPropagation(VtlParser::DefViralPropagationContext * /*ctx*/) override { }
+  virtual void exitDefViralPropagation(VtlParser::DefViralPropagationContext * /*ctx*/) override { }
+
+  virtual void enterVpSignature(VtlParser::VpSignatureContext * /*ctx*/) override { }
+  virtual void exitVpSignature(VtlParser::VpSignatureContext * /*ctx*/) override { }
+
+  virtual void enterVpBody(VtlParser::VpBodyContext * /*ctx*/) override { }
+  virtual void exitVpBody(VtlParser::VpBodyContext * /*ctx*/) override { }
+
+  virtual void enterEnumeratedVpClause(VtlParser::EnumeratedVpClauseContext * /*ctx*/) override { }
+  virtual void exitEnumeratedVpClause(VtlParser::EnumeratedVpClauseContext * /*ctx*/) override { }
+
+  virtual void enterAggregationVpClause(VtlParser::AggregationVpClauseContext * /*ctx*/) override { }
+  virtual void exitAggregationVpClause(VtlParser::AggregationVpClauseContext * /*ctx*/) override { }
+
+  virtual void enterDefaultVpClause(VtlParser::DefaultVpClauseContext * /*ctx*/) override { }
+  virtual void exitDefaultVpClause(VtlParser::DefaultVpClauseContext * /*ctx*/) override { }
+
+  virtual void enterVpCondition(VtlParser::VpConditionContext * /*ctx*/) override { }
+  virtual void exitVpCondition(VtlParser::VpConditionContext * /*ctx*/) override { }
 
   virtual void enterCallDataset(VtlParser::CallDatasetContext * /*ctx*/) override { }
   virtual void exitCallDataset(VtlParser::CallDatasetContext * /*ctx*/) override { }

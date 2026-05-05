@@ -7,12 +7,16 @@ Description
 Node Creator.
 """
 
+from typing import Any, List, Optional
+
 from vtlengine.AST import (
+    AggregateVpClause,
     Argument,
     Assignment,
     DefIdentifier,
     DPRule,
     DPRuleset,
+    EnumeratedVpClause,
     HRBinOp,
     HRule,
     HRuleset,
@@ -20,6 +24,7 @@ from vtlengine.AST import (
     Operator,
     PersistentAssignment,
     Start,
+    ViralPropagationDef,
 )
 from vtlengine.AST.ASTConstructorModules import extract_token_info
 from vtlengine.AST.ASTConstructorModules.Expr import Expr
@@ -152,7 +157,105 @@ class ASTVisitor:
         elif ctx.ctx_id == RC.DEF_HIERARCHICAL:
             return self.visitDefHierarchical(ctx)
 
-    def visitDefOperator(self, ctx):
+        elif ctx.ctx_id == RC.DEF_VIRAL_PROPAGATION:
+            return self.visitDefViralPropagation(ctx)
+
+    def visitDefViralPropagation(self, ctx: Any) -> Any:
+        """
+        DEFINE VIRAL PROPAGATION varID LPAREN vpSignature RPAREN IS
+        vpBody END VIRAL PROPAGATION  # defViralPropagation
+        """
+        ctx_list = ctx.children
+
+        propagation_name = Terminals().visitVarID(ctx_list[3]).value
+        signature_type, target = self.visitVpSignature(ctx_list[5])
+        enumerated_clauses, aggregate_clause, default_value = self.visitVpBody(ctx_list[8])
+
+        token_info = extract_token_info(ctx)
+
+        return ViralPropagationDef(
+            name=propagation_name,
+            signature_type=signature_type,
+            target=target,
+            enumerated_clauses=enumerated_clauses,
+            aggregate_clause=aggregate_clause,
+            default_value=default_value,
+            **token_info,
+        )
+
+    def visitVpSignature(self, ctx: Any) -> Any:
+        """vpSignature: VALUE_DOMAIN varID | VARIABLE varID ;"""
+        ctx_list = ctx.children
+        signature_type = ctx_list[0].text
+        target = Terminals().visitVarID(ctx_list[1]).value
+        return signature_type, target
+
+    def visitVpBody(self, ctx: Any) -> Any:
+        """vpBody: vpClause (EOL vpClause)* ;"""
+        ctx_list = ctx.children
+        enumerated_clauses: List[EnumeratedVpClause] = []
+        aggregate_clause: Optional[AggregateVpClause] = None
+        default_value: Optional[str] = None
+
+        for child in ctx_list:
+            if child.is_terminal:
+                continue
+            if child.ctx_id == RC.ENUMERATED_VP_CLAUSE:
+                enumerated_clauses.append(self.visitEnumeratedVpClause(child))
+            elif child.ctx_id == RC.AGGREGATION_VP_CLAUSE:
+                aggregate_clause = self.visitAggregationVpClause(child)
+            elif child.ctx_id == RC.DEFAULT_VP_CLAUSE:
+                default_value = self.visitDefaultVpClause(child)
+
+        return enumerated_clauses, aggregate_clause, default_value
+
+    def visitEnumeratedVpClause(self, ctx: Any) -> Any:
+        """enumeratedVpClause: (IDENTIFIER COLON)? WHEN vpCondition THEN constant ;"""
+        ctx_list = ctx.children
+        rule_name: Optional[str] = None
+        values: List[str] = []
+        result: str = ""
+
+        i = 0
+        # Optional rule name: IDENTIFIER COLON
+        if ctx_list[i].is_terminal and ctx_list[i].symbol_type == vtl_cpp_parser.IDENTIFIER:
+            rule_name = ctx_list[i].text
+            i += 2  # skip IDENTIFIER and COLON
+
+        i += 1  # skip WHEN
+        # vpCondition
+        values = self.visitVpCondition(ctx_list[i])
+        i += 1
+
+        i += 1  # skip THEN
+        # constant (result)
+        result = Terminals().visitConstant(ctx_list[i]).value
+
+        token_info = extract_token_info(ctx)
+        return EnumeratedVpClause(name=rule_name, values=values, result=result, **token_info)
+
+    def visitAggregationVpClause(self, ctx: Any) -> Any:
+        """aggregationVpClause: AGGREGATE (MIN | MAX | SUM | AVG) ;"""
+        ctx_list = ctx.children
+        function = ctx_list[1].text
+        token_info = extract_token_info(ctx)
+        return AggregateVpClause(function=function, **token_info)
+
+    def visitDefaultVpClause(self, ctx: Any) -> Any:
+        """defaultVpClause: ELSE constant ;"""
+        ctx_list = ctx.children
+        return Terminals().visitConstant(ctx_list[1]).value
+
+    def visitVpCondition(self, ctx: Any) -> Any:
+        """vpCondition: constant (AND constant)? ;"""
+        ctx_list = ctx.children
+        values = []
+        for child in ctx_list:
+            if not child.is_terminal and child.rule_index == RC.CONSTANT[0]:
+                values.append(Terminals().visitConstant(child).value)
+        return values
+
+    def visitDefOperator(self, ctx: Any) -> Any:
         """
         DEFINE OPERATOR operatorID LPAREN (parameterItem (COMMA parameterItem)*)? RPAREN
         (RETURNS outputParameterType)? IS (expr) END OPERATOR        # defOperator"""
@@ -162,12 +265,12 @@ class ASTVisitor:
         parameters = [
             self.visitParameterItem(parameter)
             for parameter in ctx_list
-            if not parameter.is_terminal and parameter.rule_index == 58
+            if not parameter.is_terminal and parameter.rule_index == 62
         ]
         return_ = [
             Terminals().visitOutputParameterType(datatype)
             for datatype in ctx_list
-            if not datatype.is_terminal and datatype.rule_index == 59
+            if not datatype.is_terminal and datatype.rule_index == 63
         ]
         # Here should be modified if we want to include more than one expr per function.
         expr = [
@@ -246,7 +349,7 @@ class ASTVisitor:
         component_nodes = [
             Terminals().visitSignature(component, kind)
             for component in ctx_list
-            if not component.is_terminal and component.rule_index == 73
+            if not component.is_terminal and component.rule_index == 77
         ]
 
         return signature_type, component_nodes
@@ -260,7 +363,7 @@ class ASTVisitor:
         ruleset_rules = [
             self.visitRuleItemDatapoint(ruleId)
             for ruleId in ctx_list
-            if not ruleId.is_terminal and ruleId.rule_index == 75
+            if not ruleId.is_terminal and ruleId.rule_index == 79
         ]
         return ruleset_rules
 
@@ -301,13 +404,13 @@ class ASTVisitor:
         er_code = [
             Terminals().visitErCode(erCode_name)
             for erCode_name in ctx_list
-            if not erCode_name.is_terminal and erCode_name.rule_index == 98
+            if not erCode_name.is_terminal and erCode_name.rule_index == 102
         ]
         er_code = None if len(er_code) == 0 else er_code[0]
         er_level = [
             Terminals().visitErLevel(erLevel_name)
             for erLevel_name in ctx_list
-            if not erLevel_name.is_terminal and erLevel_name.rule_index == 99
+            if not erLevel_name.is_terminal and erLevel_name.rule_index == 103
         ]
         er_level = None if len(er_level) == 0 else er_level[0]
 
@@ -325,17 +428,17 @@ class ASTVisitor:
         argument_name = [
             Terminals().visitVarID(element)
             for element in ctx_list
-            if not element.is_terminal and element.rule_index == 94
+            if not element.is_terminal and element.rule_index == 98
         ][0]
         argument_type = [
             Terminals().visitInputParameterType(element)
             for element in ctx_list
-            if not element.is_terminal and element.rule_index == 61
+            if not element.is_terminal and element.rule_index == 65
         ][0]
         argument_default = [
             Terminals().visitScalarItem(element)
             for element in ctx_list
-            if not element.is_terminal and element.rule_index == 43
+            if not element.is_terminal and element.rule_index == 47
         ]
         argument_default = None if len(argument_default) == 0 else argument_default[0]
 
@@ -401,7 +504,7 @@ class ASTVisitor:
         conditions = [
             self.visitValueDomainSignature(vtlsig)
             for vtlsig in ctx_list
-            if not vtlsig.is_terminal and vtlsig.rule_index == 79
+            if not vtlsig.is_terminal and vtlsig.rule_index == 83
         ]
 
         dataset = [
@@ -435,7 +538,7 @@ class ASTVisitor:
         component_nodes = [
             Terminals().visitSignature(component)
             for component in ctx_list
-            if not component.is_terminal and component.rule_index == 73
+            if not component.is_terminal and component.rule_index == 77
         ]
         return component_nodes
 
@@ -448,7 +551,7 @@ class ASTVisitor:
         rules_nodes = [
             self.visitRuleItemHierarchical(rule)
             for rule in ctx_list
-            if not rule.is_terminal and rule.rule_index == 77
+            if not rule.is_terminal and rule.rule_index == 81
         ]
         return rules_nodes
 
@@ -469,19 +572,19 @@ class ASTVisitor:
         rule_node = [
             self.visitCodeItemRelation(rule_node)
             for rule_node in ctx_list
-            if not rule_node.is_terminal and rule_node.rule_index == 80
+            if not rule_node.is_terminal and rule_node.rule_index == 84
         ][0]
 
         er_code = [
             Terminals().visitErCode(erCode_name)
             for erCode_name in ctx_list
-            if not erCode_name.is_terminal and erCode_name.rule_index == 98
+            if not erCode_name.is_terminal and erCode_name.rule_index == 102
         ]
         er_code = None if len(er_code) == 0 else er_code[0]
         er_level = [
             Terminals().visitErLevel(erLevel_name)
             for erLevel_name in ctx_list
-            if not erLevel_name.is_terminal and erLevel_name.rule_index == 99
+            if not erLevel_name.is_terminal and erLevel_name.rule_index == 103
         ]
         er_level = None if len(er_level) == 0 else er_level[0]
 
@@ -518,7 +621,7 @@ class ASTVisitor:
             right=None,
             **token_info_op,
         )
-        items = [item for item in ctx_list if not item.is_terminal and item.rule_index == 81]
+        items = [item for item in ctx_list if not item.is_terminal and item.rule_index == 85]
         token_info = extract_token_info(items[0])
         # Means that no concatenations of operations is needed for that rule.
         if len(items) == 1:

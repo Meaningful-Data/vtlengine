@@ -255,10 +255,7 @@ class Terminals:
         """
         viralAttribute: VIRAL ATTRIBUTE;
         """
-        # ctx_list = ctx.children
-        # c = ctx_list[0]
-
-        raise NotImplementedError
+        return Role.VIRAL_ATTRIBUTE
 
     def visitLists(self, ctx):
         """

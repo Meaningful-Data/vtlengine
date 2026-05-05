@@ -1,5 +1,5 @@
 
-// Generated from /home/javier/Programacion/vtlengine/src/vtlengine/AST/Grammar/Vtl.g4 by ANTLR 4.13.1
+// Generated from Vtl.g4 by ANTLR 4.13.2
 
 #pragma once
 
@@ -264,6 +264,34 @@ public:
   }
 
   virtual std::any visitDefHierarchical(VtlParser::DefHierarchicalContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitDefViralPropagation(VtlParser::DefViralPropagationContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitVpSignature(VtlParser::VpSignatureContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitVpBody(VtlParser::VpBodyContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitEnumeratedVpClause(VtlParser::EnumeratedVpClauseContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitAggregationVpClause(VtlParser::AggregationVpClauseContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitDefaultVpClause(VtlParser::DefaultVpClauseContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitVpCondition(VtlParser::VpConditionContext *ctx) override {
     return visitChildren(ctx);
   }
 

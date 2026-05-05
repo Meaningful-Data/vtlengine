@@ -48,7 +48,7 @@
                             "properties": {
                                 "role": {
                                     "type": "string",
-                                    "enum": [ "Identifier", "Measure", "Attribute", "Viral Attribute" ]
+                                    "enum": [ "Identifier", "Measure", "Attribute", "Viral Attribute", "ViralAttribute" ]
                                 },
                                 "subset": { "$ref": "#/$defs/vtl-id" },
                                 "nullable": { "type": "boolean" },

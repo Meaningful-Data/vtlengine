@@ -45,218 +45,227 @@ CUSTOM_PIVOT_CLAUSE: Final[RuleConstant] = (13, -1)
 # RuleSubspaceClause = 14
 SUBSPACE_CLAUSE: Final[RuleConstant] = (14, -1)
 
-# RuleRenameClauseItem = 38
-RENAME_CLAUSE_ITEM: Final[RuleConstant] = (38, -1)
+# RuleVpSignature = 17
+VP_SIGNATURE: Final[RuleConstant] = (17, -1)
 
-# RuleAggregateClause = 39
-AGGREGATE_CLAUSE: Final[RuleConstant] = (39, -1)
+# RuleVpBody = 18
+VP_BODY: Final[RuleConstant] = (18, -1)
 
-# RuleAggrFunctionClause = 40
-AGGR_FUNCTION_CLAUSE: Final[RuleConstant] = (40, -1)
+# RuleVpCondition = 20
+VP_CONDITION: Final[RuleConstant] = (20, -1)
 
-# RuleCalcClauseItem = 41
-CALC_CLAUSE_ITEM: Final[RuleConstant] = (41, -1)
+# RuleRenameClauseItem = 42
+RENAME_CLAUSE_ITEM: Final[RuleConstant] = (42, -1)
 
-# RuleSubspaceClauseItem = 42
-SUBSPACE_CLAUSE_ITEM: Final[RuleConstant] = (42, -1)
+# RuleAggregateClause = 43
+AGGREGATE_CLAUSE: Final[RuleConstant] = (43, -1)
 
-# RuleJoinClauseWithoutUsing = 44
-JOIN_CLAUSE_WITHOUT_USING: Final[RuleConstant] = (44, -1)
+# RuleAggrFunctionClause = 44
+AGGR_FUNCTION_CLAUSE: Final[RuleConstant] = (44, -1)
 
-# RuleJoinClause = 45
-JOIN_CLAUSE: Final[RuleConstant] = (45, -1)
+# RuleCalcClauseItem = 45
+CALC_CLAUSE_ITEM: Final[RuleConstant] = (45, -1)
 
-# RuleJoinClauseItem = 46
-JOIN_CLAUSE_ITEM: Final[RuleConstant] = (46, -1)
+# RuleSubspaceClauseItem = 46
+SUBSPACE_CLAUSE_ITEM: Final[RuleConstant] = (46, -1)
 
-# RuleJoinBody = 47
-JOIN_BODY: Final[RuleConstant] = (47, -1)
+# RuleJoinClauseWithoutUsing = 48
+JOIN_CLAUSE_WITHOUT_USING: Final[RuleConstant] = (48, -1)
 
-# RuleJoinApplyClause = 48
-JOIN_APPLY_CLAUSE: Final[RuleConstant] = (48, -1)
+# RuleJoinClause = 49
+JOIN_CLAUSE: Final[RuleConstant] = (49, -1)
 
-# RulePartitionByClause = 49
-PARTITION_BY_CLAUSE: Final[RuleConstant] = (49, -1)
+# RuleJoinClauseItem = 50
+JOIN_CLAUSE_ITEM: Final[RuleConstant] = (50, -1)
 
-# RuleOrderByClause = 50
-ORDER_BY_CLAUSE: Final[RuleConstant] = (50, -1)
+# RuleJoinBody = 51
+JOIN_BODY: Final[RuleConstant] = (51, -1)
 
-# RuleOrderByItem = 51
-ORDER_BY_ITEM: Final[RuleConstant] = (51, -1)
+# RuleJoinApplyClause = 52
+JOIN_APPLY_CLAUSE: Final[RuleConstant] = (52, -1)
 
-# RuleWindowingClause = 52
-WINDOWING_CLAUSE: Final[RuleConstant] = (52, -1)
+# RulePartitionByClause = 53
+PARTITION_BY_CLAUSE: Final[RuleConstant] = (53, -1)
 
-# RuleSignedInteger = 53
-SIGNED_INTEGER: Final[RuleConstant] = (53, -1)
+# RuleOrderByClause = 54
+ORDER_BY_CLAUSE: Final[RuleConstant] = (54, -1)
 
-# RuleSignedNumber = 54
-SIGNED_NUMBER: Final[RuleConstant] = (54, -1)
+# RuleOrderByItem = 55
+ORDER_BY_ITEM: Final[RuleConstant] = (55, -1)
 
-# RuleLimitClauseItem = 55
-LIMIT_CLAUSE_ITEM: Final[RuleConstant] = (55, -1)
+# RuleWindowingClause = 56
+WINDOWING_CLAUSE: Final[RuleConstant] = (56, -1)
 
-# RuleHavingClause = 57
-HAVING_CLAUSE: Final[RuleConstant] = (57, -1)
+# RuleSignedInteger = 57
+SIGNED_INTEGER: Final[RuleConstant] = (57, -1)
 
-# RuleParameterItem = 58
-PARAMETER_ITEM: Final[RuleConstant] = (58, -1)
+# RuleSignedNumber = 58
+SIGNED_NUMBER: Final[RuleConstant] = (58, -1)
 
-# RuleOutputParameterType = 59
-OUTPUT_PARAMETER_TYPE: Final[RuleConstant] = (59, -1)
+# RuleLimitClauseItem = 59
+LIMIT_CLAUSE_ITEM: Final[RuleConstant] = (59, -1)
 
-# RuleOutputParameterTypeComponent = 60
-OUTPUT_PARAMETER_TYPE_COMPONENT: Final[RuleConstant] = (60, -1)
+# RuleHavingClause = 61
+HAVING_CLAUSE: Final[RuleConstant] = (61, -1)
 
-# RuleInputParameterType = 61
-INPUT_PARAMETER_TYPE: Final[RuleConstant] = (61, -1)
+# RuleParameterItem = 62
+PARAMETER_ITEM: Final[RuleConstant] = (62, -1)
 
-# RuleRulesetType = 62
-RULESET_TYPE: Final[RuleConstant] = (62, -1)
+# RuleOutputParameterType = 63
+OUTPUT_PARAMETER_TYPE: Final[RuleConstant] = (63, -1)
 
-# RuleScalarType = 63
-SCALAR_TYPE: Final[RuleConstant] = (63, -1)
+# RuleOutputParameterTypeComponent = 64
+OUTPUT_PARAMETER_TYPE_COMPONENT: Final[RuleConstant] = (64, -1)
 
-# RuleComponentType = 64
-COMPONENT_TYPE: Final[RuleConstant] = (64, -1)
+# RuleInputParameterType = 65
+INPUT_PARAMETER_TYPE: Final[RuleConstant] = (65, -1)
 
-# RuleDatasetType = 65
-DATASET_TYPE: Final[RuleConstant] = (65, -1)
+# RuleRulesetType = 66
+RULESET_TYPE: Final[RuleConstant] = (66, -1)
 
-# RuleEvalDatasetType = 66
-EVAL_DATASET_TYPE: Final[RuleConstant] = (66, -1)
+# RuleScalarType = 67
+SCALAR_TYPE: Final[RuleConstant] = (67, -1)
 
-# RuleScalarSetType = 67
-SCALAR_SET_TYPE: Final[RuleConstant] = (67, -1)
+# RuleComponentType = 68
+COMPONENT_TYPE: Final[RuleConstant] = (68, -1)
 
-# RuleValueDomainName = 70
-VALUE_DOMAIN_NAME: Final[RuleConstant] = (70, -1)
+# RuleDatasetType = 69
+DATASET_TYPE: Final[RuleConstant] = (69, -1)
 
-# RuleRulesetID = 71
-RULESET_ID: Final[RuleConstant] = (71, -1)
+# RuleEvalDatasetType = 70
+EVAL_DATASET_TYPE: Final[RuleConstant] = (70, -1)
 
-# RuleRulesetSignature = 72
-RULESET_SIGNATURE: Final[RuleConstant] = (72, -1)
+# RuleScalarSetType = 71
+SCALAR_SET_TYPE: Final[RuleConstant] = (71, -1)
 
-# RuleSignature = 73
-SIGNATURE: Final[RuleConstant] = (73, -1)
+# RuleValueDomainName = 74
+VALUE_DOMAIN_NAME: Final[RuleConstant] = (74, -1)
 
-# RuleRuleClauseDatapoint = 74
-RULE_CLAUSE_DATAPOINT: Final[RuleConstant] = (74, -1)
+# RuleRulesetID = 75
+RULESET_ID: Final[RuleConstant] = (75, -1)
 
-# RuleRuleItemDatapoint = 75
-RULE_ITEM_DATAPOINT: Final[RuleConstant] = (75, -1)
+# RuleRulesetSignature = 76
+RULESET_SIGNATURE: Final[RuleConstant] = (76, -1)
 
-# RuleRuleClauseHierarchical = 76
-RULE_CLAUSE_HIERARCHICAL: Final[RuleConstant] = (76, -1)
+# RuleSignature = 77
+SIGNATURE: Final[RuleConstant] = (77, -1)
 
-# RuleRuleItemHierarchical = 77
-RULE_ITEM_HIERARCHICAL: Final[RuleConstant] = (77, -1)
+# RuleRuleClauseDatapoint = 78
+RULE_CLAUSE_DATAPOINT: Final[RuleConstant] = (78, -1)
 
-# RuleHierRuleSignature = 78
-HIER_RULE_SIGNATURE: Final[RuleConstant] = (78, -1)
+# RuleRuleItemDatapoint = 79
+RULE_ITEM_DATAPOINT: Final[RuleConstant] = (79, -1)
 
-# RuleValueDomainSignature = 79
-VALUE_DOMAIN_SIGNATURE: Final[RuleConstant] = (79, -1)
+# RuleRuleClauseHierarchical = 80
+RULE_CLAUSE_HIERARCHICAL: Final[RuleConstant] = (80, -1)
 
-# RuleCodeItemRelation = 80
-CODE_ITEM_RELATION: Final[RuleConstant] = (80, -1)
+# RuleRuleItemHierarchical = 81
+RULE_ITEM_HIERARCHICAL: Final[RuleConstant] = (81, -1)
 
-# RuleCodeItemRelationClause = 81
-CODE_ITEM_RELATION_CLAUSE: Final[RuleConstant] = (81, -1)
+# RuleHierRuleSignature = 82
+HIER_RULE_SIGNATURE: Final[RuleConstant] = (82, -1)
 
-# RuleValueDomainValue = 82
-VALUE_DOMAIN_VALUE: Final[RuleConstant] = (82, -1)
+# RuleValueDomainSignature = 83
+VALUE_DOMAIN_SIGNATURE: Final[RuleConstant] = (83, -1)
 
-# RuleCompConstraint = 84
-COMP_CONSTRAINT: Final[RuleConstant] = (84, -1)
+# RuleCodeItemRelation = 84
+CODE_ITEM_RELATION: Final[RuleConstant] = (84, -1)
 
-# RuleMultModifier = 85
-MULT_MODIFIER: Final[RuleConstant] = (85, -1)
+# RuleCodeItemRelationClause = 85
+CODE_ITEM_RELATION_CLAUSE: Final[RuleConstant] = (85, -1)
 
-# RuleValidationOutput = 86
-VALIDATION_OUTPUT: Final[RuleConstant] = (86, -1)
+# RuleValueDomainValue = 86
+VALUE_DOMAIN_VALUE: Final[RuleConstant] = (86, -1)
 
-# RuleValidationMode = 87
-VALIDATION_MODE: Final[RuleConstant] = (87, -1)
+# RuleCompConstraint = 88
+COMP_CONSTRAINT: Final[RuleConstant] = (88, -1)
 
-# RuleConditionClause = 88
-CONDITION_CLAUSE: Final[RuleConstant] = (88, -1)
+# RuleMultModifier = 89
+MULT_MODIFIER: Final[RuleConstant] = (89, -1)
 
-# RuleInputMode = 89
-INPUT_MODE: Final[RuleConstant] = (89, -1)
+# RuleValidationOutput = 90
+VALIDATION_OUTPUT: Final[RuleConstant] = (90, -1)
 
-# RuleImbalanceExpr = 90
-IMBALANCE_EXPR: Final[RuleConstant] = (90, -1)
+# RuleValidationMode = 91
+VALIDATION_MODE: Final[RuleConstant] = (91, -1)
 
-# RuleInputModeHierarchy = 91
-INPUT_MODE_HIERARCHY: Final[RuleConstant] = (91, -1)
+# RuleConditionClause = 92
+CONDITION_CLAUSE: Final[RuleConstant] = (92, -1)
 
-# RuleOutputModeHierarchy = 92
-OUTPUT_MODE_HIERARCHY: Final[RuleConstant] = (92, -1)
+# RuleInputMode = 93
+INPUT_MODE: Final[RuleConstant] = (93, -1)
 
-# RuleAlias = 93
-ALIAS: Final[RuleConstant] = (93, -1)
+# RuleImbalanceExpr = 94
+IMBALANCE_EXPR: Final[RuleConstant] = (94, -1)
 
-# RuleVarID = 94
-VAR_ID: Final[RuleConstant] = (94, -1)
+# RuleInputModeHierarchy = 95
+INPUT_MODE_HIERARCHY: Final[RuleConstant] = (95, -1)
 
-# RuleSimpleComponentId = 95
-SIMPLE_COMPONENT_ID: Final[RuleConstant] = (95, -1)
+# RuleOutputModeHierarchy = 96
+OUTPUT_MODE_HIERARCHY: Final[RuleConstant] = (96, -1)
 
-# RuleComponentID = 96
-COMPONENT_ID: Final[RuleConstant] = (96, -1)
+# RuleAlias = 97
+ALIAS: Final[RuleConstant] = (97, -1)
 
-# RuleLists = 97
-LISTS: Final[RuleConstant] = (97, -1)
+# RuleVarID = 98
+VAR_ID: Final[RuleConstant] = (98, -1)
 
-# RuleErCode = 98
-ER_CODE: Final[RuleConstant] = (98, -1)
+# RuleSimpleComponentId = 99
+SIMPLE_COMPONENT_ID: Final[RuleConstant] = (99, -1)
 
-# RuleErLevel = 99
-ER_LEVEL: Final[RuleConstant] = (99, -1)
+# RuleComponentID = 100
+COMPONENT_ID: Final[RuleConstant] = (100, -1)
 
-# RuleComparisonOperand = 100
-COMPARISON_OPERAND: Final[RuleConstant] = (100, -1)
+# RuleLists = 101
+LISTS: Final[RuleConstant] = (101, -1)
 
-# RuleOptionalExpr = 101
-OPTIONAL_EXPR: Final[RuleConstant] = (101, -1)
+# RuleErCode = 102
+ER_CODE: Final[RuleConstant] = (102, -1)
 
-# RuleOptionalExprComponent = 102
-OPTIONAL_EXPR_COMPONENT: Final[RuleConstant] = (102, -1)
+# RuleErLevel = 103
+ER_LEVEL: Final[RuleConstant] = (103, -1)
 
-# RuleComponentRole = 103
-COMPONENT_ROLE: Final[RuleConstant] = (103, -1)
+# RuleComparisonOperand = 104
+COMPARISON_OPERAND: Final[RuleConstant] = (104, -1)
 
-# RuleViralAttribute = 104
-VIRAL_ATTRIBUTE: Final[RuleConstant] = (104, -1)
+# RuleOptionalExpr = 105
+OPTIONAL_EXPR: Final[RuleConstant] = (105, -1)
 
-# RuleValueDomainID = 105
-VALUE_DOMAIN_ID: Final[RuleConstant] = (105, -1)
+# RuleOptionalExprComponent = 106
+OPTIONAL_EXPR_COMPONENT: Final[RuleConstant] = (106, -1)
 
-# RuleOperatorID = 106
-OPERATOR_ID: Final[RuleConstant] = (106, -1)
+# RuleComponentRole = 107
+COMPONENT_ROLE: Final[RuleConstant] = (107, -1)
 
-# RuleRoutineName = 107
-ROUTINE_NAME: Final[RuleConstant] = (107, -1)
+# RuleViralAttribute = 108
+VIRAL_ATTRIBUTE: Final[RuleConstant] = (108, -1)
 
-# RuleConstant = 108
-CONSTANT: Final[RuleConstant] = (108, -1)
+# RuleValueDomainID = 109
+VALUE_DOMAIN_ID: Final[RuleConstant] = (109, -1)
 
-# RuleBasicScalarType = 109
-BASIC_SCALAR_TYPE: Final[RuleConstant] = (109, -1)
+# RuleOperatorID = 110
+OPERATOR_ID: Final[RuleConstant] = (110, -1)
 
-# RuleRetainType = 110
-RETAIN_TYPE: Final[RuleConstant] = (110, -1)
+# RuleRoutineName = 111
+ROUTINE_NAME: Final[RuleConstant] = (111, -1)
 
-# RuleParameterComponent = 19
-PARAMETER_COMPONENT: Final[RuleConstant] = (19, -1)
+# RuleConstant = 112
+CONSTANT: Final[RuleConstant] = (112, -1)
 
-# RuleParameter = 20
-PARAMETER: Final[RuleConstant] = (20, -1)
+# RuleBasicScalarType = 113
+BASIC_SCALAR_TYPE: Final[RuleConstant] = (113, -1)
 
-# RuleHierarchyOperators = 30
-HIERARCHY_OPERATORS: Final[RuleConstant] = (30, -1)
+# RuleRetainType = 114
+RETAIN_TYPE: Final[RuleConstant] = (114, -1)
+
+# RuleParameterComponent = 23
+PARAMETER_COMPONENT: Final[RuleConstant] = (23, -1)
+
+# RuleParameter = 24
+PARAMETER: Final[RuleConstant] = (24, -1)
+
+# RuleHierarchyOperators = 34
+HIERARCHY_OPERATORS: Final[RuleConstant] = (34, -1)
 
 # =============================================================================
 # Rules WITH labeled alternatives
@@ -328,141 +337,147 @@ JOIN_EXPR: Final[RuleConstant] = (15, 0)
 DEF_OPERATOR: Final[RuleConstant] = (16, 0)
 DEF_DATAPOINT_RULESET: Final[RuleConstant] = (16, 1)
 DEF_HIERARCHICAL: Final[RuleConstant] = (16, 2)
+DEF_VIRAL_PROPAGATION: Final[RuleConstant] = (16, 3)
 
-# --- RuleGenericOperators = 17 ---
-CALL_DATASET: Final[RuleConstant] = (17, 0)
-EVAL_ATOM: Final[RuleConstant] = (17, 1)
-CAST_EXPR_DATASET: Final[RuleConstant] = (17, 2)
+# --- RuleVpClause = 19 ---
+ENUMERATED_VP_CLAUSE: Final[RuleConstant] = (19, 0)
+AGGREGATION_VP_CLAUSE: Final[RuleConstant] = (19, 1)
+DEFAULT_VP_CLAUSE: Final[RuleConstant] = (19, 2)
 
-# --- RuleGenericOperatorsComponent = 18 ---
-CALL_COMPONENT: Final[RuleConstant] = (18, 0)
-CAST_EXPR_COMPONENT: Final[RuleConstant] = (18, 1)
-EVAL_ATOM_COMPONENT: Final[RuleConstant] = (18, 2)
+# --- RuleGenericOperators = 21 ---
+CALL_DATASET: Final[RuleConstant] = (21, 0)
+EVAL_ATOM: Final[RuleConstant] = (21, 1)
+CAST_EXPR_DATASET: Final[RuleConstant] = (21, 2)
 
-# --- RuleStringOperators = 21 ---
-UNARY_STRING_FUNCTION: Final[RuleConstant] = (21, 0)
-SUBSTR_ATOM: Final[RuleConstant] = (21, 1)
-REPLACE_ATOM: Final[RuleConstant] = (21, 2)
-INSTR_ATOM: Final[RuleConstant] = (21, 3)
+# --- RuleGenericOperatorsComponent = 22 ---
+CALL_COMPONENT: Final[RuleConstant] = (22, 0)
+CAST_EXPR_COMPONENT: Final[RuleConstant] = (22, 1)
+EVAL_ATOM_COMPONENT: Final[RuleConstant] = (22, 2)
 
-# --- RuleStringOperatorsComponent = 22 ---
-UNARY_STRING_FUNCTION_COMPONENT: Final[RuleConstant] = (22, 0)
-SUBSTR_ATOM_COMPONENT: Final[RuleConstant] = (22, 1)
-REPLACE_ATOM_COMPONENT: Final[RuleConstant] = (22, 2)
-INSTR_ATOM_COMPONENT: Final[RuleConstant] = (22, 3)
+# --- RuleStringOperators = 25 ---
+UNARY_STRING_FUNCTION: Final[RuleConstant] = (25, 0)
+SUBSTR_ATOM: Final[RuleConstant] = (25, 1)
+REPLACE_ATOM: Final[RuleConstant] = (25, 2)
+INSTR_ATOM: Final[RuleConstant] = (25, 3)
 
-# --- RuleNumericOperators = 23 ---
-UNARY_NUMERIC: Final[RuleConstant] = (23, 0)
-UNARY_WITH_OPTIONAL_NUMERIC: Final[RuleConstant] = (23, 1)
-BINARY_NUMERIC: Final[RuleConstant] = (23, 2)
+# --- RuleStringOperatorsComponent = 26 ---
+UNARY_STRING_FUNCTION_COMPONENT: Final[RuleConstant] = (26, 0)
+SUBSTR_ATOM_COMPONENT: Final[RuleConstant] = (26, 1)
+REPLACE_ATOM_COMPONENT: Final[RuleConstant] = (26, 2)
+INSTR_ATOM_COMPONENT: Final[RuleConstant] = (26, 3)
 
-# --- RuleNumericOperatorsComponent = 24 ---
-UNARY_NUMERIC_COMPONENT: Final[RuleConstant] = (24, 0)
-UNARY_WITH_OPTIONAL_NUMERIC_COMPONENT: Final[RuleConstant] = (24, 1)
-BINARY_NUMERIC_COMPONENT: Final[RuleConstant] = (24, 2)
+# --- RuleNumericOperators = 27 ---
+UNARY_NUMERIC: Final[RuleConstant] = (27, 0)
+UNARY_WITH_OPTIONAL_NUMERIC: Final[RuleConstant] = (27, 1)
+BINARY_NUMERIC: Final[RuleConstant] = (27, 2)
 
-# --- RuleComparisonOperators = 25 ---
-BETWEEN_ATOM: Final[RuleConstant] = (25, 0)
-CHARSET_MATCH_ATOM: Final[RuleConstant] = (25, 1)
-IS_NULL_ATOM: Final[RuleConstant] = (25, 2)
-EXIST_IN_ATOM: Final[RuleConstant] = (25, 3)
+# --- RuleNumericOperatorsComponent = 28 ---
+UNARY_NUMERIC_COMPONENT: Final[RuleConstant] = (28, 0)
+UNARY_WITH_OPTIONAL_NUMERIC_COMPONENT: Final[RuleConstant] = (28, 1)
+BINARY_NUMERIC_COMPONENT: Final[RuleConstant] = (28, 2)
 
-# --- RuleComparisonOperatorsComponent = 26 ---
-BETWEEN_ATOM_COMPONENT: Final[RuleConstant] = (26, 0)
-CHARSET_MATCH_ATOM_COMPONENT: Final[RuleConstant] = (26, 1)
-IS_NULL_ATOM_COMPONENT: Final[RuleConstant] = (26, 2)
+# --- RuleComparisonOperators = 29 ---
+BETWEEN_ATOM: Final[RuleConstant] = (29, 0)
+CHARSET_MATCH_ATOM: Final[RuleConstant] = (29, 1)
+IS_NULL_ATOM: Final[RuleConstant] = (29, 2)
+EXIST_IN_ATOM: Final[RuleConstant] = (29, 3)
 
-# --- RuleTimeOperators = 27 ---
-PERIOD_ATOM: Final[RuleConstant] = (27, 0)
-FILL_TIME_ATOM: Final[RuleConstant] = (27, 1)
-FLOW_ATOM: Final[RuleConstant] = (27, 2)
-TIME_SHIFT_ATOM: Final[RuleConstant] = (27, 3)
-TIME_AGG_ATOM: Final[RuleConstant] = (27, 4)
-CURRENT_DATE_ATOM: Final[RuleConstant] = (27, 5)
-DATE_DIFF_ATOM: Final[RuleConstant] = (27, 6)
-DATE_ADD_ATOM: Final[RuleConstant] = (27, 7)
-YEAR_ATOM: Final[RuleConstant] = (27, 8)
-MONTH_ATOM: Final[RuleConstant] = (27, 9)
-DAY_OF_MONTH_ATOM: Final[RuleConstant] = (27, 10)
-DAY_OF_YEAR_ATOM: Final[RuleConstant] = (27, 11)
-DAY_TO_YEAR_ATOM: Final[RuleConstant] = (27, 12)
-DAY_TO_MONTH_ATOM: Final[RuleConstant] = (27, 13)
-YEAR_TODAY_ATOM: Final[RuleConstant] = (27, 14)
-MONTH_TODAY_ATOM: Final[RuleConstant] = (27, 15)
+# --- RuleComparisonOperatorsComponent = 30 ---
+BETWEEN_ATOM_COMPONENT: Final[RuleConstant] = (30, 0)
+CHARSET_MATCH_ATOM_COMPONENT: Final[RuleConstant] = (30, 1)
+IS_NULL_ATOM_COMPONENT: Final[RuleConstant] = (30, 2)
 
-# --- RuleTimeOperatorsComponent = 28 ---
-PERIOD_ATOM_COMPONENT: Final[RuleConstant] = (28, 0)
-FILL_TIME_ATOM_COMPONENT: Final[RuleConstant] = (28, 1)
-FLOW_ATOM_COMPONENT: Final[RuleConstant] = (28, 2)
-TIME_SHIFT_ATOM_COMPONENT: Final[RuleConstant] = (28, 3)
-TIME_AGG_ATOM_COMPONENT: Final[RuleConstant] = (28, 4)
-CURRENT_DATE_ATOM_COMPONENT: Final[RuleConstant] = (28, 5)
-DATE_DIFF_ATOM_COMPONENT: Final[RuleConstant] = (28, 6)
-DATE_ADD_ATOM_COMPONENT: Final[RuleConstant] = (28, 7)
-YEAR_ATOM_COMPONENT: Final[RuleConstant] = (28, 8)
-MONTH_ATOM_COMPONENT: Final[RuleConstant] = (28, 9)
-DAY_OF_MONTH_ATOM_COMPONENT: Final[RuleConstant] = (28, 10)
-DAT_OF_YEAR_ATOM_COMPONENT: Final[RuleConstant] = (28, 11)
-DAY_TO_YEAR_ATOM_COMPONENT: Final[RuleConstant] = (28, 12)
-DAY_TO_MONTH_ATOM_COMPONENT: Final[RuleConstant] = (28, 13)
-YEAR_TODAY_ATOM_COMPONENT: Final[RuleConstant] = (28, 14)
-MONTH_TODAY_ATOM_COMPONENT: Final[RuleConstant] = (28, 15)
+# --- RuleTimeOperators = 31 ---
+PERIOD_ATOM: Final[RuleConstant] = (31, 0)
+FILL_TIME_ATOM: Final[RuleConstant] = (31, 1)
+FLOW_ATOM: Final[RuleConstant] = (31, 2)
+TIME_SHIFT_ATOM: Final[RuleConstant] = (31, 3)
+TIME_AGG_ATOM: Final[RuleConstant] = (31, 4)
+CURRENT_DATE_ATOM: Final[RuleConstant] = (31, 5)
+DATE_DIFF_ATOM: Final[RuleConstant] = (31, 6)
+DATE_ADD_ATOM: Final[RuleConstant] = (31, 7)
+YEAR_ATOM: Final[RuleConstant] = (31, 8)
+MONTH_ATOM: Final[RuleConstant] = (31, 9)
+DAY_OF_MONTH_ATOM: Final[RuleConstant] = (31, 10)
+DAY_OF_YEAR_ATOM: Final[RuleConstant] = (31, 11)
+DAY_TO_YEAR_ATOM: Final[RuleConstant] = (31, 12)
+DAY_TO_MONTH_ATOM: Final[RuleConstant] = (31, 13)
+YEAR_TODAY_ATOM: Final[RuleConstant] = (31, 14)
+MONTH_TODAY_ATOM: Final[RuleConstant] = (31, 15)
 
-# --- RuleSetOperators = 29 ---
-UNION_ATOM: Final[RuleConstant] = (29, 0)
-INTERSECT_ATOM: Final[RuleConstant] = (29, 1)
-SET_OR_SYM_DIFF_ATOM: Final[RuleConstant] = (29, 2)
+# --- RuleTimeOperatorsComponent = 32 ---
+PERIOD_ATOM_COMPONENT: Final[RuleConstant] = (32, 0)
+FILL_TIME_ATOM_COMPONENT: Final[RuleConstant] = (32, 1)
+FLOW_ATOM_COMPONENT: Final[RuleConstant] = (32, 2)
+TIME_SHIFT_ATOM_COMPONENT: Final[RuleConstant] = (32, 3)
+TIME_AGG_ATOM_COMPONENT: Final[RuleConstant] = (32, 4)
+CURRENT_DATE_ATOM_COMPONENT: Final[RuleConstant] = (32, 5)
+DATE_DIFF_ATOM_COMPONENT: Final[RuleConstant] = (32, 6)
+DATE_ADD_ATOM_COMPONENT: Final[RuleConstant] = (32, 7)
+YEAR_ATOM_COMPONENT: Final[RuleConstant] = (32, 8)
+MONTH_ATOM_COMPONENT: Final[RuleConstant] = (32, 9)
+DAY_OF_MONTH_ATOM_COMPONENT: Final[RuleConstant] = (32, 10)
+DAT_OF_YEAR_ATOM_COMPONENT: Final[RuleConstant] = (32, 11)
+DAY_TO_YEAR_ATOM_COMPONENT: Final[RuleConstant] = (32, 12)
+DAY_TO_MONTH_ATOM_COMPONENT: Final[RuleConstant] = (32, 13)
+YEAR_TODAY_ATOM_COMPONENT: Final[RuleConstant] = (32, 14)
+MONTH_TODAY_ATOM_COMPONENT: Final[RuleConstant] = (32, 15)
 
-# --- RuleValidationOperators = 31 ---
-VALIDATE_D_PRULESET: Final[RuleConstant] = (31, 0)
-VALIDATE_HR_RULESET: Final[RuleConstant] = (31, 1)
-VALIDATION_SIMPLE: Final[RuleConstant] = (31, 2)
+# --- RuleSetOperators = 33 ---
+UNION_ATOM: Final[RuleConstant] = (33, 0)
+INTERSECT_ATOM: Final[RuleConstant] = (33, 1)
+SET_OR_SYM_DIFF_ATOM: Final[RuleConstant] = (33, 2)
 
-# --- RuleConditionalOperators = 32 ---
-NVL_ATOM: Final[RuleConstant] = (32, 0)
+# --- RuleValidationOperators = 35 ---
+VALIDATE_D_PRULESET: Final[RuleConstant] = (35, 0)
+VALIDATE_HR_RULESET: Final[RuleConstant] = (35, 1)
+VALIDATION_SIMPLE: Final[RuleConstant] = (35, 2)
 
-# --- RuleConditionalOperatorsComponent = 33 ---
-NVL_ATOM_COMPONENT: Final[RuleConstant] = (33, 0)
+# --- RuleConditionalOperators = 36 ---
+NVL_ATOM: Final[RuleConstant] = (36, 0)
 
-# --- RuleAggrOperators = 34 ---
-AGGR_COMP: Final[RuleConstant] = (34, 0)
-COUNT_AGGR_COMP: Final[RuleConstant] = (34, 1)
+# --- RuleConditionalOperatorsComponent = 37 ---
+NVL_ATOM_COMPONENT: Final[RuleConstant] = (37, 0)
 
-# --- RuleAggrOperatorsGrouping = 35 ---
-AGGR_DATASET: Final[RuleConstant] = (35, 0)
+# --- RuleAggrOperators = 38 ---
+AGGR_COMP: Final[RuleConstant] = (38, 0)
+COUNT_AGGR_COMP: Final[RuleConstant] = (38, 1)
 
-# --- RuleAnFunction = 36 ---
-AN_SIMPLE_FUNCTION: Final[RuleConstant] = (36, 0)
-LAG_OR_LEAD_AN: Final[RuleConstant] = (36, 1)
-RATIO_TO_REPORT_AN: Final[RuleConstant] = (36, 2)
+# --- RuleAggrOperatorsGrouping = 39 ---
+AGGR_DATASET: Final[RuleConstant] = (39, 0)
 
-# --- RuleAnFunctionComponent = 37 ---
-AN_SIMPLE_FUNCTION_COMPONENT: Final[RuleConstant] = (37, 0)
-LAG_OR_LEAD_AN_COMPONENT: Final[RuleConstant] = (37, 1)
-RANK_AN_COMPONENT: Final[RuleConstant] = (37, 2)
-RATIO_TO_REPORT_AN_COMPONENT: Final[RuleConstant] = (37, 3)
+# --- RuleAnFunction = 40 ---
+AN_SIMPLE_FUNCTION: Final[RuleConstant] = (40, 0)
+LAG_OR_LEAD_AN: Final[RuleConstant] = (40, 1)
+RATIO_TO_REPORT_AN: Final[RuleConstant] = (40, 2)
 
-# --- RuleScalarItem = 43 ---
-SIMPLE_SCALAR: Final[RuleConstant] = (43, 0)
-SCALAR_WITH_CAST: Final[RuleConstant] = (43, 1)
+# --- RuleAnFunctionComponent = 41 ---
+AN_SIMPLE_FUNCTION_COMPONENT: Final[RuleConstant] = (41, 0)
+LAG_OR_LEAD_AN_COMPONENT: Final[RuleConstant] = (41, 1)
+RANK_AN_COMPONENT: Final[RuleConstant] = (41, 2)
+RATIO_TO_REPORT_AN_COMPONENT: Final[RuleConstant] = (41, 3)
 
-# --- RuleGroupingClause = 56 ---
-GROUP_BY_OR_EXCEPT: Final[RuleConstant] = (56, 0)
-GROUP_ALL: Final[RuleConstant] = (56, 1)
+# --- RuleScalarItem = 47 ---
+SIMPLE_SCALAR: Final[RuleConstant] = (47, 0)
+SCALAR_WITH_CAST: Final[RuleConstant] = (47, 1)
 
-# --- RuleDpRuleset = 68 ---
-DATA_POINT: Final[RuleConstant] = (68, 0)
-DATA_POINT_VD: Final[RuleConstant] = (68, 1)
-DATA_POINT_VAR: Final[RuleConstant] = (68, 2)
+# --- RuleGroupingClause = 60 ---
+GROUP_BY_OR_EXCEPT: Final[RuleConstant] = (60, 0)
+GROUP_ALL: Final[RuleConstant] = (60, 1)
 
-# --- RuleHrRuleset = 69 ---
-HR_RULESET_TYPE: Final[RuleConstant] = (69, 0)
-HR_RULESET_VD_TYPE: Final[RuleConstant] = (69, 1)
-HR_RULESET_VAR_TYPE: Final[RuleConstant] = (69, 2)
+# --- RuleDpRuleset = 72 ---
+DATA_POINT: Final[RuleConstant] = (72, 0)
+DATA_POINT_VD: Final[RuleConstant] = (72, 1)
+DATA_POINT_VAR: Final[RuleConstant] = (72, 2)
 
-# --- RuleScalarTypeConstraint = 83 ---
-CONDITION_CONSTRAINT: Final[RuleConstant] = (83, 0)
-RANGE_CONSTRAINT: Final[RuleConstant] = (83, 1)
+# --- RuleHrRuleset = 73 ---
+HR_RULESET_TYPE: Final[RuleConstant] = (73, 0)
+HR_RULESET_VD_TYPE: Final[RuleConstant] = (73, 1)
+HR_RULESET_VAR_TYPE: Final[RuleConstant] = (73, 2)
+
+# --- RuleScalarTypeConstraint = 87 ---
+CONDITION_CONSTRAINT: Final[RuleConstant] = (87, 0)
+RANGE_CONSTRAINT: Final[RuleConstant] = (87, 1)
 
 
 class RC:
@@ -479,6 +494,9 @@ class RC:
     PIVOT_OR_UNPIVOT_CLAUSE = PIVOT_OR_UNPIVOT_CLAUSE
     CUSTOM_PIVOT_CLAUSE = CUSTOM_PIVOT_CLAUSE
     SUBSPACE_CLAUSE = SUBSPACE_CLAUSE
+    VP_SIGNATURE = VP_SIGNATURE
+    VP_BODY = VP_BODY
+    VP_CONDITION = VP_CONDITION
     RENAME_CLAUSE_ITEM = RENAME_CLAUSE_ITEM
     AGGREGATE_CLAUSE = AGGREGATE_CLAUSE
     AGGR_FUNCTION_CLAUSE = AGGR_FUNCTION_CLAUSE
@@ -605,6 +623,10 @@ class RC:
     DEF_OPERATOR = DEF_OPERATOR
     DEF_DATAPOINT_RULESET = DEF_DATAPOINT_RULESET
     DEF_HIERARCHICAL = DEF_HIERARCHICAL
+    DEF_VIRAL_PROPAGATION = DEF_VIRAL_PROPAGATION
+    ENUMERATED_VP_CLAUSE = ENUMERATED_VP_CLAUSE
+    AGGREGATION_VP_CLAUSE = AGGREGATION_VP_CLAUSE
+    DEFAULT_VP_CLAUSE = DEFAULT_VP_CLAUSE
     CALL_DATASET = CALL_DATASET
     EVAL_ATOM = EVAL_ATOM
     CAST_EXPR_DATASET = CAST_EXPR_DATASET

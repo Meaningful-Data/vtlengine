@@ -182,6 +182,17 @@ static void init_type_map() {
     g_type_map[typeid(VtlParser::DefOperatorContext)] = {VtlParser::RuleDefOperators, 0};
     g_type_map[typeid(VtlParser::DefDatapointRulesetContext)] = {VtlParser::RuleDefOperators, 1};
     g_type_map[typeid(VtlParser::DefHierarchicalContext)] = {VtlParser::RuleDefOperators, 2};
+    g_type_map[typeid(VtlParser::DefViralPropagationContext)] = {VtlParser::RuleDefOperators, 3};
+
+    // Viral propagation rules without alternatives
+    g_type_map[typeid(VtlParser::VpSignatureContext)] = {VtlParser::RuleVpSignature, -1};
+    g_type_map[typeid(VtlParser::VpBodyContext)] = {VtlParser::RuleVpBody, -1};
+    g_type_map[typeid(VtlParser::VpConditionContext)] = {VtlParser::RuleVpCondition, -1};
+
+    // VpClause alternatives
+    g_type_map[typeid(VtlParser::EnumeratedVpClauseContext)] = {VtlParser::RuleVpClause, 0};
+    g_type_map[typeid(VtlParser::AggregationVpClauseContext)] = {VtlParser::RuleVpClause, 1};
+    g_type_map[typeid(VtlParser::DefaultVpClauseContext)] = {VtlParser::RuleVpClause, 2};
 
     // GenericOperators alternatives
     g_type_map[typeid(VtlParser::CallDatasetContext)] = {VtlParser::RuleGenericOperators, 0};
@@ -640,6 +651,7 @@ PYBIND11_MODULE(vtl_cpp_parser, m) {
     m.attr("FILTER") = static_cast<int>(VtlParser::FILTER);
     m.attr("EXP") = static_cast<int>(VtlParser::EXP);
     m.attr("VIRAL") = static_cast<int>(VtlParser::VIRAL);
+    m.attr("PROPAGATION") = static_cast<int>(VtlParser::PROPAGATION);
     m.attr("CHARSET_MATCH") = static_cast<int>(VtlParser::CHARSET_MATCH);
     m.attr("NVL") = static_cast<int>(VtlParser::NVL);
     m.attr("HIERARCHY") = static_cast<int>(VtlParser::HIERARCHY);
