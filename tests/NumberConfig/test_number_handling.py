@@ -10,7 +10,9 @@ from unittest import mock
 import pandas as pd
 import pytest
 
+from tests.Helper import _use_duckdb_backend
 from vtlengine.API import run
+from vtlengine.Exceptions import RunTimeError
 from vtlengine.Utils._number_config import (
     DEFAULT_SIGNIFICANT_DIGITS,
     DISABLED_VALUE,
@@ -60,7 +62,7 @@ def test_parse_env_value_valid(env_value: str, expected: int) -> None:
 def test_parse_env_value_invalid(env_value: str) -> None:
     with (
         mock.patch.dict(os.environ, {ENV_COMPARISON_THRESHOLD: env_value}),
-        pytest.raises(ValueError, match="Invalid value"),
+        pytest.raises(RunTimeError, match="Invalid value"),
     ):
         _parse_env_value(ENV_COMPARISON_THRESHOLD)
 
@@ -257,7 +259,12 @@ def test_vtl_comparison_with_tolerance(
 ) -> None:
     with mock.patch.dict(os.environ, {ENV_COMPARISON_THRESHOLD: "10"}):
         datapoints = pd.DataFrame({"Id_1": list(range(1, len(me_values) + 1)), "Me_1": me_values})
-        result = run(script=script, data_structures=ds_structure, datapoints={"DS_1": datapoints})
+        result = run(
+            script=script,
+            data_structures=ds_structure,
+            datapoints={"DS_1": datapoints},
+            use_duckdb=_use_duckdb_backend(),
+        )
         assert result["DS_r"].data["bool_var"].tolist() == expected
 
 
@@ -268,6 +275,7 @@ def test_vtl_equal_disabled(ds_structure) -> None:
             script="DS_r <- DS_1 = 1.0;",
             data_structures=ds_structure,
             datapoints={"DS_1": datapoints},
+            use_duckdb=_use_duckdb_backend(),
         )
         assert result["DS_r"].data["bool_var"].tolist()[0]
 
@@ -284,6 +292,7 @@ def test_vtl_between_with_tolerance(ds_structure) -> None:
             script="DS_r <- between(DS_1, 1.0, 2.0);",
             data_structures=ds_structure,
             datapoints={"DS_1": datapoints},
+            use_duckdb=_use_duckdb_backend(),
         )
         assert result["DS_r"].data["bool_var"].tolist() == [True, True, True, False, False]
 
@@ -327,6 +336,7 @@ def test_output_formatting(env_value: str, expected_substring: str) -> None:
                 data_structures=ds_structure,
                 datapoints={"DS_1": datapoints},
                 output_folder=Path(tmpdir),
+                use_duckdb=_use_duckdb_backend(),
             )
             content = (Path(tmpdir) / "DS_r.csv").read_text()
             assert expected_substring in content

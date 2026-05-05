@@ -151,7 +151,9 @@ class Expr:
                 condition = self.visitExpr(ctx_list[i + 1])
                 thenOp = self.visitExpr(ctx_list[i + 3])
                 case_obj = CaseObj(
-                    condition=condition, thenOp=thenOp, **extract_token_info(ctx_list[i + 1])
+                    condition=condition,
+                    thenOp=thenOp,
+                    **extract_token_info(ctx_list[i + 1]),
                 )
                 cases.append(case_obj)
 
@@ -586,7 +588,10 @@ class Expr:
             children_nodes = expr_node + basic_scalar_type
 
             return ParamOp(
-                op=op, children=children_nodes, params=param_node, **extract_token_info(ctx)
+                op=op,
+                children=children_nodes,
+                params=param_node,
+                **extract_token_info(ctx),
             )
 
         else:
@@ -653,7 +658,10 @@ class Expr:
                 params_nodes.append(self.visitOptionalExpr(param))
 
         return ParamOp(
-            op=op_node, children=children_nodes, params=params_nodes, **extract_token_info(ctx)
+            op=op_node,
+            children=children_nodes,
+            params=params_nodes,
+            **extract_token_info(ctx),
         )
 
     def visitReplaceAtom(self, ctx: Any) -> ParamOp:
@@ -677,7 +685,10 @@ class Expr:
         params_nodes = [expressions[1]] + params
 
         return ParamOp(
-            op=op_node, children=children_nodes, params=params_nodes, **extract_token_info(ctx)
+            op=op_node,
+            children=children_nodes,
+            params=params_nodes,
+            **extract_token_info(ctx),
         )
 
     def visitInstrAtom(self, ctx: Any) -> ParamOp:
@@ -701,7 +712,10 @@ class Expr:
         params_nodes = [expressions[1]] + params
 
         return ParamOp(
-            op=op_node, children=children_nodes, params=params_nodes, **extract_token_info(ctx)
+            op=op_node,
+            children=children_nodes,
+            params=params_nodes,
+            **extract_token_info(ctx),
         )
 
     """
@@ -751,7 +765,10 @@ class Expr:
                 params_nodes.append(self.visitOptionalExpr(param))
 
         return ParamOp(
-            op=op_node, children=children_nodes, params=params_nodes, **extract_token_info(ctx)
+            op=op_node,
+            children=children_nodes,
+            params=params_nodes,
+            **extract_token_info(ctx),
         )
 
     def visitBinaryNumeric(self, ctx: Any) -> BinOp:
@@ -921,7 +938,10 @@ class Expr:
             param_constant_node = []
 
         return ParamOp(
-            op=op, children=children_node, params=param_constant_node, **extract_token_info(ctx)
+            op=op,
+            children=children_node,
+            params=param_constant_node,
+            **extract_token_info(ctx),
         )
 
     def visitTimeAggAtom(self, ctx: Any) -> TimeAggregation:
@@ -1016,7 +1036,10 @@ class Expr:
                 param_constant_node.append(self.visitExpr(ctx_list[6]))
 
         return ParamOp(
-            op=op, children=children_node, params=param_constant_node, **extract_token_info(ctx)
+            op=op,
+            children=children_node,
+            params=param_constant_node,
+            **extract_token_info(ctx),
         )
 
     """
@@ -1144,7 +1167,9 @@ class Expr:
             if rule_element.kind == "DatasetID":
                 check_hierarchy_rule = rule_element.value
                 rule_comp = Identifier(
-                    value=check_hierarchy_rule, kind="ComponentID", **extract_token_info(ctx)
+                    value=check_hierarchy_rule,
+                    kind="ComponentID",
+                    **extract_token_info(ctx),
                 )
             else:  # ValuedomainID
                 raise SemanticError("1-1-10-4", op=op)
@@ -1800,14 +1825,33 @@ class Expr:
 
         # Check if TIME_AGG is present (more than just GROUP ALL)
         if len(ctx_list) > 2:
-            period_to, conf = self._extract_time_agg_tokens(ctx_list)
+            period_to = None
+            period_from = None
+            operand_node = None
+            conf = None
+
+            for child in ctx_list:
+                if child.is_terminal:
+                    if child.symbol_type == vtl_cpp_parser.STRING_CONSTANT:
+                        if period_to is None:
+                            period_to = child.text[1:-1]
+                        else:
+                            period_from = child.text[1:-1]
+                    elif child.symbol_type in (vtl_cpp_parser.FIRST, vtl_cpp_parser.LAST):
+                        conf = child.text
+                elif not child.is_terminal and child.rule_index == RC.OPTIONAL_EXPR[0]:
+                    operand_node = self.visitOptionalExpr(child)
+                    if isinstance(operand_node, ID):
+                        operand_node = None
+                    elif isinstance(operand_node, Identifier):
+                        operand_node = VarID(value=operand_node.value, **extract_token_info(child))
 
             children_nodes = [
                 TimeAggregation(
                     op="time_agg",
-                    operand=None,
+                    operand=operand_node,
                     period_to=period_to,
-                    period_from=None,
+                    period_from=period_from,
                     conf=conf,
                     **extract_token_info(ctx),
                 )
@@ -1882,7 +1926,9 @@ class Expr:
             )
             if role is None:
                 return UnaryOp(
-                    op=Role.MEASURE.value.lower(), operand=operand_node, **extract_token_info(c)
+                    op=Role.MEASURE.value.lower(),
+                    operand=operand_node,
+                    **extract_token_info(c),
                 )
             return UnaryOp(op=role.value.lower(), operand=operand_node, **extract_token_info(c))
         else:
@@ -1894,7 +1940,9 @@ class Expr:
                 left=left_node, op=op_node, right=right_node, **extract_token_info(ctx)
             )
             return UnaryOp(
-                op=Role.MEASURE.value.lower(), operand=operand_node, **extract_token_info(ctx)
+                op=Role.MEASURE.value.lower(),
+                operand=operand_node,
+                **extract_token_info(ctx),
             )
 
     def visitKeepOrDropClause(self, ctx: Any) -> RegularAggregation:

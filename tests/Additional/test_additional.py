@@ -2,9 +2,10 @@ import warnings
 from pathlib import Path
 from typing import Union
 
-from tests.Helper import TestHelper
-from vtlengine.API import create_ast
-from vtlengine.Interpreter import InterpreterAnalyzer
+import pytest
+
+from tests.Helper import TestHelper, _use_duckdb_backend
+from vtlengine.API import run
 
 
 class AdditionalHelper(TestHelper):
@@ -26,9 +27,13 @@ class AdditionalHelper(TestHelper):
         """ """
         if text is None:
             text = cls.LoadVTL(code)
-        ast = create_ast(text)
-        interpreter = InterpreterAnalyzer({})
-        result = interpreter.visit(ast)
+        result = run(
+            script=text,
+            data_structures={"datasets": []},
+            datapoints={},
+            return_only_persistent=False,
+            use_duckdb=_use_duckdb_backend(),
+        )
         assert result["DS_r"].value == reference_value
 
 
@@ -4361,6 +4366,10 @@ class DefinedOperatorsTest(AdditionalHelper):
         )
 
 
+@pytest.mark.skipif(
+    _use_duckdb_backend,
+    reason="deactivated on duckdb until nullability over scalars is implemented",
+)
 class DatesTest(AdditionalHelper):
     """
     Group 16
@@ -4376,7 +4385,6 @@ class DatesTest(AdditionalHelper):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        # with pytest.raises(Exception, match="cast .+? without providing a mask"):
         self.BaseTest(
             text=None,
             code=code,

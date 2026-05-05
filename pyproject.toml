@@ -42,11 +42,8 @@ dependencies = [
     "pyarrow>=14.0,<25.0",
     "numpy>=2.0.2,<2.1; python_version < '3.10'",
     "numpy>=2.2.0,<2.5; python_version >= '3.10'",
+    "psutil>=7.2,<8.0"
 ]
-
-[project.optional-dependencies]
-s3 = ["s3fs>=2022.11.0"]
-all = ["s3fs>=2022.11.0"]
 
 [project.urls]
 Repository = 'https://github.com/Meaningful-Data/vtlengine'

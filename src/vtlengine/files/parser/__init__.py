@@ -41,7 +41,7 @@ SEPARATORS = "".join([",", ";", ":", "|", "\t"])
 def _detect_delimiter(file_path: Union[str, Path], num_bytes: int = 4096) -> str:
     try:
         if _is_remote_path(file_path):
-            import fsspec  # type: ignore[import-untyped]
+            import fsspec  # type: ignore[import-untyped, import-not-found, unused-ignore]
 
             reader = fsspec.open
         else:
@@ -124,7 +124,8 @@ def _sanitize_pandas_columns(
     for comp_name, comp in components.items():
         if comp_name not in data:
             if not comp.nullable:
-                raise InputValidationException(f"Component {comp_name} is missing in the file.")
+                name = Path(csv_path).stem
+                raise InputValidationException(code="0-3-1-5", name=name, comp_name=comp_name)
             data[comp_name] = None
     return data
 

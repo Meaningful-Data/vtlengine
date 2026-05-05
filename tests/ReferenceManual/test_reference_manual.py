@@ -7,7 +7,8 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from vtlengine.API import create_ast
+from tests.Helper import _use_duckdb_backend
+from vtlengine.API import create_ast, run
 from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.files.parser import load_datapoints
 from vtlengine.Interpreter import InterpreterAnalyzer
@@ -64,6 +65,11 @@ time_operators.remove(100)
 
 # Remove HR Rules cyclic graph
 validation_operators.remove(159)
+
+# Remove random tests if duckdb
+if _use_duckdb_backend:
+    new_operators.remove(184)
+    new_operators.remove(185)
 
 # Multimeasures on specific operators that must raise errors
 exceptions_tests = [27, 31]
@@ -177,17 +183,52 @@ def load_dataset(dataPoints, dataStructures, dp_dir, param):
     return datasets
 
 
+def get_test_files(dataPoints, dataStructures, dp_dir, param):
+    vtl = Path(f"{vtl_dir}/RM{param:03d}.vtl")
+    ds = []
+    dp = {}
+    for f in dataStructures:
+        ds.append(Path(f))
+        with open(f, "r") as file:
+            structures = json.load(file)
+
+        for dataset_json in structures["datasets"]:
+            dataset_name = dataset_json["name"]
+            if dataset_name not in dataPoints:
+                dp[dataset_name] = None
+            else:
+                dp[dataset_name] = Path(f"{dp_dir}/{param}-{dataset_name}.csv")
+
+    return vtl, ds, dp
+
+
+@pytest.mark.parametrize("param", params if _use_duckdb_backend else [])
+def test_reference_duckdb(input_datasets, reference_datasets, ast, param):
+    warnings.filterwarnings("ignore", category=FutureWarning)
+    reference_datasets = load_dataset(*reference_datasets, dp_dir=reference_dp_dir, param=param)
+
+    vtl, ds, dp = get_test_files(*input_datasets, dp_dir=input_dp_dir, param=param)
+    vd_files = list(value_domain_dir.glob("*.json"))
+    result = run(
+        script=vtl,
+        data_structures=ds,
+        datapoints=dp,
+        value_domains=vd_files if vd_files else None,
+        return_only_persistent=False,
+        use_duckdb=_use_duckdb_backend,
+    )
+
+    assert result == reference_datasets
+
+
 @pytest.mark.parametrize("param", params)
 def test_reference(input_datasets, reference_datasets, ast, param, value_domains):
-    # try:
     warnings.filterwarnings("ignore", category=FutureWarning)
     input_datasets = load_dataset(*input_datasets, dp_dir=input_dp_dir, param=param)
     reference_datasets = load_dataset(*reference_datasets, dp_dir=reference_dp_dir, param=param)
     interpreter = InterpreterAnalyzer(input_datasets, value_domains=value_domains)
     result = interpreter.visit(ast)
     assert result == reference_datasets
-    # except NotImplementedError:
-    #     pass
 
 
 @pytest.mark.parametrize("param", params)
@@ -204,7 +245,6 @@ def test_reference_defined_operators(
 
 @pytest.mark.parametrize("param", exceptions_tests)
 def test_reference_exceptions(input_datasets, reference_datasets, ast, param):
-    # try:
     warnings.filterwarnings("ignore", category=FutureWarning)
     input_datasets = load_dataset(*input_datasets, dp_dir=input_dp_dir, param=param)
     interpreter = InterpreterAnalyzer(input_datasets)

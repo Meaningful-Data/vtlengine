@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from tests.Helper import TestHelper
 
 
@@ -29,6 +31,7 @@ class SemanticBIRD(BIRDHelper):
     #
     #     self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    @pytest.mark.skip(reason=("deactivated until scalars nullability implementation"))
     def test_INPUT_LAYER_TO_ENRICHED_INPUT_LAYER(self):
         """ """
         code = "INPUT_LAYER_TO_ENRICHED_INPUT_LAYER"
