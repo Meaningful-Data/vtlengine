@@ -538,6 +538,81 @@ You can also mix VTL JSON structures with SDMX structures and plain CSV datapoin
     )
 
 
+.. _example_4c_compare_two_datasets_sharing_dataflow:
+
+==================================================================
+Example 4c: Comparing two datasets sharing one SDMX Dataflow
+==================================================================
+
+A common SDMX pattern is having two datasets that share a single ``Dataflow``
+(and therefore one ``DataStructureDefinition``) but contain different data —
+for example, two reporting periods or a previous-vs-current snapshot. The same
+``Dataflow`` object can be passed to ``to_vtl_json`` twice with different
+``dataset_name`` arguments to bind it to two VTL aliases without cloning the
+structure.
+
+.. code-block:: python
+
+    import pandas as pd
+    from pysdmx.model.concept import Concept, DataType
+    from pysdmx.model.dataflow import (
+        Component, Components, Dataflow, DataStructureDefinition, Role,
+    )
+
+    from vtlengine import run
+    from vtlengine.files.sdmx_handler import to_vtl_json
+
+
+    def build_components() -> Components:
+        return Components([
+            Component(id="Id_1", required=True, role=Role.DIMENSION,
+                      concept=Concept(id="Id_1", dtype=DataType.INTEGER)),
+            Component(id="Me_1", required=False, role=Role.MEASURE,
+                      concept=Concept(id="Me_1", dtype=DataType.FLOAT)),
+        ])
+
+
+    dataflow = Dataflow(
+        id="DF_1", agency="ME", version="1.0",
+        structure=DataStructureDefinition(
+            id="DSD_1", agency="ME", version="1.0",
+            components=build_components(),
+        ),
+    )
+
+    data_structures = [
+        to_vtl_json(dataflow, dataset_name="DS_1"),
+        to_vtl_json(dataflow, dataset_name="DS_2"),
+    ]
+
+    datapoints = {
+        "DS_1": pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [10.0, 20.0, 30.0]}),
+        "DS_2": pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [10.0, 25.0, 30.0]}),
+    }
+
+    script = """
+        DS_diff  <- DS_2 - DS_1;
+        DS_equal <- DS_1 = DS_2;
+    """
+
+    result = run(script=script, data_structures=data_structures,
+                 datapoints=datapoints, return_only_persistent=False)
+
+Expected output for ``DS_diff``::
+
+     Id_1  Me_1
+        1   0.0
+        2   5.0
+        3   0.0
+
+Expected output for ``DS_equal``::
+
+     Id_1  bool_var
+        1      True
+        2     False
+        3      True
+
+
 .. _example_5_run_with_multiple_value_domains_and_external_routines:
 
 =================================================================================
