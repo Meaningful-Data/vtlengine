@@ -1374,7 +1374,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 for rule in aux:
                     left_part = rule.rule.left if rule.rule.op == EQ else rule.rule.right.left
                     if left_part in left_parts:
-                        raise SemanticError("1-1-10-10", ruleset=hr_name, rule=left_part)
+                        raise SemanticError("1-1-10-10", ruleset=hr_name, rule=left_part.value)
                     left_parts.append(left_part)
 
                 hr_info["rules"] = aux
@@ -1721,7 +1721,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 df = df.loc[condition.data]
                 keys = pd.MultiIndex.from_frame(df[other_ids].drop_duplicates())
                 mask = pd.MultiIndex.from_frame(code_data[other_ids]).isin(keys)
-                code_data = code_data.loc[mask]
+                code_data = code_data.loc[mask]  # type: ignore[index, unused-ignore]
 
         if node.value in df[hr_component].values:
             value_data = df[df[hr_component] == node.value]

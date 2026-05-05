@@ -7,12 +7,20 @@ Description
 Basic AST nodes.
 """
 
+import inspect
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Type, Union
 
 from vtlengine.DataTypes import ScalarType
 from vtlengine.Model import Dataset, Role
+
+if hasattr(inspect, "get_annotations"):
+    _get_annotations = inspect.get_annotations
+else:  # pragma: no cover
+
+    def _get_annotations(cls: type) -> Dict[str, Any]:
+        return cls.__dict__.get("__annotations__") or {}
 
 
 class ValidationMode(Enum):
@@ -71,8 +79,9 @@ class AST:
     def __all_annotations(cls) -> Dict[str, Any]:
         class_attributes = {}
         for c in cls.__mro__:
-            if "__annotations__" in c.__dict__:
-                class_attributes.update(c.__annotations__)
+            annotations = _get_annotations(c)
+            if annotations:
+                class_attributes.update(annotations)
         return dict(reversed(list(class_attributes.items())))
 
     def __str__(self) -> str:

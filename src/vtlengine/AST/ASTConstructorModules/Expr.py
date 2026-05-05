@@ -1,4 +1,3 @@
-import re
 from copy import copy
 from typing import Any, List, Optional, Tuple
 
@@ -46,6 +45,13 @@ from vtlengine.AST.Grammar.tokens import DATASET_PRIORITY
 from vtlengine.AST.VtlVisitor import VtlVisitor
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Role
+
+
+def _to_tokens_text(ctx: Any) -> str:
+    """Reconstruct text from parse tree by joining leaf tokens with spaces."""
+    if isinstance(ctx, TerminalNodeImpl):
+        return str(ctx.getSymbol().text)
+    return " ".join(_to_tokens_text(child) for child in ctx.getChildren())
 
 
 class Expr(VtlVisitor):
@@ -1673,20 +1679,7 @@ class Expr(VtlVisitor):
         """
         ctx_list = list(ctx.getChildren())
         op_node = ctx_list[0].getSymbol().text
-
-        text = ctx_list[1].start.source[1].strdata
-        expr = re.split("having", text)[1]
-        expr = "having " + expr[:-2].strip()
-
-        if "]" in expr:
-            index = expr.index("]")
-            expr = expr[:index]
-        if "end" in expr:
-            index = expr.index("end")
-            expr = expr[:index]
-        if expr.count(")") > expr.count("("):
-            index = expr.rindex(")")
-            expr = expr[:index]
+        expr = _to_tokens_text(ctx)
 
         if "{" in expr or "}" in expr:
             expr = expr.replace("{", "(")
