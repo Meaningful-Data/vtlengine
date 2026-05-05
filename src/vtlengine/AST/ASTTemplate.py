@@ -268,7 +268,8 @@ class ASTTemplate(NodeVisitor):
                 for group in node.grouping:
                     self.visit(group)
         """
-        self.visit(node.operand)
+        if node.operand is not None:
+            self.visit(node.operand)
 
         if node.grouping is not None:
             for group in node.grouping:

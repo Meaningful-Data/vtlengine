@@ -1374,3 +1374,25 @@ class AggregateOperatorsTest(TestAggregateHelper):
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=exception_code
         )
+
+    def test_GH_662_1(self):
+        """
+        Sum and Average: sum, avg
+        Dataset --> Dataset
+        Status: OK
+        Expression: sum_ds1 <- sum(DS_1#Me_1 group by Id_1 having count() > 0);
+                    avg_ds <- avg(DS_1#Me_1 group by Id_1);
+                    DS_1 Dataset
+
+        Description: Check that sum with having clause and avg work correctly when
+                     grouping by a subset of identifiers (Id_1), dropping Id_2.
+
+        Git Branch: #662
+        Goal: Check that aggregate operators with component-level syntax group by
+              a subset of identifiers and produce correct results.
+        """
+        code = "GH_662_1"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)

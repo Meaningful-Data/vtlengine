@@ -1,0 +1,6 @@
+define hierarchical ruleset hr_bool (variable rule Id_1) is
+    B = C - D errorcode true errorlevel true;
+    N = A - L errorcode false errorlevel false
+end hierarchical ruleset;
+
+DS_r <- check_hierarchy(DS_1, hr_bool rule Id_1);

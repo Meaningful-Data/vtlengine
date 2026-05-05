@@ -1,0 +1,3 @@
+Id_1,Id_2,ruleid,Me_1,errorcode,errorlevel
+A,2,rule_1,-5.0,True,True
+B,2,rule_2,30.0,False,False

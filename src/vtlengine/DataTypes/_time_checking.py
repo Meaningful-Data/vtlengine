@@ -6,6 +6,8 @@ from functools import lru_cache
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.Exceptions import InputValidationException
 
+_DATE_PART_RE = re.compile(r"^(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})")
+
 
 def _has_time_component(value: str) -> bool:
     """Check if a date string includes a time component (T or space separator at position 10)."""
@@ -48,13 +50,15 @@ def check_date(value: str) -> str:
             if len(value) == 9 and value[7] == "-":
                 value = value[:-1] + "0" + value[-1]
             iso_result = date.fromisoformat(value).isoformat()
-    except ValueError as e:
-        if "is out of range" in str(e):
+    except ValueError:
+        date_part_match = _DATE_PART_RE.match(value)
+        if date_part_match:
+            month = int(date_part_match.group("month"))
+            if not 1 <= month <= 12:
+                raise InputValidationException(
+                    f"Date {value} is invalid. Month must be between 1 and 12."
+                )
             raise InputValidationException(f"Date {value} is out of range for the month.")
-        if "month must be in 1..12" in str(e):
-            raise InputValidationException(
-                f"Date {value} is invalid. Month must be between 1 and 12."
-            )
         raise InputValidationException(
             f"Date {value} is not in the correct format. Use YYYY-MM-DD or YYYY-MM-DD HH:MM:SS."
         )

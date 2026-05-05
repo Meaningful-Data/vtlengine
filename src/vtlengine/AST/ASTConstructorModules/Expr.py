@@ -1,6 +1,5 @@
-import re
 from copy import copy
-from typing import Any, Optional
+from typing import Any, List, Optional, Tuple
 
 from vtlengine.AST import (
     ID,
@@ -44,6 +43,13 @@ from vtlengine.AST.Grammar._cpp_parser._rule_constants import RC
 from vtlengine.AST.Grammar.tokens import DATASET_PRIORITY
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Role
+
+
+def _to_tokens_text(ctx: Any) -> str:
+    """Reconstruct text from parse tree by joining leaf tokens with spaces."""
+    if ctx.is_terminal:
+        return str(ctx.text)
+    return " ".join(_to_tokens_text(child) for child in ctx.children)
 
 
 class Expr:
@@ -1689,8 +1695,11 @@ class Expr:
     def visitGroupingClause(self, ctx: Any) -> Any:
         """
         groupingClause:
-            GROUP op=(BY | EXCEPT) componentID (COMMA componentID)*     # groupByOrExcept
-            | GROUP ALL exprComponent                                   # groupAll
+            GROUP op=(BY | EXCEPT) componentID (COMMA componentID)*
+                ( TIME_AGG LPAREN STRING_CONSTANT
+                  (COMMA delim=(FIRST|LAST))? RPAREN )?
+            | GROUP ALL ( TIME_AGG LPAREN STRING_CONSTANT
+                  (COMMA delim=(FIRST|LAST))? RPAREN )?
           ;
         """
         if ctx.ctx_id == RC.GROUP_BY_OR_EXCEPT:
@@ -1706,34 +1715,8 @@ class Expr:
         """
         ctx_list = ctx.children
         op_node = ctx_list[0].text
-
-        strdata = vtl_cpp_parser.get_input_text()
-        # Extract the relevant substring using position information from the exprComponent node
         expr_component = ctx_list[1]
-        # Use the start position of the having keyword to extract the having clause text
-        start_line = ctx.start_line
-        # Find 'having' in strdata and extract from there
-        lines = strdata.split("\n")
-        # Build the text from start_line to end
-        text_from_having = "\n".join(lines[start_line - 1 :])
-        # Find 'having' keyword position within that line
-        line_text = lines[start_line - 1]
-        having_pos = line_text.lower().find("having")
-        if having_pos >= 0:
-            text_from_having = line_text[having_pos:] + "\n" + "\n".join(lines[start_line:])
-
-        expr = re.split("having", text_from_having)[1]
-        expr = "having " + expr[:-2].strip()
-
-        if "]" in expr:
-            index = expr.index("]")
-            expr = expr[:index]
-        if "end" in expr:
-            index = expr.index("end")
-            expr = expr[:index]
-        if expr.count(")") > expr.count("("):
-            index = expr.rindex(")")
-            expr = expr[:index]
+        expr = _to_tokens_text(ctx)
 
         if "{" in expr or "}" in expr:
             expr = expr.replace("{", "(")
@@ -1756,6 +1739,21 @@ class Expr:
             op=op_node, children=None, params=param_nodes, **extract_token_info(ctx)
         ), expr
 
+    @staticmethod
+    def _extract_time_agg_tokens(
+        ctx_list: List[Any],
+    ) -> Tuple[Optional[str], Optional[str]]:
+        """Extract TIME_AGG parameters (period_to, conf) from parse tree children."""
+        period_to: Optional[str] = None
+        conf: Optional[str] = None
+        for child in ctx_list:
+            if child.is_terminal:
+                if child.symbol_type == vtl_cpp_parser.STRING_CONSTANT:
+                    period_to = child.text[1:-1]
+                elif child.symbol_type in (vtl_cpp_parser.FIRST, vtl_cpp_parser.LAST):
+                    conf = child.text
+        return period_to, conf
+
     def visitGroupByOrExcept(self, ctx: Any) -> Any:
         ctx_list = ctx.children
 
@@ -1764,11 +1762,29 @@ class Expr:
 
         op_node = token_left + " " + token_right
 
-        children_nodes = [
-            Terminals().visitComponentID(identifier)
-            for identifier in ctx_list
-            if not identifier.is_terminal and identifier.rule_index == RC.COMPONENT_ID[0]
-        ]
+        children_nodes: List[Any] = []
+        has_time_agg = False
+
+        for child in ctx_list:
+            if not child.is_terminal and child.rule_index == RC.COMPONENT_ID[0]:
+                children_nodes.append(Terminals().visitComponentID(child))
+            elif child.is_terminal and child.symbol_type == vtl_cpp_parser.TIME_AGG:
+                has_time_agg = True
+
+        if has_time_agg:
+            period_to, conf = self._extract_time_agg_tokens(ctx_list)
+            if period_to is None:
+                raise NotImplementedError
+            children_nodes.append(
+                TimeAggregation(
+                    op="time_agg",
+                    operand=None,
+                    period_to=period_to,
+                    period_from=None,
+                    conf=conf,
+                    **extract_token_info(ctx),
+                )
+            )
 
         return op_node, children_nodes
 
@@ -1784,33 +1800,14 @@ class Expr:
 
         # Check if TIME_AGG is present (more than just GROUP ALL)
         if len(ctx_list) > 2:
-            period_to = None
-            period_from = None
-            operand_node = None
-            conf = None
-
-            for child in ctx_list:
-                if child.is_terminal:
-                    if child.symbol_type == vtl_cpp_parser.STRING_CONSTANT:
-                        if period_to is None:
-                            period_to = child.text[1:-1]
-                        else:
-                            period_from = child.text[1:-1]
-                    elif child.symbol_type in (vtl_cpp_parser.FIRST, vtl_cpp_parser.LAST):
-                        conf = child.text
-                elif not child.is_terminal and child.rule_index == RC.OPTIONAL_EXPR[0]:
-                    operand_node = self.visitOptionalExpr(child)
-                    if isinstance(operand_node, ID):
-                        operand_node = None
-                    elif isinstance(operand_node, Identifier):
-                        operand_node = VarID(value=operand_node.value, **extract_token_info(child))
+            period_to, conf = self._extract_time_agg_tokens(ctx_list)
 
             children_nodes = [
                 TimeAggregation(
                     op="time_agg",
-                    operand=operand_node,
+                    operand=None,
                     period_to=period_to,
-                    period_from=period_from,
+                    period_from=None,
                     conf=conf,
                     **extract_token_info(ctx),
                 )

@@ -3,6 +3,8 @@ from pathlib import Path
 import pytest
 
 from tests.Helper import TestHelper
+from vtlengine.API import create_ast
+from vtlengine.AST.ASTString import ASTString
 
 
 class HierarchicalHelper(TestHelper):
@@ -1436,6 +1438,47 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         references_names = ["1", "2", "3"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_598_1(self):
+        """
+        check_hierarchy with boolean errorcode and errorlevel constants.
+        Dataset --> Dataset
+        Status: OK
+
+        define hierarchical ruleset hr_bool (variable rule Id_1) is
+            B = C - D errorcode true errorlevel true;
+            N = A - L errorcode false errorlevel false
+        end hierarchical ruleset;
+
+        DS_r <- check_hierarchy(DS_1, hr_bool rule Id_1);
+
+        Git Branch: cr-596.
+        Goal: Verify boolean constants work as errorcode/errorlevel in hierarchical
+        rulesets, including AST round-trip.
+        """
+        code = "GH_598_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_598_1_roundtrip(self):
+        """
+        AST round-trip for check_hierarchy with boolean errorcode/errorlevel.
+
+        Git Branch: cr-596.
+        Goal: Verify that rendering the AST back to VTL and re-parsing produces the
+        same result when boolean constants are used in errorcode/errorlevel.
+        """
+        code = "GH_598_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        text = self.LoadVTL(code)
+        rendered = ASTString().render(create_ast(text))
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names, text=rendered
+        )
 
 
 class HierarchicalRollUpOperatorsTest(HierarchicalHelper):

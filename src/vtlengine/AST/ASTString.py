@@ -134,10 +134,10 @@ class ASTString(ASTTemplate):
             self.vtl_script += f"define hierarchical ruleset {node.name}({signature}) is{nl}"
             for _i, rule in enumerate(node.rules):
                 rule_str = f"{tab}{self.visit(rule)}"
-                if rule.erCode:
+                if rule.erCode is not None:
                     rule_str += f"{nl}{tab}errorcode {_handle_literal(rule.erCode)}"
-                if rule.erLevel:
-                    rule_str += f"{nl}{tab}errorlevel {rule.erLevel}"
+                if rule.erLevel is not None:
+                    rule_str += f"{nl}{tab}errorlevel {_handle_literal(rule.erLevel)}"
                 rules_strs.append(rule_str)
             rules_sep = f";{nl * 2}" if len(rules_strs) > 1 else ""
             rules = rules_sep.join(rules_strs)
@@ -146,10 +146,10 @@ class ASTString(ASTTemplate):
         else:
             for rule in node.rules:
                 rule_str = self.visit(rule)
-                if rule.erCode:
+                if rule.erCode is not None:
                     rule_str += f" errorcode {_handle_literal(rule.erCode)}"
-                if rule.erLevel:
-                    rule_str += f" errorlevel {rule.erLevel}"
+                if rule.erLevel is not None:
+                    rule_str += f" errorlevel {_handle_literal(rule.erLevel)}"
                 rules_strs.append(rule_str)
             rules_sep = "; " if len(rules_strs) > 1 else ""
             rules = rules_sep.join(rules_strs)
@@ -195,7 +195,7 @@ class ASTString(ASTTemplate):
             if node.erCode is not None:
                 lines.append(f"{tab * 3}errorcode  {_handle_literal(node.erCode)}")
             if node.erLevel is not None:
-                lines.append(f"{tab * 3}errorlevel {node.erLevel}")
+                lines.append(f"{tab * 3}errorlevel {_handle_literal(node.erLevel)}")
             return nl.join(lines)
         else:
             vtl_script = ""
@@ -205,7 +205,7 @@ class ASTString(ASTTemplate):
             if node.erCode is not None:
                 vtl_script += f" errorcode {_handle_literal(node.erCode)}"
             if node.erLevel is not None:
-                vtl_script += f" errorlevel {node.erLevel}"
+                vtl_script += f" errorlevel {_handle_literal(node.erLevel)}"
             return vtl_script
 
     def visit_DPRIdentifier(self, node: AST.DPRIdentifier) -> str:

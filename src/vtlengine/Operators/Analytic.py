@@ -127,7 +127,9 @@ class Analytic(Operator.Unary):
                     context="analytic",
                 )
         else:
-            if any(me.data_type is TimeInterval for me in operand.get_measures()):
+            if cls.op != RANK and any(
+                me.data_type is TimeInterval for me in operand.get_measures()
+            ):
                 raise SemanticError(
                     "1-1-19-12",
                     op=cls.op,
@@ -297,13 +299,17 @@ class Analytic(Operator.Unary):
 
         if cls.op == COUNT:
             df[measure_names] = df[measure_names].fillna(-1)
+        conn = duckdb.connect(database=":memory:", read_only=False)
         try:
-            result = duckdb.query(query).to_df()
+            conn.register("df", df)
+            result = conn.execute(query).fetchdf()
         except RuntimeError as e:
             if "Conversion" in e.args[0]:
                 raise RunTimeError("2-3-8", op=cls.op, msg=e.args[0].split(":")[-1])
             else:
                 raise RunTimeError("2-1-1-1", op=cls.op, error=e)
+        finally:
+            conn.close()
         if cls.op == RATIO_TO_REPORT:
             for col_name in measure_names:
                 arr = pa.array(result[col_name])
