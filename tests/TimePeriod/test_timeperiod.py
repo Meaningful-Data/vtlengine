@@ -6,11 +6,20 @@ from pytest import mark
 
 from tests.Helper import _use_duckdb_backend
 from vtlengine.API import create_ast, run
+from vtlengine.API._InternalApi import load_datasets_with_data
 from vtlengine.DataTypes import Date, TimePeriod
+from vtlengine.DataTypes.TimeHandling import (
+    TimeIntervalHandler,
+    TimePeriodHandler,
+    from_input_customer_support_to_internal,
+    generate_period_range,
+    period_to_date,
+)
+from vtlengine.Exceptions import RunTimeError as RT
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Component, Dataset, Role
-from vtlengine.Operators.Time import Time
+from vtlengine.Operators.Time import Time, Year_to_Day
 
 pytestmark = mark.input_path(Path(__file__).parent / "data")
 
@@ -127,3 +136,124 @@ def test_get_time_id_error_reference_id():
 
     with pytest.raises(SemanticError, match="1-1-19-8"):
         Time._get_time_id(dataset)
+
+
+def _run_semantic(script: str, data_structures: dict) -> None:
+    ast = create_ast(script)
+    datasets, scalars, _ = load_datasets_with_data(data_structures, datapoints=None)
+    InterpreterAnalyzer(datasets=datasets, scalars=scalars, only_semantic=True).visit(ast)
+
+
+def test_GH_676_1_1_19_3_invalid_period_indicator():
+    """time_agg with an invalid duration indicator triggers 1-1-19-3."""
+    script = 'DS_r := time_agg("X", DS_1);'
+    structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {
+                        "name": "TIME_PERIOD",
+                        "type": "Time_Period",
+                        "role": "Identifier",
+                        "nullable": False,
+                    },
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    with pytest.raises(SemanticError) as ctx:
+        _run_semantic(script, structures)
+    assert ctx.value.args[1] == "1-1-19-3"
+
+
+def test_GH_676_1_1_19_4_period_to_smaller_than_period_from():
+    """time_agg with period_to <= period_from triggers 1-1-19-4."""
+    script = 'DS_r := time_agg("M", "A", DS_1);'
+    structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {
+                        "name": "TIME_PERIOD",
+                        "type": "Time_Period",
+                        "role": "Identifier",
+                        "nullable": False,
+                    },
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    with pytest.raises(SemanticError) as ctx:
+        _run_semantic(script, structures)
+    assert ctx.value.args[1] == "1-1-19-4"
+
+
+def test_GH_676_2_1_19_2_invalid_period_indicator_runtime():
+    with pytest.raises(RT) as ctx:
+        period_to_date(2024, "X", 1)
+    assert ctx.value.args[1] == "2-1-19-2"
+
+
+def test_GH_676_2_1_19_3_period_indicator_mismatch_runtime():
+    start = TimePeriodHandler("2020A")
+    end = TimePeriodHandler("2020M01")
+    with pytest.raises(RT) as ctx:
+        generate_period_range(start, end)
+    assert ctx.value.args[1] == "2-1-19-3"
+
+
+def test_GH_676_2_1_19_6_invalid_period_format_runtime():
+    """Period string with a too-long second term triggers 2-1-19-6."""
+    with pytest.raises(RT) as ctx:
+        from_input_customer_support_to_internal("2020-XYZWX")
+    assert ctx.value.args[1] == "2-1-19-6"
+
+
+def test_GH_676_2_1_19_7_period_number_out_of_range_runtime():
+    """A monthly period number outside [1, 12] triggers 2-1-19-7."""
+    with pytest.raises(RT) as ctx:
+        TimePeriodHandler("2020M13")
+    assert ctx.value.args[1] == "2-1-19-7"
+
+
+def test_GH_676_2_1_19_10_invalid_year_runtime():
+    """Year out of [0, 9999] triggers 2-1-19-10."""
+    handler = TimePeriodHandler("2020A")
+    with pytest.raises(RT) as ctx:
+        handler.year = 10000
+    assert ctx.value.args[1] == "2-1-19-10"
+
+
+def test_GH_676_2_1_19_9_invalid_day_of_year_runtime():
+    """A daily period number > 365 in a non-leap year triggers 2-1-19-9."""
+    # 2021 is a non-leap year; D366 is past the 365-day range.
+    with pytest.raises(RT) as ctx:
+        TimePeriodHandler("2021D366")
+    assert ctx.value.args[1] == "2-1-19-9"
+
+
+def test_GH_676_2_1_19_4_date1_after_date2_runtime():
+    """set_date1 with a value greater than date2 triggers 2-1-19-4."""
+    interval = TimeIntervalHandler("2020-01-01", "2020-12-31")
+    with pytest.raises(RT) as ctx:
+        interval.set_date1("2021-06-01")
+    assert ctx.value.args[1] == "2-1-19-4"
+
+
+def test_GH_676_2_1_19_5_date2_before_date1_runtime():
+    """set_date2 with a value lower than date1 triggers 2-1-19-5."""
+    interval = TimeIntervalHandler("2020-01-01", "2020-12-31")
+    with pytest.raises(RT) as ctx:
+        interval.set_date2("2019-06-01")
+    assert ctx.value.args[1] == "2-1-19-5"
+
+
+def test_GH_676_2_1_19_22_invalid_duration_format_runtime():
+    """year_to_day with a malformed duration string triggers 2-1-19-22."""
+    with pytest.raises(RT) as ctx:
+        Year_to_Day.py_op("not-a-duration")
+    assert ctx.value.args[1] == "2-1-19-22"

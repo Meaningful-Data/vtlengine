@@ -7,6 +7,7 @@ import pandas as pd
 import pytest
 
 from vtlengine import run
+from vtlengine.Exceptions import InputValidationException
 
 SCRIPT = """
     DS_r <- DS_1;
@@ -83,3 +84,15 @@ def test_representation_pandas_duckdb_match(representation: str) -> None:
 
 def test_sdmx_gregorian_pandas_duckdb_match() -> None:
     _run_and_compare(AMD_ONLY_DF, "sdmx_gregorian")
+
+
+def test_GH_676_0_1_1_15_invalid_representation() -> None:
+    """Invalid time_period_output_format value triggers 0-1-1-15."""
+    with pytest.raises(InputValidationException) as ctx:
+        run(
+            script=SCRIPT,
+            data_structures=DATA_STRUCTURES,
+            datapoints={"DS_1": AMD_ONLY_DF.copy()},
+            time_period_output_format="not_a_valid_format",
+        )
+    assert ctx.value.args[1] == "0-1-1-15"

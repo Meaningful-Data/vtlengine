@@ -5,6 +5,7 @@ import pytest
 from tests.Helper import TestHelper, _use_duckdb_backend
 from vtlengine import semantic_analysis
 from vtlengine.API import create_ast
+from vtlengine.API._InternalApi import load_datasets_with_data
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Dataset, Scalar
@@ -2950,3 +2951,85 @@ def test_bug_411():
 
     with pytest.raises(SemanticError, match="1-1-1-10"):
         semantic_analysis(script=script, data_structures=data_structures)
+
+
+def test_GH_676_2_3_6_dataset_not_in_inputs():
+    script = "DS_r := DS_unknown;"
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    with pytest.raises(SemanticError) as ctx:
+        semantic_analysis(script=script, data_structures=data_structures)
+    assert ctx.value.args[1] == "2-3-6"
+
+
+def test_GH_676_2_3_10_value_domains_none():
+    script = "DS_r := DS_1[filter Me_1 in undefined_vd];"
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "String", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    datasets, scalars, _ = load_datasets_with_data(data_structures, datapoints=None)
+    ast = create_ast(script)
+    interpreter = InterpreterAnalyzer(
+        datasets=datasets, scalars=scalars, value_domains=None, only_semantic=True
+    )
+    with pytest.raises(SemanticError) as ctx:
+        interpreter.visit(ast)
+    assert ctx.value.args[1] == "2-3-10"
+
+
+def test_GH_676_2_3_11_exists_in_non_dataset():
+    script = "DS_r := exists_in(1, DS_1);"
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    with pytest.raises(SemanticError) as ctx:
+        semantic_analysis(script=script, data_structures=data_structures)
+    assert ctx.value.args[1] == "2-3-11"
+
+
+def test_GH_676_1_2_8_value_domain_not_defined():
+    script = "DS_r := DS_1[filter Me_1 in undefined_vd];"
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "String", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    datasets, scalars, _ = load_datasets_with_data(data_structures, datapoints=None)
+    ast = create_ast(script)
+    interpreter = InterpreterAnalyzer(
+        datasets=datasets, scalars=scalars, value_domains={}, only_semantic=True
+    )
+    with pytest.raises(SemanticError) as ctx:
+        interpreter.visit(ast)
+    assert ctx.value.args[1] == "1-2-8"
