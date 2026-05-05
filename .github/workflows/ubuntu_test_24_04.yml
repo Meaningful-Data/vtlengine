@@ -4,7 +4,7 @@ on:
   push:
     branches: [ "main", "duckdb/main", "dev" ]
   pull_request:
-    branches: [ "main", "dev" ]
+    branches: [ "main", "duckdb/main", "dev" ]
 
 permissions:
   contents: read
