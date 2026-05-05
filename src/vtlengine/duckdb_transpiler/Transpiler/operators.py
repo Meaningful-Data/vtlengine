@@ -107,7 +107,7 @@ class OperatorRegistry:
         """Check if any operator variant is registered for this token."""
         return any(tok == vtl_token for tok, _ in self._operators)
 
-    def sql(self, vtl_token: str, *operands: str, data_type: Optional[type] = None) -> str:
+    def sql(self, vtl_token: str, *operands: Any, data_type: Optional[type] = None) -> str:
         """Generate SQL, resolving by type override → arity → fallback.
 
         For unregistered operators, falls back to ``TOKEN(operands)`` style.
