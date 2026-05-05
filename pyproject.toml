@@ -62,7 +62,6 @@ dev = [
     "pytest-cov>=7.0.0,<8.0",
     "coverage>=7.0,!=7.13.0,<8.0",
     "pytest-xdist>=3.8.0,<4.0",
-    "line-profiler-pycharm>=1.2.0,<2.0",
     "mypy>=1.18,<2.0",
     "pandas-stubs>=2.2.2,<3.0",
     "pyarrow-stubs>=19.0,<21.0",
