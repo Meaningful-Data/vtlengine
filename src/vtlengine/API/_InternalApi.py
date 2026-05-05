@@ -47,6 +47,7 @@ from vtlengine.Model import (
     Scalar,
     ValueDomain,
 )
+from vtlengine.Model._case_insensitive_dict import CaseInsensitiveDict
 
 # Cache SCALAR_TYPES keys for performance
 _SCALAR_TYPE_KEYS = SCALAR_TYPES.keys()
@@ -94,8 +95,8 @@ def _load_dataset_from_structure(
     """
     Loads a dataset with the structure given.
     """
-    datasets = {}
-    scalars = {}
+    datasets: CaseInsensitiveDict[Any] = CaseInsensitiveDict()
+    scalars: CaseInsensitiveDict[Any] = CaseInsensitiveDict()
 
     if "datasets" in structures:
         for dataset_json in structures["datasets"]:
@@ -417,12 +418,12 @@ def load_datasets(
     if isinstance(data_structure, dict):
         return _load_datastructure_single(data_structure, sdmx_mappings=sdmx_mappings)
     if isinstance(data_structure, list):
-        ds_structures: Dict[str, Dataset] = {}
-        scalar_structures: Dict[str, Scalar] = {}
+        ds_structures: CaseInsensitiveDict[Dataset] = CaseInsensitiveDict()
+        scalar_structures: CaseInsensitiveDict[Scalar] = CaseInsensitiveDict()
         for x in data_structure:
             ds, sc = _load_datastructure_single(x, sdmx_mappings=sdmx_mappings)
-            ds_structures = {**ds_structures, **ds}  # Overwrite ds_structures dict.
-            scalar_structures = {**scalar_structures, **sc}  # Overwrite scalar_structures dict.
+            ds_structures.update(ds)
+            scalar_structures.update(sc)
         return ds_structures, scalar_structures
     return _load_datastructure_single(data_structure, sdmx_mappings=sdmx_mappings)
 
