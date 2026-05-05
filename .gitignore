@@ -190,3 +190,6 @@ docs/plans/
 # Claude Code settings
 .claude/*
 !.claude/CLAUDE.md
+
+# Third-party files that we want to ignore
+third_party/*
