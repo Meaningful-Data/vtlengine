@@ -119,14 +119,18 @@ def _load_dataset_from_structure(
                     # Support both 'type' and 'data_type' for backward compatibility
                     _, scalar_type = _extract_data_type(component)
                     if component["role"] == "ViralAttribute":
-                        component["role"] = "Attribute"
+                        component["role"] = "Viral Attribute"
 
                     check_key("role", Role_keys, component["role"])
 
                     if "nullable" not in component:
                         if Role(component["role"]) == Role.IDENTIFIER:
                             component["nullable"] = False
-                        elif Role(component["role"]) in (Role.MEASURE, Role.ATTRIBUTE):
+                        elif Role(component["role"]) in (
+                            Role.MEASURE,
+                            Role.ATTRIBUTE,
+                            Role.VIRAL_ATTRIBUTE,
+                        ):
                             component["nullable"] = True
                         else:
                             component["nullable"] = False
@@ -142,6 +146,8 @@ def _load_dataset_from_structure(
                 for component in dataset_json["DataStructure"]:
                     # Support both 'type' and 'data_type' for backward compatibility
                     _, scalar_type = _extract_data_type(component)
+                    if component["role"] == "ViralAttribute":
+                        component["role"] = "Viral Attribute"
                     check_key("role", Role_keys, component["role"])
                     components[component["name"]] = VTL_Component(
                         name=component["name"],
