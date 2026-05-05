@@ -50,7 +50,7 @@ jobs:
             sdmxschemas==1.0.0 \
             parsy==2.2 \
             msgspec==0.19.0 \
-            duckdb==1.1 \
+            duckdb==1.4.1 \
             pysdmx==1.9.0
 
       - name: Download ANTLR4 C++ runtime
@@ -66,5 +66,12 @@ jobs:
       - name: Install C++ parser
         run: pip install --break-system-packages --no-deps .cpp-wheel/*.whl
 
-      - name: Run tests
+      - name: Run tests (pandas backend)
+        env:
+          VTL_ENGINE_BACKEND: pandas
+        run: pytest --verbose --tb=short --strict-markers --strict-config --durations=10
+
+      - name: Run tests (duckdb backend)
+        env:
+          VTL_ENGINE_BACKEND: duckdb
         run: pytest --verbose --tb=short --strict-markers --strict-config --durations=10
