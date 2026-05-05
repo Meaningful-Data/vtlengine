@@ -23,13 +23,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+      - name: Install poetry
+        run: pipx install poetry
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
           cache: poetry
-      - name: Install poetry
-        run: pipx install poetry
       - name: Cache C++ parser wheel
         uses: actions/cache@v4
         id: cpp-cache
