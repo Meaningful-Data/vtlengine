@@ -127,8 +127,8 @@ TEMP_DIRECTORY: str = os.getenv("VTL_TEMP_DIRECTORY", tempfile.gettempdir())
 # Max temp directory size for spill-to-disk (empty = use available disk space)
 MAX_TEMP_DIRECTORY_SIZE: str = os.getenv("VTL_MAX_TEMP_DIRECTORY_SIZE", "")
 
-# Storage backend: True → :memory:, False → on-disk session DB inside session_dir
-USE_IN_MEMORY_DB: bool = os.getenv("VTL_USE_IN_MEMORY_DB", "1").lower() in ("1", "true", "yes")
+# Storage backend = True: :memory:, False: on-disk session DB inside session_dir
+USE_IN_MEMORY_DB: bool = os.getenv("VTL_USE_IN_MEMORY_DB", "1").lower() in ("1", "true")
 
 
 def get_memory_limit_bytes() -> int:
