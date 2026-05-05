@@ -13,17 +13,6 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-// macOS framework Python's Python.h transitively includes Token.h, which
-// defines macros (PLUS, MINUS, etc.) that clobber identically-named
-// ANTLR-generated TerminalNode getter methods on VtlParser. Undefine the
-// ones VTL grammar uses before including the ANTLR headers.
-#undef COLON
-#undef COMMA
-#undef MINUS
-#undef NUMBER
-#undef PLUS
-#undef STRING
-
 #include "antlr4-runtime.h"
 #include "VtlLexer.h"
 #include "VtlParser.h"

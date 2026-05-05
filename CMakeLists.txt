@@ -77,10 +77,20 @@ if(NOT VTLENGINE_BUILD_ANTLR4_PREBUILT)
         ${VTL_PARSER_SOURCES}
     )
 
-    # ANTLR4 includes are propagated via the antlr4_runtime target's
-    # INTERFACE_INCLUDE_DIRECTORIES (PUBLIC for the from-source build, set
-    # explicitly on the imported target for the prebuilt build).
-    target_include_directories(vtl_cpp_parser PRIVATE "${VTL_PARSER_DIR}")
+    # The ANTLR4 include path must be searched BEFORE pybind11/Python
+    # system includes; otherwise on macOS framework Python the compiler
+    # finds Python's Token.h (which contains conflicting macros) before
+    # ANTLR's own Token.h. Adding the path with BEFORE PRIVATE puts it
+    # at the front of the include search, regardless of whether
+    # antlr4_runtime exposes its includes as -I or -isystem.
+    if(VTLENGINE_USE_PREBUILT_ANTLR4)
+        set(_VTLENGINE_ANTLR4_INCLUDE "${VTLENGINE_ANTLR4_PREFIX}/include")
+    else()
+        set(_VTLENGINE_ANTLR4_INCLUDE "${ANTLR4_SRC_DIR}")
+    endif()
+    target_include_directories(vtl_cpp_parser BEFORE PRIVATE
+        "${_VTLENGINE_ANTLR4_INCLUDE}"
+        "${VTL_PARSER_DIR}")
 
     target_link_libraries(vtl_cpp_parser PRIVATE antlr4_runtime)
 
