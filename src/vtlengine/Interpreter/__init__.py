@@ -102,6 +102,12 @@ from vtlengine.Utils import (
     UNARY_MAPPING,
 )
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.ViralPropagation import (
+    ViralPropagationRegistry,
+    ViralPropagationRule,
+    get_current_registry,
+    set_current_registry,
+)
 
 
 # noinspection PyTypeChecker
@@ -231,6 +237,9 @@ class InterpreterAnalyzer(ASTTemplate):
     # **********************************
 
     def visit_Start(self, node: AST.Start) -> Any:
+        # Initialize fresh viral propagation registry for this run
+        set_current_registry(ViralPropagationRegistry())
+
         statement_num = 1
         if self.only_semantic:
             Operators.only_semantic = True
@@ -245,7 +254,8 @@ class InterpreterAnalyzer(ASTTemplate):
                 vtlengine.Exceptions.dataset_output = child.left.value  # type: ignore[attr-defined]
                 self._load_datapoints_efficient(statement_num)
             if not isinstance(
-                child, (AST.HRuleset, AST.DPRuleset, AST.Operator)
+                child,
+                (AST.HRuleset, AST.DPRuleset, AST.Operator, AST.ViralPropagationDef),
             ) and not isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
                 raise SemanticError("1-2-5")
             result = self.visit(child)
@@ -411,6 +421,43 @@ class InterpreterAnalyzer(ASTTemplate):
         }
 
         self.hrs[node.name] = ruleset_data
+
+    def visit_ViralPropagationDef(self, node: AST.ViralPropagationDef) -> None:
+        """Validate and store the viral propagation definition in the registry."""
+        registry = get_current_registry()
+
+        # Validate: cannot mix enumerated and aggregate clauses
+        if node.enumerated_clauses and node.aggregate_clause:
+            raise SemanticError("1-3-3-3", name=node.name)
+
+        # Validate: no duplicate enumeration combinations
+        seen_values: Set[frozenset[str]] = set()
+        for clause in node.enumerated_clauses:
+            key = frozenset(clause.values)
+            if key in seen_values:
+                raise SemanticError("1-3-3-4", values=clause.values, name=node.name)
+            seen_values.add(key)
+
+        # Validate: no duplicate rules for the same target
+        existing = registry.get_rule_for_variable(node.target)
+        if existing is not None and node.signature_type == existing.signature_type:
+            code = "1-3-3-1" if node.signature_type == "variable" else "1-3-3-2"
+            raise SemanticError(code, name=node.target)
+
+        enumerated_clauses = [
+            {"values": clause.values, "result": clause.result} for clause in node.enumerated_clauses
+        ]
+        aggregate_function = node.aggregate_clause.function if node.aggregate_clause else None
+
+        rule = ViralPropagationRule(
+            name=node.name,
+            signature_type=node.signature_type,
+            target=node.target,
+            enumerated_clauses=enumerated_clauses,
+            aggregate_function=aggregate_function,
+            default_value=node.default_value,
+        )
+        registry.register(rule)
 
     # Execution Language
     def visit_Assignment(self, node: AST.Assignment) -> Any:
@@ -1263,7 +1310,8 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.aggregation_dataset.components = {
                     comp_name: deepcopy(comp)
                     for comp_name, comp in self.aggregation_dataset.components.items()
-                    if comp_name in self.aggregation_grouping or comp.role == Role.MEASURE
+                    if comp_name in self.aggregation_grouping
+                    or comp.role in [Role.MEASURE, Role.VIRAL_ATTRIBUTE]
                 }
 
                 self.aggregation_dataset.data = (
