@@ -2,9 +2,9 @@ name: Ubuntu 24.04 Tests
 
 on:
   push:
-    branches: [ "main", "duckdb/main", "dev" ]
+    branches: [ "main", "dev" ]
   pull_request:
-    branches: [ "main", "duckdb/main", "dev" ]
+    branches: [ "main", "dev" ]
 
 permissions:
   contents: read
@@ -38,7 +38,6 @@ jobs:
             python3-networkx \
             python3-sqlglot \
             python3-pytest \
-            python3-psutil \
             cmake \
             g++ \
             pybind11-dev
@@ -50,7 +49,7 @@ jobs:
             sdmxschemas==1.0.0 \
             parsy==2.2 \
             msgspec==0.19.0 \
-            duckdb==1.4.1 \
+            duckdb==1.1 \
             pysdmx==1.9.0
 
       - name: Download ANTLR4 C++ runtime

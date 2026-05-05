@@ -2,9 +2,9 @@ name: Testing
 
 on:
   push:
-    branches: [ "main", "duckdb/main", "dev" ]
+    branches: [ "main", "dev" ]
   pull_request:
-    branches: [ "main", "duckdb/main", "dev" ]
+    branches: [ "main", "dev" ]
   workflow_dispatch:
 
 permissions:
@@ -23,6 +23,8 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v6
+    - name: Install poetry
+      run: pipx install poetry
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v6
       with:
@@ -51,13 +53,7 @@ jobs:
       run: poetry run ruff check --output-format=github
     - name: Run type checks
       run: poetry run mypy --show-error-codes --pretty
-    - name: Run tests with pandas backend
-      env:
-        VTL_ENGINE_BACKEND: pandas
-      run: poetry run pytest -n auto --verbose --tb=short --durations=10
-    - name: Run tests with duckdb backend
-      env:
-        VTL_ENGINE_BACKEND: duckdb
+    - name: Run tests
       run: poetry run pytest --cov=vtlengine -n auto --verbose --tb=short --strict-markers --strict-config --durations=10
     - name: Check coverage
-      run: poetry run coverage report --fail-under=85
+      run: poetry run coverage report --fail-under=90
