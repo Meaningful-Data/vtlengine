@@ -2,9 +2,9 @@ name: Ubuntu 24.04 Tests
 
 on:
   push:
-    branches: [ "main", "duckdb/main", "dev" ]
+    branches: ["main", "duckdb/main", "dev"]
   pull_request:
-    branches: [ "main", "duckdb/main", "dev" ]
+    branches: ["main", "duckdb/main", "dev"]
 
 permissions:
   contents: read
@@ -68,9 +68,10 @@ jobs:
         if: steps.cpp-cache.outputs.cache-hit != 'true' && steps.antlr4-cache.outputs.cache-hit != 'true'
         run: |
           cmake -S . -B build/antlr4-build \
+            -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DVTLENGINE_BUILD_ANTLR4_PREBUILT=ON
-          cmake --build build/antlr4-build --target antlr4_runtime --config Release -j
+          cmake --build build/antlr4-build --target antlr4_runtime --config Release
           cmake --install build/antlr4-build --prefix "$PWD/build/antlr4-prefix" --config Release
 
       - name: Build C++ parser wheel
