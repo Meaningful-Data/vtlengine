@@ -37,6 +37,7 @@ jobs:
             python3-jsonschema \
             python3-networkx \
             python3-sqlglot \
+            python3-psutil \
             python3-pytest \
             cmake \
             g++ \
