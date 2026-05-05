@@ -127,6 +127,9 @@ TEMP_DIRECTORY: str = os.getenv("VTL_TEMP_DIRECTORY", tempfile.gettempdir())
 # Max temp directory size for spill-to-disk (empty = use available disk space)
 MAX_TEMP_DIRECTORY_SIZE: str = os.getenv("VTL_MAX_TEMP_DIRECTORY_SIZE", "")
 
+# Storage backend: True → :memory:, False → on-disk session DB inside session_dir
+USE_IN_MEMORY_DB: bool = os.getenv("VTL_USE_IN_MEMORY_DB", "1").lower() in ("1", "true", "yes")
+
 
 def get_memory_limit_bytes() -> int:
     """
@@ -221,6 +224,9 @@ def configured_connection(database: str = ":memory:") -> Iterator[duckdb.DuckDBP
     Path(TEMP_DIRECTORY).mkdir(parents=True, exist_ok=True)
     session_dir = Path(TEMP_DIRECTORY) / f"duckdb_tmp_{uuid.uuid4().hex}"
     session_dir.mkdir(exist_ok=True)
+
+    if database == ":memory:" and not USE_IN_MEMORY_DB:
+        database = str(session_dir / "session.duckdb")
 
     conn = create_configured_connection(database)
     conn.execute(f"SET temp_directory = '{session_dir}'")
