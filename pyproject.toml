@@ -136,18 +136,19 @@ wheel.exclude = ["vtlengine/AST/Grammar/_cpp_parser/*.cpp", "vtlengine/AST/Gramm
 
 [tool.cibuildwheel]
 build = "cp39-* cp310-* cp311-* cp312-* cp313-* cp314-*"
-skip = "*-musllinux_*"
 test-requires = ["pytest"]
-test-command = "pytest {project}/tests -x -q --tb=short -k 'test_1' --strict-markers"
+# Smoke test: run the API-level test suite (fast, broad coverage, hits the C++ parser end-to-end)
+test-command = "pytest {project}/tests/API -x --tb=short --strict-markers"
+manylinux-x86_64-image = "manylinux_2_28"
+manylinux-aarch64-image = "manylinux_2_28"
+musllinux-x86_64-image = "musllinux_1_2"
+musllinux-aarch64-image = "musllinux_1_2"
 
 [tool.cibuildwheel.linux]
-archs = ["x86_64", "aarch64"]
 before-build = "bash {project}/scripts/setup_antlr4_runtime.sh"
 
 [tool.cibuildwheel.macos]
-archs = ["x86_64", "arm64"]
 before-build = "bash {project}/scripts/setup_antlr4_runtime.sh"
 
 [tool.cibuildwheel.windows]
-archs = ["AMD64"]
 before-build = "bash {project}/scripts/setup_antlr4_runtime.sh"
