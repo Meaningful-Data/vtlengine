@@ -20,11 +20,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { runner: ubuntu-24.04,        arch: x86_64 }
+          - { runner: ubuntu-latest,       arch: x86_64 }
           - { runner: ubuntu-24.04-arm,    arch: aarch64 }
-          - { runner: macos-13,            arch: x86_64 }
-          - { runner: macos-14,            arch: arm64 }
-          - { runner: windows-2022,        arch: AMD64 }
+          - { runner: macos-latest-large,  arch: x86_64 }
+          - { runner: macos-latest,        arch: arm64 }
+          - { runner: windows-latest,      arch: AMD64 }
           - { runner: windows-11-arm,      arch: ARM64 }
 
     steps:
@@ -46,7 +46,7 @@ jobs:
     name: Publish to PyPI
     needs: [build-wheels]
     if: github.event_name == 'release' || github.event_name == 'repository_dispatch'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     environment: pypi
     permissions:
       id-token: write
