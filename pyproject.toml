@@ -141,13 +141,13 @@ wheel.exclude = [
 
 [tool.cibuildwheel]
 build = "cp39-* cp310-* cp311-* cp312-* cp313-* cp314-*"
+# Skip musllinux: duckdb 1.4.x ships no musllinux wheels, so vtlengine cannot resolve deps there.
+skip = "*-musllinux*"
 test-requires = ["pytest"]
 # Smoke test: run the API-level test suite (fast, broad coverage, hits the C++ parser end-to-end)
 test-command = "pytest {project}/tests/API -x --tb=short --strict-markers"
 manylinux-x86_64-image = "manylinux_2_28"
 manylinux-aarch64-image = "manylinux_2_28"
-musllinux-x86_64-image = "musllinux_1_2"
-musllinux-aarch64-image = "musllinux_1_2"
 
 [tool.cibuildwheel.linux]
 before-build = "bash {project}/scripts/setup_antlr4_runtime.sh"
