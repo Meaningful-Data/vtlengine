@@ -297,9 +297,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         for i, rule in enumerate(rules):
             rule.name = str(i + 1)
 
-    def _resolve_clause_dataset(
-        self, node: AST.RegularAggregation
-    ) -> Optional[Tuple[Dataset, str]]:
+    def _resolve_clause_dataset(self, node: AST.RegularAggregation) -> Any:
         """Resolve and return (dataset, table_src) for a clause node."""
         if not node.dataset:
             return None
@@ -520,7 +518,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     def _apply_measures(
         self,
-        ds_node: AST.AST,
+        ds_node: Optional[AST.AST],
         expr_fn: "Callable[[str], str]",
         output_name_override: Optional[str] = None,
         cast_bool_to_str: bool = False,
@@ -909,7 +907,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if operand_type == _DATASET or ds is not None:
             src = self._get_dataset_sql(node.operand)
 
-            time_id = None
+            time_id = ""
             for comp in ds.components.values():
                 if comp.data_type == TimePeriod and comp.role == Role.IDENTIFIER:
                     time_id = comp.name
@@ -962,7 +960,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 result.append(self.visit(p))
         return result
 
-    def _resolve_time_identifier(self, ds: Dataset, op_name: str) -> Tuple[str, type]:
+    def _resolve_time_identifier(self, ds: Dataset, op_name: str) -> Any:
         """Return the time identifier name and type for time-based operators."""
         for comp in ds.components.values():
             if comp.data_type in (TimePeriod, Date) and comp.role == Role.IDENTIFIER:
@@ -972,7 +970,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         self,
         ds: Dataset,
         time_id: str,
-    ) -> Tuple[List[str], List[str], str, str, str, str]:
+    ) -> Tuple[str, List[str], List[str], str, str, str]:
         """Build common JOIN/select fragments for fill-time-series queries."""
         time_col = quote_name(time_id)
         other_id_cols = [quote_name(c.name) for c in ds.get_identifiers() if c.name != time_id]
@@ -1293,7 +1291,7 @@ FROM {src}, (
                 return f"vtl_tp_dateadd(vtl_period_parse({operand_sql}), {shift_sql}, {period_sql})"
             return f"vtl_dateadd({operand_sql}, {shift_sql}, {period_sql})"
 
-    def _get_source_vtl_type(self, node: "AST.AST") -> Optional[str]:
+    def _get_source_vtl_type(self, node: "AST.AST") -> Any:
         """Return the VTL type name produced by an AST node when known."""
         if isinstance(node, AST.Constant):
             if isinstance(node.value, bool):
@@ -2497,7 +2495,7 @@ FROM {src}, (
     ) -> str:
         """Build SQL for a single datapoint rule."""
         rule_node = rule.rule
-        has_when = isinstance(rule_node, AST.HRBinOp) and rule_node.op == tokens.WHEN
+        has_when = isinstance(rule_node, AST.HRBinOp) and rule_node.op == tokens.WHEN  # type: ignore[redundant-expr]
         then_node = rule_node.right if has_when else rule_node
 
         with self._stash_dp_signature(signature):
@@ -2766,8 +2764,8 @@ FROM {src}, (
             right_sql = self._build_hr_expr_sql(node.right, mode)
             return f"({left_sql} {node.op} {right_sql})"
         # HRUnOp
-        operand_sql = self._build_hr_expr_sql(node.operand, mode)
-        return f"({node.op}{operand_sql})"
+        operand_sql = self._build_hr_expr_sql(node.operand, mode)  # type: ignore[attr-defined]
+        return f"({node.op}{operand_sql})"  # type: ignore[attr-defined]
 
     def _build_check_hr_rule_select(
         self,
@@ -3330,9 +3328,9 @@ FROM {src}, (
         # Map SQL table names to actual DuckDB table names.
         for table_name in routine.dataset_names:
             for operand in node.operands:
-                short_name = operand.value.rsplit(".", 1)[-1]
+                short_name = operand.value.rsplit(".", 1)[-1]  # type: ignore[attr-defined]
                 if short_name == table_name:
-                    op_name = quote_name(operand.value)
+                    op_name = quote_name(operand.value)  # type: ignore[attr-defined]
                     query = re.sub(rf"\b{re.escape(table_name)}\b", op_name, query)
                     break
 

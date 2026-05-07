@@ -12,19 +12,53 @@ permissions:
   contents: read
 
 jobs:
-  release:
-    runs-on: ubuntu-latest
+  build-wheels:
+    name: Build wheels (${{ matrix.runner }} / ${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { runner: ubuntu-24.04,        arch: x86_64 }
+          - { runner: ubuntu-24.04-arm,    arch: aarch64 }
+          - { runner: macos-13,            arch: x86_64 }
+          - { runner: macos-14,            arch: arm64 }
+          - { runner: windows-2022,        arch: AMD64 }
+          - { runner: windows-11-arm,      arch: ARM64 }
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
-      - name: Install poetry
-        run: pipx install poetry
-      - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@d16cc544083d96996f923fc4b318fee3cb14b34e # v3.4.1
+        env:
+          CIBW_ARCHS: ${{ matrix.arch }}
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          python-version: "3.x"
-      - name: Build package
-        run: poetry build
+          name: wheels-${{ matrix.runner }}-${{ matrix.arch }}
+          path: wheelhouse/*.whl
+
+  publish:
+    name: Publish to PyPI
+    needs: [build-wheels]
+    if: github.event_name == 'release' || github.event_name == 'repository_dispatch'
+    runs-on: ubuntu-24.04
+    environment: pypi
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          path: dist
+          merge-multiple: true
+
       - name: Publish to PyPI
-        run: poetry publish --username=__token__ --password=${{ secrets.PYPI_TOKEN }}
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
+        with:
+          attestations: true

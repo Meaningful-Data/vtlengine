@@ -2,9 +2,9 @@ name: Ubuntu 24.04 Tests
 
 on:
   push:
-    branches: [ "main", "duckdb/main", "dev" ]
+    branches: ["main", "duckdb/main", "dev"]
   pull_request:
-    branches: [ "main", "duckdb/main", "dev" ]
+    branches: ["main", "duckdb/main", "dev"]
 
 permissions:
   contents: read
@@ -17,11 +17,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
+      - name: Cache ANTLR4 runtime prebuilt
+        uses: actions/cache@v4
+        id: antlr4-cache
+        with:
+          path: build/antlr4-prefix
+          key: antlr4-runtime-ubuntu2404-py3.12-${{ hashFiles('scripts/setup_antlr4_runtime.sh', 'CMakeLists.txt') }}
+
+      - name: Cache C++ parser wheel
+        uses: actions/cache@v4
+        id: cpp-cache
+        with:
+          path: .cpp-wheel
+          key: cpp-parser-ubuntu2404-py3.12-${{ hashFiles('src/vtlengine/AST/Grammar/_cpp_parser/**', 'CMakeLists.txt', 'pyproject.toml') }}
+
       - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            python3-antlr4 \
             python3-pip \
             python3-httpx \
             python3-pandas \
@@ -31,8 +44,11 @@ jobs:
             python3-jsonschema \
             python3-networkx \
             python3-sqlglot \
+            python3-psutil \
             python3-pytest \
-            python3-psutil
+            cmake \
+            g++ \
+            pybind11-dev
 
       - name: Install pip-only dependencies
         run: |
@@ -44,18 +60,31 @@ jobs:
             duckdb==1.4.1 \
             pysdmx==1.9.0
 
-      - name: Install Poetry
-        run: |
-          pip install poetry
-          poetry config virtualenvs.create false
+      - name: Download ANTLR4 C++ runtime source
+        if: steps.cpp-cache.outputs.cache-hit != 'true' && steps.antlr4-cache.outputs.cache-hit != 'true'
+        run: bash scripts/setup_antlr4_runtime.sh
 
-      - name: Build wheel
+      - name: Build ANTLR4 runtime
+        if: steps.cpp-cache.outputs.cache-hit != 'true' && steps.antlr4-cache.outputs.cache-hit != 'true'
         run: |
-          poetry build -f wheel -o .
+          cmake -S . -B build/antlr4-build \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DVTLENGINE_BUILD_ANTLR4_PREBUILT=ON
+          cmake --build build/antlr4-build --target antlr4_runtime --config Release
+          cmake --install build/antlr4-build --prefix "$PWD/build/antlr4-prefix" --config Release
 
-      - name: Install built package
+      - name: Build C++ parser wheel
+        if: steps.cpp-cache.outputs.cache-hit != 'true'
         run: |
-          pip install "./vtlengine-$(poetry version -s)-py3-none-any.whl" --no-dependencies --break-system-packages
+          pip wheel . -w .cpp-wheel --no-deps -v \
+            -C cmake.define.VTLENGINE_USE_PREBUILT_ANTLR4=ON \
+            -C "cmake.define.VTLENGINE_ANTLR4_PREFIX=$PWD/build/antlr4-prefix"
+        env:
+          PIP_BREAK_SYSTEM_PACKAGES: "1"
+
+      - name: Install C++ parser
+        run: pip install --break-system-packages --no-deps .cpp-wheel/*.whl
 
       - name: Run tests (pandas backend)
         env:

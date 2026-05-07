@@ -9,7 +9,7 @@ This module consolidates all SDMX-related file operations including:
 """
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Union, cast
+from typing import Any, Dict, List, Optional, Union
 
 import pandas as pd
 from pysdmx.io import get_datasets as sdmx_get_datasets
@@ -100,7 +100,7 @@ def extract_sdmx_dataset_name(
         return explicit_name
 
     try:
-        pandas_datasets = cast(Sequence[PandasDataset], sdmx_get_datasets(data=file_path))
+        pandas_datasets = sdmx_get_datasets(data=file_path)
     except Exception as e:
         raise DataLoadError(
             code="0-3-1-8",
@@ -143,7 +143,7 @@ def load_sdmx_datapoints(
         InputValidationException: If required identifiers are missing.
     """
     try:
-        pandas_datasets = cast(Sequence[PandasDataset], sdmx_get_datasets(data=file_path))
+        pandas_datasets = sdmx_get_datasets(data=file_path)
     except Exception as e:
         raise DataLoadError(
             "0-3-1-8",

@@ -1,27 +1,38 @@
-from antlr4 import CommonTokenStream, InputStream
-from antlr4.Token import CommonToken
+from typing import Any, Dict
 
 from vtlengine.API import create_ast
 from vtlengine.AST import Comment, Start
-from vtlengine.AST.ASTConstructorModules import extract_token_info
-from vtlengine.AST.Grammar.lexer import Lexer
+from vtlengine.AST.Grammar._cpp_parser import vtl_cpp_parser
 
 
-def generate_ast_comment(token: CommonToken) -> Comment:
+def generate_ast_comment(comment: Dict[str, Any]) -> Comment:
     """
-    Parses a token belonging to a comment and returns a Comment AST object.
+    Parses a comment dict from the C++ parser and returns a Comment AST object.
 
     Args:
-        token (str): The comment string to parse.
+        comment: A dict with keys: type, text, line, column.
 
     Returns:
         Comment: A Comment AST object.
     """
-    token_info = extract_token_info(token)
-    text = token.text
-    if token.type == Lexer.SL_COMMENT:
-        # Usage rstrip("\r\n") instead of [:-1] since SL_COMMENT no longer includes trailing newline
-        text = token.text.rstrip("\r\n")
+    text = comment["text"]
+    line = comment["line"]
+    column = comment["column"]
+    token_type = comment["type"]
+
+    line_stop = line
+    if token_type == vtl_cpp_parser.ML_COMMENT:
+        line_stop = line + text.count("\n")
+    else:
+        # SL_COMMENT
+        text = text.rstrip("\r\n")
+
+    token_info = {
+        "column_start": column,
+        "column_stop": column + len(text),
+        "line_start": line,
+        "line_stop": line_stop,
+    }
     return Comment(value=text, **token_info)
 
 
@@ -35,34 +46,24 @@ def create_ast_with_comments(text: str) -> Start:
     Returns:
         AST: The generated AST with comments.
     """
+    # Parse with C++ parser (this also collects comments)
+    text_with_newline = text + "\n"
+    vtl_cpp_parser.parse(text_with_newline)
 
-    # Reading the script on channel 2 to get the comments
-    # Adding \n at the end to ensure single line comments at the end of the script are captured
-    lexer_ = Lexer(InputStream(text + "\n"))
-    stream = CommonTokenStream(lexer_, channel=2)
+    # Get comments from the last parse
+    comment_tokens = vtl_cpp_parser.get_comments()
 
-    # Fill the stream with tokens on the buffer
-    stream.fill()
+    comments = [generate_ast_comment(c) for c in comment_tokens]
 
-    # Extract comments from the stream
-    comments = [generate_ast_comment(token) for token in stream.tokens if token.channel == 2]
-
-    EOF = -1
-    only_comments = all(
-        token.type in (EOF, Lexer.WS, Lexer.EOL, Lexer.ML_COMMENT, Lexer.SL_COMMENT)
-        for token in stream.tokens
-    )
-
-    if not only_comments or not stream.tokens:
-        # Call the create_ast function to generate the AST from channel 0
+    # Try to parse: if no statements, it's only comments
+    try:
         ast = create_ast(text)
-    else:
-        # If there are only comments or empty lines, create an empty AST
+        if not ast.children:
+            ast = Start(line_start=1, line_stop=1, column_start=0, column_stop=0, children=[])
+    except Exception:
         ast = Start(line_start=1, line_stop=1, column_start=0, column_stop=0, children=[])
 
     ast.children.extend(comments)
-
-    # Sort the ast children based on their start line and column
     ast.children.sort(key=lambda x: (x.line_start, x.column_start))
 
     return ast

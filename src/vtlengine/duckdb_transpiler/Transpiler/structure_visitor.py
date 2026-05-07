@@ -258,7 +258,7 @@ class StructureVisitor(ASTTemplate):
 
     # Output dataset resolution
 
-    def _get_output_dataset(self) -> Optional[Dataset]:
+    def _get_output_dataset(self) -> Any:
         """Get the current assignment's output dataset."""
         return self.output_datasets.get(self.current_assignment)
 
@@ -293,7 +293,7 @@ class StructureVisitor(ASTTemplate):
 
     # Dataset SQL source resolution
 
-    def _get_dataset_sql(self, node: AST.AST) -> str:
+    def _get_dataset_sql(self, node: Optional[AST.AST]) -> str:
         """Get the SQL FROM source for a dataset node."""
         if isinstance(node, AST.VarID):
             kind, val = self._resolve_udo_var(node.value)
@@ -364,7 +364,7 @@ class StructureVisitor(ASTTemplate):
 
     # Dataset structure resolution
 
-    def _get_dataset_structure(self, node: Optional[AST.AST]) -> Optional[Dataset]:
+    def _get_dataset_structure(self, node: Optional[AST.AST]) -> Any:
         """Get dataset structure for a node, tracing to the source dataset."""
         if node is None:
             return None
@@ -932,11 +932,11 @@ class StructureVisitor(ASTTemplate):
 
     def _get_time_id(self, ds: Dataset) -> Tuple[str, List[str]]:
         """Split identifiers into time identifier and other identifiers."""
-        for name, comp in ds.get_identifiers():
+        for comp in ds.get_identifiers():
             if comp.data_type in (Date, TimeInterval, TimePeriod):
-                time_id = name
+                time_id = comp.name
                 break
-        other_ids = [name for name, comp in ds.get_identifiers() if name != time_id]
+        other_ids = [comp.name for comp in ds.get_identifiers() if comp.name != time_id]
         return time_id, other_ids
 
     def _resolve_grouping_names(self, grouping: List[AST.AST]) -> List[str]:

@@ -22,9 +22,9 @@ import tempfile
 from typing import Tuple, Union
 
 import duckdb
-import psutil
+import psutil  # type: ignore[import-untyped]
 
-from vtlengine.Exceptions import RunTimeError  # type: ignore[import-untyped]
+from vtlengine.Exceptions import RunTimeError
 
 # =============================================================================
 # Decimal Configuration
