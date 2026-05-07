@@ -1,10 +1,8 @@
 name: Ubuntu 24.04 Tests
 
 on:
-  push:
-    branches: ["main", "duckdb/main", "dev"]
   pull_request:
-    branches: ["main", "duckdb/main", "dev"]
+    branches: ["main", "1.6.X"]
 
 permissions:
   contents: read
