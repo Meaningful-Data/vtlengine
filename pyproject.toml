@@ -148,8 +148,6 @@ test-requires = ["pytest"]
 test-command = "pytest {project}/tests/API -x --tb=short --strict-markers"
 manylinux-x86_64-image = "manylinux_2_28"
 manylinux-aarch64-image = "manylinux_2_28"
-musllinux-x86_64-image = "musllinux_1_2"
-musllinux-aarch64-image = "musllinux_1_2"
 
 [tool.cibuildwheel.linux]
 before-build = "bash {project}/scripts/setup_antlr4_runtime.sh"
