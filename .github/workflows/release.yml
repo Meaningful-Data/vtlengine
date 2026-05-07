@@ -25,7 +25,6 @@ jobs:
           - { runner: macos-13,            arch: x86_64 }
           - { runner: macos-14,            arch: arm64 }
           - { runner: windows-2022,        arch: AMD64 }
-          - { runner: windows-11-arm,      arch: ARM64 }
 
     steps:
       - name: Checkout code
