@@ -2953,7 +2953,8 @@ def test_bug_411():
         semantic_analysis(script=script, data_structures=data_structures)
 
 
-def test_GH_676_2_3_6_dataset_not_in_inputs():
+def test_GH_676_1():
+    """Referencing a dataset name not provided in datasets triggers 2-3-6."""
     script = "DS_r := DS_unknown;"
     data_structures = {
         "datasets": [
@@ -2971,7 +2972,8 @@ def test_GH_676_2_3_6_dataset_not_in_inputs():
     assert ctx.value.args[1] == "2-3-6"
 
 
-def test_GH_676_2_3_10_value_domains_none():
+def test_GH_676_2():
+    """Using a value domain reference when value_domains is None triggers 2-3-10."""
     script = "DS_r := DS_1[filter Me_1 in undefined_vd];"
     data_structures = {
         "datasets": [
@@ -2994,7 +2996,8 @@ def test_GH_676_2_3_10_value_domains_none():
     assert ctx.value.args[1] == "2-3-10"
 
 
-def test_GH_676_2_3_11_exists_in_non_dataset():
+def test_GH_676_3():
+    """exists_in with a scalar instead of a dataset triggers 2-3-11."""
     script = "DS_r := exists_in(1, DS_1);"
     data_structures = {
         "datasets": [
@@ -3012,7 +3015,8 @@ def test_GH_676_2_3_11_exists_in_non_dataset():
     assert ctx.value.args[1] == "2-3-11"
 
 
-def test_GH_676_1_2_8_value_domain_not_defined():
+def test_GH_676_4():
+    """Reference to a value domain not present in value_domains triggers 1-2-8."""
     script = "DS_r := DS_1[filter Me_1 in undefined_vd];"
     data_structures = {
         "datasets": [

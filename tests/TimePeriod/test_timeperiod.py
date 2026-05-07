@@ -144,7 +144,7 @@ def _run_semantic(script: str, data_structures: dict) -> None:
     InterpreterAnalyzer(datasets=datasets, scalars=scalars, only_semantic=True).visit(ast)
 
 
-def test_GH_676_1_1_19_3_invalid_period_indicator():
+def test_GH_676_1():
     """time_agg with an invalid duration indicator triggers 1-1-19-3."""
     script = 'DS_r := time_agg("X", DS_1);'
     structures = {
@@ -168,7 +168,7 @@ def test_GH_676_1_1_19_3_invalid_period_indicator():
     assert ctx.value.args[1] == "1-1-19-3"
 
 
-def test_GH_676_1_1_19_4_period_to_smaller_than_period_from():
+def test_GH_676_2():
     """time_agg with period_to <= period_from triggers 1-1-19-4."""
     script = 'DS_r := time_agg("M", "A", DS_1);'
     structures = {
@@ -192,13 +192,15 @@ def test_GH_676_1_1_19_4_period_to_smaller_than_period_from():
     assert ctx.value.args[1] == "1-1-19-4"
 
 
-def test_GH_676_2_1_19_2_invalid_period_indicator_runtime():
+def test_GH_676_3():
+    """period_to_date with an unknown period indicator triggers runtime 2-1-19-2."""
     with pytest.raises(RT) as ctx:
         period_to_date(2024, "X", 1)
     assert ctx.value.args[1] == "2-1-19-2"
 
 
-def test_GH_676_2_1_19_3_period_indicator_mismatch_runtime():
+def test_GH_676_4():
+    """generate_period_range with mismatched period indicators triggers 2-1-19-3."""
     start = TimePeriodHandler("2020A")
     end = TimePeriodHandler("2020M01")
     with pytest.raises(RT) as ctx:
@@ -206,21 +208,21 @@ def test_GH_676_2_1_19_3_period_indicator_mismatch_runtime():
     assert ctx.value.args[1] == "2-1-19-3"
 
 
-def test_GH_676_2_1_19_6_invalid_period_format_runtime():
+def test_GH_676_5():
     """Period string with a too-long second term triggers 2-1-19-6."""
     with pytest.raises(RT) as ctx:
         from_input_customer_support_to_internal("2020-XYZWX")
     assert ctx.value.args[1] == "2-1-19-6"
 
 
-def test_GH_676_2_1_19_7_period_number_out_of_range_runtime():
+def test_GH_676_6():
     """A monthly period number outside [1, 12] triggers 2-1-19-7."""
     with pytest.raises(RT) as ctx:
         TimePeriodHandler("2020M13")
     assert ctx.value.args[1] == "2-1-19-7"
 
 
-def test_GH_676_2_1_19_10_invalid_year_runtime():
+def test_GH_676_7():
     """Year out of [0, 9999] triggers 2-1-19-10."""
     handler = TimePeriodHandler("2020A")
     with pytest.raises(RT) as ctx:
@@ -228,7 +230,7 @@ def test_GH_676_2_1_19_10_invalid_year_runtime():
     assert ctx.value.args[1] == "2-1-19-10"
 
 
-def test_GH_676_2_1_19_9_invalid_day_of_year_runtime():
+def test_GH_676_8():
     """A daily period number > 365 in a non-leap year triggers 2-1-19-9."""
     # 2021 is a non-leap year; D366 is past the 365-day range.
     with pytest.raises(RT) as ctx:
@@ -236,7 +238,7 @@ def test_GH_676_2_1_19_9_invalid_day_of_year_runtime():
     assert ctx.value.args[1] == "2-1-19-9"
 
 
-def test_GH_676_2_1_19_4_date1_after_date2_runtime():
+def test_GH_676_9():
     """set_date1 with a value greater than date2 triggers 2-1-19-4."""
     interval = TimeIntervalHandler("2020-01-01", "2020-12-31")
     with pytest.raises(RT) as ctx:
@@ -244,7 +246,7 @@ def test_GH_676_2_1_19_4_date1_after_date2_runtime():
     assert ctx.value.args[1] == "2-1-19-4"
 
 
-def test_GH_676_2_1_19_5_date2_before_date1_runtime():
+def test_GH_676_10():
     """set_date2 with a value lower than date1 triggers 2-1-19-5."""
     interval = TimeIntervalHandler("2020-01-01", "2020-12-31")
     with pytest.raises(RT) as ctx:
@@ -252,7 +254,7 @@ def test_GH_676_2_1_19_5_date2_before_date1_runtime():
     assert ctx.value.args[1] == "2-1-19-5"
 
 
-def test_GH_676_2_1_19_22_invalid_duration_format_runtime():
+def test_GH_676_11():
     """year_to_day with a malformed duration string triggers 2-1-19-22."""
     with pytest.raises(RT) as ctx:
         Year_to_Day.py_op("not-a-duration")

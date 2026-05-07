@@ -597,9 +597,9 @@ class IfThenElseTest(TestIfThenElse):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    def test_GH_676_1_1_9_10(self):
+    def test_GH_676(self):
         """if-then-else with mismatched then-branch identifiers triggers 1-1-9-10."""
-        code = "GH_676_1_1_9_10"
+        code = "GH_676"
         number_inputs = 3
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code="1-1-9-10"

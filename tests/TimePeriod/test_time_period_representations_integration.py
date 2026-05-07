@@ -86,8 +86,7 @@ def test_sdmx_gregorian_pandas_duckdb_match() -> None:
     _run_and_compare(AMD_ONLY_DF, "sdmx_gregorian")
 
 
-def test_GH_676_0_1_1_15_invalid_representation() -> None:
-    """Invalid time_period_output_format value triggers 0-1-1-15."""
+def test_invalid_time_period_output_format() -> None:
     with pytest.raises(InputValidationException) as ctx:
         run(
             script=SCRIPT,

@@ -63,8 +63,9 @@ class CastExplicitWithoutMask(CastHelper):
 
         self.BaseTest(code, number_inputs, references_names=reference_names)
 
-    def test_GH_676_1_1_5_4(self):
-        code = "GH_676_1_1_5_4"
+    def test_GH_676(self):
+        """cast() with an unsupported type promotion (Boolean -> Date) triggers 1-1-5-4."""
+        code = "GH_676"
         number_inputs = 1
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code="1-1-5-4"
