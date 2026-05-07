@@ -109,8 +109,45 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: '3.12'
+          cache: poetry
+      - name: Cache ANTLR4 runtime prebuilt
+        uses: actions/cache@v4
+        id: antlr4-cache
+        with:
+          path: build/antlr4-prefix
+          key: antlr4-runtime-${{ runner.os }}-py3.12-${{ hashFiles('scripts/setup_antlr4_runtime.sh', 'CMakeLists.txt') }}
+      - name: Cache C++ parser wheel
+        uses: actions/cache@v4
+        id: cpp-cache
+        with:
+          path: .cpp-wheel
+          key: cpp-parser-${{ runner.os }}-py3.12-${{ hashFiles('src/vtlengine/AST/Grammar/_cpp_parser/**', 'CMakeLists.txt', 'pyproject.toml') }}
+      - name: Download ANTLR4 C++ runtime source
+        if: steps.cpp-cache.outputs.cache-hit != 'true' && steps.antlr4-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: bash scripts/setup_antlr4_runtime.sh
+      - name: Build ANTLR4 runtime
+        if: steps.cpp-cache.outputs.cache-hit != 'true' && steps.antlr4-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          cmake -S . -B build/antlr4-build \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DVTLENGINE_BUILD_ANTLR4_PREBUILT=ON
+          cmake --build build/antlr4-build --target antlr4_runtime --config Release
+          cmake --install build/antlr4-build --prefix "$PWD/build/antlr4-prefix" --config Release
+      - name: Build C++ parser wheel
+        if: steps.cpp-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          pip wheel . -w .cpp-wheel --no-deps -v \
+            -C cmake.define.VTLENGINE_USE_PREBUILT_ANTLR4=ON \
+            -C "cmake.define.VTLENGINE_ANTLR4_PREFIX=$PWD/build/antlr4-prefix"
       - name: Install dependencies
-        run: poetry install
+        shell: bash
+        run: |
+          poetry install --no-root
+          poetry run pip install .cpp-wheel/*.whl
       - name: Configure documentation versions
         run: |
           poetry run python docs/scripts/configure_doc_versions.py
