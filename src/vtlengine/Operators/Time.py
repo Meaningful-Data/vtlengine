@@ -606,8 +606,8 @@ class Time_Shift(Binary):
                 )
             )
             result.data[cls.time_id] = cls.shift_dates(result.data[cls.time_id], shift_value, freq)
-        elif data_type == Time:
-            freq = cls.get_frequency_from_time(result.data[cls.time_id].iloc[0])
+        elif data_type == TimeInterval:
+            freq = cls._classify_interval_period(result.data[cls.time_id].iloc[0])
             result.data[cls.time_id] = result.data[cls.time_id].apply(
                 lambda x: cls.shift_interval(x, shift_value, freq)
             )
@@ -631,12 +631,24 @@ class Time_Shift(Binary):
         dates = pd.to_datetime(dates)
         if frequency == "D":
             return dates + pd.to_timedelta(shift_value, unit="D")
-        elif frequency == "W":
+        if frequency == "W":
             return dates + pd.to_timedelta(shift_value, unit="W")
-        elif frequency == "Y":
+        if frequency == "Y":
             return dates + pd.DateOffset(years=shift_value)
-        elif frequency in ["M", "Q", "S"]:
-            return dates + pd.DateOffset(months=shift_value)
+        if frequency in ("M", "Q", "S"):
+            months_per = {"M": 1, "Q": 3, "S": 6}[frequency]
+            return dates + pd.DateOffset(months=months_per * shift_value)
+        if frequency.startswith("P"):
+            m = cls._PERIOD_DURATION_RE.match(frequency)
+            if m is not None:
+                years = int(m.group(1) or 0)
+                months = int(m.group(2) or 0)
+                days = int(m.group(3) or 0)
+                return dates + pd.DateOffset(
+                    years=years * shift_value,
+                    months=months * shift_value,
+                    days=days * shift_value,
+                )
         raise SemanticError("2-1-19-2", period=frequency)
 
     @classmethod
@@ -673,9 +685,10 @@ class Time_Shift(Binary):
     @classmethod
     def shift_interval(cls, interval: str, shift_value: Any, frequency: str) -> str:
         start_date, end_date = interval.split("/")
-        start_date = cls.shift_dates(start_date, shift_value, frequency)
-        end_date = cls.shift_dates(end_date, shift_value, frequency)
-        return f"{start_date}/{end_date}"
+        fmt = "%Y-%m-%dT%H:%M:%S" if _has_time_component(start_date) else "%Y-%m-%d"
+        start_shifted = cls.shift_dates(start_date, shift_value, frequency)
+        end_shifted = cls.shift_dates(end_date, shift_value, frequency)
+        return f"{start_shifted.strftime(fmt)}/{end_shifted.strftime(fmt)}"
 
 
 class Time_Aggregation(Time):
