@@ -130,6 +130,10 @@ MAX_TEMP_DIRECTORY_SIZE: str = os.getenv("VTL_MAX_TEMP_DIRECTORY_SIZE", "")
 # Use file-backed database instead of in-memory (better for large datasets)
 USE_IN_MEMORY_DB: bool = os.getenv("VTL_USE_IN_MEMORY_DB", "1").lower() in ("1", "true")
 
+# Minimum storage version required by the transpiler (typed macro parameters need >= v1.4.0).
+# DuckDB defaults to an older on-disk format for portability, so it must be set explicitly.
+STORAGE_COMPATIBILITY_VERSION: str = "v1.4.0"
+
 
 def get_memory_limit_bytes() -> int:
     """
@@ -223,7 +227,9 @@ def create_configured_connection(database: str = ":memory:") -> duckdb.DuckDBPyC
     Returns:
         Configured DuckDB connection
     """
-    conn = duckdb.connect(database)
+    conn = duckdb.connect(
+        database, config={"storage_compatibility_version": STORAGE_COMPATIBILITY_VERSION}
+    )
     configure_duckdb_connection(conn)
     return conn
 
