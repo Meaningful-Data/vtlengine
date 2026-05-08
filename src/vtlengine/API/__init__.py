@@ -2,7 +2,6 @@ import copy
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Union, cast
 
-import duckdb
 import pandas as pd
 from pysdmx.io.pd import PandasDataset
 from pysdmx.model import TransformationScheme
@@ -28,10 +27,7 @@ from vtlengine.AST.ASTConstructor import ASTVisitor
 from vtlengine.AST.ASTString import ASTString
 from vtlengine.AST.DAG import DAGAnalyzer
 from vtlengine.AST.Grammar._cpp_parser import vtl_cpp_parser
-from vtlengine.duckdb_transpiler.Config.config import (
-    configure_duckdb_connection,
-    configured_connection,
-)
+from vtlengine.duckdb_transpiler.Config.config import configured_connection
 from vtlengine.duckdb_transpiler.io import execute_queries, extract_datapoint_paths
 from vtlengine.duckdb_transpiler.Transpiler import SQLTranspiler
 from vtlengine.Exceptions import InputValidationException
