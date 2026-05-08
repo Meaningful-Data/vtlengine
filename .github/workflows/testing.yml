@@ -1,11 +1,13 @@
 name: Testing
 
 on:
-  push:
-    branches: ["main", "duckdb/main", "dev"]
   pull_request:
-    branches: ["main", "duckdb/main", "dev"]
+    branches: ["main", "1.6.X"]
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
