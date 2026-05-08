@@ -13,6 +13,32 @@ Thanks for your interest in contributing! This guide covers the basics to get yo
   poetry shell
   ```
 
+### Building the C++ parser from source
+
+`poetry install` (and `pip install vtlengine`) builds a compiled C++ extension that
+contains the VTL parser. The build runs automatically via
+[scikit-build-core](https://scikit-build-core.readthedocs.io) and
+[pybind11](https://pybind11.readthedocs.io); you do not need to invoke it by hand.
+
+Required toolchain:
+- a C++17 compiler (recent gcc/clang on Linux/macOS, MSVC on Windows)
+- CMake ≥ 3.15
+- Python development headers
+
+Before each build, `scripts/setup_antlr4_runtime.sh` downloads the ANTLR 4.13.1 C++
+runtime sources into `third_party/antlr4-cpp-runtime/`. CI runs this from the
+`cibuildwheel` `before-build` hook in `pyproject.toml`. Compilation is driven by
+`CMakeLists.txt`.
+
+Verify the compiled parser is importable after install:
+
+```bash
+python -c "from vtlengine import check_parser; check_parser()"
+```
+
+The command exits silently on success. If the parser is missing or fails to load it
+raises `ImportError` with a remediation message pointing back to this section.
+
 ## Development Workflow
 1) Branch from `main` and use a descriptive branch name.
 2) Make changes with tests and type hints in mind.
@@ -29,7 +55,7 @@ Thanks for your interest in contributing! This guide covers the basics to get yo
 5) Keep diffs small and focused; include relevant test updates/data fixtures where needed.
 
 ## Project Conventions
-- VTL grammar lives in `src/vtlengine/AST/Grammar/`; regenerate via `antlr4 -Dlanguage=Python3 -visitor Vtl.g4` (ANTLR 4.9.x). Do not hand-edit generated `lexer.py`, `parser.py`, `tokens.py`.
+- VTL grammar lives in `src/vtlengine/AST/Grammar/`. The runtime parser the engine actually uses is the compiled C++ one in `src/vtlengine/AST/Grammar/_cpp_parser/`; the Python ANTLR sources are kept for grammar maintenance and regeneration only. To regenerate, run `antlr4 -Dlanguage=Python3 -visitor Vtl.g4` (ANTLR 4.9.x). Do not hand-edit generated `lexer.py`, `parser.py`, `tokens.py`.
 - Operators follow the `validate/compute` pattern in `src/vtlengine/Operators/` with strict type checks before execution.
 - Identifiers cannot be nullable; measures may be. Role definitions are enforced in `Model`.
 - For SDMX integrations, use `run_sdmx` with proper `VtlDataflowMapping` when multiple datasets are present.

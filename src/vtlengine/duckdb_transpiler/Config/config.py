@@ -2,19 +2,22 @@
 DuckDB Transpiler Configuration.
 
 Configuration values can be set via environment variables:
-- VTL_DECIMAL_WIDTH: Total number of digits for DECIMAL type (default: 18, -1 to disable)
-- VTL_DECIMAL_SCALE: Number of decimal places for DECIMAL type (default: 8, -1 to disable)
+- VTL_DUCKDB_DECIMAL_WIDTH: DECIMAL precision, total digits (default: 28, -1 to disable)
+- OUTPUT_NUMBER_SIGNIFICANT_DIGITS: DECIMAL scale, decimal places
+  (default: 10, -1 to disable; shared with the pandas backend)
 - VTL_MEMORY_LIMIT: Max memory for DuckDB (e.g., "8GB", "80%") (default: "80%")
-- VTL_THREADS: Number of threads for DuckDB (default: system cores)
+- VTL_THREADS: Number of threads for DuckDB (default: 1)
 - VTL_TEMP_DIRECTORY: Directory for spill-to-disk (default: system temp)
 - VTL_MAX_TEMP_DIRECTORY_SIZE: Max size for temp directory spill
   (e.g., "100GB") (default: available disk space)
+- VTL_USE_IN_MEMORY_DB: Use in-memory database (default: "1"; set to "0" for file-backed)
 
 Example:
-    export VTL_DECIMAL_WIDTH=28
-    export VTL_DECIMAL_SCALE=10
+    export VTL_DUCKDB_DECIMAL_WIDTH=28
+    export OUTPUT_NUMBER_SIGNIFICANT_DIGITS=10
     export VTL_MEMORY_LIMIT=16GB
     export VTL_THREADS=4
+    export VTL_USE_IN_MEMORY_DB=0
 """
 
 import os
@@ -34,7 +37,7 @@ from vtlengine.Exceptions import RunTimeError
 # Decimal Configuration
 # =============================================================================
 
-DECIMAL_WIDTH_ENV_VAR = "DUCKDB_DECIMAL_WIDTH"
+DECIMAL_WIDTH_ENV_VAR = "VTL_DUCKDB_DECIMAL_WIDTH"
 DECIMAL_SCALE_ENV_VAR = "OUTPUT_NUMBER_SIGNIFICANT_DIGITS"
 
 DEFAULT_DECIMAL_WIDTH = 28
