@@ -978,7 +978,7 @@ def _handle_url_datapoints(
                 error=f"Expected Schema object, got {type(schema).__name__}",
             )
 
-        dataframes[dataset_name] = sdmx_dataset.data  # type: ignore[attr-defined]
+        dataframes[dataset_name] = sdmx_dataset.data
 
     return datasets, {}, dataframes
 
