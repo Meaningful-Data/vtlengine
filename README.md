@@ -41,7 +41,7 @@ pip install vtlengine
 *Note: it is recommended to install the VTL Engine in a virtual environment.*
 
 S3 URI support is provided by the DuckDB execution engine (`use_duckdb=True`). See the
-[DuckDB Engine documentation](https://docs.vtlengine.meaningfuldata.eu/duckdb_engine.html)
+[DuckDB Engine documentation](https://docs.vtlengine.meaningfuldata.eu/latest/duckdb_engine.html)
 for details.
 
 ## Documentation
