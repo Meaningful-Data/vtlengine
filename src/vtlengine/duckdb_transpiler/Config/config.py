@@ -18,8 +18,12 @@ Example:
 """
 
 import os
+import shutil
 import tempfile
-from typing import Tuple, Union
+import uuid
+from contextlib import contextmanager
+from pathlib import Path
+from typing import Iterator, Tuple, Union
 
 import duckdb
 import psutil  # type: ignore[import-untyped]
@@ -124,7 +128,11 @@ TEMP_DIRECTORY: str = os.getenv("VTL_TEMP_DIRECTORY", tempfile.gettempdir())
 MAX_TEMP_DIRECTORY_SIZE: str = os.getenv("VTL_MAX_TEMP_DIRECTORY_SIZE", "")
 
 # Use file-backed database instead of in-memory (better for large datasets)
-USE_FILE_DATABASE: bool = os.getenv("VTL_USE_FILE_DATABASE", "").lower() in ("1", "true", "yes")
+USE_IN_MEMORY_DB: bool = os.getenv("VTL_USE_IN_MEMORY_DB", "1").lower() in ("1", "true")
+
+# Minimum storage version required by the transpiler (typed macro parameters need >= v1.4.0).
+# DuckDB defaults to an older on-disk format for portability, so it must be set explicitly.
+STORAGE_COMPATIBILITY_VERSION: str = "v1.4.0"
 
 
 def get_memory_limit_bytes() -> int:
@@ -219,9 +227,32 @@ def create_configured_connection(database: str = ":memory:") -> duckdb.DuckDBPyC
     Returns:
         Configured DuckDB connection
     """
-    conn = duckdb.connect(database)
+    conn = duckdb.connect(
+        database, config={"storage_compatibility_version": STORAGE_COMPATIBILITY_VERSION}
+    )
     configure_duckdb_connection(conn)
     return conn
+
+
+@contextmanager
+def configured_connection(database: str = ":memory:") -> Iterator[duckdb.DuckDBPyConnection]:
+    """Context manager that yields a configured DuckDB connection."""
+    Path(TEMP_DIRECTORY).mkdir(parents=True, exist_ok=True)
+    session_dir = Path(TEMP_DIRECTORY) / f"duckdb_tmp_{uuid.uuid4().hex}"
+    session_dir.mkdir(exist_ok=True)
+
+    if database == ":memory:" and not USE_IN_MEMORY_DB:
+        database = str(session_dir / "session.duckdb")
+
+    conn = create_configured_connection(database)
+    conn.execute(f"SET temp_directory = '{session_dir}'")
+    try:
+        yield conn
+    finally:
+        try:
+            conn.close()
+        finally:
+            shutil.rmtree(session_dir, ignore_errors=True)
 
 
 def get_system_info() -> dict[str, Union[float, int, str, None]]:
