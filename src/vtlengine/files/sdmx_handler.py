@@ -100,7 +100,7 @@ def extract_sdmx_dataset_name(
         return explicit_name
 
     try:
-        pandas_datasets = cast(Sequence[PandasDataset], sdmx_get_datasets(data=file_path))  # type: ignore[redundant-cast]
+        pandas_datasets = cast(Sequence[PandasDataset], sdmx_get_datasets(data=file_path))
     except Exception as e:
         raise DataLoadError(
             code="0-3-1-8",
@@ -143,7 +143,7 @@ def load_sdmx_datapoints(
         InputValidationException: If required identifiers are missing.
     """
     try:
-        pandas_datasets = cast(Sequence[PandasDataset], sdmx_get_datasets(data=file_path))  # type: ignore[redundant-cast]
+        pandas_datasets = cast(Sequence[PandasDataset], sdmx_get_datasets(data=file_path))
     except Exception as e:
         raise DataLoadError(
             "0-3-1-8",
