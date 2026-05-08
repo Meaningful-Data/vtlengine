@@ -67,6 +67,16 @@ def test_parse_env_value_invalid(env_value: str) -> None:
         _parse_env_value(ENV_COMPARISON_THRESHOLD)
 
 
+def test_GH_676() -> None:
+    """Invalid env-var value triggers 0-4-1-1."""
+    with (
+        mock.patch.dict(os.environ, {ENV_COMPARISON_THRESHOLD: "abc"}),
+        pytest.raises(RunTimeError) as ctx,
+    ):
+        _parse_env_value(ENV_COMPARISON_THRESHOLD)
+    assert ctx.value.args[1] == "0-4-1-1"
+
+
 # --- Effective Digits ---
 
 
