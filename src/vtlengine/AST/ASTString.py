@@ -791,3 +791,6 @@ class ASTString(ASTTemplate):
         value = copy.copy(node.value)
         value = value[:-1] if value[-1] == "\n" else value
         self.vtl_script += value
+
+    def visit_ID(self, node: AST.ID) -> AST.AST:
+        return node.value
