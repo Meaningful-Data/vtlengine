@@ -2107,3 +2107,11 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
     #     self.NewSemanticExceptionTest(
     #         code=code, number_inputs=number_inputs, exception_code=message
     #     )
+
+    def test_GH_676(self):
+        """instr() with a dataset where a scalar parameter is expected triggers 1-1-18-10."""
+        code = "GH_676"
+        number_inputs = 2
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-18-10"
+        )

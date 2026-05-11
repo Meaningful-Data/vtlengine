@@ -51,16 +51,7 @@ To install the VTL Engine on any Operating System, you can download it from `pip
     It is recommended to install any python package in a virtual environment.
     Please follow `these steps <https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/>`_
 
-S3 Extra
-========
-
-If you would like to use the S3 capabilities, you need to install the `s3` extra:
-
-.. code-block:: bash
-
-    pip install vtlengine[s3]
-
-The S3 extra is based on the pandas[aws] extra, which requires to set up some environment variables. Please check the `boto3 documentation <https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html#using-environment-variables>`_
+S3 URI support is provided by the DuckDB execution engine; see :doc:`duckdb_engine`.
 
 .. toctree::
     :caption: Getting Started
@@ -73,6 +64,12 @@ The S3 extra is based on the pandas[aws] extra, which requires to set up some en
     api
     data_types
     extra_inputs
+
+.. toctree::
+    :caption: Engines
+
+    pandas_engine
+    duckdb_engine
 
 .. toctree::
     :caption: Configuration

@@ -279,6 +279,64 @@ Example 3: Simple run
     :file: _static/DS_A_run.csv
     :header-rows: 1
 
+==========================================
+Example 3b: Run using the DuckDB engine
+==========================================
+
+The :meth:`vtlengine.run` method can transpile VTL to SQL and execute it on DuckDB by
+passing ``use_duckdb=True``. The DuckDB engine is recommended for large datasets and is
+required for S3 URI support. The recommended pattern is to provide an ``output_folder``
+so each result dataset is streamed straight to a CSV file rather than materialised in
+memory. See :doc:`duckdb_engine` for details.
+
+.. code-block:: python
+
+    from pathlib import Path
+
+    import pandas as pd
+
+    from vtlengine import run
+
+    script = "DS_A <- DS_1 * 10;"
+
+    data_structures = {
+        "datasets": [
+            {"name": "DS_1",
+             "DataStructure": [
+                 {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                 {"name": "Me_1", "type": "Number",  "role": "Measure",    "nullable": True},
+             ]}
+        ]
+    }
+
+    datapoints = {"DS_1": pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [10, 20, 30]})}
+    output_folder = Path("./vtl-output")
+
+    run_result = run(
+        script=script,
+        data_structures=data_structures,
+        datapoints=datapoints,
+        output_folder=output_folder,
+    )
+
+    # With output_folder set, results are written as CSV files; the returned
+    # Dataset objects carry no in-memory data.
+    print(run_result["DS_A"])
+    print(sorted(p.name for p in output_folder.iterdir()))
+
+The ``output_folder`` will contain ``DS_A.csv`` with the same rows shown in
+Example 3. Drop ``output_folder`` to receive the result as an in-memory
+``pandas.DataFrame`` instead.
+
+.. warning::
+    Running on large datasets without an ``output_folder`` forces the DuckDB engine to
+    materialise every result fully into memory as a ``pandas.DataFrame``. This negates
+    most of the throughput and memory-headroom advantages of the backend and can drop
+    performance significantly. If any individual output dataset is larger than available
+    memory, the run will raise an out-of-memory error, since pandas requires the
+    complete object to be materialised in memory. For anything beyond small/exploratory
+    inputs, set ``output_folder``.
+
 ================================
 Example 4: Run from SDMX Dataset
 ================================

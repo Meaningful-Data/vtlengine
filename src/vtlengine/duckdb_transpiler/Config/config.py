@@ -2,24 +2,31 @@
 DuckDB Transpiler Configuration.
 
 Configuration values can be set via environment variables:
-- VTL_DECIMAL_WIDTH: Total number of digits for DECIMAL type (default: 18, -1 to disable)
-- VTL_DECIMAL_SCALE: Number of decimal places for DECIMAL type (default: 8, -1 to disable)
+- VTL_DUCKDB_DECIMAL_WIDTH: DECIMAL precision, total digits (default: 28, -1 to disable)
+- OUTPUT_NUMBER_SIGNIFICANT_DIGITS: DECIMAL scale, decimal places
+  (default: 10, -1 to disable; shared with the pandas backend)
 - VTL_MEMORY_LIMIT: Max memory for DuckDB (e.g., "8GB", "80%") (default: "80%")
-- VTL_THREADS: Number of threads for DuckDB (default: system cores)
+- VTL_THREADS: Number of threads for DuckDB (default: 1)
 - VTL_TEMP_DIRECTORY: Directory for spill-to-disk (default: system temp)
 - VTL_MAX_TEMP_DIRECTORY_SIZE: Max size for temp directory spill
   (e.g., "100GB") (default: available disk space)
+- VTL_USE_IN_MEMORY_DB: Use in-memory database (default: "1"; set to "0" for file-backed)
 
 Example:
-    export VTL_DECIMAL_WIDTH=28
-    export VTL_DECIMAL_SCALE=10
+    export VTL_DUCKDB_DECIMAL_WIDTH=28
+    export OUTPUT_NUMBER_SIGNIFICANT_DIGITS=10
     export VTL_MEMORY_LIMIT=16GB
     export VTL_THREADS=4
+    export VTL_USE_IN_MEMORY_DB=0
 """
 
 import os
+import shutil
 import tempfile
-from typing import Tuple, Union
+import uuid
+from contextlib import contextmanager
+from pathlib import Path
+from typing import Iterator, Tuple, Union
 
 import duckdb
 import psutil  # type: ignore[import-untyped]
@@ -30,7 +37,7 @@ from vtlengine.Exceptions import RunTimeError
 # Decimal Configuration
 # =============================================================================
 
-DECIMAL_WIDTH_ENV_VAR = "DUCKDB_DECIMAL_WIDTH"
+DECIMAL_WIDTH_ENV_VAR = "VTL_DUCKDB_DECIMAL_WIDTH"
 DECIMAL_SCALE_ENV_VAR = "OUTPUT_NUMBER_SIGNIFICANT_DIGITS"
 
 DEFAULT_DECIMAL_WIDTH = 28
@@ -124,7 +131,11 @@ TEMP_DIRECTORY: str = os.getenv("VTL_TEMP_DIRECTORY", tempfile.gettempdir())
 MAX_TEMP_DIRECTORY_SIZE: str = os.getenv("VTL_MAX_TEMP_DIRECTORY_SIZE", "")
 
 # Use file-backed database instead of in-memory (better for large datasets)
-USE_FILE_DATABASE: bool = os.getenv("VTL_USE_FILE_DATABASE", "").lower() in ("1", "true", "yes")
+USE_IN_MEMORY_DB: bool = os.getenv("VTL_USE_IN_MEMORY_DB", "1").lower() in ("1", "true")
+
+# Minimum storage version required by the transpiler (typed macro parameters need >= v1.4.0).
+# DuckDB defaults to an older on-disk format for portability, so it must be set explicitly.
+STORAGE_COMPATIBILITY_VERSION: str = "v1.4.0"
 
 
 def get_memory_limit_bytes() -> int:
@@ -219,9 +230,32 @@ def create_configured_connection(database: str = ":memory:") -> duckdb.DuckDBPyC
     Returns:
         Configured DuckDB connection
     """
-    conn = duckdb.connect(database)
+    conn = duckdb.connect(
+        database, config={"storage_compatibility_version": STORAGE_COMPATIBILITY_VERSION}
+    )
     configure_duckdb_connection(conn)
     return conn
+
+
+@contextmanager
+def configured_connection(database: str = ":memory:") -> Iterator[duckdb.DuckDBPyConnection]:
+    """Context manager that yields a configured DuckDB connection."""
+    Path(TEMP_DIRECTORY).mkdir(parents=True, exist_ok=True)
+    session_dir = Path(TEMP_DIRECTORY) / f"duckdb_tmp_{uuid.uuid4().hex}"
+    session_dir.mkdir(exist_ok=True)
+
+    if database == ":memory:" and not USE_IN_MEMORY_DB:
+        database = str(session_dir / "session.duckdb")
+
+    conn = create_configured_connection(database)
+    conn.execute(f"SET temp_directory = '{session_dir}'")
+    try:
+        yield conn
+    finally:
+        try:
+            conn.close()
+        finally:
+            shutil.rmtree(session_dir, ignore_errors=True)
 
 
 def get_system_info() -> dict[str, Union[float, int, str, None]]:

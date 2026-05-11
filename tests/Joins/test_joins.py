@@ -2329,3 +2329,11 @@ class JoinsGeneralTests(JoinHelper):
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code
         )
+
+    def test_GH_676(self):
+        """full_join with mismatched identifier names triggers 1-1-13-12."""
+        code = "GH_676"
+        number_inputs = 2
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-12"
+        )

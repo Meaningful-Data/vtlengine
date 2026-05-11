@@ -40,7 +40,7 @@ from vtlengine.DataTypes.TimeHandling import (
     generate_period_range,
     max_periods_in_year,
 )
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
@@ -604,8 +604,20 @@ class Year_to_Day(Operators.Unary):
     return_type = Integer
     _duration_pattern = re.compile(r"^P(?=\d)(\d+Y)?(\d+D)?$")
 
+    @classmethod
+    def py_op(cls, value: str) -> int:
+        if not cls._duration_pattern.match(value):
+            raise RunTimeError("2-1-19-22", op=cls.op, value=value, expected="PnYnD")
+        return cls.to_days(value)
+
 
 class Month_to_Day(Operators.Unary):
     op = MONTHTODAY
     return_type = Integer
     _duration_pattern = re.compile(r"^P(?=\d)(\d+M)?(\d+D)?$")
+
+    @classmethod
+    def py_op(cls, value: str) -> int:
+        if not cls._duration_pattern.match(value):
+            raise RunTimeError("2-1-19-22", op=cls.op, value=value, expected="PnMnD")
+        return cls.to_days(value)

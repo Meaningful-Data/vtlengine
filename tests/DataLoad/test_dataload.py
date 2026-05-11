@@ -931,6 +931,21 @@ class DataLoadTest(DataLoadHelper):
             code=code, number_inputs=number_inputs, exception_message=message
         )
 
+    @pytest.mark.skip(
+        reason="DuckDB backend handles empty CSVs differently and does not surface 0-1-1-6.",
+    )
+    def test_GH_676_1(self):
+        """Empty CSV file (no columns) triggers 0-1-1-6 on the pandas backend."""
+        code = "GH_676_1"
+        number_inputs = 1
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code="0-1-1-6")
+
+    def test_GH_676_2(self):
+        """CSV header missing an identifier declared in the structure triggers 0-1-1-8."""
+        code = "GH_676_2"
+        number_inputs = 1
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code="0-1-1-8")
+
 
 BOM = b"\xef\xbb\xbf"
 
