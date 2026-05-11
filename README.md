@@ -40,13 +40,9 @@ pip install vtlengine
 
 *Note: it is recommended to install the VTL Engine in a virtual environment.*
 
-### S3 extra
-
-If you want to use the S3 functionality, you can install the VTL Engine with the `s3` extra:
-
-```bash
-pip install vtlengine[s3]
-```
+S3 URI support is provided by the DuckDB execution engine (`use_duckdb=True`). See the
+[DuckDB Engine documentation](https://docs.vtlengine.meaningfuldata.eu/latest/duckdb_engine.html)
+for details.
 
 ## Documentation
 

@@ -57,8 +57,10 @@ def _exec_block(source: str, filename: str, capture_results: bool = False) -> di
     """Execute a code block and return the resulting namespace."""
     if capture_results:
         source = _preprocess_for_result_capture(source)
-    # When DuckDB backend is active, patch run/run_sdmx calls to include use_duckdb=True
-    if _use_duckdb_backend():
+    # When DuckDB backend is active, patch run/run_sdmx calls to include use_duckdb=True.
+    # Skip blocks that already pass use_duckdb explicitly (e.g. doc examples that
+    # demonstrate the DuckDB engine).
+    if _use_duckdb_backend() and "use_duckdb=" not in source:
         import re
 
         source = re.sub(
