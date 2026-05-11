@@ -190,3 +190,6 @@ docs/plans/
 # Claude Code settings
 .claude/*
 !.claude/CLAUDE.md
+
+# Third party
+third_party/

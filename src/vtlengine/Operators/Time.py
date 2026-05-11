@@ -3,6 +3,7 @@ from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional, Type, Union
 
 import pandas as pd
+from dateutil.relativedelta import relativedelta  # type: ignore[import-untyped]
 
 import vtlengine.Operators as Operators
 from vtlengine.AST.Grammar.tokens import (
@@ -116,15 +117,78 @@ class Time(Operators.Operator):
         )
         return "D" if min_days else "M" if min_months else "Y"
 
+    _PERIOD_BY_RELATIVEDELTA = {
+        (1, 0, 0): "Y",
+        (0, 6, 0): "S",
+        (0, 3, 0): "Q",
+        (0, 1, 0): "M",
+        (0, 0, 7): "W",
+        (0, 0, 1): "D",
+    }
+
     @classmethod
     def get_frequency_from_time(cls, interval: str) -> Any:
         start_date, end_date = interval.split("/")
         return date.fromisoformat(end_date) - date.fromisoformat(start_date)
 
     @classmethod
+    def _classify_interval_period(cls, interval: str) -> str:
+        start_str, end_str = interval.split("/")
+        start = date.fromisoformat(start_str)
+        end = date.fromisoformat(end_str)
+        candidates = [relativedelta(endpoint, start) for endpoint in (end, end + timedelta(days=1))]
+        candidates = [
+            rd
+            for rd in candidates
+            if rd.years >= 0
+            and rd.months >= 0
+            and rd.days >= 0
+            and (rd.years or rd.months or rd.days)
+        ]
+        if not candidates:
+            return f"P{(end - start).days}D"
+        for rd in candidates:
+            canonical = cls._PERIOD_BY_RELATIVEDELTA.get((rd.years, rd.months, rd.days))
+            if canonical is not None:
+                return canonical
+        chosen = min(
+            candidates, key=lambda r: sum(1 for x in (r.years, r.months, r.days) if x != 0)
+        )
+        parts = []
+        if chosen.years:
+            parts.append(f"{chosen.years}Y")
+        if chosen.months:
+            parts.append(f"{chosen.months}M")
+        if chosen.days:
+            parts.append(f"{chosen.days}D")
+        return "P" + "".join(parts)
+
+    @classmethod
     def get_date_format(cls, date_str: Union[str, date]) -> str:
         date = cls.parse_date(date_str) if isinstance(date_str, str) else date_str
         return "%Y-%m-%d" if date.day >= 1 else "%Y-%m" if date.month >= 1 else "%Y"
+
+    _PERIOD_DURATION_RE = re.compile(r"^P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)D)?$")
+
+    @classmethod
+    def _to_pandas_freq(cls, code: str) -> str:
+        if code == "S":
+            return "6MS"
+        if code == "Q":
+            return "3MS"
+        if not code.startswith("P"):
+            return code
+        m = cls._PERIOD_DURATION_RE.match(code)
+        if m is None:
+            return code
+        years = int(m.group(1) or 0)
+        months = int(m.group(2) or 0)
+        days = int(m.group(3) or 0)
+        if days and not (years or months):
+            return f"{days}D"
+        if (years or months) and not days:
+            return f"{years * 12 + months}MS"
+        return f"{years * 365 + months * 30 + days}D"
 
 
 class Unary(Time):
@@ -305,15 +369,15 @@ class Fill_time_series(Binary):
                 result.data, fill_type, cls.find_min_frequency(frequencies)
             )
         elif data_type == TimeInterval:
-            frequencies = result.data[cls.time_id].apply(cls.get_frequency_from_time).unique()
-            if len(frequencies) > 1:
+            categories = result.data[cls.time_id].apply(cls._classify_interval_period).unique()
+            if len(categories) > 1:
                 raise SemanticError(
                     "1-1-19-9",
                     op=cls.op,
                     comp_type="dataset",
                     param="single time interval frequency",
                 )
-            result.data = cls.fill_time_intervals(result.data, fill_type, frequencies[0])
+            result.data = cls.fill_time_intervals(result.data, fill_type, categories[0])
         else:
             raise SemanticError("1-1-19-2", op=cls.op)
         return result
@@ -433,8 +497,10 @@ class Fill_time_series(Binary):
         date_format = None
         filled_data = []
 
+        pandas_freq = cls._to_pandas_freq(min_frequency)
+
         def create_filled_dates(group: Any, min_max: Dict[str, Any]) -> (pd.DataFrame, str):  # type: ignore[syntax]
-            date_range = pd.date_range(start=min_max["min"], end=min_max["max"], freq=min_frequency)
+            date_range = pd.date_range(start=min_max["min"], end=min_max["max"], freq=pandas_freq)
             date_df = pd.DataFrame(date_range, columns=[cls.time_id])
             date_df[cls.other_ids] = group.iloc[0][cls.other_ids]
             date_df[cls.measures] = None
@@ -469,7 +535,7 @@ class Fill_time_series(Binary):
             return extract_max_min(data[cls.time_id])
         else:
             return {
-                name: extract_max_min(group[cls.time_id])
+                (name if len(name) > 1 else name[0]): extract_max_min(group[cls.time_id])
                 for name, group in data.groupby(cls.other_ids)
             }
 
@@ -501,9 +567,7 @@ class Fill_time_series(Binary):
                     empty_row = group_df.iloc[0].copy()
                     empty_row[cls.time_id] = interval
                     empty_row[cls.measures] = None
-                    group_df = group_df.append(  # type: ignore[operator]
-                        empty_row, ignore_index=True
-                    )
+                    group_df = pd.concat([group_df, pd.DataFrame([empty_row])], ignore_index=True)
             start_group_df = group_df.copy()
             start_group_df[cls.time_id] = start_group_df[cls.time_id].str.split("/").str[0]
             end_group_df = group_df.copy()
@@ -542,8 +606,8 @@ class Time_Shift(Binary):
                 )
             )
             result.data[cls.time_id] = cls.shift_dates(result.data[cls.time_id], shift_value, freq)
-        elif data_type == Time:
-            freq = cls.get_frequency_from_time(result.data[cls.time_id].iloc[0])
+        elif data_type == TimeInterval:
+            freq = cls._classify_interval_period(result.data[cls.time_id].iloc[0])
             result.data[cls.time_id] = result.data[cls.time_id].apply(
                 lambda x: cls.shift_interval(x, shift_value, freq)
             )
@@ -567,12 +631,24 @@ class Time_Shift(Binary):
         dates = pd.to_datetime(dates)
         if frequency == "D":
             return dates + pd.to_timedelta(shift_value, unit="D")
-        elif frequency == "W":
+        if frequency == "W":
             return dates + pd.to_timedelta(shift_value, unit="W")
-        elif frequency == "Y":
+        if frequency == "Y":
             return dates + pd.DateOffset(years=shift_value)
-        elif frequency in ["M", "Q", "S"]:
-            return dates + pd.DateOffset(months=shift_value)
+        if frequency in ("M", "Q", "S"):
+            months_per = {"M": 1, "Q": 3, "S": 6}[frequency]
+            return dates + pd.DateOffset(months=months_per * shift_value)
+        if frequency.startswith("P"):
+            m = cls._PERIOD_DURATION_RE.match(frequency)
+            if m is not None:
+                years = int(m.group(1) or 0)
+                months = int(m.group(2) or 0)
+                days = int(m.group(3) or 0)
+                return dates + pd.DateOffset(
+                    years=years * shift_value,
+                    months=months * shift_value,
+                    days=days * shift_value,
+                )
         raise SemanticError("2-1-19-2", period=frequency)
 
     @classmethod
@@ -609,9 +685,10 @@ class Time_Shift(Binary):
     @classmethod
     def shift_interval(cls, interval: str, shift_value: Any, frequency: str) -> str:
         start_date, end_date = interval.split("/")
-        start_date = cls.shift_dates(start_date, shift_value, frequency)
-        end_date = cls.shift_dates(end_date, shift_value, frequency)
-        return f"{start_date}/{end_date}"
+        fmt = "%Y-%m-%dT%H:%M:%S" if _has_time_component(start_date) else "%Y-%m-%d"
+        start_shifted = cls.shift_dates(start_date, shift_value, frequency)
+        end_shifted = cls.shift_dates(end_date, shift_value, frequency)
+        return f"{start_shifted.strftime(fmt)}/{end_shifted.strftime(fmt)}"
 
 
 class Time_Aggregation(Time):
