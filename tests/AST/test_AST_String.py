@@ -26,6 +26,7 @@ params = [
     "GH_358.vtl",
     "comments_end_line.vtl",
     "time_agg.vtl",
+    "round_with_slash.vtl",
 ]
 
 params_prettier = [
