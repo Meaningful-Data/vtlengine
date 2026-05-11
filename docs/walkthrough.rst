@@ -333,8 +333,10 @@ Example 3. Drop ``output_folder`` to receive the result as an in-memory
     Running on large datasets without an ``output_folder`` forces the DuckDB engine to
     materialise every result fully into memory as a ``pandas.DataFrame``. This negates
     most of the throughput and memory-headroom advantages of the backend and can drop
-    performance significantly. For anything beyond small/exploratory inputs, set
-    ``output_folder``.
+    performance significantly. If any individual output dataset is larger than available
+    memory, the run will raise an out-of-memory error, since pandas requires the
+    complete object to be materialised in memory. For anything beyond small/exploratory
+    inputs, set ``output_folder``.
 
 ================================
 Example 4: Run from SDMX Dataset

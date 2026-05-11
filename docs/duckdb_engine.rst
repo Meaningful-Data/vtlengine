@@ -81,8 +81,10 @@ pandas engine, so calling code does not need to change.
     Running on large datasets without an ``output_folder`` forces the engine to
     materialise every result fully into memory as a ``pandas.DataFrame``. This negates
     most of the throughput and memory-headroom advantages of the DuckDB backend and
-    can drop performance significantly. For anything beyond small/exploratory inputs,
-    set ``output_folder``.
+    can drop performance significantly. If any individual output dataset is larger
+    than available memory, the run will raise an out-of-memory error, since pandas
+    requires the complete object to be materialised in memory. For anything beyond
+    small/exploratory inputs, set ``output_folder``.
 
 In-memory vs. file-backed database
 **********************************

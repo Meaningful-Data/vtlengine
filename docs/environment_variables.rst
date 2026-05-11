@@ -113,9 +113,25 @@ Number of worker threads DuckDB may use during query execution.
 ``VTL_TEMP_DIRECTORY``
 ======================
 
-Directory where DuckDB writes spill files when memory is exceeded. Defaults to the system
-temporary directory (e.g., ``/tmp`` on Linux, ``%TEMP%`` on Windows). The engine creates a
-unique sub-directory per session and removes it when the connection closes.
+Directory where DuckDB writes spill files when memory is exceeded, and where the
+file-backed database lives when :ref:`vtl_use_in_memory_db` is disabled. When unset, the
+engine falls back to Python's
+`tempfile.gettempdir() <https://docs.python.org/3/library/tempfile.html#tempfile.gettempdir>`_,
+which resolves in this order:
+
+1. The directory named by the ``TMPDIR`` environment variable
+2. The directory named by the ``TEMP`` environment variable
+3. The directory named by the ``TMP`` environment variable
+4. A platform-specific location:
+
+   - **Linux/POSIX**: ``/tmp``, ``/var/tmp``, ``/usr/tmp`` (in that order)
+   - **Windows**: ``C:\TEMP``, ``C:\TMP``, ``\TEMP``, ``\TMP`` (in that order)
+   - **macOS**: typically ``/var/folders/`` or ``~/Library/Caches/``
+
+5. The current working directory as a last resort
+
+The engine creates a unique sub-directory per session under the resolved location and
+removes it when the connection closes.
 
 ``VTL_MAX_TEMP_DIRECTORY_SIZE``
 ===============================
@@ -132,6 +148,8 @@ Caps the total disk space DuckDB may use for spill-to-disk.
      - No cap; DuckDB may use all available disk space in ``VTL_TEMP_DIRECTORY``
    * - ``"100GB"`` / ``"500MB"``
      - Absolute size cap; queries that would exceed it fail
+
+.. _vtl_use_in_memory_db:
 
 ``VTL_USE_IN_MEMORY_DB``
 ========================
