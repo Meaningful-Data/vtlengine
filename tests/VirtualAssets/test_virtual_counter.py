@@ -4,7 +4,6 @@ from unittest.mock import patch
 import pandas as pd
 import pytest
 
-from tests.Helper import _use_duckdb_backend
 from vtlengine import run
 from vtlengine.DataTypes import Integer, Number
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
@@ -13,9 +12,7 @@ from vtlengine.Operators.Analytic import Analytic
 from vtlengine.Operators.Conditional import Nvl
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
-pytestmark = pytest.mark.skipif(
-    _use_duckdb_backend, reason="VirtualCounter not supported on DuckDB backend"
-)
+pytestmark = pytest.mark.skip(reason="VirtualCounter not supported on DuckDB backend")
 
 base_path = Path(__file__).parent
 filepath_VTL = base_path / "data" / "vtl"

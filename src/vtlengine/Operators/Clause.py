@@ -1,8 +1,6 @@
 from copy import copy
 from typing import List, Type, Union
 
-import pandas as pd
-
 from vtlengine.AST import RenameNode
 from vtlengine.AST.Grammar.tokens import AGGREGATE, CALC, DROP, KEEP, RENAME, SUBSPACE
 from vtlengine.DataTypes import (
@@ -55,17 +53,6 @@ class Calc(Operator):
                 )
         return result_dataset
 
-    @classmethod
-    def evaluate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset) -> Dataset:
-        result_dataset = cls.validate(operands, dataset)
-        result_dataset.data = dataset.data.copy() if dataset.data is not None else pd.DataFrame()
-        for operand in operands:
-            if isinstance(operand, Scalar):
-                result_dataset.data[operand.name] = operand.value
-            else:
-                result_dataset.data[operand.name] = operand.data
-        return result_dataset
-
 
 class Aggregate(Operator):
     op = AGGREGATE
@@ -105,20 +92,6 @@ class Aggregate(Operator):
                 )
         return result_dataset
 
-    @classmethod
-    def evaluate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset) -> Dataset:
-        result_dataset = cls.validate(operands, dataset)
-        result_dataset.data = copy(dataset.data) if dataset.data is not None else pd.DataFrame()
-        for operand in operands:
-            if isinstance(operand, Scalar):
-                result_dataset.data[operand.name] = operand.value
-            else:
-                if operand.data is not None and len(operand.data) > 0:
-                    result_dataset.data[operand.name] = operand.data
-                else:
-                    result_dataset.data[operand.name] = None
-        return result_dataset
-
 
 class Filter(Operator):
     @classmethod
@@ -127,15 +100,6 @@ class Filter(Operator):
             raise ValueError(f"Filter condition must be of type {Boolean}")
         dataset_name = VirtualCounter._new_ds_name()
         return Dataset(name=dataset_name, components=dataset.components, data=None)
-
-    @classmethod
-    def evaluate(cls, condition: DataComponent, dataset: Dataset) -> Dataset:
-        result_dataset = cls.validate(condition, dataset)
-        result_dataset.data = dataset.data.copy() if dataset.data is not None else pd.DataFrame()
-        if condition.data is not None and len(condition.data) > 0 and dataset.data is not None:
-            true_indexes = condition.data[condition.data == True].index
-            result_dataset.data = dataset.data.iloc[true_indexes].reset_index(drop=True)
-        return result_dataset
 
 
 class Keep(Operator):
@@ -158,17 +122,6 @@ class Keep(Operator):
         }
         return Dataset(name=dataset_name, components=result_components, data=None)
 
-    @classmethod
-    def evaluate(cls, operands: List[str], dataset: Dataset) -> Dataset:
-        if len(operands) == 0:
-            raise ValueError("Keep clause requires at least one operand")
-        if dataset is None and sum(isinstance(operand, Dataset) for operand in operands) != 1:
-            raise ValueError("Keep clause requires at most one dataset operand")
-        result_dataset = cls.validate(operands, dataset)
-        if dataset.data is not None:
-            result_dataset.data = dataset.data[dataset.get_identifiers_names() + operands]
-        return result_dataset
-
 
 class Drop(Operator):
     op = DROP
@@ -187,13 +140,6 @@ class Drop(Operator):
             name: comp for name, comp in dataset.components.items() if comp.name not in operands
         }
         return Dataset(name=dataset_name, components=result_components, data=None)
-
-    @classmethod
-    def evaluate(cls, operands: List[str], dataset: Dataset) -> Dataset:
-        result_dataset = cls.validate(operands, dataset)
-        if dataset.data is not None:
-            result_dataset.data = dataset.data.drop(columns=operands, axis=1)
-        return result_dataset
 
 
 class Rename(Operator):
@@ -244,23 +190,10 @@ class Rename(Operator):
                 result_components[comp.name] = comp
         return Dataset(name=dataset_name, components=result_components, data=None)
 
-    @classmethod
-    def evaluate(cls, operands: List[RenameNode], dataset: Dataset) -> Dataset:
-        result_dataset = cls.validate(operands, dataset)
-        if dataset.data is not None:
-            result_dataset.data = dataset.data.rename(
-                columns={operand.old_name: operand.new_name for operand in operands}
-            )
-        return result_dataset
-
 
 class Pivot(Operator):
     @classmethod
     def validate(cls, operands: List[str], dataset: Dataset) -> Dataset:
-        raise NotImplementedError
-
-    @classmethod
-    def evaluate(cls, operands: List[str], dataset: Dataset) -> Dataset:
         raise NotImplementedError
 
 
@@ -298,20 +231,6 @@ class Unpivot(Operator):
         )
         return result_dataset
 
-    @classmethod
-    def evaluate(cls, operands: List[str], dataset: Dataset) -> Dataset:
-        result_dataset = cls.validate(operands, dataset)
-        if dataset.data is not None:
-            result_dataset.data = dataset.data.melt(
-                id_vars=dataset.get_identifiers_names(),
-                value_vars=dataset.get_measures_names(),
-                var_name=operands[0],
-                value_name="NEW_COLUMN",
-            )
-            result_dataset.data.rename(columns={"NEW_COLUMN": operands[1]}, inplace=True)
-            result_dataset.data = result_dataset.data.dropna().reset_index(drop=True)
-        return result_dataset
-
 
 class Sub(Operator):
     op = SUBSPACE
@@ -345,27 +264,3 @@ class Sub(Operator):
             if comp.name not in [operand.name for operand in operands]
         }
         return Dataset(name=dataset_name, components=result_components, data=None)
-
-    @classmethod
-    def evaluate(cls, operands: List[DataComponent], dataset: Dataset) -> Dataset:
-        result_dataset = cls.validate(operands, dataset)
-        result_dataset.data = copy(dataset.data) if dataset.data is not None else pd.DataFrame()
-        operand_names = [operand.name for operand in operands]
-        if dataset.data is not None and len(dataset.data) > 0:
-            # Filter the Dataframe
-            # by intersecting the indexes of the Data Component with True values
-            true_indexes = set()
-            is_first = True
-            for operand in operands:
-                if operand.data is not None:
-                    if is_first:
-                        true_indexes = set(operand.data[operand.data == True].index)
-                        is_first = False
-                    else:
-                        true_indexes.intersection_update(
-                            set(operand.data[operand.data == True].index)
-                        )
-            result_dataset.data = result_dataset.data.iloc[list(true_indexes)]
-        result_dataset.data = result_dataset.data.drop(columns=operand_names, axis=1)
-        result_dataset.data = result_dataset.data.reset_index(drop=True)
-        return result_dataset

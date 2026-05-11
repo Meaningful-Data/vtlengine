@@ -4,7 +4,7 @@ Tests for efficient CSV IO operations in DuckDB transpiler.
 Sprint 6: Datapoint Loading/Saving Optimization
 - Tests for save_datapoints_duckdb using COPY TO
 - Tests for load_datapoints_duckdb using read_csv
-- Tests for run() with use_duckdb=True and output_folder parameter
+- Tests for run() and output_folder parameter
 - Tests for table deletion after save
 """
 
@@ -209,12 +209,12 @@ class TestLoadDatapointsDuckdbFromCSV:
 
 
 # =============================================================================
-# Tests for run() function with use_duckdb=True and output_folder
+# Tests for run() function and output_folder
 # =============================================================================
 
 
 class TestRunWithOutputFolder:
-    """Tests for run() function with use_duckdb=True and efficient CSV IO."""
+    """Tests for run() function and efficient CSV IO."""
 
     @pytest.fixture
     def simple_data_structure(self):
@@ -241,7 +241,7 @@ class TestRunWithOutputFolder:
         return csv_path
 
     def test_run_saves_output_to_folder(self, temp_output_dir, simple_data_structure, input_csv):
-        """Test that run() with use_duckdb=True saves outputs to specified folder."""
+        """Test that run() with DuckDB saves outputs to specified folder."""
         from vtlengine.API import run
 
         output_dir = temp_output_dir / "output"
@@ -254,7 +254,6 @@ class TestRunWithOutputFolder:
             data_structures=simple_data_structure,
             datapoints={"DS_1": input_csv},
             output_folder=output_dir,
-            use_duckdb=True,
         )
 
         # Check that output CSV was created
@@ -268,7 +267,7 @@ class TestRunWithOutputFolder:
     def test_run_without_output_folder_returns_datasets(
         self, temp_output_dir, simple_data_structure, input_csv
     ):
-        """Test that run() with use_duckdb=True returns Datasets when no output_folder."""
+        """Test that run() with DuckDB returns Datasets when no output_folder."""
         from vtlengine.API import run
         from vtlengine.Model import Dataset
 
@@ -279,7 +278,6 @@ class TestRunWithOutputFolder:
             data_structures=simple_data_structure,
             datapoints={"DS_1": input_csv},
             output_folder=None,
-            use_duckdb=True,
         )
 
         assert "DS_r" in results
@@ -289,7 +287,7 @@ class TestRunWithOutputFolder:
     def test_run_deletes_intermediate_tables(
         self, temp_output_dir, simple_data_structure, input_csv
     ):
-        """Test that run() with use_duckdb=True deletes tables after saving."""
+        """Test that run() with DuckDB deletes tables after saving."""
         from vtlengine.API import run
 
         output_dir = temp_output_dir / "output"
@@ -306,7 +304,6 @@ class TestRunWithOutputFolder:
             data_structures=simple_data_structure,
             datapoints={"DS_1": input_csv},
             output_folder=output_dir,
-            use_duckdb=True,
         )
 
         # Only persistent result should be saved
@@ -333,7 +330,6 @@ class TestRunWithOutputFolder:
             datapoints={"DS_1": input_csv},
             output_folder=output_dir,
             return_only_persistent=True,
-            use_duckdb=True,
         )
 
         # Only DS_r (persistent) should be saved

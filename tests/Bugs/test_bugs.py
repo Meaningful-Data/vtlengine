@@ -2,9 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from tests.Helper import TestHelper, _use_duckdb_backend
-from vtlengine.API import create_ast, run
-from vtlengine.Interpreter import InterpreterAnalyzer
+from tests.Helper import TestHelper
+from vtlengine.API import run
 
 
 class BugHelper(TestHelper):
@@ -23,10 +22,7 @@ class GeneralBugs(BugHelper):
 
     classTest = "Bugs.GeneralBugs"
 
-    @pytest.mark.skipif(
-        _use_duckdb_backend,
-        reason="deactivated on duckdb until nullability over scalars is implemented",
-    )
+    @pytest.mark.skip(reason="deactivated on duckdb until nullability over scalars is implemented")
     def test_GL_22(self):
         """
         Description: cast zero value to number-Integer.
@@ -67,18 +63,12 @@ class GeneralBugs(BugHelper):
             "f": False,
         }
 
-        if _use_duckdb_backend():
-            result = run(
-                script=script,
-                data_structures={"datasets": []},
-                datapoints={},
-                return_only_persistent=False,
-                use_duckdb=True,
-            )
-        else:
-            ast = create_ast(script)
-            interpreter = InterpreterAnalyzer(datasets={})
-            result = interpreter.visit(ast)
+        result = run(
+            script=script,
+            data_structures={"datasets": []},
+            datapoints={},
+            return_only_persistent=False,
+        )
         for sc in result.values():
             assert sc.persistent == references[sc.name]
 
@@ -1654,10 +1644,7 @@ class ConditionalBugs(BugHelper):
 
     classTest = "Bugs.ConditionalOperatorsTest"
 
-    @pytest.mark.skipif(
-        _use_duckdb_backend,
-        reason="deactivated on duckdb until nullability over scalars is implemented",
-    )
+    @pytest.mark.skip(reason="deactivated on duckdb until nullability over scalars is implemented")
     def test_VTLEN_476(self):
         """ """
         code = "VTLEN_476"

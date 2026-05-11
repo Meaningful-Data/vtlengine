@@ -9,7 +9,7 @@ from vtlengine.AST.Grammar.tokens import CROSS_JOIN, FULL_JOIN, INNER_JOIN, LEFT
 from vtlengine.DataTypes import SCALAR_TYPES_CLASS_REVERSE, binary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
-from vtlengine.Operators import Operator, _id_type_promotion_join_keys
+from vtlengine.Operators import Operator
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
 
@@ -129,68 +129,6 @@ class Join(Operator):
             for id in inter_identifiers:
                 components.update({id: copy(op.components[id])} if id in ids else {})
         return components
-
-    @classmethod
-    def evaluate(cls, operands: List[Dataset], using: List[str]) -> Dataset:
-        result = cls.execute([copy(operand) for operand in operands], using)
-        if result.data is not None and sorted(result.get_components_names()) != sorted(
-            result.data.columns.tolist()
-        ):
-            missing = list(set(result.get_components_names()) - set(result.data.columns.tolist()))
-            if len(missing) == 0:
-                missing.append("None")
-            raise SemanticError("1-1-1-10", comp_name=missing[0], dataset_name=result.name)
-        return result
-
-    @classmethod
-    def execute(cls, operands: List[Dataset], using: List[str]) -> Dataset:
-        result = cls.validate(operands, using)
-        using = using if using else []
-        if len(operands) == 1:
-            result.data = operands[0].data
-            return result
-
-        common_measures = cls.get_components_intersection(
-            [op.get_measures_names() + op.get_attributes_names() for op in operands]
-        )
-        for op in operands:
-            if op.data is not None:
-                for column in op.data.columns.tolist():
-                    if column in common_measures and column not in using:
-                        op.data = op.data.rename(columns={column: op.name + "#" + column})
-        result.data = copy(cls.reference_dataset.data)
-
-        join_keys = using if using else result.get_identifiers_names()
-
-        for op in operands:
-            if op is not cls.reference_dataset:
-                merge_join_keys = (
-                    [key for key in join_keys if key in op.data.columns.tolist()]
-                    if (op.data is not None)
-                    else []
-                )
-                if len(merge_join_keys) == 0:
-                    raise SemanticError("1-1-13-14", name=op.name)
-                for join_key in merge_join_keys:
-                    _id_type_promotion_join_keys(
-                        result.get_component(join_key),
-                        op.get_component(join_key),
-                        join_key,
-                        result.data,
-                        op.data,
-                    )
-                if op.data is not None and result.data is not None:
-                    result.data = pd.merge(
-                        result.data,
-                        op.data,
-                        how=cls.how,  # type: ignore[arg-type]
-                        on=merge_join_keys,
-                    )
-                else:
-                    result.data = pd.DataFrame()
-        if result.data is not None:
-            result.data.reset_index(drop=True, inplace=True)
-        return result
 
     @classmethod
     def validate(cls, operands: List[Dataset], using: Optional[List[str]]) -> Dataset:
@@ -352,38 +290,6 @@ class CrossJoin(Join):
     how = "cross"
 
     @classmethod
-    def execute(cls, operands: List[Dataset], using: Optional[List[str]] = None) -> Dataset:
-        result = cls.validate(operands, using)
-        if len(operands) == 1:
-            result.data = operands[0].data
-            return result
-        common = cls.get_components_intersection([op.get_components_names() for op in operands])
-
-        for op in operands:
-            if op.data is None:
-                op.data = pd.DataFrame(columns=op.get_components_names())
-            if op is operands[0]:
-                result.data = op.data
-            else:
-                if result.data is not None:
-                    result.data = pd.merge(
-                        result.data,
-                        op.data,
-                        how=cls.how,  # type: ignore[arg-type]
-                    )
-            if result.data is not None:
-                result.data = result.data.rename(
-                    columns={
-                        column: op.name + "#" + column
-                        for column in result.data.columns.tolist()
-                        if column in common
-                    }
-                )
-        if result.data is not None:
-            result.data.reset_index(drop=True, inplace=True)
-        return result
-
-    @classmethod
     def identifiers_validation(
         cls, operands: List[Dataset], using: Optional[List[str]] = None
     ) -> None:
@@ -392,19 +298,6 @@ class CrossJoin(Join):
 
 
 class Apply(Operator):
-    @classmethod
-    def evaluate(cls, dataset: Dataset, expression: Any, op_map: Dict[str, Any]) -> Dataset:
-        for child in expression:
-            dataset = cls.execute(dataset, op_map[child.op], child.left.value, child.right.value)
-        return dataset
-
-    @classmethod
-    def execute(cls, dataset: Dataset, op: Any, left: str, right: str) -> Dataset:
-        left_dataset = cls.create_dataset("left", left, dataset)
-        right_dataset = cls.create_dataset("right", right, dataset)
-        left_dataset, right_dataset = cls.get_common_components(left_dataset, right_dataset)
-        return op.evaluate(left_dataset, right_dataset)
-
     @classmethod
     def validate(cls, dataset: Dataset, child: Any, op_map: Dict[str, Any]) -> Dataset:
         if isinstance(child, list):

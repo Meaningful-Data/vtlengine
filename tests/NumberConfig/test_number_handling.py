@@ -10,7 +10,6 @@ from unittest import mock
 import pandas as pd
 import pytest
 
-from tests.Helper import _use_duckdb_backend
 from vtlengine.API import run
 from vtlengine.Exceptions import RunTimeError
 from vtlengine.Utils._number_config import (
@@ -263,7 +262,6 @@ def test_vtl_comparison_with_tolerance(
             script=script,
             data_structures=ds_structure,
             datapoints={"DS_1": datapoints},
-            use_duckdb=_use_duckdb_backend(),
         )
         assert result["DS_r"].data["bool_var"].tolist() == expected
 
@@ -275,7 +273,6 @@ def test_vtl_equal_disabled(ds_structure) -> None:
             script="DS_r <- DS_1 = 1.0;",
             data_structures=ds_structure,
             datapoints={"DS_1": datapoints},
-            use_duckdb=_use_duckdb_backend(),
         )
         assert result["DS_r"].data["bool_var"].tolist()[0]
 
@@ -292,7 +289,6 @@ def test_vtl_between_with_tolerance(ds_structure) -> None:
             script="DS_r <- between(DS_1, 1.0, 2.0);",
             data_structures=ds_structure,
             datapoints={"DS_1": datapoints},
-            use_duckdb=_use_duckdb_backend(),
         )
         assert result["DS_r"].data["bool_var"].tolist() == [True, True, True, False, False]
 
@@ -336,7 +332,6 @@ def test_output_formatting(env_value: str, expected_substring: str) -> None:
                 data_structures=ds_structure,
                 datapoints={"DS_1": datapoints},
                 output_folder=Path(tmpdir),
-                use_duckdb=_use_duckdb_backend(),
             )
             content = (Path(tmpdir) / "DS_r.csv").read_text()
             assert expected_substring in content

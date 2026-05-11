@@ -11,7 +11,6 @@ succeed by promoting both operands to TimeInterval.
 import pandas as pd
 import pytest
 
-from tests.Helper import _use_duckdb_backend
 from vtlengine import run
 from vtlengine.DataTypes import (
     Boolean,
@@ -123,7 +122,6 @@ class TestDateTimePeriodComparison:
             script=script,
             data_structures=DATA_STRUCTURES,
             datapoints=datapoints,
-            use_duckdb=_use_duckdb_backend(),
         )
         assert "DS_r" in result
         assert list(result["DS_r"].data["bool_var"]) == expected
@@ -184,7 +182,6 @@ class TestDurationComparison:
             script=script,
             data_structures={"datasets": []},
             datapoints={},
-            use_duckdb=_use_duckdb_backend(),
         )
         scalar = result["DS_r"]
         assert not isinstance(scalar, Dataset)
@@ -211,7 +208,6 @@ class TestDurationComparison:
             script=script,
             data_structures=DURATION_TWO_DS,
             datapoints=datapoints,
-            use_duckdb=_use_duckdb_backend(),
         )
         ds = result["DS_r"]
         assert isinstance(ds, Dataset)
@@ -234,7 +230,6 @@ class TestDurationComparison:
             script=script,
             data_structures=DURATION_SINGLE_DS,
             datapoints=datapoints,
-            use_duckdb=_use_duckdb_backend(),
         )
         ds = result["DS_r"]
         assert isinstance(ds, Dataset)
@@ -262,7 +257,6 @@ class TestDurationComparison:
             script=script,
             data_structures=DURATION_SINGLE_DS,
             datapoints=datapoints,
-            use_duckdb=_use_duckdb_backend(),
         )
         ds = result["DS_r"]
         assert isinstance(ds, Dataset)
@@ -327,7 +321,6 @@ class TestDurationComparison:
             script=script,
             data_structures=data_structures,
             datapoints=datapoints,
-            use_duckdb=_use_duckdb_backend(),
         )
         ds = result["DS_r"]
         assert isinstance(ds, Dataset)
@@ -385,7 +378,6 @@ class TestTimePeriodComparison:
             script=script,
             data_structures={"datasets": []},
             datapoints={},
-            use_duckdb=_use_duckdb_backend(),
         )
         scalar = result["DS_r"]
         assert not isinstance(scalar, Dataset)
@@ -410,7 +402,6 @@ class TestTimePeriodComparison:
             script=script,
             data_structures=TIME_PERIOD_TWO_DS,
             datapoints=datapoints,
-            use_duckdb=_use_duckdb_backend(),
         )
         ds = result["DS_r"]
         assert isinstance(ds, Dataset)
@@ -433,7 +424,6 @@ class TestTimePeriodComparison:
             script=script,
             data_structures=TIME_PERIOD_SINGLE_DS,
             datapoints=datapoints,
-            use_duckdb=_use_duckdb_backend(),
         )
         ds = result["DS_r"]
         assert isinstance(ds, Dataset)
@@ -461,7 +451,6 @@ class TestTimePeriodComparison:
             script=script,
             data_structures=TIME_PERIOD_SINGLE_DS,
             datapoints=datapoints,
-            use_duckdb=_use_duckdb_backend(),
         )
         ds = result["DS_r"]
         assert isinstance(ds, Dataset)
@@ -517,7 +506,6 @@ class TestTimePeriodComparison:
             script=script,
             data_structures=data_structures,
             datapoints=datapoints,
-            use_duckdb=_use_duckdb_backend(),
         )
         ds = result["DS_r"]
         assert isinstance(ds, Dataset)

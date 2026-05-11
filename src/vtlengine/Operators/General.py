@@ -1,14 +1,14 @@
 import re
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Union
 
 import duckdb
 import pandas as pd
 import pyarrow as pa
 import pyarrow.compute as pc
 
-from vtlengine.DataTypes import COMP_NAME_MAPPING, Date
+from vtlengine.DataTypes import COMP_NAME_MAPPING
 from vtlengine.Exceptions import RunTimeError, SemanticError
-from vtlengine.Model import Component, DataComponent, Dataset, ExternalRoutine, Role
+from vtlengine.Model import Component, Dataset, ExternalRoutine, Role
 from vtlengine.Operators import Binary, Unary
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
@@ -55,26 +55,6 @@ class Membership(Binary):
         result_dataset = Dataset(name=dataset_name, components=result_components, data=None)
         return result_dataset
 
-    @classmethod
-    def evaluate(
-        cls,
-        left_operand: Dataset,
-        right_operand: str,
-        is_from_component_assignment: bool = False,
-    ) -> Union[DataComponent, Dataset]:
-        result_dataset = cls.validate(left_operand, right_operand)
-        if left_operand.data is not None:
-            if is_from_component_assignment:
-                return DataComponent(
-                    name=right_operand,
-                    data_type=left_operand.components[right_operand].data_type,
-                    role=Role.MEASURE,
-                    nullable=left_operand.components[right_operand].nullable,
-                    data=left_operand.data[right_operand],
-                )
-            result_dataset.data = left_operand.data[list(result_dataset.components.keys())]
-        return result_dataset
-
 
 class Alias(Binary):
     """Alias operator class
@@ -91,12 +71,6 @@ class Alias(Binary):
         if new_name != left_operand.name and new_name in left_operand.get_components_names():
             raise SemanticError("1-3-1", alias=new_name)
         return Dataset(name=new_name, components=left_operand.components, data=None)
-
-    @classmethod
-    def evaluate(cls, left_operand: Dataset, right_operand: Union[str, Dataset]) -> Dataset:
-        result = cls.validate(left_operand, right_operand)
-        result.data = left_operand.data
-        return result
 
 
 class Eval(Unary):
@@ -184,37 +158,3 @@ class Eval(Unary):
         output.name = external_routine.name
 
         return output
-
-    @classmethod
-    def evaluate(  # type: ignore[override]
-        cls,
-        operands: Dict[str, Dataset],
-        external_routine: ExternalRoutine,
-        output: Dataset,
-    ) -> Dataset:
-        result: Dataset = cls.validate(operands, external_routine, output)
-        operands_data = {}
-        for ds_name in operands:
-            operands_data[ds_name] = cls.normalize_dates(
-                operands[ds_name].data, operands[ds_name].components
-            )
-
-        result.data = cls._execute_query(
-            external_routine.query,
-            external_routine.dataset_names,
-            operands_data,
-        )
-        return result
-
-    @classmethod
-    def normalize_dates(
-        cls, data: Optional[pd.DataFrame], components: Dict[str, Component]
-    ) -> pd.DataFrame:
-        if data is None:
-            return pd.DataFrame(columns=[comp.name for comp in components.values()])
-        elif any(comp.data_type is Date for comp in components.values()):
-            data = data.copy()
-            for comp_name, comp in components.items():
-                if comp.data_type is Date:
-                    data[comp_name] = data[comp_name].astype("date64[pyarrow]")
-        return data

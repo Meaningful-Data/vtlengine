@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.Helper import TestHelper, _use_duckdb_backend
+from tests.Helper import TestHelper
 from vtlengine import semantic_analysis
 from vtlengine.API import create_ast
 from vtlengine.Exceptions import SemanticError
@@ -794,10 +794,7 @@ class ClauseClauseTests(SemanticHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    @pytest.mark.skipif(
-        _use_duckdb_backend,
-        reason="DuckDB is case-insensitive for column names",
-    )
+    @pytest.mark.skip(reason="DuckDB is case-insensitive for column names")
     def test_46(self):
         """
         Dataset --> Dataset
@@ -848,9 +845,7 @@ class ClauseClauseTests(SemanticHelper):
         input_datasets = self.LoadInputs(code=code, number_inputs=number_inputs, only_semantic=True)
         datasets = {k: v for k, v in input_datasets.items() if isinstance(v, Dataset)}
         scalars_obj = {k: v for k, v in input_datasets.items() if isinstance(v, Scalar)}
-        interpreter = InterpreterAnalyzer(
-            datasets=datasets, scalars=scalars_obj, only_semantic=True
-        )
+        interpreter = InterpreterAnalyzer(datasets=datasets, scalars=scalars_obj)
         result = interpreter.visit(create_ast(text))
         assert "DS_r" in result
 
@@ -2019,11 +2014,10 @@ class ScalarTests(SemanticHelper):
         Goal: .
         VtlEngine.Exceptions.exceptions.VTLEngineException: Trying to redefine input datasets. ['DS_1'].
         """
-        if _use_duckdb_backend():
-            pytest.skip(
-                "Input-dataset redefinition check is enforced at the pandas data-load level "
-                "in the test suite and is not applicable to the DuckDB backend."
-            )
+        pytest.skip(
+            "Input-dataset redefinition check is enforced at the pandas data-load level "
+            "in the test suite and is not applicable to the DuckDB backend."
+        )
         code = "Sc_6"
         number_inputs = 2
         message = "Trying to redefine input datasets"
@@ -2246,10 +2240,7 @@ class ScalarTests(SemanticHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    @pytest.mark.skipif(
-        _use_duckdb_backend,
-        reason="deactivated on duckdb until nullability over scalars is implemented",
-    )
+    @pytest.mark.skip(reason="deactivated on duckdb until nullability over scalars is implemented")
     def test_19(self):
         """
         Dataset --> Dataset
@@ -2266,10 +2257,7 @@ class ScalarTests(SemanticHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    @pytest.mark.skipif(
-        _use_duckdb_backend,
-        reason="deactivated on duckdb until nullability over scalars is implemented",
-    )
+    @pytest.mark.skip(reason="deactivated on duckdb until nullability over scalars is implemented")
     def test_20(self):
         """
         Dataset --> Dataset
@@ -2291,10 +2279,7 @@ class ScalarTests(SemanticHelper):
             scalars={"sc_1": True},
         )
 
-    @pytest.mark.skipif(
-        _use_duckdb_backend,
-        reason="deactivated on duckdb until nullability over scalars is implemented",
-    )
+    @pytest.mark.skip(reason="deactivated on duckdb until nullability over scalars is implemented")
     def test_21(self):
         """
         Dataset --> Dataset

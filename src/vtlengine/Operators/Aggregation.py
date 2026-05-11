@@ -1,9 +1,6 @@
 from copy import copy
 from typing import Any, List, Optional
 
-import duckdb
-import pandas as pd
-
 import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import (
     AVG,
@@ -18,24 +15,13 @@ from vtlengine.AST.Grammar.tokens import (
     VAR_SAMP,
 )
 from vtlengine.DataTypes import (
-    Boolean,
-    Date,
-    Duration,
     Integer,
     Number,
     TimeInterval,
-    TimePeriod,
     unary_implicit_promotion,
 )
-from vtlengine.DataTypes.TimeHandling import (
-    PERIOD_IND_MAPPING,
-    PERIOD_IND_MAPPING_REVERSE,
-    TimeIntervalHandler,
-    TimePeriodHandler,
-)
-from vtlengine.Exceptions import RunTimeError, SemanticError
+from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
-from vtlengine.ViralPropagation import get_current_registry
 
 
 def extract_grouping_identifiers(
@@ -51,54 +37,6 @@ def extract_grouping_identifiers(
 
 # noinspection PyMethodOverriding
 class Aggregation(Operator.Unary):
-    @classmethod
-    def _handle_data_types(cls, data: pd.DataFrame, measures: List[Component], mode: str) -> None:
-        if cls.op == COUNT:
-            return
-
-        for measure in measures:
-            if measure.data_type == TimePeriod:
-                if mode == "input":
-                    if cls.op in [MAX, MIN]:
-                        indicators = (
-                            data[measure.name].dropna().str.extract(r"^\d{4}-?([ASQMWD])")[0]
-                        )
-                        if indicators.nunique() > 1:
-                            raise RunTimeError("2-1-19-20", op=cls.op)
-                    data[measure.name] = data[measure.name].map(
-                        lambda x: TimePeriodHandler(str(x)), na_action="ignore"
-                    )
-                else:
-                    data[measure.name] = data[measure.name].map(
-                        lambda x: str(x), na_action="ignore"
-                    )
-            elif measure.data_type == TimeInterval:
-                if mode == "input":
-                    data[measure.name] = data[measure.name].map(
-                        lambda x: TimeIntervalHandler.from_iso_format(str(x)),
-                        na_action="ignore",
-                    )
-                else:
-                    data[measure.name] = data[measure.name].map(
-                        lambda x: str(x), na_action="ignore"
-                    )
-            elif measure.data_type == Duration:
-                if mode == "input":
-                    data[measure.name] = data[measure.name].map(PERIOD_IND_MAPPING)
-                else:
-                    data[measure.name] = data[measure.name].map(PERIOD_IND_MAPPING_REVERSE)
-            elif measure.data_type == Date:
-                if mode == "input":
-                    data[measure.name] = data[measure.name].astype("date64[pyarrow]")
-                else:
-                    data[measure.name] = data[measure.name].astype(Date.dtype())  # type: ignore[call-overload]
-            elif measure.data_type == Boolean and mode == "result":
-                data[measure.name] = (
-                    data[measure.name]  # type: ignore[call-overload, unused-ignore]
-                    .map(lambda x: Boolean().cast(x), na_action="ignore")
-                    .astype("bool[pyarrow]")
-                )
-
     @classmethod
     def validate(  # type: ignore[override]
         cls,
@@ -171,144 +109,6 @@ class Aggregation(Operator.Unary):
 
         # VDS is handled in visit_Aggregation
         return Dataset(name="result", components=result_components, data=None)
-
-    @classmethod
-    def _agg_func(
-        cls,
-        df: pd.DataFrame,
-        grouping_keys: Optional[List[str]],
-        measure_names: Optional[List[str]],
-        having_expression: Optional[str],
-    ) -> pd.DataFrame:
-        grouping_names = (
-            [f'"{name}"' for name in grouping_keys] if grouping_keys is not None else None
-        )
-        if grouping_names is not None and len(grouping_names) > 0:
-            grouping = "GROUP BY " + ", ".join(grouping_names)
-        else:
-            grouping = ""
-
-        if having_expression is None:
-            having_expression = ""
-
-        if measure_names is not None and len(measure_names) == 0 and cls.op == COUNT:
-            if grouping_names is not None:
-                query = (
-                    f"SELECT {', '.join(grouping_names)}, COUNT() AS "
-                    f"int_var from df {grouping} {having_expression}"
-                )
-            else:
-                query = f"SELECT COUNT() AS int_var from df {grouping}"
-            conn = duckdb.connect(database=":memory:", read_only=False)
-            try:
-                conn.register("df", df)
-                return conn.execute(query).fetchdf()
-            finally:
-                conn.close()
-
-        if measure_names is not None and len(measure_names) > 0:
-            functions = ""
-            for e in measure_names:
-                e = f'"{e}"'
-                if cls.type_to_check is not None and cls.op != COUNT:
-                    functions += (
-                        f"{cls.py_op}(CAST({e} AS DOUBLE)) AS {e}, "  # Count can only be one here
-                    )
-                elif cls.op == COUNT:
-                    functions += f"{cls.py_op}({e}) AS int_var, "
-                    break
-                else:
-                    functions += f"{cls.py_op}({e}) AS {e}, "
-            if grouping_names is not None and len(grouping_names) > 0:
-                query = (
-                    f"SELECT {', '.join(grouping_names) + ', '}{functions[:-2]} "
-                    f"from df {grouping} {having_expression}"
-                )
-            else:
-                query = f"SELECT {functions[:-2]} from df"
-
-        else:
-            query = (
-                f"SELECT {', '.join(grouping_names or [])} from df {grouping} {having_expression}"
-            )
-
-        conn = duckdb.connect(database=":memory:", read_only=False)
-        try:
-            conn.register("df", df)
-            result = conn.execute(query).fetchdf()
-        except RuntimeError as e:
-            if "Conversion" in e.args[0]:
-                raise RunTimeError("2-3-8", op=cls.op, msg=e.args[0].split(":")[-1])
-            else:
-                raise RunTimeError("2-1-1-1", op=cls.op, error=e)
-        finally:
-            conn.close()
-        return result
-
-    @classmethod
-    def evaluate(  # type: ignore[override]
-        cls,
-        operand: Dataset,
-        group_op: Optional[str],
-        grouping_columns: Optional[List[str]],
-        having_expr: Optional[str],
-    ) -> Dataset:
-        result = cls.validate(operand, group_op, grouping_columns, having_expr)
-
-        grouping_keys = result.get_identifiers_names()
-        result_df = operand.data.copy() if operand.data is not None else pd.DataFrame()
-        measure_names = operand.get_measures_names()
-        viral_attr_names = operand.get_viral_attributes_names()
-        # Keep a copy of viral attrs for post-aggregation propagation
-        viral_df = result_df[grouping_keys + viral_attr_names].copy() if viral_attr_names else None
-        result_df = result_df[grouping_keys + measure_names]
-        if cls.op == COUNT:
-            result_df = result_df.dropna(subset=measure_names, how="any")
-        if cls.op in [MAX, MIN]:
-            for measure in operand.get_measures():
-                if measure.data_type == TimeInterval:
-                    raise RunTimeError("2-1-19-18", op=cls.op)
-        cls._handle_data_types(result_df, operand.get_measures(), "input")
-        result_df = cls._agg_func(result_df, grouping_keys, measure_names, having_expr)
-
-        cls._handle_data_types(result_df, operand.get_measures(), "result")
-        # Handle correct order on result
-        aux_df = (
-            operand.data[grouping_keys].drop_duplicates()
-            if operand.data is not None
-            else pd.DataFrame()
-        )
-        if len(grouping_keys) == 0:
-            aux_df = result_df
-            aux_df.dropna(subset=result.get_measures_names(), how="all", inplace=True)
-            if cls.op == COUNT and len(result_df) == 0:
-                aux_df["int_var"] = 0
-        elif len(aux_df) == 0:
-            aux_df = pd.DataFrame(columns=result.get_components_names())
-        else:
-            aux_df = pd.merge(aux_df, result_df, how="left", on=grouping_keys)
-        if having_expr is not None:
-            aux_df.dropna(subset=result.get_measures_names(), how="any", inplace=True)
-        # Propagate viral attributes using the registry
-        if viral_df is not None and viral_attr_names:
-            registry = get_current_registry()
-            if grouping_keys:
-                grouped = viral_df.groupby(grouping_keys, sort=False)
-                for va_name in viral_attr_names:
-                    aux_df[va_name] = (
-                        grouped[va_name]
-                        .agg(lambda vals: registry.resolve_group(va_name, list(vals)))
-                        .values
-                    )
-            else:
-                for va_name in viral_attr_names:
-                    aux_df[va_name] = registry.resolve_group(va_name, list(viral_df[va_name]))
-
-        for comp_name, comp in result.components.items():
-            if comp_name in aux_df.columns:
-                aux_df[comp_name] = aux_df[comp_name].astype(comp.data_type.dtype())  # type: ignore[call-overload]
-        result.data = aux_df
-        return result
 
 
 class Max(Aggregation):

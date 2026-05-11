@@ -4,7 +4,7 @@ from typing import Union
 
 import pytest
 
-from tests.Helper import TestHelper, _use_duckdb_backend
+from tests.Helper import TestHelper
 from vtlengine.API import run
 
 
@@ -32,7 +32,6 @@ class AdditionalHelper(TestHelper):
             data_structures={"datasets": []},
             datapoints={},
             return_only_persistent=False,
-            use_duckdb=_use_duckdb_backend(),
         )
         assert result["DS_r"].value == reference_value
 
@@ -4366,10 +4365,7 @@ class DefinedOperatorsTest(AdditionalHelper):
         )
 
 
-@pytest.mark.skipif(
-    _use_duckdb_backend,
-    reason="deactivated on duckdb until nullability over scalars is implemented",
-)
+@pytest.mark.skip(reason="deactivated on duckdb until nullability over scalars is implemented")
 class DatesTest(AdditionalHelper):
     """
     Group 16
