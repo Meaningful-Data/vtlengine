@@ -2,9 +2,9 @@ name: Testing
 
 on:
   push:
-    branches: [ "main", "dev" ]
+    branches: [ "main", "1.6.X", "dev" ]
   pull_request:
-    branches: [ "main", "dev" ]
+    branches: [ "main", "1.6.X", "dev" ]
   workflow_dispatch:
 
 permissions:
