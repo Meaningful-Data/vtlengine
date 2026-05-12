@@ -349,6 +349,13 @@ class StructureVisitor(ASTTemplate):
             return udo_val
         return name
 
+    def _resolve_membership_name(self, name: str) -> str:
+        """Resolve a ``alias#component`` name, substituting UDO bindings on each side."""
+        if "#" not in name:
+            return self._resolve_udo_name(name)
+        alias, comp = name.split("#", 1)
+        return f"{self._resolve_udo_name(alias)}#{self._resolve_udo_name(comp)}"
+
     def _push_udo_params(self, params: Dict[str, Any]) -> None:
         """Push a new UDO parameter scope onto the stack."""
         if self._udo_params is None:
@@ -728,8 +735,8 @@ class StructureVisitor(ASTTemplate):
                 grouping_op = agg_node.grouping_op or ""
                 for g in agg_node.grouping:
                     if isinstance(g, (AST.VarID, AST.Identifier)):
-                        group_ids.add(g.value)
-            measure_names.append(self._resolve_name(assignment.left))
+                        group_ids.add(self._resolve_udo_name(g.value))
+            measure_names.append(self._resolve_udo_name(self._resolve_name(assignment.left)))
 
         if grouping_op == tokens.GROUP_BY:
             kept_ids = group_ids
@@ -779,11 +786,12 @@ class StructureVisitor(ASTTemplate):
         renames: Dict[str, str] = {}
         for child in node.children:
             if isinstance(child, AST.RenameNode):
-                old = child.old_name
+                old = self._resolve_membership_name(child.old_name)
+                new = self._resolve_udo_name(child.new_name)
                 # Strip alias prefix from membership refs.
                 if "#" in old and old not in input_ds.components:
                     old = old.split("#", 1)[1]
-                renames[old] = child.new_name
+                renames[old] = new
 
         unqualified_to_qualified: Dict[str, str] = {}
         for comp_name in input_ds.components:
@@ -827,7 +835,7 @@ class StructureVisitor(ASTTemplate):
         if input_ds is None:
             return None
         remove_ids = {
-            self._resolve_name(child.left)
+            self._resolve_udo_name(self._resolve_name(child.left))
             for child in node.children
             if isinstance(child, AST.BinOp)
         }
@@ -918,10 +926,10 @@ class StructureVisitor(ASTTemplate):
         names: List[str] = []
         for child in children:
             if isinstance(child, (AST.VarID, AST.Identifier)):
-                names.append(child.value)
+                names.append(self._resolve_udo_name(child.value))
             elif isinstance(child, AST.BinOp) and child.op == tokens.MEMBERSHIP:
-                ds_alias = self._resolve_name(child.left)
-                comp = self._resolve_name(child.right)
+                ds_alias = self._resolve_udo_name(self._resolve_name(child.left))
+                comp = self._resolve_udo_name(self._resolve_name(child.right))
                 qualified = f"{ds_alias}#{comp}"
                 names.append(qualified if qualified in ctx else comp)
         return names
