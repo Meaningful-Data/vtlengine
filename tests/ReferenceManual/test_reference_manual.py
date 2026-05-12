@@ -72,17 +72,6 @@ new_operators.remove(185)
 # Multimeasures on specific operators that must raise errors
 exceptions_tests = [27, 31]
 
-# Reference-manual UDO variants the DuckDB transpiler does not yet substitute
-# component-name parameters for. The standard-syntax versions pass via
-# test_reference_duckdb; only the user-defined-operator wrapper fails. Tracked as
-# a follow-up against the SQL transpiler — remove an entry here when fixed.
-UDO_TRANSPILER_BROKEN = {
-    6, 7, 8, 9, 10, 11,          # join with component params
-    151, 152, 153, 154, 155, 156, # analytic with component params
-    166, 167, 168, 169, 170,      # clause variants with component params
-    174, 175, 176, 177,           # remaining clause / new operators
-}
-
 params = itertools.chain(
     general_operators,
     join_operators,
@@ -225,10 +214,6 @@ def test_reference_duckdb(input_datasets, reference_datasets, ast, param):
 @pytest.mark.parametrize("param", params)
 def test_reference_defined_operators_duckdb(input_datasets, reference_datasets, param):
     """Run each reference-manual example via the user-defined-operator VTL variant."""
-    if param in UDO_TRANSPILER_BROKEN:
-        pytest.xfail(
-            "DuckDB transpiler does not substitute UDO component-name parameters into SQL"
-        )
     warnings.filterwarnings("ignore", category=FutureWarning)
     reference_datasets = load_dataset(*reference_datasets, dp_dir=reference_dp_dir, param=param)
 
