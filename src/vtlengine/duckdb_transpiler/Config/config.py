@@ -118,20 +118,31 @@ def set_decimal_config() -> None:
 # Memory & Performance Configuration
 # =============================================================================
 
-# Default memory limit (80% of system RAM)
-MEMORY_LIMIT: str = os.getenv("VTL_MEMORY_LIMIT", "80%")
+# Accessor functions read os.environ on every call so user scripts can mutate
+# os.environ after `import vtlengine` and have those values take effect on the
+# next run(). Capturing them in module-level constants would freeze the values
+# at import time.
 
-# Default thread count (default = 1)
-THREADS: int = int(os.getenv("VTL_THREADS", "1"))
 
-# Temp directory for spill-to-disk
-TEMP_DIRECTORY: str = os.getenv("VTL_TEMP_DIRECTORY", tempfile.gettempdir())
+def _memory_limit() -> str:
+    return os.getenv("VTL_MEMORY_LIMIT", "80%")
 
-# Max temp directory size for spill-to-disk (empty = use available disk space)
-MAX_TEMP_DIRECTORY_SIZE: str = os.getenv("VTL_MAX_TEMP_DIRECTORY_SIZE", "")
 
-# Use file-backed database instead of in-memory (better for large datasets)
-USE_IN_MEMORY_DB: bool = os.getenv("VTL_USE_IN_MEMORY_DB", "1").lower() in ("1", "true")
+def _threads() -> int:
+    return int(os.getenv("VTL_THREADS", "1"))
+
+
+def _temp_directory() -> str:
+    return os.getenv("VTL_TEMP_DIRECTORY", tempfile.gettempdir())
+
+
+def _max_temp_directory_size() -> str:
+    return os.getenv("VTL_MAX_TEMP_DIRECTORY_SIZE", "")
+
+
+def _use_in_memory_db() -> bool:
+    return os.getenv("VTL_USE_IN_MEMORY_DB", "1").lower() in ("1", "true")
+
 
 # Minimum storage version required by the transpiler (typed macro parameters need >= v1.4.0).
 # DuckDB defaults to an older on-disk format for portability, so it must be set explicitly.
@@ -150,7 +161,7 @@ def get_memory_limit_bytes() -> int:
     Returns:
         Memory limit in bytes
     """
-    limit = MEMORY_LIMIT.strip().upper()
+    limit = _memory_limit().strip().upper()
 
     total_ram = psutil.virtual_memory().total
 
@@ -202,17 +213,17 @@ def configure_duckdb_connection(conn: duckdb.DuckDBPyConnection) -> None:
         and data structures to speed up repeated queries
     - Set decimal configuration: Apply the configured decimal precision and scale
     """
+    max_temp_dir_size = _max_temp_directory_size()
     statements = [
         f"SET memory_limit = '{get_memory_limit_str()}'",
-        f"SET temp_directory = '{TEMP_DIRECTORY}'",
+        f"SET temp_directory = '{_temp_directory()}'",
         "SET preserve_insertion_order = false",
         "SET max_expression_depth TO 10000",
         "SET enable_object_cache = true",
+        f"SET threads = {_threads()}",
     ]
-    if MAX_TEMP_DIRECTORY_SIZE:
-        statements.append(f"SET max_temp_directory_size = '{MAX_TEMP_DIRECTORY_SIZE}'")
-    if THREADS is not None:
-        statements.append(f"SET threads = {THREADS}")
+    if max_temp_dir_size:
+        statements.append(f"SET max_temp_directory_size = '{max_temp_dir_size}'")
 
     conn.execute(";\n".join(statements))
 
@@ -240,11 +251,12 @@ def create_configured_connection(database: str = ":memory:") -> duckdb.DuckDBPyC
 @contextmanager
 def configured_connection(database: str = ":memory:") -> Iterator[duckdb.DuckDBPyConnection]:
     """Context manager that yields a configured DuckDB connection."""
-    Path(TEMP_DIRECTORY).mkdir(parents=True, exist_ok=True)
-    session_dir = Path(TEMP_DIRECTORY) / f"duckdb_tmp_{uuid.uuid4().hex}"
+    temp_dir = _temp_directory()
+    Path(temp_dir).mkdir(parents=True, exist_ok=True)
+    session_dir = Path(temp_dir) / f"duckdb_tmp_{uuid.uuid4().hex}"
     session_dir.mkdir(exist_ok=True)
 
-    if database == ":memory:" and not USE_IN_MEMORY_DB:
+    if database == ":memory:" and not _use_in_memory_db():
         database = str(session_dir / "session.duckdb")
 
     conn = create_configured_connection(database)
@@ -272,6 +284,6 @@ def get_system_info() -> dict[str, Union[float, int, str, None]]:
         "used_percent": mem.percent,
         "configured_limit_gb": get_memory_limit_bytes() / (1024**3),
         "configured_limit_str": get_memory_limit_str(),
-        "threads": THREADS or os.cpu_count(),
-        "temp_directory": TEMP_DIRECTORY,
+        "threads": _threads() or os.cpu_count(),
+        "temp_directory": _temp_directory(),
     }
