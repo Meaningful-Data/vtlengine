@@ -29,10 +29,27 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@1583d6b38d7be47f593cb472781bbb21cab4321e # v0.0.10
+
       - name: Build wheels
         uses: pypa/cibuildwheel@d16cc544083d96996f923fc4b318fee3cb14b34e # v3.4.1
         env:
           CIBW_ARCHS: ${{ matrix.arch }}
+          CMAKE_C_COMPILER_LAUNCHER: sccache
+          CMAKE_CXX_COMPILER_LAUNCHER: sccache
+          SCCACHE_GHA_ENABLED: "true"
+          CIBW_BEFORE_ALL_LINUX: |
+            ARCH=$(uname -m)
+            curl -fsSL "https://github.com/mozilla/sccache/releases/download/v0.15.0/sccache-v0.15.0-${ARCH}-unknown-linux-musl.tar.gz" \
+              | tar -xz --strip-components=1 -C /usr/local/bin --wildcards '*/sccache'
+            chmod +x /usr/local/bin/sccache
+          CIBW_ENVIRONMENT_PASS_LINUX: >-
+            SCCACHE_GHA_ENABLED
+            ACTIONS_CACHE_URL
+            ACTIONS_RUNTIME_TOKEN
+            ACTIONS_RESULTS_URL
+            ACTIONS_CACHE_SERVICE_V2
 
       - name: Upload wheels
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
