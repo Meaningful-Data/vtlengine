@@ -31,7 +31,7 @@ jobs:
         id: cpp-cache
         with:
           path: .cpp-wheel
-          key: cpp-parser-ubuntu2404-py3.12-${{ hashFiles('src/vtlengine/AST/Grammar/_cpp_parser/**', 'CMakeLists.txt', 'pyproject.toml') }}
+          key: cpp-parser-ubuntu2404-py3.12-${{ hashFiles('src/vtlengine/**', 'CMakeLists.txt', 'pyproject.toml') }}
 
       - name: Install system dependencies
         run: |
