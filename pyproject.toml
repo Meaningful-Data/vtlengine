@@ -72,7 +72,9 @@ dev = [
     "types-jsonschema>=4.25.1,<5.0",
 ]
 docs = [
-    "sphinx>=7.4.7,<8.0",
+    "sphinx>=7.4.7,<8.0; python_version < '3.11'",
+    "sphinx>=8.2.3,<9.0; python_version >= '3.11' and python_version < '3.12'",
+    "sphinx>=9.1.0,<10.0; python_version >= '3.12'",
     "sphinx-rtd-theme>=3.0.2,<4.0",
     "sphinx-multiversion>=0.2.4,<0.3.0",
     "toml>=0.10.2,<0.11.0",
