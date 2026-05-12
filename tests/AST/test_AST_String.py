@@ -28,6 +28,7 @@ params = [
     "time_agg.vtl",
     "viral_propagation.vtl",
     "round_with_slash.vtl",
+    "trunc_with_slash.vtl",
 ]
 
 params_prettier = [
