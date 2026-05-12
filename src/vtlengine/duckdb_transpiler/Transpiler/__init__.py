@@ -1111,10 +1111,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     def _is_operand_type(self, node: AST.AST, target_type: type) -> bool:
         """Check if an operand resolves to *target_type*."""
         if isinstance(node, AST.VarID):
+            name = self._resolve_udo_name(node.value)
             if self._in_clause and self._current_dataset:
-                comp = self._current_dataset.components.get(node.value)
+                comp = self._current_dataset.components.get(name)
                 return comp is not None and comp.data_type == target_type
-            return node.value in self.scalars and self.scalars[node.value].data_type == target_type
+            return name in self.scalars and self.scalars[name].data_type == target_type
 
         elif isinstance(node, AST.ParamOp) and node.op == tokens.CAST:
             type_node = node.children[1]
@@ -2277,7 +2278,7 @@ FROM (
         renames: Dict[str, str] = {}
         for child in node.children:
             if isinstance(child, AST.RenameNode):
-                old = self._resolve_udo_name(child.old_name)
+                old = self._resolve_membership_name(child.old_name)
                 new = self._resolve_udo_name(child.new_name)
                 if "#" in old:
                     if old in self._join_alias_map:
@@ -2308,7 +2309,7 @@ FROM (
         remove_ids: set[str] = set()
         for child in node.children:
             if isinstance(child, AST.BinOp):
-                col_name = self._get_node_value(child.left)
+                col_name = self._resolve_udo_name(self._get_node_value(child.left))
                 remove_ids.add(col_name)
                 val_sql = self.visit(child.right)
                 where_parts.append(f"{quote_name(col_name)} = {val_sql}")
@@ -2333,7 +2334,7 @@ FROM (
             for child in node.children:
                 assignment = self._unwrap_assignment(child)
                 if isinstance(assignment, AST.Assignment):
-                    col_name = self._get_node_value(assignment.left)
+                    col_name = self._resolve_udo_name(self._get_node_value(assignment.left))
                     agg_node = assignment.right
                     if isinstance(agg_node, AST.Aggregation) and agg_node.having_clause is not None:
                         hc = agg_node.having_clause
@@ -2346,11 +2347,10 @@ FROM (
                         and agg_node.operand
                         and hasattr(agg_node.operand, "value")
                     ):
-                        src_comp = ds.components.get(agg_node.operand.value)
+                        operand_name = self._resolve_udo_name(agg_node.operand.value)
+                        src_comp = ds.components.get(operand_name)
                         if src_comp and src_comp.data_type == TimePeriod:
-                            tp_minmax_cols.append(
-                                (agg_node.operand.value, str(agg_node.op).lower())
-                            )
+                            tp_minmax_cols.append((operand_name, str(agg_node.op).lower()))
 
                     expr_sql = self.visit(agg_node)
                     calc_exprs[col_name] = expr_sql
@@ -2367,11 +2367,10 @@ FROM (
                 if isinstance(agg_node, AST.Aggregation) and agg_node.grouping:
                     grouping_op = agg_node.grouping_op or ""
                     for g in agg_node.grouping:
-                        if (
-                            isinstance(g, (AST.VarID, AST.Identifier))
-                            and g.value not in grouping_names
-                        ):
-                            grouping_names.append(g.value)
+                        if isinstance(g, (AST.VarID, AST.Identifier)):
+                            resolved = self._resolve_udo_name(g.value)
+                            if resolved not in grouping_names:
+                                grouping_names.append(resolved)
                         elif isinstance(g, AST.TimeAggregation) and time_agg_expr is None:
                             with self._clause_scope(ds):
                                 time_agg_expr = self.visit_TimeAggregation(g)
@@ -2667,12 +2666,17 @@ FROM (
             partition_cols = ", ".join(quote_name(p) for p in partition_cols_list)
             over_parts.append(f"PARTITION BY {partition_cols}")
         if node.order_by:
-            order_cols = ", ".join(f"{quote_name(o.component)} {o.order}" for o in node.order_by)
+            order_cols = ", ".join(
+                f"{quote_name(self._resolve_udo_name(o.component))} {o.order}"
+                for o in node.order_by
+            )
             over_parts.append(f"ORDER BY {order_cols}")
         if node.window:
             order_is_date = False
             if node.order_by and self._current_dataset:
-                comp = self._current_dataset.components.get(node.order_by[0].component)
+                comp = self._current_dataset.components.get(
+                    self._resolve_udo_name(node.order_by[0].component)
+                )
                 order_is_date = comp is not None and comp.data_type == Date
             window_sql = self.visit_Windowing(node.window, order_is_date=order_is_date)
             over_parts.append(window_sql)
@@ -2682,7 +2686,7 @@ FROM (
 
     def _resolve_partition_cols(self, node: AST.Analytic) -> List[str]:
         """Resolve the partition column list applying VTL 2.2 EXCEPT semantics."""
-        listed = list(node.partition_by) if node.partition_by else []
+        listed = [self._resolve_udo_name(p) for p in node.partition_by] if node.partition_by else []
         if node.partition_op == "except all":
             return []
         if node.partition_op == "except":
@@ -2690,7 +2694,7 @@ FROM (
             excluded = set(listed)
             return [i for i in id_names if i not in excluded]
         if node.partition_by is None and node.order_by:
-            ordered = {o.component for o in node.order_by}
+            ordered = {self._resolve_udo_name(o.component) for o in node.order_by}
             return [i for i in self._operand_identifier_names(node) if i not in ordered]
         return listed
 
@@ -2785,9 +2789,7 @@ FROM (
         # rules must reduce over the full partition, so we use only PARTITION BY.
         partition_cols_list = self._resolve_partition_cols(node)
         if partition_cols_list:
-            partition_cols = ", ".join(
-                quote_name(self._resolve_udo_name(p)) for p in partition_cols_list
-            )
+            partition_cols = ", ".join(quote_name(p) for p in partition_cols_list)
             vp_over_clause = f"PARTITION BY {partition_cols}"
         else:
             vp_over_clause = ""
