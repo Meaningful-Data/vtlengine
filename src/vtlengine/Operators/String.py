@@ -129,10 +129,7 @@ class Substr(Parameterized):
         if not check_unary_implicit_promotion(data_type, Integer):
             raise SemanticError("1-1-18-4", op=cls.op, param_type=cls.op, correct_type="Integer")
 
-        if isinstance(param, DataComponent):
-            if param.data is not None:
-                param.data.map(lambda x: cls.check_param_value(x, position))
-        else:
+        if isinstance(param, Scalar):
             cls.check_param_value(param.value, position)
 
     @classmethod
@@ -224,10 +221,7 @@ class Instr(Parameterized):
                     param_type="Occurrence",
                     correct_type="Integer",
                 )
-        if isinstance(param, DataComponent):
-            if param.data is not None:
-                param.data.map(lambda x: cls.check_param_value(x, position))
-        else:
+        if isinstance(param, Scalar):
             cls.check_param_value(param.value, position)
 
     @classmethod

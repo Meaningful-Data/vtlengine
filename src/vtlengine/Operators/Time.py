@@ -1,8 +1,6 @@
 import re
 from datetime import date
-from typing import Any, Dict, List, Optional, Type, Union
-
-import pandas as pd
+from typing import Any, List, Optional, Type, Union
 
 import vtlengine.Operators as Operators
 from vtlengine.AST.Grammar.tokens import (
@@ -37,8 +35,6 @@ from vtlengine.DataTypes.TimeHandling import (
     PERIOD_IND_MAPPING,
     TimePeriodHandler,
     date_to_period,
-    generate_period_range,
-    max_periods_in_year,
 )
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
@@ -75,17 +71,6 @@ class Time(Operators.Operator):
         return str(reference_id)
 
     @classmethod
-    def sort_by_time(cls, operand: Dataset) -> Optional[pd.DataFrame]:
-        time_id = cls._get_time_id(operand)
-        if time_id is None:
-            return None
-        ids = [id.name for id in operand.get_identifiers() if id.name != time_id]
-        ids.append(time_id)
-        if operand.data is None:
-            return None
-        return operand.data.sort_values(by=ids).reset_index(drop=True)
-
-    @classmethod
     def _get_period(cls, value: str) -> str:
         tp_value = TimePeriodHandler(value)
         return tp_value.period_indicator
@@ -103,7 +88,6 @@ class Unary(Time):
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
         if cls._get_time_id(operand) is None:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
-        operand.data = cls.sort_by_time(operand)
         return Dataset(name=dataset_name, components=operand.components.copy(), data=None)
 
 
@@ -178,76 +162,6 @@ class Fill_time_series(Binary):
             fill_type = "all"
         return Dataset(name=dataset_name, components=operand.components.copy(), data=None)
 
-    @classmethod
-    def fill_periods(cls, data: pd.DataFrame, fill_type: str) -> pd.DataFrame:
-        # Parse each time_id value once and reuse throughout
-        data = data.copy()
-        tp_parsed = data[cls.time_id].map(lambda x: TimePeriodHandler(x), na_action="ignore")
-        data[cls.time_id] = tp_parsed.map(str, na_action="ignore")
-        data = data.assign(_freq=tp_parsed.map(lambda x: x.period_indicator, na_action="ignore"))
-
-        # Determine global year range (for "all" mode)
-        if fill_type == "all":
-            global_min_year: int = tp_parsed.map(lambda x: x.year).min()
-            global_max_year: int = tp_parsed.map(lambda x: x.year).max()
-
-        # Group by other_ids + frequency and fill missing periods
-        filled_rows: List[Dict[str, Any]] = []
-        non_id_cols = [
-            c for c in data.columns if c not in cls.other_ids and c != cls.time_id and c != "_freq"
-        ]
-
-        for group_key, group_df in data.groupby(cls.other_ids + ["_freq"]):
-            if isinstance(group_key, tuple):
-                freq = group_key[-1]
-                other_id_values = group_key[:-1]
-            else:
-                freq = group_key
-                other_id_values = ()
-
-            group_tp = tp_parsed.loc[group_df.index]
-
-            # Determine range start/end
-            if fill_type == "all":
-                if freq == "A":
-                    start = TimePeriodHandler(f"{global_min_year}A")
-                    end = TimePeriodHandler(f"{global_max_year}A")
-                else:
-                    max_p = max_periods_in_year(freq, global_max_year)
-                    start = TimePeriodHandler(f"{global_min_year}-{freq}1")
-                    end = TimePeriodHandler(f"{global_max_year}-{freq}{max_p}")
-            else:  # single
-                sorted_tp = sorted(group_tp.tolist(), key=lambda x: (x.year, x.period_number))
-                start, end = sorted_tp[0], sorted_tp[-1]
-
-            # Generate all expected periods and find missing ones
-            expected = generate_period_range(start, end)
-            existing = set(group_df[cls.time_id].tolist())
-
-            # Build other_ids dict for fill rows
-            other_vals: Dict[str, Any] = {}
-            if cls.other_ids:
-                for i, col in enumerate(cls.other_ids):
-                    other_vals[col] = other_id_values[i]
-
-            for tp in expected:
-                tp_str = str(tp)
-                if tp_str not in existing:
-                    row: Dict[str, Any] = {**other_vals, cls.time_id: tp_str}
-                    for col in non_id_cols:
-                        row[col] = None
-                    filled_rows.append(row)
-
-        # Combine and return
-        data = data.drop(columns=["_freq"])
-        if filled_rows:
-            fill_df = pd.DataFrame(filled_rows)
-            result = pd.concat([data, fill_df], ignore_index=True)
-        else:
-            result = data
-        result[cls.time_id] = result[cls.time_id].astype("string[pyarrow]")
-        return result.sort_values(by=cls.other_ids + [cls.time_id]).reset_index(drop=True)
-
 
 class Time_Shift(Binary):
     op = TIMESHIFT
@@ -258,37 +172,6 @@ class Time_Shift(Binary):
         if cls._get_time_id(operand) is None:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
         return Dataset(name=dataset_name, components=operand.components.copy(), data=None)
-
-    @classmethod
-    def shift_period(
-        cls, period_str: str, shift_value: int, frequency: Optional[int] = None
-    ) -> str:
-        period_type = cls._get_period(period_str)
-
-        if period_type == "A":
-            tp = TimePeriodHandler(period_str)
-            tp.year += shift_value
-            return str(tp)
-
-        if frequency:
-            shift_value *= frequency
-
-        tp_value = TimePeriodHandler(period_str)
-        year, period, value = (
-            tp_value.year,
-            tp_value.period_indicator,
-            tp_value.period_number + shift_value,
-        )
-        period_limit = cls.YEAR_TO_PERIOD[period]
-
-        if value <= 0:
-            year -= 1
-            value += period_limit
-        elif value > period_limit:
-            year += (value - 1) // period_limit
-            value = (value - 1) % period_limit + 1
-
-        return str(TimePeriodHandler(f"{year}-{period}{value}"))
 
 
 class Time_Aggregation(Time):

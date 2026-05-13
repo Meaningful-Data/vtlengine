@@ -2,8 +2,6 @@ from copy import copy
 from functools import reduce
 from typing import Any, Dict, List, Optional
 
-import pandas as pd
-
 from vtlengine.AST import BinOp
 from vtlengine.AST.Grammar.tokens import CROSS_JOIN, FULL_JOIN, INNER_JOIN, LEFT_JOIN
 from vtlengine.DataTypes import SCALAR_TYPES_CLASS_REVERSE, binary_implicit_promotion
@@ -344,13 +342,6 @@ class Apply(Operator):
             for component in dataset.components.values()
             if component.name.startswith(prefix) or component.role is Role.IDENTIFIER
         }
-        comp_names = list(components.keys())
-        data = (
-            dataset.data[comp_names]
-            if dataset.data is not None
-            else pd.DataFrame(columns=comp_names)
-        )
-
         for component in components.values():
             component.name = (
                 component.name[len(prefix) :]
@@ -358,15 +349,7 @@ class Apply(Operator):
                 else component.name
             )
         components = {component.name: component for component in components.values()}
-        data.rename(
-            columns={
-                column: column[len(prefix) :]
-                for column in data.columns
-                if column.startswith(prefix)
-            },
-            inplace=True,
-        )
-        return Dataset(name=name, components=components, data=data)
+        return Dataset(name=name, components=components, data=None)
 
     @classmethod
     def get_common_components(cls, left: Dataset, right: Dataset) -> (Dataset, Dataset):  # type: ignore[syntax]
@@ -377,6 +360,4 @@ class Apply(Operator):
         right.components = {
             comp.name: comp for comp in right.components.values() if comp.name in common
         }
-        left.data = left.data[list(common)] if left.data is not None else pd.DataFrame()
-        right.data = right.data[list(common)] if right.data is not None else pd.DataFrame()
         return left, right

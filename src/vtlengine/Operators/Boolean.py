@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Optional
 
 import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import AND, NOT, OR, XOR
@@ -53,7 +53,3 @@ class Not(Unary):
     @staticmethod
     def py_op(x: Optional[bool]) -> Optional[bool]:
         return None if x is None else not x
-
-    @classmethod
-    def apply_operation_component(cls, series: Any) -> Any:
-        return ~series.astype("bool[pyarrow]")

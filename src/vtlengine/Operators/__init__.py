@@ -1,9 +1,6 @@
-import math
 import re
 from copy import copy
 from typing import Any, Union
-
-import pandas as pd
 
 from vtlengine.AST.Grammar.tokens import (
     CEIL,
@@ -21,7 +18,6 @@ from vtlengine.DataTypes import (
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.ViralPropagation import get_current_registry
 
 ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
 
@@ -97,42 +93,6 @@ class Operator:
 
 
 class Binary(Operator):
-    @classmethod
-    def op_func(cls, *args: Any) -> Any:
-        x, y = args
-
-        if (x is None or (isinstance(x, float) and math.isnan(x))) or (
-            y is None or (isinstance(y, float) and math.isnan(y))
-        ):
-            return None
-        return cls.py_op(x, y)
-
-    @classmethod
-    def apply_operation_two_series(cls, left_series: Any, right_series: Any) -> Any:
-        result = list(map(cls.op_func, left_series.values, right_series.values))
-        index = left_series.index if len(left_series) <= len(right_series) else right_series.index
-        result_dtype = cls.return_type.dtype() if cls.return_type is not None else "string[pyarrow]"
-        return pd.Series(result, index=index, dtype=result_dtype)
-
-    @classmethod
-    def apply_operation_series_scalar(
-        cls,
-        series: Any,
-        scalar: Scalar,
-        series_left: bool,
-    ) -> Any:
-        result_dtype = cls.return_type.dtype() if cls.return_type is not None else "string[pyarrow]"
-        if scalar is None:
-            return pd.Series(None, index=series.index, dtype=result_dtype)
-        if series_left:
-            return series.map(lambda x: cls.py_op(x, scalar), na_action="ignore").astype(
-                result_dtype
-            )
-        else:
-            return series.map(lambda x: cls.py_op(scalar, x), na_action="ignore").astype(
-                result_dtype
-            )
-
     @classmethod
     def validate(cls, *args: Any) -> Any:
         """
@@ -399,61 +359,8 @@ class Binary(Operator):
             else:
                 measure.data_type = result_data_type
 
-    @staticmethod
-    def _cleanup_attributes_after_merge(
-        result_data: pd.DataFrame,
-        left_operand: Dataset,
-        right_operand: Dataset,
-    ) -> pd.DataFrame:
-        """Remove non-viral attributes and resolve viral attribute merge suffixes."""
-        # Delete non-viral attributes from the result data
-        attributes = list(
-            set(left_operand.get_attributes_names()).union(right_operand.get_attributes_names())
-        )
-        for att in attributes:
-            if att in result_data.columns:
-                result_data = result_data.drop(att, axis=1)
-            if att + "_x" in result_data.columns:
-                result_data = result_data.drop(att + "_x", axis=1)
-            if att + "_y" in result_data.columns:
-                result_data = result_data.drop(att + "_y", axis=1)
-
-        # Handle viral attribute merge suffixes
-        registry = get_current_registry()
-        left_viral = set(left_operand.get_viral_attributes_names())
-        right_viral = set(right_operand.get_viral_attributes_names())
-        all_viral = left_viral | right_viral
-        for va in all_viral:
-            has_x = va + "_x" in result_data.columns
-            has_y = va + "_y" in result_data.columns
-            if has_x and has_y:
-                # Both operands have this viral attr — apply propagation rule
-                result_data[va] = result_data[[va + "_x", va + "_y"]].apply(
-                    lambda row: registry.resolve_pair(va, row.iloc[0], row.iloc[1]),
-                    axis=1,
-                )
-                result_data = result_data.drop([va + "_x", va + "_y"], axis=1)
-            elif has_x:
-                result_data = result_data.rename(columns={va + "_x": va})
-            elif has_y:
-                result_data = result_data.rename(columns={va + "_y": va})
-        return result_data
-
 
 class Unary(Operator):
-    @classmethod
-    def op_func(cls, *args: Any) -> Any:
-        x = args[0]
-
-        return None if (x is None or (isinstance(x, float) and math.isnan(x))) else cls.py_op(x)
-
-    @classmethod
-    def apply_operation_component(cls, series: Any) -> Any:
-        """
-        Applies the operation to a component
-        """
-        return series.map(cls.py_op, na_action="ignore")
-
     @classmethod
     def validate(cls, operand: Any) -> Any:
         """

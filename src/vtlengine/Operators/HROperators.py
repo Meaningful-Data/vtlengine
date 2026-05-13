@@ -1,8 +1,6 @@
 import operator
 from copy import copy
-from typing import Dict
-
-from pandas import DataFrame
+from typing import Any, Dict
 
 import vtlengine.Operators as Operators
 from vtlengine.AST.Grammar.tokens import HIERARCHY
@@ -113,7 +111,7 @@ class Hierarchy(Operators.Operator):
 
     @classmethod
     def validate(
-        cls, dataset: Dataset, computed_dict: Dict[str, DataFrame], output: str
+        cls, dataset: Dataset, computed_dict: Dict[str, Any], output: str
     ) -> Dataset:
         dataset_name = VirtualCounter._new_ds_name()
         result_components = {

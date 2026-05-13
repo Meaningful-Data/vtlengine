@@ -4,9 +4,6 @@ import operator
 import warnings
 from typing import Any, Optional, Union
 
-import pandas as pd
-import pyarrow.compute as pc
-
 import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import (
     ABS,
@@ -37,17 +34,6 @@ class Unary(Operator.Unary):
     """
 
     type_to_check = Number
-    pc_func: Any = None
-
-    @classmethod
-    def apply_operation_component(cls, series: Any) -> Any:
-        if cls.pc_func is not None:
-            arr = series.values._pa_array
-            return pd.Series(
-                pd.arrays.ArrowExtensionArray(cls.pc_func(arr)),  # type: ignore[attr-defined,unused-ignore]
-                index=series.index,
-            )
-        return super().apply_operation_component(series)
 
 
 class Binary(Operator.Binary):
@@ -66,10 +52,6 @@ class UnPlus(Unary):
     op = PLUS
     py_op = operator.pos
 
-    @classmethod
-    def apply_operation_component(cls, series: Any) -> Any:
-        return series
-
 
 class UnMinus(Unary):
     """
@@ -78,7 +60,6 @@ class UnMinus(Unary):
 
     op = MINUS
     py_op = operator.neg
-    pc_func = staticmethod(pc.negate)
 
 
 class AbsoluteValue(Unary):
@@ -88,7 +69,6 @@ class AbsoluteValue(Unary):
 
     op = ABS
     py_op = operator.abs
-    pc_func = staticmethod(pc.abs)
 
 
 class Exponential(Unary):
@@ -99,7 +79,6 @@ class Exponential(Unary):
     op = EXP
     py_op = math.exp
     return_type = Number
-    pc_func = staticmethod(pc.exp)
 
 
 class NaturalLogarithm(Unary):
@@ -111,7 +90,6 @@ class NaturalLogarithm(Unary):
     op = LN
     py_op = math.log
     return_type = Number
-    pc_func = staticmethod(pc.ln)
 
 
 class SquareRoot(Unary):
@@ -123,7 +101,6 @@ class SquareRoot(Unary):
     op = SQRT
     py_op = math.sqrt
     return_type = Number
-    pc_func = staticmethod(pc.sqrt)
 
 
 class Ceil(Unary):
@@ -134,7 +111,6 @@ class Ceil(Unary):
     op = CEIL
     py_op = math.ceil
     return_type = Integer
-    pc_func = staticmethod(pc.ceil)
 
 
 class Floor(Unary):
@@ -145,7 +121,6 @@ class Floor(Unary):
     op = FLOOR
     py_op = math.floor
     return_type = Integer
-    pc_func = staticmethod(pc.floor)
 
 
 class BinPlus(Binary):

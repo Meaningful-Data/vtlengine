@@ -185,10 +185,6 @@ class InterpreterAnalyzer(ASTTemplate):
             if result is None:
                 continue
 
-            # Enforce output dtypes match DataStructure declarations
-            if isinstance(result, Dataset):
-                result.enforce_dtypes()
-
             # Removing output dataset
             vtlengine.Exceptions.dataset_output = None
             # Save results
