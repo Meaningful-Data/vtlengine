@@ -78,7 +78,7 @@ jobs:
       - name: Install package and dependencies
         run: |
           poetry install --no-root --all-extras
-          poetry run pip install .cpp-wheel/*.whl
+          poetry run pip install --force-reinstall --no-deps .cpp-wheel/*.whl
         shell: bash
       - name: Check compliance with code formatting guidelines
         run: poetry run ruff format --no-cache --check
