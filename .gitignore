@@ -190,6 +190,7 @@ docs/plans/
 # C++ parser build artifacts
 third_party/
 build/
+.cpp-wheel
 
 # Claude Code settings
 .claude/*

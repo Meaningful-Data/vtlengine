@@ -33,12 +33,10 @@ from vtlengine.files.sdmx_handler import (
 )
 from vtlengine.Model import Component, Dataset, Role, Scalar
 
-# Environment variable to skip post-load validations (for benchmarking)
-SKIP_LOAD_VALIDATION = os.environ.get("VTL_SKIP_LOAD_VALIDATION", "").lower() in (
-    "1",
-    "true",
-    "yes",
-)
+
+def _skip_load_validation() -> bool:
+    """Read VTL_SKIP_LOAD_VALIDATION lazily so mutations after import take effect."""
+    return os.environ.get("VTL_SKIP_LOAD_VALIDATION", "").lower() in ("1", "true", "yes")
 
 
 def _validate_loaded_table(
@@ -60,7 +58,7 @@ def _validate_loaded_table(
     # Normalize TimePeriod columns to canonical internal representation
     _normalize_time_period_columns(conn, table_name, components)
 
-    if SKIP_LOAD_VALIDATION:
+    if _skip_load_validation():
         return
 
     try:
