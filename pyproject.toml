@@ -123,6 +123,7 @@ follow_imports = "silent"
 
 [tool.pytest.ini_options]
 addopts = "--strict-markers"
+pythonpath = ["src"]
 markers = [
     "input_path: directory where tests data files are stored"
 ]

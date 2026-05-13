@@ -38,11 +38,13 @@ jobs:
         with:
           path: build/antlr4-prefix
           key: antlr4-runtime-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('scripts/setup_antlr4_runtime.sh', 'CMakeLists.txt') }}
-      - name: Cache C++ parser wheel
+      - name: Cache compiled C++ parser
         uses: actions/cache@v4
         id: cpp-cache
         with:
-          path: .cpp-wheel
+          # Just the compiled extension binary — restoring it puts it back
+          # next to its __init__.py with no .py files riding along.
+          path: src/vtlengine/AST/Grammar/_cpp_parser/vtl_cpp_parser*
           key: cpp-parser-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('src/vtlengine/AST/Grammar/_cpp_parser/**', 'CMakeLists.txt', 'pyproject.toml') }}
       - name: Download ANTLR4 C++ runtime source
         if: steps.cpp-cache.outputs.cache-hit != 'true' && steps.antlr4-cache.outputs.cache-hit != 'true'
@@ -68,18 +70,22 @@ jobs:
           fi
           cmake --build build/antlr4-build --target antlr4_runtime --config Release
           cmake --install build/antlr4-build --prefix "$PWD/build/antlr4-prefix" --config Release
-      - name: Build C++ parser wheel
+      - name: Build C++ parser binary
         if: steps.cpp-cache.outputs.cache-hit != 'true'
         shell: bash
         run: |
-          pip wheel . -w .cpp-wheel --no-deps -v \
+          # Build the wheel only to fish out the compiled extension; throw
+          # the rest away. The cached entry above is just the binary.
+          pip wheel . -w .build_wheel --no-deps -v \
             -C cmake.define.VTLENGINE_USE_PREBUILT_ANTLR4=ON \
             -C "cmake.define.VTLENGINE_ANTLR4_PREFIX=$PWD/build/antlr4-prefix"
-      - name: Install package and dependencies
-        run: |
-          poetry install --no-root --all-extras
-          poetry run pip install --force-reinstall --no-deps .cpp-wheel/*.whl
+          unzip -o -j .build_wheel/*.whl \
+            'vtlengine/AST/Grammar/_cpp_parser/vtl_cpp_parser*' \
+            -d src/vtlengine/AST/Grammar/_cpp_parser/
+          rm -rf .build_wheel
+      - name: Install dependencies
         shell: bash
+        run: poetry install --no-root --all-extras
       - name: Check compliance with code formatting guidelines
         run: poetry run ruff format --no-cache --check
       - name: Run lint checks
