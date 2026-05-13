@@ -43,7 +43,7 @@ jobs:
         id: cpp-cache
         with:
           path: .cpp-wheel
-          key: cpp-parser-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('src/vtlengine/**', 'CMakeLists.txt', 'pyproject.toml') }}
+          key: cpp-parser-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('src/vtlengine/AST/Grammar/_cpp_parser/**', 'CMakeLists.txt', 'pyproject.toml') }}
       - name: Download ANTLR4 C++ runtime source
         if: steps.cpp-cache.outputs.cache-hit != 'true' && steps.antlr4-cache.outputs.cache-hit != 'true'
         shell: bash
