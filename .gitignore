@@ -198,3 +198,6 @@ build/
 
 # Third-party files that we want to ignore
 third_party/*
+
+# Tests output files
+vtl-output/*
