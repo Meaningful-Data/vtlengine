@@ -194,13 +194,13 @@ def semantic_analysis(
         value domains JSON files. (default:None) It is passed as an object, that can be read from \
         a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
         Check the following example: \
-        :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
+        :doc:`Extra Inputs <extra_inputs>`.
 
         external_routines: Dict or Path, or List of Dicts or Paths of the \
         external routines JSON files. (default: None) It is passed as an object, that can be read \
         from a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
         Check the following example: \
-        :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
+        :doc:`Extra Inputs <extra_inputs>`.
 
         sdmx_mappings: A dictionary or VtlDataflowMapping object that maps SDMX URNs \
         (e.g., "Dataflow=MD:TEST_DF(1.0)") to VTL dataset names. (default: None)
@@ -464,19 +464,19 @@ def run(
         the dataset name as key and the Path or DataFrame as value. \
         S3 URIs are supported when ``use_duckdb=True``. \
         Check the following example: \
-        :ref:`Example 6 <example_6_run_using_paths>`.
+        :doc:`Extra Inputs <extra_inputs>`.
 
         value_domains: Dict or Path, or List of Dicts or Paths of the \
         value domains JSON files. (default:None) It is passed as an object, that can be read from \
         a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
         Check the following example: \
-        :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
+        :doc:`Extra Inputs <extra_inputs>`.
 
         external_routines: Dict or Path, or List of Dicts or Paths of the \
         external routines JSON files. (default: None) It is passed as an object, that can be read \
         from a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
         Check the following example: \
-        :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
+        :doc:`Extra Inputs <extra_inputs>`.
 
         time_period_output_format: String with the possible values \
         ("sdmx_gregorian", "sdmx_reporting", "vtl", "natural") for the representation of the \
@@ -634,13 +634,13 @@ def run_sdmx(
         value domains JSON files. (default:None) It is passed as an object, that can be read from \
         a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
         Check the following example: \
-        :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
+        :doc:`Extra Inputs <extra_inputs>`.
 
         external_routines: Dict or Path, or List of Dicts or Paths of the \
         external routines JSON files. (default: None) It is passed as an object, that can be read \
         from a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
         Check the following example: \
-        :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
+        :doc:`Extra Inputs <extra_inputs>`.
 
         time_period_output_format: String with the possible values \
         ("sdmx_gregorian", "sdmx_reporting", "vtl", "natural") for the representation of the \

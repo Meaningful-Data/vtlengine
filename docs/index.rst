@@ -64,6 +64,7 @@ S3 URI support is provided by the DuckDB execution engine; see :doc:`duckdb_engi
     api
     data_types
     extra_inputs
+    sdmx_inputs
 
 .. toctree::
     :caption: Engines
