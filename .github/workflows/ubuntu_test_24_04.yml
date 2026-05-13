@@ -91,12 +91,6 @@ jobs:
         env:
           PIP_BREAK_SYSTEM_PACKAGES: "1"
 
-      - name: Register source tree
-        run: |
-          SITE=$(python -c "import site; print(site.getusersitepackages())")
-          mkdir -p "$SITE"
-          echo "${{ github.workspace }}/src" > "$SITE/vtlengine.pth"
-
       - name: Run tests (pandas backend)
         env:
           VTL_ENGINE_BACKEND: pandas

@@ -83,15 +83,9 @@ jobs:
             'vtlengine/AST/Grammar/_cpp_parser/vtl_cpp_parser*' \
             -d src/vtlengine/AST/Grammar/_cpp_parser/
           rm -rf .build_wheel
-      - name: Install dependencies and register source tree
+      - name: Install dependencies
         shell: bash
-        run: |
-          poetry install --no-root --all-extras
-          # The cached poetry venv may carry a stale vtlengine from a prior
-          # run — wipe it so the .pth below isn't shadowed by site-packages.
-          poetry run pip uninstall -y vtlengine 2>/dev/null || true
-          SITE=$(poetry run python -c "import site; print(site.getsitepackages()[0])")
-          echo "${{ github.workspace }}/src" > "$SITE/vtlengine.pth"
+        run: poetry install --no-root --all-extras
       - name: Check compliance with code formatting guidelines
         run: poetry run ruff format --no-cache --check
       - name: Run lint checks
