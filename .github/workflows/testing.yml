@@ -89,7 +89,7 @@ jobs:
           poetry install --no-root --all-extras
           # The cached poetry venv may carry a stale vtlengine from a prior
           # run — wipe it so the .pth below isn't shadowed by site-packages.
-          # poetry run pip uninstall -y vtlengine 2>/dev/null || true
+          poetry run pip uninstall -y vtlengine 2>/dev/null || true
           SITE=$(poetry run python -c "import site; print(site.getsitepackages()[0])")
           echo "${{ github.workspace }}/src" > "$SITE/vtlengine.pth"
       - name: Check compliance with code formatting guidelines
