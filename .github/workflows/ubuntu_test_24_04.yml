@@ -88,12 +88,5 @@ jobs:
       - name: Install C++ parser
         run: pip install --break-system-packages --no-deps .cpp-wheel/*.whl
 
-      - name: Run tests (pandas backend)
-        env:
-          VTL_ENGINE_BACKEND: pandas
-        run: pytest --verbose --tb=short --strict-markers --strict-config --durations=10
-
-      - name: Run tests (duckdb backend)
-        env:
-          VTL_ENGINE_BACKEND: duckdb
+      - name: Run tests
         run: pytest --verbose --tb=short --strict-markers --strict-config --durations=10
