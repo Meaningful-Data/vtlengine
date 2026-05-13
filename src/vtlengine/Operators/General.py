@@ -2,9 +2,6 @@ import re
 from typing import Any, Dict, List, Union
 
 import duckdb
-import pandas as pd
-import pyarrow as pa
-import pyarrow.compute as pc
 
 from vtlengine.DataTypes import COMP_NAME_MAPPING
 from vtlengine.Exceptions import RunTimeError, SemanticError
@@ -86,8 +83,16 @@ class Eval(Unary):
 
     @staticmethod
     def _execute_query(
-        query: str, dataset_names: List[str], data: Dict[str, pd.DataFrame]
-    ) -> pd.DataFrame:
+        query: str,
+        dataset_names: List[str],
+        schemas: Dict[str, Dict[str, Component]],
+    ) -> List[str]:
+        """Validate the external SQL against the operand schemas and return the result columns.
+
+        Creates empty typed tables for each operand in an in-memory DuckDB connection,
+        runs the query, and returns the column names DuckDB produces. No data flows
+        through; this is a schema-validation pass.
+        """
         query = re.sub(r'"([^"]*)"', r"'\1'", query)
         for forbidden in ["INSTALL", "LOAD"]:
             if re.search(rf"\b{forbidden}\b", query, re.IGNORECASE):
@@ -103,16 +108,15 @@ class Eval(Unary):
             conn.execute("SET autoload_known_extensions = false")
             conn.execute("SET lock_configuration = true")
 
+            # Lazy import to avoid a circular dependency between Operators and the
+            # duckdb_transpiler.io package (which transitively imports files.sdmx_handler).
+            from vtlengine.duckdb_transpiler.io._validation import build_create_table_sql
+
             try:
                 for ds_name in dataset_names:
-                    df = data[ds_name]
-                    conn.register(ds_name, df)
-                df_result = conn.execute(query).fetchdf()
-                for col_name in df_result.columns:
-                    arr = pa.array(df_result[col_name])
-                    if pa.types.is_floating(arr.type) and pc.any(pc.is_inf(arr)).as_py():
-                        conn.close()
-                        raise RunTimeError("2-1-3-1", op="eval")
+                    conn.execute(build_create_table_sql(ds_name, schemas[ds_name]))
+                result = conn.execute(query)
+                column_names = [col[0] for col in result.description or []]
                 conn.close()
             except Exception as e:
                 conn.close()
@@ -121,7 +125,7 @@ class Eval(Unary):
             raise
         except Exception as e:
             raise RunTimeError("2-1-1-1", op="eval", error=e)
-        return df_result
+        return column_names
 
     @classmethod
     def validate(  # type: ignore[override]
@@ -130,21 +134,17 @@ class Eval(Unary):
         external_routine: ExternalRoutine,
         output: Dataset,
     ) -> Dataset:
-        empty_data_dict = {}
+        schemas: Dict[str, Dict[str, Component]] = {}
         for ds_name in external_routine.dataset_names:
             if ds_name not in operands:
                 raise ValueError(
                     f"External Routine dataset {ds_name} is not present in Eval operands"
                 )
-            empty_data = pd.DataFrame(
-                columns=[comp.name for comp in operands[ds_name].components.values()]
-            )
-            empty_data_dict[ds_name] = empty_data
+            schemas[ds_name] = operands[ds_name].components
 
-        df = cls._execute_query(
-            external_routine.query, external_routine.dataset_names, empty_data_dict
+        component_names = cls._execute_query(
+            external_routine.query, external_routine.dataset_names, schemas
         )
-        component_names = df.columns.tolist()
         for comp_name in component_names:
             if comp_name not in output.components:
                 raise SemanticError(
