@@ -2,237 +2,99 @@
 10 minutes to VTL Engine
 ########################
 
-Summarizes the main functions of the VTL Engine.
+The VTL Engine validates and executes
+`VTL 2.1 <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf>`_
+scripts against tabular data. This page walks through the two main entry
+points:
 
-The VTL Engine API provides eight basic methods:
+* :ref:`run <run-section>` — execute a script against pandas DataFrames or
+  CSV files, with structures described in VTL JSON.
+* :ref:`run_sdmx <run-sdmx-section>` — execute a script against ``pysdmx``
+  ``PandasDataset`` objects, where the SDMX structure travels with the data.
 
-* **Semantic Analysis**: Validates the correctness of a VTL script and computes the data structures of the datasets created within the script. Supports VTL JSON format, SDMX structure files, and pysdmx objects.
-* **Run**: Executes a VTL script using the provided input datapoints. Supports loading data structures from VTL JSON, SDMX structure files (.xml, .json), and pysdmx objects. Also supports loading datapoints from plain CSV files and SDMX data files (SDMX-ML, SDMX-JSON, SDMX-CSV).
-* **Run_sdmx**: Ensures compatibility with `pysdmx` by running a VTL script using the `pysdmx` `PandasDataset`. The VTL engine uses the input datapoints while mapping the SDMX DataStructureDefinition to the VTL datastructure. Internally uses the `run` function after converting PandasDatasets.
-* **Generate_sdmx**: Ensures compatibility with `pysdmx` by generating a `TransformationScheme` object from a VTL script.
-* **Prettify**: Formats a VTL script to make it more readable.
-* **validate_datasets**: Validates the input datapoints against the provided data structures.
-* **validate_value_domains**: Validates input value domains using a JSON Schema.
-* **validate_external_routines**: Validates external routines using both JSON Schema and SQLGlot.
+Both methods accept the same script. They differ in **how the data
+structures and datapoints are supplied**, plus a couple of related
+arguments (see *Optional* below).
 
-Any VTL action requires the following elements as input:
+For semantic validation without execution, see :ref:`semantic_analysis` below.
+For the full API (including ``generate_sdmx``, ``validate_datasets``,
+``validate_value_domains``, and ``validate_external_routines``), see
+:doc:`api`.
 
-* **VTL Script**:
-    The VTL script to be executed. It includes the transformation scheme,
-    as well as any User Defined Operators, Hierarchical Rulesets, and
-    Datapoint Rulesets. It can be provided as a string or as a `Path`
-    object pointing to a `.vtl` file.
+*************
+What you need
+*************
 
-* **Data Structures**:
-    Define the structure of the input artifacts used in the VTL script,
-    according to the VTL Information Model. Data structures can be provided
-    in multiple formats:
+Every run takes three required inputs and a handful of optional ones.
 
-    - **VTL JSON format**: As dictionaries or paths to JSON files
-    - **SDMX structure files**: Paths to SDMX-ML (.xml) or SDMX-JSON (.json) structure files
-    - **pysdmx objects**: Schema, DataStructureDefinition, or Dataflow objects
+**Required**
 
-    A list of mixed formats can also be provided.
+* **VTL script** — the transformations to apply. A ``str``, a ``Path`` to a
+  ``.vtl`` file, or a ``pysdmx`` ``TransformationScheme`` (accepted by both
+  methods).
+* **Data structures** — the schema of every input dataset (components, types,
+  roles). Accepted formats depend on the method (see below).
+* **Datapoints** — the actual data. Accepted formats depend on the method
+  (see below).
 
-* **External Routines**:
-    The VTL Engine supports the use of SQL (ISO/IEC 9075) within the `eval`
-    operator. External routines can be provided as a dictionary, a `Path`
-    object pointing to a `.json` file or directory, or a list of such
-    elements. The default value is `None`, which should be used if external
-    routines are not applicable to the script. See :ref:`example 5
-    <example_5_run_with_multiple_value_domains_and_external_routines>`
-    for an example.
+**Optional**
 
-* **Value Domains**:
-    Define the value domains referenced in the VTL script, usually with
-    an `in` operator. They can be provided as dictionaries, as paths, or
-    as lists of JSON files. The default value is `None`, which should be
-    used if value domains are not applicable. See :ref:`example 5
-    <example_5_run_with_multiple_value_domains_and_external_routines>`
-    for details.
-
-* **Scalar Values**:
-    The VTL Engine supports scalar values as input for VTL scripts.
-    These can be provided as a dictionary where keys are scalar names
-    and values are the corresponding data. The default value is `None`,
-    which should be used if scalar values are not required.
-
-* **Output Folder**:
-    Specifies the directory where the results of the VTL script execution
-    are saved. This is useful for scripts that generate datasets or
-    scalar values. The output folder can be provided as a `Path` object.
-
-* **SDMX Mappings** (optional):
-    When using SDMX files, you can provide a mapping between SDMX URNs and
-    VTL dataset names. This can be a dictionary or a `VtlDataflowMapping`
-    object from pysdmx. The mapping is useful when SDMX dataset names differ
-    from VTL script dataset names.
-
-*****************
-Semantic Analysis
-*****************
-
-The :meth:`vtlengine.semantic_analysis` method validates the correctness of a VTL script and computes the data structures of
-the datasets generated by the script itself (a prerequisite for semantic analysis).
-
-* If the VTL script is correct, the method returns a dictionary containing the data structures of all datasets generated by the script.
-* If the VTL script is incorrect, a `SemanticError` is raised.
-
-The ``data_structures`` parameter accepts multiple formats:
-
-- **VTL JSON format**: Dictionaries or paths to ``.json`` files
-- **SDMX structure files**: Paths to SDMX-ML (``.xml``) or SDMX-JSON (``.json``) files
-- **pysdmx objects**: ``Schema``, ``DataStructureDefinition``, or ``Dataflow`` objects
-- **Mixed lists**: Any combination of the above formats
-
-======================
-Example 1: Correct VTL
-======================
-
-.. code-block:: python
-
-    from vtlengine import semantic_analysis
-
-    script = """
-        DS_A <- DS_1 * 10;
-    """
-
-    data_structures = {
-        'datasets': [
-            {'name': 'DS_1',
-             'DataStructure': [
-                 {'name': 'Id_1',
-                  'type':
-                      'Integer',
-                  'role': 'Identifier',
-                  'nullable': False},
-                 {'name': 'Me_1',
-                  'type': 'Number',
-                  'role': 'Measure',
-                  'nullable': True}
-             ]
-             }
-        ]
-    }
-
-    sa_result = semantic_analysis(script=script, data_structures=data_structures)
-
-    print(sa_result)
-
-Returns:
-
-.. code-block:: python
-
-    {'DS_A': Dataset(name='DS_A', components={'Id_1': Component(name='Id_1', data_type="Integer", role="Identifier", nullable=False), 'Me_1': Component(name='Me_1', data_type="Number", role="Measure", nullable=True)}, data=None)}
-
-========================
-Example 2: Incorrect VTL
-========================
-
-Compared to Example 1, the only difference is that `Me_1` uses a `String` data type instead of `Number`.
-
-.. code-block:: python
-
-    from vtlengine import semantic_analysis
-
-    script = """
-        DS_A <- DS_1 * 10;
-    """
-
-    data_structures = {
-        'datasets': [
-            {'name': 'DS_1',
-             'DataStructure': [
-                 {'name': 'Id_1',
-                  'type':
-                      'Integer',
-                  'role': 'Identifier',
-                  'nullable': False},
-                 {'name': 'Me_1',
-                  'type': 'String',
-                  'role': 'Measure',
-                  'nullable': True}
-             ]
-             }
-        ]
-    }
-
-    sa_result = semantic_analysis(script=script, data_structures=data_structures)
-
-    print(sa_result)
+* ``value_domains`` — codelists referenced by the ``in`` operator.
+  See :doc:`extra_inputs`.
+* ``external_routines`` — SQL snippets used inside ``eval``.
+  See :doc:`extra_inputs`.
+* ``scalar_values`` — scalar inputs (``run`` only). See Example 2 below.
+* ``output_folder`` — write results to disk instead of returning them in memory.
+* ``sdmx_mappings`` — map an SDMX short-URN to the dataset name used in
+  the script. Exposed as ``mappings`` in ``run_sdmx``.
+  See :doc:`sdmx_inputs`.
 
 
-Raises the following Error:
+.. _run-section:
 
-.. code-block:: python
+***
+Run
+***
 
-    raise SemanticError(code="1-1-1-2",
-    vtlengine.Exceptions.SemanticError: ('Invalid implicit cast from String and Integer to Number.', '1-1-1-2')
+Use :meth:`vtlengine.run` when you have data in pandas DataFrames or CSV
+files, or when you want to mix VTL JSON and SDMX inputs.
 
+.. note::
+    ``run`` natively reads SDMX structure files (``.xml`` / ``.json``) and
+    ``pysdmx`` structure objects (``Schema``, ``DataStructureDefinition``,
+    ``Dataflow``), so passing SDMX inputs does **not** require ``run_sdmx``.
+    Use :ref:`run_sdmx <run-sdmx-section>` only when structure and data are
+    already bundled together inside ``pysdmx`` ``PandasDataset`` objects
+    (typically obtained from ``pysdmx.io.get_datasets``) — it's a convenience
+    wrapper that unpacks them into the two arguments ``run`` expects.
 
-====================================
-Example 2b: Using SDMX Structures
-====================================
+**Data structures** — a VTL JSON ``dict``, or a ``Path`` to a ``.json``
+file. For SDMX structure files or ``pysdmx`` objects, see
+:doc:`sdmx_inputs`.
 
-The ``semantic_analysis`` function can also accept SDMX structure files or pysdmx objects:
+**Datapoints** — a ``dict`` keyed by dataset name, where each value is a
+``pandas.DataFrame`` or a ``Path`` to a plain CSV file. For SDMX data
+files (SDMX-ML, SDMX-JSON, SDMX-CSV), see :doc:`sdmx_inputs`.
 
-.. code-block:: python
-
-    from pathlib import Path
-
-    from vtlengine import semantic_analysis
-
-    script = """
-        DS_A <- DS_1 * 10;
-    """
-
-    # Using an SDMX-ML structure file
-    sdmx_structure = Path("path/to/structure.xml")
-
-    sa_result = semantic_analysis(script=script, data_structures=sdmx_structure)
-
-    print(sa_result)
-
-Using pysdmx objects directly:
-
-.. code-block:: python
-
-    from pathlib import Path
-
-    from pysdmx.io import read_sdmx
-
-    from vtlengine import semantic_analysis
-
-    script = """
-        DS_A <- DS_1 * 10;
-    """
-
-    # Load structure using pysdmx
-    msg = read_sdmx(Path("path/to/structure.xml"))
-    dsds = msg.get_data_structure_definitions()
-
-    sa_result = semantic_analysis(script=script, data_structures=dsds)
-
-    print(sa_result)
-
-
-*****************
-Run VTL Scripts
-*****************
-
-The :meth:`vtlengine.run` method executes a VTL script with the provided datapoints.
-
-It returns a dictionary containing all generated datasets.
-If the `output` parameter is set, the engine writes the computation results to the specified folder; otherwise,
-the data is returned within the dictionary of computed datasets.
+The method returns a dictionary containing all generated datasets. If the
+``output_folder`` parameter is set, results are written to that folder
+instead of being kept in memory.
 
 Two validations are performed before execution, either of which may raise an error:
 
-* **Semantic analysis**: Equivalent to running :meth:`vtlengine.semantic_analysis`.
-* **Data load analysis**: Performs a basic check of data structure names and types.
+* **Semantic analysis**: equivalent to running :meth:`vtlengine.semantic_analysis`.
+* **Data load analysis**: a basic check of data structure names and types.
+
+.. seealso::
+
+    * :doc:`duckdb_engine` — execute on DuckDB by passing ``use_duckdb=True``.
+    * :doc:`sdmx_inputs` — SDMX file inputs, ``pysdmx`` structure objects,
+      and the shared-Dataflow pattern.
+    * :doc:`extra_inputs` — value domains, external routines, and using
+      ``Path`` objects for all inputs.
 
 =====================
-Example 3: Simple run
+Example 1: Simple run
 =====================
 
 .. code-block:: python
@@ -279,529 +141,22 @@ Example 3: Simple run
     :file: _static/DS_A_run.csv
     :header-rows: 1
 
-==========================================
-Example 3b: Run using the DuckDB engine
-==========================================
+.. note::
+    ``run`` returns a ``dict`` keyed by output name. Each value is a
+    :class:`Dataset <vtlengine.Model.Dataset>` (with ``.data`` as a
+    ``pandas.DataFrame``) or a :class:`Scalar <vtlengine.Model.Scalar>`
+    (with ``.value``). The example above accesses
+    ``run_result["DS_A"].data`` to get the DataFrame.
 
-The :meth:`vtlengine.run` method can transpile VTL to SQL and execute it on DuckDB by
-passing ``use_duckdb=True``. The DuckDB engine is recommended for large datasets and is
-required for S3 URI support. The recommended pattern is to provide an ``output_folder``
-so each result dataset is streamed straight to a CSV file rather than materialised in
-memory. See :doc:`duckdb_engine` for details.
-
-.. code-block:: python
-
-    from pathlib import Path
-
-    import pandas as pd
-
-    from vtlengine import run
-
-    script = "DS_A <- DS_1 * 10;"
-
-    data_structures = {
-        "datasets": [
-            {"name": "DS_1",
-             "DataStructure": [
-                 {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
-                 {"name": "Me_1", "type": "Number",  "role": "Measure",    "nullable": True},
-             ]}
-        ]
-    }
-
-    datapoints = {"DS_1": pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [10, 20, 30]})}
-    output_folder = Path("./vtl-output")
-
-    run_result = run(
-        script=script,
-        data_structures=data_structures,
-        datapoints=datapoints,
-        output_folder=output_folder,
-        use_duckdb=True,
-    )
-
-    # With output_folder set, results are written as CSV files; the returned
-    # Dataset objects carry no in-memory data.
-    print(run_result["DS_A"])
-    print(sorted(p.name for p in output_folder.iterdir()))
-
-The ``output_folder`` will contain ``DS_A.csv`` with the same rows shown in
-Example 3. Drop ``output_folder`` to receive the result as an in-memory
-``pandas.DataFrame`` instead.
-
-.. warning::
-    Running on large datasets without an ``output_folder`` forces the DuckDB engine to
-    materialise every result fully into memory as a ``pandas.DataFrame``. This negates
-    most of the throughput and memory-headroom advantages of the backend and can drop
-    performance significantly. If any individual output dataset is larger than available
-    memory, the run will raise an out-of-memory error, since pandas requires the
-    complete object to be materialised in memory. For anything beyond small/exploratory
-    inputs, set ``output_folder``.
-
-================================
-Example 4: Run from SDMX Dataset
-================================
-
-The :meth:`vtlengine.run_sdmx` method executes a VTL script using SDMX files, via the `get_datasets` function from `pysdmx`.
-It runs a VTL script with one or more `PandasDataset` instances from the `pysdmx` library.
-
-This method prepares the required VTL data structures and datapoints, maps dataset structures to VTL identifiers, and delegates execution to the VTL Engine.
-It performs internal validation of dataset structures and input dependencies using DAG analysis.
-
-For details on reading and writing SDMX datasets, see the `pysdmx documentation <https://py.sdmx.io/howto/vtl_handling.html>`_.
-
-The process works as follows:
-
-- Provide a VTL script (as a string, `TransformationScheme`, or file).
-- Supply one or more SDMX datasets as `PandasDataset` objects including structural metadata (from the `pysdmx` Schema).
-- When using multiple datasets, provide a mapping linking each dataset to the corresponding name expected in the script.
-  This can be a `VTLDataflowMapping` object or a dictionary pairing the short-URN with the VTL dataset name.
-- The method validates all inputs, converts them into a VTL-compatible format, and executes the script.
-- The result is a new dataset (or several) generated according to the logic defined in the VTL script.
-
-.. important::
-    The short-urn is the meaningful part of the URN. The format is:
-    SDMX_type=Agency:ID(Version).
-
-    Example:
-
-    Dataflow=MD:TEST_DF(1.0) is the short-urn for
-    urn:sdmx:org.sdmx.infomodel.datastructure.Dataflow=MD:TEST_DF(1.0)
-
-Optional settings are the same as in the `run` method, including:
-
-- Providing value domains for data validation.
-- Using external routines as SQL statements.
-- Controlling how time period columns are formatted in the output.
-- Saving results to a specified output folder.
-- Filtering output datasets to return only those marked as “persistent” in the VTL script.
-
-
-.. code-block:: python
-
-    from pathlib import Path
-
-    from pysdmx.io import get_datasets
-
-    from vtlengine import run_sdmx
-
-    data = Path("docs/_static/data.xml")
-    structure = Path("docs/_static/metadata.xml")
-    datasets = get_datasets(data, structure)
-    script = "DS_r <- DS_1 [calc Me_4 := OBS_VALUE];"
-    print(run_sdmx(script, datasets)['DS_r'].data)
-
-
-.. csv-table:: Returns:
-    :file: _static/DS_r_run_sdmx.csv
-    :header-rows: 1
-
-As part of its compatibility with `pysdmx`, the function can also take a `TransformationScheme` object as input.
-If no mapping is provided, the VTL script must have a single input, and the data file must contain only one dataset.
-
-.. code-block:: python
-
-    from pathlib import Path
-
-    from pysdmx.io import get_datasets
-    from pysdmx.model.vtl import TransformationScheme, Transformation
-
-    from vtlengine import run_sdmx
-
-    data = Path("docs/_static/data.xml")
-    structure = Path("docs/_static/metadata.xml")
-    datasets = get_datasets(data, structure)
-    script = TransformationScheme(
-        id="TS1",
-        version="1.0",
-        agency="MD",
-        vtl_version="2.1",
-        items=[
-            Transformation(
-                id="T1",
-                uri=None,
-                urn=None,
-                name=None,
-                description=None,
-                expression="DS_1 [calc Me_4 := OBS_VALUE];",
-                is_persistent=True,
-                result="DS_r1",
-                annotations=(),
-            ),
-            Transformation(
-                id="T2",
-                uri=None,
-                urn=None,
-                name=None,
-                description=None,
-                expression="DS_1 [rename OBS_VALUE to Me_5];",
-                is_persistent=True,
-                result="DS_r2",
-                annotations=(),
-            )
-        ],
-    )
-    run_sdmx(script, datasets=datasets)
-
-
-
-
-Finally, mapping information can be used to link an SDMX input dataset to a VTL input dataset via the `VtlDataflowMapping` object from `pysdmx` or a dictionary.
-
-.. code-block:: python
-
-    from pathlib import Path
-
-    from pysdmx.io import get_datasets
-    from pysdmx.model.vtl import TransformationScheme, Transformation
-    from pysdmx.model.vtl import VtlDataflowMapping
-
-    from vtlengine import run_sdmx
-
-    data = Path("docs/_static/data.xml")
-    structure = Path("docs/_static/metadata.xml")
-    datasets = get_datasets(data, structure)
-    script = TransformationScheme(
-        id="TS1",
-        version="1.0",
-        agency="MD",
-        vtl_version="2.1",
-        items=[
-            Transformation(
-                id="T1",
-                uri=None,
-                urn=None,
-                name=None,
-                description=None,
-                expression="DS_1 [calc Me_4 := OBS_VALUE]",
-                is_persistent=True,
-                result="DS_r",
-                annotations=(),
-            ),
-        ],
-    )
-    # Mapping using VtlDataflowMapping object:
-    mapping = VtlDataflowMapping(
-            dataflow="urn:sdmx:org.sdmx.infomodel.datastructure.Dataflow=MD:TEST_DF(1.0)",
-            dataflow_alias="DS_1",
-            id="VTL_MAP_1",
-        )
-
-    # Mapping using dictionary:
-    mapping = {
-    "Dataflow=MD:TEST_DF(1.0)": "DS_1"
-    }
-    run_sdmx(script, datasets, mappings=mapping)
-
-
-
-Files used in the example can be found here:
-
-- :download:`data.xml <_static/data.xml>`
-- :download:`metadata.xml <_static/metadata.xml>`
-
-
-======================================
-Example 4b: Run with SDMX Files
-======================================
-
-The :meth:`vtlengine.run` function can also load SDMX files directly, without using the `run_sdmx` function.
-This provides a seamless workflow for SDMX data without requiring manual conversion to VTL JSON format.
-
-Supported SDMX formats for **data_structures**:
-
-- SDMX-ML structure files (``.xml``)
-- SDMX-JSON structure files (``.json``)
-- pysdmx objects (``Schema``, ``DataStructureDefinition``, ``Dataflow``)
-
-Supported SDMX formats for **datapoints**:
-
-- SDMX-ML data files (``.xml``)
-- SDMX-JSON data files (``.json``)
-- SDMX-CSV data files (``.csv``) - with automatic detection
-
-SDMX files are automatically detected by their extension. For CSV files, the engine first attempts to parse
-as SDMX-CSV, then falls back to plain CSV if SDMX parsing fails.
-
-When using SDMX files, the dataset name in the structure file (from the DataStructureDefinition ID) may differ
-from the name in the data file (from the Dataflow reference). Use the ``sdmx_mappings`` parameter to map
-the data file's URN to the VTL dataset name used in your script:
-
-.. code-block:: python
-
-    from pathlib import Path
-
-    from vtlengine import run
-
-    # Using SDMX structure and data files directly
-    structure_file = Path("path/to/structure.xml")  # SDMX-ML structure
-    data_file = Path("path/to/data.xml")            # SDMX-ML data
-
-    # Map the data file's Dataflow URN to the structure's DSD name
-    mapping = {"Dataflow=AGENCY:DATAFLOW_ID(1.0)": "DSD_NAME"}
-
-    script = "DS_r <- DSD_NAME [calc Me_2 := OBS_VALUE * 2];"
-
-    result = run(
-        script=script,
-        data_structures=structure_file,
-        datapoints=data_file,
-        sdmx_mappings=mapping
-    )
-
-You can also use ``sdmx_mappings`` to give datasets custom names in your VTL script:
-
-.. code-block:: python
-
-    from pathlib import Path
-
-    from vtlengine import run
-
-    structure_file = Path("path/to/structure.xml")
-    data_file = Path("path/to/data.xml")
-
-    script = "DS_r <- MY_DATASET [calc Me_2 := OBS_VALUE * 2];"
-
-    # Map SDMX URN to VTL dataset name
-    mapping = {"Dataflow=MD:TEST_DF(1.0)": "MY_DATASET"}
-
-    result = run(
-        script=script,
-        data_structures=structure_file,
-        datapoints=data_file,
-        sdmx_mappings=mapping
-    )
-
-You can also mix VTL JSON structures with SDMX structures and plain CSV datapoints with SDMX data files:
-
-.. code-block:: python
-
-    from pathlib import Path
-
-    from vtlengine import run
-
-    # Mix of VTL JSON and SDMX structures
-    vtl_structure = {"datasets": [{"name": "DS_1", "DataStructure": [...]}]}
-    sdmx_structure = Path("path/to/sdmx_structure.xml")
-
-    # Mix of plain CSV and SDMX data
-    datapoints = {
-        "DS_1": Path("path/to/plain_data.csv"),          # Plain CSV
-        "DS_2": Path("path/to/sdmx_data.xml"),           # SDMX-ML
-    }
-
-    result = run(
-        script=script,
-        data_structures=[vtl_structure, sdmx_structure],
-        datapoints=datapoints
-    )
-
-
-.. _example_4c_compare_two_datasets_sharing_dataflow:
-
-==================================================================
-Example 4c: Comparing two datasets sharing one SDMX Dataflow
-==================================================================
-
-A common SDMX pattern is having two datasets that share a single ``Dataflow``
-(and therefore one ``DataStructureDefinition``) but contain different data —
-for example, two reporting periods or a previous-vs-current snapshot. The same
-``Dataflow`` object can be passed to ``to_vtl_json`` twice with different
-``dataset_name`` arguments to bind it to two VTL aliases without cloning the
-structure.
-
-.. code-block:: python
-
-    import pandas as pd
-    from pysdmx.model.concept import Concept, DataType
-    from pysdmx.model.dataflow import (
-        Component, Components, Dataflow, DataStructureDefinition, Role,
-    )
-
-    from vtlengine import run
-    from vtlengine.files.sdmx_handler import to_vtl_json
-
-
-    def build_components() -> Components:
-        return Components([
-            Component(id="Id_1", required=True, role=Role.DIMENSION,
-                      concept=Concept(id="Id_1", dtype=DataType.INTEGER)),
-            Component(id="Me_1", required=False, role=Role.MEASURE,
-                      concept=Concept(id="Me_1", dtype=DataType.FLOAT)),
-        ])
-
-
-    dataflow = Dataflow(
-        id="DF_1", agency="ME", version="1.0",
-        structure=DataStructureDefinition(
-            id="DSD_1", agency="ME", version="1.0",
-            components=build_components(),
-        ),
-    )
-
-    data_structures = [
-        to_vtl_json(dataflow, dataset_name="DS_1"),
-        to_vtl_json(dataflow, dataset_name="DS_2"),
-    ]
-
-    datapoints = {
-        "DS_1": pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [10.0, 20.0, 30.0]}),
-        "DS_2": pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [10.0, 25.0, 30.0]}),
-    }
-
-    script = """
-        DS_diff  <- DS_2 - DS_1;
-        DS_equal <- DS_1 = DS_2;
-    """
-
-    result = run(script=script, data_structures=data_structures,
-                 datapoints=datapoints, return_only_persistent=False)
-
-Expected output for ``DS_diff``::
-
-     Id_1  Me_1
-        1   0.0
-        2   5.0
-        3   0.0
-
-Expected output for ``DS_equal``::
-
-     Id_1  bool_var
-        1      True
-        2     False
-        3      True
-
-
-.. _example_5_run_with_multiple_value_domains_and_external_routines:
-
-=================================================================================
-Example 5: Run with multiple Value Domains and External Routines as dictionaries.
-=================================================================================
-.. code-block:: python
-
-    from pathlib import Path
-
-    import pandas as pd
-
-    from vtlengine import run
-
-    def main():
-        script = """
-                    Example_5 <- DS_1 [ calc Me_2:= Id_2 in Countries];
-                    Example_5_2 <- eval(SQL_3(DS_1) language "SQL" returns dataset { identifier<integer> Id_1,
-                    measure<number> Me_1});
-                """
-
-        data_structures = {
-            "datasets": [
-                {
-                    "name": "DS_1",
-                    "DataStructure": [
-                        {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
-                        {"name": "Id_2", "type": "String", "role": "Identifier", "nullable": False},
-                        {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
-                    ],
-                }
-            ]
-        }
-
-        data_df = pd.DataFrame(
-            {"Id_1": [2012, 2012, 2012], "Id_2": ["AT", "DE", "FR"], "Me_1": [0, 4, 9]}
-        )
-
-        datapoints = {"DS_1": data_df}
-
-        external_routines = {
-            "name": "SQL_3",
-            "query": "SELECT Id_1, COUNT(*) AS Me_1 FROM DS_1 GROUP BY Id_1;",
-        }
-
-
-        value_domains = {
-            "name": "Countries",
-            "setlist": ["DE", "FR", "IT"],
-            "type": "String",
-        }
-
-        run_result = run(
-            script=script,
-            data_structures=data_structures,
-            datapoints=datapoints,
-            value_domains=value_domains,
-            external_routines=external_routines,
-        )
-        print(run_result)
-
-Returns:
-
-.. csv-table::
-    :file: _static/Example_5.csv
-    :header-rows: 1
-
-.. csv-table::
-    :file: _static/Example_5_2.csv
-    :header-rows: 1
-
-.. _example_6_run_using_paths:
-
-===========================
-Example 6: Run using Paths
-===========================
-The following example shows how to run a VTL script by providing all inputs as Path objects.
-In this case, datapoints can be passed as a dictionary where the dataset name is the key and the corresponding file path is the value.
-Here, `DS_1` is the dictionary key that matches the dataset defined in the data structures file, but the input data file itself can have any name.
-
-
-.. code-block:: python
-
-    from pathlib import Path
-
-    import pandas as pd
-
-    from vtlengine import run
-
-    def main():
-        filepath_external_routines = Path("docs/_static/SQL_4.json")
-        filepath_ValueDomains = Path("docs/_static/VD_2.json")
-        filepath_vtl_script = Path("docs/_static/Example_6.vtl")
-        filepath_data_structures = Path("docs/_static/Example_6.json")
-        filepath_data = Path("docs/_static/Example_6_input.csv")
-
-        data_structures = filepath_data_structures
-        datapoints = {"DS_1": filepath_data}
-        script = filepath_vtl_script
-        external_routines = filepath_external_routines
-        value_domains = filepath_ValueDomains
-        run_result = run(
-            script=script,
-            data_structures=data_structures,
-            datapoints=datapoints,
-            value_domains=value_domains,
-            external_routines=external_routines,
-        )
-        print(run_result)
-
-Returns:
-
-.. csv-table::
-    :file: _static/Example_6_output.csv
-    :header-rows: 1
-
-.. csv-table::
-    :file: _static/Example_6_2_output.csv
-    :header-rows: 1
-
-
-
-**********************
-Run with Scalar Values
-**********************
-The VTL Engine also supports the use of scalar values to be used as input within the VTL script. When an output path is provided,
-the engine generates CSV files containing the results of the script execution. Scalar results are saved as a CSV file containing all resulting scalar values.
 
 =================================
-Example 7: Run with Scalar Values
+Example 2: Run with Scalar Values
 =================================
+
+``run`` supports scalar inputs to the script via the ``scalar_values``
+parameter. When an ``output_folder`` is provided, the engine generates
+CSV files containing the results of the script execution. Scalar results
+are saved as a CSV file containing all resulting scalar values.
 
 .. code-block:: python
 
@@ -859,6 +214,223 @@ Returns:
     :header-rows: 1
 
 
+.. _run-sdmx-section:
+
+********
+Run SDMX
+********
+
+Use :meth:`vtlengine.run_sdmx` when you already have ``pysdmx``
+``PandasDataset`` objects — typically obtained via
+``pysdmx.io.get_datasets``. Internally, ``run_sdmx`` converts the SDMX
+inputs and delegates execution to :meth:`vtlengine.run`.
+
+Unlike ``run``, **structures and datapoints travel together** inside each
+``PandasDataset``; you pass a single ``datasets`` argument instead of two.
+
+By default, each ``PandasDataset``'s ``Schema`` ID is used as the VTL
+dataset name (e.g. ``DataStructure=MD:TEST_DS(1.0)`` → ``TEST_DS``). If
+the script refers to a dataset by a different name, pass a ``mappings``
+argument — a ``dict`` mapping the SDMX short-URN to the VTL alias, or a
+``pysdmx`` ``VtlDataflowMapping`` object.
+
+For details on reading and writing SDMX datasets, see the
+`pysdmx documentation <https://py.sdmx.io/howto/vtl_handling.html>`_.
+
+.. important::
+    The short-urn is the meaningful part of the URN. The format is:
+    SDMX_type=Agency:ID(Version).
+
+    Example:
+
+    Dataflow=MD:TEST_DF(1.0) is the short-urn for
+    urn:sdmx:org.sdmx.infomodel.datastructure.Dataflow=MD:TEST_DF(1.0)
+
+.. seealso::
+
+    :doc:`sdmx_inputs` — using a ``TransformationScheme`` as the script,
+    ``VtlDataflowMapping`` for SDMX-to-VTL aliasing, and the shared-Dataflow
+    pattern.
+
+================================
+Example 3: Run from SDMX Dataset
+================================
+
+.. code-block:: python
+
+    from pathlib import Path
+
+    from pysdmx.io import get_datasets
+
+    from vtlengine import run_sdmx
+
+    data = Path("docs/_static/data.xml")
+    structure = Path("docs/_static/metadata.xml")
+    datasets = get_datasets(data, structure)
+    script = "DS_r <- DS_1 [calc Me_4 := OBS_VALUE];"
+    print(run_sdmx(script, datasets)['DS_r'].data)
+
+
+.. csv-table:: Returns:
+    :file: _static/DS_r_run_sdmx.csv
+    :header-rows: 1
+
+Files used in the example:
+
+- :download:`data.xml <_static/data.xml>`
+- :download:`metadata.xml <_static/metadata.xml>`
+
+
+.. _semantic_analysis:
+
+*****************
+Semantic Analysis
+*****************
+
+The :meth:`vtlengine.semantic_analysis` method validates the correctness of a VTL script and computes the data structures of
+the datasets generated by the script itself (a prerequisite for semantic analysis).
+
+* If the VTL script is correct, the method returns a dictionary containing the data structures of all datasets generated by the script.
+* If the VTL script is incorrect, a `SemanticError` is raised.
+
+The ``data_structures`` parameter accepts multiple formats:
+
+- **VTL JSON format**: Dictionaries or paths to ``.json`` files
+- **SDMX structure files**: Paths to SDMX-ML (``.xml``) or SDMX-JSON (``.json``) files
+- **pysdmx objects**: ``Schema``, ``DataStructureDefinition``, or ``Dataflow`` objects
+- **Mixed lists**: Any combination of the above formats
+
+======================
+Example 4: Correct VTL
+======================
+
+.. code-block:: python
+
+    from vtlengine import semantic_analysis
+
+    script = """
+        DS_A <- DS_1 * 10;
+    """
+
+    data_structures = {
+        'datasets': [
+            {'name': 'DS_1',
+             'DataStructure': [
+                 {'name': 'Id_1',
+                  'type':
+                      'Integer',
+                  'role': 'Identifier',
+                  'nullable': False},
+                 {'name': 'Me_1',
+                  'type': 'Number',
+                  'role': 'Measure',
+                  'nullable': True}
+             ]
+             }
+        ]
+    }
+
+    sa_result = semantic_analysis(script=script, data_structures=data_structures)
+
+    print(sa_result)
+
+Returns:
+
+.. code-block:: python
+
+    {'DS_A': Dataset(name='DS_A', components={'Id_1': Component(name='Id_1', data_type="Integer", role="Identifier", nullable=False), 'Me_1': Component(name='Me_1', data_type="Number", role="Measure", nullable=True)}, data=None)}
+
+========================
+Example 5: Incorrect VTL
+========================
+
+Compared to Example 4, the only difference is that `Me_1` uses a `String` data type instead of `Number`.
+
+.. code-block:: python
+
+    from vtlengine import semantic_analysis
+
+    script = """
+        DS_A <- DS_1 * 10;
+    """
+
+    data_structures = {
+        'datasets': [
+            {'name': 'DS_1',
+             'DataStructure': [
+                 {'name': 'Id_1',
+                  'type':
+                      'Integer',
+                  'role': 'Identifier',
+                  'nullable': False},
+                 {'name': 'Me_1',
+                  'type': 'String',
+                  'role': 'Measure',
+                  'nullable': True}
+             ]
+             }
+        ]
+    }
+
+    sa_result = semantic_analysis(script=script, data_structures=data_structures)
+
+    print(sa_result)
+
+
+Raises the following Error:
+
+.. code-block:: python
+
+    raise SemanticError(code="1-1-1-2",
+    vtlengine.Exceptions.SemanticError: ('Invalid implicit cast from String and Integer to Number.', '1-1-1-2')
+
+
+====================================
+Example 6: Using SDMX Structures
+====================================
+
+The ``semantic_analysis`` function can also accept SDMX structure files or pysdmx objects:
+
+.. code-block:: python
+
+    from pathlib import Path
+
+    from vtlengine import semantic_analysis
+
+    script = """
+        DS_A <- DS_1 * 10;
+    """
+
+    # Using an SDMX-ML structure file
+    sdmx_structure = Path("path/to/structure.xml")
+
+    sa_result = semantic_analysis(script=script, data_structures=sdmx_structure)
+
+    print(sa_result)
+
+Using pysdmx objects directly:
+
+.. code-block:: python
+
+    from pathlib import Path
+
+    from pysdmx.io import read_sdmx
+
+    from vtlengine import semantic_analysis
+
+    script = """
+        DS_A <- DS_1 * 10;
+    """
+
+    # Load structure using pysdmx
+    msg = read_sdmx(Path("path/to/structure.xml"))
+    dsds = msg.get_data_structure_definitions()
+
+    sa_result = semantic_analysis(script=script, data_structures=dsds)
+
+    print(sa_result)
+
+
 ********
 Prettify
 ********
@@ -902,4 +474,3 @@ Returns:
 
 
 For more information on usage, please refer to the `API documentation <https://docs.vtlengine.meaningfuldata.eu/api.html>`_
-
