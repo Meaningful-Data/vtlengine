@@ -217,7 +217,7 @@ def _load_single_datapoint(
             raise InputValidationException(
                 code="0-1-1-2",
                 input=datapoint,
-                message="S3 URIs are only supported with use_duckdb=True.",
+                message="S3 URIs are not supported in this code path.",
             )
         # Converting to Path object
         try:
@@ -297,7 +297,7 @@ def _load_datapoints_path(
                 raise InputValidationException(
                     code="0-1-1-2",
                     input=datapoint,
-                    message="S3 URIs are only supported with use_duckdb=True.",
+                    message="S3 URIs are not supported in this code path.",
                 )
             if isinstance(datapoint, str) and not _is_url(datapoint):
                 datapoint = Path(datapoint)
@@ -745,7 +745,7 @@ def _check_output_folder(output_folder: Union[str, Path]) -> None:
             raise InputValidationException(
                 code="0-1-1-2",
                 input=output_folder,
-                message="S3 URIs are only supported with use_duckdb=True.",
+                message="S3 URIs are not supported in this code path.",
             )
         try:
             output_folder = Path(output_folder)

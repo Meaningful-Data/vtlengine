@@ -317,7 +317,6 @@ memory. See :doc:`duckdb_engine` for details.
         data_structures=data_structures,
         datapoints=datapoints,
         output_folder=output_folder,
-        use_duckdb=True,
     )
 
     # With output_folder set, results are written as CSV files; the returned

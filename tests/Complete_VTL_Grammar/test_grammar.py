@@ -3,7 +3,6 @@ from pathlib import Path
 
 import pandas as pd
 
-from tests.Helper import _use_duckdb_backend
 from vtlengine import API, DataTypes, run
 from vtlengine.DataTypes import Null
 from vtlengine.Model import Dataset, Scalar
@@ -38,7 +37,6 @@ def test_grammar():
         datapoints=datapoints,
         external_routines=external_routines,
         value_domains=value_domains,
-        use_duckdb=_use_duckdb_backend(),
     )
 
     if refactor_results:

@@ -1,12 +1,12 @@
+import json
+import os
 import warnings
 from pathlib import Path
 
 import pytest
 from pytest import mark
 
-from tests.Helper import _use_duckdb_backend
-from vtlengine.API import create_ast, run
-from vtlengine.API._InternalApi import load_datasets_with_data
+from vtlengine.API import run, semantic_analysis
 from vtlengine.DataTypes import Date, TimePeriod
 from vtlengine.DataTypes.TimeHandling import (
     TimeIntervalHandler,
@@ -17,7 +17,6 @@ from vtlengine.DataTypes.TimeHandling import (
 )
 from vtlengine.Exceptions import RunTimeError as RT
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators.Time import Time, Year_to_Day
 
@@ -73,41 +72,30 @@ error_param = [
 
 
 @pytest.mark.parametrize("code, expression", ds_param)
-def test_case_ds(request, load_input, load_reference, code, expression):
+def test_case_ds(request, load_reference, code, expression):
     warnings.filterwarnings("ignore", category=FutureWarning)
-    if _use_duckdb_backend():
-        base_path = request.node.get_closest_marker("input_path").args[0]
-        import os
+    base_path = request.node.get_closest_marker("input_path").args[0]
 
-        ds_dir = base_path / "DataStructure" / "input"
-        prefix = f"{code}-"
-        data_structures = sorted(ds_dir / f for f in os.listdir(ds_dir) if f.startswith(prefix))
+    ds_dir = base_path / "DataStructure" / "input"
+    prefix = f"{code}-"
+    data_structures = sorted(ds_dir / f for f in os.listdir(ds_dir) if f.startswith(prefix))
 
-        datapoints = {}
-        import json
+    datapoints = {}
+    for ds_file in data_structures:
+        with open(ds_file) as f:
+            structure = json.load(f)
+        if "datasets" in structure:
+            ds_name = structure["datasets"][0]["name"]
+            csv_path = base_path / "DataSet" / "input" / f"{code}-{ds_file.stem.split('-')[-1]}.csv"
+            if csv_path.exists():
+                datapoints[ds_name] = csv_path
 
-        for ds_file in data_structures:
-            with open(ds_file) as f:
-                structure = json.load(f)
-            if "datasets" in structure:
-                ds_name = structure["datasets"][0]["name"]
-                csv_path = (
-                    base_path / "DataSet" / "input" / f"{code}-{ds_file.stem.split('-')[-1]}.csv"
-                )
-                if csv_path.exists():
-                    datapoints[ds_name] = csv_path
-
-        result = run(
-            script=expression,
-            data_structures=data_structures,
-            datapoints=datapoints,
-            return_only_persistent=False,
-            use_duckdb=True,
-        )
-    else:
-        ast = create_ast(expression)
-        interpreter = InterpreterAnalyzer(datasets=load_input[0], scalars=load_input[1])
-        result = interpreter.visit(ast)
+    result = run(
+        script=expression,
+        data_structures=data_structures,
+        datapoints=datapoints,
+        return_only_persistent=False,
+    )
     reference = {**load_reference[0], **load_reference[1]}
     assert result == reference
 
@@ -139,9 +127,7 @@ def test_get_time_id_error_reference_id():
 
 
 def _run_semantic(script: str, data_structures: dict) -> None:
-    ast = create_ast(script)
-    datasets, scalars, _ = load_datasets_with_data(data_structures, datapoints=None)
-    InterpreterAnalyzer(datasets=datasets, scalars=scalars, only_semantic=True).visit(ast)
+    semantic_analysis(script=script, data_structures=data_structures)
 
 
 def test_GH_676_1():

@@ -1,5 +1,4 @@
 import json
-import os
 import warnings
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
@@ -30,14 +29,6 @@ from vtlengine.Model import (
     Scalar,
     ValueDomain,
 )
-
-# VTL_ENGINE_BACKEND can be "pandas" (default) or "duckdb"
-VTL_ENGINE_BACKEND = os.environ.get("VTL_ENGINE_BACKEND", "duckdb").lower()
-
-
-def _use_duckdb_backend() -> bool:
-    """Check if DuckDB backend should be used."""
-    return VTL_ENGINE_BACKEND == "duckdb"
 
 
 class TestHelper(TestCase):
@@ -162,8 +153,7 @@ class TestHelper(TestCase):
         if text is None:
             text = cls.LoadVTL(code)
 
-        # Use DuckDB backend if configured
-        if _use_duckdb_backend() and not only_semantic:
+        if not only_semantic:
             result = cls._run_with_duckdb_backend(
                 code=code,
                 number_inputs=number_inputs,
@@ -173,7 +163,6 @@ class TestHelper(TestCase):
                 scalars=scalars,
             )
         else:
-            # Original Pandas/Interpreter backend
             ast = create_ast(text)
             input_datasets = cls.LoadInputs(code, number_inputs, only_semantic)
 
@@ -201,7 +190,6 @@ class TestHelper(TestCase):
                 scalars=scalars_obj,
                 value_domains=value_domains,
                 external_routines=external_routines,
-                only_semantic=only_semantic,
             )
             result = interpreter.visit(ast)
 
@@ -283,7 +271,6 @@ class TestHelper(TestCase):
             external_routines=external_routines,
             scalar_values=scalar_values,
             return_only_persistent=False,
-            use_duckdb=True,
         )
 
     @classmethod
@@ -323,8 +310,7 @@ class TestHelper(TestCase):
 
         is_runtime_error = exception_code.startswith("2")
 
-        # Runtime errors on DuckDB backend go through run()
-        if _use_duckdb_backend() and is_runtime_error:
+        if is_runtime_error:
             with pytest.raises((SemanticError, RunTimeError, Exception)) as context:
                 cls._run_with_duckdb_backend(
                     code=code,
@@ -362,7 +348,6 @@ class TestHelper(TestCase):
                 scalars=scalars_obj,
                 value_domains=value_domains,
                 external_routines=external_routines,
-                only_semantic=not is_runtime_error,
             )
             with pytest.raises((SemanticError, RunTimeError)) as context:
                 ast = create_ast(text)
@@ -394,18 +379,7 @@ class TestHelper(TestCase):
 
     @classmethod
     def DataLoadTest(cls, code: str, number_inputs: int, references_names: List[str] = None):
-        if _use_duckdb_backend():
-            cls._DataLoadTestDuckDB(code, number_inputs, references_names)
-            return
-
-        # Data Loading.--------------------------------------------------------
-        inputs = cls.LoadInputs(code=code, number_inputs=number_inputs)
-
-        # Test Assertion.------------------------------------------------------
-        if references_names:
-            references = cls.LoadOutputs(code=code, references_names=references_names)
-            assert inputs == references
-        assert True
+        cls._DataLoadTestDuckDB(code, number_inputs, references_names)
 
     @classmethod
     def _DataLoadTestDuckDB(cls, code: str, number_inputs: int, references_names: List[str] = None):
@@ -432,7 +406,6 @@ class TestHelper(TestCase):
             data_structures=data_structures,
             datapoints=datapoints,
             return_only_persistent=False,
-            use_duckdb=True,
         )
 
         if references_names:
@@ -456,23 +429,7 @@ class TestHelper(TestCase):
         exception_message: Optional[str] = None,
         exception_code: Optional[str] = None,
     ):
-        if _use_duckdb_backend():
-            cls._DataLoadExceptionTestDuckDB(code, number_inputs, exception_message, exception_code)
-            return
-
-        if exception_code is not None:
-            with pytest.raises(VTLEngineException) as context:
-                cls.LoadInputs(code=code, number_inputs=number_inputs)
-        else:
-            with pytest.raises(Exception, match=exception_message) as context:
-                cls.LoadInputs(code=code, number_inputs=number_inputs)
-        # Test Assertion.------------------------------------------------------
-
-        if len(context.value.args) > 1 and exception_code is not None:
-            assert exception_code == str(context.value.args[1])
-        else:
-            if exception_message is not None:
-                assert exception_message in str(context.value.args[0])
+        cls._DataLoadExceptionTestDuckDB(code, number_inputs, exception_message, exception_code)
 
     @classmethod
     def _DataLoadExceptionTestDuckDB(
@@ -507,7 +464,6 @@ class TestHelper(TestCase):
                     data_structures=data_structures,
                     datapoints=datapoints,
                     return_only_persistent=False,
-                    use_duckdb=True,
                 )
         else:
             with pytest.raises(Exception, match=exception_message) as context:
@@ -516,7 +472,6 @@ class TestHelper(TestCase):
                     data_structures=data_structures,
                     datapoints=datapoints,
                     return_only_persistent=False,
-                    use_duckdb=True,
                 )
 
         if len(context.value.args) > 1 and exception_code is not None:

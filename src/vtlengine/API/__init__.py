@@ -9,11 +9,9 @@ from pysdmx.model.dataflow import Dataflow, DataStructureDefinition, Schema
 from pysdmx.model.vtl import VtlDataflowMapping
 
 from vtlengine.API._InternalApi import (
-    _check_output_folder,
     _check_script,
     _handle_url_datapoints,
     _is_url,
-    _return_only_persistent_datasets,
     ast_to_sdmx,
     load_datasets,
     load_datasets_with_data,
@@ -247,40 +245,133 @@ def semantic_analysis(
         value_domains=vd,
         external_routines=ext_routines,
         scalars=scalars,
-        only_semantic=True,
     )
     result = interpreter.visit(ast)
     return result
 
 
-def _run_with_duckdb(
+def run(
     script: Union[str, TransformationScheme, Path],
     data_structures: Union[
-        str,
         Dict[str, Any],
         Path,
+        str,
         Schema,
         DataStructureDefinition,
         Dataflow,
-        List[Union[str, Dict[str, Any], Path, Schema, DataStructureDefinition, Dataflow]],
+        List[Union[Dict[str, Any], Path, str, Schema, DataStructureDefinition, Dataflow]],
     ],
     datapoints: Union[Dict[str, Union[pd.DataFrame, str, Path]], List[Union[str, Path]], str, Path],
     value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
     external_routines: Optional[
         Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
     ] = None,
-    return_only_persistent: bool = True,
-    scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
-    output_folder: Optional[Union[str, Path]] = None,
     time_period_output_format: str = "vtl",
+    return_only_persistent: bool = True,
+    output_folder: Optional[Union[str, Path]] = None,
+    scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
     sdmx_mappings: Optional[Union[VtlDataflowMapping, Dict[str, str]]] = None,
 ) -> Dict[str, Union[Dataset, Scalar]]:
     """
-    Run VTL script using DuckDB as the execution engine.
+    Run is the main function of the ``API``, which mission is to execute
+    the vtl operation over the data.
 
-    This function transpiles VTL to SQL and executes it using DuckDB.
-    Always uses DAG analysis for efficient dataset loading/saving scheduling.
-    When output_folder is provided, saves results as CSV files.
+    VTL scripts are transpiled to SQL and executed on DuckDB.
+
+    Concepts you may need to know:
+
+    - Vtl script: The script that shows the set of operations to be executed.
+
+    - Data Structure: JSON file that contains the structure and the name for the dataset(s) \
+    (and/or scalar) about the datatype (String, integer or number), \
+    the role (Identifier, Attribute or Measure) and the nullability each component has.
+
+    - Data point: `Pandas Dataframe \
+    <https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html>`_ \
+    that holds the data related to the Dataset.
+
+    - Value domains: Collection of unique values on the same datatype.
+
+    - External routines: SQL query used to transform a dataset.
+
+    .. important::
+        The data structure and the data points must have the same dataset
+        name to be loaded correctly.
+
+    .. important::
+        If pointing to a Path, dataset_name will be taken from the file name.
+        Example: If the path is 'path/to/data.csv', the dataset name will be 'data'.
+
+    .. important::
+        S3 URIs (``s3://bucket-name/path/to/data.csv``) are supported.
+        DuckDB handles S3 access via the
+        `httpfs extension <https://duckdb.org/docs/extensions/httpfs/s3api.html>`_.
+
+        The following environment variables must be set (from the AWS account):
+
+        - ``AWS_ACCESS_KEY_ID``
+        - ``AWS_SECRET_ACCESS_KEY``
+        - ``AWS_DEFAULT_REGION`` (optional)
+
+    Before the execution, the DAG analysis reviews if the VTL script is a direct acyclic graph.
+
+    This function has the following params:
+
+    Args:
+        script: VTL script as a string, a Transformation Scheme object or Path with the VTL script.
+
+        data_structures: Dict, Path, URL string, pysdmx object, or a List of these with the \
+        data structures. Supports VTL JSON format (dict or .json file), SDMX structure files \
+        (.xml or SDMX-JSON), HTTP/HTTPS URLs to SDMX structure endpoints, \
+        or pysdmx objects (Schema, DataStructureDefinition, Dataflow). \
+        When datapoints contains HTTP/HTTPS URLs, data_structures must be a file path or URL \
+        pointing to an SDMX structure file.
+
+        datapoints: Dict, Path or List of Paths with data. \
+        Supports plain CSV files and SDMX files (.xml for SDMX-ML, .json for SDMX-JSON, \
+        and .csv for SDMX-CSV with embedded structure). SDMX files are automatically \
+        detected by extension and loaded using pysdmx. For SDMX files requiring \
+        external structure files, use the :obj:`run_sdmx` function instead. \
+        You can also use a custom name for the dataset by passing a dictionary with \
+        the dataset name as key and the Path or DataFrame as value. \
+        S3 URIs are supported. \
+        Check the following example: \
+        :ref:`Example 6 <example_6_run_using_paths>`.
+
+        value_domains: Dict or Path, or List of Dicts or Paths of the \
+        value domains JSON files. (default:None) It is passed as an object, that can be read from \
+        a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
+        Check the following example: \
+        :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
+
+        external_routines: Dict or Path, or List of Dicts or Paths of the \
+        external routines JSON files. (default: None) It is passed as an object, that can be read \
+        from a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
+        Check the following example: \
+        :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
+
+        time_period_output_format: String with the possible values \
+        ("sdmx_gregorian", "sdmx_reporting", "vtl", "natural") for the representation of the \
+        Time Period components.
+
+        return_only_persistent: If True, run function will only return the results of \
+        Persistent Assignments. (default: True)
+
+        output_folder: Path to the output folder. S3 URIs are supported. (default: None)
+
+        scalar_values: Dict with the scalar values to be used in the VTL script.
+
+        sdmx_mappings: A dictionary or VtlDataflowMapping object that maps SDMX URNs \
+        (e.g., "Dataflow=MD:TEST_DF(1.0)") to VTL dataset names. This parameter is \
+        primarily used when calling run() from run_sdmx() to pass mapping configuration.
+
+    Returns:
+       The datasets are produced without data if the output folder is defined.
+
+    Raises:
+        Exception: If the files have the wrong format, or they do not exist, \
+        or their Paths are invalid.
+
     """
     # Convert sdmx_mappings to dict format for internal use
     mapping_dict = _convert_sdmx_mappings(sdmx_mappings)
@@ -309,8 +400,6 @@ def _run_with_duckdb(
         value_domains=loaded_vds,
         external_routines=loaded_routines,
         scalars=copy.deepcopy(input_scalars),
-        only_semantic=True,
-        return_only_persistent=False,
     )
     semantic_results = interpreter.visit(copy.deepcopy(ast))
 
@@ -388,210 +477,6 @@ def _run_with_duckdb(
     return results
 
 
-def run(
-    script: Union[str, TransformationScheme, Path],
-    data_structures: Union[
-        Dict[str, Any],
-        Path,
-        str,
-        Schema,
-        DataStructureDefinition,
-        Dataflow,
-        List[Union[Dict[str, Any], Path, str, Schema, DataStructureDefinition, Dataflow]],
-    ],
-    datapoints: Union[Dict[str, Union[pd.DataFrame, str, Path]], List[Union[str, Path]], str, Path],
-    value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
-    external_routines: Optional[
-        Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
-    ] = None,
-    time_period_output_format: str = "vtl",
-    return_only_persistent: bool = True,
-    output_folder: Optional[Union[str, Path]] = None,
-    scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
-    sdmx_mappings: Optional[Union[VtlDataflowMapping, Dict[str, str]]] = None,
-    use_duckdb: bool = False,
-) -> Dict[str, Union[Dataset, Scalar]]:
-    """
-    Run is the main function of the ``API``, which mission is to execute
-    the vtl operation over the data.
-
-    Concepts you may need to know:
-
-    - Vtl script: The script that shows the set of operations to be executed.
-
-    - Data Structure: JSON file that contains the structure and the name for the dataset(s) \
-    (and/or scalar) about the datatype (String, integer or number), \
-    the role (Identifier, Attribute or Measure) and the nullability each component has.
-
-    - Data point: `Pandas Dataframe \
-    <https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html>`_ \
-    that holds the data related to the Dataset.
-
-    - Value domains: Collection of unique values on the same datatype.
-
-    - External routines: SQL query used to transform a dataset.
-
-    .. important::
-        The data structure and the data points must have the same dataset
-        name to be loaded correctly.
-
-    .. important::
-        If pointing to a Path, dataset_name will be taken from the file name.
-        Example: If the path is 'path/to/data.csv', the dataset name will be 'data'.
-
-    .. important::
-        S3 URIs (``s3://bucket-name/path/to/data.csv``) are only supported when
-        ``use_duckdb=True``. The DuckDB backend handles S3 access via the
-        `httpfs extension <https://duckdb.org/docs/extensions/httpfs/s3api.html>`_.
-
-        The following environment variables must be set (from the AWS account):
-
-        - ``AWS_ACCESS_KEY_ID``
-        - ``AWS_SECRET_ACCESS_KEY``
-        - ``AWS_DEFAULT_REGION`` (optional)
-
-    Before the execution, the DAG analysis reviews if the VTL script is a direct acyclic graph.
-
-    This function has the following params:
-
-    Args:
-        script: VTL script as a string, a Transformation Scheme object or Path with the VTL script.
-
-        data_structures: Dict, Path, URL string, pysdmx object, or a List of these with the \
-        data structures. Supports VTL JSON format (dict or .json file), SDMX structure files \
-        (.xml or SDMX-JSON), HTTP/HTTPS URLs to SDMX structure endpoints, \
-        or pysdmx objects (Schema, DataStructureDefinition, Dataflow). \
-        When datapoints contains HTTP/HTTPS URLs, data_structures must be a file path or URL \
-        pointing to an SDMX structure file.
-
-        datapoints: Dict, Path or List of Paths with data. \
-        Supports plain CSV files and SDMX files (.xml for SDMX-ML, .json for SDMX-JSON, \
-        and .csv for SDMX-CSV with embedded structure). SDMX files are automatically \
-        detected by extension and loaded using pysdmx. For SDMX files requiring \
-        external structure files, use the :obj:`run_sdmx` function instead. \
-        You can also use a custom name for the dataset by passing a dictionary with \
-        the dataset name as key and the Path or DataFrame as value. \
-        S3 URIs are supported when ``use_duckdb=True``. \
-        Check the following example: \
-        :ref:`Example 6 <example_6_run_using_paths>`.
-
-        value_domains: Dict or Path, or List of Dicts or Paths of the \
-        value domains JSON files. (default:None) It is passed as an object, that can be read from \
-        a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
-        Check the following example: \
-        :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
-
-        external_routines: Dict or Path, or List of Dicts or Paths of the \
-        external routines JSON files. (default: None) It is passed as an object, that can be read \
-        from a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
-        Check the following example: \
-        :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
-
-        time_period_output_format: String with the possible values \
-        ("sdmx_gregorian", "sdmx_reporting", "vtl", "natural") for the representation of the \
-        Time Period components.
-
-        return_only_persistent: If True, run function will only return the results of \
-        Persistent Assignments. (default: True)
-
-        output_folder: Path to the output folder. S3 URIs are supported when \
-        ``use_duckdb=True``. (default: None)
-
-        scalar_values: Dict with the scalar values to be used in the VTL script.
-
-        sdmx_mappings: A dictionary or VtlDataflowMapping object that maps SDMX URNs \
-        (e.g., "Dataflow=MD:TEST_DF(1.0)") to VTL dataset names. This parameter is \
-        primarily used when calling run() from run_sdmx() to pass mapping configuration.
-
-        use_duckdb: If True, use DuckDB as the execution engine instead of pandas. \
-        This transpiles VTL to SQL and executes it using DuckDB, which can be more \
-        efficient for large datasets. S3 URIs for datapoints and output_folder \
-        are only supported with this option enabled. (default: False)
-
-    Returns:
-       The datasets are produced without data if the output folder is defined.
-
-    Raises:
-        Exception: If the files have the wrong format, or they do not exist, \
-        or their Paths are invalid.
-
-    """
-    # Use DuckDB execution engine if requested (check early to avoid unnecessary processing)
-    if use_duckdb:
-        return _run_with_duckdb(
-            script=script,
-            data_structures=data_structures,
-            datapoints=datapoints,
-            value_domains=value_domains,
-            external_routines=external_routines,
-            return_only_persistent=return_only_persistent,
-            scalar_values=scalar_values,
-            output_folder=output_folder,
-            time_period_output_format=time_period_output_format,
-            sdmx_mappings=sdmx_mappings,
-        )
-
-    # Convert sdmx_mappings to dict format for internal use
-    mapping_dict = _convert_sdmx_mappings(sdmx_mappings)
-
-    # AST generation
-    script = _check_script(script)
-    vtl = load_vtl(script)
-    ast = create_ast(vtl)
-
-    # Loading datasets and datapoints (handles URLs, file paths, DataFrames)
-    datasets, scalars, path_dict = load_datasets_with_data(
-        data_structures,
-        datapoints,
-        scalar_values,
-        sdmx_mappings=mapping_dict,
-    )
-
-    # Handling of library items
-    vd = None
-    if value_domains is not None:
-        vd = load_value_domains(value_domains)
-    ext_routines = None
-    if external_routines is not None:
-        ext_routines = load_external_routines(external_routines)
-
-    # Checking time period output format value
-    time_period_representation = TimePeriodRepresentation.check_value(time_period_output_format)
-
-    # VTL Efficient analysis
-    ds_analysis = DAGAnalyzer.ds_structure(ast)
-
-    # Checking the output path to be a Path object to a directory
-    if output_folder is not None:
-        _check_output_folder(output_folder)
-
-    # Running the interpreter
-    interpreter = InterpreterAnalyzer(
-        datasets=datasets,
-        value_domains=vd,
-        external_routines=ext_routines,
-        ds_analysis=ds_analysis,
-        datapoints_paths=path_dict,
-        output_path=output_folder,
-        time_period_representation=time_period_representation,
-        return_only_persistent=return_only_persistent,
-        scalars=scalars,
-    )
-    result = interpreter.visit(ast)
-
-    # Applying output format (Date ISO 8601 T separator, TimePeriod representation)
-    if output_folder is None:
-        for obj in result.values():
-            if isinstance(obj, (Dataset, Scalar)):
-                format_date_iso8601(obj)
-                format_time_period_external_representation(obj, time_period_representation)
-
-    # Returning only persistent datasets
-    if return_only_persistent:
-        return _return_only_persistent_datasets(result, ast)
-    return result
-
-
 def run_sdmx(
     script: Union[str, TransformationScheme, Path],
     datasets: Sequence[PandasDataset],
@@ -603,7 +488,6 @@ def run_sdmx(
     time_period_output_format: str = "vtl",
     return_only_persistent: bool = True,
     output_folder: Optional[Union[str, Path]] = None,
-    use_duckdb: bool = False,
 ) -> Dict[str, Union[Dataset, Scalar]]:
     """
     Executes a VTL script using a list of pysdmx `PandasDataset` objects.
@@ -659,10 +543,6 @@ def run_sdmx(
         Persistent Assignments. (default: True)
 
         output_folder: Path to the output folder. (default: None)
-
-        use_duckdb: If True, use DuckDB as the execution engine instead of pandas. \
-        This transpiles VTL to SQL and executes it using DuckDB, which can be more \
-        efficient for large datasets. (default: False)
 
     Returns:
        The datasets are produced without data if the output folder is defined.
@@ -722,7 +602,6 @@ def run_sdmx(
         return_only_persistent=return_only_persistent,
         output_folder=output_folder,
         sdmx_mappings=mappings,
-        use_duckdb=use_duckdb,
     )
 
 

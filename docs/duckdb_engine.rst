@@ -70,7 +70,6 @@ materialised in memory:
         data_structures=data_structures,
         datapoints=datapoints,
         output_folder=Path("./vtl-output"),
-        use_duckdb=True,
     )
 
 When no ``output_folder`` is provided, the dataset values returned in ``run_result.data``
@@ -128,7 +127,6 @@ When ``use_duckdb=True`` you may pass S3 URIs as ``datapoints`` and as ``output_
         data_structures=data_structures,
         datapoints="s3://my-bucket/input/DS_1.csv",
         output_folder="s3://my-bucket/output/",
-        use_duckdb=True,
     )
 
 Authentication uses the standard AWS environment variables (``AWS_ACCESS_KEY_ID``,

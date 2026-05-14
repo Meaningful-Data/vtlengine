@@ -124,7 +124,7 @@ def _detect_csv_format(
     """
     if expected_columns:
         try:
-            with open(csv_path, newline="", encoding="utf-8") as f:
+            with open(csv_path, newline="", encoding="utf-8-sig") as f:
                 reader = csv.reader(f, delimiter=",")
                 header = next(reader, [])
             header_set = {h.strip() for h in header}
@@ -232,7 +232,7 @@ def load_datapoints_duckdb(
 
         # 3. Read CSV header and check for duplicate columns
         sniffed_delim = _sniffed_fmt.split("'")[1] if "delim=" in _sniffed_fmt else ","
-        with open(csv_path, newline="", encoding="utf-8") as f:
+        with open(csv_path, newline="", encoding="utf-8-sig") as f:
             reader = csv.reader(f, delimiter=sniffed_delim)
             csv_columns = next(reader, [])
 
@@ -537,6 +537,10 @@ def register_dataframes(
             continue
 
         components = input_datasets[name].components
+
+        # Strip UTF-8 BOM from DataFrame column names (may appear when a DataFrame
+        # was created from a BOM-encoded CSV without utf-8-sig decoding).
+        df = df.rename(columns=lambda c: c.removeprefix("﻿") if isinstance(c, str) else c)
 
         # Detect Date columns that contain time values → TIMESTAMP instead of DATE
         type_overrides = _detect_date_type_overrides(df, components)

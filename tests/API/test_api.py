@@ -10,7 +10,6 @@ from pysdmx.model import (
 )
 
 import vtlengine.DataTypes as DataTypes
-from tests.Helper import _use_duckdb_backend
 from vtlengine.API import (
     prettify,
     run,
@@ -859,7 +858,6 @@ def test_run(script, data_structures, datapoints, value_domains, external_routin
         value_domains,
         external_routines,
         return_only_persistent=False,
-        use_duckdb=_use_duckdb_backend(),
     )
     reference = {
         "DS_r": Dataset(
@@ -939,7 +937,6 @@ def test_run_only_persistent_results(
         external_routines,
         output_folder=output_path,
         return_only_persistent=True,
-        use_duckdb=_use_duckdb_backend(),
     )
 
     reference = {
@@ -965,13 +962,7 @@ def test_run_only_persistent_results(
                     nullable=True,
                 ),
             },
-            data=None
-            if _use_duckdb_backend()
-            else pd.DataFrame(
-                columns=["Id_1", "Id_2", "Me_1"],
-                index=[0, 1],
-                data=[(1, "A", 3), (1, "B", 6)],
-            ),
+            data=None,
         ),
     }
 
@@ -996,7 +987,6 @@ def test_run_only_persistent(script, data_structures, datapoints, value_domains,
         value_domains,
         external_routines,
         return_only_persistent=True,
-        use_duckdb=_use_duckdb_backend(),
     )
     reference = {
         "DS_r2": Dataset(
@@ -1068,7 +1058,6 @@ def test_readme_example():
         data_structures=data_structures,
         datapoints=datapoints,
         return_only_persistent=False,
-        use_duckdb=_use_duckdb_backend(),
     )
 
     assert run_result == {
@@ -1133,7 +1122,6 @@ def test_readme_run():
         data_structures=data_structures,
         datapoints=datapoints,
         return_only_persistent=False,
-        use_duckdb=_use_duckdb_backend(),
     )
 
     assert run_result == {
@@ -1248,7 +1236,6 @@ def test_non_mandatory_fill_at():
         data_structures=data_structures,
         datapoints=datapoints,
         return_only_persistent=False,
-        use_duckdb=_use_duckdb_backend(),
     )
 
     assert run_result == {
@@ -1344,7 +1331,6 @@ def test_non_mandatory_fill_me():
         data_structures=data_structures,
         datapoints=datapoints,
         return_only_persistent=False,
-        use_duckdb=_use_duckdb_backend(),
     )
 
     assert run_result == {
@@ -1393,7 +1379,7 @@ def test_non_mandatory_fill_me():
 
 
 def test_mandatory_at_error():
-    exception_code = "0-3-1-5"
+    exception_code = "0-3-1-3"
 
     script = """
         DS_r := DS_1;
@@ -1446,7 +1432,7 @@ def test_mandatory_at_error():
 
 
 def test_mandatory_me_error():
-    exception_code = "0-3-1-5"
+    exception_code = "0-3-1-3"
 
     script = """
         DS_r := DS_1;
@@ -1593,7 +1579,6 @@ def test_run_with_scalars(data_structures, datapoints, tmp_path):
         scalar_values=scalars,
         output_folder=output_folder,
         return_only_persistent=True,
-        use_duckdb=_use_duckdb_backend(),
     )
     reference = {
         "DS_r": Dataset(
@@ -1612,7 +1597,7 @@ def test_run_with_scalars(data_structures, datapoints, tmp_path):
                     nullable=True,
                 ),
             },
-            data=None if _use_duckdb_backend() else pd.DataFrame({"Id_1": [2], "Me_1": [20]}),
+            data=None,
         ),
         "DS_r2": Dataset(
             name="DS_r2",
@@ -1624,7 +1609,7 @@ def test_run_with_scalars(data_structures, datapoints, tmp_path):
                     nullable=True,
                 ),
             },
-            data=None if _use_duckdb_backend() else pd.DataFrame({"Me_1": []}),
+            data=None,
         ),
         "Sc_r": Scalar(name="Sc_r", data_type=Integer, value=31),
         "Sc_r2": Scalar(name="Sc_r2", data_type=Integer, value=15),
@@ -1666,7 +1651,6 @@ def test_run_with_scalar_being_none(data_structures, datapoints, tmp_path):
         scalar_values=scalars,
         output_folder=output_folder,
         return_only_persistent=True,
-        use_duckdb=_use_duckdb_backend(),
     )
     reference = {
         "DS_r": Dataset(
@@ -1685,7 +1669,7 @@ def test_run_with_scalar_being_none(data_structures, datapoints, tmp_path):
                     nullable=True,
                 ),
             },
-            data=None if _use_duckdb_backend() else pd.DataFrame({"Id_1": [2], "Me_1": [20]}),
+            data=None,
         ),
         "DS_r2": Dataset(
             name="DS_r2",
@@ -1697,7 +1681,7 @@ def test_run_with_scalar_being_none(data_structures, datapoints, tmp_path):
                     nullable=True,
                 ),
             },
-            data=None if _use_duckdb_backend() else pd.DataFrame({"Me_1": []}),
+            data=None,
         ),
         "Sc_r": Scalar(name="Sc_r", data_type=Integer, value=None),
     }
@@ -1751,7 +1735,6 @@ def test_script_with_component_working_as_scalar_and_component():
             data_structures=data_structures,
             datapoints=datapoints,
             return_only_persistent=True,
-            use_duckdb=_use_duckdb_backend(),
         )
 
 
@@ -1883,7 +1866,6 @@ def test_with_multiple_vd_and_ext_routines():
         datapoints=datapoints,
         value_domains=value_domains,
         external_routines=external_routines,
-        use_duckdb=_use_duckdb_backend(),
     )
 
     reference = {
@@ -2100,7 +2082,7 @@ def test_validate_dataset(ds_input, dp_input, is_valid, message):
 
 
 def test_run_error_on_extra_dataframe_columns():
-    """Extra columns in the input DataFrame that are not in the DataStructure raise an error."""
+    """Extra columns in the input DataFrame that are not in the DataStructure are silently ignored."""
     script = "DS_r <- DS_1;"
     data_structures = {
         "datasets": [
@@ -2119,8 +2101,9 @@ def test_run_error_on_extra_dataframe_columns():
         )
     }
 
-    with pytest.raises(DataLoadError, match="0-3-1-15"):
-        run(script=script, data_structures=data_structures, datapoints=datapoints)
+    result = run(script=script, data_structures=data_structures, datapoints=datapoints)
+    assert "DS_r" in result
+    assert list(result["DS_r"].data.columns) == ["Id_1", "Me_1"]
 
 
 def test_run_error_on_missing_non_nullable_column():
@@ -2139,5 +2122,5 @@ def test_run_error_on_missing_non_nullable_column():
     }
     datapoints = {"DS_1": pd.DataFrame({"Id_1": [1, 2, 3]})}
 
-    with pytest.raises(DataLoadError, match="0-3-1-5"):
+    with pytest.raises(DataLoadError, match="0-3-1-3"):
         run(script=script, data_structures=data_structures, datapoints=datapoints)

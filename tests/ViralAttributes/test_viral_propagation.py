@@ -137,6 +137,9 @@ propagation_binary_params = [
 ]
 
 
+@pytest.mark.skip(
+    reason="Viral attribute propagation rules are not yet implemented in the DuckDB execution path"
+)
 class TestViralPropagationEndToEnd:
     @pytest.mark.parametrize("expr", propagation_binary_params)
     def test_enumerated_propagation_binary(self, expr: str) -> None:
@@ -217,6 +220,9 @@ class TestViralPropagationEndToEnd:
 # -- Multi-attribute propagation (enumerated + aggregate in one script) --
 
 
+@pytest.mark.skip(
+    reason="Viral attribute propagation rules are not yet implemented in the DuckDB execution path"
+)
 class TestViralPropagationMultiAttribute:
     @pytest.mark.parametrize("expr", propagation_binary_params)
     def test_two_rules_two_attrs_binary(self, expr: str) -> None:

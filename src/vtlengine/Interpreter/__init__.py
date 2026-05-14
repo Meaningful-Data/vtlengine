@@ -1,17 +1,11 @@
-import csv
 from copy import copy, deepcopy
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple, Type, Union
-
-import pandas as pd
 
 import vtlengine.AST as AST
 import vtlengine.Exceptions
-import vtlengine.Operators as Operators
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.DAG import HRDAGAnalyzer
-from vtlengine.AST.DAG._models import DatasetSchedule
 from vtlengine.AST.Grammar.tokens import (
     AGGREGATE,
     ALL,
@@ -24,7 +18,6 @@ from vtlengine.AST.Grammar.tokens import (
     CHECK_HIERARCHY,
     COUNT,
     CURRENT_DATE,
-    DATASET_PRIORITY,
     DATE_ADD,
     DROP,
     EQ,
@@ -41,7 +34,6 @@ from vtlengine.AST.Grammar.tokens import (
     PARTIAL_ZERO,
     REPLACE,
     ROUND,
-    RULE_PRIORITY,
     SUBSTR,
     TRUNC,
     WHEN,
@@ -54,9 +46,6 @@ from vtlengine.DataTypes import (
     check_unary_implicit_promotion,
 )
 from vtlengine.Exceptions import SemanticError
-from vtlengine.files.output import save_datapoints
-from vtlengine.files.output._time_period_representation import TimePeriodRepresentation
-from vtlengine.files.parser import _fill_dataset_empty_data, load_datapoints
 from vtlengine.Model import (
     Component,
     DataComponent,
@@ -74,7 +63,6 @@ from vtlengine.Operators.Comparison import Between, ExistIn
 from vtlengine.Operators.Conditional import Case, If
 from vtlengine.Operators.General import Eval
 from vtlengine.Operators.HROperators import (
-    REMOVE,
     HAAssignment,
     Hierarchy,
     get_measure_from_dataset,
@@ -118,16 +106,6 @@ class InterpreterAnalyzer(ASTTemplate):
     scalars: Optional[Dict[str, Scalar]] = None
     value_domains: Optional[Dict[str, ValueDomain]] = None
     external_routines: Optional[Dict[str, ExternalRoutine]] = None
-    # Analysis mode
-    only_semantic: bool = False
-    # Memory efficient
-    ds_analysis: Optional[DatasetSchedule] = None
-    datapoints_paths: Optional[Dict[str, Path]] = None
-    output_path: Optional[Union[str, Path]] = None
-    # Time Period Representation
-    time_period_representation: Optional[TimePeriodRepresentation] = None
-    # Return only persistent
-    return_only_persistent: bool = True
     # Flags to change behavior
     is_from_assignment: bool = False
     is_from_component_assignment: bool = False
@@ -138,19 +116,14 @@ class InterpreterAnalyzer(ASTTemplate):
     is_from_join: bool = False
     is_from_hr_val: bool = False
     is_from_hr_agg: bool = False
-    compute_partial_data: bool = False
     # Handlers for simplicity
     condition_stack: Optional[List[Dataset]] = None
     regular_aggregation_dataset: Optional[Dataset] = None
     aggregation_grouping: Optional[List[str]] = None
     aggregation_dataset: Optional[Dataset] = None
     ruleset_dataset: Optional[Dataset] = None
-    rule_data: Optional[pd.DataFrame] = None
-    partial_rule_data: Optional[Any] = None
-    partial_rule_elements: Optional[Set[str]] = None
     ruleset_signature: Optional[Dict[str, str]] = None
     udo_params: Optional[List[Dict[str, Any]]] = None
-    hr_agg_rules_computed: Optional[Dict[str, pd.DataFrame]] = None
     ruleset_mode: Optional[str] = None
     hr_input: Optional[str] = None
     # DL
@@ -163,72 +136,12 @@ class InterpreterAnalyzer(ASTTemplate):
     def __post_init__(self) -> None:
         self.datasets_inputs = set(self.datasets.keys())
         self.scalars_inputs = set(self.scalars.keys()) if self.scalars else set()
-
-    # **********************************
-    # *                                *
-    # *          Memory efficient      *
-    # *                                *
-    # **********************************
-    def _load_datapoints_efficient(self, statement_num: int) -> None:
-        if self.datapoints_paths is None:
-            return
-        if self.ds_analysis is None:
-            return
-        if statement_num not in self.ds_analysis.insertion:
-            return
-        for ds_name in self.ds_analysis.insertion[statement_num]:
-            if ds_name in self.datapoints_paths:
-                self.datasets[ds_name].data = load_datapoints(
-                    self.datasets[ds_name].components,
-                    ds_name,
-                    self.datapoints_paths[ds_name],
-                )
-            elif ds_name in self.datasets and self.datasets[ds_name].data is None:
-                _fill_dataset_empty_data(self.datasets[ds_name])
-
-    def _save_datapoints_efficient(self, statement_num: int) -> None:
-        if self.output_path is None:
-            # Keeping the data in memory if no output path is provided
-            return
-        if self.ds_analysis is None:
-            return
-        if statement_num not in self.ds_analysis.deletion:
-            return
-        for ds_name in self.ds_analysis.deletion[statement_num]:
-            if (
-                ds_name not in self.datasets
-                or not isinstance(self.datasets[ds_name], Dataset)
-                or self.datasets[ds_name].data is None
-            ):
-                continue
-            if ds_name in self.ds_analysis.global_inputs:
-                # We do not save global input datasets, only results of transformations
-                self.datasets[ds_name].data = None
-                continue
-            if self.return_only_persistent and ds_name not in self.ds_analysis.persistent:
-                self.datasets[ds_name].data = None
-                continue
-            # Saving only datasets, no scalars
-            save_datapoints(
-                self.time_period_representation,
-                self.datasets[ds_name],
-                self.output_path,
-            )
-            self.datasets[ds_name].data = None
-
-    def _save_scalars_efficient(self, scalars: Dict[str, Scalar]) -> None:
-        output_path = Path(self.output_path)  # type: ignore[arg-type]
-        output_path.mkdir(parents=True, exist_ok=True)
-        result_scalars = dict(scalars)
-        if result_scalars:
-            sorted(result_scalars.keys())
-            file_path = output_path / "_scalars.csv"
-            with open(file_path, "w", newline="", encoding="utf-8") as csv_file:
-                writer = csv.writer(csv_file)
-                writer.writerow(["name", "value"])
-                for name, scalar in sorted(result_scalars.items(), key=lambda item: item[0]):
-                    value_to_write = "" if scalar.value is None else scalar.value
-                    writer.writerow([name, str(value_to_write)])
+        # Internal runtime state (not constructor parameters)
+        self.rule_data: Any = None
+        self.partial_rule_data: Any = None
+        self.partial_rule_elements: Optional[Set[str]] = None
+        self.hr_agg_rules_computed: Optional[Dict[str, Any]] = None
+        self.compute_partial_data: bool = False
 
     # **********************************
     # *                                *
@@ -241,10 +154,6 @@ class InterpreterAnalyzer(ASTTemplate):
         set_current_registry(ViralPropagationRegistry())
 
         statement_num = 1
-        if self.only_semantic:
-            Operators.only_semantic = True
-        else:
-            Operators.only_semantic = False
         results = {}
         scalars_to_save = set()
         invalid_dataset_outputs = []
@@ -252,7 +161,6 @@ class InterpreterAnalyzer(ASTTemplate):
         for child in node.children:
             if isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
                 vtlengine.Exceptions.dataset_output = child.left.value  # type: ignore[attr-defined]
-                self._load_datapoints_efficient(statement_num)
             if not isinstance(
                 child,
                 (AST.HRuleset, AST.DPRuleset, AST.Operator, AST.ViralPropagationDef),
@@ -277,10 +185,6 @@ class InterpreterAnalyzer(ASTTemplate):
             if result is None:
                 continue
 
-            # Enforce output dtypes match DataStructure declarations
-            if isinstance(result, Dataset):
-                result.enforce_dtypes()
-
             # Removing output dataset
             vtlengine.Exceptions.dataset_output = None
             # Save results
@@ -291,23 +195,11 @@ class InterpreterAnalyzer(ASTTemplate):
                 if self.scalars is None:
                     self.scalars = {}
                 self.scalars[result.name] = copy(result)
-            self._save_datapoints_efficient(statement_num)
             statement_num += 1
         if invalid_dataset_outputs:
             raise SemanticError("0-1-2-8", names=", ".join(invalid_dataset_outputs))
         if invalid_scalar_outputs:
             raise SemanticError("0-1-2-8", names=", ".join(invalid_scalar_outputs))
-
-        if self.output_path is not None and scalars_to_save:
-            scalars_filtered = {
-                name: self.scalars[name]  # type: ignore[index]
-                for name in scalars_to_save
-                if (
-                    not self.return_only_persistent
-                    or name in (self.ds_analysis.persistent if self.ds_analysis else [])
-                )
-            }
-            self._save_scalars_efficient(scalars_filtered)
 
         return results
 
@@ -612,9 +504,8 @@ class InterpreterAnalyzer(ASTTemplate):
         if node.grouping is not None:
             has_time_agg = any(isinstance(x, AST.TimeAggregation) for x in node.grouping)
             if grouping_op == "group all" or has_time_agg:
-                data = None if self.only_semantic else copy(operand.data)
                 self.aggregation_dataset = Dataset(
-                    name=operand.name, components=operand.components, data=data
+                    name=operand.name, components=operand.components, data=None
                 )
             # For Component handling in operators like time_agg
             self.is_from_grouping = True
@@ -628,7 +519,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.aggregation_dataset = Dataset(
                     name=operand.name,
                     components=deepcopy(operand.components),
-                    data=pd.DataFrame(columns=operand.get_components_names()),
+                    data=None,
                 )
                 self.aggregation_grouping = extract_grouping_identifiers(
                     operand.get_identifiers_names(), node.grouping_op, groupings
@@ -682,7 +573,6 @@ class InterpreterAnalyzer(ASTTemplate):
             else:
                 operand_comp = self.visit(node.operand)
                 component_name = operand_comp.name
-                id_names = self.regular_aggregation_dataset.get_identifiers_names()
                 measure_names = self.regular_aggregation_dataset.get_measures_names()
                 attribute_names = self.regular_aggregation_dataset.get_attributes_names()
                 dataset_components = self.regular_aggregation_dataset.components.copy()
@@ -696,16 +586,10 @@ class InterpreterAnalyzer(ASTTemplate):
                     nullable=operand_comp.nullable,
                 )
 
-                if self.only_semantic or self.regular_aggregation_dataset.data is None:
-                    data = None
-                else:
-                    data = self.regular_aggregation_dataset.data[id_names].copy()
-                    data[operand_comp.name] = operand_comp.data
-
                 operand = Dataset(
                     name=self.regular_aggregation_dataset.name,
                     components=dataset_components,
-                    data=data,
+                    data=None,
                 )
 
         else:
@@ -769,35 +653,12 @@ class InterpreterAnalyzer(ASTTemplate):
         if not self.is_from_regular_aggregation:
             return result
 
-        # Extracting the components we need (only identifiers)
-        id_columns = (
-            self.regular_aggregation_dataset.get_identifiers_names()
-            if (self.regular_aggregation_dataset is not None)
-            else None
-        )
-
         # # Extracting the component we need (only measure)
         if component_name is None or node.op == COUNT:
             measure_name = result.get_measures_names()[0]
         else:
             measure_name = component_name
-        # Joining the result with the original dataset
-        if self.only_semantic:
-            data = None
-        else:
-            if (
-                self.regular_aggregation_dataset is not None
-                and self.regular_aggregation_dataset.data is not None
-            ):
-                joined_result = pd.merge(
-                    self.regular_aggregation_dataset.data[id_columns],
-                    result.data,
-                    on=id_columns,
-                    how="inner",
-                )
-                data = joined_result[measure_name]
-            else:
-                data = None
+        data = None
 
         return DataComponent(
             name=measure_name,
@@ -955,10 +816,9 @@ class InterpreterAnalyzer(ASTTemplate):
                     comp_name=node.value,
                     dataset_name=self.ruleset_dataset.name,
                 )
-            data = None if self.rule_data is None else self.rule_data[comp_name]
             return DataComponent(
                 name=comp_name,
-                data=data,
+                data=None,
                 data_type=self.ruleset_dataset.components[comp_name].data_type,
                 role=self.ruleset_dataset.components[comp_name].role,
                 nullable=self.ruleset_dataset.components[comp_name].nullable,
@@ -1149,7 +1009,7 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_Case(self, node: AST.Case) -> Any:
         conditions: List[Any] = []
         thenOps: List[Any] = []
-        else_ds = Dataset(name="else", components={}, data=pd.DataFrame())
+        else_ds = Dataset(name="else", components={}, data=None)
 
         if self.condition_stack is None:
             self.condition_stack = []
@@ -1182,51 +1042,17 @@ class InterpreterAnalyzer(ASTTemplate):
                 raise SemanticError("1-1-1-4", op="condition")
             elif measures[0].data_type != BASIC_TYPES[bool]:
                 raise SemanticError("2-1-9-5", op="condition", name=condition.name)
-            cond = condition.data[measures[0].name] if condition.data is not None else None
         else:
             if condition.data_type != BASIC_TYPES[bool]:
                 raise SemanticError("2-1-9-4", op="condition", name=condition.name)
-            cond = condition.data
 
         components = getattr(condition, "components", {})
-        then_df = pd.DataFrame(columns=list(components.keys()))
-        else_df = pd.DataFrame(columns=list(components.keys()))
-        if cond is not None:
-            merge_ds = self.condition_stack[-1] if self.condition_stack else None
-            if isinstance(merge_ds, Dataset) and merge_ds.data is not None:
-                cond = cond.loc[merge_ds.data.index]
-
-            valid = cond.dropna().astype("bool[pyarrow]")
-            if isinstance(condition, Dataset) and condition.data is not None:
-                then_df = condition.data.loc[valid.index[valid]]
-                else_df = condition.data.loc[valid.index[~valid]]
-            else:
-                then_df = pd.DataFrame(index=valid.index[valid])
-                else_df = pd.DataFrame(index=valid.index[~valid])
-
         return (
-            Dataset(name="then", components=components, data=then_df),
-            Dataset(name="else", components=components, data=else_df),
+            Dataset(name="then", components=components, data=None),
+            Dataset(name="else", components=components, data=None),
         )
 
     def merge_then_else_datasets(self, operand: Any) -> Any:
-        if self.condition_stack:
-            merge_dataset = self.condition_stack[-1]
-            if merge_dataset.data is None:
-                return operand
-
-            merge_data = merge_dataset.data
-            if isinstance(operand, DataComponent) and operand.data is not None:
-                operand.data = operand.data.loc[merge_data.index]
-            elif isinstance(operand, Dataset) and operand.data is not None:
-                ids = merge_dataset.get_identifiers_names()
-                if set(ids).issubset(operand.data.columns):
-                    operand.data = (
-                        operand.data.assign(__idx__=operand.data.index)
-                        .merge(merge_data[ids], on=ids, how="inner")
-                        .set_index("__idx__")
-                    )
-
         return operand
 
     def visit_RenameNode(self, node: AST.RenameNode) -> Any:
@@ -1552,31 +1378,17 @@ class InterpreterAnalyzer(ASTTemplate):
 
     def visit_DPRule(self, node: AST.DPRule) -> None:
         self.is_from_rule = True
-        if self.ruleset_dataset is not None:
-            if self.ruleset_dataset.data is None:
-                self.rule_data = None
-            else:
-                self.rule_data = self.ruleset_dataset.data.copy()
+        self.rule_data = None
         validation_data = self.visit(node.rule)
         if isinstance(validation_data, DataComponent):
-            if self.rule_data is not None and self.ruleset_dataset is not None:
-                aux = self.rule_data.loc[:, self.ruleset_dataset.get_components_names()]
-                aux["bool_var"] = validation_data.data
-                validation_data = aux
-            else:
-                validation_data = None
-        if self.ruleset_mode == "invalid" and validation_data is not None:
-            validation_data = validation_data[validation_data["bool_var"] == False]
+            validation_data = None
         self.rule_data = None
         self.is_from_rule = False
         return validation_data
 
     def visit_HRule(self, node: AST.HRule) -> None:
         self.is_from_rule = True
-        if self.ruleset_dataset is not None:
-            self.rule_data = (
-                None if self.ruleset_dataset.data is None else self.ruleset_dataset.data.copy()
-            )
+        self.rule_data = None
 
         if self.ruleset_mode in (PARTIAL_NULL, PARTIAL_ZERO):
             self.compute_partial_data = True
@@ -1588,14 +1400,8 @@ class InterpreterAnalyzer(ASTTemplate):
             self.is_from_rule = False
             return None
         if self.is_from_hr_agg:
-            measure_name = rule_result.get_measures_names()[0]
-            if (
-                self.hr_agg_rules_computed is not None
-                and rule_result.data is not None
-                and len(rule_result.data[measure_name]) > 0
-                and not (self.hr_input == DATASET_PRIORITY and node.rule.op != EQ)
-            ):
-                self.hr_agg_rules_computed[rule_result.name] = rule_result.data
+            # rule_result.data is None in semantic mode; nothing to store
+            pass
         else:
             rule_result = rule_result.data
 
@@ -1605,46 +1411,16 @@ class InterpreterAnalyzer(ASTTemplate):
 
     def visit_HRBinOp(self, node: AST.HRBinOp) -> Any:
         if node.op == WHEN:
-            filter_comp = self.visit(node.left)
-            if self.rule_data is None:
-                return None
-            if filter_comp.data is None:
-                return self.visit(node.right)
-            filtering_indexes = list(filter_comp.data[filter_comp.data == True].index)
-            nan_indexes = list(filter_comp.data[filter_comp.data.isnull()].index)
-            # If no filtering indexes, then all datapoints are valid on DPR and HR
-            if len(filtering_indexes) == 0 and not (self.is_from_hr_agg or self.is_from_hr_val):
-                self.rule_data["bool_var"] = True
-                self.rule_data.loc[nan_indexes, "bool_var"] = None
-                return self.rule_data
-            non_filtering_indexes = list(set(filter_comp.data.index) - set(filtering_indexes))
+            # Visit both operands for semantic validation (type checks, component checks)
+            self.visit(node.left)
+            self.visit(node.right)
+            # rule_data is always None in semantic mode; no data to filter
+            return None
 
-            original_data = self.rule_data.copy()
-            self.rule_data = self.rule_data.iloc[filtering_indexes].reset_index(drop=True)
-            result_validation = self.visit(node.right)
-            if self.is_from_hr_agg or self.is_from_hr_val:
-                # We only need to filter rule_data on DPR
-                return result_validation
-            self.rule_data["bool_var"] = result_validation.data
-            original_data = original_data.merge(
-                self.rule_data, how="left", on=original_data.columns.tolist()
-            )
-            original_data.loc[non_filtering_indexes, "bool_var"] = True
-            original_data.loc[nan_indexes, "bool_var"] = None
-            return original_data
-
-        self.compute_partial_data &= not self.is_from_hr_agg or node.op not in HR_COMP_MAPPING
         left_operand = self.visit(node.left)
-        self.compute_partial_data = self.ruleset_mode in (PARTIAL_NULL, PARTIAL_ZERO)
         right_operand = self.visit(node.right)
         if isinstance(right_operand, Dataset):
             right_operand = get_measure_from_dataset(right_operand, node.right.value)
-
-        if self.ruleset_mode in (PARTIAL_NULL, PARTIAL_ZERO):
-            if left_operand.data is not None:
-                left_operand.data = left_operand.data[self.partial_rule_data]
-            if right_operand.data is not None:
-                right_operand.data = right_operand.data[self.partial_rule_data]
 
         if node.op in HR_COMP_MAPPING:
             op = HAAssignment if self.is_from_hr_agg else HR_COMP_MAPPING[node.op]
@@ -1740,58 +1516,14 @@ class InterpreterAnalyzer(ASTTemplate):
         ruleset_ds = self.ruleset_dataset
         if ruleset_ds is None:
             raise SemanticError("2-3-7")
-        rule_data = self.rule_data
-        signature = self.ruleset_signature
 
         result_components = {c.name: c for c in ruleset_ds.get_components()}
-        hr_component = signature["RULE_COMPONENT"]  # type: ignore[index]
-        me_name = ruleset_ds.get_measures_names()[0]
-        other_ids = list(set(ruleset_ds.get_identifiers_names()) - {hr_component})
-
-        if rule_data is None:
-            return Dataset(name=node.value, components=result_components, data=None)
-
-        if self.hr_agg_rules_computed is not None and node.value in self.hr_agg_rules_computed:
-            df = self.hr_agg_rules_computed[node.value].copy()
-            if self.hr_input in (RULE_PRIORITY, DATASET_PRIORITY):
-                input_df = rule_data.copy().rename(columns={me_name: "__input_me__"})
-                merged = df.merge(input_df, on=ruleset_ds.get_identifiers_names(), how="inner")
-                df[me_name].where(df[me_name].notna(), merged["__input_me__"], inplace=True)
-            self.update_partial_data(df, me_name, node.value)
-            return Dataset(name=node.value, components=result_components, data=df)
-
-        df = rule_data.copy()
-        code_data = df[other_ids].drop_duplicates().reset_index(drop=True)
+        # Visit the right-condition for semantic validation (type/component checks)
         condition = getattr(node, "_right_condition", None)
         if condition is not None:
-            condition = self.visit(condition)
-            if condition is not None and condition.data is not None:
-                df = df.loc[condition.data]
-                keys = pd.MultiIndex.from_frame(df[other_ids].drop_duplicates())
-                mask = pd.MultiIndex.from_frame(code_data[other_ids]).isin(keys)
-                code_data = code_data.loc[mask]  # type: ignore[index, unused-ignore]
-
-        if node.value in df[hr_component].values:
-            value_data = df[df[hr_component] == node.value]
-            merged = value_data.merge(code_data, how="right", on=other_ids, indicator=True)
-            merged[me_name] = merged[me_name].astype(object)
-            merged.loc[merged["_merge"] == "right_only", me_name] = REMOVE
-            df = merged.drop(columns=["_merge"]).set_index(code_data.index)
-        else:
-            df = code_data.copy()
-            df[me_name] = REMOVE
-        df[hr_component] = node.value
-
-        self.update_partial_data(df, me_name, node.value)
-        return Dataset(name=node.value, components=result_components, data=df)
-
-    def update_partial_data(self, df: pd.DataFrame, measure: str, name: str) -> None:
-        if self.compute_partial_data:
-            if self.partial_rule_data is None:
-                self.partial_rule_data = (df[measure] != REMOVE) & df[measure].notna()
-            else:
-                self.partial_rule_data |= (df[measure] != REMOVE) & df[measure].notna()
-            self.partial_rule_elements.add(name)  # type: ignore[union-attr]
+            self.visit(condition)
+        # rule_data is always None in semantic mode; return structural dataset
+        return Dataset(name=node.value, components=result_components, data=None)
 
     def visit_UDOCall(self, node: AST.UDOCall) -> None:  # noqa: C901
         if self.udos is None:
