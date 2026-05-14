@@ -315,6 +315,7 @@ def save_datapoints_duckdb(
     dataset_name: str,
     output_path: Union[Path, str],
     delete_after_save: bool = True,
+    select_sql: Optional[str] = None,
 ) -> None:
     """
     Save dataset to CSV using DuckDB's COPY TO.
@@ -324,6 +325,11 @@ def save_datapoints_duckdb(
         dataset_name: Name of the table to save
         output_path: Directory path where CSV will be saved
         delete_after_save: If True, drop table after saving to free memory
+        select_sql: Optional SELECT query whose rows are saved. When provided
+            the CSV is produced from ``COPY ({select_sql}) TO ...`` so that
+            column projection and in-SQL formatting (date/timestamp/ISO 8601)
+            applied by the caller are reflected on disk. When omitted the
+            raw table is dumped with ``COPY "{dataset_name}" TO ...``.
 
     The CSV is saved with:
     - Header row present
@@ -333,8 +339,9 @@ def save_datapoints_duckdb(
     output_path = Path(output_path) if isinstance(output_path, str) else output_path
     output_file = output_path / f"{dataset_name}.csv"
 
+    source = f"({select_sql})" if select_sql else f'"{dataset_name}"'
     copy_sql = f"""
-        COPY "{dataset_name}"
+        COPY {source}
         TO '{output_file}'
         WITH (HEADER true, DELIMITER ',')
     """
