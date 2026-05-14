@@ -110,9 +110,7 @@ class Hierarchy(Operators.Operator):
     op = HIERARCHY
 
     @classmethod
-    def validate(
-        cls, dataset: Dataset, computed_dict: Dict[str, Any], output: str
-    ) -> Dataset:
+    def validate(cls, dataset: Dataset, computed_dict: Dict[str, Any], output: str) -> Dataset:
         dataset_name = VirtualCounter._new_ds_name()
         result_components = {
             comp_name: copy(comp) for comp_name, comp in dataset.components.items()
