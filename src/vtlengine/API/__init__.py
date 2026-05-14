@@ -90,15 +90,14 @@ def create_ast(text: str) -> Start:
     """
     text = text + "\n"
     cst = vtl_cpp_parser.parse(text)
-    errors = vtl_cpp_parser.get_syntax_errors()
-    if errors:
-        first = errors[0]
+    error = vtl_cpp_parser.get_syntax_error()
+    if error is not None:
         raise VTLSyntaxError(
-            line=first["line"],
-            column=first["column"] + 1,
-            detail=first["message"],
-            source_line=first["source_line"],
-            underline_length=first["underline_length"],
+            line=error["line"],
+            column=error["column"] + 1,
+            detail=error["message"],
+            source_line=error["source_line"],
+            underline_length=error["underline_length"],
         )
     visitor = ASTVisitor()
     ast = visitor.visitStart(cst)

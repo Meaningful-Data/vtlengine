@@ -18,6 +18,7 @@
 #include "VtlParser.h"
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <typeindex>
 #include <unordered_map>
@@ -357,7 +358,7 @@ struct ParserState {
         std::string source_line;
         int underline_length;
     };
-    std::vector<SyntaxErrorInfo> syntax_errors;
+    std::optional<SyntaxErrorInfo> syntax_error;
 };
 
 static ParserState g_state;
@@ -413,8 +414,9 @@ static std::string extract_source_line_expanded(int line_1based, int& column_in_
 
 
 // ============================================================
-// CollectingErrorListener: captures syntax errors instead of
-// printing them to stderr. Reads from g_state.syntax_errors.
+// CollectingErrorListener: captures the first syntax error instead
+// of printing to stderr. Subsequent errors from ANTLR's error
+// recovery are usually noise, so we ignore them.
 // ============================================================
 class CollectingErrorListener : public antlr4::BaseErrorListener {
 public:
@@ -424,6 +426,8 @@ public:
                      size_t charPositionInLine,
                      const std::string& msg,
                      std::exception_ptr /*e*/) override {
+        if (g_state.syntax_error.has_value()) return;
+
         std::string text;
         int underline_length = 1;
         if (offendingSymbol) {
@@ -441,14 +445,14 @@ public:
         std::string src_line = extract_source_line_expanded(
             static_cast<int>(line), column_1based);
 
-        g_state.syntax_errors.push_back({
+        g_state.syntax_error = ParserState::SyntaxErrorInfo{
             static_cast<int>(line),
             column_1based - 1,    // store 0-based for back-compat with Python; API adds 1.
             msg,
             text,
             src_line,
             underline_length
-        });
+        };
     }
 };
 
@@ -581,7 +585,7 @@ static py::object do_parse(const std::string& text) {
 
     g_state.input_text = text;
     g_state.comments.clear();
-    g_state.syntax_errors.clear();
+    g_state.syntax_error.reset();
 
     g_state.input = std::make_unique<antlr4::ANTLRInputStream>(text);
     g_state.lexer = std::make_unique<VtlLexer>(g_state.input.get());
@@ -624,19 +628,19 @@ static std::string get_input_text() {
     return g_state.input_text;
 }
 
-static py::list get_syntax_errors() {
-    py::list result;
-    for (auto& e : g_state.syntax_errors) {
-        py::dict d;
-        d["line"] = e.line;
-        d["column"] = e.column;
-        d["message"] = e.message;
-        d["offending_text"] = e.offending_text;
-        d["source_line"] = e.source_line;
-        d["underline_length"] = e.underline_length;
-        result.append(d);
+static py::object get_syntax_error() {
+    if (!g_state.syntax_error.has_value()) {
+        return py::none();
     }
-    return result;
+    auto& e = g_state.syntax_error.value();
+    py::dict d;
+    d["line"] = e.line;
+    d["column"] = e.column;
+    d["message"] = e.message;
+    d["offending_text"] = e.offending_text;
+    d["source_line"] = e.source_line;
+    d["underline_length"] = e.underline_length;
+    return d;
 }
 
 static py::list get_comments() {
@@ -685,8 +689,8 @@ PYBIND11_MODULE(vtl_cpp_parser, m) {
           "Get the input text from the last parse() call");
     m.def("get_comments", &get_comments,
           "Get comment tokens from the last parse() call");
-    m.def("get_syntax_errors", &get_syntax_errors,
-          "Get syntax errors collected during the last parse() call");
+    m.def("get_syntax_error", &get_syntax_error,
+          "Get the first syntax error from the last parse() call, or None if there were none");
 
     // Token type constants
     m.attr("LPAREN") = static_cast<int>(VtlParser::LPAREN);
