@@ -80,6 +80,21 @@ class RunTimeError(VTLEngineException):
             self.comp_code = comp_code
 
 
+class VTLSyntaxError(VTLEngineException):
+    """Raised when the VTL script cannot be parsed because it does not match the grammar."""
+
+    def __init__(self, code: str, **kwargs: Any) -> None:
+        message = centralised_messages[code]["message"].format(**kwargs)
+        line = kwargs.get("line")
+        column = kwargs.get("column")
+        super().__init__(
+            message,
+            lino=None if line is None else str(line),
+            colno=None if column is None else str(column),
+            code=code,
+        )
+
+
 class InputValidationException(VTLEngineException):
     """ """
 
