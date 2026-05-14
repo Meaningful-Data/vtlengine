@@ -37,6 +37,11 @@ if pyproject_toml_file.exists() and pyproject_toml_file.is_file():
     version = str(data["project"]["version"])
     description = str(data["project"]["description"])
 
+# Doc preview version (decoupled from the published package version).
+# Remove these lines once pyproject.toml is bumped to match.
+version = "1.8.0rc1"
+release = "1.8.0rc1"
+
 copyright = "2025 MeaningfulData"
 
 
