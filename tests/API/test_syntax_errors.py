@@ -1,0 +1,89 @@
+import pandas as pd
+import pytest
+
+from vtlengine import run
+from vtlengine.Exceptions import VTLSyntaxError
+
+_EMPTY_DS = {"datasets": []}
+_NO_DATA: dict[str, pd.DataFrame] = {}
+
+
+def test_single_char_offending_token_has_caret_at_column():
+    """`=` used in place of `:=` in a calc clause — caret points at the `=`."""
+    script = "DS_A <- DS_1[calc test_2 = 42];"
+    with pytest.raises(VTLSyntaxError) as ex:
+        run(script=script, data_structures=_EMPTY_DS, datapoints=_NO_DATA)
+
+    msg = str(ex.value)
+    assert "line 1, column 26" in msg
+    assert "DS_A <- DS_1[calc test_2 = 42];" in msg
+    # 4-space indent + 25 spaces before column 26 → caret at offset 4 + 25 = 29
+    assert "\n" + " " * 29 + "^" in msg
+    # Single-character offending token = single caret
+    assert "^^" not in msg
+
+
+def test_multi_char_offending_token_is_fully_underlined():
+    """A multi-character offending identifier gets a `^^^...` underline matching its length."""
+    script = "DS_A := DS_1[calc x foo_bar 5];"
+    with pytest.raises(VTLSyntaxError) as ex:
+        run(script=script, data_structures=_EMPTY_DS, datapoints=_NO_DATA)
+
+    msg = str(ex.value)
+    assert "foo_bar" in msg
+    # 7-character token → 7 carets
+    assert "^^^^^^^" in msg
+
+
+def test_error_on_line_two_aligns_to_that_line():
+    """Multi-line script — preview shows the offending line, not line 1."""
+    script = "DS_A := DS_1 + 1;\nDS_B := DS_2[calc x = 5];"
+    with pytest.raises(VTLSyntaxError) as ex:
+        run(script=script, data_structures=_EMPTY_DS, datapoints=_NO_DATA)
+
+    msg = str(ex.value)
+    assert "line 2" in msg
+    assert "DS_B := DS_2[calc x = 5];" in msg
+    # The first line of the script must NOT be quoted as the preview
+    assert "    DS_A := DS_1 + 1;" not in msg
+
+
+def test_tab_indented_script_keeps_caret_aligned():
+    """Tabs in the source line are expanded so the caret aligns to the offending token."""
+    script = "\t\tDS_A := DS_1[calc x = 1];"
+    with pytest.raises(VTLSyntaxError) as ex:
+        run(script=script, data_structures=_EMPTY_DS, datapoints=_NO_DATA)
+
+    msg = str(ex.value)
+    # Tabs should be expanded — the rendered line must not contain a raw \t
+    assert "\t" not in msg
+    # Locate the caret line; it must be a stretch of spaces followed by at least one ^.
+    caret_line = msg.splitlines()[-1]
+    assert caret_line.lstrip(" ") == "^"
+    # And the character directly above the caret must be the `=`.
+    preview_line = msg.splitlines()[-2]
+    caret_col = len(caret_line) - len(caret_line.lstrip(" "))
+    assert preview_line[caret_col] == "="
+
+
+def test_valid_script_still_parses():
+    """Regression guard — a well-formed script does not raise VTLSyntaxError."""
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    datapoints = {"DS_1": pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [10.0, 20.0, 30.0]})}
+
+    result = run(
+        script="DS_A <- DS_1 * 2;",
+        data_structures=data_structures,
+        datapoints=datapoints,
+    )
+    assert "DS_A" in result
