@@ -1,15 +1,7 @@
-from pathlib import Path
-from typing import Optional, Union
-
-import pandas as pd
+from typing import Union
 
 from vtlengine.DataTypes import Date
-from vtlengine.files.output._time_period_representation import (
-    TimePeriodRepresentation,
-    format_time_period_external_representation,
-)
 from vtlengine.Model import Dataset, Scalar
-from vtlengine.Utils._number_config import get_float_format
 
 
 def _space_to_t(value: str) -> str:
