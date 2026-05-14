@@ -354,11 +354,62 @@ struct ParserState {
         int column;
         std::string message;
         std::string offending_text;
+        std::string source_line;
+        int underline_length;
     };
     std::vector<SyntaxErrorInfo> syntax_errors;
 };
 
 static ParserState g_state;
+
+
+// ============================================================
+// Helper: extract one line (1-based) from the input buffer, with
+// each \t expanded to TAB_WIDTH spaces. Adjusts the caller-supplied
+// column so the caret stays aligned after tab expansion.
+// ============================================================
+static constexpr int TAB_WIDTH = 4;
+
+static std::string extract_source_line_expanded(int line_1based, int& column_in_out) {
+    const std::string& src = g_state.input_text;
+    if (line_1based < 1) return "";
+
+    // Find start of the requested line.
+    size_t start = 0;
+    int current_line = 1;
+    while (current_line < line_1based && start < src.size()) {
+        if (src[start] == '\n') {
+            ++current_line;
+        }
+        ++start;
+    }
+    if (current_line != line_1based) return "";
+
+    // Walk to end of the requested line, expanding tabs and tracking the
+    // caller's column index (1-based, counted in original-source columns).
+    std::string out;
+    int orig_col = 1;        // 1-based original column index walking the source
+    int target_col = column_in_out;  // 1-based original column we want to remap
+    int remapped = target_col;       // 1-based output column after tab expansion
+    for (size_t i = start; i < src.size() && src[i] != '\n'; ++i) {
+        char c = src[i];
+        if (orig_col == target_col) {
+            remapped = static_cast<int>(out.size()) + 1;
+        }
+        if (c == '\t') {
+            out.append(TAB_WIDTH, ' ');
+        } else if (c != '\r') {
+            out.push_back(c);
+        }
+        ++orig_col;
+    }
+    // Caret past end of line: snap to end.
+    if (target_col > orig_col) {
+        remapped = static_cast<int>(out.size()) + 1;
+    }
+    column_in_out = remapped;
+    return out;
+}
 
 
 // ============================================================
@@ -374,14 +425,29 @@ public:
                      const std::string& msg,
                      std::exception_ptr /*e*/) override {
         std::string text;
+        int underline_length = 1;
         if (offendingSymbol) {
             text = offendingSymbol->getText();
+            size_t start_idx = offendingSymbol->getStartIndex();
+            size_t stop_idx = offendingSymbol->getStopIndex();
+            if (stop_idx != static_cast<size_t>(-1) && stop_idx >= start_idx) {
+                underline_length = static_cast<int>(stop_idx - start_idx + 1);
+            }
         }
+
+        // ANTLR uses 0-based columns; we use 1-based externally. The helper
+        // rewrites the column to account for tab expansion.
+        int column_1based = static_cast<int>(charPositionInLine) + 1;
+        std::string src_line = extract_source_line_expanded(
+            static_cast<int>(line), column_1based);
+
         g_state.syntax_errors.push_back({
             static_cast<int>(line),
-            static_cast<int>(charPositionInLine),
+            column_1based - 1,    // store 0-based for back-compat with Python; API adds 1.
             msg,
-            text
+            text,
+            src_line,
+            underline_length
         });
     }
 };
@@ -566,6 +632,8 @@ static py::list get_syntax_errors() {
         d["column"] = e.column;
         d["message"] = e.message;
         d["offending_text"] = e.offending_text;
+        d["source_line"] = e.source_line;
+        d["underline_length"] = e.underline_length;
         result.append(d);
     }
     return result;

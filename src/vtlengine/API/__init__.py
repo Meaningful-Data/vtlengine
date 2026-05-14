@@ -94,10 +94,11 @@ def create_ast(text: str) -> Start:
     if errors:
         first = errors[0]
         raise VTLSyntaxError(
-            "0-1-4-1",
             line=first["line"],
             column=first["column"] + 1,
             detail=first["message"],
+            source_line=first["source_line"],
+            underline_length=first["underline_length"],
         )
     visitor = ASTVisitor()
     ast = visitor.visitStart(cst)
