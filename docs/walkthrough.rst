@@ -17,9 +17,10 @@ structures and datapoints are supplied**, plus a couple of related
 arguments (see *Optional* below).
 
 For semantic validation without execution, see :ref:`semantic_analysis` below.
-For the full API (including ``generate_sdmx``, ``validate_datasets``,
-``validate_value_domains``, and ``validate_external_routines``), see
-:doc:`api`.
+For the full API — including :meth:`~vtlengine.generate_sdmx`,
+:meth:`~vtlengine.validate_dataset`,
+:meth:`~vtlengine.validate_value_domain`, and
+:meth:`~vtlengine.validate_external_routine` — see :doc:`api`.
 
 *************
 What you need
