@@ -962,13 +962,7 @@ def test_run_only_persistent_results(
                     nullable=True,
                 ),
             },
-            data=None
-            if _use_duckdb_backend()
-            else pd.DataFrame(
-                columns=["Id_1", "Id_2", "Me_1"],
-                index=[0, 1],
-                data=[(1, "A", 3), (1, "B", 6)],
-            ),
+            data=None,
         ),
     }
 
@@ -1603,7 +1597,7 @@ def test_run_with_scalars(data_structures, datapoints, tmp_path):
                     nullable=True,
                 ),
             },
-            data=None if _use_duckdb_backend() else pd.DataFrame({"Id_1": [2], "Me_1": [20]}),
+            data=None,
         ),
         "DS_r2": Dataset(
             name="DS_r2",
@@ -1615,7 +1609,7 @@ def test_run_with_scalars(data_structures, datapoints, tmp_path):
                     nullable=True,
                 ),
             },
-            data=None if _use_duckdb_backend() else pd.DataFrame({"Me_1": []}),
+            data=None,
         ),
         "Sc_r": Scalar(name="Sc_r", data_type=Integer, value=31),
         "Sc_r2": Scalar(name="Sc_r2", data_type=Integer, value=15),
@@ -1675,7 +1669,7 @@ def test_run_with_scalar_being_none(data_structures, datapoints, tmp_path):
                     nullable=True,
                 ),
             },
-            data=None if _use_duckdb_backend() else pd.DataFrame({"Id_1": [2], "Me_1": [20]}),
+            data=None,
         ),
         "DS_r2": Dataset(
             name="DS_r2",
@@ -1687,7 +1681,7 @@ def test_run_with_scalar_being_none(data_structures, datapoints, tmp_path):
                     nullable=True,
                 ),
             },
-            data=None if _use_duckdb_backend() else pd.DataFrame({"Me_1": []}),
+            data=None,
         ),
         "Sc_r": Scalar(name="Sc_r", data_type=Integer, value=None),
     }
