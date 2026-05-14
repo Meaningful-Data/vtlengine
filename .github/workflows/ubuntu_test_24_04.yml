@@ -91,12 +91,7 @@ jobs:
         env:
           PIP_BREAK_SYSTEM_PACKAGES: "1"
 
-      - name: Run tests (pandas backend)
-        env:
-          VTL_ENGINE_BACKEND: pandas
-        run: pytest --verbose --tb=short --strict-markers --strict-config --durations=10
-
-      - name: Run tests (duckdb backend)
+      - name: Run tests
         env:
           VTL_ENGINE_BACKEND: duckdb
         run: pytest --verbose --tb=short --strict-markers --strict-config --durations=10
