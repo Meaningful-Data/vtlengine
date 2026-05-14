@@ -695,9 +695,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     operand_comp.role == Role.IDENTIFIER and operand_comp.name in id_names
                 )
                 analytic_component_name = (
-                    f"__vtl_op_{operand_comp.name}"
-                    if operand_id_collision
-                    else operand_comp.name
+                    f"__vtl_op_{operand_comp.name}" if operand_id_collision else operand_comp.name
                 )
                 analytic_role = Role.MEASURE if operand_id_collision else operand_comp.role
 
@@ -794,9 +792,7 @@ class InterpreterAnalyzer(ASTTemplate):
         else:
             measure_name = analytic_component_name
         output_name = (
-            component_name
-            if operand_id_collision and component_name is not None
-            else measure_name
+            component_name if operand_id_collision and component_name is not None else measure_name
         )
 
         # Joining the result with the original dataset
