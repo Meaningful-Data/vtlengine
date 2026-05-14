@@ -690,6 +690,96 @@ def test_fill_time_series(lim_method, Id_1, Id_2, Me_1, exp_Id_1, exp_Id_2, exp_
 
 
 @pytest.mark.parametrize(
+    "interval, expected",
+    [
+        # Daily
+        ("2020-01-01/2020-01-02", "D"),
+        # Weekly
+        ("2020-01-01/2020-01-08", "W"),
+        ("2020-01-01/2020-01-07", "W"),
+        # Monthly: both "start of next" and "end of current" conventions
+        ("2020-01-01/2020-02-01", "M"),
+        ("2020-01-01/2020-01-31", "M"),
+        ("2020-02-01/2020-03-01", "M"),
+        ("2020-02-01/2020-02-29", "M"),  # leap year February
+        ("2021-02-01/2021-02-28", "M"),  # non-leap year February
+        # Quarterly
+        ("2020-01-01/2020-04-01", "Q"),
+        ("2020-01-01/2020-03-31", "Q"),
+        # Semester
+        ("2020-01-01/2020-07-01", "S"),
+        ("2020-01-01/2020-06-30", "S"),
+        # Yearly: leap and non-leap
+        ("2020-01-01/2021-01-01", "Y"),
+        ("2020-01-01/2020-12-31", "Y"),  # leap year, "end of period"
+        ("2022-01-01/2022-12-31", "Y"),  # non-leap year, "end of period"
+        # Multi-period spans (consistent shape across years/months/days)
+        ("2020-01-01/2022-01-01", "P2Y"),  # exact 2 years
+        ("2020-01-01/2021-12-31", "P2Y"),  # 2 years, "end of period" convention
+        ("2020-01-01/2027-01-01", "P7Y"),
+        ("2020-01-01/2020-08-01", "P7M"),
+        ("2020-01-01/2020-07-31", "P7M"),  # 7 months, "end of period"
+        ("2020-01-01/2021-03-01", "P1Y2M"),  # 14 months
+        ("2020-01-01/2020-01-15", "P14D"),
+        # Unclassifiable: encoded as raw days
+        ("2020-01-01/2020-01-16", "P15D"),
+    ],
+)
+def test_classify_interval_period(interval, expected):
+    from vtlengine.Operators.Time import Time
+
+    assert Time._classify_interval_period(interval) == expected
+
+
+@pytest.mark.parametrize(
+    "intervals",
+    [
+        pytest.param(
+            ["2020-01-01/2021-01-01", "2021-01-01/2022-01-01", "2024-01-01/2025-01-01"],
+            id="yearly_leap_mix_jan1",
+        ),
+        pytest.param(
+            ["2020-01-01/2020-02-01", "2020-02-01/2020-03-01", "2021-02-01/2021-03-01"],
+            id="monthly_leap_and_non_leap_february",
+        ),
+        pytest.param(
+            ["2020-01-01/2022-01-01", "2022-01-01/2024-01-01", "2024-01-01/2026-01-01"],
+            id="biennial_consistent",
+        ),
+        pytest.param(
+            ["2020-01-01/2020-08-01", "2020-08-01/2021-03-01"],
+            id="seven_month_consistent",
+        ),
+    ],
+)
+def test_fill_time_series_interval_uniform_frequency(intervals):
+    """Consistent-frequency intervals (varying month/year lengths or multi-period
+    spans) must not trigger the 'single time interval frequency' SemanticError and
+    must round-trip the original intervals."""
+    structure = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "String", "role": "Identifier", "nullable": False},
+                    {"name": "Id_2", "type": "Time", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Integer", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    data_df = pd.DataFrame(
+        {"Id_1": ["A"] * len(intervals), "Id_2": intervals, "Me_1": list(range(len(intervals)))}
+    )
+    result = run(
+        script="DS_r <- fill_time_series(DS_1, single);",
+        data_structures=structure,
+        datapoints={"DS_1": data_df},
+    )
+    assert set(result["DS_r"].data["Id_2"].tolist()) >= set(intervals)
+
+
+@pytest.mark.parametrize(
     "lim_method, Id_1, Id_2, Me_1, exp_Id_1, exp_Id_2, exp_Me_1",
     fill_time_series_period_params,
 )

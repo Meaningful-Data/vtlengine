@@ -169,6 +169,22 @@ def _has_col(code_item: str) -> str:
     return f"_has_{code_item}"
 
 
+def _contains_analytic(node: Any) -> bool:
+    """Return True if any descendant of ``node`` is an ``AST.Analytic``."""
+    if isinstance(node, AST.Analytic):
+        return True
+    if isinstance(node, AST.AST):
+        for key in node.__class__.__annotations__:
+            value = getattr(node, key, None)
+            if _contains_analytic(value):
+                return True
+    elif isinstance(node, (list, tuple)):
+        for item in node:
+            if _contains_analytic(item):
+                return True
+    return False
+
+
 @dataclass
 class _ParsedHRRule:
     """Parsed pieces of a hierarchical rule."""
@@ -1474,6 +1490,19 @@ FROM {src}, (
 
         with self._clause_scope(ds):
             conditions = [self.visit(child) for child in node.children]
+
+        if conditions and any(_contains_analytic(child) for child in node.children):
+            # Window functions cannot appear in WHERE; project the predicate in a
+            # subquery and filter on it from the outside.
+            predicate_alias = "__vtl_filter_predicate"
+            inner = (
+                f'SELECT *, ({" AND ".join(conditions)}) AS "{predicate_alias}" FROM {table_src}'
+            )
+            return (
+                f'SELECT * EXCLUDE ("{predicate_alias}") '
+                f'FROM ({inner}) AS "_vtl_filter_src" '
+                f'WHERE "{predicate_alias}"'
+            )
 
         builder = SQLBuilder().select_all().from_table(table_src)
         if conditions:
