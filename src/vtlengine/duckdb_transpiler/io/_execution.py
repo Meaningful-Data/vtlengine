@@ -212,10 +212,12 @@ def _build_dataset_fetch_select(
     """Build a SELECT query with column projection and in-SQL date/timestamp formatting.
 
     Moves all post-fetch pandas processing into DuckDB SQL so that fetchdf()
-    receives data already in the correct shape and format:
+    receives data already in the correct shape and format, and so the CSV
+    written via ``COPY (SELECT ...) TO`` is bit-for-bit aligned with the
+    in-memory DataFrame:
     - Column projection: only the columns declared in ds.components (in order)
     - DATE columns → strftime('%Y-%m-%d', col) → 'YYYY-MM-DD' strings
-    - TIMESTAMP with any non-midnight value → formatted with time component
+    - TIMESTAMP with any non-midnight value → ISO 8601 'YYYY-MM-DDTHH:MM:SS'
     - TIMESTAMP with all-midnight values → formatted as date-only
     - Other columns → passed through unchanged
 
@@ -259,9 +261,9 @@ def _build_dataset_fetch_select(
                 exprs.append(
                     f'CASE WHEN "{col}" IS NULL THEN NULL'
                     f' WHEN microsecond("{col}") % 1000000 != 0'
-                    f" THEN strftime('%Y-%m-%d %H:%M:%S', \"{col}\")"
+                    f" THEN strftime('%Y-%m-%dT%H:%M:%S', \"{col}\")"
                     f" || '.' || printf('%06d', microsecond(\"{col}\") % 1000000)"
-                    f" ELSE strftime('%Y-%m-%d %H:%M:%S', \"{col}\")"
+                    f" ELSE strftime('%Y-%m-%dT%H:%M:%S', \"{col}\")"
                     f' END AS "{col}"'
                 )
             else:
@@ -419,14 +421,21 @@ def fetch_result(
             return scalar
         return Dataset(name=result_name, components={}, data=result_df)
 
-    # Save to CSV if output folder provided (table kept alive for fetch)
-    if output_folder:
-        save_datapoints_duckdb(conn, result_name, output_folder, delete_after_save=False)
-
-    # Build fetch query: column projection + date/timestamp formatting inside DuckDB
+    # Build fetch query: column projection + ISO 8601 date/timestamp
+    # formatting inside DuckDB.
     ds = output_datasets.get(result_name, Dataset(name=result_name, components={}, data=None))
     fetch_sql = _build_dataset_fetch_select(conn, result_name, ds)
-    ds.data = conn.execute(fetch_sql).fetchdf()
+
+    if output_folder:
+        save_datapoints_duckdb(
+            conn,
+            result_name,
+            output_folder,
+            delete_after_save=False,
+            select_sql=fetch_sql,
+        )
+    else:
+        ds.data = conn.execute(fetch_sql).fetchdf()
 
     return ds
 
