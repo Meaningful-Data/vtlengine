@@ -348,9 +348,45 @@ struct ParserState {
         int column;
     };
     std::vector<CommentInfo> comments;
+
+    struct SyntaxErrorInfo {
+        int line;
+        int column;
+        std::string message;
+        std::string offending_text;
+    };
+    std::vector<SyntaxErrorInfo> syntax_errors;
 };
 
 static ParserState g_state;
+
+
+// ============================================================
+// CollectingErrorListener: captures syntax errors instead of
+// printing them to stderr. Reads from g_state.syntax_errors.
+// ============================================================
+class CollectingErrorListener : public antlr4::BaseErrorListener {
+public:
+    void syntaxError(antlr4::Recognizer* /*recognizer*/,
+                     antlr4::Token* offendingSymbol,
+                     size_t line,
+                     size_t charPositionInLine,
+                     const std::string& msg,
+                     std::exception_ptr /*e*/) override {
+        std::string text;
+        if (offendingSymbol) {
+            text = offendingSymbol->getText();
+        }
+        g_state.syntax_errors.push_back({
+            static_cast<int>(line),
+            static_cast<int>(charPositionInLine),
+            msg,
+            text
+        });
+    }
+};
+
+static CollectingErrorListener g_collecting_listener;
 
 
 // ============================================================
@@ -479,6 +515,7 @@ static py::object do_parse(const std::string& text) {
 
     g_state.input_text = text;
     g_state.comments.clear();
+    g_state.syntax_errors.clear();
 
     g_state.input = std::make_unique<antlr4::ANTLRInputStream>(text);
     g_state.lexer = std::make_unique<VtlLexer>(g_state.input.get());
@@ -489,8 +526,12 @@ static py::object do_parse(const std::string& text) {
     g_state.parser->getInterpreter<antlr4::atn::ParserATNSimulator>()
         ->setPredictionMode(antlr4::atn::PredictionMode::SLL);
 
-    // Remove default error listeners for cleaner output
+    // Replace default error listeners (which print to stderr) with the
+    // collecting listener so Python can surface a clean error.
+    g_state.lexer->removeErrorListeners();
+    g_state.lexer->addErrorListener(&g_collecting_listener);
     g_state.parser->removeErrorListeners();
+    g_state.parser->addErrorListener(&g_collecting_listener);
 
     // Parse
     auto* tree = g_state.parser->start();
@@ -515,6 +556,19 @@ static py::object do_parse(const std::string& text) {
 
 static std::string get_input_text() {
     return g_state.input_text;
+}
+
+static py::list get_syntax_errors() {
+    py::list result;
+    for (auto& e : g_state.syntax_errors) {
+        py::dict d;
+        d["line"] = e.line;
+        d["column"] = e.column;
+        d["message"] = e.message;
+        d["offending_text"] = e.offending_text;
+        result.append(d);
+    }
+    return result;
 }
 
 static py::list get_comments() {
@@ -563,6 +617,8 @@ PYBIND11_MODULE(vtl_cpp_parser, m) {
           "Get the input text from the last parse() call");
     m.def("get_comments", &get_comments,
           "Get comment tokens from the last parse() call");
+    m.def("get_syntax_errors", &get_syntax_errors,
+          "Get syntax errors collected during the last parse() call");
 
     // Token type constants
     m.attr("LPAREN") = static_cast<int>(VtlParser::LPAREN);
