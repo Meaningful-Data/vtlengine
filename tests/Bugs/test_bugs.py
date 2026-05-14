@@ -2416,6 +2416,22 @@ class ClauseBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_728(self):
+        """
+        Description: Window aggregate over an identifier (e.g.
+            ``max(Id_2 over(partition by Id_1))``) inside a filter or calc clause
+            was broken in both engines. Pandas silently returned the row's
+            identifier value (filter became a no-op); DuckDB raised
+            ``BinderException: WHERE clause cannot contain window functions``.
+        Git Branch: cr-728.
+        Goal: Check Result.
+        """
+        code = "GH_728"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class DefinedBugs(BugHelper):
     """ """
