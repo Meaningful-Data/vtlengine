@@ -1,6 +1,6 @@
 [project]
 name = "vtlengine"
-version = "1.8.0rc1"
+version = "1.8.0rc2"
 description = "Run and Validate VTL Scripts"
 license = "AGPL-3.0"
 readme = "README.md"
@@ -72,12 +72,9 @@ dev = [
     "types-jsonschema>=4.25.1,<5.0",
 ]
 docs = [
-    "sphinx>=7.4.7,<8.0; python_version < '3.11'",
-    "sphinx>=8.2.3,<9.0; python_version >= '3.11' and python_version < '3.12'",
-    "sphinx>=9.1.0,<10.0; python_version >= '3.12'",
-    "sphinx-rtd-theme>=3.0.2,<4.0",
-    "sphinx-multiversion>=0.2.4,<0.3.0",
-    "toml>=0.10.2,<0.11.0",
+    "sphinx>=9.1.0,<10.0; python_version == '3.12'",
+    "sphinx-rtd-theme>=3.0.2,<4.0; python_version == '3.12'",
+    "toml>=0.10.2,<0.11.0; python_version == '3.12'",
 ]
 
 
@@ -147,8 +144,10 @@ build = "cp39-* cp310-* cp311-* cp312-* cp313-* cp314-*"
 # Skip musllinux: duckdb 1.4.x ships no musllinux wheels, so vtlengine cannot resolve deps there.
 skip = "*-musllinux*"
 test-requires = ["pytest"]
-# Smoke test: run the API-level test suite (fast, broad coverage, hits the C++ parser end-to-end)
-test-command = "pytest {project}/tests/API -x --tb=short --strict-markers"
+# Smoke test the *installed* wheel. `-o pythonpath=` empties the `["src"]` setting from
+# [tool.pytest.ini_options] so `import vtlengine` resolves to site-packages (where the
+# compiled vtl_cpp_parser.*.so lives) rather than the bind-mounted source at /project/src.
+test-command = "pytest {project}/tests/API -x --tb=short --strict-markers -o pythonpath="
 manylinux-x86_64-image = "manylinux_2_28"
 manylinux-aarch64-image = "manylinux_2_28"
 

@@ -151,9 +151,9 @@ jobs:
       - name: Configure documentation versions
         run: |
           poetry run python docs/scripts/configure_doc_versions.py
-      - name: Build with Sphinx Multi-Version
+      - name: Build multi-version documentation
         run: |
-          poetry run sphinx-multiversion docs _site
+          poetry run python docs/scripts/build_multiversion.py _site
       - name: Generate latest alias
         run: |
           poetry run python docs/scripts/generate_latest_alias.py _site
