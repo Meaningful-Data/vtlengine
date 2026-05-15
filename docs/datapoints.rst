@@ -37,7 +37,16 @@ shapes:
 * a **pandas DataFrame**, when your data is already in memory
 * a **Path to a CSV file** (plain or SDMX-CSV — extension and content
   decide which loader to use)
-* a **Path to an SDMX-ML (``.xml``) or SDMX-JSON (``.json``) data file**
+* a **Path to an SDMX-ML (``.xml``) data file**
+
+.. note::
+    SDMX-JSON is supported for **structures**, not for data. For data,
+    use SDMX-ML or SDMX-CSV.
+
+For the exact SDMX versions supported on the data side (SDMX-CSV 1.0 /
+2.0 / 2.1, SDMX-ML 2.1 / 3.0 / 3.1), see pysdmx's
+`Formats and versions supported
+<https://py.sdmx.io/api/io/general_reader.html#formats-and-versions-supported>`_.
 
 You can mix them freely — one dataset can come from a DataFrame, another
 from a plain CSV, a third from an SDMX-ML file. The engine routes each

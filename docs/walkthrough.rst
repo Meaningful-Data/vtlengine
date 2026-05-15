@@ -73,8 +73,8 @@ A few optional inputs let you extend or tune the run:
 Run
 ***
 
-Reach for :meth:`vtlengine.run` when your data is in pandas DataFrames
-or CSV files.
+Use :meth:`vtlengine.run` when your data is in pandas DataFrames or CSV
+files.
 
 .. note::
     If you're working with SDMX data, prefer :ref:`run_sdmx <run-sdmx-section>`
@@ -90,7 +90,7 @@ For ``run`` you pass the structure and the data separately:
   the engine accepts those too — see :doc:`sdmx_inputs`.
 * **Datapoints** — a ``dict`` keyed by dataset name, where each value
   is a ``pandas.DataFrame`` or a ``Path`` to a plain CSV file. For SDMX
-  data files (SDMX-ML, SDMX-JSON, SDMX-CSV), see :doc:`sdmx_inputs`.
+  data files (SDMX-ML, SDMX-CSV), see :doc:`sdmx_inputs`.
 
 The method returns a dictionary of all generated datasets, keyed by
 their VTL output name. If you'd rather have the results written to disk
@@ -239,8 +239,7 @@ Returns:
 Run SDMX
 ********
 
-Reach for :meth:`vtlengine.run_sdmx` when you're working with SDMX
-data. In SDMX, data and structure are inseparable — every dataset
+Use :meth:`vtlengine.run_sdmx` when you're working with SDMX data. In SDMX, data and structure are inseparable — every dataset
 arrives with its structure attached. ``pysdmx`` mirrors this by
 representing each dataset as a single object (the class is called
 ``PandasDataset`` in its model) that carries the rows and the structure
@@ -248,27 +247,29 @@ together. You hand those objects directly to ``run_sdmx``, which
 unpacks the bundles internally and delegates execution to
 :meth:`vtlengine.run`.
 
-If you want to peek under the hood: each dataset exposes its rows as
-``.data`` (a ``pandas.DataFrame``) and its structure as ``.structure``
+If you're curious about the internals: each dataset exposes its rows
+as ``.data`` (a ``pandas.DataFrame``) and its structure as ``.structure``
 (a ``pysdmx`` ``Schema``). When the ``Schema`` is present, the engine
 auto-casts the DataFrame columns to the declared component types, so
 you don't have to.
 
-By default, the engine uses each dataset's Schema ID as the VTL
-dataset name. So if your SDMX source is
-``DataStructure=MD:TEST_DS(1.0)``, the dataset shows up in your script
-as ``TEST_DS``. If your script calls it something else — say ``DS_1`` —
-pass a ``mappings`` argument to alias the SDMX short-URN to the VTL
-name (a plain ``dict``, or a ``pysdmx`` ``VtlDataflowMapping`` if you
-prefer pysdmx idioms).
+For the common case — your input list contains a single dataset and
+your script references a single input — the engine auto-matches them.
+Whatever name your script uses for the input becomes the alias for that
+dataset; no ``mappings`` argument is required.
+
+If your script references multiple inputs, or your input list contains
+datasets the script doesn't all use, you must pass a ``mappings``
+argument: a ``dict`` mapping each SDMX short-URN to a VTL alias, or a
+``pysdmx`` ``VtlDataflowMapping`` object.
 
 .. note::
-    **Multiple datasets in one source.** If ``get_datasets`` returns more
-    datasets than your script references, filter the list before passing
-    it in — every dataset you pass must be used by the script, otherwise
-    the engine raises an error. Conversely, every name referenced by the
-    script must resolve to one of the datasets (either via the default
-    Schema-ID rule or an explicit mapping).
+    **Multiple datasets in one source.** The 1-to-1 auto-match only
+    works when both the input list and the script's inputs have exactly
+    one entry each. As soon as either side has more than one, you must
+    pass an explicit ``mappings`` argument: every mapped dataset must
+    appear in the script (extras error out), and every script input
+    must be covered by the mapping.
 
 For details on reading and writing SDMX datasets, see the
 `pysdmx documentation <https://py.sdmx.io/howto/vtl_handling.html>`_.
@@ -298,9 +299,9 @@ file, then applies a single VTL transformation that adds a new measure
 
 The structure file defines one ``Dataflow=MD:TEST_DF(1.0)`` with
 components ``DIM_1``, ``DIM_2``, and ``OBS_VALUE``; the data file contains
-six observations. The script references the dataset as ``DS_1``, so a
-``mappings`` argument is passed to alias the SDMX dataflow's short-URN to
-that VTL name.
+six observations. The script references the dataset as ``DS_1``. Because
+there's only one dataset in the list and the script references only one
+input, the engine auto-matches them — no ``mappings`` argument needed.
 
 .. code-block:: python
 
@@ -314,13 +315,10 @@ that VTL name.
     structure = Path("docs/_static/metadata.xml")
     datasets = get_datasets(data, structure)
 
-    # Map the SDMX dataflow's short-URN to the VTL alias used in the script.
-    mappings = {"Dataflow=MD:TEST_DF(1.0)": "DS_1"}
-
     # Add a new measure Me_4 with the same value as OBS_VALUE, and
     # call the resulting dataset DS_r.
     script = "DS_r <- DS_1 [calc Me_4 := OBS_VALUE];"
-    print(run_sdmx(script, datasets, mappings=mappings)['DS_r'].data)
+    print(run_sdmx(script, datasets)['DS_r'].data)
 
 
 .. csv-table:: Returns:

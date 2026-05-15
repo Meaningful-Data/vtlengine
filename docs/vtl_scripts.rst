@@ -107,7 +107,7 @@ together programmatically, it might not be the easiest thing to read.
     print(prettify("DS_r<-DS_1[calc Me_2:=Me_1*10];"))
 
 See the :ref:`Prettify <prettify>` section of the :doc:`walkthrough` for
-a fuller example.
+a complete example.
 
 
 *******************************
