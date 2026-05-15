@@ -2,45 +2,54 @@
 SDMX Inputs
 ###########
 
-The VTL Engine integrates natively with SDMX. :meth:`vtlengine.run` can
-load SDMX structure files and ``pysdmx`` structure objects directly — you
-do not need :meth:`vtlengine.run_sdmx` for that. Use ``run_sdmx`` only
-when structure and data already travel together inside ``pysdmx``
-``PandasDataset`` objects.
+If you work mostly with SDMX, the engine has you covered. It reads
+SDMX-ML, SDMX-JSON and SDMX-CSV files directly, understands the
+``pysdmx`` structure objects (``Schema``, ``DataStructureDefinition``,
+``Dataflow``) and ``PandasDataset`` bundles, and can produce SDMX
+``TransformationScheme`` objects on the way out.
 
-For the basic ``run_sdmx`` call (a script + a list of ``PandasDataset``
-objects from ``pysdmx.io.get_datasets``), see :ref:`run-sdmx-section` in
-the :doc:`walkthrough`. This page collects the more advanced SDMX-flavored
-patterns.
+This page collects the SDMX-specific patterns you're likely to run
+into beyond the basics: loading SDMX files through :meth:`vtlengine.run`,
+binding one ``Dataflow`` to two VTL datasets, feeding the engine a
+registered ``TransformationScheme``, and aliasing SDMX dataflows to the
+names your script uses.
 
-***********************
+For the basic case — a script plus a list of ``PandasDataset`` objects
+from ``pysdmx.io.get_datasets`` — start with :ref:`run-sdmx-section` in
+the :doc:`walkthrough` instead. This page picks up where that leaves off.
+
+*******************
 Run with SDMX files
-***********************
+*******************
 
-:meth:`vtlengine.run` can load SDMX files directly, without using
-:meth:`vtlengine.run_sdmx`. This provides a seamless workflow for SDMX
-data without requiring manual conversion to VTL JSON format.
+If you have SDMX files on disk and you'd rather not convert them
+yourself, hand them straight to :meth:`vtlengine.run` — there's no need
+to go through :meth:`vtlengine.run_sdmx` for that. The engine picks the
+right loader from each file's extension and translates the contents to
+its internal VTL representation behind the scenes.
 
-Supported SDMX formats for **data_structures**:
+Accepted SDMX formats for **data_structures**:
 
 - SDMX-ML structure files (``.xml``)
 - SDMX-JSON structure files (``.json``)
 - pysdmx objects (``Schema``, ``DataStructureDefinition``, ``Dataflow``)
 
-Supported SDMX formats for **datapoints**:
+Accepted SDMX formats for **datapoints**:
 
 - SDMX-ML data files (``.xml``)
 - SDMX-JSON data files (``.json``)
-- SDMX-CSV data files (``.csv``) — with automatic detection
+- SDMX-CSV data files (``.csv``) — auto-detected
 
-SDMX files are automatically detected by their extension. For CSV files,
-the engine first attempts to parse as SDMX-CSV, then falls back to plain
-CSV if SDMX parsing fails.
+The engine routes each file based on its extension. For CSV files in
+particular, it first tries to parse them as SDMX-CSV and falls back to
+plain CSV if that doesn't work — so you can mix the two without
+thinking about it.
 
-When using SDMX files, the dataset name in the structure file (from the
-DataStructureDefinition ID) may differ from the name in the data file
-(from the Dataflow reference). Use the ``sdmx_mappings`` parameter to map
-the data file's URN to the VTL dataset name used in your script:
+One detail that catches users out: the dataset name in the structure
+file (the DSD ID) often differs from the name in the data file (the
+Dataflow reference). When that happens, use the ``sdmx_mappings``
+argument to alias the data file's URN to whatever name your script
+uses:
 
 .. code-block:: python
 
@@ -116,16 +125,19 @@ datapoints with SDMX data files:
 
 .. _sharing_one_dataflow_between_two_datasets:
 
-******************************************
+*****************************************
 Sharing one Dataflow between two datasets
-******************************************
+*****************************************
 
-A common SDMX pattern is having two datasets that share a single
-``Dataflow`` (and therefore one ``DataStructureDefinition``) but contain
-different data — for example, two reporting periods or a previous-vs-current
-snapshot. The same ``Dataflow`` object can be passed to ``to_vtl_json``
-twice with different ``dataset_name`` arguments to bind it to two VTL
-aliases without cloning the structure.
+A common SDMX situation: you have two datasets that share a single
+``Dataflow`` (and therefore one ``DataStructureDefinition``) but hold
+different data. Maybe two reporting periods, maybe a
+previous-vs-current snapshot. You'd like both to appear in your VTL
+script under separate names — without cloning the structure.
+
+The trick is to call ``to_vtl_json`` on the same ``Dataflow`` twice,
+each time with a different ``dataset_name``. That gives you two VTL
+data structures pointing at the same SDMX backbone.
 
 .. code-block:: python
 
@@ -189,14 +201,20 @@ Expected output for ``DS_equal``::
         3      True
 
 
-***********************************
+**********************************
 TransformationScheme as the script
-***********************************
+**********************************
 
-As part of its compatibility with ``pysdmx``, ``run_sdmx`` can take a
-``TransformationScheme`` object as input. If no mapping is provided, the
-VTL script must have a single input, and the data file must contain only
-one dataset.
+If your VTL script already lives in an SDMX repository as a
+``TransformationScheme``, you don't have to extract the text and pass
+it as a string — ``run_sdmx`` accepts the object directly. Each
+``Transformation`` inside the scheme contributes one statement to the
+script the engine executes.
+
+When you don't pass a ``mappings`` argument, the script must reference
+a single input dataset, and the data file you load must contain just
+one dataset too — the engine has to figure out the pairing
+unambiguously.
 
 .. code-block:: python
 
@@ -243,13 +261,18 @@ one dataset.
     run_sdmx(script, datasets=datasets)
 
 
-**************************************
+*************************************
 Mapping SDMX dataflows to VTL aliases
-**************************************
+*************************************
 
-Mapping information can be used to link an SDMX input dataset to a VTL
-input dataset via the ``VtlDataflowMapping`` object from ``pysdmx`` or a
-dictionary.
+Sometimes the name your script uses for a dataset doesn't match the
+SDMX dataflow's short-URN — maybe the script was written first, maybe
+the SDMX names are too unwieldy to drop into VTL expressions, or maybe
+you just want a friendlier handle. Pass a ``mappings`` argument to
+bridge the two.
+
+You can express the mapping as a plain ``dict`` or as a ``pysdmx``
+``VtlDataflowMapping`` object — pick whichever fits your code:
 
 .. code-block:: python
 

@@ -615,12 +615,12 @@ def run_sdmx(
 
     .. important::
         We recommend to use this function in combination with the
-        `get_datasets <https://py.sdmx.io/howto/data_rw.html#pysdmx.io.get_datasets>`_
+        `get_datasets <https://py.sdmx.io/howto/io_data.html>`_
         pysdmx method.
 
     .. important::
         The mapping between pysdmx `PandasDataset
-        <https://py.sdmx.io/howto/data_rw.html#pysdmx.io.pd.PandasDataset>`_ \
+        <https://py.sdmx.io/howto/io_data.html>`_ \
         and VTL datasets is done using the `Schema` instance of the `PandasDataset`.
         The Schema ID is used as the dataset name.
 
