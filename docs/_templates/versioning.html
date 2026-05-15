@@ -1,83 +1,20 @@
-{% if versions %}
-{# Compute latest stable version from versions list AND current_version #}
-{# We need to find the highest version number among all stable versions #}
-{% set ns = namespace(latest_stable=None) %}
-
-{# Check current_version first #}
-{% if current_version.name.startswith('v') and 'rc' not in current_version.name and 'alpha' not in current_version.name and 'beta' not in current_version.name %}
-  {% set ns.latest_stable = current_version.name %}
-{% endif %}
-
-{# Then check all other versions - versions are sorted oldest first #}
-{% for version in versions %}
-  {% if version.name.startswith('v') and 'rc' not in version.name and 'alpha' not in version.name and 'beta' not in version.name %}
-    {# Compare version numbers: if this version is higher, update latest_stable #}
-    {% if ns.latest_stable is none %}
-      {% set ns.latest_stable = version.name %}
-    {% elif version.name > ns.latest_stable %}
-      {% set ns.latest_stable = version.name %}
-    {% endif %}
-  {% endif %}
-{% endfor %}
-{% set computed_latest = ns.latest_stable %}
+{% if site_versions %}
+{% set branch = current_branch or "dev" %}
 {# Determine version type for styling #}
 {% set version_class = "" %}
-{% if current_version.name == computed_latest %}
+{% if branch == latest_version %}
   {% set version_class = "version-latest" %}
-{% elif "rc" in current_version.name or "alpha" in current_version.name or "beta" in current_version.name %}
+{% elif "rc" in branch or "alpha" in branch or "beta" in branch %}
   {% set version_class = "version-prerelease" %}
-{% elif current_version.name == "main" %}
+{% elif branch == "main" %}
   {% set version_class = "version-development" %}
-{% elif not current_version.name.startswith('v') and current_version.name != "main" %}
+{% elif not branch.startswith('v') and branch != "main" %}
   {% set version_class = "version-current" %}
 {% endif %}
 <div class="rst-versions {{ version_class }}" data-toggle="rst-versions" role="note" aria-label="versions">
   <span class="rst-current-version" data-toggle="rst-current-version">
     <span class="fa fa-book"> VTL Engine Docs</span>
-    v: {{ current_version.name.lstrip('v') }}
-    <span class="fa fa-caret-down"></span>
-  </span>
-  <div class="rst-other-versions">
-    <dl>
-      <dt>Versions</dt>
-      {% for version in versions %}
-        {% set display_name = version.name.lstrip('v') %}
-        {% if version.name == current_version.name %}
-          <dd><strong>{{ display_name }}</strong>
-            {% if version.name == computed_latest %}
-              <em style="color: #27ae60; font-size: 0.85em;">(latest)</em>
-            {% elif "rc" in version.name %}
-              <em style="color: #e67e22; font-size: 0.85em;">(pre-release)</em>
-            {% elif version.name == "main" %}
-              <em style="color: #3498db; font-size: 0.85em;">(development)</em>
-            {% elif not version.name.startswith('v') and version.name != "main" %}
-              <em style="color: #f48fb1; font-size: 0.85em;">(current)</em>
-            {% endif %}
-          </dd>
-        {% else %}
-          <dd><a href="{% if version.name == computed_latest %}{{ version.url | replace('/' + version.name + '/', '/latest/') }}{% else %}{{ version.url }}{% endif %}">{{ display_name }}</a>
-            {% if version.name == computed_latest %}
-              <em style="color: #27ae60; font-size: 0.85em;">(latest)</em>
-            {% elif "rc" in version.name %}
-              <em style="color: #e67e22; font-size: 0.85em;">(pre-release)</em>
-            {% elif version.name == "main" %}
-              <em style="color: #3498db; font-size: 0.85em;">(development)</em>
-            {% elif not version.name.startswith('v') and version.name != "main" %}
-              <em style="color: #f48fb1; font-size: 0.85em;">(current)</em>
-            {% endif %}
-          </dd>
-        {% endif %}
-      {% endfor %}
-    </dl>
-  </div>
-</div>
-{% elif site_versions is defined and site_versions %}
-{# Fallback version selector for sphinx-build (working tree with uncommitted changes) #}
-{% set branch = current_branch or "dev" %}
-<div class="rst-versions version-current" data-toggle="rst-versions" role="note" aria-label="versions">
-  <span class="rst-current-version" data-toggle="rst-current-version">
-    <span class="fa fa-book"> VTL Engine Docs</span>
-    v: {{ branch }}
+    v: {{ branch.lstrip('v') }}
     <span class="fa fa-caret-down"></span>
   </span>
   <div class="rst-other-versions">
@@ -87,16 +24,30 @@
         {% set display = ver.lstrip('v') %}
         {% if ver == branch %}
           <dd><strong>{{ display }}</strong>
-            <em style="color: #f48fb1; font-size: 0.85em;">(current)</em>
-          </dd>
-        {% else %}
-          <dd><a href="{{ pathto('', 1) }}../{{ ver }}/index.html">{{ display }}</a>
             {% if ver == latest_version %}
               <em style="color: #27ae60; font-size: 0.85em;">(latest)</em>
             {% elif "rc" in ver %}
               <em style="color: #e67e22; font-size: 0.85em;">(pre-release)</em>
             {% elif ver == "main" %}
               <em style="color: #3498db; font-size: 0.85em;">(development)</em>
+            {% elif not ver.startswith('v') and ver != "main" %}
+              <em style="color: #f48fb1; font-size: 0.85em;">(current)</em>
+            {% endif %}
+          </dd>
+        {% else %}
+          {% if ver == latest_version %}
+            <dd><a href="{{ pathto('', 1) }}../latest/index.html">{{ display }}</a>
+          {% else %}
+            <dd><a href="{{ pathto('', 1) }}../{{ ver }}/index.html">{{ display }}</a>
+          {% endif %}
+            {% if ver == latest_version %}
+              <em style="color: #27ae60; font-size: 0.85em;">(latest)</em>
+            {% elif "rc" in ver %}
+              <em style="color: #e67e22; font-size: 0.85em;">(pre-release)</em>
+            {% elif ver == "main" %}
+              <em style="color: #3498db; font-size: 0.85em;">(development)</em>
+            {% elif not ver.startswith('v') and ver != "main" %}
+              <em style="color: #f48fb1; font-size: 0.85em;">(current)</em>
             {% endif %}
           </dd>
         {% endif %}
