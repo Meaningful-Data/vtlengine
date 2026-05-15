@@ -94,7 +94,10 @@ If you're already working with SDMX, you don't need to convert anything.
 Hand the engine an SDMX-ML (``.xml``) or SDMX-JSON (``.json``) structure
 file as a ``Path``, and the engine will read it via ``pysdmx``, extract
 each ``DataStructureDefinition``, and translate the components to VTL's
-equivalent representation internally.
+equivalent representation internally. For the exact SDMX versions
+supported (SDMX-ML 2.1 / 3.0 / 3.1, SDMX-JSON 2.0.0), see pysdmx's
+`Formats and versions supported
+<https://py.sdmx.io/api/io/general_reader.html#formats-and-versions-supported>`_.
 
 .. code-block:: python
 

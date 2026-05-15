@@ -619,12 +619,13 @@ def run_sdmx(
         pysdmx method.
 
     .. important::
-        The mapping between pysdmx `PandasDataset
-        <https://py.sdmx.io/howto/io_data.html>`_ \
-        and VTL datasets is done using the `Schema` instance of the `PandasDataset`.
-        The Schema ID is used as the dataset name.
-
-        DataStructure=MD:TEST_DS(1.0) -> TEST_DS
+        When ``mappings`` is not provided, ``run_sdmx`` only accepts exactly one
+        dataset, and the script must reference exactly one input — they are
+        auto-matched (the script's input name becomes the alias for the
+        dataset's `Schema`). For any other case, pass an explicit ``mappings``
+        argument that maps each dataset's short-URN to the VTL alias used in
+        the script. See `PandasDataset
+        <https://py.sdmx.io/howto/io_data.html>`_ in the pysdmx documentation.
 
     The function then calls the :obj:`run <vtlengine.API>` function with the provided VTL
     script and prepared inputs.

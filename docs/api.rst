@@ -13,9 +13,10 @@ The VTL Engine API provides the following methods:
   the data structures of the datasets it creates. Supports VTL JSON,
   SDMX structure files, and ``pysdmx`` objects.
 * :meth:`~vtlengine.run` — Execute a VTL script over input datapoints.
-  Accepts VTL JSON, SDMX structure files (``.xml``, ``.json``), and
-  ``pysdmx`` structure objects for structures; pandas DataFrames, plain
-  CSV, or SDMX data files (SDMX-ML, SDMX-JSON, SDMX-CSV) for datapoints.
+  Accepts VTL JSON, SDMX-ML / SDMX-JSON structure files, and ``pysdmx``
+  structure objects for structures; pandas DataFrames, plain CSV, or
+  SDMX-ML / SDMX-CSV data files for datapoints (SDMX-JSON is supported
+  for structures, not data).
 * :meth:`~vtlengine.run_sdmx` — Run a VTL script against ``pysdmx``
   ``PandasDataset`` objects, mapping each ``Schema`` to a VTL data
   structure. Internally calls :meth:`~vtlengine.run`.

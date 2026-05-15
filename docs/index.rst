@@ -13,7 +13,7 @@ It is a Python-based library around the `VTL Language 2.1 <https://sdmx-twg.gith
 
 The vtlengine library provides full SDMX compatibility:
 
-- **Direct SDMX file loading**: Load SDMX-ML, SDMX-JSON, and SDMX-CSV files directly in the ``run()`` and ``semantic_analysis()`` functions
+- **Direct SDMX file loading**: Read SDMX structure files (SDMX-ML, SDMX-JSON) and SDMX data files (SDMX-ML, SDMX-CSV) directly in the ``run()`` and ``semantic_analysis()`` functions
 - **pysdmx integration**: Work with pysdmx objects (Schema, DataStructureDefinition, Dataflow, PandasDataset)
 - **Automatic format detection**: SDMX files are automatically detected by extension
 - **Flexible mappings**: Map SDMX URNs to VTL dataset names using the ``sdmx_mappings`` parameter
