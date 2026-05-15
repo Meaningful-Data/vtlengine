@@ -60,9 +60,9 @@ python = ">=3.10,<4.0"
 # Dependency groups follow PEP 735 (https://peps.python.org/pep-0735/).
 [dependency-groups]
 dev = [
-    "pytest>=8.4,<9.0",
-    "pytest-cov>=7.0.0,<8.0",
-    "coverage>=7.0,!=7.13.0,<8.0",
+    "pytest>=9.0.3,<10.0",
+    "pytest-cov>=7.1.0,<8.0",
+    "coverage>=7.14.0,<8.0",
     "pytest-xdist>=3.8.0,<4.0",
     "mypy>=1.18,<2.0",
     "pyarrow-stubs>=14.0,<25.0",
