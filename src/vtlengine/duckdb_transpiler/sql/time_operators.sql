@@ -275,6 +275,20 @@ CREATE OR REPLACE MACRO vtl_date_timeshift_period_ind(
     END
 );
 
+-- Map a period indicator to the INTERVAL step expected by generate_series and
+-- friends. Kept colocated with the inference helpers so the period-indicator
+-- vocabulary lives in a single place.
+CREATE OR REPLACE MACRO vtl_period_ind_to_interval(period_ind) AS (
+    CASE period_ind
+        WHEN 'D' THEN INTERVAL 1 DAY
+        WHEN 'W' THEN INTERVAL 7 DAY
+        WHEN 'M' THEN INTERVAL 1 MONTH
+        WHEN 'Q' THEN INTERVAL 3 MONTH
+        WHEN 'S' THEN INTERVAL 6 MONTH
+        WHEN 'A' THEN INTERVAL 1 YEAR
+    END
+);
+
 
 -- ============================================================================
 -- OPERATOR: timeshift (TimePeriod shift by N periods)

@@ -1006,39 +1006,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         order_by = ", ".join(g_cols)
         return time_col, other_id_cols, measure_cols, join_on, final_select, order_by
 
-    def _build_date_frequency_subquery(
-        self, src: str, time_col: str, partition: str, *, as_period_indicator: bool = False
-    ) -> str:
-        """Build SQL that infers date frequency (or its period indicator) from date diffs."""
-        freq_case = self._build_date_frequency_case(as_period_indicator=as_period_indicator)
-        alias = "period_ind" if as_period_indicator else "step"
-        return f"""
-SELECT {freq_case} AS {alias}
-FROM (
-    SELECT ABS(DATE_DIFF('day',
-        LAG({time_col}) OVER ({partition} ORDER BY {time_col}),
-        {time_col})) AS diff_days
-    FROM {src}
-) WHERE diff_days IS NOT NULL AND diff_days > 0""".strip()
-
-    @staticmethod
-    def _build_date_frequency_case(as_period_indicator: bool) -> str:
-        """Return a CASE expression for inferred date frequency output."""
-        periods = {
-            7: "'D'" if as_period_indicator else "INTERVAL 1 DAY",
-            28: "'W'" if as_period_indicator else "INTERVAL 7 DAY",
-            90: "'M'" if as_period_indicator else "INTERVAL 1 MONTH",
-            181: "'Q'" if as_period_indicator else "INTERVAL 3 MONTH",
-            365: "'S'" if as_period_indicator else "INTERVAL 6 MONTH",
-            "'Inf'::DOUBLE": "'A'" if as_period_indicator else "INTERVAL 1 YEAR",
-        }
-
-        cases = "\n".join(
-            f"WHEN MIN(diff_days) < {value} THEN {period}" for value, period in periods.items()
-        )
-
-        return f"CASE\n{cases}\nEND".strip()
-
     # Shared SQL fragment for the RECURSIVE step that increments a vtl_time_period.
     _TP_NEXT_PERIOD = (
         "CASE"
@@ -1152,13 +1119,16 @@ FROM (
         time_col, other_id_cols, _, join_on, final_select, order_by = self._build_time_grid_parts(
             ds, time_id
         )
-        partition = "PARTITION BY {}".format(", ".join(other_id_cols)) if other_id_cols else ""
         per_group = fill_mode == "single" and bool(other_id_cols)
         freq_step = "(SELECT step FROM freq)"
 
         cte = CTEBuilder()
         cte.cte("source", f"SELECT * FROM {src}")
-        cte.cte("freq", self._build_date_frequency_subquery("source", time_col, partition))
+        freq_inner = self._build_timeshift_date_frequency_subquery("source", time_col)
+        cte.cte(
+            "freq",
+            f"SELECT vtl_period_ind_to_interval(period_ind) AS step FROM ({freq_inner})",
+        )
 
         if per_group:
             oid_csv = ", ".join(other_id_cols)
