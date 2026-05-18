@@ -409,9 +409,7 @@ class Expr:
         """
         ctx_list = ctx.children
         components = [
-            c
-            for c in ctx_list
-            if not c.is_terminal and c.rule_index == RC.COMPONENT_ID[0]
+            c for c in ctx_list if not c.is_terminal and c.rule_index == RC.COMPONENT_ID[0]
         ]
         return [Terminals().visitComponentID(c).value for c in components]
 
