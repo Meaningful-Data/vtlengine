@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: write
   contents: write
   issues: read
   pull-requests: read
@@ -325,11 +326,16 @@ jobs:
               core.info(`Deleted ${preReleases.length} pre-release(s)`);
             }
 
-            // 13. Trigger downstream workflows via repository_dispatch
-            await github.rest.repos.createDispatchEvent({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              event_type: 'release-published',
-              client_payload: { tag_name: tagName },
-            });
-            core.info('Dispatched release-published event');
+            // 13. Trigger downstream workflows from the released tag's commit.
+            // createWorkflowDispatch (rather than createDispatchEvent) means each
+            // workflow runs the file at the tag's ref — so release branches can
+            // carry their own publish/docs recipe alongside main's.
+            for (const workflow of ['release.yml', 'docs.yml']) {
+              await github.rest.actions.createWorkflowDispatch({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: workflow,
+                ref: tagName,
+              });
+              core.info(`Dispatched ${workflow} at ref ${tagName}`);
+            }
