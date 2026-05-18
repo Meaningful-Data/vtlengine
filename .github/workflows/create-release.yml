@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Create release with notes
         uses: actions/github-script@v8
@@ -31,10 +33,22 @@ jobs:
             const version = versionMatch[1];
             const tagName = `v${version}`;
             core.info(`Version: ${version}, Tag: ${tagName}`);
+            core.info(`Target branch: ${process.env.GITHUB_REF_NAME}`);
 
             // 2. Determine if pre-release
             const isPrerelease = /rc|alpha|beta|dev/.test(version);
             core.info(`Pre-release: ${isPrerelease}`);
+
+            // Tags reachable from this commit — scopes previous-release lookup and
+            // pre-release cleanup to the current branch's lineage.
+            const { execSync } = require('child_process');
+            const reachableTags = new Set(
+              execSync('git tag --merged HEAD', { encoding: 'utf8' })
+                .split('\n')
+                .map(t => t.trim())
+                .filter(Boolean)
+            );
+            core.info(`Reachable tags: ${[...reachableTags].join(', ') || 'none'}`);
 
             // 3. Check tag does not already exist
             try {
@@ -59,9 +73,9 @@ jobs:
             });
             let previousRelease;
             if (isPrerelease) {
-              previousRelease = releases.data[0];
+              previousRelease = releases.data.find(r => reachableTags.has(r.tag_name));
             } else {
-              previousRelease = releases.data.find(r => !r.prerelease);
+              previousRelease = releases.data.find(r => !r.prerelease && reachableTags.has(r.tag_name));
             }
             const previousTag = previousRelease ? previousRelease.tag_name : null;
             core.info(`Previous release: ${previousTag || 'none'}`);
@@ -72,7 +86,7 @@ jobs:
               const comparison = await github.rest.repos.compareCommitsWithBasehead({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                basehead: `${previousTag}...HEAD`,
+                basehead: `${previousTag}...${process.env.GITHUB_SHA}`,
               });
               commits = comparison.data.commits;
             } else {
@@ -100,6 +114,7 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 tag_name: tagName,
+                target_commitish: process.env.GITHUB_REF_NAME,
                 name: tagName,
                 body: `**Full Changelog**: https://github.com/${context.repo.owner}/${context.repo.repo}/compare/${previousTag}...${tagName}`,
                 prerelease: isPrerelease,
@@ -294,6 +309,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               tag_name: tagName,
+              target_commitish: process.env.GITHUB_REF_NAME,
               name: tagName,
               body: body,
               prerelease: isPrerelease,
@@ -303,7 +319,7 @@ jobs:
 
             // 12. Delete pre-releases when publishing a stable release
             if (!isPrerelease) {
-              const preReleases = releases.data.filter(r => r.prerelease);
+              const preReleases = releases.data.filter(r => r.prerelease && reachableTags.has(r.tag_name));
               for (const pr of preReleases) {
                 core.info(`Deleting pre-release: ${pr.tag_name}`);
                 await github.rest.repos.deleteRelease({
