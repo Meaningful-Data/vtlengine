@@ -53,17 +53,16 @@ Sphinx-based documentation published at <https://docs.vtlengine.meaningfuldata.e
 - `docs/data_types.rst` — Data types reference (input/output/internal, casting rules)
 - `docs/environment_variables.rst` — Configuration
 - `docs/error_messages.rst` — Auto-generated error codes
-- `docs/conf.py` — Sphinx config (theme: `sphinx_rtd_theme`, versioning: `sphinx-multiversion`)
+- `docs/conf.py` — Sphinx config (theme: `sphinx_rtd_theme`; multi-version builds are driven by `docs/scripts/build_multiversion.py`)
 
 Build docs locally (all released versions + current branch):
 
 ```bash
 rm -rf _site
 poetry run python docs/scripts/configure_doc_versions.py --include-current-branch
-poetry run sphinx-multiversion docs _site
+poetry run python docs/scripts/build_multiversion.py _site
 poetry run python docs/scripts/generate_latest_alias.py _site
 poetry run python docs/scripts/generate_redirect.py _site
-poetry run sphinx-build docs _site/$(git branch --show-current)
 ```
 
 ## Testing

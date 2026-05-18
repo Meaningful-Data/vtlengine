@@ -37,5 +37,5 @@ Reference
 .. automodule:: vtlengine
     :members:
     :undoc-members:
-    :exclude-members: create_ast
+    :exclude-members: create_ast, check_parser
 

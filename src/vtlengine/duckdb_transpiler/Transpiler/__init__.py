@@ -169,6 +169,22 @@ def _has_col(code_item: str) -> str:
     return f"_has_{code_item}"
 
 
+def _contains_analytic(node: Any) -> bool:
+    """Return True if any descendant of ``node`` is an ``AST.Analytic``."""
+    if isinstance(node, AST.Analytic):
+        return True
+    if isinstance(node, AST.AST):
+        for key in node.__class__.__annotations__:
+            value = getattr(node, key, None)
+            if _contains_analytic(value):
+                return True
+    elif isinstance(node, (list, tuple)):
+        for item in node:
+            if _contains_analytic(item):
+                return True
+    return False
+
+
 @dataclass
 class _ParsedHRRule:
     """Parsed pieces of a hierarchical rule."""
@@ -458,7 +474,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return self._resolve_udo_param(name, udo_val)
 
         if name in self.scalars:
-            return self._scalar_literal(name)
+            if name in self.input_scalars:
+                return self._scalar_literal(name)
+            return f"(SELECT value FROM {quote_name(name)})"
 
         clause_match = self._resolve_clause_component(name)
         if clause_match is not None:
@@ -988,39 +1006,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         order_by = ", ".join(g_cols)
         return time_col, other_id_cols, measure_cols, join_on, final_select, order_by
 
-    def _build_date_frequency_subquery(
-        self, src: str, time_col: str, partition: str, *, as_period_indicator: bool = False
-    ) -> str:
-        """Build SQL that infers date frequency (or its period indicator) from date diffs."""
-        freq_case = self._build_date_frequency_case(as_period_indicator=as_period_indicator)
-        alias = "period_ind" if as_period_indicator else "step"
-        return f"""
-SELECT {freq_case} AS {alias}
-FROM (
-    SELECT ABS(DATE_DIFF('day',
-        LAG({time_col}) OVER ({partition} ORDER BY {time_col}),
-        {time_col})) AS diff_days
-    FROM {src}
-) WHERE diff_days IS NOT NULL AND diff_days > 0""".strip()
-
-    @staticmethod
-    def _build_date_frequency_case(as_period_indicator: bool) -> str:
-        """Return a CASE expression for inferred date frequency output."""
-        periods = {
-            7: "'D'" if as_period_indicator else "INTERVAL 1 DAY",
-            28: "'W'" if as_period_indicator else "INTERVAL 7 DAY",
-            90: "'M'" if as_period_indicator else "INTERVAL 1 MONTH",
-            181: "'Q'" if as_period_indicator else "INTERVAL 3 MONTH",
-            365: "'S'" if as_period_indicator else "INTERVAL 6 MONTH",
-            "'Inf'::DOUBLE": "'A'" if as_period_indicator else "INTERVAL 1 YEAR",
-        }
-
-        cases = "\n".join(
-            f"WHEN MIN(diff_days) < {value} THEN {period}" for value, period in periods.items()
-        )
-
-        return f"CASE\n{cases}\nEND".strip()
-
     # Shared SQL fragment for the RECURSIVE step that increments a vtl_time_period.
     _TP_NEXT_PERIOD = (
         "CASE"
@@ -1134,13 +1119,16 @@ FROM (
         time_col, other_id_cols, _, join_on, final_select, order_by = self._build_time_grid_parts(
             ds, time_id
         )
-        partition = "PARTITION BY {}".format(", ".join(other_id_cols)) if other_id_cols else ""
         per_group = fill_mode == "single" and bool(other_id_cols)
         freq_step = "(SELECT step FROM freq)"
 
         cte = CTEBuilder()
         cte.cte("source", f"SELECT * FROM {src}")
-        cte.cte("freq", self._build_date_frequency_subquery("source", time_col, partition))
+        freq_inner = self._build_timeshift_date_frequency_subquery("source", time_col)
+        cte.cte(
+            "freq",
+            f"SELECT vtl_period_ind_to_interval(period_ind) AS step FROM ({freq_inner})",
+        )
 
         if per_group:
             oid_csv = ", ".join(other_id_cols)
@@ -1235,25 +1223,53 @@ FROM (
                 cols.append(shifted if comp.name == time_id else col)
             return SQLBuilder().select(*cols).from_table(src).build()
         else:
-            other_ids = [quote_name(c.name) for c in ds.get_identifiers() if c.name != time_id]
-            partition = f"PARTITION BY {', '.join(other_ids)}" if other_ids else ""
-
             cols = []
             for comp in ds.components.values():
                 col = quote_name(comp.name)
                 if comp.name == time_id:
-                    cols.append(f"vtl_dateadd({col}, {shift_sql}, freq.period_ind) AS {col}")
+                    shifted_expr = (
+                        f"CASE WHEN freq.period_ind IN ('M','Q','S','A') "
+                        f"AND CAST({col} AS DATE) = LAST_DAY(CAST({col} AS DATE)) "
+                        f"THEN LAST_DAY(CAST("
+                        f"vtl_dateadd({col}, {shift_sql}, freq.period_ind) AS DATE)) "
+                        f"ELSE vtl_dateadd({col}, {shift_sql}, freq.period_ind) END"
+                    )
+                    cols.append(f"{shifted_expr} AS {col}")
                 else:
                     cols.append(col)
 
-            freq_sql = self._build_date_frequency_subquery(
-                src, time_col, partition, as_period_indicator=True
-            )
+            freq_sql = self._build_timeshift_date_frequency_subquery(src, time_col)
 
             return f"""SELECT {", ".join(cols)}
 FROM {src}, (
     {freq_sql}
 ) AS freq"""
+
+    @staticmethod
+    def _build_timeshift_date_frequency_subquery(src: str, time_col: str) -> str:
+        """Calendar-aware frequency inference for timeshift on Date."""
+        return f"""
+SELECT vtl_date_timeshift_period_ind(
+    COUNT(*),
+    BOOL_OR(NOT clean_month),
+    BOOL_AND(diff_days % 7 = 0),
+    BOOL_AND(clean_month AND diff_months % 12 = 0),
+    BOOL_AND(clean_month AND diff_months % 6 = 0),
+    BOOL_AND(clean_month AND diff_months % 3 = 0)
+) AS period_ind
+FROM (
+    SELECT
+        DATE_DIFF('day', d_prev, d_next) AS diff_days,
+        DATE_DIFF('month', d_prev, d_next) AS diff_months,
+        vtl_date_gap_clean_month(d_prev, d_next) AS clean_month
+    FROM (
+        SELECT LAG({time_col}) OVER (ORDER BY {time_col}) AS d_prev,
+               {time_col} AS d_next
+        FROM {src}
+        WHERE {time_col} IS NOT NULL
+    )
+    WHERE d_prev IS NOT NULL AND d_prev <> d_next
+)""".strip()
 
     def visit_ParamOp_dateadd(self, node: AST.ParamOp) -> str:
         """Visit DATEADD operation: dateadd(op, shiftNumber, periodInd)."""
@@ -1474,6 +1490,19 @@ FROM {src}, (
 
         with self._clause_scope(ds):
             conditions = [self.visit(child) for child in node.children]
+
+        if conditions and any(_contains_analytic(child) for child in node.children):
+            # Window functions cannot appear in WHERE; project the predicate in a
+            # subquery and filter on it from the outside.
+            predicate_alias = "__vtl_filter_predicate"
+            inner = (
+                f'SELECT *, ({" AND ".join(conditions)}) AS "{predicate_alias}" FROM {table_src}'
+            )
+            return (
+                f'SELECT * EXCLUDE ("{predicate_alias}") '
+                f'FROM ({inner}) AS "_vtl_filter_src" '
+                f'WHERE "{predicate_alias}"'
+            )
 
         builder = SQLBuilder().select_all().from_table(table_src)
         if conditions:
