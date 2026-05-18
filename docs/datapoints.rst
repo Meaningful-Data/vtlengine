@@ -98,7 +98,7 @@ For ``run_sdmx`` there's no separate ``datapoints`` argument. Each
     from pysdmx.io import get_datasets
     from vtlengine import run_sdmx
 
-    datasets = get_datasets(Path("data.xml"), Path("structure.xml"))
+    datasets = get_datasets(Path("path/to/data.xml"), Path("path/to/structure.xml"))
     run_sdmx(script, datasets)
 
 If your SDMX source returns more datasets than the script needs, filter

@@ -109,8 +109,8 @@ supported (SDMX-ML 2.1 / 3.0 / 3.1, SDMX-JSON 2.0.0), see pysdmx's
 
     result = run(
         script="DS_r <- TEST_DSD [calc Me_2 := OBS_VALUE * 2];",
-        data_structures=Path("structure.xml"),
-        datapoints=Path("data.csv"),
+        data_structures=Path("path/to/structure.xml"),
+        datapoints=Path("path/to/data.csv"),
     )
 
 By default, the SDMX DSD's (or Dataflow's) ID becomes the VTL dataset
@@ -129,10 +129,12 @@ file paths needed.
 
 .. code-block:: python
 
+    from pathlib import Path
+
     from pysdmx.io import read_sdmx
     from vtlengine import run
 
-    msg = read_sdmx(Path("structure.xml"))
+    msg = read_sdmx(Path("path/to/structure.xml"))
     dsds = msg.get_data_structure_definitions()
 
     result = run(script=script, data_structures=dsds, datapoints=datapoints)
