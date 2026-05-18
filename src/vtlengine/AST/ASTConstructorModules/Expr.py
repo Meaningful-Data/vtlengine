@@ -331,16 +331,29 @@ class Expr:
     def visitJoinFunctions(self, ctx: Any) -> Any:
         ctx_list = ctx.children
 
-        using_node = None
-
         op_node = ctx_list[0].text
 
-        if op_node in ["inner_join", "left_join"]:
-            clause_node, using_node = self.visitJoinClause(ctx_list[2])
-        else:
-            clause_node = self.visitJoinClauseWithoutUsing(ctx_list[2])
+        clause_ctx = next(
+            c for c in ctx_list if not c.is_terminal and c.rule_index == RC.JOIN_CLAUSE[0]
+        )
+        clause_node = self.visitJoinClause(clause_ctx)
 
-        body_node = self.visitJoinBody(ctx_list[3])
+        using_ctx = next(
+            (c for c in ctx_list if not c.is_terminal and c.rule_index == RC.USING_CLAUSE[0]),
+            None,
+        )
+        using_node = self.visitUsingClause(using_ctx) if using_ctx is not None else None
+
+        nvl_join_present = any(
+            not c.is_terminal and c.rule_index == RC.NVL_JOIN_CLAUSE[0] for c in ctx_list
+        )
+        if nvl_join_present:
+            raise NotImplementedError("nvl(...) clause inside join is not yet supported")
+
+        body_ctx = next(
+            c for c in ctx_list if not c.is_terminal and c.rule_index == RC.JOIN_BODY[0]
+        )
+        body_node = self.visitJoinBody(body_ctx)
 
         token_info = extract_token_info(ctx)
 
@@ -379,53 +392,28 @@ class Expr:
 
     def visitJoinClause(self, ctx: Any) -> Any:
         """
-        JoinClauseItem (COMMA joinClauseItem)* (USING componentID (COMMA componentID)*)?
+        joinClause: joinClauseItem (COMMA joinClauseItem)*? ;
         """
         ctx_list = ctx.children
-
-        clause_nodes = []
-        component_nodes = []
-        using = None
 
         items = [
             item
             for item in ctx_list
             if not item.is_terminal and item.rule_index == RC.JOIN_CLAUSE_ITEM[0]
         ]
+        return [self.visitJoinClauseItem(item) for item in items]
+
+    def visitUsingClause(self, ctx: Any) -> Any:
+        """
+        usingClause: USING componentID (COMMA componentID)* ;
+        """
+        ctx_list = ctx.children
         components = [
-            component
-            for component in ctx_list
-            if not component.is_terminal and component.rule_index == RC.COMPONENT_ID[0]
+            c
+            for c in ctx_list
+            if not c.is_terminal and c.rule_index == RC.COMPONENT_ID[0]
         ]
-
-        for item in items:
-            clause_nodes.append(self.visitJoinClauseItem(item))
-
-        if len(components) != 0:
-            for component in components:
-                component_nodes.append(Terminals().visitComponentID(component).value)
-            using = component_nodes
-
-        return clause_nodes, using
-
-    def visitJoinClauseWithoutUsing(self, ctx: Any) -> Any:
-        """
-        joinClause: joinClauseItem (COMMA joinClauseItem)* (USING componentID (COMMA componentID)*)? ;
-        """  # noqa E501
-        ctx_list = ctx.children
-
-        clause_nodes = []
-
-        items = [
-            item
-            for item in ctx_list
-            if not item.is_terminal and item.rule_index == RC.JOIN_CLAUSE_ITEM[0]
-        ]
-
-        for item in items:
-            clause_nodes.append(self.visitJoinClauseItem(item))
-
-        return clause_nodes
+        return [Terminals().visitComponentID(c).value for c in components]
 
     def visitJoinBody(self, ctx: Any) -> Any:
         """

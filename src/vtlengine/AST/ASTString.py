@@ -250,7 +250,7 @@ class ASTString(ASTTemplate):
             clause_str += f'when {values_str} then "{clause.result}"'
             clauses_strs.append(clause_str)
         if node.aggregate_clause is not None:
-            clauses_strs.append(f"aggr {node.aggregate_clause.function}")
+            clauses_strs.append(f"aggregate {node.aggregate_clause.function}")
         if node.default_value is not None:
             clauses_strs.append(f'else "{node.default_value}"')
 

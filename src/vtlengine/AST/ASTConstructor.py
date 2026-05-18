@@ -29,7 +29,7 @@ from vtlengine.AST import (
 from vtlengine.AST.ASTConstructorModules import extract_token_info
 from vtlengine.AST.ASTConstructorModules.Expr import Expr
 from vtlengine.AST.ASTConstructorModules.ExprComponents import ExprComp
-from vtlengine.AST.ASTConstructorModules.Terminals import Terminals
+from vtlengine.AST.ASTConstructorModules.Terminals import Terminals, _remove_scaped_characters
 from vtlengine.AST.ASTDataExchange import de_ruleset_elements
 from vtlengine.AST.Grammar._cpp_parser import vtl_cpp_parser
 from vtlengine.AST.Grammar._cpp_parser._rule_constants import RC
@@ -184,10 +184,10 @@ class ASTVisitor:
         )
 
     def visitVpSignature(self, ctx: Any) -> Any:
-        """vpSignature: VALUE_DOMAIN varID | VARIABLE varID ;"""
+        """vpSignature: (VARIABLE | VALUE_DOMAIN) IDENTIFIER ;"""
         ctx_list = ctx.children
         signature_type = ctx_list[0].text
-        target = Terminals().visitVarID(ctx_list[1]).value
+        target = _remove_scaped_characters(ctx_list[1].text)
         return signature_type, target
 
     def visitVpBody(self, ctx: Any) -> Any:
@@ -265,12 +265,12 @@ class ASTVisitor:
         parameters = [
             self.visitParameterItem(parameter)
             for parameter in ctx_list
-            if not parameter.is_terminal and parameter.rule_index == 62
+            if not parameter.is_terminal and parameter.rule_index == 64
         ]
         return_ = [
             Terminals().visitOutputParameterType(datatype)
             for datatype in ctx_list
-            if not datatype.is_terminal and datatype.rule_index == 63
+            if not datatype.is_terminal and datatype.rule_index == 65
         ]
         # Here should be modified if we want to include more than one expr per function.
         expr = [
@@ -349,7 +349,7 @@ class ASTVisitor:
         component_nodes = [
             Terminals().visitSignature(component, kind)
             for component in ctx_list
-            if not component.is_terminal and component.rule_index == 77
+            if not component.is_terminal and component.rule_index == 79
         ]
 
         return signature_type, component_nodes
@@ -363,7 +363,7 @@ class ASTVisitor:
         ruleset_rules = [
             self.visitRuleItemDatapoint(ruleId)
             for ruleId in ctx_list
-            if not ruleId.is_terminal and ruleId.rule_index == 79
+            if not ruleId.is_terminal and ruleId.rule_index == 81
         ]
         return ruleset_rules
 
@@ -404,13 +404,13 @@ class ASTVisitor:
         er_code = [
             Terminals().visitErCode(erCode_name)
             for erCode_name in ctx_list
-            if not erCode_name.is_terminal and erCode_name.rule_index == 102
+            if not erCode_name.is_terminal and erCode_name.rule_index == 104
         ]
         er_code = None if len(er_code) == 0 else er_code[0]
         er_level = [
             Terminals().visitErLevel(erLevel_name)
             for erLevel_name in ctx_list
-            if not erLevel_name.is_terminal and erLevel_name.rule_index == 103
+            if not erLevel_name.is_terminal and erLevel_name.rule_index == 105
         ]
         er_level = None if len(er_level) == 0 else er_level[0]
 
@@ -428,17 +428,17 @@ class ASTVisitor:
         argument_name = [
             Terminals().visitVarID(element)
             for element in ctx_list
-            if not element.is_terminal and element.rule_index == 98
+            if not element.is_terminal and element.rule_index == 100
         ][0]
         argument_type = [
             Terminals().visitInputParameterType(element)
             for element in ctx_list
-            if not element.is_terminal and element.rule_index == 65
+            if not element.is_terminal and element.rule_index == 67
         ][0]
         argument_default = [
             Terminals().visitScalarItem(element)
             for element in ctx_list
-            if not element.is_terminal and element.rule_index == 47
+            if not element.is_terminal and element.rule_index == 48
         ]
         argument_default = None if len(argument_default) == 0 else argument_default[0]
 
@@ -504,7 +504,7 @@ class ASTVisitor:
         conditions = [
             self.visitValueDomainSignature(vtlsig)
             for vtlsig in ctx_list
-            if not vtlsig.is_terminal and vtlsig.rule_index == 83
+            if not vtlsig.is_terminal and vtlsig.rule_index == 85
         ]
 
         dataset = [
@@ -538,7 +538,7 @@ class ASTVisitor:
         component_nodes = [
             Terminals().visitSignature(component)
             for component in ctx_list
-            if not component.is_terminal and component.rule_index == 77
+            if not component.is_terminal and component.rule_index == 79
         ]
         return component_nodes
 
@@ -551,7 +551,7 @@ class ASTVisitor:
         rules_nodes = [
             self.visitRuleItemHierarchical(rule)
             for rule in ctx_list
-            if not rule.is_terminal and rule.rule_index == 81
+            if not rule.is_terminal and rule.rule_index == 83
         ]
         return rules_nodes
 
@@ -572,19 +572,19 @@ class ASTVisitor:
         rule_node = [
             self.visitCodeItemRelation(rule_node)
             for rule_node in ctx_list
-            if not rule_node.is_terminal and rule_node.rule_index == 84
+            if not rule_node.is_terminal and rule_node.rule_index == 86
         ][0]
 
         er_code = [
             Terminals().visitErCode(erCode_name)
             for erCode_name in ctx_list
-            if not erCode_name.is_terminal and erCode_name.rule_index == 102
+            if not erCode_name.is_terminal and erCode_name.rule_index == 104
         ]
         er_code = None if len(er_code) == 0 else er_code[0]
         er_level = [
             Terminals().visitErLevel(erLevel_name)
             for erLevel_name in ctx_list
-            if not erLevel_name.is_terminal and erLevel_name.rule_index == 103
+            if not erLevel_name.is_terminal and erLevel_name.rule_index == 105
         ]
         er_level = None if len(er_level) == 0 else er_level[0]
 
@@ -621,7 +621,7 @@ class ASTVisitor:
             right=None,
             **token_info_op,
         )
-        items = [item for item in ctx_list if not item.is_terminal and item.rule_index == 85]
+        items = [item for item in ctx_list if not item.is_terminal and item.rule_index == 87]
         token_info = extract_token_info(items[0])
         # Means that no concatenations of operations is needed for that rule.
         if len(items) == 1:

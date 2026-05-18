@@ -319,7 +319,7 @@ class ExprComp:
         constant_nodes = [
             Terminals().visitScalarItem(scalar)
             for scalar in ctx_list
-            if not scalar.is_terminal and scalar.rule_index == 47
+            if not scalar.is_terminal and scalar.rule_index == 48
         ]
         children_nodes = var_ids_nodes + constant_nodes
 
@@ -599,7 +599,7 @@ class ExprComp:
             RC.YEAR_ATOM_COMPONENT,
             RC.MONTH_ATOM_COMPONENT,
             RC.DAY_OF_MONTH_ATOM_COMPONENT,
-            RC.DAT_OF_YEAR_ATOM_COMPONENT,
+            RC.DAY_OF_YEAR_ATOM_COMPONENT,
             RC.DAY_TO_YEAR_ATOM_COMPONENT,
             RC.DAY_TO_MONTH_ATOM_COMPONENT,
             RC.YEAR_TODAY_ATOM_COMPONENT,
@@ -753,16 +753,13 @@ class ExprComp:
         return MulOp(op=c.text, children=[], **extract_token_info(ctx))
 
     def visitDateDiffAtomComponent(self, ctx):  # type: ignore[no-untyped-def]
-        """ """
-        from vtlengine.AST.ASTConstructorModules.Expr import Expr
-
+        """datediff(dateFrom=exprComponent, dateTo=exprComponent)"""
         ctx_list = ctx.children
         c = ctx_list[0]
 
         op = c.text
         left_node = self.visitExprComponent(ctx_list[2])
-        # dateTo is 'expr' (not exprComponent) in the new grammar
-        right_node = Expr().visitExpr(ctx_list[4])
+        right_node = self.visitExprComponent(ctx_list[4])
 
         return BinOp(left=left_node, op=op, right=right_node, **extract_token_info(ctx))
 
@@ -906,7 +903,7 @@ class ExprComp:
         operand = self.visitExprComponent(ctx_list[2])
 
         for c in ctx_list[5:-2]:
-            if not c.is_terminal and c.ctx_id == RC.PARTITION_BY_CLAUSE:
+            if not c.is_terminal and c.rule_index == RC.PARTITION_BY_CLAUSE[0]:
                 partition_by = Terminals().visitPartitionByClause(c)
                 continue
             elif not c.is_terminal and c.ctx_id == RC.ORDER_BY_CLAUSE:
@@ -938,17 +935,17 @@ class ExprComp:
         operand = self.visitExprComponent(ctx_list[2])
 
         for c in ctx_list[4:-2]:
-            if not c.is_terminal and c.ctx_id == RC.PARTITION_BY_CLAUSE:
+            if not c.is_terminal and c.rule_index == RC.PARTITION_BY_CLAUSE[0]:
                 partition_by = Terminals().visitPartitionByClause(c)
                 continue
             elif not c.is_terminal and c.ctx_id == RC.ORDER_BY_CLAUSE:
                 order_by = Terminals().visitOrderByClause(c)
                 continue
-            elif not c.is_terminal and c.rule_index in (57, 47):
-                # SignedInteger (rule 57) or ScalarItem (rule 47)
+            elif not c.is_terminal and c.rule_index in (59, 48):
+                # SignedInteger (rule 59) or ScalarItem (rule 48)
                 if params is None:
                     params = []
-                if c.rule_index == 57:
+                if c.rule_index == 59:
                     params.append(Terminals().visitSignedInteger(c))
                 else:
                     params.append(Terminals().visitScalarItem(c))
@@ -972,7 +969,7 @@ class ExprComp:
         op_node = ctx_list[0].text
 
         for c in ctx_list[4:-2]:
-            if not c.is_terminal and c.ctx_id == RC.PARTITION_BY_CLAUSE:
+            if not c.is_terminal and c.rule_index == RC.PARTITION_BY_CLAUSE[0]:
                 partition_by = Terminals().visitPartitionByClause(c)
                 continue
             elif not c.is_terminal and c.ctx_id == RC.ORDER_BY_CLAUSE:

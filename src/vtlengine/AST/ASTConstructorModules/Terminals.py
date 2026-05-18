@@ -325,7 +325,7 @@ class Terminals:
     def visitSimpleScalar(self, ctx):
         ctx_list = ctx.children
         c = ctx_list[0]
-        if not c.is_terminal and c.ctx_id == RC.CONSTANT:
+        if not c.is_terminal and c.rule_index == RC.CONSTANT[0]:
             return self.visitConstant(c)
         else:
             raise NotImplementedError
