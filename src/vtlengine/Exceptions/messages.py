@@ -226,12 +226,6 @@ centralised_messages = {
         "description": "Raised when URL datapoints are provided but data_structures is not a "
         "file path or URL for fetching the SDMX structure definition.",
     },
-    # VTL parser errors
-    "0-1-4-1": {
-        "message": "VTL syntax error at line {line}, column {column}: {detail}",
-        "description": "Raised when the VTL script cannot be parsed because it does not "
-        "match the VTL grammar (e.g. using '=' instead of ':=' in a calc clause).",
-    },
     # Env var errors
     "0-4-1-1": {
         "message": "Invalid value for {env_var}: {value}. "

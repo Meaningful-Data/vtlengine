@@ -2,7 +2,6 @@
 """Configure which versions to build in documentation based on tag analysis."""
 
 import json
-import re
 import subprocess
 import sys
 from pathlib import Path
@@ -15,7 +14,7 @@ from version_utils import (
     parse_version,
 )
 
-SMV_WHITELIST_PATH = Path(__file__).parent.parent / "_smv_whitelist.json"
+VERSIONS_JSON_PATH = Path(__file__).parent.parent / "_versions.json"
 
 
 def should_build_rc_tags(
@@ -49,37 +48,6 @@ def should_build_rc_tags(
     return (rc_base > stable_base, latest_rc)
 
 
-def generate_tag_whitelist(
-    stable_versions: list[str], build_rc: bool, latest_rc: Optional[str]
-) -> str:
-    """
-    Generate the tag whitelist regex pattern.
-
-    Args:
-        stable_versions: List of stable versions to include
-        build_rc: Whether to build rc tags
-        latest_rc: The latest rc tag (if any)
-
-    Returns:
-        Regex pattern string
-    """
-    if not stable_versions and not build_rc:
-        return r"^v\d+\.\d+\.\d+$"
-
-    patterns = []
-
-    for version in stable_versions:
-        patterns.append(f"{re.escape(version)}$")
-
-    if build_rc and latest_rc:
-        patterns.append(f"{re.escape(latest_rc)}$")
-
-    if not patterns:
-        return r"^v\d+\.\d+\.\d+$"
-
-    return f"^({'|'.join(patterns)})"
-
-
 def get_current_branch() -> Optional[str]:
     """Get the current git branch name, or None if in detached HEAD state."""
     try:
@@ -95,29 +63,39 @@ def get_current_branch() -> Optional[str]:
         return None
 
 
-def write_whitelist_config(tag_whitelist: str, include_current_branch: bool = False) -> None:
+def build_versions_list(
+    stable_versions: list[str],
+    latest_rc: Optional[str],
+    build_rc: bool,
+    extra_branch: Optional[str],
+) -> list[str]:
     """
-    Write the sphinx-multiversion whitelist configuration to a JSON file.
+    Assemble the ordered list of refs to build.
 
-    Args:
-        tag_whitelist: The regex pattern for tag whitelist
-        include_current_branch: Whether to add the current git branch to smv_branch_whitelist
+    Order (most-recent first for display):
+      main, <extra_branch?>, <latest_rc if build_rc>, *stable_versions
+
+    The list deduplicates entries so an explicit `--include-current-branch=main`
+    does not duplicate the always-present `main` entry.
     """
-    branch_whitelist = r"^main$"
+    versions = ["main"]
+    if extra_branch and extra_branch not in versions:
+        versions.append(extra_branch)
+    if build_rc and latest_rc:
+        versions.append(latest_rc)
+    versions.extend(stable_versions)
+    return versions
 
-    if include_current_branch:
-        current_branch = get_current_branch()
-        if current_branch and current_branch != "main":
-            branch_whitelist = f"^(main|{re.escape(current_branch)})$"
-            print(f"Updated smv_branch_whitelist to include: {current_branch}")
 
+def write_versions_config(versions: list[str], latest_stable: Optional[str]) -> None:
+    """Write the resolved version list to docs/_versions.json."""
     config = {
-        "smv_tag_whitelist": tag_whitelist,
-        "smv_branch_whitelist": branch_whitelist,
+        "versions": versions,
+        "latest_stable": latest_stable,
     }
 
-    SMV_WHITELIST_PATH.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
-    print(f"Wrote whitelist config to {SMV_WHITELIST_PATH.name}")
+    VERSIONS_JSON_PATH.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
+    print(f"Wrote version list to {VERSIONS_JSON_PATH.name}")
 
 
 def main() -> int:
@@ -128,7 +106,7 @@ def main() -> int:
 
     all_tags = get_all_version_tags()
     stable_versions = get_latest_stable_versions(all_tags, limit=5)
-    print(f"Latest stable versions (limit 5): {', '.join(stable_versions)}")
+    print(f"Latest stable versions (limit 5): {', '.join(stable_versions) or '(none)'}")
 
     build_rc, latest_rc = should_build_rc_tags(all_tags, stable_versions)
 
@@ -139,10 +117,19 @@ def main() -> int:
     else:
         print("No rc tags found")
 
-    tag_whitelist = generate_tag_whitelist(stable_versions, build_rc, latest_rc)
-    print(f"Generated tag whitelist: {tag_whitelist}")
+    extra_branch: Optional[str] = None
+    if include_current_branch:
+        current_branch = get_current_branch()
+        if current_branch and current_branch != "main":
+            extra_branch = current_branch
+            print(f"Including current branch in build list: {current_branch}")
 
-    write_whitelist_config(tag_whitelist, include_current_branch=include_current_branch)
+    latest_stable = stable_versions[0] if stable_versions else None
+    versions = build_versions_list(stable_versions, latest_rc, build_rc, extra_branch)
+    print(f"Resolved versions to build: {', '.join(versions)}")
+    print(f"Latest stable: {latest_stable or '(none)'}")
+
+    write_versions_config(versions, latest_stable)
     print("Configuration updated successfully")
 
     return 0

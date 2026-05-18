@@ -83,16 +83,20 @@ class RunTimeError(VTLEngineException):
 class VTLSyntaxError(VTLEngineException):
     """Raised when the VTL script cannot be parsed because it does not match the grammar."""
 
-    def __init__(self, code: str, **kwargs: Any) -> None:
-        message = centralised_messages[code]["message"].format(**kwargs)
-        line = kwargs.get("line")
-        column = kwargs.get("column")
-        super().__init__(
-            message,
-            lino=None if line is None else str(line),
-            colno=None if column is None else str(column),
-            code=code,
-        )
+    def __init__(
+        self,
+        *,
+        line: int,
+        column: int,
+        detail: str,
+        source_line: str = "",
+        underline_length: int = 1,
+    ) -> None:
+        message = f"VTL syntax error at line {line}, column {column}: {detail}"
+        if source_line:
+            caret = " " * (column - 1) + "^" * max(1, underline_length)
+            message += f"\n    {source_line}\n    {caret}"
+        super().__init__(message, lino=str(line), colno=str(column))
 
 
 class InputValidationException(VTLEngineException):
