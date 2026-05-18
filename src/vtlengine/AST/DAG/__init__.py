@@ -38,7 +38,14 @@ from vtlengine.AST import (
 )
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.DAG._models import DatasetSchedule, StatementDeps
-from vtlengine.AST.Grammar.tokens import AS, DROP, KEEP, MEMBERSHIP, RENAME, TO
+from vtlengine.AST.Grammar.tokens import (
+    AS,
+    DROP,
+    KEEP,
+    MEMBERSHIP,
+    RENAME,
+    TO,
+)
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component
 
@@ -110,6 +117,7 @@ class DAGAnalyzer(ASTTemplate):
             deletion=dict(deletion),
             global_inputs=global_inputs,
             persistent=persistent_datasets,
+            all_outputs=sorted(all_outputs),
         )
 
     @classmethod
@@ -148,13 +156,15 @@ class DAGAnalyzer(ASTTemplate):
             self.sorting = result
         except nx.NetworkXUnfeasible:
             error_keys: Dict[int, Any] = {}
-            for v in self.edges.values():
-                aux_v0, aux_v1 = v[1], v[0]
-                for iv in self.edges.values():
-                    if aux_v0 == iv[0] and aux_v1 == iv[1]:
-                        error_keys[aux_v0] = self.dependencies[aux_v0]
-                        error_keys[aux_v1] = self.dependencies[aux_v1]
-                        break
+            try:
+                cycle = nx.find_cycle(graph)
+                for u, v in cycle:
+                    if u in self.dependencies:
+                        error_keys[u] = self.dependencies[u]
+                    if v in self.dependencies:
+                        error_keys[v] = self.dependencies[v]
+            except nx.NetworkXNoCycle:
+                pass
             raise SemanticError("1-3-2-3", op=error_op, nodes=error_keys) from None
 
     def load_vertex(self) -> None:
@@ -236,6 +246,8 @@ class DAGAnalyzer(ASTTemplate):
         for ast_element in node.children:
             if isinstance(ast_element, Operator):
                 udos[ast_element.op] = ast_element
+            elif isinstance(ast_element, HRuleset):
+                HRDAGAnalyzer.sort_hr_rules(ast_element)
         self.udos = udos
         for child in node.children:
             if isinstance(child, (Assignment, PersistentAssignment)):
@@ -358,6 +370,21 @@ class DAGAnalyzer(ASTTemplate):
 
 
 class HRDAGAnalyzer(DAGAnalyzer):
+    @classmethod
+    def sort_hr_rules(cls, node: HRuleset) -> None:
+        """Filter valid hierarchy rules (EQ comparison) and sort by dependency order.
+
+        Modifies node.rules in place: removes rules whose comparison operator is not '='
+        and re-sorts the remaining rules based on the dependency DAG.
+        """
+        dag = cls()
+        dag.visit(node)
+        dag.load_vertex()
+        dag.load_edges()
+        if len(dag.edges) != 0:
+            dag._build_and_sort_graph("hierarchy")
+            node.rules = dag.sort_elements(node.rules)
+
     def visit_HRuleset(self, node: HRuleset) -> None:
         """
         HRuleset: (name, element, rules)

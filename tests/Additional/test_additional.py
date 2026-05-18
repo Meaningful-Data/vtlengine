@@ -2850,13 +2850,10 @@ class DataValidationOperatorsTest(AdditionalHelper):
 
         code = "11-4"
         number_inputs = 1
-        references_names = ["DS_r"]
+        exception_code = "1-3-2-3"
 
-        self.BaseTest(
-            text=text,
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names,
+        self.NewSemanticExceptionTest(
+            text=text, code=code, number_inputs=number_inputs, exception_code=exception_code
         )
 
     def test_5(self):
@@ -3736,7 +3733,7 @@ class TimeOperatorsTest(AdditionalHelper):
         """
         Basic behaviour for datasets with period type.
         """
-        text = """DS_r := sum (DS_1 group all time_agg("A", Id_1));"""
+        text = """DS_r := sum (DS_1 group all time_agg("A"));"""
         code = "7-18"
         number_inputs = 1
         references_names = ["DS_r"]
@@ -3752,7 +3749,7 @@ class TimeOperatorsTest(AdditionalHelper):
         """
         Basic behaviour for datasets with date type.
         """
-        text = """DS_r := sum (DS_1 group all time_agg("A", Id_1, last));"""
+        text = """DS_r := sum (DS_1 group all time_agg("A", last));"""
         code = "7-19"
         number_inputs = 1
         references_names = ["DS_r"]
@@ -3889,6 +3886,103 @@ class TimeOperatorsTest(AdditionalHelper):
             text=text, code=code, number_inputs=number_inputs, exception_code=exception_code
         )
 
+    def test_30(self):
+        """
+        Group by with time_agg on Time_Period type.
+        """
+        text = """DS_r := sum(DS_1 group by Id_2 time_agg("A"));"""
+        code = "7-30"
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
+
+    def test_31(self):
+        """
+        Group except with time_agg on Date type.
+        Excludes Id_2 from grouping, time_agg transforms Id_1 to annual.
+        """
+        text = """DS_r := sum(DS_1 group except Id_2 time_agg("A", last));"""
+        code = "7-31"
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
+
+    def test_32(self):
+        """
+        Group by with time_agg on Date type with first conf, spanning multiple years.
+        """
+        text = """DS_r := sum(DS_1 group by Id_2 time_agg("A", first));"""
+        code = "7-32"
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
+
+    def test_33(self):
+        """
+        Group by with time_agg on Time_Period, multiple measures, multiple years.
+        """
+        text = """DS_r := sum(DS_1 group by Id_2 time_agg("A"));"""
+        code = "7-33"
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
+
+    def test_34(self):
+        """
+        Group except with time_agg on Time_Period, 3 identifiers, exclude one.
+        """
+        text = """DS_r := sum(DS_1 group except Id_3 time_agg("A"));"""
+        code = "7-34"
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
+
+    def test_35(self):
+        """
+        Group except with time_agg on Date, exclude multiple identifiers, multiple years.
+        """
+        text = """DS_r := sum(DS_1 group except Id_2, Id_3 time_agg("A", last));"""
+        code = "7-35"
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
+
     def test_GH_261_1(self):
         text = "DS_r <- DS_1[calc Me_2 := Me_1 < Me_1];"
         code = "GH_261"
@@ -3933,7 +4027,7 @@ class TimeOperatorsTest(AdditionalHelper):
         text = "DS_r <- DS_1[aggr Me_2 := max(Me_1)];"
         code = "GH_261"
         number_inputs = 1
-        exception_code = "2-1-19-18"
+        exception_code = "1-1-19-12"
 
         self.NewSemanticExceptionTest(
             text=text, code=code, number_inputs=number_inputs, exception_code=exception_code
@@ -3943,7 +4037,7 @@ class TimeOperatorsTest(AdditionalHelper):
         text = "DS_r <- DS_1[aggr Me_2 := min(Me_1)];"
         code = "GH_261"
         number_inputs = 1
-        exception_code = "2-1-19-18"
+        exception_code = "1-1-19-12"
 
         self.NewSemanticExceptionTest(
             text=text, code=code, number_inputs=number_inputs, exception_code=exception_code

@@ -4205,6 +4205,21 @@ class SetOperatorsTest(TestAttributesHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_611(self):
+        """
+        SET DIFFERENCE: setdiff
+        Dataset --> Dataset
+        Status: OK
+        Expression: DS_r := setdiff(DS_1,DS_2)
+
+        Description: Check the operator its not returning rows with pre-existing null values as results
+        """
+        code = "GH_611"
+        number_inputs = 2
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class ConditionalOperatorsTest(TestAttributesHelper):
     """

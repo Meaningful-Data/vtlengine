@@ -3,6 +3,8 @@ from pathlib import Path
 import pytest
 
 from tests.Helper import TestHelper
+from vtlengine.API import create_ast
+from vtlengine.AST.ASTString import ASTString
 
 
 class HierarchicalHelper(TestHelper):
@@ -1437,6 +1439,47 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_598_1(self):
+        """
+        check_hierarchy with boolean errorcode and errorlevel constants.
+        Dataset --> Dataset
+        Status: OK
+
+        define hierarchical ruleset hr_bool (variable rule Id_1) is
+            B = C - D errorcode true errorlevel true;
+            N = A - L errorcode false errorlevel false
+        end hierarchical ruleset;
+
+        DS_r <- check_hierarchy(DS_1, hr_bool rule Id_1);
+
+        Git Branch: cr-596.
+        Goal: Verify boolean constants work as errorcode/errorlevel in hierarchical
+        rulesets, including AST round-trip.
+        """
+        code = "GH_598_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_598_1_roundtrip(self):
+        """
+        AST round-trip for check_hierarchy with boolean errorcode/errorlevel.
+
+        Git Branch: cr-596.
+        Goal: Verify that rendering the AST back to VTL and re-parsing produces the
+        same result when boolean constants are used in errorcode/errorlevel.
+        """
+        code = "GH_598_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        text = self.LoadVTL(code)
+        rendered = ASTString().render(create_ast(text))
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names, text=rendered
+        )
+
 
 class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
     """
@@ -2647,9 +2690,11 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
 
         code = "GL_397_31"
         number_inputs = 1
-        references_names = ["1"]
+        exception_code = "1-1-10-10"
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
 
     def test_GL_397_33(self):
         """
@@ -2667,10 +2712,12 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
 
         code = "GL_397_33"
         number_inputs = 1
-        references_names = ["1"]
+        exception_code = "1-1-10-10"
 
         # with pytest.raises(Exception, match="cast .+? without providing a mask"):
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
 
     def test_GL_397_35(self):
         """
@@ -2754,3 +2801,105 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_567_1(self):
+        """
+        HIERARCHICAL ROLL-UP: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset hie1 (variable rule Id_2) is
+                        E = A + F    errorcode "error"   errorlevel 5;
+                        A = B + C    errorcode "error2"   errorlevel 5;
+                        D = E + A   errorcode "error3"  errorlevel 5;
+                        A >= B        errorcode "error4"  errorlevel 5
+                    end hierarchical ruleset;
+
+                    DS_r := hierarchy(DS_1, hie1 rule Id_2 all);
+
+        Description: Hierarchy with mixed comparison operators (= and >=).
+        Non-EQ rules are filtered out by the DAG during rule analysis.
+
+        Git Branch: #567.
+        Goal: Verify that hierarchy filters non-EQ rules and computes correctly.
+        """
+
+        code = "GH_567_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_567_2(self):
+        """
+        HIERARCHICAL ROLL-UP: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset hie1 (variable rule Id_2) is
+                        A >= B        errorcode "error4"  errorlevel 5
+                    end hierarchical ruleset;
+
+                    DS_r := hierarchy(DS_1, hie1 rule Id_2 all);
+
+        Description: Hierarchy with no EQ rules should raise SemanticError.
+
+        Git Branch: #567.
+        Goal: Verify that hierarchy raises error 1-1-10-5 when no rules have = operator.
+        """
+
+        code = "GH_567_2"
+        number_inputs = 1
+        error_code = "1-1-10-5"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
+    def test_GH_567_3(self):
+        """
+        HIERARCHICAL ROLL-UP: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset hie1 (variable rule Id_2) is
+                        A >= B        errorcode "error4"  errorlevel 5
+                    end hierarchical ruleset;
+
+                    DS_r := hierarchy(DS_1, hie1 rule Id_2 all);
+
+        Description: Hierarchy with no EQ rules should raise SemanticError.
+
+        Git Branch: #567.
+        Goal: Verify that hierarchy raises error 1-1-10-5 when no rules have = operator.
+        """
+
+        code = "GH_567_3"
+        number_inputs = 1
+        error_code = "1-1-10-10"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
+    def test_GH_567_4(self):
+        """
+        HIERARCHICAL ROLL-UP: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset hie1 (variable rule Id_2) is
+                        A >= B        errorcode "error4"  errorlevel 5
+                    end hierarchical ruleset;
+
+                    DS_r := hierarchy(DS_1, hie1 rule Id_2 all);
+
+        Description: Hierarchy with no EQ rules should raise SemanticError.
+
+        Git Branch: #567.
+        Goal: Verify that hierarchy raises error 1-1-10-5 when no rules have = operator.
+        """
+
+        code = "GH_567_4"
+        number_inputs = 1
+        error_code = "1-3-2-3"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )

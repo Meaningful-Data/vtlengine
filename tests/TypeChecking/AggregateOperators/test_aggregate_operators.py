@@ -160,7 +160,7 @@ class AggregateOperatorsDatasetTypeChecking(TestAggregateTypeChecking):
         """
         code = "10-1-9"
         number_inputs = 1
-        message = "1-1-1-1"
+        message = "1-1-19-12"
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -229,9 +229,11 @@ class AggregateOperatorsDatasetTypeChecking(TestAggregateTypeChecking):
         """
         code = "10-1-13"
         number_inputs = 1
-        references_names = ["DS_r"]
+        exception_code = "1-1-19-12"
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
 
     def test_14(self):
         """
@@ -1504,9 +1506,11 @@ class AggregateOperatorsComponentTypeChecking(TestAggregateTypeChecking):
         """
         code = "10-2-12"
         number_inputs = 1
-        references_names = ["DS_r"]
+        exception_code = "1-1-19-12"
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
 
     def test_13(self):
         """

@@ -20,7 +20,8 @@ def generate_ast_comment(token: CommonToken) -> Comment:
     token_info = extract_token_info(token)
     text = token.text
     if token.type == Lexer.SL_COMMENT:
-        text = token.text[:-1]  # Remove the trailing newline character
+        # Usage rstrip("\r\n") instead of [:-1] since SL_COMMENT no longer includes trailing newline
+        text = token.text.rstrip("\r\n")
     return Comment(value=text, **token_info)
 
 

@@ -68,10 +68,10 @@ check_max_date_invalid_params = [
 ]
 
 scalar_time_params = [
-    ('year(cast("2023-01-12T10:30:00", date))', 2023),
-    ('year(cast("2023-01-12 10:30:00", date))', 2023),
-    ('month(cast("2023-06-15T08:00:00", date))', 6),
-    ('month(cast("2023-06-15 08:00:00", date))', 6),
+    ('getyear(cast("2023-01-12T10:30:00", date))', 2023),
+    ('getyear(cast("2023-01-12 10:30:00", date))', 2023),
+    ('getmonth(cast("2023-06-15T08:00:00", date))', 6),
+    ('getmonth(cast("2023-06-15 08:00:00", date))', 6),
     ('dayofmonth(cast("2023-01-12T15:45:00", date))', 12),
     ('dayofmonth(cast("2023-01-12 15:45:00", date))', 12),
     ('dayofyear(cast("2023-02-01T23:59:59", date))', 32),
@@ -114,27 +114,27 @@ dateadd_params = [
 dataload_params = [
     pytest.param(
         ["2020-01-15 10:30:00", "2020-06-01 00:00:00", "2020-12-31 23:59:59"],
-        ["2020-01-15 10:30:00", "2020-06-01 00:00:00", "2020-12-31 23:59:59"],
+        ["2020-01-15T10:30:00", "2020-06-01T00:00:00", "2020-12-31T23:59:59"],
         id="datetime_values",
     ),
     pytest.param(
         ["2020-01-15T10:30:00", "2020-06-01T00:00:00"],
-        ["2020-01-15 10:30:00", "2020-06-01 00:00:00"],
-        id="t_separator_normalized_to_space",
+        ["2020-01-15T10:30:00", "2020-06-01T00:00:00"],
+        id="t_separator_preserved",
     ),
     pytest.param(
         ["2020-01-15 10:30:00", "2020-06-01 00:00:00.123456"],
-        ["2020-01-15 10:30:00", "2020-06-01 00:00:00.123456"],
+        ["2020-01-15T10:30:00", "2020-06-01T00:00:00.123456"],
         id="space_separator_with_microseconds",
     ),
     pytest.param(
         ["2020-01-15", "2020-06-01 10:00:00"],
-        ["2020-01-15", "2020-06-01 10:00:00"],
+        ["2020-01-15", "2020-06-01T10:00:00"],
         id="mixed_date_and_datetime",
     ),
     pytest.param(
         ["2020-01-15T10:30:00.123456789"],
-        ["2020-01-15 10:30:00.123456"],
+        ["2020-01-15T10:30:00.123456"],
         id="nanoseconds_truncated",
     ),
 ]
@@ -143,25 +143,25 @@ dataset_operator_params = [
     pytest.param(
         'DS_r <- DS_1[calc Me_1 := dateadd(Me_1, 1, "D")];',
         ["2020-01-15 10:30:00"],
-        ["2020-01-16 10:30:00"],
+        ["2020-01-16T10:30:00"],
         id="dateadd_day_preserves_time",
     ),
     pytest.param(
         'DS_r <- DS_1[calc Me_1 := dateadd(Me_1, 1, "M")];',
         ["2020-01-15 10:30:00"],
-        ["2020-02-15 10:30:00"],
+        ["2020-02-15T10:30:00"],
         id="dateadd_month_preserves_time",
     ),
     pytest.param(
         'DS_r <- DS_1[calc Me_1 := dateadd(Me_1, 1, "A")];',
         ["2020-01-15 10:30:00"],
-        ["2021-01-15 10:30:00"],
+        ["2021-01-15T10:30:00"],
         id="dateadd_year_preserves_time",
     ),
     pytest.param(
         'DS_r <- DS_1[calc Me_1 := dateadd(Me_1, 7, "D")];',
         ["2020-01-15 10:30:00.123456"],
-        ["2020-01-22 10:30:00.123456"],
+        ["2020-01-22T10:30:00.123456"],
         id="dateadd_day_preserves_microseconds",
     ),
 ]
@@ -169,13 +169,13 @@ dataset_operator_params = [
 
 dataset_extraction_params = [
     pytest.param(
-        "year",
+        "getyear",
         ["2023-01-12 10:30:00", "2024-06-15 08:00:00"],
         [2023, 2024],
         id="year_from_datetime",
     ),
     pytest.param(
-        "month",
+        "getmonth",
         ["2023-06-15 08:00:00", "2023-12-01 10:00:00"],
         [6, 12],
         id="month_from_datetime",
@@ -233,9 +233,9 @@ flow_to_stock_params = [
             "Me_1": [10, 20, 30],
         },
         [
-            "2020-01-01 10:30:00",
-            "2020-01-02 10:30:00",
-            "2020-01-03 10:30:00",
+            "2020-01-01T10:30:00",
+            "2020-01-02T10:30:00",
+            "2020-01-03T10:30:00",
         ],
         [10, 30, 60],
         id="single_group_cumulative",
@@ -459,7 +459,7 @@ timeshift_params = [
         [1, 1, 1],
         ["2020-01-01 10:30:00", "2020-01-02 10:30:00", "2020-01-03 10:30:00"],
         [10, 20, 30],
-        ["2020-01-02 10:30:00", "2020-01-03 10:30:00", "2020-01-04 10:30:00"],
+        ["2020-01-02T10:30:00", "2020-01-03T10:30:00", "2020-01-04T10:30:00"],
         [10, 20, 30],
         id="timeshift_forward_preserves_time",
     ),
@@ -468,7 +468,7 @@ timeshift_params = [
         [1, 1, 1],
         ["2020-01-01 10:30:00", "2020-01-02 10:30:00", "2020-01-03 10:30:00"],
         [10, 20, 30],
-        ["2019-12-31 10:30:00", "2020-01-01 10:30:00", "2020-01-02 10:30:00"],
+        ["2019-12-31T10:30:00", "2020-01-01T10:30:00", "2020-01-02T10:30:00"],
         [10, 20, 30],
         id="timeshift_backward_preserves_time",
     ),
@@ -664,6 +664,96 @@ def test_fill_time_series(lim_method, Id_1, Id_2, Me_1, exp_Id_1, exp_Id_2, exp_
     assert _to_pylist(result_data["Id_1"]) == exp_Id_1
     assert _to_pylist(result_data["Id_2"]) == exp_Id_2
     assert _to_pylist(result_data["Me_1"]) == exp_Me_1
+
+
+@pytest.mark.parametrize(
+    "interval, expected",
+    [
+        # Daily
+        ("2020-01-01/2020-01-02", "D"),
+        # Weekly
+        ("2020-01-01/2020-01-08", "W"),
+        ("2020-01-01/2020-01-07", "W"),
+        # Monthly: both "start of next" and "end of current" conventions
+        ("2020-01-01/2020-02-01", "M"),
+        ("2020-01-01/2020-01-31", "M"),
+        ("2020-02-01/2020-03-01", "M"),
+        ("2020-02-01/2020-02-29", "M"),  # leap year February
+        ("2021-02-01/2021-02-28", "M"),  # non-leap year February
+        # Quarterly
+        ("2020-01-01/2020-04-01", "Q"),
+        ("2020-01-01/2020-03-31", "Q"),
+        # Semester
+        ("2020-01-01/2020-07-01", "S"),
+        ("2020-01-01/2020-06-30", "S"),
+        # Yearly: leap and non-leap
+        ("2020-01-01/2021-01-01", "Y"),
+        ("2020-01-01/2020-12-31", "Y"),  # leap year, "end of period"
+        ("2022-01-01/2022-12-31", "Y"),  # non-leap year, "end of period"
+        # Multi-period spans (consistent shape across years/months/days)
+        ("2020-01-01/2022-01-01", "P2Y"),  # exact 2 years
+        ("2020-01-01/2021-12-31", "P2Y"),  # 2 years, "end of period" convention
+        ("2020-01-01/2027-01-01", "P7Y"),
+        ("2020-01-01/2020-08-01", "P7M"),
+        ("2020-01-01/2020-07-31", "P7M"),  # 7 months, "end of period"
+        ("2020-01-01/2021-03-01", "P1Y2M"),  # 14 months
+        ("2020-01-01/2020-01-15", "P14D"),
+        # Unclassifiable: encoded as raw days
+        ("2020-01-01/2020-01-16", "P15D"),
+    ],
+)
+def test_classify_interval_period(interval, expected):
+    from vtlengine.Operators.Time import Time
+
+    assert Time._classify_interval_period(interval) == expected
+
+
+@pytest.mark.parametrize(
+    "intervals",
+    [
+        pytest.param(
+            ["2020-01-01/2021-01-01", "2021-01-01/2022-01-01", "2024-01-01/2025-01-01"],
+            id="yearly_leap_mix_jan1",
+        ),
+        pytest.param(
+            ["2020-01-01/2020-02-01", "2020-02-01/2020-03-01", "2021-02-01/2021-03-01"],
+            id="monthly_leap_and_non_leap_february",
+        ),
+        pytest.param(
+            ["2020-01-01/2022-01-01", "2022-01-01/2024-01-01", "2024-01-01/2026-01-01"],
+            id="biennial_consistent",
+        ),
+        pytest.param(
+            ["2020-01-01/2020-08-01", "2020-08-01/2021-03-01"],
+            id="seven_month_consistent",
+        ),
+    ],
+)
+def test_fill_time_series_interval_uniform_frequency(intervals):
+    """Consistent-frequency intervals (varying month/year lengths or multi-period
+    spans) must not trigger the 'single time interval frequency' SemanticError and
+    must round-trip the original intervals."""
+    structure = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "String", "role": "Identifier", "nullable": False},
+                    {"name": "Id_2", "type": "Time", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Integer", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    data_df = pd.DataFrame(
+        {"Id_1": ["A"] * len(intervals), "Id_2": intervals, "Me_1": list(range(len(intervals)))}
+    )
+    result = run(
+        script="DS_r <- fill_time_series(DS_1, single);",
+        data_structures=structure,
+        datapoints={"DS_1": data_df},
+    )
+    assert set(result["DS_r"].data["Id_2"].tolist()) >= set(intervals)
 
 
 @pytest.mark.parametrize(

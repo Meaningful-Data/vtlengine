@@ -28,6 +28,7 @@ from vtlengine.AST.DAG import DAGAnalyzer
 from vtlengine.AST.Grammar.lexer import Lexer
 from vtlengine.AST.Grammar.parser import Parser
 from vtlengine.Exceptions import InputValidationException
+from vtlengine.files.output import format_date_iso8601
 from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
     format_time_period_external_representation,
@@ -381,7 +382,7 @@ def run(
         :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
 
         time_period_output_format: String with the possible values \
-        ("sdmx_gregorian", "sdmx_reporting", "vtl", "legacy") for the representation of the \
+        ("sdmx_gregorian", "sdmx_reporting", "vtl", "natural") for the representation of the \
         Time Period components.
 
         return_only_persistent: If True, run function will only return the results of \
@@ -452,10 +453,11 @@ def run(
     )
     result = interpreter.visit(ast)
 
-    # Applying time period output format
+    # Applying output format (Date ISO 8601 T separator, TimePeriod representation)
     if output_folder is None:
         for obj in result.values():
             if isinstance(obj, (Dataset, Scalar)):
+                format_date_iso8601(obj)
                 format_time_period_external_representation(obj, time_period_representation)
 
     # Returning only persistent datasets
@@ -523,7 +525,7 @@ def run_sdmx(
         :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
 
         time_period_output_format: String with the possible values \
-        ("sdmx_gregorian", "sdmx_reporting", "vtl", "legacy") for the representation of the \
+        ("sdmx_gregorian", "sdmx_reporting", "vtl", "natural") for the representation of the \
         Time Period components.
 
         return_only_persistent: If True, run function will only return the results of \

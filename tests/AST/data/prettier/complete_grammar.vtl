@@ -274,14 +274,14 @@ rtrim_ds := rtrim(DS_1#Me_str);
 TIME
 *************************************************/
 current_date_sc := current_date();
-year_sc := year(cast("2000-01-01", date));
-month_sc := month(cast("2012-12-25", date));
+year_sc := getyear(cast("2000-01-01", date));
+month_sc := getmonth(cast("2012-12-25", date));
 dayofyear_sc := dayofyear(cast("2020-12-31", date));
 dayofmonth_sc := dayofmonth(cast("2025-03-07", date));
 daytoyear_sc := daytoyear(730);
 daytomonth_sc := daytomonth(183);
-yeartoday_sc := yeartoday("P1Y6M15D");
-monthtoday_sc := monthtoday("P2Y9M21D");
+yeartoday_sc := yeartoday("P1Y195D");
+monthtoday_sc := monthtoday("P9M21D");
 
 period_indicator_ds := period_indicator(drop_identifier(DS_1, Id_date));
 flow_to_stock_date_ds := flow_to_stock(drop_identifier(DS_1, Id_date));
@@ -294,8 +294,8 @@ timeshift_period_ds := timeshift(drop_identifier(DS_1, Id_date), -2);
 datediff_ds := DS_1[calc Me_diff := datediff(Me_interval, Id_period)];
 date_add_ds := DS_1[calc Me_add := dateadd(Id_period, 2, "M")];
 
-time_agg_date_ds := sum(drop_identifier(DS_1, Id_period)#Me_int group all time_agg("A", _, Id_date));
-time_agg_period_ds := sum(drop_identifier(DS_1, Id_date)#Me_num group all time_agg("M", _, Id_period));
+time_agg_date_ds := sum(drop_identifier(DS_1, Id_period)#Me_int group all time_agg("A"));
+time_agg_period_ds := sum(drop_identifier(DS_1, Id_date)#Me_num group all time_agg("M"));
 
 /*************************************************
 USER DEFINE OPERATOR

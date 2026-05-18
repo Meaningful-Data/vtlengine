@@ -948,3 +948,26 @@ def test_rule_name_not_in_ruleset():
         """
     ast = create_ast(text=script)
     assert len(ast.children) == 1
+
+
+empty_script_params = [
+    "",
+    "//Comment",
+    "/*Comment*/",
+]
+
+
+@pytest.mark.parametrize("script", empty_script_params)
+def test_create_ast_empty_script(script):
+    ast = create_ast(text=script)
+    assert isinstance(ast, Start)
+    assert ast.children == []
+
+
+@pytest.mark.parametrize("script", empty_script_params)
+def test_create_ast_with_comments_empty_script(script):
+    from vtlengine.AST import Comment
+
+    ast = create_ast_with_comments(text=script)
+    assert isinstance(ast, Start)
+    assert all(isinstance(child, Comment) for child in ast.children)

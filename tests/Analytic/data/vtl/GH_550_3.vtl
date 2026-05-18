@@ -1,0 +1,8 @@
+DS_r <- DS_1[calc MAX_Me_1 :=
+    max(Me_1 over (
+        partition by Id_1
+        order by Me_1
+        range between unbounded preceding and 1 preceding
+        )
+    )
+];

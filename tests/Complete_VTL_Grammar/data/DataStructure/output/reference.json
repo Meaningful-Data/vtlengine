@@ -846,12 +846,6 @@
           "nullable": false
         },
         {
-          "name": "Me_interval",
-          "type": "Time",
-          "role": "Measure",
-          "nullable": true
-        },
-        {
           "name": "Me_rank",
           "type": "Integer",
           "role": "Measure",
@@ -6326,7 +6320,7 @@
     {
       "name": "monthtoday_sc",
       "data_type": "Integer",
-      "value": 1021
+      "value": 291
     },
     {
       "name": "value_domain_sc",

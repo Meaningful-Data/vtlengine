@@ -820,6 +820,45 @@ class DataLoadTest(DataLoadHelper):
 
         self.DataLoadTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_51(self):
+        """
+        Status: OK
+        Expression: DS_r := DS_1;
+        Description: Data Load with "" (quoted empty string) as null for non-String columns.
+        Goal: Check Result.
+        """
+        code = "DataLoad-14"
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_52(self):
+        """
+        Status: OK
+        Expression: DS_r := DS_1;
+        Description: Data Load with semicolon separator auto-detection.
+        Goal: Check Result.
+        """
+        code = "DataLoad-15"
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_53(self):
+        """
+        Status: OK
+        Expression: DS_r := DS_1;
+        Description: Data Load with tab separator auto-detection.
+        Goal: Check Result.
+        """
+        code = "DataLoad-16"
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_infer_keys_1(self):
         """ """
         code = "IK-1"

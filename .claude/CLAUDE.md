@@ -257,6 +257,7 @@ print(run_result)
 
 - Always follow the pull request template in `.github/PULL_REQUEST_TEMPLATE.md`
 - Focus on what changed, why, impact/risk, and notes
+- Always include a closing keyword linking to the related issue in the PR description (e.g., `Fixes #123`, `Closes #456`, `Resolves #789`). This is required for the automated release notes workflow to categorize PRs by issue type
 
 ## Common Pitfalls
 

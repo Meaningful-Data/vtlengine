@@ -12,8 +12,8 @@ from vtlengine.Interpreter import InterpreterAnalyzer
 pytestmark = mark.input_path(Path(__file__).parent / "data")
 
 ds_param = [
-    ("1", "DS_r := DS_1 [calc Me_2 := year(Me_1)];"),
-    ("2", "DS_r := DS_1[calc Me_2 := month(Me_1)];"),
+    ("1", "DS_r := DS_1 [calc Me_2 := getyear(Me_1)];"),
+    ("2", "DS_r := DS_1[calc Me_2 := getmonth(Me_1)];"),
     ("3", "DS_r := DS_1[calc Me_2 := dayofmonth(Me_1)];"),
     ("4", "DS_r := DS_1[calc Me_2 := dayofyear(Me_1)];"),
     ("5", "DS_r := DS_1[calc Me_2 := daytomonth(Me_1)];"),
@@ -25,17 +25,17 @@ ds_param = [
 error_param = [
     ("9", "DS_r := DS_1[calc Me_2 := daytomonth(Me_1)];", RunTimeError, "2-1-19-16"),
     ("10", "DS_r := DS_1[calc Me_2 := daytoyear(Me_1)];", RunTimeError, "2-1-19-16"),
-    ("13", "DS_r := DS_1 [calc Me_2 := year(Me_1)];", SemanticError, "1-1-19-10"),
-    ("14", "DS_r := DS_1 [calc Me_2 := month(Me_1)];", SemanticError, "1-1-19-10"),
+    ("13", "DS_r := DS_1 [calc Me_2 := getyear(Me_1)];", SemanticError, "1-1-19-10"),
+    ("14", "DS_r := DS_1 [calc Me_2 := getmonth(Me_1)];", SemanticError, "1-1-19-10"),
     ("15", "DS_r := DS_1 [calc Me_2 := dayofmonth(Me_1)];", SemanticError, "1-1-19-10"),
     ("16", "DS_r := DS_1 [calc Me_2 := dayofyear(Me_1)];", SemanticError, "1-1-19-10"),
 ]
 
 scalar_time_params = [
-    ('year(cast("2023-01-12", date))', 2023),
-    ('year(cast("2022Q1", time_period))', 2022),
-    ('month(cast("2023-01-12", date))', 1),
-    ('month(cast("2022Q1", time_period))', 1),
+    ('getyear(cast("2023-01-12", date))', 2023),
+    ('getyear(cast("2022Q1", time_period))', 2022),
+    ('getmonth(cast("2023-01-12", date))', 1),
+    ('getmonth(cast("2022Q1", time_period))', 1),
     ('dayofmonth(cast("2023-01-12", date))', 12),
     ('dayofmonth(cast("2022Q1", time_period))', 31),
     ('dayofyear(cast("2023-01-12", date))', 12),
@@ -43,12 +43,12 @@ scalar_time_params = [
 ]
 
 scalar_time_error_params = [
-    ('year(cast("2023-01-12/2024-01-03", date))', RunTimeError, "2-1-19-8"),
-    ('month(cast("2023-01-12/2024-02-15", date))', RunTimeError, "2-1-19-8"),
+    ('getyear(cast("2023-01-12/2024-01-03", date))', RunTimeError, "2-1-19-8"),
+    ('getmonth(cast("2023-01-12/2024-02-15", date))', RunTimeError, "2-1-19-8"),
     ('dayofmonth(cast("2023-01-12/2024-02-02", date))', RunTimeError, "2-1-19-8"),
     ('dayofyear(cast("2023-01-12/2024-03-06", date))', RunTimeError, "2-1-19-8"),
-    ('year(cast("2023-01-12/2024-01-31", time))', SemanticError, "1-1-19-10"),
-    ('month(cast("2023-01-12/2024-03-25", time))', SemanticError, "1-1-19-10"),
+    ('getyear(cast("2023-01-12/2024-01-31", time))', SemanticError, "1-1-19-10"),
+    ('getmonth(cast("2023-01-12/2024-03-25", time))', SemanticError, "1-1-19-10"),
     ('dayofmonth(cast("2023-01-12/2024-05-29", time))', SemanticError, "1-1-19-10"),
     ('dayofyear(cast("2023-01-12/2024-06-08", time))', SemanticError, "1-1-19-10"),
 ]

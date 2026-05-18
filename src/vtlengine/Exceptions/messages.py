@@ -217,6 +217,12 @@ centralised_messages = {
         "message": "Failed to fetch SDMX structure from URL '{url}': {error}",
         "description": "Raised when fetching SDMX structure from an HTTP/HTTPS URL fails.",
     },
+    "0-3-1-15": {
+        "message": "On Dataset {name} loading: Found columns not defined "
+        "in the DataStructure: {extra_columns}.",
+        "description": "Raised when the input data contains columns that are not "
+        "defined in the DataStructure.",
+    },
     # Input validation errors for URL datapoints
     "0-1-3-8": {
         "message": "data_structures must be a file path or URL "
@@ -554,6 +560,12 @@ centralised_messages = {
         "description": "Raised when condComp and ruleComp in a ruleset signature do not "
         "match as required.",
     },
+    "1-1-10-10": {
+        "message": "Duplicated EQ rules on the Hierarchy Roll-up {ruleset}. "
+        "Check the EQ rules: {rule}.",
+        "description": "Raised when there are no applicable rules in a Hierarchy Roll-up "
+        "due to missing '=' operators.",
+    },
     # General Operators
     "2-1-12-1": {
         "message": "At op {op}: Create a null Measure without a Scalar type is not allowed. "
@@ -723,6 +735,11 @@ centralised_messages = {
         "description": "Runtime error when an operator is incorrectly applied to a Dataset "
         "instead of allowed types.",
     },  # RunTimeError.
+    "2-1-15-8": {
+        "message": "At op {op}: Value {value} must be greater than 0.",
+        "description": "Runtime error when a value is less than or equal to zero for an "
+        "operator that requires a strictly positive input (e.g. log, ln).",
+    },  # RunTimeError.
     # Set Operators
     "1-1-17-1": {
         "message": "At op {op}: Datasets {dataset_1} and {dataset_2} have different number "
@@ -822,6 +839,17 @@ centralised_messages = {
         "message": "At op time_agg: If used over a Date, first/last parameter must be declared.",
         "description": "Raised when the first/last parameter is missing in a time aggregation "
         "over a Date type.",
+    },
+    "1-1-19-12": {
+        "message": "At op {op}: Time data type is not supported for {context} operations.",
+        "description": "Raised when a Time data type is used in an Analytic or "
+        "Aggregate operation, which does not support it.",
+    },
+    "1-1-19-13": {
+        "message": "At op {op}: RANGE window is not supported for {data_type} "
+        "data type in component {comp_name}.",
+        "description": "Raised when a RANGE window is applied to a component with an "
+        "incompatible data type (String, Duration, TimePeriod, Time).",
     },
     # ---------Semantic Analyzer Common----
     "1-2-1": {
@@ -1085,6 +1113,11 @@ centralised_messages = {
         "'{period}'. Only Annual (A), Month (M), and Day (D) are supported.",
         "description": "Raised when trying to convert a time period with Semester (S), "
         "Quarter (Q), or Week (W) indicator to SDMX Gregorian format.",
+    },
+    "2-1-19-22": {
+        "message": "At op {op}: Invalid ISO 8601 duration format '{value}', expected {expected}",
+        "description": "Raised when a duration string does not match the expected "
+        "format for the operator.",
     },
     # ----------- Interpreter Common ------
     "2-3-4": {

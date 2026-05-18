@@ -1,0 +1,335 @@
+name: Create Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: read
+  pull-requests: read
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Create release with notes
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+
+            // 1. Read version from pyproject.toml
+            const pyproject = fs.readFileSync('pyproject.toml', 'utf8');
+            const versionMatch = pyproject.match(/^version\s*=\s*"([^"]+)"/m);
+            if (!versionMatch) {
+              core.setFailed('Could not read version from pyproject.toml');
+              return;
+            }
+            const version = versionMatch[1];
+            const tagName = `v${version}`;
+            core.info(`Version: ${version}, Tag: ${tagName}`);
+
+            // 2. Determine if pre-release
+            const isPrerelease = /rc|alpha|beta|dev/.test(version);
+            core.info(`Pre-release: ${isPrerelease}`);
+
+            // 3. Check tag does not already exist
+            try {
+              await github.rest.git.getRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: `tags/${tagName}`,
+              });
+              core.setFailed(`Tag ${tagName} already exists`);
+              return;
+            } catch (e) {
+              if (e.status !== 404) throw e;
+            }
+
+            // 4. Find previous release
+            // For stable releases: compare against previous stable release
+            // For pre-releases: compare against previous release (any type)
+            const releases = await github.rest.repos.listReleases({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100,
+            });
+            let previousRelease;
+            if (isPrerelease) {
+              previousRelease = releases.data[0];
+            } else {
+              previousRelease = releases.data.find(r => !r.prerelease);
+            }
+            const previousTag = previousRelease ? previousRelease.tag_name : null;
+            core.info(`Previous release: ${previousTag || 'none'}`);
+
+            // 5. Get commits between previous tag and HEAD
+            let commits;
+            if (previousTag) {
+              const comparison = await github.rest.repos.compareCommitsWithBasehead({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                basehead: `${previousTag}...HEAD`,
+              });
+              commits = comparison.data.commits;
+            } else {
+              const commitList = await github.rest.repos.listCommits({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                per_page: 100,
+              });
+              commits = commitList.data;
+            }
+
+            // 6. Extract PR numbers from commit messages
+            const prNumbers = new Set();
+            for (const commit of commits) {
+              const matches = commit.commit.message.matchAll(/\(#(\d+)\)/g);
+              for (const match of matches) {
+                prNumbers.add(parseInt(match[1]));
+              }
+            }
+            core.info(`Found ${prNumbers.size} PRs: ${[...prNumbers].join(', ')}`);
+
+            if (prNumbers.size === 0) {
+              core.info('No PRs found, creating release with empty notes');
+              await github.rest.repos.createRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag_name: tagName,
+                name: tagName,
+                body: `**Full Changelog**: https://github.com/${context.repo.owner}/${context.repo.repo}/compare/${previousTag}...${tagName}`,
+                prerelease: isPrerelease,
+              });
+              return;
+            }
+
+            // 7. Query PR details with linked issues and issue types via GraphQL
+            const prAliases = [...prNumbers].map((n, i) => `
+              pr${i}: pullRequest(number: ${n}) {
+                number
+                title
+                url
+                author { login }
+                labels(first: 10) { nodes { name } }
+                closingIssuesReferences(first: 10, userLinkedOnly: false) {
+                  nodes {
+                    number
+                    issueType { name }
+                  }
+                }
+              }
+            `).join('');
+
+            const query = `
+              query {
+                repository(owner: "${context.repo.owner}", name: "${context.repo.repo}") {
+                  ${prAliases}
+                }
+              }
+            `;
+
+            // Some numbers extracted from commit messages may be issues, not PRs.
+            // The GraphQL query returns partial data with errors for non-PR numbers,
+            // so we catch the error and use the partial data.
+            let graphqlResult;
+            try {
+              graphqlResult = await github.graphql(query, {
+                headers: { 'GraphQL-Features': 'issue_types' },
+              });
+            } catch (e) {
+              if (e.data?.repository) {
+                graphqlResult = { repository: e.data.repository };
+                core.info(`GraphQL partial errors (non-PR numbers skipped): ${e.errors?.map(err => err.message).join(', ')}`);
+              } else {
+                throw e;
+              }
+            }
+
+            const prs = Object.values(graphqlResult.repository).filter(Boolean);
+
+            // 7b. Fallback: for PRs without closingIssuesReferences, parse issue
+            // numbers from title (e.g. "Fix #504:") and query their issue types
+            const unresolvedIssueNumbers = new Set();
+            for (const pr of prs) {
+              const linked = pr.closingIssuesReferences?.nodes || [];
+              if (linked.length === 0) {
+                const titleMatch = pr.title.match(/(?:Fix|Fixes|Close|Closes|Resolve|Resolves)\s+#(\d+)/i);
+                if (titleMatch) {
+                  unresolvedIssueNumbers.add(parseInt(titleMatch[1]));
+                }
+              }
+            }
+
+            const issueTypeMap = new Map();
+            if (unresolvedIssueNumbers.size > 0) {
+              const issueAliases = [...unresolvedIssueNumbers].map((n, i) => `
+                issue${i}: issue(number: ${n}) {
+                  number
+                  issueType { name }
+                }
+              `).join('');
+
+              const issueQuery = `
+                query {
+                  repository(owner: "${context.repo.owner}", name: "${context.repo.repo}") {
+                    ${issueAliases}
+                  }
+                }
+              `;
+
+              const issueResult = await github.graphql(issueQuery, {
+                headers: { 'GraphQL-Features': 'issue_types' },
+              });
+
+              for (const issue of Object.values(issueResult.repository).filter(Boolean)) {
+                if (issue.issueType?.name) {
+                  issueTypeMap.set(issue.number, issue.issueType.name);
+                }
+              }
+              core.info(`Resolved ${issueTypeMap.size} issue types from PR titles: ${[...issueTypeMap.entries()].map(([n, t]) => `#${n}=${t}`).join(', ')}`);
+            }
+
+            // 8. Parse main dependencies from pyproject.toml
+            const depsSection = pyproject.match(/\[project\]\s[\s\S]*?dependencies\s*=\s*\[([\s\S]*?)\]/);
+            const mainDeps = new Set();
+            if (depsSection) {
+              const depLines = depsSection[1].matchAll(/"([a-zA-Z0-9_-]+)/g);
+              for (const match of depLines) {
+                mainDeps.add(match[1].toLowerCase());
+              }
+            }
+            core.info(`Main dependencies: ${[...mainDeps].join(', ')}`);
+
+            // 9. Categorize PRs
+            const categories = {
+              'Added': [],
+              'Changes': [],
+              'Bug fixes': [],
+              'Dependencies': [],
+              'Other Changes': [],
+            };
+
+            for (const pr of prs) {
+              const title = pr.title;
+              const author = pr.author?.login || 'unknown';
+              const url = pr.url;
+              const entry = `* ${title} by @${author} in ${url}`;
+
+              // Exclude version bumps always; exclude QA PRs only for stable releases
+              if (/^Bump version/i.test(title)) {
+                continue;
+              }
+              if (!isPrerelease && /^\(QA\b/i.test(title)) {
+                continue;
+              }
+              const labels = pr.labels?.nodes?.map(l => l.name) || [];
+              if (labels.includes('workflows')) {
+                continue;
+              }
+
+              const isDependabot = author === 'dependabot[bot]' || author === 'dependabot';
+
+              // Check linked issue types (closing refs first, then title fallback)
+              const linkedIssues = pr.closingIssuesReferences?.nodes || [];
+              let issueType = linkedIssues.length > 0
+                ? linkedIssues[0].issueType?.name
+                : null;
+
+              if (!issueType) {
+                const titleMatch = title.match(/(?:Fix|Fixes|Close|Closes|Resolve|Resolves)\s+#(\d+)/i);
+                if (titleMatch) {
+                  issueType = issueTypeMap.get(parseInt(titleMatch[1])) || null;
+                }
+              }
+
+              if (issueType) {
+                switch (issueType.toLowerCase()) {
+                  case 'feature':
+                    categories['Added'].push(entry);
+                    break;
+                  case 'task':
+                    categories['Changes'].push(entry);
+                    break;
+                  case 'bug':
+                    categories['Bug fixes'].push(entry);
+                    break;
+                  default:
+                    categories['Other Changes'].push(entry);
+                }
+              } else if (isDependabot) {
+                // Extract package name from dependabot PR title
+                const pkgMatch = title.match(/^Bump\s+(\S+)/i);
+                const pkg = pkgMatch ? pkgMatch[1].toLowerCase() : null;
+                if (pkg && mainDeps.has(pkg)) {
+                  categories['Dependencies'].push(entry);
+                }
+                // Dev dependencies are excluded (not added to any category)
+              } else {
+                categories['Other Changes'].push(entry);
+              }
+            }
+
+            // 10. Generate markdown
+            const sections = [];
+            for (const [title, entries] of Object.entries(categories)) {
+              if (entries.length > 0) {
+                sections.push(`## ${title}\n${entries.join('\n')}`);
+              }
+            }
+
+            const compareUrl = previousTag
+              ? `https://github.com/${context.repo.owner}/${context.repo.repo}/compare/${previousTag}...${tagName}`
+              : `https://github.com/${context.repo.owner}/${context.repo.repo}/commits/${tagName}`;
+            sections.push(`**Full Changelog**: ${compareUrl}`);
+
+            const body = sections.join('\n\n');
+            core.info(`Release notes:\n${body}`);
+
+            // 11. Create release
+            await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: tagName,
+              name: tagName,
+              body: body,
+              prerelease: isPrerelease,
+            });
+
+            core.info(`Release ${tagName} created successfully`);
+
+            // 12. Delete pre-releases when publishing a stable release
+            if (!isPrerelease) {
+              const preReleases = releases.data.filter(r => r.prerelease);
+              for (const pr of preReleases) {
+                core.info(`Deleting pre-release: ${pr.tag_name}`);
+                await github.rest.repos.deleteRelease({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  release_id: pr.id,
+                });
+                // Delete the associated tag
+                try {
+                  await github.rest.git.deleteRef({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    ref: `tags/${pr.tag_name}`,
+                  });
+                } catch (e) {
+                  core.warning(`Could not delete tag ${pr.tag_name}: ${e.message}`);
+                }
+              }
+              core.info(`Deleted ${preReleases.length} pre-release(s)`);
+            }
+
+            // 13. Trigger downstream workflows via repository_dispatch
+            await github.rest.repos.createDispatchEvent({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              event_type: 'release-published',
+              client_payload: { tag_name: tagName },
+            });
+            core.info('Dispatched release-published event');
