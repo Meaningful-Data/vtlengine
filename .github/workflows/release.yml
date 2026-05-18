@@ -7,17 +7,24 @@ on:
     types: [ published ]
   repository_dispatch:
     types: [ release-published ]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
   release:
+    name: Publish to PyPI
     runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.client_payload.tag_name || github.ref }}
       - name: Install poetry
         run: pipx install poetry
       - name: Set up Python
@@ -27,4 +34,6 @@ jobs:
       - name: Build package
         run: poetry build
       - name: Publish to PyPI
-        run: poetry publish --username=__token__ --password=${{ secrets.PYPI_TOKEN }}
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
+        with:
+          attestations: true
