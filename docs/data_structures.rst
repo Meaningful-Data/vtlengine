@@ -29,8 +29,11 @@ few options, and you pick whichever matches the data you already have.
 Option 1: VTL JSON
 ******************
 
-The engine's native format is a small JSON document. You can write it
-directly as a Python ``dict`` and pass it in:
+The engine's native format is a small JSON document, formally specified
+by the `VTL JSON Schema
+<https://github.com/Meaningful-Data/vtlengine/blob/main/src/vtlengine/API/data/schema/json_schema_2.1.json>`_
+shipped with the engine. You can write it directly as a Python ``dict``
+and pass it in:
 
 .. code-block:: python
 
@@ -211,7 +214,10 @@ The mapping itself is deliberately simple. **Roles** translate one-to-one:
 **Nullability** falls out of the role: dimensions are never nullable;
 everything else is.
 
-**Types** are collapsed from the long SDMX list onto VTL's smaller set:
+**Types** are collapsed from the long SDMX list onto VTL's smaller set,
+following the official SDMX-to-VTL correspondence published in the
+`SDMX 3.0 Technical Notes
+<https://sdmx.org/wp-content/uploads/SDMX_3-0-0_SECTION_6_FINAL-1_0.pdf>`_:
 
 .. list-table::
     :widths: 50 50
