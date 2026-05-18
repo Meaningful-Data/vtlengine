@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: write
   contents: write
   issues: read
   pull-requests: read
@@ -108,63 +109,54 @@ jobs:
             }
             core.info(`Found ${prNumbers.size} PRs: ${[...prNumbers].join(', ')}`);
 
-            if (prNumbers.size === 0) {
-              core.info('No PRs found, creating release with empty notes');
-              await github.rest.repos.createRelease({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                tag_name: tagName,
-                target_commitish: process.env.GITHUB_REF_NAME,
-                name: tagName,
-                body: `**Full Changelog**: https://github.com/${context.repo.owner}/${context.repo.repo}/compare/${previousTag}...${tagName}`,
-                prerelease: isPrerelease,
-              });
-              return;
-            }
-
-            // 7. Query PR details with linked issues and issue types via GraphQL
-            const prAliases = [...prNumbers].map((n, i) => `
-              pr${i}: pullRequest(number: ${n}) {
-                number
-                title
-                url
-                author { login }
-                labels(first: 10) { nodes { name } }
-                closingIssuesReferences(first: 10, userLinkedOnly: false) {
-                  nodes {
-                    number
-                    issueType { name }
+            // 7. Query PR details with linked issues and issue types via GraphQL.
+            // Skipped when there are no PRs so the empty case flows naturally
+            // through createRelease + cleanup + dispatch with just a changelog link.
+            let prs = [];
+            if (prNumbers.size > 0) {
+              const prAliases = [...prNumbers].map((n, i) => `
+                pr${i}: pullRequest(number: ${n}) {
+                  number
+                  title
+                  url
+                  author { login }
+                  labels(first: 10) { nodes { name } }
+                  closingIssuesReferences(first: 10, userLinkedOnly: false) {
+                    nodes {
+                      number
+                      issueType { name }
+                    }
                   }
                 }
-              }
-            `).join('');
+              `).join('');
 
-            const query = `
-              query {
-                repository(owner: "${context.repo.owner}", name: "${context.repo.repo}") {
-                  ${prAliases}
+              const query = `
+                query {
+                  repository(owner: "${context.repo.owner}", name: "${context.repo.repo}") {
+                    ${prAliases}
+                  }
+                }
+              `;
+
+              // Some numbers extracted from commit messages may be issues, not PRs.
+              // The GraphQL query returns partial data with errors for non-PR numbers,
+              // so we catch the error and use the partial data.
+              let graphqlResult;
+              try {
+                graphqlResult = await github.graphql(query, {
+                  headers: { 'GraphQL-Features': 'issue_types' },
+                });
+              } catch (e) {
+                if (e.data?.repository) {
+                  graphqlResult = { repository: e.data.repository };
+                  core.info(`GraphQL partial errors (non-PR numbers skipped): ${e.errors?.map(err => err.message).join(', ')}`);
+                } else {
+                  throw e;
                 }
               }
-            `;
 
-            // Some numbers extracted from commit messages may be issues, not PRs.
-            // The GraphQL query returns partial data with errors for non-PR numbers,
-            // so we catch the error and use the partial data.
-            let graphqlResult;
-            try {
-              graphqlResult = await github.graphql(query, {
-                headers: { 'GraphQL-Features': 'issue_types' },
-              });
-            } catch (e) {
-              if (e.data?.repository) {
-                graphqlResult = { repository: e.data.repository };
-                core.info(`GraphQL partial errors (non-PR numbers skipped): ${e.errors?.map(err => err.message).join(', ')}`);
-              } else {
-                throw e;
-              }
+              prs = Object.values(graphqlResult.repository).filter(Boolean);
             }
-
-            const prs = Object.values(graphqlResult.repository).filter(Boolean);
 
             // 7b. Fallback: for PRs without closingIssuesReferences, parse issue
             // numbers from title (e.g. "Fix #504:") and query their issue types
@@ -341,11 +333,16 @@ jobs:
               core.info(`Deleted ${preReleases.length} pre-release(s)`);
             }
 
-            // 13. Trigger downstream workflows via repository_dispatch
-            await github.rest.repos.createDispatchEvent({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              event_type: 'release-published',
-              client_payload: { tag_name: tagName },
-            });
-            core.info('Dispatched release-published event');
+            // 13. Trigger downstream workflows from the released tag's commit.
+            // createWorkflowDispatch (rather than createDispatchEvent) means each
+            // workflow runs the file at the tag's ref — so release branches can
+            // carry their own publish/docs recipe alongside main's.
+            for (const workflow of ['release.yml', 'docs.yml']) {
+              await github.rest.actions.createWorkflowDispatch({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: workflow,
+                ref: tagName,
+              });
+              core.info(`Dispatched ${workflow} at ref ${tagName}`);
+            }
