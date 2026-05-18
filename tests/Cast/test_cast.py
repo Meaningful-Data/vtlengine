@@ -76,7 +76,7 @@ class CastExplicitWithoutMask(CastHelper):
         code = "GH_539_1"
         number_inputs = 2
         reference_names = ["1"]
-        scalars = {"sc_1": 1}
+        scalars = {"sc_1": "1"}
 
         self.BaseTest(code, number_inputs, references_names=reference_names, scalars=scalars)
 
@@ -85,6 +85,17 @@ class CastExplicitWithoutMask(CastHelper):
         Solves bug report in github issue #539: sub fails whith scalar as VarID casting
         """
         code = "GH_539_2"
+        number_inputs = 2
+        reference_names = ["1"]
+        scalars = {"sc_1": 1}
+
+        self.BaseTest(code, number_inputs, references_names=reference_names, scalars=scalars)
+
+    def test_GH_539_3(self):
+        """
+        Solves bug report in github issue #539: sub fails whith scalar as VarID casting
+        """
+        code = "GH_539_3"
         number_inputs = 1
         exception_code = "1-1-1-11"  # sub comparison is not allowed between components
 
