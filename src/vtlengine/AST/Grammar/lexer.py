@@ -1,17 +1,14 @@
 # Generated from Vtl.g4 by ANTLR 4.9.3
-import sys
-from io import StringIO
-from typing import TextIO
-
-from antlr4 import (
-    DFA,
-    ATNDeserializer,
-    LexerATNSimulator,
-    PredictionContextCache,
-)
 from antlr4 import (
     Lexer as ANTLRLexer,
+    ATNDeserializer,
+    DFA,
+    PredictionContextCache,
+    LexerATNSimulator,
 )
+from io import StringIO
+import sys
+from typing import TextIO
 
 
 def serializedATN():
@@ -2128,7 +2125,7 @@ class Lexer(ANTLRLexer):
         "SL_COMMENT",
     ]
 
-    grammarFileName = "Vtl.g4"
+    grammarFileName = "VtlTokens.g4"
 
     def __init__(self, input=None, output: TextIO = sys.stdout):
         super().__init__(input, output)
