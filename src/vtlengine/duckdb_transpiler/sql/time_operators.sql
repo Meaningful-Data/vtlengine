@@ -240,6 +240,43 @@ CREATE OR REPLACE MACRO vtl_time_agg_tp(p vtl_time_period, target VARCHAR) AS (
 
 
 -- ============================================================================
+-- Calendar-aware helpers frequency inference for Date timeshift
+-- ============================================================================
+
+CREATE OR REPLACE MACRO vtl_date_gap_clean_month(d_prev, d_next) AS (
+    DATE_DIFF('month', d_prev, d_next) > 0
+    AND (
+        CAST(d_prev + to_months(CAST(DATE_DIFF('month', d_prev, d_next) AS INTEGER)) AS DATE)
+            = CAST(d_next AS DATE)
+        OR (
+            CAST(d_prev AS DATE) = LAST_DAY(CAST(d_prev AS DATE))
+            AND CAST(d_next AS DATE) = LAST_DAY(CAST(d_next AS DATE))
+        )
+    )
+);
+
+
+CREATE OR REPLACE MACRO vtl_date_timeshift_period_ind(
+    n,
+    has_dirty_gap,
+    all_days_weekly,
+    all_months_annual,
+    all_months_semester,
+    all_months_quarter
+) AS (
+    CASE
+        WHEN n = 0 THEN 'A'
+        WHEN has_dirty_gap THEN
+            CASE WHEN all_days_weekly THEN 'W' ELSE 'D' END
+        WHEN all_months_annual THEN 'A'
+        WHEN all_months_semester THEN 'S'
+        WHEN all_months_quarter THEN 'Q'
+        ELSE 'M'
+    END
+);
+
+
+-- ============================================================================
 -- OPERATOR: timeshift (TimePeriod shift by N periods)
 -- ============================================================================
 

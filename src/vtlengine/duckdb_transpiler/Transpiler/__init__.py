@@ -474,7 +474,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return self._resolve_udo_param(name, udo_val)
 
         if name in self.scalars:
-            return self._scalar_literal(name)
+            if name in self.input_scalars:
+                return self._scalar_literal(name)
+            return f"(SELECT value FROM {quote_name(name)})"
 
         clause_match = self._resolve_clause_component(name)
         if clause_match is not None:
@@ -1251,25 +1253,53 @@ FROM (
                 cols.append(shifted if comp.name == time_id else col)
             return SQLBuilder().select(*cols).from_table(src).build()
         else:
-            other_ids = [quote_name(c.name) for c in ds.get_identifiers() if c.name != time_id]
-            partition = f"PARTITION BY {', '.join(other_ids)}" if other_ids else ""
-
             cols = []
             for comp in ds.components.values():
                 col = quote_name(comp.name)
                 if comp.name == time_id:
-                    cols.append(f"vtl_dateadd({col}, {shift_sql}, freq.period_ind) AS {col}")
+                    shifted_expr = (
+                        f"CASE WHEN freq.period_ind IN ('M','Q','S','A') "
+                        f"AND CAST({col} AS DATE) = LAST_DAY(CAST({col} AS DATE)) "
+                        f"THEN LAST_DAY(CAST("
+                        f"vtl_dateadd({col}, {shift_sql}, freq.period_ind) AS DATE)) "
+                        f"ELSE vtl_dateadd({col}, {shift_sql}, freq.period_ind) END"
+                    )
+                    cols.append(f"{shifted_expr} AS {col}")
                 else:
                     cols.append(col)
 
-            freq_sql = self._build_date_frequency_subquery(
-                src, time_col, partition, as_period_indicator=True
-            )
+            freq_sql = self._build_timeshift_date_frequency_subquery(src, time_col)
 
             return f"""SELECT {", ".join(cols)}
 FROM {src}, (
     {freq_sql}
 ) AS freq"""
+
+    @staticmethod
+    def _build_timeshift_date_frequency_subquery(src: str, time_col: str) -> str:
+        """Calendar-aware frequency inference for timeshift on Date."""
+        return f"""
+SELECT vtl_date_timeshift_period_ind(
+    COUNT(*),
+    BOOL_OR(NOT clean_month),
+    BOOL_AND(diff_days % 7 = 0),
+    BOOL_AND(clean_month AND diff_months % 12 = 0),
+    BOOL_AND(clean_month AND diff_months % 6 = 0),
+    BOOL_AND(clean_month AND diff_months % 3 = 0)
+) AS period_ind
+FROM (
+    SELECT
+        DATE_DIFF('day', d_prev, d_next) AS diff_days,
+        DATE_DIFF('month', d_prev, d_next) AS diff_months,
+        vtl_date_gap_clean_month(d_prev, d_next) AS clean_month
+    FROM (
+        SELECT LAG({time_col}) OVER (ORDER BY {time_col}) AS d_prev,
+               {time_col} AS d_next
+        FROM {src}
+        WHERE {time_col} IS NOT NULL
+    )
+    WHERE d_prev IS NOT NULL AND d_prev <> d_next
+)""".strip()
 
     def visit_ParamOp_dateadd(self, node: AST.ParamOp) -> str:
         """Visit DATEADD operation: dateadd(op, shiftNumber, periodInd)."""
