@@ -22,6 +22,7 @@ from vtlengine.AST.ASTConstructorModules import extract_token_info
 from vtlengine.AST.ASTConstructorModules.Terminals import Terminals
 from vtlengine.AST.Grammar._cpp_parser import vtl_cpp_parser
 from vtlengine.AST.Grammar._cpp_parser._rule_constants import RC
+from vtlengine.AST.Grammar.tokens import STRING_DISTANCE
 from vtlengine.Exceptions import SemanticError
 
 
@@ -428,6 +429,8 @@ class ExprComp:
             return self.visitReplaceAtomComponent(ctx)
         elif ctx.ctx_id == RC.INSTR_ATOM_COMPONENT:
             return self.visitInstrAtomComponent(ctx)
+        elif ctx.ctx_id == RC.STRING_DISTANCE_ATOM_COMPONENT:
+            return self.visitStringDistanceAtomComponent(ctx)
         else:
             raise NotImplementedError
 
@@ -511,6 +514,38 @@ class ExprComp:
 
         return ParamOp(
             op=op_node, children=children_nodes, params=params_nodes, **extract_token_info(ctx)
+        )
+
+    def visitStringDistanceAtomComponent(self, ctx):  # type: ignore[no-untyped-def]
+        """STRING_DISTANCE LPAREN method COMMA s1=exprComponent COMMA s2=exprComponent RPAREN.
+
+        Component-level twin of `Expr.visitStringDistanceAtom`. Method keyword is
+        constrained by the grammar to one of LEVENSHTEIN / DAMERAU_LEVENSHTEIN /
+        HAMMING / JARO_WINKLER and captured verbatim as a ParamConstant.
+        """
+        ctx_list = ctx.children
+
+        method_ctx = next(
+            c for c in ctx_list if not c.is_terminal and c.ctx_id == RC.STRING_DISTANCE_METHODS
+        )
+        method_token = method_ctx.children[0].text
+        method_node = ParamConstant(
+            type_="METHOD",
+            value=method_token,
+            **extract_token_info(method_ctx),
+        )
+
+        expressions = [
+            self.visitExprComponent(expr)
+            for expr in ctx_list
+            if not expr.is_terminal and expr.rule_index == 3
+        ]
+
+        return ParamOp(
+            op=STRING_DISTANCE,
+            children=expressions,
+            params=[method_node],
+            **extract_token_info(ctx),
         )
 
     """

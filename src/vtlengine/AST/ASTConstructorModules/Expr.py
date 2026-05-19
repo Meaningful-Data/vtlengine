@@ -40,7 +40,7 @@ from vtlengine.AST.ASTConstructorModules.Terminals import Terminals
 from vtlengine.AST.ASTDataExchange import de_ruleset_elements
 from vtlengine.AST.Grammar._cpp_parser import vtl_cpp_parser
 from vtlengine.AST.Grammar._cpp_parser._rule_constants import RC
-from vtlengine.AST.Grammar.tokens import DATASET_PRIORITY
+from vtlengine.AST.Grammar.tokens import DATASET_PRIORITY, STRING_DISTANCE
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Role
 
@@ -610,6 +610,8 @@ class Expr:
             return self.visitReplaceAtom(ctx)
         elif ctx.ctx_id == RC.INSTR_ATOM:
             return self.visitInstrAtom(ctx)
+        elif ctx.ctx_id == RC.STRING_DISTANCE_ATOM:
+            return self.visitStringDistanceAtom(ctx)
         else:
             raise NotImplementedError
 
@@ -701,6 +703,39 @@ class Expr:
             op=op_node,
             children=children_nodes,
             params=params_nodes,
+            **extract_token_info(ctx),
+        )
+
+    def visitStringDistanceAtom(self, ctx: Any) -> ParamOp:
+        """STRING_DISTANCE LPAREN method COMMA string1=expr COMMA string2=expr RPAREN.
+
+        The grammar (`stringDistanceMethods`) restricts the method keyword to one
+        of LEVENSHTEIN, DAMERAU_LEVENSHTEIN, HAMMING, JARO_WINKLER — captured here
+        as a ParamConstant so downstream operator dispatch keeps the method name
+        verbatim from the source.
+        """
+        ctx_list = ctx.children
+
+        method_ctx = next(
+            c for c in ctx_list if not c.is_terminal and c.ctx_id == RC.STRING_DISTANCE_METHODS
+        )
+        method_token = method_ctx.children[0].text
+        method_node = ParamConstant(
+            type_="METHOD",
+            value=method_token,
+            **extract_token_info(method_ctx),
+        )
+
+        expressions = [
+            self.visitExpr(expr)
+            for expr in ctx_list
+            if not expr.is_terminal and expr.rule_index == 2
+        ]
+
+        return ParamOp(
+            op=STRING_DISTANCE,
+            children=expressions,
+            params=[method_node],
             **extract_token_info(ctx),
         )
 
