@@ -309,9 +309,7 @@ jobs:
 
             core.info(`Release ${tagName} created successfully`);
 
-            // 12. Delete pre-release entries when publishing a stable release.
-            // Tags are intentionally left in place so the rc commits remain
-            // navigable; only the GitHub Release objects are removed.
+            // 12. Delete pre-releases when publishing a stable release
             if (!isPrerelease) {
               const preReleases = releases.data.filter(r => {
                 if (!r.prerelease) return false;
@@ -328,6 +326,16 @@ jobs:
                   repo: context.repo.repo,
                   release_id: pr.id,
                 });
+                // Delete the associated tag
+                try {
+                  await github.rest.git.deleteRef({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    ref: `tags/${pr.tag_name}`,
+                  });
+                } catch (e) {
+                  core.warning(`Could not delete tag ${pr.tag_name}: ${e.message}`);
+                }
               }
               core.info(`Deleted ${preReleases.length} pre-release(s)`);
             }
