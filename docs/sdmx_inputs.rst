@@ -44,9 +44,7 @@ Accepted SDMX formats for **datapoints**:
     ``pysdmx`` only parses SDMX-JSON in its Structure and Reference
     Metadata variants.
 
-For the full list of supported SDMX formats and versions (SDMX-CSV
-1.0 / 2.0 / 2.1, SDMX-ML 2.1 / 3.0 / 3.1 for both data and structures,
-SDMX-JSON 2.0.0 for structures only), see pysdmx's
+For the full list of supported SDMX formats and versions, see pysdmx's
 `Formats and versions supported
 <https://py.sdmx.io/api/io/general_reader.html#formats-and-versions-supported>`_
 — the engine inherits its parsing support from pysdmx.

@@ -43,8 +43,7 @@ shapes:
     SDMX-JSON is supported for **structures**, not for data. For data,
     use SDMX-ML or SDMX-CSV.
 
-For the exact SDMX versions supported on the data side (SDMX-CSV 1.0 /
-2.0 / 2.1, SDMX-ML 2.1 / 3.0 / 3.1), see pysdmx's
+For the full list of supported SDMX formats and versions, see pysdmx's
 `Formats and versions supported
 <https://py.sdmx.io/api/io/general_reader.html#formats-and-versions-supported>`_.
 

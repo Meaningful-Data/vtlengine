@@ -97,8 +97,8 @@ If you're already working with SDMX, you don't need to convert anything.
 Hand the engine an SDMX-ML (``.xml``) or SDMX-JSON (``.json``) structure
 file as a ``Path``, and the engine will read it via ``pysdmx``, extract
 each ``DataStructureDefinition``, and translate the components to VTL's
-equivalent representation internally. For the exact SDMX versions
-supported (SDMX-ML 2.1 / 3.0 / 3.1, SDMX-JSON 2.0.0), see pysdmx's
+equivalent representation internally. For the full list of supported
+SDMX formats and versions, see pysdmx's
 `Formats and versions supported
 <https://py.sdmx.io/api/io/general_reader.html#formats-and-versions-supported>`_.
 
@@ -218,8 +218,8 @@ everything else is.
 
 **Types** are collapsed from the long SDMX list onto VTL's smaller set,
 following the official SDMX-to-VTL correspondence published in the
-`SDMX 3.0 Technical Notes
-<https://sdmx.org/wp-content/uploads/SDMX_3-0-0_SECTION_6_FINAL-1_0.pdf>`_:
+`SDMX 3.1 Technical Notes
+<https://sdmx.org/wp-content/uploads/SDMX_3-1-0_SECTION_6_FINAL.pdf>`_:
 
 .. list-table::
     :widths: 50 50
