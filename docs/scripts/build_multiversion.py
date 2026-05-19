@@ -60,6 +60,25 @@ def overlay_current_docs(worktree: Path) -> None:
             shutil.copy2(src, dst)
 
 
+def resolve_worktree_ref(ref: str) -> str:
+    """Return a ref name that ``git worktree add`` can resolve.
+
+    When the CI checkout is a detached HEAD at a tag, branch names like ``main``
+    only exist as remote-tracking refs (``origin/main``); ``git worktree add``
+    does not DWIM a bare branch name to its remote counterpart. Tries the ref
+    as-is first, then falls back to ``origin/<ref>``.
+    """
+    for candidate in (ref, f"origin/{ref}"):
+        result = subprocess.run(  # noqa: S603
+            ["git", "rev-parse", "--verify", "--quiet", f"{candidate}^{{commit}}"],  # noqa: S607
+            cwd=REPO_ROOT,
+            capture_output=True,
+        )
+        if result.returncode == 0:
+            return candidate
+    raise SystemExit(f"Cannot resolve git ref {ref!r} (tried {ref!r} and {f'origin/{ref}'!r})")
+
+
 def build_one_version(
     ref: str,
     out_dir: Path,
@@ -67,10 +86,11 @@ def build_one_version(
     latest_stable: Optional[str],
 ) -> None:
     """Check out `ref` into a temp worktree, overlay current docs, and run sphinx-build."""
+    resolved_ref = resolve_worktree_ref(ref)
     with tempfile.TemporaryDirectory(prefix=f"vtlengine-docs-{ref.replace('/', '_')}-") as tmp:
         worktree = Path(tmp) / "wt"
         subprocess.run(  # noqa: S603
-            ["git", "worktree", "add", "--detach", str(worktree), ref],  # noqa: S607
+            ["git", "worktree", "add", "--detach", str(worktree), resolved_ref],  # noqa: S607
             cwd=REPO_ROOT,
             check=True,
         )
