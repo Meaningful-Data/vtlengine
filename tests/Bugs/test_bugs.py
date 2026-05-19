@@ -3123,3 +3123,52 @@ class CastBugs(BugHelper):
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+
+class VtlV22GrammarBugs(BugHelper):
+    """VTL 2.2 grammar regressions tracked in sdmx-twg/vtl."""
+
+    classTest = "Bugs.VtlV22GrammarBugs"
+
+    @pytest.mark.skipif(
+        _use_duckdb_backend(),
+        reason="DuckDB infers nullable=True for constant literals; backends disagree on nullability",
+    )
+    def test_SDMX_TWG_GH_560_1(self):
+        """
+        Description: `-1` as the right-hand side of a calc assignment is a valid
+                     signedInteger after the constant restructuring in VTL 2.2.
+        Git Branch: sdmx-twg/vtl#560.
+        Goal: Check Result.
+        """
+        code = "SDMX_TWG_GH_560_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_SDMX_TWG_GH_560_2(self):
+        """
+        Description: `-1` is consumable inside arithmetic expressions without
+                     ambiguity between MINUS INTEGER_CONSTANT and signedInteger.
+        Git Branch: sdmx-twg/vtl#560.
+        Goal: Check Result.
+        """
+        code = "SDMX_TWG_GH_560_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_SDMX_TWG_GH_560_3(self):
+        """
+        Description: A signed-integer literal as the value of an `if` branch
+                     parses and runs unambiguously in VTL 2.2.
+        Git Branch: sdmx-twg/vtl#560.
+        Goal: Check Result.
+        """
+        code = "SDMX_TWG_GH_560_3"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
