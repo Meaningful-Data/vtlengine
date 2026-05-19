@@ -99,6 +99,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
         with:
+          ref: ${{ github.event.client_payload.tag_name || github.ref }}
           fetch-depth: 0  # Fetch all history for all tags and branches
       - name: Setup Pages
         id: pages
