@@ -23,7 +23,7 @@ Controls the significant digits used for Number comparison operations (``=``, ``
    :widths: 20 80
 
    * - Value
-     - Behavior
+     - Behaviour
    * - Not defined
      - Uses default value of **15** significant digits
    * - ``6`` to ``15``
@@ -53,7 +53,7 @@ Controls the significant digits used for:
    :widths: 20 80
 
    * - Value
-     - Behavior
+     - Behaviour
    * - Not defined
      - Uses default value of **15** significant digits (pandas) / **10** (DuckDB)
    * - ``6`` to ``15``
@@ -82,7 +82,7 @@ Maximum memory the DuckDB engine may consume.
    :widths: 20 80
 
    * - Value
-     - Behavior
+     - Behaviour
    * - Not defined
      - Uses default value of **80%** of system RAM
    * - ``"80%"``
@@ -104,7 +104,7 @@ Number of worker threads DuckDB may use during query execution.
    :widths: 20 80
 
    * - Value
-     - Behavior
+     - Behaviour
    * - Not defined
      - Uses default value of **1**
    * - integer ``>= 1``
@@ -143,7 +143,7 @@ Caps the total disk space DuckDB may use for spill-to-disk.
    :widths: 20 80
 
    * - Value
-     - Behavior
+     - Behaviour
    * - Not defined / empty
      - No cap; DuckDB may use all available disk space in ``VTL_TEMP_DIRECTORY``
    * - ``"100GB"`` / ``"500MB"``
@@ -161,7 +161,7 @@ Selects the DuckDB storage backend.
    :widths: 20 80
 
    * - Value
-     - Behavior
+     - Behaviour
    * - Not defined / ``"1"`` / ``"true"``
      - Use an in-memory database (default)
    * - ``"0"`` / any other value
@@ -181,7 +181,7 @@ controlled separately by :ref:`output_number_significant_digits`.
    :widths: 20 80
 
    * - Value
-     - Behavior
+     - Behaviour
    * - Not defined
      - Uses default value of **28**
    * - ``6`` to ``38``
@@ -201,7 +201,7 @@ not use in production.
    :widths: 20 80
 
    * - Value
-     - Behavior
+     - Behaviour
    * - Not defined / empty
      - Validation runs (default)
    * - ``"1"`` / ``"true"`` / ``"yes"``
