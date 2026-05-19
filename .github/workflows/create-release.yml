@@ -309,9 +309,18 @@ jobs:
 
             core.info(`Release ${tagName} created successfully`);
 
-            // 12. Delete pre-releases when publishing a stable release
+            // 12. Delete pre-release entries when publishing a stable release.
+            // Tags are intentionally left in place so the rc commits remain
+            // navigable; only the GitHub Release objects are removed.
             if (!isPrerelease) {
-              const preReleases = releases.data.filter(r => r.prerelease && reachableTags.has(r.tag_name));
+              const preReleases = releases.data.filter(r => {
+                if (!r.prerelease) return false;
+                if (reachableTags.has(r.tag_name)) return true;
+                // Catch rcs of this exact stable that aren't reachable —
+                // e.g., after a squash-merge severs the rc commits from the
+                // branch's lineage.
+                return /^(rc|alpha|beta|dev)\d*$/.test(r.tag_name.slice(tagName.length));
+              });
               for (const pr of preReleases) {
                 core.info(`Deleting pre-release: ${pr.tag_name}`);
                 await github.rest.repos.deleteRelease({
@@ -319,16 +328,6 @@ jobs:
                   repo: context.repo.repo,
                   release_id: pr.id,
                 });
-                // Delete the associated tag
-                try {
-                  await github.rest.git.deleteRef({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    ref: `tags/${pr.tag_name}`,
-                  });
-                } catch (e) {
-                  core.warning(`Could not delete tag ${pr.tag_name}: ${e.message}`);
-                }
               }
               core.info(`Deleted ${preReleases.length} pre-release(s)`);
             }
