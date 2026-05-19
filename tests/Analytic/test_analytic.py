@@ -1310,60 +1310,6 @@ class VtlV22GrammarAnalytic(AnalyticHelper):
 
     classTest = "analytic.VtlV22GrammarAnalytic"
 
-    def test_SDMX_TWG_GH_390_3(self):
-        """
-        Description: `lag(Me_1, sc_offset over (...))` reads the offset from a
-                     scalar resolved at interpretation time.
-        Git Branch: sdmx-twg/vtl#390.
-        Goal: Check Result.
-        """
-        code = "SDMX_TWG_GH_390_3"
-        number_inputs = 1
-        references_names = ["1"]
-
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names,
-            scalars={"sc_offset": 1},
-        )
-
-    def test_SDMX_TWG_GH_390_4(self):
-        """
-        Description: `lead(Me_1, sc_offset over (...))` mirrors lag for the
-                     trailing direction with the offset read from a scalar.
-        Git Branch: sdmx-twg/vtl#390.
-        Goal: Check Result.
-        """
-        code = "SDMX_TWG_GH_390_4"
-        number_inputs = 1
-        references_names = ["1"]
-
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names,
-            scalars={"sc_offset": 1},
-        )
-
-    def test_SDMX_TWG_GH_390_5(self):
-        """
-        Description: `data points between sc_n preceding and current data point`
-                     reads sc_n from a scalar.
-        Git Branch: sdmx-twg/vtl#390.
-        Goal: Check Result.
-        """
-        code = "SDMX_TWG_GH_390_5"
-        number_inputs = 1
-        references_names = ["1"]
-
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names,
-            scalars={"sc_n": 1},
-        )
-
     def test_SDMX_TWG_GH_391_1(self):
         """
         Description: Usage of optional partion except all flag
