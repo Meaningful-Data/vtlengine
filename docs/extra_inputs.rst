@@ -13,9 +13,9 @@ VTL syntax, and validation for each feature.
 .. seealso::
 
     - :ref:`example_5_run_with_multiple_value_domains_and_external_routines`
-      — Walkthrough example using both features as dictionaries
+      — Combined example using both features as dictionaries
     - :ref:`example_6_run_using_paths`
-      — Walkthrough example using both features as Path objects
+      — Combined example using both features as Path objects
     - `VTL 2.1 Reference Manual
       <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf>`_
       — Full VTL specification
@@ -462,3 +462,132 @@ the JSON structure and SQL syntax before execution:
 
     # Raises an exception if the structure or SQL is invalid
     validate_external_routine(external_routines)
+
+
+Combined Examples
+*****************
+
+The following examples combine ``value_domains`` and ``external_routines``
+in a single ``run`` call.
+
+.. _example_5_run_with_multiple_value_domains_and_external_routines:
+
+Using dictionaries
+==================
+
+Pass both ``value_domains`` and ``external_routines`` as Python
+dictionaries:
+
+.. code-block:: python
+
+    from pathlib import Path
+
+    import pandas as pd
+
+    from vtlengine import run
+
+    def main():
+        script = """
+                    Example_5 <- DS_1 [ calc Me_2:= Id_2 in Countries];
+                    Example_5_2 <- eval(SQL_3(DS_1) language "SQL" returns dataset { identifier<integer> Id_1,
+                    measure<number> Me_1});
+                """
+
+        data_structures = {
+            "datasets": [
+                {
+                    "name": "DS_1",
+                    "DataStructure": [
+                        {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                        {"name": "Id_2", "type": "String", "role": "Identifier", "nullable": False},
+                        {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                    ],
+                }
+            ]
+        }
+
+        data_df = pd.DataFrame(
+            {"Id_1": [2012, 2012, 2012], "Id_2": ["AT", "DE", "FR"], "Me_1": [0, 4, 9]}
+        )
+
+        datapoints = {"DS_1": data_df}
+
+        external_routines = {
+            "name": "SQL_3",
+            "query": "SELECT Id_1, COUNT(*) AS Me_1 FROM DS_1 GROUP BY Id_1;",
+        }
+
+
+        value_domains = {
+            "name": "Countries",
+            "setlist": ["DE", "FR", "IT"],
+            "type": "String",
+        }
+
+        run_result = run(
+            script=script,
+            data_structures=data_structures,
+            datapoints=datapoints,
+            value_domains=value_domains,
+            external_routines=external_routines,
+        )
+        print(run_result)
+
+Returns:
+
+.. csv-table::
+    :file: _static/Example_5.csv
+    :header-rows: 1
+
+.. csv-table::
+    :file: _static/Example_5_2.csv
+    :header-rows: 1
+
+
+.. _example_6_run_using_paths:
+
+Using Path objects
+==================
+
+Pass all inputs (script, data structures, datapoints, value domains, and
+external routines) as ``Path`` objects. Datapoints are still keyed by
+dataset name; the file itself can have any name.
+
+.. code-block:: python
+
+    from pathlib import Path
+
+    import pandas as pd
+
+    from vtlengine import run
+
+    def main():
+        filepath_external_routines = Path("docs/_static/SQL_4.json")
+        filepath_ValueDomains = Path("docs/_static/VD_2.json")
+        filepath_vtl_script = Path("docs/_static/Example_6.vtl")
+        filepath_data_structures = Path("docs/_static/Example_6.json")
+        filepath_data = Path("docs/_static/Example_6_input.csv")
+
+        data_structures = filepath_data_structures
+        datapoints = {"DS_1": filepath_data}
+        script = filepath_vtl_script
+        external_routines = filepath_external_routines
+        value_domains = filepath_ValueDomains
+        run_result = run(
+            script=script,
+            data_structures=data_structures,
+            datapoints=datapoints,
+            value_domains=value_domains,
+            external_routines=external_routines,
+        )
+        print(run_result)
+
+Returns:
+
+.. csv-table::
+    :file: _static/Example_6_output.csv
+    :header-rows: 1
+
+.. csv-table::
+    :file: _static/Example_6_2_output.csv
+    :header-rows: 1
