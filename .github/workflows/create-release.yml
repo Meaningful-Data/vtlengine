@@ -15,6 +15,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Create release with notes
         uses: actions/github-script@v8
@@ -36,6 +38,18 @@ jobs:
             // 2. Determine if pre-release
             const isPrerelease = /rc|alpha|beta|dev/.test(version);
             core.info(`Pre-release: ${isPrerelease}`);
+
+            // Tags reachable from this commit — scopes pre-release cleanup
+            // to the current branch's lineage so a stable on one release
+            // train doesn't sweep pre-releases on another.
+            const { execSync } = require('child_process');
+            const reachableTags = new Set(
+              execSync('git tag --merged HEAD', { encoding: 'utf8' })
+                .split('\n')
+                .map(t => t.trim())
+                .filter(Boolean)
+            );
+            core.info(`Reachable tags: ${[...reachableTags].join(', ') || 'none'}`);
 
             // 3. Check tag does not already exist
             try {
@@ -304,7 +318,14 @@ jobs:
 
             // 12. Delete pre-releases when publishing a stable release
             if (!isPrerelease) {
-              const preReleases = releases.data.filter(r => r.prerelease);
+              const preReleases = releases.data.filter(r => {
+                if (!r.prerelease) return false;
+                if (reachableTags.has(r.tag_name)) return true;
+                // Catch rcs of this exact stable that aren't reachable —
+                // e.g., after a squash-merge severs the rc commits from the
+                // branch's lineage.
+                return /^(rc|alpha|beta|dev)\d*$/.test(r.tag_name.slice(tagName.length));
+              });
               for (const pr of preReleases) {
                 core.info(`Deleting pre-release: ${pr.tag_name}`);
                 await github.rest.repos.deleteRelease({
