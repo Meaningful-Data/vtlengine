@@ -943,6 +943,7 @@ class ExprComp:
 
         params = None
         partition_by = None
+        partition_op = None
         order_by = None
 
         op_node = ctx_list[0].text
@@ -950,7 +951,7 @@ class ExprComp:
 
         for c in ctx_list[5:-2]:
             if not c.is_terminal and c.rule_index == RC.PARTITION_BY_CLAUSE[0]:
-                partition_by = Terminals().visitPartitionByClause(c)
+                partition_op, partition_by = Terminals().visitPartitionByClause(c)
                 continue
             elif not c.is_terminal and c.ctx_id == RC.ORDER_BY_CLAUSE:
                 order_by = Terminals().visitOrderByClause(c)
@@ -965,6 +966,7 @@ class ExprComp:
             op=op_node,
             operand=operand,
             partition_by=partition_by,
+            partition_op=partition_op,
             order_by=order_by,
             window=params,
             **extract_token_info(ctx),
@@ -975,6 +977,7 @@ class ExprComp:
 
         params = None
         partition_by = None
+        partition_op = None
         order_by = None
 
         op_node = ctx_list[0].text
@@ -982,7 +985,7 @@ class ExprComp:
 
         for c in ctx_list[4:-2]:
             if not c.is_terminal and c.rule_index == RC.PARTITION_BY_CLAUSE[0]:
-                partition_by = Terminals().visitPartitionByClause(c)
+                partition_op, partition_by = Terminals().visitPartitionByClause(c)
                 continue
             elif not c.is_terminal and c.ctx_id == RC.ORDER_BY_CLAUSE:
                 order_by = Terminals().visitOrderByClause(c)
@@ -1007,6 +1010,7 @@ class ExprComp:
             op=op_node,
             operand=operand,
             partition_by=partition_by,
+            partition_op=partition_op,
             order_by=order_by,
             params=params,
             **extract_token_info(ctx),
@@ -1016,13 +1020,14 @@ class ExprComp:
         ctx_list = ctx.children
 
         partition_by = None
+        partition_op = None
         order_by = None
 
         op_node = ctx_list[0].text
 
         for c in ctx_list[4:-2]:
             if not c.is_terminal and c.rule_index == RC.PARTITION_BY_CLAUSE[0]:
-                partition_by = Terminals().visitPartitionByClause(c)
+                partition_op, partition_by = Terminals().visitPartitionByClause(c)
                 continue
             elif not c.is_terminal and c.ctx_id == RC.ORDER_BY_CLAUSE:
                 order_by = Terminals().visitOrderByClause(c)
@@ -1032,6 +1037,7 @@ class ExprComp:
             op=op_node,
             operand=None,
             partition_by=partition_by,
+            partition_op=partition_op,
             order_by=order_by,
             window=None,
             **extract_token_info(ctx),
@@ -1046,12 +1052,13 @@ class ExprComp:
         op_node = ctx_list[0].text
         operand = self.visitExprComponent(ctx_list[2])
 
-        partition_by = Terminals().visitPartitionByClause(ctx_list[5])
+        partition_op, partition_by = Terminals().visitPartitionByClause(ctx_list[5])
 
         return Analytic(
             op=op_node,
             operand=operand,
             partition_by=partition_by,
+            partition_op=partition_op,
             order_by=order_by,
             window=params,
             **extract_token_info(ctx),

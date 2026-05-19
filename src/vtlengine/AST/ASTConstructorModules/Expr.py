@@ -1462,6 +1462,7 @@ class Expr:
 
         window = None
         partition_by = None
+        partition_op = None
         order_by = None
 
         op_node = ctx_list[0].text
@@ -1469,7 +1470,7 @@ class Expr:
 
         for c in ctx_list[5:-2]:
             if not c.is_terminal and c.rule_index == RC.PARTITION_BY_CLAUSE[0]:
-                partition_by = Terminals().visitPartitionByClause(c)
+                partition_op, partition_by = Terminals().visitPartitionByClause(c)
                 continue
             elif not c.is_terminal and c.rule_index == RC.ORDER_BY_CLAUSE[0]:
                 order_by = Terminals().visitOrderByClause(c)
@@ -1494,6 +1495,7 @@ class Expr:
             op=op_node,
             operand=operand,
             partition_by=partition_by,
+            partition_op=partition_op,
             order_by=order_by,
             window=window,
             **extract_token_info(ctx),
@@ -1504,6 +1506,7 @@ class Expr:
 
         params = None
         partition_by = None
+        partition_op = None
         order_by = None
 
         op_node = ctx_list[0].text
@@ -1513,7 +1516,7 @@ class Expr:
             if c.is_terminal:
                 continue
             if c.rule_index == RC.PARTITION_BY_CLAUSE[0]:
-                partition_by = Terminals().visitPartitionByClause(c)
+                partition_op, partition_by = Terminals().visitPartitionByClause(c)
                 continue
             elif c.rule_index == RC.ORDER_BY_CLAUSE[0]:
                 order_by = Terminals().visitOrderByClause(c)
@@ -1544,6 +1547,7 @@ class Expr:
             op=op_node,
             operand=operand,
             partition_by=partition_by,
+            partition_op=partition_op,
             order_by=order_by,
             params=params,
             **extract_token_info(ctx),
@@ -1557,12 +1561,13 @@ class Expr:
         op_node = ctx_list[0].text
         operand = self.visitExpr(ctx_list[2])
 
-        partition_by = Terminals().visitPartitionByClause(ctx_list[5])
+        partition_op, partition_by = Terminals().visitPartitionByClause(ctx_list[5])
 
         return Analytic(
             op=op_node,
             operand=operand,
             partition_by=partition_by,
+            partition_op=partition_op,
             order_by=order_by,
             **extract_token_info(ctx),
         )

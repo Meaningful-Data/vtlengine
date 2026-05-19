@@ -696,13 +696,29 @@ class Terminals:
     """
 
     def visitPartitionByClause(self, ctx):
+        """Return (op, components) where op is "by" | "except" | "except all".
+
+        VTL 2.2 (sdmx-twg/vtl#699, #391) distinguishes three alternatives:
+          * ``partition by X, Y``         -> ("by", ["X", "Y"])
+          * ``partition except X, Y``     -> ("except", ["X", "Y"])
+          * ``partition except all``      -> ("except all", [])
+
+        Downstream consumers (Analytic AST node, interpreter, transpiler) resolve
+        the negation against the operand's identifier list at execution time.
+        """
         ctx_list = ctx.children
 
-        return [
+        if ctx.ctx_id == RC.PARTITION_EXCEPT_ALL:
+            return "except all", []
+
+        # partitionListed: PARTITION (BY|EXCEPT) componentID (COMMA componentID)*
+        op = ctx_list[1].text.lower()
+        components = [
             self.visitComponentID(compID).value
             for compID in ctx_list
             if not compID.is_terminal and compID.ctx_id == RC.COMPONENT_ID
         ]
+        return op, components
 
     def visitOrderByClause(self, ctx):
         ctx_list = ctx.children
