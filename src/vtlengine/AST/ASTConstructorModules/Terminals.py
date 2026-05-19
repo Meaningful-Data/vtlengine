@@ -730,6 +730,9 @@ class Terminals:
         first = num_rows_1  # unbounded (default value)
         second = num_rows_2  # current data point (default value)
 
+        if not (isinstance(first, int) and isinstance(second, int)):
+            return create_windowing(win_mode, [first, second], [mode_1, mode_2], token_info)
+
         if (
             mode_2 == "preceding"
             and mode_1 == "preceding"
@@ -778,16 +781,22 @@ class Terminals:
         )
 
     def visitLimitClauseItem(self, ctx):
-        # limitClauseItem: signedInteger limitDir=PRECEDING
-        #     | signedInteger limitDir=FOLLOWING
-        #     | CURRENT DATA POINT
-        #     | UNBOUNDED limitDir=PRECEDING
-        #     | UNBOUNDED limitDir=FOLLOWING
+        # VTL 2.2 (sdmx-twg/vtl#390):
+        # limitClauseItem:
+        #     (intLimit=signedInteger | varLimit=varID) dir=PRECEDING
+        #   | (intLimit=signedInteger | varLimit=varID) dir=FOLLOWING
+        #   | CURRENT DATA POINT
+        #   | UNBOUNDED dir=PRECEDING
+        #   | UNBOUNDED dir=FOLLOWING
         ctx_list = ctx.children
         c = ctx_list[0]
         if not c.is_terminal and c.ctx_id == RC.SIGNED_INTEGER:
             result = self.visitSignedInteger(c)
-            # limitDir is the last terminal child (PRECEDING or FOLLOWING)
+            limit_dir = ctx_list[-1].text
+            return result, limit_dir
+        elif not c.is_terminal and c.ctx_id == RC.VAR_ID:
+            # varLimit: AST.VarID node, resolved at interpretation time
+            result = self.visitVarID(c)
             limit_dir = ctx_list[-1].text
             return result, limit_dir
         elif c.text.lower() == "unbounded":

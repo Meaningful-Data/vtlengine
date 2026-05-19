@@ -887,18 +887,22 @@ class Expr:
 
     def visitTimeShiftAtom(self, ctx: Any) -> BinOp:
         """
-        timeShiftExpr: TIMESHIFT '(' expr ',' INTEGER_CONSTANT ')' ;
+        timeShiftAtom: TIMESHIFT '(' expr ',' (intShift=signedInteger | varShift=varID) ')' ;
         """
         ctx_list = ctx.children
         c = ctx_list[0]
 
         op = c.text
         left_node = self.visitExpr(ctx_list[2])
-        right_node = Constant(
-            type_="INTEGER_CONSTANT",
-            value=Terminals().visitSignedInteger(ctx_list[4]),
-            **extract_token_info(ctx_list[4]),
-        )
+        shift_node = ctx_list[4]
+        if not shift_node.is_terminal and shift_node.rule_index == RC.VAR_ID[0]:
+            right_node = Terminals().visitVarID(shift_node)
+        else:
+            right_node = Constant(
+                type_="INTEGER_CONSTANT",
+                value=Terminals().visitSignedInteger(shift_node),
+                **extract_token_info(shift_node),
+            )
 
         return BinOp(left=left_node, op=op, right=right_node, **extract_token_info(ctx))
 
@@ -932,15 +936,18 @@ class Expr:
 
     def visitTimeAggAtom(self, ctx: Any) -> TimeAggregation:
         """
-        TIME_AGG LPAREN periodIndTo=STRING_CONSTANT (COMMA periodIndFrom=(STRING_CONSTANT| OPTIONAL ))? (COMMA op=optionalExpr)? (COMMA (FIRST|LAST))? RPAREN     # timeAggAtom
-        """  # noqa E501
+        TIME_AGG LPAREN (periodIndToVar=varID | periodIndToConst=STRING_CONSTANT)
+            (COMMA periodIndFrom=(STRING_CONSTANT | OPTIONAL))?
+            (COMMA op=optionalExpr)?
+            (COMMA (FIRST | LAST))? RPAREN                                       # timeAggAtom
+        """
         ctx_list = ctx.children
         c = ctx_list[0]
 
         op = c.text
 
-        # Find periodIndTo: first STRING_CONSTANT terminal
         period_to = None
+        period_to_ref = None
         period_from = None
         optional_expr_node = None
         conf = None
@@ -958,7 +965,10 @@ class Expr:
                     pass  # periodIndFrom is OPTIONAL, skip
                 elif child.symbol_type in (vtl_cpp_parser.FIRST, vtl_cpp_parser.LAST):
                     conf = child.text
-            elif not child.is_terminal and child.rule_index == RC.OPTIONAL_EXPR[0]:
+            elif child.rule_index == RC.VAR_ID[0] and not period_to_found:
+                period_to_ref = Terminals().visitVarID(child)
+                period_to_found = True
+            elif child.rule_index == RC.OPTIONAL_EXPR[0]:
                 optional_expr_node = child
 
         conf_val = None if conf is None else conf
@@ -978,6 +988,7 @@ class Expr:
             op=op,
             operand=operand_node,
             period_to=period_to,
+            period_to_ref=period_to_ref,
             period_from=period_from,
             conf=conf_val,
             **extract_token_info(ctx),
@@ -1483,6 +1494,12 @@ class Expr:
                 else:
                     params.append(Terminals().visitScalarItem(c))
                 continue
+            elif c.rule_index == RC.VAR_ID[0]:
+                # VTL 2.2 (sdmx-twg/vtl#390): varOffset alternative
+                if params is None:
+                    params = []
+                params.append(Terminals().visitVarID(c))
+                continue
 
         if len(params) == 0:
             # AST_ASTCONSTRUCTOR.16
@@ -1753,17 +1770,24 @@ class Expr:
     @staticmethod
     def _extract_time_agg_tokens(
         ctx_list: List[Any],
-    ) -> Tuple[Optional[str], Optional[str]]:
-        """Extract TIME_AGG parameters (period_to, conf) from parse tree children."""
+    ) -> Tuple[Optional[str], Optional[Any], Optional[str]]:
+        """Extract TIME_AGG parameters (period_to, period_to_ref, conf) from parse children.
+
+        VTL 2.2 (sdmx-twg/vtl#390): `time_agg(...)` accepts either a STRING_CONSTANT or a
+        varID as its periodIndTo argument. Returns whichever is present.
+        """
         period_to: Optional[str] = None
+        period_to_ref: Optional[Any] = None
         conf: Optional[str] = None
         for child in ctx_list:
             if child.is_terminal:
-                if child.symbol_type == vtl_cpp_parser.STRING_CONSTANT:
+                if child.symbol_type == vtl_cpp_parser.STRING_CONSTANT and period_to is None:
                     period_to = child.text[1:-1]
                 elif child.symbol_type in (vtl_cpp_parser.FIRST, vtl_cpp_parser.LAST):
                     conf = child.text
-        return period_to, conf
+            elif child.rule_index == RC.VAR_ID[0] and period_to_ref is None:
+                period_to_ref = Terminals().visitVarID(child)
+        return period_to, period_to_ref, conf
 
     def visitGroupByOrExcept(self, ctx: Any) -> Any:
         ctx_list = ctx.children
@@ -1783,14 +1807,15 @@ class Expr:
                 has_time_agg = True
 
         if has_time_agg:
-            period_to, conf = self._extract_time_agg_tokens(ctx_list)
-            if period_to is None:
+            period_to, period_to_ref, conf = self._extract_time_agg_tokens(ctx_list)
+            if period_to is None and period_to_ref is None:
                 raise NotImplementedError
             children_nodes.append(
                 TimeAggregation(
                     op="time_agg",
                     operand=None,
                     period_to=period_to,
+                    period_to_ref=period_to_ref,
                     period_from=None,
                     conf=conf,
                     **extract_token_info(ctx),
@@ -1812,20 +1837,26 @@ class Expr:
         # Check if TIME_AGG is present (more than just GROUP ALL)
         if len(ctx_list) > 2:
             period_to = None
+            period_to_ref = None
             period_from = None
             operand_node = None
             conf = None
+            period_to_found = False
 
             for child in ctx_list:
                 if child.is_terminal:
                     if child.symbol_type == vtl_cpp_parser.STRING_CONSTANT:
-                        if period_to is None:
+                        if not period_to_found:
                             period_to = child.text[1:-1]
+                            period_to_found = True
                         else:
                             period_from = child.text[1:-1]
                     elif child.symbol_type in (vtl_cpp_parser.FIRST, vtl_cpp_parser.LAST):
                         conf = child.text
-                elif not child.is_terminal and child.rule_index == RC.OPTIONAL_EXPR[0]:
+                elif child.rule_index == RC.VAR_ID[0] and not period_to_found:
+                    period_to_ref = Terminals().visitVarID(child)
+                    period_to_found = True
+                elif child.rule_index == RC.OPTIONAL_EXPR[0]:
                     operand_node = self.visitOptionalExpr(child)
                     if isinstance(operand_node, ID):
                         operand_node = None
@@ -1837,6 +1868,7 @@ class Expr:
                     op="time_agg",
                     operand=operand_node,
                     period_to=period_to,
+                    period_to_ref=period_to_ref,
                     period_from=period_from,
                     conf=conf,
                     **extract_token_info(ctx),
