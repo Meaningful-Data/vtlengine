@@ -565,6 +565,8 @@ class InterpreterAnalyzer(ASTTemplate):
 
     def visit_Analytic(self, node: AST.Analytic) -> Any:  # noqa: C901
         component_name = None
+        analytic_component_name: Optional[str] = None
+        operand_id_collision = False
         if self.is_from_regular_aggregation:
             if self.regular_aggregation_dataset is None:
                 raise SemanticError("1-1-6-10")
@@ -573,16 +575,25 @@ class InterpreterAnalyzer(ASTTemplate):
             else:
                 operand_comp = self.visit(node.operand)
                 component_name = operand_comp.name
+                id_names = self.regular_aggregation_dataset.get_identifiers_names()
                 measure_names = self.regular_aggregation_dataset.get_measures_names()
                 attribute_names = self.regular_aggregation_dataset.get_attributes_names()
                 dataset_components = self.regular_aggregation_dataset.components.copy()
                 for name in measure_names + attribute_names:
                     dataset_components.pop(name)
 
-                dataset_components[operand_comp.name] = Component(
-                    name=operand_comp.name,
+                operand_id_collision = (
+                    operand_comp.role == Role.IDENTIFIER and operand_comp.name in id_names
+                )
+                analytic_component_name = (
+                    f"__vtl_op_{operand_comp.name}" if operand_id_collision else operand_comp.name
+                )
+                analytic_role = Role.MEASURE if operand_id_collision else operand_comp.role
+
+                dataset_components[analytic_component_name] = Component(
+                    name=analytic_component_name,
                     data_type=operand_comp.data_type,
-                    role=operand_comp.role,
+                    role=analytic_role,
                     nullable=operand_comp.nullable,
                 )
 
@@ -648,20 +659,23 @@ class InterpreterAnalyzer(ASTTemplate):
             ordering=ordering,
             window=node.window,
             params=params,
-            component_name=component_name,
+            component_name=analytic_component_name,
         )
         if not self.is_from_regular_aggregation:
             return result
 
         # # Extracting the component we need (only measure)
-        if component_name is None or node.op == COUNT:
+        if analytic_component_name is None or node.op == COUNT:
             measure_name = result.get_measures_names()[0]
         else:
-            measure_name = component_name
+            measure_name = analytic_component_name
+        output_name = (
+            component_name if operand_id_collision and component_name is not None else measure_name
+        )
         data = None
 
         return DataComponent(
-            name=measure_name,
+            name=output_name,
             data=data,
             data_type=result.components[measure_name].data_type,
             role=result.components[measure_name].role,

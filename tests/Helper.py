@@ -14,7 +14,7 @@ from vtlengine.Exceptions import (
     VTLEngineException,
     check_key,
 )
-from vtlengine.files.output import (
+from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
     format_time_period_external_representation,
 )

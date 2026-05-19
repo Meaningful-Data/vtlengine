@@ -28,7 +28,7 @@ from vtlengine.AST.Grammar._cpp_parser import vtl_cpp_parser
 from vtlengine.duckdb_transpiler.Config.config import configured_connection
 from vtlengine.duckdb_transpiler.io import execute_queries, extract_datapoint_paths
 from vtlengine.duckdb_transpiler.Transpiler import SQLTranspiler
-from vtlengine.Exceptions import InputValidationException
+from vtlengine.Exceptions import InputValidationException, VTLSyntaxError
 from vtlengine.files.output import format_date_iso8601
 from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
@@ -88,6 +88,15 @@ def create_ast(text: str) -> Start:
     """
     text = text + "\n"
     cst = vtl_cpp_parser.parse(text)
+    error = vtl_cpp_parser.get_syntax_error()
+    if error is not None:
+        raise VTLSyntaxError(
+            line=error["line"],
+            column=error["column"] + 1,
+            detail=error["message"],
+            source_line=error["source_line"],
+            underline_length=error["underline_length"],
+        )
     visitor = ASTVisitor()
     ast = visitor.visitStart(cst)
     DAGAnalyzer.create_dag(ast)

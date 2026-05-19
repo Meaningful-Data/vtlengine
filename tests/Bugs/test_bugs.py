@@ -1042,6 +1042,34 @@ class TimeBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_duckdb_derived_scalar_chain(self):
+        """
+        Status: OK
+        Description: DuckDB transpiler inlined scalar references as their
+            transpile-time value. Derived (output-only) scalars have no value
+            at transpile time, so chained scalar arithmetic such as
+            ``b := a + 1; c := b + 1;`` produced ``NULL + 1 = NULL`` and the
+            chain collapsed to NULL.
+        Goal: pandas and DuckDB return the same scalar values across a chain
+            that mixes input scalars, derived scalars and persistent assigns.
+        """
+        script = """
+        a := sc1 + 1;
+        b := a + 1;
+        c <- b;
+        """
+        scalar_values = {"sc1": 5}
+        result = run(
+            script=script,
+            data_structures={"datasets": [], "scalars": [{"name": "sc1", "type": "Integer"}]},
+            datapoints={},
+            scalar_values=scalar_values,
+            return_only_persistent=False,
+        )
+        assert result["a"].value == 6
+        assert result["b"].value == 7
+        assert result["c"].value == 7
+
 
 class SetBugs(BugHelper):
     """ """
@@ -2398,6 +2426,22 @@ class ClauseBugs(BugHelper):
         Goal: Check Result.
         """
         code = "GH_575"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_728(self):
+        """
+        Description: Window aggregate over an identifier (e.g.
+            ``max(Id_2 over(partition by Id_1))``) inside a filter or calc clause
+            was broken in both engines. Pandas silently returned the row's
+            identifier value (filter became a no-op); DuckDB raised
+            ``BinderException: WHERE clause cannot contain window functions``.
+        Git Branch: cr-728.
+        Goal: Check Result.
+        """
+        code = "GH_728"
         number_inputs = 1
         references_names = ["1"]
 

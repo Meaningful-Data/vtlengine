@@ -1,6 +1,8 @@
 import re
-from datetime import date
+from datetime import date, timedelta
 from typing import Any, List, Optional, Type, Union
+
+from dateutil.relativedelta import relativedelta  # type: ignore[import-untyped]
 
 import vtlengine.Operators as Operators
 from vtlengine.AST.Grammar.tokens import (
@@ -78,6 +80,47 @@ class Time(Operators.Operator):
     @classmethod
     def parse_date(cls, date_str: str) -> date:
         return parse_date_value(date_str)
+
+    _PERIOD_BY_RELATIVEDELTA = {
+        (1, 0, 0): "Y",
+        (0, 6, 0): "S",
+        (0, 3, 0): "Q",
+        (0, 1, 0): "M",
+        (0, 0, 7): "W",
+        (0, 0, 1): "D",
+    }
+
+    @classmethod
+    def _classify_interval_period(cls, interval: str) -> str:
+        start_str, end_str = interval.split("/")
+        start = date.fromisoformat(start_str)
+        end = date.fromisoformat(end_str)
+        candidates = [relativedelta(endpoint, start) for endpoint in (end, end + timedelta(days=1))]
+        candidates = [
+            rd
+            for rd in candidates
+            if rd.years >= 0
+            and rd.months >= 0
+            and rd.days >= 0
+            and (rd.years or rd.months or rd.days)
+        ]
+        if not candidates:
+            return f"P{(end - start).days}D"
+        for rd in candidates:
+            canonical = cls._PERIOD_BY_RELATIVEDELTA.get((rd.years, rd.months, rd.days))
+            if canonical is not None:
+                return canonical
+        chosen = min(
+            candidates, key=lambda r: sum(1 for x in (r.years, r.months, r.days) if x != 0)
+        )
+        parts = []
+        if chosen.years:
+            parts.append(f"{chosen.years}Y")
+        if chosen.months:
+            parts.append(f"{chosen.months}M")
+        if chosen.days:
+            parts.append(f"{chosen.days}D")
+        return "P" + "".join(parts)
 
 
 class Unary(Time):

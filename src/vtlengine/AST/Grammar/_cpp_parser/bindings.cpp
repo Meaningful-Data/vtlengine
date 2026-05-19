@@ -18,6 +18,7 @@
 #include "VtlParser.h"
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <typeindex>
 #include <unordered_map>
@@ -348,9 +349,114 @@ struct ParserState {
         int column;
     };
     std::vector<CommentInfo> comments;
+
+    struct SyntaxErrorInfo {
+        int line;
+        int column;
+        std::string message;
+        std::string offending_text;
+        std::string source_line;
+        int underline_length;
+    };
+    std::optional<SyntaxErrorInfo> syntax_error;
 };
 
 static ParserState g_state;
+
+
+// ============================================================
+// Helper: extract one line (1-based) from the input buffer, with
+// each \t expanded to TAB_WIDTH spaces. Adjusts the caller-supplied
+// column so the caret stays aligned after tab expansion.
+// ============================================================
+static constexpr int TAB_WIDTH = 4;
+
+static std::string extract_source_line_expanded(int line_1based, int& column_in_out) {
+    const std::string& src = g_state.input_text;
+    if (line_1based < 1) return "";
+
+    // Find start of the requested line.
+    size_t start = 0;
+    int current_line = 1;
+    while (current_line < line_1based && start < src.size()) {
+        if (src[start] == '\n') {
+            ++current_line;
+        }
+        ++start;
+    }
+    if (current_line != line_1based) return "";
+
+    // Walk to end of the requested line, expanding tabs and tracking the
+    // caller's column index (1-based, counted in original-source columns).
+    std::string out;
+    int orig_col = 1;        // 1-based original column index walking the source
+    int target_col = column_in_out;  // 1-based original column we want to remap
+    int remapped = target_col;       // 1-based output column after tab expansion
+    for (size_t i = start; i < src.size() && src[i] != '\n'; ++i) {
+        char c = src[i];
+        if (orig_col == target_col) {
+            remapped = static_cast<int>(out.size()) + 1;
+        }
+        if (c == '\t') {
+            out.append(TAB_WIDTH, ' ');
+        } else if (c != '\r') {
+            out.push_back(c);
+        }
+        ++orig_col;
+    }
+    // Caret past end of line: snap to end.
+    if (target_col > orig_col) {
+        remapped = static_cast<int>(out.size()) + 1;
+    }
+    column_in_out = remapped;
+    return out;
+}
+
+
+// ============================================================
+// CollectingErrorListener: captures the first syntax error instead
+// of printing to stderr. Subsequent errors from ANTLR's error
+// recovery are usually noise, so we ignore them.
+// ============================================================
+class CollectingErrorListener : public antlr4::BaseErrorListener {
+public:
+    void syntaxError(antlr4::Recognizer* /*recognizer*/,
+                     antlr4::Token* offendingSymbol,
+                     size_t line,
+                     size_t charPositionInLine,
+                     const std::string& msg,
+                     std::exception_ptr /*e*/) override {
+        if (g_state.syntax_error.has_value()) return;
+
+        std::string text;
+        int underline_length = 1;
+        if (offendingSymbol) {
+            text = offendingSymbol->getText();
+            size_t start_idx = offendingSymbol->getStartIndex();
+            size_t stop_idx = offendingSymbol->getStopIndex();
+            if (stop_idx != static_cast<size_t>(-1) && stop_idx >= start_idx) {
+                underline_length = static_cast<int>(stop_idx - start_idx + 1);
+            }
+        }
+
+        // ANTLR uses 0-based columns; we use 1-based externally. The helper
+        // rewrites the column to account for tab expansion.
+        int column_1based = static_cast<int>(charPositionInLine) + 1;
+        std::string src_line = extract_source_line_expanded(
+            static_cast<int>(line), column_1based);
+
+        g_state.syntax_error = ParserState::SyntaxErrorInfo{
+            static_cast<int>(line),
+            column_1based - 1,    // store 0-based for back-compat with Python; API adds 1.
+            msg,
+            text,
+            src_line,
+            underline_length
+        };
+    }
+};
+
+static CollectingErrorListener g_collecting_listener;
 
 
 // ============================================================
@@ -479,6 +585,7 @@ static py::object do_parse(const std::string& text) {
 
     g_state.input_text = text;
     g_state.comments.clear();
+    g_state.syntax_error.reset();
 
     g_state.input = std::make_unique<antlr4::ANTLRInputStream>(text);
     g_state.lexer = std::make_unique<VtlLexer>(g_state.input.get());
@@ -489,8 +596,12 @@ static py::object do_parse(const std::string& text) {
     g_state.parser->getInterpreter<antlr4::atn::ParserATNSimulator>()
         ->setPredictionMode(antlr4::atn::PredictionMode::SLL);
 
-    // Remove default error listeners for cleaner output
+    // Replace default error listeners (which print to stderr) with the
+    // collecting listener so Python can surface a clean error.
+    g_state.lexer->removeErrorListeners();
+    g_state.lexer->addErrorListener(&g_collecting_listener);
     g_state.parser->removeErrorListeners();
+    g_state.parser->addErrorListener(&g_collecting_listener);
 
     // Parse
     auto* tree = g_state.parser->start();
@@ -515,6 +626,21 @@ static py::object do_parse(const std::string& text) {
 
 static std::string get_input_text() {
     return g_state.input_text;
+}
+
+static py::object get_syntax_error() {
+    if (!g_state.syntax_error.has_value()) {
+        return py::none();
+    }
+    auto& e = g_state.syntax_error.value();
+    py::dict d;
+    d["line"] = e.line;
+    d["column"] = e.column;
+    d["message"] = e.message;
+    d["offending_text"] = e.offending_text;
+    d["source_line"] = e.source_line;
+    d["underline_length"] = e.underline_length;
+    return d;
 }
 
 static py::list get_comments() {
@@ -563,6 +689,8 @@ PYBIND11_MODULE(vtl_cpp_parser, m) {
           "Get the input text from the last parse() call");
     m.def("get_comments", &get_comments,
           "Get comment tokens from the last parse() call");
+    m.def("get_syntax_error", &get_syntax_error,
+          "Get the first syntax error from the last parse() call, or None if there were none");
 
     // Token type constants
     m.attr("LPAREN") = static_cast<int>(VtlParser::LPAREN);
