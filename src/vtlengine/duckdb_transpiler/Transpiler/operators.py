@@ -343,6 +343,39 @@ def _create_default_registry() -> OperatorRegistry:
         ),
     )
 
+    _DISTANCE_MACROS: Dict[str, str] = {
+        tokens.LEVENSHTEIN_METHOD: "vtl_levenshtein",
+        tokens.DAMERAU_LEVENSHTEIN_METHOD: "vtl_damerau_levenshtein",
+        tokens.HAMMING_METHOD: "vtl_hamming",
+        tokens.JARO_WINKLER_METHOD: "vtl_jaro_winkler",
+    }
+
+    def _string_distance_generator(*args: Optional[str]) -> str:
+        """Generate SQL for VTL string_distance(s1, s2, method)."""
+        if len(args) != 3:
+            raise SemanticError("1-1-18-7", op=tokens.STRING_DISTANCE, number=len(args), expected=3)
+        s1, s2, method_sql = args
+        # ``method_sql`` arrives as a quoted SQL literal like "'levenshtein'".
+        # Strip the surrounding quotes to match the dispatch table.
+        method = (method_sql or "").strip("'\"")
+        macro = _DISTANCE_MACROS.get(method)
+        if macro is None:
+            raise SemanticError(
+                "1-1-18-11",
+                op=tokens.STRING_DISTANCE,
+                method=method,
+                expected_methods=sorted(_DISTANCE_MACROS.keys()),
+            )
+        return f"{macro}({s1}, {s2})"
+
+    ops.register_custom(
+        tokens.STRING_DISTANCE,
+        SQLOperator(
+            sql_template="vtl_string_distance({0}, {1}, {2})",
+            custom_generator=_string_distance_generator,
+        ),
+    )
+
     # Set operations — join multiple subqueries with the SQL set operator
     def _set_op_generator(sql_keyword: str) -> Callable[..., str]:
         def gen(*queries: str) -> str:

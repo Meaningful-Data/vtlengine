@@ -416,3 +416,48 @@ CREATE OR REPLACE MACRO vtl_instr(
 CREATE OR REPLACE MACRO vtl_div(a, b) AS (
     CASE WHEN b = 0 THEN error('VTL 2-1-15-6: Scalar division by Zero') ELSE a / b END
 );
+
+
+-- =========================================================================
+-- VTL String Distance Functions
+-- =========================================================================
+
+-- Levenshtein distance: minimum single-character edits to turn s1 into s2.
+CREATE OR REPLACE MACRO vtl_levenshtein(s1 VARCHAR, s2 VARCHAR) AS (
+    CASE
+        WHEN s1 IS NULL OR s2 IS NULL THEN NULL
+        ELSE levenshtein(s1, s2)
+    END
+);
+
+-- Damerau–Levenshtein (optimal string alignment): Levenshtein extended with
+-- adjacent transpositions counting as a single edit.
+CREATE OR REPLACE MACRO vtl_damerau_levenshtein(s1 VARCHAR, s2 VARCHAR) AS (
+    CASE
+        WHEN s1 IS NULL OR s2 IS NULL THEN NULL
+        WHEN s1 = s2 THEN 0
+        ELSE damerau_levenshtein(s1, s2)
+    END
+);
+
+-- Hamming distance: count of differing positions. Strings must be equal length;
+-- otherwise raise via error() (propagates as a DuckDB error to the engine).
+CREATE OR REPLACE MACRO vtl_hamming(s1 VARCHAR, s2 VARCHAR) AS (
+    CASE
+        WHEN s1 IS NULL OR s2 IS NULL THEN NULL
+        WHEN LENGTH(s1) <> LENGTH(s2) THEN
+            error('string_distance: hamming requires equal length strings, got '
+                  || LENGTH(s1) || ' and ' || LENGTH(s2))
+        ELSE hamming(s1, s2)
+    END
+);
+
+-- Jaro–Winkler similarity in [0, 1] (1.0 == identical), matches the spec example
+-- "a value between 0 and 1" and the GeeksforGeeks reference cited in issue #742.
+CREATE OR REPLACE MACRO vtl_jaro_winkler(s1 VARCHAR, s2 VARCHAR) AS (
+    CASE
+        WHEN s1 IS NULL OR s2 IS NULL THEN NULL
+        WHEN s1 = s2 THEN 1.0
+        ELSE jaro_winkler_similarity(s1, s2)
+    END
+);

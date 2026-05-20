@@ -7,17 +7,22 @@ import pandas as pd
 import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import (
     CONCAT,
+    DAMERAU_LEVENSHTEIN_METHOD,
+    HAMMING_METHOD,
     INSTR,
+    JARO_WINKLER_METHOD,
     LCASE,
     LEN,
+    LEVENSHTEIN_METHOD,
     LTRIM,
     REPLACE,
     RTRIM,
+    STRING_DISTANCE,
     SUBSTR,
     TRIM,
     UCASE,
 )
-from vtlengine.DataTypes import Integer, String, check_unary_implicit_promotion
+from vtlengine.DataTypes import Integer, Number, String, check_unary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Scalar
 
@@ -353,6 +358,164 @@ class Replace(Parameterized):
     def validate_params(cls, params: Any) -> None:
         if len(params) != 2:
             raise SemanticError("1-1-18-7", op=cls.op, number=len(params), expected=2)
+
+
+def _levenshtein(s1: str, s2: str) -> int:
+    """Classic Levenshtein distance — minimum single-character edits to turn s1 into s2."""
+    if s1 == s2:
+        return 0
+    if len(s1) == 0:
+        return len(s2)
+    if len(s2) == 0:
+        return len(s1)
+    prev = list(range(len(s2) + 1))
+    for i, c1 in enumerate(s1, start=1):
+        curr = [i] + [0] * len(s2)
+        for j, c2 in enumerate(s2, start=1):
+            cost = 0 if c1 == c2 else 1
+            curr[j] = min(curr[j - 1] + 1, prev[j] + 1, prev[j - 1] + cost)
+        prev = curr
+    return prev[-1]
+
+
+def _damerau_levenshtein(s1: str, s2: str) -> int:
+    """Damerau–Levenshtein distance — Levenshtein extended with adjacent transpositions."""
+    if s1 == s2:
+        return 0
+    len1, len2 = len(s1), len(s2)
+    if len1 == 0:
+        return len2
+    if len2 == 0:
+        return len1
+    dp = [[0] * (len2 + 1) for _ in range(len1 + 1)]
+    for i in range(len1 + 1):
+        dp[i][0] = i
+    for j in range(len2 + 1):
+        dp[0][j] = j
+    for i in range(1, len1 + 1):
+        for j in range(1, len2 + 1):
+            cost = 0 if s1[i - 1] == s2[j - 1] else 1
+            dp[i][j] = min(
+                dp[i - 1][j] + 1,
+                dp[i][j - 1] + 1,
+                dp[i - 1][j - 1] + cost,
+            )
+            if i > 1 and j > 1 and s1[i - 1] == s2[j - 2] and s1[i - 2] == s2[j - 1]:
+                dp[i][j] = min(dp[i][j], dp[i - 2][j - 2] + 1)
+    return dp[len1][len2]
+
+
+def _hamming(s1: str, s2: str) -> int:
+    """Hamming distance — count of differing positions. Caller must guarantee equal length."""
+    return sum(1 for a, b in zip(s1, s2) if a != b)
+
+
+def _jaro_winkler(s1: str, s2: str, prefix_scaling: float = 0.1) -> float:
+    """Jaro–Winkler similarity in [0, 1] (1.0 == identical), per VTL 2.2 ref manual examples."""
+    if s1 == s2:
+        return 1.0
+    len1, len2 = len(s1), len(s2)
+    if len1 == 0 or len2 == 0:
+        return 0.0
+    match_distance = max(len1, len2) // 2 - 1
+    if match_distance < 0:
+        match_distance = 0
+    s1_matches = [False] * len1
+    s2_matches = [False] * len2
+    matches = 0
+    for i in range(len1):
+        start = max(0, i - match_distance)
+        end = min(i + match_distance + 1, len2)
+        for j in range(start, end):
+            if s2_matches[j]:
+                continue
+            if s1[i] != s2[j]:
+                continue
+            s1_matches[i] = True
+            s2_matches[j] = True
+            matches += 1
+            break
+    if matches == 0:
+        return 0.0
+    transpositions = 0
+    k = 0
+    for i in range(len1):
+        if not s1_matches[i]:
+            continue
+        while not s2_matches[k]:
+            k += 1
+        if s1[i] != s2[k]:
+            transpositions += 1
+        k += 1
+    transpositions //= 2
+    jaro = (matches / len1 + matches / len2 + (matches - transpositions) / matches) / 3
+    prefix = 0
+    for i in range(min(4, len1, len2)):
+        if s1[i] == s2[i]:
+            prefix += 1
+        else:
+            break
+    return jaro + prefix * prefix_scaling * (1 - jaro)
+
+
+_DISTANCE_METHODS = {
+    LEVENSHTEIN_METHOD,
+    DAMERAU_LEVENSHTEIN_METHOD,
+    HAMMING_METHOD,
+    JARO_WINKLER_METHOD,
+}
+
+
+class StringDistance(Binary):
+    """Base class for the four `string_distance(method, s1, s2)` variants.
+
+    Subclasses set ``method_name`` and ``py_op`` (the latter via the algorithm helpers).
+    Type-checks both string operands against ``String`` and emits ``Number``.
+    """
+
+    op = STRING_DISTANCE
+    type_to_check = String
+    return_type = Number
+    method_name: str = ""
+
+    @classmethod
+    def op_func(cls, x: Any, y: Any) -> Any:
+        if pd.isnull(x) or pd.isnull(y):
+            return None
+        return cls.py_op(str(x), str(y))
+
+
+class Levenshtein(StringDistance):
+    method_name = LEVENSHTEIN_METHOD
+    py_op = staticmethod(_levenshtein)
+
+
+class DamerauLevenshtein(StringDistance):
+    method_name = DAMERAU_LEVENSHTEIN_METHOD
+    py_op = staticmethod(_damerau_levenshtein)
+
+
+class Hamming(StringDistance):
+    method_name = HAMMING_METHOD
+
+    @classmethod
+    def py_op(cls, x: str, y: str) -> int:
+        if len(x) != len(y):
+            raise SemanticError("1-1-18-12", op=STRING_DISTANCE, len1=len(x), len2=len(y))
+        return _hamming(x, y)
+
+
+class JaroWinkler(StringDistance):
+    method_name = JARO_WINKLER_METHOD
+    py_op = staticmethod(_jaro_winkler)
+
+
+DISTANCE_DISPATCH: dict[str, type[StringDistance]] = {
+    LEVENSHTEIN_METHOD: Levenshtein,
+    DAMERAU_LEVENSHTEIN_METHOD: DamerauLevenshtein,
+    HAMMING_METHOD: Hamming,
+    JARO_WINKLER_METHOD: JaroWinkler,
+}
 
 
 class Instr(Parameterized):
