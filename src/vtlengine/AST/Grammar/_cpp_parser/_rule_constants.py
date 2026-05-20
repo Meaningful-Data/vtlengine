@@ -272,11 +272,13 @@ RETAIN_TYPE: Final[RuleConstant] = (116, -1)
 # =============================================================================
 
 # --- RuleStatement = 1 ---
+STATEMENT: Final[RuleConstant] = (1, -1)
 TEMPORARY_ASSIGNMENT: Final[RuleConstant] = (1, 0)
 PERSIST_ASSIGNMENT: Final[RuleConstant] = (1, 1)
 DEFINE_EXPRESSION: Final[RuleConstant] = (1, 2)
 
 # --- RuleExpr = 2 ---
+EXPR: Final[RuleConstant] = (2, -1)
 PARENTHESIS_EXPR: Final[RuleConstant] = (2, 0)
 FUNCTIONS_EXPRESSION: Final[RuleConstant] = (2, 1)
 CLAUSE_EXPR: Final[RuleConstant] = (2, 2)
@@ -293,6 +295,7 @@ CONSTANT_EXPR: Final[RuleConstant] = (2, 12)
 VAR_ID_EXPR: Final[RuleConstant] = (2, 13)
 
 # --- RuleExprComponent = 3 ---
+EXPR_COMPONENT: Final[RuleConstant] = (3, -1)
 PARENTHESIS_EXPR_COMP: Final[RuleConstant] = (3, 0)
 FUNCTIONS_EXPRESSION_COMP: Final[RuleConstant] = (3, 1)
 UNARY_EXPR_COMP: Final[RuleConstant] = (3, 2)
@@ -463,6 +466,7 @@ RANK_AN_COMPONENT: Final[RuleConstant] = (42, 2)
 RATIO_TO_REPORT_AN_COMPONENT: Final[RuleConstant] = (42, 3)
 
 # --- RuleScalarItem = 48 ---
+SCALAR_ITEM: Final[RuleConstant] = (48, -1)
 SIMPLE_SCALAR: Final[RuleConstant] = (48, 0)
 SCALAR_WITH_CAST: Final[RuleConstant] = (48, 1)
 
@@ -588,9 +592,11 @@ class RC:
     RETAIN_TYPE = RETAIN_TYPE
 
     # Rules WITH labeled alternatives
+    STATEMENT = STATEMENT
     TEMPORARY_ASSIGNMENT = TEMPORARY_ASSIGNMENT
     PERSIST_ASSIGNMENT = PERSIST_ASSIGNMENT
     DEFINE_EXPRESSION = DEFINE_EXPRESSION
+    EXPR = EXPR
     PARENTHESIS_EXPR = PARENTHESIS_EXPR
     FUNCTIONS_EXPRESSION = FUNCTIONS_EXPRESSION
     CLAUSE_EXPR = CLAUSE_EXPR
@@ -605,6 +611,7 @@ class RC:
     CASE_EXPR = CASE_EXPR
     CONSTANT_EXPR = CONSTANT_EXPR
     VAR_ID_EXPR = VAR_ID_EXPR
+    EXPR_COMPONENT = EXPR_COMPONENT
     PARENTHESIS_EXPR_COMP = PARENTHESIS_EXPR_COMP
     FUNCTIONS_EXPRESSION_COMP = FUNCTIONS_EXPRESSION_COMP
     UNARY_EXPR_COMP = UNARY_EXPR_COMP
@@ -727,6 +734,7 @@ class RC:
     LAG_OR_LEAD_AN_COMPONENT = LAG_OR_LEAD_AN_COMPONENT
     RANK_AN_COMPONENT = RANK_AN_COMPONENT
     RATIO_TO_REPORT_AN_COMPONENT = RATIO_TO_REPORT_AN_COMPONENT
+    SCALAR_ITEM = SCALAR_ITEM
     SIMPLE_SCALAR = SIMPLE_SCALAR
     SCALAR_WITH_CAST = SCALAR_WITH_CAST
     PARTITION_BY_CLAUSE = PARTITION_BY_CLAUSE

@@ -214,7 +214,7 @@ class ExprComp:
         ctx_list = ctx.children
         c = ctx_list[0]
 
-        if not c.is_terminal and c.rule_index == 3:
+        if not c.is_terminal and c.rule_index == RC.EXPR_COMPONENT[0]:
             return self.visitExprComponent(c)
 
         elif c.is_terminal:
@@ -320,7 +320,7 @@ class ExprComp:
         constant_nodes = [
             Terminals().visitScalarItem(scalar)
             for scalar in ctx_list
-            if not scalar.is_terminal and scalar.rule_index == 48
+            if not scalar.is_terminal and scalar.rule_index == RC.SCALAR_ITEM[0]
         ]
         children_nodes = var_ids_nodes + constant_nodes
 
@@ -365,7 +365,7 @@ class ExprComp:
         expr_node = [
             self.visitExprComponent(expr)
             for expr in ctx_list
-            if not expr.is_terminal and expr.rule_index == 3
+            if not expr.is_terminal and expr.rule_index == RC.EXPR_COMPONENT[0]
         ]
         basic_scalar_type = [
             Terminals().visitBasicScalarType(type_)
@@ -407,7 +407,7 @@ class ExprComp:
         ctx_list = ctx.children
         c = ctx_list[0]
 
-        if not c.is_terminal and c.rule_index == 3:
+        if not c.is_terminal and c.rule_index == RC.EXPR_COMPONENT[0]:
             return self.visitExprComponent(c)
         elif c.is_terminal:
             return ID(type_="OPTIONAL", value=c.text, **extract_token_info(ctx))
@@ -449,7 +449,11 @@ class ExprComp:
         params_nodes = []
         children_nodes = []
 
-        childrens = [expr for expr in ctx_list if not expr.is_terminal and expr.rule_index == 3]
+        childrens = [
+            expr
+            for expr in ctx_list
+            if not expr.is_terminal and expr.rule_index == RC.EXPR_COMPONENT[0]
+        ]
         params = [
             param
             for param in ctx_list
@@ -475,7 +479,7 @@ class ExprComp:
         expressions = [
             self.visitExprComponent(expr)
             for expr in ctx_list
-            if not expr.is_terminal and expr.rule_index == 3
+            if not expr.is_terminal and expr.rule_index == RC.EXPR_COMPONENT[0]
         ]
         params = [
             self.visitOptionalExprComponent(param)
@@ -499,7 +503,7 @@ class ExprComp:
         expressions = [
             self.visitExprComponent(expr)
             for expr in ctx_list
-            if not expr.is_terminal and expr.rule_index == 3
+            if not expr.is_terminal and expr.rule_index == RC.EXPR_COMPONENT[0]
         ]
         params = [
             self.visitOptionalExprComponent(param)
@@ -538,7 +542,7 @@ class ExprComp:
         expressions = [
             self.visitExprComponent(expr)
             for expr in ctx_list
-            if not expr.is_terminal and expr.rule_index == 3
+            if not expr.is_terminal and expr.rule_index == RC.EXPR_COMPONENT[0]
         ]
 
         return ParamOp(
@@ -579,7 +583,11 @@ class ExprComp:
         params_nodes = []
         children_nodes = []
 
-        childrens = [expr for expr in ctx_list if not expr.is_terminal and expr.rule_index == 3]
+        childrens = [
+            expr
+            for expr in ctx_list
+            if not expr.is_terminal and expr.rule_index == RC.EXPR_COMPONENT[0]
+        ]
         params = [
             param
             for param in ctx_list
@@ -655,7 +663,7 @@ class ExprComp:
         operand_node = [
             self.visitExprComponent(operand)
             for operand in ctx_list
-            if not operand.is_terminal and operand.rule_index == 3
+            if not operand.is_terminal and operand.rule_index == RC.EXPR_COMPONENT[0]
         ]
 
         if len(operand_node) == 0:
@@ -871,7 +879,11 @@ class ExprComp:
 
         children_nodes = []
 
-        childrens = [expr for expr in ctx_list if not expr.is_terminal and expr.rule_index == 3]
+        childrens = [
+            expr
+            for expr in ctx_list
+            if not expr.is_terminal and expr.rule_index == RC.EXPR_COMPONENT[0]
+        ]
 
         op_node = c.text
         for children in childrens:
@@ -994,7 +1006,7 @@ class ExprComp:
                 # SignedInteger (rule 59) or ScalarItem (rule 48)
                 if params is None:
                     params = []
-                if c.rule_index == 59:
+                if c.rule_index == RC.SIGNED_INTEGER[0]:
                     params.append(Terminals().visitSignedInteger(c))
                 else:
                     params.append(Terminals().visitScalarItem(c))

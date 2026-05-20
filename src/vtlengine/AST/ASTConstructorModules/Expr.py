@@ -543,7 +543,7 @@ class Expr:
         expr_node = [
             self.visitExpr(expr)
             for expr in ctx_list
-            if not expr.is_terminal and expr.rule_index == 2
+            if not expr.is_terminal and expr.rule_index == RC.EXPR[0]
         ]
         basic_scalar_type = [
             Terminals().visitBasicScalarType(type_)
@@ -588,7 +588,7 @@ class Expr:
         ctx_list = ctx.children
         c = ctx_list[0]
 
-        if not c.is_terminal and c.rule_index == 2:
+        if not c.is_terminal and c.rule_index == RC.EXPR[0]:
             return self.visitExpr(c)
         elif c.is_terminal:
             return ID(type_="OPTIONAL", value=c.text, **extract_token_info(c))
@@ -630,7 +630,9 @@ class Expr:
         params_nodes = []
         children_nodes = []
 
-        childrens = [expr for expr in ctx_list if not expr.is_terminal and expr.rule_index == 2]
+        childrens = [
+            expr for expr in ctx_list if not expr.is_terminal and expr.rule_index == RC.EXPR[0]
+        ]
         params = [
             param
             for param in ctx_list
@@ -659,7 +661,7 @@ class Expr:
         expressions = [
             self.visitExpr(expr)
             for expr in ctx_list
-            if not expr.is_terminal and expr.rule_index == 2
+            if not expr.is_terminal and expr.rule_index == RC.EXPR[0]
         ]
         params = [
             self.visitOptionalExpr(param)
@@ -686,7 +688,7 @@ class Expr:
         expressions = [
             self.visitExpr(expr)
             for expr in ctx_list
-            if not expr.is_terminal and expr.rule_index == 2
+            if not expr.is_terminal and expr.rule_index == RC.EXPR[0]
         ]
         params = [
             self.visitOptionalExpr(param)
@@ -729,7 +731,7 @@ class Expr:
         expressions = [
             self.visitExpr(expr)
             for expr in ctx_list
-            if not expr.is_terminal and expr.rule_index == 2
+            if not expr.is_terminal and expr.rule_index == RC.EXPR[0]
         ]
 
         return ParamOp(
@@ -770,7 +772,9 @@ class Expr:
         params_nodes = []
         children_nodes = []
 
-        childrens = [expr for expr in ctx_list if not expr.is_terminal and expr.rule_index == 2]
+        childrens = [
+            expr for expr in ctx_list if not expr.is_terminal and expr.rule_index == RC.EXPR[0]
+        ]
         params = [
             param
             for param in ctx_list
@@ -825,7 +829,9 @@ class Expr:
 
         children_nodes = []
 
-        childrens = [expr for expr in ctx_list if not expr.is_terminal and expr.rule_index == 2]
+        childrens = [
+            expr for expr in ctx_list if not expr.is_terminal and expr.rule_index == RC.EXPR[0]
+        ]
 
         op_node = c.text
         for children in childrens:
@@ -856,7 +862,7 @@ class Expr:
         operand_nodes = [
             self.visitExpr(expr)
             for expr in ctx_list
-            if not expr.is_terminal and expr.rule_index == 2
+            if not expr.is_terminal and expr.rule_index == RC.EXPR[0]
         ]
         retain_nodes = [
             Terminals().visitRetainType(retain)
@@ -911,7 +917,7 @@ class Expr:
         operand_node = [
             self.visitExpr(operand)
             for operand in ctx_list
-            if not operand.is_terminal and operand.rule_index == 2
+            if not operand.is_terminal and operand.rule_index == RC.EXPR[0]
         ]
 
         if len(operand_node) == 0:
@@ -1121,7 +1127,7 @@ class Expr:
         exprs_nodes = [
             self.visitExpr(expr)
             for expr in ctx_list
-            if not expr.is_terminal and expr.rule_index == 2
+            if not expr.is_terminal and expr.rule_index == RC.EXPR[0]
         ]
 
         return MulOp(op=ctx_list[0].text, children=exprs_nodes, **extract_token_info(ctx))
@@ -1131,7 +1137,7 @@ class Expr:
         exprs_nodes = [
             self.visitExpr(expr)
             for expr in ctx_list
-            if not expr.is_terminal and expr.rule_index == 2
+            if not expr.is_terminal and expr.rule_index == RC.EXPR[0]
         ]
 
         return MulOp(op=ctx_list[0].text, children=exprs_nodes, **extract_token_info(ctx))
@@ -1141,7 +1147,7 @@ class Expr:
         exprs_nodes = [
             self.visitExpr(expr)
             for expr in ctx_list
-            if not expr.is_terminal and expr.rule_index == 2
+            if not expr.is_terminal and expr.rule_index == RC.EXPR[0]
         ]
 
         return MulOp(op=ctx_list[0].text, children=exprs_nodes, **extract_token_info(ctx))
@@ -2093,7 +2099,7 @@ class Expr:
         ctx_list = ctx.children
         c = ctx_list[0]
 
-        if not c.is_terminal and c.rule_index == 2:
+        if not c.is_terminal and c.rule_index == RC.EXPR[0]:
             return self.visitExpr(c)
 
         elif c.is_terminal:
