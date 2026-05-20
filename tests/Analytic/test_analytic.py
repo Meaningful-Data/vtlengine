@@ -674,6 +674,33 @@ class AnalyticOperatorsTest(AnalyticHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_751_1(self):
+        """
+        Description: ``sum(Me_1 over ())`` in a ``calc`` clause broadcasts the
+                     global sum to every row.
+        Git Branch: sdmx-twg/vtl#520.
+        Goal: Check Result.
+        """
+        code = "GH_751_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_751_2(self):
+        """
+        Description: ``filter Me_1 = max(Me_1 over ())`` — the upstream example
+                     from sdmx-twg/vtl#520. Keeps only the row(s) whose Me_1
+                     equals the global maximum.
+        Git Branch: sdmx-twg/vtl#520.
+        Goal: Check Result.
+        """
+        code = "GH_751_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class AnalyticOperatorsWithCalcTest(AnalyticHelper):
     """
