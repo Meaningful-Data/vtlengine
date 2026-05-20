@@ -22,6 +22,7 @@ from vtlengine.AST.ASTConstructorModules import extract_token_info
 from vtlengine.AST.ASTConstructorModules.Terminals import Terminals
 from vtlengine.AST.Grammar._cpp_parser import vtl_cpp_parser
 from vtlengine.AST.Grammar._cpp_parser._rule_constants import RC
+from vtlengine.AST.Grammar.tokens import STRING_DISTANCE
 from vtlengine.Exceptions import SemanticError
 
 
@@ -213,7 +214,7 @@ class ExprComp:
         ctx_list = ctx.children
         c = ctx_list[0]
 
-        if not c.is_terminal and c.rule_index == 3:
+        if not c.is_terminal and c.rule_index == RC.EXPR_COMPONENT[0]:
             return self.visitExprComponent(c)
 
         elif c.is_terminal:
@@ -319,7 +320,7 @@ class ExprComp:
         constant_nodes = [
             Terminals().visitScalarItem(scalar)
             for scalar in ctx_list
-            if not scalar.is_terminal and scalar.rule_index == 47
+            if not scalar.is_terminal and scalar.rule_index == RC.SCALAR_ITEM[0]
         ]
         children_nodes = var_ids_nodes + constant_nodes
 
@@ -364,7 +365,7 @@ class ExprComp:
         expr_node = [
             self.visitExprComponent(expr)
             for expr in ctx_list
-            if not expr.is_terminal and expr.rule_index == 3
+            if not expr.is_terminal and expr.rule_index == RC.EXPR_COMPONENT[0]
         ]
         basic_scalar_type = [
             Terminals().visitBasicScalarType(type_)
@@ -406,7 +407,7 @@ class ExprComp:
         ctx_list = ctx.children
         c = ctx_list[0]
 
-        if not c.is_terminal and c.rule_index == 3:
+        if not c.is_terminal and c.rule_index == RC.EXPR_COMPONENT[0]:
             return self.visitExprComponent(c)
         elif c.is_terminal:
             return ID(type_="OPTIONAL", value=c.text, **extract_token_info(ctx))
@@ -428,6 +429,8 @@ class ExprComp:
             return self.visitReplaceAtomComponent(ctx)
         elif ctx.ctx_id == RC.INSTR_ATOM_COMPONENT:
             return self.visitInstrAtomComponent(ctx)
+        elif ctx.ctx_id == RC.STRING_DISTANCE_ATOM_COMPONENT:
+            return self.visitStringDistanceAtomComponent(ctx)
         else:
             raise NotImplementedError
 
@@ -446,7 +449,11 @@ class ExprComp:
         params_nodes = []
         children_nodes = []
 
-        childrens = [expr for expr in ctx_list if not expr.is_terminal and expr.rule_index == 3]
+        childrens = [
+            expr
+            for expr in ctx_list
+            if not expr.is_terminal and expr.rule_index == RC.EXPR_COMPONENT[0]
+        ]
         params = [
             param
             for param in ctx_list
@@ -472,7 +479,7 @@ class ExprComp:
         expressions = [
             self.visitExprComponent(expr)
             for expr in ctx_list
-            if not expr.is_terminal and expr.rule_index == 3
+            if not expr.is_terminal and expr.rule_index == RC.EXPR_COMPONENT[0]
         ]
         params = [
             self.visitOptionalExprComponent(param)
@@ -496,7 +503,7 @@ class ExprComp:
         expressions = [
             self.visitExprComponent(expr)
             for expr in ctx_list
-            if not expr.is_terminal and expr.rule_index == 3
+            if not expr.is_terminal and expr.rule_index == RC.EXPR_COMPONENT[0]
         ]
         params = [
             self.visitOptionalExprComponent(param)
@@ -511,6 +518,38 @@ class ExprComp:
 
         return ParamOp(
             op=op_node, children=children_nodes, params=params_nodes, **extract_token_info(ctx)
+        )
+
+    def visitStringDistanceAtomComponent(self, ctx):  # type: ignore[no-untyped-def]
+        """STRING_DISTANCE LPAREN method COMMA s1=exprComponent COMMA s2=exprComponent RPAREN.
+
+        Component-level twin of `Expr.visitStringDistanceAtom`. Method keyword is
+        constrained by the grammar to one of LEVENSHTEIN / DAMERAU_LEVENSHTEIN /
+        HAMMING / JARO_WINKLER and captured verbatim as a ParamConstant.
+        """
+        ctx_list = ctx.children
+
+        method_ctx = next(
+            c for c in ctx_list if not c.is_terminal and c.ctx_id == RC.STRING_DISTANCE_METHODS
+        )
+        method_token = method_ctx.children[0].text
+        method_node = ParamConstant(
+            type_="METHOD",
+            value=method_token,
+            **extract_token_info(method_ctx),
+        )
+
+        expressions = [
+            self.visitExprComponent(expr)
+            for expr in ctx_list
+            if not expr.is_terminal and expr.rule_index == RC.EXPR_COMPONENT[0]
+        ]
+
+        return ParamOp(
+            op=STRING_DISTANCE,
+            children=expressions,
+            params=[method_node],
+            **extract_token_info(ctx),
         )
 
     """
@@ -544,7 +583,11 @@ class ExprComp:
         params_nodes = []
         children_nodes = []
 
-        childrens = [expr for expr in ctx_list if not expr.is_terminal and expr.rule_index == 3]
+        childrens = [
+            expr
+            for expr in ctx_list
+            if not expr.is_terminal and expr.rule_index == RC.EXPR_COMPONENT[0]
+        ]
         params = [
             param
             for param in ctx_list
@@ -599,7 +642,7 @@ class ExprComp:
             RC.YEAR_ATOM_COMPONENT,
             RC.MONTH_ATOM_COMPONENT,
             RC.DAY_OF_MONTH_ATOM_COMPONENT,
-            RC.DAT_OF_YEAR_ATOM_COMPONENT,
+            RC.DAY_OF_YEAR_ATOM_COMPONENT,
             RC.DAY_TO_YEAR_ATOM_COMPONENT,
             RC.DAY_TO_MONTH_ATOM_COMPONENT,
             RC.YEAR_TODAY_ATOM_COMPONENT,
@@ -620,7 +663,7 @@ class ExprComp:
         operand_node = [
             self.visitExprComponent(operand)
             for operand in ctx_list
-            if not operand.is_terminal and operand.rule_index == 3
+            if not operand.is_terminal and operand.rule_index == RC.EXPR_COMPONENT[0]
         ]
 
         if len(operand_node) == 0:
@@ -631,18 +674,23 @@ class ExprComp:
 
     def visitTimeShiftAtomComponent(self, ctx):  # type: ignore[no-untyped-def]
         """
-        timeShiftExpr: TIMESHIFT '(' expr ',' INTEGER_CONSTANT ')' ;
+        timeShiftAtomComponent:
+            TIMESHIFT '(' exprComponent ',' (intShift=signedInteger | varShift=varID) ')' ;
         """
         ctx_list = ctx.children
         c = ctx_list[0]
 
         op = c.text
         left_node = self.visitExprComponent(ctx_list[2])
-        right_node = Constant(
-            type_="INTEGER_CONSTANT",
-            value=int(ctx_list[4].text),
-            **extract_token_info(ctx),
-        )
+        shift_node = ctx_list[4]
+        if not shift_node.is_terminal and shift_node.rule_index == RC.VAR_ID[0]:
+            right_node = Terminals().visitVarID(shift_node)
+        else:
+            right_node = Constant(
+                type_="INTEGER_CONSTANT",
+                value=Terminals().visitSignedInteger(shift_node),
+                **extract_token_info(ctx),
+            )
 
         return BinOp(left=left_node, op=op, right=right_node, **extract_token_info(ctx))
 
@@ -673,22 +721,27 @@ class ExprComp:
 
     def visitTimeAggAtomComponent(self, ctx):  # type: ignore[no-untyped-def]
         """
-        TIME_AGG LPAREN periodIndTo=STRING_CONSTANT (COMMA periodIndFrom=(STRING_CONSTANT| OPTIONAL ))?
-        (COMMA op=optionalExprComponent)? (COMMA (FIRST|LAST))? RPAREN    # timeAggAtomComponent;
-        """  # noqa E501
+        TIME_AGG LPAREN (periodIndToVar=varID | periodIndToConst=STRING_CONSTANT)
+            (COMMA periodIndFrom=(STRING_CONSTANT | OPTIONAL))?
+            (COMMA op=optionalExprComponent)?
+            (COMMA (FIRST | LAST))? RPAREN                                  # timeAggAtomComponent
+        """
         ctx_list = ctx.children
         c = ctx_list[0]
 
         op = c.text
 
         # periodIndTo is always at index 2 (TIME_AGG LPAREN periodIndTo)
-        period_to = str(ctx_list[2].text)[1:-1]
+        period_to_node = ctx_list[2]
+        period_to = None
+        period_to_ref = None
+        if period_to_node.is_terminal:
+            period_to = str(period_to_node.text)[1:-1]
+        else:
+            period_to_ref = Terminals().visitVarID(period_to_node)
         period_from = None
 
         # Find periodIndFrom: look for STRING_CONSTANT or OPTIONAL after the first COMMA
-        # Grammar: TIME_AGG LPAREN STRING_CONSTANT (COMMA (STRING_CONSTANT|OPTIONAL))?
-        #          (COMMA optionalExprComponent)? (COMMA (FIRST|LAST))? RPAREN
-        # We need to scan children to find the named elements positionally.
         # ctx_list[0]=TIME_AGG, [1]=LPAREN, [2]=periodIndTo
         # If there's a periodIndFrom, it's at index 4 (after COMMA at index 3)
         idx = 3  # start after periodIndTo
@@ -743,6 +796,7 @@ class ExprComp:
             op=op,
             operand=operand_node,
             period_to=period_to,
+            period_to_ref=period_to_ref,
             period_from=period_from,
             conf=conf,
             **extract_token_info(ctx),
@@ -753,16 +807,13 @@ class ExprComp:
         return MulOp(op=c.text, children=[], **extract_token_info(ctx))
 
     def visitDateDiffAtomComponent(self, ctx):  # type: ignore[no-untyped-def]
-        """ """
-        from vtlengine.AST.ASTConstructorModules.Expr import Expr
-
+        """datediff(dateFrom=exprComponent, dateTo=exprComponent)"""
         ctx_list = ctx.children
         c = ctx_list[0]
 
         op = c.text
         left_node = self.visitExprComponent(ctx_list[2])
-        # dateTo is 'expr' (not exprComponent) in the new grammar
-        right_node = Expr().visitExpr(ctx_list[4])
+        right_node = self.visitExprComponent(ctx_list[4])
 
         return BinOp(left=left_node, op=op, right=right_node, **extract_token_info(ctx))
 
@@ -828,7 +879,11 @@ class ExprComp:
 
         children_nodes = []
 
-        childrens = [expr for expr in ctx_list if not expr.is_terminal and expr.rule_index == 3]
+        childrens = [
+            expr
+            for expr in ctx_list
+            if not expr.is_terminal and expr.rule_index == RC.EXPR_COMPONENT[0]
+        ]
 
         op_node = c.text
         for children in childrens:
@@ -900,14 +955,15 @@ class ExprComp:
 
         params = None
         partition_by = None
+        partition_op = None
         order_by = None
 
         op_node = ctx_list[0].text
         operand = self.visitExprComponent(ctx_list[2])
 
         for c in ctx_list[5:-2]:
-            if not c.is_terminal and c.ctx_id == RC.PARTITION_BY_CLAUSE:
-                partition_by = Terminals().visitPartitionByClause(c)
+            if not c.is_terminal and c.rule_index == RC.PARTITION_BY_CLAUSE[0]:
+                partition_op, partition_by = Terminals().visitPartitionByClause(c)
                 continue
             elif not c.is_terminal and c.ctx_id == RC.ORDER_BY_CLAUSE:
                 order_by = Terminals().visitOrderByClause(c)
@@ -922,6 +978,7 @@ class ExprComp:
             op=op_node,
             operand=operand,
             partition_by=partition_by,
+            partition_op=partition_op,
             order_by=order_by,
             window=params,
             **extract_token_info(ctx),
@@ -932,32 +989,40 @@ class ExprComp:
 
         params = None
         partition_by = None
+        partition_op = None
         order_by = None
 
         op_node = ctx_list[0].text
         operand = self.visitExprComponent(ctx_list[2])
 
         for c in ctx_list[4:-2]:
-            if not c.is_terminal and c.ctx_id == RC.PARTITION_BY_CLAUSE:
-                partition_by = Terminals().visitPartitionByClause(c)
+            if not c.is_terminal and c.rule_index == RC.PARTITION_BY_CLAUSE[0]:
+                partition_op, partition_by = Terminals().visitPartitionByClause(c)
                 continue
             elif not c.is_terminal and c.ctx_id == RC.ORDER_BY_CLAUSE:
                 order_by = Terminals().visitOrderByClause(c)
                 continue
-            elif not c.is_terminal and c.rule_index in (57, 47):
-                # SignedInteger (rule 57) or ScalarItem (rule 47)
+            elif not c.is_terminal and c.rule_index in (59, 48):
+                # SignedInteger (rule 59) or ScalarItem (rule 48)
                 if params is None:
                     params = []
-                if c.rule_index == 57:
+                if c.rule_index == RC.SIGNED_INTEGER[0]:
                     params.append(Terminals().visitSignedInteger(c))
                 else:
                     params.append(Terminals().visitScalarItem(c))
+                continue
+            elif not c.is_terminal and c.rule_index == RC.VAR_ID[0]:
+                # VTL 2.2 (sdmx-twg/vtl#390): varOffset alternative
+                if params is None:
+                    params = []
+                params.append(Terminals().visitVarID(c))
                 continue
 
         return Analytic(
             op=op_node,
             operand=operand,
             partition_by=partition_by,
+            partition_op=partition_op,
             order_by=order_by,
             params=params,
             **extract_token_info(ctx),
@@ -967,13 +1032,14 @@ class ExprComp:
         ctx_list = ctx.children
 
         partition_by = None
+        partition_op = None
         order_by = None
 
         op_node = ctx_list[0].text
 
         for c in ctx_list[4:-2]:
-            if not c.is_terminal and c.ctx_id == RC.PARTITION_BY_CLAUSE:
-                partition_by = Terminals().visitPartitionByClause(c)
+            if not c.is_terminal and c.rule_index == RC.PARTITION_BY_CLAUSE[0]:
+                partition_op, partition_by = Terminals().visitPartitionByClause(c)
                 continue
             elif not c.is_terminal and c.ctx_id == RC.ORDER_BY_CLAUSE:
                 order_by = Terminals().visitOrderByClause(c)
@@ -983,6 +1049,7 @@ class ExprComp:
             op=op_node,
             operand=None,
             partition_by=partition_by,
+            partition_op=partition_op,
             order_by=order_by,
             window=None,
             **extract_token_info(ctx),
@@ -997,12 +1064,13 @@ class ExprComp:
         op_node = ctx_list[0].text
         operand = self.visitExprComponent(ctx_list[2])
 
-        partition_by = Terminals().visitPartitionByClause(ctx_list[5])
+        partition_op, partition_by = Terminals().visitPartitionByClause(ctx_list[5])
 
         return Analytic(
             op=op_node,
             operand=operand,
             partition_by=partition_by,
+            partition_op=partition_op,
             order_by=order_by,
             window=params,
             **extract_token_info(ctx),

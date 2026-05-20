@@ -662,6 +662,18 @@ class AnalyticOperatorsTest(AnalyticHelper):
             code=code, number_inputs=number_inputs, exception_code=exception_code
         )
 
+    def test_GH_391_1(self):
+        """
+        Description: Usage of optional partion except all flag
+        Git Branch: sdmx-twg/vtl#391.
+        Goal: Check Result.
+        """
+        code = "GH_391_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class AnalyticOperatorsWithCalcTest(AnalyticHelper):
     """

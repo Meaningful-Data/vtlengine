@@ -40,7 +40,7 @@ from vtlengine.AST.ASTConstructorModules.Terminals import Terminals
 from vtlengine.AST.ASTDataExchange import de_ruleset_elements
 from vtlengine.AST.Grammar._cpp_parser import vtl_cpp_parser
 from vtlengine.AST.Grammar._cpp_parser._rule_constants import RC
-from vtlengine.AST.Grammar.tokens import DATASET_PRIORITY
+from vtlengine.AST.Grammar.tokens import DATASET_PRIORITY, STRING_DISTANCE
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Role
 
@@ -331,16 +331,29 @@ class Expr:
     def visitJoinFunctions(self, ctx: Any) -> Any:
         ctx_list = ctx.children
 
-        using_node = None
-
         op_node = ctx_list[0].text
 
-        if op_node in ["inner_join", "left_join"]:
-            clause_node, using_node = self.visitJoinClause(ctx_list[2])
-        else:
-            clause_node = self.visitJoinClauseWithoutUsing(ctx_list[2])
+        clause_ctx = next(
+            c for c in ctx_list if not c.is_terminal and c.rule_index == RC.JOIN_CLAUSE[0]
+        )
+        clause_node = self.visitJoinClause(clause_ctx)
 
-        body_node = self.visitJoinBody(ctx_list[3])
+        using_ctx = next(
+            (c for c in ctx_list if not c.is_terminal and c.rule_index == RC.USING_CLAUSE[0]),
+            None,
+        )
+        using_node = self.visitUsingClause(using_ctx) if using_ctx is not None else None
+
+        nvl_join_present = any(
+            not c.is_terminal and c.rule_index == RC.NVL_JOIN_CLAUSE[0] for c in ctx_list
+        )
+        if nvl_join_present:
+            raise NotImplementedError("nvl(...) clause inside join is not yet supported")
+
+        body_ctx = next(
+            c for c in ctx_list if not c.is_terminal and c.rule_index == RC.JOIN_BODY[0]
+        )
+        body_node = self.visitJoinBody(body_ctx)
 
         token_info = extract_token_info(ctx)
 
@@ -379,53 +392,26 @@ class Expr:
 
     def visitJoinClause(self, ctx: Any) -> Any:
         """
-        JoinClauseItem (COMMA joinClauseItem)* (USING componentID (COMMA componentID)*)?
+        joinClause: joinClauseItem (COMMA joinClauseItem)*? ;
         """
         ctx_list = ctx.children
-
-        clause_nodes = []
-        component_nodes = []
-        using = None
 
         items = [
             item
             for item in ctx_list
             if not item.is_terminal and item.rule_index == RC.JOIN_CLAUSE_ITEM[0]
         ]
+        return [self.visitJoinClauseItem(item) for item in items]
+
+    def visitUsingClause(self, ctx: Any) -> Any:
+        """
+        usingClause: USING componentID (COMMA componentID)* ;
+        """
+        ctx_list = ctx.children
         components = [
-            component
-            for component in ctx_list
-            if not component.is_terminal and component.rule_index == RC.COMPONENT_ID[0]
+            c for c in ctx_list if not c.is_terminal and c.rule_index == RC.COMPONENT_ID[0]
         ]
-
-        for item in items:
-            clause_nodes.append(self.visitJoinClauseItem(item))
-
-        if len(components) != 0:
-            for component in components:
-                component_nodes.append(Terminals().visitComponentID(component).value)
-            using = component_nodes
-
-        return clause_nodes, using
-
-    def visitJoinClauseWithoutUsing(self, ctx: Any) -> Any:
-        """
-        joinClause: joinClauseItem (COMMA joinClauseItem)* (USING componentID (COMMA componentID)*)? ;
-        """  # noqa E501
-        ctx_list = ctx.children
-
-        clause_nodes = []
-
-        items = [
-            item
-            for item in ctx_list
-            if not item.is_terminal and item.rule_index == RC.JOIN_CLAUSE_ITEM[0]
-        ]
-
-        for item in items:
-            clause_nodes.append(self.visitJoinClauseItem(item))
-
-        return clause_nodes
+        return [Terminals().visitComponentID(c).value for c in components]
 
     def visitJoinBody(self, ctx: Any) -> Any:
         """
@@ -557,7 +543,7 @@ class Expr:
         expr_node = [
             self.visitExpr(expr)
             for expr in ctx_list
-            if not expr.is_terminal and expr.rule_index == 2
+            if not expr.is_terminal and expr.rule_index == RC.EXPR[0]
         ]
         basic_scalar_type = [
             Terminals().visitBasicScalarType(type_)
@@ -602,7 +588,7 @@ class Expr:
         ctx_list = ctx.children
         c = ctx_list[0]
 
-        if not c.is_terminal and c.rule_index == 2:
+        if not c.is_terminal and c.rule_index == RC.EXPR[0]:
             return self.visitExpr(c)
         elif c.is_terminal:
             return ID(type_="OPTIONAL", value=c.text, **extract_token_info(c))
@@ -624,6 +610,8 @@ class Expr:
             return self.visitReplaceAtom(ctx)
         elif ctx.ctx_id == RC.INSTR_ATOM:
             return self.visitInstrAtom(ctx)
+        elif ctx.ctx_id == RC.STRING_DISTANCE_ATOM:
+            return self.visitStringDistanceAtom(ctx)
         else:
             raise NotImplementedError
 
@@ -642,7 +630,9 @@ class Expr:
         params_nodes = []
         children_nodes = []
 
-        childrens = [expr for expr in ctx_list if not expr.is_terminal and expr.rule_index == 2]
+        childrens = [
+            expr for expr in ctx_list if not expr.is_terminal and expr.rule_index == RC.EXPR[0]
+        ]
         params = [
             param
             for param in ctx_list
@@ -671,7 +661,7 @@ class Expr:
         expressions = [
             self.visitExpr(expr)
             for expr in ctx_list
-            if not expr.is_terminal and expr.rule_index == 2
+            if not expr.is_terminal and expr.rule_index == RC.EXPR[0]
         ]
         params = [
             self.visitOptionalExpr(param)
@@ -698,7 +688,7 @@ class Expr:
         expressions = [
             self.visitExpr(expr)
             for expr in ctx_list
-            if not expr.is_terminal and expr.rule_index == 2
+            if not expr.is_terminal and expr.rule_index == RC.EXPR[0]
         ]
         params = [
             self.visitOptionalExpr(param)
@@ -715,6 +705,39 @@ class Expr:
             op=op_node,
             children=children_nodes,
             params=params_nodes,
+            **extract_token_info(ctx),
+        )
+
+    def visitStringDistanceAtom(self, ctx: Any) -> ParamOp:
+        """STRING_DISTANCE LPAREN method COMMA string1=expr COMMA string2=expr RPAREN.
+
+        The grammar (`stringDistanceMethods`) restricts the method keyword to one
+        of LEVENSHTEIN, DAMERAU_LEVENSHTEIN, HAMMING, JARO_WINKLER — captured here
+        as a ParamConstant so downstream operator dispatch keeps the method name
+        verbatim from the source.
+        """
+        ctx_list = ctx.children
+
+        method_ctx = next(
+            c for c in ctx_list if not c.is_terminal and c.ctx_id == RC.STRING_DISTANCE_METHODS
+        )
+        method_token = method_ctx.children[0].text
+        method_node = ParamConstant(
+            type_="METHOD",
+            value=method_token,
+            **extract_token_info(method_ctx),
+        )
+
+        expressions = [
+            self.visitExpr(expr)
+            for expr in ctx_list
+            if not expr.is_terminal and expr.rule_index == RC.EXPR[0]
+        ]
+
+        return ParamOp(
+            op=STRING_DISTANCE,
+            children=expressions,
+            params=[method_node],
             **extract_token_info(ctx),
         )
 
@@ -749,7 +772,9 @@ class Expr:
         params_nodes = []
         children_nodes = []
 
-        childrens = [expr for expr in ctx_list if not expr.is_terminal and expr.rule_index == 2]
+        childrens = [
+            expr for expr in ctx_list if not expr.is_terminal and expr.rule_index == RC.EXPR[0]
+        ]
         params = [
             param
             for param in ctx_list
@@ -804,7 +829,9 @@ class Expr:
 
         children_nodes = []
 
-        childrens = [expr for expr in ctx_list if not expr.is_terminal and expr.rule_index == 2]
+        childrens = [
+            expr for expr in ctx_list if not expr.is_terminal and expr.rule_index == RC.EXPR[0]
+        ]
 
         op_node = c.text
         for children in childrens:
@@ -835,7 +862,7 @@ class Expr:
         operand_nodes = [
             self.visitExpr(expr)
             for expr in ctx_list
-            if not expr.is_terminal and expr.rule_index == 2
+            if not expr.is_terminal and expr.rule_index == RC.EXPR[0]
         ]
         retain_nodes = [
             Terminals().visitRetainType(retain)
@@ -890,7 +917,7 @@ class Expr:
         operand_node = [
             self.visitExpr(operand)
             for operand in ctx_list
-            if not operand.is_terminal and operand.rule_index == 2
+            if not operand.is_terminal and operand.rule_index == RC.EXPR[0]
         ]
 
         if len(operand_node) == 0:
@@ -901,18 +928,22 @@ class Expr:
 
     def visitTimeShiftAtom(self, ctx: Any) -> BinOp:
         """
-        timeShiftExpr: TIMESHIFT '(' expr ',' INTEGER_CONSTANT ')' ;
+        timeShiftAtom: TIMESHIFT '(' expr ',' (intShift=signedInteger | varShift=varID) ')' ;
         """
         ctx_list = ctx.children
         c = ctx_list[0]
 
         op = c.text
         left_node = self.visitExpr(ctx_list[2])
-        right_node = Constant(
-            type_="INTEGER_CONSTANT",
-            value=Terminals().visitSignedInteger(ctx_list[4]),
-            **extract_token_info(ctx_list[4]),
-        )
+        shift_node = ctx_list[4]
+        if not shift_node.is_terminal and shift_node.rule_index == RC.VAR_ID[0]:
+            right_node = Terminals().visitVarID(shift_node)
+        else:
+            right_node = Constant(
+                type_="INTEGER_CONSTANT",
+                value=Terminals().visitSignedInteger(shift_node),
+                **extract_token_info(shift_node),
+            )
 
         return BinOp(left=left_node, op=op, right=right_node, **extract_token_info(ctx))
 
@@ -946,15 +977,18 @@ class Expr:
 
     def visitTimeAggAtom(self, ctx: Any) -> TimeAggregation:
         """
-        TIME_AGG LPAREN periodIndTo=STRING_CONSTANT (COMMA periodIndFrom=(STRING_CONSTANT| OPTIONAL ))? (COMMA op=optionalExpr)? (COMMA (FIRST|LAST))? RPAREN     # timeAggAtom
-        """  # noqa E501
+        TIME_AGG LPAREN (periodIndToVar=varID | periodIndToConst=STRING_CONSTANT)
+            (COMMA periodIndFrom=(STRING_CONSTANT | OPTIONAL))?
+            (COMMA op=optionalExpr)?
+            (COMMA (FIRST | LAST))? RPAREN                                       # timeAggAtom
+        """
         ctx_list = ctx.children
         c = ctx_list[0]
 
         op = c.text
 
-        # Find periodIndTo: first STRING_CONSTANT terminal
         period_to = None
+        period_to_ref = None
         period_from = None
         optional_expr_node = None
         conf = None
@@ -972,7 +1006,10 @@ class Expr:
                     pass  # periodIndFrom is OPTIONAL, skip
                 elif child.symbol_type in (vtl_cpp_parser.FIRST, vtl_cpp_parser.LAST):
                     conf = child.text
-            elif not child.is_terminal and child.rule_index == RC.OPTIONAL_EXPR[0]:
+            elif child.rule_index == RC.VAR_ID[0] and not period_to_found:
+                period_to_ref = Terminals().visitVarID(child)
+                period_to_found = True
+            elif child.rule_index == RC.OPTIONAL_EXPR[0]:
                 optional_expr_node = child
 
         conf_val = None if conf is None else conf
@@ -992,6 +1029,7 @@ class Expr:
             op=op,
             operand=operand_node,
             period_to=period_to,
+            period_to_ref=period_to_ref,
             period_from=period_from,
             conf=conf_val,
             **extract_token_info(ctx),
@@ -1089,7 +1127,7 @@ class Expr:
         exprs_nodes = [
             self.visitExpr(expr)
             for expr in ctx_list
-            if not expr.is_terminal and expr.rule_index == 2
+            if not expr.is_terminal and expr.rule_index == RC.EXPR[0]
         ]
 
         return MulOp(op=ctx_list[0].text, children=exprs_nodes, **extract_token_info(ctx))
@@ -1099,7 +1137,7 @@ class Expr:
         exprs_nodes = [
             self.visitExpr(expr)
             for expr in ctx_list
-            if not expr.is_terminal and expr.rule_index == 2
+            if not expr.is_terminal and expr.rule_index == RC.EXPR[0]
         ]
 
         return MulOp(op=ctx_list[0].text, children=exprs_nodes, **extract_token_info(ctx))
@@ -1109,7 +1147,7 @@ class Expr:
         exprs_nodes = [
             self.visitExpr(expr)
             for expr in ctx_list
-            if not expr.is_terminal and expr.rule_index == 2
+            if not expr.is_terminal and expr.rule_index == RC.EXPR[0]
         ]
 
         return MulOp(op=ctx_list[0].text, children=exprs_nodes, **extract_token_info(ctx))
@@ -1430,6 +1468,7 @@ class Expr:
 
         window = None
         partition_by = None
+        partition_op = None
         order_by = None
 
         op_node = ctx_list[0].text
@@ -1437,7 +1476,7 @@ class Expr:
 
         for c in ctx_list[5:-2]:
             if not c.is_terminal and c.rule_index == RC.PARTITION_BY_CLAUSE[0]:
-                partition_by = Terminals().visitPartitionByClause(c)
+                partition_op, partition_by = Terminals().visitPartitionByClause(c)
                 continue
             elif not c.is_terminal and c.rule_index == RC.ORDER_BY_CLAUSE[0]:
                 order_by = Terminals().visitOrderByClause(c)
@@ -1462,6 +1501,7 @@ class Expr:
             op=op_node,
             operand=operand,
             partition_by=partition_by,
+            partition_op=partition_op,
             order_by=order_by,
             window=window,
             **extract_token_info(ctx),
@@ -1472,6 +1512,7 @@ class Expr:
 
         params = None
         partition_by = None
+        partition_op = None
         order_by = None
 
         op_node = ctx_list[0].text
@@ -1481,7 +1522,7 @@ class Expr:
             if c.is_terminal:
                 continue
             if c.rule_index == RC.PARTITION_BY_CLAUSE[0]:
-                partition_by = Terminals().visitPartitionByClause(c)
+                partition_op, partition_by = Terminals().visitPartitionByClause(c)
                 continue
             elif c.rule_index == RC.ORDER_BY_CLAUSE[0]:
                 order_by = Terminals().visitOrderByClause(c)
@@ -1497,6 +1538,12 @@ class Expr:
                 else:
                     params.append(Terminals().visitScalarItem(c))
                 continue
+            elif c.rule_index == RC.VAR_ID[0]:
+                # VTL 2.2 (sdmx-twg/vtl#390): varOffset alternative
+                if params is None:
+                    params = []
+                params.append(Terminals().visitVarID(c))
+                continue
 
         if len(params) == 0:
             # AST_ASTCONSTRUCTOR.16
@@ -1506,6 +1553,7 @@ class Expr:
             op=op_node,
             operand=operand,
             partition_by=partition_by,
+            partition_op=partition_op,
             order_by=order_by,
             params=params,
             **extract_token_info(ctx),
@@ -1519,12 +1567,13 @@ class Expr:
         op_node = ctx_list[0].text
         operand = self.visitExpr(ctx_list[2])
 
-        partition_by = Terminals().visitPartitionByClause(ctx_list[5])
+        partition_op, partition_by = Terminals().visitPartitionByClause(ctx_list[5])
 
         return Analytic(
             op=op_node,
             operand=operand,
             partition_by=partition_by,
+            partition_op=partition_op,
             order_by=order_by,
             **extract_token_info(ctx),
         )
@@ -1767,17 +1816,24 @@ class Expr:
     @staticmethod
     def _extract_time_agg_tokens(
         ctx_list: List[Any],
-    ) -> Tuple[Optional[str], Optional[str]]:
-        """Extract TIME_AGG parameters (period_to, conf) from parse tree children."""
+    ) -> Tuple[Optional[str], Optional[Any], Optional[str]]:
+        """Extract TIME_AGG parameters (period_to, period_to_ref, conf) from parse children.
+
+        VTL 2.2 (sdmx-twg/vtl#390): `time_agg(...)` accepts either a STRING_CONSTANT or a
+        varID as its periodIndTo argument. Returns whichever is present.
+        """
         period_to: Optional[str] = None
+        period_to_ref: Optional[Any] = None
         conf: Optional[str] = None
         for child in ctx_list:
             if child.is_terminal:
-                if child.symbol_type == vtl_cpp_parser.STRING_CONSTANT:
+                if child.symbol_type == vtl_cpp_parser.STRING_CONSTANT and period_to is None:
                     period_to = child.text[1:-1]
                 elif child.symbol_type in (vtl_cpp_parser.FIRST, vtl_cpp_parser.LAST):
                     conf = child.text
-        return period_to, conf
+            elif child.rule_index == RC.VAR_ID[0] and period_to_ref is None:
+                period_to_ref = Terminals().visitVarID(child)
+        return period_to, period_to_ref, conf
 
     def visitGroupByOrExcept(self, ctx: Any) -> Any:
         ctx_list = ctx.children
@@ -1797,14 +1853,15 @@ class Expr:
                 has_time_agg = True
 
         if has_time_agg:
-            period_to, conf = self._extract_time_agg_tokens(ctx_list)
-            if period_to is None:
+            period_to, period_to_ref, conf = self._extract_time_agg_tokens(ctx_list)
+            if period_to is None and period_to_ref is None:
                 raise NotImplementedError
             children_nodes.append(
                 TimeAggregation(
                     op="time_agg",
                     operand=None,
                     period_to=period_to,
+                    period_to_ref=period_to_ref,
                     period_from=None,
                     conf=conf,
                     **extract_token_info(ctx),
@@ -1826,20 +1883,26 @@ class Expr:
         # Check if TIME_AGG is present (more than just GROUP ALL)
         if len(ctx_list) > 2:
             period_to = None
+            period_to_ref = None
             period_from = None
             operand_node = None
             conf = None
+            period_to_found = False
 
             for child in ctx_list:
                 if child.is_terminal:
                     if child.symbol_type == vtl_cpp_parser.STRING_CONSTANT:
-                        if period_to is None:
+                        if not period_to_found:
                             period_to = child.text[1:-1]
+                            period_to_found = True
                         else:
                             period_from = child.text[1:-1]
                     elif child.symbol_type in (vtl_cpp_parser.FIRST, vtl_cpp_parser.LAST):
                         conf = child.text
-                elif not child.is_terminal and child.rule_index == RC.OPTIONAL_EXPR[0]:
+                elif child.rule_index == RC.VAR_ID[0] and not period_to_found:
+                    period_to_ref = Terminals().visitVarID(child)
+                    period_to_found = True
+                elif child.rule_index == RC.OPTIONAL_EXPR[0]:
                     operand_node = self.visitOptionalExpr(child)
                     if isinstance(operand_node, ID):
                         operand_node = None
@@ -1851,6 +1914,7 @@ class Expr:
                     op="time_agg",
                     operand=operand_node,
                     period_to=period_to,
+                    period_to_ref=period_to_ref,
                     period_from=period_from,
                     conf=conf,
                     **extract_token_info(ctx),
@@ -2035,7 +2099,7 @@ class Expr:
         ctx_list = ctx.children
         c = ctx_list[0]
 
-        if not c.is_terminal and c.rule_index == 2:
+        if not c.is_terminal and c.rule_index == RC.EXPR[0]:
             return self.visitExpr(c)
 
         elif c.is_terminal:

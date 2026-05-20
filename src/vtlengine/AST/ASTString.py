@@ -250,7 +250,7 @@ class ASTString(ASTTemplate):
             clause_str += f'when {values_str} then "{clause.result}"'
             clauses_strs.append(clause_str)
         if node.aggregate_clause is not None:
-            clauses_strs.append(f"aggr {node.aggregate_clause.function}")
+            clauses_strs.append(f"aggregate {node.aggregate_clause.function}")
         if node.default_value is not None:
             clauses_strs.append(f'else "{node.default_value}"')
 
@@ -359,10 +359,10 @@ class ASTString(ASTTemplate):
             return f"{node.op} {self.visit(node.params)}"
         elif node.op in [SUBSTR, INSTR, REPLACE, ROUND, TRUNC, UNION, SETDIFF, SYMDIFF, INTERSECT]:
             params_sep = ", " if len(node.params) > 1 else ""
-            return (
-                f"{node.op}({self.visit(node.children[0])}, "
-                f"{params_sep.join([self.visit(x) for x in node.params])})"
-            )
+            param_values = [self.visit(x) for x in node.params]
+            if not param_values:
+                return f"{node.op}({self.visit(node.children[0])})"
+            return f"{node.op}({self.visit(node.children[0])}, {params_sep.join(param_values)})"
 
         elif node.op in (CHECK_HIERARCHY, HIERARCHY):
             if len(node.children) == 2:

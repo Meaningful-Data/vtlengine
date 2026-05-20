@@ -365,12 +365,16 @@ class OrderBy(AST):
 @dataclass
 class Analytic(AST):
     """
-    Analytic: (op, operand, partition_by, order_by, params)
+    Analytic: (op, operand, partition_by, partition_op, order_by, params)
 
     op: SUM, AVG, COUNT, MEDIAN, MIN, MAX, STDDEV_POP, STDDEV_SAMP, VAR_POP, VAR_SAMP,
         FIRST_VALUE, LAST_VALUE, LAG, LEAD, RATIO_TO_REPORT
 
-    partition_by: List of components.
+    partition_by: List of components (as written in the clause).
+    partition_op: "by", "except", or "except all" — VTL 2.2 (sdmx-twg/vtl#699,
+        #391). For "except" the listed components are excluded from the operand's
+        identifiers; for "except all" the partition is empty (single global
+        window). ``None`` means no partition clause was supplied.
     order_by: List of components + mode (ASC, DESC).
     params: Windowing clause (no need to validate them) or Scalar Item in LAG/LEAD.
     """
@@ -380,6 +384,7 @@ class Analytic(AST):
     window: Optional[Windowing] = None
     params: Optional[List[int]] = None
     partition_by: Optional[List[str]] = None
+    partition_op: Optional[str] = None
     order_by: Optional[List[OrderBy]] = None
 
     def __post_init__(self):
@@ -446,7 +451,8 @@ class TimeAggregation(AST):
     """
 
     op: str
-    period_to: str
+    period_to: Optional[str] = None
+    period_to_ref: Optional[AST] = None  # VarID, mutually exclusive with period_to
     period_from: Optional[str] = None
     operand: Optional[AST] = None
     conf: Optional[str] = None

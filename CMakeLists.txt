@@ -56,8 +56,8 @@ endif()
 set(VTL_PARSER_DIR "${CMAKE_SOURCE_DIR}/src/vtlengine/AST/Grammar/_cpp_parser")
 
 set(VTL_PARSER_SOURCES
-    "${VTL_PARSER_DIR}/VtlLexer.cpp"
-    "${VTL_PARSER_DIR}/VtlParser.cpp"
+    "${VTL_PARSER_DIR}/VtlTokens.cpp"
+    "${VTL_PARSER_DIR}/Vtl.cpp"
     "${VTL_PARSER_DIR}/VtlBaseListener.cpp"
     "${VTL_PARSER_DIR}/VtlBaseVisitor.cpp"
     "${VTL_PARSER_DIR}/VtlListener.cpp"

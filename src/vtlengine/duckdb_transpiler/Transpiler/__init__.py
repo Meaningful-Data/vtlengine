@@ -39,7 +39,7 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
     StructureVisitor,
     _try_normalize_time_period,
 )
-from vtlengine.Exceptions import RunTimeError
+from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 
 # Matches a pure single-quoted SQL string literal: 'foo' (no embedded quotes).
@@ -3287,6 +3287,8 @@ FROM (
         """Visit TIME_AGG operation."""
         conf = node.conf
         target = node.period_to
+        if target is None:
+            raise SemanticError("1-3-2-4")
 
         if node.operand is not None:
             operand_type = self._get_node_type(node.operand)
