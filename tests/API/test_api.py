@@ -1792,8 +1792,8 @@ def test_validate_json_schema_on_vd_and_external_routine(
         vd_schema = json.load(f)
     with open(path_ext_routine_schema, "r") as f:
         ext_routine_schema = json.load(f)
-    _validate_json(vd_data, vd_schema)
-    _validate_json(ext_routine_data, ext_routine_schema)
+    _validate_json(vd_data, vd_schema, kind="Value Domain")
+    _validate_json(ext_routine_data, ext_routine_schema, kind="External Routine")
 
 
 @pytest.mark.parametrize("path_schema, path_vd", params_invalid_vd)
@@ -1803,7 +1803,7 @@ def test_attempt_to_validate_invalid_vd(path_schema, path_vd):
     with open(path_schema, "r") as f:
         vd_schema = json.load(f)
     with pytest.raises(InputValidationException, match="0-2-1-1"):
-        _validate_json(vd_data, vd_schema)
+        _validate_json(vd_data, vd_schema, kind="Value Domain")
 
 
 @pytest.mark.parametrize("path_schema, path_sql", params_invalid_sql)
@@ -1813,10 +1813,10 @@ def test_attempt_to_validate_invalid_sql(path_schema, path_sql):
     with open(path_schema, "r") as f:
         ext_routine_schema = json.load(f)
     try:
-        _validate_json(ext_routine_data, ext_routine_schema)
+        _validate_json(ext_routine_data, ext_routine_schema, kind="External Routine")
     except InputValidationException:
         with pytest.raises(InputValidationException, match="0-2-1-1"):
-            _validate_json(ext_routine_data, ext_routine_schema)
+            _validate_json(ext_routine_data, ext_routine_schema, kind="External Routine")
         return
     query = ext_routine_data.get("query")
     name = ext_routine_data.get("name", "test_routine")
