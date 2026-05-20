@@ -678,7 +678,7 @@ class AnalyticOperatorsTest(AnalyticHelper):
         """
         Description: ``sum(Me_1 over ())`` in a ``calc`` clause broadcasts the
                      global sum to every row.
-        Git Branch: sdmx-twg/vtl#520.
+        Git Branch: sdmx-twg/vtl#704.
         Goal: Check Result.
         """
         code = "GH_751_1"
@@ -690,9 +690,9 @@ class AnalyticOperatorsTest(AnalyticHelper):
     def test_GH_751_2(self):
         """
         Description: ``filter Me_1 = max(Me_1 over ())`` — the upstream example
-                     from sdmx-twg/vtl#520. Keeps only the row(s) whose Me_1
+                     from sdmx-twg/vtl#704. Keeps only the row(s) whose Me_1
                      equals the global maximum.
-        Git Branch: sdmx-twg/vtl#520.
+        Git Branch: sdmx-twg/vtl#704.
         Goal: Check Result.
         """
         code = "GH_751_2"
