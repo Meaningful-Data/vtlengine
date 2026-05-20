@@ -662,6 +662,18 @@ class AnalyticOperatorsTest(AnalyticHelper):
             code=code, number_inputs=number_inputs, exception_code=exception_code
         )
 
+    def test_GH_391_1(self):
+        """
+        Description: Usage of optional partion except all flag
+        Git Branch: sdmx-twg/vtl#391.
+        Goal: Check Result.
+        """
+        code = "GH_391_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class AnalyticOperatorsWithCalcTest(AnalyticHelper):
     """
@@ -1299,24 +1311,6 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
         Goal: Check that min works correctly with Date type measures in analytic calc.
         """
         code = "GH_550_2"
-        number_inputs = 1
-        references_names = ["1"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
-
-
-class VtlV22GrammarAnalytic(AnalyticHelper):
-    """VTL 2.2 grammar additions for analytic invocations (sdmx-twg/vtl#390)."""
-
-    classTest = "analytic.VtlV22GrammarAnalytic"
-
-    def test_SDMX_TWG_GH_391_1(self):
-        """
-        Description: Usage of optional partion except all flag
-        Git Branch: sdmx-twg/vtl#391.
-        Goal: Check Result.
-        """
-        code = "SDMX_TWG_GH_391_1"
         number_inputs = 1
         references_names = ["1"]
 
