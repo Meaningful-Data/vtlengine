@@ -142,7 +142,8 @@ centralised_messages = {
     },
     # JSON Schema errors
     "0-2-1-1": {
-        "message": "The provided JSON does not follow the required JSON Schema",
+        "message": "The provided JSON for {kind}{name_part} does not follow the required JSON "
+        "Schema: {error}",
         "description": "Occurs when a JSON input does not comply with the expected schema.",
     },
     "0-2-1-2": {
