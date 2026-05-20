@@ -324,10 +324,10 @@ class ASTString(ASTTemplate):
             return f"{node.op} {self.visit(node.params)}"
         elif node.op in [SUBSTR, INSTR, REPLACE, ROUND, TRUNC, UNION, SETDIFF, SYMDIFF, INTERSECT]:
             params_sep = ", " if len(node.params) > 1 else ""
-            return (
-                f"{node.op}({self.visit(node.children[0])}, "
-                f"{params_sep.join([self.visit(x) for x in node.params])})"
-            )
+            param_values = [self.visit(x) for x in node.params]
+            if not param_values:
+                return f"{node.op}({self.visit(node.children[0])})"
+            return f"{node.op}({self.visit(node.children[0])}, {params_sep.join(param_values)})"
 
         elif node.op in (CHECK_HIERARCHY, HIERARCHY):
             if len(node.children) == 2:
