@@ -615,11 +615,11 @@ def _validate_json(
     try:
         jsonschema.validate(instance=data, schema=schema)
     except jsonschema.ValidationError as e:
-        kind = kind if name else f"a {kind}"
-        name_part = f" '{name}'" if name else ""
-        raise InputValidationException(
-            code="0-2-1-1", kind=kind, name_part=name_part, error=e.message
-        )
+        if name:
+            object = f"{kind} '{name}'"
+        else:
+            object = f"an {kind}" if kind == "External Routine" else f"a {kind}"
+        raise InputValidationException(code="0-2-1-1", object=object, error=e.message)
 
 
 def _load_single_value_domain(input: Path) -> Dict[str, ValueDomain]:
