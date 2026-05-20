@@ -1969,6 +1969,8 @@ class InterpreterAnalyzer(ASTTemplate):
         # If not, a 1-3-2-4 error is raised in AST creation
         if self.aggregation_dataset is None:
             raise SemanticError("1-3-2-4")
+        if node.period_to is None:
+            raise SemanticError("1-3-2-4")
         return Time_Aggregation._execute_without_operand(
             aggregation_dataset=self.aggregation_dataset,
             period_from=node.period_from,

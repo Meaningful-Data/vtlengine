@@ -87,3 +87,67 @@ def test_valid_script_still_parses():
         datapoints=datapoints,
     )
     assert "DS_A" in result
+
+
+# ---------------------------------------------------------------------------
+# VTL 2.2 IDENTIFIER changes
+# The new grammar replaces the permissive 2.1 rule with one that:
+#   - rejects bare identifiers starting with a digit (e.g. `24A0`);
+#   - allows the same identifier when single-quoted (`'24A0'`);
+#   - allows identifiers starting with `_` (e.g. `_foo`).
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "bad_identifier",
+    ["24A0", "1abc", "9_foo"],
+)
+def test_identifier_starting_with_digit_is_rejected(bad_identifier):
+    """VTL 2.2 forbids bare identifiers that start with a digit."""
+    script = f"DS_A <- {bad_identifier} + 1;"
+    with pytest.raises(VTLSyntaxError):
+        run(script=script, data_structures=_EMPTY_DS, datapoints=_NO_DATA)
+
+
+@pytest.mark.parametrize(
+    "quoted_name",
+    ["24A0", "1abc", "9_foo"],
+)
+def test_quoted_identifier_starting_with_digit_runs(quoted_name):
+    """`'<digit-prefixed>'` is a valid IDENTIFIER and can name a dataset end-to-end."""
+    script = f"DS_A <- '{quoted_name}' * 2;"
+    data_structures = {
+        "datasets": [
+            {
+                "name": quoted_name,
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Integer", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    result = run(script=script, data_structures=data_structures, datapoints=_NO_DATA)
+    assert "DS_A" in result
+
+
+@pytest.mark.parametrize(
+    "underscore_name",
+    ["_foo", "_unknown", "_1abc"],
+)
+def test_underscore_prefixed_identifier_runs(underscore_name):
+    """A dataset named with a `_`-prefixed identifier resolves end-to-end."""
+    script = f"DS_A <- {underscore_name} * 2;"
+    data_structures = {
+        "datasets": [
+            {
+                "name": underscore_name,
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Integer", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    result = run(script=script, data_structures=data_structures, datapoints=_NO_DATA)
+    assert "DS_A" in result
