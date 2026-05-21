@@ -1487,7 +1487,7 @@ class Expr:
             else:
                 raise NotImplementedError
 
-        if window is None:
+        if window is None and (partition_by is not None or order_by is not None):
             window = Windowing(
                 type_="data",
                 start=-1,
