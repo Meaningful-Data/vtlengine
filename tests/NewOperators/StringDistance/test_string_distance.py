@@ -43,4 +43,4 @@ def test_hamming_length_mismatch():
     expression = 'DS_r := string_distance(hamming, "foo", "fooo");'
     with pytest.raises(SemanticError) as exc:
         run_scalar_expression(expression)
-    assert exc.value.args[1] == "1-1-18-12"
+    assert exc.value.args[1] == "1-1-18-11"

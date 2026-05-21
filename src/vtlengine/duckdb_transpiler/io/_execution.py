@@ -124,11 +124,11 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
     if "vtl 2-1-15-6" in msg_lower:
         return RunTimeError("2-1-15-6", op="/")
 
-    # VTL macro vtl_hamming: strings of unequal length (mirrors 1-1-18-12)
-    if "vtl 1-1-18-12" in msg_lower:
+    # VTL macro vtl_hamming: strings of unequal length (mirrors 1-1-18-11)
+    if "vtl 1-1-18-11" in msg_lower:
         m = re.search(r"hamming length mismatch (\d+) (\d+)", msg)
         len1, len2 = (m.group(1), m.group(2)) if m else ("?", "?")
-        return SemanticError("1-1-18-12", op="string_distance", len1=len1, len2=len2)
+        return SemanticError("1-1-18-11", op="string_distance", len1=len1, len2=len2)
 
     # Division by zero (explicit DuckDB error or VTL error from ratio_to_report)
     if "division by zero" in msg_lower or "divide by zero" in msg_lower:

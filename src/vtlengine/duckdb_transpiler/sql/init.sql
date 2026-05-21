@@ -447,7 +447,7 @@ CREATE OR REPLACE MACRO vtl_hamming(s1 VARCHAR, s2 VARCHAR) AS (
     CASE
         WHEN s1 IS NULL OR s2 IS NULL THEN NULL
         WHEN LENGTH(s1) <> LENGTH(s2) THEN
-            error('VTL 1-1-18-12: hamming length mismatch '
+            error('VTL 1-1-18-11: hamming length mismatch '
                   || LENGTH(s1) || ' ' || LENGTH(s2))
         ELSE hamming(s1, s2)
     END
