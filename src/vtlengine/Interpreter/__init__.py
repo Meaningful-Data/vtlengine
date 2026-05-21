@@ -42,6 +42,7 @@ from vtlengine.AST.Grammar.tokens import (
     REPLACE,
     ROUND,
     RULE_PRIORITY,
+    STRING_DISTANCE,
     SUBSTR,
     TRUNC,
     WHEN,
@@ -80,7 +81,7 @@ from vtlengine.Operators.HROperators import (
     get_measure_from_dataset,
 )
 from vtlengine.Operators.Numeric import Round, Trunc
-from vtlengine.Operators.String import Instr, Replace, Substr
+from vtlengine.Operators.String import DISTANCE_DISPATCH, Instr, Replace, Substr
 from vtlengine.Operators.Time import (
     Current_Date,
     Date_Add,
@@ -1322,6 +1323,12 @@ class InterpreterAnalyzer(ASTTemplate):
                 param_element = self.visit(node.params[0])
 
             return Trunc.analyze(op_element, param_element)
+
+        elif node.op == STRING_DISTANCE:
+            method = self.visit(node.params[0])
+            s1 = self.visit(node.children[0])
+            s2 = self.visit(node.children[1])
+            return DISTANCE_DISPATCH[method].analyze(s1, s2)
 
         elif node.op == SUBSTR or node.op == REPLACE or node.op == INSTR:
             params = [None, None, None]

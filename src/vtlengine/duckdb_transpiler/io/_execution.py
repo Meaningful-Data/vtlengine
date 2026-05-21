@@ -5,6 +5,7 @@ This module contains helper functions for executing VTL scripts with DuckDB,
 handling dataset loading/saving with DAG scheduling for memory efficiency.
 """
 
+import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -30,7 +31,7 @@ from vtlengine.duckdb_transpiler.io._time_handling import (
     format_time_period_scalar,
 )
 from vtlengine.duckdb_transpiler.sql import initialize_time_types
-from vtlengine.Exceptions import RunTimeError
+from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.files.output._time_period_representation import TimePeriodRepresentation
 from vtlengine.Model import Dataset, Scalar
 from vtlengine.Utils._number_config import get_effective_numeric_digits
@@ -122,6 +123,12 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
     # VTL macro vtl_div: denominator was 0 (mirrors Python engine error 2-1-15-6)
     if "vtl 2-1-15-6" in msg_lower:
         return RunTimeError("2-1-15-6", op="/")
+
+    # VTL macro vtl_hamming: strings of unequal length (mirrors 1-1-18-11)
+    if "vtl 1-1-18-11" in msg_lower:
+        m = re.search(r"hamming length mismatch (\d+) (\d+)", msg)
+        len1, len2 = (m.group(1), m.group(2)) if m else ("?", "?")
+        return SemanticError("1-1-18-11", op="string_distance", len1=len1, len2=len2)
 
     # Division by zero (explicit DuckDB error or VTL error from ratio_to_report)
     if "division by zero" in msg_lower or "divide by zero" in msg_lower:
