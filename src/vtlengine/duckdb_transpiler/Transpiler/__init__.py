@@ -41,7 +41,6 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
 )
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
-from vtlengine.Operators.String import DISTANCE_DISPATCH
 
 # Matches a pure single-quoted SQL string literal: 'foo' (no embedded quotes).
 _SQL_PLAIN_STRING_LITERAL = re.compile(r"^'([^'\\]*)'$")
@@ -974,13 +973,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         """Visit string_distance(method, s1, s2). Handles dataset/component/scalar mixes."""
         method_node = node.params[0]
         method = method_node.value if isinstance(method_node, AST.ParamConstant) else ""
-        if method not in DISTANCE_DISPATCH:
-            raise SemanticError(
-                "1-1-18-11",
-                op=tokens.STRING_DISTANCE,
-                method=method,
-                expected_methods=sorted(DISTANCE_DISPATCH.keys()),
-            )
         macro = f"vtl_{method}"
 
         left, right = node.children[0], node.children[1]

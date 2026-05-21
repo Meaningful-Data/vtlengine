@@ -1302,13 +1302,6 @@ class InterpreterAnalyzer(ASTTemplate):
 
         elif node.op == STRING_DISTANCE:
             method = self.visit(node.params[0])
-            if method not in DISTANCE_DISPATCH:
-                raise SemanticError(
-                    "1-1-18-11",
-                    op=STRING_DISTANCE,
-                    method=method,
-                    expected_methods=sorted(DISTANCE_DISPATCH.keys()),
-                )
             s1 = self.visit(node.children[0])
             s2 = self.visit(node.children[1])
             return DISTANCE_DISPATCH[method].analyze(s1, s2)
