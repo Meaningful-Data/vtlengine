@@ -755,10 +755,13 @@ class InterpreterAnalyzer(ASTTemplate):
         if not isinstance(operand, Dataset):
             raise SemanticError("2-3-4", op=node.op, comp="dataset")
         if node.partition_by is None:
-            order_components = (
-                [x.component for x in node.order_by] if node.order_by is not None else []
-            )
-            partitioning = [x for x in operand.get_identifiers_names() if x not in order_components]
+            if node.order_by is None:
+                partitioning = []
+            else:
+                order_components = [x.component for x in node.order_by]
+                partitioning = [
+                    x for x in operand.get_identifiers_names() if x not in order_components
+                ]
 
         if node.partition_op == "except all":
             partitioning = []
