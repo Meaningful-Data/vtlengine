@@ -787,6 +787,12 @@ centralised_messages = {
         "description": "Occurs when a Dataset is incorrectly used as a parameter in a "
         "string operation.",
     },
+    "1-1-18-11": {
+        "message": "At op {op}: Hamming distance requires both strings to have the same length, "
+        "got lengths {len1} and {len2}.",
+        "description": "Raised when the hamming method of string_distance is invoked on two "
+        "strings of unequal length.",
+    },
     # Time operators
     "1-1-19-1": {
         "message": "At op {op}: {op} must have a {data_type} type on {comp}.",

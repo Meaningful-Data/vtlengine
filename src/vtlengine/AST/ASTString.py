@@ -46,6 +46,7 @@ from vtlengine.AST.Grammar.tokens import (
     REPLACE,
     ROUND,
     SETDIFF,
+    STRING_DISTANCE,
     SUBSTR,
     SYMDIFF,
     TIMESHIFT,
@@ -354,9 +355,14 @@ class ASTString(ASTTemplate):
             return f"{node.op}({body})"
         return f"{node.op}({body})"
 
-    def visit_ParamOp(self, node: AST.ParamOp) -> str:
+    def visit_ParamOp(self, node: AST.ParamOp) -> str:  # noqa: C901
         if node.op == HAVING:
             return f"{node.op} {self.visit(node.params)}"
+        elif node.op == STRING_DISTANCE:
+            method = self.visit(node.params[0])
+            s1 = self.visit(node.children[0])
+            s2 = self.visit(node.children[1])
+            return f"{node.op}({method}, {s1}, {s2})"
         elif node.op in [SUBSTR, INSTR, REPLACE, ROUND, TRUNC, UNION, SETDIFF, SYMDIFF, INTERSECT]:
             params_sep = ", " if len(node.params) > 1 else ""
             param_values = [self.visit(x) for x in node.params]
