@@ -789,6 +789,8 @@ class AnalyticOperatorsTest(AnalyticHelper):
         number_inputs = 1
         references_names = ["1"]
 
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_704_2(self):
         """
         Description: Analytic function invoked inside a `filter` clause. Mirrors

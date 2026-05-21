@@ -6,25 +6,19 @@
                 {
                     "name": "Id_1",
                     "role": "Identifier",
-                    "type": "Time_Period",
+                    "type": "String",
                     "nullable": false
                 },
                 {
                     "name": "Id_2",
                     "role": "Identifier",
-                    "type": "String",
-                    "nullable": false
-                },
-                {
-                    "name": "Id_3",
-                    "role": "Identifier",
-                    "type": "String",
+                    "type": "Integer",
                     "nullable": false
                 },
                 {
                     "name": "Me_1",
                     "role": "Measure",
-                    "type": "Number",
+                    "type": "Integer",
                     "nullable": true
                 }
             ]
