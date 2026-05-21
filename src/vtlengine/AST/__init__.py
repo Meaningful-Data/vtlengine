@@ -387,10 +387,6 @@ class Analytic(AST):
     partition_op: Optional[str] = None
     order_by: Optional[List[OrderBy]] = None
 
-    def __post_init__(self):
-        if self.partition_by is None and self.order_by is None:
-            raise ValueError("Partition by or order by must be provided on Analytic.")
-
     __eq__ = AST.ast_equality
 
 
