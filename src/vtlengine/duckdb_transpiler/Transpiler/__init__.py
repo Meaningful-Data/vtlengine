@@ -3376,7 +3376,7 @@ FROM (
         return expr
 
     def _resolve_period_to_ref(self, ref: AST.AST) -> str:
-        name = ref.value
+        name = ref.value  # type: ignore[attr-defined]
         return str(self.input_scalars[name].value)
 
     def _resolve_scalar_varid(self, value: Any) -> Any:
