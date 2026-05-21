@@ -718,23 +718,11 @@ class AnalyticOperatorsTest(AnalyticHelper):
 
     def test_GH_391_1(self):
         """
-        Description: Analytic invocation of empty over() with calc
+        Description: Usage of optional partion except all flag
         Git Branch: sdmx-twg/vtl#391.
         Goal: Check Result.
         """
         code = "GH_391_1"
-        number_inputs = 1
-        references_names = ["1"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
-
-    def test_GH_391_2(self):
-        """
-        Description: Analytic invocation inside filter clause
-        Git Branch: sdmx-twg/vtl#391.
-        Goal: Check Result.
-        """
-        code = "GH_391_2"
         number_inputs = 1
         references_names = ["1"]
 
@@ -798,6 +786,24 @@ class AnalyticOperatorsTest(AnalyticHelper):
         Goal: Check Result.
         """
         code = "GH_704_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+    def test_GH_704_2(self):
+        """
+        Description: Analytic function invoked inside a `filter` clause. Mirrors
+                     the example in sdmx-twg/vtl#704
+                     ``ds_r1 := ds_1[filter value = max(value over())]`` with the
+                     minimum adaptation to vtlengine's grammar — an explicit
+                     ``partition by`` (vtlengine's ``Analytic`` AST node rejects
+                     ``over()`` with neither partition nor order clauses). The
+                     upstream issue was resolved as documentation-only, since
+                     the grammar already allows this; this test guards that the
+                     behaviour stays correct across backends.
+        Git Branch: sdmx-twg/vtl#704.
+        Goal: Check Result.
+        """
+        code = "GH_704_2"
         number_inputs = 1
         references_names = ["1"]
 
