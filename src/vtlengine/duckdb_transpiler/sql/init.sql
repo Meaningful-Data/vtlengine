@@ -441,13 +441,14 @@ CREATE OR REPLACE MACRO vtl_damerau_levenshtein(s1 VARCHAR, s2 VARCHAR) AS (
 );
 
 -- Hamming distance: count of differing positions. Strings must be equal length;
--- otherwise raise via error() (propagates as a DuckDB error to the engine).
+-- otherwise raise via error() with the structured VTL prefix matched by the
+-- Python error mapper (see duckdb_transpiler/io/_execution.py:_map_query_error).
 CREATE OR REPLACE MACRO vtl_hamming(s1 VARCHAR, s2 VARCHAR) AS (
     CASE
         WHEN s1 IS NULL OR s2 IS NULL THEN NULL
         WHEN LENGTH(s1) <> LENGTH(s2) THEN
-            error('string_distance: hamming requires equal length strings, got '
-                  || LENGTH(s1) || ' and ' || LENGTH(s2))
+            error('VTL 1-1-18-12: hamming length mismatch '
+                  || LENGTH(s1) || ' ' || LENGTH(s2))
         ELSE hamming(s1, s2)
     END
 );

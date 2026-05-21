@@ -41,6 +41,7 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
 )
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
+from vtlengine.Operators.String import DISTANCE_DISPATCH
 
 # Matches a pure single-quoted SQL string literal: 'foo' (no embedded quotes).
 _SQL_PLAIN_STRING_LITERAL = re.compile(r"^'([^'\\]*)'$")
@@ -951,6 +952,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if op in (tokens.ROUND, tokens.TRUNC) and not params_sql:
             params_sql = ["0"]
 
+        if op == tokens.STRING_DISTANCE:
+            return self._visit_string_distance(node)
+
         operand_type = self._get_node_type(node.children[0]) if node.children else _SCALAR
 
         if operand_type == _DATASET:
@@ -965,6 +969,90 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         children_sql = [self.visit(c) for c in node.children]
         all_args = children_sql + params_sql
         return registry.sql(op, *all_args)
+
+    def _visit_string_distance(self, node: AST.ParamOp) -> str:
+        """Visit string_distance(method, s1, s2). Handles dataset/component/scalar mixes."""
+        method_node = node.params[0]
+        method = method_node.value if isinstance(method_node, AST.ParamConstant) else ""
+        if method not in DISTANCE_DISPATCH:
+            raise SemanticError(
+                "1-1-18-11",
+                op=tokens.STRING_DISTANCE,
+                method=method,
+                expected_methods=sorted(DISTANCE_DISPATCH.keys()),
+            )
+        macro = f"vtl_{method}"
+
+        left, right = node.children[0], node.children[1]
+        left_type = self._get_node_type(left)
+        right_type = self._get_node_type(right)
+
+        if left_type == _DATASET and right_type == _DATASET:
+            return self._build_string_distance_ds_ds(left, right, macro)
+        if left_type == _DATASET or right_type == _DATASET:
+            ds_node, scalar_node = (left, right) if left_type == _DATASET else (right, left)
+            scalar_sql = self.visit(scalar_node)
+            ds_on_left = left_type == _DATASET
+
+            def _sd_expr(col_ref: str) -> str:
+                if ds_on_left:
+                    return f"{macro}({col_ref}, {scalar_sql})"
+                return f"{macro}({scalar_sql}, {col_ref})"
+
+            return self._apply_measures(ds_node, _sd_expr)
+
+        left_sql = self.visit(left)
+        right_sql = self.visit(right)
+        return f"{macro}({left_sql}, {right_sql})"
+
+    def _build_string_distance_ds_ds(
+        self, left_node: AST.AST, right_node: AST.AST, macro: str
+    ) -> str:
+        """Build JOIN-based SQL for string_distance with two dataset operands."""
+        left_ds = self._get_dataset_structure(left_node)
+        right_ds = self._get_dataset_structure(right_node)
+        output_ds = self._get_output_dataset()
+
+        left_src = self._get_dataset_sql(left_node)
+        right_src = self._get_dataset_sql(right_node)
+
+        alias_a, alias_b = "a", "b"
+        left_ids = set(left_ds.get_identifiers_names())
+        right_ids = set(right_ds.get_identifiers_names())
+        common_ids = sorted(left_ids & right_ids)
+        all_ids = sorted(left_ids | right_ids)
+
+        left_measures = left_ds.get_measures_names()
+        right_measures = right_ds.get_measures_names()
+        common_measures = [m for m in left_measures if m in right_measures]
+        if common_measures:
+            paired = [(m, m) for m in common_measures]
+        elif len(left_measures) == 1 and len(right_measures) == 1:
+            paired = [(left_measures[0], right_measures[0])]
+        else:
+            paired = []
+
+        output_measure_names = list(output_ds.get_measures_names()) if output_ds else []
+
+        cols: List[str] = []
+        for id_name in all_ids:
+            src_alias = alias_a if id_name in left_ids else alias_b
+            cols.append(f"{src_alias}.{quote_name(id_name)}")
+
+        for left_m, right_m in paired:
+            expr = f"{macro}({alias_a}.{quote_name(left_m)}, {alias_b}.{quote_name(right_m)})"
+            out_name = left_m
+            if output_measure_names and len(paired) == 1 and len(output_measure_names) == 1:
+                out_name = output_measure_names[0]
+            cols.append(f"{expr} AS {quote_name(out_name)}")
+
+        on_clause = self._join_on_clause(common_ids, alias_a, alias_b)
+        builder = SQLBuilder().select(*cols).from_table(left_src, alias_a)
+        if on_clause != "1=1":
+            builder.join(right_src, alias_b, on=on_clause, join_type="INNER")
+        else:
+            builder.cross_join(right_src, alias_b)
+        return builder.build()
 
     def _visit_params(self, params: List[Any]) -> List[Optional[str]]:
         """Visit param nodes, converting VTL '_' to None and VTL null to 'NULL'."""

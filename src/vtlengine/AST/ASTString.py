@@ -355,7 +355,7 @@ class ASTString(ASTTemplate):
             return f"{node.op}({body})"
         return f"{node.op}({body})"
 
-    def visit_ParamOp(self, node: AST.ParamOp) -> str:
+    def visit_ParamOp(self, node: AST.ParamOp) -> str:  # noqa: C901
         if node.op == HAVING:
             return f"{node.op} {self.visit(node.params)}"
         elif node.op == STRING_DISTANCE:
