@@ -1396,3 +1396,66 @@ class AggregateOperatorsTest(TestAggregateHelper):
         references_names = ["1", "2"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_390_1(self):
+        """
+        Description: `group by Id_1 time_agg(sc_period)` reads the target period
+                     from a scalar resolved at interpretation time.
+        Git Branch: sdmx-twg/vtl#390.
+        Goal: Check Result.
+        """
+        code = "GH_390_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            scalars={"sc_period": "A"},
+        )
+
+    def test_GH_390_2(self):
+        """
+        Description: `group all time_agg(sc_period, first)` accepts a varID for
+                     periodIndTo, resolved from a scalar.
+        Git Branch: sdmx-twg/vtl#390.
+        Goal: Check Result.
+        """
+        code = "GH_390_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            scalars={"sc_period": "A"},
+        )
+
+    def test_GH_680_1(self):
+        """
+        Description: `time_agg("A", first)` inside `group all` aggregates each
+                     (Id_1, year) bucket. Previously the FIRST/LAST modifier
+                     was only allowed under `group by/except`.
+        Git Branch: sdmx-twg/vtl#680.
+        Goal: Check Result.
+        """
+        code = "GH_680_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_680_2(self):
+        """
+        Description: `time_agg("A", last)` inside `group all` mirrors the FIRST
+                     case and produces the same totals.
+        Git Branch: sdmx-twg/vtl#680.
+        Goal: Check Result.
+        """
+        code = "GH_680_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
