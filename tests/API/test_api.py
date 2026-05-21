@@ -344,11 +344,11 @@ params_schema = [(filepath_json / "DS_Schema.json")]
 
 param_id_null = [((filepath_json / "DS_ID_null.json"), "Identifier Id_1 cannot be nullable")]
 
-param_wrong_role = [((filepath_json / "DS_Role_wrong.json"), "0-1-1-13")]
+param_wrong_role = [((filepath_json / "DS_Role_wrong.json"), "0-2-1-1")]
 
-param_wrong_data_type = [((filepath_json / "DS_wrong_datatype.json"), "0-1-1-13")]
+param_wrong_data_type = [((filepath_json / "DS_wrong_datatype.json"), "0-2-1-1")]
 
-param_viral_attr = [((filepath_json / "DS_Viral_attr.json"), "0-1-1-13")]
+param_viral_attr = [((filepath_json / "DS_Viral_attr.json"), "0-2-1-1")]
 
 params_check_script = [
     (
@@ -1533,13 +1533,13 @@ def test_load_data_structure_with_null_id(ds_r, error_message):
 
 @pytest.mark.parametrize("ds_r, error_code", param_wrong_role)
 def test_load_data_structure_with_wrong_role(ds_r, error_code):
-    with pytest.raises(SemanticError, match=error_code):
+    with pytest.raises(InputValidationException, match=error_code):
         load_datasets(ds_r)
 
 
 @pytest.mark.parametrize("ds_r, error_code", param_wrong_data_type)
 def test_load_data_structure_with_wrong_data_type(ds_r, error_code):
-    with pytest.raises(SemanticError, match=error_code):
+    with pytest.raises(InputValidationException, match=error_code):
         load_datasets(ds_r)
 
 
@@ -1768,7 +1768,7 @@ def test_wrong_type_in_scalar_definition(wrong_type, correct_type):
         ]
     }
 
-    with pytest.raises(SemanticError, match="0-1-1-13") as e:
+    with pytest.raises(InputValidationException, match="0-2-1-1") as e:
         run(
             script=script,
             data_structures=data_structures,

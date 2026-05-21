@@ -24,7 +24,6 @@ from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.Exceptions import (
     DataLoadError,
     InputValidationException,
-    check_key,
 )
 from vtlengine.files.parser import (
     _fill_dataset_empty_data,
@@ -43,13 +42,9 @@ from vtlengine.Model import (
     Dataset,
     ExternalRoutine,
     Role,
-    Role_keys,
     Scalar,
     ValueDomain,
 )
-
-# Cache SCALAR_TYPES keys for performance
-_SCALAR_TYPE_KEYS = SCALAR_TYPES.keys()
 
 base_path = Path(__file__).parent
 schema_path = base_path / "data" / "schema"
@@ -62,105 +57,70 @@ with open(schema_path / "external_routines_schema.json", "r") as file:
     external_routine_schema = json.load(file)
 
 
-def _extract_data_type(component: Dict[str, Any]) -> Tuple[str, Any]:
-    """
-    Extract and validate data type from component dictionary.
+def _get_scalar_type(component: Dict[str, Any]) -> type:
+    """Return the data type string from a component dict (accepts 'type' or 'data_type')."""
+    scalar_type = component.get("type") or component["data_type"]
+    return SCALAR_TYPES[scalar_type]
 
-    Supports both 'type' (preferred) and 'data_type' (backward compatibility) keys.
 
-    Args:
-        component: Component dictionary with either 'type' or 'data_type' key
+def _build_component(component: Dict[str, Any]) -> VTL_Component:
+    role = Role("Attribute" if component["role"] == "ViralAttribute" else component["role"])
+    nullable = component.get("nullable", role != Role.IDENTIFIER)
+    return VTL_Component(
+        name=component["name"],
+        data_type=_get_scalar_type(component),
+        role=role,
+        nullable=nullable,
+    )
 
-    Returns:
-        Tuple of (data_type_key, scalar_type_class)
 
-    Raises:
-        InputValidationException: If the data type key or value is invalid
-    """
-    if "type" in component:
-        key = "type"
-        value = component["type"]
-    else:
-        key = "data_type"
-        value = component["data_type"]
-
-    check_key(key, _SCALAR_TYPE_KEYS, value)
-    return key, SCALAR_TYPES[value]
+def _resolve_components(
+    dataset_json: Dict[str, Any],
+    structures: Dict[str, Any],
+) -> List[Dict[str, Any]]:
+    """Return the inline DataStructure list or resolve it via the dataset's 'structure' ref."""
+    if "DataStructure" in dataset_json:
+        return cast(List[Dict[str, Any]], dataset_json["DataStructure"])
+    structure_name = dataset_json["structure"]
+    for s in structures.get("structures", []):
+        if s["name"] == structure_name:
+            return cast(List[Dict[str, Any]], s["components"])
+    raise InputValidationException(
+        code="0-2-1-1",
+        element=f"DataStructure '{dataset_json['name']}'",
+        error=f"Referenced structure '{structure_name}' not found",
+    )
 
 
 def _load_dataset_from_structure(
     structures: Dict[str, Any],
 ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     """
-    Loads a dataset with the structure given.
+    Loads datasets and scalars from a VTL JSON structure definition.
     """
-    datasets = {}
-    scalars = {}
+    _validate_json(structures, schema, kind="DataStructures")
 
-    if "datasets" in structures:
-        for dataset_json in structures["datasets"]:
-            dataset_name = dataset_json["name"]
-            components = {}
+    datasets = {
+        dataset_json["name"]: Dataset(
+            name=dataset_json["name"],
+            components={
+                c["name"]: _build_component(c)
+                for c in _resolve_components(dataset_json, structures)
+            },
+            data=None,
+        )
+        for dataset_json in structures.get("datasets", [])
+    }
 
-            if "structure" in dataset_json:
-                structure_name = dataset_json["structure"]
-                structure_json = None
-                for s in structures["structures"]:
-                    if s["name"] == structure_name:
-                        structure_json = s
-                if structure_json is None:
-                    raise InputValidationException(code="0-2-1-2", message="Structure not found.")
-                try:
-                    jsonschema.validate(instance=structure_json, schema=schema)
-                except jsonschema.exceptions.ValidationError as e:
-                    raise InputValidationException(code="0-2-1-2", message=e.message)
+    scalars = {
+        scalar_json["name"]: Scalar(
+            name=scalar_json["name"],
+            data_type=_get_scalar_type(scalar_json),
+            value=None,
+        )
+        for scalar_json in structures.get("scalars", [])
+    }
 
-                for component in structure_json["components"]:
-                    # Support both 'type' and 'data_type' for backward compatibility
-                    _, scalar_type = _extract_data_type(component)
-                    if component["role"] == "ViralAttribute":
-                        component["role"] = "Attribute"
-
-                    check_key("role", Role_keys, component["role"])
-
-                    if "nullable" not in component:
-                        if Role(component["role"]) == Role.IDENTIFIER:
-                            component["nullable"] = False
-                        elif Role(component["role"]) in (Role.MEASURE, Role.ATTRIBUTE):
-                            component["nullable"] = True
-                        else:
-                            component["nullable"] = False
-
-                    components[component["name"]] = VTL_Component(
-                        name=component["name"],
-                        data_type=scalar_type,
-                        role=Role(component["role"]),
-                        nullable=component["nullable"],
-                    )
-
-            if "DataStructure" in dataset_json:
-                for component in dataset_json["DataStructure"]:
-                    # Support both 'type' and 'data_type' for backward compatibility
-                    _, scalar_type = _extract_data_type(component)
-                    check_key("role", Role_keys, component["role"])
-                    components[component["name"]] = VTL_Component(
-                        name=component["name"],
-                        data_type=scalar_type,
-                        role=Role(component["role"]),
-                        nullable=component["nullable"],
-                    )
-
-            datasets[dataset_name] = Dataset(name=dataset_name, components=components, data=None)
-    if "scalars" in structures:
-        for scalar_json in structures["scalars"]:
-            scalar_name = scalar_json["name"]
-            check_key("type", SCALAR_TYPES.keys(), scalar_json["type"])
-            scalar = Scalar(
-                name=scalar_name,
-                data_type=SCALAR_TYPES[scalar_json["type"]],
-                value=None,
-            )
-            scalars[scalar_name] = scalar
     return datasets, scalars
 
 
@@ -598,6 +558,32 @@ def load_vtl(input: Union[str, Path]) -> str:
         return f.read()
 
 
+_SECTION_KINDS = {
+    "datasets": "Dataset",
+    "scalars": "Scalar",
+    "structures": "Structure",
+    "variables": "Variable",
+    "domains": "Domain",
+}
+
+
+def _identify_failing_element(
+    data: Dict[str, Any],
+    path: List[Any],
+    default_kind: str,
+) -> Tuple[str, Optional[str]]:
+    """Return (kind, name) for the failing element pointed to by a ValidationError path."""
+    if len(path) < 2 or path[0] not in _SECTION_KINDS or not isinstance(path[1], int):
+        return default_kind, None
+    kind = _SECTION_KINDS[path[0]]
+    try:
+        element = data[path[0]][path[1]]
+    except (KeyError, IndexError, TypeError):
+        return kind, None
+    name = element.get("name") if isinstance(element, dict) else None
+    return kind, name
+
+
 def _validate_json(
     data: Dict[str, Any],
     schema: Dict[str, Any],
@@ -607,6 +593,8 @@ def _validate_json(
     try:
         jsonschema.validate(instance=data, schema=schema)
     except jsonschema.ValidationError as e:
+        if name is None:
+            kind, name = _identify_failing_element(data, list(e.absolute_path), default_kind=kind)
         element = f"{kind} '{name}'" if name else f"the provided {kind}"
         raise InputValidationException(code="0-2-1-1", element=element, error=e.message)
 

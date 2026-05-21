@@ -6,21 +6,56 @@
             "type": "string",
             "pattern": "^[a-zA-Z][a-zA-Z0-9_]*$|^'.*'$"
         },
+        "component-name": {
+            "type": "string",
+            "pattern": "^[a-zA-Z][a-zA-Z0-9_]*(#[a-zA-Z][a-zA-Z0-9_]*)?$|^'.*'$"
+        },
+        "data-type": {
+            "type": "string",
+            "enum": [
+                "String",
+                "Number",
+                "Integer",
+                "Boolean",
+                "Time",
+                "Time_Period",
+                "Date",
+                "Duration"
+            ]
+        },
+        "role": {
+            "type": "string",
+            "enum": [
+                "Identifier",
+                "Measure",
+                "Attribute",
+                "ViralAttribute"
+            ]
+        },
+        "component": {
+            "type": "object",
+            "properties": {
+                "name": {"$ref": "#/$defs/component-name"},
+                "role": {"$ref": "#/$defs/role"},
+                "nullable": {"type": "boolean"},
+                "type": {"$ref": "#/$defs/data-type"},
+                "data_type": {"$ref": "#/$defs/data-type"},
+                "subset": {"$ref": "#/$defs/vtl-id"},
+                "description": {"type": "string"}
+            },
+            "required": ["name", "role"],
+            "oneOf": [
+                {"required": ["type"]},
+                {"required": ["data_type"]}
+            ]
+        },
         "set-type": {
             "type": "array",
             "uniqueItems": true,
             "oneOf": [
-                { "items": { "oneOf": [ { "type": "string" }, { "type": "null" } ] } },
-                { "items": { "oneOf": [ { "type": "number" }, { "type": "null" } ] } }
+                {"items": {"oneOf": [{"type": "string"}, {"type": "null"}]}},
+                {"items": {"oneOf": [{"type": "number"}, {"type": "null"}]}}
             ]
-        },
-        "identifiable": {
-            "type": "object",
-            "properties": {
-                "name": { "$ref": "#/$defs/vtl-id" },
-                "description": { "type": "string" }
-            },
-            "required": [ "name" ]
         }
     },
     "type": "object",
@@ -28,83 +63,98 @@
         "datasets": {
             "type": "array",
             "items": {
-                "allOf": [ { "$ref": "#/$defs/identifiable" } ],
+                "type": "object",
                 "properties": {
-                    "source": { "type": "string" },
-                    "structure": { "$ref": "#/$defs/vtl-id" }
+                    "name": {"$ref": "#/$defs/vtl-id"},
+                    "description": {"type": "string"},
+                    "source": {"type": "string"},
+                    "structure": {"$ref": "#/$defs/vtl-id"},
+                    "DataStructure": {
+                        "type": "array",
+                        "items": {"$ref": "#/$defs/component"}
+                    }
                 },
-                "required": [ "structure" ]
+                "required": ["name"],
+                "oneOf": [
+                    {"required": ["DataStructure"]},
+                    {"required": ["structure"]}
+                ]
             }
         },
         "structures": {
             "type": "array",
             "items": {
-                "allOf": [ { "$ref": "#/$defs/identifiable" } ],
+                "type": "object",
                 "properties": {
+                    "name": {"$ref": "#/$defs/vtl-id"},
+                    "description": {"type": "string"},
                     "components": {
                         "type": "array",
-                        "items": {
-                            "allOf": [ { "$ref": "#/$defs/identifiable" } ],
-                            "properties": {
-                                "role": {
-                                    "type": "string",
-                                    "enum": [ "Identifier", "Measure", "Attribute", "Viral Attribute" ]
-                                },
-                                "subset": { "$ref": "#/$defs/vtl-id" },
-                                "nullable": { "type": "boolean" },
-                                "data_type": {
-                                    "type": "string",
-                                    "enum": [ "String", "Number", "Integer", "Boolean", "Time", "TimePeriod", "Date", "Duration" ]
-                                }
-                            },
-                            "required": [ "role" ]
-                        }
+                        "items": {"$ref": "#/$defs/component"}
                     }
                 },
-                "required": [ "components" ]
+                "required": ["name", "components"]
+            }
+        },
+        "scalars": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {"$ref": "#/$defs/vtl-id"},
+                    "description": {"type": "string"},
+                    "type": {"$ref": "#/$defs/data-type"},
+                    "data_type": {"$ref": "#/$defs/data-type"}
+                },
+                "required": ["name"],
+                "oneOf": [
+                    {"required": ["type"]},
+                    {"required": ["data_type"]}
+                ]
             }
         },
         "variables": {
             "type": "array",
             "items": {
-                "allOf": [ { "$ref": "#/$defs/identifiable" } ],
+                "type": "object",
                 "properties": {
-                    "domain": { "$ref": "#/$defs/vtl-id" }
+                    "name": {"$ref": "#/$defs/vtl-id"},
+                    "description": {"type": "string"},
+                    "domain": {"$ref": "#/$defs/vtl-id"}
                 },
-                "required": [ "domain" ]
+                "required": ["name", "domain"]
             }
         },
         "domains": {
             "type": "array",
             "items": {
-                "allOf": [ { "$ref": "#/$defs/identifiable" } ],
+                "type": "object",
+                "properties": {
+                    "name": {"$ref": "#/$defs/vtl-id"},
+                    "description": {"type": "string"}
+                },
+                "required": ["name"],
                 "unevaluatedProperties": false,
                 "oneOf": [
                     {
-                        "properties": {
-                            "externalRef": { "type": "string" }
-                        },
-                        "required": [ "externalRef" ]
-                    }, {
-                        "properties": {
-                            "parent": { "$ref": "#/$defs/vtl-id" }
-                        },
-                        "required": [ "parent" ],
-                        "oneOf": [{
-                                "properties": {
-                                    "restriction": { "$ref": "#/$defs/set-type" }
-                                },
-                                "required": [ "restriction" ]
-                            }, {
-                                "properties": {
-                                    "enumerated": { "$ref": "#/$defs/set-type" }
-                                },
-                                "required": [ "enumerated" ]
-                            }, {
-                                "properties": {
-                                    "described": { "type": "string" }
-                                },
-                                "required": [ "described" ]
+                        "properties": {"externalRef": {"type": "string"}},
+                        "required": ["externalRef"]
+                    },
+                    {
+                        "properties": {"parent": {"$ref": "#/$defs/vtl-id"}},
+                        "required": ["parent"],
+                        "oneOf": [
+                            {
+                                "properties": {"restriction": {"$ref": "#/$defs/set-type"}},
+                                "required": ["restriction"]
+                            },
+                            {
+                                "properties": {"enumerated": {"$ref": "#/$defs/set-type"}},
+                                "required": ["enumerated"]
+                            },
+                            {
+                                "properties": {"described": {"type": "string"}},
+                                "required": ["described"]
                             }
                         ]
                     }
@@ -113,4 +163,3 @@
         }
     }
 }
-
