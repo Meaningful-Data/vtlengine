@@ -112,37 +112,13 @@ def _resolve_components(
     )
 
 
-_DATASTRUCTURE_SECTION_KINDS = {
-    "datasets": "Dataset",
-    "scalars": "Scalar",
-    "structures": "Structure",
-}
-
-
-def _validate_datastructures(structures: Dict[str, Any]) -> None:
-    """Validate against the DataStructure schema, pointing to the failing dataset/scalar."""
-    try:
-        jsonschema.validate(instance=structures, schema=schema)
-    except jsonschema.ValidationError as e:
-        path = list(e.absolute_path)
-        kind: str = "DataStructures"
-        name: Optional[str] = None
-        if len(path) >= 2 and path[0] in _DATASTRUCTURE_SECTION_KINDS and isinstance(path[1], int):
-            kind = _DATASTRUCTURE_SECTION_KINDS[path[0]]
-            element = structures[path[0]][path[1]]
-            if isinstance(element, dict):
-                name = element.get("name")
-        identifier = f"{kind} '{name}'" if name else f"the provided {kind}"
-        raise InputValidationException(code="0-2-1-1", element=identifier, error=e.message)
-
-
 def _load_dataset_from_structure(
     structures: Dict[str, Any],
 ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     """
     Loads datasets and scalars from a VTL JSON structure definition.
     """
-    _validate_datastructures(structures)
+    _validate_json(structures, schema, kind="DataStructures")
 
     datasets = {
         dataset_json["name"]: Dataset(
@@ -602,6 +578,13 @@ def load_vtl(input: Union[str, Path]) -> str:
         return f.read()
 
 
+_SECTION_KINDS = {
+    "datasets": "Dataset",
+    "scalars": "Scalar",
+    "structures": "Structure",
+}
+
+
 def _validate_json(
     data: Dict[str, Any],
     schema: Dict[str, Any],
@@ -611,8 +594,19 @@ def _validate_json(
     try:
         jsonschema.validate(instance=data, schema=schema)
     except jsonschema.ValidationError as e:
-        element = f"{kind} '{name}'" if name else f"the provided {kind}"
-        raise InputValidationException(code="0-2-1-1", element=element, error=e.message)
+        if name is None:
+            path = list(e.absolute_path)
+            if (
+                len(path) >= 2
+                and path[0] in _SECTION_KINDS
+                and isinstance(path[1], int)
+            ):
+                kind = _SECTION_KINDS[path[0]]
+                element = data[path[0]][path[1]]
+                if isinstance(element, dict):
+                    name = element.get("name")
+        identifier = f"{kind} '{name}'" if name else f"the provided {kind}"
+        raise InputValidationException(code="0-2-1-1", element=identifier, error=e.message)
 
 
 def _load_single_value_domain(input: Path) -> Dict[str, ValueDomain]:
