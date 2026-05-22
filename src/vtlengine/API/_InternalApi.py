@@ -596,11 +596,7 @@ def _validate_json(
     except jsonschema.ValidationError as e:
         if name is None:
             path = list(e.absolute_path)
-            if (
-                len(path) >= 2
-                and path[0] in _SECTION_KINDS
-                and isinstance(path[1], int)
-            ):
+            if len(path) >= 2 and path[0] in _SECTION_KINDS and isinstance(path[1], int):
                 kind = _SECTION_KINDS[path[0]]
                 element = data[path[0]][path[1]]
                 if isinstance(element, dict):

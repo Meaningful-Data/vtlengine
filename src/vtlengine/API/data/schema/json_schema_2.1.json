@@ -59,6 +59,7 @@
         }
     },
     "type": "object",
+    "additionalProperties": false,
     "properties": {
         "datasets": {
             "type": "array",
