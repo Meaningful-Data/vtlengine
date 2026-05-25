@@ -662,6 +662,60 @@ class AnalyticOperatorsTest(AnalyticHelper):
             code=code, number_inputs=number_inputs, exception_code=exception_code
         )
 
+    def test_GH_750_5(self):
+        """
+        Description: `lag(Me_1, sc_offset over (...))` reads the offset from a
+                     scalar resolved at interpretation time.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/750
+        Goal: Check Result.
+        """
+        code = "GH_750_5"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            scalars={"sc_offset": 1},
+        )
+
+    def test_GH_750_6(self):
+        """
+        Description: `lead(Me_1, sc_offset over (...))` mirrors lag for the
+                     trailing direction with the offset read from a scalar.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/750
+        Goal: Check Result.
+        """
+        code = "GH_750_6"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            scalars={"sc_offset": 1},
+        )
+
+    def test_GH_750_7(self):
+        """
+        Description: `data points between sc_n preceding and current data point`
+                     reads sc_n from a scalar.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/750
+        Goal: Check Result.
+        """
+        code = "GH_750_7"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            scalars={"sc_n": 1},
+        )
+
     def test_GH_391_1(self):
         """
         Description: Usage of optional partion except all flag
@@ -669,6 +723,90 @@ class AnalyticOperatorsTest(AnalyticHelper):
         Goal: Check Result.
         """
         code = "GH_391_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_750_8(self):
+        """
+        Description: Baseline `partition by Id_1` — running sum partitioned per
+                     Id_1, ordered by Id_2. Companion test to GH_750_9/_10 so
+                     the three variants can be visually compared with the same
+                     data.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/750
+        Goal: Check Result.
+        """
+        code = "GH_750_8"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_750_9(self):
+        """
+        Description: `partition except Id_1` partitions by every identifier *not*
+                     listed (here Id_2). Previously the AST silently dropped the
+                     EXCEPT operator and behaved like `partition by Id_1`, which
+                     is the opposite semantics.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/750
+        Goal: Check Result.
+        """
+        code = "GH_750_9"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_750_10(self):
+        """
+        Description: `partition except all` collapses every identifier into a
+                     single global window. Same dataset as GH_750_8/_9 so the
+                     three forms can be directly compared.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/750
+        Goal: Check Result.
+        """
+        code = "GH_750_10"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_750_11(self):
+        """
+        Description: Analytic function invoked inside a `filter` clause. Mirrors
+                     the upstream example
+                     ``ds_r1 := ds_1[filter value = max(value over())]`` with the
+                     minimum adaptation to vtlengine's grammar — an explicit
+                     ``partition by`` (vtlengine's ``Analytic`` AST node rejects
+                     ``over()`` with neither partition nor order clauses). The
+                     upstream issue was resolved as documentation-only, since
+                     the grammar already allows this; this test guards that the
+                     behaviour stays correct across backends.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/750
+        Goal: Check Result.
+        """
+        code = "GH_750_11"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_750_12(self):
+        """
+        Description: Analytic function invoked inside a `filter` clause. Mirrors
+                     the upstream example
+                     ``ds_r1 := ds_1[filter value = max(value over())]`` with the
+                     minimum adaptation to vtlengine's grammar — an explicit
+                     ``partition by`` (vtlengine's ``Analytic`` AST node rejects
+                     ``over()`` with neither partition nor order clauses). The
+                     upstream issue was resolved as documentation-only, since
+                     the grammar already allows this; this test guards that the
+                     behaviour stays correct across backends.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/750
+        Goal: Check Result.
+        """
+        code = "GH_750_12"
         number_inputs = 1
         references_names = ["1"]
 
