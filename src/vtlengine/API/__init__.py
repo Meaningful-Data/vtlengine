@@ -1,6 +1,7 @@
 import copy
+import warnings
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Union, cast
+from typing import Any, Dict, List, Literal, Optional, Sequence, Union, cast
 
 import pandas as pd
 from pysdmx.io.pd import PandasDataset
@@ -274,13 +275,15 @@ def _run_with_duckdb(
     output_folder: Optional[Union[str, Path]] = None,
     time_period_output_format: str = "vtl",
     sdmx_mappings: Optional[Union[VtlDataflowMapping, Dict[str, str]]] = None,
+    output_format: Literal["csv", "parquet"] = "csv",
 ) -> Dict[str, Union[Dataset, Scalar]]:
     """
     Run VTL script using DuckDB as the execution engine.
 
     This function transpiles VTL to SQL and executes it using DuckDB.
     Always uses DAG analysis for efficient dataset loading/saving scheduling.
-    When output_folder is provided, saves results as CSV files.
+    When output_folder is provided, saves results to disk using ``output_format``
+    (``"csv"`` by default, or ``"parquet"``).
     """
     # Convert sdmx_mappings to dict format for internal use
     mapping_dict = _convert_sdmx_mappings(sdmx_mappings)
@@ -375,6 +378,7 @@ def _run_with_duckdb(
             output_folder=output_folder_path,
             return_only_persistent=return_only_persistent,
             time_period_output_format=time_period_output_format,
+            output_format=output_format,
         )
 
     # Applying output format (Date ISO 8601 T separator, TimePeriod representation)
@@ -410,6 +414,7 @@ def run(
     scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
     sdmx_mappings: Optional[Union[VtlDataflowMapping, Dict[str, str]]] = None,
     use_duckdb: bool = False,
+    output_format: Literal["csv", "parquet"] = "csv",
 ) -> Dict[str, Union[Dataset, Scalar]]:
     """
     Run is the main function of the ``API``, which mission is to execute
@@ -508,6 +513,9 @@ def run(
         efficient for large datasets. S3 URIs for datapoints and output_folder \
         are only supported with this option enabled. (default: False)
 
+        output_format: Output file format used when ``output_folder`` is set.
+            Either ``"csv"`` (default) or ``"parquet"``.
+
     Returns:
        The datasets are produced without data if the output folder is defined.
 
@@ -516,6 +524,14 @@ def run(
         or their Paths are invalid.
 
     """
+    if output_format == "parquet" and not use_duckdb:
+        warnings.warn(
+            "output_format='parquet' has no effect when use_duckdb=False; "
+            "the pandas backend always writes CSV.",
+            UserWarning,
+            stacklevel=2,
+        )
+
     # Use DuckDB execution engine if requested (check early to avoid unnecessary processing)
     if use_duckdb:
         return _run_with_duckdb(
@@ -529,6 +545,7 @@ def run(
             output_folder=output_folder,
             time_period_output_format=time_period_output_format,
             sdmx_mappings=sdmx_mappings,
+            output_format=output_format,
         )
 
     # Convert sdmx_mappings to dict format for internal use
@@ -604,6 +621,7 @@ def run_sdmx(
     return_only_persistent: bool = True,
     output_folder: Optional[Union[str, Path]] = None,
     use_duckdb: bool = False,
+    output_format: Literal["csv", "parquet"] = "csv",
 ) -> Dict[str, Union[Dataset, Scalar]]:
     """
     Executes a VTL script using a list of pysdmx `PandasDataset` objects.
@@ -665,6 +683,9 @@ def run_sdmx(
         This transpiles VTL to SQL and executes it using DuckDB, which can be more \
         efficient for large datasets. (default: False)
 
+        output_format: Output file format used when ``output_folder`` is set.
+            Either ``"csv"`` (default) or ``"parquet"``.
+
     Returns:
        The datasets are produced without data if the output folder is defined.
 
@@ -724,6 +745,7 @@ def run_sdmx(
         output_folder=output_folder,
         sdmx_mappings=mappings,
         use_duckdb=use_duckdb,
+        output_format=output_format,
     )
 
 

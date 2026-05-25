@@ -1,5 +1,5 @@
 """
-Internal IO functions for DuckDB-based CSV loading and saving.
+Internal IO functions for DuckDB-based CSV and Parquet loading and saving.
 
 This module contains the core load/save implementations to avoid circular imports.
 """
@@ -7,7 +7,7 @@ This module contains the core load/save implementations to avoid circular import
 import csv
 import os
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Literal, Optional, Tuple, Union
 
 import duckdb
 import pandas as pd
@@ -382,36 +382,38 @@ def save_datapoints_duckdb(
     output_path: Union[Path, str],
     delete_after_save: bool = True,
     select_sql: Optional[str] = None,
+    output_format: Literal["csv", "parquet"] = "csv",
 ) -> None:
-    """
-    Save dataset to CSV using DuckDB's COPY TO.
+    """Save dataset to disk using DuckDB's COPY TO.
 
     Args:
-        conn: DuckDB connection
-        dataset_name: Name of the table to save
-        output_path: Directory path where CSV will be saved
-        delete_after_save: If True, drop table after saving to free memory
-        select_sql: Optional SELECT query whose rows are saved. When provided
-            the CSV is produced from ``COPY ({select_sql}) TO ...`` so that
-            column projection and in-SQL formatting (date/timestamp/ISO 8601)
-            applied by the caller are reflected on disk. When omitted the
-            raw table is dumped with ``COPY "{dataset_name}" TO ...``.
-
-    The CSV is saved with:
-    - Header row present
-    - No index column
-    - Comma delimiter
+        conn: DuckDB connection.
+        dataset_name: Name of the table to save.
+        output_path: Directory path where the file will be saved.
+        delete_after_save: If True, drop the table after saving.
+        select_sql: Optional SELECT query whose rows are saved. When provided,
+            COPY runs against ``(select_sql)``; otherwise the raw table is dumped.
+        output_format: ``"csv"`` (default) or ``"parquet"``. Determines the
+            file extension and the COPY options used.
     """
+    if output_format not in ("csv", "parquet"):
+        raise InputValidationException(
+            code="0-1-1-16",
+            value=output_format,
+            valid_options="csv, parquet",
+        )
+
     output_path = Path(output_path) if isinstance(output_path, str) else output_path
-    output_file = output_path / f"{dataset_name}.csv"
+    output_file = output_path / f"{dataset_name}.{output_format}"
 
     source = f"({select_sql})" if select_sql else f'"{dataset_name}"'
-    copy_sql = f"""
-        COPY {source}
-        TO '{output_file}'
-        WITH (HEADER true, DELIMITER ',')
-    """
-    conn.execute(copy_sql)
+
+    if output_format == "parquet":
+        copy_options = "(FORMAT PARQUET)"
+    else:
+        copy_options = "WITH (HEADER true, DELIMITER ',')"
+
+    conn.execute(f"COPY {source} TO '{output_file}' {copy_options}")
 
     if delete_after_save:
         conn.execute(f'DROP TABLE IF EXISTS "{dataset_name}"')

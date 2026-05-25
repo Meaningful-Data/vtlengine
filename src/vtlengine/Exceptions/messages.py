@@ -81,6 +81,11 @@ centralised_messages = {
         "description": "Raised when the provided time period output format "
         "is not one of the supported representations.",
     },
+    "0-1-1-16": {
+        "message": "Invalid output_format value: '{value}'. Allowed formats: {valid_options}.",
+        "description": "Raised when the provided output_format is not one "
+        "of the supported file formats.",
+    },
     "0-1-2-3": {
         "message": "{element_type} '{element}' is/are duplicated.",
         "description": "Occurs when an element (e.g., Identifier or component) "
