@@ -177,6 +177,15 @@ def _detect_csv_format(
     return ", ".join(fmt_parts)
 
 
+def _read_parquet_columns(
+    conn: duckdb.DuckDBPyConnection,
+    file_path: Path,
+) -> List[str]:
+    """Read the column list of a parquet file via a zero-row scan."""
+    rel = conn.sql(f"SELECT * FROM read_parquet('{file_path}') LIMIT 0")
+    return list(rel.columns)
+
+
 def load_datapoints_duckdb(
     conn: duckdb.DuckDBPyConnection,
     components: Dict[str, Component],
@@ -214,6 +223,9 @@ def load_datapoints_duckdb(
         return _create_empty_table(conn, components, dataset_name)
 
     validate_input_path(file_path)
+
+    if file_path.suffix.lower() == ".parquet":
+        return _load_parquet(conn, components, dataset_name, file_path)
 
     # Get identifier columns (needed for duplicate validation)
     id_columns = [n for n, c in components.items() if c.role == Role.IDENTIFIER]
@@ -293,6 +305,9 @@ def load_datapoints_duckdb(
     except duckdb.Error as e:
         conn.execute(f'DROP TABLE IF EXISTS "{dataset_name}"')
         raise map_duckdb_error(e, dataset_name, components)
+    except Exception:
+        conn.execute(f'DROP TABLE IF EXISTS "{dataset_name}"')
+        raise
 
     # Post-load: normalize TimePeriod + validate constraints
     _validate_loaded_table(conn, dataset_name, components)
@@ -308,6 +323,57 @@ def _create_empty_table(
     """Create empty table with proper schema."""
     conn.execute(build_create_table_sql(table_name, components))
     return conn.table(table_name)
+
+
+def _load_parquet(
+    conn: duckdb.DuckDBPyConnection,
+    components: Dict[str, Component],
+    dataset_name: str,
+    file_path: Path,
+) -> duckdb.DuckDBPyRelation:
+    """Load a Parquet file into a DuckDB table via read_parquet."""
+    id_columns = [n for n, c in components.items() if c.role == Role.IDENTIFIER]
+
+    conn.execute(build_create_table_sql(dataset_name, components))
+
+    try:
+        parquet_cols = _read_parquet_columns(conn, file_path)
+
+        if len(set(parquet_cols)) != len(parquet_cols):
+            duplicates = list({item for item in parquet_cols if parquet_cols.count(item) > 1})
+            raise InputValidationException(
+                code="0-1-2-3",
+                element_type="Columns",
+                element=f"{', '.join(duplicates)}",
+            )
+
+        keep_columns = handle_sdmx_columns(parquet_cols, components)
+        check_missing_identifiers(id_columns, keep_columns, file_path)
+
+        select_exprs = _build_dataframe_select_columns(components, df_columns=parquet_cols)
+
+        action_filter = ""
+        if "ACTION" in parquet_cols and "ACTION" not in components:
+            action_filter = 'WHERE "ACTION" != \'D\' OR "ACTION" IS NULL'
+
+        col_list = ", ".join(f'"{c}"' for c in components)
+        insert_sql = (
+            f'INSERT INTO "{dataset_name}" ({col_list}) '
+            f"SELECT {', '.join(select_exprs)} "
+            f"FROM read_parquet('{file_path}') "
+            f"{action_filter}"
+        )
+        conn.execute(insert_sql)
+
+    except duckdb.Error as e:
+        conn.execute(f'DROP TABLE IF EXISTS "{dataset_name}"')
+        raise map_duckdb_error(e, dataset_name, components)
+    except Exception:
+        conn.execute(f'DROP TABLE IF EXISTS "{dataset_name}"')
+        raise
+
+    _validate_loaded_table(conn, dataset_name, components)
+    return conn.table(dataset_name)
 
 
 def save_datapoints_duckdb(
@@ -418,7 +484,7 @@ def extract_datapoint_paths(
             elif isinstance(value, (str, Path)):
                 path = Path(value) if isinstance(value, str) else value
                 # Check if this is an SDMX file — load via pysdmx into DataFrame
-                if is_sdmx_datapoint_file(path):
+                if path.suffix.lower() != ".parquet" and is_sdmx_datapoint_file(path):
                     try:
                         components = input_datasets[name].components
                         sdmx_df = load_sdmx_datapoints(components, name, path)
@@ -438,7 +504,7 @@ def extract_datapoint_paths(
         for item in datapoints:
             path = Path(item) if isinstance(item, str) else item
             # Check if this is an SDMX file — load via pysdmx into DataFrame
-            if is_sdmx_datapoint_file(path):
+            if path.suffix.lower() != ".parquet" and is_sdmx_datapoint_file(path):
                 try:
                     sdmx_name = extract_sdmx_dataset_name(path)
                     if sdmx_name in input_datasets:
@@ -457,7 +523,7 @@ def extract_datapoint_paths(
     # Handle single path
     path = Path(datapoints) if isinstance(datapoints, str) else datapoints
     # Check if this is an SDMX file — load via pysdmx into DataFrame
-    if is_sdmx_datapoint_file(path):
+    if path.suffix.lower() != ".parquet" and is_sdmx_datapoint_file(path):
         try:
             sdmx_name = extract_sdmx_dataset_name(path)
             if sdmx_name in input_datasets:
