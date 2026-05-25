@@ -316,7 +316,7 @@ def load_scheduled_datasets(
                 conn=conn,
                 components=input_datasets[ds_name].components,
                 dataset_name=ds_name,
-                csv_path=path_dict[ds_name],
+                file_path=path_dict[ds_name],
             )
         elif ds_name in dataframe_dict:
             # Register DataFrame directly with proper schema
@@ -327,7 +327,7 @@ def load_scheduled_datasets(
                 conn=conn,
                 components=input_datasets[ds_name].components,
                 dataset_name=ds_name,
-                csv_path=None,
+                file_path=None,
             )
 
 

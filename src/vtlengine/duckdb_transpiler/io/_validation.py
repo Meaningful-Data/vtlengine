@@ -269,10 +269,10 @@ def validate_no_duplicates(
 # =============================================================================
 
 
-def validate_csv_path(csv_path: Path) -> None:
-    """Validate CSV file exists."""
-    if not csv_path.exists() or not csv_path.is_file():
-        raise DataLoadError(code="0-3-1-1", file=csv_path)
+def validate_input_path(file_path: Path) -> None:
+    """Validate that the input file exists."""
+    if not file_path.exists() or not file_path.is_file():
+        raise DataLoadError(code="0-3-1-1", file=file_path)
 
 
 def build_csv_column_types(

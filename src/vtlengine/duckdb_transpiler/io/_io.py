@@ -21,7 +21,7 @@ from vtlengine.duckdb_transpiler.io._validation import (
     get_column_sql_type,
     handle_sdmx_columns,
     map_duckdb_error,
-    validate_csv_path,
+    validate_input_path,
     validate_no_duplicates,
     validate_temporal_columns,
 )
@@ -181,7 +181,7 @@ def load_datapoints_duckdb(
     conn: duckdb.DuckDBPyConnection,
     components: Dict[str, Component],
     dataset_name: str,
-    csv_path: Optional[Union[Path, str]] = None,
+    file_path: Optional[Union[Path, str]] = None,
 ) -> duckdb.DuckDBPyRelation:
     """
     Load CSV data into DuckDB table with optimized validation.
@@ -197,7 +197,7 @@ def load_datapoints_duckdb(
         conn: DuckDB connection
         components: Dataset component definitions
         dataset_name: Name for the table
-        csv_path: Path to CSV file (None for empty table)
+        file_path: Path to input file (None for empty table)
 
     Returns:
         DuckDB relation pointing to the created table
@@ -206,14 +206,14 @@ def load_datapoints_duckdb(
         DataLoadError: If validation fails
     """
     # Handle empty dataset
-    if csv_path is None:
+    if file_path is None:
         return _create_empty_table(conn, components, dataset_name)
 
-    csv_path = Path(csv_path) if isinstance(csv_path, str) else csv_path
-    if not csv_path.exists():
+    file_path = Path(file_path) if isinstance(file_path, str) else file_path
+    if not file_path.exists():
         return _create_empty_table(conn, components, dataset_name)
 
-    validate_csv_path(csv_path)
+    validate_input_path(file_path)
 
     # Get identifier columns (needed for duplicate validation)
     id_columns = [n for n, c in components.items() if c.role == Role.IDENTIFIER]
@@ -228,11 +228,11 @@ def load_datapoints_duckdb(
         # 2. Detect CSV format (delimiter, quote, escape) using sniff_csv.
         # Pass expected component names so the fast-path can skip sniffing
         # when the header already parses cleanly with a comma delimiter.
-        _sniffed_fmt = _detect_csv_format(conn, csv_path, expected_columns=list(components.keys()))
+        _sniffed_fmt = _detect_csv_format(conn, file_path, expected_columns=list(components.keys()))
 
         # 3. Read CSV header and check for duplicate columns
         sniffed_delim = _sniffed_fmt.split("'")[1] if "delim=" in _sniffed_fmt else ","
-        with open(csv_path, newline="", encoding="utf-8") as f:
+        with open(file_path, newline="", encoding="utf-8") as f:
             reader = csv.reader(f, delimiter=sniffed_delim)
             csv_columns = next(reader, [])
 
@@ -248,7 +248,7 @@ def load_datapoints_duckdb(
         keep_columns = handle_sdmx_columns(csv_columns, components)
 
         # Check required identifier columns exist
-        check_missing_identifiers(id_columns, keep_columns, csv_path)
+        check_missing_identifiers(id_columns, keep_columns, file_path)
 
         # 5. Build column type mapping and SELECT expressions
         csv_dtypes = build_csv_column_types(components, keep_columns)
@@ -277,7 +277,7 @@ def load_datapoints_duckdb(
             INSERT INTO "{dataset_name}"
             SELECT {", ".join(select_cols)}
             FROM read_csv(
-                '{csv_path}',
+                '{file_path}',
                 header=true,
                 columns={{{type_str}}},
                 auto_detect=false,
