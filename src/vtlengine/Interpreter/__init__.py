@@ -764,19 +764,40 @@ class InterpreterAnalyzer(ASTTemplate):
                     x for x in operand.get_identifiers_names() if x not in order_components
                 ]
 
+        if node.partition_op == "except all":
+            partitioning = []
+        elif node.partition_op == "except":
+            listed = set(partitioning or [])
+            partitioning = [i for i in operand.get_identifiers_names() if i not in listed]
+
         params = []
         if node.params is not None:
             for param in node.params:
                 if isinstance(param, AST.Constant):
                     params.append(param.value)
+                elif isinstance(param, AST.VarID):
+                    resolved = self.visit(param)
+                    params.append(resolved.value if hasattr(resolved, "value") else resolved)
                 else:
                     params.append(param)
+
+        window = node.window
+        if window is not None and (
+            isinstance(window.start, AST.VarID) or isinstance(window.stop, AST.VarID)
+        ):
+            window = copy(window)
+            if isinstance(window.start, AST.VarID):
+                start = self.visit(window.start)
+                window.start = start.value if hasattr(start, "value") else start
+            if isinstance(window.stop, AST.VarID):
+                stop = self.visit(window.stop)
+                window.stop = stop.value if hasattr(stop, "value") else stop
 
         result = ANALYTIC_MAPPING[node.op].analyze(
             operand=operand,
             partitioning=partitioning,
             ordering=ordering,
-            window=node.window,
+            window=window,
             params=params,
             component_name=analytic_component_name,
         )
@@ -1953,23 +1974,38 @@ class InterpreterAnalyzer(ASTTemplate):
         return result
 
     def visit_TimeAggregation(self, node: AST.TimeAggregation) -> None:
+        period_to = node.period_to
+        if node.period_to_ref is not None:
+            saved_grouping = self.is_from_grouping
+            saved_having = self.is_from_having
+            saved_regular = self.is_from_regular_aggregation
+            self.is_from_grouping = False
+            self.is_from_having = False
+            self.is_from_regular_aggregation = False
+            try:
+                resolved = self.visit(node.period_to_ref)
+            finally:
+                self.is_from_grouping = saved_grouping
+                self.is_from_having = saved_having
+                self.is_from_regular_aggregation = saved_regular
+            period_to = resolved.value if hasattr(resolved, "value") else resolved
         if node.operand is not None:
             operand = self.visit(node.operand)
             return Time_Aggregation.analyze(
                 operand=operand,
                 period_from=node.period_from,
-                period_to=node.period_to,
+                period_to=period_to,
                 conf=node.conf,
             )
         # The aggregation dataset is mandatory here as is part of a group_all statement.
         # If not, a 1-3-2-4 error is raised in AST creation
         if self.aggregation_dataset is None:
             raise SemanticError("1-3-2-4")
-        if node.period_to is None:
+        if period_to is None:
             raise SemanticError("1-3-2-4")
         return Time_Aggregation._execute_without_operand(
             aggregation_dataset=self.aggregation_dataset,
             period_from=node.period_from,
-            period_to=node.period_to,
+            period_to=period_to,
             conf=node.conf,
         )
