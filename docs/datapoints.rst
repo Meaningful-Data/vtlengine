@@ -37,6 +37,7 @@ shapes:
 * a **pandas DataFrame**, when your data is already in memory
 * a **Path to a CSV file** (plain or SDMX-CSV — extension and content
   decide which loader to use)
+* a **Path to a Parquet file** (``.parquet``) — only when ``use_duckdb=True``
 * a **Path to an SDMX-ML (``.xml``) data file**
 
 .. note::

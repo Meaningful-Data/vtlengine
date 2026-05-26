@@ -82,10 +82,8 @@ def map_duckdb_error(
     # Corrupt or invalid Parquet file
     if "magic bytes" in error_msg or "no magic bytes" in error_msg:
         return DataLoadError(
-            "0-3-1-6",
+            "0-3-1-16",
             name=dataset_name,
-            column="",
-            type="Parquet",
             error=str(error),
         )
 

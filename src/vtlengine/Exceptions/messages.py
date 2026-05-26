@@ -224,6 +224,12 @@ centralised_messages = {
         "description": "Raised when the input data contains columns that are not "
         "defined in the DataStructure.",
     },
+    "0-3-1-16": {
+        "message": "On Dataset {name} loading: the Parquet file is corrupted or invalid. "
+        'Error found: "{error}"',
+        "description": "Raised when DuckDB cannot read a Parquet file because it is "
+        "corrupted, truncated, or not a valid Parquet file (e.g. missing magic bytes).",
+    },
     # Input validation errors for URL datapoints
     "0-1-3-8": {
         "message": "data_structures must be a file path or URL "
