@@ -1459,3 +1459,15 @@ class AggregateOperatorsTest(TestAggregateHelper):
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_759_1(self):
+        """
+        Description: `aggr ... group all` without `time_agg` must collapse all
+                     identifiers and produce a single aggregated row.
+        Goal: Check Result.
+        """
+        code = "GH_759_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)

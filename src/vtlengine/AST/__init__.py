@@ -243,17 +243,34 @@ class UDOCall(AST):
 @dataclass
 class JoinOp(AST):
     """
-    JoinOp: (op, clauses, using)
+    JoinOp: (op, clauses, using, nvl)
 
     op types: INNER_JOIN, LEFT_JOIN, FULL_JOIN, CROSS_JOIN.
     clauses types:
     body types:
+    nvl: optional list of (componentID, Constant) pairs that supply default
+         values for NULLs introduced by left_join / full_join (VTL 2.2).
     """
 
     op: str
     clauses: List[AST]
     using: Optional[List[str]]
+    nvl: Optional[List["NvlJoinPair"]] = None
     isLast: bool = False
+
+    __eq__ = AST.ast_equality
+
+
+@dataclass
+class NvlJoinPair(AST):
+    """
+    NvlJoinPair: (component, default)
+
+    Carries a single `nvl(componentID, constant)` clause from the join header.
+    """
+
+    component: str
+    default: "Constant"
 
     __eq__ = AST.ast_equality
 
