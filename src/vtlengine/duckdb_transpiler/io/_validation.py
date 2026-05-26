@@ -1,5 +1,5 @@
 """
-Internal validation helpers for DuckDB CSV loading.
+Internal validation helpers for DuckDB CSV and Parquet loading.
 
 This module contains:
 - Regex patterns for VTL temporal types
@@ -75,8 +75,17 @@ def map_duckdb_error(
     - PRIMARY KEY violation: "Duplicate key" or "PRIMARY KEY"
     - NOT NULL violation: "NOT NULL constraint failed" or "cannot be null"
     - Type conversion: "Could not convert" or "Conversion Error"
+    - Corrupt/invalid Parquet: "magic bytes" or "invalid input" in the message.
     """
     error_msg = str(error).lower()
+
+    # Corrupt or invalid Parquet file
+    if "magic bytes" in error_msg or "no magic bytes" in error_msg:
+        return DataLoadError(
+            "0-3-1-16",
+            name=dataset_name,
+            error=str(error),
+        )
 
     # Duplicate key (PRIMARY KEY violation)
     if "duplicate" in error_msg or "primary key" in error_msg:
@@ -269,10 +278,10 @@ def validate_no_duplicates(
 # =============================================================================
 
 
-def validate_csv_path(csv_path: Path) -> None:
-    """Validate CSV file exists."""
-    if not csv_path.exists() or not csv_path.is_file():
-        raise DataLoadError(code="0-3-1-1", file=csv_path)
+def validate_input_path(file_path: Path) -> None:
+    """Validate that the input file exists."""
+    if not file_path.exists() or not file_path.is_file():
+        raise DataLoadError(code="0-3-1-1", file=file_path)
 
 
 def build_csv_column_types(

@@ -81,6 +81,11 @@ centralised_messages = {
         "description": "Raised when the provided time period output format "
         "is not one of the supported representations.",
     },
+    "0-1-1-16": {
+        "message": "Invalid output_format value: '{value}'. Allowed formats: {valid_options}.",
+        "description": "Raised when the provided output_format is not one "
+        "of the supported file formats.",
+    },
     "0-1-2-3": {
         "message": "{element_type} '{element}' is/are duplicated.",
         "description": "Occurs when an element (e.g., Identifier or component) "
@@ -218,6 +223,12 @@ centralised_messages = {
         "in the DataStructure: {extra_columns}.",
         "description": "Raised when the input data contains columns that are not "
         "defined in the DataStructure.",
+    },
+    "0-3-1-16": {
+        "message": "On Dataset {name} loading: the Parquet file is corrupted or invalid. "
+        'Error found: "{error}"',
+        "description": "Raised when DuckDB cannot read a Parquet file because it is "
+        "corrupted, truncated, or not a valid Parquet file (e.g. missing magic bytes).",
     },
     # Input validation errors for URL datapoints
     "0-1-3-8": {
