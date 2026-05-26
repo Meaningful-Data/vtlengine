@@ -45,6 +45,8 @@ def extract_grouping_identifiers(
         return grouping_components
     elif group_op == "group except":
         return [comp for comp in identifier_names if comp not in grouping_components]
+    elif group_op == "group all":
+        return identifier_names if grouping_components else []
     else:
         return identifier_names
 
