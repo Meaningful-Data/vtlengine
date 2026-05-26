@@ -20,6 +20,7 @@ from vtlengine.AST import (
     If,
     JoinOp,
     MulOp,
+    NvlJoinPair,
     ParamConstant,
     ParamOp,
     ParFunction,
@@ -344,11 +345,10 @@ class Expr:
         )
         using_node = self.visitUsingClause(using_ctx) if using_ctx is not None else None
 
-        nvl_join_present = any(
-            not c.is_terminal and c.rule_index == RC.NVL_JOIN_CLAUSE[0] for c in ctx_list
-        )
-        if nvl_join_present:
-            raise NotImplementedError("nvl(...) clause inside join is not yet supported")
+        nvl_ctxs = [
+            c for c in ctx_list if not c.is_terminal and c.rule_index == RC.NVL_JOIN_CLAUSE[0]
+        ]
+        nvl_node = [self.visitNvlJoinClause(c) for c in nvl_ctxs] if nvl_ctxs else None
 
         body_ctx = next(
             c for c in ctx_list if not c.is_terminal and c.rule_index == RC.JOIN_BODY[0]
@@ -358,7 +358,9 @@ class Expr:
         token_info = extract_token_info(ctx)
 
         if len(body_node) != 0:
-            previous_node = JoinOp(op=op_node, clauses=clause_node, using=using_node, **token_info)
+            previous_node = JoinOp(
+                op=op_node, clauses=clause_node, using=using_node, nvl=nvl_node, **token_info
+            )
             regular_aggregation = None
             for body in body_node:
                 regular_aggregation = body
@@ -371,9 +373,26 @@ class Expr:
             return regular_aggregation
 
         else:
-            join_node = JoinOp(op=op_node, clauses=clause_node, using=using_node, **token_info)
+            join_node = JoinOp(
+                op=op_node, clauses=clause_node, using=using_node, nvl=nvl_node, **token_info
+            )
             join_node.isLast = True
             return join_node
+
+    def visitNvlJoinClause(self, ctx: Any) -> NvlJoinPair:
+        """
+        nvlJoinClause: COMMA NVL LPAREN componentID COMMA constant RPAREN ;
+        """
+        ctx_list = ctx.children
+        comp_ctx = next(
+            c for c in ctx_list if not c.is_terminal and c.rule_index == RC.COMPONENT_ID[0]
+        )
+        const_ctx = next(
+            c for c in ctx_list if not c.is_terminal and c.rule_index == RC.CONSTANT[0]
+        )
+        component = Terminals().visitComponentID(comp_ctx).value
+        default = Terminals().visitConstant(const_ctx)
+        return NvlJoinPair(component=component, default=default, **extract_token_info(ctx))
 
     def visitJoinClauseItem(self, ctx: Any) -> Any:
         ctx_list = ctx.children

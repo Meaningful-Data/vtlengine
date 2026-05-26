@@ -131,7 +131,12 @@ class Join(Operator):
         return components
 
     @classmethod
-    def evaluate(cls, operands: List[Dataset], using: List[str]) -> Dataset:
+    def evaluate(
+        cls,
+        operands: List[Dataset],
+        using: List[str],
+        nvl: Optional[Dict[str, Any]] = None,
+    ) -> Dataset:
         result = cls.execute([copy(operand) for operand in operands], using)
         if result.data is not None and sorted(result.get_components_names()) != sorted(
             result.data.columns.tolist()
@@ -140,7 +145,31 @@ class Join(Operator):
             if len(missing) == 0:
                 missing.append("None")
             raise SemanticError("1-1-1-10", comp_name=missing[0], dataset_name=result.name)
+        if nvl:
+            cls._validate_nvl(operands, nvl)
+            if result.data is not None:
+                cls._apply_nvl(result, nvl)
         return result
+
+    @classmethod
+    def _validate_nvl(cls, operands: List[Dataset], nvl: Dict[str, Any]) -> None:
+        """Each nvl component must exist in at least one operand."""
+        all_components: set[str] = set()
+        for op in operands:
+            all_components.update(op.components)
+        for component in nvl:
+            if component not in all_components:
+                raise SemanticError("1-1-1-10", comp_name=component, dataset_name=operands[0].name)
+
+    @classmethod
+    def _apply_nvl(cls, result: Dataset, nvl: Dict[str, Any]) -> None:
+        """Replace NULLs in `result.data` for each (component, default) pair from nvl."""
+        if result.data is None:
+            return
+        for component, default in nvl.items():
+            if component not in result.data.columns:
+                continue
+            result.data[component] = result.data[component].fillna(default)
 
     @classmethod
     def execute(cls, operands: List[Dataset], using: List[str]) -> Dataset:
@@ -193,7 +222,14 @@ class Join(Operator):
         return result
 
     @classmethod
-    def validate(cls, operands: List[Dataset], using: Optional[List[str]]) -> Dataset:
+    def validate(
+        cls,
+        operands: List[Dataset],
+        using: Optional[List[str]],
+        nvl: Optional[Dict[str, Any]] = None,
+    ) -> Dataset:
+        if nvl:
+            cls._validate_nvl(operands, nvl)
         dataset_name = VirtualCounter._new_ds_name()
         if len(operands) < 1 or sum([isinstance(op, Dataset) for op in operands]) < 1:
             raise Exception("Join operator requires at least 1 dataset")

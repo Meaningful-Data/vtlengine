@@ -3295,6 +3295,31 @@ FROM (
     # Join visitor
     # =========================================================================
 
+    def _resolve_join_nvl_defaults(
+        self, node: AST.JoinOp, clause_info: List[Dict[str, Any]]
+    ) -> Dict[str, str]:
+        """Resolve VTL 2.2 `nvl(component, constant)` join clauses to SQL literals.
+
+        Each pair becomes a `COALESCE(col, <literal>)` in the SELECT list. Raises
+        SemanticError 1-1-1-10 if the referenced component isn't in any operand.
+        """
+        if not node.nvl:
+            return {}
+        all_components: Set[str] = set()
+        for info in clause_info:
+            all_components.update(info["ds"].components)
+        defaults: Dict[str, str] = {}
+        for pair in node.nvl:
+            if pair.component not in all_components:
+                raise SemanticError(
+                    "1-1-1-10",
+                    op=node.op,
+                    comp_name=pair.component,
+                    dataset_name=clause_info[0]["ds"].name,
+                )
+            defaults[pair.component] = self._constant_to_sql(pair.default)
+        return defaults
+
     def visit_JoinOp(self, node: AST.JoinOp) -> str:  # type: ignore[override]
         """Visit a join operation."""
         clause_info: List[Dict[str, Any]] = []
@@ -3348,6 +3373,8 @@ FROM (
         )
         duplicate_comps = {name for name, cnt in comp_count.items() if cnt >= 2}
 
+        nvl_defaults = self._resolve_join_nvl_defaults(node, clause_info)
+
         # First alias that exposes each component — used to pick the left side of ON
         # clauses. A USING key may be a measure in one dataset and an identifier in
         # another, so we track components (not just identifiers).
@@ -3383,10 +3410,16 @@ FROM (
                         cols.append(f"{sa}.{quote_name(name)}")
                 elif name in duplicate_comps:
                     qualified_name = f"{info['alias']}#{name}"
-                    cols.append(f"{sa}.{quote_name(name)} AS {quote_name(qualified_name)}")
+                    expr = f"{sa}.{quote_name(name)}"
+                    if name in nvl_defaults:
+                        expr = f"COALESCE({expr}, {nvl_defaults[name]})"
+                    cols.append(f"{expr} AS {quote_name(qualified_name)}")
                     self._join_alias_map[qualified_name] = qualified_name
                 else:
-                    cols.append(f"{sa}.{quote_name(name)}")
+                    expr = f"{sa}.{quote_name(name)}"
+                    if name in nvl_defaults:
+                        expr = f"COALESCE({expr}, {nvl_defaults[name]}) AS {quote_name(name)}"
+                    cols.append(expr)
 
         builder = SQLBuilder()
         builder.select(*cols) if cols else builder.select_all()

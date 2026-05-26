@@ -1302,9 +1302,13 @@ class InterpreterAnalyzer(ASTTemplate):
                 # TODO: We need to delete somewhere the join datasets with alias that are added here
                 self.datasets[clause_elements[-1].name] = clause_elements[-1]
 
+        nvl_defaults: Optional[Dict[str, Any]] = None
+        if node.nvl:
+            nvl_defaults = {pair.component: pair.default.value for pair in node.nvl}
+
         # No need to check using, regular aggregation is executed afterwards
         self.is_from_join = True
-        return JOIN_MAPPING[node.op].analyze(clause_elements, node.using)
+        return JOIN_MAPPING[node.op].analyze(clause_elements, node.using, nvl_defaults)
 
     def visit_ParamConstant(self, node: AST.ParamConstant) -> str:
         return node.value
