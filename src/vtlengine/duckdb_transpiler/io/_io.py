@@ -1,5 +1,5 @@
 """
-Internal IO functions for DuckDB-based CSV loading and saving.
+Internal IO functions for DuckDB-based CSV and Parquet loading and saving.
 
 This module contains the core load/save implementations to avoid circular imports.
 """
@@ -7,7 +7,7 @@ This module contains the core load/save implementations to avoid circular import
 import csv
 import os
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Literal, Optional, Tuple, Union
 
 import duckdb
 import pandas as pd
@@ -21,7 +21,7 @@ from vtlengine.duckdb_transpiler.io._validation import (
     get_column_sql_type,
     handle_sdmx_columns,
     map_duckdb_error,
-    validate_csv_path,
+    validate_input_path,
     validate_no_duplicates,
     validate_temporal_columns,
 )
@@ -177,11 +177,20 @@ def _detect_csv_format(
     return ", ".join(fmt_parts)
 
 
+def _read_parquet_columns(
+    conn: duckdb.DuckDBPyConnection,
+    file_path: Path,
+) -> List[str]:
+    """Read the column list of a parquet file via a zero-row scan."""
+    rel = conn.sql(f"SELECT * FROM read_parquet('{file_path}') LIMIT 0")
+    return list(rel.columns)
+
+
 def load_datapoints_duckdb(
     conn: duckdb.DuckDBPyConnection,
     components: Dict[str, Component],
     dataset_name: str,
-    csv_path: Optional[Union[Path, str]] = None,
+    file_path: Optional[Union[Path, str]] = None,
 ) -> duckdb.DuckDBPyRelation:
     """
     Load CSV data into DuckDB table with optimized validation.
@@ -197,7 +206,7 @@ def load_datapoints_duckdb(
         conn: DuckDB connection
         components: Dataset component definitions
         dataset_name: Name for the table
-        csv_path: Path to CSV file (None for empty table)
+        file_path: Path to input file (None for empty table)
 
     Returns:
         DuckDB relation pointing to the created table
@@ -206,14 +215,17 @@ def load_datapoints_duckdb(
         DataLoadError: If validation fails
     """
     # Handle empty dataset
-    if csv_path is None:
+    if file_path is None:
         return _create_empty_table(conn, components, dataset_name)
 
-    csv_path = Path(csv_path) if isinstance(csv_path, str) else csv_path
-    if not csv_path.exists():
+    file_path = Path(file_path) if isinstance(file_path, str) else file_path
+    if not file_path.exists():
         return _create_empty_table(conn, components, dataset_name)
 
-    validate_csv_path(csv_path)
+    validate_input_path(file_path)
+
+    if file_path.suffix.lower() == ".parquet":
+        return _load_parquet(conn, components, dataset_name, file_path)
 
     # Get identifier columns (needed for duplicate validation)
     id_columns = [n for n, c in components.items() if c.role == Role.IDENTIFIER]
@@ -228,11 +240,11 @@ def load_datapoints_duckdb(
         # 2. Detect CSV format (delimiter, quote, escape) using sniff_csv.
         # Pass expected component names so the fast-path can skip sniffing
         # when the header already parses cleanly with a comma delimiter.
-        _sniffed_fmt = _detect_csv_format(conn, csv_path, expected_columns=list(components.keys()))
+        _sniffed_fmt = _detect_csv_format(conn, file_path, expected_columns=list(components.keys()))
 
         # 3. Read CSV header and check for duplicate columns
         sniffed_delim = _sniffed_fmt.split("'")[1] if "delim=" in _sniffed_fmt else ","
-        with open(csv_path, newline="", encoding="utf-8") as f:
+        with open(file_path, newline="", encoding="utf-8") as f:
             reader = csv.reader(f, delimiter=sniffed_delim)
             csv_columns = next(reader, [])
 
@@ -248,7 +260,7 @@ def load_datapoints_duckdb(
         keep_columns = handle_sdmx_columns(csv_columns, components)
 
         # Check required identifier columns exist
-        check_missing_identifiers(id_columns, keep_columns, csv_path)
+        check_missing_identifiers(id_columns, keep_columns, file_path)
 
         # 5. Build column type mapping and SELECT expressions
         csv_dtypes = build_csv_column_types(components, keep_columns)
@@ -277,7 +289,7 @@ def load_datapoints_duckdb(
             INSERT INTO "{dataset_name}"
             SELECT {", ".join(select_cols)}
             FROM read_csv(
-                '{csv_path}',
+                '{file_path}',
                 header=true,
                 columns={{{type_str}}},
                 auto_detect=false,
@@ -293,6 +305,9 @@ def load_datapoints_duckdb(
     except duckdb.Error as e:
         conn.execute(f'DROP TABLE IF EXISTS "{dataset_name}"')
         raise map_duckdb_error(e, dataset_name, components)
+    except Exception:
+        conn.execute(f'DROP TABLE IF EXISTS "{dataset_name}"')
+        raise
 
     # Post-load: normalize TimePeriod + validate constraints
     _validate_loaded_table(conn, dataset_name, components)
@@ -310,42 +325,95 @@ def _create_empty_table(
     return conn.table(table_name)
 
 
+def _load_parquet(
+    conn: duckdb.DuckDBPyConnection,
+    components: Dict[str, Component],
+    dataset_name: str,
+    file_path: Path,
+) -> duckdb.DuckDBPyRelation:
+    """Load a Parquet file into a DuckDB table via read_parquet."""
+    id_columns = [n for n, c in components.items() if c.role == Role.IDENTIFIER]
+
+    conn.execute(build_create_table_sql(dataset_name, components))
+
+    try:
+        parquet_cols = _read_parquet_columns(conn, file_path)
+
+        if len(set(parquet_cols)) != len(parquet_cols):
+            duplicates = list({item for item in parquet_cols if parquet_cols.count(item) > 1})
+            raise InputValidationException(
+                code="0-1-2-3",
+                element_type="Columns",
+                element=f"{', '.join(duplicates)}",
+            )
+
+        keep_columns = handle_sdmx_columns(parquet_cols, components)
+        check_missing_identifiers(id_columns, keep_columns, file_path)
+
+        select_exprs = _build_dataframe_select_columns(components, df_columns=parquet_cols)
+
+        action_filter = ""
+        if "ACTION" in parquet_cols and "ACTION" not in components:
+            action_filter = 'WHERE "ACTION" != \'D\' OR "ACTION" IS NULL'
+
+        col_list = ", ".join(f'"{c}"' for c in components)
+        insert_sql = (
+            f'INSERT INTO "{dataset_name}" ({col_list}) '
+            f"SELECT {', '.join(select_exprs)} "
+            f"FROM read_parquet('{file_path}') "
+            f"{action_filter}"
+        )
+        conn.execute(insert_sql)
+
+    except duckdb.Error as e:
+        conn.execute(f'DROP TABLE IF EXISTS "{dataset_name}"')
+        raise map_duckdb_error(e, dataset_name, components)
+    except Exception:
+        conn.execute(f'DROP TABLE IF EXISTS "{dataset_name}"')
+        raise
+
+    _validate_loaded_table(conn, dataset_name, components)
+    return conn.table(dataset_name)
+
+
 def save_datapoints_duckdb(
     conn: duckdb.DuckDBPyConnection,
     dataset_name: str,
     output_path: Union[Path, str],
     delete_after_save: bool = True,
     select_sql: Optional[str] = None,
+    output_format: Literal["csv", "parquet"] = "csv",
 ) -> None:
-    """
-    Save dataset to CSV using DuckDB's COPY TO.
+    """Save dataset to disk using DuckDB's COPY TO.
 
     Args:
-        conn: DuckDB connection
-        dataset_name: Name of the table to save
-        output_path: Directory path where CSV will be saved
-        delete_after_save: If True, drop table after saving to free memory
-        select_sql: Optional SELECT query whose rows are saved. When provided
-            the CSV is produced from ``COPY ({select_sql}) TO ...`` so that
-            column projection and in-SQL formatting (date/timestamp/ISO 8601)
-            applied by the caller are reflected on disk. When omitted the
-            raw table is dumped with ``COPY "{dataset_name}" TO ...``.
-
-    The CSV is saved with:
-    - Header row present
-    - No index column
-    - Comma delimiter
+        conn: DuckDB connection.
+        dataset_name: Name of the table to save.
+        output_path: Directory path where the file will be saved.
+        delete_after_save: If True, drop the table after saving.
+        select_sql: Optional SELECT query whose rows are saved. When provided,
+            COPY runs against ``(select_sql)``; otherwise the raw table is dumped.
+        output_format: ``"csv"`` (default) or ``"parquet"``. Determines the
+            file extension and the COPY options used.
     """
+    if output_format not in ("csv", "parquet"):
+        raise InputValidationException(
+            code="0-1-1-16",
+            value=output_format,
+            valid_options="csv, parquet",
+        )
+
     output_path = Path(output_path) if isinstance(output_path, str) else output_path
-    output_file = output_path / f"{dataset_name}.csv"
+    output_file = output_path / f"{dataset_name}.{output_format}"
 
     source = f"({select_sql})" if select_sql else f'"{dataset_name}"'
-    copy_sql = f"""
-        COPY {source}
-        TO '{output_file}'
-        WITH (HEADER true, DELIMITER ',')
-    """
-    conn.execute(copy_sql)
+
+    if output_format == "parquet":
+        copy_options = "(FORMAT PARQUET)"
+    else:
+        copy_options = "WITH (HEADER true, DELIMITER ',')"
+
+    conn.execute(f"COPY {source} TO '{output_file}' {copy_options}")
 
     if delete_after_save:
         conn.execute(f'DROP TABLE IF EXISTS "{dataset_name}"')
@@ -418,7 +486,7 @@ def extract_datapoint_paths(
             elif isinstance(value, (str, Path)):
                 path = Path(value) if isinstance(value, str) else value
                 # Check if this is an SDMX file — load via pysdmx into DataFrame
-                if is_sdmx_datapoint_file(path):
+                if path.suffix.lower() != ".parquet" and is_sdmx_datapoint_file(path):
                     try:
                         components = input_datasets[name].components
                         sdmx_df = load_sdmx_datapoints(components, name, path)
@@ -438,7 +506,7 @@ def extract_datapoint_paths(
         for item in datapoints:
             path = Path(item) if isinstance(item, str) else item
             # Check if this is an SDMX file — load via pysdmx into DataFrame
-            if is_sdmx_datapoint_file(path):
+            if path.suffix.lower() != ".parquet" and is_sdmx_datapoint_file(path):
                 try:
                     sdmx_name = extract_sdmx_dataset_name(path)
                     if sdmx_name in input_datasets:
@@ -457,7 +525,7 @@ def extract_datapoint_paths(
     # Handle single path
     path = Path(datapoints) if isinstance(datapoints, str) else datapoints
     # Check if this is an SDMX file — load via pysdmx into DataFrame
-    if is_sdmx_datapoint_file(path):
+    if path.suffix.lower() != ".parquet" and is_sdmx_datapoint_file(path):
         try:
             sdmx_name = extract_sdmx_dataset_name(path)
             if sdmx_name in input_datasets:

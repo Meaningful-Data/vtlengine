@@ -62,6 +62,9 @@ A few optional inputs let you extend or tune the run:
   Example 2 below.
 * ``output_folder`` — write results to disk instead of returning them
   in memory.
+* ``output_format`` — ``"csv"`` (default) or ``"parquet"`` for results
+  written to ``output_folder``. ``"parquet"`` requires ``use_duckdb=True``;
+  see :doc:`duckdb_engine`.
 * ``sdmx_mappings`` — alias an SDMX short-URN to whatever name the
   script uses (exposed as ``mappings`` in ``run_sdmx``).
   See :doc:`sdmx_inputs`.

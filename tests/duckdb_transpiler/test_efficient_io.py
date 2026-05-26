@@ -183,7 +183,7 @@ class TestLoadDatapointsDuckdbFromCSV:
             conn=duckdb_conn,
             components=sample_components,
             dataset_name="DS_1",
-            csv_path=csv_path,
+            file_path=csv_path,
         )
 
         # Verify table exists and has correct data
@@ -204,7 +204,7 @@ class TestLoadDatapointsDuckdbFromCSV:
                 conn=duckdb_conn,
                 components=sample_components,
                 dataset_name="DS_1",
-                csv_path=csv_path,
+                file_path=csv_path,
             )
 
 
