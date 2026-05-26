@@ -637,6 +637,13 @@ class ASTString(ASTTemplate):
             return f"if {self.visit(node.condition)} then {self.visit(node.thenOp)} {else_str}"
 
     def visit_JoinOp(self, node: AST.JoinOp) -> str:
+        nvl_str = ""
+        if node.nvl:
+            nvl_parts = [
+                f"nvl({_format_reserved_word(p.component)}, {self.visit(p.default)})"
+                for p in node.nvl
+            ]
+            nvl_str = ", " + ", ".join(nvl_parts)
         if self.pretty:
             sep = f",{nl}{tab * 2}" if len(node.clauses) > 1 else ""
             clauses = sep.join([self.visit(x) for x in node.clauses])
@@ -644,7 +651,7 @@ class ASTString(ASTTemplate):
             if node.using is not None:
                 using_sep = ", " if len(node.using) > 1 else ""
                 using_values = [_format_reserved_word(x) for x in node.using]
-                using = f"using {using_sep.join(using_values)}"
+                using = f"using {using_sep.join(using_values)}{nvl_str}"
             return f"{node.op}({nl}{tab * 2}{clauses}{nl}{tab * 2}{using})"
         else:
             sep = ", " if len(node.clauses) > 1 else ""
@@ -653,7 +660,7 @@ class ASTString(ASTTemplate):
             if node.using is not None:
                 using_sep = ", " if len(node.using) > 1 else ""
                 using_values = [_format_reserved_word(x) for x in node.using]
-                using = f" using {using_sep.join(using_values)}"
+                using = f" using {using_sep.join(using_values)}{nvl_str}"
             return f"{node.op}({clauses}{using})"
 
     def visit_ParFunction(self, node: AST.ParFunction) -> str:
