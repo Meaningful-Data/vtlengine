@@ -36,7 +36,7 @@ from vtlengine.AST.Grammar.tokens import (
 )
 from vtlengine.DataTypes import Boolean, Integer, Number, String
 from vtlengine.duckdb_transpiler.Transpiler import SQLTranspiler
-from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, ValueDomain
+from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 
 # =============================================================================
 # Test Utilities
@@ -1321,6 +1321,31 @@ class TestTimeAggOperator:
 
         expected_sql = """vtl_time_agg_date("my_date", 'Q')"""
         assert_sql_equal(result, expected_sql)
+
+    def test_time_agg_period_from_varID_scalar(self):
+        """sdmx-twg/vtl#390: time_agg(varID, ...) resolves the period from an input scalar."""
+        sc_period = Scalar(name="sc_period", data_type=String, value="A")
+        transpiler = SQLTranspiler(
+            input_datasets={},
+            output_datasets={},
+            input_scalars={"sc_period": sc_period},
+            output_scalars={},
+        )
+
+        date_col = VarID(**make_ast_node(value="my_date"))
+        period_ref = VarID(**make_ast_node(value="sc_period"))
+        time_agg_op = TimeAggregation(
+            **make_ast_node(
+                op="time_agg",
+                period_to=None,
+                period_to_ref=period_ref,
+                operand=date_col,
+            )
+        )
+
+        result = transpiler.visit_TimeAggregation(time_agg_op)
+
+        assert_sql_equal(result, """vtl_time_agg_date("my_date", 'A')""")
 
     def test_time_agg_month(self):
         """Test TIME_AGG to month period with full SQL."""

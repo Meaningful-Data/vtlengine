@@ -9,58 +9,54 @@
 
 
 
-class  VtlParser : public antlr4::Parser {
+class  Vtl : public antlr4::Parser {
 public:
   enum {
-    LPAREN = 1, RPAREN = 2, QLPAREN = 3, QRPAREN = 4, GLPAREN = 5, GRPAREN = 6, 
-    EQ = 7, LT = 8, MT = 9, ME = 10, NEQ = 11, LE = 12, PLUS = 13, MINUS = 14, 
-    MUL = 15, DIV = 16, COMMA = 17, POINTER = 18, COLON = 19, ASSIGN = 20, 
-    MEMBERSHIP = 21, EVAL = 22, IF = 23, CASE = 24, THEN = 25, ELSE = 26, 
-    USING = 27, WITH = 28, CURRENT_DATE = 29, DATEDIFF = 30, DATEADD = 31, 
-    YEAR_OP = 32, MONTH_OP = 33, DAYOFMONTH = 34, DAYOFYEAR = 35, DAYTOYEAR = 36, 
-    DAYTOMONTH = 37, YEARTODAY = 38, MONTHTODAY = 39, ON = 40, DROP = 41, 
-    KEEP = 42, CALC = 43, ATTRCALC = 44, RENAME = 45, AS = 46, AND = 47, 
-    OR = 48, XOR = 49, NOT = 50, BETWEEN = 51, IN = 52, NOT_IN = 53, NULL_CONSTANT = 54, 
-    ISNULL = 55, EX = 56, UNION = 57, DIFF = 58, SYMDIFF = 59, INTERSECT = 60, 
-    RANDOM = 61, KEYS = 62, INTYEAR = 63, INTMONTH = 64, INTDAY = 65, CHECK = 66, 
-    EXISTS_IN = 67, TO = 68, RETURN = 69, IMBALANCE = 70, ERRORCODE = 71, 
-    ALL = 72, AGGREGATE = 73, ERRORLEVEL = 74, ORDER = 75, BY = 76, RANK = 77, 
-    ASC = 78, DESC = 79, MIN = 80, MAX = 81, FIRST = 82, LAST = 83, INDEXOF = 84, 
-    ABS = 85, KEY = 86, LN = 87, LOG = 88, TRUNC = 89, ROUND = 90, POWER = 91, 
-    MOD = 92, LEN = 93, CONCAT = 94, TRIM = 95, UCASE = 96, LCASE = 97, 
-    SUBSTR = 98, SUM = 99, AVG = 100, MEDIAN = 101, COUNT = 102, DIMENSION = 103, 
-    MEASURE = 104, ATTRIBUTE = 105, FILTER = 106, MERGE = 107, EXP = 108, 
-    ROLE = 109, VIRAL = 110, PROPAGATION = 111, CHARSET_MATCH = 112, TYPE = 113, 
-    NVL = 114, HIERARCHY = 115, OPTIONAL = 116, INVALID = 117, VALUE_DOMAIN = 118, 
-    VARIABLE = 119, DATA = 120, STRUCTURE = 121, DATASET = 122, OPERATOR = 123, 
-    DEFINE = 124, PUT_SYMBOL = 125, DATAPOINT = 126, HIERARCHICAL = 127, 
-    RULESET = 128, RULE = 129, END = 130, ALTER_DATASET = 131, LTRIM = 132, 
-    RTRIM = 133, INSTR = 134, REPLACE = 135, CEIL = 136, FLOOR = 137, SQRT = 138, 
-    ANY = 139, SETDIFF = 140, STDDEV_POP = 141, STDDEV_SAMP = 142, VAR_POP = 143, 
-    VAR_SAMP = 144, GROUP = 145, EXCEPT = 146, HAVING = 147, FIRST_VALUE = 148, 
-    LAST_VALUE = 149, LAG = 150, LEAD = 151, RATIO_TO_REPORT = 152, OVER = 153, 
-    PRECEDING = 154, FOLLOWING = 155, UNBOUNDED = 156, PARTITION = 157, 
-    ROWS = 158, RANGE = 159, CURRENT = 160, VALID = 161, FILL_TIME_SERIES = 162, 
-    FLOW_TO_STOCK = 163, STOCK_TO_FLOW = 164, TIMESHIFT = 165, MEASURES = 166, 
-    NO_MEASURES = 167, CONDITION = 168, BOOLEAN = 169, DATE = 170, TIME_PERIOD = 171, 
-    NUMBER = 172, STRING = 173, TIME = 174, INTEGER = 175, FLOAT = 176, 
-    LIST = 177, RECORD = 178, RESTRICT = 179, YYYY = 180, MM = 181, DD = 182, 
-    MAX_LENGTH = 183, REGEXP = 184, IS = 185, WHEN = 186, FROM = 187, AGGREGATES = 188, 
-    POINTS = 189, POINT = 190, TOTAL = 191, PARTIAL = 192, ALWAYS = 193, 
-    INNER_JOIN = 194, LEFT_JOIN = 195, CROSS_JOIN = 196, FULL_JOIN = 197, 
-    MAPS_FROM = 198, MAPS_TO = 199, MAP_TO = 200, MAP_FROM = 201, RETURNS = 202, 
-    PIVOT = 203, CUSTOMPIVOT = 204, UNPIVOT = 205, SUBSPACE = 206, APPLY = 207, 
-    CONDITIONED = 208, PERIOD_INDICATOR = 209, SINGLE = 210, DURATION = 211, 
-    TIME_AGG = 212, UNIT = 213, VALUE = 214, VALUEDOMAINS = 215, VARIABLES = 216, 
-    INPUT = 217, OUTPUT = 218, CAST = 219, RULE_PRIORITY = 220, DATASET_PRIORITY = 221, 
-    DEFAULT = 222, CHECK_DATAPOINT = 223, CHECK_HIERARCHY = 224, COMPUTED = 225, 
-    NON_NULL = 226, NON_ZERO = 227, PARTIAL_NULL = 228, PARTIAL_ZERO = 229, 
-    ALWAYS_NULL = 230, ALWAYS_ZERO = 231, COMPONENTS = 232, ALL_MEASURES = 233, 
-    SCALAR = 234, COMPONENT = 235, DATAPOINT_ON_VD = 236, DATAPOINT_ON_VAR = 237, 
-    HIERARCHICAL_ON_VD = 238, HIERARCHICAL_ON_VAR = 239, SET = 240, LANGUAGE = 241, 
-    INTEGER_CONSTANT = 242, NUMBER_CONSTANT = 243, BOOLEAN_CONSTANT = 244, 
-    STRING_CONSTANT = 245, IDENTIFIER = 246, WS = 247, EOL = 248, ML_COMMENT = 249, 
-    SL_COMMENT = 250
+    ASSIGN = 1, COLON = 2, COMMA = 3, CONCAT = 4, DIV = 5, DOT = 6, EOL = 7, 
+    EQ = 8, GLPAREN = 9, GRPAREN = 10, LE = 11, LPAREN = 12, LT = 13, ME = 14, 
+    MEMBERSHIP = 15, MINUS = 16, MT = 17, MUL = 18, NEQ = 19, OPTIONAL = 20, 
+    PLUS = 21, POINTER = 22, PUT_SYMBOL = 23, QLPAREN = 24, QRPAREN = 25, 
+    RPAREN = 26, SINGLE_QUOTE = 27, ABS = 28, AGGREGATE = 29, AGGREGATE_KW = 30, 
+    ALL = 31, ALL_MEASURES = 32, ALWAYS_NULL = 33, ALWAYS_ZERO = 34, AND = 35, 
+    ANY = 36, APPLY = 37, AS = 38, ASC = 39, ATTRIBUTE = 40, AVG = 41, BETWEEN = 42, 
+    BOOLEAN = 43, BY = 44, CALC = 45, CASE = 46, CAST = 47, CEIL = 48, CHARSET_MATCH = 49, 
+    CHECK = 50, CHECK_DATAPOINT = 51, CHECK_HIERARCHY = 52, COMPONENT = 53, 
+    COMPONENTS = 54, COMPUTED = 55, CONDITION = 56, COUNT = 57, CROSS_JOIN = 58, 
+    CURRENT = 59, CURRENT_DATE = 60, CUSTOMPIVOT = 61, DATA = 62, DATAPOINT = 63, 
+    DATAPOINT_ON_VAR = 64, DATAPOINT_ON_VD = 65, DATASET = 66, DATASET_PRIORITY = 67, 
+    DATE = 68, DATEADD = 69, DATEDIFF = 70, DAYOFMONTH = 71, DAYOFYEAR = 72, 
+    DAYTOMONTH = 73, DAYTOYEAR = 74, DEFAULT = 75, DEFINE = 76, DESC = 77, 
+    DIFF = 78, DIMENSION = 79, DROP = 80, DURATION = 81, ELSE = 82, END = 83, 
+    ERRORCODE = 84, ERRORLEVEL = 85, EVAL = 86, EXCEPT = 87, EXISTS_IN = 88, 
+    EXP = 89, FILL_TIME_SERIES = 90, FILTER = 91, FIRST = 92, FIRST_VALUE = 93, 
+    FLOAT = 94, FLOOR = 95, FLOW_TO_STOCK = 96, FOLLOWING = 97, FROM = 98, 
+    FULL_JOIN = 99, GROUP = 100, HAVING = 101, HIERARCHICAL = 102, HIERARCHICAL_ON_VAR = 103, 
+    HIERARCHICAL_ON_VD = 104, HIERARCHY = 105, IF = 106, IMBALANCE = 107, 
+    IN = 108, INDEXOF = 109, INNER_JOIN = 110, INPUT = 111, INSTR = 112, 
+    INTEGER = 113, INTERSECT = 114, INVALID = 115, IS = 116, ISNULL = 117, 
+    KEEP = 118, KEY = 119, LAG = 120, LANGUAGE = 121, LAST = 122, LAST_VALUE = 123, 
+    LCASE = 124, LEAD = 125, LEFT_JOIN = 126, LEN = 127, LIST = 128, LN = 129, 
+    LOG = 130, LTRIM = 131, MAX = 132, MEASURE = 133, MEDIAN = 134, MERGE = 135, 
+    MIN = 136, MOD = 137, MONTH_OP = 138, MONTHTODAY = 139, NON_NULL = 140, 
+    NON_ZERO = 141, NOT = 142, NOT_IN = 143, NUMBER = 144, NVL = 145, ON = 146, 
+    OPERATOR = 147, OR = 148, ORDER = 149, OUTPUT = 150, OVER = 151, PARTIAL_NULL = 152, 
+    PARTIAL_ZERO = 153, PARTITION = 154, PERIOD_INDICATOR = 155, PIVOT = 156, 
+    POINT = 157, POINTS = 158, POWER = 159, PRECEDING = 160, PROPAGATION = 161, 
+    RANDOM = 162, RANGE = 163, RANK = 164, RATIO_TO_REPORT = 165, RENAME = 166, 
+    REPLACE = 167, RETURNS = 168, ROUND = 169, ROWS = 170, RTRIM = 171, 
+    RULE = 172, RULE_PRIORITY = 173, RULESET = 174, SCALAR = 175, SET = 176, 
+    SETDIFF = 177, SINGLE = 178, SQRT = 179, STDDEV_POP = 180, STDDEV_SAMP = 181, 
+    STOCK_TO_FLOW = 182, STRING = 183, STRING_DISTANCE = 184, STRUCTURE = 185, 
+    SUBSPACE = 186, SUBSTR = 187, SUM = 188, SYMDIFF = 189, THEN = 190, 
+    TIME = 191, TIME_AGG = 192, TIME_PERIOD = 193, TIMESHIFT = 194, TO = 195, 
+    TRIM = 196, TRUNC = 197, TYPE = 198, UCASE = 199, UNBOUNDED = 200, UNION = 201, 
+    UNPIVOT = 202, USING = 203, VALUE = 204, VALUE_DOMAIN = 205, VAR_POP = 206, 
+    VAR_SAMP = 207, VARIABLE = 208, VIRAL = 209, WHEN = 210, WITH = 211, 
+    XOR = 212, YEAR_OP = 213, YEARTODAY = 214, LEVENSHTEIN_METHOD = 215, 
+    DAMERAU_LEVENSHTEIN_METHOD = 216, HAMMING_METHOD = 217, JARO_WINKLER_METHOD = 218, 
+    NULL_CONSTANT = 219, INTEGER_CONSTANT = 220, NUMBER_CONSTANT = 221, 
+    BOOLEAN_CONSTANT = 222, STRING_CONSTANT = 223, IDENTIFIER = 224, WS = 225, 
+    ML_COMMENT = 226, SL_COMMENT = 227
   };
 
   enum {
@@ -71,43 +67,44 @@ public:
     RuleSubspaceClause = 14, RuleJoinOperators = 15, RuleDefOperators = 16, 
     RuleVpSignature = 17, RuleVpBody = 18, RuleVpClause = 19, RuleVpCondition = 20, 
     RuleGenericOperators = 21, RuleGenericOperatorsComponent = 22, RuleParameterComponent = 23, 
-    RuleParameter = 24, RuleStringOperators = 25, RuleStringOperatorsComponent = 26, 
-    RuleNumericOperators = 27, RuleNumericOperatorsComponent = 28, RuleComparisonOperators = 29, 
-    RuleComparisonOperatorsComponent = 30, RuleTimeOperators = 31, RuleTimeOperatorsComponent = 32, 
-    RuleSetOperators = 33, RuleHierarchyOperators = 34, RuleValidationOperators = 35, 
-    RuleConditionalOperators = 36, RuleConditionalOperatorsComponent = 37, 
-    RuleAggrOperators = 38, RuleAggrOperatorsGrouping = 39, RuleAnFunction = 40, 
-    RuleAnFunctionComponent = 41, RuleRenameClauseItem = 42, RuleAggregateClause = 43, 
-    RuleAggrFunctionClause = 44, RuleCalcClauseItem = 45, RuleSubspaceClauseItem = 46, 
-    RuleScalarItem = 47, RuleJoinClauseWithoutUsing = 48, RuleJoinClause = 49, 
-    RuleJoinClauseItem = 50, RuleJoinBody = 51, RuleJoinApplyClause = 52, 
-    RulePartitionByClause = 53, RuleOrderByClause = 54, RuleOrderByItem = 55, 
-    RuleWindowingClause = 56, RuleSignedInteger = 57, RuleSignedNumber = 58, 
-    RuleLimitClauseItem = 59, RuleGroupingClause = 60, RuleHavingClause = 61, 
-    RuleParameterItem = 62, RuleOutputParameterType = 63, RuleOutputParameterTypeComponent = 64, 
-    RuleInputParameterType = 65, RuleRulesetType = 66, RuleScalarType = 67, 
-    RuleComponentType = 68, RuleDatasetType = 69, RuleEvalDatasetType = 70, 
-    RuleScalarSetType = 71, RuleDpRuleset = 72, RuleHrRuleset = 73, RuleValueDomainName = 74, 
-    RuleRulesetID = 75, RuleRulesetSignature = 76, RuleSignature = 77, RuleRuleClauseDatapoint = 78, 
-    RuleRuleItemDatapoint = 79, RuleRuleClauseHierarchical = 80, RuleRuleItemHierarchical = 81, 
-    RuleHierRuleSignature = 82, RuleValueDomainSignature = 83, RuleCodeItemRelation = 84, 
-    RuleCodeItemRelationClause = 85, RuleValueDomainValue = 86, RuleScalarTypeConstraint = 87, 
-    RuleCompConstraint = 88, RuleMultModifier = 89, RuleValidationOutput = 90, 
-    RuleValidationMode = 91, RuleConditionClause = 92, RuleInputMode = 93, 
-    RuleImbalanceExpr = 94, RuleInputModeHierarchy = 95, RuleOutputModeHierarchy = 96, 
-    RuleAlias = 97, RuleVarID = 98, RuleSimpleComponentId = 99, RuleComponentID = 100, 
-    RuleLists = 101, RuleErCode = 102, RuleErLevel = 103, RuleComparisonOperand = 104, 
-    RuleOptionalExpr = 105, RuleOptionalExprComponent = 106, RuleComponentRole = 107, 
-    RuleViralAttribute = 108, RuleValueDomainID = 109, RuleOperatorID = 110, 
-    RuleRoutineName = 111, RuleConstant = 112, RuleBasicScalarType = 113, 
-    RuleRetainType = 114
+    RuleParameter = 24, RuleStringDistanceMethods = 25, RuleStringOperators = 26, 
+    RuleStringOperatorsComponent = 27, RuleNumericOperators = 28, RuleNumericOperatorsComponent = 29, 
+    RuleComparisonOperators = 30, RuleComparisonOperatorsComponent = 31, 
+    RuleTimeOperators = 32, RuleTimeOperatorsComponent = 33, RuleSetOperators = 34, 
+    RuleHierarchyOperators = 35, RuleValidationOperators = 36, RuleConditionalOperators = 37, 
+    RuleConditionalOperatorsComponent = 38, RuleAggrOperators = 39, RuleAggrOperatorsGrouping = 40, 
+    RuleAnFunction = 41, RuleAnFunctionComponent = 42, RuleRenameClauseItem = 43, 
+    RuleAggregateClause = 44, RuleAggrFunctionClause = 45, RuleCalcClauseItem = 46, 
+    RuleSubspaceClauseItem = 47, RuleScalarItem = 48, RuleJoinClause = 49, 
+    RuleJoinClauseItem = 50, RuleUsingClause = 51, RuleNvlJoinClause = 52, 
+    RuleJoinBody = 53, RuleJoinApplyClause = 54, RulePartitionByClause = 55, 
+    RuleOrderByClause = 56, RuleOrderByItem = 57, RuleWindowingClause = 58, 
+    RuleSignedInteger = 59, RuleSignedNumber = 60, RuleLimitClauseItem = 61, 
+    RuleGroupingClause = 62, RuleHavingClause = 63, RuleParameterItem = 64, 
+    RuleOutputParameterType = 65, RuleOutputParameterTypeComponent = 66, 
+    RuleInputParameterType = 67, RuleRulesetType = 68, RuleScalarType = 69, 
+    RuleComponentType = 70, RuleDatasetType = 71, RuleEvalDatasetType = 72, 
+    RuleScalarSetType = 73, RuleDpRuleset = 74, RuleHrRuleset = 75, RuleValueDomainName = 76, 
+    RuleRulesetID = 77, RuleRulesetSignature = 78, RuleSignature = 79, RuleRuleClauseDatapoint = 80, 
+    RuleRuleItemDatapoint = 81, RuleRuleClauseHierarchical = 82, RuleRuleItemHierarchical = 83, 
+    RuleHierRuleSignature = 84, RuleValueDomainSignature = 85, RuleCodeItemRelation = 86, 
+    RuleCodeItemRelationClause = 87, RuleValueDomainValue = 88, RuleScalarTypeConstraint = 89, 
+    RuleCompConstraint = 90, RuleMultModifier = 91, RuleValidationOutput = 92, 
+    RuleValidationMode = 93, RuleConditionClause = 94, RuleInputMode = 95, 
+    RuleImbalanceExpr = 96, RuleInputModeHierarchy = 97, RuleOutputModeHierarchy = 98, 
+    RuleAlias = 99, RuleVarID = 100, RuleSimpleComponentId = 101, RuleComponentID = 102, 
+    RuleLists = 103, RuleErCode = 104, RuleErLevel = 105, RuleComparisonOperand = 106, 
+    RuleOptionalExpr = 107, RuleOptionalExprComponent = 108, RuleComponentRole = 109, 
+    RuleViralAttribute = 110, RuleValueDomainID = 111, RuleOperatorID = 112, 
+    RuleRoutineName = 113, RuleConstant = 114, RuleBasicScalarType = 115, 
+    RuleRetainType = 116
   };
 
-  explicit VtlParser(antlr4::TokenStream *input);
+  explicit Vtl(antlr4::TokenStream *input);
 
-  VtlParser(antlr4::TokenStream *input, const antlr4::atn::ParserATNSimulatorOptions &options);
+  Vtl(antlr4::TokenStream *input, const antlr4::atn::ParserATNSimulatorOptions &options);
 
-  ~VtlParser() override;
+  ~Vtl() override;
 
   std::string getGrammarFileName() const override;
 
@@ -145,6 +142,7 @@ public:
   class GenericOperatorsComponentContext;
   class ParameterComponentContext;
   class ParameterContext;
+  class StringDistanceMethodsContext;
   class StringOperatorsContext;
   class StringOperatorsComponentContext;
   class NumericOperatorsContext;
@@ -168,9 +166,10 @@ public:
   class CalcClauseItemContext;
   class SubspaceClauseItemContext;
   class ScalarItemContext;
-  class JoinClauseWithoutUsingContext;
   class JoinClauseContext;
   class JoinClauseItemContext;
+  class UsingClauseContext;
+  class NvlJoinClauseContext;
   class JoinBodyContext;
   class JoinApplyClauseContext;
   class PartitionByClauseContext;
@@ -348,7 +347,7 @@ public:
   public:
     InNotInExprContext(ExprContext *ctx);
 
-    VtlParser::ExprContext *left = nullptr;
+    Vtl::ExprContext *left = nullptr;
     antlr4::Token *op = nullptr;
     ExprContext *expr();
     antlr4::tree::TerminalNode *IN();
@@ -365,9 +364,9 @@ public:
   public:
     BooleanExprContext(ExprContext *ctx);
 
-    VtlParser::ExprContext *left = nullptr;
+    Vtl::ExprContext *left = nullptr;
     antlr4::Token *op = nullptr;
-    VtlParser::ExprContext *right = nullptr;
+    Vtl::ExprContext *right = nullptr;
     std::vector<ExprContext *> expr();
     ExprContext* expr(size_t i);
     antlr4::tree::TerminalNode *AND();
@@ -383,9 +382,9 @@ public:
   public:
     ComparisonExprContext(ExprContext *ctx);
 
-    VtlParser::ExprContext *left = nullptr;
-    VtlParser::ComparisonOperandContext *op = nullptr;
-    VtlParser::ExprContext *right = nullptr;
+    Vtl::ExprContext *left = nullptr;
+    Vtl::ComparisonOperandContext *op = nullptr;
+    Vtl::ExprContext *right = nullptr;
     std::vector<ExprContext *> expr();
     ExprContext* expr(size_t i);
     ComparisonOperandContext *comparisonOperand();
@@ -400,7 +399,7 @@ public:
     UnaryExprContext(ExprContext *ctx);
 
     antlr4::Token *op = nullptr;
-    VtlParser::ExprContext *right = nullptr;
+    Vtl::ExprContext *right = nullptr;
     ExprContext *expr();
     antlr4::tree::TerminalNode *PLUS();
     antlr4::tree::TerminalNode *MINUS();
@@ -426,9 +425,9 @@ public:
   public:
     IfExprContext(ExprContext *ctx);
 
-    VtlParser::ExprContext *conditionalExpr = nullptr;
-    VtlParser::ExprContext *thenExpr = nullptr;
-    VtlParser::ExprContext *elseExpr = nullptr;
+    Vtl::ExprContext *conditionalExpr = nullptr;
+    Vtl::ExprContext *thenExpr = nullptr;
+    Vtl::ExprContext *elseExpr = nullptr;
     antlr4::tree::TerminalNode *IF();
     antlr4::tree::TerminalNode *THEN();
     antlr4::tree::TerminalNode *ELSE();
@@ -444,8 +443,8 @@ public:
   public:
     ClauseExprContext(ExprContext *ctx);
 
-    VtlParser::ExprContext *dataset = nullptr;
-    VtlParser::DatasetClauseContext *clause = nullptr;
+    Vtl::ExprContext *dataset = nullptr;
+    Vtl::DatasetClauseContext *clause = nullptr;
     antlr4::tree::TerminalNode *QLPAREN();
     antlr4::tree::TerminalNode *QRPAREN();
     ExprContext *expr();
@@ -460,10 +459,10 @@ public:
   public:
     CaseExprContext(ExprContext *ctx);
 
-    VtlParser::ExprContext *exprContext = nullptr;
+    Vtl::ExprContext *exprContext = nullptr;
     std::vector<ExprContext *> condExpr;
     std::vector<ExprContext *> thenExpr;
-    VtlParser::ExprContext *elseExpr = nullptr;
+    Vtl::ExprContext *elseExpr = nullptr;
     antlr4::tree::TerminalNode *CASE();
     antlr4::tree::TerminalNode *ELSE();
     std::vector<ExprContext *> expr();
@@ -482,9 +481,9 @@ public:
   public:
     ArithmeticExprContext(ExprContext *ctx);
 
-    VtlParser::ExprContext *left = nullptr;
+    Vtl::ExprContext *left = nullptr;
     antlr4::Token *op = nullptr;
-    VtlParser::ExprContext *right = nullptr;
+    Vtl::ExprContext *right = nullptr;
     std::vector<ExprContext *> expr();
     ExprContext* expr(size_t i);
     antlr4::tree::TerminalNode *MUL();
@@ -523,9 +522,9 @@ public:
   public:
     ArithmeticExprOrConcatContext(ExprContext *ctx);
 
-    VtlParser::ExprContext *left = nullptr;
+    Vtl::ExprContext *left = nullptr;
     antlr4::Token *op = nullptr;
-    VtlParser::ExprContext *right = nullptr;
+    Vtl::ExprContext *right = nullptr;
     std::vector<ExprContext *> expr();
     ExprContext* expr(size_t i);
     antlr4::tree::TerminalNode *PLUS();
@@ -556,9 +555,9 @@ public:
   public:
     ArithmeticExprCompContext(ExprComponentContext *ctx);
 
-    VtlParser::ExprComponentContext *left = nullptr;
+    Vtl::ExprComponentContext *left = nullptr;
     antlr4::Token *op = nullptr;
-    VtlParser::ExprComponentContext *right = nullptr;
+    Vtl::ExprComponentContext *right = nullptr;
     std::vector<ExprComponentContext *> exprComponent();
     ExprComponentContext* exprComponent(size_t i);
     antlr4::tree::TerminalNode *MUL();
@@ -573,9 +572,9 @@ public:
   public:
     IfExprCompContext(ExprComponentContext *ctx);
 
-    VtlParser::ExprComponentContext *conditionalExpr = nullptr;
-    VtlParser::ExprComponentContext *thenExpr = nullptr;
-    VtlParser::ExprComponentContext *elseExpr = nullptr;
+    Vtl::ExprComponentContext *conditionalExpr = nullptr;
+    Vtl::ExprComponentContext *thenExpr = nullptr;
+    Vtl::ExprComponentContext *elseExpr = nullptr;
     antlr4::tree::TerminalNode *IF();
     antlr4::tree::TerminalNode *THEN();
     antlr4::tree::TerminalNode *ELSE();
@@ -591,8 +590,8 @@ public:
   public:
     ComparisonExprCompContext(ExprComponentContext *ctx);
 
-    VtlParser::ExprComponentContext *left = nullptr;
-    VtlParser::ExprComponentContext *right = nullptr;
+    Vtl::ExprComponentContext *left = nullptr;
+    Vtl::ExprComponentContext *right = nullptr;
     ComparisonOperandContext *comparisonOperand();
     std::vector<ExprComponentContext *> exprComponent();
     ExprComponentContext* exprComponent(size_t i);
@@ -639,9 +638,9 @@ public:
   public:
     ArithmeticExprOrConcatCompContext(ExprComponentContext *ctx);
 
-    VtlParser::ExprComponentContext *left = nullptr;
+    Vtl::ExprComponentContext *left = nullptr;
     antlr4::Token *op = nullptr;
-    VtlParser::ExprComponentContext *right = nullptr;
+    Vtl::ExprComponentContext *right = nullptr;
     std::vector<ExprComponentContext *> exprComponent();
     ExprComponentContext* exprComponent(size_t i);
     antlr4::tree::TerminalNode *PLUS();
@@ -670,7 +669,7 @@ public:
   public:
     InNotInExprCompContext(ExprComponentContext *ctx);
 
-    VtlParser::ExprComponentContext *left = nullptr;
+    Vtl::ExprComponentContext *left = nullptr;
     antlr4::Token *op = nullptr;
     ExprComponentContext *exprComponent();
     antlr4::tree::TerminalNode *IN();
@@ -688,7 +687,7 @@ public:
     UnaryExprCompContext(ExprComponentContext *ctx);
 
     antlr4::Token *op = nullptr;
-    VtlParser::ExprComponentContext *right = nullptr;
+    Vtl::ExprComponentContext *right = nullptr;
     ExprComponentContext *exprComponent();
     antlr4::tree::TerminalNode *PLUS();
     antlr4::tree::TerminalNode *MINUS();
@@ -703,10 +702,10 @@ public:
   public:
     CaseExprCompContext(ExprComponentContext *ctx);
 
-    VtlParser::ExprComponentContext *exprComponentContext = nullptr;
+    Vtl::ExprComponentContext *exprComponentContext = nullptr;
     std::vector<ExprComponentContext *> condExpr;
     std::vector<ExprComponentContext *> thenExpr;
-    VtlParser::ExprComponentContext *elseExpr = nullptr;
+    Vtl::ExprComponentContext *elseExpr = nullptr;
     antlr4::tree::TerminalNode *CASE();
     antlr4::tree::TerminalNode *ELSE();
     std::vector<ExprComponentContext *> exprComponent();
@@ -725,9 +724,9 @@ public:
   public:
     BooleanExprCompContext(ExprComponentContext *ctx);
 
-    VtlParser::ExprComponentContext *left = nullptr;
+    Vtl::ExprComponentContext *left = nullptr;
     antlr4::Token *op = nullptr;
-    VtlParser::ExprComponentContext *right = nullptr;
+    Vtl::ExprComponentContext *right = nullptr;
     std::vector<ExprComponentContext *> exprComponent();
     ExprComponentContext* exprComponent(size_t i);
     antlr4::tree::TerminalNode *AND();
@@ -1108,8 +1107,8 @@ public:
   class  PivotOrUnpivotClauseContext : public antlr4::ParserRuleContext {
   public:
     antlr4::Token *op = nullptr;
-    VtlParser::ComponentIDContext *id_ = nullptr;
-    VtlParser::ComponentIDContext *mea = nullptr;
+    Vtl::ComponentIDContext *id_ = nullptr;
+    Vtl::ComponentIDContext *mea = nullptr;
     PivotOrUnpivotClauseContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *COMMA();
@@ -1129,8 +1128,8 @@ public:
 
   class  CustomPivotClauseContext : public antlr4::ParserRuleContext {
   public:
-    VtlParser::ComponentIDContext *id_ = nullptr;
-    VtlParser::ComponentIDContext *mea = nullptr;
+    Vtl::ComponentIDContext *id_ = nullptr;
+    Vtl::ComponentIDContext *mea = nullptr;
     CustomPivotClauseContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *CUSTOMPIVOT();
@@ -1183,20 +1182,67 @@ public:
    
   };
 
-  class  JoinExprContext : public JoinOperatorsContext {
+  class  FullJoinExprContext : public JoinOperatorsContext {
   public:
-    JoinExprContext(JoinOperatorsContext *ctx);
+    FullJoinExprContext(JoinOperatorsContext *ctx);
 
-    antlr4::Token *joinKeyword = nullptr;
+    antlr4::tree::TerminalNode *FULL_JOIN();
     antlr4::tree::TerminalNode *LPAREN();
     JoinClauseContext *joinClause();
     JoinBodyContext *joinBody();
     antlr4::tree::TerminalNode *RPAREN();
+    UsingClauseContext *usingClause();
+    std::vector<NvlJoinClauseContext *> nvlJoinClause();
+    NvlJoinClauseContext* nvlJoinClause(size_t i);
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  InnerJoinExprContext : public JoinOperatorsContext {
+  public:
+    InnerJoinExprContext(JoinOperatorsContext *ctx);
+
     antlr4::tree::TerminalNode *INNER_JOIN();
-    antlr4::tree::TerminalNode *LEFT_JOIN();
-    JoinClauseWithoutUsingContext *joinClauseWithoutUsing();
-    antlr4::tree::TerminalNode *FULL_JOIN();
+    antlr4::tree::TerminalNode *LPAREN();
+    JoinClauseContext *joinClause();
+    JoinBodyContext *joinBody();
+    antlr4::tree::TerminalNode *RPAREN();
+    UsingClauseContext *usingClause();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  CrossJoinExprContext : public JoinOperatorsContext {
+  public:
+    CrossJoinExprContext(JoinOperatorsContext *ctx);
+
     antlr4::tree::TerminalNode *CROSS_JOIN();
+    antlr4::tree::TerminalNode *LPAREN();
+    JoinClauseContext *joinClause();
+    JoinBodyContext *joinBody();
+    antlr4::tree::TerminalNode *RPAREN();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  LeftJoinExprContext : public JoinOperatorsContext {
+  public:
+    LeftJoinExprContext(JoinOperatorsContext *ctx);
+
+    antlr4::tree::TerminalNode *LEFT_JOIN();
+    antlr4::tree::TerminalNode *LPAREN();
+    JoinClauseContext *joinClause();
+    JoinBodyContext *joinBody();
+    antlr4::tree::TerminalNode *RPAREN();
+    UsingClauseContext *usingClause();
+    std::vector<NvlJoinClauseContext *> nvlJoinClause();
+    NvlJoinClauseContext* nvlJoinClause(size_t i);
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
 
@@ -1315,9 +1361,9 @@ public:
   public:
     VpSignatureContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *VALUE_DOMAIN();
-    VarIDContext *varID();
+    antlr4::tree::TerminalNode *IDENTIFIER();
     antlr4::tree::TerminalNode *VARIABLE();
+    antlr4::tree::TerminalNode *VALUE_DOMAIN();
 
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
@@ -1363,7 +1409,7 @@ public:
   public:
     AggregationVpClauseContext(VpClauseContext *ctx);
 
-    antlr4::tree::TerminalNode *AGGREGATE();
+    antlr4::tree::TerminalNode *AGGREGATE_KW();
     antlr4::tree::TerminalNode *MIN();
     antlr4::tree::TerminalNode *MAX();
     antlr4::tree::TerminalNode *SUM();
@@ -1607,6 +1653,24 @@ public:
 
   ParameterContext* parameter();
 
+  class  StringDistanceMethodsContext : public antlr4::ParserRuleContext {
+  public:
+    StringDistanceMethodsContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *LEVENSHTEIN_METHOD();
+    antlr4::tree::TerminalNode *DAMERAU_LEVENSHTEIN_METHOD();
+    antlr4::tree::TerminalNode *HAMMING_METHOD();
+    antlr4::tree::TerminalNode *JARO_WINKLER_METHOD();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  StringDistanceMethodsContext* stringDistanceMethods();
+
   class  StringOperatorsContext : public antlr4::ParserRuleContext {
   public:
     StringOperatorsContext(antlr4::ParserRuleContext *parent, size_t invokingState);
@@ -1620,13 +1684,34 @@ public:
    
   };
 
+  class  StringDistanceAtomContext : public StringOperatorsContext {
+  public:
+    StringDistanceAtomContext(StringOperatorsContext *ctx);
+
+    Vtl::StringDistanceMethodsContext *method = nullptr;
+    Vtl::ExprContext *string1 = nullptr;
+    Vtl::ExprContext *string2 = nullptr;
+    antlr4::tree::TerminalNode *STRING_DISTANCE();
+    antlr4::tree::TerminalNode *LPAREN();
+    std::vector<antlr4::tree::TerminalNode *> COMMA();
+    antlr4::tree::TerminalNode* COMMA(size_t i);
+    antlr4::tree::TerminalNode *RPAREN();
+    StringDistanceMethodsContext *stringDistanceMethods();
+    std::vector<ExprContext *> expr();
+    ExprContext* expr(size_t i);
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
   class  InstrAtomContext : public StringOperatorsContext {
   public:
     InstrAtomContext(StringOperatorsContext *ctx);
 
-    VtlParser::ExprContext *pattern = nullptr;
-    VtlParser::OptionalExprContext *startParameter = nullptr;
-    VtlParser::OptionalExprContext *occurrenceParameter = nullptr;
+    Vtl::ExprContext *pattern = nullptr;
+    Vtl::OptionalExprContext *startParameter = nullptr;
+    Vtl::OptionalExprContext *occurrenceParameter = nullptr;
     antlr4::tree::TerminalNode *INSTR();
     antlr4::tree::TerminalNode *LPAREN();
     std::vector<ExprContext *> expr();
@@ -1666,8 +1751,8 @@ public:
   public:
     SubstrAtomContext(StringOperatorsContext *ctx);
 
-    VtlParser::OptionalExprContext *startParameter = nullptr;
-    VtlParser::OptionalExprContext *endParameter = nullptr;
+    Vtl::OptionalExprContext *startParameter = nullptr;
+    Vtl::OptionalExprContext *endParameter = nullptr;
     antlr4::tree::TerminalNode *SUBSTR();
     antlr4::tree::TerminalNode *LPAREN();
     ExprContext *expr();
@@ -1686,7 +1771,7 @@ public:
   public:
     ReplaceAtomContext(StringOperatorsContext *ctx);
 
-    VtlParser::ExprContext *param = nullptr;
+    Vtl::ExprContext *param = nullptr;
     antlr4::tree::TerminalNode *REPLACE();
     antlr4::tree::TerminalNode *LPAREN();
     std::vector<ExprContext *> expr();
@@ -1720,7 +1805,7 @@ public:
   public:
     ReplaceAtomComponentContext(StringOperatorsComponentContext *ctx);
 
-    VtlParser::ExprComponentContext *param = nullptr;
+    Vtl::ExprComponentContext *param = nullptr;
     antlr4::tree::TerminalNode *REPLACE();
     antlr4::tree::TerminalNode *LPAREN();
     std::vector<ExprComponentContext *> exprComponent();
@@ -1729,6 +1814,27 @@ public:
     antlr4::tree::TerminalNode* COMMA(size_t i);
     antlr4::tree::TerminalNode *RPAREN();
     OptionalExprComponentContext *optionalExprComponent();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  StringDistanceAtomComponentContext : public StringOperatorsComponentContext {
+  public:
+    StringDistanceAtomComponentContext(StringOperatorsComponentContext *ctx);
+
+    Vtl::StringDistanceMethodsContext *method = nullptr;
+    Vtl::ExprComponentContext *string1 = nullptr;
+    Vtl::ExprComponentContext *string2 = nullptr;
+    antlr4::tree::TerminalNode *STRING_DISTANCE();
+    antlr4::tree::TerminalNode *LPAREN();
+    std::vector<antlr4::tree::TerminalNode *> COMMA();
+    antlr4::tree::TerminalNode* COMMA(size_t i);
+    antlr4::tree::TerminalNode *RPAREN();
+    StringDistanceMethodsContext *stringDistanceMethods();
+    std::vector<ExprComponentContext *> exprComponent();
+    ExprComponentContext* exprComponent(size_t i);
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
 
@@ -1759,8 +1865,8 @@ public:
   public:
     SubstrAtomComponentContext(StringOperatorsComponentContext *ctx);
 
-    VtlParser::OptionalExprComponentContext *startParameter = nullptr;
-    VtlParser::OptionalExprComponentContext *endParameter = nullptr;
+    Vtl::OptionalExprComponentContext *startParameter = nullptr;
+    Vtl::OptionalExprComponentContext *endParameter = nullptr;
     antlr4::tree::TerminalNode *SUBSTR();
     antlr4::tree::TerminalNode *LPAREN();
     ExprComponentContext *exprComponent();
@@ -1779,9 +1885,9 @@ public:
   public:
     InstrAtomComponentContext(StringOperatorsComponentContext *ctx);
 
-    VtlParser::ExprComponentContext *pattern = nullptr;
-    VtlParser::OptionalExprComponentContext *startParameter = nullptr;
-    VtlParser::OptionalExprComponentContext *occurrenceParameter = nullptr;
+    Vtl::ExprComponentContext *pattern = nullptr;
+    Vtl::OptionalExprComponentContext *startParameter = nullptr;
+    Vtl::OptionalExprComponentContext *occurrenceParameter = nullptr;
     antlr4::tree::TerminalNode *INSTR();
     antlr4::tree::TerminalNode *LPAREN();
     std::vector<ExprComponentContext *> exprComponent();
@@ -1855,8 +1961,8 @@ public:
     BinaryNumericContext(NumericOperatorsContext *ctx);
 
     antlr4::Token *op = nullptr;
-    VtlParser::ExprContext *left = nullptr;
-    VtlParser::ExprContext *right = nullptr;
+    Vtl::ExprContext *left = nullptr;
+    Vtl::ExprContext *right = nullptr;
     antlr4::tree::TerminalNode *LPAREN();
     antlr4::tree::TerminalNode *COMMA();
     antlr4::tree::TerminalNode *RPAREN();
@@ -1912,8 +2018,8 @@ public:
     BinaryNumericComponentContext(NumericOperatorsComponentContext *ctx);
 
     antlr4::Token *op = nullptr;
-    VtlParser::ExprComponentContext *left = nullptr;
-    VtlParser::ExprComponentContext *right = nullptr;
+    Vtl::ExprComponentContext *left = nullptr;
+    Vtl::ExprComponentContext *right = nullptr;
     antlr4::tree::TerminalNode *LPAREN();
     antlr4::tree::TerminalNode *COMMA();
     antlr4::tree::TerminalNode *RPAREN();
@@ -1966,9 +2072,9 @@ public:
   public:
     BetweenAtomContext(ComparisonOperatorsContext *ctx);
 
-    VtlParser::ExprContext *op = nullptr;
-    VtlParser::ExprContext *from_ = nullptr;
-    VtlParser::ExprContext *to_ = nullptr;
+    Vtl::ExprContext *op = nullptr;
+    Vtl::ExprContext *from_ = nullptr;
+    Vtl::ExprContext *to_ = nullptr;
     antlr4::tree::TerminalNode *BETWEEN();
     antlr4::tree::TerminalNode *LPAREN();
     std::vector<antlr4::tree::TerminalNode *> COMMA();
@@ -1986,8 +2092,8 @@ public:
   public:
     CharsetMatchAtomContext(ComparisonOperatorsContext *ctx);
 
-    VtlParser::ExprContext *op = nullptr;
-    VtlParser::ExprContext *pattern = nullptr;
+    Vtl::ExprContext *op = nullptr;
+    Vtl::ExprContext *pattern = nullptr;
     antlr4::tree::TerminalNode *CHARSET_MATCH();
     antlr4::tree::TerminalNode *LPAREN();
     antlr4::tree::TerminalNode *COMMA();
@@ -2018,8 +2124,8 @@ public:
   public:
     ExistInAtomContext(ComparisonOperatorsContext *ctx);
 
-    VtlParser::ExprContext *left = nullptr;
-    VtlParser::ExprContext *right = nullptr;
+    Vtl::ExprContext *left = nullptr;
+    Vtl::ExprContext *right = nullptr;
     antlr4::tree::TerminalNode *EXISTS_IN();
     antlr4::tree::TerminalNode *LPAREN();
     std::vector<antlr4::tree::TerminalNode *> COMMA();
@@ -2067,8 +2173,8 @@ public:
   public:
     CharsetMatchAtomComponentContext(ComparisonOperatorsComponentContext *ctx);
 
-    VtlParser::ExprComponentContext *op = nullptr;
-    VtlParser::ExprComponentContext *pattern = nullptr;
+    Vtl::ExprComponentContext *op = nullptr;
+    Vtl::ExprComponentContext *pattern = nullptr;
     antlr4::tree::TerminalNode *CHARSET_MATCH();
     antlr4::tree::TerminalNode *LPAREN();
     antlr4::tree::TerminalNode *COMMA();
@@ -2085,9 +2191,9 @@ public:
   public:
     BetweenAtomComponentContext(ComparisonOperatorsComponentContext *ctx);
 
-    VtlParser::ExprComponentContext *op = nullptr;
-    VtlParser::ExprComponentContext *from_ = nullptr;
-    VtlParser::ExprComponentContext *to_ = nullptr;
+    Vtl::ExprComponentContext *op = nullptr;
+    Vtl::ExprComponentContext *from_ = nullptr;
+    Vtl::ExprComponentContext *to_ = nullptr;
     antlr4::tree::TerminalNode *BETWEEN();
     antlr4::tree::TerminalNode *LPAREN();
     std::vector<antlr4::tree::TerminalNode *> COMMA();
@@ -2266,12 +2372,15 @@ public:
   public:
     TimeShiftAtomContext(TimeOperatorsContext *ctx);
 
+    Vtl::SignedIntegerContext *intShift = nullptr;
+    Vtl::VarIDContext *varShift = nullptr;
     antlr4::tree::TerminalNode *TIMESHIFT();
     antlr4::tree::TerminalNode *LPAREN();
     ExprContext *expr();
     antlr4::tree::TerminalNode *COMMA();
-    SignedIntegerContext *signedInteger();
     antlr4::tree::TerminalNode *RPAREN();
+    SignedIntegerContext *signedInteger();
+    VarIDContext *varID();
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
 
@@ -2282,13 +2391,15 @@ public:
   public:
     TimeAggAtomContext(TimeOperatorsContext *ctx);
 
-    antlr4::Token *periodIndTo = nullptr;
+    Vtl::VarIDContext *periodIndToVar = nullptr;
+    antlr4::Token *periodIndToConst = nullptr;
     antlr4::Token *periodIndFrom = nullptr;
-    VtlParser::OptionalExprContext *op = nullptr;
+    Vtl::OptionalExprContext *op = nullptr;
     antlr4::Token *delim = nullptr;
     antlr4::tree::TerminalNode *TIME_AGG();
     antlr4::tree::TerminalNode *LPAREN();
     antlr4::tree::TerminalNode *RPAREN();
+    VarIDContext *varID();
     std::vector<antlr4::tree::TerminalNode *> STRING_CONSTANT();
     antlr4::tree::TerminalNode* STRING_CONSTANT(size_t i);
     std::vector<antlr4::tree::TerminalNode *> COMMA();
@@ -2307,8 +2418,8 @@ public:
   public:
     DateDiffAtomContext(TimeOperatorsContext *ctx);
 
-    VtlParser::ExprContext *dateFrom = nullptr;
-    VtlParser::ExprContext *dateTo = nullptr;
+    Vtl::ExprContext *dateFrom = nullptr;
+    Vtl::ExprContext *dateTo = nullptr;
     antlr4::tree::TerminalNode *DATEDIFF();
     antlr4::tree::TerminalNode *LPAREN();
     antlr4::tree::TerminalNode *COMMA();
@@ -2325,9 +2436,9 @@ public:
   public:
     DateAddAtomContext(TimeOperatorsContext *ctx);
 
-    VtlParser::ExprContext *op = nullptr;
-    VtlParser::ExprContext *shiftNumber = nullptr;
-    VtlParser::ExprContext *periodInd = nullptr;
+    Vtl::ExprContext *op = nullptr;
+    Vtl::ExprContext *shiftNumber = nullptr;
+    Vtl::ExprContext *periodInd = nullptr;
     antlr4::tree::TerminalNode *DATEADD();
     antlr4::tree::TerminalNode *LPAREN();
     std::vector<antlr4::tree::TerminalNode *> COMMA();
@@ -2401,12 +2512,15 @@ public:
   public:
     TimeShiftAtomComponentContext(TimeOperatorsComponentContext *ctx);
 
+    Vtl::SignedIntegerContext *intShift = nullptr;
+    Vtl::VarIDContext *varShift = nullptr;
     antlr4::tree::TerminalNode *TIMESHIFT();
     antlr4::tree::TerminalNode *LPAREN();
     ExprComponentContext *exprComponent();
     antlr4::tree::TerminalNode *COMMA();
-    SignedIntegerContext *signedInteger();
     antlr4::tree::TerminalNode *RPAREN();
+    SignedIntegerContext *signedInteger();
+    VarIDContext *varID();
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
 
@@ -2431,13 +2545,15 @@ public:
   public:
     TimeAggAtomComponentContext(TimeOperatorsComponentContext *ctx);
 
-    antlr4::Token *periodIndTo = nullptr;
+    Vtl::VarIDContext *periodIndToVar = nullptr;
+    antlr4::Token *periodIndToConst = nullptr;
     antlr4::Token *periodIndFrom = nullptr;
-    VtlParser::OptionalExprComponentContext *op = nullptr;
+    Vtl::OptionalExprComponentContext *op = nullptr;
     antlr4::Token *delim = nullptr;
     antlr4::tree::TerminalNode *TIME_AGG();
     antlr4::tree::TerminalNode *LPAREN();
     antlr4::tree::TerminalNode *RPAREN();
+    VarIDContext *varID();
     std::vector<antlr4::tree::TerminalNode *> STRING_CONSTANT();
     antlr4::tree::TerminalNode* STRING_CONSTANT(size_t i);
     std::vector<antlr4::tree::TerminalNode *> COMMA();
@@ -2470,9 +2586,9 @@ public:
   public:
     DateAddAtomComponentContext(TimeOperatorsComponentContext *ctx);
 
-    VtlParser::ExprComponentContext *op = nullptr;
-    VtlParser::ExprComponentContext *shiftNumber = nullptr;
-    VtlParser::ExprComponentContext *periodInd = nullptr;
+    Vtl::ExprComponentContext *op = nullptr;
+    Vtl::ExprComponentContext *shiftNumber = nullptr;
+    Vtl::ExprComponentContext *periodInd = nullptr;
     antlr4::tree::TerminalNode *DATEADD();
     antlr4::tree::TerminalNode *LPAREN();
     std::vector<antlr4::tree::TerminalNode *> COMMA();
@@ -2514,6 +2630,20 @@ public:
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
+  class  DayOfYearAtomComponentContext : public TimeOperatorsComponentContext {
+  public:
+    DayOfYearAtomComponentContext(TimeOperatorsComponentContext *ctx);
+
+    antlr4::tree::TerminalNode *DAYOFYEAR();
+    antlr4::tree::TerminalNode *LPAREN();
+    ExprComponentContext *exprComponent();
+    antlr4::tree::TerminalNode *RPAREN();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
   class  MonthAtomComponentContext : public TimeOperatorsComponentContext {
   public:
     MonthAtomComponentContext(TimeOperatorsComponentContext *ctx);
@@ -2540,20 +2670,6 @@ public:
     antlr4::tree::TerminalNode *COMMA();
     antlr4::tree::TerminalNode *SINGLE();
     antlr4::tree::TerminalNode *ALL();
-    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
-    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
-
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-  };
-
-  class  DatOfYearAtomComponentContext : public TimeOperatorsComponentContext {
-  public:
-    DatOfYearAtomComponentContext(TimeOperatorsComponentContext *ctx);
-
-    antlr4::tree::TerminalNode *DAYOFYEAR();
-    antlr4::tree::TerminalNode *LPAREN();
-    ExprComponentContext *exprComponent();
-    antlr4::tree::TerminalNode *RPAREN();
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
 
@@ -2607,14 +2723,14 @@ public:
   public:
     DateDiffAtomComponentContext(TimeOperatorsComponentContext *ctx);
 
-    VtlParser::ExprComponentContext *dateFrom = nullptr;
-    VtlParser::ExprContext *dateTo = nullptr;
+    Vtl::ExprComponentContext *dateFrom = nullptr;
+    Vtl::ExprComponentContext *dateTo = nullptr;
     antlr4::tree::TerminalNode *DATEDIFF();
     antlr4::tree::TerminalNode *LPAREN();
     antlr4::tree::TerminalNode *COMMA();
     antlr4::tree::TerminalNode *RPAREN();
-    ExprComponentContext *exprComponent();
-    ExprContext *expr();
+    std::vector<ExprComponentContext *> exprComponent();
+    ExprComponentContext* exprComponent(size_t i);
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
 
@@ -2655,8 +2771,8 @@ public:
     SetOrSYmDiffAtomContext(SetOperatorsContext *ctx);
 
     antlr4::Token *op = nullptr;
-    VtlParser::ExprContext *left = nullptr;
-    VtlParser::ExprContext *right = nullptr;
+    Vtl::ExprContext *left = nullptr;
+    Vtl::ExprContext *right = nullptr;
     antlr4::tree::TerminalNode *LPAREN();
     antlr4::tree::TerminalNode *COMMA();
     antlr4::tree::TerminalNode *RPAREN();
@@ -2674,7 +2790,7 @@ public:
   public:
     IntersectAtomContext(SetOperatorsContext *ctx);
 
-    VtlParser::ExprContext *left = nullptr;
+    Vtl::ExprContext *left = nullptr;
     antlr4::tree::TerminalNode *INTERSECT();
     antlr4::tree::TerminalNode *LPAREN();
     antlr4::tree::TerminalNode *RPAREN();
@@ -2692,7 +2808,7 @@ public:
   public:
     UnionAtomContext(SetOperatorsContext *ctx);
 
-    VtlParser::ExprContext *left = nullptr;
+    Vtl::ExprContext *left = nullptr;
     antlr4::tree::TerminalNode *UNION();
     antlr4::tree::TerminalNode *LPAREN();
     antlr4::tree::TerminalNode *RPAREN();
@@ -2710,9 +2826,9 @@ public:
 
   class  HierarchyOperatorsContext : public antlr4::ParserRuleContext {
   public:
-    VtlParser::ExprContext *op = nullptr;
+    Vtl::ExprContext *op = nullptr;
     antlr4::Token *hrName = nullptr;
-    VtlParser::ComponentIDContext *ruleComponent = nullptr;
+    Vtl::ComponentIDContext *ruleComponent = nullptr;
     HierarchyOperatorsContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *HIERARCHY();
@@ -2754,7 +2870,7 @@ public:
   public:
     ValidateHRrulesetContext(ValidationOperatorsContext *ctx);
 
-    VtlParser::ExprContext *op = nullptr;
+    Vtl::ExprContext *op = nullptr;
     antlr4::Token *hrName = nullptr;
     antlr4::tree::TerminalNode *CHECK_HIERARCHY();
     antlr4::tree::TerminalNode *LPAREN();
@@ -2778,7 +2894,7 @@ public:
   public:
     ValidateDPrulesetContext(ValidationOperatorsContext *ctx);
 
-    VtlParser::ExprContext *op = nullptr;
+    Vtl::ExprContext *op = nullptr;
     antlr4::Token *dpName = nullptr;
     antlr4::tree::TerminalNode *CHECK_DATAPOINT();
     antlr4::tree::TerminalNode *LPAREN();
@@ -2801,9 +2917,9 @@ public:
   public:
     ValidationSimpleContext(ValidationOperatorsContext *ctx);
 
-    VtlParser::ExprContext *op = nullptr;
-    VtlParser::ErCodeContext *codeErr = nullptr;
-    VtlParser::ErLevelContext *levelCode = nullptr;
+    Vtl::ExprContext *op = nullptr;
+    Vtl::ErCodeContext *codeErr = nullptr;
+    Vtl::ErLevelContext *levelCode = nullptr;
     antlr4::Token *output = nullptr;
     antlr4::tree::TerminalNode *CHECK();
     antlr4::tree::TerminalNode *LPAREN();
@@ -2839,8 +2955,8 @@ public:
   public:
     NvlAtomContext(ConditionalOperatorsContext *ctx);
 
-    VtlParser::ExprContext *left = nullptr;
-    VtlParser::ExprContext *right = nullptr;
+    Vtl::ExprContext *left = nullptr;
+    Vtl::ExprContext *right = nullptr;
     antlr4::tree::TerminalNode *NVL();
     antlr4::tree::TerminalNode *LPAREN();
     antlr4::tree::TerminalNode *COMMA();
@@ -2872,8 +2988,8 @@ public:
   public:
     NvlAtomComponentContext(ConditionalOperatorsComponentContext *ctx);
 
-    VtlParser::ExprComponentContext *left = nullptr;
-    VtlParser::ExprComponentContext *right = nullptr;
+    Vtl::ExprComponentContext *left = nullptr;
+    Vtl::ExprComponentContext *right = nullptr;
     antlr4::tree::TerminalNode *NVL();
     antlr4::tree::TerminalNode *LPAREN();
     antlr4::tree::TerminalNode *COMMA();
@@ -2999,10 +3115,11 @@ public:
     LagOrLeadAnContext(AnFunctionContext *ctx);
 
     antlr4::Token *op = nullptr;
-    VtlParser::SignedIntegerContext *offset = nullptr;
-    VtlParser::ScalarItemContext *defaultValue = nullptr;
-    VtlParser::PartitionByClauseContext *partition = nullptr;
-    VtlParser::OrderByClauseContext *orderBy = nullptr;
+    Vtl::SignedIntegerContext *intOffset = nullptr;
+    Vtl::VarIDContext *varOffset = nullptr;
+    Vtl::ScalarItemContext *defaultValue = nullptr;
+    Vtl::PartitionByClauseContext *partition = nullptr;
+    Vtl::OrderByClauseContext *orderBy = nullptr;
     std::vector<antlr4::tree::TerminalNode *> LPAREN();
     antlr4::tree::TerminalNode* LPAREN(size_t i);
     ExprContext *expr();
@@ -3015,6 +3132,7 @@ public:
     antlr4::tree::TerminalNode* COMMA(size_t i);
     OrderByClauseContext *orderByClause();
     SignedIntegerContext *signedInteger();
+    VarIDContext *varID();
     PartitionByClauseContext *partitionByClause();
     ScalarItemContext *scalarItem();
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
@@ -3028,7 +3146,7 @@ public:
     RatioToReportAnContext(AnFunctionContext *ctx);
 
     antlr4::Token *op = nullptr;
-    VtlParser::PartitionByClauseContext *partition = nullptr;
+    Vtl::PartitionByClauseContext *partition = nullptr;
     std::vector<antlr4::tree::TerminalNode *> LPAREN();
     antlr4::tree::TerminalNode* LPAREN(size_t i);
     ExprContext *expr();
@@ -3048,9 +3166,9 @@ public:
     AnSimpleFunctionContext(AnFunctionContext *ctx);
 
     antlr4::Token *op = nullptr;
-    VtlParser::PartitionByClauseContext *partition = nullptr;
-    VtlParser::OrderByClauseContext *orderBy = nullptr;
-    VtlParser::WindowingClauseContext *windowing = nullptr;
+    Vtl::PartitionByClauseContext *partition = nullptr;
+    Vtl::OrderByClauseContext *orderBy = nullptr;
+    Vtl::WindowingClauseContext *windowing = nullptr;
     std::vector<antlr4::tree::TerminalNode *> LPAREN();
     antlr4::tree::TerminalNode* LPAREN(size_t i);
     ExprContext *expr();
@@ -3098,9 +3216,9 @@ public:
     AnSimpleFunctionComponentContext(AnFunctionComponentContext *ctx);
 
     antlr4::Token *op = nullptr;
-    VtlParser::PartitionByClauseContext *partition = nullptr;
-    VtlParser::OrderByClauseContext *orderBy = nullptr;
-    VtlParser::WindowingClauseContext *windowing = nullptr;
+    Vtl::PartitionByClauseContext *partition = nullptr;
+    Vtl::OrderByClauseContext *orderBy = nullptr;
+    Vtl::WindowingClauseContext *windowing = nullptr;
     std::vector<antlr4::tree::TerminalNode *> LPAREN();
     antlr4::tree::TerminalNode* LPAREN(size_t i);
     ExprComponentContext *exprComponent();
@@ -3133,10 +3251,11 @@ public:
     LagOrLeadAnComponentContext(AnFunctionComponentContext *ctx);
 
     antlr4::Token *op = nullptr;
-    VtlParser::SignedIntegerContext *offset = nullptr;
-    VtlParser::ScalarItemContext *defaultValue = nullptr;
-    VtlParser::PartitionByClauseContext *partition = nullptr;
-    VtlParser::OrderByClauseContext *orderBy = nullptr;
+    Vtl::SignedIntegerContext *intOffset = nullptr;
+    Vtl::VarIDContext *varOffset = nullptr;
+    Vtl::ScalarItemContext *defaultValue = nullptr;
+    Vtl::PartitionByClauseContext *partition = nullptr;
+    Vtl::OrderByClauseContext *orderBy = nullptr;
     std::vector<antlr4::tree::TerminalNode *> LPAREN();
     antlr4::tree::TerminalNode* LPAREN(size_t i);
     ExprComponentContext *exprComponent();
@@ -3145,9 +3264,11 @@ public:
     antlr4::tree::TerminalNode* RPAREN(size_t i);
     antlr4::tree::TerminalNode *LAG();
     antlr4::tree::TerminalNode *LEAD();
-    antlr4::tree::TerminalNode *COMMA();
+    std::vector<antlr4::tree::TerminalNode *> COMMA();
+    antlr4::tree::TerminalNode* COMMA(size_t i);
     OrderByClauseContext *orderByClause();
     SignedIntegerContext *signedInteger();
+    VarIDContext *varID();
     PartitionByClauseContext *partitionByClause();
     ScalarItemContext *scalarItem();
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
@@ -3161,8 +3282,8 @@ public:
     RankAnComponentContext(AnFunctionComponentContext *ctx);
 
     antlr4::Token *op = nullptr;
-    VtlParser::PartitionByClauseContext *partition = nullptr;
-    VtlParser::OrderByClauseContext *orderBy = nullptr;
+    Vtl::PartitionByClauseContext *partition = nullptr;
+    Vtl::OrderByClauseContext *orderBy = nullptr;
     std::vector<antlr4::tree::TerminalNode *> LPAREN();
     antlr4::tree::TerminalNode* LPAREN(size_t i);
     antlr4::tree::TerminalNode *OVER();
@@ -3182,7 +3303,7 @@ public:
     RatioToReportAnComponentContext(AnFunctionComponentContext *ctx);
 
     antlr4::Token *op = nullptr;
-    VtlParser::PartitionByClauseContext *partition = nullptr;
+    Vtl::PartitionByClauseContext *partition = nullptr;
     std::vector<antlr4::tree::TerminalNode *> LPAREN();
     antlr4::tree::TerminalNode* LPAREN(size_t i);
     ExprComponentContext *exprComponent();
@@ -3201,8 +3322,8 @@ public:
 
   class  RenameClauseItemContext : public antlr4::ParserRuleContext {
   public:
-    VtlParser::ComponentIDContext *fromName = nullptr;
-    VtlParser::ComponentIDContext *toName = nullptr;
+    Vtl::ComponentIDContext *fromName = nullptr;
+    Vtl::ComponentIDContext *toName = nullptr;
     RenameClauseItemContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *TO();
@@ -3278,6 +3399,7 @@ public:
     virtual size_t getRuleIndex() const override;
     ComponentIDContext *componentID();
     antlr4::tree::TerminalNode *EQ();
+    VarIDContext *varID();
     ScalarItemContext *scalarItem();
 
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
@@ -3333,24 +3455,6 @@ public:
 
   ScalarItemContext* scalarItem();
 
-  class  JoinClauseWithoutUsingContext : public antlr4::ParserRuleContext {
-  public:
-    JoinClauseWithoutUsingContext(antlr4::ParserRuleContext *parent, size_t invokingState);
-    virtual size_t getRuleIndex() const override;
-    std::vector<JoinClauseItemContext *> joinClauseItem();
-    JoinClauseItemContext* joinClauseItem(size_t i);
-    std::vector<antlr4::tree::TerminalNode *> COMMA();
-    antlr4::tree::TerminalNode* COMMA(size_t i);
-
-    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
-    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
-
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-   
-  };
-
-  JoinClauseWithoutUsingContext* joinClauseWithoutUsing();
-
   class  JoinClauseContext : public antlr4::ParserRuleContext {
   public:
     JoinClauseContext(antlr4::ParserRuleContext *parent, size_t invokingState);
@@ -3359,9 +3463,6 @@ public:
     JoinClauseItemContext* joinClauseItem(size_t i);
     std::vector<antlr4::tree::TerminalNode *> COMMA();
     antlr4::tree::TerminalNode* COMMA(size_t i);
-    antlr4::tree::TerminalNode *USING();
-    std::vector<ComponentIDContext *> componentID();
-    ComponentIDContext* componentID(size_t i);
 
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
@@ -3388,6 +3489,46 @@ public:
   };
 
   JoinClauseItemContext* joinClauseItem();
+
+  class  UsingClauseContext : public antlr4::ParserRuleContext {
+  public:
+    UsingClauseContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *USING();
+    std::vector<ComponentIDContext *> componentID();
+    ComponentIDContext* componentID(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> COMMA();
+    antlr4::tree::TerminalNode* COMMA(size_t i);
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  UsingClauseContext* usingClause();
+
+  class  NvlJoinClauseContext : public antlr4::ParserRuleContext {
+  public:
+    NvlJoinClauseContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    std::vector<antlr4::tree::TerminalNode *> COMMA();
+    antlr4::tree::TerminalNode* COMMA(size_t i);
+    antlr4::tree::TerminalNode *NVL();
+    antlr4::tree::TerminalNode *LPAREN();
+    ComponentIDContext *componentID();
+    ConstantContext *constant();
+    antlr4::tree::TerminalNode *RPAREN();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  NvlJoinClauseContext* nvlJoinClause();
 
   class  JoinBodyContext : public antlr4::ParserRuleContext {
   public:
@@ -3428,19 +3569,47 @@ public:
   class  PartitionByClauseContext : public antlr4::ParserRuleContext {
   public:
     PartitionByClauseContext(antlr4::ParserRuleContext *parent, size_t invokingState);
-    virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *PARTITION();
-    antlr4::tree::TerminalNode *BY();
-    std::vector<ComponentIDContext *> componentID();
-    ComponentIDContext* componentID(size_t i);
-    std::vector<antlr4::tree::TerminalNode *> COMMA();
-    antlr4::tree::TerminalNode* COMMA(size_t i);
+   
+    PartitionByClauseContext() = default;
+    void copyFrom(PartitionByClauseContext *context);
+    using antlr4::ParserRuleContext::copyFrom;
 
+    virtual size_t getRuleIndex() const override;
+
+   
+  };
+
+  class  PartitionExceptAllContext : public PartitionByClauseContext {
+  public:
+    PartitionExceptAllContext(PartitionByClauseContext *ctx);
+
+    antlr4::Token *type = nullptr;
+    antlr4::Token *all = nullptr;
+    antlr4::tree::TerminalNode *PARTITION();
+    antlr4::tree::TerminalNode *EXCEPT();
+    antlr4::tree::TerminalNode *ALL();
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-   
+  };
+
+  class  PartitionListedContext : public PartitionByClauseContext {
+  public:
+    PartitionListedContext(PartitionByClauseContext *ctx);
+
+    antlr4::Token *type = nullptr;
+    antlr4::tree::TerminalNode *PARTITION();
+    std::vector<ComponentIDContext *> componentID();
+    ComponentIDContext* componentID(size_t i);
+    antlr4::tree::TerminalNode *BY();
+    antlr4::tree::TerminalNode *EXCEPT();
+    std::vector<antlr4::tree::TerminalNode *> COMMA();
+    antlr4::tree::TerminalNode* COMMA(size_t i);
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
   PartitionByClauseContext* partitionByClause();
@@ -3484,8 +3653,8 @@ public:
 
   class  WindowingClauseContext : public antlr4::ParserRuleContext {
   public:
-    VtlParser::LimitClauseItemContext *from_ = nullptr;
-    VtlParser::LimitClauseItemContext *to_ = nullptr;
+    Vtl::LimitClauseItemContext *from_ = nullptr;
+    Vtl::LimitClauseItemContext *to_ = nullptr;
     WindowingClauseContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *BETWEEN();
@@ -3541,11 +3710,14 @@ public:
 
   class  LimitClauseItemContext : public antlr4::ParserRuleContext {
   public:
-    antlr4::Token *limitDir = nullptr;
+    Vtl::SignedIntegerContext *intLimit = nullptr;
+    Vtl::VarIDContext *varLimit = nullptr;
+    antlr4::Token *dir = nullptr;
     LimitClauseItemContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    SignedIntegerContext *signedInteger();
     antlr4::tree::TerminalNode *PRECEDING();
+    SignedIntegerContext *signedInteger();
+    VarIDContext *varID();
     antlr4::tree::TerminalNode *FOLLOWING();
     antlr4::tree::TerminalNode *CURRENT();
     antlr4::tree::TerminalNode *DATA();
@@ -3578,13 +3750,16 @@ public:
   public:
     GroupAllContext(GroupingClauseContext *ctx);
 
+    Vtl::VarIDContext *periodVar = nullptr;
+    antlr4::Token *periodConst = nullptr;
     antlr4::Token *delim = nullptr;
     antlr4::tree::TerminalNode *GROUP();
     antlr4::tree::TerminalNode *ALL();
     antlr4::tree::TerminalNode *TIME_AGG();
     antlr4::tree::TerminalNode *LPAREN();
-    antlr4::tree::TerminalNode *STRING_CONSTANT();
     antlr4::tree::TerminalNode *RPAREN();
+    VarIDContext *varID();
+    antlr4::tree::TerminalNode *STRING_CONSTANT();
     antlr4::tree::TerminalNode *COMMA();
     antlr4::tree::TerminalNode *FIRST();
     antlr4::tree::TerminalNode *LAST();
@@ -3599,6 +3774,8 @@ public:
     GroupByOrExceptContext(GroupingClauseContext *ctx);
 
     antlr4::Token *op = nullptr;
+    Vtl::VarIDContext *periodVar = nullptr;
+    antlr4::Token *periodConst = nullptr;
     antlr4::Token *delim = nullptr;
     antlr4::tree::TerminalNode *GROUP();
     std::vector<ComponentIDContext *> componentID();
@@ -3609,8 +3786,9 @@ public:
     antlr4::tree::TerminalNode* COMMA(size_t i);
     antlr4::tree::TerminalNode *TIME_AGG();
     antlr4::tree::TerminalNode *LPAREN();
-    antlr4::tree::TerminalNode *STRING_CONSTANT();
     antlr4::tree::TerminalNode *RPAREN();
+    VarIDContext *varID();
+    antlr4::tree::TerminalNode *STRING_CONSTANT();
     antlr4::tree::TerminalNode *FIRST();
     antlr4::tree::TerminalNode *LAST();
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
@@ -3914,7 +4092,7 @@ public:
   public:
     HrRulesetVarTypeContext(HrRulesetContext *ctx);
 
-    VtlParser::VarIDContext *varName = nullptr;
+    Vtl::VarIDContext *varName = nullptr;
     antlr4::tree::TerminalNode *HIERARCHICAL_ON_VAR();
     antlr4::tree::TerminalNode *GLPAREN();
     antlr4::tree::TerminalNode *GRPAREN();
@@ -4031,8 +4209,8 @@ public:
   class  RuleItemDatapointContext : public antlr4::ParserRuleContext {
   public:
     antlr4::Token *ruleName = nullptr;
-    VtlParser::ExprComponentContext *antecedentContiditon = nullptr;
-    VtlParser::ExprComponentContext *consequentCondition = nullptr;
+    Vtl::ExprComponentContext *antecedentContiditon = nullptr;
+    Vtl::ExprComponentContext *consequentCondition = nullptr;
     RuleItemDatapointContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     std::vector<ExprComponentContext *> exprComponent();
@@ -4131,7 +4309,7 @@ public:
 
   class  CodeItemRelationContext : public antlr4::ParserRuleContext {
   public:
-    VtlParser::ValueDomainValueContext *codetemRef = nullptr;
+    Vtl::ValueDomainValueContext *codetemRef = nullptr;
     CodeItemRelationContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     std::vector<CodeItemRelationClauseContext *> codeItemRelationClause();
@@ -4154,8 +4332,8 @@ public:
   class  CodeItemRelationClauseContext : public antlr4::ParserRuleContext {
   public:
     antlr4::Token *opAdd = nullptr;
-    VtlParser::ValueDomainValueContext *rightCodeItem = nullptr;
-    VtlParser::ExprComponentContext *rightCondition = nullptr;
+    Vtl::ValueDomainValueContext *rightCodeItem = nullptr;
+    Vtl::ExprComponentContext *rightCondition = nullptr;
     CodeItemRelationClauseContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     ValueDomainValueContext *valueDomainValue();
@@ -4639,18 +4817,69 @@ public:
   class  ConstantContext : public antlr4::ParserRuleContext {
   public:
     ConstantContext(antlr4::ParserRuleContext *parent, size_t invokingState);
-    virtual size_t getRuleIndex() const override;
-    SignedIntegerContext *signedInteger();
-    SignedNumberContext *signedNumber();
-    antlr4::tree::TerminalNode *BOOLEAN_CONSTANT();
-    antlr4::tree::TerminalNode *STRING_CONSTANT();
-    antlr4::tree::TerminalNode *NULL_CONSTANT();
+   
+    ConstantContext() = default;
+    void copyFrom(ConstantContext *context);
+    using antlr4::ParserRuleContext::copyFrom;
 
+    virtual size_t getRuleIndex() const override;
+
+   
+  };
+
+  class  NullLiteralContext : public ConstantContext {
+  public:
+    NullLiteralContext(ConstantContext *ctx);
+
+    antlr4::tree::TerminalNode *NULL_CONSTANT();
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-   
+  };
+
+  class  StringLiteralContext : public ConstantContext {
+  public:
+    StringLiteralContext(ConstantContext *ctx);
+
+    antlr4::tree::TerminalNode *STRING_CONSTANT();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  IntegerLiteralContext : public ConstantContext {
+  public:
+    IntegerLiteralContext(ConstantContext *ctx);
+
+    SignedIntegerContext *signedInteger();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  BooleanLiteralContext : public ConstantContext {
+  public:
+    BooleanLiteralContext(ConstantContext *ctx);
+
+    antlr4::tree::TerminalNode *BOOLEAN_CONSTANT();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  NumberLiteralContext : public ConstantContext {
+  public:
+    NumberLiteralContext(ConstantContext *ctx);
+
+    SignedNumberContext *signedNumber();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
   ConstantContext* constant();

@@ -129,7 +129,24 @@ class Join(Operator):
         return components
 
     @classmethod
-    def validate(cls, operands: List[Dataset], using: Optional[List[str]]) -> Dataset:
+    def _validate_nvl(cls, operands: List[Dataset], nvl: Dict[str, Any]) -> None:
+        """Each nvl component must exist in at least one operand."""
+        all_components: set[str] = set()
+        for op in operands:
+            all_components.update(op.components)
+        for component in nvl:
+            if component not in all_components:
+                raise SemanticError("1-1-1-10", comp_name=component, dataset_name=operands[0].name)
+
+    @classmethod
+    def validate(
+        cls,
+        operands: List[Dataset],
+        using: Optional[List[str]],
+        nvl: Optional[Dict[str, Any]] = None,
+    ) -> Dataset:
+        if nvl:
+            cls._validate_nvl(operands, nvl)
         dataset_name = VirtualCounter._new_ds_name()
         if len(operands) < 1 or sum([isinstance(op, Dataset) for op in operands]) < 1:
             raise Exception("Join operator requires at least 1 dataset")

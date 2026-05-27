@@ -1,6 +1,6 @@
 import copy
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Union, cast
+from typing import Any, Dict, List, Literal, Optional, Sequence, Union, cast
 
 import pandas as pd
 from pysdmx.io.pd import PandasDataset
@@ -201,13 +201,13 @@ def semantic_analysis(
         value domains JSON files. (default:None) It is passed as an object, that can be read from \
         a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
         Check the following example: \
-        :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
+        :doc:`Extra Inputs <extra_inputs>`.
 
         external_routines: Dict or Path, or List of Dicts or Paths of the \
         external routines JSON files. (default: None) It is passed as an object, that can be read \
         from a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
         Check the following example: \
-        :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
+        :doc:`Extra Inputs <extra_inputs>`.
 
         sdmx_mappings: A dictionary or VtlDataflowMapping object that maps SDMX URNs \
         (e.g., "Dataflow=MD:TEST_DF(1.0)") to VTL dataset names. (default: None)
@@ -271,6 +271,7 @@ def run(
     output_folder: Optional[Union[str, Path]] = None,
     scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
     sdmx_mappings: Optional[Union[VtlDataflowMapping, Dict[str, str]]] = None,
+    output_format: Literal["csv", "parquet"] = "csv",
 ) -> Dict[str, Union[Dataset, Scalar]]:
     """
     Run is the main function of the ``API``, which mission is to execute
@@ -364,6 +365,9 @@ def run(
         sdmx_mappings: A dictionary or VtlDataflowMapping object that maps SDMX URNs \
         (e.g., "Dataflow=MD:TEST_DF(1.0)") to VTL dataset names. This parameter is \
         primarily used when calling run() from run_sdmx() to pass mapping configuration.
+
+        output_format: Output file format used when ``output_folder`` is set. \
+        Either ``"csv"`` (default) or ``"parquet"``.
 
     Returns:
        The datasets are produced without data if the output folder is defined.
@@ -464,6 +468,7 @@ def run(
             output_folder=output_folder_path,
             return_only_persistent=return_only_persistent,
             time_period_output_format=time_period_output_format,
+            output_format=output_format,
         )
 
     # Applying output format (Date ISO 8601 T separator, TimePeriod representation)
@@ -488,6 +493,7 @@ def run_sdmx(
     time_period_output_format: str = "vtl",
     return_only_persistent: bool = True,
     output_folder: Optional[Union[str, Path]] = None,
+    output_format: Literal["csv", "parquet"] = "csv",
 ) -> Dict[str, Union[Dataset, Scalar]]:
     """
     Executes a VTL script using a list of pysdmx `PandasDataset` objects.
@@ -499,16 +505,17 @@ def run_sdmx(
 
     .. important::
         We recommend to use this function in combination with the
-        `get_datasets <https://py.sdmx.io/howto/data_rw.html#pysdmx.io.get_datasets>`_
+        `get_datasets <https://py.sdmx.io/howto/io_data.html>`_
         pysdmx method.
 
     .. important::
-        The mapping between pysdmx `PandasDataset
-        <https://py.sdmx.io/howto/data_rw.html#pysdmx.io.pd.PandasDataset>`_ \
-        and VTL datasets is done using the `Schema` instance of the `PandasDataset`.
-        The Schema ID is used as the dataset name.
-
-        DataStructure=MD:TEST_DS(1.0) -> TEST_DS
+        When ``mappings`` is not provided, ``run_sdmx`` only accepts exactly one
+        dataset, and the script must reference exactly one input — they are
+        auto-matched (the script's input name becomes the alias for the
+        dataset's `Schema`). For any other case, pass an explicit ``mappings``
+        argument that maps each dataset's short-URN to the VTL alias used in
+        the script. See `PandasDataset
+        <https://py.sdmx.io/howto/io_data.html>`_ in the pysdmx documentation.
 
     The function then calls the :obj:`run <vtlengine.API>` function with the provided VTL
     script and prepared inputs.
@@ -527,13 +534,13 @@ def run_sdmx(
         value domains JSON files. (default:None) It is passed as an object, that can be read from \
         a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
         Check the following example: \
-        :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
+        :doc:`Extra Inputs <extra_inputs>`.
 
         external_routines: Dict or Path, or List of Dicts or Paths of the \
         external routines JSON files. (default: None) It is passed as an object, that can be read \
         from a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
         Check the following example: \
-        :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
+        :doc:`Extra Inputs <extra_inputs>`.
 
         time_period_output_format: String with the possible values \
         ("sdmx_gregorian", "sdmx_reporting", "vtl", "natural") for the representation of the \
@@ -543,6 +550,9 @@ def run_sdmx(
         Persistent Assignments. (default: True)
 
         output_folder: Path to the output folder. (default: None)
+
+        output_format: Output file format used when ``output_folder`` is set.
+            Either ``"csv"`` (default) or ``"parquet"``.
 
     Returns:
        The datasets are produced without data if the output folder is defined.
@@ -602,6 +612,7 @@ def run_sdmx(
         return_only_persistent=return_only_persistent,
         output_folder=output_folder,
         sdmx_mappings=mappings,
+        output_format=output_format,
     )
 
 

@@ -22,6 +22,10 @@ Overview
   larger than RAM can be processed.
 * **S3 native**: reads from and writes to ``s3://`` URIs through DuckDB's
   `httpfs <https://duckdb.org/docs/extensions/httpfs/s3api.html>`_ extension.
+* **Parquet support**: reads ``.parquet`` files as datapoints (auto-detected by
+  suffix) and writes results as Parquet when ``output_format="parquet"`` is set
+  on :meth:`vtlengine.run` / :meth:`vtlengine.run_sdmx`. Parquet IO is only
+  available on the DuckDB engine; the pandas engine always writes CSV.
 * **Same return shape as pandas backend**: when ``output_folder`` is not provided,
   ``run`` materialises each result as a ``pandas.DataFrame`` so downstream code is
   identical to the pandas engine. When ``output_folder`` is set, results are written
@@ -114,6 +118,53 @@ The DuckDB backend reads the following environment variables. See
 * :ref:`vtl_duckdb_decimal_width` — DECIMAL precision (paired with
   :ref:`output_number_significant_digits` for the scale).
 * ``VTL_SKIP_LOAD_VALIDATION`` — skip post-load validation (benchmarking only).
+
+Parquet IO
+**********
+
+The DuckDB engine reads and writes Parquet natively through DuckDB. No pandas round-trip 
+is involved on the Parquet path.
+
+Input — any ``.parquet`` file passed in ``datapoints`` is detected by suffix and
+loaded via DuckDB. Mixing CSV and Parquet inputs in the same run is supported:
+
+.. code-block:: python
+
+    run(
+        script="DS_A <- DS_1 + DS_2;",
+        data_structures=data_structures,
+        datapoints={
+            "DS_1": "data/DS_1.csv",
+            "DS_2": "data/DS_2.parquet",
+        },
+        use_duckdb=True,
+    )
+
+Output — pass ``output_format="parquet"`` together with ``output_folder`` to write
+each result as ``{dataset_name}.parquet``:
+
+.. code-block:: python
+
+    run(
+        script="DS_A <- DS_1 * 10;",
+        data_structures=data_structures,
+        datapoints={"DS_1": "data/DS_1.parquet"},
+        output_folder="./vtl-output",
+        use_duckdb=True,
+        output_format="parquet",
+    )
+
+The default ``output_format="csv"`` preserves existing behaviour.
+
+.. note::
+    Parquet is only available with ``use_duckdb=True``. Setting
+    ``output_format="parquet"`` with ``use_duckdb=False`` is a no-op (the pandas
+    backend always writes CSV) and emits a ``UserWarning``.
+
+.. note::
+    Scalar results are always written to ``_scalars.csv`` regardless of
+    ``output_format``. Advanced Parquet features (partitioned writes,
+    compression-codec selection, glob inputs) are not currently exposed.
 
 S3 URI support
 **************

@@ -34,6 +34,7 @@ from vtlengine.AST.Grammar.tokens import (
     PARTIAL_ZERO,
     REPLACE,
     ROUND,
+    STRING_DISTANCE,
     SUBSTR,
     TRUNC,
     WHEN,
@@ -68,7 +69,7 @@ from vtlengine.Operators.HROperators import (
     get_measure_from_dataset,
 )
 from vtlengine.Operators.Numeric import Round, Trunc
-from vtlengine.Operators.String import Instr, Replace, Substr
+from vtlengine.Operators.String import DISTANCE_DISPATCH, Instr, Replace, Substr
 from vtlengine.Operators.Time import (
     Current_Date,
     Date_Add,
@@ -640,24 +641,48 @@ class InterpreterAnalyzer(ASTTemplate):
         if not isinstance(operand, Dataset):
             raise SemanticError("2-3-4", op=node.op, comp="dataset")
         if node.partition_by is None:
-            order_components = (
-                [x.component for x in node.order_by] if node.order_by is not None else []
-            )
-            partitioning = [x for x in operand.get_identifiers_names() if x not in order_components]
+            if node.order_by is None:
+                partitioning = []
+            else:
+                order_components = [x.component for x in node.order_by]
+                partitioning = [
+                    x for x in operand.get_identifiers_names() if x not in order_components
+                ]
+
+        if node.partition_op == "except all":
+            partitioning = []
+        elif node.partition_op == "except":
+            listed = set(partitioning or [])
+            partitioning = [i for i in operand.get_identifiers_names() if i not in listed]
 
         params = []
         if node.params is not None:
             for param in node.params:
                 if isinstance(param, AST.Constant):
                     params.append(param.value)
+                elif isinstance(param, AST.VarID):
+                    resolved = self.visit(param)
+                    params.append(resolved.value if hasattr(resolved, "value") else resolved)
                 else:
                     params.append(param)
+
+        window = node.window
+        if window is not None and (
+            isinstance(window.start, AST.VarID) or isinstance(window.stop, AST.VarID)
+        ):
+            window = copy(window)
+            if isinstance(window.start, AST.VarID):
+                start = self.visit(window.start)
+                window.start = start.value if hasattr(start, "value") else start
+            if isinstance(window.stop, AST.VarID):
+                stop = self.visit(window.stop)
+                window.stop = stop.value if hasattr(stop, "value") else stop
 
         result = ANALYTIC_MAPPING[node.op].analyze(
             operand=operand,
             partitioning=partitioning,
             ordering=ordering,
-            window=node.window,
+            window=window,
             params=params,
             component_name=analytic_component_name,
         )
@@ -1103,9 +1128,13 @@ class InterpreterAnalyzer(ASTTemplate):
                 # TODO: We need to delete somewhere the join datasets with alias that are added here
                 self.datasets[clause_elements[-1].name] = clause_elements[-1]
 
+        nvl_defaults: Optional[Dict[str, Any]] = None
+        if node.nvl:
+            nvl_defaults = {pair.component: pair.default.value for pair in node.nvl}
+
         # No need to check using, regular aggregation is executed afterwards
         self.is_from_join = True
-        return JOIN_MAPPING[node.op].analyze(clause_elements, node.using)
+        return JOIN_MAPPING[node.op].analyze(clause_elements, node.using, nvl_defaults)
 
     def visit_ParamConstant(self, node: AST.ParamConstant) -> str:
         return node.value
@@ -1124,6 +1153,12 @@ class InterpreterAnalyzer(ASTTemplate):
                 param_element = self.visit(node.params[0])
 
             return Trunc.analyze(op_element, param_element)
+
+        elif node.op == STRING_DISTANCE:
+            method = self.visit(node.params[0])
+            s1 = self.visit(node.children[0])
+            s2 = self.visit(node.children[1])
+            return DISTANCE_DISPATCH[method].analyze(s1, s2)
 
         elif node.op == SUBSTR or node.op == REPLACE or node.op == INSTR:
             params = [None, None, None]
@@ -1675,21 +1710,38 @@ class InterpreterAnalyzer(ASTTemplate):
         return result
 
     def visit_TimeAggregation(self, node: AST.TimeAggregation) -> None:
+        period_to = node.period_to
+        if node.period_to_ref is not None:
+            saved_grouping = self.is_from_grouping
+            saved_having = self.is_from_having
+            saved_regular = self.is_from_regular_aggregation
+            self.is_from_grouping = False
+            self.is_from_having = False
+            self.is_from_regular_aggregation = False
+            try:
+                resolved = self.visit(node.period_to_ref)
+            finally:
+                self.is_from_grouping = saved_grouping
+                self.is_from_having = saved_having
+                self.is_from_regular_aggregation = saved_regular
+            period_to = resolved.value if hasattr(resolved, "value") else resolved
         if node.operand is not None:
             operand = self.visit(node.operand)
             return Time_Aggregation.analyze(
                 operand=operand,
                 period_from=node.period_from,
-                period_to=node.period_to,
+                period_to=period_to,
                 conf=node.conf,
             )
         # The aggregation dataset is mandatory here as is part of a group_all statement.
         # If not, a 1-3-2-4 error is raised in AST creation
         if self.aggregation_dataset is None:
             raise SemanticError("1-3-2-4")
+        if period_to is None:
+            raise SemanticError("1-3-2-4")
         return Time_Aggregation._execute_without_operand(
             aggregation_dataset=self.aggregation_dataset,
             period_from=node.period_from,
-            period_to=node.period_to,
+            period_to=period_to,
             conf=node.conf,
         )

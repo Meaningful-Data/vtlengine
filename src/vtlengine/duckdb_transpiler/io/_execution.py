@@ -5,8 +5,9 @@ This module contains helper functions for executing VTL scripts with DuckDB,
 handling dataset loading/saving with DAG scheduling for memory efficiency.
 """
 
+import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
 import duckdb
 import pandas as pd
@@ -30,7 +31,7 @@ from vtlengine.duckdb_transpiler.io._time_handling import (
     format_time_period_scalar,
 )
 from vtlengine.duckdb_transpiler.sql import initialize_time_types
-from vtlengine.Exceptions import RunTimeError
+from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.files.output._time_period_representation import TimePeriodRepresentation
 from vtlengine.Model import Dataset, Scalar
 from vtlengine.Utils._number_config import get_effective_numeric_digits
@@ -122,6 +123,12 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
     # VTL macro vtl_div: denominator was 0 (mirrors Python engine error 2-1-15-6)
     if "vtl 2-1-15-6" in msg_lower:
         return RunTimeError("2-1-15-6", op="/")
+
+    # VTL macro vtl_hamming: strings of unequal length (mirrors 1-1-18-11)
+    if "vtl 1-1-18-11" in msg_lower:
+        m = re.search(r"hamming length mismatch (\d+) (\d+)", msg)
+        len1, len2 = (m.group(1), m.group(2)) if m else ("?", "?")
+        return SemanticError("1-1-18-11", op="string_distance", len1=len1, len2=len2)
 
     # Division by zero (explicit DuckDB error or VTL error from ratio_to_report)
     if "division by zero" in msg_lower or "divide by zero" in msg_lower:
@@ -309,7 +316,7 @@ def load_scheduled_datasets(
                 conn=conn,
                 components=input_datasets[ds_name].components,
                 dataset_name=ds_name,
-                csv_path=path_dict[ds_name],
+                file_path=path_dict[ds_name],
             )
         elif ds_name in dataframe_dict:
             # Register DataFrame directly with proper schema
@@ -320,7 +327,7 @@ def load_scheduled_datasets(
                 conn=conn,
                 components=input_datasets[ds_name].components,
                 dataset_name=ds_name,
-                csv_path=None,
+                file_path=None,
             )
 
 
@@ -334,6 +341,7 @@ def cleanup_scheduled_datasets(
     results: Dict[str, Union[Dataset, Scalar]],
     return_only_persistent: bool,
     representation: Optional[TimePeriodRepresentation] = None,
+    output_format: Literal["csv", "parquet"] = "csv",
 ) -> None:
     """
     Clean up datasets scheduled for deletion at a given statement.
@@ -348,6 +356,7 @@ def cleanup_scheduled_datasets(
         results: Dict to store results
         return_only_persistent: Only return persistent assignments
         representation: TimePeriod output format
+        output_format: Output file format ("csv" or "parquet")
     """
     if statement_num not in ds_analysis.deletion:
         return
@@ -361,12 +370,13 @@ def cleanup_scheduled_datasets(
             conn.execute(f'DROP TABLE IF EXISTS "{ds_name}"')
         elif not return_only_persistent or ds_name in persistent_datasets:
             results[ds_name] = fetch_result(
-                conn,
-                ds_name,
-                output_folder,
-                output_datasets,
-                output_scalars,
-                representation,
+                conn=conn,
+                result_name=ds_name,
+                output_folder=output_folder,
+                output_datasets=output_datasets,
+                output_scalars=output_scalars,
+                representation=representation,
+                output_format=output_format,
             )
             conn.execute(f'DROP TABLE IF EXISTS "{ds_name}"')
         else:
@@ -381,6 +391,7 @@ def fetch_result(
     output_datasets: Dict[str, Dataset],
     output_scalars: Dict[str, Scalar],
     representation: Optional[TimePeriodRepresentation] = None,
+    output_format: Literal["csv", "parquet"] = "csv",
 ) -> Union[Dataset, Scalar]:
     """
     Fetch a result from DuckDB and return as Dataset or Scalar.
@@ -392,6 +403,7 @@ def fetch_result(
         output_datasets: Dict of output dataset structures
         output_scalars: Dict of output scalar structures
         representation: TimePeriod output format (applied before save/fetch)
+        output_format: Output file format ("csv" or "parquet")
 
     Returns:
         Dataset or Scalar with result data
@@ -433,6 +445,7 @@ def fetch_result(
             output_folder,
             delete_after_save=False,
             select_sql=fetch_sql,
+            output_format=output_format,
         )
     else:
         ds.data = conn.execute(fetch_sql).fetchdf()
@@ -452,6 +465,7 @@ def execute_queries(
     output_folder: Optional[Path],
     return_only_persistent: bool,
     time_period_output_format: str = "vtl",
+    output_format: Literal["csv", "parquet"] = "csv",
 ) -> Dict[str, Union[Dataset, Scalar]]:
     """
     Execute transpiled SQL queries with DAG-scheduled dataset loading/saving.
@@ -468,6 +482,8 @@ def execute_queries(
         output_folder: Path to save CSVs (None for in-memory mode)
         return_only_persistent: Only return persistent assignments
         time_period_output_format: Output format for TimePeriod columns
+        output_format: Output file format ("csv" or "parquet")
+
     Returns:
         Dict of result_name -> Dataset or Scalar
     """
@@ -527,6 +543,7 @@ def execute_queries(
             results=results,
             return_only_persistent=return_only_persistent,
             representation=representation,
+            output_format=output_format,
         )
 
     # Handle final results not yet processed
@@ -545,6 +562,7 @@ def execute_queries(
             output_datasets=output_datasets,
             output_scalars=output_scalars,
             representation=representation,
+            output_format=output_format,
         )
 
     # Save scalars to CSV when output_folder is provided

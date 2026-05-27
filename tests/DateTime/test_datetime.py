@@ -826,3 +826,94 @@ def test_timeshift_datetime(script, Id_1, Id_2, Me_1, Id_2_reference, Me_1_refer
     result_data = result["DS_r"].data
     assert result_data["Id_2"].astype(str).tolist() == Id_2_reference
     assert _to_pylist(result_data["Me_1"]) == Me_1_reference
+
+
+# ---------------------------------------------------------------------------
+# VTL 2.2 grammar — sdmx-twg/vtl#390
+# `timeshift` and `time_agg` accept a varID (scalar reference) where in VTL 2.1
+# they only accepted a literal `signedInteger` / `STRING_CONSTANT`.
+# ---------------------------------------------------------------------------
+
+
+_TIME_PERIOD_STRUCT = {
+    "datasets": [
+        {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "String", "role": "Identifier", "nullable": False},
+                {"name": "Id_2", "type": "Time_Period", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Integer", "role": "Measure", "nullable": True},
+            ],
+        }
+    ],
+    "scalars": [{"name": "sc_shift", "type": "Integer"}],
+}
+
+
+def _quarterly_dataset():
+    return pd.DataFrame(
+        {
+            "Id_1": ["A"] * 4 + ["B"] * 4,
+            "Id_2": [
+                "2024Q1",
+                "2024Q2",
+                "2024Q3",
+                "2024Q4",
+                "2024Q1",
+                "2024Q2",
+                "2024Q3",
+                "2024Q4",
+            ],
+            "Me_1": [10, 20, 30, 40, 1, 2, 3, 4],
+        }
+    )
+
+
+def test_GH_390_timeshift_with_varID():
+    """`timeshift(DS, sc_shift)` resolves the shift amount from a scalar."""
+    result = run(
+        script="DS_A <- timeshift(DS_1, sc_shift);",
+        data_structures=_TIME_PERIOD_STRUCT,
+        datapoints={"DS_1": _quarterly_dataset()},
+        scalar_values={"sc_shift": "2"},
+    )
+    assert result["DS_A"].data["Id_2"].tolist() == [
+        "2024Q3",
+        "2024Q4",
+        "2025Q1",
+        "2025Q2",
+        "2024Q3",
+        "2024Q4",
+        "2025Q1",
+        "2025Q2",
+    ]
+
+
+_DATE_MEASURE_STRUCT = {
+    "datasets": [
+        {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Date", "role": "Measure", "nullable": True},
+            ],
+        }
+    ],
+    "scalars": [{"name": "sc_period", "type": "String"}],
+}
+
+
+def test_GH_390_time_agg_periodIndTo_with_varID():
+    """`time_agg(sc_period, _, DS, first)` reads the period from a scalar reference."""
+    df = pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": ["2024-01-15", "2024-02-15", "2024-03-15"]})
+    result = run(
+        script="DS_A <- time_agg(sc_period, _, DS_1, first);",
+        data_structures=_DATE_MEASURE_STRUCT,
+        datapoints={"DS_1": df},
+        scalar_values={"sc_period": "A"},
+    )
+    assert result["DS_A"].data["Me_1"].astype(str).tolist() == [
+        "2024-01-01",
+        "2024-01-01",
+        "2024-01-01",
+    ]

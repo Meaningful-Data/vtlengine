@@ -46,6 +46,7 @@ from vtlengine.AST.Grammar.tokens import (
     REPLACE,
     ROUND,
     SETDIFF,
+    STRING_DISTANCE,
     SUBSTR,
     SYMDIFF,
     TIMESHIFT,
@@ -250,7 +251,7 @@ class ASTString(ASTTemplate):
             clause_str += f'when {values_str} then "{clause.result}"'
             clauses_strs.append(clause_str)
         if node.aggregate_clause is not None:
-            clauses_strs.append(f"aggr {node.aggregate_clause.function}")
+            clauses_strs.append(f"aggregate {node.aggregate_clause.function}")
         if node.default_value is not None:
             clauses_strs.append(f'else "{node.default_value}"')
 
@@ -354,15 +355,20 @@ class ASTString(ASTTemplate):
             return f"{node.op}({body})"
         return f"{node.op}({body})"
 
-    def visit_ParamOp(self, node: AST.ParamOp) -> str:
+    def visit_ParamOp(self, node: AST.ParamOp) -> str:  # noqa: C901
         if node.op == HAVING:
             return f"{node.op} {self.visit(node.params)}"
+        elif node.op == STRING_DISTANCE:
+            method = self.visit(node.params[0])
+            s1 = self.visit(node.children[0])
+            s2 = self.visit(node.children[1])
+            return f"{node.op}({method}, {s1}, {s2})"
         elif node.op in [SUBSTR, INSTR, REPLACE, ROUND, TRUNC, UNION, SETDIFF, SYMDIFF, INTERSECT]:
             params_sep = ", " if len(node.params) > 1 else ""
-            return (
-                f"{node.op}({self.visit(node.children[0])}, "
-                f"{params_sep.join([self.visit(x) for x in node.params])})"
-            )
+            param_values = [self.visit(x) for x in node.params]
+            if not param_values:
+                return f"{node.op}({self.visit(node.children[0])})"
+            return f"{node.op}({self.visit(node.children[0])}, {params_sep.join(param_values)})"
 
         elif node.op in (CHECK_HIERARCHY, HIERARCHY):
             if len(node.children) == 2:
@@ -631,6 +637,13 @@ class ASTString(ASTTemplate):
             return f"if {self.visit(node.condition)} then {self.visit(node.thenOp)} {else_str}"
 
     def visit_JoinOp(self, node: AST.JoinOp) -> str:
+        nvl_str = ""
+        if node.nvl:
+            nvl_parts = [
+                f"nvl({_format_reserved_word(p.component)}, {self.visit(p.default)})"
+                for p in node.nvl
+            ]
+            nvl_str = ", " + ", ".join(nvl_parts)
         if self.pretty:
             sep = f",{nl}{tab * 2}" if len(node.clauses) > 1 else ""
             clauses = sep.join([self.visit(x) for x in node.clauses])
@@ -638,7 +651,7 @@ class ASTString(ASTTemplate):
             if node.using is not None:
                 using_sep = ", " if len(node.using) > 1 else ""
                 using_values = [_format_reserved_word(x) for x in node.using]
-                using = f"using {using_sep.join(using_values)}"
+                using = f"using {using_sep.join(using_values)}{nvl_str}"
             return f"{node.op}({nl}{tab * 2}{clauses}{nl}{tab * 2}{using})"
         else:
             sep = ", " if len(node.clauses) > 1 else ""
@@ -647,7 +660,7 @@ class ASTString(ASTTemplate):
             if node.using is not None:
                 using_sep = ", " if len(node.using) > 1 else ""
                 using_values = [_format_reserved_word(x) for x in node.using]
-                using = f" using {using_sep.join(using_values)}"
+                using = f" using {using_sep.join(using_values)}{nvl_str}"
             return f"{node.op}({clauses}{using})"
 
     def visit_ParFunction(self, node: AST.ParFunction) -> str:

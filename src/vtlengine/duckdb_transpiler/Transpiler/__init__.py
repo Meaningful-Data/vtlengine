@@ -39,7 +39,7 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
     StructureVisitor,
     _try_normalize_time_period,
 )
-from vtlengine.Exceptions import RunTimeError
+from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 
 # Matches a pure single-quoted SQL string literal: 'foo' (no embedded quotes).
@@ -952,6 +952,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if op in (tokens.ROUND, tokens.TRUNC) and not params_sql:
             params_sql = ["0"]
 
+        if op == tokens.STRING_DISTANCE:
+            return self._visit_string_distance(node)
+
         operand_type = self._get_node_type(node.children[0]) if node.children else _SCALAR
 
         if operand_type == _DATASET:
@@ -966,6 +969,83 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         children_sql = [self.visit(c) for c in node.children]
         all_args = children_sql + params_sql
         return registry.sql(op, *all_args)
+
+    def _visit_string_distance(self, node: AST.ParamOp) -> str:
+        """Visit string_distance(method, s1, s2). Handles dataset/component/scalar mixes."""
+        method_node = node.params[0]
+        method = method_node.value if isinstance(method_node, AST.ParamConstant) else ""
+        macro = f"vtl_{method}"
+
+        left, right = node.children[0], node.children[1]
+        left_type = self._get_node_type(left)
+        right_type = self._get_node_type(right)
+
+        if left_type == _DATASET and right_type == _DATASET:
+            return self._build_string_distance_ds_ds(left, right, macro)
+        if left_type == _DATASET or right_type == _DATASET:
+            ds_node, scalar_node = (left, right) if left_type == _DATASET else (right, left)
+            scalar_sql = self.visit(scalar_node)
+            ds_on_left = left_type == _DATASET
+
+            def _sd_expr(col_ref: str) -> str:
+                if ds_on_left:
+                    return f"{macro}({col_ref}, {scalar_sql})"
+                return f"{macro}({scalar_sql}, {col_ref})"
+
+            return self._apply_measures(ds_node, _sd_expr)
+
+        left_sql = self.visit(left)
+        right_sql = self.visit(right)
+        return f"{macro}({left_sql}, {right_sql})"
+
+    def _build_string_distance_ds_ds(
+        self, left_node: AST.AST, right_node: AST.AST, macro: str
+    ) -> str:
+        """Build JOIN-based SQL for string_distance with two dataset operands."""
+        left_ds = self._get_dataset_structure(left_node)
+        right_ds = self._get_dataset_structure(right_node)
+        output_ds = self._get_output_dataset()
+
+        left_src = self._get_dataset_sql(left_node)
+        right_src = self._get_dataset_sql(right_node)
+
+        alias_a, alias_b = "a", "b"
+        left_ids = set(left_ds.get_identifiers_names())
+        right_ids = set(right_ds.get_identifiers_names())
+        common_ids = sorted(left_ids & right_ids)
+        all_ids = sorted(left_ids | right_ids)
+
+        left_measures = left_ds.get_measures_names()
+        right_measures = right_ds.get_measures_names()
+        common_measures = [m for m in left_measures if m in right_measures]
+        if common_measures:
+            paired = [(m, m) for m in common_measures]
+        elif len(left_measures) == 1 and len(right_measures) == 1:
+            paired = [(left_measures[0], right_measures[0])]
+        else:
+            paired = []
+
+        output_measure_names = list(output_ds.get_measures_names()) if output_ds else []
+
+        cols: List[str] = []
+        for id_name in all_ids:
+            src_alias = alias_a if id_name in left_ids else alias_b
+            cols.append(f"{src_alias}.{quote_name(id_name)}")
+
+        for left_m, right_m in paired:
+            expr = f"{macro}({alias_a}.{quote_name(left_m)}, {alias_b}.{quote_name(right_m)})"
+            out_name = left_m
+            if output_measure_names and len(paired) == 1 and len(output_measure_names) == 1:
+                out_name = output_measure_names[0]
+            cols.append(f"{expr} AS {quote_name(out_name)}")
+
+        on_clause = self._join_on_clause(common_ids, alias_a, alias_b)
+        builder = SQLBuilder().select(*cols).from_table(left_src, alias_a)
+        if on_clause != "1=1":
+            builder.join(right_src, alias_b, on=on_clause, join_type="INNER")
+        else:
+            builder.cross_join(right_src, alias_b)
+        return builder.build()
 
     def _visit_params(self, params: List[Any]) -> List[Optional[str]]:
         """Visit param nodes, converting VTL '_' to None and VTL null to 'NULL'."""
@@ -1217,7 +1297,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         time_id, time_type = self._resolve_time_identifier(ds, "timeshift")
         time_col = quote_name(time_id)
         if time_type == TimePeriod:
-            shifted = f"vtl_tp_shift(vtl_period_parse({time_col}), {shift_sql}) AS {time_col}"
+            shifted = (
+                f"vtl_tp_shift(vtl_period_parse({time_col}), "
+                f"CAST({shift_sql} AS INTEGER)) AS {time_col}"
+            )
             cols = []
             for comp in ds.components.values():
                 col = quote_name(comp.name)
@@ -1671,6 +1754,8 @@ FROM (
         group_ids: List[str] = []
         grouping_op: str = ""
         grouping_names: List[str] = []
+        time_agg_expr: Optional[str] = None
+        time_agg_id: Optional[str] = None
         for child in node.children:
             assignment = self._unwrap_assignment(child)
             if isinstance(assignment, AST.Assignment):
@@ -1682,10 +1767,20 @@ FROM (
                             resolved = self._resolve_udo_name(g.value)
                             if resolved not in grouping_names:
                                 grouping_names.append(resolved)
+                        elif isinstance(g, AST.TimeAggregation) and time_agg_expr is None:
+                            with self._clause_scope(ds):
+                                time_agg_expr = self.visit_TimeAggregation(g)
+                            for comp in ds.components.values():
+                                if (
+                                    comp.data_type in (TimePeriod, Date)
+                                    and comp.role == Role.IDENTIFIER
+                                ):
+                                    time_agg_id = comp.name
+                                    break
 
         all_input_ids = list(ds.get_identifiers_names())
         if grouping_op == "group by":
-            group_ids = grouping_names
+            group_ids = list(grouping_names)
         elif grouping_op == "group except":
             except_set = set(grouping_names)
             group_ids = [n for n in all_input_ids if n not in except_set]
@@ -1693,13 +1788,26 @@ FROM (
             output_ds = self._get_output_dataset()
             group_ids = list(output_ds.get_identifiers_names() if output_ds else all_input_ids)
 
-        cols: List[str] = [quote_name(id_) for id_ in group_ids]
+        if time_agg_id and time_agg_id not in group_ids and grouping_op != "group except":
+            group_ids.append(time_agg_id)
+
+        def _id_select_sql(name: str) -> str:
+            if name == time_agg_id and time_agg_expr is not None:
+                return f"{time_agg_expr} AS {quote_name(name)}"
+            return quote_name(name)
+
+        def _id_group_sql(name: str) -> str:
+            if name == time_agg_id and time_agg_expr is not None:
+                return time_agg_expr
+            return quote_name(name)
+
+        cols: List[str] = [_id_select_sql(id_) for id_ in group_ids]
         for col_name, expr_sql in calc_exprs.items():
             cols.append(f"{expr_sql} AS {quote_name(col_name)}")
 
         builder = SQLBuilder().select(*cols).from_table(table_src)
         if group_ids:
-            builder.group_by(*[quote_name(id_) for id_ in group_ids])
+            builder.group_by(*[_id_group_sql(id_) for id_ in group_ids])
 
         if having_sql:
             builder.having(having_sql)
@@ -1921,9 +2029,10 @@ FROM (
     def _build_over_clause(self, node: AST.Analytic) -> str:
         """Build the OVER (...) clause for an analytic function."""
         over_parts: List[str] = []
-        if node.partition_by:
+        partition_cols_list = self._resolve_partition_cols(node)
+        if partition_cols_list:
             partition_cols = ", ".join(
-                quote_name(self._resolve_udo_name(p)) for p in node.partition_by
+                quote_name(self._resolve_udo_name(p)) for p in partition_cols_list
             )
             over_parts.append(f"PARTITION BY {partition_cols}")
         if node.order_by:
@@ -1942,6 +2051,27 @@ FROM (
             window_sql = self.visit_Windowing(node.window, order_is_date=order_is_date)
             over_parts.append(window_sql)
         return " ".join(over_parts)
+
+    def _resolve_partition_cols(self, node: AST.Analytic) -> List[str]:
+        """Resolve the partition column list applying VTL 2.2 EXCEPT semantics."""
+        listed = list(node.partition_by) if node.partition_by else []
+        if node.partition_op == "except all":
+            return []
+        if node.partition_op == "except":
+            id_names = self._operand_identifier_names(node)
+            excluded = set(listed)
+            return [i for i in id_names if i not in excluded]
+        return listed
+
+    def _operand_identifier_names(self, node: AST.Analytic) -> List[str]:
+        """Best-effort identifier list for the analytic operand."""
+        if node.operand is not None:
+            ds = self._get_dataset_structure(node.operand)
+            if ds is not None:
+                return list(ds.get_identifiers_names())
+        if self._current_dataset is not None:
+            return list(self._current_dataset.get_identifiers_names())
+        return []
 
     def _build_analytic_expr(self, op: str, operand_sql: str, node: AST.Analytic) -> str:
         """Build the analytic function expression (without OVER).
@@ -1963,7 +2093,7 @@ FROM (
         if op == tokens.RANK:
             return "RANK()"
         if op in (tokens.LAG, tokens.LEAD) and node.params:
-            offset = node.params[0] if node.params else 1
+            offset = self._resolve_scalar_varid(node.params[0] if node.params else 1)
             default_val = node.params[1] if len(node.params) > 1 else None
             func_sql = f"{op.upper()}({operand_sql}, {offset}"
             if default_val is not None:
@@ -2044,8 +2174,10 @@ FROM (
                 return f"INTERVAL '{value}' DAY {mode_up}"
             return f"{value} {mode_up}"
 
-        start = bound_str(node.start, node.start_mode)
-        stop = bound_str(node.stop, node.stop_mode)
+        start_val = self._resolve_scalar_varid(node.start)
+        stop_val = self._resolve_scalar_varid(node.stop)
+        start = bound_str(start_val, node.start_mode)
+        stop = bound_str(stop_val, node.stop_mode)
 
         return f"{type_str} BETWEEN {start} AND {stop}"
 
@@ -3172,6 +3304,31 @@ FROM (
     # Join visitor
     # =========================================================================
 
+    def _resolve_join_nvl_defaults(
+        self, node: AST.JoinOp, clause_info: List[Dict[str, Any]]
+    ) -> Dict[str, str]:
+        """Resolve VTL 2.2 `nvl(component, constant)` join clauses to SQL literals.
+
+        Each pair becomes a `COALESCE(col, <literal>)` in the SELECT list. Raises
+        SemanticError 1-1-1-10 if the referenced component isn't in any operand.
+        """
+        if not node.nvl:
+            return {}
+        all_components: Set[str] = set()
+        for info in clause_info:
+            all_components.update(info["ds"].components)
+        defaults: Dict[str, str] = {}
+        for pair in node.nvl:
+            if pair.component not in all_components:
+                raise SemanticError(
+                    "1-1-1-10",
+                    op=node.op,
+                    comp_name=pair.component,
+                    dataset_name=clause_info[0]["ds"].name,
+                )
+            defaults[pair.component] = self._constant_to_sql(pair.default)
+        return defaults
+
     def visit_JoinOp(self, node: AST.JoinOp) -> str:  # type: ignore[override]
         """Visit a join operation."""
         clause_info: List[Dict[str, Any]] = []
@@ -3225,6 +3382,8 @@ FROM (
         )
         duplicate_comps = {name for name, cnt in comp_count.items() if cnt >= 2}
 
+        nvl_defaults = self._resolve_join_nvl_defaults(node, clause_info)
+
         # First alias that exposes each component — used to pick the left side of ON
         # clauses. A USING key may be a measure in one dataset and an identifier in
         # another, so we track components (not just identifiers).
@@ -3260,10 +3419,16 @@ FROM (
                         cols.append(f"{sa}.{quote_name(name)}")
                 elif name in duplicate_comps:
                     qualified_name = f"{info['alias']}#{name}"
-                    cols.append(f"{sa}.{quote_name(name)} AS {quote_name(qualified_name)}")
+                    expr = f"{sa}.{quote_name(name)}"
+                    if name in nvl_defaults:
+                        expr = f"COALESCE({expr}, {nvl_defaults[name]})"
+                    cols.append(f"{expr} AS {quote_name(qualified_name)}")
                     self._join_alias_map[qualified_name] = qualified_name
                 else:
-                    cols.append(f"{sa}.{quote_name(name)}")
+                    expr = f"{sa}.{quote_name(name)}"
+                    if name in nvl_defaults:
+                        expr = f"COALESCE({expr}, {nvl_defaults[name]}) AS {quote_name(name)}"
+                    cols.append(expr)
 
         builder = SQLBuilder()
         builder.select(*cols) if cols else builder.select_all()
@@ -3293,6 +3458,10 @@ FROM (
         """Visit TIME_AGG operation."""
         conf = node.conf
         target = node.period_to
+        if target is None and node.period_to_ref is not None:
+            target = self._resolve_period_to_ref(node.period_to_ref)
+        if target is None:
+            raise SemanticError("1-3-2-4")
 
         if node.operand is not None:
             operand_type = self._get_node_type(node.operand)
@@ -3327,6 +3496,17 @@ FROM (
         if conf == "last":
             return f"vtl_tp_end_date(vtl_period_parse({expr}))"
         return expr
+
+    def _resolve_period_to_ref(self, ref: AST.AST) -> str:
+        name = ref.value  # type: ignore[attr-defined]
+        return str(self.input_scalars[name].value)
+
+    def _resolve_scalar_varid(self, value: Any) -> Any:
+        """Non-VarID values pass through unchanged."""
+        if not isinstance(value, AST.VarID):
+            return value
+        name = value.value
+        return self.input_scalars[name].value
 
     def _visit_time_agg_dataset(
         self, node: AST.TimeAggregation, target: str, conf: Optional[str]

@@ -81,6 +81,11 @@ centralised_messages = {
         "description": "Raised when the provided time period output format "
         "is not one of the supported representations.",
     },
+    "0-1-1-16": {
+        "message": "Invalid output_format value: '{value}'. Allowed formats: {valid_options}.",
+        "description": "Raised when the provided output_format is not one "
+        "of the supported file formats.",
+    },
     "0-1-2-3": {
         "message": "{element_type} '{element}' is/are duplicated.",
         "description": "Occurs when an element (e.g., Identifier or component) "
@@ -219,6 +224,12 @@ centralised_messages = {
         "description": "Raised when the input data contains columns that are not "
         "defined in the DataStructure.",
     },
+    "0-3-1-16": {
+        "message": "On Dataset {name} loading: the Parquet file is corrupted or invalid. "
+        'Error found: "{error}"',
+        "description": "Raised when DuckDB cannot read a Parquet file because it is "
+        "corrupted, truncated, or not a valid Parquet file (e.g. missing magic bytes).",
+    },
     # Input validation errors for URL datapoints
     "0-1-3-8": {
         "message": "data_structures must be a file path or URL "
@@ -273,6 +284,12 @@ centralised_messages = {
     "1-1-1-10": {
         "message": "Component {comp_name} not found in Dataset {dataset_name}.",
         "description": "Occurs when a referenced component is missing from the Dataset.",
+    },
+    "1-1-1-11": {
+        "message": "At op {op}: Sub comparison is not allowed between components. "
+        "Please check sub comparison in Dataset {dataset_name} is between a Component and a "
+        "Scalar/Constant.",
+        "description": "Occurs when a sub operation attempts to compare components.",
     },
     "1-1-1-13": {
         "message": "At op {op}: Component {comp_name} role must be '{role_1}', found '{role_2}'.",
@@ -780,6 +797,12 @@ centralised_messages = {
         "message": "At op {op}: Cannot have a Dataset as parameter",
         "description": "Occurs when a Dataset is incorrectly used as a parameter in a "
         "string operation.",
+    },
+    "1-1-18-11": {
+        "message": "At op {op}: Hamming distance requires both strings to have the same length, "
+        "got lengths {len1} and {len2}.",
+        "description": "Raised when the hamming method of string_distance is invoked on two "
+        "strings of unequal length.",
     },
     # Time operators
     "1-1-19-1": {

@@ -325,7 +325,7 @@ class Terminals:
     def visitSimpleScalar(self, ctx):
         ctx_list = ctx.children
         c = ctx_list[0]
-        if not c.is_terminal and c.ctx_id == RC.CONSTANT:
+        if not c.is_terminal and c.rule_index == RC.CONSTANT[0]:
             return self.visitConstant(c)
         else:
             raise NotImplementedError
@@ -696,13 +696,29 @@ class Terminals:
     """
 
     def visitPartitionByClause(self, ctx):
+        """Return (op, components) where op is "by" | "except" | "except all".
+
+        VTL 2.2 (sdmx-twg/vtl#699, #391) distinguishes three alternatives:
+          * ``partition by X, Y``         -> ("by", ["X", "Y"])
+          * ``partition except X, Y``     -> ("except", ["X", "Y"])
+          * ``partition except all``      -> ("except all", [])
+
+        Downstream consumers (Analytic AST node, interpreter, transpiler) resolve
+        the negation against the operand's identifier list at execution time.
+        """
         ctx_list = ctx.children
 
-        return [
+        if ctx.ctx_id == RC.PARTITION_EXCEPT_ALL:
+            return "except all", []
+
+        # partitionListed: PARTITION (BY|EXCEPT) componentID (COMMA componentID)*
+        op = ctx_list[1].text.lower()
+        components = [
             self.visitComponentID(compID).value
             for compID in ctx_list
             if not compID.is_terminal and compID.ctx_id == RC.COMPONENT_ID
         ]
+        return op, components
 
     def visitOrderByClause(self, ctx):
         ctx_list = ctx.children
@@ -729,6 +745,9 @@ class Terminals:
 
         first = num_rows_1  # unbounded (default value)
         second = num_rows_2  # current data point (default value)
+
+        if not (isinstance(first, int) and isinstance(second, int)):
+            return create_windowing(win_mode, [first, second], [mode_1, mode_2], token_info)
 
         if (
             mode_2 == "preceding"
@@ -778,16 +797,22 @@ class Terminals:
         )
 
     def visitLimitClauseItem(self, ctx):
-        # limitClauseItem: signedInteger limitDir=PRECEDING
-        #     | signedInteger limitDir=FOLLOWING
-        #     | CURRENT DATA POINT
-        #     | UNBOUNDED limitDir=PRECEDING
-        #     | UNBOUNDED limitDir=FOLLOWING
+        # VTL 2.2 (sdmx-twg/vtl#390):
+        # limitClauseItem:
+        #     (intLimit=signedInteger | varLimit=varID) dir=PRECEDING
+        #   | (intLimit=signedInteger | varLimit=varID) dir=FOLLOWING
+        #   | CURRENT DATA POINT
+        #   | UNBOUNDED dir=PRECEDING
+        #   | UNBOUNDED dir=FOLLOWING
         ctx_list = ctx.children
         c = ctx_list[0]
         if not c.is_terminal and c.ctx_id == RC.SIGNED_INTEGER:
             result = self.visitSignedInteger(c)
-            # limitDir is the last terminal child (PRECEDING or FOLLOWING)
+            limit_dir = ctx_list[-1].text
+            return result, limit_dir
+        elif not c.is_terminal and c.ctx_id == RC.VAR_ID:
+            # varLimit: AST.VarID node, resolved at interpretation time
+            result = self.visitVarID(c)
             limit_dir = ctx_list[-1].text
             return result, limit_dir
         elif c.text.lower() == "unbounded":

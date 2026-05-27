@@ -15,6 +15,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Create release with notes
         uses: actions/github-script@v8
@@ -32,10 +34,23 @@ jobs:
             const version = versionMatch[1];
             const tagName = `v${version}`;
             core.info(`Version: ${version}, Tag: ${tagName}`);
+            core.info(`Target branch: ${process.env.GITHUB_REF_NAME}`);
 
             // 2. Determine if pre-release
             const isPrerelease = /rc|alpha|beta|dev/.test(version);
             core.info(`Pre-release: ${isPrerelease}`);
+
+            // Tags reachable from this commit — scopes pre-release cleanup
+            // to the current branch's lineage so a stable on one release
+            // train doesn't sweep pre-releases on another.
+            const { execSync } = require('child_process');
+            const reachableTags = new Set(
+              execSync('git tag --merged HEAD', { encoding: 'utf8' })
+                .split('\n')
+                .map(t => t.trim())
+                .filter(Boolean)
+            );
+            core.info(`Reachable tags: ${[...reachableTags].join(', ') || 'none'}`);
 
             // 3. Check tag does not already exist
             try {
@@ -60,9 +75,9 @@ jobs:
             });
             let previousRelease;
             if (isPrerelease) {
-              previousRelease = releases.data[0];
+              previousRelease = releases.data.find(r => reachableTags.has(r.tag_name));
             } else {
-              previousRelease = releases.data.find(r => !r.prerelease);
+              previousRelease = releases.data.find(r => !r.prerelease && reachableTags.has(r.tag_name));
             }
             const previousTag = previousRelease ? previousRelease.tag_name : null;
             core.info(`Previous release: ${previousTag || 'none'}`);
@@ -73,7 +88,7 @@ jobs:
               const comparison = await github.rest.repos.compareCommitsWithBasehead({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                basehead: `${previousTag}...HEAD`,
+                basehead: `${previousTag}...${process.env.GITHUB_SHA}`,
               });
               commits = comparison.data.commits;
             } else {
@@ -95,62 +110,54 @@ jobs:
             }
             core.info(`Found ${prNumbers.size} PRs: ${[...prNumbers].join(', ')}`);
 
-            if (prNumbers.size === 0) {
-              core.info('No PRs found, creating release with empty notes');
-              await github.rest.repos.createRelease({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                tag_name: tagName,
-                name: tagName,
-                body: `**Full Changelog**: https://github.com/${context.repo.owner}/${context.repo.repo}/compare/${previousTag}...${tagName}`,
-                prerelease: isPrerelease,
-              });
-              return;
-            }
-
-            // 7. Query PR details with linked issues and issue types via GraphQL
-            const prAliases = [...prNumbers].map((n, i) => `
-              pr${i}: pullRequest(number: ${n}) {
-                number
-                title
-                url
-                author { login }
-                labels(first: 10) { nodes { name } }
-                closingIssuesReferences(first: 10, userLinkedOnly: false) {
-                  nodes {
-                    number
-                    issueType { name }
+            // 7. Query PR details with linked issues and issue types via GraphQL.
+            // Skipped when there are no PRs so the empty case flows naturally
+            // through createRelease + cleanup + dispatch with just a changelog link.
+            let prs = [];
+            if (prNumbers.size > 0) {
+              const prAliases = [...prNumbers].map((n, i) => `
+                pr${i}: pullRequest(number: ${n}) {
+                  number
+                  title
+                  url
+                  author { login }
+                  labels(first: 10) { nodes { name } }
+                  closingIssuesReferences(first: 10, userLinkedOnly: false) {
+                    nodes {
+                      number
+                      issueType { name }
+                    }
                   }
                 }
-              }
-            `).join('');
+              `).join('');
 
-            const query = `
-              query {
-                repository(owner: "${context.repo.owner}", name: "${context.repo.repo}") {
-                  ${prAliases}
+              const query = `
+                query {
+                  repository(owner: "${context.repo.owner}", name: "${context.repo.repo}") {
+                    ${prAliases}
+                  }
+                }
+              `;
+
+              // Some numbers extracted from commit messages may be issues, not PRs.
+              // The GraphQL query returns partial data with errors for non-PR numbers,
+              // so we catch the error and use the partial data.
+              let graphqlResult;
+              try {
+                graphqlResult = await github.graphql(query, {
+                  headers: { 'GraphQL-Features': 'issue_types' },
+                });
+              } catch (e) {
+                if (e.data?.repository) {
+                  graphqlResult = { repository: e.data.repository };
+                  core.info(`GraphQL partial errors (non-PR numbers skipped): ${e.errors?.map(err => err.message).join(', ')}`);
+                } else {
+                  throw e;
                 }
               }
-            `;
 
-            // Some numbers extracted from commit messages may be issues, not PRs.
-            // The GraphQL query returns partial data with errors for non-PR numbers,
-            // so we catch the error and use the partial data.
-            let graphqlResult;
-            try {
-              graphqlResult = await github.graphql(query, {
-                headers: { 'GraphQL-Features': 'issue_types' },
-              });
-            } catch (e) {
-              if (e.data?.repository) {
-                graphqlResult = { repository: e.data.repository };
-                core.info(`GraphQL partial errors (non-PR numbers skipped): ${e.errors?.map(err => err.message).join(', ')}`);
-              } else {
-                throw e;
-              }
+              prs = Object.values(graphqlResult.repository).filter(Boolean);
             }
-
-            const prs = Object.values(graphqlResult.repository).filter(Boolean);
 
             // 7b. Fallback: for PRs without closingIssuesReferences, parse issue
             // numbers from title (e.g. "Fix #504:") and query their issue types
@@ -295,6 +302,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               tag_name: tagName,
+              target_commitish: process.env.GITHUB_REF_NAME,
               name: tagName,
               body: body,
               prerelease: isPrerelease,
@@ -304,7 +312,14 @@ jobs:
 
             // 12. Delete pre-releases when publishing a stable release
             if (!isPrerelease) {
-              const preReleases = releases.data.filter(r => r.prerelease);
+              const preReleases = releases.data.filter(r => {
+                if (!r.prerelease) return false;
+                if (reachableTags.has(r.tag_name)) return true;
+                // Catch rcs of this exact stable that aren't reachable —
+                // e.g., after a squash-merge severs the rc commits from the
+                // branch's lineage.
+                return /^(rc|alpha|beta|dev)\d*$/.test(r.tag_name.slice(tagName.length));
+              });
               for (const pr of preReleases) {
                 core.info(`Deleting pre-release: ${pr.tag_name}`);
                 await github.rest.repos.deleteRelease({

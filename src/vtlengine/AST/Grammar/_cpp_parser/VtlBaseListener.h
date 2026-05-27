@@ -16,695 +16,731 @@
 class  VtlBaseListener : public VtlListener {
 public:
 
-  virtual void enterStart(VtlParser::StartContext * /*ctx*/) override { }
-  virtual void exitStart(VtlParser::StartContext * /*ctx*/) override { }
+  virtual void enterStart(Vtl::StartContext * /*ctx*/) override { }
+  virtual void exitStart(Vtl::StartContext * /*ctx*/) override { }
 
-  virtual void enterTemporaryAssignment(VtlParser::TemporaryAssignmentContext * /*ctx*/) override { }
-  virtual void exitTemporaryAssignment(VtlParser::TemporaryAssignmentContext * /*ctx*/) override { }
+  virtual void enterTemporaryAssignment(Vtl::TemporaryAssignmentContext * /*ctx*/) override { }
+  virtual void exitTemporaryAssignment(Vtl::TemporaryAssignmentContext * /*ctx*/) override { }
 
-  virtual void enterPersistAssignment(VtlParser::PersistAssignmentContext * /*ctx*/) override { }
-  virtual void exitPersistAssignment(VtlParser::PersistAssignmentContext * /*ctx*/) override { }
+  virtual void enterPersistAssignment(Vtl::PersistAssignmentContext * /*ctx*/) override { }
+  virtual void exitPersistAssignment(Vtl::PersistAssignmentContext * /*ctx*/) override { }
 
-  virtual void enterDefineExpression(VtlParser::DefineExpressionContext * /*ctx*/) override { }
-  virtual void exitDefineExpression(VtlParser::DefineExpressionContext * /*ctx*/) override { }
+  virtual void enterDefineExpression(Vtl::DefineExpressionContext * /*ctx*/) override { }
+  virtual void exitDefineExpression(Vtl::DefineExpressionContext * /*ctx*/) override { }
 
-  virtual void enterVarIdExpr(VtlParser::VarIdExprContext * /*ctx*/) override { }
-  virtual void exitVarIdExpr(VtlParser::VarIdExprContext * /*ctx*/) override { }
+  virtual void enterVarIdExpr(Vtl::VarIdExprContext * /*ctx*/) override { }
+  virtual void exitVarIdExpr(Vtl::VarIdExprContext * /*ctx*/) override { }
 
-  virtual void enterMembershipExpr(VtlParser::MembershipExprContext * /*ctx*/) override { }
-  virtual void exitMembershipExpr(VtlParser::MembershipExprContext * /*ctx*/) override { }
+  virtual void enterMembershipExpr(Vtl::MembershipExprContext * /*ctx*/) override { }
+  virtual void exitMembershipExpr(Vtl::MembershipExprContext * /*ctx*/) override { }
 
-  virtual void enterInNotInExpr(VtlParser::InNotInExprContext * /*ctx*/) override { }
-  virtual void exitInNotInExpr(VtlParser::InNotInExprContext * /*ctx*/) override { }
+  virtual void enterInNotInExpr(Vtl::InNotInExprContext * /*ctx*/) override { }
+  virtual void exitInNotInExpr(Vtl::InNotInExprContext * /*ctx*/) override { }
 
-  virtual void enterBooleanExpr(VtlParser::BooleanExprContext * /*ctx*/) override { }
-  virtual void exitBooleanExpr(VtlParser::BooleanExprContext * /*ctx*/) override { }
+  virtual void enterBooleanExpr(Vtl::BooleanExprContext * /*ctx*/) override { }
+  virtual void exitBooleanExpr(Vtl::BooleanExprContext * /*ctx*/) override { }
 
-  virtual void enterComparisonExpr(VtlParser::ComparisonExprContext * /*ctx*/) override { }
-  virtual void exitComparisonExpr(VtlParser::ComparisonExprContext * /*ctx*/) override { }
+  virtual void enterComparisonExpr(Vtl::ComparisonExprContext * /*ctx*/) override { }
+  virtual void exitComparisonExpr(Vtl::ComparisonExprContext * /*ctx*/) override { }
 
-  virtual void enterUnaryExpr(VtlParser::UnaryExprContext * /*ctx*/) override { }
-  virtual void exitUnaryExpr(VtlParser::UnaryExprContext * /*ctx*/) override { }
+  virtual void enterUnaryExpr(Vtl::UnaryExprContext * /*ctx*/) override { }
+  virtual void exitUnaryExpr(Vtl::UnaryExprContext * /*ctx*/) override { }
 
-  virtual void enterFunctionsExpression(VtlParser::FunctionsExpressionContext * /*ctx*/) override { }
-  virtual void exitFunctionsExpression(VtlParser::FunctionsExpressionContext * /*ctx*/) override { }
+  virtual void enterFunctionsExpression(Vtl::FunctionsExpressionContext * /*ctx*/) override { }
+  virtual void exitFunctionsExpression(Vtl::FunctionsExpressionContext * /*ctx*/) override { }
 
-  virtual void enterIfExpr(VtlParser::IfExprContext * /*ctx*/) override { }
-  virtual void exitIfExpr(VtlParser::IfExprContext * /*ctx*/) override { }
+  virtual void enterIfExpr(Vtl::IfExprContext * /*ctx*/) override { }
+  virtual void exitIfExpr(Vtl::IfExprContext * /*ctx*/) override { }
 
-  virtual void enterClauseExpr(VtlParser::ClauseExprContext * /*ctx*/) override { }
-  virtual void exitClauseExpr(VtlParser::ClauseExprContext * /*ctx*/) override { }
+  virtual void enterClauseExpr(Vtl::ClauseExprContext * /*ctx*/) override { }
+  virtual void exitClauseExpr(Vtl::ClauseExprContext * /*ctx*/) override { }
 
-  virtual void enterCaseExpr(VtlParser::CaseExprContext * /*ctx*/) override { }
-  virtual void exitCaseExpr(VtlParser::CaseExprContext * /*ctx*/) override { }
+  virtual void enterCaseExpr(Vtl::CaseExprContext * /*ctx*/) override { }
+  virtual void exitCaseExpr(Vtl::CaseExprContext * /*ctx*/) override { }
 
-  virtual void enterArithmeticExpr(VtlParser::ArithmeticExprContext * /*ctx*/) override { }
-  virtual void exitArithmeticExpr(VtlParser::ArithmeticExprContext * /*ctx*/) override { }
+  virtual void enterArithmeticExpr(Vtl::ArithmeticExprContext * /*ctx*/) override { }
+  virtual void exitArithmeticExpr(Vtl::ArithmeticExprContext * /*ctx*/) override { }
 
-  virtual void enterParenthesisExpr(VtlParser::ParenthesisExprContext * /*ctx*/) override { }
-  virtual void exitParenthesisExpr(VtlParser::ParenthesisExprContext * /*ctx*/) override { }
+  virtual void enterParenthesisExpr(Vtl::ParenthesisExprContext * /*ctx*/) override { }
+  virtual void exitParenthesisExpr(Vtl::ParenthesisExprContext * /*ctx*/) override { }
 
-  virtual void enterConstantExpr(VtlParser::ConstantExprContext * /*ctx*/) override { }
-  virtual void exitConstantExpr(VtlParser::ConstantExprContext * /*ctx*/) override { }
+  virtual void enterConstantExpr(Vtl::ConstantExprContext * /*ctx*/) override { }
+  virtual void exitConstantExpr(Vtl::ConstantExprContext * /*ctx*/) override { }
 
-  virtual void enterArithmeticExprOrConcat(VtlParser::ArithmeticExprOrConcatContext * /*ctx*/) override { }
-  virtual void exitArithmeticExprOrConcat(VtlParser::ArithmeticExprOrConcatContext * /*ctx*/) override { }
+  virtual void enterArithmeticExprOrConcat(Vtl::ArithmeticExprOrConcatContext * /*ctx*/) override { }
+  virtual void exitArithmeticExprOrConcat(Vtl::ArithmeticExprOrConcatContext * /*ctx*/) override { }
 
-  virtual void enterArithmeticExprComp(VtlParser::ArithmeticExprCompContext * /*ctx*/) override { }
-  virtual void exitArithmeticExprComp(VtlParser::ArithmeticExprCompContext * /*ctx*/) override { }
+  virtual void enterArithmeticExprComp(Vtl::ArithmeticExprCompContext * /*ctx*/) override { }
+  virtual void exitArithmeticExprComp(Vtl::ArithmeticExprCompContext * /*ctx*/) override { }
 
-  virtual void enterIfExprComp(VtlParser::IfExprCompContext * /*ctx*/) override { }
-  virtual void exitIfExprComp(VtlParser::IfExprCompContext * /*ctx*/) override { }
+  virtual void enterIfExprComp(Vtl::IfExprCompContext * /*ctx*/) override { }
+  virtual void exitIfExprComp(Vtl::IfExprCompContext * /*ctx*/) override { }
 
-  virtual void enterComparisonExprComp(VtlParser::ComparisonExprCompContext * /*ctx*/) override { }
-  virtual void exitComparisonExprComp(VtlParser::ComparisonExprCompContext * /*ctx*/) override { }
+  virtual void enterComparisonExprComp(Vtl::ComparisonExprCompContext * /*ctx*/) override { }
+  virtual void exitComparisonExprComp(Vtl::ComparisonExprCompContext * /*ctx*/) override { }
 
-  virtual void enterFunctionsExpressionComp(VtlParser::FunctionsExpressionCompContext * /*ctx*/) override { }
-  virtual void exitFunctionsExpressionComp(VtlParser::FunctionsExpressionCompContext * /*ctx*/) override { }
+  virtual void enterFunctionsExpressionComp(Vtl::FunctionsExpressionCompContext * /*ctx*/) override { }
+  virtual void exitFunctionsExpressionComp(Vtl::FunctionsExpressionCompContext * /*ctx*/) override { }
 
-  virtual void enterCompId(VtlParser::CompIdContext * /*ctx*/) override { }
-  virtual void exitCompId(VtlParser::CompIdContext * /*ctx*/) override { }
+  virtual void enterCompId(Vtl::CompIdContext * /*ctx*/) override { }
+  virtual void exitCompId(Vtl::CompIdContext * /*ctx*/) override { }
 
-  virtual void enterConstantExprComp(VtlParser::ConstantExprCompContext * /*ctx*/) override { }
-  virtual void exitConstantExprComp(VtlParser::ConstantExprCompContext * /*ctx*/) override { }
+  virtual void enterConstantExprComp(Vtl::ConstantExprCompContext * /*ctx*/) override { }
+  virtual void exitConstantExprComp(Vtl::ConstantExprCompContext * /*ctx*/) override { }
 
-  virtual void enterArithmeticExprOrConcatComp(VtlParser::ArithmeticExprOrConcatCompContext * /*ctx*/) override { }
-  virtual void exitArithmeticExprOrConcatComp(VtlParser::ArithmeticExprOrConcatCompContext * /*ctx*/) override { }
+  virtual void enterArithmeticExprOrConcatComp(Vtl::ArithmeticExprOrConcatCompContext * /*ctx*/) override { }
+  virtual void exitArithmeticExprOrConcatComp(Vtl::ArithmeticExprOrConcatCompContext * /*ctx*/) override { }
 
-  virtual void enterParenthesisExprComp(VtlParser::ParenthesisExprCompContext * /*ctx*/) override { }
-  virtual void exitParenthesisExprComp(VtlParser::ParenthesisExprCompContext * /*ctx*/) override { }
+  virtual void enterParenthesisExprComp(Vtl::ParenthesisExprCompContext * /*ctx*/) override { }
+  virtual void exitParenthesisExprComp(Vtl::ParenthesisExprCompContext * /*ctx*/) override { }
 
-  virtual void enterInNotInExprComp(VtlParser::InNotInExprCompContext * /*ctx*/) override { }
-  virtual void exitInNotInExprComp(VtlParser::InNotInExprCompContext * /*ctx*/) override { }
+  virtual void enterInNotInExprComp(Vtl::InNotInExprCompContext * /*ctx*/) override { }
+  virtual void exitInNotInExprComp(Vtl::InNotInExprCompContext * /*ctx*/) override { }
 
-  virtual void enterUnaryExprComp(VtlParser::UnaryExprCompContext * /*ctx*/) override { }
-  virtual void exitUnaryExprComp(VtlParser::UnaryExprCompContext * /*ctx*/) override { }
+  virtual void enterUnaryExprComp(Vtl::UnaryExprCompContext * /*ctx*/) override { }
+  virtual void exitUnaryExprComp(Vtl::UnaryExprCompContext * /*ctx*/) override { }
 
-  virtual void enterCaseExprComp(VtlParser::CaseExprCompContext * /*ctx*/) override { }
-  virtual void exitCaseExprComp(VtlParser::CaseExprCompContext * /*ctx*/) override { }
+  virtual void enterCaseExprComp(Vtl::CaseExprCompContext * /*ctx*/) override { }
+  virtual void exitCaseExprComp(Vtl::CaseExprCompContext * /*ctx*/) override { }
 
-  virtual void enterBooleanExprComp(VtlParser::BooleanExprCompContext * /*ctx*/) override { }
-  virtual void exitBooleanExprComp(VtlParser::BooleanExprCompContext * /*ctx*/) override { }
+  virtual void enterBooleanExprComp(Vtl::BooleanExprCompContext * /*ctx*/) override { }
+  virtual void exitBooleanExprComp(Vtl::BooleanExprCompContext * /*ctx*/) override { }
 
-  virtual void enterGenericFunctionsComponents(VtlParser::GenericFunctionsComponentsContext * /*ctx*/) override { }
-  virtual void exitGenericFunctionsComponents(VtlParser::GenericFunctionsComponentsContext * /*ctx*/) override { }
+  virtual void enterGenericFunctionsComponents(Vtl::GenericFunctionsComponentsContext * /*ctx*/) override { }
+  virtual void exitGenericFunctionsComponents(Vtl::GenericFunctionsComponentsContext * /*ctx*/) override { }
 
-  virtual void enterStringFunctionsComponents(VtlParser::StringFunctionsComponentsContext * /*ctx*/) override { }
-  virtual void exitStringFunctionsComponents(VtlParser::StringFunctionsComponentsContext * /*ctx*/) override { }
+  virtual void enterStringFunctionsComponents(Vtl::StringFunctionsComponentsContext * /*ctx*/) override { }
+  virtual void exitStringFunctionsComponents(Vtl::StringFunctionsComponentsContext * /*ctx*/) override { }
 
-  virtual void enterNumericFunctionsComponents(VtlParser::NumericFunctionsComponentsContext * /*ctx*/) override { }
-  virtual void exitNumericFunctionsComponents(VtlParser::NumericFunctionsComponentsContext * /*ctx*/) override { }
+  virtual void enterNumericFunctionsComponents(Vtl::NumericFunctionsComponentsContext * /*ctx*/) override { }
+  virtual void exitNumericFunctionsComponents(Vtl::NumericFunctionsComponentsContext * /*ctx*/) override { }
 
-  virtual void enterComparisonFunctionsComponents(VtlParser::ComparisonFunctionsComponentsContext * /*ctx*/) override { }
-  virtual void exitComparisonFunctionsComponents(VtlParser::ComparisonFunctionsComponentsContext * /*ctx*/) override { }
+  virtual void enterComparisonFunctionsComponents(Vtl::ComparisonFunctionsComponentsContext * /*ctx*/) override { }
+  virtual void exitComparisonFunctionsComponents(Vtl::ComparisonFunctionsComponentsContext * /*ctx*/) override { }
 
-  virtual void enterTimeFunctionsComponents(VtlParser::TimeFunctionsComponentsContext * /*ctx*/) override { }
-  virtual void exitTimeFunctionsComponents(VtlParser::TimeFunctionsComponentsContext * /*ctx*/) override { }
+  virtual void enterTimeFunctionsComponents(Vtl::TimeFunctionsComponentsContext * /*ctx*/) override { }
+  virtual void exitTimeFunctionsComponents(Vtl::TimeFunctionsComponentsContext * /*ctx*/) override { }
 
-  virtual void enterConditionalFunctionsComponents(VtlParser::ConditionalFunctionsComponentsContext * /*ctx*/) override { }
-  virtual void exitConditionalFunctionsComponents(VtlParser::ConditionalFunctionsComponentsContext * /*ctx*/) override { }
+  virtual void enterConditionalFunctionsComponents(Vtl::ConditionalFunctionsComponentsContext * /*ctx*/) override { }
+  virtual void exitConditionalFunctionsComponents(Vtl::ConditionalFunctionsComponentsContext * /*ctx*/) override { }
 
-  virtual void enterAggregateFunctionsComponents(VtlParser::AggregateFunctionsComponentsContext * /*ctx*/) override { }
-  virtual void exitAggregateFunctionsComponents(VtlParser::AggregateFunctionsComponentsContext * /*ctx*/) override { }
+  virtual void enterAggregateFunctionsComponents(Vtl::AggregateFunctionsComponentsContext * /*ctx*/) override { }
+  virtual void exitAggregateFunctionsComponents(Vtl::AggregateFunctionsComponentsContext * /*ctx*/) override { }
 
-  virtual void enterAnalyticFunctionsComponents(VtlParser::AnalyticFunctionsComponentsContext * /*ctx*/) override { }
-  virtual void exitAnalyticFunctionsComponents(VtlParser::AnalyticFunctionsComponentsContext * /*ctx*/) override { }
+  virtual void enterAnalyticFunctionsComponents(Vtl::AnalyticFunctionsComponentsContext * /*ctx*/) override { }
+  virtual void exitAnalyticFunctionsComponents(Vtl::AnalyticFunctionsComponentsContext * /*ctx*/) override { }
 
-  virtual void enterJoinFunctions(VtlParser::JoinFunctionsContext * /*ctx*/) override { }
-  virtual void exitJoinFunctions(VtlParser::JoinFunctionsContext * /*ctx*/) override { }
+  virtual void enterJoinFunctions(Vtl::JoinFunctionsContext * /*ctx*/) override { }
+  virtual void exitJoinFunctions(Vtl::JoinFunctionsContext * /*ctx*/) override { }
 
-  virtual void enterGenericFunctions(VtlParser::GenericFunctionsContext * /*ctx*/) override { }
-  virtual void exitGenericFunctions(VtlParser::GenericFunctionsContext * /*ctx*/) override { }
+  virtual void enterGenericFunctions(Vtl::GenericFunctionsContext * /*ctx*/) override { }
+  virtual void exitGenericFunctions(Vtl::GenericFunctionsContext * /*ctx*/) override { }
 
-  virtual void enterStringFunctions(VtlParser::StringFunctionsContext * /*ctx*/) override { }
-  virtual void exitStringFunctions(VtlParser::StringFunctionsContext * /*ctx*/) override { }
+  virtual void enterStringFunctions(Vtl::StringFunctionsContext * /*ctx*/) override { }
+  virtual void exitStringFunctions(Vtl::StringFunctionsContext * /*ctx*/) override { }
 
-  virtual void enterNumericFunctions(VtlParser::NumericFunctionsContext * /*ctx*/) override { }
-  virtual void exitNumericFunctions(VtlParser::NumericFunctionsContext * /*ctx*/) override { }
+  virtual void enterNumericFunctions(Vtl::NumericFunctionsContext * /*ctx*/) override { }
+  virtual void exitNumericFunctions(Vtl::NumericFunctionsContext * /*ctx*/) override { }
 
-  virtual void enterComparisonFunctions(VtlParser::ComparisonFunctionsContext * /*ctx*/) override { }
-  virtual void exitComparisonFunctions(VtlParser::ComparisonFunctionsContext * /*ctx*/) override { }
+  virtual void enterComparisonFunctions(Vtl::ComparisonFunctionsContext * /*ctx*/) override { }
+  virtual void exitComparisonFunctions(Vtl::ComparisonFunctionsContext * /*ctx*/) override { }
 
-  virtual void enterTimeFunctions(VtlParser::TimeFunctionsContext * /*ctx*/) override { }
-  virtual void exitTimeFunctions(VtlParser::TimeFunctionsContext * /*ctx*/) override { }
+  virtual void enterTimeFunctions(Vtl::TimeFunctionsContext * /*ctx*/) override { }
+  virtual void exitTimeFunctions(Vtl::TimeFunctionsContext * /*ctx*/) override { }
 
-  virtual void enterSetFunctions(VtlParser::SetFunctionsContext * /*ctx*/) override { }
-  virtual void exitSetFunctions(VtlParser::SetFunctionsContext * /*ctx*/) override { }
+  virtual void enterSetFunctions(Vtl::SetFunctionsContext * /*ctx*/) override { }
+  virtual void exitSetFunctions(Vtl::SetFunctionsContext * /*ctx*/) override { }
 
-  virtual void enterHierarchyFunctions(VtlParser::HierarchyFunctionsContext * /*ctx*/) override { }
-  virtual void exitHierarchyFunctions(VtlParser::HierarchyFunctionsContext * /*ctx*/) override { }
+  virtual void enterHierarchyFunctions(Vtl::HierarchyFunctionsContext * /*ctx*/) override { }
+  virtual void exitHierarchyFunctions(Vtl::HierarchyFunctionsContext * /*ctx*/) override { }
 
-  virtual void enterValidationFunctions(VtlParser::ValidationFunctionsContext * /*ctx*/) override { }
-  virtual void exitValidationFunctions(VtlParser::ValidationFunctionsContext * /*ctx*/) override { }
+  virtual void enterValidationFunctions(Vtl::ValidationFunctionsContext * /*ctx*/) override { }
+  virtual void exitValidationFunctions(Vtl::ValidationFunctionsContext * /*ctx*/) override { }
 
-  virtual void enterConditionalFunctions(VtlParser::ConditionalFunctionsContext * /*ctx*/) override { }
-  virtual void exitConditionalFunctions(VtlParser::ConditionalFunctionsContext * /*ctx*/) override { }
+  virtual void enterConditionalFunctions(Vtl::ConditionalFunctionsContext * /*ctx*/) override { }
+  virtual void exitConditionalFunctions(Vtl::ConditionalFunctionsContext * /*ctx*/) override { }
 
-  virtual void enterAggregateFunctions(VtlParser::AggregateFunctionsContext * /*ctx*/) override { }
-  virtual void exitAggregateFunctions(VtlParser::AggregateFunctionsContext * /*ctx*/) override { }
+  virtual void enterAggregateFunctions(Vtl::AggregateFunctionsContext * /*ctx*/) override { }
+  virtual void exitAggregateFunctions(Vtl::AggregateFunctionsContext * /*ctx*/) override { }
 
-  virtual void enterAnalyticFunctions(VtlParser::AnalyticFunctionsContext * /*ctx*/) override { }
-  virtual void exitAnalyticFunctions(VtlParser::AnalyticFunctionsContext * /*ctx*/) override { }
+  virtual void enterAnalyticFunctions(Vtl::AnalyticFunctionsContext * /*ctx*/) override { }
+  virtual void exitAnalyticFunctions(Vtl::AnalyticFunctionsContext * /*ctx*/) override { }
 
-  virtual void enterDatasetClause(VtlParser::DatasetClauseContext * /*ctx*/) override { }
-  virtual void exitDatasetClause(VtlParser::DatasetClauseContext * /*ctx*/) override { }
+  virtual void enterDatasetClause(Vtl::DatasetClauseContext * /*ctx*/) override { }
+  virtual void exitDatasetClause(Vtl::DatasetClauseContext * /*ctx*/) override { }
 
-  virtual void enterRenameClause(VtlParser::RenameClauseContext * /*ctx*/) override { }
-  virtual void exitRenameClause(VtlParser::RenameClauseContext * /*ctx*/) override { }
+  virtual void enterRenameClause(Vtl::RenameClauseContext * /*ctx*/) override { }
+  virtual void exitRenameClause(Vtl::RenameClauseContext * /*ctx*/) override { }
 
-  virtual void enterAggrClause(VtlParser::AggrClauseContext * /*ctx*/) override { }
-  virtual void exitAggrClause(VtlParser::AggrClauseContext * /*ctx*/) override { }
+  virtual void enterAggrClause(Vtl::AggrClauseContext * /*ctx*/) override { }
+  virtual void exitAggrClause(Vtl::AggrClauseContext * /*ctx*/) override { }
 
-  virtual void enterFilterClause(VtlParser::FilterClauseContext * /*ctx*/) override { }
-  virtual void exitFilterClause(VtlParser::FilterClauseContext * /*ctx*/) override { }
+  virtual void enterFilterClause(Vtl::FilterClauseContext * /*ctx*/) override { }
+  virtual void exitFilterClause(Vtl::FilterClauseContext * /*ctx*/) override { }
 
-  virtual void enterCalcClause(VtlParser::CalcClauseContext * /*ctx*/) override { }
-  virtual void exitCalcClause(VtlParser::CalcClauseContext * /*ctx*/) override { }
+  virtual void enterCalcClause(Vtl::CalcClauseContext * /*ctx*/) override { }
+  virtual void exitCalcClause(Vtl::CalcClauseContext * /*ctx*/) override { }
 
-  virtual void enterKeepOrDropClause(VtlParser::KeepOrDropClauseContext * /*ctx*/) override { }
-  virtual void exitKeepOrDropClause(VtlParser::KeepOrDropClauseContext * /*ctx*/) override { }
+  virtual void enterKeepOrDropClause(Vtl::KeepOrDropClauseContext * /*ctx*/) override { }
+  virtual void exitKeepOrDropClause(Vtl::KeepOrDropClauseContext * /*ctx*/) override { }
 
-  virtual void enterPivotOrUnpivotClause(VtlParser::PivotOrUnpivotClauseContext * /*ctx*/) override { }
-  virtual void exitPivotOrUnpivotClause(VtlParser::PivotOrUnpivotClauseContext * /*ctx*/) override { }
+  virtual void enterPivotOrUnpivotClause(Vtl::PivotOrUnpivotClauseContext * /*ctx*/) override { }
+  virtual void exitPivotOrUnpivotClause(Vtl::PivotOrUnpivotClauseContext * /*ctx*/) override { }
 
-  virtual void enterCustomPivotClause(VtlParser::CustomPivotClauseContext * /*ctx*/) override { }
-  virtual void exitCustomPivotClause(VtlParser::CustomPivotClauseContext * /*ctx*/) override { }
+  virtual void enterCustomPivotClause(Vtl::CustomPivotClauseContext * /*ctx*/) override { }
+  virtual void exitCustomPivotClause(Vtl::CustomPivotClauseContext * /*ctx*/) override { }
 
-  virtual void enterSubspaceClause(VtlParser::SubspaceClauseContext * /*ctx*/) override { }
-  virtual void exitSubspaceClause(VtlParser::SubspaceClauseContext * /*ctx*/) override { }
+  virtual void enterSubspaceClause(Vtl::SubspaceClauseContext * /*ctx*/) override { }
+  virtual void exitSubspaceClause(Vtl::SubspaceClauseContext * /*ctx*/) override { }
 
-  virtual void enterJoinExpr(VtlParser::JoinExprContext * /*ctx*/) override { }
-  virtual void exitJoinExpr(VtlParser::JoinExprContext * /*ctx*/) override { }
+  virtual void enterInnerJoinExpr(Vtl::InnerJoinExprContext * /*ctx*/) override { }
+  virtual void exitInnerJoinExpr(Vtl::InnerJoinExprContext * /*ctx*/) override { }
 
-  virtual void enterDefOperator(VtlParser::DefOperatorContext * /*ctx*/) override { }
-  virtual void exitDefOperator(VtlParser::DefOperatorContext * /*ctx*/) override { }
+  virtual void enterLeftJoinExpr(Vtl::LeftJoinExprContext * /*ctx*/) override { }
+  virtual void exitLeftJoinExpr(Vtl::LeftJoinExprContext * /*ctx*/) override { }
 
-  virtual void enterDefDatapointRuleset(VtlParser::DefDatapointRulesetContext * /*ctx*/) override { }
-  virtual void exitDefDatapointRuleset(VtlParser::DefDatapointRulesetContext * /*ctx*/) override { }
+  virtual void enterFullJoinExpr(Vtl::FullJoinExprContext * /*ctx*/) override { }
+  virtual void exitFullJoinExpr(Vtl::FullJoinExprContext * /*ctx*/) override { }
 
-  virtual void enterDefHierarchical(VtlParser::DefHierarchicalContext * /*ctx*/) override { }
-  virtual void exitDefHierarchical(VtlParser::DefHierarchicalContext * /*ctx*/) override { }
+  virtual void enterCrossJoinExpr(Vtl::CrossJoinExprContext * /*ctx*/) override { }
+  virtual void exitCrossJoinExpr(Vtl::CrossJoinExprContext * /*ctx*/) override { }
 
-  virtual void enterDefViralPropagation(VtlParser::DefViralPropagationContext * /*ctx*/) override { }
-  virtual void exitDefViralPropagation(VtlParser::DefViralPropagationContext * /*ctx*/) override { }
+  virtual void enterDefOperator(Vtl::DefOperatorContext * /*ctx*/) override { }
+  virtual void exitDefOperator(Vtl::DefOperatorContext * /*ctx*/) override { }
 
-  virtual void enterVpSignature(VtlParser::VpSignatureContext * /*ctx*/) override { }
-  virtual void exitVpSignature(VtlParser::VpSignatureContext * /*ctx*/) override { }
+  virtual void enterDefDatapointRuleset(Vtl::DefDatapointRulesetContext * /*ctx*/) override { }
+  virtual void exitDefDatapointRuleset(Vtl::DefDatapointRulesetContext * /*ctx*/) override { }
 
-  virtual void enterVpBody(VtlParser::VpBodyContext * /*ctx*/) override { }
-  virtual void exitVpBody(VtlParser::VpBodyContext * /*ctx*/) override { }
+  virtual void enterDefHierarchical(Vtl::DefHierarchicalContext * /*ctx*/) override { }
+  virtual void exitDefHierarchical(Vtl::DefHierarchicalContext * /*ctx*/) override { }
 
-  virtual void enterEnumeratedVpClause(VtlParser::EnumeratedVpClauseContext * /*ctx*/) override { }
-  virtual void exitEnumeratedVpClause(VtlParser::EnumeratedVpClauseContext * /*ctx*/) override { }
+  virtual void enterDefViralPropagation(Vtl::DefViralPropagationContext * /*ctx*/) override { }
+  virtual void exitDefViralPropagation(Vtl::DefViralPropagationContext * /*ctx*/) override { }
 
-  virtual void enterAggregationVpClause(VtlParser::AggregationVpClauseContext * /*ctx*/) override { }
-  virtual void exitAggregationVpClause(VtlParser::AggregationVpClauseContext * /*ctx*/) override { }
+  virtual void enterVpSignature(Vtl::VpSignatureContext * /*ctx*/) override { }
+  virtual void exitVpSignature(Vtl::VpSignatureContext * /*ctx*/) override { }
 
-  virtual void enterDefaultVpClause(VtlParser::DefaultVpClauseContext * /*ctx*/) override { }
-  virtual void exitDefaultVpClause(VtlParser::DefaultVpClauseContext * /*ctx*/) override { }
+  virtual void enterVpBody(Vtl::VpBodyContext * /*ctx*/) override { }
+  virtual void exitVpBody(Vtl::VpBodyContext * /*ctx*/) override { }
 
-  virtual void enterVpCondition(VtlParser::VpConditionContext * /*ctx*/) override { }
-  virtual void exitVpCondition(VtlParser::VpConditionContext * /*ctx*/) override { }
+  virtual void enterEnumeratedVpClause(Vtl::EnumeratedVpClauseContext * /*ctx*/) override { }
+  virtual void exitEnumeratedVpClause(Vtl::EnumeratedVpClauseContext * /*ctx*/) override { }
 
-  virtual void enterCallDataset(VtlParser::CallDatasetContext * /*ctx*/) override { }
-  virtual void exitCallDataset(VtlParser::CallDatasetContext * /*ctx*/) override { }
+  virtual void enterAggregationVpClause(Vtl::AggregationVpClauseContext * /*ctx*/) override { }
+  virtual void exitAggregationVpClause(Vtl::AggregationVpClauseContext * /*ctx*/) override { }
 
-  virtual void enterEvalAtom(VtlParser::EvalAtomContext * /*ctx*/) override { }
-  virtual void exitEvalAtom(VtlParser::EvalAtomContext * /*ctx*/) override { }
+  virtual void enterDefaultVpClause(Vtl::DefaultVpClauseContext * /*ctx*/) override { }
+  virtual void exitDefaultVpClause(Vtl::DefaultVpClauseContext * /*ctx*/) override { }
 
-  virtual void enterCastExprDataset(VtlParser::CastExprDatasetContext * /*ctx*/) override { }
-  virtual void exitCastExprDataset(VtlParser::CastExprDatasetContext * /*ctx*/) override { }
+  virtual void enterVpCondition(Vtl::VpConditionContext * /*ctx*/) override { }
+  virtual void exitVpCondition(Vtl::VpConditionContext * /*ctx*/) override { }
 
-  virtual void enterCallComponent(VtlParser::CallComponentContext * /*ctx*/) override { }
-  virtual void exitCallComponent(VtlParser::CallComponentContext * /*ctx*/) override { }
+  virtual void enterCallDataset(Vtl::CallDatasetContext * /*ctx*/) override { }
+  virtual void exitCallDataset(Vtl::CallDatasetContext * /*ctx*/) override { }
 
-  virtual void enterCastExprComponent(VtlParser::CastExprComponentContext * /*ctx*/) override { }
-  virtual void exitCastExprComponent(VtlParser::CastExprComponentContext * /*ctx*/) override { }
+  virtual void enterEvalAtom(Vtl::EvalAtomContext * /*ctx*/) override { }
+  virtual void exitEvalAtom(Vtl::EvalAtomContext * /*ctx*/) override { }
 
-  virtual void enterEvalAtomComponent(VtlParser::EvalAtomComponentContext * /*ctx*/) override { }
-  virtual void exitEvalAtomComponent(VtlParser::EvalAtomComponentContext * /*ctx*/) override { }
+  virtual void enterCastExprDataset(Vtl::CastExprDatasetContext * /*ctx*/) override { }
+  virtual void exitCastExprDataset(Vtl::CastExprDatasetContext * /*ctx*/) override { }
 
-  virtual void enterParameterComponent(VtlParser::ParameterComponentContext * /*ctx*/) override { }
-  virtual void exitParameterComponent(VtlParser::ParameterComponentContext * /*ctx*/) override { }
+  virtual void enterCallComponent(Vtl::CallComponentContext * /*ctx*/) override { }
+  virtual void exitCallComponent(Vtl::CallComponentContext * /*ctx*/) override { }
 
-  virtual void enterParameter(VtlParser::ParameterContext * /*ctx*/) override { }
-  virtual void exitParameter(VtlParser::ParameterContext * /*ctx*/) override { }
+  virtual void enterCastExprComponent(Vtl::CastExprComponentContext * /*ctx*/) override { }
+  virtual void exitCastExprComponent(Vtl::CastExprComponentContext * /*ctx*/) override { }
 
-  virtual void enterUnaryStringFunction(VtlParser::UnaryStringFunctionContext * /*ctx*/) override { }
-  virtual void exitUnaryStringFunction(VtlParser::UnaryStringFunctionContext * /*ctx*/) override { }
+  virtual void enterEvalAtomComponent(Vtl::EvalAtomComponentContext * /*ctx*/) override { }
+  virtual void exitEvalAtomComponent(Vtl::EvalAtomComponentContext * /*ctx*/) override { }
 
-  virtual void enterSubstrAtom(VtlParser::SubstrAtomContext * /*ctx*/) override { }
-  virtual void exitSubstrAtom(VtlParser::SubstrAtomContext * /*ctx*/) override { }
+  virtual void enterParameterComponent(Vtl::ParameterComponentContext * /*ctx*/) override { }
+  virtual void exitParameterComponent(Vtl::ParameterComponentContext * /*ctx*/) override { }
 
-  virtual void enterReplaceAtom(VtlParser::ReplaceAtomContext * /*ctx*/) override { }
-  virtual void exitReplaceAtom(VtlParser::ReplaceAtomContext * /*ctx*/) override { }
+  virtual void enterParameter(Vtl::ParameterContext * /*ctx*/) override { }
+  virtual void exitParameter(Vtl::ParameterContext * /*ctx*/) override { }
 
-  virtual void enterInstrAtom(VtlParser::InstrAtomContext * /*ctx*/) override { }
-  virtual void exitInstrAtom(VtlParser::InstrAtomContext * /*ctx*/) override { }
+  virtual void enterStringDistanceMethods(Vtl::StringDistanceMethodsContext * /*ctx*/) override { }
+  virtual void exitStringDistanceMethods(Vtl::StringDistanceMethodsContext * /*ctx*/) override { }
 
-  virtual void enterUnaryStringFunctionComponent(VtlParser::UnaryStringFunctionComponentContext * /*ctx*/) override { }
-  virtual void exitUnaryStringFunctionComponent(VtlParser::UnaryStringFunctionComponentContext * /*ctx*/) override { }
+  virtual void enterUnaryStringFunction(Vtl::UnaryStringFunctionContext * /*ctx*/) override { }
+  virtual void exitUnaryStringFunction(Vtl::UnaryStringFunctionContext * /*ctx*/) override { }
 
-  virtual void enterSubstrAtomComponent(VtlParser::SubstrAtomComponentContext * /*ctx*/) override { }
-  virtual void exitSubstrAtomComponent(VtlParser::SubstrAtomComponentContext * /*ctx*/) override { }
+  virtual void enterSubstrAtom(Vtl::SubstrAtomContext * /*ctx*/) override { }
+  virtual void exitSubstrAtom(Vtl::SubstrAtomContext * /*ctx*/) override { }
 
-  virtual void enterReplaceAtomComponent(VtlParser::ReplaceAtomComponentContext * /*ctx*/) override { }
-  virtual void exitReplaceAtomComponent(VtlParser::ReplaceAtomComponentContext * /*ctx*/) override { }
+  virtual void enterReplaceAtom(Vtl::ReplaceAtomContext * /*ctx*/) override { }
+  virtual void exitReplaceAtom(Vtl::ReplaceAtomContext * /*ctx*/) override { }
 
-  virtual void enterInstrAtomComponent(VtlParser::InstrAtomComponentContext * /*ctx*/) override { }
-  virtual void exitInstrAtomComponent(VtlParser::InstrAtomComponentContext * /*ctx*/) override { }
+  virtual void enterInstrAtom(Vtl::InstrAtomContext * /*ctx*/) override { }
+  virtual void exitInstrAtom(Vtl::InstrAtomContext * /*ctx*/) override { }
 
-  virtual void enterUnaryNumeric(VtlParser::UnaryNumericContext * /*ctx*/) override { }
-  virtual void exitUnaryNumeric(VtlParser::UnaryNumericContext * /*ctx*/) override { }
+  virtual void enterStringDistanceAtom(Vtl::StringDistanceAtomContext * /*ctx*/) override { }
+  virtual void exitStringDistanceAtom(Vtl::StringDistanceAtomContext * /*ctx*/) override { }
 
-  virtual void enterUnaryWithOptionalNumeric(VtlParser::UnaryWithOptionalNumericContext * /*ctx*/) override { }
-  virtual void exitUnaryWithOptionalNumeric(VtlParser::UnaryWithOptionalNumericContext * /*ctx*/) override { }
+  virtual void enterUnaryStringFunctionComponent(Vtl::UnaryStringFunctionComponentContext * /*ctx*/) override { }
+  virtual void exitUnaryStringFunctionComponent(Vtl::UnaryStringFunctionComponentContext * /*ctx*/) override { }
 
-  virtual void enterBinaryNumeric(VtlParser::BinaryNumericContext * /*ctx*/) override { }
-  virtual void exitBinaryNumeric(VtlParser::BinaryNumericContext * /*ctx*/) override { }
+  virtual void enterSubstrAtomComponent(Vtl::SubstrAtomComponentContext * /*ctx*/) override { }
+  virtual void exitSubstrAtomComponent(Vtl::SubstrAtomComponentContext * /*ctx*/) override { }
 
-  virtual void enterUnaryNumericComponent(VtlParser::UnaryNumericComponentContext * /*ctx*/) override { }
-  virtual void exitUnaryNumericComponent(VtlParser::UnaryNumericComponentContext * /*ctx*/) override { }
+  virtual void enterReplaceAtomComponent(Vtl::ReplaceAtomComponentContext * /*ctx*/) override { }
+  virtual void exitReplaceAtomComponent(Vtl::ReplaceAtomComponentContext * /*ctx*/) override { }
 
-  virtual void enterUnaryWithOptionalNumericComponent(VtlParser::UnaryWithOptionalNumericComponentContext * /*ctx*/) override { }
-  virtual void exitUnaryWithOptionalNumericComponent(VtlParser::UnaryWithOptionalNumericComponentContext * /*ctx*/) override { }
+  virtual void enterInstrAtomComponent(Vtl::InstrAtomComponentContext * /*ctx*/) override { }
+  virtual void exitInstrAtomComponent(Vtl::InstrAtomComponentContext * /*ctx*/) override { }
 
-  virtual void enterBinaryNumericComponent(VtlParser::BinaryNumericComponentContext * /*ctx*/) override { }
-  virtual void exitBinaryNumericComponent(VtlParser::BinaryNumericComponentContext * /*ctx*/) override { }
+  virtual void enterStringDistanceAtomComponent(Vtl::StringDistanceAtomComponentContext * /*ctx*/) override { }
+  virtual void exitStringDistanceAtomComponent(Vtl::StringDistanceAtomComponentContext * /*ctx*/) override { }
 
-  virtual void enterBetweenAtom(VtlParser::BetweenAtomContext * /*ctx*/) override { }
-  virtual void exitBetweenAtom(VtlParser::BetweenAtomContext * /*ctx*/) override { }
+  virtual void enterUnaryNumeric(Vtl::UnaryNumericContext * /*ctx*/) override { }
+  virtual void exitUnaryNumeric(Vtl::UnaryNumericContext * /*ctx*/) override { }
 
-  virtual void enterCharsetMatchAtom(VtlParser::CharsetMatchAtomContext * /*ctx*/) override { }
-  virtual void exitCharsetMatchAtom(VtlParser::CharsetMatchAtomContext * /*ctx*/) override { }
+  virtual void enterUnaryWithOptionalNumeric(Vtl::UnaryWithOptionalNumericContext * /*ctx*/) override { }
+  virtual void exitUnaryWithOptionalNumeric(Vtl::UnaryWithOptionalNumericContext * /*ctx*/) override { }
 
-  virtual void enterIsNullAtom(VtlParser::IsNullAtomContext * /*ctx*/) override { }
-  virtual void exitIsNullAtom(VtlParser::IsNullAtomContext * /*ctx*/) override { }
+  virtual void enterBinaryNumeric(Vtl::BinaryNumericContext * /*ctx*/) override { }
+  virtual void exitBinaryNumeric(Vtl::BinaryNumericContext * /*ctx*/) override { }
 
-  virtual void enterExistInAtom(VtlParser::ExistInAtomContext * /*ctx*/) override { }
-  virtual void exitExistInAtom(VtlParser::ExistInAtomContext * /*ctx*/) override { }
+  virtual void enterUnaryNumericComponent(Vtl::UnaryNumericComponentContext * /*ctx*/) override { }
+  virtual void exitUnaryNumericComponent(Vtl::UnaryNumericComponentContext * /*ctx*/) override { }
 
-  virtual void enterBetweenAtomComponent(VtlParser::BetweenAtomComponentContext * /*ctx*/) override { }
-  virtual void exitBetweenAtomComponent(VtlParser::BetweenAtomComponentContext * /*ctx*/) override { }
+  virtual void enterUnaryWithOptionalNumericComponent(Vtl::UnaryWithOptionalNumericComponentContext * /*ctx*/) override { }
+  virtual void exitUnaryWithOptionalNumericComponent(Vtl::UnaryWithOptionalNumericComponentContext * /*ctx*/) override { }
 
-  virtual void enterCharsetMatchAtomComponent(VtlParser::CharsetMatchAtomComponentContext * /*ctx*/) override { }
-  virtual void exitCharsetMatchAtomComponent(VtlParser::CharsetMatchAtomComponentContext * /*ctx*/) override { }
+  virtual void enterBinaryNumericComponent(Vtl::BinaryNumericComponentContext * /*ctx*/) override { }
+  virtual void exitBinaryNumericComponent(Vtl::BinaryNumericComponentContext * /*ctx*/) override { }
 
-  virtual void enterIsNullAtomComponent(VtlParser::IsNullAtomComponentContext * /*ctx*/) override { }
-  virtual void exitIsNullAtomComponent(VtlParser::IsNullAtomComponentContext * /*ctx*/) override { }
+  virtual void enterBetweenAtom(Vtl::BetweenAtomContext * /*ctx*/) override { }
+  virtual void exitBetweenAtom(Vtl::BetweenAtomContext * /*ctx*/) override { }
 
-  virtual void enterPeriodAtom(VtlParser::PeriodAtomContext * /*ctx*/) override { }
-  virtual void exitPeriodAtom(VtlParser::PeriodAtomContext * /*ctx*/) override { }
+  virtual void enterCharsetMatchAtom(Vtl::CharsetMatchAtomContext * /*ctx*/) override { }
+  virtual void exitCharsetMatchAtom(Vtl::CharsetMatchAtomContext * /*ctx*/) override { }
 
-  virtual void enterFillTimeAtom(VtlParser::FillTimeAtomContext * /*ctx*/) override { }
-  virtual void exitFillTimeAtom(VtlParser::FillTimeAtomContext * /*ctx*/) override { }
+  virtual void enterIsNullAtom(Vtl::IsNullAtomContext * /*ctx*/) override { }
+  virtual void exitIsNullAtom(Vtl::IsNullAtomContext * /*ctx*/) override { }
 
-  virtual void enterFlowAtom(VtlParser::FlowAtomContext * /*ctx*/) override { }
-  virtual void exitFlowAtom(VtlParser::FlowAtomContext * /*ctx*/) override { }
+  virtual void enterExistInAtom(Vtl::ExistInAtomContext * /*ctx*/) override { }
+  virtual void exitExistInAtom(Vtl::ExistInAtomContext * /*ctx*/) override { }
 
-  virtual void enterTimeShiftAtom(VtlParser::TimeShiftAtomContext * /*ctx*/) override { }
-  virtual void exitTimeShiftAtom(VtlParser::TimeShiftAtomContext * /*ctx*/) override { }
+  virtual void enterBetweenAtomComponent(Vtl::BetweenAtomComponentContext * /*ctx*/) override { }
+  virtual void exitBetweenAtomComponent(Vtl::BetweenAtomComponentContext * /*ctx*/) override { }
 
-  virtual void enterTimeAggAtom(VtlParser::TimeAggAtomContext * /*ctx*/) override { }
-  virtual void exitTimeAggAtom(VtlParser::TimeAggAtomContext * /*ctx*/) override { }
+  virtual void enterCharsetMatchAtomComponent(Vtl::CharsetMatchAtomComponentContext * /*ctx*/) override { }
+  virtual void exitCharsetMatchAtomComponent(Vtl::CharsetMatchAtomComponentContext * /*ctx*/) override { }
 
-  virtual void enterCurrentDateAtom(VtlParser::CurrentDateAtomContext * /*ctx*/) override { }
-  virtual void exitCurrentDateAtom(VtlParser::CurrentDateAtomContext * /*ctx*/) override { }
+  virtual void enterIsNullAtomComponent(Vtl::IsNullAtomComponentContext * /*ctx*/) override { }
+  virtual void exitIsNullAtomComponent(Vtl::IsNullAtomComponentContext * /*ctx*/) override { }
 
-  virtual void enterDateDiffAtom(VtlParser::DateDiffAtomContext * /*ctx*/) override { }
-  virtual void exitDateDiffAtom(VtlParser::DateDiffAtomContext * /*ctx*/) override { }
+  virtual void enterPeriodAtom(Vtl::PeriodAtomContext * /*ctx*/) override { }
+  virtual void exitPeriodAtom(Vtl::PeriodAtomContext * /*ctx*/) override { }
 
-  virtual void enterDateAddAtom(VtlParser::DateAddAtomContext * /*ctx*/) override { }
-  virtual void exitDateAddAtom(VtlParser::DateAddAtomContext * /*ctx*/) override { }
+  virtual void enterFillTimeAtom(Vtl::FillTimeAtomContext * /*ctx*/) override { }
+  virtual void exitFillTimeAtom(Vtl::FillTimeAtomContext * /*ctx*/) override { }
 
-  virtual void enterYearAtom(VtlParser::YearAtomContext * /*ctx*/) override { }
-  virtual void exitYearAtom(VtlParser::YearAtomContext * /*ctx*/) override { }
+  virtual void enterFlowAtom(Vtl::FlowAtomContext * /*ctx*/) override { }
+  virtual void exitFlowAtom(Vtl::FlowAtomContext * /*ctx*/) override { }
 
-  virtual void enterMonthAtom(VtlParser::MonthAtomContext * /*ctx*/) override { }
-  virtual void exitMonthAtom(VtlParser::MonthAtomContext * /*ctx*/) override { }
+  virtual void enterTimeShiftAtom(Vtl::TimeShiftAtomContext * /*ctx*/) override { }
+  virtual void exitTimeShiftAtom(Vtl::TimeShiftAtomContext * /*ctx*/) override { }
 
-  virtual void enterDayOfMonthAtom(VtlParser::DayOfMonthAtomContext * /*ctx*/) override { }
-  virtual void exitDayOfMonthAtom(VtlParser::DayOfMonthAtomContext * /*ctx*/) override { }
+  virtual void enterTimeAggAtom(Vtl::TimeAggAtomContext * /*ctx*/) override { }
+  virtual void exitTimeAggAtom(Vtl::TimeAggAtomContext * /*ctx*/) override { }
 
-  virtual void enterDayOfYearAtom(VtlParser::DayOfYearAtomContext * /*ctx*/) override { }
-  virtual void exitDayOfYearAtom(VtlParser::DayOfYearAtomContext * /*ctx*/) override { }
+  virtual void enterCurrentDateAtom(Vtl::CurrentDateAtomContext * /*ctx*/) override { }
+  virtual void exitCurrentDateAtom(Vtl::CurrentDateAtomContext * /*ctx*/) override { }
 
-  virtual void enterDayToYearAtom(VtlParser::DayToYearAtomContext * /*ctx*/) override { }
-  virtual void exitDayToYearAtom(VtlParser::DayToYearAtomContext * /*ctx*/) override { }
+  virtual void enterDateDiffAtom(Vtl::DateDiffAtomContext * /*ctx*/) override { }
+  virtual void exitDateDiffAtom(Vtl::DateDiffAtomContext * /*ctx*/) override { }
 
-  virtual void enterDayToMonthAtom(VtlParser::DayToMonthAtomContext * /*ctx*/) override { }
-  virtual void exitDayToMonthAtom(VtlParser::DayToMonthAtomContext * /*ctx*/) override { }
+  virtual void enterDateAddAtom(Vtl::DateAddAtomContext * /*ctx*/) override { }
+  virtual void exitDateAddAtom(Vtl::DateAddAtomContext * /*ctx*/) override { }
 
-  virtual void enterYearTodayAtom(VtlParser::YearTodayAtomContext * /*ctx*/) override { }
-  virtual void exitYearTodayAtom(VtlParser::YearTodayAtomContext * /*ctx*/) override { }
+  virtual void enterYearAtom(Vtl::YearAtomContext * /*ctx*/) override { }
+  virtual void exitYearAtom(Vtl::YearAtomContext * /*ctx*/) override { }
 
-  virtual void enterMonthTodayAtom(VtlParser::MonthTodayAtomContext * /*ctx*/) override { }
-  virtual void exitMonthTodayAtom(VtlParser::MonthTodayAtomContext * /*ctx*/) override { }
+  virtual void enterMonthAtom(Vtl::MonthAtomContext * /*ctx*/) override { }
+  virtual void exitMonthAtom(Vtl::MonthAtomContext * /*ctx*/) override { }
 
-  virtual void enterPeriodAtomComponent(VtlParser::PeriodAtomComponentContext * /*ctx*/) override { }
-  virtual void exitPeriodAtomComponent(VtlParser::PeriodAtomComponentContext * /*ctx*/) override { }
+  virtual void enterDayOfMonthAtom(Vtl::DayOfMonthAtomContext * /*ctx*/) override { }
+  virtual void exitDayOfMonthAtom(Vtl::DayOfMonthAtomContext * /*ctx*/) override { }
 
-  virtual void enterFillTimeAtomComponent(VtlParser::FillTimeAtomComponentContext * /*ctx*/) override { }
-  virtual void exitFillTimeAtomComponent(VtlParser::FillTimeAtomComponentContext * /*ctx*/) override { }
+  virtual void enterDayOfYearAtom(Vtl::DayOfYearAtomContext * /*ctx*/) override { }
+  virtual void exitDayOfYearAtom(Vtl::DayOfYearAtomContext * /*ctx*/) override { }
 
-  virtual void enterFlowAtomComponent(VtlParser::FlowAtomComponentContext * /*ctx*/) override { }
-  virtual void exitFlowAtomComponent(VtlParser::FlowAtomComponentContext * /*ctx*/) override { }
+  virtual void enterDayToYearAtom(Vtl::DayToYearAtomContext * /*ctx*/) override { }
+  virtual void exitDayToYearAtom(Vtl::DayToYearAtomContext * /*ctx*/) override { }
 
-  virtual void enterTimeShiftAtomComponent(VtlParser::TimeShiftAtomComponentContext * /*ctx*/) override { }
-  virtual void exitTimeShiftAtomComponent(VtlParser::TimeShiftAtomComponentContext * /*ctx*/) override { }
+  virtual void enterDayToMonthAtom(Vtl::DayToMonthAtomContext * /*ctx*/) override { }
+  virtual void exitDayToMonthAtom(Vtl::DayToMonthAtomContext * /*ctx*/) override { }
 
-  virtual void enterTimeAggAtomComponent(VtlParser::TimeAggAtomComponentContext * /*ctx*/) override { }
-  virtual void exitTimeAggAtomComponent(VtlParser::TimeAggAtomComponentContext * /*ctx*/) override { }
+  virtual void enterYearTodayAtom(Vtl::YearTodayAtomContext * /*ctx*/) override { }
+  virtual void exitYearTodayAtom(Vtl::YearTodayAtomContext * /*ctx*/) override { }
 
-  virtual void enterCurrentDateAtomComponent(VtlParser::CurrentDateAtomComponentContext * /*ctx*/) override { }
-  virtual void exitCurrentDateAtomComponent(VtlParser::CurrentDateAtomComponentContext * /*ctx*/) override { }
+  virtual void enterMonthTodayAtom(Vtl::MonthTodayAtomContext * /*ctx*/) override { }
+  virtual void exitMonthTodayAtom(Vtl::MonthTodayAtomContext * /*ctx*/) override { }
 
-  virtual void enterDateDiffAtomComponent(VtlParser::DateDiffAtomComponentContext * /*ctx*/) override { }
-  virtual void exitDateDiffAtomComponent(VtlParser::DateDiffAtomComponentContext * /*ctx*/) override { }
+  virtual void enterPeriodAtomComponent(Vtl::PeriodAtomComponentContext * /*ctx*/) override { }
+  virtual void exitPeriodAtomComponent(Vtl::PeriodAtomComponentContext * /*ctx*/) override { }
 
-  virtual void enterDateAddAtomComponent(VtlParser::DateAddAtomComponentContext * /*ctx*/) override { }
-  virtual void exitDateAddAtomComponent(VtlParser::DateAddAtomComponentContext * /*ctx*/) override { }
+  virtual void enterFillTimeAtomComponent(Vtl::FillTimeAtomComponentContext * /*ctx*/) override { }
+  virtual void exitFillTimeAtomComponent(Vtl::FillTimeAtomComponentContext * /*ctx*/) override { }
 
-  virtual void enterYearAtomComponent(VtlParser::YearAtomComponentContext * /*ctx*/) override { }
-  virtual void exitYearAtomComponent(VtlParser::YearAtomComponentContext * /*ctx*/) override { }
+  virtual void enterFlowAtomComponent(Vtl::FlowAtomComponentContext * /*ctx*/) override { }
+  virtual void exitFlowAtomComponent(Vtl::FlowAtomComponentContext * /*ctx*/) override { }
 
-  virtual void enterMonthAtomComponent(VtlParser::MonthAtomComponentContext * /*ctx*/) override { }
-  virtual void exitMonthAtomComponent(VtlParser::MonthAtomComponentContext * /*ctx*/) override { }
+  virtual void enterTimeShiftAtomComponent(Vtl::TimeShiftAtomComponentContext * /*ctx*/) override { }
+  virtual void exitTimeShiftAtomComponent(Vtl::TimeShiftAtomComponentContext * /*ctx*/) override { }
 
-  virtual void enterDayOfMonthAtomComponent(VtlParser::DayOfMonthAtomComponentContext * /*ctx*/) override { }
-  virtual void exitDayOfMonthAtomComponent(VtlParser::DayOfMonthAtomComponentContext * /*ctx*/) override { }
+  virtual void enterTimeAggAtomComponent(Vtl::TimeAggAtomComponentContext * /*ctx*/) override { }
+  virtual void exitTimeAggAtomComponent(Vtl::TimeAggAtomComponentContext * /*ctx*/) override { }
 
-  virtual void enterDatOfYearAtomComponent(VtlParser::DatOfYearAtomComponentContext * /*ctx*/) override { }
-  virtual void exitDatOfYearAtomComponent(VtlParser::DatOfYearAtomComponentContext * /*ctx*/) override { }
+  virtual void enterCurrentDateAtomComponent(Vtl::CurrentDateAtomComponentContext * /*ctx*/) override { }
+  virtual void exitCurrentDateAtomComponent(Vtl::CurrentDateAtomComponentContext * /*ctx*/) override { }
 
-  virtual void enterDayToYearAtomComponent(VtlParser::DayToYearAtomComponentContext * /*ctx*/) override { }
-  virtual void exitDayToYearAtomComponent(VtlParser::DayToYearAtomComponentContext * /*ctx*/) override { }
+  virtual void enterDateDiffAtomComponent(Vtl::DateDiffAtomComponentContext * /*ctx*/) override { }
+  virtual void exitDateDiffAtomComponent(Vtl::DateDiffAtomComponentContext * /*ctx*/) override { }
 
-  virtual void enterDayToMonthAtomComponent(VtlParser::DayToMonthAtomComponentContext * /*ctx*/) override { }
-  virtual void exitDayToMonthAtomComponent(VtlParser::DayToMonthAtomComponentContext * /*ctx*/) override { }
+  virtual void enterDateAddAtomComponent(Vtl::DateAddAtomComponentContext * /*ctx*/) override { }
+  virtual void exitDateAddAtomComponent(Vtl::DateAddAtomComponentContext * /*ctx*/) override { }
 
-  virtual void enterYearTodayAtomComponent(VtlParser::YearTodayAtomComponentContext * /*ctx*/) override { }
-  virtual void exitYearTodayAtomComponent(VtlParser::YearTodayAtomComponentContext * /*ctx*/) override { }
+  virtual void enterYearAtomComponent(Vtl::YearAtomComponentContext * /*ctx*/) override { }
+  virtual void exitYearAtomComponent(Vtl::YearAtomComponentContext * /*ctx*/) override { }
 
-  virtual void enterMonthTodayAtomComponent(VtlParser::MonthTodayAtomComponentContext * /*ctx*/) override { }
-  virtual void exitMonthTodayAtomComponent(VtlParser::MonthTodayAtomComponentContext * /*ctx*/) override { }
+  virtual void enterMonthAtomComponent(Vtl::MonthAtomComponentContext * /*ctx*/) override { }
+  virtual void exitMonthAtomComponent(Vtl::MonthAtomComponentContext * /*ctx*/) override { }
 
-  virtual void enterUnionAtom(VtlParser::UnionAtomContext * /*ctx*/) override { }
-  virtual void exitUnionAtom(VtlParser::UnionAtomContext * /*ctx*/) override { }
+  virtual void enterDayOfMonthAtomComponent(Vtl::DayOfMonthAtomComponentContext * /*ctx*/) override { }
+  virtual void exitDayOfMonthAtomComponent(Vtl::DayOfMonthAtomComponentContext * /*ctx*/) override { }
 
-  virtual void enterIntersectAtom(VtlParser::IntersectAtomContext * /*ctx*/) override { }
-  virtual void exitIntersectAtom(VtlParser::IntersectAtomContext * /*ctx*/) override { }
+  virtual void enterDayOfYearAtomComponent(Vtl::DayOfYearAtomComponentContext * /*ctx*/) override { }
+  virtual void exitDayOfYearAtomComponent(Vtl::DayOfYearAtomComponentContext * /*ctx*/) override { }
 
-  virtual void enterSetOrSYmDiffAtom(VtlParser::SetOrSYmDiffAtomContext * /*ctx*/) override { }
-  virtual void exitSetOrSYmDiffAtom(VtlParser::SetOrSYmDiffAtomContext * /*ctx*/) override { }
+  virtual void enterDayToYearAtomComponent(Vtl::DayToYearAtomComponentContext * /*ctx*/) override { }
+  virtual void exitDayToYearAtomComponent(Vtl::DayToYearAtomComponentContext * /*ctx*/) override { }
 
-  virtual void enterHierarchyOperators(VtlParser::HierarchyOperatorsContext * /*ctx*/) override { }
-  virtual void exitHierarchyOperators(VtlParser::HierarchyOperatorsContext * /*ctx*/) override { }
+  virtual void enterDayToMonthAtomComponent(Vtl::DayToMonthAtomComponentContext * /*ctx*/) override { }
+  virtual void exitDayToMonthAtomComponent(Vtl::DayToMonthAtomComponentContext * /*ctx*/) override { }
 
-  virtual void enterValidateDPruleset(VtlParser::ValidateDPrulesetContext * /*ctx*/) override { }
-  virtual void exitValidateDPruleset(VtlParser::ValidateDPrulesetContext * /*ctx*/) override { }
+  virtual void enterYearTodayAtomComponent(Vtl::YearTodayAtomComponentContext * /*ctx*/) override { }
+  virtual void exitYearTodayAtomComponent(Vtl::YearTodayAtomComponentContext * /*ctx*/) override { }
 
-  virtual void enterValidateHRruleset(VtlParser::ValidateHRrulesetContext * /*ctx*/) override { }
-  virtual void exitValidateHRruleset(VtlParser::ValidateHRrulesetContext * /*ctx*/) override { }
+  virtual void enterMonthTodayAtomComponent(Vtl::MonthTodayAtomComponentContext * /*ctx*/) override { }
+  virtual void exitMonthTodayAtomComponent(Vtl::MonthTodayAtomComponentContext * /*ctx*/) override { }
 
-  virtual void enterValidationSimple(VtlParser::ValidationSimpleContext * /*ctx*/) override { }
-  virtual void exitValidationSimple(VtlParser::ValidationSimpleContext * /*ctx*/) override { }
+  virtual void enterUnionAtom(Vtl::UnionAtomContext * /*ctx*/) override { }
+  virtual void exitUnionAtom(Vtl::UnionAtomContext * /*ctx*/) override { }
 
-  virtual void enterNvlAtom(VtlParser::NvlAtomContext * /*ctx*/) override { }
-  virtual void exitNvlAtom(VtlParser::NvlAtomContext * /*ctx*/) override { }
+  virtual void enterIntersectAtom(Vtl::IntersectAtomContext * /*ctx*/) override { }
+  virtual void exitIntersectAtom(Vtl::IntersectAtomContext * /*ctx*/) override { }
 
-  virtual void enterNvlAtomComponent(VtlParser::NvlAtomComponentContext * /*ctx*/) override { }
-  virtual void exitNvlAtomComponent(VtlParser::NvlAtomComponentContext * /*ctx*/) override { }
+  virtual void enterSetOrSYmDiffAtom(Vtl::SetOrSYmDiffAtomContext * /*ctx*/) override { }
+  virtual void exitSetOrSYmDiffAtom(Vtl::SetOrSYmDiffAtomContext * /*ctx*/) override { }
 
-  virtual void enterAggrComp(VtlParser::AggrCompContext * /*ctx*/) override { }
-  virtual void exitAggrComp(VtlParser::AggrCompContext * /*ctx*/) override { }
+  virtual void enterHierarchyOperators(Vtl::HierarchyOperatorsContext * /*ctx*/) override { }
+  virtual void exitHierarchyOperators(Vtl::HierarchyOperatorsContext * /*ctx*/) override { }
 
-  virtual void enterCountAggrComp(VtlParser::CountAggrCompContext * /*ctx*/) override { }
-  virtual void exitCountAggrComp(VtlParser::CountAggrCompContext * /*ctx*/) override { }
+  virtual void enterValidateDPruleset(Vtl::ValidateDPrulesetContext * /*ctx*/) override { }
+  virtual void exitValidateDPruleset(Vtl::ValidateDPrulesetContext * /*ctx*/) override { }
 
-  virtual void enterAggrDataset(VtlParser::AggrDatasetContext * /*ctx*/) override { }
-  virtual void exitAggrDataset(VtlParser::AggrDatasetContext * /*ctx*/) override { }
+  virtual void enterValidateHRruleset(Vtl::ValidateHRrulesetContext * /*ctx*/) override { }
+  virtual void exitValidateHRruleset(Vtl::ValidateHRrulesetContext * /*ctx*/) override { }
 
-  virtual void enterAnSimpleFunction(VtlParser::AnSimpleFunctionContext * /*ctx*/) override { }
-  virtual void exitAnSimpleFunction(VtlParser::AnSimpleFunctionContext * /*ctx*/) override { }
+  virtual void enterValidationSimple(Vtl::ValidationSimpleContext * /*ctx*/) override { }
+  virtual void exitValidationSimple(Vtl::ValidationSimpleContext * /*ctx*/) override { }
 
-  virtual void enterLagOrLeadAn(VtlParser::LagOrLeadAnContext * /*ctx*/) override { }
-  virtual void exitLagOrLeadAn(VtlParser::LagOrLeadAnContext * /*ctx*/) override { }
+  virtual void enterNvlAtom(Vtl::NvlAtomContext * /*ctx*/) override { }
+  virtual void exitNvlAtom(Vtl::NvlAtomContext * /*ctx*/) override { }
 
-  virtual void enterRatioToReportAn(VtlParser::RatioToReportAnContext * /*ctx*/) override { }
-  virtual void exitRatioToReportAn(VtlParser::RatioToReportAnContext * /*ctx*/) override { }
+  virtual void enterNvlAtomComponent(Vtl::NvlAtomComponentContext * /*ctx*/) override { }
+  virtual void exitNvlAtomComponent(Vtl::NvlAtomComponentContext * /*ctx*/) override { }
 
-  virtual void enterAnSimpleFunctionComponent(VtlParser::AnSimpleFunctionComponentContext * /*ctx*/) override { }
-  virtual void exitAnSimpleFunctionComponent(VtlParser::AnSimpleFunctionComponentContext * /*ctx*/) override { }
+  virtual void enterAggrComp(Vtl::AggrCompContext * /*ctx*/) override { }
+  virtual void exitAggrComp(Vtl::AggrCompContext * /*ctx*/) override { }
 
-  virtual void enterLagOrLeadAnComponent(VtlParser::LagOrLeadAnComponentContext * /*ctx*/) override { }
-  virtual void exitLagOrLeadAnComponent(VtlParser::LagOrLeadAnComponentContext * /*ctx*/) override { }
+  virtual void enterCountAggrComp(Vtl::CountAggrCompContext * /*ctx*/) override { }
+  virtual void exitCountAggrComp(Vtl::CountAggrCompContext * /*ctx*/) override { }
 
-  virtual void enterRankAnComponent(VtlParser::RankAnComponentContext * /*ctx*/) override { }
-  virtual void exitRankAnComponent(VtlParser::RankAnComponentContext * /*ctx*/) override { }
+  virtual void enterAggrDataset(Vtl::AggrDatasetContext * /*ctx*/) override { }
+  virtual void exitAggrDataset(Vtl::AggrDatasetContext * /*ctx*/) override { }
 
-  virtual void enterRatioToReportAnComponent(VtlParser::RatioToReportAnComponentContext * /*ctx*/) override { }
-  virtual void exitRatioToReportAnComponent(VtlParser::RatioToReportAnComponentContext * /*ctx*/) override { }
+  virtual void enterAnSimpleFunction(Vtl::AnSimpleFunctionContext * /*ctx*/) override { }
+  virtual void exitAnSimpleFunction(Vtl::AnSimpleFunctionContext * /*ctx*/) override { }
 
-  virtual void enterRenameClauseItem(VtlParser::RenameClauseItemContext * /*ctx*/) override { }
-  virtual void exitRenameClauseItem(VtlParser::RenameClauseItemContext * /*ctx*/) override { }
+  virtual void enterLagOrLeadAn(Vtl::LagOrLeadAnContext * /*ctx*/) override { }
+  virtual void exitLagOrLeadAn(Vtl::LagOrLeadAnContext * /*ctx*/) override { }
 
-  virtual void enterAggregateClause(VtlParser::AggregateClauseContext * /*ctx*/) override { }
-  virtual void exitAggregateClause(VtlParser::AggregateClauseContext * /*ctx*/) override { }
+  virtual void enterRatioToReportAn(Vtl::RatioToReportAnContext * /*ctx*/) override { }
+  virtual void exitRatioToReportAn(Vtl::RatioToReportAnContext * /*ctx*/) override { }
 
-  virtual void enterAggrFunctionClause(VtlParser::AggrFunctionClauseContext * /*ctx*/) override { }
-  virtual void exitAggrFunctionClause(VtlParser::AggrFunctionClauseContext * /*ctx*/) override { }
+  virtual void enterAnSimpleFunctionComponent(Vtl::AnSimpleFunctionComponentContext * /*ctx*/) override { }
+  virtual void exitAnSimpleFunctionComponent(Vtl::AnSimpleFunctionComponentContext * /*ctx*/) override { }
 
-  virtual void enterCalcClauseItem(VtlParser::CalcClauseItemContext * /*ctx*/) override { }
-  virtual void exitCalcClauseItem(VtlParser::CalcClauseItemContext * /*ctx*/) override { }
+  virtual void enterLagOrLeadAnComponent(Vtl::LagOrLeadAnComponentContext * /*ctx*/) override { }
+  virtual void exitLagOrLeadAnComponent(Vtl::LagOrLeadAnComponentContext * /*ctx*/) override { }
 
-  virtual void enterSubspaceClauseItem(VtlParser::SubspaceClauseItemContext * /*ctx*/) override { }
-  virtual void exitSubspaceClauseItem(VtlParser::SubspaceClauseItemContext * /*ctx*/) override { }
+  virtual void enterRankAnComponent(Vtl::RankAnComponentContext * /*ctx*/) override { }
+  virtual void exitRankAnComponent(Vtl::RankAnComponentContext * /*ctx*/) override { }
 
-  virtual void enterSimpleScalar(VtlParser::SimpleScalarContext * /*ctx*/) override { }
-  virtual void exitSimpleScalar(VtlParser::SimpleScalarContext * /*ctx*/) override { }
+  virtual void enterRatioToReportAnComponent(Vtl::RatioToReportAnComponentContext * /*ctx*/) override { }
+  virtual void exitRatioToReportAnComponent(Vtl::RatioToReportAnComponentContext * /*ctx*/) override { }
 
-  virtual void enterScalarWithCast(VtlParser::ScalarWithCastContext * /*ctx*/) override { }
-  virtual void exitScalarWithCast(VtlParser::ScalarWithCastContext * /*ctx*/) override { }
+  virtual void enterRenameClauseItem(Vtl::RenameClauseItemContext * /*ctx*/) override { }
+  virtual void exitRenameClauseItem(Vtl::RenameClauseItemContext * /*ctx*/) override { }
 
-  virtual void enterJoinClauseWithoutUsing(VtlParser::JoinClauseWithoutUsingContext * /*ctx*/) override { }
-  virtual void exitJoinClauseWithoutUsing(VtlParser::JoinClauseWithoutUsingContext * /*ctx*/) override { }
+  virtual void enterAggregateClause(Vtl::AggregateClauseContext * /*ctx*/) override { }
+  virtual void exitAggregateClause(Vtl::AggregateClauseContext * /*ctx*/) override { }
 
-  virtual void enterJoinClause(VtlParser::JoinClauseContext * /*ctx*/) override { }
-  virtual void exitJoinClause(VtlParser::JoinClauseContext * /*ctx*/) override { }
+  virtual void enterAggrFunctionClause(Vtl::AggrFunctionClauseContext * /*ctx*/) override { }
+  virtual void exitAggrFunctionClause(Vtl::AggrFunctionClauseContext * /*ctx*/) override { }
 
-  virtual void enterJoinClauseItem(VtlParser::JoinClauseItemContext * /*ctx*/) override { }
-  virtual void exitJoinClauseItem(VtlParser::JoinClauseItemContext * /*ctx*/) override { }
+  virtual void enterCalcClauseItem(Vtl::CalcClauseItemContext * /*ctx*/) override { }
+  virtual void exitCalcClauseItem(Vtl::CalcClauseItemContext * /*ctx*/) override { }
 
-  virtual void enterJoinBody(VtlParser::JoinBodyContext * /*ctx*/) override { }
-  virtual void exitJoinBody(VtlParser::JoinBodyContext * /*ctx*/) override { }
+  virtual void enterSubspaceClauseItem(Vtl::SubspaceClauseItemContext * /*ctx*/) override { }
+  virtual void exitSubspaceClauseItem(Vtl::SubspaceClauseItemContext * /*ctx*/) override { }
 
-  virtual void enterJoinApplyClause(VtlParser::JoinApplyClauseContext * /*ctx*/) override { }
-  virtual void exitJoinApplyClause(VtlParser::JoinApplyClauseContext * /*ctx*/) override { }
+  virtual void enterSimpleScalar(Vtl::SimpleScalarContext * /*ctx*/) override { }
+  virtual void exitSimpleScalar(Vtl::SimpleScalarContext * /*ctx*/) override { }
 
-  virtual void enterPartitionByClause(VtlParser::PartitionByClauseContext * /*ctx*/) override { }
-  virtual void exitPartitionByClause(VtlParser::PartitionByClauseContext * /*ctx*/) override { }
+  virtual void enterScalarWithCast(Vtl::ScalarWithCastContext * /*ctx*/) override { }
+  virtual void exitScalarWithCast(Vtl::ScalarWithCastContext * /*ctx*/) override { }
 
-  virtual void enterOrderByClause(VtlParser::OrderByClauseContext * /*ctx*/) override { }
-  virtual void exitOrderByClause(VtlParser::OrderByClauseContext * /*ctx*/) override { }
+  virtual void enterJoinClause(Vtl::JoinClauseContext * /*ctx*/) override { }
+  virtual void exitJoinClause(Vtl::JoinClauseContext * /*ctx*/) override { }
 
-  virtual void enterOrderByItem(VtlParser::OrderByItemContext * /*ctx*/) override { }
-  virtual void exitOrderByItem(VtlParser::OrderByItemContext * /*ctx*/) override { }
+  virtual void enterJoinClauseItem(Vtl::JoinClauseItemContext * /*ctx*/) override { }
+  virtual void exitJoinClauseItem(Vtl::JoinClauseItemContext * /*ctx*/) override { }
 
-  virtual void enterWindowingClause(VtlParser::WindowingClauseContext * /*ctx*/) override { }
-  virtual void exitWindowingClause(VtlParser::WindowingClauseContext * /*ctx*/) override { }
+  virtual void enterUsingClause(Vtl::UsingClauseContext * /*ctx*/) override { }
+  virtual void exitUsingClause(Vtl::UsingClauseContext * /*ctx*/) override { }
 
-  virtual void enterSignedInteger(VtlParser::SignedIntegerContext * /*ctx*/) override { }
-  virtual void exitSignedInteger(VtlParser::SignedIntegerContext * /*ctx*/) override { }
+  virtual void enterNvlJoinClause(Vtl::NvlJoinClauseContext * /*ctx*/) override { }
+  virtual void exitNvlJoinClause(Vtl::NvlJoinClauseContext * /*ctx*/) override { }
 
-  virtual void enterSignedNumber(VtlParser::SignedNumberContext * /*ctx*/) override { }
-  virtual void exitSignedNumber(VtlParser::SignedNumberContext * /*ctx*/) override { }
+  virtual void enterJoinBody(Vtl::JoinBodyContext * /*ctx*/) override { }
+  virtual void exitJoinBody(Vtl::JoinBodyContext * /*ctx*/) override { }
 
-  virtual void enterLimitClauseItem(VtlParser::LimitClauseItemContext * /*ctx*/) override { }
-  virtual void exitLimitClauseItem(VtlParser::LimitClauseItemContext * /*ctx*/) override { }
+  virtual void enterJoinApplyClause(Vtl::JoinApplyClauseContext * /*ctx*/) override { }
+  virtual void exitJoinApplyClause(Vtl::JoinApplyClauseContext * /*ctx*/) override { }
 
-  virtual void enterGroupByOrExcept(VtlParser::GroupByOrExceptContext * /*ctx*/) override { }
-  virtual void exitGroupByOrExcept(VtlParser::GroupByOrExceptContext * /*ctx*/) override { }
+  virtual void enterPartitionListed(Vtl::PartitionListedContext * /*ctx*/) override { }
+  virtual void exitPartitionListed(Vtl::PartitionListedContext * /*ctx*/) override { }
 
-  virtual void enterGroupAll(VtlParser::GroupAllContext * /*ctx*/) override { }
-  virtual void exitGroupAll(VtlParser::GroupAllContext * /*ctx*/) override { }
+  virtual void enterPartitionExceptAll(Vtl::PartitionExceptAllContext * /*ctx*/) override { }
+  virtual void exitPartitionExceptAll(Vtl::PartitionExceptAllContext * /*ctx*/) override { }
 
-  virtual void enterHavingClause(VtlParser::HavingClauseContext * /*ctx*/) override { }
-  virtual void exitHavingClause(VtlParser::HavingClauseContext * /*ctx*/) override { }
+  virtual void enterOrderByClause(Vtl::OrderByClauseContext * /*ctx*/) override { }
+  virtual void exitOrderByClause(Vtl::OrderByClauseContext * /*ctx*/) override { }
 
-  virtual void enterParameterItem(VtlParser::ParameterItemContext * /*ctx*/) override { }
-  virtual void exitParameterItem(VtlParser::ParameterItemContext * /*ctx*/) override { }
+  virtual void enterOrderByItem(Vtl::OrderByItemContext * /*ctx*/) override { }
+  virtual void exitOrderByItem(Vtl::OrderByItemContext * /*ctx*/) override { }
 
-  virtual void enterOutputParameterType(VtlParser::OutputParameterTypeContext * /*ctx*/) override { }
-  virtual void exitOutputParameterType(VtlParser::OutputParameterTypeContext * /*ctx*/) override { }
+  virtual void enterWindowingClause(Vtl::WindowingClauseContext * /*ctx*/) override { }
+  virtual void exitWindowingClause(Vtl::WindowingClauseContext * /*ctx*/) override { }
 
-  virtual void enterOutputParameterTypeComponent(VtlParser::OutputParameterTypeComponentContext * /*ctx*/) override { }
-  virtual void exitOutputParameterTypeComponent(VtlParser::OutputParameterTypeComponentContext * /*ctx*/) override { }
+  virtual void enterSignedInteger(Vtl::SignedIntegerContext * /*ctx*/) override { }
+  virtual void exitSignedInteger(Vtl::SignedIntegerContext * /*ctx*/) override { }
 
-  virtual void enterInputParameterType(VtlParser::InputParameterTypeContext * /*ctx*/) override { }
-  virtual void exitInputParameterType(VtlParser::InputParameterTypeContext * /*ctx*/) override { }
+  virtual void enterSignedNumber(Vtl::SignedNumberContext * /*ctx*/) override { }
+  virtual void exitSignedNumber(Vtl::SignedNumberContext * /*ctx*/) override { }
 
-  virtual void enterRulesetType(VtlParser::RulesetTypeContext * /*ctx*/) override { }
-  virtual void exitRulesetType(VtlParser::RulesetTypeContext * /*ctx*/) override { }
+  virtual void enterLimitClauseItem(Vtl::LimitClauseItemContext * /*ctx*/) override { }
+  virtual void exitLimitClauseItem(Vtl::LimitClauseItemContext * /*ctx*/) override { }
 
-  virtual void enterScalarType(VtlParser::ScalarTypeContext * /*ctx*/) override { }
-  virtual void exitScalarType(VtlParser::ScalarTypeContext * /*ctx*/) override { }
+  virtual void enterGroupByOrExcept(Vtl::GroupByOrExceptContext * /*ctx*/) override { }
+  virtual void exitGroupByOrExcept(Vtl::GroupByOrExceptContext * /*ctx*/) override { }
 
-  virtual void enterComponentType(VtlParser::ComponentTypeContext * /*ctx*/) override { }
-  virtual void exitComponentType(VtlParser::ComponentTypeContext * /*ctx*/) override { }
+  virtual void enterGroupAll(Vtl::GroupAllContext * /*ctx*/) override { }
+  virtual void exitGroupAll(Vtl::GroupAllContext * /*ctx*/) override { }
 
-  virtual void enterDatasetType(VtlParser::DatasetTypeContext * /*ctx*/) override { }
-  virtual void exitDatasetType(VtlParser::DatasetTypeContext * /*ctx*/) override { }
+  virtual void enterHavingClause(Vtl::HavingClauseContext * /*ctx*/) override { }
+  virtual void exitHavingClause(Vtl::HavingClauseContext * /*ctx*/) override { }
 
-  virtual void enterEvalDatasetType(VtlParser::EvalDatasetTypeContext * /*ctx*/) override { }
-  virtual void exitEvalDatasetType(VtlParser::EvalDatasetTypeContext * /*ctx*/) override { }
+  virtual void enterParameterItem(Vtl::ParameterItemContext * /*ctx*/) override { }
+  virtual void exitParameterItem(Vtl::ParameterItemContext * /*ctx*/) override { }
 
-  virtual void enterScalarSetType(VtlParser::ScalarSetTypeContext * /*ctx*/) override { }
-  virtual void exitScalarSetType(VtlParser::ScalarSetTypeContext * /*ctx*/) override { }
+  virtual void enterOutputParameterType(Vtl::OutputParameterTypeContext * /*ctx*/) override { }
+  virtual void exitOutputParameterType(Vtl::OutputParameterTypeContext * /*ctx*/) override { }
 
-  virtual void enterDataPoint(VtlParser::DataPointContext * /*ctx*/) override { }
-  virtual void exitDataPoint(VtlParser::DataPointContext * /*ctx*/) override { }
+  virtual void enterOutputParameterTypeComponent(Vtl::OutputParameterTypeComponentContext * /*ctx*/) override { }
+  virtual void exitOutputParameterTypeComponent(Vtl::OutputParameterTypeComponentContext * /*ctx*/) override { }
 
-  virtual void enterDataPointVd(VtlParser::DataPointVdContext * /*ctx*/) override { }
-  virtual void exitDataPointVd(VtlParser::DataPointVdContext * /*ctx*/) override { }
+  virtual void enterInputParameterType(Vtl::InputParameterTypeContext * /*ctx*/) override { }
+  virtual void exitInputParameterType(Vtl::InputParameterTypeContext * /*ctx*/) override { }
 
-  virtual void enterDataPointVar(VtlParser::DataPointVarContext * /*ctx*/) override { }
-  virtual void exitDataPointVar(VtlParser::DataPointVarContext * /*ctx*/) override { }
+  virtual void enterRulesetType(Vtl::RulesetTypeContext * /*ctx*/) override { }
+  virtual void exitRulesetType(Vtl::RulesetTypeContext * /*ctx*/) override { }
 
-  virtual void enterHrRulesetType(VtlParser::HrRulesetTypeContext * /*ctx*/) override { }
-  virtual void exitHrRulesetType(VtlParser::HrRulesetTypeContext * /*ctx*/) override { }
+  virtual void enterScalarType(Vtl::ScalarTypeContext * /*ctx*/) override { }
+  virtual void exitScalarType(Vtl::ScalarTypeContext * /*ctx*/) override { }
 
-  virtual void enterHrRulesetVdType(VtlParser::HrRulesetVdTypeContext * /*ctx*/) override { }
-  virtual void exitHrRulesetVdType(VtlParser::HrRulesetVdTypeContext * /*ctx*/) override { }
+  virtual void enterComponentType(Vtl::ComponentTypeContext * /*ctx*/) override { }
+  virtual void exitComponentType(Vtl::ComponentTypeContext * /*ctx*/) override { }
 
-  virtual void enterHrRulesetVarType(VtlParser::HrRulesetVarTypeContext * /*ctx*/) override { }
-  virtual void exitHrRulesetVarType(VtlParser::HrRulesetVarTypeContext * /*ctx*/) override { }
+  virtual void enterDatasetType(Vtl::DatasetTypeContext * /*ctx*/) override { }
+  virtual void exitDatasetType(Vtl::DatasetTypeContext * /*ctx*/) override { }
 
-  virtual void enterValueDomainName(VtlParser::ValueDomainNameContext * /*ctx*/) override { }
-  virtual void exitValueDomainName(VtlParser::ValueDomainNameContext * /*ctx*/) override { }
+  virtual void enterEvalDatasetType(Vtl::EvalDatasetTypeContext * /*ctx*/) override { }
+  virtual void exitEvalDatasetType(Vtl::EvalDatasetTypeContext * /*ctx*/) override { }
 
-  virtual void enterRulesetID(VtlParser::RulesetIDContext * /*ctx*/) override { }
-  virtual void exitRulesetID(VtlParser::RulesetIDContext * /*ctx*/) override { }
+  virtual void enterScalarSetType(Vtl::ScalarSetTypeContext * /*ctx*/) override { }
+  virtual void exitScalarSetType(Vtl::ScalarSetTypeContext * /*ctx*/) override { }
 
-  virtual void enterRulesetSignature(VtlParser::RulesetSignatureContext * /*ctx*/) override { }
-  virtual void exitRulesetSignature(VtlParser::RulesetSignatureContext * /*ctx*/) override { }
+  virtual void enterDataPoint(Vtl::DataPointContext * /*ctx*/) override { }
+  virtual void exitDataPoint(Vtl::DataPointContext * /*ctx*/) override { }
 
-  virtual void enterSignature(VtlParser::SignatureContext * /*ctx*/) override { }
-  virtual void exitSignature(VtlParser::SignatureContext * /*ctx*/) override { }
+  virtual void enterDataPointVd(Vtl::DataPointVdContext * /*ctx*/) override { }
+  virtual void exitDataPointVd(Vtl::DataPointVdContext * /*ctx*/) override { }
 
-  virtual void enterRuleClauseDatapoint(VtlParser::RuleClauseDatapointContext * /*ctx*/) override { }
-  virtual void exitRuleClauseDatapoint(VtlParser::RuleClauseDatapointContext * /*ctx*/) override { }
+  virtual void enterDataPointVar(Vtl::DataPointVarContext * /*ctx*/) override { }
+  virtual void exitDataPointVar(Vtl::DataPointVarContext * /*ctx*/) override { }
 
-  virtual void enterRuleItemDatapoint(VtlParser::RuleItemDatapointContext * /*ctx*/) override { }
-  virtual void exitRuleItemDatapoint(VtlParser::RuleItemDatapointContext * /*ctx*/) override { }
+  virtual void enterHrRulesetType(Vtl::HrRulesetTypeContext * /*ctx*/) override { }
+  virtual void exitHrRulesetType(Vtl::HrRulesetTypeContext * /*ctx*/) override { }
 
-  virtual void enterRuleClauseHierarchical(VtlParser::RuleClauseHierarchicalContext * /*ctx*/) override { }
-  virtual void exitRuleClauseHierarchical(VtlParser::RuleClauseHierarchicalContext * /*ctx*/) override { }
+  virtual void enterHrRulesetVdType(Vtl::HrRulesetVdTypeContext * /*ctx*/) override { }
+  virtual void exitHrRulesetVdType(Vtl::HrRulesetVdTypeContext * /*ctx*/) override { }
 
-  virtual void enterRuleItemHierarchical(VtlParser::RuleItemHierarchicalContext * /*ctx*/) override { }
-  virtual void exitRuleItemHierarchical(VtlParser::RuleItemHierarchicalContext * /*ctx*/) override { }
+  virtual void enterHrRulesetVarType(Vtl::HrRulesetVarTypeContext * /*ctx*/) override { }
+  virtual void exitHrRulesetVarType(Vtl::HrRulesetVarTypeContext * /*ctx*/) override { }
 
-  virtual void enterHierRuleSignature(VtlParser::HierRuleSignatureContext * /*ctx*/) override { }
-  virtual void exitHierRuleSignature(VtlParser::HierRuleSignatureContext * /*ctx*/) override { }
+  virtual void enterValueDomainName(Vtl::ValueDomainNameContext * /*ctx*/) override { }
+  virtual void exitValueDomainName(Vtl::ValueDomainNameContext * /*ctx*/) override { }
 
-  virtual void enterValueDomainSignature(VtlParser::ValueDomainSignatureContext * /*ctx*/) override { }
-  virtual void exitValueDomainSignature(VtlParser::ValueDomainSignatureContext * /*ctx*/) override { }
+  virtual void enterRulesetID(Vtl::RulesetIDContext * /*ctx*/) override { }
+  virtual void exitRulesetID(Vtl::RulesetIDContext * /*ctx*/) override { }
 
-  virtual void enterCodeItemRelation(VtlParser::CodeItemRelationContext * /*ctx*/) override { }
-  virtual void exitCodeItemRelation(VtlParser::CodeItemRelationContext * /*ctx*/) override { }
+  virtual void enterRulesetSignature(Vtl::RulesetSignatureContext * /*ctx*/) override { }
+  virtual void exitRulesetSignature(Vtl::RulesetSignatureContext * /*ctx*/) override { }
 
-  virtual void enterCodeItemRelationClause(VtlParser::CodeItemRelationClauseContext * /*ctx*/) override { }
-  virtual void exitCodeItemRelationClause(VtlParser::CodeItemRelationClauseContext * /*ctx*/) override { }
+  virtual void enterSignature(Vtl::SignatureContext * /*ctx*/) override { }
+  virtual void exitSignature(Vtl::SignatureContext * /*ctx*/) override { }
 
-  virtual void enterValueDomainValue(VtlParser::ValueDomainValueContext * /*ctx*/) override { }
-  virtual void exitValueDomainValue(VtlParser::ValueDomainValueContext * /*ctx*/) override { }
+  virtual void enterRuleClauseDatapoint(Vtl::RuleClauseDatapointContext * /*ctx*/) override { }
+  virtual void exitRuleClauseDatapoint(Vtl::RuleClauseDatapointContext * /*ctx*/) override { }
 
-  virtual void enterConditionConstraint(VtlParser::ConditionConstraintContext * /*ctx*/) override { }
-  virtual void exitConditionConstraint(VtlParser::ConditionConstraintContext * /*ctx*/) override { }
+  virtual void enterRuleItemDatapoint(Vtl::RuleItemDatapointContext * /*ctx*/) override { }
+  virtual void exitRuleItemDatapoint(Vtl::RuleItemDatapointContext * /*ctx*/) override { }
 
-  virtual void enterRangeConstraint(VtlParser::RangeConstraintContext * /*ctx*/) override { }
-  virtual void exitRangeConstraint(VtlParser::RangeConstraintContext * /*ctx*/) override { }
+  virtual void enterRuleClauseHierarchical(Vtl::RuleClauseHierarchicalContext * /*ctx*/) override { }
+  virtual void exitRuleClauseHierarchical(Vtl::RuleClauseHierarchicalContext * /*ctx*/) override { }
 
-  virtual void enterCompConstraint(VtlParser::CompConstraintContext * /*ctx*/) override { }
-  virtual void exitCompConstraint(VtlParser::CompConstraintContext * /*ctx*/) override { }
+  virtual void enterRuleItemHierarchical(Vtl::RuleItemHierarchicalContext * /*ctx*/) override { }
+  virtual void exitRuleItemHierarchical(Vtl::RuleItemHierarchicalContext * /*ctx*/) override { }
 
-  virtual void enterMultModifier(VtlParser::MultModifierContext * /*ctx*/) override { }
-  virtual void exitMultModifier(VtlParser::MultModifierContext * /*ctx*/) override { }
+  virtual void enterHierRuleSignature(Vtl::HierRuleSignatureContext * /*ctx*/) override { }
+  virtual void exitHierRuleSignature(Vtl::HierRuleSignatureContext * /*ctx*/) override { }
 
-  virtual void enterValidationOutput(VtlParser::ValidationOutputContext * /*ctx*/) override { }
-  virtual void exitValidationOutput(VtlParser::ValidationOutputContext * /*ctx*/) override { }
+  virtual void enterValueDomainSignature(Vtl::ValueDomainSignatureContext * /*ctx*/) override { }
+  virtual void exitValueDomainSignature(Vtl::ValueDomainSignatureContext * /*ctx*/) override { }
 
-  virtual void enterValidationMode(VtlParser::ValidationModeContext * /*ctx*/) override { }
-  virtual void exitValidationMode(VtlParser::ValidationModeContext * /*ctx*/) override { }
+  virtual void enterCodeItemRelation(Vtl::CodeItemRelationContext * /*ctx*/) override { }
+  virtual void exitCodeItemRelation(Vtl::CodeItemRelationContext * /*ctx*/) override { }
 
-  virtual void enterConditionClause(VtlParser::ConditionClauseContext * /*ctx*/) override { }
-  virtual void exitConditionClause(VtlParser::ConditionClauseContext * /*ctx*/) override { }
+  virtual void enterCodeItemRelationClause(Vtl::CodeItemRelationClauseContext * /*ctx*/) override { }
+  virtual void exitCodeItemRelationClause(Vtl::CodeItemRelationClauseContext * /*ctx*/) override { }
 
-  virtual void enterInputMode(VtlParser::InputModeContext * /*ctx*/) override { }
-  virtual void exitInputMode(VtlParser::InputModeContext * /*ctx*/) override { }
+  virtual void enterValueDomainValue(Vtl::ValueDomainValueContext * /*ctx*/) override { }
+  virtual void exitValueDomainValue(Vtl::ValueDomainValueContext * /*ctx*/) override { }
 
-  virtual void enterImbalanceExpr(VtlParser::ImbalanceExprContext * /*ctx*/) override { }
-  virtual void exitImbalanceExpr(VtlParser::ImbalanceExprContext * /*ctx*/) override { }
+  virtual void enterConditionConstraint(Vtl::ConditionConstraintContext * /*ctx*/) override { }
+  virtual void exitConditionConstraint(Vtl::ConditionConstraintContext * /*ctx*/) override { }
 
-  virtual void enterInputModeHierarchy(VtlParser::InputModeHierarchyContext * /*ctx*/) override { }
-  virtual void exitInputModeHierarchy(VtlParser::InputModeHierarchyContext * /*ctx*/) override { }
+  virtual void enterRangeConstraint(Vtl::RangeConstraintContext * /*ctx*/) override { }
+  virtual void exitRangeConstraint(Vtl::RangeConstraintContext * /*ctx*/) override { }
 
-  virtual void enterOutputModeHierarchy(VtlParser::OutputModeHierarchyContext * /*ctx*/) override { }
-  virtual void exitOutputModeHierarchy(VtlParser::OutputModeHierarchyContext * /*ctx*/) override { }
+  virtual void enterCompConstraint(Vtl::CompConstraintContext * /*ctx*/) override { }
+  virtual void exitCompConstraint(Vtl::CompConstraintContext * /*ctx*/) override { }
 
-  virtual void enterAlias(VtlParser::AliasContext * /*ctx*/) override { }
-  virtual void exitAlias(VtlParser::AliasContext * /*ctx*/) override { }
+  virtual void enterMultModifier(Vtl::MultModifierContext * /*ctx*/) override { }
+  virtual void exitMultModifier(Vtl::MultModifierContext * /*ctx*/) override { }
 
-  virtual void enterVarID(VtlParser::VarIDContext * /*ctx*/) override { }
-  virtual void exitVarID(VtlParser::VarIDContext * /*ctx*/) override { }
+  virtual void enterValidationOutput(Vtl::ValidationOutputContext * /*ctx*/) override { }
+  virtual void exitValidationOutput(Vtl::ValidationOutputContext * /*ctx*/) override { }
 
-  virtual void enterSimpleComponentId(VtlParser::SimpleComponentIdContext * /*ctx*/) override { }
-  virtual void exitSimpleComponentId(VtlParser::SimpleComponentIdContext * /*ctx*/) override { }
+  virtual void enterValidationMode(Vtl::ValidationModeContext * /*ctx*/) override { }
+  virtual void exitValidationMode(Vtl::ValidationModeContext * /*ctx*/) override { }
 
-  virtual void enterComponentID(VtlParser::ComponentIDContext * /*ctx*/) override { }
-  virtual void exitComponentID(VtlParser::ComponentIDContext * /*ctx*/) override { }
+  virtual void enterConditionClause(Vtl::ConditionClauseContext * /*ctx*/) override { }
+  virtual void exitConditionClause(Vtl::ConditionClauseContext * /*ctx*/) override { }
 
-  virtual void enterLists(VtlParser::ListsContext * /*ctx*/) override { }
-  virtual void exitLists(VtlParser::ListsContext * /*ctx*/) override { }
+  virtual void enterInputMode(Vtl::InputModeContext * /*ctx*/) override { }
+  virtual void exitInputMode(Vtl::InputModeContext * /*ctx*/) override { }
 
-  virtual void enterErCode(VtlParser::ErCodeContext * /*ctx*/) override { }
-  virtual void exitErCode(VtlParser::ErCodeContext * /*ctx*/) override { }
+  virtual void enterImbalanceExpr(Vtl::ImbalanceExprContext * /*ctx*/) override { }
+  virtual void exitImbalanceExpr(Vtl::ImbalanceExprContext * /*ctx*/) override { }
 
-  virtual void enterErLevel(VtlParser::ErLevelContext * /*ctx*/) override { }
-  virtual void exitErLevel(VtlParser::ErLevelContext * /*ctx*/) override { }
+  virtual void enterInputModeHierarchy(Vtl::InputModeHierarchyContext * /*ctx*/) override { }
+  virtual void exitInputModeHierarchy(Vtl::InputModeHierarchyContext * /*ctx*/) override { }
 
-  virtual void enterComparisonOperand(VtlParser::ComparisonOperandContext * /*ctx*/) override { }
-  virtual void exitComparisonOperand(VtlParser::ComparisonOperandContext * /*ctx*/) override { }
+  virtual void enterOutputModeHierarchy(Vtl::OutputModeHierarchyContext * /*ctx*/) override { }
+  virtual void exitOutputModeHierarchy(Vtl::OutputModeHierarchyContext * /*ctx*/) override { }
 
-  virtual void enterOptionalExpr(VtlParser::OptionalExprContext * /*ctx*/) override { }
-  virtual void exitOptionalExpr(VtlParser::OptionalExprContext * /*ctx*/) override { }
+  virtual void enterAlias(Vtl::AliasContext * /*ctx*/) override { }
+  virtual void exitAlias(Vtl::AliasContext * /*ctx*/) override { }
 
-  virtual void enterOptionalExprComponent(VtlParser::OptionalExprComponentContext * /*ctx*/) override { }
-  virtual void exitOptionalExprComponent(VtlParser::OptionalExprComponentContext * /*ctx*/) override { }
+  virtual void enterVarID(Vtl::VarIDContext * /*ctx*/) override { }
+  virtual void exitVarID(Vtl::VarIDContext * /*ctx*/) override { }
 
-  virtual void enterComponentRole(VtlParser::ComponentRoleContext * /*ctx*/) override { }
-  virtual void exitComponentRole(VtlParser::ComponentRoleContext * /*ctx*/) override { }
+  virtual void enterSimpleComponentId(Vtl::SimpleComponentIdContext * /*ctx*/) override { }
+  virtual void exitSimpleComponentId(Vtl::SimpleComponentIdContext * /*ctx*/) override { }
 
-  virtual void enterViralAttribute(VtlParser::ViralAttributeContext * /*ctx*/) override { }
-  virtual void exitViralAttribute(VtlParser::ViralAttributeContext * /*ctx*/) override { }
+  virtual void enterComponentID(Vtl::ComponentIDContext * /*ctx*/) override { }
+  virtual void exitComponentID(Vtl::ComponentIDContext * /*ctx*/) override { }
 
-  virtual void enterValueDomainID(VtlParser::ValueDomainIDContext * /*ctx*/) override { }
-  virtual void exitValueDomainID(VtlParser::ValueDomainIDContext * /*ctx*/) override { }
+  virtual void enterLists(Vtl::ListsContext * /*ctx*/) override { }
+  virtual void exitLists(Vtl::ListsContext * /*ctx*/) override { }
 
-  virtual void enterOperatorID(VtlParser::OperatorIDContext * /*ctx*/) override { }
-  virtual void exitOperatorID(VtlParser::OperatorIDContext * /*ctx*/) override { }
+  virtual void enterErCode(Vtl::ErCodeContext * /*ctx*/) override { }
+  virtual void exitErCode(Vtl::ErCodeContext * /*ctx*/) override { }
 
-  virtual void enterRoutineName(VtlParser::RoutineNameContext * /*ctx*/) override { }
-  virtual void exitRoutineName(VtlParser::RoutineNameContext * /*ctx*/) override { }
+  virtual void enterErLevel(Vtl::ErLevelContext * /*ctx*/) override { }
+  virtual void exitErLevel(Vtl::ErLevelContext * /*ctx*/) override { }
 
-  virtual void enterConstant(VtlParser::ConstantContext * /*ctx*/) override { }
-  virtual void exitConstant(VtlParser::ConstantContext * /*ctx*/) override { }
+  virtual void enterComparisonOperand(Vtl::ComparisonOperandContext * /*ctx*/) override { }
+  virtual void exitComparisonOperand(Vtl::ComparisonOperandContext * /*ctx*/) override { }
 
-  virtual void enterBasicScalarType(VtlParser::BasicScalarTypeContext * /*ctx*/) override { }
-  virtual void exitBasicScalarType(VtlParser::BasicScalarTypeContext * /*ctx*/) override { }
+  virtual void enterOptionalExpr(Vtl::OptionalExprContext * /*ctx*/) override { }
+  virtual void exitOptionalExpr(Vtl::OptionalExprContext * /*ctx*/) override { }
 
-  virtual void enterRetainType(VtlParser::RetainTypeContext * /*ctx*/) override { }
-  virtual void exitRetainType(VtlParser::RetainTypeContext * /*ctx*/) override { }
+  virtual void enterOptionalExprComponent(Vtl::OptionalExprComponentContext * /*ctx*/) override { }
+  virtual void exitOptionalExprComponent(Vtl::OptionalExprComponentContext * /*ctx*/) override { }
+
+  virtual void enterComponentRole(Vtl::ComponentRoleContext * /*ctx*/) override { }
+  virtual void exitComponentRole(Vtl::ComponentRoleContext * /*ctx*/) override { }
+
+  virtual void enterViralAttribute(Vtl::ViralAttributeContext * /*ctx*/) override { }
+  virtual void exitViralAttribute(Vtl::ViralAttributeContext * /*ctx*/) override { }
+
+  virtual void enterValueDomainID(Vtl::ValueDomainIDContext * /*ctx*/) override { }
+  virtual void exitValueDomainID(Vtl::ValueDomainIDContext * /*ctx*/) override { }
+
+  virtual void enterOperatorID(Vtl::OperatorIDContext * /*ctx*/) override { }
+  virtual void exitOperatorID(Vtl::OperatorIDContext * /*ctx*/) override { }
+
+  virtual void enterRoutineName(Vtl::RoutineNameContext * /*ctx*/) override { }
+  virtual void exitRoutineName(Vtl::RoutineNameContext * /*ctx*/) override { }
+
+  virtual void enterIntegerLiteral(Vtl::IntegerLiteralContext * /*ctx*/) override { }
+  virtual void exitIntegerLiteral(Vtl::IntegerLiteralContext * /*ctx*/) override { }
+
+  virtual void enterNumberLiteral(Vtl::NumberLiteralContext * /*ctx*/) override { }
+  virtual void exitNumberLiteral(Vtl::NumberLiteralContext * /*ctx*/) override { }
+
+  virtual void enterBooleanLiteral(Vtl::BooleanLiteralContext * /*ctx*/) override { }
+  virtual void exitBooleanLiteral(Vtl::BooleanLiteralContext * /*ctx*/) override { }
+
+  virtual void enterStringLiteral(Vtl::StringLiteralContext * /*ctx*/) override { }
+  virtual void exitStringLiteral(Vtl::StringLiteralContext * /*ctx*/) override { }
+
+  virtual void enterNullLiteral(Vtl::NullLiteralContext * /*ctx*/) override { }
+  virtual void exitNullLiteral(Vtl::NullLiteralContext * /*ctx*/) override { }
+
+  virtual void enterBasicScalarType(Vtl::BasicScalarTypeContext * /*ctx*/) override { }
+  virtual void exitBasicScalarType(Vtl::BasicScalarTypeContext * /*ctx*/) override { }
+
+  virtual void enterRetainType(Vtl::RetainTypeContext * /*ctx*/) override { }
+  virtual void exitRetainType(Vtl::RetainTypeContext * /*ctx*/) override { }
 
 
   virtual void enterEveryRule(antlr4::ParserRuleContext * /*ctx*/) override { }

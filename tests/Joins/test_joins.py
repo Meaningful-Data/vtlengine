@@ -2337,3 +2337,39 @@ class JoinsGeneralTests(JoinHelper):
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code="1-1-13-12"
         )
+
+    def test_GH_759_2(self):
+        """
+        Description: VTL 2.2 `left_join (... using id, nvl(comp, const))` must
+                     replace NULLs produced by the outer join in `comp` with
+                     `const`.
+        Goal: Check Result.
+        """
+        code = "GH_759_2"
+        number_inputs = 2
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_759_3(self):
+        """
+        Description: VTL 2.2 `left_join (... using id, nvl(c1, k1), nvl(c2, k2))`
+                     must replace NULLs in each listed component independently.
+        Goal: Check Result.
+        """
+        code = "GH_759_3"
+        number_inputs = 2
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_759_4(self):
+        """
+        Description: VTL 2.2 nvl(componentID, constant) inside a join must
+                     reference an existing component; otherwise raise 1-1-1-10.
+        """
+        code = "GH_759_4"
+        number_inputs = 2
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-1-10"
+        )

@@ -32,13 +32,13 @@ TWO_RULES = """
         else "F"
     end viral propagation;
     define viral propagation R2 (variable VAt_2) is
-        aggr max
+        aggregate max
     end viral propagation;
 """
 
 AGGR_MAX_RULE = """
     define viral propagation S (variable VAt_1) is
-        aggr max
+        aggregate max
     end viral propagation;
 """
 
