@@ -2247,10 +2247,6 @@ class ScalarTests(SemanticHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    @pytest.mark.skipif(
-        _use_duckdb_backend,
-        reason="deactivated on duckdb until nullability over scalars is implemented",
-    )
     def test_19(self):
         """
         Dataset --> Dataset
@@ -2267,10 +2263,6 @@ class ScalarTests(SemanticHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    @pytest.mark.skipif(
-        _use_duckdb_backend,
-        reason="deactivated on duckdb until nullability over scalars is implemented",
-    )
     def test_20(self):
         """
         Dataset --> Dataset
@@ -2292,10 +2284,6 @@ class ScalarTests(SemanticHelper):
             scalars={"sc_1": True},
         )
 
-    @pytest.mark.skipif(
-        _use_duckdb_backend,
-        reason="deactivated on duckdb until nullability over scalars is implemented",
-    )
     def test_21(self):
         """
         Dataset --> Dataset
