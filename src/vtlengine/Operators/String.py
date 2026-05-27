@@ -340,7 +340,7 @@ class Replace(Parameterized):
     def evaluate(cls, *args: Any) -> Union[Dataset, DataComponent, Scalar]:
         operand, param1, param2 = (args + (None, None))[:3]
         if param2 is None:
-            param2 = Scalar(name="replace_default", data_type=String, value="")
+            param2 = Scalar(name="replace_default", data_type=String, value="", nullable=False)
         return super().evaluate(operand, param1, param2)
 
     @classmethod

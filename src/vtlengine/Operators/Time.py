@@ -278,7 +278,7 @@ class Period_indicator(Unary):
             return DataComponent(
                 name=operand.name, data_type=Duration, data=None, nullable=operand.nullable
             )
-        return Scalar(name=operand.name, data_type=Duration, value=None)
+        return Scalar(name=operand.name, data_type=Duration, value=None, nullable=operand.nullable)
 
     @classmethod
     def evaluate(
@@ -808,7 +808,9 @@ class Time_Aggregation(Time):
         if operand.data_type == Date and conf is None:
             raise SemanticError("1-1-19-11")
 
-        return Scalar(name=operand.name, data_type=operand.data_type, value=None)
+        return Scalar(
+            name=operand.name, data_type=operand.data_type, value=None, nullable=operand.nullable
+        )
 
     @classmethod
     def _execute_time_aggregation(
@@ -928,7 +930,7 @@ def _date_access(v: str, to_param: str, start: bool) -> Any:
 class Current_Date(Time):
     @classmethod
     def validate(cls) -> Scalar:
-        return Scalar(name="current_date", data_type=Date, value=None)
+        return Scalar(name="current_date", data_type=Date, value=None, nullable=False)
 
     @classmethod
     def evaluate(cls) -> Scalar:
@@ -1034,7 +1036,12 @@ class Date_Add(Parametrized):
             unary_implicit_promotion(operand.data_type, Date)
 
         if isinstance(operand, Scalar):
-            return Scalar(name=operand.name, data_type=operand.data_type, value=None)
+            return Scalar(
+                name=operand.name,
+                data_type=operand.data_type,
+                value=None,
+                nullable=operand.nullable,
+            )
         if isinstance(operand, DataComponent):
             return DataComponent(
                 name=operand.name, data_type=operand.data_type, data=None, nullable=operand.nullable

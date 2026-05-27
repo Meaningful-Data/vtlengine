@@ -67,6 +67,12 @@ class IsNull(Unary):
         result.nullable = False
         return result
 
+    @classmethod
+    def scalar_validation(cls, operand: Scalar) -> Scalar:
+        result = super().scalar_validation(operand)
+        result.nullable = False
+        return result
+
 
 class Binary(Operator.Binary):
     """
@@ -379,7 +385,10 @@ class Between(Operator.Operator):
                 nullable=operand.nullable,
             )
         elif isinstance(from_, Scalar) and isinstance(to, Scalar):
-            result = Scalar(name=operand.name, value=None, data_type=cls.return_type)
+            nullable = operand.nullable or from_.nullable or to.nullable
+            result = Scalar(
+                name=operand.name, value=None, data_type=cls.return_type, nullable=nullable
+            )
         else:
             # From or To is a DataComponent, or both
             result = DataComponent(
