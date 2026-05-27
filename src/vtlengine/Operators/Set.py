@@ -1,7 +1,5 @@
 from typing import Any, Dict, List
 
-import pandas as pd
-
 from vtlengine.DataTypes import binary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Dataset
@@ -58,114 +56,18 @@ class Set(Operator):
 
 
 class Union(Set):
-    @classmethod
-    def evaluate(cls, operands: List[Dataset]) -> Dataset:
-        result = cls.validate(operands)
-        all_datapoints = [ds.data for ds in operands]
-        result.data = pd.concat(all_datapoints, sort=True, ignore_index=True)
-        identifiers_names = result.get_identifiers_names()
-        result.data = result.data.drop_duplicates(subset=identifiers_names, keep="first")
-        result.data.reset_index(drop=True, inplace=True)
-        return result
+    pass
 
 
 class Intersection(Set):
-    @classmethod
-    def evaluate(cls, operands: List[Dataset]) -> Dataset:
-        result = cls.validate(operands)
-        all_datapoints = [ds.data for ds in operands]
-        for data in all_datapoints:
-            if result.data is None:
-                result.data = data
-            else:
-                if data is None:
-                    result.data = pd.DataFrame(columns=result.get_identifiers_names())
-                    break
-                result.data = result.data.merge(
-                    data, how="inner", on=result.get_identifiers_names()
-                )
-
-                not_identifiers = (
-                    result.get_measures_names()
-                    + result.get_attributes_names()
-                    + result.get_viral_attributes_names()
-                )
-
-                for col in not_identifiers:
-                    result.data[col] = result.data[col + "_x"]
-                result.data = result.data[result.get_identifiers_names() + not_identifiers]
-        if result.data is not None:
-            result.data.reset_index(drop=True, inplace=True)
-        return result
+    pass
 
 
 class Symdiff(Set):
-    @classmethod
-    def evaluate(cls, operands: List[Dataset]) -> Dataset:
-        result = cls.validate(operands)
-        all_datapoints = [ds.data for ds in operands]
-        for data in all_datapoints:
-            if data is None:
-                data = pd.DataFrame(columns=result.get_identifiers_names())
-            if result.data is None:
-                result.data = data
-            else:
-                result.data = result.data.merge(
-                    data,
-                    how="outer",
-                    on=result.get_identifiers_names(),
-                    suffixes=("_x", "_y"),
-                )
-
-                for measure in result.get_measures_names():
-                    y_null = result.data[f"{measure}_y"].isna()
-                    x_null = result.data[f"{measure}_x"].isna()
-                    merge_col = pd.Series("both", index=result.data.index)
-                    merge_col = merge_col.where(~x_null, "right_only")
-                    merge_col = merge_col.where(~y_null, "left_only")
-                    result.data["_merge"] = merge_col
-
-                not_identifiers = (
-                    result.get_measures_names()
-                    + result.get_attributes_names()
-                    + result.get_viral_attributes_names()
-                )
-                left_mask = result.data["_merge"] == "left_only"
-                right_mask = result.data["_merge"] == "right_only"
-                for col in not_identifiers:
-                    result.data[col] = None
-                    result.data.loc[left_mask, col] = result.data.loc[left_mask, col + "_x"]
-                    result.data.loc[right_mask, col] = result.data.loc[right_mask, col + "_y"]
-                result.data = result.data[result.get_identifiers_names() + not_identifiers].dropna()
-        if result.data is not None:
-            result.data = result.data.reset_index(drop=True)
-        return result
+    pass
 
 
 class Setdiff(Set):
     @staticmethod
     def has_null(row: Any) -> bool:
         return row.isnull().any()
-
-    @classmethod
-    def evaluate(cls, operands: List[Dataset]) -> Dataset:
-        result = cls.validate(operands)
-        all_datapoints = [ds.data for ds in operands]
-        for data in all_datapoints:
-            if result.data is None:
-                result.data = data
-            else:
-                if data is None:
-                    data = pd.DataFrame(columns=result.get_identifiers_names())
-                id_names = result.get_identifiers_names()
-                result.data = result.data.merge(
-                    data[id_names].drop_duplicates(),
-                    how="left",
-                    on=id_names,
-                    indicator=True,
-                )
-                result.data = result.data[result.data["_merge"] == "left_only"]
-                result.data = result.data.drop(columns=["_merge"])
-        if result.data is not None:
-            result.data.reset_index(drop=True, inplace=True)
-        return result

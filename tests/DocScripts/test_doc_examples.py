@@ -8,7 +8,6 @@ import pandas as pd
 import pytest
 
 from tests.DocScripts._rst_code_extractor import CodeBlock, extract_python_blocks, is_runnable
-from tests.Helper import _use_duckdb_backend
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Dataset, Scalar
 
@@ -57,22 +56,6 @@ def _exec_block(source: str, filename: str, capture_results: bool = False) -> di
     """Execute a code block and return the resulting namespace."""
     if capture_results:
         source = _preprocess_for_result_capture(source)
-    # When DuckDB backend is active, patch run/run_sdmx calls to include use_duckdb=True.
-    # Skip blocks that already pass use_duckdb explicitly (e.g. doc examples that
-    # demonstrate the DuckDB engine).
-    if _use_duckdb_backend() and "use_duckdb=" not in source:
-        import re
-
-        source = re.sub(
-            r"\brun\((\s*script=)",
-            r"run(use_duckdb=True, \1",
-            source,
-        )
-        source = re.sub(
-            r"\brun_sdmx\(([^)]+)\)",
-            r"run_sdmx(\1, use_duckdb=True)",
-            source,
-        )
     namespace: dict[str, object] = {}
     exec(compile(source, filename, "exec"), namespace)  # noqa: S102
     return namespace

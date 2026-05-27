@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.Helper import TestHelper, _use_duckdb_backend
+from tests.Helper import TestHelper
 from vtlengine.API import run
 from vtlengine.DataTypes import (
     Boolean,
@@ -106,7 +106,7 @@ class TestCastIntegerToBoolean:
         [(0, False), (5, True), (-3, True), (1, True), (None, None)],
     )
     def test_cast(self, input_val: object, expected: object) -> None:
-        result = Cast.evaluate(operand=Scalar("x", Integer, input_val), scalarType=Boolean)
+        result = Cast.cast_scalar(operand=Scalar("x", Integer, input_val), scalarType=Boolean)
         assert result.value == expected
         assert result.data_type == Boolean
 
@@ -119,7 +119,7 @@ class TestCastBooleanToInteger:
         [(True, 1), (False, 0), (None, None)],
     )
     def test_cast(self, input_val: object, expected: object) -> None:
-        result = Cast.evaluate(operand=Scalar("x", Boolean, input_val), scalarType=Integer)
+        result = Cast.cast_scalar(operand=Scalar("x", Boolean, input_val), scalarType=Integer)
         assert result.value == expected
         assert result.data_type == Integer
 
@@ -132,7 +132,7 @@ class TestCastNumberToBoolean:
         [(0.0, False), (3.14, True), (-2.5, True), (None, None)],
     )
     def test_cast(self, input_val: object, expected: object) -> None:
-        result = Cast.evaluate(operand=Scalar("x", Number, input_val), scalarType=Boolean)
+        result = Cast.cast_scalar(operand=Scalar("x", Number, input_val), scalarType=Boolean)
         assert result.value == expected
         assert result.data_type == Boolean
 
@@ -145,7 +145,7 @@ class TestCastBooleanToNumber:
         [(True, 1.0), (False, 0.0), (None, None)],
     )
     def test_cast(self, input_val: object, expected: object) -> None:
-        result = Cast.evaluate(operand=Scalar("x", Boolean, input_val), scalarType=Number)
+        result = Cast.cast_scalar(operand=Scalar("x", Boolean, input_val), scalarType=Number)
         assert result.value == expected
         assert result.data_type == Number
 
@@ -169,7 +169,7 @@ class TestCastStringToBoolean:
         ],
     )
     def test_cast(self, input_val: object, expected: object) -> None:
-        result = Cast.evaluate(operand=Scalar("x", String, input_val), scalarType=Boolean)
+        result = Cast.cast_scalar(operand=Scalar("x", String, input_val), scalarType=Boolean)
         assert result.value == expected
         assert result.data_type == Boolean
 
@@ -191,14 +191,14 @@ class TestCastStringToInteger:
         ],
     )
     def test_cast(self, input_val: object, expected: object) -> None:
-        result = Cast.evaluate(operand=Scalar("x", String, input_val), scalarType=Integer)
+        result = Cast.cast_scalar(operand=Scalar("x", String, input_val), scalarType=Integer)
         assert result.value == expected
         assert result.data_type == Integer
 
     @pytest.mark.parametrize("input_val", ["3.14", "abc"])
     def test_invalid_raises(self, input_val: str) -> None:
         with pytest.raises(RunTimeError):
-            Cast.evaluate(operand=Scalar("x", String, input_val), scalarType=Integer)
+            Cast.cast_scalar(operand=Scalar("x", String, input_val), scalarType=Integer)
 
 
 class TestCastStringToNumber:
@@ -221,13 +221,13 @@ class TestCastStringToNumber:
         ],
     )
     def test_cast(self, input_val: object, expected: object) -> None:
-        result = Cast.evaluate(operand=Scalar("x", String, input_val), scalarType=Number)
+        result = Cast.cast_scalar(operand=Scalar("x", String, input_val), scalarType=Number)
         assert result.value == expected
         assert result.data_type == Number
 
     def test_invalid_raises(self) -> None:
         with pytest.raises(RunTimeError):
-            Cast.evaluate(operand=Scalar("x", String, "abc"), scalarType=Number)
+            Cast.cast_scalar(operand=Scalar("x", String, "abc"), scalarType=Number)
 
 
 class TestCastStringToDate:
@@ -243,7 +243,7 @@ class TestCastStringToDate:
         ],
     )
     def test_cast(self, input_val: object, expected: object) -> None:
-        result = Cast.evaluate(operand=Scalar("x", String, input_val), scalarType=Date)
+        result = Cast.cast_scalar(operand=Scalar("x", String, input_val), scalarType=Date)
         assert result.value == expected
         assert result.data_type == Date
 
@@ -262,13 +262,13 @@ class TestCastStringToTimePeriod:
         ],
     )
     def test_cast(self, input_val: object, expected: object) -> None:
-        result = Cast.evaluate(operand=Scalar("x", String, input_val), scalarType=TimePeriod)
+        result = Cast.cast_scalar(operand=Scalar("x", String, input_val), scalarType=TimePeriod)
         assert result.value == expected
         assert result.data_type == TimePeriod
 
     def test_irregular_interval_raises(self) -> None:
         with pytest.raises(RunTimeError):
-            Cast.evaluate(
+            Cast.cast_scalar(
                 operand=Scalar("x", String, "2020-01-15/2020-03-20"), scalarType=TimePeriod
             )
 
@@ -285,7 +285,7 @@ class TestCastStringToTimeInterval:
         ],
     )
     def test_cast(self, input_val: object, expected: object) -> None:
-        result = Cast.evaluate(operand=Scalar("x", String, input_val), scalarType=TimeInterval)
+        result = Cast.cast_scalar(operand=Scalar("x", String, input_val), scalarType=TimeInterval)
         assert result.value == expected
         assert result.data_type == TimeInterval
 
@@ -295,7 +295,7 @@ class TestCastStringToDuration:
 
     @pytest.mark.parametrize("shortcode", ["A", "D", "M", "Q", "W", "S"])
     def test_shortcode(self, shortcode: str) -> None:
-        result = Cast.evaluate(operand=Scalar("x", String, shortcode), scalarType=Duration)
+        result = Cast.cast_scalar(operand=Scalar("x", String, shortcode), scalarType=Duration)
         assert result.value == shortcode
         assert result.data_type == Duration
 
@@ -304,17 +304,17 @@ class TestCastStringToDuration:
         [("P1Y", "A"), ("P6M", "S"), ("P3M", "Q"), ("P1M", "M"), ("P1W", "W"), ("P1D", "D")],
     )
     def test_iso8601(self, iso_input: str, expected_shortcode: str) -> None:
-        result = Cast.evaluate(operand=Scalar("x", String, iso_input), scalarType=Duration)
+        result = Cast.cast_scalar(operand=Scalar("x", String, iso_input), scalarType=Duration)
         assert result.value == expected_shortcode
         assert result.data_type == Duration
 
     def test_null_returns_null(self) -> None:
-        result = Cast.evaluate(operand=Scalar("x", String, None), scalarType=Duration)
+        result = Cast.cast_scalar(operand=Scalar("x", String, None), scalarType=Duration)
         assert result.value is None
 
     def test_invalid_iso_raises(self) -> None:
         with pytest.raises(RunTimeError):
-            Cast.evaluate(operand=Scalar("x", String, "P2Y"), scalarType=Duration)
+            Cast.cast_scalar(operand=Scalar("x", String, "P2Y"), scalarType=Duration)
 
 
 class TestCastNumberToInteger:
@@ -325,7 +325,7 @@ class TestCastNumberToInteger:
         [(5.0, 5), (None, None)],
     )
     def test_cast(self, input_val: object, expected: object) -> None:
-        result = Cast.evaluate(operand=Scalar("x", Number, input_val), scalarType=Integer)
+        result = Cast.cast_scalar(operand=Scalar("x", Number, input_val), scalarType=Integer)
         assert result.value == expected
         assert result.data_type == Integer
 
@@ -338,7 +338,7 @@ class TestCastIntegerToNumber:
         [(42, 42.0), (None, None)],
     )
     def test_cast(self, input_val: object, expected: object) -> None:
-        result = Cast.evaluate(operand=Scalar("x", Integer, input_val), scalarType=Number)
+        result = Cast.cast_scalar(operand=Scalar("x", Integer, input_val), scalarType=Number)
         assert result.value == expected
         assert result.data_type == Number
 
@@ -351,7 +351,7 @@ class TestCastIntegerToString:
         [(-123, "-123"), (0, "0"), (456789, "456789"), (42, "42"), (-7, "-7"), (None, None)],
     )
     def test_cast(self, input_val: object, expected: object) -> None:
-        result = Cast.evaluate(operand=Scalar("x", Integer, input_val), scalarType=String)
+        result = Cast.cast_scalar(operand=Scalar("x", Integer, input_val), scalarType=String)
         assert result.value == expected
         assert result.data_type == String
 
@@ -364,7 +364,7 @@ class TestCastNumberToString:
         [(-123.45, "-123.45"), (0.001, "0.001"), (3.14, "3.14"), (5.0, "5.0"), (None, None)],
     )
     def test_cast(self, input_val: object, expected: object) -> None:
-        result = Cast.evaluate(operand=Scalar("x", Number, input_val), scalarType=String)
+        result = Cast.cast_scalar(operand=Scalar("x", Number, input_val), scalarType=String)
         assert result.value == expected
         assert result.data_type == String
 
@@ -377,7 +377,7 @@ class TestCastBooleanToString:
         [(True, "True"), (False, "False"), (None, None)],
     )
     def test_cast(self, input_val: object, expected: object) -> None:
-        result = Cast.evaluate(operand=Scalar("x", Boolean, input_val), scalarType=String)
+        result = Cast.cast_scalar(operand=Scalar("x", Boolean, input_val), scalarType=String)
         assert result.value == expected
         assert result.data_type == String
 
@@ -395,7 +395,7 @@ class TestCastDateToString:
         ],
     )
     def test_cast(self, input_val: object, expected: object) -> None:
-        result = Cast.evaluate(operand=Scalar("x", Date, input_val), scalarType=String)
+        result = Cast.cast_scalar(operand=Scalar("x", Date, input_val), scalarType=String)
         assert result.value == expected
         assert result.data_type == String
 
@@ -414,7 +414,7 @@ class TestCastTimePeriodToString:
         ],
     )
     def test_cast(self, input_val: object, expected: object) -> None:
-        result = Cast.evaluate(operand=Scalar("x", TimePeriod, input_val), scalarType=String)
+        result = Cast.cast_scalar(operand=Scalar("x", TimePeriod, input_val), scalarType=String)
         assert result.value == expected
         assert result.data_type == String
 
@@ -431,7 +431,7 @@ class TestCastTimeIntervalToString:
         ],
     )
     def test_cast(self, input_val: object, expected: object) -> None:
-        result = Cast.evaluate(operand=Scalar("x", TimeInterval, input_val), scalarType=String)
+        result = Cast.cast_scalar(operand=Scalar("x", TimeInterval, input_val), scalarType=String)
         assert result.value == expected
         assert result.data_type == String
 
@@ -452,7 +452,7 @@ class TestCastDurationToString:
         ],
     )
     def test_cast(self, input_val: object, expected: object) -> None:
-        result = Cast.evaluate(operand=Scalar("x", Duration, input_val), scalarType=String)
+        result = Cast.cast_scalar(operand=Scalar("x", Duration, input_val), scalarType=String)
         assert result.value == expected
         assert result.data_type == String
 
@@ -470,7 +470,7 @@ class TestCastDateToTimePeriod:
         ],
     )
     def test_cast(self, input_val: object, expected: object) -> None:
-        result = Cast.evaluate(operand=Scalar("x", Date, input_val), scalarType=TimePeriod)
+        result = Cast.cast_scalar(operand=Scalar("x", Date, input_val), scalarType=TimePeriod)
         assert result.value == expected
         assert result.data_type == TimePeriod
 
@@ -483,14 +483,14 @@ class TestCastTimePeriodToDate:
         [("2020D15", "2020-01-15"), ("2025D1", "2025-01-01"), (None, None)],
     )
     def test_cast(self, input_val: object, expected: object) -> None:
-        result = Cast.evaluate(operand=Scalar("x", TimePeriod, input_val), scalarType=Date)
+        result = Cast.cast_scalar(operand=Scalar("x", TimePeriod, input_val), scalarType=Date)
         assert result.value == expected
         assert result.data_type == Date
 
     @pytest.mark.parametrize("input_val", ["2020A", "2020Q1", "2020M1"])
     def test_non_daily_raises(self, input_val: str) -> None:
         with pytest.raises(RunTimeError):
-            Cast.evaluate(operand=Scalar("x", TimePeriod, input_val), scalarType=Date)
+            Cast.cast_scalar(operand=Scalar("x", TimePeriod, input_val), scalarType=Date)
 
 
 class TestCastTimeIntervalToDate:
@@ -501,13 +501,13 @@ class TestCastTimeIntervalToDate:
         [("2020-01-15/2020-01-15", "2020-01-15"), (None, None)],
     )
     def test_cast(self, input_val: object, expected: object) -> None:
-        result = Cast.evaluate(operand=Scalar("x", TimeInterval, input_val), scalarType=Date)
+        result = Cast.cast_scalar(operand=Scalar("x", TimeInterval, input_val), scalarType=Date)
         assert result.value == expected
         assert result.data_type == Date
 
     def test_different_dates_raises(self) -> None:
         with pytest.raises(RunTimeError):
-            Cast.evaluate(
+            Cast.cast_scalar(
                 operand=Scalar("x", TimeInterval, "2020-01-01/2020-12-31"), scalarType=Date
             )
 
@@ -527,13 +527,15 @@ class TestCastTimeIntervalToTimePeriod:
         ],
     )
     def test_cast(self, input_val: object, expected: object) -> None:
-        result = Cast.evaluate(operand=Scalar("x", TimeInterval, input_val), scalarType=TimePeriod)
+        result = Cast.cast_scalar(
+            operand=Scalar("x", TimeInterval, input_val), scalarType=TimePeriod
+        )
         assert result.value == expected
         assert result.data_type == TimePeriod
 
     def test_irregular_raises(self) -> None:
         with pytest.raises(RunTimeError):
-            Cast.evaluate(
+            Cast.cast_scalar(
                 operand=Scalar("x", TimeInterval, "2020-01-15/2020-03-20"),
                 scalarType=TimePeriod,
             )
@@ -547,7 +549,7 @@ class TestCastDateToTimeInterval:
         [("2020-01-15", "2020-01-15/2020-01-15"), (None, None)],
     )
     def test_cast(self, input_val: object, expected: object) -> None:
-        result = Cast.evaluate(operand=Scalar("x", Date, input_val), scalarType=TimeInterval)
+        result = Cast.cast_scalar(operand=Scalar("x", Date, input_val), scalarType=TimeInterval)
         assert result.value == expected
         assert result.data_type == TimeInterval
 
@@ -560,7 +562,9 @@ class TestCastTimePeriodToTimeInterval:
         [("2020A", "2020-01-01/2020-12-31"), (None, None)],
     )
     def test_cast(self, input_val: object, expected: object) -> None:
-        result = Cast.evaluate(operand=Scalar("x", TimePeriod, input_val), scalarType=TimeInterval)
+        result = Cast.cast_scalar(
+            operand=Scalar("x", TimePeriod, input_val), scalarType=TimeInterval
+        )
         assert result.value == expected
         assert result.data_type == TimeInterval
 
@@ -649,7 +653,6 @@ class TestCastInterpreter:
             data_structures={"datasets": []},
             datapoints={},
             return_only_persistent=False,
-            use_duckdb=_use_duckdb_backend(),
         )
         return result["DS_r"]
 

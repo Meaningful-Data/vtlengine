@@ -4,7 +4,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from tests.Helper import TestHelper, _use_duckdb_backend
+from tests.Helper import TestHelper
 from vtlengine import DataTypes
 from vtlengine.API import run
 from vtlengine.DataTypes import Boolean, Integer, Null, Number, String
@@ -19,7 +19,6 @@ def _run_scalar(expression):
         data_structures={"datasets": []},
         datapoints={},
         return_only_persistent=False,
-        use_duckdb=_use_duckdb_backend(),
     )
 
 
@@ -349,7 +348,7 @@ def test_exception_string_op(text, exception_message):
 def test_numeric_operators(text, reference):
     warnings.filterwarnings("ignore", category=FutureWarning)
     # DuckDB's log() implementation differs from Python math.log() at the last ULP
-    if _use_duckdb_backend() and text in ("log(1024, 10)", "log(0.5, 6)"):
+    if text in ("log(1024, 10)", "log(0.5, 6)"):
         pytest.skip("DuckDB log() differs from Python math.log() implementation")
     expression = f"DS_r := {text};"
     result = _run_scalar(expression)
@@ -431,7 +430,6 @@ def test_run_scalars_operations(script, reference, tmp_path):
         scalar_values=scalar_values,
         output_folder=tmp_path,
         return_only_persistent=True,
-        use_duckdb=_use_duckdb_backend(),
     )
     for k, expected_scalar in reference.items():
         assert k in run_result
@@ -480,6 +478,5 @@ def test_filter_op(script, reference):
         datapoints=datapoints,
         scalar_values=scalar_values,
         return_only_persistent=True,
-        use_duckdb=_use_duckdb_backend(),
     )
     assert run_result == reference

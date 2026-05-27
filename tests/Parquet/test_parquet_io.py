@@ -39,7 +39,6 @@ def test_load_parquet_input_basic(tmp_path: Path) -> None:
         script=SCRIPT,
         data_structures=DATA_STRUCTURE,
         datapoints={"DS_1": pq},
-        use_duckdb=True,
     )
 
     assert "DS_A" in result
@@ -57,7 +56,6 @@ def test_parquet_path_is_not_treated_as_sdmx(tmp_path: Path) -> None:
         script="DS_A <- DS_1;",
         data_structures=DATA_STRUCTURE,
         datapoints={"DS_1": str(pq)},  # string path, not Path object
-        use_duckdb=True,
     )
     assert result["DS_A"].data["Me_1"].iloc[0] == 42.0
 
@@ -103,7 +101,6 @@ def test_run_output_format_parquet(tmp_path: Path) -> None:
         data_structures=DATA_STRUCTURE,
         datapoints={"DS_1": pq},
         output_folder=out_dir,
-        use_duckdb=True,
         output_format="parquet",
     )
 
@@ -134,7 +131,6 @@ def test_run_default_output_format_is_csv(tmp_path: Path) -> None:
         data_structures=DATA_STRUCTURE,
         datapoints={"DS_1": csv_path},
         output_folder=out_dir,
-        use_duckdb=True,
     )
 
     assert (out_dir / "DS_A.csv").exists()
@@ -173,7 +169,6 @@ def test_mixed_csv_and_parquet_inputs(tmp_path: Path) -> None:
         script="DS_A <- DS_1 + DS_2;",
         data_structures=TWO_DS_STRUCTURE,
         datapoints={"DS_1": csv_path, "DS_2": pq_path},
-        use_duckdb=True,
     )
 
     out = result["DS_A"].data.sort_values("Id_1").reset_index(drop=True)
@@ -193,7 +188,6 @@ def test_parquet_duplicate_identifier_raises(tmp_path: Path) -> None:
             script="DS_A <- DS_1;",
             data_structures=DATA_STRUCTURE,
             datapoints={"DS_1": pq},
-            use_duckdb=True,
         )
     assert "0-3-1-7" in str(excinfo.value)
 
@@ -204,7 +198,6 @@ def test_parquet_nonexistent_path_empty_table(tmp_path: Path) -> None:
         script="DS_A <- DS_1;",
         data_structures=DATA_STRUCTURE,
         datapoints={"DS_1": missing},
-        use_duckdb=True,
     )
     assert result["DS_A"].data is not None
     assert len(result["DS_A"].data) == 0
@@ -223,7 +216,6 @@ def test_parquet_output_roundtrip(tmp_path: Path) -> None:
         data_structures=DATA_STRUCTURE,
         datapoints={"DS_1": pq_in},
         output_folder=out_dir,
-        use_duckdb=True,
         output_format="parquet",
     )
 
@@ -243,7 +235,6 @@ def test_parquet_output_roundtrip(tmp_path: Path) -> None:
         script="DS_B <- DS_A;",
         data_structures=structure_for_dsa,
         datapoints={"DS_A": produced},
-        use_duckdb=True,
     )
     out = result["DS_B"].data.sort_values("Id_1").reset_index(drop=True)
     assert list(out["Me_1"].astype(float)) == [10.0, 20.0, 30.0]
@@ -267,23 +258,3 @@ def test_save_datapoints_invalid_output_format_raises(tmp_path: Path) -> None:
         assert "0-1-1-16" in str(excinfo.value)
     finally:
         conn.close()
-
-
-def test_run_parquet_without_duckdb_warns(tmp_path: Path) -> None:
-    """output_format='parquet' with use_duckdb=False emits a UserWarning."""
-    df = pd.DataFrame({"Id_1": [1], "Me_1": [10.0]})
-    csv_path = tmp_path / "DS_1.csv"
-    df.to_csv(csv_path, index=False)
-
-    out_dir = tmp_path / "out"
-    out_dir.mkdir()
-
-    with pytest.warns(UserWarning, match="output_format='parquet' has no effect"):
-        run(
-            script="DS_A <- DS_1;",
-            data_structures=DATA_STRUCTURE,
-            datapoints={"DS_1": csv_path},
-            output_folder=out_dir,
-            use_duckdb=False,
-            output_format="parquet",
-        )

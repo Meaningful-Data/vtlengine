@@ -131,16 +131,6 @@ def test_rolesetter_uses_scalar_nullable(value, nullable, expected):
     assert result.nullable is expected
 
 
-@pytest.mark.parametrize("nullable", [True, False])
-def test_rolesetter_evaluate_matches_validate_nullable(nullable):
-    # The bug: validate (value None) vs evaluate (value set) must agree.
-    v = Measure.validate(Scalar(name="m", data_type=Integer, value=None, nullable=nullable))
-    e = Measure.evaluate(
-        Scalar(name="m", data_type=Integer, value=5, nullable=nullable), data_size=3
-    )
-    assert v.nullable == e.nullable is nullable
-
-
 # --- Comparison -------------------------------------------------------------
 
 
@@ -210,8 +200,8 @@ def test_cast_scalar_validation_carries_nullable(nullable):
 
 
 @pytest.mark.parametrize("nullable", [True, False])
-def test_cast_scalar_evaluation_carries_nullable(nullable):
-    result = Cast.scalar_evaluation(_scalar(5, nullable), Number)
+def test_cast_scalar_value_carries_nullable(nullable):
+    result = Cast.cast_scalar(_scalar(5, nullable), Number)
     assert result.nullable is nullable
 
 

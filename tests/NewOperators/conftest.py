@@ -4,7 +4,6 @@ import os
 import pandas as pd
 import pytest
 
-from tests.Helper import _use_duckdb_backend
 from vtlengine.API import run
 from vtlengine.API._InternalApi import load_datasets_with_data
 
@@ -71,7 +70,6 @@ def run_expression(expression, input_paths):
         data_structures=data_structures,
         datapoints=datapoints,
         return_only_persistent=False,
-        use_duckdb=_use_duckdb_backend(),
     )
 
 
@@ -82,5 +80,4 @@ def run_scalar_expression(expression):
         data_structures={"datasets": []},
         datapoints={},
         return_only_persistent=False,
-        use_duckdb=_use_duckdb_backend(),
     )

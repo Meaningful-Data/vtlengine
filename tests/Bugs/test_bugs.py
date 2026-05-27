@@ -2,9 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from tests.Helper import TestHelper, _use_duckdb_backend
-from vtlengine.API import create_ast, run
-from vtlengine.Interpreter import InterpreterAnalyzer
+from tests.Helper import TestHelper
+from vtlengine.API import run
 
 
 class BugHelper(TestHelper):
@@ -63,18 +62,12 @@ class GeneralBugs(BugHelper):
             "f": False,
         }
 
-        if _use_duckdb_backend():
-            result = run(
-                script=script,
-                data_structures={"datasets": []},
-                datapoints={},
-                return_only_persistent=False,
-                use_duckdb=True,
-            )
-        else:
-            ast = create_ast(script)
-            interpreter = InterpreterAnalyzer(datasets={})
-            result = interpreter.visit(ast)
+        result = run(
+            script=script,
+            data_structures={"datasets": []},
+            datapoints={},
+            return_only_persistent=False,
+        )
         for sc in result.values():
             assert sc.persistent == references[sc.name]
 
@@ -1065,18 +1058,16 @@ class TimeBugs(BugHelper):
         c <- b;
         """
         scalar_values = {"sc1": 5}
-        for engine in (False, True):
-            result = run(
-                script=script,
-                data_structures={"datasets": [], "scalars": [{"name": "sc1", "type": "Integer"}]},
-                datapoints={},
-                scalar_values=scalar_values,
-                return_only_persistent=False,
-                use_duckdb=engine,
-            )
-            assert result["a"].value == 6, f"engine={engine}"
-            assert result["b"].value == 7, f"engine={engine}"
-            assert result["c"].value == 7, f"engine={engine}"
+        result = run(
+            script=script,
+            data_structures={"datasets": [], "scalars": [{"name": "sc1", "type": "Integer"}]},
+            datapoints={},
+            scalar_values=scalar_values,
+            return_only_persistent=False,
+        )
+        assert result["a"].value == 6
+        assert result["b"].value == 7
+        assert result["c"].value == 7
 
 
 class SetBugs(BugHelper):

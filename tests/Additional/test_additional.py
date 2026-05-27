@@ -2,7 +2,7 @@ import warnings
 from pathlib import Path
 from typing import Union
 
-from tests.Helper import TestHelper, _use_duckdb_backend
+from tests.Helper import TestHelper
 from vtlengine.API import run
 
 
@@ -30,7 +30,6 @@ class AdditionalHelper(TestHelper):
             data_structures={"datasets": []},
             datapoints={},
             return_only_persistent=False,
-            use_duckdb=_use_duckdb_backend(),
         )
         assert result["DS_r"].value == reference_value
 

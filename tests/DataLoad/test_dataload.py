@@ -22,7 +22,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from tests.Helper import TestHelper, _use_duckdb_backend
+from tests.Helper import TestHelper
 from vtlengine import run
 from vtlengine.API._InternalApi import (
     _load_single_external_routine_from_file,
@@ -210,9 +210,8 @@ class DataLoadTest(DataLoadHelper):
 
         assert dataset_input.data["OBS_VALUE"][0] == string_to_compare
 
-    @pytest.mark.skipif(
-        _use_duckdb_backend,
-        reason="Duckdb cannot handle unmatched types errors as pandas, so it not raises the same error",
+    @pytest.mark.skip(
+        reason="Duckdb cannot handle unmatched types errors as pandas, so it not raises the same error"
     )
     def test_12(self):
         """
@@ -258,9 +257,8 @@ class DataLoadTest(DataLoadHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    @pytest.mark.skipif(
-        _use_duckdb_backend,
-        reason="Duckdb cannot handle unmatched types errors as pandas, so it not raises the same error",
+    @pytest.mark.skip(
+        reason="Duckdb cannot handle unmatched types errors as pandas, so it not raises the same error"
     )
     def test_15(self):
         """
@@ -933,8 +931,7 @@ class DataLoadTest(DataLoadHelper):
             code=code, number_inputs=number_inputs, exception_message=message
         )
 
-    @pytest.mark.skipif(
-        _use_duckdb_backend,
+    @pytest.mark.skip(
         reason="DuckDB backend handles empty CSVs differently and does not surface 0-1-1-6.",
     )
     def test_GH_676_1(self):

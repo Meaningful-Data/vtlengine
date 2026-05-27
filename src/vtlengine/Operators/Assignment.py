@@ -17,7 +17,3 @@ class Assignment(Binary):
             raise SemanticError("1-1-6-13", op=cls.op, comp_name=right_operand.name)
         right_operand.name = left_operand
         return right_operand
-
-    @classmethod
-    def evaluate(cls, left_operand: Any, right_operand: Any) -> ALL_MODEL_TYPES:
-        return cls.validate(left_operand, right_operand)

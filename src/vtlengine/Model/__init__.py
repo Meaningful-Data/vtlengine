@@ -229,19 +229,6 @@ class Dataset:
                 if name not in self.data.columns:
                     raise ValueError(f"Component {name} not found in the data")
 
-    def enforce_dtypes(self) -> None:
-        """Ensure all DataFrame column dtypes match their component DataType."""
-        if self.data is None:
-            return
-        for comp_name, comp in self.components.items():
-            if comp_name in self.data.columns:
-                col = self.data[comp_name]
-                if isinstance(col, pd.DataFrame):
-                    continue
-                target_dtype = comp.data_type.dtype()
-                if str(col.dtype) != target_dtype:
-                    self.data[comp_name] = col.astype(target_dtype)  # type: ignore[call-overload]
-
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Dataset):
             return False
