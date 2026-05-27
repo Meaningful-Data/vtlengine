@@ -56,8 +56,6 @@ def transpile(
         value_domains=loaded_vds,
         external_routines=loaded_routines,
         scalars=input_scalars,
-        only_semantic=True,
-        return_only_persistent=False,
     )
     semantic_results = interpreter.visit(ast)
 

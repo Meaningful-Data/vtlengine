@@ -1,8 +1,6 @@
 from copy import copy
 from typing import Any, List, Union
 
-import pandas as pd
-
 from vtlengine.DataTypes import (
     SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
@@ -14,101 +12,8 @@ from vtlengine.Model import DataComponent, Dataset, Role, Scalar
 from vtlengine.Operators import Binary, Operator
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
-COND_COL = "__cond__"
-
-
-def component_assign(cond: Any, op: Union[DataComponent, Scalar]) -> Any:
-    idx = cond.index[cond.fillna(False)]
-    if isinstance(op, DataComponent):
-        return pd.Series(dtype=op.data_type.dtype()) if op.data is None else op.data.reindex(idx)
-    return pd.Series(op.value, index=idx)
-
-
-def dataset_assign(
-    cond: pd.DataFrame, op: Union[Dataset, Scalar], ids: List[str], measures: List[str]
-) -> pd.DataFrame:
-    if isinstance(op, Dataset):
-        if op.data is None or cond.empty:
-            return pd.DataFrame(columns=ids + measures + [COND_COL])
-        return cond.merge(op.data, on=ids, how="inner")
-    return cond.assign(**dict.fromkeys(measures, op.value))
-
 
 class If(Operator):
-    """
-    If class:
-        `If-then-else <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=225&zoom=100,72,142>`_ operator
-        inherits from Operator, a superclass that contains general validate and evaluate class methods.
-        It has the following class methods:
-    Class methods:
-        evaluate: Evaluates if the operation is well constructed, checking the actual condition and
-        dropping a boolean result.
-        The result will depend on the data class, such as datacomponent and dataset.
-
-        component_level_evaluation: Returns a pandas dataframe with data to set the condition
-
-        dataset_level_evaluation: Sets the dataset and evaluates its correct schema to be able to perform the condition.
-
-        validate: Class method that has two branches so datacomponent and datasets can be validated. With datacomponent,
-        the code reviews if it is actually a Measure and if it is a binary operation. Dataset branch reviews if the
-        identifiers are the same in 'if', 'then' and 'else'.
-    """  # noqa E501
-
-    @classmethod
-    def evaluate(cls, condition: Any, true_branch: Any, false_branch: Any) -> Any:
-        result = cls.validate(condition, true_branch, false_branch)
-        if isinstance(result, DataComponent):
-            result.data = cls.component_level_evaluation(condition, true_branch, false_branch)
-        elif isinstance(result, Dataset):
-            cls.dataset_level_evaluation(result, condition, true_branch, false_branch)
-        return result
-
-    @classmethod
-    def component_level_evaluation(
-        cls,
-        condition: DataComponent,
-        true_branch: Union[DataComponent, Scalar],
-        false_branch: Union[DataComponent, Scalar],
-    ) -> Any:
-        if condition.data is None:
-            return pd.Series()
-
-        cond = condition.data.fillna(False).astype("bool[pyarrow]")
-        t_base = component_assign(cond, true_branch)
-        f_base = component_assign(~cond, false_branch)
-        return pd.concat([t_base, f_base])
-
-    @classmethod
-    def dataset_level_evaluation(
-        cls,
-        result: Dataset,
-        condition: Dataset,
-        true_branch: Union[Dataset, Scalar],
-        false_branch: Union[Dataset, Scalar],
-    ) -> None:
-        if condition.data is None:
-            result.data = pd.DataFrame(columns=result.get_components_names())
-            return
-
-        ids = result.get_identifiers_names()
-        measures = result.get_measures_names()
-
-        cond_measure = condition.get_measures_names()[0]
-        cond = condition.data
-        cond[COND_COL] = cond.pop(cond_measure).fillna(False).astype("bool[pyarrow]")
-
-        t_base = dataset_assign(cond[cond[COND_COL]], true_branch, ids, measures)
-        f_base = dataset_assign(cond[~cond[COND_COL]], false_branch, ids, measures)
-        # Ensure compatible dtypes for merge
-        for col in t_base.columns.intersection(f_base.columns):
-            if col != COND_COL and str(t_base[col].dtype) != str(f_base[col].dtype):
-                common_dtype = (
-                    t_base[col].dtype if str(t_base[col].dtype) != "object" else f_base[col].dtype
-                )
-                t_base[col] = t_base[col].astype(common_dtype)
-                f_base[col] = f_base[col].astype(common_dtype)
-        result.data = t_base.merge(f_base, how="outer").drop(columns=COND_COL)
-
     @classmethod
     def validate(  # noqa: C901
         cls, condition: Any, true_branch: Any, false_branch: Any
@@ -214,37 +119,6 @@ class Nvl(Binary):
     """  # noqa E501
 
     @classmethod
-    def evaluate(cls, left: Any, right: Any) -> Union[Scalar, DataComponent, Dataset]:
-        result = cls.validate(left, right)
-
-        if isinstance(left, Scalar) and isinstance(result, Scalar):
-            if left.data_type is Null:
-                result.data_type = right.data_type
-                result.value = right.value
-            elif right.data_type is Null:
-                result.data_type = left.data_type
-                result.value = left.value
-            else:
-                result.data_type = left.data_type
-                result.value = left.value
-        else:
-            if not isinstance(result, Scalar):
-                if isinstance(right, Scalar):
-                    if isinstance(result, Dataset):
-                        measure_names = result.get_measures_names()
-                        result.data = left.data.copy()
-                        for me in measure_names:
-                            if me in result.data.columns:
-                                result.data[me] = result.data[me].fillna(right.value)
-                    else:
-                        result.data = left.data.fillna(right.value)
-                else:
-                    result.data = left.data.fillna(right.data)
-                if isinstance(result, Dataset):
-                    result.data = result.data[result.get_components_names()]
-        return result
-
-    @classmethod
     def validate(cls, left: Any, right: Any) -> Union[Scalar, DataComponent, Dataset]:
         dataset_name = VirtualCounter._new_ds_name()
         comp_name = VirtualCounter._new_dc_name()
@@ -266,7 +140,7 @@ class Nvl(Binary):
             cls.type_validation(left.data_type, right.data_type)
             return DataComponent(
                 name=comp_name,
-                data=pd.Series(dtype=left.data_type.dtype()),
+                data=None,
                 data_type=left.data_type,
                 role=Role.MEASURE,
                 nullable=False,
@@ -296,65 +170,6 @@ class Nvl(Binary):
 
 
 class Case(Operator):
-    @classmethod
-    def evaluate(
-        cls, conditions: List[Any], thenOps: List[Any], elseOp: Any
-    ) -> Union[Scalar, DataComponent, Dataset]:
-        result = cls.validate(conditions, thenOps, elseOp)
-        if not isinstance(result, Scalar):
-            operation_level = list({type(c) for c in conditions if not isinstance(c, Scalar)})
-            if operation_level[0] == DataComponent:
-                result.data = cls.component_level_evaluation(conditions, thenOps, elseOp)
-            else:
-                cls.dataset_level_evaluation(result, conditions, thenOps, elseOp)
-        return result
-
-    @classmethod
-    def component_level_evaluation(
-        cls, conditions: List[Any], thenOps: List[Any], elseOp: Any
-    ) -> Any:
-        if isinstance(elseOp, DataComponent):
-            result = (
-                pd.Series(dtype=elseOp.data_type.dtype()) if elseOp.data is None else elseOp.data
-            )
-        else:
-            result = pd.Series(elseOp.value, index=conditions[0].data.index)
-
-        for i in range(len(conditions)):
-            case = conditions[i].data[conditions[i].data.fillna(False).astype("bool[pyarrow]")]
-            case_result = component_assign(case, thenOps[i])
-            result = result.reindex(result.index.union(case.index))
-            result.loc[case.index] = case_result
-
-        return result
-
-    @classmethod
-    def dataset_level_evaluation(
-        cls, result: Any, conditions: List[Any], thenOps: List[Any], elseOp: Any
-    ) -> None:
-        ids = result.get_identifiers_names()
-        measures = result.get_measures_names()
-
-        else_cond = conditions[0].data[ids].copy()
-        else_cond[COND_COL] = ~pd.concat(
-            [c.data[c.get_measures_names()[0]].fillna(False) for c in conditions],
-            axis=1,
-        ).any(axis=1)
-        result.data = dataset_assign(else_cond[else_cond[COND_COL]], elseOp, ids, measures)
-
-        for i in range(len(conditions)):
-            case = conditions[i].data.rename(
-                columns={conditions[i].get_measures_names()[0]: COND_COL}
-            )
-            case_result = dataset_assign(
-                case[case[COND_COL].fillna(False)], thenOps[i], ids, measures
-            )
-            result.data = (
-                case_result.set_index(ids).combine_first(result.data.set_index(ids)).reset_index()
-            )
-
-        result.data.drop(columns=COND_COL, inplace=True)
-
     @classmethod
     def validate(
         cls, conditions: List[Any], thenOps: List[Any], elseOp: Any

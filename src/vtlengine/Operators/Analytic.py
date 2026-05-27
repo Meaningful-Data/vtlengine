@@ -1,10 +1,5 @@
 from copy import copy
-from typing import Dict, List, Optional
-
-import duckdb
-import pandas as pd
-import pyarrow as pa
-import pyarrow.compute as pc
+from typing import List, Optional
 
 import vtlengine.Operators as Operator
 from vtlengine.AST import OrderBy, Windowing
@@ -28,7 +23,6 @@ from vtlengine.AST.Grammar.tokens import (
 )
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
-    Date,
     Duration,
     Integer,
     Number,
@@ -37,7 +31,7 @@ from vtlengine.DataTypes import (
     TimePeriod,
     unary_implicit_promotion,
 )
-from vtlengine.Exceptions import RunTimeError, SemanticError
+from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
@@ -53,8 +47,6 @@ class Analytic(Operator.Unary):
 
     Class methods:
         Validate: Validates the Dataset.
-        analyticfunc: Specify class method that returns a dataframe using the duckdb library.
-        Evaluate: Ensures the type of data is the correct one to perform the Analytic operators.
     """
 
     return_integer = None
@@ -206,179 +198,6 @@ class Analytic(Operator.Unary):
                 )
         dataset_name = VirtualCounter._new_ds_name()
         return Dataset(name=dataset_name, components=result_components, data=None)
-
-    @classmethod
-    def analyticfunc(
-        cls,
-        df: pd.DataFrame,
-        partitioning: List[str],
-        identifier_names: List[str],
-        measure_names: List[str],
-        ordering: List[OrderBy],
-        window: Optional[Windowing],
-        params: Optional[List[int]] = None,
-    ) -> pd.DataFrame:
-        """Annotation class
-
-        It is used to analyze the attributes specified bellow
-        ensuring that the type of data is the correct one to perform
-        the operation.
-
-        Attributes:
-            identifier_names: List with the id names.
-            measure_names: List with the measures names.
-            ordering: List with the ordering modes.
-            window: ...
-            params: No params are related to this class.
-        """
-        # Windowing
-        window_str = ""
-        if window is not None:
-            mode = "ROWS" if window.type_ == "data" else "RANGE"
-            start_mode = (
-                window.start_mode.upper()
-                if (isinstance(window.start, int) and window.start != 0)
-                or (isinstance(window.start, str) and window.start == "unbounded")
-                else ""
-            )
-            stop_mode = (
-                window.stop_mode.upper()
-                if (isinstance(window.stop, int) and window.stop != 0)
-                or (isinstance(window.stop, str) and window.stop == "unbounded")
-                else ""
-            )
-            start = (
-                "UNBOUNDED"
-                if window.start == "unbounded" or window.start == -1
-                else str(window.start)
-            )
-            stop = (
-                "CURRENT ROW" if window.stop == "current" or window.stop == 0 else str(window.stop)
-            )
-            window_str = f"{mode} BETWEEN {start} {start_mode} AND {stop} {stop_mode}"
-
-        # Partitioning
-        partition = "PARTITION BY " + ", ".join(partitioning) if len(partitioning) > 0 else ""
-
-        # Ordering
-        order_str = ""
-        if len(ordering) > 0:
-            for x in ordering:
-                order_str += f"{x.component} {x.order}, "
-            if len(order_str) > 0:
-                order_str = "ORDER BY " + order_str[:-2]
-
-        # Generating the complete analytic string
-        analytic_str = f"OVER ( {partition} {order_str} {window_str})"
-
-        measure_queries = []
-        for measure in measure_names:
-            if cls.op == RANK:
-                measure_query = f"{cls.sql_op}()"
-            elif cls.op == RATIO_TO_REPORT:
-                measure_query = f"CAST({measure} AS DOUBLE) / SUM(CAST({measure} AS DOUBLE))"
-            elif cls.op in [LAG, LEAD]:
-                measure_query = f"{cls.sql_op}({measure}, {','.join(map(str, params or []))})"
-            else:
-                measure_query = f"{cls.sql_op}({measure})"
-            if cls.op == COUNT and len(measure_names) == 1:
-                measure_query += f" {analytic_str} as {COMP_NAME_MAPPING[cls.return_type]}"
-            elif cls.op in return_integer_operators and cls.return_integer:
-                measure_query = f"CAST({measure_query} {analytic_str} AS INTEGER) as {measure}"
-            else:
-                measure_query += f" {analytic_str} as {measure}"
-            measure_queries.append(measure_query)
-        if cls.op == COUNT and len(measure_names) == 0:
-            measure_queries.append(
-                f"COUNT(*) {analytic_str} as {COMP_NAME_MAPPING[cls.return_type]}"
-            )
-
-        measures_sql = ", ".join(measure_queries)
-        identifiers_sql = ", ".join(identifier_names)
-        query = f"SELECT {identifiers_sql} , {measures_sql} FROM df"
-
-        if cls.op == COUNT:
-            df[measure_names] = df[measure_names].fillna(-1)
-        conn = duckdb.connect(database=":memory:", read_only=False)
-        try:
-            conn.register("df", df)
-            result = conn.execute(query).fetchdf()
-        except RuntimeError as e:
-            if "Conversion" in e.args[0]:
-                raise RunTimeError("2-3-8", op=cls.op, msg=e.args[0].split(":")[-1])
-            else:
-                raise RunTimeError("2-1-1-1", op=cls.op, error=e)
-        finally:
-            conn.close()
-        if cls.op == RATIO_TO_REPORT:
-            for col_name in measure_names:
-                arr = pa.array(result[col_name])
-                if pa.types.is_floating(arr.type) and pc.any(pc.is_inf(arr)).as_py():
-                    raise RunTimeError("2-1-3-1", op=cls.op)
-        return result
-
-    @classmethod
-    def evaluate(  # type: ignore[override]
-        cls,
-        operand: Dataset,
-        partitioning: List[str],
-        ordering: Optional[List[OrderBy]],
-        window: Optional[Windowing],
-        params: Optional[List[int]],
-        component_name: Optional[str] = None,
-    ) -> Dataset:
-        result = cls.validate(operand, partitioning, ordering, window, params, component_name)
-        df = operand.data.copy() if operand.data is not None else pd.DataFrame()
-        df = cls.normalize_dates(df, operand.components)
-        identifier_names = operand.get_identifiers_names()
-
-        if component_name is not None:
-            measure_names = [component_name]
-        else:
-            measure_names = operand.get_measures_names()
-
-        # Validate TimePeriod measures have same period indicator for MAX/MIN
-        if cls.op in [MAX, MIN]:
-            measures = (
-                [operand.components[component_name]]
-                if component_name is not None
-                else operand.get_measures()
-            )
-            for measure in measures:
-                if measure.data_type is TimePeriod:
-                    indicators = df[measure.name].dropna().str.extract(r"^\d{4}-?([ASQMWD])")[0]
-                    if indicators.nunique() > 1:
-                        raise RunTimeError("2-1-19-20", op=cls.op)
-
-        result.data = cls.analyticfunc(
-            df=df,
-            partitioning=partitioning,
-            identifier_names=identifier_names,
-            measure_names=measure_names,
-            ordering=ordering or [],
-            window=window,
-            params=params,
-        )
-
-        if result.data is not None:
-            for comp_name, comp in result.components.items():
-                if comp_name in result.data.columns:
-                    result.data[comp_name] = result.data[comp_name].astype(comp.data_type.dtype())  # type: ignore[call-overload]
-
-        return result
-
-    @classmethod
-    def normalize_dates(
-        cls, data: Optional[pd.DataFrame], components: Dict[str, Component]
-    ) -> pd.DataFrame:
-        if data is None:
-            return pd.DataFrame(columns=[comp.name for comp in components.values()])
-        elif any(comp.data_type is Date for comp in components.values()):
-            data = data.copy()
-            for comp_name, comp in components.items():
-                if comp.data_type is Date:
-                    data[comp_name] = data[comp_name].astype("date64[pyarrow]")
-        return data
 
 
 class Max(Analytic):
