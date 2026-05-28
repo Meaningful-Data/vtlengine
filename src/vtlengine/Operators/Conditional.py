@@ -130,7 +130,7 @@ class Nvl(Binary):
                     "types on right (applicable) side"
                 )
             cls.type_validation(left.data_type, right.data_type)
-            return Scalar(name="result", value=None, data_type=left.data_type)
+            return Scalar(name="result", value=None, data_type=left.data_type, nullable=False)
         if isinstance(left, DataComponent):
             if isinstance(right, Dataset):
                 raise ValueError(
@@ -197,10 +197,12 @@ class Case(Operator):
                 if conditions[i].value:
                     output_data_type = thenOps[i].data_type
 
+            nullable = any(op.nullable or op.data_type == Null for op in ops)
             return Scalar(
                 name="result",
                 value=None,
                 data_type=output_data_type,
+                nullable=nullable,
             )
 
         elif condition_type is DataComponent:

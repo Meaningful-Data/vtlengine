@@ -2,8 +2,6 @@ import warnings
 from pathlib import Path
 from typing import Union
 
-import pytest
-
 from tests.Helper import TestHelper
 from vtlengine.API import run
 
@@ -4365,7 +4363,6 @@ class DefinedOperatorsTest(AdditionalHelper):
         )
 
 
-@pytest.mark.skip(reason="deactivated on duckdb until nullability over scalars is implemented")
 class DatesTest(AdditionalHelper):
     """
     Group 16

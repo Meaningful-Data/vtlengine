@@ -22,7 +22,6 @@ class GeneralBugs(BugHelper):
 
     classTest = "Bugs.GeneralBugs"
 
-    @pytest.mark.skip(reason="deactivated on duckdb until nullability over scalars is implemented")
     def test_GL_22(self):
         """
         Description: cast zero value to number-Integer.
@@ -1672,7 +1671,6 @@ class ConditionalBugs(BugHelper):
 
     classTest = "Bugs.ConditionalOperatorsTest"
 
-    @pytest.mark.skip(reason="deactivated on duckdb until nullability over scalars is implemented")
     def test_VTLEN_476(self):
         """ """
         code = "VTLEN_476"

@@ -1118,6 +1118,7 @@ class InterpreterAnalyzer(ASTTemplate):
             name=str(node.value),
             value=node.value,
             data_type=BASIC_TYPES[type(node.value)],
+            nullable=node.value is None,
         )
 
     def visit_JoinOp(self, node: AST.JoinOp) -> None:
@@ -1597,7 +1598,10 @@ class InterpreterAnalyzer(ASTTemplate):
                 if "default" in param:
                     value = self.visit(param["default"]).value
                     signature_values[param["name"]] = Scalar(
-                        name=str(value), value=value, data_type=BASIC_TYPES[type(value)]
+                        name=str(value),
+                        value=value,
+                        data_type=BASIC_TYPES[type(value)],
+                        nullable=value is None,
                     )
                 else:
                     raise SemanticError(
@@ -1665,6 +1669,7 @@ class InterpreterAnalyzer(ASTTemplate):
                         name=param_element.name,
                         value=scalar_type.cast(param_element.value),
                         data_type=scalar_type,
+                        nullable=param_element.nullable,
                     )
                 else:
                     raise NotImplementedError

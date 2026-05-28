@@ -370,9 +370,6 @@ def test_exception_numeric_op(text, exception_message):
 @pytest.mark.parametrize("code, text", ds_param)
 def test_datasets_params(code, text):
     warnings.filterwarnings("ignore", category=FutureWarning)
-    # Scalar nullable propagation not yet implemented in DuckDB backend
-    if code in ("7-27",):
-        pytest.skip("Scalar nullability pending implementation")
     expression = f"DS_r := {text};"
     AdditionalScalarsTests.BaseTest(
         code=code,

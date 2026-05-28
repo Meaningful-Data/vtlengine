@@ -146,7 +146,7 @@ class Cast(Operator.Unary):
         cls.check_cast(from_type, to_type, mask)
         if from_type == String and to_type == Date and operand.value is not None:
             Date.explicit_cast(operand.value, String)
-        return Scalar(name=operand.name, data_type=to_type, value=None)
+        return Scalar(name=operand.name, data_type=to_type, value=None, nullable=operand.nullable)
 
     @classmethod
     def cast_scalar(
@@ -159,9 +159,13 @@ class Cast(Operator.Unary):
         from_type = operand.data_type
         cls.check_cast(from_type, scalarType, mask)
         if operand.value is None:
-            return Scalar(name=operand.name, data_type=scalarType, value=None)
+            return Scalar(
+                name=operand.name, data_type=scalarType, value=None, nullable=operand.nullable
+            )
         if scalarType.is_included(IMPLICIT_TYPE_PROMOTION_MAPPING[from_type]):
             value = scalarType.implicit_cast(operand.value, from_type)
         else:
             value = scalarType.explicit_cast(operand.value, from_type)
-        return Scalar(name=operand.name, data_type=scalarType, value=value)
+        return Scalar(
+            name=operand.name, data_type=scalarType, value=value, nullable=operand.nullable
+        )
