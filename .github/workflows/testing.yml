@@ -2,7 +2,7 @@ name: Testing
 
 on:
   pull_request:
-    branches: ["main", "1.6.X"]
+    branches: ["main", "1.9.X", "1.6.X"]
   workflow_dispatch:
 
 concurrency:
