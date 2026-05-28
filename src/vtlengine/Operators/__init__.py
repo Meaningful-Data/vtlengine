@@ -395,6 +395,7 @@ class Binary(Operator):
             name="result",
             data_type=cls.type_validation(left_operand.data_type, right_operand.data_type),
             value=None,
+            nullable=left_operand.nullable or right_operand.nullable,
         )
 
     @classmethod
@@ -470,6 +471,7 @@ class Binary(Operator):
             name="result",
             data_type=cls.type_validation(scalar.data_type, scalar_set.data_type),
             value=None,
+            nullable=scalar.nullable,
         )
 
     # The following class method implements the type promotion
@@ -895,7 +897,7 @@ class Unary(Operator):
     @classmethod
     def scalar_validation(cls, operand: Scalar) -> Scalar:
         result_type = cls.type_validation(operand.data_type)
-        result = Scalar(name="result", data_type=result_type, value=None)
+        result = Scalar(name="result", data_type=result_type, value=None, nullable=operand.nullable)
         return result
 
     @classmethod

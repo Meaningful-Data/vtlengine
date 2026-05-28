@@ -322,7 +322,7 @@ class Nvl(Binary):
                     "1-1-9-2", op=cls.op, left_type="Scalar", right_type=type(right).__name__
                 )
             data_type = cls.type_validation(left.data_type, right.data_type)
-            return Scalar(name="result", value=None, data_type=data_type)
+            return Scalar(name="result", value=None, data_type=data_type, nullable=keeps_nulls)
         if isinstance(left, DataComponent):
             if isinstance(right, Dataset):
                 raise SemanticError(
@@ -463,10 +463,12 @@ class Case(Operator):
                 if conditions[i].value:
                     output_data_type = thenOps[i].data_type
 
+            nullable = any(op.nullable or op.data_type == Null for op in ops)
             return Scalar(
                 name="result",
                 value=None,
                 data_type=output_data_type,
+                nullable=nullable,
             )
 
         elif condition_type is DataComponent:

@@ -26,14 +26,21 @@ class Scalar:
     name: str
     data_type: Type[ScalarType]
     _value: Any
+    nullable: bool = True
     persistent: bool = False
 
     def __init__(
-        self, name: str, data_type: Type[ScalarType], value: Any, persistent: bool = False
+        self,
+        name: str,
+        data_type: Type[ScalarType],
+        value: Any,
+        nullable: bool = True,
+        persistent: bool = False,
     ) -> None:
         self.name = name
         self.data_type = data_type
         self.value = value
+        self.nullable = nullable
         self.persistent = persistent
 
     @property
@@ -57,7 +64,12 @@ class Scalar:
         data = json.loads(json_str)
         # Support both 'type' and 'data_type' for backward compatibility
         data_type_value = data.get("type") or data.get("data_type")
-        return cls(data["name"], SCALAR_TYPES[data_type_value], data["value"])
+        return cls(
+            data["name"],
+            SCALAR_TYPES[data_type_value],
+            data["value"],
+            data.get("nullable", True),
+        )
 
     def to_dict(self) -> Dict[str, Any]:
         data_type = self.data_type
@@ -67,6 +79,7 @@ class Scalar:
             "name": self.name,
             "type": DataTypes.SCALAR_TYPES_CLASS_REVERSE[data_type],
             "value": self.value,
+            "nullable": self.nullable,
         }
 
     def to_json(self) -> str:

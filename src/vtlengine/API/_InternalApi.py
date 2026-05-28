@@ -158,6 +158,7 @@ def _load_dataset_from_structure(
                 name=scalar_name,
                 data_type=SCALAR_TYPES[scalar_json["type"]],
                 value=None,
+                nullable=scalar_json.get("nullable", True),
             )
             scalars[scalar_name] = scalar
     return datasets, scalars
