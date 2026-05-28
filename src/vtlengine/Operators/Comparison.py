@@ -471,10 +471,17 @@ class ExistIn(Operator.Operator):
         left_identifiers = dataset_1.get_identifiers_names()
         right_identifiers = dataset_2.get_identifiers_names()
 
-        is_subset_right = set(right_identifiers).issubset(left_identifiers)
-        is_subset_left = set(left_identifiers).issubset(right_identifiers)
-        if not (is_subset_left or is_subset_right):
-            raise ValueError("Datasets must have common identifiers")
+        left_ids_set = set(left_identifiers)
+        right_ids_set = set(right_identifiers)
+        if not (left_ids_set.issubset(right_ids_set) or right_ids_set.issubset(left_ids_set)):
+            raise SemanticError(
+                "1-2-15",
+                op=cls.op,
+                left_name=dataset_1.name,
+                left=sorted(left_ids_set),
+                right_name=dataset_2.name,
+                right=sorted(right_ids_set),
+            )
 
         result_components = {comp.name: copy(comp) for comp in dataset_1.get_identifiers()}
         result_dataset = Dataset(name=dataset_name, components=result_components, data=None)

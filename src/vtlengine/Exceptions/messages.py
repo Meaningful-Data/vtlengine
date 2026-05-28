@@ -54,7 +54,7 @@ centralised_messages = {
         "description": "Occurs when the input CSV file does not contain any data.",
     },
     "0-1-1-8": {
-        "message": "The following Identifiers {ids} were not found , review file {file}.",
+        "message": "The following Identifiers {ids} were not found, review file {file}.",
         "description": "Raised when certain expected Identifiers are missing in the input Dataset.",
     },
     "0-1-1-9": {
@@ -919,6 +919,13 @@ centralised_messages = {
         "message": "At op {op}: Cannot perform aggregation inside a Calc.",
         "description": "Occurs when an aggregation operation is attempted inside a "
         "Calc expression.",
+    },
+    "1-2-15": {
+        "message": "At op {op}: incompatible identifier sets between datasets {left_name} {left} "
+        "and {right_name} {right}: the operands must have the same identifiers, or one set must "
+        "be a subset of the other.",
+        "description": "Raised when a binary dataset operator is applied to two datasets whose "
+        "identifier sets are neither equal nor in a subset relationship.",
     },
     # AST Helpers
     "1-3-1-1": {
