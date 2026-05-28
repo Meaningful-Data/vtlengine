@@ -3083,6 +3083,7 @@ _INCOMPATIBLE_IDS_STRUCTURES = {
     "script",
     [
         "DS_r := DS_1 + DS_2;",
+        "DS_r := DS_2 + DS_1;",
         "DS_r := DS_1 - DS_2;",
         "DS_r := DS_1 * DS_2;",
         "DS_r := DS_1 = DS_2;",
