@@ -88,8 +88,6 @@ class Binary(Operator.Binary):
             )
             result_dataset.delete_component(measure.name)
             result_dataset.add_component(component)
-            if result_dataset.data is not None:
-                result_dataset.data.rename(columns={measure.name: component.name}, inplace=True)
 
 
 class Equal(Binary):
@@ -165,8 +163,6 @@ class Between(Operator.Operator):
                 )
                 result_dataset.delete_component(measure.name)
                 result_dataset.add_component(component)
-                if result_dataset.data is not None:
-                    result_dataset.data.rename(columns={measure.name: component.name}, inplace=True)
             elif is_mono_measure is False and operand_type.promotion_changed_type(result_data_type):
                 raise SemanticError("1-1-1-4", op=cls.op)
             else:

@@ -1,6 +1,6 @@
 import operator
 from copy import copy
-from typing import Any, Dict
+from typing import Optional
 
 import vtlengine.Operators as Operators
 from vtlengine.AST.Grammar.tokens import HIERARCHY
@@ -11,10 +11,9 @@ from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
 def get_measure_from_dataset(dataset: Dataset, code_item: str) -> DataComponent:
     measure_name = dataset.get_measures_names()[0]
-    data = None if dataset.data is None else dataset.data[measure_name]
     return DataComponent(
         name=code_item,
-        data=data,
+        data=None,
         data_type=dataset.components[measure_name].data_type,
         role=dataset.components[measure_name].role,
         nullable=dataset.components[measure_name].nullable,
@@ -27,7 +26,12 @@ class HRBinOp(Operators.Binary):
 
 class HRComparison(HRBinOp):
     @classmethod
-    def validate(cls, left_operand: Dataset, right_operand: DataComponent, hr_mode: str) -> Dataset:
+    def validate(
+        cls,
+        left_operand: Dataset,
+        right_operand: DataComponent,
+        hr_mode: Optional[str],
+    ) -> Dataset:
         result_components = {
             comp_name: copy(comp)
             for comp_name, comp in left_operand.components.items()
@@ -101,7 +105,7 @@ class HRUnMinus(HRUnNumeric):
 
 class HAAssignment(Operators.Binary):
     @classmethod
-    def validate(cls, left: Dataset, right: DataComponent, hr_mode: str) -> Dataset:
+    def validate(cls, left: Dataset, right: DataComponent, hr_mode: Optional[str]) -> Dataset:
         result_components = {comp_name: copy(comp) for comp_name, comp in left.components.items()}
         return Dataset(name=f"{left.name}", components=result_components, data=None)
 
@@ -110,7 +114,7 @@ class Hierarchy(Operators.Operator):
     op = HIERARCHY
 
     @classmethod
-    def validate(cls, dataset: Dataset, computed_dict: Dict[str, Any], output: str) -> Dataset:
+    def validate(cls, dataset: Dataset, output: str) -> Dataset:
         dataset_name = VirtualCounter._new_ds_name()
         result_components = {
             comp_name: copy(comp) for comp_name, comp in dataset.components.items()
