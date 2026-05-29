@@ -42,7 +42,12 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 from vtlengine.ViralPropagation import get_current_registry
-from vtlengine.ViralPropagation.sql import vp_group_sql, vp_group_sql_windowed, vp_pair_sql
+from vtlengine.ViralPropagation.sql import (
+    vp_group_sql,
+    vp_group_sql_windowed,
+    vp_pair_sql,
+    vp_reduce_refs,
+)
 
 # Matches a pure single-quoted SQL string literal: 'foo' (no embedded quotes).
 _SQL_PLAIN_STRING_LITERAL = re.compile(r"^'([^'\\]*)'$")
@@ -3400,6 +3405,34 @@ FROM (
             defaults[pair.component] = self._constant_to_sql(pair.default)
         return defaults
 
+    @staticmethod
+    def _build_join_viral_cols(
+        clause_info: List[Dict[str, Any]],
+        vp_registry: Any,
+    ) -> List[str]:
+        """Collect viral attributes across join operands and emit one merged SQL column each."""
+        viral_aliases: Dict[str, List[str]] = {}
+        viral_comp: Dict[str, Any] = {}
+        for info in clause_info:
+            for vname, vcomp in info["ds"].components.items():
+                if vcomp.role == Role.VIRAL_ATTRIBUTE:
+                    viral_aliases.setdefault(vname, []).append(info["sql_alias"])
+                    viral_comp.setdefault(vname, vcomp)
+
+        cols: List[str] = []
+        for vname, aliases in viral_aliases.items():
+            v_qn = quote_name(vname)
+            refs = [f"{sa}.{v_qn}" for sa in aliases]
+            if len(refs) == 1:
+                cols.append(f"{refs[0]} AS {v_qn}")
+                continue
+            v_rule = vp_registry.rule_for(viral_comp[vname])
+            if v_rule is None:
+                cols.append(f"NULL AS {v_qn}")
+            else:
+                cols.append(f"{vp_reduce_refs(v_rule, refs)} AS {v_qn}")
+        return cols
+
     def visit_JoinOp(self, node: AST.JoinOp) -> str:  # type: ignore[override]
         """Visit a join operation."""
         clause_info: List[Dict[str, Any]] = []
@@ -3464,6 +3497,7 @@ FROM (
                 comp_to_alias.setdefault(name, info["sql_alias"])
 
         first_sql_alias = clause_info[0]["sql_alias"]
+        vp_registry = get_current_registry()
 
         cols: List[str] = []
         self._join_alias_map = {}
@@ -3471,6 +3505,8 @@ FROM (
         for info in clause_info:
             sa = info["sql_alias"]
             for name, comp in info["ds"].components.items():
+                if comp.role == Role.VIRAL_ATTRIBUTE:
+                    continue
                 is_join_col = (
                     comp.role == Role.IDENTIFIER and not is_cross_join
                 ) or name in all_join_ids
@@ -3500,6 +3536,8 @@ FROM (
                     if name in nvl_defaults:
                         expr = f"COALESCE({expr}, {nvl_defaults[name]}) AS {quote_name(name)}"
                     cols.append(expr)
+
+        cols.extend(self._build_join_viral_cols(clause_info, vp_registry))
 
         builder = SQLBuilder()
         builder.select(*cols) if cols else builder.select_all()

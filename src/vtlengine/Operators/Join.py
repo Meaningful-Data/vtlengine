@@ -55,6 +55,20 @@ class Join(Operator):
             )
         )
 
+        # Viral attributes shared by the operands are MERGED into one component
+        # (values combined via the viral propagation rule at execution time)
+        # instead of being #-qualified like other shared components.
+        viral_common = {
+            name
+            for name in common
+            if name not in using
+            and all(
+                op.components[name].role == Role.VIRAL_ATTRIBUTE
+                for op in operands
+                if name in op.get_components_names()
+            )
+        }
+
         for op in operands:
             for comp in op.components.values():
                 if comp.name in using:
@@ -90,6 +104,12 @@ class Join(Operator):
 
             for component_name, component in components.items():
                 component.nullable = nullability[component_name]
+
+                if component_name in viral_common:
+                    if component_name not in merged_components:
+                        component.name = component_name
+                        merged_components[component_name] = component
+                    continue
 
                 if component_name in common and component_name not in using:
                     if component.role != Role.IDENTIFIER or cls.how == "cross":
