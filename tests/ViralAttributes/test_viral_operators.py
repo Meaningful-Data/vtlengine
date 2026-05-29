@@ -205,9 +205,6 @@ class TestViralAttributeSpecialCases:
         )
         assert result["DS_r"].components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
 
-    @pytest.mark.skip(
-        reason="Viral attribute propagation in binary ops not yet implemented in DuckDB path"
-    )
     def test_binary_one_operand_viral(self) -> None:
         """Only DS_1 has viral attr, DS_2 doesn't — viral attr propagated from DS_1."""
         result = run(

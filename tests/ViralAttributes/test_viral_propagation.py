@@ -137,9 +137,6 @@ propagation_binary_params = [
 ]
 
 
-@pytest.mark.skip(
-    reason="Viral attribute propagation rules are not yet implemented in the DuckDB execution path"
-)
 class TestViralPropagationEndToEnd:
     @pytest.mark.parametrize("expr", propagation_binary_params)
     def test_enumerated_propagation_binary(self, expr: str) -> None:
@@ -188,6 +185,7 @@ class TestViralPropagationEndToEnd:
         )
         assert pd.isna(result["DS_r"].data["VAt_1"].iloc[0])
 
+    @pytest.mark.skip(reason="aggregation viral propagation wired in a later task (#771)")
     def test_aggregate_max_in_aggregation(self) -> None:
         """Aggregate max propagation in group by."""
         ds = {
@@ -220,9 +218,6 @@ class TestViralPropagationEndToEnd:
 # -- Multi-attribute propagation (enumerated + aggregate in one script) --
 
 
-@pytest.mark.skip(
-    reason="Viral attribute propagation rules are not yet implemented in the DuckDB execution path"
-)
 class TestViralPropagationMultiAttribute:
     @pytest.mark.parametrize("expr", propagation_binary_params)
     def test_two_rules_two_attrs_binary(self, expr: str) -> None:

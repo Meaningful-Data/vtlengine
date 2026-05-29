@@ -41,6 +41,8 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
 )
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
+from vtlengine.ViralPropagation import get_current_registry
+from vtlengine.ViralPropagation.sql import vp_pair_sql
 
 # Matches a pure single-quoted SQL string literal: 'foo' (no embedded quotes).
 _SQL_PLAIN_STRING_LITERAL = re.compile(r"^'([^'\\]*)'$")
@@ -780,6 +782,36 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             ):
                 out_name = output_measure_names[0]
             cols.append(f"{expr} AS {quote_name(out_name)}")
+
+        # Viral attribute propagation: combine values present in both operands.
+        vp_registry = get_current_registry()
+        left_viral = {n for n, c in left_ds.components.items() if c.role == Role.VIRAL_ATTRIBUTE}
+        right_viral = {n for n, c in right_ds.components.items() if c.role == Role.VIRAL_ATTRIBUTE}
+        if output_ds is not None:
+            viral_names = [
+                n for n, c in output_ds.components.items() if c.role == Role.VIRAL_ATTRIBUTE
+            ]
+        else:
+            viral_names = sorted(left_viral | right_viral)
+        for name in viral_names:
+            qn = quote_name(name)
+            in_left = name in left_viral
+            in_right = name in right_viral
+            if in_left and in_right:
+                comp = (
+                    output_ds.components.get(name) if output_ds else None
+                ) or left_ds.components[name]
+                rule = vp_registry.rule_for(comp)
+                if rule is None:
+                    cols.append(f"NULL AS {qn}")
+                else:
+                    cols.append(
+                        f"{vp_pair_sql(rule, f'{alias_a}.{qn}', f'{alias_b}.{qn}')} AS {qn}"
+                    )
+            elif in_left:
+                cols.append(f"{alias_a}.{qn} AS {qn}")
+            elif in_right:
+                cols.append(f"{alias_b}.{qn} AS {qn}")
 
         on_clause = self._join_on_clause(common_ids, alias_a, alias_b)
 
