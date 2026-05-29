@@ -45,6 +45,20 @@ class ViralPropagationRegistry:
         # For v1, only variable-level rules are supported.
         return None
 
+    def rule_for(self, component: Any) -> Optional["ViralPropagationRule"]:
+        """Resolve the rule for a component: variable-level overrides value-domain-level.
+
+        ``component.value_domain`` may not exist yet (added in a later phase); use
+        getattr so this is forward-compatible.
+        """
+        rule = self._variable_rules.get(component.name)
+        if rule is not None:
+            return rule
+        value_domain = getattr(component, "value_domain", None)
+        if value_domain is not None:
+            return self._valuedomain_rules.get(value_domain)
+        return None
+
     def resolve_pair(self, variable_name: str, value_a: Any, value_b: Any) -> Any:
         """Resolve two viral attribute values into one (for binary operators)."""
         rule = self.get_rule_for_variable(variable_name)
