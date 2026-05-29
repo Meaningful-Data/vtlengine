@@ -1,4 +1,3 @@
-import _random
 import math
 import operator
 import warnings
@@ -239,12 +238,6 @@ class Trunc(Parameterized):
     """  # noqa E501
 
     op = TRUNC
-
-
-class PseudoRandom(_random.Random):
-    def __init__(self, seed: Union[int, float]) -> None:
-        super().__init__()
-        self.seed(seed)
 
 
 class Random(Parameterized):

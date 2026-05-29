@@ -208,7 +208,7 @@ class Time_Shift(Binary):
     op = TIMESHIFT
 
     @classmethod
-    def validate(cls, operand: Dataset, shift_value: str) -> Dataset:
+    def validate(cls, operand: Dataset, _shift_value: str) -> Dataset:
         dataset_name = VirtualCounter._new_ds_name()
         if cls._get_time_id(operand) is None:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")

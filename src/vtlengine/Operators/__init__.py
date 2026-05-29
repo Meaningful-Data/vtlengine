@@ -40,10 +40,6 @@ class Operator:
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
-    def validate_component_type(cls, *args: Any) -> None:
-        raise Exception("Method should be implemented by inheritors")
-
-    @classmethod
     def validate_scalar_type(cls, *args: Any) -> None:
         raise Exception("Method should be implemented by inheritors")
 
@@ -81,10 +77,6 @@ class Operator:
 
     @classmethod
     def apply_return_type_dataset(cls, *args: Any) -> None:
-        raise Exception("Method should be implemented by inheritors")
-
-    @classmethod
-    def apply_return_type(cls, *args: Any) -> None:
         raise Exception("Method should be implemented by inheritors")
 
 

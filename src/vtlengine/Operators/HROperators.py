@@ -1,6 +1,5 @@
 import operator
 from copy import copy
-from typing import Optional
 
 import vtlengine.Operators as Operators
 from vtlengine.AST.Grammar.tokens import HIERARCHY
@@ -26,12 +25,7 @@ class HRBinOp(Operators.Binary):
 
 class HRComparison(HRBinOp):
     @classmethod
-    def validate(
-        cls,
-        left_operand: Dataset,
-        right_operand: DataComponent,
-        hr_mode: Optional[str],
-    ) -> Dataset:
+    def validate(cls, left_operand: Dataset, right_operand: DataComponent) -> Dataset:
         result_components = {
             comp_name: copy(comp)
             for comp_name, comp in left_operand.components.items()
@@ -105,7 +99,7 @@ class HRUnMinus(HRUnNumeric):
 
 class HAAssignment(Operators.Binary):
     @classmethod
-    def validate(cls, left: Dataset, right: DataComponent, hr_mode: Optional[str]) -> Dataset:
+    def validate(cls, left: Dataset, right: DataComponent) -> Dataset:
         result_components = {comp_name: copy(comp) for comp_name, comp in left.components.items()}
         return Dataset(name=f"{left.name}", components=result_components, data=None)
 

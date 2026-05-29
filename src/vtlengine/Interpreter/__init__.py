@@ -1296,12 +1296,10 @@ class InterpreterAnalyzer(ASTTemplate):
 
         if node.op in HR_COMP_MAPPING:
             op = HAAssignment if self.is_from_hr_agg else HR_COMP_MAPPING[node.op]
-            return op.validate(left_operand, right_operand, self.ruleset_mode)
+            return op.validate(left_operand, right_operand)
         if isinstance(left_operand, Dataset):
             left_operand = get_measure_from_dataset(left_operand, node.left.value)
-        return HR_NUM_BINARY_MAPPING[node.op].validate(
-            left_operand, right_operand, self.ruleset_mode
-        )
+        return HR_NUM_BINARY_MAPPING[node.op].validate(left_operand, right_operand)
 
     def visit_HRUnOp(self, node: AST.HRUnOp) -> None:
         operand = self.visit(node.operand)
