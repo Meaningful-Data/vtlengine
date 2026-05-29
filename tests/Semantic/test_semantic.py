@@ -5,6 +5,7 @@ import pytest
 from tests.Helper import TestHelper
 from vtlengine import semantic_analysis
 from vtlengine.API import create_ast
+from vtlengine.API._InternalApi import load_datasets_with_data
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Dataset, Scalar
@@ -2927,3 +2928,168 @@ def test_bug_411():
 
     with pytest.raises(SemanticError, match="1-1-1-10"):
         semantic_analysis(script=script, data_structures=data_structures)
+
+
+def test_GH_676_1():
+    """Referencing a dataset name not provided in datasets triggers 2-3-6."""
+    script = "DS_r := DS_unknown;"
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    with pytest.raises(SemanticError) as ctx:
+        semantic_analysis(script=script, data_structures=data_structures)
+    assert ctx.value.args[1] == "2-3-6"
+
+
+def test_GH_676_2():
+    """Using a value domain reference when value_domains is None triggers 2-3-10."""
+    script = "DS_r := DS_1[filter Me_1 in undefined_vd];"
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "String", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    datasets, scalars, _ = load_datasets_with_data(data_structures, datapoints=None)
+    ast = create_ast(script)
+    interpreter = InterpreterAnalyzer(
+        datasets=datasets, scalars=scalars, value_domains=None, only_semantic=True
+    )
+    with pytest.raises(SemanticError) as ctx:
+        interpreter.visit(ast)
+    assert ctx.value.args[1] == "2-3-10"
+
+
+def test_GH_676_3():
+    """exists_in with a scalar instead of a dataset triggers 2-3-11."""
+    script = "DS_r := exists_in(1, DS_1);"
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    with pytest.raises(SemanticError) as ctx:
+        semantic_analysis(script=script, data_structures=data_structures)
+    assert ctx.value.args[1] == "2-3-11"
+
+
+def test_GH_676_4():
+    """Reference to a value domain not present in value_domains triggers 1-2-8."""
+    script = "DS_r := DS_1[filter Me_1 in undefined_vd];"
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "String", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    datasets, scalars, _ = load_datasets_with_data(data_structures, datapoints=None)
+    ast = create_ast(script)
+    interpreter = InterpreterAnalyzer(
+        datasets=datasets, scalars=scalars, value_domains={}, only_semantic=True
+    )
+    with pytest.raises(SemanticError) as ctx:
+        interpreter.visit(ast)
+    assert ctx.value.args[1] == "1-2-8"
+
+
+# Binary dataset operators: identifier sets must be equal or one a subset of the other (1-2-15).
+
+_INCOMPATIBLE_IDS_STRUCTURES = {
+    "datasets": [
+        {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "String", "role": "Identifier", "nullable": False},
+                {"name": "Id_2", "type": "Number", "role": "Identifier", "nullable": False},
+                {"name": "Id_3", "type": "Number", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+            ],
+        },
+        {
+            "name": "DS_2",
+            "DataStructure": [
+                {"name": "Id_1", "type": "String", "role": "Identifier", "nullable": False},
+                {"name": "Id_4", "type": "Number", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+            ],
+        },
+        {
+            "name": "DS_DISJOINT",
+            "DataStructure": [
+                {"name": "Id_9", "type": "String", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+            ],
+        },
+        {
+            "name": "DS_SUBSET",
+            "DataStructure": [
+                {"name": "Id_1", "type": "String", "role": "Identifier", "nullable": False},
+                {"name": "Id_2", "type": "Number", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+            ],
+        },
+    ]
+}
+
+
+@pytest.mark.parametrize(
+    "script",
+    [
+        "DS_r := DS_1 + DS_2;",
+        "DS_r := DS_2 + DS_1;",
+        "DS_r := DS_1 - DS_2;",
+        "DS_r := DS_1 * DS_2;",
+        "DS_r := DS_1 = DS_2;",
+    ],
+)
+def test_binary_incompatible_identifiers_overlap_not_subset(script: str) -> None:
+    """Binary ops fail when identifier sets overlap but neither is a subset of the other."""
+    with pytest.raises(SemanticError) as ctx:
+        semantic_analysis(script=script, data_structures=_INCOMPATIBLE_IDS_STRUCTURES)
+    assert ctx.value.args[1] == "1-2-15"
+
+
+def test_binary_incompatible_identifiers_disjoint() -> None:
+    """Binary op fails when identifier sets are disjoint (still neither subset)."""
+    script = "DS_r := DS_1 + DS_DISJOINT;"
+    with pytest.raises(SemanticError) as ctx:
+        semantic_analysis(script=script, data_structures=_INCOMPATIBLE_IDS_STRUCTURES)
+    assert ctx.value.args[1] == "1-2-15"
+
+
+def test_binary_subset_identifiers_ok() -> None:
+    """Binary op succeeds when one identifier set is a strict subset of the other."""
+    script = "DS_r := DS_1 + DS_SUBSET;"
+    semantic_analysis(script=script, data_structures=_INCOMPATIBLE_IDS_STRUCTURES)
+
+
+def test_exists_in_incompatible_identifiers() -> None:
+    """exists_in fails when identifier sets overlap but neither is a subset of the other."""
+    script = "DS_r := exists_in(DS_1, DS_2);"
+    with pytest.raises(SemanticError) as ctx:
+        semantic_analysis(script=script, data_structures=_INCOMPATIBLE_IDS_STRUCTURES)
+    assert ctx.value.args[1] == "1-2-15"

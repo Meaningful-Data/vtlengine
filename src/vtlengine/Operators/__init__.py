@@ -316,9 +316,19 @@ class Binary(Operator):
         del left_measures_names
         del right_measures_names
 
-        join_keys = list(set(left_identifiers).intersection(right_identifiers))
-        if len(join_keys) == 0:
+        left_ids_set = set(left_identifiers)
+        right_ids_set = set(right_identifiers)
+        if not left_ids_set or not right_ids_set:
             raise SemanticError("1-2-10", op=cls.op)
+        if not (left_ids_set.issubset(right_ids_set) or right_ids_set.issubset(left_ids_set)):
+            raise SemanticError(
+                "1-2-15",
+                op=cls.op,
+                left_name=left_operand.name,
+                left=sorted(left_ids_set),
+                right_name=right_operand.name,
+                right=sorted(right_ids_set),
+            )
 
         # Deleting extra identifiers that we do not need anymore
 
