@@ -42,7 +42,7 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 from vtlengine.ViralPropagation import get_current_registry
-from vtlengine.ViralPropagation.sql import vp_group_sql, vp_pair_sql
+from vtlengine.ViralPropagation.sql import vp_group_sql, vp_group_sql_windowed, vp_pair_sql
 
 # Matches a pure single-quoted SQL string literal: 'foo' (no embedded quotes).
 _SQL_PLAIN_STRING_LITERAL = re.compile(r"^'([^'\\]*)'$")
@@ -542,6 +542,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         expr_fn: "Callable[[str], str]",
         output_name_override: Optional[str] = None,
         cast_bool_to_str: bool = False,
+        viral_expr_fn: "Optional[Callable[[str, Any], str]]" = None,
     ) -> str:
         """Apply an expression to each dataset measure and pass identifiers through."""
         ds = self._get_dataset_structure(ds_node)
@@ -568,6 +569,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 ):
                     out_name = output_measures[0]
                 cols.append(f"{expr} AS {quote_name(out_name)}")
+            elif comp.role == Role.VIRAL_ATTRIBUTE and viral_expr_fn is not None:
+                cols.append(f"{viral_expr_fn(name, comp)} AS {quote_name(name)}")
 
         return SQLBuilder().select(*cols).from_table(table_src).build()
 
@@ -2176,8 +2179,32 @@ FROM (
                 return func_sql
             return f"{func_sql} OVER ({over_clause})"
 
+        # Build a partition-only OVER clause for viral attribute aggregation.
+        # The full over_clause may include ORDER BY and a windowing frame (e.g.
+        # "ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW") which would turn
+        # MAX into a running max rather than a partition-wide max. Viral attribute
+        # rules must reduce over the full partition, so we use only PARTITION BY.
+        partition_cols_list = self._resolve_partition_cols(node)
+        if partition_cols_list:
+            partition_cols = ", ".join(
+                quote_name(self._resolve_udo_name(p)) for p in partition_cols_list
+            )
+            vp_over_clause = f"PARTITION BY {partition_cols}"
+        else:
+            vp_over_clause = ""
+
+        vp_registry = get_current_registry()
+
+        def _viral_expr(v_name: str, v_comp: Any) -> str:
+            v_rule = vp_registry.rule_for(v_comp)
+            if v_rule is None:
+                return quote_name(v_name)  # single value per row -> pass through
+            return vp_group_sql_windowed(v_rule, quote_name(v_name), vp_over_clause)
+
         name_override = "int_var" if op == tokens.COUNT else None
-        result = self._apply_measures(node.operand, _analytic_expr, name_override)
+        result = self._apply_measures(
+            node.operand, _analytic_expr, name_override, viral_expr_fn=_viral_expr
+        )
 
         # Inject TimePeriod indicator validation for MIN/MAX
         if op in (tokens.MIN, tokens.MAX) and node.operand:
