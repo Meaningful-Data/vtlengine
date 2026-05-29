@@ -357,7 +357,7 @@ class Parameterized(Unary):
     ) -> Dataset:
         result = cls.validate(operand, param)
         result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
-        for measure_name in result.get_measures_names():
+        for measure_name in operand.get_measures_names():
             try:
                 if isinstance(param, DataComponent):
                     result.data[measure_name] = cls.apply_operation_two_series(
@@ -375,6 +375,7 @@ class Parameterized(Unary):
                     comp_name=measure_name,
                     dataset_name=operand.name,
                 ) from None
+        cls.modify_measure_column(result)
         result.data = result.data[result.get_components_names()]
         return result
 
