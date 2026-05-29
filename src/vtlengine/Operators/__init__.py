@@ -36,15 +36,7 @@ class Operator:
     return_type: Any = None
 
     @classmethod
-    def analyze(cls, *args: Any, **kwargs: Any) -> Any:
-        return cls.validate(*args, **kwargs)
-
-    @classmethod
     def validate_dataset_type(cls, *args: Any) -> None:
-        raise Exception("Method should be implemented by inheritors")
-
-    @classmethod
-    def validate_component_type(cls, *args: Any) -> None:
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
@@ -85,10 +77,6 @@ class Operator:
 
     @classmethod
     def apply_return_type_dataset(cls, *args: Any) -> None:
-        raise Exception("Method should be implemented by inheritors")
-
-    @classmethod
-    def apply_return_type(cls, *args: Any) -> None:
         raise Exception("Method should be implemented by inheritors")
 
 
@@ -350,8 +338,6 @@ class Binary(Operator):
                 )
                 result_dataset.delete_component(measure.name)
                 result_dataset.add_component(component)
-                if result_dataset.data is not None:
-                    result_dataset.data.rename(columns={measure.name: component.name}, inplace=True)
             elif (
                 changed_allowed is False
                 and is_mono_measure is False
@@ -463,8 +449,6 @@ class Unary(Operator):
                 )
                 result_dataset.delete_component(measure.name)
                 result_dataset.add_component(component)
-                if result_dataset.data is not None:
-                    result_dataset.data.rename(columns={measure.name: component.name}, inplace=True)
             elif (
                 changed_allowed is False
                 and is_mono_measure is False

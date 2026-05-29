@@ -1,6 +1,6 @@
 import re
 from datetime import date, timedelta
-from typing import Any, List, Optional, Type, Union
+from typing import Any, List, Optional, Union
 
 from dateutil.relativedelta import relativedelta  # type: ignore[import-untyped]
 
@@ -26,7 +26,6 @@ from vtlengine.DataTypes import (
     Date,
     Duration,
     Integer,
-    ScalarType,
     String,
     TimeInterval,
     TimePeriod,
@@ -36,7 +35,6 @@ from vtlengine.DataTypes._time_checking import parse_date_value
 from vtlengine.DataTypes.TimeHandling import (
     PERIOD_IND_MAPPING,
     TimePeriodHandler,
-    date_to_period,
 )
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
@@ -210,7 +208,7 @@ class Time_Shift(Binary):
     op = TIMESHIFT
 
     @classmethod
-    def validate(cls, operand: Dataset, shift_value: str) -> Dataset:
+    def validate(cls, operand: Dataset, _shift_value: str) -> Dataset:
         dataset_name = VirtualCounter._new_ds_name()
         if cls._get_time_id(operand) is None:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
@@ -237,18 +235,9 @@ class Time_Aggregation(Time):
         if time_id.data_type == Date and conf is None:
             raise SemanticError("1-1-19-11")
 
-        if aggregation_dataset.data is not None:
-            series_data = aggregation_dataset.data[time_id_name].map(
-                lambda x: cls._execute_time_aggregation(
-                    x, time_id.data_type, period_from, period_to, conf
-                ),
-                na_action="ignore",
-            )
-        else:
-            series_data = None  # For semantic
         result = DataComponent(
             name=time_id_name,
-            data=series_data,
+            data=None,
             data_type=TimePeriod,
             role=Role.IDENTIFIER,
             nullable=False,
@@ -339,29 +328,6 @@ class Time_Aggregation(Time):
         )
 
     @classmethod
-    def _execute_time_aggregation(
-        cls,
-        value: str,
-        data_type: Type[ScalarType],
-        period_from: Optional[str],
-        period_to: str,
-        conf: Optional[str],
-    ) -> str:
-        if data_type == TimePeriod:  # Time period
-            return _time_period_access(value, period_to)
-
-        elif data_type == Date:
-            if conf is None:
-                raise SemanticError("1-1-19-11")
-            start = conf == "first"
-            # Date
-            if period_to == "D":
-                return value
-            return _date_access(value, period_to, start)
-        else:
-            raise NotImplementedError
-
-    @classmethod
     def validate(
         cls,
         operand: Union[Dataset, DataComponent, Scalar],
@@ -376,21 +342,6 @@ class Time_Aggregation(Time):
             return cls.component_validation(operand, period_from, period_to, conf)
         else:
             return cls.scalar_validation(operand, period_from, period_to, conf)
-
-
-def _time_period_access(v: Any, to_param: str) -> Any:
-    v = TimePeriodHandler(v)
-    if v.period_indicator == to_param:
-        return str(v)
-    v.change_indicator(to_param)
-    return str(v)
-
-
-def _date_access(v: str, to_param: str, start: bool) -> Any:
-    period_value = date_to_period(parse_date_value(v), to_param)
-    if start:
-        return period_value.start_date()
-    return period_value.end_date()
 
 
 class Current_Date(Time):
