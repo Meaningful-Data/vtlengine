@@ -566,6 +566,66 @@ class NumericBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_766_1(self):
+        """
+        Expression: DS_A <- round(DS_1);
+        Description: ``round`` without param promotes Number measures to Integer,
+            renaming the measure column (e.g. ``Me_1`` -> ``int_var``).
+            ``Parameterized.dataset_evaluation`` iterated the result's renamed
+            measures over the operand's data (still using the original names),
+            raising ``KeyError: 'int_var'``.
+        Git Issue: GH_766.
+        Goal: Check Result.
+        """
+        code = "GH_766_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_766_2(self):
+        """
+        Expression: DS_A <- trunc(DS_1);
+        Description: Same KeyError as GH_766_1 for ``trunc`` without param.
+        Git Issue: GH_766.
+        Goal: Check Result.
+        """
+        code = "GH_766_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_766_3(self):
+        """
+        Expression: DS_A <- round(DS_1, 1);
+        Description: ``round`` with an explicit decimal param keeps the Number
+            type and the original measure name. Regression guard for the
+            no-rename branch of the same fix.
+        Git Issue: GH_766.
+        Goal: Check Result.
+        """
+        code = "GH_766_3"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_766_4(self):
+        """
+        Expression: DS_A <- trunc(DS_1, 1);
+        Description: ``trunc`` with an explicit decimal param keeps the Number
+            type and the original measure name. Regression guard for the
+            no-rename branch of the same fix.
+        Git Issue: GH_766.
+        Goal: Check Result.
+        """
+        code = "GH_766_4"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class ComparisonBugs(BugHelper):
     """ """
