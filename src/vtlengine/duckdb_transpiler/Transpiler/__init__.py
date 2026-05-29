@@ -42,7 +42,7 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 from vtlengine.ViralPropagation import get_current_registry
-from vtlengine.ViralPropagation.sql import vp_pair_sql
+from vtlengine.ViralPropagation.sql import vp_group_sql, vp_pair_sql
 
 # Matches a pure single-quoted SQL string literal: 'foo' (no embedded quotes).
 _SQL_PLAIN_STRING_LITERAL = re.compile(r"^'([^'\\]*)'$")
@@ -2030,6 +2030,18 @@ FROM (
                 agg = self._build_agg_expr(op, qm, dt, dataset_level=True)
                 expr = agg if agg is not None else registry.sql(op, qm)
                 cols.append(f"{expr} AS {qm}")
+
+        # Viral attribute propagation across the aggregation group.
+        vp_registry = get_current_registry()
+        for v_name, v_comp in ds.components.items():
+            if v_comp.role != Role.VIRAL_ATTRIBUTE:
+                continue
+            v_rule = vp_registry.rule_for(v_comp)
+            v_qn = quote_name(v_name)
+            if v_rule is None:
+                cols.append(f"NULL AS {v_qn}")
+            else:
+                cols.append(f"{vp_group_sql(v_rule, v_qn)} AS {v_qn}")
 
         builder = SQLBuilder().select(*cols).from_table(table_src)
 

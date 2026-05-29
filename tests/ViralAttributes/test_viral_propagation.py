@@ -185,7 +185,6 @@ class TestViralPropagationEndToEnd:
         )
         assert pd.isna(result["DS_r"].data["VAt_1"].iloc[0])
 
-    @pytest.mark.skip(reason="aggregation viral propagation wired in a later task (#771)")
     def test_aggregate_max_in_aggregation(self) -> None:
         """Aggregate max propagation in group by."""
         ds = {
@@ -213,6 +212,34 @@ class TestViralPropagationEndToEnd:
         )
         sorted_data = result["DS_r"].data.sort_values("Id_1").reset_index(drop=True)
         assert list(sorted_data["VAt_1"]) == [7, 5]
+
+    def test_enumerated_propagation_aggregation(self) -> None:
+        """Enumerated rule reduced pairwise across a group (order-independent)."""
+        ds = {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Id_2", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                {"name": "VAt_1", "type": "String", "role": "Viral Attribute", "nullable": True},
+            ],
+        }
+        result = run(
+            script=CONF_RULE + "DS_r <- max(DS_1 group by Id_1);",
+            data_structures={"datasets": [ds]},
+            datapoints={
+                "DS_1": pd.DataFrame(
+                    {
+                        "Id_1": [1, 1, 1],
+                        "Id_2": [1, 2, 3],
+                        "Me_1": [10.0, 20.0, 30.0],
+                        "VAt_1": ["C", "N", "F"],
+                    }
+                )
+            },
+        )
+        # group {C, N, F} -> C (highest priority)
+        assert list(result["DS_r"].data["VAt_1"]) == ["C"]
 
 
 # -- Multi-attribute propagation (enumerated + aggregate in one script) --
