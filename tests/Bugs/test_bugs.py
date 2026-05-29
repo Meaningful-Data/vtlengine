@@ -473,6 +473,271 @@ class NumericBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_763_1(self):
+        """
+        Expression: DS_A <- abs(DS_1);
+        Description: Unary abs on a dataset with no datapoints failed because the
+            pyarrow fast-path expected ``series.values`` to be an
+            ArrowExtensionArray, but pandas returns a numpy ndarray for empty
+            non-arrow columns.
+        Git Issue: GH_763.
+        Goal: Check Result.
+        """
+        code = "GH_763_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_763_2(self):
+        """
+        Expression: DS_A <- ceil(DS_1);
+        Description: Same empty-dataset pyarrow fast-path bug as GH_763_1, for ceil.
+        Git Issue: GH_763.
+        Goal: Check Result.
+        """
+        code = "GH_763_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_763_3(self):
+        """
+        Expression: DS_A <- floor(DS_1);
+        Description: Same empty-dataset pyarrow fast-path bug as GH_763_1, for floor.
+        Git Issue: GH_763.
+        Goal: Check Result.
+        """
+        code = "GH_763_3"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_763_4(self):
+        """
+        Expression: DS_A <- exp(DS_1);
+        Description: Same empty-dataset pyarrow fast-path bug as GH_763_1, for exp.
+        Git Issue: GH_763.
+        Goal: Check Result.
+        """
+        code = "GH_763_4"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_763_5(self):
+        """
+        Expression: DS_A <- ln(DS_1);
+        Description: Same empty-dataset pyarrow fast-path bug as GH_763_1, for ln.
+        Git Issue: GH_763.
+        Goal: Check Result.
+        """
+        code = "GH_763_5"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_763_6(self):
+        """
+        Expression: DS_A <- sqrt(DS_1);
+        Description: Same empty-dataset pyarrow fast-path bug as GH_763_1, for sqrt.
+        Git Issue: GH_763.
+        Goal: Check Result.
+        """
+        code = "GH_763_6"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_763_7(self):
+        """
+        Expression: DS_A <- -DS_1;
+        Description: Same empty-dataset pyarrow fast-path bug as GH_763_1, for the
+            unary minus operator.
+        Git Issue: GH_763.
+        Goal: Check Result.
+        """
+        code = "GH_763_7"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_766_1(self):
+        """
+        Expression: DS_A <- round(DS_1);
+        Description: ``round`` without param promotes Number measures to Integer,
+            renaming the measure column (e.g. ``Me_1`` -> ``int_var``).
+            ``Parameterized.dataset_evaluation`` iterated the result's renamed
+            measures over the operand's data (still using the original names),
+            raising ``KeyError: 'int_var'``.
+        Git Issue: GH_766.
+        Goal: Check Result.
+        """
+        code = "GH_766_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_766_2(self):
+        """
+        Expression: DS_A <- trunc(DS_1);
+        Description: Same KeyError as GH_766_1 for ``trunc`` without param.
+        Git Issue: GH_766.
+        Goal: Check Result.
+        """
+        code = "GH_766_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_766_3(self):
+        """
+        Expression: DS_A <- round(DS_1, 1);
+        Description: ``round`` with an explicit decimal param keeps the Number
+            type and the original measure name. Regression guard for the
+            no-rename branch of the same fix.
+        Git Issue: GH_766.
+        Goal: Check Result.
+        """
+        code = "GH_766_3"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_766_4(self):
+        """
+        Expression: DS_A <- trunc(DS_1, 1);
+        Description: ``trunc`` with an explicit decimal param keeps the Number
+            type and the original measure name. Regression guard for the
+            no-rename branch of the same fix.
+        Git Issue: GH_766.
+        Goal: Check Result.
+        """
+        code = "GH_766_4"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_778_1(self):
+        """
+        Expression: DS_A <- round(DS_1);
+        Description: When the operand has an attribute, ``round`` without param
+            renames the measure (``Me_1`` -> ``int_var``) and
+            ``modify_measure_column`` copied the attribute column into the new
+            measure name, raising a numeric cast error on the string values
+            (e.g. ``Failed to parse string: 'D' as a scalar of type int64``).
+        Git Issue: GH_778.
+        Goal: Check Result.
+        """
+        code = "GH_778_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_778_2(self):
+        """
+        Expression: DS_A <- trunc(DS_1);
+        Description: Same attribute-leak bug as GH_778_1, for ``trunc`` without param.
+        Git Issue: GH_778.
+        Goal: Check Result.
+        """
+        code = "GH_778_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_778_3(self):
+        """
+        Expression: DS_A <- round(DS_1, 1);
+        Description: ``round`` with param on a dataset with an attribute keeps
+            the Number measure and must still drop the attribute from the
+            result. Regression guard for the no-rename branch.
+        Git Issue: GH_778.
+        Goal: Check Result.
+        """
+        code = "GH_778_3"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_778_4(self):
+        """
+        Expression: DS_A <- trunc(DS_1, 1);
+        Description: ``trunc`` with param on a dataset with an attribute keeps
+            the Number measure and must still drop the attribute from the
+            result. Regression guard for the no-rename branch.
+        Git Issue: GH_778.
+        Goal: Check Result.
+        """
+        code = "GH_778_4"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_778_5(self):
+        """
+        Expression: DS_A <- sum(DS_1 over(partition by Id_1));
+        Description: ``Analytic.validate`` kept all components (including
+            non-viral attributes) in ``result.components`` while the underlying
+            SQL query selected only identifiers and measures, leaving
+            ``result.data`` without the attribute column. Per VTL 2.1
+            ("Attribute propagation rule" applied at Data Set level), non-viral
+            attributes must be dropped from analytic results.
+        Git Issue: GH_778.
+        Goal: Check Result.
+        """
+        code = "GH_778_5"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_778_6(self):
+        """
+        Expression: DS_A <- avg(DS_1 over(order by Id_1));
+        Description: Same attribute-propagation bug as GH_778_5, for ``avg``
+            with an ``order by`` analytic clause.
+        Git Issue: GH_778.
+        Goal: Check Result.
+        """
+        code = "GH_778_6"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_778_7(self):
+        """
+        Expression: DS_A <- time_agg("A", _, DS_1);
+        Description: ``Time_Aggregation.dataset_validation`` dropped attributes
+            from ``result.components`` but ``dataset_evaluation`` copied
+            ``operand.data`` verbatim, leaving the attribute column in
+            ``result.data``. Per VTL 2.1 (time_agg "returns a Data Set having
+            the same structure" + attribute propagation rule), non-viral
+            attributes must be dropped from both components and data.
+        Git Issue: GH_778.
+        Goal: Check Result.
+        """
+        code = "GH_778_7"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class ComparisonBugs(BugHelper):
     """ """
