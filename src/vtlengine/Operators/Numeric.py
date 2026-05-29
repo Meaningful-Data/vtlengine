@@ -48,7 +48,7 @@ class Unary(Operator.Unary):
             series.values,
             pd.arrays.ArrowExtensionArray,  # type: ignore[attr-defined,unused-ignore]
         ):
-            arr = series.values._pa_array
+            arr = series.values._pa_array  # type: ignore[attr-defined,unused-ignore]
             return pd.Series(
                 pd.arrays.ArrowExtensionArray(cls.pc_func(arr)),  # type: ignore[attr-defined,unused-ignore]
                 index=series.index,
