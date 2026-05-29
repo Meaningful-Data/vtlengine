@@ -605,11 +605,17 @@ def load_vtl(input: Union[str, Path]) -> str:
         return f.read()
 
 
-def _validate_json(data: Dict[str, Any], schema: Dict[str, Any]) -> None:
+def _validate_json(
+    data: Dict[str, Any],
+    schema: Dict[str, Any],
+    kind: str,
+    name: Optional[str] = None,
+) -> None:
     try:
         jsonschema.validate(instance=data, schema=schema)
     except jsonschema.ValidationError as e:
-        raise InputValidationException(code="0-2-1-1", message=f"{e}")
+        element = f"{kind} '{name}'" if name else f"the provided {kind}"
+        raise InputValidationException(code="0-2-1-1", element=element, error=e.message)
 
 
 def _load_single_value_domain(input: Path) -> Dict[str, ValueDomain]:
@@ -617,7 +623,8 @@ def _load_single_value_domain(input: Path) -> Dict[str, ValueDomain]:
         raise InputValidationException(code="0-1-1-3", expected_ext=".json", ext=input.suffix)
     with open(input, "r", encoding="utf-8-sig") as f:
         data = json.load(f)
-    _validate_json(data, vd_schema)
+    name = data.get("name") if isinstance(data, dict) else None
+    _validate_json(data, vd_schema, kind="Value Domain", name=name or input.stem)
     vd = ValueDomain.from_dict(data)
     return {vd.name: vd}
 
@@ -640,7 +647,7 @@ def load_value_domains(
         or the value domains file does not exist.
     """
     if isinstance(input, dict):
-        _validate_json(input, vd_schema)
+        _validate_json(input, vd_schema, kind="Value Domain", name=input.get("name"))
         vd = ValueDomain.from_dict(input)
         return {vd.name: vd}
     if isinstance(input, list):
@@ -685,7 +692,9 @@ def load_external_routines(
     """
     external_routines = {}
     if isinstance(input, dict):
-        _validate_json(input, external_routine_schema)
+        _validate_json(
+            input, external_routine_schema, kind="External Routine", name=input.get("name")
+        )
         ext_routine = ExternalRoutine.from_sql_query(input["name"], input["query"])
         external_routines[ext_routine.name] = ext_routine
         return external_routines
@@ -731,7 +740,10 @@ def _load_single_external_routine_from_file(input: Path) -> Any:
     routine_name = input.stem
     with open(input, "r", encoding="utf-8-sig") as f:
         data = json.load(f)
-    _validate_json(data, external_routine_schema)
+    name = data.get("name") if isinstance(data, dict) else None
+    _validate_json(
+        data, external_routine_schema, kind="External Routine", name=name or routine_name
+    )
     ext_rout = ExternalRoutine.from_sql_query(routine_name, data["query"])
     return ext_rout
 
