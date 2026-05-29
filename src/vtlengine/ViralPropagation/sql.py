@@ -28,7 +28,14 @@ def _sql_literal(value: str) -> str:
 
 
 def _enumerated_case(rule: ViralPropagationRule, a_ref: str, b_ref: str) -> str:
-    """A CASE expr matching resolve_pair: binary clauses first, then unary, then default."""
+    """A CASE expr matching resolve_pair: binary clauses first, then unary, then default.
+
+    Assumes the two values of a binary clause are distinct (guaranteed by the grammar +
+    the upstream duplicate-combination check), so ``v1 IN (a,b) AND v2 IN (a,b)`` matches
+    the oracle's set-equality semantics.
+    When there are no WHEN clauses (e.g. an else-only rule), emits just the default
+    scalar expression instead of the invalid ``CASE  ELSE ... END`` form.
+    """
     pair = f"({a_ref}, {b_ref})"
     whens: List[str] = []
     binary = [c for c in rule.enumerated_clauses if len(c["values"]) == 2]
@@ -43,6 +50,8 @@ def _enumerated_case(rule: ViralPropagationRule, a_ref: str, b_ref: str) -> str:
         v1 = _sql_literal(clause["values"][0])
         whens.append(f"WHEN {v1} IN {pair} THEN {_sql_literal(clause['result'])}")
     default = _sql_literal(rule.default_value) if rule.default_value is not None else "NULL"
+    if not whens:
+        return default
     return "CASE " + " ".join(whens) + f" ELSE {default} END"
 
 
@@ -55,6 +64,8 @@ def vp_pair_sql(rule: ViralPropagationRule, a_ref: str, b_ref: str) -> str:
 
 def vp_reduce_refs(rule: ViralPropagationRule, refs: List[str]) -> str:
     """Fold vp_pair_sql across an ordered list of column refs (>=1)."""
+    if not refs:
+        raise ValueError("vp_reduce_refs requires at least one column ref")
     acc = refs[0]
     for ref in refs[1:]:
         acc = vp_pair_sql(rule, acc, ref)

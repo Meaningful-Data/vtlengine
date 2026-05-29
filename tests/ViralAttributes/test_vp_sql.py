@@ -1,10 +1,17 @@
 """The generated SQL must match the resolve_pair / resolve_group reference oracle."""
 
+import functools
+
 import duckdb
 import pytest
 
 from vtlengine.ViralPropagation import ViralPropagationRegistry, ViralPropagationRule
-from vtlengine.ViralPropagation.sql import vp_group_sql, vp_pair_sql
+from vtlengine.ViralPropagation.sql import (
+    vp_group_sql,
+    vp_group_sql_windowed,
+    vp_pair_sql,
+    vp_reduce_refs,
+)
 
 CONF = ViralPropagationRule(
     name="CONF",
@@ -52,7 +59,9 @@ def _lit(value: str) -> str:
 def test_pair_sql_matches_oracle(rule: ViralPropagationRule, a: str, b: str) -> None:
     con = duckdb.connect()
     sql = vp_pair_sql(rule, _lit(a), _lit(b))
-    got = con.execute(f"SELECT {sql}").fetchone()[0]
+    row = con.execute(f"SELECT {sql}").fetchone()
+    assert row is not None
+    got = row[0]
     assert got == _reg(rule).resolve_pair("v", a, b)
 
 
@@ -66,13 +75,92 @@ def test_pair_sql_matches_oracle(rule: ViralPropagationRule, a: str, b: str) -> 
         (SMAX, ["C", "N", "F"]),
     ],
 )
-def test_group_sql_matches_oracle(rule: ViralPropagationRule, vals: list) -> None:
+def test_group_sql_matches_oracle(rule: ViralPropagationRule, vals: list[str]) -> None:
     con = duckdb.connect()
     con.execute("CREATE TABLE g(v VARCHAR)")
     con.executemany("INSERT INTO g VALUES (?)", [(x,) for x in vals])
     sql = vp_group_sql(rule, "v")
-    got = con.execute(f"SELECT {sql} FROM g").fetchone()[0]
+    row = con.execute(f"SELECT {sql} FROM g").fetchone()
+    assert row is not None
+    got = row[0]
     assert got == _reg(rule).resolve_group("v", vals)
+
+
+SMIN = ViralPropagationRule(
+    name="Smin", signature_type="variable", target="v", aggregate_function="min"
+)
+SSUM = ViralPropagationRule(
+    name="Ssum", signature_type="variable", target="v", aggregate_function="sum"
+)
+SAVG = ViralPropagationRule(
+    name="Savg", signature_type="variable", target="v", aggregate_function="avg"
+)
+DEFAULT_ONLY = ViralPropagationRule(
+    name="d", signature_type="variable", target="v", default_value="Z"
+)
+
+
+@pytest.mark.parametrize("rule,a,b", [(SMIN, 3, 7), (SSUM, 3, 7), (SAVG, 3, 7), (SMIN, 7, 3)])
+def test_pair_sql_numeric_aggregate_matches_oracle(
+    rule: ViralPropagationRule, a: int, b: int
+) -> None:
+    con = duckdb.connect()
+    sql = vp_pair_sql(rule, str(a), str(b))
+    row = con.execute(f"SELECT {sql}").fetchone()
+    assert row is not None
+    got = row[0]
+    assert got == _reg(rule).resolve_pair("v", a, b)
+
+
+def test_pair_sql_default_only_rule_is_valid_sql() -> None:
+    # A rule with only an `else` (no when-clauses, no aggregate) must emit valid SQL.
+    con = duckdb.connect()
+    sql = vp_pair_sql(DEFAULT_ONLY, _lit("A"), _lit("B"))
+    row = con.execute(f"SELECT {sql}").fetchone()
+    assert row is not None
+    got = row[0]
+    assert got == _reg(DEFAULT_ONLY).resolve_pair("v", "A", "B")
+    assert got == "Z"
+
+
+@pytest.mark.parametrize(
+    "rule,vals",
+    [
+        (CONF, ["C"]),
+        (CONF, ["C", "N"]),
+        (CONF, ["C", "N", "F"]),
+        (COMP, ["C", "M", "X"]),
+        (SMIN, ["A", "Z", "M"]),
+    ],
+)
+def test_reduce_refs_matches_pair_fold(rule: ViralPropagationRule, vals: list[str]) -> None:
+    con = duckdb.connect()
+    refs = [_lit(v) for v in vals]
+    sql = vp_reduce_refs(rule, refs)
+    row = con.execute(f"SELECT {sql}").fetchone()
+    assert row is not None
+    got = row[0]
+    expected = functools.reduce(lambda x, y: _reg(rule).resolve_pair("v", x, y), vals)
+    assert got == expected
+
+
+def test_reduce_refs_empty_raises() -> None:
+    with pytest.raises(ValueError, match="at least one column ref"):
+        vp_reduce_refs(CONF, [])
+
+
+def test_group_sql_windowed_matches_group_per_partition() -> None:
+    con = duckdb.connect()
+    con.execute("CREATE TABLE w(part INTEGER, v VARCHAR)")
+    con.executemany(
+        "INSERT INTO w VALUES (?, ?)", [(1, "C"), (1, "N"), (1, "F"), (2, "N"), (2, "F")]
+    )
+    sql = vp_group_sql_windowed(CONF, "v", "PARTITION BY part")
+    got = con.execute(f"SELECT part, {sql} AS r FROM w ORDER BY part, v").fetchall()
+    reg = _reg(CONF)
+    part1 = reg.resolve_group("v", ["C", "N", "F"])
+    part2 = reg.resolve_group("v", ["N", "F"])
+    assert all(r == (part1 if p == 1 else part2) for p, r in got)
 
 
 class _FakeComp:
