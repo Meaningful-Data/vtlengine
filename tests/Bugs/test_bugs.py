@@ -484,6 +484,101 @@ class NumericBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_763_1(self):
+        """
+        Expression: DS_A <- abs(DS_1);
+        Description: Unary abs on a dataset with no datapoints failed because the
+            pyarrow fast-path expected ``series.values`` to be an
+            ArrowExtensionArray, but pandas returns a numpy ndarray for empty
+            non-arrow columns.
+        Git Issue: GH_763.
+        Goal: Check Result.
+        """
+        code = "GH_763_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_763_2(self):
+        """
+        Expression: DS_A <- ceil(DS_1);
+        Description: Same empty-dataset pyarrow fast-path bug as GH_763_1, for ceil.
+        Git Issue: GH_763.
+        Goal: Check Result.
+        """
+        code = "GH_763_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_763_3(self):
+        """
+        Expression: DS_A <- floor(DS_1);
+        Description: Same empty-dataset pyarrow fast-path bug as GH_763_1, for floor.
+        Git Issue: GH_763.
+        Goal: Check Result.
+        """
+        code = "GH_763_3"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_763_4(self):
+        """
+        Expression: DS_A <- exp(DS_1);
+        Description: Same empty-dataset pyarrow fast-path bug as GH_763_1, for exp.
+        Git Issue: GH_763.
+        Goal: Check Result.
+        """
+        code = "GH_763_4"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_763_5(self):
+        """
+        Expression: DS_A <- ln(DS_1);
+        Description: Same empty-dataset pyarrow fast-path bug as GH_763_1, for ln.
+        Git Issue: GH_763.
+        Goal: Check Result.
+        """
+        code = "GH_763_5"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_763_6(self):
+        """
+        Expression: DS_A <- sqrt(DS_1);
+        Description: Same empty-dataset pyarrow fast-path bug as GH_763_1, for sqrt.
+        Git Issue: GH_763.
+        Goal: Check Result.
+        """
+        code = "GH_763_6"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_763_7(self):
+        """
+        Expression: DS_A <- -DS_1;
+        Description: Same empty-dataset pyarrow fast-path bug as GH_763_1, for the
+            unary minus operator.
+        Git Issue: GH_763.
+        Goal: Check Result.
+        """
+        code = "GH_763_7"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class ComparisonBugs(BugHelper):
     """ """
