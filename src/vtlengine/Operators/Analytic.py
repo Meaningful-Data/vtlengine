@@ -72,7 +72,11 @@ class Analytic(Operator.Unary):
     ) -> Dataset:
         order_components = [] if ordering is None else [o.component for o in ordering]
         identifier_names = operand.get_identifiers_names()
-        result_components = operand.components.copy()
+        result_components = {
+            comp_name: comp
+            for comp_name, comp in operand.components.items()
+            if comp.role != Role.ATTRIBUTE
+        }
 
         for comp_name in partitioning:
             if comp_name not in operand.components:
