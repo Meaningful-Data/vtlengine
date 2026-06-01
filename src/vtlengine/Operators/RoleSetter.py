@@ -12,7 +12,7 @@ class RoleSetter(Unary):
     role: Role
 
     @classmethod
-    def validate(cls, operand: ALLOWED_MODEL_TYPES, data_size: int = 0) -> DataComponent:
+    def validate(cls, operand: ALLOWED_MODEL_TYPES) -> DataComponent:
         if isinstance(operand, Scalar):
             nullable = cls.role != Role.IDENTIFIER and operand.nullable
             return DataComponent(
@@ -30,7 +30,7 @@ class Identifier(RoleSetter):
     role = Role.IDENTIFIER
 
     @classmethod
-    def validate(cls, operand: ALLOWED_MODEL_TYPES, data_size: int = 0) -> DataComponent:
+    def validate(cls, operand: ALLOWED_MODEL_TYPES) -> DataComponent:
         result = super().validate(operand)
         if result.nullable:
             raise SemanticError("1-1-1-16")
