@@ -41,6 +41,7 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
 )
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
+from vtlengine.Operators.Join import merged_viral_attribute_names
 from vtlengine.ViralPropagation import get_current_registry
 from vtlengine.ViralPropagation.sql import (
     vp_group_sql,
@@ -3409,23 +3410,30 @@ FROM (
     def _build_join_viral_cols(
         clause_info: List[Dict[str, Any]],
         vp_registry: Any,
+        merged_viral: Set[str],
     ) -> List[str]:
-        """Collect viral attributes across join operands and emit one merged SQL column each."""
-        viral_aliases: Dict[str, List[str]] = {}
+        """Emit one merged SQL column for each name in ``merged_viral``.
+
+        Only names that satisfy the shared-viral predicate (viral in every operand
+        that has them, present in >=2 operands, not a join key) are passed in via
+        ``merged_viral``.  Single-operand viral attrs and mixed-role components are
+        handled by the main projection loop instead.
+        """
         viral_comp: Dict[str, Any] = {}
+        viral_aliases: Dict[str, List[str]] = {}
         for info in clause_info:
             for vname, vcomp in info["ds"].components.items():
-                if vcomp.role == Role.VIRAL_ATTRIBUTE:
+                if vname in merged_viral and vcomp.role == Role.VIRAL_ATTRIBUTE:
                     viral_aliases.setdefault(vname, []).append(info["sql_alias"])
                     viral_comp.setdefault(vname, vcomp)
 
         cols: List[str] = []
-        for vname, aliases in viral_aliases.items():
+        for vname in sorted(merged_viral):
+            aliases = viral_aliases.get(vname, [])
+            if not aliases:
+                continue
             v_qn = quote_name(vname)
             refs = [f"{sa}.{v_qn}" for sa in aliases]
-            if len(refs) == 1:
-                cols.append(f"{refs[0]} AS {v_qn}")
-                continue
             v_rule = vp_registry.rule_for(viral_comp[vname])
             if v_rule is None:
                 cols.append(f"NULL AS {v_qn}")
@@ -3488,6 +3496,12 @@ FROM (
 
         nvl_defaults = self._resolve_join_nvl_defaults(node, clause_info)
 
+        # Determine which viral attrs merge into a single bare column (shared by >=2
+        # operands, viral in every operand that has them, not a join key).
+        merged_viral = merged_viral_attribute_names(
+            [info["ds"].components for info in clause_info], all_join_ids
+        )
+
         # First alias that exposes each component — used to pick the left side of ON
         # clauses. A USING key may be a measure in one dataset and an identifier in
         # another, so we track components (not just identifiers).
@@ -3505,7 +3519,8 @@ FROM (
         for info in clause_info:
             sa = info["sql_alias"]
             for name, comp in info["ds"].components.items():
-                if comp.role == Role.VIRAL_ATTRIBUTE:
+                if name in merged_viral:
+                    # Merged viral attrs are emitted once by _build_join_viral_cols.
                     continue
                 is_join_col = (
                     comp.role == Role.IDENTIFIER and not is_cross_join
@@ -3537,7 +3552,7 @@ FROM (
                         expr = f"COALESCE({expr}, {nvl_defaults[name]}) AS {quote_name(name)}"
                     cols.append(expr)
 
-        cols.extend(self._build_join_viral_cols(clause_info, vp_registry))
+        cols.extend(self._build_join_viral_cols(clause_info, vp_registry, merged_viral))
 
         builder = SQLBuilder()
         builder.select(*cols) if cols else builder.select_all()
