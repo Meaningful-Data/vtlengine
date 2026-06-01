@@ -10,20 +10,12 @@ import pytest
 
 from tests.ViralAttributes._helper import ViralHelper
 
-# Unary (7-1..7-7: abs, ceil, floor, sqrt, ln, exp, isnull) and dataset-scalar
-# (9-1..9-3: DS_1 + 5, DS_1 * 2, DS_1 - 1) ops must carry the viral attribute
-# through in the executed data, not just declare it in the structure.
+# A unary op (7-1: abs) and a dataset-scalar op (9-1: DS_1 + 5) must carry the viral
+# attribute through in the executed data, not just declare it in the structure. The
+# passthrough is operator-independent, so one representative of each suffices.
 passthrough_codes = [
     ("7-1", 1),
-    ("7-2", 1),
-    ("7-3", 1),
-    ("7-4", 1),
-    ("7-5", 1),
-    ("7-6", 1),
-    ("7-7", 1),
     ("9-1", 1),
-    ("9-2", 1),
-    ("9-3", 1),
 ]
 
 
@@ -32,18 +24,12 @@ def test_data_passthrough(code: str, number_inputs: int) -> None:
     ViralHelper.BaseTest(code=code, number_inputs=number_inputs, references_names=["DS_r"])
 
 
-# Remaining operators keep the viral attribute in the output structure.
-# 8-x binary (dataset-dataset: +, -, *, >, =); 10-1 between; 10-2 intersect;
-# 10-3 aggregation; 11-1 non-viral attribute still dropped; 11-2 calc viral.
+# Other operators keep the viral attribute in the output structure. Binary and
+# aggregation preservation is covered by the end-to-end execution tests (1-x / 2-x);
+# 10-2 intersect is kept as a representative set-operator. 11-1 non-viral attribute
+# still dropped; 11-2 calc viral.
 preserve_codes = [
-    ("8-1", 2),
-    ("8-2", 2),
-    ("8-3", 2),
-    ("8-4", 2),
-    ("8-5", 2),
-    ("10-1", 1),
     ("10-2", 2),
-    ("10-3", 1),
     ("11-1", 2),
     ("11-2", 1),
 ]

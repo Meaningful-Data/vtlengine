@@ -8,8 +8,10 @@ import pytest
 
 from tests.ViralAttributes._helper import ViralHelper
 
-# -- Parsing: the define is registered and the viral attribute is preserved (structure only) --
-parse_codes = ["5-1", "5-2", "5-3", "5-4"]
+# -- Parsing: a value-domain rule registers and the viral attribute is preserved (structure
+# only). Variable-level enumerated/aggregate/binary-clause parsing is covered by the
+# end-to-end execution tests below. --
+parse_codes = ["5-4"]
 
 
 @pytest.mark.parametrize("code", parse_codes)
