@@ -45,6 +45,11 @@ class ViralPropagationRegistry:
         # For v1, only variable-level rules are supported.
         return None
 
+    def get_existing(self, signature_type: str, target: str) -> Optional["ViralPropagationRule"]:
+        """Return an already-registered rule with the same signature_type and target."""
+        rules = self._variable_rules if signature_type == "variable" else self._valuedomain_rules
+        return rules.get(target)
+
     def rule_for(self, component: Any) -> Optional["ViralPropagationRule"]:
         """Resolve the rule for a component: variable-level overrides value-domain-level.
 

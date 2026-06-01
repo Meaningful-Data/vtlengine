@@ -1,7 +1,7 @@
 """Viral attribute tests, unified in a single module.
 
 File-based tests follow the repo convention: a VTL script + DataStructure JSON
-(+ DataSet CSV) under ``data/``, addressed by a descriptive ``code`` and driven
+(+ DataSet CSV) under ``data/``, addressed by a numeric ``code`` and driven
 through :class:`ViralHelper` (a :class:`tests.Helper.TestHelper` subclass):
 - ``test_execution``   — full run, output structure AND data compared
 - ``test_structure``   — semantic-only, output structure compared
@@ -31,26 +31,24 @@ class ViralHelper(TestHelper):
 
 
 # -- End-to-end execution: output structure AND data are compared --
-# binary value resolution / aggregation / analytic / join merge, plus per-row
-# passthrough (unary, dataset-scalar) and the legacy 'ViralAttribute' input role.
 execution_codes = [
-    ("binary_enumerated", 2),
-    ("binary_clause_precedence", 2),
-    ("binary_no_rule_null", 2),
-    ("binary_one_operand", 2),
-    ("binary_multi_attribute", 2),
-    ("aggregation_max", 1),
-    ("aggregation_enumerated", 1),
-    ("analytic_max", 1),
-    ("analytic_no_rule", 1),
-    ("join_inner_merge", 2),
-    ("join_no_rule_null", 2),
-    ("join_left_max", 2),
-    ("join_body_calc", 2),
-    ("join_mixed_role", 2),
-    ("unary_passthrough", 1),
-    ("scalar_passthrough", 1),
-    ("legacy_input", 1),
+    ("1-1", 2),  # binary, enumerated rule
+    ("1-2", 2),  # binary, clause precedence (binary clause before unary)
+    ("1-3", 2),  # binary, no rule -> NULL
+    ("1-4", 2),  # binary, viral attr in one operand only (passthrough)
+    ("1-5", 2),  # binary, two rules (enumerated VAt_1 + aggregate-max VAt_2)
+    ("2-1", 1),  # aggregation, aggregate-max
+    ("2-2", 1),  # aggregation, enumerated pairwise reduction
+    ("3-1", 1),  # analytic, aggregate-max over the partition
+    ("3-2", 1),  # analytic, no rule (per-row passthrough)
+    ("4-1", 2),  # inner join, merge shared viral attr via the rule
+    ("4-2", 2),  # inner join, no rule -> NULL
+    ("4-3", 2),  # left join, aggregate-max
+    ("4-4", 2),  # join with a body calc + shared viral attr
+    ("4-5", 2),  # join, mixed-role shared component -> not merged
+    ("7-1", 1),  # unary (abs), per-row passthrough
+    ("8-1", 1),  # dataset-scalar (DS_1 + 5), per-row passthrough
+    ("10-3", 1),  # legacy 'ViralAttribute' input role
 ]
 
 
@@ -59,13 +57,12 @@ def test_execution(code: str, number_inputs: int) -> None:
     ViralHelper.BaseTest(code=code, number_inputs=number_inputs, references_names=["DS_r"])
 
 
-# -- Structure-only (semantic): the value-domain rule registers; viral attributes
-# survive a set operator; non-viral attributes are dropped; calc creates a viral attr. --
+# -- Structure-only (semantic) --
 semantic_codes = [
-    ("parse_valuedomain", 1),
-    ("intersect_preserved", 2),
-    ("non_viral_dropped", 2),
-    ("calc_viral", 1),
+    ("5-1", 1),  # a value-domain rule registers; viral attr preserved
+    ("9-1", 2),  # intersect preserves viral attributes
+    ("10-1", 2),  # a non-viral attribute is still dropped
+    ("10-2", 1),  # calc creates a viral attribute
 ]
 
 
@@ -76,10 +73,11 @@ def test_structure(code: str, number_inputs: int) -> None:
     )
 
 
-# -- Semantic validation: duplicate variable rule / duplicate enumeration --
+# -- Semantic validation: duplicate rules --
 validation_codes = [
-    ("validation_duplicate_variable", "1-3-3-1"),
-    ("validation_duplicate_enumeration", "1-3-3-4"),
+    ("6-1", "1-3-3-1"),  # duplicate variable-level rule
+    ("6-2", "1-3-3-4"),  # duplicate enumeration combination
+    ("6-3", "1-3-3-2"),  # duplicate value-domain-level rule
 ]
 
 
