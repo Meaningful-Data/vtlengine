@@ -575,8 +575,14 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 ):
                     out_name = output_measures[0]
                 cols.append(f"{expr} AS {quote_name(out_name)}")
-            elif comp.role == Role.VIRAL_ATTRIBUTE and viral_expr_fn is not None:
-                cols.append(f"{viral_expr_fn(name, comp)} AS {quote_name(name)}")
+            elif comp.role == Role.VIRAL_ATTRIBUTE:
+                if viral_expr_fn is not None:
+                    cols.append(f"{viral_expr_fn(name, comp)} AS {quote_name(name)}")
+                elif output_ds is not None and name in output_ds.components:
+                    # Single value per row: pass the viral attribute through unchanged,
+                    # but only when the operator's output structure keeps it (so data
+                    # matches the declared structure for unary / dataset-scalar / etc.).
+                    cols.append(quote_name(name))
 
         return SQLBuilder().select(*cols).from_table(table_src).build()
 
