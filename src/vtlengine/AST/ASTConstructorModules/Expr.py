@@ -1608,7 +1608,7 @@ class Expr(VtlVisitor):
             base_index = 1
         else:
             base_index = 0
-            role = Role.MEASURE
+            role = None
 
         left_node = Terminals().visitSimpleComponentId(ctx_list[base_index])
         op_node = ":="
@@ -1845,9 +1845,11 @@ class Expr(VtlVisitor):
                 left=left_node, op=op_node, right=right_node, **extract_token_info(ctx)
             )
             if role is None:
-                return UnaryOp(
+                implicit_node = UnaryOp(
                     op=Role.MEASURE.value.lower(), operand=operand_node, **extract_token_info(c)
                 )
+                implicit_node.is_implicit_role = True
+                return implicit_node
             return UnaryOp(op=role.value.lower(), operand=operand_node, **extract_token_info(c))
         else:
             left_node = Terminals().visitSimpleComponentId(c)
@@ -1857,9 +1859,11 @@ class Expr(VtlVisitor):
             operand_node = Assignment(
                 left=left_node, op=op_node, right=right_node, **extract_token_info(ctx)
             )
-            return UnaryOp(
+            node = UnaryOp(
                 op=Role.MEASURE.value.lower(), operand=operand_node, **extract_token_info(ctx)
             )
+            node.is_implicit_role = True
+            return node
 
     def visitKeepOrDropClause(self, ctx: Parser.KeepOrDropClauseContext):
         """
