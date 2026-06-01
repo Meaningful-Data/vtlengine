@@ -1,10 +1,9 @@
 """DuckDB SQL generation for viral attribute propagation rules.
 
-These functions turn a registered ``ViralPropagationRule`` into SQL fragments.
-They mirror, in SQL, the semantics of ``resolve_pair`` / ``resolve_group`` in
-this package (which remain the reference oracle, see tests/ViralAttributes).
-This module imports nothing from the transpiler or the data model, so it is
-free of import cycles.
+These functions turn a registered ``ViralPropagationRule`` into SQL fragments
+that combine viral-attribute values per the rule (enumerated when/then clauses
+or an aggregate function). This module imports nothing from the transpiler or
+the data model, so it is free of import cycles.
 """
 
 from typing import Callable, Dict, List
@@ -28,11 +27,11 @@ def _sql_literal(value: str) -> str:
 
 
 def _enumerated_case(rule: ViralPropagationRule, a_ref: str, b_ref: str) -> str:
-    """A CASE expr matching resolve_pair: binary clauses first, then unary, then default.
+    """A CASE expr: binary clauses first, then unary, then default.
 
     Assumes the two values of a binary clause are distinct (guaranteed by the grammar +
     the upstream duplicate-combination check), so ``v1 IN (a,b) AND v2 IN (a,b)`` matches
-    the oracle's set-equality semantics.
+    set-equality semantics.
     When there are no WHEN clauses (e.g. an else-only rule), emits just the default
     scalar expression instead of the invalid ``CASE  ELSE ... END`` form.
     """
@@ -56,7 +55,7 @@ def _enumerated_case(rule: ViralPropagationRule, a_ref: str, b_ref: str) -> str:
 
 
 def vp_pair_sql(rule: ViralPropagationRule, a_ref: str, b_ref: str) -> str:
-    """SQL expression combining two viral values (resolve_pair semantics)."""
+    """SQL expression combining two viral values for a binary operator."""
     if rule.aggregate_function is not None:
         return _AGG_BINARY[rule.aggregate_function](a_ref, b_ref)
     return _enumerated_case(rule, a_ref, b_ref)
@@ -73,7 +72,7 @@ def vp_reduce_refs(rule: ViralPropagationRule, refs: List[str]) -> str:
 
 
 def vp_group_sql(rule: ViralPropagationRule, col_ref: str) -> str:
-    """SQL aggregate expression combining a group of viral values (resolve_group)."""
+    """SQL aggregate expression combining a group of viral values."""
     if rule.aggregate_function is not None:
         return f"{_AGG_GROUP[rule.aggregate_function]}({col_ref})"
     case = _enumerated_case(rule, "acc", "x")

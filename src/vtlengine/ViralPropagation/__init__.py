@@ -2,12 +2,12 @@
 ViralPropagation
 ================
 
-Registry and resolution logic for viral attribute propagation rules
-as defined by VTL 2.2 ``define viral propagation`` construct.
+Registry for viral attribute propagation rules as defined by the VTL 2.2
+``define viral propagation`` construct. Value resolution is generated as SQL
+in :mod:`vtlengine.ViralPropagation.sql`.
 """
 
 from dataclasses import dataclass, field
-from functools import reduce
 from typing import Any, Dict, List, Optional
 
 
@@ -58,61 +58,6 @@ class ViralPropagationRegistry:
         if value_domain is not None:
             return self._valuedomain_rules.get(value_domain)
         return None
-
-    def resolve_pair(self, variable_name: str, value_a: Any, value_b: Any) -> Any:
-        """Resolve two viral attribute values into one (for binary operators)."""
-        rule = self.get_rule_for_variable(variable_name)
-        if rule is None:
-            return None
-
-        if rule.aggregate_function is not None:
-            if rule.aggregate_function == "avg":
-                return (value_a + value_b) / 2
-            elif rule.aggregate_function == "min":
-                return min(value_a, value_b)
-            elif rule.aggregate_function == "max":
-                return max(value_a, value_b)
-            elif rule.aggregate_function == "sum":
-                return value_a + value_b
-            return None
-
-        # Enumerated: binary clauses first, then unary (per spec)
-        binary_clauses = [c for c in rule.enumerated_clauses if len(c["values"]) == 2]
-        unary_clauses = [c for c in rule.enumerated_clauses if len(c["values"]) == 1]
-
-        pair = {value_a, value_b}
-        for clause in binary_clauses:
-            if set(clause["values"]) == pair:
-                return clause["result"]
-
-        for clause in unary_clauses:
-            if clause["values"][0] in pair:
-                return clause["result"]
-
-        return rule.default_value
-
-    def resolve_group(self, variable_name: str, values: List[Any]) -> Any:
-        """Resolve N values (for aggregation/analytic operators)."""
-        rule = self.get_rule_for_variable(variable_name)
-        if rule is None:
-            return None
-
-        if len(values) == 0:
-            return None
-        if len(values) == 1:
-            return values[0]
-
-        if rule.aggregate_function is not None:
-            funcs: Dict[str, Any] = {
-                "min": min,
-                "max": max,
-                "sum": sum,
-                "avg": lambda v: sum(v) / len(v),
-            }
-            return funcs[rule.aggregate_function](values)
-
-        # Enumerated: reduce pairwise (associative + commutative guarantees correctness)
-        return reduce(lambda a, b: self.resolve_pair(variable_name, a, b), values)
 
     def clear(self) -> None:
         """Clear all registered rules."""

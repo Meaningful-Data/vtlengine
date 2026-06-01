@@ -812,7 +812,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 ) or left_ds.components[name]
                 rule = vp_registry.rule_for(comp)
                 if rule is None:
-                    cols.append(f"NULL AS {qn}")
+                    cols.append(f"CAST(NULL AS {get_duckdb_type(comp.data_type.__name__)}) AS {qn}")
                 else:
                     cols.append(
                         f"{vp_pair_sql(rule, f'{alias_a}.{qn}', f'{alias_b}.{qn}')} AS {qn}"
@@ -2048,7 +2048,7 @@ FROM (
             v_rule = vp_registry.rule_for(v_comp)
             v_qn = quote_name(v_name)
             if v_rule is None:
-                cols.append(f"NULL AS {v_qn}")
+                cols.append(f"CAST(NULL AS {get_duckdb_type(v_comp.data_type.__name__)}) AS {v_qn}")
             else:
                 cols.append(f"{vp_group_sql(v_rule, v_qn)} AS {v_qn}")
 
@@ -3436,7 +3436,8 @@ FROM (
             refs = [f"{sa}.{v_qn}" for sa in aliases]
             v_rule = vp_registry.rule_for(viral_comp[vname])
             if v_rule is None:
-                cols.append(f"NULL AS {v_qn}")
+                v_type = get_duckdb_type(viral_comp[vname].data_type.__name__)
+                cols.append(f"CAST(NULL AS {v_type}) AS {v_qn}")
             else:
                 cols.append(f"{vp_reduce_refs(v_rule, refs)} AS {v_qn}")
         return cols
