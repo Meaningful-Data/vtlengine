@@ -31,8 +31,10 @@ class TestIsRe2Incompatible:
             r"(\w)\1",  # numeric backreference
             r"(?P<x>\w)(?P=x)",  # named backreference
             # The real Canadian postal-code rule from the issue.
-            r"^((?=[^DdFfIiOoQqUu\d\s])[A-Z]\d(?=[^DdFfIiOoQqUu\d\s])[A-Z]"
-            r"\s{1}\d(?=[^DdFfIiOoQqUu\d\s])[A-Z]\d)$",
+            (
+                r"^((?=[^DdFfIiOoQqUu\d\s])[A-Z]\d(?=[^DdFfIiOoQqUu\d\s])[A-Z]"
+                + r"\s{1}\d(?=[^DdFfIiOoQqUu\d\s])[A-Z]\d)$"
+            ),
         ],
     )
     def test_incompatible_patterns(self, pattern: str):
