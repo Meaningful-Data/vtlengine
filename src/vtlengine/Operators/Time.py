@@ -846,7 +846,7 @@ class Time_Aggregation(Time):
             ),
             na_action="ignore",
         )
-
+        result.data = result.data[result.get_components_names()]
         return result
 
     @classmethod

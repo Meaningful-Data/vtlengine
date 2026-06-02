@@ -375,8 +375,8 @@ class Parameterized(Unary):
                     comp_name=measure_name,
                     dataset_name=operand.name,
                 ) from None
+        result.data = result.data[operand.get_identifiers_names() + operand.get_measures_names()]
         cls.modify_measure_column(result)
-        result.data = result.data[result.get_components_names()]
         return result
 
     @classmethod
