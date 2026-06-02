@@ -55,12 +55,11 @@ def create_ast_with_comments(text: str) -> Start:
 
     comments = [generate_ast_comment(c) for c in comment_tokens]
 
-    # Try to parse: if no statements, it's only comments
-    try:
-        ast = create_ast(text)
-        if not ast.children:
-            ast = Start(line_start=1, line_stop=1, column_start=0, column_stop=0, children=[])
-    except Exception:
+    # Parse the statements. A script with no statements (only comments or empty) yields a
+    # Start node with no children; a malformed script raises VTLSyntaxError, which must
+    # propagate instead of being silently swallowed into an empty AST.
+    ast = create_ast(text)
+    if not ast.children:
         ast = Start(line_start=1, line_stop=1, column_start=0, column_stop=0, children=[])
 
     ast.children.extend(comments)
