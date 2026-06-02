@@ -24,7 +24,7 @@ from vtlengine.AST.Grammar.tokens import (
 )
 from vtlengine.DataTypes import Integer, Number, String, check_unary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Model import DataComponent, Dataset, Scalar
+from vtlengine.Model import DataComponent, Dataset, Role, Scalar
 
 
 class Unary(Operator.Unary):
@@ -187,7 +187,7 @@ class Parameterized(Unary):
                     result.data[measure_name], param_value1, param_value2
                 )
 
-        cols_to_keep = operand.get_identifiers_names() + operand.get_measures_names()
+        cols_to_keep = [c.name for c in operand.get_components() if c.role != Role.ATTRIBUTE]
         result.data = result.data[cols_to_keep]
         cls.modify_measure_column(result)
         return result
@@ -617,7 +617,7 @@ class Instr(Parameterized):
                 result.data[measure_name] = cls.apply_operation_series_scalar(
                     result.data[measure_name], param_value1, param_value2, param_value3
                 )
-        cols_to_keep = operand.get_identifiers_names() + operand.get_measures_names()
+        cols_to_keep = [c.name for c in operand.get_components() if c.role != Role.ATTRIBUTE]
         result.data = result.data[cols_to_keep]
         cls.modify_measure_column(result)
         return result
