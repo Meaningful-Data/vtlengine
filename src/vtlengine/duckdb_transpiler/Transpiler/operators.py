@@ -1,7 +1,13 @@
 """Operator registry used by the DuckDB transpiler."""
 
+import contextlib
+import re
 from dataclasses import dataclass, field
+from functools import lru_cache
 from typing import Any, Callable, Dict, Optional, Set, Tuple
+
+import duckdb
+from duckdb.sqltypes import BOOLEAN, VARCHAR
 
 import vtlengine.AST.Grammar.tokens as tokens
 from vtlengine.DataTypes import Duration, TimePeriod
@@ -372,3 +378,99 @@ def _create_default_registry() -> OperatorRegistry:
 
 # Global registry instance
 registry = _create_default_registry()
+
+# DuckDB's ``regexp_*`` functions use Google's RE2 library, which deliberately
+# omits regex features that cannot be matched in linear time: lookaround
+# assertions, atomic groups, conditionals and backreferences. Python's ``re``
+# module (used by the legacy engine) supports them all.
+#
+# Patterns RE2 can compile keep using the native ``regexp_full_match`` (fast
+# path). Literal patterns using RE2-unsupported constructs are routed to the
+# :func:`match_characters` Python UDF, which mirrors ``regexp_full_match``
+# (whole-string match, NULL-in/NULL-out) using ``re``.
+
+# SQL function names emitted by the transpiler for match_characters.
+NATIVE_MATCH_FUNCTION = "regexp_full_match"
+FALLBACK_MATCH_FUNCTION = "vtl_match_characters"
+
+# Group prefixes RE2 cannot compile: lookahead (?= (?!, lookbehind (?<= (?<!,
+# atomic groups (?>, and conditionals (?(.
+_RE2_UNSUPPORTED_GROUPS = ("(?=", "(?!", "(?<=", "(?<!", "(?>", "(?(")
+
+# Named backreference spellings (numeric backreferences are detected separately
+# so character-class contents and escapes are handled correctly).
+_NAMED_BACKREFERENCES = ("(?P=", "\\k<", "\\k'", "\\k{")
+
+
+@lru_cache(maxsize=256)
+def _compiled(pattern: str) -> "re.Pattern[str]":
+    """Compile and cache a regex pattern."""
+    return re.compile(pattern)
+
+
+def match_characters(value: Optional[str], pattern: Optional[str]) -> Optional[bool]:
+    """Full-match ``value`` against ``pattern`` using Python's ``re`` module.
+
+    Mirrors DuckDB's ``regexp_full_match`` (the whole string must match) but with
+    Python/PCRE regex semantics, so patterns using constructs RE2 rejects behave
+    the same as in the legacy engine. Returns ``None`` for NULL inputs.
+    """
+    if value is None or pattern is None:
+        return None
+    return _compiled(pattern).fullmatch(value) is not None
+
+
+def _has_numeric_backreference(pattern: str) -> bool:
+    """Return True if ``pattern`` contains a ``\\1``-``\\9`` backreference.
+
+    Escapes are skipped in pairs and character-class contents are ignored, so a
+    ``\\d`` or a ``[\\1]`` octal escape is not mistaken for a backreference.
+    """
+    in_class = False
+    i = 0
+    n = len(pattern)
+    while i < n:
+        char = pattern[i]
+        if char == "\\":
+            nxt = pattern[i + 1] if i + 1 < n else ""
+            if not in_class and nxt in "123456789":
+                return True
+            i += 2
+            continue
+        if char == "[" and not in_class:
+            in_class = True
+        elif char == "]" and in_class:
+            in_class = False
+        i += 1
+    return False
+
+
+def is_re2_incompatible(pattern: str) -> bool:
+    """Return True when ``pattern`` uses regex features DuckDB's RE2 rejects.
+
+    Detection errs toward the native engine: only clearly RE2-unsupported
+    constructs (lookaround, atomic groups, conditionals and backreferences)
+    trigger the fallback, so RE2-compatible patterns keep using the faster
+    native ``regexp_full_match``. Possessive quantifiers are not detected
+    (ambiguous to identify reliably); such patterns surface RE2's own error.
+    """
+    if any(token in pattern for token in _RE2_UNSUPPORTED_GROUPS):
+        return True
+    if any(token in pattern for token in _NAMED_BACKREFERENCES):
+        return True
+    return _has_numeric_backreference(pattern)
+
+
+def register_regex_functions(conn: duckdb.DuckDBPyConnection) -> None:
+    """Register the Python regex fallback UDF on a DuckDB connection.
+
+    Idempotent: re-registering the function on the same connection is a no-op.
+    """
+    # Re-registering on the same connection raises; suppress to stay idempotent.
+    with contextlib.suppress(duckdb.Error):
+        conn.create_function(
+            FALLBACK_MATCH_FUNCTION,
+            match_characters,
+            [VARCHAR, VARCHAR],
+            BOOLEAN,
+        )

@@ -1,0 +1,2 @@
+pc22 <- DS_1[filter COUNTRY_INCORPORATION = "CA"]
+            [calc PC_VALID := match_characters(POSTAL_CODE, "^((?=[^DdFfIiOoQqUu\d\s])[A-Z]\d(?=[^DdFfIiOoQqUu\d\s])[A-Z]\s{1}\d(?=[^DdFfIiOoQqUu\d\s])[A-Z]\d)$")];
