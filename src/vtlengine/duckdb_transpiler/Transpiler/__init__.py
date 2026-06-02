@@ -44,6 +44,14 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
 )
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
+from vtlengine.Operators.Join import merged_viral_attribute_names
+from vtlengine.ViralPropagation import get_current_registry
+from vtlengine.ViralPropagation.sql import (
+    vp_group_sql,
+    vp_group_sql_windowed,
+    vp_pair_sql,
+    vp_reduce_refs,
+)
 
 # Matches a pure single-quoted SQL string literal: 'foo' (no embedded quotes).
 _SQL_PLAIN_STRING_LITERAL = re.compile(r"^'([^'\\]*)'$")
@@ -543,6 +551,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         expr_fn: "Callable[[str], str]",
         output_name_override: Optional[str] = None,
         cast_bool_to_str: bool = False,
+        viral_expr_fn: "Optional[Callable[[str, Any], str]]" = None,
     ) -> str:
         """Apply an expression to each dataset measure and pass identifiers through."""
         ds = self._get_dataset_structure(ds_node)
@@ -569,6 +578,14 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 ):
                     out_name = output_measures[0]
                 cols.append(f"{expr} AS {quote_name(out_name)}")
+            elif comp.role == Role.VIRAL_ATTRIBUTE:
+                if viral_expr_fn is not None:
+                    cols.append(f"{viral_expr_fn(name, comp)} AS {quote_name(name)}")
+                elif output_ds is not None and name in output_ds.components:
+                    # Single value per row: pass the viral attribute through unchanged,
+                    # but only when the operator's output structure keeps it (so data
+                    # matches the declared structure for unary / dataset-scalar / etc.).
+                    cols.append(quote_name(name))
 
         return SQLBuilder().select(*cols).from_table(table_src).build()
 
@@ -783,6 +800,36 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             ):
                 out_name = output_measure_names[0]
             cols.append(f"{expr} AS {quote_name(out_name)}")
+
+        # Viral attribute propagation: combine values present in both operands.
+        vp_registry = get_current_registry()
+        left_viral = {n for n, c in left_ds.components.items() if c.role == Role.VIRAL_ATTRIBUTE}
+        right_viral = {n for n, c in right_ds.components.items() if c.role == Role.VIRAL_ATTRIBUTE}
+        if output_ds is not None:
+            viral_names = [
+                n for n, c in output_ds.components.items() if c.role == Role.VIRAL_ATTRIBUTE
+            ]
+        else:
+            viral_names = sorted(left_viral | right_viral)
+        for name in viral_names:
+            qn = quote_name(name)
+            in_left = name in left_viral
+            in_right = name in right_viral
+            if in_left and in_right:
+                comp = (
+                    output_ds.components.get(name) if output_ds else None
+                ) or left_ds.components[name]
+                rule = vp_registry.rule_for(comp)
+                if rule is None:
+                    cols.append(f"CAST(NULL AS {get_duckdb_type(comp.data_type.__name__)}) AS {qn}")
+                else:
+                    cols.append(
+                        f"{vp_pair_sql(rule, f'{alias_a}.{qn}', f'{alias_b}.{qn}')} AS {qn}"
+                    )
+            elif in_left:
+                cols.append(f"{alias_a}.{qn} AS {qn}")
+            elif in_right:
+                cols.append(f"{alias_b}.{qn} AS {qn}")
 
         on_clause = self._join_on_clause(common_ids, alias_a, alias_b)
 
@@ -2023,6 +2070,18 @@ FROM (
                 expr = agg if agg is not None else registry.sql(op, qm)
                 cols.append(f"{expr} AS {qm}")
 
+        # Viral attribute propagation across the aggregation group.
+        vp_registry = get_current_registry()
+        for v_name, v_comp in ds.components.items():
+            if v_comp.role != Role.VIRAL_ATTRIBUTE:
+                continue
+            v_rule = vp_registry.rule_for(v_comp)
+            v_qn = quote_name(v_name)
+            if v_rule is None:
+                cols.append(f"CAST(NULL AS {get_duckdb_type(v_comp.data_type.__name__)}) AS {v_qn}")
+            else:
+                cols.append(f"{vp_group_sql(v_rule, v_qn)} AS {v_qn}")
+
         builder = SQLBuilder().select(*cols).from_table(table_src)
 
         if group_cols:
@@ -2156,8 +2215,32 @@ FROM (
                 return func_sql
             return f"{func_sql} OVER ({over_clause})"
 
+        # Build a partition-only OVER clause for viral attribute aggregation.
+        # The full over_clause may include ORDER BY and a windowing frame (e.g.
+        # "ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW") which would turn
+        # MAX into a running max rather than a partition-wide max. Viral attribute
+        # rules must reduce over the full partition, so we use only PARTITION BY.
+        partition_cols_list = self._resolve_partition_cols(node)
+        if partition_cols_list:
+            partition_cols = ", ".join(
+                quote_name(self._resolve_udo_name(p)) for p in partition_cols_list
+            )
+            vp_over_clause = f"PARTITION BY {partition_cols}"
+        else:
+            vp_over_clause = ""
+
+        vp_registry = get_current_registry()
+
+        def _viral_expr(v_name: str, v_comp: Any) -> str:
+            v_rule = vp_registry.rule_for(v_comp)
+            if v_rule is None:
+                return quote_name(v_name)  # single value per row -> pass through
+            return vp_group_sql_windowed(v_rule, quote_name(v_name), vp_over_clause)
+
         name_override = "int_var" if op == tokens.COUNT else None
-        result = self._apply_measures(node.operand, _analytic_expr, name_override)
+        result = self._apply_measures(
+            node.operand, _analytic_expr, name_override, viral_expr_fn=_viral_expr
+        )
 
         # Inject TimePeriod indicator validation for MIN/MAX
         if op in (tokens.MIN, tokens.MAX) and node.operand:
@@ -3353,6 +3436,42 @@ FROM (
             defaults[pair.component] = self._constant_to_sql(pair.default)
         return defaults
 
+    @staticmethod
+    def _build_join_viral_cols(
+        clause_info: List[Dict[str, Any]],
+        vp_registry: Any,
+        merged_viral: Set[str],
+    ) -> List[str]:
+        """Emit one merged SQL column for each name in ``merged_viral``.
+
+        Only names that satisfy the shared-viral predicate (viral in every operand
+        that has them, present in >=2 operands, not a join key) are passed in via
+        ``merged_viral``.  Single-operand viral attrs and mixed-role components are
+        handled by the main projection loop instead.
+        """
+        viral_comp: Dict[str, Any] = {}
+        viral_aliases: Dict[str, List[str]] = {}
+        for info in clause_info:
+            for vname, vcomp in info["ds"].components.items():
+                if vname in merged_viral and vcomp.role == Role.VIRAL_ATTRIBUTE:
+                    viral_aliases.setdefault(vname, []).append(info["sql_alias"])
+                    viral_comp.setdefault(vname, vcomp)
+
+        cols: List[str] = []
+        for vname in sorted(merged_viral):
+            aliases = viral_aliases.get(vname, [])
+            if not aliases:
+                continue
+            v_qn = quote_name(vname)
+            refs = [f"{sa}.{v_qn}" for sa in aliases]
+            v_rule = vp_registry.rule_for(viral_comp[vname])
+            if v_rule is None:
+                v_type = get_duckdb_type(viral_comp[vname].data_type.__name__)
+                cols.append(f"CAST(NULL AS {v_type}) AS {v_qn}")
+            else:
+                cols.append(f"{vp_reduce_refs(v_rule, refs)} AS {v_qn}")
+        return cols
+
     def visit_JoinOp(self, node: AST.JoinOp) -> str:  # type: ignore[override]
         """Visit a join operation."""
         clause_info: List[Dict[str, Any]] = []
@@ -3408,6 +3527,12 @@ FROM (
 
         nvl_defaults = self._resolve_join_nvl_defaults(node, clause_info)
 
+        # Determine which viral attrs merge into a single bare column (shared by >=2
+        # operands, viral in every operand that has them, not a join key).
+        merged_viral = merged_viral_attribute_names(
+            [info["ds"].components for info in clause_info], all_join_ids
+        )
+
         # First alias that exposes each component — used to pick the left side of ON
         # clauses. A USING key may be a measure in one dataset and an identifier in
         # another, so we track components (not just identifiers).
@@ -3417,6 +3542,7 @@ FROM (
                 comp_to_alias.setdefault(name, info["sql_alias"])
 
         first_sql_alias = clause_info[0]["sql_alias"]
+        vp_registry = get_current_registry()
 
         cols: List[str] = []
         self._join_alias_map = {}
@@ -3424,6 +3550,9 @@ FROM (
         for info in clause_info:
             sa = info["sql_alias"]
             for name, comp in info["ds"].components.items():
+                if name in merged_viral:
+                    # Merged viral attrs are emitted once by _build_join_viral_cols.
+                    continue
                 is_join_col = (
                     comp.role == Role.IDENTIFIER and not is_cross_join
                 ) or name in all_join_ids
@@ -3453,6 +3582,8 @@ FROM (
                     if name in nvl_defaults:
                         expr = f"COALESCE({expr}, {nvl_defaults[name]}) AS {quote_name(name)}"
                     cols.append(expr)
+
+        cols.extend(self._build_join_viral_cols(clause_info, vp_registry, merged_viral))
 
         builder = SQLBuilder()
         builder.select(*cols) if cols else builder.select_all()

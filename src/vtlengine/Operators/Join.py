@@ -1,6 +1,6 @@
 from copy import copy
 from functools import reduce
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 from vtlengine.AST import BinOp
 from vtlengine.AST.Grammar.tokens import CROSS_JOIN, FULL_JOIN, INNER_JOIN, LEFT_JOIN
@@ -9,6 +9,28 @@ from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators import Operator
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+
+
+def merged_viral_attribute_names(
+    components_per_operand: List[Dict[str, Component]], exclude: Set[str]
+) -> Set[str]:
+    """Names that MERGE into a single viral column in a join: shared by >=2 operands,
+    viral in every operand that has them, and not a join key (``exclude``)."""
+    counts: Dict[str, int] = {}
+    for comps in components_per_operand:
+        for name in comps:
+            counts[name] = counts.get(name, 0) + 1
+    merged: Set[str] = set()
+    for name, count in counts.items():
+        if count < 2 or name in exclude:
+            continue
+        if all(
+            comps[name].role == Role.VIRAL_ATTRIBUTE
+            for comps in components_per_operand
+            if name in comps
+        ):
+            merged.add(name)
+    return merged
 
 
 class Join(Operator):
@@ -55,6 +77,11 @@ class Join(Operator):
             )
         )
 
+        # Viral attributes shared by the operands are MERGED into one component
+        # (values combined via the viral propagation rule at execution time)
+        # instead of being #-qualified like other shared components.
+        viral_common = merged_viral_attribute_names([op.components for op in operands], set(using))
+
         for op in operands:
             for comp in op.components.values():
                 if comp.name in using:
@@ -90,6 +117,12 @@ class Join(Operator):
 
             for component_name, component in components.items():
                 component.nullable = nullability[component_name]
+
+                if component_name in viral_common:
+                    if component_name not in merged_components:
+                        component.name = component_name
+                        merged_components[component_name] = component
+                    continue
 
                 if component_name in common and component_name not in using:
                     if component.role != Role.IDENTIFIER or cls.how == "cross":

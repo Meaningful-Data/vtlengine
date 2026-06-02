@@ -2,12 +2,12 @@
 ViralPropagation
 ================
 
-Registry and resolution logic for viral attribute propagation rules
-as defined by VTL 2.2 ``define viral propagation`` construct.
+Registry for viral attribute propagation rules as defined by the VTL 2.2
+``define viral propagation`` construct. Value resolution is generated as SQL
+in :mod:`vtlengine.ViralPropagation.sql`.
 """
 
 from dataclasses import dataclass, field
-from functools import reduce
 from typing import Any, Dict, List, Optional
 
 
@@ -45,60 +45,24 @@ class ViralPropagationRegistry:
         # For v1, only variable-level rules are supported.
         return None
 
-    def resolve_pair(self, variable_name: str, value_a: Any, value_b: Any) -> Any:
-        """Resolve two viral attribute values into one (for binary operators)."""
-        rule = self.get_rule_for_variable(variable_name)
-        if rule is None:
-            return None
+    def get_existing(self, signature_type: str, target: str) -> Optional["ViralPropagationRule"]:
+        """Return an already-registered rule with the same signature_type and target."""
+        rules = self._variable_rules if signature_type == "variable" else self._valuedomain_rules
+        return rules.get(target)
 
-        if rule.aggregate_function is not None:
-            if rule.aggregate_function == "avg":
-                return (value_a + value_b) / 2
-            elif rule.aggregate_function == "min":
-                return min(value_a, value_b)
-            elif rule.aggregate_function == "max":
-                return max(value_a, value_b)
-            elif rule.aggregate_function == "sum":
-                return value_a + value_b
-            return None
+    def rule_for(self, component: Any) -> Optional["ViralPropagationRule"]:
+        """Resolve the rule for a component: variable-level overrides value-domain-level.
 
-        # Enumerated: binary clauses first, then unary (per spec)
-        binary_clauses = [c for c in rule.enumerated_clauses if len(c["values"]) == 2]
-        unary_clauses = [c for c in rule.enumerated_clauses if len(c["values"]) == 1]
-
-        pair = {value_a, value_b}
-        for clause in binary_clauses:
-            if set(clause["values"]) == pair:
-                return clause["result"]
-
-        for clause in unary_clauses:
-            if clause["values"][0] in pair:
-                return clause["result"]
-
-        return rule.default_value
-
-    def resolve_group(self, variable_name: str, values: List[Any]) -> Any:
-        """Resolve N values (for aggregation/analytic operators)."""
-        rule = self.get_rule_for_variable(variable_name)
-        if rule is None:
-            return None
-
-        if len(values) == 0:
-            return None
-        if len(values) == 1:
-            return values[0]
-
-        if rule.aggregate_function is not None:
-            funcs: Dict[str, Any] = {
-                "min": min,
-                "max": max,
-                "sum": sum,
-                "avg": lambda v: sum(v) / len(v),
-            }
-            return funcs[rule.aggregate_function](values)
-
-        # Enumerated: reduce pairwise (associative + commutative guarantees correctness)
-        return reduce(lambda a, b: self.resolve_pair(variable_name, a, b), values)
+        ``component.value_domain`` may not exist yet (added in a later phase); use
+        getattr so this is forward-compatible.
+        """
+        rule = self._variable_rules.get(component.name)
+        if rule is not None:
+            return rule
+        value_domain = getattr(component, "value_domain", None)
+        if value_domain is not None:
+            return self._valuedomain_rules.get(value_domain)
+        return None
 
     def clear(self) -> None:
         """Clear all registered rules."""
