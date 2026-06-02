@@ -160,6 +160,52 @@ class TestViralAttributeOtherOps:
         _assert_viral_attrs(result, num_viral)
 
 
+# -- String parameterized operators (substr, replace, instr) --
+
+
+class TestViralAttributeStringParameterizedOps:
+    """Viral attributes must keep BOTH their component role and their data values
+    through parameterized string operators (substr, replace, instr)."""
+
+    @staticmethod
+    def _string_ds(num_viral: int) -> dict:
+        comps = [
+            {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+            {"name": "Me_1", "type": "String", "role": "Measure", "nullable": True},
+        ] + VA_COMPONENTS[:num_viral]
+        return {"name": "DS_1", "DataStructure": comps}
+
+    @staticmethod
+    def _string_dp(num_viral: int) -> pd.DataFrame:
+        data: dict = {"Id_1": [1, 2], "Me_1": ["hello", "world"]}
+        for i in range(num_viral):
+            data[VA_NAMES[i]] = VA_VALUES[i]
+        return pd.DataFrame(data)
+
+    @pytest.mark.parametrize(
+        "expr",
+        [
+            "substr(DS_1, 2)",
+            "substr(DS_1, 2, 3)",
+            'replace(DS_1, "l", "L")',
+            'instr(DS_1, "o")',
+        ],
+    )
+    @pytest.mark.parametrize("num_viral", [1, 2, 3])
+    def test_string_param_preserves_viral_attrs(self, expr: str, num_viral: int) -> None:
+        result = run(
+            script=f"DS_r <- {expr};",
+            data_structures={"datasets": [self._string_ds(num_viral)]},
+            datapoints={"DS_1": self._string_dp(num_viral)},
+        )
+        _assert_viral_attrs(result, num_viral)
+        # The viral attribute data values must be carried over unchanged (issue #782).
+        for i in range(num_viral):
+            va_name = VA_NAMES[i]
+            assert va_name in result["DS_r"].data.columns, f"{va_name} missing from result data"
+            assert list(result["DS_r"].data[va_name]) == VA_VALUES[i]
+
+
 # -- Special cases --
 
 
