@@ -1,0 +1,4 @@
+cd := DS_1[calc identifier CI := nvl(CI, ""), identifier CH := nvl(CH, "")];
+a := count(cd # ID group by CI)[calc identifier T := "A"][rename int_var to V, CI to C];
+c := count(cd[filter CI <> CH] group by CI)[calc identifier T := "B"][rename int_var to V, CI to C];
+res <- union(a, c);

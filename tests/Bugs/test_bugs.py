@@ -1482,6 +1482,24 @@ class SetBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_796(self):
+        """
+        Expression: res <- union(count(cd # ID group by CI), count(cd group by CI));
+        Description: ``Membership.validate`` added the synthetic ``str_var`` measure
+            (from ``cd # ID``) directly into the shared operand ``cd``. The mutation
+            leaked into the later ``count(cd ...)`` over the multi-measure ``cd``,
+            so the DuckDB transpiler emitted ``COUNT(CASE WHEN ... "str_var" ...)``
+            against a table without that column, raising ``BinderException``. The
+            union of the two count branches surfaced it.
+        Git Issue: GH_796.
+        Goal: Check Result (``cd`` keeps only its real measures; the union runs).
+        """
+        code = "GH_796"
+        number_inputs = 1
+        references_names = ["cd", "a", "c", "res"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class AggregationBugs(BugHelper):
     """ """
