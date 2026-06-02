@@ -236,6 +236,29 @@ class TestMatchOperator:
         expected_sql = 'SELECT "Id_1", regexp_full_match("Me_1", \'[A-Z]+\') AS "Me_1", regexp_full_match("Me_2", \'[A-Z]+\') AS "Me_2" FROM "DS_1"'
         assert_sql_equal(sql, expected_sql)
 
+    def test_dataset_match_lookahead_uses_fallback(self):
+        """Patterns RE2 cannot compile (lookahead) route to the Python UDF."""
+        ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
+        ds.components["Me_1"].data_type = String
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds},
+            output_datasets={"DS_r": ds},
+        )
+
+        # Create AST: DS_r := match_characters(DS_1, "(?=[A-Z])\\w+")
+        left = VarID(**make_ast_node(value="DS_1"))
+        right = Constant(**make_ast_node(type_="STRING_CONSTANT", value=r"(?=[A-Z])\w+"))
+        expr = BinOp(**make_ast_node(left=left, op="match_characters", right=right))
+        ast = create_start_with_assignment("DS_r", expr)
+
+        results = transpile_and_get_sql(transpiler, ast)
+
+        _, sql, _ = results[0]
+        expected_sql = (
+            'SELECT "Id_1", vtl_match_characters("Me_1", \'(?=[A-Z])\\w+\') AS "Me_1" FROM "DS_1"'
+        )
+        assert_sql_equal(sql, expected_sql)
+
 
 # =============================================================================
 # EXIST_IN Operator Tests
