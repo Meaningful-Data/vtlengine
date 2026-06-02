@@ -27,6 +27,7 @@ params = [
     "comments_end_line.vtl",
     "time_agg.vtl",
     "round_with_slash.vtl",
+    "component_roles.vtl",
 ]
 
 params_prettier = [
