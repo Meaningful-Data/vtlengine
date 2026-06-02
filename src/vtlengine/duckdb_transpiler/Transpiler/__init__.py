@@ -24,7 +24,10 @@ from vtlengine.duckdb_transpiler.Transpiler.operators import (
     _ORDERING_OPS,
     _STRING_PARAM_OPS,
     _STRING_UNARY_OPS,
+    FALLBACK_MATCH_FUNCTION,
+    NATIVE_MATCH_FUNCTION,
     get_duckdb_type,
+    is_re2_incompatible,
     registry,
 )
 from vtlengine.duckdb_transpiler.Transpiler.sql_builder import (
@@ -907,17 +910,40 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         return SQLBuilder().select(*cols).from_table(table_src).build()
 
     def visit_BinOp_match_characters(self, node: AST.BinOp) -> str:
-        """Visit match_characters operator using registry."""
-        left_type = self._get_node_type(node.left)
-        pattern_sql = self.visit(node.right)
+        """Visit match_characters operator.
 
-        if left_type == _DATASET:
-            return self._apply_measures(
-                node.left, lambda col: registry.sql(tokens.CHARSET_MATCH, col, pattern_sql)
-            )
-        else:
-            left_sql = self.visit(node.left)
-            return registry.sql(tokens.CHARSET_MATCH, left_sql, pattern_sql)
+        Emits DuckDB's native RE2 ``regexp_full_match`` for patterns RE2 can
+        compile. Literal patterns using PCRE/Python-only constructs RE2 rejects
+        (lookaround, backreferences, ...) are routed to the
+        ``vtl_match_characters`` Python UDF so they match the ``re`` semantics
+        of the legacy engine.
+        """
+        pattern_sql = self.visit(node.right)
+        match_function = self._match_characters_function(node.right)
+
+        def _match_sql(col: str) -> str:
+            if match_function == NATIVE_MATCH_FUNCTION:
+                return registry.sql(tokens.CHARSET_MATCH, col, pattern_sql)
+            return f"{match_function}({col}, {pattern_sql})"
+
+        if self._get_node_type(node.left) == _DATASET:
+            return self._apply_measures(node.left, _match_sql)
+        return _match_sql(self.visit(node.left))
+
+    def _match_characters_function(self, pattern_node: AST.AST) -> str:
+        """Pick the SQL function for a ``match_characters`` pattern.
+
+        Literal patterns are inspected: those RE2 cannot compile use the Python
+        fallback UDF. Non-literal patterns (e.g. a component) keep the native
+        function, since their compatibility is unknown at transpile time.
+        """
+        if (
+            isinstance(pattern_node, AST.Constant)
+            and isinstance(pattern_node.value, str)
+            and is_re2_incompatible(pattern_node.value)
+        ):
+            return FALLBACK_MATCH_FUNCTION
+        return NATIVE_MATCH_FUNCTION
 
     def visit_BinOp_exists_in(self, node: AST.BinOp) -> str:
         """Visit EXISTS_IN BinOp."""
@@ -1566,8 +1592,6 @@ FROM (
             and index_node.op == "-"
             and isinstance(index_node.operand, AST.Constant)
         ):
-            from vtlengine.Exceptions import SemanticError
-
             raise SemanticError("2-1-15-2", op="random", value=index_node.operand.value)
 
     def _visit_random_impl(
