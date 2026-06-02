@@ -1,0 +1,33 @@
+{
+  "datasets": [
+    {
+      "name": "pc22",
+      "DataStructure": [
+        {
+          "name": "Id_1",
+          "role": "Identifier",
+          "type": "Integer",
+          "nullable": false
+        },
+        {
+          "name": "COUNTRY_INCORPORATION",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "POSTAL_CODE",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "PC_VALID",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}
