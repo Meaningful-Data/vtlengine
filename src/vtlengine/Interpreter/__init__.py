@@ -305,9 +305,9 @@ class InterpreterAnalyzer(ASTTemplate):
                 raise SemanticError("1-3-3-4", values=clause.values, name=node.name)
             seen_values.add(key)
 
-        # Validate: no duplicate rules for the same target
-        existing = registry.get_rule_for_variable(node.target)
-        if existing is not None and node.signature_type == existing.signature_type:
+        # Validate: no duplicate rules for the same target (variable or value domain)
+        existing = registry.get_existing(node.signature_type, node.target)
+        if existing is not None:
             code = "1-3-3-1" if node.signature_type == "variable" else "1-3-3-2"
             raise SemanticError(code, name=node.target)
 
