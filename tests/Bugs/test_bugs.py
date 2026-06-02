@@ -1077,6 +1077,23 @@ class ComparisonBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GL_792(self):
+        """
+        Status: BUG
+        Expression: pc22 <- DS_1[filter COUNTRY_INCORPORATION = "CA"]
+            [calc PC_VALID := match_characters(POSTAL_CODE, "^((?=[^DdFfIiOoQqUu\\d\\s])...")];
+        Description: match_characters patterns using PCRE/Python lookaround assertions
+            (a Canadian postal-code rule) are rejected by DuckDB's RE2 engine. They
+            must fall back to the Python ``re`` engine and yield the same result.
+        Git Issue: #792.
+        Goal: Check Result.
+        """
+        code = "GL_792"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GL_193_1(self):
         """
         Status: OK
