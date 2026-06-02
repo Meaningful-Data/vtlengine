@@ -2,7 +2,7 @@ name: Ubuntu 24.04 Tests
 
 on:
   pull_request:
-    branches: ["main", "1.6.X"]
+    branches: ["main", "1.6.X", "1.9.X"]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
@@ -57,12 +57,12 @@ jobs:
       - name: Install pip-only dependencies
         run: |
           pip install --no-dependencies --break-system-packages \
-            pyarrow==14.0.2 \
+            pyarrow==24.0.0 \
             sdmxschemas==1.0.0 \
             parsy==2.2 \
-            msgspec==0.19.0 \
-            duckdb==1.4.1 \
-            pysdmx==1.9.0
+            msgspec==0.21.1 \
+            duckdb==1.4.4 \
+            pysdmx==1.15.1
 
       - name: Download ANTLR4 C++ runtime source
         if: steps.cpp-cache.outputs.cache-hit != 'true' && steps.antlr4-cache.outputs.cache-hit != 'true'

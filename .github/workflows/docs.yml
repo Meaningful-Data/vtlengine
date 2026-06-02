@@ -12,7 +12,7 @@ on:
 
   pull_request:
     types: [ closed ]
-    branches: [ main, 1.6.X ]
+    branches: [ main, 1.6.X, 1.9.X ]
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
