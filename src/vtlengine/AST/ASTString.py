@@ -314,13 +314,14 @@ class ASTString(ASTTemplate):
         is_first = self.is_first_assignment
         if is_first:
             self.is_first_assignment = False
-        if self.pretty:
-            if is_first:
-                expression = f"{self.visit(node.left)} {node.op}{nl}{tab}{self.visit(node.right)}"
-            else:
-                expression = f"{self.visit(node.left)} {node.op} {self.visit(node.right)}"
+        left = self.visit(node.left)
+        role = getattr(node.left, "role", None)
+        if role is not None:
+            left = f"{role.value.lower()} {left}"
+        if self.pretty and is_first:
+            expression = f"{left} {node.op}{nl}{tab}{self.visit(node.right)}"
         else:
-            expression = f"{self.visit(node.left)} {node.op} {self.visit(node.right)}"
+            expression = f"{left} {node.op} {self.visit(node.right)}"
         if return_element:
             return expression
         self.vtl_script += f"{expression};"
@@ -344,7 +345,9 @@ class ASTString(ASTTemplate):
         elif node.op in [IDENTIFIER, ATTRIBUTE, VIRAL_ATTRIBUTE, NOT]:
             return f"{node.op} {self.visit(node.operand)}"
         elif node.op == MEASURE:
-            return self.visit(node.operand)
+            if getattr(node, "is_implicit_role", False):
+                return self.visit(node.operand)
+            return f"{node.op} {self.visit(node.operand)}"
 
         return f"{node.op}({self.visit(node.operand)})"
 

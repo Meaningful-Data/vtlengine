@@ -1,0 +1,8 @@
+aggr_measure_ds := DS_1 [ aggr measure Me_1 := min ( Me_1 ) group by Id_1 ];
+aggr_identifier_ds := DS_1 [ aggr identifier Me_1 := min ( Me_1 ) group by Id_1 ];
+aggr_attribute_ds := DS_1 [ aggr attribute Me_1 := min ( Me_1 ) group by Id_1 ];
+calc_measure_ds := DS_1 [ calc measure Me_3 := Me_1 + Me_2 ];
+calc_identifier_ds := DS_1 [ calc identifier Me_3 := Me_1 + Me_2 ];
+calc_attribute_ds := DS_1 [ calc attribute Me_3 := Me_1 + Me_2 ];
+aggr_implicit_measure_ds := DS_1 [ aggr Me_1 := min ( Me_1 ) group by Id_1 ];
+calc_implicit_measure_ds := DS_1 [ calc Me_3 := Me_1 + Me_2 ];
