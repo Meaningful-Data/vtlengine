@@ -24,7 +24,7 @@ from tests.Helper import TestHelper, _use_duckdb_backend
 from vtlengine.API import generate_sdmx, prettify, run, run_sdmx, semantic_analysis
 from vtlengine.API._InternalApi import _check_script, to_vtl_json
 from vtlengine.API._sdmx_utils import _build_mapping_dict
-from vtlengine.Exceptions import DataLoadError, InputValidationException, SemanticError
+from vtlengine.Exceptions import DataLoadError, InputValidationException
 from vtlengine.Model import Dataset
 
 # Path setup
