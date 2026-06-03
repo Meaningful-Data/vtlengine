@@ -201,3 +201,9 @@ third_party/*
 
 # Tests output files
 vtl-output/*
+
+# JupyterLite demo build artifacts
+jupyterlite/_output/
+jupyterlite/.build/
+jupyterlite/wheels/
+jupyterlite/.jupyterlite.doit.db
