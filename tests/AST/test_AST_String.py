@@ -29,6 +29,7 @@ params = [
     "viral_propagation.vtl",
     "round_with_slash.vtl",
     "trunc_with_slash.vtl",
+    "component_roles.vtl",
 ]
 
 params_prettier = [
