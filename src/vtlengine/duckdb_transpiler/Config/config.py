@@ -5,7 +5,8 @@ Configuration values can be set via environment variables:
 - VTL_DUCKDB_DECIMAL_WIDTH: DECIMAL precision, total digits (default: 28, -1 to disable)
 - OUTPUT_NUMBER_SIGNIFICANT_DIGITS: DECIMAL scale, decimal places
   (default: 10, -1 to disable; shared with the pandas backend)
-- VTL_MEMORY_LIMIT: Max memory for DuckDB (e.g., "8GB", "80%") (default: "80%")
+- VTL_MEMORY_LIMIT: Max memory for DuckDB as an absolute size (e.g. "8GB", "512MB").
+  A percentage (e.g. "80%", the default) defers to DuckDB's own default of 80% of RAM.
 - VTL_THREADS: Number of threads for DuckDB (default: 1)
 - VTL_TEMP_DIRECTORY: Directory for spill-to-disk (default: system temp)
 - VTL_MAX_TEMP_DIRECTORY_SIZE: Max size for temp directory spill
@@ -26,10 +27,9 @@ import tempfile
 import uuid
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterator, Tuple, Union
+from typing import Iterator, Optional, Tuple, Union
 
 import duckdb
-import psutil  # type: ignore[import-untyped]
 
 from vtlengine.duckdb_transpiler.Transpiler.operators import register_regex_functions
 from vtlengine.Exceptions import RunTimeError
@@ -150,50 +150,24 @@ def _use_in_memory_db() -> bool:
 STORAGE_COMPATIBILITY_VERSION: str = "v1.4.0"
 
 
-def get_memory_limit_bytes() -> int:
+def _duckdb_memory_limit() -> Optional[str]:
     """
-    Parse memory limit and return bytes.
+    Value for DuckDB's ``memory_limit`` setting, or ``None`` to leave it unset.
 
-    Supports formats:
-    - "80%" - percentage of system RAM
-    - "8GB" - absolute size in GB
-    - "8192MB" - absolute size in MB
-
-    Returns:
-        Memory limit in bytes
+    DuckDB cannot parse percentage strings (e.g. "80%") and its own default is
+    already 80% of physical RAM, so percentage limits are deferred to that
+    default rather than computed here. Absolute limits (e.g. "8GB", "512MB") are
+    passed straight through — DuckDB parses the units itself. Deferring on
+    percentages is what lets vtlengine run without psutil (e.g. under
+    Pyodide/Emscripten, where psutil cannot be installed).
     """
-    limit = _memory_limit().strip().upper()
-
-    total_ram = psutil.virtual_memory().total
-
-    if limit.endswith("%"):
-        pct = float(limit[:-1]) / 100.0
-        return int(total_ram * pct)
-    elif limit.endswith("GB"):
-        return int(float(limit[:-2]) * 1024 * 1024 * 1024)
-    elif limit.endswith("MB"):
-        return int(float(limit[:-2]) * 1024 * 1024)
-    elif limit.endswith("KB"):
-        return int(float(limit[:-2]) * 1024)
-    else:
-        # Assume bytes
-        return int(limit)
-
-
-def get_memory_limit_str() -> str:
-    """
-    Get memory limit as a human-readable string for DuckDB.
-
-    Returns:
-        Memory limit string (e.g., "8GB")
-    """
-    bytes_limit = get_memory_limit_bytes()
-    gb = bytes_limit / (1024**3)
-    if gb >= 1:
-        return f"{gb:.1f}GB"
-    else:
-        mb = bytes_limit / (1024**2)
-        return f"{mb:.0f}MB"
+    limit = _memory_limit().strip()
+    if not limit or limit.endswith("%"):
+        return None
+    if limit.isdigit():
+        # A bare integer is a byte count; DuckDB requires an explicit unit.
+        return f"{limit}B"
+    return limit
 
 
 def configure_duckdb_connection(conn: duckdb.DuckDBPyConnection) -> None:
@@ -201,7 +175,8 @@ def configure_duckdb_connection(conn: duckdb.DuckDBPyConnection) -> None:
     Apply memory and performance settings to a DuckDB connection.
 
     Statements:
-    - Set memory limit: set the maximum memory DuckDB can use based on configuration
+    - Set memory limit (absolute VTL_MEMORY_LIMIT only; a percentage defers to DuckDB's
+        own default of 80% of RAM)
     - Set temp directory: configure where DuckDB can spill to disk when memory is exceeded
     - Set max temp directory size (if configured): limit how much disk space DuckDB can use for
         spill-to-disk
@@ -216,13 +191,15 @@ def configure_duckdb_connection(conn: duckdb.DuckDBPyConnection) -> None:
     """
     max_temp_dir_size = _max_temp_directory_size()
     statements = [
-        f"SET memory_limit = '{get_memory_limit_str()}'",
         f"SET temp_directory = '{_temp_directory()}'",
         "SET preserve_insertion_order = false",
         "SET max_expression_depth TO 10000",
         "SET enable_object_cache = true",
         f"SET threads = {_threads()}",
     ]
+    memory_limit = _duckdb_memory_limit()
+    if memory_limit is not None:
+        statements.insert(0, f"SET memory_limit = '{memory_limit}'")
     if max_temp_dir_size:
         statements.append(f"SET max_temp_directory_size = '{max_temp_dir_size}'")
 
@@ -276,18 +253,14 @@ def configured_connection(database: str = ":memory:") -> Iterator[duckdb.DuckDBP
 
 def get_system_info() -> dict[str, Union[float, int, str, None]]:
     """
-    Get system memory information.
+    Get the DuckDB memory/thread configuration.
 
-    Returns:
-        Dict with total_ram, available_ram, memory_limit (all in GB)
+    Live system-RAM figures are not reported: probing them required psutil,
+    which is no longer a dependency. When VTL_MEMORY_LIMIT is a percentage,
+    DuckDB's own default (80% of physical RAM) applies.
     """
-    mem = psutil.virtual_memory()
     return {
-        "total_ram_gb": mem.total / (1024**3),
-        "available_ram_gb": mem.available / (1024**3),
-        "used_percent": mem.percent,
-        "configured_limit_gb": get_memory_limit_bytes() / (1024**3),
-        "configured_limit_str": get_memory_limit_str(),
+        "configured_limit": _memory_limit(),
         "threads": _threads() or os.cpu_count(),
         "temp_directory": _temp_directory(),
     }
