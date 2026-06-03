@@ -65,39 +65,40 @@ public:
     RuleRenameClause = 7, RuleAggrClause = 8, RuleFilterClause = 9, RuleCalcClause = 10, 
     RuleKeepOrDropClause = 11, RulePivotOrUnpivotClause = 12, RuleCustomPivotClause = 13, 
     RuleSubspaceClause = 14, RuleJoinOperators = 15, RuleDefOperators = 16, 
-    RuleVpSignature = 17, RuleVpBody = 18, RuleVpClause = 19, RuleVpCondition = 20, 
-    RuleGenericOperators = 21, RuleGenericOperatorsComponent = 22, RuleParameterComponent = 23, 
-    RuleParameter = 24, RuleStringDistanceMethods = 25, RuleStringOperators = 26, 
-    RuleStringOperatorsComponent = 27, RuleNumericOperators = 28, RuleNumericOperatorsComponent = 29, 
-    RuleComparisonOperators = 30, RuleComparisonOperatorsComponent = 31, 
-    RuleTimeOperators = 32, RuleTimeOperatorsComponent = 33, RuleSetOperators = 34, 
-    RuleHierarchyOperators = 35, RuleValidationOperators = 36, RuleConditionalOperators = 37, 
-    RuleConditionalOperatorsComponent = 38, RuleAggrOperators = 39, RuleAggrOperatorsGrouping = 40, 
-    RuleAnFunction = 41, RuleAnFunctionComponent = 42, RuleRenameClauseItem = 43, 
-    RuleAggregateClause = 44, RuleAggrFunctionClause = 45, RuleCalcClauseItem = 46, 
-    RuleSubspaceClauseItem = 47, RuleScalarItem = 48, RuleJoinClause = 49, 
-    RuleJoinClauseItem = 50, RuleUsingClause = 51, RuleNvlJoinClause = 52, 
-    RuleJoinBody = 53, RuleJoinApplyClause = 54, RulePartitionByClause = 55, 
-    RuleOrderByClause = 56, RuleOrderByItem = 57, RuleWindowingClause = 58, 
-    RuleSignedInteger = 59, RuleSignedNumber = 60, RuleLimitClauseItem = 61, 
-    RuleGroupingClause = 62, RuleHavingClause = 63, RuleParameterItem = 64, 
-    RuleOutputParameterType = 65, RuleOutputParameterTypeComponent = 66, 
-    RuleInputParameterType = 67, RuleRulesetType = 68, RuleScalarType = 69, 
-    RuleComponentType = 70, RuleDatasetType = 71, RuleEvalDatasetType = 72, 
-    RuleScalarSetType = 73, RuleDpRuleset = 74, RuleHrRuleset = 75, RuleValueDomainName = 76, 
-    RuleRulesetID = 77, RuleRulesetSignature = 78, RuleSignature = 79, RuleRuleClauseDatapoint = 80, 
-    RuleRuleItemDatapoint = 81, RuleRuleClauseHierarchical = 82, RuleRuleItemHierarchical = 83, 
-    RuleHierRuleSignature = 84, RuleValueDomainSignature = 85, RuleCodeItemRelation = 86, 
-    RuleCodeItemRelationClause = 87, RuleValueDomainValue = 88, RuleScalarTypeConstraint = 89, 
-    RuleCompConstraint = 90, RuleMultModifier = 91, RuleValidationOutput = 92, 
-    RuleValidationMode = 93, RuleConditionClause = 94, RuleInputMode = 95, 
-    RuleImbalanceExpr = 96, RuleInputModeHierarchy = 97, RuleOutputModeHierarchy = 98, 
-    RuleAlias = 99, RuleVarID = 100, RuleSimpleComponentId = 101, RuleComponentID = 102, 
-    RuleLists = 103, RuleErCode = 104, RuleErLevel = 105, RuleComparisonOperand = 106, 
-    RuleOptionalExpr = 107, RuleOptionalExprComponent = 108, RuleComponentRole = 109, 
-    RuleViralAttribute = 110, RuleValueDomainID = 111, RuleOperatorID = 112, 
-    RuleRoutineName = 113, RuleConstant = 114, RuleBasicScalarType = 115, 
-    RuleRetainType = 116
+    RuleVpSignature = 17, RuleVpBody = 18, RuleEnumeratedVpClause = 19, 
+    RuleAggregationVpClause = 20, RuleDefaultVpClause = 21, RuleVpCondition = 22, 
+    RuleGenericOperators = 23, RuleGenericOperatorsComponent = 24, RuleParameterComponent = 25, 
+    RuleParameter = 26, RuleStringDistanceMethods = 27, RuleStringOperators = 28, 
+    RuleStringOperatorsComponent = 29, RuleNumericOperators = 30, RuleNumericOperatorsComponent = 31, 
+    RuleComparisonOperators = 32, RuleComparisonOperatorsComponent = 33, 
+    RuleTimeOperators = 34, RuleTimeOperatorsComponent = 35, RuleSetOperators = 36, 
+    RuleHierarchyOperators = 37, RuleValidationOperators = 38, RuleConditionalOperators = 39, 
+    RuleConditionalOperatorsComponent = 40, RuleAggrOperators = 41, RuleAggrOperatorsGrouping = 42, 
+    RuleAnFunction = 43, RuleAnFunctionComponent = 44, RuleRenameClauseItem = 45, 
+    RuleAggregateClause = 46, RuleAggrFunctionClause = 47, RuleCalcClauseItem = 48, 
+    RuleSubspaceClauseItem = 49, RuleScalarItem = 50, RuleJoinClause = 51, 
+    RuleJoinClauseItem = 52, RuleUsingClause = 53, RuleNvlJoinClause = 54, 
+    RuleJoinBody = 55, RuleJoinApplyClause = 56, RulePartitionByClause = 57, 
+    RuleOrderByClause = 58, RuleOrderByItem = 59, RuleWindowingClause = 60, 
+    RuleSignedInteger = 61, RuleSignedNumber = 62, RuleLimitClauseItem = 63, 
+    RuleGroupingClause = 64, RuleHavingClause = 65, RuleParameterItem = 66, 
+    RuleOutputParameterType = 67, RuleOutputParameterTypeComponent = 68, 
+    RuleInputParameterType = 69, RuleRulesetType = 70, RuleScalarType = 71, 
+    RuleComponentType = 72, RuleDatasetType = 73, RuleEvalDatasetType = 74, 
+    RuleScalarSetType = 75, RuleDpRuleset = 76, RuleHrRuleset = 77, RuleValueDomainName = 78, 
+    RuleRulesetID = 79, RuleRulesetSignature = 80, RuleSignature = 81, RuleRuleClauseDatapoint = 82, 
+    RuleRuleItemDatapoint = 83, RuleRuleClauseHierarchical = 84, RuleRuleItemHierarchical = 85, 
+    RuleHierRuleSignature = 86, RuleValueDomainSignature = 87, RuleCodeItemRelation = 88, 
+    RuleCodeItemRelationClause = 89, RuleValueDomainValue = 90, RuleScalarTypeConstraint = 91, 
+    RuleCompConstraint = 92, RuleMultModifier = 93, RuleValidationOutput = 94, 
+    RuleValidationMode = 95, RuleConditionClause = 96, RuleInputMode = 97, 
+    RuleImbalanceExpr = 98, RuleInputModeHierarchy = 99, RuleOutputModeHierarchy = 100, 
+    RuleAlias = 101, RuleVarID = 102, RuleSimpleComponentId = 103, RuleComponentID = 104, 
+    RuleLists = 105, RuleErCode = 106, RuleErLevel = 107, RuleComparisonOperand = 108, 
+    RuleOptionalExpr = 109, RuleOptionalExprComponent = 110, RuleComponentRole = 111, 
+    RuleViralAttribute = 112, RuleValueDomainID = 113, RuleOperatorID = 114, 
+    RuleRoutineName = 115, RuleConstant = 116, RuleBasicScalarType = 117, 
+    RuleRetainType = 118
   };
 
   explicit Vtl(antlr4::TokenStream *input);
@@ -136,7 +137,9 @@ public:
   class DefOperatorsContext;
   class VpSignatureContext;
   class VpBodyContext;
-  class VpClauseContext;
+  class EnumeratedVpClauseContext;
+  class AggregationVpClauseContext;
+  class DefaultVpClauseContext;
   class VpConditionContext;
   class GenericOperatorsContext;
   class GenericOperatorsComponentContext;
@@ -1378,10 +1381,12 @@ public:
   public:
     VpBodyContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    std::vector<VpClauseContext *> vpClause();
-    VpClauseContext* vpClause(size_t i);
+    std::vector<EnumeratedVpClauseContext *> enumeratedVpClause();
+    EnumeratedVpClauseContext* enumeratedVpClause(size_t i);
     std::vector<antlr4::tree::TerminalNode *> EOL();
     antlr4::tree::TerminalNode* EOL(size_t i);
+    DefaultVpClauseContext *defaultVpClause();
+    AggregationVpClauseContext *aggregationVpClause();
 
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
@@ -1392,63 +1397,60 @@ public:
 
   VpBodyContext* vpBody();
 
-  class  VpClauseContext : public antlr4::ParserRuleContext {
+  class  EnumeratedVpClauseContext : public antlr4::ParserRuleContext {
   public:
-    VpClauseContext(antlr4::ParserRuleContext *parent, size_t invokingState);
-   
-    VpClauseContext() = default;
-    void copyFrom(VpClauseContext *context);
-    using antlr4::ParserRuleContext::copyFrom;
-
+    EnumeratedVpClauseContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-
-   
-  };
-
-  class  AggregationVpClauseContext : public VpClauseContext {
-  public:
-    AggregationVpClauseContext(VpClauseContext *ctx);
-
-    antlr4::tree::TerminalNode *AGGREGATE_KW();
-    antlr4::tree::TerminalNode *MIN();
-    antlr4::tree::TerminalNode *MAX();
-    antlr4::tree::TerminalNode *SUM();
-    antlr4::tree::TerminalNode *AVG();
-    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
-    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
-
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-  };
-
-  class  DefaultVpClauseContext : public VpClauseContext {
-  public:
-    DefaultVpClauseContext(VpClauseContext *ctx);
-
-    antlr4::tree::TerminalNode *ELSE();
-    ConstantContext *constant();
-    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
-    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
-
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-  };
-
-  class  EnumeratedVpClauseContext : public VpClauseContext {
-  public:
-    EnumeratedVpClauseContext(VpClauseContext *ctx);
-
     antlr4::tree::TerminalNode *WHEN();
     VpConditionContext *vpCondition();
     antlr4::tree::TerminalNode *THEN();
     ConstantContext *constant();
     antlr4::tree::TerminalNode *IDENTIFIER();
     antlr4::tree::TerminalNode *COLON();
+
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
   };
 
-  VpClauseContext* vpClause();
+  EnumeratedVpClauseContext* enumeratedVpClause();
+
+  class  AggregationVpClauseContext : public antlr4::ParserRuleContext {
+  public:
+    AggregationVpClauseContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *AGGREGATE_KW();
+    antlr4::tree::TerminalNode *MIN();
+    antlr4::tree::TerminalNode *MAX();
+    antlr4::tree::TerminalNode *SUM();
+    antlr4::tree::TerminalNode *AVG();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  AggregationVpClauseContext* aggregationVpClause();
+
+  class  DefaultVpClauseContext : public antlr4::ParserRuleContext {
+  public:
+    DefaultVpClauseContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *ELSE();
+    ConstantContext *constant();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  DefaultVpClauseContext* defaultVpClause();
 
   class  VpConditionContext : public antlr4::ParserRuleContext {
   public:

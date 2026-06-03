@@ -149,13 +149,20 @@ vpSignature:
 ;
 
 vpBody:
-    vpClause (EOL vpClause)*
+    enumeratedVpClause (EOL enumeratedVpClause)* (EOL defaultVpClause)?
+    | aggregationVpClause
 ;
 
-vpClause:
-    (IDENTIFIER COLON)? WHEN vpCondition THEN constant    # enumeratedVpClause
-    | AGGREGATE_KW (MIN | MAX | SUM | AVG)                 # aggregationVpClause
-    | ELSE constant                                        # defaultVpClause
+enumeratedVpClause:
+    (IDENTIFIER COLON)? WHEN vpCondition THEN constant
+;
+
+aggregationVpClause:
+    AGGREGATE_KW (MIN | MAX | SUM | AVG)
+;
+
+defaultVpClause:
+    ELSE constant
 ;
 
 vpCondition:

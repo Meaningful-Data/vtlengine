@@ -1002,8 +1002,10 @@ class ExprComp:
             elif not c.is_terminal and c.ctx_id == RC.ORDER_BY_CLAUSE:
                 order_by = Terminals().visitOrderByClause(c)
                 continue
-            elif not c.is_terminal and c.rule_index in (59, 48):
-                # SignedInteger (rule 59) or ScalarItem (rule 48)
+            elif not c.is_terminal and c.rule_index in (
+                RC.SIGNED_INTEGER[0],
+                RC.SCALAR_ITEM[0],
+            ):
                 if params is None:
                     params = []
                 if c.rule_index == RC.SIGNED_INTEGER[0]:
