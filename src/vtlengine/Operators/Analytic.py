@@ -40,6 +40,7 @@ from vtlengine.DataTypes import (
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.ViralPropagation import get_current_registry
 
 return_integer_operators = [MAX, MIN, SUM]
 
@@ -363,6 +364,24 @@ class Analytic(Operator.Unary):
             window=window,
             params=params,
         )
+
+        # Propagate viral attributes over each partition (analyticfunc only
+        # returns identifiers + measures, so they are re-attached here).
+        viral_attr_names = operand.get_viral_attributes_names()
+        if viral_attr_names and operand.data is not None and result.data is not None:
+            registry = get_current_registry()
+            viral_src = operand.data[identifier_names + viral_attr_names].copy()
+            for va_name in viral_attr_names:
+                if registry.get_rule_for_variable(va_name) is None:
+                    # No rule -> per-row passthrough (keep the original value).
+                    continue
+                if partitioning:
+                    viral_src[va_name] = viral_src.groupby(partitioning, sort=False)[
+                        va_name
+                    ].transform(lambda vals, n=va_name: registry.resolve_group(n, list(vals)))
+                else:
+                    viral_src[va_name] = registry.resolve_group(va_name, list(viral_src[va_name]))
+            result.data = result.data.merge(viral_src, on=identifier_names, how="left")
 
         if result.data is not None:
             for comp_name, comp in result.components.items():

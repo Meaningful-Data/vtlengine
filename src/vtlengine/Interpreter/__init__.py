@@ -439,9 +439,9 @@ class InterpreterAnalyzer(ASTTemplate):
                 raise SemanticError("1-3-3-4", values=clause.values, name=node.name)
             seen_values.add(key)
 
-        # Validate: no duplicate rules for the same target
-        existing = registry.get_rule_for_variable(node.target)
-        if existing is not None and node.signature_type == existing.signature_type:
+        # Validate: no duplicate rules for the same target (variable or value domain)
+        existing = registry.get_existing(node.signature_type, node.target)
+        if existing is not None:
             code = "1-3-3-1" if node.signature_type == "variable" else "1-3-3-2"
             raise SemanticError(code, name=node.target)
 
@@ -1142,12 +1142,14 @@ class InterpreterAnalyzer(ASTTemplate):
                         columns={col: col[col.find("#") + 1 :] for col in result.data.columns},
                         inplace=True,
                     )
-                result.components = {
-                    comp_name[comp_name.find("#") + 1 :]: comp
-                    for comp_name, comp in result.components.items()
-                }
-                for comp in result.components.values():
-                    comp.name = comp.name[comp.name.find("#") + 1 :]
+                    result.data = result.data.loc[:, ~result.data.columns.duplicated()]
+                deduped_components: Dict[str, Component] = {}
+                for comp_name, comp in result.components.items():
+                    stripped = comp_name[comp_name.find("#") + 1 :]
+                    if stripped not in deduped_components:
+                        comp.name = stripped
+                        deduped_components[stripped] = comp
+                result.components = deduped_components
                 if result.data is not None:
                     result.data.reset_index(drop=True, inplace=True)
                 self.is_from_join = False

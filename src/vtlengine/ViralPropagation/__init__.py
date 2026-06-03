@@ -2,8 +2,9 @@
 ViralPropagation
 ================
 
-Registry and resolution logic for viral attribute propagation rules
-as defined by VTL 2.2 ``define viral propagation`` construct.
+Registry for viral attribute propagation rules as defined by the VTL 2.2
+``define viral propagation`` construct. Value resolution is generated as SQL
+in :mod:`vtlengine.ViralPropagation.sql`.
 """
 
 from dataclasses import dataclass, field
@@ -45,6 +46,26 @@ class ViralPropagationRegistry:
         # For v1, only variable-level rules are supported.
         return None
 
+    def get_existing(self, signature_type: str, target: str) -> Optional["ViralPropagationRule"]:
+        """Return an already-registered rule with the same signature_type and target."""
+        rules = self._variable_rules if signature_type == "variable" else self._valuedomain_rules
+        return rules.get(target)
+
+    def rule_for(self, component: Any) -> Optional["ViralPropagationRule"]:
+        """Resolve the rule for a component: variable-level overrides value-domain-level.
+
+        ``component.value_domain`` may not exist yet (added in a later phase); use
+        getattr so this is forward-compatible.
+        """
+        rule = self._variable_rules.get(component.name)
+        if rule is not None:
+            return rule
+        value_domain = getattr(component, "value_domain", None)
+        if value_domain is not None:
+            return self._valuedomain_rules.get(value_domain)
+        return None
+
+    # Pandas resolution methods
     def resolve_pair(self, variable_name: str, value_a: Any, value_b: Any) -> Any:
         """Resolve two viral attribute values into one (for binary operators)."""
         rule = self.get_rule_for_variable(variable_name)
