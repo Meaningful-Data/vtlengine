@@ -35,25 +35,23 @@ class Membership(Binary):
             )
 
         component = left_operand.components[right_operand]
-        if component.role in (Role.IDENTIFIER, Role.ATTRIBUTE):
-            right_operand = COMP_NAME_MAPPING[component.data_type]
-            left_operand.components[right_operand] = Component(
-                name=right_operand,
-                data_type=component.data_type,
-                role=Role.MEASURE,
-                nullable=component.nullable,
-            )
-            if left_operand.data is not None:
-                left_operand.data[right_operand] = left_operand.data[component.name]
+        promote_to_measure = component.role in (Role.IDENTIFIER, Role.ATTRIBUTE)
         result_components = {
             name: comp
             for name, comp in left_operand.components.items()
             if comp.role == Role.IDENTIFIER
-            or comp.name == right_operand
             or comp.role == Role.VIRAL_ATTRIBUTE
+            or (not promote_to_measure and comp.name == right_operand)
         }
-        result_dataset = Dataset(name=dataset_name, components=result_components, data=None)
-        return result_dataset
+        if promote_to_measure:
+            measure_name = COMP_NAME_MAPPING[component.data_type]
+            result_components[measure_name] = Component(
+                name=measure_name,
+                data_type=component.data_type,
+                role=Role.MEASURE,
+                nullable=component.nullable,
+            )
+        return Dataset(name=dataset_name, components=result_components, data=None)
 
     @classmethod
     def evaluate(
@@ -63,16 +61,24 @@ class Membership(Binary):
         is_from_component_assignment: bool = False,
     ) -> Union[DataComponent, Dataset]:
         result_dataset = cls.validate(left_operand, right_operand)
-        if left_operand.data is not None:
-            if is_from_component_assignment:
-                return DataComponent(
-                    name=right_operand,
-                    data_type=left_operand.components[right_operand].data_type,
-                    role=Role.MEASURE,
-                    nullable=left_operand.components[right_operand].nullable,
-                    data=left_operand.data[right_operand],
-                )
-            result_dataset.data = left_operand.data[list(result_dataset.components.keys())]
+        if left_operand.data is None:
+            return result_dataset
+
+        component = left_operand.components[right_operand]
+        if is_from_component_assignment:
+            return DataComponent(
+                name=right_operand,
+                data_type=component.data_type,
+                role=Role.MEASURE,
+                nullable=component.nullable,
+                data=left_operand.data[right_operand],
+            )
+
+        result_data = pd.DataFrame()
+        for name in result_dataset.components:
+            source_name = name if name in left_operand.data.columns else component.name
+            result_data[name] = left_operand.data[source_name]
+        result_dataset.data = result_data.reset_index(drop=True)
         return result_dataset
 
 

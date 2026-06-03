@@ -2,7 +2,7 @@ name: Ubuntu 24.04 Tests
 
 on:
   pull_request:
-    branches: ["main", "1.9.X", "1.6.X"]
+    branches: ["main", "1.6.X", "1.9.X"]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}

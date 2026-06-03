@@ -20,6 +20,7 @@ from vtlengine.DataTypes import String as StringType
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.duckdb_transpiler.Transpiler.sql_builder import quote_name
 from vtlengine.Model import Component, Dataset, Role
+from vtlengine.Operators.Join import merged_viral_attribute_names
 
 
 def _try_normalize_time_period(value: str) -> Optional[str]:
@@ -892,8 +893,22 @@ class StructureVisitor(ASTTemplate):
 
         comps: Dict[str, Component] = {}
         duplicate_comps = {name for name, cnt in comp_count.items() if cnt >= 2}
+        merged_viral = merged_viral_attribute_names(
+            [ds.components for _, ds in clause_datasets], all_join_ids
+        )
         for alias, ds in clause_datasets:
             for comp_name, comp in ds.components.items():
+                if comp_name in merged_viral:
+                    if comp_name not in comps:
+                        nullable = any(
+                            d.components[comp_name].nullable
+                            for _, d in clause_datasets
+                            if comp_name in d.components
+                        )
+                        comps[comp_name] = self._make_comp(
+                            comp_name, comp.data_type, role=comp.role, nullable=nullable
+                        )
+                    continue
                 is_join_id = comp.role == Role.IDENTIFIER or comp_name in all_join_ids
                 if comp_name in duplicate_comps and (not is_join_id or is_cross):
                     qualified = f"{alias}#{comp_name}"

@@ -1,6 +1,6 @@
 from copy import copy
 from functools import reduce
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 import pandas as pd
 
@@ -11,6 +11,29 @@ from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators import Operator, _id_type_promotion_join_keys
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.ViralPropagation import get_current_registry
+
+
+def merged_viral_attribute_names(
+    components_per_operand: List[Dict[str, Component]], exclude: Set[str]
+) -> Set[str]:
+    """Names that MERGE into a single viral column in a join: shared by >=2 operands,
+    viral in every operand that has them, and not a join key (``exclude``)."""
+    counts: Dict[str, int] = {}
+    for comps in components_per_operand:
+        for name in comps:
+            counts[name] = counts.get(name, 0) + 1
+    merged: Set[str] = set()
+    for name, count in counts.items():
+        if count < 2 or name in exclude:
+            continue
+        if all(
+            comps[name].role == Role.VIRAL_ATTRIBUTE
+            for comps in components_per_operand
+            if name in comps
+        ):
+            merged.add(name)
+    return merged
 
 
 class Join(Operator):
@@ -57,6 +80,11 @@ class Join(Operator):
             )
         )
 
+        # Viral attributes shared by the operands are MERGED into one component
+        # (values combined via the viral propagation rule at execution time)
+        # instead of being #-qualified like other shared components.
+        viral_common = merged_viral_attribute_names([op.components for op in operands], set(using))
+
         for op in operands:
             for comp in op.components.values():
                 if comp.name in using:
@@ -92,6 +120,12 @@ class Join(Operator):
 
             for component_name, component in components.items():
                 component.nullable = nullability[component_name]
+
+                if component_name in viral_common:
+                    if component_name not in merged_components:
+                        component.name = component_name
+                        merged_components[component_name] = component
+                    continue
 
                 if component_name in common and component_name not in using:
                     if component.role != Role.IDENTIFIER or cls.how == "cross":
@@ -179,14 +213,18 @@ class Join(Operator):
             result.data = operands[0].data
             return result
 
-        common_measures = cls.get_components_intersection(
-            [op.get_measures_names() + op.get_attributes_names() for op in operands]
-        )
+        common = cls.get_components_intersection([op.get_components_names() for op in operands])
+        viral_common = merged_viral_attribute_names([op.components for op in operands], set(using))
+        registry = get_current_registry()
         for op in operands:
-            if op.data is not None:
-                for column in op.data.columns.tolist():
-                    if column in common_measures and column not in using:
-                        op.data = op.data.rename(columns={column: op.name + "#" + column})
+            if op.data is None:
+                continue
+            for column in op.data.columns.tolist():
+                if column in using or column in viral_common or column not in common:
+                    continue
+                comp = op.components.get(column)
+                if comp is not None and (comp.role != Role.IDENTIFIER or cls.how == "cross"):
+                    op.data = op.data.rename(columns={column: op.name + "#" + column})
         result.data = copy(cls.reference_dataset.data)
 
         join_keys = using if using else result.get_identifiers_names()
@@ -215,11 +253,28 @@ class Join(Operator):
                         how=cls.how,  # type: ignore[arg-type]
                         on=merge_join_keys,
                     )
+                    cls._combine_viral_attributes(result, viral_common, registry)
                 else:
                     result.data = pd.DataFrame()
         if result.data is not None:
             result.data.reset_index(drop=True, inplace=True)
         return result
+
+    @classmethod
+    def _combine_viral_attributes(
+        cls, result: Dataset, viral_common: Set[str], registry: Any
+    ) -> None:
+        if result.data is None:
+            return
+        for name in viral_common:
+            if name + "_x" in result.data.columns and name + "_y" in result.data.columns:
+                result.data[name] = result.data[[name + "_x", name + "_y"]].apply(
+                    lambda row, n=name: registry.resolve_group(
+                        n, [v for v in (row.iloc[0], row.iloc[1]) if not pd.isna(v)]
+                    ),
+                    axis=1,
+                )
+                result.data = result.data.drop([name + "_x", name + "_y"], axis=1)
 
     @classmethod
     def validate(

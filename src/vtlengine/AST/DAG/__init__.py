@@ -290,10 +290,13 @@ class DAGAnalyzer(ASTTemplate):
         self.visit(node.dataset)
         if node.op in [KEEP, DROP, RENAME]:
             return
+        saved_is_dataset = self.is_dataset
+        self.is_dataset = False
         for child in node.children:
             self.is_from_regular_aggregation = True
             self.visit(child)
             self.is_from_regular_aggregation = False
+        self.is_dataset = saved_is_dataset
 
     def visit_BinOp(self, node: BinOp) -> None:
         if node.op == MEMBERSHIP:

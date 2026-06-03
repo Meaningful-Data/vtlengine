@@ -1088,6 +1088,23 @@ class ComparisonBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GL_792(self):
+        """
+        Status: BUG
+        Expression: pc22 <- DS_1[filter COUNTRY_INCORPORATION = "CA"]
+            [calc PC_VALID := match_characters(POSTAL_CODE, "^((?=[^DdFfIiOoQqUu\\d\\s])...")];
+        Description: match_characters patterns using PCRE/Python lookaround assertions
+            (a Canadian postal-code rule) are rejected by DuckDB's RE2 engine. They
+            must fall back to the Python ``re`` engine and yield the same result.
+        Git Issue: #792.
+        Goal: Check Result.
+        """
+        code = "GL_792"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GL_193_1(self):
         """
         Status: OK
@@ -1492,6 +1509,24 @@ class SetBugs(BugHelper):
         code = "GL_20_10"
         number_inputs = 2
         references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_796(self):
+        """
+        Expression: res <- union(count(cd # ID group by CI), count(cd group by CI));
+        Description: ``Membership.validate`` added the synthetic ``str_var`` measure
+            (from ``cd # ID``) directly into the shared operand ``cd``. The mutation
+            leaked into the later ``count(cd ...)`` over the multi-measure ``cd``,
+            so the DuckDB transpiler emitted ``COUNT(CASE WHEN ... "str_var" ...)``
+            against a table without that column, raising ``BinderException``. The
+            union of the two count branches surfaced it.
+        Git Issue: GH_796.
+        Goal: Check Result (``cd`` keeps only its real measures; the union runs).
+        """
+        code = "GH_796"
+        number_inputs = 1
+        references_names = ["cd", "a", "c", "res"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 

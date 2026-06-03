@@ -108,7 +108,7 @@ centralised_messages = {
     # Run SDMX errors
     "0-1-3-1": {
         "message": "Expected exactly one input Dataset in the whole script, "
-        "found: {number_Datasets}",
+        "found: {number_datasets}",
         "description": "Raised when the script expects exactly one input Dataset but finds "
         "more than one.",
     },

@@ -31,6 +31,7 @@ from typing import Iterator, Tuple, Union
 import duckdb
 import psutil  # type: ignore[import-untyped]
 
+from vtlengine.duckdb_transpiler.Transpiler.operators import register_regex_functions
 from vtlengine.Exceptions import RunTimeError
 
 # =============================================================================
@@ -226,6 +227,9 @@ def configure_duckdb_connection(conn: duckdb.DuckDBPyConnection) -> None:
         statements.append(f"SET max_temp_directory_size = '{max_temp_dir_size}'")
 
     conn.execute(";\n".join(statements))
+
+    # Register Python UDFs (regex fallback for patterns RE2 cannot compile).
+    register_regex_functions(conn)
 
     # Module-level decimal config
     set_decimal_config()
