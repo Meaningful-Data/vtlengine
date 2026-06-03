@@ -23,7 +23,8 @@ from pysdmx.model.vtl import VtlDataflowMapping
 from tests.Helper import TestHelper, _use_duckdb_backend
 from vtlengine.API import generate_sdmx, prettify, run, run_sdmx, semantic_analysis
 from vtlengine.API._InternalApi import _check_script, to_vtl_json
-from vtlengine.Exceptions import DataLoadError, InputValidationException
+from vtlengine.API._sdmx_utils import _build_mapping_dict
+from vtlengine.Exceptions import DataLoadError, InputValidationException, SemanticError
 from vtlengine.Model import Dataset
 
 # Path setup
@@ -363,7 +364,19 @@ def test_run_sdmx_errors_with_mappings(datasets, mappings, expected_exception, m
     """Test run_sdmx error handling with invalid inputs."""
     script = "DS_r := BIS_DER [calc Me_4 := OBS_VALUE];"
     with pytest.raises(expected_exception, match=match):
-        run_sdmx(script, datasets, mappings=mappings, use_duckdb=_use_duckdb_backend())
+        run_sdmx(script, datasets, mappings=mappings)
+
+
+def test_build_mapping_dict_multiple_inputs_message():
+    datasets = [
+        PandasDataset(
+            structure=Schema(id="DS1", components=[], agency="BIS", context="datastructure"),
+            data=pd.DataFrame(),
+        )
+    ]
+    with pytest.raises(InputValidationException, match="0-1-3-1") as exc_info:
+        _build_mapping_dict(datasets, None, ["DS_1", "DS_2"])
+    assert "found: 2" in str(exc_info.value)
 
 
 # =============================================================================

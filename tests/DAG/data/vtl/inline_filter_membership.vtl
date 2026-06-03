@@ -1,0 +1,3 @@
+cd := DS[calc identifier CI := nvl(CI, ""), identifier CH := nvl(CH, "")];
+ndh := count(cd[filter CI <> CH] # ID group by CI);
+res <- ndh;
