@@ -19,7 +19,6 @@ jobs:
           fetch-depth: 0
 
       - name: Create release with notes
-        id: release
         uses: actions/github-script@v8
         with:
           script: |
@@ -342,65 +341,10 @@ jobs:
               core.info(`Deleted ${preReleases.length} pre-release(s)`);
             }
 
-            // 13. Expose the tag for the wasm-wheel + dispatch steps that follow.
-            core.setOutput('tag_name', tagName);
-
-      # The WebAssembly (Pyodide) wheel is built here — in the release-creation
-      # workflow — and attached to the GitHub Release BEFORE the docs workflow is
-      # dispatched, so the per-version JupyterLite demo can download it. It can't
-      # go to PyPI (the pyodide_2025_0 tag isn't PyPI-uploadable; PEP 783 uses a
-      # different pyemscripten_* tag). A wasm-build failure never blocks the release.
-      - name: Set up host Python 3.13
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.13'
-      - name: Cache vtlengine wasm wheel
-        uses: actions/cache@v4
-        id: wasm-wheel-cache
-        with:
-          path: docs/jupyterlite/wheels
-          key: vtl-wasm-wheel-${{ hashFiles('src/vtlengine/**', 'CMakeLists.txt', 'pyproject.toml', 'scripts/setup_antlr4_runtime.sh') }}
-      - name: Cache Emscripten SDK
-        if: steps.wasm-wheel-cache.outputs.cache-hit != 'true'
-        uses: actions/cache@v4
-        with:
-          path: emsdk
-          key: emsdk-4.0.9-${{ runner.os }}
-      - name: Build the wasm wheel (Pyodide 0.29.3 / pyodide_2025_0)
-        if: steps.wasm-wheel-cache.outputs.cache-hit != 'true'
-        continue-on-error: true
-        run: |
-          [ -d emsdk ] || git clone --depth 1 https://github.com/emscripten-core/emsdk.git
-          ( cd emsdk && ./emsdk install 4.0.9 && ./emsdk activate 4.0.9 )
-          python -m venv .pyobuild
-          .pyobuild/bin/pip install pyodide-build wheel
-          .pyobuild/bin/pyodide xbuildenv install 0.29.3
-          source emsdk/emsdk_env.sh
-          export PATH="$PWD/.pyobuild/bin:$PATH"
-          bash docs/jupyterlite/build-wheel.sh
-      - name: Attach the wasm wheel to the release
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG_NAME: ${{ steps.release.outputs.tag_name }}
-        run: |
-          wheel="$(ls docs/jupyterlite/wheels/vtlengine-*-pyodide_2025_0_wasm32.whl 2>/dev/null || true)"
-          if [ -n "$wheel" ]; then
-            gh release upload "$TAG_NAME" "$wheel" --clobber
-            echo "Attached $(basename "$wheel") to release $TAG_NAME"
-          else
-            echo "No wasm wheel built; skipping asset upload (demo skipped this release)."
-          fi
-      - name: Dispatch the publish + docs workflows
-        uses: actions/github-script@v8
-        env:
-          TAG_NAME: ${{ steps.release.outputs.tag_name }}
-        with:
-          script: |
-            // createWorkflowDispatch runs each workflow's file at the tag's ref,
-            // so release branches carry their own publish/docs recipe. Dispatched
-            // after the wasm asset is attached so the docs demo can download it.
-            const tagName = process.env.TAG_NAME;
+            // 13. Trigger downstream workflows from the released tag's commit.
+            // createWorkflowDispatch (rather than createDispatchEvent) means each
+            // workflow runs the file at the tag's ref — so release branches can
+            // carry their own publish/docs recipe alongside main's.
             for (const workflow of ['release.yml', 'docs.yml']) {
               await github.rest.actions.createWorkflowDispatch({
                 owner: context.repo.owner,
