@@ -4,7 +4,8 @@ import pandas as pd
 import pytest
 
 from vtlengine import run
-from vtlengine.Exceptions import SemanticError
+from vtlengine.API import create_ast
+from vtlengine.Exceptions import SemanticError, VTLSyntaxError
 from vtlengine.Model import Role
 
 # -- Shared propagation rules --
@@ -277,3 +278,68 @@ class TestViralPropagationValidation:
         """
         with pytest.raises(SemanticError, match="1-3-3-4"):
             run(script=script, data_structures=SIMPLE_DS, datapoints=SIMPLE_DP)
+
+
+# -- vpBody grammar restriction (VTL 2.2 reference manual) --
+
+
+def _vp(body: str) -> str:
+    return f"define viral propagation R (variable VAt_1) is\n{body}\nend viral propagation;"
+
+
+class TestVpBodyGrammar:
+    # Bodies that violate the spec and must be rejected at parse time.
+    invalid_bodies = [
+        pytest.param("aggregate max;\naggregate min", id="two_aggregates"),
+        pytest.param('aggregate max;\nwhen "C" then "C"', id="aggregate_then_enumerated"),
+        pytest.param('aggregate max;\nelse "F"', id="aggregate_then_else"),
+        pytest.param('else "A";\nelse "B"', id="two_else"),
+    ]
+
+    @pytest.mark.parametrize("body", invalid_bodies)
+    def test_invalid_vp_body_raises_syntax_error(self, body: str) -> None:
+        with pytest.raises(VTLSyntaxError):
+            create_ast(_vp(body))
+
+    def test_valid_enumerated_then_else_propagates(self) -> None:
+        """Valid body (enumerated clauses + trailing else): resolves on a binary op."""
+        script = _vp('when "C" then "C";\nelse "F"') + "\nDS_r <- DS_1 + DS_2;"
+        result = run(
+            script=script,
+            data_structures=_ds_pair(DS_1VA),
+            datapoints={
+                "DS_1": pd.DataFrame({"Id_1": [1, 2], "Me_1": [10.0, 20.0], "VAt_1": ["C", "X"]}),
+                "DS_2": pd.DataFrame({"Id_1": [1, 2], "Me_1": [5.0, 15.0], "VAt_1": ["C", "Y"]}),
+            },
+        )
+        # C+C→"C" (when "C"); X+Y→"F" (else)
+        assert list(result["DS_r"].data["VAt_1"]) == ["C", "F"]
+
+    def test_valid_single_aggregate_propagates(self) -> None:
+        """Valid body (single aggregate clause): max propagated through a group by."""
+        ds = {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Id_2", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                {"name": "VAt_1", "type": "Integer", "role": "Viral Attribute", "nullable": True},
+            ],
+        }
+        script = _vp("aggregate max") + "\nDS_r <- sum(DS_1 group by Id_1);"
+        result = run(
+            script=script,
+            data_structures={"datasets": [ds]},
+            datapoints={
+                "DS_1": pd.DataFrame(
+                    {
+                        "Id_1": [1, 1, 2],
+                        "Id_2": [1, 2, 1],
+                        "Me_1": [10.0, 20.0, 30.0],
+                        "VAt_1": [3, 7, 5],
+                    }
+                )
+            },
+        )
+        sorted_data = result["DS_r"].data.sort_values("Id_1").reset_index(drop=True)
+        assert list(sorted_data["VAt_1"]) == [7, 5]
