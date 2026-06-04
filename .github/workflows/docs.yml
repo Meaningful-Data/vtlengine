@@ -83,9 +83,10 @@ jobs:
               core.setOutput('should_build', 'false');
             }
 
-  # Build the in-browser JupyterLite demo (vtlengine on the Pyodide kernel).
-  # Cross-compiles the vtlengine WebAssembly wheel and assembles a static site
-  # that the build job publishes at /jupyterlite/ alongside the docs.
+  # Build the in-browser JupyterLite demo(s) for the latest-stable and pre-release
+  # versions only. The vtlengine WebAssembly wheel is a GitHub Release asset built
+  # by release.yml; this job downloads it per target version (no wasm compile) and
+  # the build job publishes each demo under that version's docs.
   build-jupyterlite:
     needs: [ check-docs-label ]
     if: |
@@ -104,52 +105,50 @@ jobs:
           ref: ${{ github.event.client_payload.tag_name || github.ref }}
           fetch-depth: 0
       - name: Set up host Python 3.13
-        # pyodide-build requires the host interpreter's major.minor to match the
-        # target Pyodide's Python; Pyodide 0.29.3 targets 3.13.
         uses: actions/setup-python@v6
         with:
           python-version: '3.13'
-      - name: Cache vtlengine WebAssembly wheel
-        uses: actions/cache@v4
-        id: wasm-wheel-cache
-        with:
-          path: docs/jupyterlite/wheels
-          key: vtl-wasm-wheel-${{ hashFiles('src/vtlengine/**', 'CMakeLists.txt', 'pyproject.toml', 'scripts/setup_antlr4_runtime.sh') }}
-      - name: Cache Emscripten SDK
-        if: steps.wasm-wheel-cache.outputs.cache-hit != 'true'
-        uses: actions/cache@v4
-        with:
-          path: emsdk
-          key: emsdk-4.0.9-${{ runner.os }}
-      - name: Build the vtlengine wasm wheel
-        if: steps.wasm-wheel-cache.outputs.cache-hit != 'true'
+      - name: Install the JupyterLite build environment
         run: |
-          [ -d emsdk ] || git clone --depth 1 https://github.com/emscripten-core/emsdk.git
-          ( cd emsdk && ./emsdk install 4.0.9 && ./emsdk activate 4.0.9 )
-          python -m venv .pyobuild
-          .pyobuild/bin/pip install pyodide-build wheel
-          .pyobuild/bin/pyodide xbuildenv install 0.29.3
-          source emsdk/emsdk_env.sh
-          export PATH="$PWD/.pyobuild/bin:$PATH"
-          bash docs/jupyterlite/build-wheel.sh
+          python -m venv .jlite
+          .jlite/bin/pip install -r docs/jupyterlite/requirements.txt
       - name: Cache Pyodide distribution
         uses: actions/cache@v4
         with:
           path: docs/jupyterlite/.build
           key: pyodide-dist-0.29.3
-      - name: Assemble the JupyterLite site
+      - name: Build per-version demos (latest stable + pre-release)
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          python -m venv .jlite
-          .jlite/bin/pip install -r docs/jupyterlite/requirements.txt
           export PATH="$PWD/.jlite/bin:$PATH"
           export PYTHON="$PWD/.jlite/bin/python"
-          export VTLENGINE_WHEEL="$(ls "$PWD"/docs/jupyterlite/wheels/vtlengine-*-pyodide_2025_0_wasm32.whl)"
-          bash docs/jupyterlite/build.sh
-      - name: Upload JupyterLite site artifact
+          resolve() { python -c "import sys; sys.path.insert(0, 'docs/scripts'); from version_utils import get_all_version_tags, $1; print($1(get_all_version_tags()) or '')"; }
+          latest_stable="$(resolve find_latest_stable_tag)"
+          latest_rc="$(resolve find_latest_rc_tag)"
+          echo "latest_stable='$latest_stable'  latest_rc='$latest_rc'"
+          build_demo() {
+            local tag="$1" role="$2"
+            [ -z "$tag" ] && { echo "(no $role tag - skipping)"; return 0; }
+            rm -rf docs/jupyterlite/wheels docs/jupyterlite/_output
+            mkdir -p docs/jupyterlite/wheels
+            if ! gh release download "$tag" --pattern 'vtlengine-*-pyodide_2025_0_wasm32.whl' -D docs/jupyterlite/wheels; then
+              echo "(no wasm wheel on release $tag - skipping $role demo)"; return 0
+            fi
+            if ! bash docs/jupyterlite/build.sh; then
+              echo "(demo build failed for $tag - skipping $role)"; return 0
+            fi
+            mkdir -p "staged/$role" && cp -r docs/jupyterlite/_output/. "staged/$role/"
+            echo "staged $role demo from $tag"
+          }
+          build_demo "$latest_stable" latest
+          build_demo "$latest_rc" rc
+      - name: Upload per-version JupyterLite demos
+        if: hashFiles('staged/**') != ''
         uses: actions/upload-artifact@v4
         with:
           name: jupyterlite-site
-          path: docs/jupyterlite/_output
+          path: staged
 
   # Build job
   build:
@@ -248,12 +247,24 @@ jobs:
           done
           echo "ERROR: All error_messages.html files are empty"
           exit 1
-      - name: Add the JupyterLite demo to the site (/jupyterlite)
+      - name: Download per-version JupyterLite demos
         uses: actions/download-artifact@v4
-        continue-on-error: true  # don't block the docs deploy if the demo build failed
+        continue-on-error: true  # a missing demo must never block the docs deploy
         with:
           name: jupyterlite-site
-          path: _site/jupyterlite
+          path: jlite-demos
+      - name: Place demos under their version directories
+        continue-on-error: true
+        run: |
+          rc_tag="$(python -c "import json, sys; sys.path.insert(0, 'docs/scripts'); from version_utils import is_stable_version; v = json.load(open('docs/_versions.json'))['versions']; rcs = [t for t in v if t.startswith('v') and not is_stable_version(t)]; print(rcs[0] if rcs else '')")"
+          if [ -d jlite-demos/latest ]; then
+            mkdir -p _site/latest/jupyterlite && cp -r jlite-demos/latest/. _site/latest/jupyterlite/
+            echo "placed latest-stable demo -> _site/latest/jupyterlite"
+          fi
+          if [ -n "$rc_tag" ] && [ -d jlite-demos/rc ]; then
+            mkdir -p "_site/$rc_tag/jupyterlite" && cp -r jlite-demos/rc/. "_site/$rc_tag/jupyterlite/"
+            echo "placed pre-release demo -> _site/$rc_tag/jupyterlite"
+          fi
       - name: Upload artifact
         # Automatically uploads an artifact from the './_site' directory by default
         uses: actions/upload-pages-artifact@v4
