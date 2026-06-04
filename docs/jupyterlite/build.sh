@@ -33,7 +33,7 @@ PY="${PYTHON:-python}"
 
 mkdir -p "$WORK" "$WHEELS"
 
-echo "==> 1/5  vtlengine wheel"
+echo "==> 1/6  vtlengine wheel"
 if [ -n "${VTLENGINE_WHEEL:-}" ]; then
     cp "$VTLENGINE_WHEEL" "$WHEELS/"
 fi
@@ -42,24 +42,37 @@ if ! ls "$WHEELS"/vtlengine-*pyodide_2025_0_wasm32.whl >/dev/null 2>&1; then
     exit 1
 fi
 
-echo "==> 2/5  DuckDB wasm wheel (>=1.4, from duckdb-pyodide)"
+echo "==> 2/6  DuckDB wasm wheel (>=1.4, from duckdb-pyodide)"
 [ -f "$WHEELS/$(basename "$DUCKDB_WHEEL_URL")" ] || curl -fsSL -o "$WHEELS/$(basename "$DUCKDB_WHEEL_URL")" "$DUCKDB_WHEEL_URL"
 
-echo "==> 3/5  pure-Python deps not bundled in Pyodide"
+echo "==> 3/6  pure-Python deps not bundled in Pyodide"
 "$PY" -m pip download --no-deps --quiet --dest "$WHEELS" \
     parsy==2.2 pysdmx==1.15.1 sdmxschemas==1.0.0 sqlglot==30.8.0 xmltodict==1.0.4
 
-echo "==> 4/5  jupyter lite build (stock Pyodide ${PYODIDE_VERSION})"
+echo "==> 4/6  jupyter lite build (stock Pyodide ${PYODIDE_VERSION})"
 [ -f "$PYODIDE_TARBALL" ] || curl -fsSL -o "$PYODIDE_TARBALL" \
     "https://github.com/pyodide/pyodide/releases/download/${PYODIDE_VERSION}/pyodide-${PYODIDE_VERSION}.tar.bz2"
 rm -rf "$OUT"
 ( cd "$HERE" && jupyter lite build --pyodide="$PYODIDE_TARBALL" --contents=content --output-dir="$OUT" )
 
-echo "==> 5/5  inject wheels + patch the served lockfile (zero-install auto-load)"
+echo "==> 5/6  inject wheels + patch the served lockfile (zero-install auto-load)"
 cp "$WHEELS"/*.whl "$OUT/static/pyodide/"
 "$PY" "${HERE}/patch_lock.py" "$OUT/static/pyodide"
+
+echo "==> 6/6  point the demo root (/) at the vtl-demo notebook"
+# JupyterLite generates a landing tree at index.html; replace it with a redirect
+# so the bare demo URL (e.g. /jupyterlite/) opens the vtl-demo notebook directly.
+# The target is relative, so it keeps working under any deploy path.
+cat > "$OUT/index.html" <<'HTML'
+<!doctype html>
+<meta charset="utf-8">
+<title>VTL Engine - browser demo</title>
+<meta http-equiv="refresh" content="0; url=lab/index.html?path=vtl-demo.ipynb">
+<link rel="canonical" href="lab/index.html?path=vtl-demo.ipynb">
+<p>Redirecting to the <a href="lab/index.html?path=vtl-demo.ipynb">VTL Engine browser demo</a>.</p>
+HTML
 
 echo
 echo "Done. Serve the demo with:"
 echo "    python -m http.server -d \"$OUT\" 8000"
-echo "then open http://localhost:8000/lab/index.html and run content/vtl-demo.ipynb"
+echo "then open http://localhost:8000/  (redirects to the vtl-demo notebook)"
