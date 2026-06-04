@@ -43,67 +43,6 @@ jobs:
           name: wheels-${{ matrix.runner }}-${{ matrix.arch }}
           path: wheelhouse/*.whl
 
-  # Build the WebAssembly (Pyodide) wheel and attach it to the GitHub Release.
-  # It cannot go to PyPI: the wheel uses the pyodide_2025_0 platform tag that the
-  # JupyterLite demo's Pyodide 0.29.3 runtime requires, which PyPI does not accept
-  # (PEP 783 standardises a different `pyemscripten_*` tag). The docs workflow
-  # downloads this asset to assemble the per-version demo.
-  build-wasm-wheel:
-    name: Build WebAssembly (Pyodide) wheel
-    runs-on: ubuntu-latest
-    continue-on-error: true  # a wasm-build failure must never block the release
-    permissions:
-      contents: write  # attach the wheel as a Release asset
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          ref: ${{ github.event.client_payload.tag_name || github.ref }}
-          fetch-depth: 0
-      - name: Set up host Python 3.13
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.13'
-      - name: Cache vtlengine wasm wheel
-        uses: actions/cache@v4
-        id: wasm-wheel-cache
-        with:
-          path: docs/jupyterlite/wheels
-          key: vtl-wasm-wheel-${{ hashFiles('src/vtlengine/**', 'CMakeLists.txt', 'pyproject.toml', 'scripts/setup_antlr4_runtime.sh') }}
-      - name: Cache Emscripten SDK
-        if: steps.wasm-wheel-cache.outputs.cache-hit != 'true'
-        uses: actions/cache@v4
-        with:
-          path: emsdk
-          key: emsdk-4.0.9-${{ runner.os }}
-      - name: Build the wasm wheel (Pyodide 0.29.3 / pyodide_2025_0)
-        if: steps.wasm-wheel-cache.outputs.cache-hit != 'true'
-        run: |
-          [ -d emsdk ] || git clone --depth 1 https://github.com/emscripten-core/emsdk.git
-          ( cd emsdk && ./emsdk install 4.0.9 && ./emsdk activate 4.0.9 )
-          python -m venv .pyobuild
-          .pyobuild/bin/pip install pyodide-build wheel
-          .pyobuild/bin/pyodide xbuildenv install 0.29.3
-          source emsdk/emsdk_env.sh
-          export PATH="$PWD/.pyobuild/bin:$PATH"
-          bash docs/jupyterlite/build-wheel.sh
-      - name: Attach the wheel to the GitHub Release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.event.release.tag_name || github.event.client_payload.tag_name || github.ref_name }}
-        run: |
-          wheel="$(ls docs/jupyterlite/wheels/vtlengine-*-pyodide_2025_0_wasm32.whl)"
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" "$wheel" --clobber
-          else
-            echo "No GitHub Release for tag '$TAG'; skipping wasm asset upload."
-          fi
-      - name: Upload wasm wheel artifact (traceability)
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: wasm-wheel
-          path: docs/jupyterlite/wheels/vtlengine-*-pyodide_2025_0_wasm32.whl
-
   publish:
     name: Publish to PyPI
     needs: [build-wheels]
@@ -118,7 +57,6 @@ jobs:
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           path: dist
-          pattern: wheels-*  # platform wheels only; the wasm wheel is never published to PyPI
           merge-multiple: true
 
       - name: Publish to PyPI
