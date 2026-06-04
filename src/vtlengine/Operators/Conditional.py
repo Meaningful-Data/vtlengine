@@ -96,6 +96,7 @@ class If(Operator):
         cond_measure = condition.get_measures_names()[0]
         cond = condition.data
         cond[COND_COL] = cond.pop(cond_measure).fillna(False).astype("bool[pyarrow]")
+        cond = cond[ids + [COND_COL]]
 
         t_base = dataset_assign(cond[cond[COND_COL]], true_branch, ids, measures)
         f_base = dataset_assign(cond[~cond[COND_COL]], false_branch, ids, measures)
@@ -346,6 +347,7 @@ class Case(Operator):
             case = conditions[i].data.rename(
                 columns={conditions[i].get_measures_names()[0]: COND_COL}
             )
+            case = case[ids + [COND_COL]]
             case_result = dataset_assign(
                 case[case[COND_COL].fillna(False)], thenOps[i], ids, measures
             )
