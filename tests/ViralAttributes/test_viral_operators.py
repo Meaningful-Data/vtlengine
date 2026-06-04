@@ -353,6 +353,25 @@ class TestViralAttributeStringParameterizedOps:
             assert list(result["DS_r"].data[va_name]) == VA_VALUES[i]
 
 
+# -- Set comparison operators (in / not_in) --
+
+
+class TestViralAttributeCompOps:
+    """Viral attributes must keep BOTH their component role and their data values
+    through the operators ``in`` and ``not_in``."""
+
+    @pytest.mark.parametrize("expr", ["DS_1 in {10, 30}", "DS_1 not_in {10, 30}"])
+    @pytest.mark.parametrize("num_viral", [1, 2, 3])
+    def test_set_membership_preserves_viral_attrs(self, expr: str, num_viral: int) -> None:
+        result = _run_single(expr, num_viral)
+        _assert_viral_attrs(result, num_viral)
+        # The viral attribute data values must be carried over unchanged.
+        for i in range(num_viral):
+            va_name = VA_NAMES[i]
+            assert va_name in result["DS_r"].data.columns, f"{va_name} missing from result data"
+            assert list(result["DS_r"].data[va_name]) == VA_VALUES[i]
+
+
 # -- Special cases --
 
 
