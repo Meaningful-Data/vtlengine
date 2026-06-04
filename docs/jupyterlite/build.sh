@@ -59,18 +59,28 @@ echo "==> 5/6  inject wheels + patch the served lockfile (zero-install auto-load
 cp "$WHEELS"/*.whl "$OUT/static/pyodide/"
 "$PY" "${HERE}/patch_lock.py" "$OUT/static/pyodide"
 
-echo "==> 6/6  point the demo root (/) at the vtl-demo notebook"
-# JupyterLite generates a landing tree at index.html; replace it with a redirect
-# so the bare demo URL (e.g. /jupyterlite/) opens the vtl-demo notebook directly.
-# The target is relative, so it keeps working under any deploy path.
-cat > "$OUT/index.html" <<'HTML'
-<!doctype html>
-<meta charset="utf-8">
-<title>VTL Engine - browser demo</title>
-<meta http-equiv="refresh" content="0; url=lab/index.html?path=vtl-demo.ipynb">
-<link rel="canonical" href="lab/index.html?path=vtl-demo.ipynb">
-<p>Redirecting to the <a href="lab/index.html?path=vtl-demo.ipynb">VTL Engine browser demo</a>.</p>
-HTML
+echo "==> 6/6  redirect the demo root (/) to the vtl-demo notebook"
+# Point the bare demo URL (e.g. /jupyterlite/) straight at the vtl-demo notebook.
+# IMPORTANT: do NOT overwrite index.html. JupyterLite's config-utils.js fetches the
+# site-root index.html and reads its embedded <script id="jupyter-config-data">, so
+# replacing it with a bare stub makes the app crash on boot (textContent of null).
+# Inject a <meta refresh> into its <head> instead; the relative target keeps working
+# under any deploy path.
+"$PY" - "$OUT/index.html" <<'PY'
+import sys, pathlib
+
+path = pathlib.Path(sys.argv[1])
+html = path.read_text()
+tag = '<meta http-equiv="refresh" content="0; url=lab/index.html?path=vtl-demo.ipynb">'
+if tag in html:
+    print("  redirect already present")
+elif "<head>" in html:
+    path.write_text(html.replace("<head>", "<head>\n    " + tag, 1))
+    print("  injected redirect into <head>")
+else:
+    path.write_text(tag + "\n" + html)
+    print("  prepended redirect (no <head> found)")
+PY
 
 echo
 echo "Done. Serve the demo with:"
