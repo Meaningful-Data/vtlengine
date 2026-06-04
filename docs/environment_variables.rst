@@ -95,12 +95,6 @@ Maximum memory the DuckDB engine may consume.
 
 When DuckDB exceeds this limit it spills to ``VTL_TEMP_DIRECTORY``.
 
-.. note::
-
-   A percentage limit is left unset so DuckDB applies its own default (80% of
-   RAM), which is why vtlengine needs no ``psutil`` dependency (and so can run
-   under Pyodide/Emscripten). Set an absolute value to cap memory explicitly.
-
 ``VTL_THREADS``
 ===============
 
