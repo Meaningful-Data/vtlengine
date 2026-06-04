@@ -22,8 +22,16 @@ from pathlib import Path
 EXTRA = {
     "vtlengine": {
         "imports": ["vtlengine"],
-        "depends": ["duckdb", "jsonschema", "networkx", "numpy", "pandas", "pyarrow",
-                    "pysdmx", "sqlglot"],
+        "depends": [
+            "duckdb",
+            "jsonschema",
+            "networkx",
+            "numpy",
+            "pandas",
+            "pyarrow",
+            "pysdmx",
+            "sqlglot",
+        ],
     },
     "duckdb": {"imports": ["duckdb"], "depends": []},
     "pysdmx": {

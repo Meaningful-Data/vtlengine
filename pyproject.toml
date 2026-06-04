@@ -81,9 +81,6 @@ docs = [
 [tool.ruff]
 target-version = "py39"
 line-length = 100
-# The JupyterLite demo under docs/jupyterlite/ is standalone build tooling, not
-# library code — keep it out of both `ruff check` and `ruff format`.
-extend-exclude = ["docs/jupyterlite"]
 lint.mccabe.max-complexity = 20
 lint.select = [
     "B", "B9", "C", "C4", "D", "E", "F", "I", "PT", "S", "SIM", "W"
