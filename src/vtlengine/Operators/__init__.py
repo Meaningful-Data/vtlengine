@@ -777,7 +777,7 @@ class Binary(Operator):
                     dataset.data[measure_name], scalar_set
                 )
 
-        cols_to_keep = dataset.get_identifiers_names() + dataset.get_measures_names()
+        cols_to_keep = [c.name for c in dataset.get_components() if c.role != Role.ATTRIBUTE]
         result_dataset.data = result_data[cols_to_keep]
         cls.modify_measure_column(result_dataset)
 
