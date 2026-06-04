@@ -48,6 +48,15 @@ python -m http.server -d _output 8000
 
 Open <http://localhost:8000/lab/index.html> and run `content/vtl-demo.ipynb`.
 
+## Deployment
+
+The `build-jupyterlite` job in `.github/workflows/docs.yml` runs both steps in CI
+(host Python 3.13 + emsdk 4.0.9, with the wasm wheel and Emscripten SDK cached)
+and the docs `build` job publishes the result at `/jupyterlite/` on the docs
+site — e.g. <https://docs.vtlengine.meaningfuldata.eu/jupyterlite/lab/index.html>.
+The docs workflow runs on releases, manual dispatch, or a merged `cr-N` PR whose
+issue carries the `documentation` label.
+
 ## Notes
 
 - Build artifacts (`_output/`, `wheels/`, `.build/`) are git-ignored.

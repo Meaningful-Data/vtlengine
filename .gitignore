@@ -203,7 +203,7 @@ third_party/*
 vtl-output/*
 
 # JupyterLite demo build artifacts
-jupyterlite/_output/
-jupyterlite/.build/
-jupyterlite/wheels/
-jupyterlite/.jupyterlite.doit.db
+docs/jupyterlite/_output/
+docs/jupyterlite/.build/
+docs/jupyterlite/wheels/
+docs/jupyterlite/.jupyterlite.doit.db

@@ -15,7 +15,7 @@
 #
 set -euo pipefail
 
-REPO="$(cd "$(dirname "$0")/.." && pwd)"
+REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 OUT="$(cd "$(dirname "$0")" && pwd)/wheels"
 mkdir -p "$OUT"
 
