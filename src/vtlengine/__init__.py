@@ -39,4 +39,4 @@ __all__ = [
     "validate_external_routine",
 ]
 
-__version__ = "1.9.0rc1"
+__version__ = "2.0.0rc1"
