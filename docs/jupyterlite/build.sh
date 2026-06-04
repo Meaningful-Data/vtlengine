@@ -18,6 +18,11 @@ set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 PYODIDE_VERSION="0.29.3"
+# DuckDB wasm wheel. NOTE: this is the community xlwings/duckdb-pyodide fork, NOT
+# the official duckdb/duckdb-pyodide. The official project is stale (Feb 2025) and
+# only ships duckdb 1.2.0 for cp312/pyodide_2024_0 — there is no cp313 /
+# pyodide_2025_0 wheel and nothing >=1.4, which vtlengine requires. Switch this to
+# the official URL once it publishes a cp313 / pyodide_2025_0 wheel >=1.4.
 DUCKDB_WHEEL_URL="https://github.com/xlwings/duckdb-pyodide/releases/download/duckdb-v1.5.0-pyodide-0.29.3/duckdb-1.5.0-cp313-cp313-pyodide_2025_0_wasm32.whl"
 
 WORK="${HERE}/.build"

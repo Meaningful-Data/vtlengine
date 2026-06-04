@@ -13,8 +13,8 @@ WebAssembly build, and its `duckdb` dependency (≥1.4) is not in the stock Pyod
 distribution. The build therefore:
 
 1. compiles `vtlengine` to a `pyodide_2025_0` wasm wheel (see `build-wheel.sh`);
-2. gathers `duckdb` 1.5.0 (from [duckdb-pyodide](https://github.com/xlwings/duckdb-pyodide))
-   plus the pure-Python deps not bundled in Pyodide;
+2. gathers `duckdb` 1.5.0 (from the community [xlwings/duckdb-pyodide](https://github.com/xlwings/duckdb-pyodide)
+   fork — see the DuckDB note below) plus the pure-Python deps not bundled in Pyodide;
 3. runs `jupyter lite build` against stock Pyodide 0.29.3, then **adds these
    wheels to the served `pyodide-lock.json`** (`patch_lock.py`) so Pyodide
    auto-loads them on `import` — the key to the zero-install experience.
@@ -56,6 +56,17 @@ and the docs `build` job publishes the result at `/jupyterlite/` on the docs
 site — e.g. <https://docs.vtlengine.meaningfuldata.eu/jupyterlite/lab/index.html>.
 The docs workflow runs on releases, manual dispatch, or a merged `cr-N` PR whose
 issue carries the `documentation` label.
+
+## DuckDB
+
+DuckDB is sourced from the community [xlwings/duckdb-pyodide](https://github.com/xlwings/duckdb-pyodide)
+fork rather than the official [duckdb/duckdb-pyodide](https://github.com/duckdb/duckdb-pyodide).
+The official project is stale (last updated Feb 2025) and only ships **duckdb 1.2.0
+for cp312 / pyodide_2024_0** — there is no `cp313` / `pyodide_2025_0` wheel and
+nothing `>=1.4`, which vtlengine requires (it relies on the DuckDB `v1.4.0`
+storage format). The xlwings fork is the only source providing duckdb `1.5.0` for
+our ABI. Switch `DUCKDB_WHEEL_URL` in `build.sh` to the official wheel once it
+publishes a `cp313` / `pyodide_2025_0` build `>=1.4`.
 
 ## Notes
 

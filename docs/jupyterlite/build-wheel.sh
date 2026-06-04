@@ -6,7 +6,7 @@
 # Prerequisites:
 #   * Host Python 3.13 — pyodide-build requires the host interpreter's
 #     major.minor to match the target Pyodide's Python, and 0.29.3 targets 3.13.
-#       uv python install 3.13   # (or any 3.13 interpreter)
+#       (use actions/setup-python, pyenv, or any system Python 3.13)
 #   * pyodide-build with the 0.29.3 cross-build environment:
 #       pip install pyodide-build && pyodide xbuildenv install 0.29.3
 #   * Emscripten 4.0.9 active (matches Pyodide 0.29.3):

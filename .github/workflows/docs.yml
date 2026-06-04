@@ -103,12 +103,12 @@ jobs:
         with:
           ref: ${{ github.event.client_payload.tag_name || github.ref }}
           fetch-depth: 0
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-      - name: Install host Python 3.13
+      - name: Set up host Python 3.13
         # pyodide-build requires the host interpreter's major.minor to match the
         # target Pyodide's Python; Pyodide 0.29.3 targets 3.13.
-        run: uv python install 3.13
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
       - name: Cache vtlengine WebAssembly wheel
         uses: actions/cache@v4
         id: wasm-wheel-cache
@@ -126,8 +126,8 @@ jobs:
         run: |
           [ -d emsdk ] || git clone --depth 1 https://github.com/emscripten-core/emsdk.git
           ( cd emsdk && ./emsdk install 4.0.9 && ./emsdk activate 4.0.9 )
-          uv venv --python 3.13 .pyobuild
-          uv pip install --python .pyobuild/bin/python pyodide-build wheel
+          python -m venv .pyobuild
+          .pyobuild/bin/pip install pyodide-build wheel
           .pyobuild/bin/pyodide xbuildenv install 0.29.3
           source emsdk/emsdk_env.sh
           export PATH="$PWD/.pyobuild/bin:$PATH"
@@ -139,9 +139,8 @@ jobs:
           key: pyodide-dist-0.29.3
       - name: Assemble the JupyterLite site
         run: |
-          uv venv --python 3.13 .jlite
-          .jlite/bin/python -m ensurepip --upgrade
-          uv pip install --python .jlite/bin/python -r docs/jupyterlite/requirements.txt
+          python -m venv .jlite
+          .jlite/bin/pip install -r docs/jupyterlite/requirements.txt
           export PATH="$PWD/.jlite/bin:$PATH"
           export PYTHON="$PWD/.jlite/bin/python"
           export VTLENGINE_WHEEL="$(ls "$PWD"/docs/jupyterlite/wheels/vtlengine-*-pyodide_2025_0_wasm32.whl)"
@@ -178,20 +177,20 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.12'
+          python-version: '3.13'
           cache: poetry
       - name: Cache ANTLR4 runtime prebuilt
         uses: actions/cache@v4
         id: antlr4-cache
         with:
           path: build/antlr4-prefix
-          key: antlr4-runtime-${{ runner.os }}-py3.12-${{ hashFiles('scripts/setup_antlr4_runtime.sh', 'CMakeLists.txt') }}
+          key: antlr4-runtime-${{ runner.os }}-py3.13-${{ hashFiles('scripts/setup_antlr4_runtime.sh', 'CMakeLists.txt') }}
       - name: Cache C++ parser wheel
         uses: actions/cache@v4
         id: cpp-cache
         with:
           path: .cpp-wheel
-          key: cpp-parser-${{ runner.os }}-py3.12-${{ hashFiles('src/vtlengine/AST/Grammar/_cpp_parser/**', 'CMakeLists.txt', 'pyproject.toml') }}
+          key: cpp-parser-${{ runner.os }}-py3.13-${{ hashFiles('src/vtlengine/AST/Grammar/_cpp_parser/**', 'CMakeLists.txt', 'pyproject.toml') }}
       - name: Download ANTLR4 C++ runtime source
         if: steps.cpp-cache.outputs.cache-hit != 'true' && steps.antlr4-cache.outputs.cache-hit != 'true'
         shell: bash

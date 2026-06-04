@@ -71,9 +71,9 @@ dev = [
     "types-jsonschema>=4.25.1,<5.0",
 ]
 docs = [
-    "sphinx>=9.1.0,<10.0; python_version == '3.12'",
-    "sphinx-rtd-theme>=3.0.2,<4.0; python_version == '3.12'",
-    "toml>=0.10.2,<0.11.0; python_version == '3.12'",
+    "sphinx>=9.1.0,<10.0; python_version == '3.13'",
+    "sphinx-rtd-theme>=3.0.2,<4.0; python_version == '3.13'",
+    "toml>=0.10.2,<0.11.0; python_version == '3.13'",
 ]
 
 
