@@ -36,7 +36,21 @@ EXTRA = {
     "duckdb": {"imports": ["duckdb"], "depends": []},
     "pysdmx": {
         "imports": ["pysdmx"],
-        "depends": ["httpx", "lxml", "msgspec", "parsy", "sdmxschemas", "xmltodict"],
+        # ssl + certifi ship in stock Pyodide but are NOT auto-loaded: httpx imports
+        # them at runtime for HTTPS, so without them a remote read_sdmx/run_sdmx(URL)
+        # fails with "No module named 'ssl'". Listing them here loads them alongside
+        # pysdmx so remote SDMX URLs work out of the box (ssl also pulls libopenssl).
+        # Local-file SDMX needs neither.
+        "depends": [
+            "certifi",
+            "httpx",
+            "lxml",
+            "msgspec",
+            "parsy",
+            "sdmxschemas",
+            "ssl",
+            "xmltodict",
+        ],
     },
     "parsy": {"imports": ["parsy"], "depends": []},
     "sdmxschemas": {"imports": ["sdmxschemas"], "depends": []},
