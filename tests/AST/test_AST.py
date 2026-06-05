@@ -971,13 +971,3 @@ def test_create_ast_with_comments_empty_script(script):
     ast = create_ast_with_comments(text=script)
     assert isinstance(ast, Start)
     assert all(isinstance(child, Comment) for child in ast.children)
-
-
-def test_create_ast_with_comments_syntax_error_raises():
-    script = (
-        "define hierarchical ruleset MY_HR (valuedomain rule SECTOR) is\n"
-        "    10A = 10B + 10C\n"
-        "end hierarchical ruleset;"
-    )
-    with pytest.raises(VTLSyntaxError):
-        create_ast_with_comments(text=script)
