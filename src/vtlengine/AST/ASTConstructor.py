@@ -32,7 +32,7 @@ from vtlengine.AST.ASTConstructorModules.ExprComponents import ExprComp
 from vtlengine.AST.ASTConstructorModules.Terminals import (
     Terminals,
     _remove_scaped_characters,
-    is_quoted_value_domain_value,
+    is_quoted_identifier,
 )
 from vtlengine.AST.ASTDataExchange import de_ruleset_elements
 from vtlengine.AST.Grammar._cpp_parser import vtl_cpp_parser
@@ -610,13 +610,13 @@ class ASTVisitor:
         if ctx_list[0].is_terminal:
             when = ctx_list[0].text
             vd_value = Terminals().visitValueDomainValue(ctx_list[3])
-            vd_quoted = is_quoted_value_domain_value(ctx_list[3])
+            vd_quoted = is_quoted_identifier(ctx_list[3])
             op = Terminals().visitComparisonOperand(ctx_list[4])
             token_info_value = extract_token_info(ctx_list[3])
             token_info_op = extract_token_info(ctx_list[4])
         else:
             vd_value = Terminals().visitValueDomainValue(ctx_list[0])
-            vd_quoted = is_quoted_value_domain_value(ctx_list[0])
+            vd_quoted = is_quoted_identifier(ctx_list[0])
             op = Terminals().visitComparisonOperand(ctx_list[1])
             token_info_value = extract_token_info(ctx_list[0])
             token_info_op = extract_token_info(ctx_list[1])
@@ -691,7 +691,7 @@ class ASTVisitor:
             code_item = DefIdentifier(
                 value=value,
                 kind="CodeItemID",
-                was_quoted=is_quoted_value_domain_value(ctx_list[1]),
+                was_quoted=is_quoted_identifier(ctx_list[1]),
                 **extract_token_info(ctx_list[1]),
             )
             if right_condition:
@@ -703,7 +703,7 @@ class ASTVisitor:
             code_item = DefIdentifier(
                 value=value,
                 kind="CodeItemID",
-                was_quoted=is_quoted_value_domain_value(ctx_list[0]),
+                was_quoted=is_quoted_identifier(ctx_list[0]),
                 **extract_token_info(ctx_list[0]),
             )
             if right_condition:

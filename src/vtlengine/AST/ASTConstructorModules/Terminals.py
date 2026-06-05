@@ -33,7 +33,7 @@ def _remove_scaped_characters(text):
     return text
 
 
-def is_quoted_value_domain_value(ctx):
+def is_quoted_identifier(ctx):
     child = ctx.children[0]
     return child.is_terminal and child.text.startswith("'")
 
