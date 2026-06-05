@@ -244,6 +244,9 @@ IDENTIFIER
   | '\'' ( '\\\'' | ~'\'' )* '\''
 ;
 
+// Code Item value (HR): same as Identifier but may start with a digit and cannot contain dots
+ITEM_CODE : CODE_PART ;
+
 // Non-syntax tokens
 WS         : [ \t\r\n\u000C]+ -> channel(1);
 ML_COMMENT : '/*' .*? '*/'    -> channel(2);

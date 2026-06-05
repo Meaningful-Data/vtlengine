@@ -55,8 +55,8 @@ public:
     XOR = 212, YEAR_OP = 213, YEARTODAY = 214, LEVENSHTEIN_METHOD = 215, 
     DAMERAU_LEVENSHTEIN_METHOD = 216, HAMMING_METHOD = 217, JARO_WINKLER_METHOD = 218, 
     NULL_CONSTANT = 219, INTEGER_CONSTANT = 220, NUMBER_CONSTANT = 221, 
-    BOOLEAN_CONSTANT = 222, STRING_CONSTANT = 223, IDENTIFIER = 224, WS = 225, 
-    ML_COMMENT = 226, SL_COMMENT = 227
+    BOOLEAN_CONSTANT = 222, STRING_CONSTANT = 223, IDENTIFIER = 224, ITEM_CODE = 225, 
+    WS = 226, ML_COMMENT = 227, SL_COMMENT = 228
   };
 
   enum {
@@ -4359,6 +4359,7 @@ public:
     ValueDomainValueContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *IDENTIFIER();
+    antlr4::tree::TerminalNode *ITEM_CODE();
     SignedIntegerContext *signedInteger();
     SignedNumberContext *signedNumber();
 
