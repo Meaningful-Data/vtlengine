@@ -35,7 +35,10 @@ mkdir -p "$WORK" "$WHEELS"
 
 echo "==> 1/6  vtlengine wheel"
 if [ -n "${VTLENGINE_WHEEL:-}" ]; then
-    cp "$VTLENGINE_WHEEL" "$WHEELS/"
+    # build-wheel.sh (and CI) may already drop the wheel into $WHEELS; skip the
+    # copy when VTLENGINE_WHEEL already points there (cp errors on same-file).
+    dest="$WHEELS/$(basename "$VTLENGINE_WHEEL")"
+    [ "$VTLENGINE_WHEEL" -ef "$dest" ] || cp "$VTLENGINE_WHEEL" "$WHEELS/"
 fi
 if ! ls "$WHEELS"/vtlengine-*pyodide_2025_0_wasm32.whl >/dev/null 2>&1; then
     echo "ERROR: no vtlengine wheel in $WHEELS. Build it with ./build-wheel.sh and set VTLENGINE_WHEEL." >&2
