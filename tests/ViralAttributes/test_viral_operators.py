@@ -181,8 +181,11 @@ class TestViralAttributeOtherOps:
             "DS_1[aggr Me_3 := max(Me_1) group by Id_1]",
         ],
     )
+    @pytest.mark.parametrize("use_duckdb", [False, True])
     @pytest.mark.parametrize("num_viral", [1, 2, 3])
-    def test_aggr_clause_preserves_viral_attrs(self, expr: str, num_viral: int) -> None:
+    def test_aggr_clause_preserves_viral_attrs(
+        self, expr: str, num_viral: int, use_duckdb: bool
+    ) -> None:
         comps = [
             {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
             {"name": "Id_2", "type": "Integer", "role": "Identifier", "nullable": False},
@@ -199,6 +202,7 @@ class TestViralAttributeOtherOps:
             script=f"DS_r <- {expr};",
             data_structures={"datasets": [{"name": "DS_1", "DataStructure": comps}]},
             datapoints={"DS_1": pd.DataFrame(data)},
+            use_duckdb=use_duckdb,
         )
         _assert_viral_attrs(result, num_viral)
         # The viral attribute column must survive the aggr clause (component/data parity).
@@ -214,10 +218,15 @@ class TestViralAttributeConditionalOps:
 
     The condition dataset (e.g. ``DS_1#Id_2 = "A"``) also carries the viral
     attribute, which previously collided on merge with the branch operands and
-    corrupted the result (component/data mismatch -> downstream crash)."""
+    corrupted the result (component/data mismatch -> downstream crash). The
+    viral attribute itself combines across branches like a binary operator: with
+    no propagation rule its combined value is NULL."""
 
+    @pytest.mark.parametrize("use_duckdb", [False, True])
     @pytest.mark.parametrize("num_viral", [1, 2, 3])
-    def test_if_dataset_condition_preserves_viral_attrs(self, num_viral: int) -> None:
+    def test_if_dataset_condition_preserves_viral_attrs(
+        self, num_viral: int, use_duckdb: bool
+    ) -> None:
         comps = [
             {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
             {"name": "Id_2", "type": "String", "role": "Identifier", "nullable": False},
@@ -234,13 +243,17 @@ class TestViralAttributeConditionalOps:
             script='DS_r <- if DS_1#Id_2 = "A" then DS_1 else DS_1;',
             data_structures={"datasets": [{"name": "DS_1", "DataStructure": comps}]},
             datapoints={"DS_1": pd.DataFrame(data)},
+            use_duckdb=use_duckdb,
         )
         _assert_viral_attrs(result, num_viral)
-        for va_name in VA_NAMES[:num_viral]:
-            assert va_name in result["DS_r"].data.columns, f"{va_name} missing from result data"
+        _assert_component_data_parity(result)
+        for i in range(num_viral):
+            va = VA_NAMES[i]
+            assert result["DS_r"].data[va].isna().all()
 
+    @pytest.mark.parametrize("use_duckdb", [False, True])
     @pytest.mark.parametrize("num_viral", [1, 2, 3])
-    def test_count_over_if_dataset_condition(self, num_viral: int) -> None:
+    def test_count_over_if_dataset_condition(self, num_viral: int, use_duckdb: bool) -> None:
         """count() over an if-then-else result must not crash on viral attrs."""
         comps = [
             {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
@@ -258,14 +271,18 @@ class TestViralAttributeConditionalOps:
             script='DS_r <- count(if DS_1#Id_2 = "A" then DS_1 else DS_1 group by Id_1);',
             data_structures={"datasets": [{"name": "DS_1", "DataStructure": comps}]},
             datapoints={"DS_1": pd.DataFrame(data)},
+            use_duckdb=use_duckdb,
         )
         _assert_viral_attrs(result, num_viral)
         for va_name in VA_NAMES[:num_viral]:
             assert va_name in result["DS_r"].data.columns, f"{va_name} missing from result data"
 
+    @pytest.mark.parametrize("use_duckdb", [False, True])
     @pytest.mark.parametrize("num_viral", [1, 2, 3])
-    def test_case_dataset_condition_preserves_viral_attrs(self, num_viral: int) -> None:
-        """A dataset-level ``case`` must not leave phantom suffixed viral columns."""
+    def test_case_dataset_condition_preserves_viral_attrs(
+        self, num_viral: int, use_duckdb: bool
+    ) -> None:
+        """A dataset-level ``case`` keeps viral attrs (1:1) with no phantom columns."""
         comps = [
             {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
             {"name": "Id_2", "type": "String", "role": "Identifier", "nullable": False},
@@ -282,16 +299,18 @@ class TestViralAttributeConditionalOps:
             script='DS_r <- case when DS_1#Id_2 = "A" then DS_1 else DS_1;',
             data_structures={"datasets": [{"name": "DS_1", "DataStructure": comps}]},
             datapoints={"DS_1": pd.DataFrame(data)},
+            use_duckdb=use_duckdb,
         )
         _assert_viral_attrs(result, num_viral)
         _assert_component_data_parity(result)
 
+    @pytest.mark.parametrize("use_duckdb", [False, True])
     @pytest.mark.parametrize(
         "expr",
         ["nvl(DS_1, DS_2)", "nvl(DS_1, 0.0)"],
     )
     @pytest.mark.parametrize("num_viral", [1, 2, 3])
-    def test_nvl_preserves_viral_attrs(self, expr: str, num_viral: int) -> None:
+    def test_nvl_preserves_viral_attrs(self, expr: str, num_viral: int, use_duckdb: bool) -> None:
         comps = BASE_COMPS + VA_COMPONENTS[:num_viral]
         structures = [{"name": "DS_1", "DataStructure": comps}]
         datapoints = {"DS_1": _make_dp(num_viral)}
@@ -302,6 +321,7 @@ class TestViralAttributeConditionalOps:
             script=f"DS_r <- {expr};",
             data_structures={"datasets": structures},
             datapoints=datapoints,
+            use_duckdb=use_duckdb,
         )
         _assert_viral_attrs(result, num_viral)
         _assert_component_data_parity(result)
