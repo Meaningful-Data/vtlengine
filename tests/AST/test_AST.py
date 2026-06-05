@@ -45,7 +45,7 @@ from vtlengine.AST import (
 from vtlengine.AST.ASTEncoders import ComplexDecoder, ComplexEncoder
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.DataTypes import ScalarType
-from vtlengine.Exceptions import SemanticError, VTLSyntaxError
+from vtlengine.Exceptions import SemanticError
 from vtlengine.Interpreter import InterpreterAnalyzer
 
 base_path = Path(__file__).parent
