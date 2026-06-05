@@ -33,6 +33,11 @@ def _remove_scaped_characters(text):
     return text
 
 
+def is_quoted_value_domain_value(ctx):
+    child = ctx.children[0]
+    return child.is_terminal and child.text.startswith("'")
+
+
 class Terminals:
     def visitConstant(self, ctx):
         # constant: signedInteger | signedNumber | BOOLEAN_CONSTANT |
