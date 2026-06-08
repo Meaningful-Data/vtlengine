@@ -185,6 +185,8 @@ class ASTString(ASTTemplate):
         return f"{node.op} {self.visit(node.operand)}"
 
     def visit_DefIdentifier(self, node: AST.DefIdentifier) -> str:
+        if node.was_quoted:
+            return f"'{node.value}'"
         return _format_reserved_word(node.value)
 
     def visit_DPRule(self, node: AST.DPRule) -> str:
