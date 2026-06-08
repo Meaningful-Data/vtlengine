@@ -1,0 +1,7 @@
+# Build-time tools for the JupyterLite demo (host Python 3.10+; 3.13 if you also
+# build the vtlengine wheel here). Pinned to the 0.7.x line, which ships the
+# Pyodide 0.29.3 kernel that the vtlengine + duckdb wasm wheels target.
+jupyterlite-core~=0.7.0
+jupyterlite-pyodide-kernel~=0.7.0
+jupyterlab~=4.4
+wheel>=0.45  # `wheel tags` retag step in build-wheel.sh
