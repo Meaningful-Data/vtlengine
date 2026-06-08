@@ -239,13 +239,10 @@ fragment SDMX_VERSION
   | [_+*~]
 ;
 IDENTIFIER
-  : ID_PART 
+  : ([0-9] [a-zA-Z0-9_.]*)? ID_PART
   | ID_PART COLON ID_PART ( LPAREN SDMX_VERSION RPAREN )? ( COLON (DOT | CODE_PART)+ )?
   | '\'' ( '\\\'' | ~'\'' )* '\''
 ;
-
-// Code Item value (HR): same as Identifier but may start with a digit and cannot contain dots
-ITEM_CODE : CODE_PART ;
 
 // Non-syntax tokens
 WS         : [ \t\r\n\u000C]+ -> channel(1);

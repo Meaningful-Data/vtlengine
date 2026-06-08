@@ -595,7 +595,6 @@ codeItemRelationClause:
 
 valueDomainValue:
     IDENTIFIER
-    | ITEM_CODE
     | signedInteger
     | signedNumber
 ;
