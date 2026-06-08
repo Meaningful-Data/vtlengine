@@ -49,6 +49,7 @@ from vtlengine.ViralPropagation import get_current_registry
 from vtlengine.ViralPropagation.sql import (
     vp_group_sql,
     vp_group_sql_windowed,
+    vp_no_rule_group_sql,
     vp_pair_sql,
     vp_reduce_refs,
 )
@@ -1874,6 +1875,17 @@ FROM (
         for col_name, expr_sql in calc_exprs.items():
             cols.append(f"{expr_sql} AS {quote_name(col_name)}")
 
+        vp_registry = get_current_registry()
+        for v_name, v_comp in ds.components.items():
+            if v_comp.role != Role.VIRAL_ATTRIBUTE:
+                continue
+            v_rule = vp_registry.rule_for(v_comp)
+            v_qn = quote_name(v_name)
+            if v_rule is None:
+                cols.append(f"{vp_no_rule_group_sql(v_qn)} AS {v_qn}")
+            else:
+                cols.append(f"{vp_group_sql(v_rule, v_qn)} AS {v_qn}")
+
         builder = SQLBuilder().select(*cols).from_table(table_src)
         if group_ids:
             builder.group_by(*[_id_group_sql(id_) for id_ in group_ids])
@@ -2076,7 +2088,7 @@ FROM (
             v_rule = vp_registry.rule_for(v_comp)
             v_qn = quote_name(v_name)
             if v_rule is None:
-                cols.append(f"CAST(NULL AS {get_duckdb_type(v_comp.data_type.__name__)}) AS {v_qn}")
+                cols.append(f"{vp_no_rule_group_sql(v_qn)} AS {v_qn}")
             else:
                 cols.append(f"{vp_group_sql(v_rule, v_qn)} AS {v_qn}")
 
@@ -2225,7 +2237,7 @@ FROM (
         def _viral_expr(v_name: str, v_comp: Any) -> str:
             v_rule = vp_registry.rule_for(v_comp)
             if v_rule is None:
-                return quote_name(v_name)  # single value per row -> pass through
+                return quote_name(v_name)
             return vp_group_sql_windowed(v_rule, quote_name(v_name), vp_over_clause)
 
         name_override = "int_var" if op == tokens.COUNT else None
@@ -2501,6 +2513,7 @@ FROM (
             ref_ds = self._get_output_dataset() or source_ds
         output_measures = list(ref_ds.get_measures_names())
         output_attributes = list(ref_ds.get_attributes_names())
+        output_viral = list(ref_ds.get_viral_attributes_names())
 
         # Build SELECT columns
         cols: List[str] = [f"{alias}.{quote_name(id_)}" for id_ in source_ids]
@@ -2510,6 +2523,22 @@ FROM (
             cols.append(
                 f"CASE WHEN {cond_expr} THEN {t_ref} ELSE {e_ref} END AS {quote_name(col_name)}"
             )
+
+        vp_registry = get_current_registry()
+        for v_name in output_viral:
+            v_qn = quote_name(v_name)
+            v_comp = ref_ds.components.get(v_name)
+            if t_type == _DATASET and e_type == _DATASET:
+                v_rule = vp_registry.rule_for(v_comp) if v_comp is not None else None
+                if v_rule is None:
+                    v_type = get_duckdb_type(v_comp.data_type.__name__) if v_comp else "VARCHAR"
+                    cols.append(f"CAST(NULL AS {v_type}) AS {v_qn}")
+                else:
+                    cols.append(f"{vp_pair_sql(v_rule, f't.{v_qn}', f'e.{v_qn}')} AS {v_qn}")
+            elif t_type == _DATASET:
+                cols.append(f"CASE WHEN {cond_expr} THEN t.{v_qn} ELSE NULL END AS {v_qn}")
+            elif e_type == _DATASET:
+                cols.append(f"CASE WHEN {cond_expr} THEN NULL ELSE e.{v_qn} END AS {v_qn}")
 
         # Use from_subquery when the source is a SELECT (e.g., dataset-level condition)
         if source_sql.lstrip().upper().startswith("SELECT"):
@@ -2598,6 +2627,7 @@ FROM (
 
         output_ds = self._get_output_dataset() or source_ds
         output_measures = output_ds.get_measures_names()
+        output_viral = output_ds.get_viral_attributes_names()
         builder = SQLBuilder().from_table(source_sql, alias_src)
 
         # Process each WHEN branch
@@ -2623,7 +2653,6 @@ FROM (
         if e_type == _DATASET:
             self._left_join_dataset(node.elseOp, e_type, e_alias, source_ids, alias_src, builder)
 
-        # Build SELECT: identifiers + CASE WHEN per measure (reversed for last-match-wins)
         cols: List[str] = [f"{alias_src}.{quote_name(id_)}" for id_ in source_ids]
         for measure in output_measures:
             case_parts = ["CASE"]
@@ -2641,6 +2670,23 @@ FROM (
             )
             case_parts.append(f"ELSE {else_ref} END")
             cols.append(f"{' '.join(case_parts)} AS {quote_name(measure)}")
+
+        vp_registry = get_current_registry()
+        for v_name in output_viral:
+            v_qn = quote_name(v_name)
+            v_comp = output_ds.components.get(v_name)
+            refs = [f"{then_aliases[i]}.{v_qn}" for i in range(len(node.cases)) if then_aliases[i]]
+            if e_type == _DATASET:
+                refs.append(f"{e_alias}.{v_qn}")
+            if len(refs) >= 2:
+                v_rule = vp_registry.rule_for(v_comp) if v_comp is not None else None
+                if v_rule is None:
+                    v_type = get_duckdb_type(v_comp.data_type.__name__) if v_comp else "VARCHAR"
+                    cols.append(f"CAST(NULL AS {v_type}) AS {v_qn}")
+                else:
+                    cols.append(f"{vp_reduce_refs(v_rule, refs)} AS {v_qn}")
+            elif refs:
+                cols.append(f"{refs[0]} AS {v_qn}")
 
         builder.select(*cols)
 

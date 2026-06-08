@@ -577,7 +577,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     comp_name,
                     comp,
                 ) in self.regular_aggregation_dataset.components.items():
-                    if comp.role == Role.IDENTIFIER:
+                    if comp.role in (Role.IDENTIFIER, Role.VIRAL_ATTRIBUTE):
                         comps_to_keep[comp_name] = copy(comp)
                 comps_to_keep[op_comp.name] = Component(
                     name=op_comp.name,
@@ -586,7 +586,10 @@ class InterpreterAnalyzer(ASTTemplate):
                     nullable=op_comp.nullable,
                 )
                 if operand.data is not None:
-                    data_to_keep = operand.data[operand.get_identifiers_names()]
+                    cols_to_keep = (
+                        operand.get_identifiers_names() + operand.get_viral_attributes_names()
+                    )
+                    data_to_keep = operand.data[cols_to_keep].copy()
                     data_to_keep[op_comp.name] = op_comp.data
                 else:
                     data_to_keep = None
@@ -1074,7 +1077,9 @@ class InterpreterAnalyzer(ASTTemplate):
                 if comp.role != Role.MEASURE
             }
             if dataset.data is not None:
-                dataset.data = dataset.data[dataset.get_identifiers_names()]
+                dataset.data = dataset.data[
+                    dataset.get_identifiers_names() + dataset.get_viral_attributes_names()
+                ]
             aux_operands = []
             for operand in operands:
                 measure = operand.get_component(operand.get_measures_names()[0])
