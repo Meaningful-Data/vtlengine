@@ -90,11 +90,14 @@ def test_valid_script_still_parses():
 
 
 # ---------------------------------------------------------------------------
-# VTL 2.2 IDENTIFIER changes
-# The new grammar replaces the permissive 2.1 rule with one that:
-#   - rejects bare identifiers starting with a digit (e.g. `24A0`);
-#   - allows the same identifier when single-quoted (`'24A0'`);
-#   - allows identifiers starting with `_` (e.g. `_foo`).
+# IDENTIFIER digit/underscore handling
+# The grammar accepts bare identifiers that:
+#   - start with a digit as long as they contain at least one letter
+#     (e.g. `24A0`, `1abc`, `9_foo`) — aligned with the VTL "regular names"
+#     definition (VTL 2.1 User Manual, "The regular names");
+#   - start with `_` (e.g. `_foo`).
+# Purely numeric tokens (e.g. `123`) are NOT identifiers and cannot name an
+# artefact; the same names are also valid when single-quoted.
 # ---------------------------------------------------------------------------
 
 
@@ -102,9 +105,9 @@ def test_valid_script_still_parses():
     "name",
     ["24A0", "1abc", "9_foo"],
 )
-def test_identifier_starting_with_digit_is_rejected(name):
-    """VTL 2.2 forbids bare identifiers that start with a digit."""
-    script = f"DS_A <- '{name}' * 2;"
+def test_bare_identifier_starting_with_digit_runs(name):
+    """A bare digit-prefixed identifier (with a letter) can name a dataset end-to-end."""
+    script = f"DS_A <- {name} * 2;"
     data_structures = {
         "datasets": [
             {
@@ -118,6 +121,17 @@ def test_identifier_starting_with_digit_is_rejected(name):
     }
     result = run(script=script, data_structures=data_structures, datapoints=_NO_DATA)
     assert "DS_A" in result
+
+
+@pytest.mark.parametrize(
+    "name",
+    ["123", "0", "42"],
+)
+def test_purely_numeric_name_is_rejected(name):
+    """A purely numeric token is a constant, not an identifier — it cannot be a target."""
+    script = f"{name} <- DS_1;"
+    with pytest.raises(VTLSyntaxError):
+        run(script=script, data_structures=_EMPTY_DS, datapoints=_NO_DATA)
 
 
 @pytest.mark.parametrize(
