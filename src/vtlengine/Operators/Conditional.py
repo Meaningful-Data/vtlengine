@@ -13,6 +13,7 @@ from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Role, Scalar
 from vtlengine.Operators import Binary, Operator
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.ViralPropagation import get_current_registry
 
 COND_COL = "__cond__"
 
@@ -32,6 +33,42 @@ def dataset_assign(
             return pd.DataFrame(columns=ids + measures + [COND_COL])
         return cond.merge(op.data, on=ids, how="inner")
     return cond.assign(**dict.fromkeys(measures, op.value))
+
+
+def _combine_viral_attributes(result: Any, operands: List[Any]) -> None:
+    """Combine the viral attributes, as the viral attribute binary combination"""
+    if not isinstance(result, Dataset) or result.data is None:
+        return
+    res_data = result.data
+    ds_ops = [op for op in operands if isinstance(op, Dataset) and op.data is not None]
+    if len(ds_ops) < 2:
+        return
+    registry = get_current_registry()
+    ids = result.get_identifiers_names()
+    n = len(res_data)
+    for va in result.get_viral_attributes_names():
+        carriers: List[pd.DataFrame] = [
+            op.data
+            for op in ds_ops
+            if op.data is not None
+            and va in op.get_viral_attributes_names()
+            and va in op.data.columns
+        ]
+        if len(carriers) < 2:
+            continue
+        if ids:
+            base = res_data[ids]
+            cols = [
+                list(
+                    base.merge(d[ids + [va]].rename(columns={va: "__v__"}), on=ids, how="left")[
+                        "__v__"
+                    ]
+                )
+                for d in carriers
+            ]
+        else:
+            cols = [list(d[va]) for d in carriers]
+        res_data[va] = [registry.resolve_group(va, [col[r] for col in cols]) for r in range(n)]
 
 
 class If(Operator):
@@ -96,6 +133,7 @@ class If(Operator):
         cond_measure = condition.get_measures_names()[0]
         cond = condition.data
         cond[COND_COL] = cond.pop(cond_measure).fillna(False).astype("bool[pyarrow]")
+        cond = cond[ids + [COND_COL]]
 
         t_base = dataset_assign(cond[cond[COND_COL]], true_branch, ids, measures)
         f_base = dataset_assign(cond[~cond[COND_COL]], false_branch, ids, measures)
@@ -108,6 +146,7 @@ class If(Operator):
                 t_base[col] = t_base[col].astype(common_dtype)
                 f_base[col] = f_base[col].astype(common_dtype)
         result.data = t_base.merge(f_base, how="outer").drop(columns=COND_COL)
+        _combine_viral_attributes(result, [true_branch, false_branch])
 
     @classmethod
     def validate(  # noqa: C901
@@ -240,6 +279,7 @@ class Nvl(Binary):
                         result.data = left.data.fillna(right.value)
                 else:
                     result.data = left.data.fillna(right.data)
+                    _combine_viral_attributes(result, [left, right])
                 if isinstance(result, Dataset):
                     result.data = result.data[result.get_components_names()]
         return result
@@ -346,6 +386,7 @@ class Case(Operator):
             case = conditions[i].data.rename(
                 columns={conditions[i].get_measures_names()[0]: COND_COL}
             )
+            case = case[ids + [COND_COL]]
             case_result = dataset_assign(
                 case[case[COND_COL].fillna(False)], thenOps[i], ids, measures
             )
@@ -354,6 +395,7 @@ class Case(Operator):
             )
 
         result.data.drop(columns=COND_COL, inplace=True)
+        _combine_viral_attributes(result, [*thenOps, elseOp])
 
     @classmethod
     def validate(

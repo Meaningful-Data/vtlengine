@@ -100,14 +100,13 @@ class ViralPropagationRegistry:
 
     def resolve_group(self, variable_name: str, values: List[Any]) -> Any:
         """Resolve N values (for aggregation/analytic operators)."""
-        rule = self.get_rule_for_variable(variable_name)
-        if rule is None:
-            return None
-
         if len(values) == 0:
             return None
         if len(values) == 1:
             return values[0]
+        rule = self.get_rule_for_variable(variable_name)
+        if rule is None:
+            return None
 
         if rule.aggregate_function is not None:
             funcs: Dict[str, Any] = {
