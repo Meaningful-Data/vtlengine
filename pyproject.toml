@@ -32,7 +32,7 @@ keywords = ['vtl', 'sdmx', 'vtlengine', 'Validation and Transformation Language'
 
 dependencies = [
     # PyPi dependencies
-    "duckdb>=1.4,<1.5",
+    "duckdb>=1.4,<2.0",
     "pysdmx[xml]>=1.15.1,<2.0",
     # APT-supported dependencies
     "jsonschema>=3.2.0,<5.0",
@@ -44,7 +44,6 @@ dependencies = [
     "pyarrow>=22.0,<25.0; python_version >= '3.14'",
     "numpy>=2.0.2,<2.1; python_version < '3.10'",
     "numpy>=2.2.0,<2.5; python_version >= '3.10'",
-    "psutil>=7.2,<8.0"
 ]
 
 [project.urls]
@@ -72,9 +71,9 @@ dev = [
     "types-jsonschema>=4.25.1,<5.0",
 ]
 docs = [
-    "sphinx>=9.1.0,<10.0; python_version == '3.12'",
-    "sphinx-rtd-theme>=3.0.2,<4.0; python_version == '3.12'",
-    "toml>=0.10.2,<0.11.0; python_version == '3.12'",
+    "sphinx>=9.1.0,<10.0; python_version == '3.13'",
+    "sphinx-rtd-theme>=3.0.2,<4.0; python_version == '3.13'",
+    "toml>=0.10.2,<0.11.0; python_version == '3.13'",
 ]
 
 

@@ -84,9 +84,10 @@ Maximum memory the DuckDB engine may consume.
    * - Value
      - Behaviour
    * - Not defined
-     - Uses default value of **80%** of system RAM
-   * - ``"80%"``
-     - Percentage of system RAM
+     - Uses DuckDB's built-in default of **80%** of system RAM
+   * - ``"80%"`` (or any percentage)
+     - Deferred to DuckDB's built-in default of 80% of system RAM; percentages
+       other than the default are not computed
    * - ``"8GB"`` / ``"8192MB"`` / ``"8388608KB"``
      - Absolute size in GB / MB / KB
    * - integer

@@ -24,6 +24,7 @@ Useful links
 ************
 
 - `MeaningfulData: who we are <https://www.meaningfuldata.eu>`_
+- `Try VTL in your browser (JupyterLite) <https://docs.vtlengine.meaningfuldata.eu/jupyterlite/>`_ — runs the engine on the Pyodide kernel, no install required
 - `Source Code <https://github.com/Meaningful-Data/vtlengine>`_
 - `PyPI link <https://pypi.org/project/vtlengine>`_
 - `Bug Tracker <https://github.com/Meaningful-Data/vtlengine/issues?q=is%3Aopen+is%3Aissue+label%3Abug>`_
