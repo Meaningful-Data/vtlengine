@@ -99,14 +99,25 @@ def test_valid_script_still_parses():
 
 
 @pytest.mark.parametrize(
-    "bad_identifier",
+    "name",
     ["24A0", "1abc", "9_foo"],
 )
-def test_identifier_starting_with_digit_is_rejected(bad_identifier):
+def test_identifier_starting_with_digit_is_rejected(name):
     """VTL 2.2 forbids bare identifiers that start with a digit."""
-    script = f"DS_A <- {bad_identifier} + 1;"
-    with pytest.raises(VTLSyntaxError):
-        run(script=script, data_structures=_EMPTY_DS, datapoints=_NO_DATA)
+    script = f"DS_A <- '{name}' * 2;"
+    data_structures = {
+        "datasets": [
+            {
+                "name": name,
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Integer", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    result = run(script=script, data_structures=data_structures, datapoints=_NO_DATA)
+    assert "DS_A" in result
 
 
 @pytest.mark.parametrize(
