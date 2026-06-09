@@ -30,7 +30,7 @@ params = [
     "round_with_slash.vtl",
     "trunc_with_slash.vtl",
     "component_roles.vtl",
-    "hierarchical_quoted_codeitems.vtl",
+    "hierarchical_unquoted_codeitems.vtl",
 ]
 
 params_prettier = [
