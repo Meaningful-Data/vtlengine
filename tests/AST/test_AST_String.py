@@ -31,7 +31,6 @@ params = [
     "trunc_with_slash.vtl",
     "component_roles.vtl",
     "hierarchical_unquoted_codeitems.vtl",
-    "codeitems_digit_underscore.vtl",
 ]
 
 params_prettier = [
@@ -60,7 +59,6 @@ params_prettier = [
     ("unbounded.vtl", "reference_unbounded.vtl"),
     ("time_agg.vtl", "reference_time_agg.vtl"),
     ("viral_propagation.vtl", "reference_viral_propagation.vtl"),
-    ("codeitems_digit_underscore.vtl", "reference_codeitems_digit_underscore.vtl"),
 ]
 
 

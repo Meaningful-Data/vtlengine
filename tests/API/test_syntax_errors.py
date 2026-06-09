@@ -91,13 +91,13 @@ def test_valid_script_still_parses():
 
 # ---------------------------------------------------------------------------
 # IDENTIFIER digit/underscore handling
-# The grammar accepts bare identifiers that:
-#   - start with a digit as long as they contain at least one letter
-#     (e.g. `24A0`, `1abc`, `9_foo`) — aligned with the VTL "regular names"
-#     definition (VTL 2.1 User Manual, "The regular names");
-#   - start with `_` (e.g. `_foo`).
-# Purely numeric tokens (e.g. `123`) are NOT identifiers and cannot name an
-# artefact; the same names are also valid when single-quoted.
+# A bare identifier must begin with a letter or a digit (and, when starting
+# with a digit, contain at least one letter) — e.g. `abc`, `24A0`, `1abc`,
+# `9_foo`. This matches the VTL "regular names" definition (VTL 2.1 User
+# Manual, "The regular names"): a name must begin with an alphanumeric
+# character, not a special character. Therefore:
+#   - bare names starting with `_` are rejected (only valid when quoted);
+#   - purely numeric tokens (e.g. `123`) are constants, not identifiers.
 # ---------------------------------------------------------------------------
 
 
@@ -160,19 +160,8 @@ def test_quoted_identifier_starting_with_digit_runs(quoted_name):
     "underscore_name",
     ["_foo", "_unknown", "_1abc"],
 )
-def test_underscore_prefixed_identifier_runs(underscore_name):
-    """A dataset named with a `_`-prefixed identifier resolves end-to-end."""
+def test_bare_underscore_prefixed_identifier_is_rejected(underscore_name):
+    """A bare identifier starting with `_` is not valid (it must be quoted)."""
     script = f"DS_A <- {underscore_name} * 2;"
-    data_structures = {
-        "datasets": [
-            {
-                "name": underscore_name,
-                "DataStructure": [
-                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
-                    {"name": "Me_1", "type": "Integer", "role": "Measure", "nullable": True},
-                ],
-            }
-        ]
-    }
-    result = run(script=script, data_structures=data_structures, datapoints=_NO_DATA)
-    assert "DS_A" in result
+    with pytest.raises(VTLSyntaxError):
+        run(script=script, data_structures=_EMPTY_DS, datapoints=_NO_DATA)

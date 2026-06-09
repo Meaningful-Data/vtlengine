@@ -239,7 +239,7 @@ fragment SDMX_VERSION
   | [_+*~]
 ;
 IDENTIFIER
-  : ([0-9] [a-zA-Z0-9_.]*)? ID_PART
+  : ([0-9] [a-zA-Z0-9_.]*)? [a-zA-Z] [a-zA-Z0-9_.]*
   | ID_PART COLON ID_PART ( LPAREN SDMX_VERSION RPAREN )? ( COLON (DOT | CODE_PART)+ )?
   | '\'' ( '\\\'' | ~'\'' )* '\''
 ;
