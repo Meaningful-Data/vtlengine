@@ -11,6 +11,8 @@ from dataclasses import dataclass, field
 from functools import reduce
 from typing import Any, Dict, List, Optional
 
+import pandas as pd
+
 
 @dataclass
 class ViralPropagationRule:
@@ -87,13 +89,13 @@ class ViralPropagationRegistry:
         binary_clauses = [c for c in rule.enumerated_clauses if len(c["values"]) == 2]
         unary_clauses = [c for c in rule.enumerated_clauses if len(c["values"]) == 1]
 
-        pair = {value_a, value_b}
+        pair = {self._normalize_null(value_a), self._normalize_null(value_b)}
         for clause in binary_clauses:
-            if set(clause["values"]) == pair:
+            if {self._normalize_null(v) for v in clause["values"]} == pair:
                 return clause["result"]
 
         for clause in unary_clauses:
-            if clause["values"][0] in pair:
+            if self._normalize_null(clause["values"][0]) in pair:
                 return clause["result"]
 
         return rule.default_value
@@ -124,6 +126,11 @@ class ViralPropagationRegistry:
         """Clear all registered rules."""
         self._variable_rules.clear()
         self._valuedomain_rules.clear()
+
+    def _normalize_null(self, value: Any) -> Any:
+        if pd.isna(value):
+            return None
+        return value
 
 
 # Module-level accessor for operators to use.
