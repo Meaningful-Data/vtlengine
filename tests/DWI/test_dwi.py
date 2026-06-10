@@ -25,16 +25,29 @@ class Membership(DWIHelper):
         """
         Status: OK
         Expression: DS_r := DS_1#INSTTTNL_SCTR;';
-        Description: Membership correct loading.
+        Description: Membership on a dataset without identifiers returns a
+        dataset without identifiers holding the selected measure.
         Git Branch: feat-200-DWI-membership.
         Goal: Check Result.
         """
         code = "GL_200-1"
         number_inputs = 1
-        message = "1-2-10"
-        self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code=message
-        )
+        references_names = ["DS_r"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_2(self):
+        """
+        Status: OK
+        Expression: DS_r := max(DS_1)#Me_1;
+        Description: Membership on a dataset without identifiers produced by a
+        full aggregation (no group by) returns the single aggregated measure.
+        Git Issue: #822 follow-up.
+        Goal: Check Result.
+        """
+        code = "GL_200-2"
+        number_inputs = 1
+        references_names = ["DS_r"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_218_1(self):
         """
