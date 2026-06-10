@@ -174,6 +174,27 @@ class TestViralPropagationEndToEnd:
         # C+M→N (binary); M+F→M (unary "M"); X+Y→" " (else)
         assert list(result["DS_r"].data["VAt_1"]) == ["N", "M", " "]
 
+    @pytest.mark.parametrize("use_duckdb", [False, True])
+    def test_null_condition_matches_null_value(self, use_duckdb: bool) -> None:
+        """A `when null` clause must match a null (pd.NA/None) viral value, not fall to else."""
+        result = run(
+            script=(
+                "define viral propagation ee (variable VAt_1) is\n"
+                '    when null then "Nullable";\n'
+                '    else "NO_COINCIDENCE"\n'
+                "end viral propagation;\n"
+                "DS_r <- DS_1 + DS_2;"
+            ),
+            data_structures=_ds_pair(DS_1VA),
+            datapoints={
+                "DS_1": pd.DataFrame({"Id_1": [1, 2], "Me_1": [10.0, 20.0], "VAt_1": ["X", None]}),
+                "DS_2": pd.DataFrame({"Id_1": [1, 2], "Me_1": [5.0, 15.0], "VAt_1": ["X", None]}),
+            },
+            use_duckdb=use_duckdb,
+        )
+        # X+X→else "NO_COINCIDENCE"; null+null→"Nullable" (when null)
+        assert list(result["DS_r"].data["VAt_1"]) == ["NO_COINCIDENCE", "Nullable"]
+
     def test_no_rule_gives_null(self) -> None:
         """Both operands viral but no rule defined → null."""
         result = run(
