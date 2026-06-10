@@ -568,10 +568,12 @@ class ASTString(ASTTemplate):
     def visit_Analytic(self, node: AST.Analytic) -> str:
         operand = "" if node.operand is None else self.visit(node.operand)
         partition = ""
-        if node.partition_by:
-            partition_sep = ", " if len(node.partition_by) > 1 else ""
+        if node.partition_op == "except all":
+            partition = "partition except all"
+        elif node.partition_by:
+            keyword = "except" if node.partition_op == "except" else "by"
             partition_values = [_format_reserved_word(x) for x in node.partition_by]
-            partition = f"partition by {partition_sep.join(partition_values)}"
+            partition = f"partition {keyword} {', '.join(partition_values)}"
         order = ""
         if node.order_by:
             order_sep = ", " if len(node.order_by) > 1 else ""
