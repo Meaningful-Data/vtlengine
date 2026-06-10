@@ -691,8 +691,11 @@ class InterpreterAnalyzer(ASTTemplate):
                 id_names = self.regular_aggregation_dataset.get_identifiers_names()
                 measure_names = self.regular_aggregation_dataset.get_measures_names()
                 attribute_names = self.regular_aggregation_dataset.get_attributes_names()
+                viral_attribute_names = (
+                    self.regular_aggregation_dataset.get_viral_attributes_names()
+                )
                 dataset_components = self.regular_aggregation_dataset.components.copy()
-                for name in measure_names + attribute_names:
+                for name in measure_names + attribute_names + viral_attribute_names:
                     dataset_components.pop(name)
 
                 operand_id_collision = (
