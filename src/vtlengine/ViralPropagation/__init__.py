@@ -71,7 +71,7 @@ class ViralPropagationRegistry:
     def resolve_pair(self, variable_name: str, value_a: Any, value_b: Any) -> Any:
         """Resolve two viral attribute values into one (for binary operators)."""
         rule = self.get_rule_for_variable(variable_name)
-        if rule is None:
+        if rule is None or pd.isna(value_a) or pd.isna(value_b):
             return None
 
         if rule.aggregate_function is not None:
