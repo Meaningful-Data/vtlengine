@@ -520,8 +520,6 @@ class InterpreterAnalyzer(ASTTemplate):
                 )
             elif self.is_from_regular_aggregation:
                 raise SemanticError("1-1-6-6", dataset_name=left_operand, comp_name=right_operand)
-            elif len(left_operand.get_identifiers()) == 0:
-                raise SemanticError("1-2-10", op=node.op)
         return BINARY_MAPPING[node.op].analyze(left_operand, right_operand)
 
     def visit_UnaryOp(self, node: AST.UnaryOp) -> None:
