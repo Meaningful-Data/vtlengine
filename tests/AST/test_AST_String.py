@@ -26,6 +26,7 @@ params = [
     "GH_358.vtl",
     "comments_end_line.vtl",
     "time_agg.vtl",
+    "time_agg_ref.vtl",
     "viral_propagation.vtl",
     "round_with_slash.vtl",
     "trunc_with_slash.vtl",
@@ -58,6 +59,7 @@ params_prettier = [
     ("validation_str_errorlevel.vtl", "reference_validation_str_errorlevel.vtl"),
     ("unbounded.vtl", "reference_unbounded.vtl"),
     ("time_agg.vtl", "reference_time_agg.vtl"),
+    ("time_agg_ref.vtl", "reference_time_agg_ref.vtl"),
     ("viral_propagation.vtl", "reference_viral_propagation.vtl"),
 ]
 

@@ -717,7 +717,10 @@ class ASTString(ASTTemplate):
         return f"{node.old_name} to {node.new_name}"
 
     def visit_TimeAggregation(self, node: AST.TimeAggregation) -> str:
-        period_to = _handle_literal(node.period_to)
+        if node.period_to_ref is not None:
+            period_to = self.visit(node.period_to_ref)
+        else:
+            period_to = _handle_literal(node.period_to)
         operand = "" if node.operand is None else f", {self.visit(node.operand)}"
 
         if node.period_from is None:
