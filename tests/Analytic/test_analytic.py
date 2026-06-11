@@ -1462,6 +1462,23 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_30(self):
+        """
+        Status: OK
+        Expression: DS_r := DS_1[calc Me_2 := sum(Me_1 over (partition by Id_1))];
+                    DS_1 Dataset (with a viral attribute)
+
+        Description: Analytic operator inside a calc on a dataset that carries a
+        viral attribute. Regression: the viral attribute was not excluded when
+        rebuilding the analytic operand, raising "The number of components must
+        match the number of columns in the data".
+        """
+        code = "2-1-1-30"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_550_2(self):
         """
         Min: min

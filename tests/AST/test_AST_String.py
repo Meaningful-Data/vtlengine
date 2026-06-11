@@ -86,6 +86,30 @@ def test_ast_string_with_comments(filename):
     assert ast == ast_result
 
 
+partition_clauses = [
+    "partition by id",
+    "partition except anyo",
+    "partition except anyo, id",
+    "partition except all",
+]
+
+
+@pytest.mark.parametrize("clause", partition_clauses)
+def test_ast_string_partition_clause(clause):
+    """ASTString must preserve the partition operator (by / except / except all).
+
+    Regression: ``partition except X`` used to be rendered as ``partition by X``,
+    silently changing the analytic window when round-tripping script -> AST -> script.
+    """
+    script = f"DS_r <- DS_1[calc Me_2 := rank(over({clause} order by me))];"
+
+    rendered = ASTString().render(create_ast(script))
+
+    assert clause in rendered
+    # Stable across a second round-trip
+    assert clause in ASTString().render(create_ast(rendered))
+
+
 def test_comments_parsing():
     with open(vtl_filepath / "comments.vtl", "r") as file:
         script = file.read()
