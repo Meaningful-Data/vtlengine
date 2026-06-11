@@ -1,5 +1,7 @@
 """Tests for define viral propagation: parsing, end-to-end execution, and semantic validation."""
 
+from typing import Optional
+
 import pandas as pd
 import pytest
 
@@ -192,7 +194,7 @@ class TestViralPropagationEndToEnd:
             },
             use_duckdb=use_duckdb,
         )
-        # X+X→else "NO_COINCIDENCE"; null+null→"Nullable" (when null)
+        # X+X→else "NO_COINCIDENCE"; null+null→"Nullable" (when null) on both engines.
         assert list(result["DS_r"].data["VAt_1"]) == ["NO_COINCIDENCE", "Nullable"]
 
     def test_no_rule_gives_null(self) -> None:
@@ -234,6 +236,55 @@ class TestViralPropagationEndToEnd:
         )
         sorted_data = result["DS_r"].data.sort_values("Id_1").reset_index(drop=True)
         assert list(sorted_data["VAt_1"]) == [7, 5]
+
+    @pytest.mark.parametrize(
+        "agg, both_present, one_null",
+        # min/max skip nulls (LEAST/GREATEST); sum/avg propagate nulls (a + b).
+        [("min", 10, 5), ("max", 20, 5), ("sum", 30, None), ("avg", 15, None)],
+    )
+    @pytest.mark.parametrize("use_duckdb", [False, True])
+    def test_aggregate_binary_with_nulls(
+        self, agg: str, both_present: int, one_null: Optional[int], use_duckdb: bool
+    ) -> None:
+        """Aggregate viral propagation on a binary op handles nulls identically on both engines.
+
+        min/max ignore a null operand (SQL LEAST/GREATEST); sum/avg propagate it (a + b).
+        Two nulls always yield null. Pandas and DuckDB must agree.
+        """
+        num_va_ds = {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                {"name": "VAt_1", "type": "Number", "role": "Viral Attribute", "nullable": True},
+            ],
+        }
+        rule = (
+            f"define viral propagation ee (variable VAt_1) is\n"
+            f"    aggregate {agg}\n"
+            f"end viral propagation;\n"
+        )
+        result = run(
+            script=rule + "DS_r <- DS_1 + DS_2;",
+            data_structures=_ds_pair(num_va_ds),
+            datapoints={
+                "DS_1": pd.DataFrame(
+                    {"Id_1": [1, 2, 3], "Me_1": [10.0, 20.0, 30.0], "VAt_1": [10.0, None, None]}
+                ),
+                "DS_2": pd.DataFrame(
+                    {"Id_1": [1, 2, 3], "Me_1": [5.0, 15.0, 25.0], "VAt_1": [20.0, 5.0, None]}
+                ),
+            },
+            use_duckdb=use_duckdb,
+        )
+        va = result["DS_r"].data.sort_values("Id_1").reset_index(drop=True)["VAt_1"]
+        # row1: both present; row2: one operand null; row3: both null -> always null
+        assert int(va.iloc[0]) == both_present
+        if one_null is None:
+            assert pd.isna(va.iloc[1])
+        else:
+            assert int(va.iloc[1]) == one_null
+        assert pd.isna(va.iloc[2])
 
 
 # -- Multi-attribute propagation (enumerated + aggregate in one script) --
