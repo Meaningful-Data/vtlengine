@@ -75,13 +75,16 @@ class ViralPropagationRegistry:
             return None
 
         if rule.aggregate_function is not None:
-            if rule.aggregate_function == "avg":
+            fn = rule.aggregate_function
+            if fn in ("min", "max"):
+                if pd.isna(value_a):
+                    return None if pd.isna(value_b) else value_b
+                if pd.isna(value_b):
+                    return value_a
+                return min(value_a, value_b) if fn == "min" else max(value_a, value_b)
+            elif fn == "avg":
                 return (value_a + value_b) / 2
-            elif rule.aggregate_function == "min":
-                return min(value_a, value_b)
-            elif rule.aggregate_function == "max":
-                return max(value_a, value_b)
-            elif rule.aggregate_function == "sum":
+            elif fn == "sum":
                 return value_a + value_b
             return None
 
@@ -111,13 +114,18 @@ class ViralPropagationRegistry:
             return None
 
         if rule.aggregate_function is not None:
+            # Native SQL aggregates (MIN/MAX/SUM/AVG) ignore nulls; mirror that here so
+            # the pandas path matches DuckDB and min/max do not choke on pd.NA.
+            non_null = [v for v in values if not pd.isna(v)]
+            if not non_null:
+                return None
             funcs: Dict[str, Any] = {
                 "min": min,
                 "max": max,
                 "sum": sum,
                 "avg": lambda v: sum(v) / len(v),
             }
-            return funcs[rule.aggregate_function](values)
+            return funcs[rule.aggregate_function](non_null)
 
         # Enumerated: reduce pairwise (associative + commutative guarantees correctness)
         return reduce(lambda a, b: self.resolve_pair(variable_name, a, b), values)
