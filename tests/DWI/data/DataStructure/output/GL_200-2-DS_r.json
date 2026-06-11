@@ -2,7 +2,7 @@
   "scalars": [
     {
       "name": "DS_r",
-      "type": "String"
+      "type": "Number"
     }
   ]
 }

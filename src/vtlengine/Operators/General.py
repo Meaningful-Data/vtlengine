@@ -8,7 +8,7 @@ import pyarrow.compute as pc
 
 from vtlengine.DataTypes import COMP_NAME_MAPPING, Date
 from vtlengine.Exceptions import RunTimeError, SemanticError
-from vtlengine.Model import Component, DataComponent, Dataset, ExternalRoutine, Role
+from vtlengine.Model import Component, DataComponent, Dataset, ExternalRoutine, Role, Scalar
 from vtlengine.Operators import Binary, Unary
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
@@ -24,7 +24,7 @@ class Membership(Binary):
     """
 
     @classmethod
-    def validate(cls, left_operand: Any, right_operand: Any) -> Dataset:
+    def validate(cls, left_operand: Any, right_operand: Any) -> Union[Dataset, Scalar]:
         dataset_name = VirtualCounter._new_ds_name()
         if right_operand not in left_operand.components:
             raise SemanticError(
@@ -35,6 +35,9 @@ class Membership(Binary):
             )
 
         component = left_operand.components[right_operand]
+        if len(left_operand.get_identifiers()) == 0:
+            return Scalar(name=dataset_name, data_type=component.data_type, value=None)
+
         promote_to_measure = component.role in (Role.IDENTIFIER, Role.ATTRIBUTE)
         result_components = {
             name: comp
@@ -59,10 +62,10 @@ class Membership(Binary):
         left_operand: Dataset,
         right_operand: str,
         is_from_component_assignment: bool = False,
-    ) -> Union[DataComponent, Dataset]:
-        result_dataset = cls.validate(left_operand, right_operand)
+    ) -> Union[DataComponent, Dataset, Scalar]:
+        result = cls.validate(left_operand, right_operand)
         if left_operand.data is None:
-            return result_dataset
+            return result
 
         component = left_operand.components[right_operand]
         if is_from_component_assignment:
@@ -74,6 +77,13 @@ class Membership(Binary):
                 data=left_operand.data[right_operand],
             )
 
+        if isinstance(result, Scalar):
+            data = left_operand.data
+            raw_value = data[component.name].iloc[0] if len(data) else None
+            result.value = component.data_type.cast(raw_value)
+            return result
+
+        result_dataset = result
         result_data = pd.DataFrame()
         for name in result_dataset.components:
             source_name = name if name in left_operand.data.columns else component.name
