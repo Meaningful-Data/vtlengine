@@ -1,6 +1,11 @@
 from pathlib import Path
 
+import pandas as pd
+
 from tests.Helper import TestHelper
+from vtlengine import run
+from vtlengine.DataTypes import Number
+from vtlengine.Model import Scalar
 
 
 class DWIHelper(TestHelper):
@@ -25,8 +30,8 @@ class Membership(DWIHelper):
         """
         Status: OK
         Expression: DS_r := DS_1#INSTTTNL_SCTR;';
-        Description: Membership on a dataset without identifiers returns a
-        dataset without identifiers holding the selected measure.
+        Description: Membership on a dataset without identifiers returns a scalar
+        holding the selected component value (VTL 2.2, issue #824).
         Git Branch: feat-200-DWI-membership.
         Goal: Check Result.
         """
@@ -40,8 +45,8 @@ class Membership(DWIHelper):
         Status: OK
         Expression: DS_r := max(DS_1)#Me_1;
         Description: Membership on a dataset without identifiers produced by a
-        full aggregation (no group by) returns the single aggregated measure.
-        Git Issue: #822 follow-up.
+        full aggregation (no group by) returns the single aggregated measure as a scalar.
+        Git Issue: #822 follow-up / #824.
         Goal: Check Result.
         """
         code = "GL_200-2"
@@ -49,21 +54,54 @@ class Membership(DWIHelper):
         references_names = ["DS_r"]
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_scalar_value(self) -> None:
+        """Membership on a dataset without identifiers returns a Scalar with the right value.
+
+        The file-based comparison only checks the scalar's name/type (Scalar.__eq__ does not
+        compare values), so this asserts the actual value on both backends. Issue #824.
+        """
+        data_structures = {
+            "datasets": [
+                {
+                    "name": "DS_1",
+                    "DataStructure": [
+                        {
+                            "name": "Id_1",
+                            "type": "Integer",
+                            "role": "Identifier",
+                            "nullable": False,
+                        },
+                        {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                    ],
+                }
+            ]
+        }
+        datapoints = {"DS_1": pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [10.0, 20.0, 30.0]})}
+        for use_duckdb in (False, True):
+            result = run(
+                script="SC_r := max(DS_1)#Me_1;",
+                data_structures=data_structures,
+                datapoints=datapoints,
+                use_duckdb=use_duckdb,
+                return_only_persistent=False,
+            )
+            assert isinstance(result["SC_r"], Scalar), f"use_duckdb={use_duckdb}"
+            assert result["SC_r"].data_type is Number, f"use_duckdb={use_duckdb}"
+            assert result["SC_r"].value == 30.0, f"use_duckdb={use_duckdb}"
+
     def test_GL_218_1(self):
         """
         Status: OK
         Expression: DS_r := DS_1#BLNC_SHT_TTL_CRRNCY + DS_2#BLNC_SHT_TTL_CRRNCY;
-        Description: Should raise a semantic exception
-        Git Issue: #218.
+        Description: Membership on datasets without identifiers yields scalars (VTL 2.2,
+        issue #824), so adding two of them returns a scalar instead of raising 1-2-10.
+        Git Issue: #218 / #824.
         Goal: Check Result.
         """
         code = "GL_218_1"
         number_inputs = 2
-
-        message = "1-2-10"
-        self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code=message
-        )
+        references_names = ["DS_r"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_218_2(self):
         """
