@@ -218,9 +218,8 @@ class ASTString(ASTTemplate):
     def visit_DPRuleset(self, node: AST.DPRuleset) -> None:
         rules_sep = "; " if len(node.rules) > 1 else ""
         signature_sep = ", " if len(node.params) > 1 else ""
-        signature = (
-            f"{node.signature_type} {signature_sep.join([self.visit(x) for x in node.params])}"
-        )
+        params = signature_sep.join([self.visit(x) for x in node.params])
+        signature = f"{node.signature_type} {params}" if params else node.signature_type
 
         if self.pretty:
             self.vtl_script += f"define datapoint ruleset {node.name}({signature}) is {nl}"

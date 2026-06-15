@@ -1566,7 +1566,11 @@ class InterpreterAnalyzer(ASTTemplate):
                         comp_name=comp_name,
                         dataset_name=dataset_element.name,
                     )
-            if dpr_info is not None and dpr_info["signature_type"] == "variable":
+            if (
+                dpr_info is not None
+                and dpr_info["signature_type"] == "variable"
+                and dpr_info["params"]
+            ):
                 for i, comp_name in enumerate(node.components):
                     if comp_name != dpr_info["params"][i]:
                         raise SemanticError(
@@ -1585,6 +1589,8 @@ class InterpreterAnalyzer(ASTTemplate):
         rule_output_values = {}
         self.ruleset_dataset = dataset_element
         self.ruleset_signature = dpr_info.get("signature")
+        if dpr_info.get("signature_type") == "variable" and not self.ruleset_signature:
+            self.ruleset_signature = {name: name for name in dataset_element.components}
         self.ruleset_mode = output
 
         # Gather rule data
