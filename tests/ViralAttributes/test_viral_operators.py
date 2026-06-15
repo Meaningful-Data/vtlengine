@@ -450,3 +450,110 @@ class TestViralAttributeSpecialCases:
         _assert_viral_attrs(result, 2)
         assert list(result["DS_r"].data["VAt_1"]) == ["A", "B"]
         assert list(result["DS_r"].data["VAt_2"]) == ["X", "Y"]
+
+
+# -- Join operators --
+
+JOIN_OPS = ["inner_join", "left_join", "full_join", "cross_join"]
+
+
+def _join_ds(name: str, *, attr: bool, viral: bool) -> dict:
+    comps = [
+        {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+        {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+    ]
+    if attr:
+        comps.append({"name": "At_1", "type": "String", "role": "Attribute", "nullable": True})
+    if viral:
+        comps.append(
+            {"name": "VAt_1", "type": "String", "role": "Viral Attribute", "nullable": True}
+        )
+    return {"name": name, "DataStructure": comps}
+
+
+def _join_dp(*, base: float, attr: bool, viral: str = "") -> pd.DataFrame:
+    data: dict = {"Id_1": [1, 2], "Me_1": [base, base + 10.0]}
+    if attr:
+        data["At_1"] = ["n1", "n2"]
+    if viral:
+        data["VAt_1"] = [viral + "1", viral + "2"]
+    return pd.DataFrame(data)
+
+
+class TestViralAttributeJoinOps:
+    """VTL 2.2 join behaviour: the virtual data set keeps only identifiers,
+    measures and viral attributes. Non-viral attributes are dropped; viral
+    attributes are kept once (combined via the propagation rule when shared)."""
+
+    @pytest.mark.parametrize("join_op", JOIN_OPS)
+    def test_join_drops_non_viral_attribute(self, join_op: str) -> None:
+        """A non-viral attribute present in the operands must not reach the result
+        (component nor data), unlike a measure."""
+        structures = [
+            _join_ds("DS_1", attr=True, viral=False),
+            _join_ds("DS_2", attr=True, viral=False),
+        ]
+        datapoints = {
+            "DS_1": _join_dp(base=10.0, attr=True),
+            "DS_2": _join_dp(base=100.0, attr=True),
+        }
+        result = run(
+            script=f"DS_r <- {join_op}(DS_1, DS_2);",
+            data_structures={"datasets": structures},
+            datapoints=datapoints,
+        )
+        ds_r = result["DS_r"]
+        # No attribute survives — neither bare nor #-qualified (e.g. DS_1#At_1).
+        assert all(c.role != Role.ATTRIBUTE for c in ds_r.components.values())
+        assert not any("At_1" in col for col in ds_r.components)
+        assert not any("At_1" in str(col) for col in ds_r.data.columns)
+        _assert_component_data_parity(result)
+
+    @pytest.mark.parametrize("join_op", JOIN_OPS)
+    def test_join_keeps_viral_attribute_from_one_operand(self, join_op: str) -> None:
+        """A viral attribute present in exactly one operand is kept unchanged."""
+        structures = [
+            _join_ds("DS_1", attr=False, viral=True),
+            _join_ds("DS_2", attr=False, viral=False),
+        ]
+        datapoints = {
+            "DS_1": _join_dp(base=10.0, attr=False, viral="A"),
+            "DS_2": _join_dp(base=100.0, attr=False),
+        }
+        result = run(
+            script=f"DS_r <- {join_op}(DS_1, DS_2);",
+            data_structures={"datasets": structures},
+            datapoints=datapoints,
+        )
+        ds_r = result["DS_r"]
+        assert ds_r.components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
+        assert "VAt_1" in ds_r.data.columns
+        # Values come unchanged from DS_1 (cross_join repeats them cartesian-wise).
+        assert ds_r.data["VAt_1"].notna().all()
+        assert set(ds_r.data["VAt_1"]) == {"A1", "A2"}
+        _assert_component_data_parity(result)
+
+    @pytest.mark.parametrize("join_op", JOIN_OPS)
+    def test_join_combines_shared_viral_attribute(self, join_op: str) -> None:
+        """A viral attribute shared by both operands appears once and is combined
+        via the Attribute Propagation Rule (null when no rule is defined)."""
+        structures = [
+            _join_ds("DS_1", attr=False, viral=True),
+            _join_ds("DS_2", attr=False, viral=True),
+        ]
+        datapoints = {
+            "DS_1": _join_dp(base=10.0, attr=False, viral="A"),
+            "DS_2": _join_dp(base=100.0, attr=False, viral="X"),
+        }
+        result = run(
+            script=f"DS_r <- {join_op}(DS_1, DS_2);",
+            data_structures={"datasets": structures},
+            datapoints=datapoints,
+        )
+        ds_r = result["DS_r"]
+        # Single viral column (not #-qualified per operand), keeping its role.
+        assert ds_r.components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
+        assert "DS_1#VAt_1" not in ds_r.components
+        assert "DS_2#VAt_1" not in ds_r.components
+        assert "VAt_1" in ds_r.data.columns
+        _assert_component_data_parity(result)
