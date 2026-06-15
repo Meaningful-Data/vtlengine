@@ -581,7 +581,10 @@ class ASTString(ASTTemplate):
         window = f" {self.visit(node.window)}" if node.window is not None else ""
         params = ""
         if node.params:
-            params = "" if len(node.params) == 0 else f", {int(node.params[0])}"
+            rendered_params = [
+                self.visit(p) if isinstance(p, AST.AST) else str(p) for p in node.params
+            ]
+            params = ", " + ", ".join(rendered_params)
         if self.pretty:
             result = (
                 f"{node.op}({nl}{tab * 3}{operand}{params} over({partition}{order} {window})"
