@@ -1,0 +1,4 @@
+DS_r1 := time_agg(DS_1, a);
+DS_r2 := sum ( DS_1 group all time_agg ( "A" ) );
+DS_r3 := time_agg ( "Q", cast ( "2012M01", time_period, "YYYY\MMM" ) );
+DS_r4 := time_agg ( "A", _, cast ( "2012M1", date, "YYYYMMDD" ), first );
