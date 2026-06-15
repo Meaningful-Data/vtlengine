@@ -262,10 +262,6 @@ class Analytic(Operator.Unary):
             )
             window_str = f"{mode} BETWEEN {start} {start_mode} AND {stop} {stop_mode}"
 
-        # Column names come from VTL components and may contain special characters
-        # (e.g. the ``dataset#component`` membership notation), so every reference
-        # is double-quoted to be a valid DuckDB identifier.
-
         # Partitioning
         partition = (
             "PARTITION BY " + ", ".join(f'"{p}"' for p in partitioning)
