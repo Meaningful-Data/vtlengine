@@ -373,6 +373,39 @@ class TestViralAttributeStringParameterizedOps:
             assert list(result["DS_r"].data[va_name]) == VA_VALUES[i]
 
 
+# -- Numeric parameterized operators (round, trunc) --
+
+
+class TestViralAttributeNumericParameterizedOps:
+    """Viral attributes must keep BOTH their component role and their data values
+    through parameterized numeric operators (round, trunc).
+
+    Regression (issue #833): ``Parameterized.dataset_evaluation`` rebuilt the
+    result data with only identifiers and measures, so the viral attribute was
+    kept in ``result.components`` but dropped from ``result.data`` (component/data
+    mismatch)."""
+
+    @pytest.mark.parametrize(
+        "expr",
+        [
+            "round(DS_1, 2)",
+            "round(DS_1)",
+            "trunc(DS_1, 1)",
+            "trunc(DS_1)",
+        ],
+    )
+    @pytest.mark.parametrize("num_viral", [1, 2, 3])
+    def test_numeric_param_preserves_viral_attrs(self, expr: str, num_viral: int) -> None:
+        result = _run_single(expr, num_viral)
+        _assert_viral_attrs(result, num_viral)
+        _assert_component_data_parity(result)
+        # The viral attribute data values must be carried over unchanged.
+        for i in range(num_viral):
+            va_name = VA_NAMES[i]
+            assert va_name in result["DS_r"].data.columns, f"{va_name} missing from result data"
+            assert list(result["DS_r"].data[va_name]) == VA_VALUES[i]
+
+
 # -- Set comparison operators (in / not_in) --
 
 
