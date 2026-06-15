@@ -467,6 +467,7 @@ class TimeAggregation(AST):
     period_to: Optional[str] = None
     period_to_ref: Optional[AST] = None  # VarID, mutually exclusive with period_to
     period_from: Optional[str] = None
+    period_from_optional: bool = False
     operand: Optional[AST] = None
     conf: Optional[str] = None
 

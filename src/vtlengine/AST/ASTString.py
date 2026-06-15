@@ -581,7 +581,10 @@ class ASTString(ASTTemplate):
         window = f" {self.visit(node.window)}" if node.window is not None else ""
         params = ""
         if node.params:
-            params = "" if len(node.params) == 0 else f", {int(node.params[0])}"
+            rendered_params = [
+                self.visit(p) if isinstance(p, AST.AST) else str(p) for p in node.params
+            ]
+            params = ", " + ", ".join(rendered_params)
         if self.pretty:
             result = (
                 f"{node.op}({nl}{tab * 3}{operand}{params} over({partition}{order} {window})"
@@ -723,10 +726,12 @@ class ASTString(ASTTemplate):
             period_to = _handle_literal(node.period_to)
         operand = "" if node.operand is None else f", {self.visit(node.operand)}"
 
-        if node.period_from is None:
-            period_from = ", _" if node.operand is not None else ""
-        else:
+        if node.period_from is not None:
             period_from = f", {_handle_literal(node.period_from)}"
+        elif node.period_from_optional:
+            period_from = ", _"
+        else:
+            period_from = ""
         config = "" if node.conf is None else f", {node.conf}"
         return f"{node.op}({period_to}{period_from}{operand}{config})"
 
@@ -795,9 +800,14 @@ class ASTString(ASTTemplate):
             start = f"unbounded {node.start_mode}"
         elif node.start_mode == "current":
             start = "current data point"
+        elif isinstance(node.start, AST.AST):
+            start = f"{self.visit(node.start)} {node.start_mode}"
         else:
             start = f"{node.start if node.start != 'current row' else 0} {node.start_mode}"
-        stop = f"{node.stop if node.stop != 'current row' else 0} {node.stop_mode}"
+        if isinstance(node.stop, AST.AST):
+            stop = f"{self.visit(node.stop)} {node.stop_mode}"
+        else:
+            stop = f"{node.stop if node.stop != 'current row' else 0} {node.stop_mode}"
         if node.stop_mode == "current":
             stop = "current data point"
         mode = "data points" if node.type_ == "data" else "range"
