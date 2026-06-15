@@ -1009,6 +1009,7 @@ class Expr:
         period_to = None
         period_to_ref = None
         period_from = None
+        period_from_optional = False
         optional_expr_node = None
         conf = None
         period_to_found = False
@@ -1022,7 +1023,7 @@ class Expr:
                     else:
                         period_from = str(child.text)[1:-1]
                 elif child.symbol_type == vtl_cpp_parser.OPTIONAL:
-                    pass  # periodIndFrom is OPTIONAL, skip
+                    period_from_optional = True
                 elif child.symbol_type in (vtl_cpp_parser.FIRST, vtl_cpp_parser.LAST):
                     conf = child.text
             elif child.rule_index == RC.VAR_ID[0] and not period_to_found:
@@ -1050,6 +1051,7 @@ class Expr:
             period_to=period_to,
             period_to_ref=period_to_ref,
             period_from=period_from,
+            period_from_optional=period_from_optional,
             conf=conf_val,
             **extract_token_info(ctx),
         )
@@ -1904,6 +1906,7 @@ class Expr:
             period_to = None
             period_to_ref = None
             period_from = None
+            period_from_optional = False
             operand_node = None
             conf = None
             period_to_found = False
@@ -1916,6 +1919,9 @@ class Expr:
                             period_to_found = True
                         else:
                             period_from = child.text[1:-1]
+                    elif child.symbol_type == vtl_cpp_parser.OPTIONAL:
+                        # periodIndFrom omitted via the explicit ``_`` placeholder
+                        period_from_optional = True
                     elif child.symbol_type in (vtl_cpp_parser.FIRST, vtl_cpp_parser.LAST):
                         conf = child.text
                 elif child.rule_index == RC.VAR_ID[0] and not period_to_found:
@@ -1935,6 +1941,7 @@ class Expr:
                     period_to=period_to,
                     period_to_ref=period_to_ref,
                     period_from=period_from,
+                    period_from_optional=period_from_optional,
                     conf=conf,
                     **extract_token_info(ctx),
                 )

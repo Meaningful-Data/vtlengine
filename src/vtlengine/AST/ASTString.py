@@ -723,10 +723,12 @@ class ASTString(ASTTemplate):
             period_to = _handle_literal(node.period_to)
         operand = "" if node.operand is None else f", {self.visit(node.operand)}"
 
-        if node.period_from is None:
-            period_from = ", _" if node.operand is not None else ""
-        else:
+        if node.period_from is not None:
             period_from = f", {_handle_literal(node.period_from)}"
+        elif node.period_from_optional:
+            period_from = ", _"
+        else:
+            period_from = ""
         config = "" if node.conf is None else f", {node.conf}"
         return f"{node.op}({period_to}{period_from}{operand}{config})"
 
