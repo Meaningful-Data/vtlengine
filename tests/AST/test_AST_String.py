@@ -29,6 +29,7 @@ params = [
     "time_agg_ref.vtl",
     "time_agg_optional.vtl",
     "lag_lead_offset.vtl",
+    "windowing_scalar_bound.vtl",
     "viral_propagation.vtl",
     "round_with_slash.vtl",
     "trunc_with_slash.vtl",

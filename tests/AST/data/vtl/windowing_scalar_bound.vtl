@@ -1,0 +1,4 @@
+DS_r1 := DS_1[calc me_win := sum(me over (partition by id order by anyo data points between sc1 preceding and 1 following))];
+DS_r2 := DS_1[calc me_win := sum(me over (partition by id order by anyo data points between 1 preceding and sc1 following))];
+DS_r3 := DS_1[calc me_win := sum(me over (partition by id order by anyo data points between 3 preceding and 1 following))];
+DS_r4 := DS_1[calc me_win := sum(me over (partition by id order by anyo data points between unbounded preceding and current data point))];
