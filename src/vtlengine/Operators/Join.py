@@ -121,6 +121,9 @@ class Join(Operator):
             for component_name, component in components.items():
                 component.nullable = nullability[component_name]
 
+                if component.role == Role.ATTRIBUTE:
+                    continue
+
                 if component_name in viral_common:
                     if component_name not in merged_components:
                         component.name = component_name
@@ -172,13 +175,19 @@ class Join(Operator):
         nvl: Optional[Dict[str, Any]] = None,
     ) -> Dataset:
         result = cls.execute([copy(operand) for operand in operands], using)
-        if result.data is not None and sorted(result.get_components_names()) != sorted(
-            result.data.columns.tolist()
-        ):
-            missing = list(set(result.get_components_names()) - set(result.data.columns.tolist()))
-            if len(missing) == 0:
-                missing.append("None")
-            raise SemanticError("1-1-1-10", comp_name=missing[0], dataset_name=result.name)
+
+        if result.data is not None:
+            extra_cols = [c for c in result.data.columns if c not in result.components]
+            if extra_cols:
+                result.data = result.data.drop(columns=extra_cols)
+            if sorted(result.get_components_names()) != sorted(result.data.columns.tolist()):
+                missing = list(
+                    set(result.get_components_names()) - set(result.data.columns.tolist())
+                )
+                if len(missing) == 0:
+                    missing.append("None")
+                raise SemanticError("1-1-1-10", comp_name=missing[0], dataset_name=result.name)
+
         if nvl:
             cls._validate_nvl(operands, nvl)
             if result.data is not None:
@@ -449,6 +458,8 @@ class CrossJoin(Join):
             result.data = operands[0].data
             return result
         common = cls.get_components_intersection([op.get_components_names() for op in operands])
+        viral_common = merged_viral_attribute_names([op.components for op in operands], set())
+        registry = get_current_registry()
 
         for op in operands:
             if op.data is None:
@@ -462,12 +473,13 @@ class CrossJoin(Join):
                         op.data,
                         how=cls.how,  # type: ignore[arg-type]
                     )
+                    cls._combine_viral_attributes(result, viral_common, registry)
             if result.data is not None:
                 result.data = result.data.rename(
                     columns={
                         column: op.name + "#" + column
                         for column in result.data.columns.tolist()
-                        if column in common
+                        if column in common and column not in viral_common
                     }
                 )
         if result.data is not None:
