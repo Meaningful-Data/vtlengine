@@ -4157,10 +4157,10 @@ public:
   public:
     RulesetSignatureContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    std::vector<SignatureContext *> signature();
-    SignatureContext* signature(size_t i);
     antlr4::tree::TerminalNode *VALUE_DOMAIN();
     antlr4::tree::TerminalNode *VARIABLE();
+    std::vector<SignatureContext *> signature();
+    SignatureContext* signature(size_t i);
     std::vector<antlr4::tree::TerminalNode *> COMMA();
     antlr4::tree::TerminalNode* COMMA(size_t i);
 

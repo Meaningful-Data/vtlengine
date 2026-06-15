@@ -554,7 +554,7 @@ rulesetID:
 ;
 
 rulesetSignature:
-    (VALUE_DOMAIN|VARIABLE) signature (COMMA signature)*
+    (VALUE_DOMAIN|VARIABLE) (signature (COMMA signature)*)?
 ;
 
 signature:
