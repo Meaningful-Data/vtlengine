@@ -800,9 +800,14 @@ class ASTString(ASTTemplate):
             start = f"unbounded {node.start_mode}"
         elif node.start_mode == "current":
             start = "current data point"
+        elif isinstance(node.start, AST.AST):
+            start = f"{self.visit(node.start)} {node.start_mode}"
         else:
             start = f"{node.start if node.start != 'current row' else 0} {node.start_mode}"
-        stop = f"{node.stop if node.stop != 'current row' else 0} {node.stop_mode}"
+        if isinstance(node.stop, AST.AST):
+            stop = f"{self.visit(node.stop)} {node.stop_mode}"
+        else:
+            stop = f"{node.stop if node.stop != 'current row' else 0} {node.stop_mode}"
         if node.stop_mode == "current":
             stop = "current data point"
         mode = "data points" if node.type_ == "data" else "range"
