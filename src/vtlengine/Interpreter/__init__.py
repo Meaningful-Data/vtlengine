@@ -2018,6 +2018,6 @@ class InterpreterAnalyzer(ASTTemplate):
         return Time_Aggregation._execute_without_operand(
             aggregation_dataset=self.aggregation_dataset,
             period_from=node.period_from,
-            period_to=period_to,
+            period_to=period_to,  # type: ignore[arg-type]
             conf=node.conf,
         )
