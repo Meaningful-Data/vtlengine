@@ -263,13 +263,17 @@ class Analytic(Operator.Unary):
             window_str = f"{mode} BETWEEN {start} {start_mode} AND {stop} {stop_mode}"
 
         # Partitioning
-        partition = "PARTITION BY " + ", ".join(partitioning) if len(partitioning) > 0 else ""
+        partition = (
+            "PARTITION BY " + ", ".join(f'"{p}"' for p in partitioning)
+            if len(partitioning) > 0
+            else ""
+        )
 
         # Ordering
         order_str = ""
         if len(ordering) > 0:
             for x in ordering:
-                order_str += f"{x.component} {x.order}, "
+                order_str += f'"{x.component}" {x.order}, '
             if len(order_str) > 0:
                 order_str = "ORDER BY " + order_str[:-2]
 
@@ -281,25 +285,25 @@ class Analytic(Operator.Unary):
             if cls.op == RANK:
                 measure_query = f"{cls.sql_op}()"
             elif cls.op == RATIO_TO_REPORT:
-                measure_query = f"CAST({measure} AS DOUBLE) / SUM(CAST({measure} AS DOUBLE))"
+                measure_query = f'CAST("{measure}" AS DOUBLE) / SUM(CAST("{measure}" AS DOUBLE))'
             elif cls.op in [LAG, LEAD]:
-                measure_query = f"{cls.sql_op}({measure}, {','.join(map(str, params or []))})"
+                measure_query = f'{cls.sql_op}("{measure}", {",".join(map(str, params or []))})'
             else:
-                measure_query = f"{cls.sql_op}({measure})"
+                measure_query = f'{cls.sql_op}("{measure}")'
             if cls.op == COUNT and len(measure_names) == 1:
-                measure_query += f" {analytic_str} as {COMP_NAME_MAPPING[cls.return_type]}"
+                measure_query += f' {analytic_str} as "{COMP_NAME_MAPPING[cls.return_type]}"'
             elif cls.op in return_integer_operators and cls.return_integer:
-                measure_query = f"CAST({measure_query} {analytic_str} AS INTEGER) as {measure}"
+                measure_query = f'CAST({measure_query} {analytic_str} AS INTEGER) as "{measure}"'
             else:
-                measure_query += f" {analytic_str} as {measure}"
+                measure_query += f' {analytic_str} as "{measure}"'
             measure_queries.append(measure_query)
         if cls.op == COUNT and len(measure_names) == 0:
             measure_queries.append(
-                f"COUNT(*) {analytic_str} as {COMP_NAME_MAPPING[cls.return_type]}"
+                f'COUNT(*) {analytic_str} as "{COMP_NAME_MAPPING[cls.return_type]}"'
             )
 
         measures_sql = ", ".join(measure_queries)
-        identifiers_sql = ", ".join(identifier_names)
+        identifiers_sql = ", ".join(f'"{name}"' for name in identifier_names)
         query = f"SELECT {identifiers_sql} , {measures_sql} FROM df"
 
         if cls.op == COUNT:

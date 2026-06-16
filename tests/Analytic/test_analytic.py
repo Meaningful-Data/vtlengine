@@ -1497,3 +1497,27 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_833(self):
+        """
+        Max: max
+        Dataset --> Dataset
+        Status: OK
+        Expression: DS_r := inner_join(DS_1, DS_2
+                    filter DS_1#me = max(DS_2#me over ()))[drop DS_2#me];
+                    DS_1, DS_2 Datasets
+
+        Description: Fix #833: when an analytic operates on a component
+        referenced through the ``dataset#component`` membership notation (here
+        inside a join), the DuckDB transpiler built the window SQL with the raw
+        column name ``DS_2#me``, which is not a valid unquoted DuckDB identifier
+        and raised ``Parser Error: syntax error at or near "#"``. Column
+        references in the analytic query must be double-quoted.
+
+        Goal: Check that analytic functions work on membership-named columns.
+        """
+        code = "GH_833"
+        number_inputs = 2
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
