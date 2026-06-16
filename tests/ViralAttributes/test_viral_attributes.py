@@ -41,11 +41,6 @@ execution_codes = [
     ("2-2", 1),  # aggregation, enumerated pairwise reduction
     ("3-1", 1),  # analytic, aggregate-max over the partition
     ("3-2", 1),  # analytic, no rule (per-row passthrough)
-    ("4-1", 2),  # inner join, merge shared viral attr via the rule
-    ("4-2", 2),  # inner join, no rule -> NULL
-    ("4-3", 2),  # left join, aggregate-max
-    ("4-4", 2),  # join with a body calc + shared viral attr
-    ("4-5", 2),  # join, mixed-role shared component -> not merged
     ("7-1", 1),  # unary (abs), per-row passthrough
     ("8-1", 1),  # dataset-scalar (DS_1 + 5), per-row passthrough
     ("10-3", 1),  # legacy 'ViralAttribute' input role
@@ -84,6 +79,24 @@ validation_codes = [
 @pytest.mark.parametrize("code,exception_code", validation_codes)
 def test_validation(code: str, exception_code: str) -> None:
     ViralHelper.NewSemanticExceptionTest(code=code, number_inputs=1, exception_code=exception_code)
+
+
+# -- Join ambiguity: a component shared (and not disambiguated) by both join
+# operands collapses to a homonym at the join's final un-prefixing step, which
+# VTL 2.2 rejects. Valid viral-propagation-through-join cases (distinct
+# measures) are covered in test_viral_propagation.TestViralPropagationJoins.
+join_ambiguity_codes = [
+    ("4-1", "1-1-13-9"),  # inner join, shared measure Me_1
+    ("4-2", "1-1-13-9"),  # inner join, shared measure Me_1
+    ("4-3", "1-1-13-9"),  # left join, shared measure Me_1
+    ("4-4", "1-1-13-9"),  # join with body calc, shared measure Me_1 still present
+    ("4-5", "1-1-13-9"),  # join, mixed-role shared component VAt_1
+]
+
+
+@pytest.mark.parametrize("code,exception_code", join_ambiguity_codes)
+def test_join_ambiguity(code: str, exception_code: str) -> None:
+    ViralHelper.NewSemanticExceptionTest(code=code, number_inputs=2, exception_code=exception_code)
 
 
 # -- Model-level checks (Role enum and Dataset helpers) --

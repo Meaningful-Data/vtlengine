@@ -419,13 +419,17 @@ class TestVpBodyGrammar:
 
 # -- Propagation rules through join operators --
 
-DS_1VA_NO_VA = {
-    "name": "DS_2",
-    "DataStructure": [
-        {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
-        {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
-    ],
-}
+_ID_1 = {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False}
+_ID_2 = {"name": "Id_2", "type": "Integer", "role": "Identifier", "nullable": False}
+_ME_1 = {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True}
+_ME_2 = {"name": "Me_2", "type": "Number", "role": "Measure", "nullable": True}
+_VA = {"name": "VAt_1", "type": "String", "role": "Viral Attribute", "nullable": True}
+
+DS_JOIN_1 = {"name": "DS_1", "DataStructure": [_ID_1, _ME_1, _VA]}
+DS_JOIN_2 = {"name": "DS_2", "DataStructure": [_ID_1, _ME_2, _VA]}
+DS_JOIN_2_NO_VA = {"name": "DS_2", "DataStructure": [_ID_1, _ME_2]}
+DS_CROSS_2 = {"name": "DS_2", "DataStructure": [_ID_2, _ME_2, _VA]}
+DS_CROSS_2_NO_VA = {"name": "DS_2", "DataStructure": [_ID_2, _ME_2]}
 
 
 class TestViralPropagationJoins:
@@ -439,13 +443,13 @@ class TestViralPropagationJoins:
         """Shared viral attribute is resolved by CONF_RULE inside the join."""
         result = run(
             script=CONF_RULE + f"DS_r <- {join_op}(DS_1, DS_2);",
-            data_structures=_ds_pair(DS_1VA),
+            data_structures={"datasets": [DS_JOIN_1, DS_JOIN_2]},
             datapoints={
                 "DS_1": pd.DataFrame(
                     {"Id_1": [1, 2, 3], "Me_1": [10.0, 20.0, 30.0], "VAt_1": ["C", "N", "F"]}
                 ),
                 "DS_2": pd.DataFrame(
-                    {"Id_1": [1, 2, 3], "Me_1": [5.0, 15.0, 25.0], "VAt_1": ["N", "F", "F"]}
+                    {"Id_1": [1, 2, 3], "Me_2": [5.0, 15.0, 25.0], "VAt_1": ["N", "F", "F"]}
                 ),
             },
         )
@@ -460,13 +464,13 @@ class TestViralPropagationJoins:
         """Binary propagation clauses take precedence over unary ones in a join."""
         result = run(
             script=CONF_BINARY_RULE + "DS_r <- left_join(DS_1, DS_2);",
-            data_structures=_ds_pair(DS_1VA),
+            data_structures={"datasets": [DS_JOIN_1, DS_JOIN_2]},
             datapoints={
                 "DS_1": pd.DataFrame(
                     {"Id_1": [1, 2, 3], "Me_1": [10.0, 20.0, 30.0], "VAt_1": ["C", "M", "X"]}
                 ),
                 "DS_2": pd.DataFrame(
-                    {"Id_1": [1, 2, 3], "Me_1": [5.0, 15.0, 25.0], "VAt_1": ["M", "F", "Y"]}
+                    {"Id_1": [1, 2, 3], "Me_2": [5.0, 15.0, 25.0], "VAt_1": ["M", "F", "Y"]}
                 ),
             },
         )
@@ -479,10 +483,10 @@ class TestViralPropagationJoins:
         propagation rule (cross_join pairs every row, so use one row per operand)."""
         result = run(
             script=CONF_RULE + "DS_r <- cross_join(DS_1, DS_2);",
-            data_structures=_ds_pair(DS_1VA),
+            data_structures={"datasets": [DS_JOIN_1, DS_CROSS_2]},
             datapoints={
                 "DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "VAt_1": ["C"]}),
-                "DS_2": pd.DataFrame({"Id_1": [2], "Me_1": [5.0], "VAt_1": ["N"]}),
+                "DS_2": pd.DataFrame({"Id_2": [2], "Me_2": [5.0], "VAt_1": ["N"]}),
             },
         )
         ds_r = result["DS_r"]
@@ -492,35 +496,64 @@ class TestViralPropagationJoins:
         # C+N→C (unary "C")
         assert list(ds_r.data["VAt_1"]) == ["C"]
 
-    @pytest.mark.parametrize("join_op", ["inner_join", "left_join", "full_join", "cross_join"])
+    @pytest.mark.parametrize("join_op", ["inner_join", "left_join", "full_join"])
     def test_no_rule_gives_null_join(self, join_op: str) -> None:
         """Both operands viral but no rule defined → combined value is null."""
         result = run(
             script=f"DS_r <- {join_op}(DS_1, DS_2);",
-            data_structures=_ds_pair(DS_1VA),
+            data_structures={"datasets": [DS_JOIN_1, DS_JOIN_2]},
             datapoints={
                 "DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "VAt_1": ["A"]}),
-                "DS_2": pd.DataFrame({"Id_1": [1], "Me_1": [5.0], "VAt_1": ["B"]}),
+                "DS_2": pd.DataFrame({"Id_1": [1], "Me_2": [5.0], "VAt_1": ["B"]}),
             },
         )
         ds_r = result["DS_r"]
         assert ds_r.components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
         assert pd.isna(ds_r.data["VAt_1"].iloc[0])
 
-    @pytest.mark.parametrize("join_op", ["inner_join", "left_join", "full_join", "cross_join"])
+    def test_no_rule_gives_null_cross_join(self) -> None:
+        """cross_join, both operands viral, no rule defined → combined value null."""
+        result = run(
+            script="DS_r <- cross_join(DS_1, DS_2);",
+            data_structures={"datasets": [DS_JOIN_1, DS_CROSS_2]},
+            datapoints={
+                "DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "VAt_1": ["A"]}),
+                "DS_2": pd.DataFrame({"Id_2": [1], "Me_2": [5.0], "VAt_1": ["B"]}),
+            },
+        )
+        ds_r = result["DS_r"]
+        assert ds_r.components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
+        assert pd.isna(ds_r.data["VAt_1"].iloc[0])
+
+    @pytest.mark.parametrize("join_op", ["inner_join", "left_join", "full_join"])
     def test_viral_from_one_operand_kept(self, join_op: str) -> None:
         """A viral attribute present in a single operand is carried over unchanged
         (no propagation rule needed)."""
         result = run(
             script=CONF_RULE + f"DS_r <- {join_op}(DS_1, DS_2);",
-            data_structures={"datasets": [DS_1VA, DS_1VA_NO_VA]},
+            data_structures={"datasets": [DS_JOIN_1, DS_JOIN_2_NO_VA]},
             datapoints={
                 "DS_1": pd.DataFrame({"Id_1": [1, 2], "Me_1": [10.0, 20.0], "VAt_1": ["C", "N"]}),
-                "DS_2": pd.DataFrame({"Id_1": [1, 2], "Me_1": [5.0, 15.0]}),
+                "DS_2": pd.DataFrame({"Id_1": [1, 2], "Me_2": [5.0, 15.0]}),
             },
         )
         ds_r = result["DS_r"]
         assert ds_r.components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
-        # Values come straight from DS_1 (cross_join repeats them cartesian-wise).
+        assert ds_r.data["VAt_1"].notna().all()
+        assert set(ds_r.data["VAt_1"]) == {"C", "N"}
+
+    def test_viral_from_one_operand_kept_cross_join(self) -> None:
+        """cross_join: a viral attribute present in a single operand is kept
+        unchanged (repeated cartesian-wise)."""
+        result = run(
+            script=CONF_RULE + "DS_r <- cross_join(DS_1, DS_2);",
+            data_structures={"datasets": [DS_JOIN_1, DS_CROSS_2_NO_VA]},
+            datapoints={
+                "DS_1": pd.DataFrame({"Id_1": [1, 2], "Me_1": [10.0, 20.0], "VAt_1": ["C", "N"]}),
+                "DS_2": pd.DataFrame({"Id_2": [1, 2], "Me_2": [5.0, 15.0]}),
+            },
+        )
+        ds_r = result["DS_r"]
+        assert ds_r.components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
         assert ds_r.data["VAt_1"].notna().all()
         assert set(ds_r.data["VAt_1"]) == {"C", "N"}
