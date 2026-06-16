@@ -2373,3 +2373,103 @@ class JoinsGeneralTests(JoinHelper):
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code="1-1-1-10"
         )
+
+    def test_GH_847_1(self):
+        """
+        Expression: DS_r := inner_join(DS_1, DS_2 drop DS_2#me);
+        Description: A `drop` inside the join body resolves the shared measure,
+                     so the final un-prefixing yields a plain `me` (from DS_1).
+        Git Issue: GH_847.
+        """
+        code = "GH_847_1"
+        number_inputs = 2
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_847_2(self):
+        """
+        Expression: DS_r := inner_join(DS_1, DS_2 keep DS_1#me);
+        Description: A `keep` inside the join body keeps one copy of the shared
+                     measure, un-prefixed to `me`.
+        Git Issue: GH_847.
+        """
+        code = "GH_847_2"
+        number_inputs = 2
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_847_3(self):
+        """
+        Expression: DS_r := inner_join(DS_1, DS_2 rename DS_1#me to m1, DS_2#me to m2);
+        Description: A `rename` inside the join body disambiguates both copies of
+                     the shared measure, so both survive (m1, m2).
+        Git Issue: GH_847.
+        """
+        code = "GH_847_3"
+        number_inputs = 2
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_847_4(self):
+        """
+        Expression: DS_r := inner_join(DS_1, DS_2 keep DS_1#me, DS_2#me);
+        Description: Keeping both copies of the shared measure leaves two `me`
+                     after the prefix is stripped -> ambiguity error (VTL 2.2).
+        Git Issue: GH_847.
+        """
+        code = "GH_847_4"
+        number_inputs = 2
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-9"
+        )
+
+    def test_GH_847_5(self):
+        """
+        Expression: DS_r := inner_join(DS_1, DS_2);
+        Description: A bare join of two operands sharing the measure `me` is
+                     ambiguous: un-prefixing collapses them to a homonym.
+        Git Issue: GH_847.
+        """
+        code = "GH_847_5"
+        number_inputs = 2
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-9"
+        )
+
+    def test_GH_847_6(self):
+        """
+        Expression: DS_r := inner_join(DS_1, DS_2)[drop Me_2];
+        Description: With distinct measures the join is unambiguous; a `drop`
+                     clause OUTSIDE the join operates on the finalised
+                     (un-prefixed) structure.
+        Git Issue: GH_847.
+        """
+        code = "GH_847_6"
+        number_inputs = 2
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_847_7(self):
+        """
+        Expression: DS_r := inner_join(DS_1, DS_2)[keep Me_1];
+        Description: A `keep` clause OUTSIDE the join references the plain
+                     component names of the finalised structure.
+        Git Issue: GH_847.
+        """
+        code = "GH_847_7"
+        number_inputs = 2
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_847_8(self):
+        """
+        Expression: DS_r := inner_join(DS_1, DS_2)[drop DS_2#Me_2];
+        Description: Outside the join the `dataset#component` names no longer
+                     exist, so referencing `DS_2#Me_2` raises 1-1-6-6.
+        Git Issue: GH_847.
+        """
+        code = "GH_847_8"
+        number_inputs = 2
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-6-6"
+        )

@@ -1143,21 +1143,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 )
             result = REGULAR_AGGREGATION_MAPPING[node.op].analyze(operands, dataset)
             if node.isLast:
-                if result.data is not None:
-                    result.data.rename(
-                        columns={col: col[col.find("#") + 1 :] for col in result.data.columns},
-                        inplace=True,
-                    )
-                    result.data = result.data.loc[:, ~result.data.columns.duplicated()]
-                deduped_components: Dict[str, Component] = {}
-                for comp_name, comp in result.components.items():
-                    stripped = comp_name[comp_name.find("#") + 1 :]
-                    if stripped not in deduped_components:
-                        comp.name = stripped
-                        deduped_components[stripped] = comp
-                result.components = deduped_components
-                if result.data is not None:
-                    result.data.reset_index(drop=True, inplace=True)
+                self._strip_join_prefixes(result)
                 self.is_from_join = False
             return result
         return REGULAR_AGGREGATION_MAPPING[node.op].analyze(operands, dataset)
@@ -1302,6 +1288,23 @@ class InterpreterAnalyzer(ASTTemplate):
             data_type=BASIC_TYPES[type(node.value)],
         )
 
+    @staticmethod
+    def _strip_join_prefixes(result: Dataset) -> None:
+        new_components: Dict[str, Component] = {}
+        for comp_name, comp in result.components.items():
+            stripped = comp_name[comp_name.find("#") + 1 :]
+            if stripped in new_components:
+                raise SemanticError("1-1-13-9", comp_name=stripped)
+            comp.name = stripped
+            new_components[stripped] = comp
+        result.components = new_components
+        if result.data is not None:
+            result.data.rename(
+                columns={col: col[col.find("#") + 1 :] for col in result.data.columns},
+                inplace=True,
+            )
+            result.data.reset_index(drop=True, inplace=True)
+
     def visit_JoinOp(self, node: AST.JoinOp) -> None:
         clause_elements = []
         for clause in node.clauses:
@@ -1316,7 +1319,11 @@ class InterpreterAnalyzer(ASTTemplate):
 
         # No need to check using, regular aggregation is executed afterwards
         self.is_from_join = True
-        return JOIN_MAPPING[node.op].analyze(clause_elements, node.using, nvl_defaults)
+        result = JOIN_MAPPING[node.op].analyze(clause_elements, node.using, nvl_defaults)
+        if node.isLast:
+            self._strip_join_prefixes(result)
+            self.is_from_join = False
+        return result
 
     def visit_ParamConstant(self, node: AST.ParamConstant) -> str:
         return node.value
