@@ -449,6 +449,8 @@ class CrossJoin(Join):
             result.data = operands[0].data
             return result
         common = cls.get_components_intersection([op.get_components_names() for op in operands])
+        viral_common = merged_viral_attribute_names([op.components for op in operands], set())
+        registry = get_current_registry()
 
         for op in operands:
             if op.data is None:
@@ -462,12 +464,13 @@ class CrossJoin(Join):
                         op.data,
                         how=cls.how,  # type: ignore[arg-type]
                     )
+                    cls._combine_viral_attributes(result, viral_common, registry)
             if result.data is not None:
                 result.data = result.data.rename(
                     columns={
                         column: op.name + "#" + column
                         for column in result.data.columns.tolist()
-                        if column in common
+                        if column in common and column not in viral_common
                     }
                 )
         if result.data is not None:

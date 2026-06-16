@@ -2019,11 +2019,11 @@ class InterpreterAnalyzer(ASTTemplate):
         # If not, a 1-3-2-4 error is raised in AST creation
         if self.aggregation_dataset is None:
             raise SemanticError("1-3-2-4")
-        if period_to is None:
+        if period_to is None and not self.only_semantic:
             raise SemanticError("1-3-2-4")
         return Time_Aggregation._execute_without_operand(
             aggregation_dataset=self.aggregation_dataset,
             period_from=node.period_from,
-            period_to=period_to,
+            period_to=period_to,  # type: ignore[arg-type]
             conf=node.conf,
         )
