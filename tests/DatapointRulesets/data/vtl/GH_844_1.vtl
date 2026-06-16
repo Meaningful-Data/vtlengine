@@ -1,0 +1,7 @@
+define datapoint ruleset dpr (variable) is
+    r1: A <= B errorcode "A higher than B";
+    r2: not isnull(C) errorcode "C not reported";
+    r3: when T = "L" then length(C) = 3 errorcode "len mismatch"
+end datapoint ruleset;
+
+DS_r := check_datapoint(DS_1, dpr all);
