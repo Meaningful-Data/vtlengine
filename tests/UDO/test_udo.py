@@ -696,7 +696,9 @@ class UdoTest(UDOHelper):
     def test_GL_476_1(self):
         """
         Status: OK
-        Description:
+        Description: The join body references ``A#CONF_STATUS`` / ``B#CONF_STATUS``
+            in calc and keeps CONF_STATUS. Attributes are visible to the join body
+            clauses (VTL 2.2) and the explicit keep retains CONF_STATUS.
         Goal: Check Result.
         """
         code = "GL_476_1"

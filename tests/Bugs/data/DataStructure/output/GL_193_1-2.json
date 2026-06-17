@@ -10,6 +10,12 @@
           "nullable": false
         },
         {
+          "name": "DT_LGL_FNL_MTRTY",
+          "role": "Measure",
+          "type": "Date",
+          "nullable": true
+        },
+        {
           "name": "DT_RFRNC",
           "role": "Identifier",
           "type": "Date",
@@ -22,19 +28,19 @@
           "nullable": false
         },
         {
-          "name": "NEVS_PRTCTN_ALLCTD_VL",
-          "role": "Attribute",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "NEVS_THRD_PRTY_PRRTY_CLMS",
-          "role": "Attribute",
-          "type": "String",
-          "nullable": true
-        },
-        {
           "name": "OBSRVD_AGNT_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "DT_MTRTY_PRTCTN",
+          "role": "Measure",
+          "type": "Date",
+          "nullable": true
+        },
+        {
+          "name": "PRTCTN_ID",
           "role": "Identifier",
           "type": "String",
           "nullable": false
@@ -46,27 +52,9 @@
           "nullable": true
         },
         {
-          "name": "PRTCTN_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
           "name": "THRD_PRTY_PRRTY_CLMS",
           "role": "Measure",
           "type": "Number",
-          "nullable": true
-        },
-        {
-          "name": "DT_LGL_FNL_MTRTY",
-          "role": "Measure",
-          "type": "Date",
-          "nullable": true
-        },
-        {
-          "name": "DT_MTRTY_PRTCTN",
-          "role": "Measure",
-          "type": "Date",
           "nullable": true
         },
         {

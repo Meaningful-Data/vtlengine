@@ -2473,3 +2473,17 @@ class JoinsGeneralTests(JoinHelper):
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code="1-1-6-6"
         )
+
+    def test_GH_847_9(self):
+        """
+        Expression: DS_r := inner_join(DS_1, DS_2);
+        Description: Non-viral attributes are NOT propagated through a join
+                     (VTL 2.2): the result keeps only identifiers, measures and
+                     viral attributes. DS_1's non-viral attribute At_1 is dropped,
+                     leaving Id_1, Me_1, Me_2.
+        Git Issue: GH_847.
+        """
+        code = "GH_847_9"
+        number_inputs = 2
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
