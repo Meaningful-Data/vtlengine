@@ -120,7 +120,6 @@ class Join(Operator):
 
             for component_name, component in components.items():
                 component.nullable = nullability[component_name]
-
                 if component_name in viral_common:
                     if component_name not in merged_components:
                         component.name = component_name
@@ -172,6 +171,10 @@ class Join(Operator):
         nvl: Optional[Dict[str, Any]] = None,
     ) -> Dataset:
         result = cls.execute([copy(operand) for operand in operands], using)
+        if result.data is not None:
+            extra_cols = [c for c in result.data.columns if c not in result.components]
+            if extra_cols:
+                result.data = result.data.drop(columns=extra_cols)
         if result.data is not None and sorted(result.get_components_names()) != sorted(
             result.data.columns.tolist()
         ):
