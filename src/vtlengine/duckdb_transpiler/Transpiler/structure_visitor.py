@@ -842,6 +842,9 @@ class StructureVisitor(ASTTemplate):
             return None
         keep = {name for name, comp in input_ds.components.items() if comp.role == Role.IDENTIFIER}
         keep |= set(self._extract_component_names(node.children, input_ds.components))
+        keep |= {
+            name for name, comp in input_ds.components.items() if comp.role == Role.VIRAL_ATTRIBUTE
+        }
         return self._build_filtered_structure(input_ds, keep)
 
     def _build_join_structure(self, node: AST.JoinOp) -> Optional[Dataset]:
