@@ -1055,7 +1055,11 @@ class InterpreterAnalyzer(ASTTemplate):
         self.regular_aggregation_dataset = dataset
         if node.op == APPLY:
             op_map = BINARY_MAPPING
-            return REGULAR_AGGREGATION_MAPPING[node.op].analyze(dataset, node.children, op_map)
+            result = REGULAR_AGGREGATION_MAPPING[node.op].analyze(dataset, node.children, op_map)
+            if self.is_from_join and node.isLast:
+                self._strip_join_prefixes(result)
+                self.is_from_join = False
+            return result
         for child in node.children:
             self.is_from_regular_aggregation = True
             operands.append(self.visit(child))
@@ -1116,7 +1120,11 @@ class InterpreterAnalyzer(ASTTemplate):
                     role=operands[0].components[measure].role,
                     nullable=operands[0].components[measure].nullable,
                 )
-            return REGULAR_AGGREGATION_MAPPING[node.op].analyze(operands[0], dataset)
+            result = REGULAR_AGGREGATION_MAPPING[node.op].analyze(operands[0], dataset)
+            if self.is_from_join and node.isLast:
+                self._strip_join_prefixes(result)
+                self.is_from_join = False
+            return result
         if self.is_from_join:
             if node.op in [DROP, KEEP]:
                 operands = [
