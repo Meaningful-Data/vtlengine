@@ -137,8 +137,7 @@ class InterpreterAnalyzer(ASTTemplate):
     is_from_having: bool = False
     is_from_rule: bool = False
     is_from_join: bool = False
-    join_had_keep: bool = False
-    join_is_multi_operand: bool = False
+    join_drops_attributes: bool = False
     is_from_hr_val: bool = False
     is_from_hr_agg: bool = False
     compute_partial_data: bool = False
@@ -1129,7 +1128,7 @@ class InterpreterAnalyzer(ASTTemplate):
             return result
         if self.is_from_join:
             if node.op == KEEP:
-                self.join_had_keep = True
+                self.join_drops_attributes = False
             if node.op in [DROP, KEEP]:
                 operands = [
                     (
@@ -1301,7 +1300,7 @@ class InterpreterAnalyzer(ASTTemplate):
         )
 
     def _strip_join_prefixes(self, result: Dataset) -> None:
-        if self.join_is_multi_operand and not self.join_had_keep:
+        if self.join_drops_attributes:
             dropped = [
                 comp_name
                 for comp_name, comp in result.components.items()
@@ -1313,8 +1312,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 result.data = result.data.drop(
                     columns=[c for c in dropped if c in result.data.columns]
                 )
-        self.join_had_keep = False
-        self.join_is_multi_operand = False
+        self.join_drops_attributes = False
 
         new_components: Dict[str, Component] = {}
         for comp_name, comp in result.components.items():
@@ -1345,8 +1343,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
         # No need to check using, regular aggregation is executed afterwards
         self.is_from_join = True
-        self.join_had_keep = False
-        self.join_is_multi_operand = sum(isinstance(e, Dataset) for e in clause_elements) > 1
+        self.join_drops_attributes = sum(isinstance(e, Dataset) for e in clause_elements) > 1
         result = JOIN_MAPPING[node.op].analyze(clause_elements, node.using, nvl_defaults)
         if node.isLast:
             self._strip_join_prefixes(result)
