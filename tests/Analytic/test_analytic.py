@@ -1498,13 +1498,13 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    def test_GH_833(self):
+    def test_GH_833_1(self):
         """
         Max: max
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := inner_join(DS_1, DS_2
-                    filter DS_1#me = max(DS_2#me over ()))[drop DS_2#me];
+                    filter DS_1#me = max(DS_2#me over ()) drop DS_2#me);
                     DS_1, DS_2 Datasets
 
         Description: Fix #833: when an analytic operates on a component
@@ -1514,10 +1514,36 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
         and raised ``Parser Error: syntax error at or near "#"``. Column
         references in the analytic query must be double-quoted.
 
+        The ``drop`` is part of the join body, so the surviving ``DS_1#me`` has
+        its prefix stripped to ``me`` (VTL 2.2 join final step).
+
         Goal: Check that analytic functions work on membership-named columns.
         """
-        code = "GH_833"
+        code = "GH_833_1"
         number_inputs = 2
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_833_2(self):
+        """
+        Max: max
+        Dataset --> Dataset
+        Status: OK
+        Expression: DS_r := inner_join(DS_1, DS_2
+                    filter DS_1#me = max(DS_2#me over ()))[drop DS_2#me];
+                    DS_1, DS_2 Datasets
+
+        Description: Same analytic membership scenario as GH_833_1, but the
+        ``drop`` is OUTSIDE the join. The join body (only a ``filter``) leaves
+        both ``DS_1#me`` and ``DS_2#me``, so its final un-prefixing step collapses
+        them to a homonym ``me`` -> ambiguity error (VTL 2.2). The duplicate must
+        be resolved inside the join (as in GH_833_1).
+
+        Goal: Check that the ambiguity is reported instead of silently kept.
+        """
+        code = "GH_833_2"
+        number_inputs = 2
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-9"
+        )

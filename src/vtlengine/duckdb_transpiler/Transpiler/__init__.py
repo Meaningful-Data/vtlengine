@@ -1707,6 +1707,11 @@ FROM (
             name for name, comp in ds.components.items() if comp.role == Role.IDENTIFIER
         ]
         keep_names.extend(self._extract_component_names(node.children, self._join_alias_map))
+        keep_names.extend(
+            name
+            for name, comp in ds.components.items()
+            if comp.role == Role.VIRAL_ATTRIBUTE and name not in keep_names
+        )
 
         keep_set = set(keep_names)
         for qualified in self._join_alias_map:

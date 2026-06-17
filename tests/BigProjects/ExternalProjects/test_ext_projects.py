@@ -97,7 +97,10 @@ class AnaMart(ExternalProjectsHelper):
         #     vd_names=vd_names,
         #     sql_names=sql_names
         # )
-        exception_code = "1-1-13-4"
+        # Attributes are not propagated through a join (VTL 2.2), so a join in the
+        # mart that references an input attribute now fails earlier with 1-1-1-10
+        # (component not found) instead of the previous 1-1-13-4.
+        exception_code = "1-1-1-10"
         self.NewSemanticExceptionTest(
             code=code,
             number_inputs=number_inputs,

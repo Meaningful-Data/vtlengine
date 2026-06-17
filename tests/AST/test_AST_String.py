@@ -35,6 +35,7 @@ params = [
     "trunc_with_slash.vtl",
     "component_roles.vtl",
     "hierarchical_unquoted_codeitems.vtl",
+    "join_body_clauses.vtl",
 ]
 
 params_prettier = [
