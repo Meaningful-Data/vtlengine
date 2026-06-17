@@ -272,9 +272,7 @@ class Join(Operator):
         for name in viral_common:
             if name + "_x" in result.data.columns and name + "_y" in result.data.columns:
                 result.data[name] = result.data[[name + "_x", name + "_y"]].apply(
-                    lambda row, n=name: registry.resolve_group(
-                        n, [v for v in (row.iloc[0], row.iloc[1]) if not pd.isna(v)]
-                    ),
+                    lambda row, n=name: registry.resolve_pair(n, row.iloc[0], row.iloc[1]),
                     axis=1,
                 )
                 result.data = result.data.drop([name + "_x", name + "_y"], axis=1)
