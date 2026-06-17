@@ -673,6 +673,14 @@ class ASTString(ASTTemplate):
     def visit_ParFunction(self, node: AST.ParFunction) -> str:
         return f"({self.visit(node.operand)})"
 
+    def _in_join_body(self, node: AST.RegularAggregation) -> bool:
+        dataset = node.dataset
+        if isinstance(dataset, AST.JoinOp):
+            return not dataset.isLast
+        if isinstance(dataset, AST.RegularAggregation) and not dataset.isLast:
+            return self._in_join_body(dataset)
+        return False
+
     def visit_RegularAggregation(self, node: AST.RegularAggregation) -> str:
         child_sep = ", " if len(node.children) > 1 else ""
         if node.op == AGGREGATE:
@@ -695,7 +703,7 @@ class ASTString(ASTTemplate):
             body = f"{nl}{tab * 4}{condition}{nl}{tab * 2}"
         else:
             body = child_sep.join([self.visit(x) for x in node.children])
-        if isinstance(node.dataset, AST.JoinOp) and node.op in [
+        if self._in_join_body(node) and node.op in [
             CALC,
             DROP,
             FILTER,
