@@ -152,10 +152,13 @@ class Keep(Operator):
                 )
             if dataset.get_component(operand).role == Role.IDENTIFIER:
                 raise SemanticError("1-1-6-2", op=cls.op, name=operand, dataset=dataset_name)
+
         result_components = {
             name: comp
             for name, comp in dataset.components.items()
-            if comp.name in operands or comp.role == Role.IDENTIFIER
+            if comp.name in operands
+            or comp.role == Role.IDENTIFIER
+            or comp.role == Role.VIRAL_ATTRIBUTE
         }
         return Dataset(name=dataset_name, components=result_components, data=None)
 
@@ -167,7 +170,9 @@ class Keep(Operator):
             raise ValueError("Keep clause requires at most one dataset operand")
         result_dataset = cls.validate(operands, dataset)
         if dataset.data is not None:
-            result_dataset.data = dataset.data[dataset.get_identifiers_names() + operands]
+            keep_cols = dataset.get_identifiers_names() + operands
+            viral_cols = [c for c in dataset.get_viral_attributes_names() if c not in keep_cols]
+            result_dataset.data = dataset.data[keep_cols + viral_cols]
         return result_dataset
 
 

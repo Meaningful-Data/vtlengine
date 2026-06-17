@@ -557,3 +557,227 @@ class TestViralPropagationJoins:
         assert ds_r.components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
         assert ds_r.data["VAt_1"].notna().all()
         assert set(ds_r.data["VAt_1"]) == {"C", "N"}
+
+
+# -- Null operands in the join viral combination --
+#
+# Regression: the join combined two shared viral columns by dropping nulls
+# *before* resolving, so a ``(null, X)`` pair collapsed to ``[X]`` and leaked X
+# unchanged instead of going through the propagation rule (which a binary
+# operator like ``DS_1 + DS_2`` applied correctly via resolve_pair).
+
+DS_PLUS_2 = {"name": "DS_2", "DataStructure": [_ID_1, _ME_1, _VA]}  # Me_1 in both, for ``+``
+
+
+class TestViralPropagationJoinNulls:
+    """A shared viral attribute where one operand's value is null must still go
+    through the propagation rule in a join, exactly like in a binary operator."""
+
+    @pytest.mark.parametrize("use_duckdb", [False, True])
+    @pytest.mark.parametrize("join_op", ["inner_join", "left_join", "full_join"])
+    def test_null_pair_applies_rule(self, join_op: str, use_duckdb: bool) -> None:
+        """(null, X) and (X, null) resolve through the rule, not leaking X."""
+        result = run(
+            script=CONF_RULE + f"DS_r <- {join_op}(DS_1, DS_2);",
+            data_structures={"datasets": [DS_JOIN_1, DS_JOIN_2]},
+            datapoints={
+                "DS_1": pd.DataFrame(
+                    {
+                        "Id_1": [1, 2, 3, 4],
+                        "Me_1": [1.0, 2.0, 3.0, 4.0],
+                        "VAt_1": ["C", "Z", None, None],
+                    }
+                ),
+                "DS_2": pd.DataFrame(
+                    {
+                        "Id_1": [1, 2, 3, 4],
+                        "Me_2": [1.0, 2.0, 3.0, 4.0],
+                        "VAt_1": ["N", None, "Z", None],
+                    }
+                ),
+            },
+            use_duckdb=use_duckdb,
+        )
+        d = result["DS_r"].data.sort_values("Id_1").reset_index(drop=True)
+        # (C,N)->C (unary); (Z,null)->F (else); (null,Z)->F (else); (null,null)->F (else)
+        assert list(d["VAt_1"]) == ["C", "F", "F", "F"]
+        # The lone non-null value must NOT survive unchanged.
+        assert "Z" not in list(d["VAt_1"])
+
+    @pytest.mark.parametrize("use_duckdb", [False, True])
+    def test_join_viral_matches_binary_plus(self, use_duckdb: bool) -> None:
+        """The join's viral combination is identical to the binary ``+`` one for
+        the same viral data (including null operands). The ``+`` uses a matching
+        measure; the join uses distinct measures so the non-key columns do not
+        collide on the final un-prefix step."""
+        vat_1 = ["C", "Z", None, None, "N"]
+        vat_2 = ["N", None, "Z", None, "N"]
+        ids = [1, 2, 3, 4, 5]
+        nums = [1.0, 2.0, 3.0, 4.0, 5.0]
+        plus = run(
+            script=CONF_RULE + "DS_r <- DS_1 + DS_2;",
+            data_structures={"datasets": [DS_JOIN_1, DS_PLUS_2]},
+            datapoints={
+                "DS_1": pd.DataFrame({"Id_1": ids, "Me_1": nums, "VAt_1": vat_1}),
+                "DS_2": pd.DataFrame({"Id_1": ids, "Me_1": nums, "VAt_1": vat_2}),
+            },
+            use_duckdb=use_duckdb,
+        )
+        join = run(
+            script=CONF_RULE + "DS_r <- inner_join(DS_1, DS_2);",
+            data_structures={"datasets": [DS_JOIN_1, DS_JOIN_2]},
+            datapoints={
+                "DS_1": pd.DataFrame({"Id_1": ids, "Me_1": nums, "VAt_1": vat_1}),
+                "DS_2": pd.DataFrame({"Id_1": ids, "Me_2": nums, "VAt_1": vat_2}),
+            },
+            use_duckdb=use_duckdb,
+        )
+        p = plus["DS_r"].data.sort_values("Id_1").reset_index(drop=True)
+        j = join["DS_r"].data.sort_values("Id_1").reset_index(drop=True)
+        assert list(p["VAt_1"]) == list(j["VAt_1"])
+
+    @pytest.mark.parametrize("use_duckdb", [False, True])
+    def test_aggregate_rule_ignores_nulls_in_join(self, use_duckdb: bool) -> None:
+        """An aggregate (max) viral rule ignores nulls in a join: (null, X)->X,
+        (null, null)->null."""
+        result = run(
+            script=AGGR_MAX_RULE + "DS_r <- inner_join(DS_1, DS_2);",
+            data_structures={"datasets": [DS_JOIN_1, DS_JOIN_2]},
+            datapoints={
+                "DS_1": pd.DataFrame(
+                    {"Id_1": [1, 2, 3], "Me_1": [1.0, 2.0, 3.0], "VAt_1": ["B", None, None]}
+                ),
+                "DS_2": pd.DataFrame(
+                    {"Id_1": [1, 2, 3], "Me_2": [1.0, 2.0, 3.0], "VAt_1": [None, "A", None]}
+                ),
+            },
+            use_duckdb=use_duckdb,
+        )
+        d = result["DS_r"].data.sort_values("Id_1").reset_index(drop=True)
+        assert d["VAt_1"].iloc[0] == "B"  # (B, null) -> B
+        assert d["VAt_1"].iloc[1] == "A"  # (null, A) -> A
+        assert pd.isna(d["VAt_1"].iloc[2])  # (null, null) -> null
+
+
+# -- keep clause must preserve viral attributes (they always propagate) --
+
+_AT = {"name": "At_1", "type": "String", "role": "Attribute", "nullable": True}
+_VA_2 = {"name": "VAt_2", "type": "Integer", "role": "Viral Attribute", "nullable": True}
+DS_KEEP = {"name": "DS_1", "DataStructure": [_ID_1, _ME_1, _ME_2, _AT, _VA]}
+DS_KEEP_2VA = {"name": "DS_1", "DataStructure": [_ID_1, _ME_1, _VA, _VA_2]}
+DS_NA_VA_1 = {"name": "DS_1", "DataStructure": [_ID_1, _ME_1, _AT, _VA]}
+DS_NA_VA_2 = {"name": "DS_2", "DataStructure": [_ID_1, _ME_2, _AT, _VA]}
+
+
+class TestKeepPreservesViralAttributes:
+    """A keep clause restricts identifiers/measures/non-viral attributes, but viral
+    attributes always propagate and survive implicitly (without being listed)."""
+
+    @pytest.mark.parametrize("use_duckdb", [False, True])
+    def test_standalone_keep_preserves_viral_drops_rest(self, use_duckdb: bool) -> None:
+        """Keep Me_1 keeps the viral attr but drops the other measure and the
+        non-viral attribute."""
+        result = run(
+            script=CONF_RULE + "DS_r <- DS_1[keep Me_1];",
+            data_structures={"datasets": [DS_KEEP]},
+            datapoints={
+                "DS_1": pd.DataFrame(
+                    {
+                        "Id_1": [1, 2],
+                        "Me_1": [10.0, 20.0],
+                        "Me_2": [1.0, 2.0],
+                        "At_1": ["a", "b"],
+                        "VAt_1": ["C", "N"],
+                    }
+                )
+            },
+            use_duckdb=use_duckdb,
+        )
+        ds = result["DS_r"]
+        assert set(ds.components) == {"Id_1", "Me_1", "VAt_1"}
+        assert ds.components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
+        # Single operand: viral value passes through unchanged (no combination).
+        d = ds.data.sort_values("Id_1").reset_index(drop=True)
+        assert "VAt_1" in d.columns
+        assert list(d["VAt_1"]) == ["C", "N"]
+
+    @pytest.mark.parametrize("use_duckdb", [False, True])
+    def test_keep_listing_viral_no_duplicate(self, use_duckdb: bool) -> None:
+        """Listing the viral attribute explicitly in keep does not duplicate it."""
+        result = run(
+            script=CONF_RULE + "DS_r <- DS_1[keep Me_1, VAt_1];",
+            data_structures={"datasets": [DS_KEEP]},
+            datapoints={
+                "DS_1": pd.DataFrame(
+                    {
+                        "Id_1": [1],
+                        "Me_1": [10.0],
+                        "Me_2": [1.0],
+                        "At_1": ["a"],
+                        "VAt_1": ["C"],
+                    }
+                )
+            },
+            use_duckdb=use_duckdb,
+        )
+        ds = result["DS_r"]
+        assert set(ds.components) == {"Id_1", "Me_1", "VAt_1"}
+        assert list(ds.data.columns).count("VAt_1") == 1
+
+    @pytest.mark.parametrize("use_duckdb", [False, True])
+    def test_keep_preserves_multiple_viral(self, use_duckdb: bool) -> None:
+        """All viral attributes survive a keep, even those without a rule."""
+        result = run(
+            script=CONF_RULE + "DS_r <- DS_1[keep Me_1];",
+            data_structures={"datasets": [DS_KEEP_2VA]},
+            datapoints={
+                "DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "VAt_1": ["C"], "VAt_2": [7]})
+            },
+            use_duckdb=use_duckdb,
+        )
+        ds = result["DS_r"]
+        assert set(ds.components) == {"Id_1", "Me_1", "VAt_1", "VAt_2"}
+        assert ds.components["VAt_2"].role == Role.VIRAL_ATTRIBUTE
+
+    @pytest.mark.parametrize("use_duckdb", [False, True])
+    @pytest.mark.parametrize("join_op", ["inner_join", "left_join", "full_join"])
+    def test_keep_in_join_preserves_combined_viral(self, join_op: str, use_duckdb: bool) -> None:
+        """A keep inside a join keeps the merged viral attribute, combined by the
+        rule, even though only a measure is listed."""
+        result = run(
+            script=CONF_RULE + f"DS_r <- {join_op}(DS_1, DS_2 keep Me_1);",
+            data_structures={"datasets": [DS_JOIN_1, DS_JOIN_2]},
+            datapoints={
+                "DS_1": pd.DataFrame({"Id_1": [1, 2], "Me_1": [10.0, 20.0], "VAt_1": ["C", "N"]}),
+                "DS_2": pd.DataFrame({"Id_1": [1, 2], "Me_2": [5.0, 15.0], "VAt_1": ["N", "F"]}),
+            },
+            use_duckdb=use_duckdb,
+        )
+        ds = result["DS_r"]
+        assert set(ds.components) == {"Id_1", "Me_1", "VAt_1"}
+        assert ds.components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
+        d = ds.data.sort_values("Id_1").reset_index(drop=True)
+        # C+N->C (unary "C"); N+F->N (unary "N")
+        assert list(d["VAt_1"]) == ["C", "N"]
+
+    @pytest.mark.parametrize("use_duckdb", [False, True])
+    def test_keep_nonviral_attr_in_join_keeps_viral_with_null(self, use_duckdb: bool) -> None:
+        """The reported scenario: keeping a non-viral attribute in a join still
+        propagates the viral attribute, and a (null, X) pair resolves via the rule."""
+        result = run(
+            script=CONF_RULE + "DS_r <- inner_join(DS_1, DS_2 keep DS_2#At_1);",
+            data_structures={"datasets": [DS_NA_VA_1, DS_NA_VA_2]},
+            datapoints={
+                "DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "At_1": ["x"], "VAt_1": [None]}),
+                "DS_2": pd.DataFrame({"Id_1": [1], "Me_2": [5.0], "At_1": ["y"], "VAt_1": ["Z"]}),
+            },
+            use_duckdb=use_duckdb,
+        )
+        ds = result["DS_r"]
+        # The explicitly kept non-viral attribute and the viral attribute survive.
+        assert set(ds.components) == {"Id_1", "At_1", "VAt_1"}
+        assert ds.components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
+        assert ds.components["At_1"].role == Role.ATTRIBUTE
+        # (null, "Z") -> "F" (else), not the leaked "Z".
+        assert ds.data["VAt_1"].iloc[0] == "F"
+        assert ds.data["At_1"].iloc[0] == "y"

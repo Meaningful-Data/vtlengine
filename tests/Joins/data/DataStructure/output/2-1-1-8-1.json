@@ -4,16 +4,16 @@
       "name": "DS_r",
       "DataStructure": [
         {
-          "name": "Me_11",
-          "role": "Measure",
-          "type": "Number",
-          "nullable": true
+          "name": "Id_1",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
         },
         {
-          "name": "Me_22",
-          "role": "Measure",
-          "type": "Number",
-          "nullable": true
+          "name": "Id_2",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
         },
         {
           "name": "Id_3",
@@ -34,26 +34,14 @@
           "nullable": true
         },
         {
-          "name": "Id_1",
-          "role": "Identifier",
-          "type": "Date",
-          "nullable": false
-        },
-        {
-          "name": "Id_2",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "At_1",
-          "role": "Attribute",
+          "name": "Me_11",
+          "role": "Measure",
           "type": "Number",
           "nullable": true
         },
         {
-          "name": "At_2",
-          "role": "Attribute",
+          "name": "Me_22",
+          "role": "Measure",
           "type": "Number",
           "nullable": true
         }

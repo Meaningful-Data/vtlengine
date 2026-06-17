@@ -5,7 +5,7 @@
       "DataStructure": [
         {"name": "anyo", "role": "Identifier", "type": "Integer", "nullable": false},
         {"name": "id", "role": "Identifier", "type": "String", "nullable": false},
-        {"name": "DS_1#me", "role": "Measure", "type": "Number", "nullable": true}
+        {"name": "me", "role": "Measure", "type": "Number", "nullable": true}
       ]
     }
   ]
