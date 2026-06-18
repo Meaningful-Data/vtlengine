@@ -467,6 +467,7 @@ class TimeAggregation(AST):
     period_to: Optional[str] = None
     period_to_ref: Optional[AST] = None  # VarID, mutually exclusive with period_to
     period_from: Optional[str] = None
+    period_from_optional: bool = False
     operand: Optional[AST] = None
     conf: Optional[str] = None
 
@@ -600,11 +601,11 @@ class Operator(AST):
 @dataclass
 class DefIdentifier(AST):
     """
-    DefIdentifier: (value, kind)
-    """
+    DefIdentifier: (value, kind, was_quoted)"""
 
     value: str
     kind: str
+    was_quoted: bool = False
 
     __eq__ = AST.ast_equality
 

@@ -16,42 +16,6 @@
           "nullable": false
         },
         {
-          "name": "At_4",
-          "role": "Attribute",
-          "type": "Integer",
-          "nullable": false
-        },
-        {
-          "name": "Me_1",
-          "role": "Measure",
-          "type": "Number",
-          "nullable": true
-        },
-        {
-          "name": "Me_2",
-          "role": "Measure",
-          "type": "Number",
-          "nullable": true
-        },
-        {
-          "name": "At_1",
-          "role": "Attribute",
-          "type": "Number",
-          "nullable": true
-        },
-        {
-          "name": "At_2",
-          "role": "Attribute",
-          "type": "Number",
-          "nullable": true
-        },
-        {
-          "name": "At_3",
-          "role": "Attribute",
-          "type": "Integer",
-          "nullable": false
-        },
-        {
           "name": "Me_11",
           "role": "Measure",
           "type": "Number",
@@ -70,14 +34,14 @@
           "nullable": true
         },
         {
-          "name": "At_11",
-          "role": "Attribute",
+          "name": "Me_1",
+          "role": "Measure",
           "type": "Number",
           "nullable": true
         },
         {
-          "name": "At_12",
-          "role": "Attribute",
+          "name": "Me_2",
+          "role": "Measure",
           "type": "Number",
           "nullable": true
         }

@@ -8,7 +8,10 @@ in :mod:`vtlengine.ViralPropagation.sql`.
 """
 
 from dataclasses import dataclass, field
+from functools import reduce
 from typing import Any, Dict, List, Optional
+
+import pandas as pd
 
 
 @dataclass
@@ -64,10 +67,78 @@ class ViralPropagationRegistry:
             return self._valuedomain_rules.get(value_domain)
         return None
 
+    # Pandas resolution methods
+    def resolve_pair(self, variable_name: str, value_a: Any, value_b: Any) -> Any:
+        """Resolve two viral attribute values into one (for binary operators)."""
+        rule = self.get_rule_for_variable(variable_name)
+        if rule is None:
+            return None
+
+        if rule.aggregate_function is not None:
+            fn = rule.aggregate_function
+            if fn in ("min", "max"):
+                if pd.isna(value_a):
+                    return None if pd.isna(value_b) else value_b
+                if pd.isna(value_b):
+                    return value_a
+                return min(value_a, value_b) if fn == "min" else max(value_a, value_b)
+            elif fn == "avg":
+                return (value_a + value_b) / 2
+            elif fn == "sum":
+                return value_a + value_b
+            return None
+
+        # Enumerated: binary clauses first, then unary (per spec)
+        binary_clauses = [c for c in rule.enumerated_clauses if len(c["values"]) == 2]
+        unary_clauses = [c for c in rule.enumerated_clauses if len(c["values"]) == 1]
+
+        pair = {self._normalize_null(value_a), self._normalize_null(value_b)}
+        for clause in binary_clauses:
+            if {self._normalize_null(v) for v in clause["values"]} == pair:
+                return clause["result"]
+
+        for clause in unary_clauses:
+            if self._normalize_null(clause["values"][0]) in pair:
+                return clause["result"]
+
+        return rule.default_value
+
+    def resolve_group(self, variable_name: str, values: List[Any]) -> Any:
+        """Resolve N values (for aggregation/analytic operators)."""
+        if len(values) == 0:
+            return None
+        if len(values) == 1:
+            return values[0]
+        rule = self.get_rule_for_variable(variable_name)
+        if rule is None:
+            return None
+
+        if rule.aggregate_function is not None:
+            # Native SQL aggregates (MIN/MAX/SUM/AVG) ignore nulls; mirror that here so
+            # the pandas path matches DuckDB and min/max do not choke on pd.NA.
+            non_null = [v for v in values if not pd.isna(v)]
+            if not non_null:
+                return None
+            funcs: Dict[str, Any] = {
+                "min": min,
+                "max": max,
+                "sum": sum,
+                "avg": lambda v: sum(v) / len(v),
+            }
+            return funcs[rule.aggregate_function](non_null)
+
+        # Enumerated: reduce pairwise (associative + commutative guarantees correctness)
+        return reduce(lambda a, b: self.resolve_pair(variable_name, a, b), values)
+
     def clear(self) -> None:
         """Clear all registered rules."""
         self._variable_rules.clear()
         self._valuedomain_rules.clear()
+
+    def _normalize_null(self, value: Any) -> Any:
+        if pd.isna(value):
+            return None
+        return value
 
 
 # Module-level accessor for operators to use.

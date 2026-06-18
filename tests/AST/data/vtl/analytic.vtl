@@ -4,6 +4,9 @@ last_value_ds_all_preceding := first_value(DS_1#Me_int over (partition by Id_1, 
 lag_ds := lag(DS_1#Me_num, 1 over (partition by Id_1, Id_2 order by Id_3 ));
 lead_ds := lead(DS_1#Me_num, 2 over (partition by Id_1, Id_2 order by Id_3 asc));
 rank_ds := DS_1[calc Me_rank := rank (over (partition by Id_1, Id_2 order by Id_3))];
+rank_except_ds := DS_1[calc Me_rank := rank (over (partition except Id_1 order by Id_3))];
+rank_except_multi_ds := DS_1[calc Me_rank := rank (over (partition except Id_1, Id_2 order by Id_3))];
+rank_except_all_ds := DS_1[calc Me_rank := rank (over (partition except all order by Id_3))];
 ratio_to_report_ds := ratio_to_report(DS_1#Me_num over (partition by Id_1, Id_2 ));
 max_analytic_ds := max(DS_1#Me_int over (partition by Id_1, Id_2 order by Id_3 range between unbounded preceding and current data point));
 max_analytic_ds_follow := max(DS_1#Me_int over (partition by Id_1, Id_2 order by Id_3 range between current data point and unbounded following));
