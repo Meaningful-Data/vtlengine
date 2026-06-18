@@ -463,3 +463,28 @@ class DatapointRulesetTests(TestDataPointRuleset):
         self.BaseTest(
             code=code, number_inputs=number_inputs, references_names=references_names, text=rendered
         )
+
+    def test_GH_844_1(self):
+        """
+        Define datapoint ruleset on `variable` with an EMPTY signature.
+
+        define datapoint ruleset dpr (variable) is
+            r1: A <= B errorcode "A higher than B";
+            r2: not isnull(C) errorcode "C not reported";
+            r3: when T = "L" then length(C) = 3 errorcode "len mismatch"
+        end datapoint ruleset;
+        DS_r := check_datapoint(DS_1, dpr all);
+
+        Description: When the signature is `(variable)` with no listed variables,
+        they are inferred from the rule body (each referenced component maps to the
+        dataset component of the same name). Removes the need to keep a redundant
+        variable list in sync with the body.
+
+        Git Issue: GH_844.
+        Goal: Check that an empty variable signature validates like the explicit one.
+        """
+        code = "GH_844_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)

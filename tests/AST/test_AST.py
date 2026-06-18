@@ -974,10 +974,6 @@ def test_create_ast_with_comments_empty_script(script):
 
 
 def test_create_ast_with_comments_syntax_error_raises():
-    script = (
-        "define hierarchical ruleset MY_HR (valuedomain rule SECTOR) is\n"
-        "    10A = 10B + 10C\n"
-        "end hierarchical ruleset;"
-    )
+    script = "DS_r := ;"
     with pytest.raises(VTLSyntaxError):
         create_ast_with_comments(text=script)

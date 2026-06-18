@@ -191,12 +191,10 @@ static void init_type_map() {
     // Viral propagation rules without alternatives
     g_type_map[typeid(Vtl::VpSignatureContext)] = {Vtl::RuleVpSignature, -1};
     g_type_map[typeid(Vtl::VpBodyContext)] = {Vtl::RuleVpBody, -1};
+    g_type_map[typeid(Vtl::EnumeratedVpClauseContext)] = {Vtl::RuleEnumeratedVpClause, -1};
+    g_type_map[typeid(Vtl::AggregationVpClauseContext)] = {Vtl::RuleAggregationVpClause, -1};
+    g_type_map[typeid(Vtl::DefaultVpClauseContext)] = {Vtl::RuleDefaultVpClause, -1};
     g_type_map[typeid(Vtl::VpConditionContext)] = {Vtl::RuleVpCondition, -1};
-
-    // VpClause alternatives
-    g_type_map[typeid(Vtl::EnumeratedVpClauseContext)] = {Vtl::RuleVpClause, 0};
-    g_type_map[typeid(Vtl::AggregationVpClauseContext)] = {Vtl::RuleVpClause, 1};
-    g_type_map[typeid(Vtl::DefaultVpClauseContext)] = {Vtl::RuleVpClause, 2};
 
     // GenericOperators alternatives
     g_type_map[typeid(Vtl::CallDatasetContext)] = {Vtl::RuleGenericOperators, 0};

@@ -117,7 +117,6 @@ class Join(Operator):
 
             for component_name, component in components.items():
                 component.nullable = nullability[component_name]
-
                 if component_name in viral_common:
                     if component_name not in merged_components:
                         component.name = component_name

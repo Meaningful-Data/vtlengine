@@ -29,7 +29,11 @@ from vtlengine.AST import (
 from vtlengine.AST.ASTConstructorModules import extract_token_info
 from vtlengine.AST.ASTConstructorModules.Expr import Expr
 from vtlengine.AST.ASTConstructorModules.ExprComponents import ExprComp
-from vtlengine.AST.ASTConstructorModules.Terminals import Terminals, _remove_scaped_characters
+from vtlengine.AST.ASTConstructorModules.Terminals import (
+    Terminals,
+    _remove_scaped_characters,
+    is_quoted_identifier,
+)
 from vtlengine.AST.ASTDataExchange import de_ruleset_elements
 from vtlengine.AST.Grammar._cpp_parser import vtl_cpp_parser
 from vtlengine.AST.Grammar._cpp_parser._rule_constants import RC
@@ -606,17 +610,21 @@ class ASTVisitor:
         if ctx_list[0].is_terminal:
             when = ctx_list[0].text
             vd_value = Terminals().visitValueDomainValue(ctx_list[3])
+            vd_quoted = is_quoted_identifier(ctx_list[3])
             op = Terminals().visitComparisonOperand(ctx_list[4])
             token_info_value = extract_token_info(ctx_list[3])
             token_info_op = extract_token_info(ctx_list[4])
         else:
             vd_value = Terminals().visitValueDomainValue(ctx_list[0])
+            vd_quoted = is_quoted_identifier(ctx_list[0])
             op = Terminals().visitComparisonOperand(ctx_list[1])
             token_info_value = extract_token_info(ctx_list[0])
             token_info_op = extract_token_info(ctx_list[1])
 
         rule_node = HRBinOp(
-            left=DefIdentifier(value=vd_value, kind="CodeItemID", **token_info_value),
+            left=DefIdentifier(
+                value=vd_value, kind="CodeItemID", was_quoted=vd_quoted, **token_info_value
+            ),
             op=op,
             right=None,
             **token_info_op,
@@ -681,7 +689,10 @@ class ASTVisitor:
             value = Terminals().visitValueDomainValue(ctx_list[1])
 
             code_item = DefIdentifier(
-                value=value, kind="CodeItemID", **extract_token_info(ctx_list[1])
+                value=value,
+                kind="CodeItemID",
+                was_quoted=is_quoted_identifier(ctx_list[1]),
+                **extract_token_info(ctx_list[1]),
             )
             if right_condition:
                 code_item._right_condition = right_condition[0]
@@ -690,7 +701,10 @@ class ASTVisitor:
         else:
             value = Terminals().visitValueDomainValue(ctx_list[0])
             code_item = DefIdentifier(
-                value=value, kind="CodeItemID", **extract_token_info(ctx_list[0])
+                value=value,
+                kind="CodeItemID",
+                was_quoted=is_quoted_identifier(ctx_list[0]),
+                **extract_token_info(ctx_list[0]),
             )
             if right_condition:
                 code_item._right_condition = right_condition[0]

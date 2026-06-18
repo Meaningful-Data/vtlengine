@@ -3015,3 +3015,82 @@ def test_GH_676_4():
     with pytest.raises(SemanticError) as ctx:
         interpreter.visit(ast)
     assert ctx.value.args[1] == "1-2-8"
+
+
+# Binary dataset operators: identifier sets must be equal or one a subset of the other (1-2-15).
+
+_INCOMPATIBLE_IDS_STRUCTURES = {
+    "datasets": [
+        {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "String", "role": "Identifier", "nullable": False},
+                {"name": "Id_2", "type": "Number", "role": "Identifier", "nullable": False},
+                {"name": "Id_3", "type": "Number", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+            ],
+        },
+        {
+            "name": "DS_2",
+            "DataStructure": [
+                {"name": "Id_1", "type": "String", "role": "Identifier", "nullable": False},
+                {"name": "Id_4", "type": "Number", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+            ],
+        },
+        {
+            "name": "DS_DISJOINT",
+            "DataStructure": [
+                {"name": "Id_9", "type": "String", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+            ],
+        },
+        {
+            "name": "DS_SUBSET",
+            "DataStructure": [
+                {"name": "Id_1", "type": "String", "role": "Identifier", "nullable": False},
+                {"name": "Id_2", "type": "Number", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+            ],
+        },
+    ]
+}
+
+
+@pytest.mark.parametrize(
+    "script",
+    [
+        "DS_r := DS_1 + DS_2;",
+        "DS_r := DS_2 + DS_1;",
+        "DS_r := DS_1 - DS_2;",
+        "DS_r := DS_1 * DS_2;",
+        "DS_r := DS_1 = DS_2;",
+    ],
+)
+def test_binary_incompatible_identifiers_overlap_not_subset(script: str) -> None:
+    """Binary ops fail when identifier sets overlap but neither is a subset of the other."""
+    with pytest.raises(SemanticError) as ctx:
+        semantic_analysis(script=script, data_structures=_INCOMPATIBLE_IDS_STRUCTURES)
+    assert ctx.value.args[1] == "1-2-15"
+
+
+def test_binary_incompatible_identifiers_disjoint() -> None:
+    """Binary op fails when identifier sets are disjoint (still neither subset)."""
+    script = "DS_r := DS_1 + DS_DISJOINT;"
+    with pytest.raises(SemanticError) as ctx:
+        semantic_analysis(script=script, data_structures=_INCOMPATIBLE_IDS_STRUCTURES)
+    assert ctx.value.args[1] == "1-2-15"
+
+
+def test_binary_subset_identifiers_ok() -> None:
+    """Binary op succeeds when one identifier set is a strict subset of the other."""
+    script = "DS_r := DS_1 + DS_SUBSET;"
+    semantic_analysis(script=script, data_structures=_INCOMPATIBLE_IDS_STRUCTURES)
+
+
+def test_exists_in_incompatible_identifiers() -> None:
+    """exists_in fails when identifier sets overlap but neither is a subset of the other."""
+    script = "DS_r := exists_in(DS_1, DS_2);"
+    with pytest.raises(SemanticError) as ctx:
+        semantic_analysis(script=script, data_structures=_INCOMPATIBLE_IDS_STRUCTURES)
+    assert ctx.value.args[1] == "1-2-15"
