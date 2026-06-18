@@ -46,6 +46,7 @@ from vtlengine.Model import (
     Scalar,
     ValueDomain,
 )
+from vtlengine.Model._case_insensitive_dict import CaseInsensitiveDict
 
 # Cache SCALAR_TYPES keys for performance
 _SCALAR_TYPE_KEYS = SCALAR_TYPES.keys()
@@ -87,13 +88,13 @@ def _load_dataset_from_structure(
     """
     Loads a dataset with the structure given.
     """
-    datasets = {}
-    scalars = {}
+    datasets: CaseInsensitiveDict[Dataset] = CaseInsensitiveDict()
+    scalars: CaseInsensitiveDict[Scalar] = CaseInsensitiveDict()
 
     if "datasets" in structures:
         for dataset_json in structures["datasets"]:
             dataset_name = dataset_json["name"]
-            components = {}
+            components: CaseInsensitiveDict[VTL_Component] = CaseInsensitiveDict()
 
             if "structure" in dataset_json:
                 structure_name = dataset_json["structure"]
@@ -365,15 +366,15 @@ def _load_datastructure_single(
     if not data_structure.exists():
         raise DataLoadError(code="0-3-1-1", file=data_structure)
     if data_structure.is_dir():
-        datasets: Dict[str, Dataset] = {}
-        scalars: Dict[str, Scalar] = {}
+        dir_datasets: CaseInsensitiveDict[Dataset] = CaseInsensitiveDict()
+        dir_scalars: CaseInsensitiveDict[Scalar] = CaseInsensitiveDict()
         for f in data_structure.iterdir():
             if f.suffix not in (".json", ".xml"):
                 continue
             ds, sc = _load_datastructure_single(f, sdmx_mappings=sdmx_mappings)
-            datasets = {**datasets, **ds}
-            scalars = {**scalars, **sc}
-        return datasets, scalars
+            dir_datasets.update(ds)
+            dir_scalars.update(sc)
+        return dir_datasets, dir_scalars
     else:
         suffix = data_structure.suffix.lower()
         # Handle SDMX-ML structure files (.xml) - strict, must be SDMX

@@ -55,6 +55,11 @@ from vtlengine.Model import (
     ScalarSet,
     ValueDomain,
 )
+from vtlengine.Model._case_insensitive_dict import (
+    CaseInsensitiveDict,
+    names_equal,
+    normalize_name,
+)
 from vtlengine.Operators.Aggregation import extract_grouping_identifiers
 from vtlengine.Operators.Assignment import Assignment
 from vtlengine.Operators.CastOperator import Cast
@@ -129,8 +134,17 @@ class InterpreterAnalyzer(ASTTemplate):
     signature_values: Optional[Dict[str, Any]] = None
 
     def __post_init__(self) -> None:
-        self.datasets_inputs = set(self.datasets.keys())
-        self.scalars_inputs = set(self.scalars.keys()) if self.scalars else set()
+        # VTL regular names are case-insensitive: keep all symbol tables in
+        # CaseInsensitiveDict so lookups match regardless of the written casing.
+        self.datasets = CaseInsensitiveDict(self.datasets)
+        if self.scalars is not None:
+            self.scalars = CaseInsensitiveDict(self.scalars)
+        if self.value_domains is not None:
+            self.value_domains = CaseInsensitiveDict(self.value_domains)
+        if self.external_routines is not None:
+            self.external_routines = CaseInsensitiveDict(self.external_routines)
+        self.datasets_inputs = {normalize_name(k) for k in self.datasets}
+        self.scalars_inputs = {normalize_name(k) for k in self.scalars} if self.scalars else set()
 
     # **********************************
     # *                                *
@@ -153,9 +167,9 @@ class InterpreterAnalyzer(ASTTemplate):
             ) and not isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
                 raise SemanticError("1-2-5")
             result = self.visit(child)
-            if isinstance(result, Dataset) and result.name in self.datasets_inputs:
+            if isinstance(result, Dataset) and normalize_name(result.name) in self.datasets_inputs:
                 invalid_dataset_outputs.append(result.name)
-            if isinstance(result, Scalar) and result.name in self.scalars_inputs:
+            if isinstance(result, Scalar) and normalize_name(result.name) in self.scalars_inputs:
                 invalid_scalar_outputs.append(result.name)
 
             self.is_from_join = False
@@ -169,7 +183,7 @@ class InterpreterAnalyzer(ASTTemplate):
             results[result.name] = result
             if isinstance(result, Scalar):
                 if self.scalars is None:
-                    self.scalars = {}
+                    self.scalars = CaseInsensitiveDict()
                 self.scalars[result.name] = copy(result)
         if invalid_dataset_outputs:
             raise SemanticError("0-1-2-8", names=", ".join(invalid_dataset_outputs))
@@ -182,7 +196,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
     def visit_Operator(self, node: AST.Operator) -> None:
         if self.udos is None:
-            self.udos = {}
+            self.udos = CaseInsensitiveDict()
         elif node.op in self.udos:
             raise ValueError(f"User Defined Operator {node.op} already exists")
 
@@ -232,7 +246,7 @@ class InterpreterAnalyzer(ASTTemplate):
             )
 
         # Signature has the actual parameters names or aliases if provided
-        signature_actual_names = {}
+        signature_actual_names: CaseInsensitiveDict[str] = CaseInsensitiveDict()
         if not isinstance(node.params, AST.DefIdentifier):
             for param in node.params:
                 if param.alias is not None:
@@ -253,7 +267,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
         # Adding the ruleset to the dprs dictionary
         if self.dprs is None:
-            self.dprs = {}
+            self.dprs = CaseInsensitiveDict()
         elif node.name in self.dprs:
             raise ValueError(f"Datapoint Ruleset {node.name} already exists")
 
@@ -261,7 +275,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
     def visit_HRuleset(self, node: AST.HRuleset) -> None:
         if self.hrs is None:
-            self.hrs = {}
+            self.hrs = CaseInsensitiveDict()
 
         if node.name in self.hrs:
             raise ValueError(f"Hierarchical Ruleset {node.name} already exists")
@@ -1113,7 +1127,9 @@ class InterpreterAnalyzer(ASTTemplate):
             if len(cond_components) != len(hr_info["condition"]):
                 raise SemanticError("1-1-10-2", op=node.op)
 
-            if hr_info["node"].signature_type == "variable" and hr_info["signature"] != component:
+            if hr_info["node"].signature_type == "variable" and not names_equal(
+                hr_info["signature"], component
+            ):
                 raise SemanticError(
                     "1-1-10-3",
                     op=node.op,
@@ -1173,7 +1189,9 @@ class InterpreterAnalyzer(ASTTemplate):
 
             # Set up interpreter state for rule processing
             self.ruleset_dataset = dataset
-            self.ruleset_signature = {**{"RULE_COMPONENT": component}, **cond_info}
+            self.ruleset_signature = CaseInsensitiveDict(
+                {**{"RULE_COMPONENT": component}, **cond_info}
+            )
             self.ruleset_mode = mode
             rule_output_values = {}
 
@@ -1230,7 +1248,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     )
             if dpr_info is not None and dpr_info["signature_type"] == "variable":
                 for i, comp_name in enumerate(node.components):
-                    if comp_name != dpr_info["params"][i]:
+                    if not names_equal(comp_name, dpr_info["params"][i]):
                         raise SemanticError(
                             "1-1-10-3",
                             op=CHECK_DATAPOINT,

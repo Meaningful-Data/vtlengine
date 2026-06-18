@@ -13,6 +13,7 @@ from vtlengine.DataTypes import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
+from vtlengine.Model._case_insensitive_dict import CaseInsensitiveDict, normalize_name
 from vtlengine.Operators import Operator
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
@@ -149,17 +150,21 @@ class Rename(Operator):
     @classmethod
     def validate(cls, operands: List[RenameNode], dataset: Dataset) -> Dataset:
         dataset_name = VirtualCounter._new_ds_name()
+        # Regular names are case-insensitive: Me_1 and ME_1 are the same component,
+        # so duplicate detection must compare normalized names.
         from_names = [operand.old_name for operand in operands]
-        if len(from_names) != len(set(from_names)):
-            duplicates = set([name for name in from_names if from_names.count(name) > 1])
+        norm_from = [normalize_name(name) for name in from_names]
+        if len(norm_from) != len(set(norm_from)):
+            duplicates = {name for name in from_names if norm_from.count(normalize_name(name)) > 1}
             raise SemanticError("1-1-6-9", op=cls.op, from_components=duplicates)
 
         to_names = [operand.new_name for operand in operands]
-        if len(to_names) != len(set(to_names)):  # If duplicates
-            duplicates = set([name for name in to_names if to_names.count(name) > 1])
+        norm_to = [normalize_name(name) for name in to_names]
+        if len(norm_to) != len(set(norm_to)):  # If duplicates
+            duplicates = {name for name in to_names if norm_to.count(normalize_name(name)) > 1}
             raise SemanticError("1-2-1", alias=duplicates)
 
-        from_names_set = set(from_names)
+        from_names_set = {normalize_name(name) for name in from_names}
         for operand in operands:
             if operand.old_name not in dataset.components:
                 raise SemanticError(
@@ -168,7 +173,10 @@ class Rename(Operator):
                     comp_name=operand.old_name,
                     dataset_name=dataset_name,
                 )
-            if operand.new_name in dataset.components and operand.new_name not in from_names_set:
+            if (
+                operand.new_name in dataset.components
+                and normalize_name(operand.new_name) not in from_names_set
+            ):
                 raise SemanticError(
                     "1-1-6-8",
                     op=cls.op,
@@ -176,7 +184,9 @@ class Rename(Operator):
                     dataset_name=dataset_name,
                 )
 
-        rename_map = {op.old_name: op.new_name for op in operands}
+        rename_map: CaseInsensitiveDict[str] = CaseInsensitiveDict(
+            {op.old_name: op.new_name for op in operands}
+        )
         result_components = {}
         for comp in dataset.components.values():
             if comp.name in rename_map:

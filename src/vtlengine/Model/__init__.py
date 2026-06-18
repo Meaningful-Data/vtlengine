@@ -15,6 +15,7 @@ import vtlengine.DataTypes as DataTypes
 from vtlengine.DataTypes import SCALAR_TYPES, ScalarType
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.Exceptions import InputValidationException, SemanticError
+from vtlengine.Model._case_insensitive_dict import CaseInsensitiveDict
 
 
 @dataclass
@@ -220,6 +221,8 @@ class Dataset:
     persistent: bool = False
 
     def __post_init__(self) -> None:
+        if not isinstance(self.components, CaseInsensitiveDict):
+            self.components = CaseInsensitiveDict(self.components)
         if self.data is not None:
             if len(self.components) != len(self.data.columns):
                 raise ValueError(
@@ -339,7 +342,8 @@ class Dataset:
         self.components[component.name] = component
 
     def delete_component(self, component_name: str) -> None:
-        self.components.pop(component_name, None)
+        if component_name in self.components:
+            del self.components[component_name]
         if self.data is not None:
             self.data.drop(columns=[component_name], inplace=True)
 
