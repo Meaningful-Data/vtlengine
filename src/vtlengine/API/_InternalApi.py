@@ -36,9 +36,7 @@ from vtlengine.files.sdmx_handler import (
     to_vtl_json,
 )
 from vtlengine.Model import (
-    Component as VTL_Component,
-)
-from vtlengine.Model import (
+    CaseInsensitiveDict,
     Dataset,
     ExternalRoutine,
     Role,
@@ -46,7 +44,9 @@ from vtlengine.Model import (
     Scalar,
     ValueDomain,
 )
-from vtlengine.Model._case_insensitive_dict import CaseInsensitiveDict
+from vtlengine.Model import (
+    Component as VTL_Component,
+)
 
 # Cache SCALAR_TYPES keys for performance
 _SCALAR_TYPE_KEYS = SCALAR_TYPES.keys()

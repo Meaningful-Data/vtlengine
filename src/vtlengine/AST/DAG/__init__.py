@@ -48,8 +48,7 @@ from vtlengine.AST.Grammar.tokens import (
     TO,
 )
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Model import Component
-from vtlengine.Model._case_insensitive_dict import normalize_name
+from vtlengine.Model import Component, normalize_name
 
 
 @dataclass

@@ -4,8 +4,7 @@ import pickle
 import pytest
 
 import vtlengine.DataTypes as DataTypes
-from vtlengine.Model import Component, Dataset, Role
-from vtlengine.Model._case_insensitive_dict import CaseInsensitiveDict
+from vtlengine.Model import CaseInsensitiveDict, Component, Dataset, Role
 
 
 def test_case_insensitive_lookup():

@@ -21,8 +21,7 @@ from vtlengine.DataTypes import (
     unary_implicit_promotion,
 )
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Model import Component, Dataset, Role
-from vtlengine.Model._case_insensitive_dict import normalize_name
+from vtlengine.Model import Component, Dataset, Role, normalize_name
 
 
 def extract_grouping_identifiers(

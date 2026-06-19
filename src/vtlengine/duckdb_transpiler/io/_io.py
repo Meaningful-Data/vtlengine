@@ -31,8 +31,7 @@ from vtlengine.files.sdmx_handler import (
     is_sdmx_datapoint_file,
     load_sdmx_datapoints,
 )
-from vtlengine.Model import Component, Dataset, Role, Scalar
-from vtlengine.Model._case_insensitive_dict import CaseInsensitiveDict
+from vtlengine.Model import CaseInsensitiveDict, Component, Dataset, Role, Scalar
 
 
 def _skip_load_validation() -> bool:

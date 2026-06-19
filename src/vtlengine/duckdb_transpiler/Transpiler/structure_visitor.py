@@ -19,8 +19,7 @@ from vtlengine.DataTypes import (
 from vtlengine.DataTypes import String as StringType
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.duckdb_transpiler.Transpiler.sql_builder import quote_name
-from vtlengine.Model import Component, Dataset, Role
-from vtlengine.Model._case_insensitive_dict import CaseInsensitiveDict
+from vtlengine.Model import CaseInsensitiveDict, Component, Dataset, Role
 from vtlengine.Operators.Join import merged_viral_attribute_names
 
 

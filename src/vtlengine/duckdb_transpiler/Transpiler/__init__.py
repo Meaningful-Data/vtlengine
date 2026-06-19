@@ -43,8 +43,15 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
     _try_normalize_time_period,
 )
 from vtlengine.Exceptions import RunTimeError, SemanticError
-from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
-from vtlengine.Model._case_insensitive_dict import CaseInsensitiveDict
+from vtlengine.Model import (
+    CaseInsensitiveDict,
+    Component,
+    Dataset,
+    ExternalRoutine,
+    Role,
+    Scalar,
+    ValueDomain,
+)
 from vtlengine.Operators.Join import merged_viral_attribute_names
 from vtlengine.ViralPropagation import get_current_registry
 from vtlengine.ViralPropagation.sql import (

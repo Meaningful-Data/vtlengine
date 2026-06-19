@@ -46,6 +46,7 @@ from vtlengine.DataTypes import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import (
+    CaseInsensitiveDict,
     Component,
     DataComponent,
     Dataset,
@@ -54,9 +55,6 @@ from vtlengine.Model import (
     Scalar,
     ScalarSet,
     ValueDomain,
-)
-from vtlengine.Model._case_insensitive_dict import (
-    CaseInsensitiveDict,
     names_equal,
     normalize_name,
 )

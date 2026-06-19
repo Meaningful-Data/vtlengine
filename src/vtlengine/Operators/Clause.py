@@ -12,8 +12,15 @@ from vtlengine.DataTypes import (
     unary_implicit_promotion,
 )
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
-from vtlengine.Model._case_insensitive_dict import CaseInsensitiveDict, normalize_name
+from vtlengine.Model import (
+    CaseInsensitiveDict,
+    Component,
+    DataComponent,
+    Dataset,
+    Role,
+    Scalar,
+    normalize_name,
+)
 from vtlengine.Operators import Operator
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
