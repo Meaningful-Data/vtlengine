@@ -5,7 +5,7 @@ import duckdb
 
 from vtlengine.DataTypes import COMP_NAME_MAPPING
 from vtlengine.Exceptions import RunTimeError, SemanticError
-from vtlengine.Model import Component, Dataset, ExternalRoutine, Role
+from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar
 from vtlengine.Operators import Binary, Unary
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
@@ -21,7 +21,7 @@ class Membership(Binary):
     """
 
     @classmethod
-    def validate(cls, left_operand: Any, right_operand: Any) -> Dataset:
+    def validate(cls, left_operand: Any, right_operand: Any) -> Union[Dataset, Scalar]:
         dataset_name = VirtualCounter._new_ds_name()
         if right_operand not in left_operand.components:
             raise SemanticError(
@@ -32,6 +32,9 @@ class Membership(Binary):
             )
 
         component = left_operand.components[right_operand]
+        if len(left_operand.get_identifiers()) == 0:
+            return Scalar(name=dataset_name, data_type=component.data_type, value=None)
+
         promote_to_measure = component.role in (Role.IDENTIFIER, Role.ATTRIBUTE)
         result_components = {
             name: comp

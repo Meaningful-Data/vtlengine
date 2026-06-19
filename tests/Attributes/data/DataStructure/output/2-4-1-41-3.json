@@ -10,12 +10,6 @@
           "nullable": false
         },
         {
-          "name": "At_11",
-          "role": "Attribute",
-          "type": "Number",
-          "nullable": true
-        },
-        {
           "name": "Id_12",
           "role": "Identifier",
           "type": "String",
@@ -34,22 +28,10 @@
           "nullable": true
         },
         {
-          "name": "At_12",
-          "role": "Attribute",
-          "type": "Number",
-          "nullable": true
-        },
-        {
           "name": "Id_21",
           "role": "Identifier",
           "type": "Integer",
           "nullable": false
-        },
-        {
-          "name": "At_21",
-          "role": "Attribute",
-          "type": "Number",
-          "nullable": true
         },
         {
           "name": "Id_22",
@@ -66,12 +48,6 @@
         {
           "name": "Me_22",
           "role": "Measure",
-          "type": "Number",
-          "nullable": true
-        },
-        {
-          "name": "At_22",
-          "role": "Attribute",
           "type": "Number",
           "nullable": true
         }

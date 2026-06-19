@@ -38,30 +38,6 @@
           "role": "Measure",
           "type": "Number",
           "nullable": true
-        },
-        {
-          "name": "At11",
-          "role": "Attribute",
-          "type": "Number",
-          "nullable": true
-        },
-        {
-          "name": "At12",
-          "role": "Attribute",
-          "type": "Number",
-          "nullable": true
-        },
-        {
-          "name": "At_21",
-          "role": "Attribute",
-          "type": "Number",
-          "nullable": true
-        },
-        {
-          "name": "At_22",
-          "role": "Attribute",
-          "type": "Number",
-          "nullable": true
         }
       ]
     }

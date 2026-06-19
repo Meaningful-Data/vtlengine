@@ -758,10 +758,11 @@ class ExprComp:
             period_ind_from_token = ctx_list[idx + 1]
             idx = idx + 2
 
-        if (
+        period_from_optional = (
             period_ind_from_token is not None
-            and period_ind_from_token.symbol_type != vtl_cpp_parser.OPTIONAL
-        ):
+            and period_ind_from_token.symbol_type == vtl_cpp_parser.OPTIONAL
+        )
+        if period_ind_from_token is not None and not period_from_optional:
             period_from = str(period_ind_from_token.text)[1:-1]
 
         # Find optionalExprComponent (op)
@@ -798,6 +799,7 @@ class ExprComp:
             period_to=period_to,
             period_to_ref=period_to_ref,
             period_from=period_from,
+            period_from_optional=period_from_optional,
             conf=conf,
             **extract_token_info(ctx),
         )
@@ -1002,8 +1004,10 @@ class ExprComp:
             elif not c.is_terminal and c.ctx_id == RC.ORDER_BY_CLAUSE:
                 order_by = Terminals().visitOrderByClause(c)
                 continue
-            elif not c.is_terminal and c.rule_index in (59, 48):
-                # SignedInteger (rule 59) or ScalarItem (rule 48)
+            elif not c.is_terminal and c.rule_index in (
+                RC.SIGNED_INTEGER[0],
+                RC.SCALAR_ITEM[0],
+            ):
                 if params is None:
                     params = []
                 if c.rule_index == RC.SIGNED_INTEGER[0]:

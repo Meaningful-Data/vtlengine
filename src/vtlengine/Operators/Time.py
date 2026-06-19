@@ -246,8 +246,8 @@ class Time_Aggregation(Time):
         return result
 
     @classmethod
-    def _check_duration(cls, value: str) -> None:
-        if value not in PERIOD_IND_MAPPING:
+    def _check_duration(cls, value: Optional[str]) -> None:
+        if value is not None and value not in PERIOD_IND_MAPPING:
             raise SemanticError("1-1-19-3", op=cls.op, param="duration")
 
     @classmethod
