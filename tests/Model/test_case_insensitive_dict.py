@@ -35,7 +35,8 @@ def test_get_pop_setdefault():
     assert d.get("a") == 1
     assert d.get("z", 99) == 99
     assert d.setdefault("a", 5) == 1
-    assert d.pop("A") == 1
+    popped = d.pop("A")
+    assert popped == 1
     assert "a" not in d
 
 
