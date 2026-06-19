@@ -116,6 +116,8 @@ class InterpreterAnalyzer(ASTTemplate):
     is_from_having: bool = False
     is_from_rule: bool = False
     is_from_join: bool = False
+    join_drops_attributes: bool = False
+    is_from_hr_val: bool = False
     is_from_hr_agg: bool = False
     # Handlers for simplicity
     regular_aggregation_dataset: Optional[Dataset] = None
@@ -388,13 +390,8 @@ class InterpreterAnalyzer(ASTTemplate):
         if node.op == MEMBERSHIP:
             if right_operand not in left_operand.components and "#" in right_operand:
                 right_operand = right_operand.split("#")[1]
-            if not self.is_from_component_assignment:
-                if self.is_from_regular_aggregation:
-                    raise SemanticError(
-                        "1-1-6-6", dataset_name=left_operand, comp_name=right_operand
-                    )
-                if len(left_operand.get_identifiers()) == 0:
-                    raise SemanticError("1-2-10", op=node.op)
+            if not self.is_from_component_assignment and self.is_from_regular_aggregation:
+                raise SemanticError("1-1-6-6", dataset_name=left_operand, comp_name=right_operand)
         return BINARY_MAPPING[node.op].validate(left_operand, right_operand)
 
     def visit_UnaryOp(self, node: AST.UnaryOp) -> Any:
@@ -436,18 +433,28 @@ class InterpreterAnalyzer(ASTTemplate):
             operand = self.regular_aggregation_dataset
             if node.operand is not None and operand is not None:
                 op_comp: DataComponent = self.visit(node.operand)
-                comps_to_keep = {
-                    comp_name: copy(comp)
-                    for comp_name, comp in self.regular_aggregation_dataset.components.items()
-                    if comp.role == Role.IDENTIFIER
-                }
+                comps_to_keep = {}
+                for (
+                    comp_name,
+                    comp,
+                ) in self.regular_aggregation_dataset.components.items():
+                    if comp.role in (Role.IDENTIFIER, Role.VIRAL_ATTRIBUTE):
+                        comps_to_keep[comp_name] = copy(comp)
                 comps_to_keep[op_comp.name] = Component(
                     name=op_comp.name,
                     data_type=op_comp.data_type,
                     role=op_comp.role,
                     nullable=op_comp.nullable,
                 )
-                return Dataset(name=operand.name, components=comps_to_keep, data=None)
+                if operand.data is not None:
+                    cols_to_keep = (
+                        operand.get_identifiers_names() + operand.get_viral_attributes_names()
+                    )
+                    data_to_keep = operand.data[cols_to_keep].copy()
+                    data_to_keep[op_comp.name] = op_comp.data
+                else:
+                    data_to_keep = None
+                return Dataset(name=operand.name, components=comps_to_keep, data=data_to_keep)
             return operand
         return self.visit(node.operand)
 
@@ -518,8 +525,11 @@ class InterpreterAnalyzer(ASTTemplate):
                 id_names = self.regular_aggregation_dataset.get_identifiers_names()
                 measure_names = self.regular_aggregation_dataset.get_measures_names()
                 attribute_names = self.regular_aggregation_dataset.get_attributes_names()
+                viral_attribute_names = (
+                    self.regular_aggregation_dataset.get_viral_attributes_names()
+                )
                 dataset_components = self.regular_aggregation_dataset.components.copy()
-                for name in measure_names + attribute_names:
+                for name in measure_names + attribute_names + viral_attribute_names:
                     dataset_components.pop(name)
 
                 operand_id_collision = (
@@ -827,7 +837,11 @@ class InterpreterAnalyzer(ASTTemplate):
         self.regular_aggregation_dataset = dataset
         if node.op == APPLY:
             op_map = BINARY_MAPPING
-            return REGULAR_AGGREGATION_MAPPING[node.op].validate(dataset, node.children, op_map)
+            result = REGULAR_AGGREGATION_MAPPING[node.op].validate(dataset, node.children, op_map)
+            if self.is_from_join and node.isLast:
+                self._strip_join_prefixes(result)
+                self.is_from_join = False
+            return result
         for child in node.children:
             self.is_from_regular_aggregation = True
             operands.append(self.visit(child))
@@ -883,8 +897,14 @@ class InterpreterAnalyzer(ASTTemplate):
                     role=operands[0].components[measure].role,
                     nullable=operands[0].components[measure].nullable,
                 )
-            return REGULAR_AGGREGATION_MAPPING[node.op].validate(operands[0], dataset)
+            result = REGULAR_AGGREGATION_MAPPING[node.op].validate(operands[0], dataset)
+            if self.is_from_join and node.isLast:
+                self._strip_join_prefixes(result)
+                self.is_from_join = False
+            return result
         if self.is_from_join:
+            if node.op == KEEP:
+                self.join_drops_attributes = False
             if node.op in [DROP, KEEP]:
                 operands = [
                     (
@@ -910,12 +930,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 )
             result = REGULAR_AGGREGATION_MAPPING[node.op].validate(operands, dataset)
             if node.isLast:
-                result.components = {
-                    comp_name[comp_name.find("#") + 1 :]: comp
-                    for comp_name, comp in result.components.items()
-                }
-                for comp in result.components.values():
-                    comp.name = comp.name[comp.name.find("#") + 1 :]
+                self._strip_join_prefixes(result)
                 self.is_from_join = False
             return result
         return REGULAR_AGGREGATION_MAPPING[node.op].validate(operands, dataset)
@@ -1001,6 +1016,36 @@ class InterpreterAnalyzer(ASTTemplate):
             nullable=node.value is None,
         )
 
+    def _strip_join_prefixes(self, result: Dataset) -> None:
+        if self.join_drops_attributes:
+            dropped = [
+                comp_name
+                for comp_name, comp in result.components.items()
+                if comp.role == Role.ATTRIBUTE
+            ]
+            for comp_name in dropped:
+                del result.components[comp_name]
+            if result.data is not None and dropped:
+                result.data = result.data.drop(
+                    columns=[c for c in dropped if c in result.data.columns]
+                )
+        self.join_drops_attributes = False
+
+        new_components: Dict[str, Component] = {}
+        for comp_name, comp in result.components.items():
+            stripped = comp_name[comp_name.find("#") + 1 :]
+            if stripped in new_components:
+                raise SemanticError("1-1-13-9", comp_name=stripped)
+            comp.name = stripped
+            new_components[stripped] = comp
+        result.components = new_components
+        if result.data is not None:
+            result.data.rename(
+                columns={col: col[col.find("#") + 1 :] for col in result.data.columns},
+                inplace=True,
+            )
+            result.data.reset_index(drop=True, inplace=True)
+
     def visit_JoinOp(self, node: AST.JoinOp) -> Any:
         clause_elements = []
         for clause in node.clauses:
@@ -1015,7 +1060,12 @@ class InterpreterAnalyzer(ASTTemplate):
 
         # No need to check using, regular aggregation is executed afterwards
         self.is_from_join = True
-        return JOIN_MAPPING[node.op].validate(clause_elements, node.using, nvl_defaults)
+        self.join_drops_attributes = sum(isinstance(e, Dataset) for e in clause_elements) > 1
+        result = JOIN_MAPPING[node.op].validate(clause_elements, node.using, nvl_defaults)
+        if node.isLast:
+            self._strip_join_prefixes(result)
+            self.is_from_join = False
+        return result
 
     def visit_ParamConstant(self, node: AST.ParamConstant) -> str:
         return node.value
@@ -1244,7 +1294,11 @@ class InterpreterAnalyzer(ASTTemplate):
                         comp_name=comp_name,
                         dataset_name=dataset_element.name,
                     )
-            if dpr_info is not None and dpr_info["signature_type"] == "variable":
+            if (
+                dpr_info is not None
+                and dpr_info["signature_type"] == "variable"
+                and dpr_info["params"]
+            ):
                 for i, comp_name in enumerate(node.components):
                     if not names_equal(comp_name, dpr_info["params"][i]):
                         raise SemanticError(
@@ -1263,6 +1317,8 @@ class InterpreterAnalyzer(ASTTemplate):
         rule_output_values = {}
         self.ruleset_dataset = dataset_element
         self.ruleset_signature = dpr_info.get("signature")
+        if dpr_info.get("signature_type") == "variable" and not self.ruleset_signature:
+            self.ruleset_signature = {name: name for name in dataset_element.components}
         self.ruleset_mode = output
 
         # Gather rule data

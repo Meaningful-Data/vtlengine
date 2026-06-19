@@ -46,12 +46,6 @@
           "nullable": true
         },
         {
-          "name": "NEVS_JNT_LBLTY_AMNT",
-          "role": "Attribute",
-          "type": "String",
-          "nullable": true
-        },
-        {
           "name": "OTSTNDNG_NMNL_AMNT",
           "role": "Measure",
           "type": "Number",

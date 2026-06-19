@@ -124,10 +124,13 @@ class Keep(Operator):
                 )
             if dataset.get_component(operand).role == Role.IDENTIFIER:
                 raise SemanticError("1-1-6-2", op=cls.op, name=operand, dataset=dataset_name)
+
         result_components = {
             name: comp
             for name, comp in dataset.components.items()
-            if comp.name in operands or comp.role == Role.IDENTIFIER
+            if comp.name in operands
+            or comp.role == Role.IDENTIFIER
+            or comp.role == Role.VIRAL_ATTRIBUTE
         }
         return Dataset(name=dataset_name, components=result_components, data=None)
 

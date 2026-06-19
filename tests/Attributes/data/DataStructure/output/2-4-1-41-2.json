@@ -10,12 +10,6 @@
           "nullable": false
         },
         {
-          "name": "At_11",
-          "role": "Attribute",
-          "type": "Number",
-          "nullable": true
-        },
-        {
           "name": "Id_12",
           "role": "Identifier",
           "type": "String",
@@ -30,6 +24,12 @@
         {
           "name": "Me_12",
           "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "At_11",
+          "role": "Attribute",
           "type": "Number",
           "nullable": true
         },

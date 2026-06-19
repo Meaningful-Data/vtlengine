@@ -92,8 +92,6 @@ def _format_dataset_eval(dataset: Dataset) -> str:
 def _format_reserved_word(value: str):
     if value in RESERVED_WORDS:
         return RESERVED_WORDS[value]
-    elif value[0] == "_":
-        return f"'{value}'"
     return value
 
 
@@ -185,6 +183,8 @@ class ASTString(ASTTemplate):
         return f"{node.op} {self.visit(node.operand)}"
 
     def visit_DefIdentifier(self, node: AST.DefIdentifier) -> str:
+        if node.was_quoted:
+            return f"'{node.value}'"
         return _format_reserved_word(node.value)
 
     def visit_DPRule(self, node: AST.DPRule) -> str:
@@ -218,9 +218,8 @@ class ASTString(ASTTemplate):
     def visit_DPRuleset(self, node: AST.DPRuleset) -> None:
         rules_sep = "; " if len(node.rules) > 1 else ""
         signature_sep = ", " if len(node.params) > 1 else ""
-        signature = (
-            f"{node.signature_type} {signature_sep.join([self.visit(x) for x in node.params])}"
-        )
+        params = signature_sep.join([self.visit(x) for x in node.params])
+        signature = f"{node.signature_type} {params}" if params else node.signature_type
 
         if self.pretty:
             self.vtl_script += f"define datapoint ruleset {node.name}({signature}) is {nl}"
@@ -314,13 +313,14 @@ class ASTString(ASTTemplate):
         is_first = self.is_first_assignment
         if is_first:
             self.is_first_assignment = False
-        if self.pretty:
-            if is_first:
-                expression = f"{self.visit(node.left)} {node.op}{nl}{tab}{self.visit(node.right)}"
-            else:
-                expression = f"{self.visit(node.left)} {node.op} {self.visit(node.right)}"
+        left = self.visit(node.left)
+        role = getattr(node.left, "role", None)
+        if role is not None:
+            left = f"{role.value.lower()} {left}"
+        if self.pretty and is_first:
+            expression = f"{left} {node.op}{nl}{tab}{self.visit(node.right)}"
         else:
-            expression = f"{self.visit(node.left)} {node.op} {self.visit(node.right)}"
+            expression = f"{left} {node.op} {self.visit(node.right)}"
         if return_element:
             return expression
         self.vtl_script += f"{expression};"
@@ -344,7 +344,9 @@ class ASTString(ASTTemplate):
         elif node.op in [IDENTIFIER, ATTRIBUTE, VIRAL_ATTRIBUTE, NOT]:
             return f"{node.op} {self.visit(node.operand)}"
         elif node.op == MEASURE:
-            return self.visit(node.operand)
+            if getattr(node, "is_implicit_role", False):
+                return self.visit(node.operand)
+            return f"{node.op} {self.visit(node.operand)}"
 
         return f"{node.op}({self.visit(node.operand)})"
 
@@ -565,10 +567,12 @@ class ASTString(ASTTemplate):
     def visit_Analytic(self, node: AST.Analytic) -> str:
         operand = "" if node.operand is None else self.visit(node.operand)
         partition = ""
-        if node.partition_by:
-            partition_sep = ", " if len(node.partition_by) > 1 else ""
+        if node.partition_op == "except all":
+            partition = "partition except all"
+        elif node.partition_by:
+            keyword = "except" if node.partition_op == "except" else "by"
             partition_values = [_format_reserved_word(x) for x in node.partition_by]
-            partition = f"partition by {partition_sep.join(partition_values)}"
+            partition = f"partition {keyword} {', '.join(partition_values)}"
         order = ""
         if node.order_by:
             order_sep = ", " if len(node.order_by) > 1 else ""
@@ -576,7 +580,10 @@ class ASTString(ASTTemplate):
         window = f" {self.visit(node.window)}" if node.window is not None else ""
         params = ""
         if node.params:
-            params = "" if len(node.params) == 0 else f", {int(node.params[0])}"
+            rendered_params = [
+                self.visit(p) if isinstance(p, AST.AST) else str(p) for p in node.params
+            ]
+            params = ", " + ", ".join(rendered_params)
         if self.pretty:
             result = (
                 f"{node.op}({nl}{tab * 3}{operand}{params} over({partition}{order} {window})"
@@ -666,6 +673,14 @@ class ASTString(ASTTemplate):
     def visit_ParFunction(self, node: AST.ParFunction) -> str:
         return f"({self.visit(node.operand)})"
 
+    def _in_join_body(self, node: AST.RegularAggregation) -> bool:
+        dataset = node.dataset
+        if isinstance(dataset, AST.JoinOp):
+            return not dataset.isLast
+        if isinstance(dataset, AST.RegularAggregation) and not dataset.isLast:
+            return self._in_join_body(dataset)
+        return False
+
     def visit_RegularAggregation(self, node: AST.RegularAggregation) -> str:
         child_sep = ", " if len(node.children) > 1 else ""
         if node.op == AGGREGATE:
@@ -688,7 +703,7 @@ class ASTString(ASTTemplate):
             body = f"{nl}{tab * 4}{condition}{nl}{tab * 2}"
         else:
             body = child_sep.join([self.visit(x) for x in node.children])
-        if isinstance(node.dataset, AST.JoinOp) and node.op in [
+        if self._in_join_body(node) and node.op in [
             CALC,
             DROP,
             FILTER,
@@ -712,13 +727,18 @@ class ASTString(ASTTemplate):
         return f"{node.old_name} to {node.new_name}"
 
     def visit_TimeAggregation(self, node: AST.TimeAggregation) -> str:
-        period_to = _handle_literal(node.period_to)
+        if node.period_to_ref is not None:
+            period_to = self.visit(node.period_to_ref)
+        else:
+            period_to = _handle_literal(node.period_to)
         operand = "" if node.operand is None else f", {self.visit(node.operand)}"
 
-        if node.period_from is None:
-            period_from = ", _" if node.operand is not None else ""
-        else:
+        if node.period_from is not None:
             period_from = f", {_handle_literal(node.period_from)}"
+        elif node.period_from_optional:
+            period_from = ", _"
+        else:
+            period_from = ""
         config = "" if node.conf is None else f", {node.conf}"
         return f"{node.op}({period_to}{period_from}{operand}{config})"
 
@@ -787,9 +807,14 @@ class ASTString(ASTTemplate):
             start = f"unbounded {node.start_mode}"
         elif node.start_mode == "current":
             start = "current data point"
+        elif isinstance(node.start, AST.AST):
+            start = f"{self.visit(node.start)} {node.start_mode}"
         else:
             start = f"{node.start if node.start != 'current row' else 0} {node.start_mode}"
-        stop = f"{node.stop if node.stop != 'current row' else 0} {node.stop_mode}"
+        if isinstance(node.stop, AST.AST):
+            stop = f"{self.visit(node.stop)} {node.stop_mode}"
+        else:
+            stop = f"{node.stop if node.stop != 'current row' else 0} {node.stop_mode}"
         if node.stop_mode == "current":
             stop = "current data point"
         mode = "data points" if node.type_ == "data" else "range"

@@ -90,21 +90,46 @@ def test_valid_script_still_parses():
 
 
 # ---------------------------------------------------------------------------
-# VTL 2.2 IDENTIFIER changes
-# The new grammar replaces the permissive 2.1 rule with one that:
-#   - rejects bare identifiers starting with a digit (e.g. `24A0`);
-#   - allows the same identifier when single-quoted (`'24A0'`);
-#   - allows identifiers starting with `_` (e.g. `_foo`).
+# IDENTIFIER digit/underscore handling
+# A bare identifier must begin with a letter or a digit (and, when starting
+# with a digit, contain at least one letter) — e.g. `abc`, `24A0`, `1abc`,
+# `9_foo`. This matches the VTL "regular names" definition (VTL 2.1 User
+# Manual, "The regular names"): a name must begin with an alphanumeric
+# character, not a special character. Therefore:
+#   - bare names starting with `_` are rejected (only valid when quoted);
+#   - purely numeric tokens (e.g. `123`) are constants, not identifiers.
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
-    "bad_identifier",
+    "name",
     ["24A0", "1abc", "9_foo"],
 )
-def test_identifier_starting_with_digit_is_rejected(bad_identifier):
-    """VTL 2.2 forbids bare identifiers that start with a digit."""
-    script = f"DS_A <- {bad_identifier} + 1;"
+def test_bare_identifier_starting_with_digit_runs(name):
+    """A bare digit-prefixed identifier (with a letter) can name a dataset end-to-end."""
+    script = f"DS_A <- {name} * 2;"
+    data_structures = {
+        "datasets": [
+            {
+                "name": name,
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Integer", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    result = run(script=script, data_structures=data_structures, datapoints=_NO_DATA)
+    assert "DS_A" in result
+
+
+@pytest.mark.parametrize(
+    "name",
+    ["123", "0", "42"],
+)
+def test_purely_numeric_name_is_rejected(name):
+    """A purely numeric token is a constant, not an identifier — it cannot be a target."""
+    script = f"{name} <- DS_1;"
     with pytest.raises(VTLSyntaxError):
         run(script=script, data_structures=_EMPTY_DS, datapoints=_NO_DATA)
 
@@ -135,19 +160,8 @@ def test_quoted_identifier_starting_with_digit_runs(quoted_name):
     "underscore_name",
     ["_foo", "_unknown", "_1abc"],
 )
-def test_underscore_prefixed_identifier_runs(underscore_name):
-    """A dataset named with a `_`-prefixed identifier resolves end-to-end."""
+def test_bare_underscore_prefixed_identifier_is_rejected(underscore_name):
+    """A bare identifier starting with `_` is not valid (it must be quoted)."""
     script = f"DS_A <- {underscore_name} * 2;"
-    data_structures = {
-        "datasets": [
-            {
-                "name": underscore_name,
-                "DataStructure": [
-                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
-                    {"name": "Me_1", "type": "Integer", "role": "Measure", "nullable": True},
-                ],
-            }
-        ]
-    }
-    result = run(script=script, data_structures=data_structures, datapoints=_NO_DATA)
-    assert "DS_A" in result
+    with pytest.raises(VTLSyntaxError):
+        run(script=script, data_structures=_EMPTY_DS, datapoints=_NO_DATA)

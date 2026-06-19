@@ -4,12 +4,6 @@
       "name": "DS_r",
       "DataStructure": [
         {
-          "name": "At_1",
-          "role": "Attribute",
-          "type": "Number",
-          "nullable": true
-        },
-        {
           "name": "Id_11",
           "role": "Identifier",
           "type": "Integer",
@@ -20,12 +14,6 @@
           "role": "Identifier",
           "type": "String",
           "nullable": false
-        },
-        {
-          "name": "At_2",
-          "role": "Attribute",
-          "type": "Number",
-          "nullable": true
         },
         {
           "name": "Id_21",
