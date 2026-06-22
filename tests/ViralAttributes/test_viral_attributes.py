@@ -1,21 +1,12 @@
-"""Viral attribute tests, unified in a single module.
-
-File-based tests follow the repo convention: a VTL script + DataStructure JSON
-(+ DataSet CSV) under ``data/``, addressed by a numeric ``code`` and driven
-through :class:`ViralHelper` (a :class:`tests.Helper.TestHelper` subclass):
-- ``test_execution``   — full run, output structure AND data compared
-- ``test_structure``   — semantic-only, output structure compared
-- ``test_validation``  — expected semantic error code
-The model-level checks (Role enum / Dataset helpers) live in ``TestViralAttributeRole``.
-"""
-
 from pathlib import Path
 
 import pandas as pd
 import pytest
 
 from tests.Helper import TestHelper
+from vtlengine.API import create_ast
 from vtlengine.DataTypes import Integer, Number, String
+from vtlengine.Exceptions import VTLSyntaxError
 from vtlengine.Model import Component, Dataset, Role, Role_keys
 
 
@@ -30,20 +21,40 @@ class ViralHelper(TestHelper):
     filepath_sql = base_path / "data" / "sql"
 
 
-# -- End-to-end execution: output structure AND data are compared --
 execution_codes = [
-    ("1-1", 2),  # binary, enumerated rule
-    ("1-2", 2),  # binary, clause precedence (binary clause before unary)
-    ("1-3", 2),  # binary, no rule -> NULL
-    ("1-4", 2),  # binary, viral attr in one operand only (passthrough)
-    ("1-5", 2),  # binary, two rules (enumerated VAt_1 + aggregate-max VAt_2)
-    ("2-1", 1),  # aggregation, aggregate-max
-    ("2-2", 1),  # aggregation, enumerated pairwise reduction
-    ("3-1", 1),  # analytic, aggregate-max over the partition
-    ("3-2", 1),  # analytic, no rule (per-row passthrough)
-    ("7-1", 1),  # unary (abs), per-row passthrough
-    ("8-1", 1),  # dataset-scalar (DS_1 + 5), per-row passthrough
-    ("10-3", 1),  # legacy 'ViralAttribute' input role
+    ("1-1", 2),
+    ("1-2", 2),
+    ("1-3", 2),
+    ("1-4", 2),
+    ("1-5", 2),
+    ("2-1", 1),
+    ("2-2", 1),
+    ("3-1", 1),
+    ("3-2", 1),
+    ("7-1", 1),
+    ("8-1", 1),
+    ("10-3", 1),
+    ("1-6", 2),
+    ("1-7", 2),
+    ("1-8", 2),
+    ("2-3", 1),
+    ("4-6", 2),
+    ("4-7", 2),
+    ("4-8", 2),
+    ("4-9", 2),
+    ("4-10", 2),
+    ("4-11", 2),
+    ("4-12", 2),
+    ("7-2", 1),
+    ("7-3", 1),
+    ("9-2", 1),
+    ("11-1", 1),
+    ("11-2", 1),
+    ("11-3", 2),
+    ("12-1", 1),
+    ("12-2", 1),
+    ("12-3", 2),
+    ("12-4", 2),
 ]
 
 
@@ -52,12 +63,11 @@ def test_execution(code: str, number_inputs: int) -> None:
     ViralHelper.BaseTest(code=code, number_inputs=number_inputs, references_names=["DS_r"])
 
 
-# -- Structure-only (semantic) --
 semantic_codes = [
-    ("5-1", 1),  # a value-domain rule registers; viral attr preserved
-    ("9-1", 2),  # intersect preserves viral attributes
-    ("10-1", 2),  # a non-viral attribute is still dropped
-    ("10-2", 1),  # calc creates a viral attribute
+    ("5-1", 1),
+    ("9-1", 2),
+    ("10-1", 2),
+    ("10-2", 1),
 ]
 
 
@@ -68,11 +78,10 @@ def test_structure(code: str, number_inputs: int) -> None:
     )
 
 
-# -- Semantic validation: duplicate rules --
 validation_codes = [
-    ("6-1", "1-3-3-1"),  # duplicate variable-level rule
-    ("6-2", "1-3-3-4"),  # duplicate enumeration combination
-    ("6-3", "1-3-3-2"),  # duplicate value-domain-level rule
+    ("6-1", "1-3-3-1"),
+    ("6-2", "1-3-3-4"),
+    ("6-3", "1-3-3-2"),
 ]
 
 
@@ -81,16 +90,12 @@ def test_validation(code: str, exception_code: str) -> None:
     ViralHelper.NewSemanticExceptionTest(code=code, number_inputs=1, exception_code=exception_code)
 
 
-# -- Join ambiguity: a component shared (and not disambiguated) by both join
-# operands collapses to a homonym at the join's final un-prefixing step, which
-# VTL 2.2 rejects. Valid viral-propagation-through-join cases (distinct
-# measures) are covered in test_viral_propagation.TestViralPropagationJoins.
 join_ambiguity_codes = [
-    ("4-1", "1-1-13-9"),  # inner join, shared measure Me_1
-    ("4-2", "1-1-13-9"),  # inner join, shared measure Me_1
-    ("4-3", "1-1-13-9"),  # left join, shared measure Me_1
-    ("4-4", "1-1-13-9"),  # join with body calc, shared measure Me_1 still present
-    ("4-5", "1-1-13-9"),  # join, mixed-role shared component VAt_1
+    ("4-1", "1-1-13-9"),
+    ("4-2", "1-1-13-9"),
+    ("4-3", "1-1-13-9"),
+    ("4-4", "1-1-13-9"),
+    ("4-5", "1-1-13-9"),
 ]
 
 
@@ -99,7 +104,6 @@ def test_join_ambiguity(code: str, exception_code: str) -> None:
     ViralHelper.NewSemanticExceptionTest(code=code, number_inputs=2, exception_code=exception_code)
 
 
-# -- Model-level checks (Role enum and Dataset helpers) --
 class TestViralAttributeRole:
     def test_viral_attribute_in_role_enum(self) -> None:
         assert Role.VIRAL_ATTRIBUTE.value == "Viral Attribute"
@@ -137,7 +141,6 @@ class TestViralAttributeRole:
         assert ds.get_viral_attributes_names() == ["VAt_1"]
 
     def test_get_attributes_excludes_viral(self) -> None:
-        """get_attributes() must NOT return VIRAL_ATTRIBUTE components."""
         ds = Dataset(
             name="DS_1",
             components={
@@ -151,3 +154,18 @@ class TestViralAttributeRole:
         assert len(attrs) == 1
         assert attrs[0].name == "VAt_1"
         assert "VAt_2" not in ds.get_attributes_names()
+
+
+class TestVpBodyGrammar:
+    invalid_bodies = [
+        pytest.param("aggregate max;\naggregate min", id="two_aggregates"),
+        pytest.param('aggregate max;\nwhen "C" then "C"', id="aggregate_then_enumerated"),
+        pytest.param('aggregate max;\nelse "F"', id="aggregate_then_else"),
+        pytest.param('else "A";\nelse "B"', id="two_else"),
+    ]
+
+    @pytest.mark.parametrize("body", invalid_bodies)
+    def test_invalid_vp_body_raises_syntax_error(self, body: str) -> None:
+        script = f"define viral propagation R (variable VAt_1) is\n{body}\nend viral propagation;"
+        with pytest.raises(VTLSyntaxError):
+            create_ast(script)
