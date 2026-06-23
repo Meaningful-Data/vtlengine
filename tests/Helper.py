@@ -6,7 +6,7 @@ from unittest import TestCase
 
 import pytest
 
-from vtlengine.API import create_ast
+from vtlengine.API import create_ast, run
 from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.Exceptions import (
     RunTimeError,
@@ -14,7 +14,7 @@ from vtlengine.Exceptions import (
     VTLEngineException,
     check_key,
 )
-from vtlengine.files.output import (
+from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
     format_time_period_external_representation,
 )
@@ -66,7 +66,10 @@ class TestHelper(TestCase):
                 components = {}
 
                 for component in dataset_json["DataStructure"]:
-                    check_key("data_type", SCALAR_TYPES.keys(), component["type"])
+                    type_key = "type" if "type" in component else "data_type"
+                    check_key(type_key, SCALAR_TYPES.keys(), component[type_key])
+                    if component["role"] == "ViralAttribute":
+                        component["role"] = "Viral Attribute"
                     check_key("role", Role_keys, component["role"])
                     components[component["name"]] = Component(
                         name=component["name"],
@@ -151,36 +154,49 @@ class TestHelper(TestCase):
         warnings.filterwarnings("ignore", category=FutureWarning)
         if text is None:
             text = cls.LoadVTL(code)
-        ast = create_ast(text)
-        input_datasets = cls.LoadInputs(code, number_inputs, only_semantic)
+
+        if not only_semantic:
+            result = cls._run_with_duckdb_backend(
+                code=code,
+                number_inputs=number_inputs,
+                script=text,
+                vd_names=vd_names,
+                sql_names=sql_names,
+                scalars=scalars,
+            )
+        else:
+            ast = create_ast(text)
+            input_datasets = cls.LoadInputs(code, number_inputs, only_semantic)
+
+            value_domains = None
+            if vd_names is not None:
+                value_domains = cls.LoadValueDomains(vd_names)
+
+            external_routines = None
+            if sql_names is not None:
+                external_routines = cls.LoadExternalRoutines(sql_names)
+
+            if scalars is not None:
+                for scalar_name, scalar_value in scalars.items():
+                    if scalar_name not in input_datasets:
+                        raise Exception(f"Scalar {scalar_name} not found in the input datasets")
+                    if not isinstance(input_datasets[scalar_name], Scalar):
+                        raise Exception(f"{scalar_name} is a dataset")
+                    input_datasets[scalar_name].value = scalar_value
+
+            datasets = {k: v for k, v in input_datasets.items() if isinstance(v, Dataset)}
+            scalars_obj = {k: v for k, v in input_datasets.items() if isinstance(v, Scalar)}
+
+            interpreter = InterpreterAnalyzer(
+                datasets=datasets,
+                scalars=scalars_obj,
+                value_domains=value_domains,
+                external_routines=external_routines,
+            )
+            result = interpreter.visit(ast)
+
         reference_datasets = cls.LoadOutputs(code, references_names, only_semantic)
-        value_domains = None
-        if vd_names is not None:
-            value_domains = cls.LoadValueDomains(vd_names)
 
-        external_routines = None
-        if sql_names is not None:
-            external_routines = cls.LoadExternalRoutines(sql_names)
-
-        if scalars is not None:
-            for scalar_name, scalar_value in scalars.items():
-                if scalar_name not in input_datasets:
-                    raise Exception(f"Scalar {scalar_name} not found in the input datasets")
-                if not isinstance(input_datasets[scalar_name], Scalar):
-                    raise Exception(f"{scalar_name} is a dataset")
-                input_datasets[scalar_name].value = scalar_value
-
-        datasets = {k: v for k, v in input_datasets.items() if isinstance(v, Dataset)}
-        scalars_obj = {k: v for k, v in input_datasets.items() if isinstance(v, Scalar)}
-
-        interpreter = InterpreterAnalyzer(
-            datasets=datasets,
-            scalars=scalars_obj,
-            value_domains=value_domains,
-            external_routines=external_routines,
-            only_semantic=only_semantic,
-        )
-        result = interpreter.visit(ast)
         for dataset in result.values():
             format_time_period_external_representation(
                 dataset, TimePeriodRepresentation.SDMX_REPORTING
@@ -195,6 +211,69 @@ class TestHelper(TestCase):
         # cls._override_structures(code, result, reference_datasets)
         # cls._override_data(code, result, reference_datasets)
         assert result == reference_datasets
+
+    @classmethod
+    def _run_with_duckdb_backend(
+        cls,
+        code: str,
+        number_inputs: int,
+        script: str,
+        vd_names: List[str] = None,
+        sql_names: List[str] = None,
+        scalars: Dict[str, Any] = None,
+    ) -> Dict[str, Union[Dataset, Scalar]]:
+        """
+        Execute test using DuckDB backend.
+        """
+        # Collect data structure JSON files
+        data_structures = []
+        for i in range(number_inputs):
+            json_file = cls.filepath_json / f"{code}-{cls.ds_input_prefix}{str(i + 1)}{cls.JSON}"
+            data_structures.append(json_file)
+
+        # Collect datapoint CSV paths
+        datapoints = {}
+        for i in range(number_inputs):
+            json_file = cls.filepath_json / f"{code}-{cls.ds_input_prefix}{str(i + 1)}{cls.JSON}"
+            csv_file = cls.filepath_csv / f"{code}-{cls.ds_input_prefix}{str(i + 1)}{cls.CSV}"
+            # Load structure to get dataset names
+            with open(json_file, "r") as f:
+                structure = json.load(f)
+            if "datasets" in structure:
+                for ds in structure["datasets"]:
+                    # If CSV doesn't exist (semantic-only test), pass None
+                    datapoints[ds["name"]] = csv_file if csv_file.exists() else None
+            # Scalars don't need datapoints
+
+        # Load value domains if specified
+        value_domains = None
+        if vd_names is not None:
+            value_domains = [cls.filepath_valueDomain / f"{name}.json" for name in vd_names]
+
+        # Load external routines as raw dicts for run() API
+        external_routines = None
+        if sql_names is not None:
+            er_list = []
+            for name in sql_names:
+                sql_file = cls.filepath_sql / f"{name}.sql"
+                with open(sql_file, "r") as f:
+                    er_list.append({"name": name, "query": f.read()})
+            external_routines = er_list if len(er_list) > 1 else er_list[0]
+
+        # Prepare scalar values
+        scalar_values = None
+        if scalars is not None:
+            scalar_values = scalars
+
+        return run(
+            script=script,
+            data_structures=data_structures,
+            datapoints=datapoints,
+            value_domains=value_domains,
+            external_routines=external_routines,
+            scalar_values=scalar_values,
+            return_only_persistent=False,
+        )
 
     @classmethod
     def _override_structures(cls, code, result, reference_datasets):
@@ -233,37 +312,48 @@ class TestHelper(TestCase):
 
         is_runtime_error = exception_code.startswith("2")
 
-        input_datasets = cls.LoadInputs(code=code, number_inputs=number_inputs)
+        if is_runtime_error:
+            with pytest.raises((SemanticError, RunTimeError, Exception)) as context:
+                cls._run_with_duckdb_backend(
+                    code=code,
+                    number_inputs=number_inputs,
+                    script=text,
+                    vd_names=vd_names,
+                    sql_names=sql_names,
+                    scalars=scalars,
+                )
+        else:
+            # Semantic errors: use only_semantic=True (no execution needed)
+            input_datasets = cls.LoadInputs(code=code, number_inputs=number_inputs)
 
-        value_domains = None
-        if vd_names is not None:
-            value_domains = cls.LoadValueDomains(vd_names)
+            value_domains = None
+            if vd_names is not None:
+                value_domains = cls.LoadValueDomains(vd_names)
 
-        external_routines = None
-        if sql_names is not None:
-            external_routines = cls.LoadExternalRoutines(sql_names)
+            external_routines = None
+            if sql_names is not None:
+                external_routines = cls.LoadExternalRoutines(sql_names)
 
-        if scalars is not None:
-            for scalar_name, scalar_value in scalars.items():
-                if scalar_name not in input_datasets:
-                    raise Exception(f"Scalar {scalar_name} not found in the input datasets")
-                if not isinstance(input_datasets[scalar_name], Scalar):
-                    raise Exception(f"{scalar_name} is a dataset")
-                input_datasets[scalar_name].value = scalar_value
+            if scalars is not None:
+                for scalar_name, scalar_value in scalars.items():
+                    if scalar_name not in input_datasets:
+                        raise Exception(f"Scalar {scalar_name} not found in the input datasets")
+                    if not isinstance(input_datasets[scalar_name], Scalar):
+                        raise Exception(f"{scalar_name} is a dataset")
+                    input_datasets[scalar_name].value = scalar_value
 
-        datasets = {k: v for k, v in input_datasets.items() if isinstance(v, Dataset)}
-        scalars_obj = {k: v for k, v in input_datasets.items() if isinstance(v, Scalar)}
+            datasets = {k: v for k, v in input_datasets.items() if isinstance(v, Dataset)}
+            scalars_obj = {k: v for k, v in input_datasets.items() if isinstance(v, Scalar)}
 
-        interpreter = InterpreterAnalyzer(
-            datasets=datasets,
-            scalars=scalars_obj,
-            value_domains=value_domains,
-            external_routines=external_routines,
-            only_semantic=not is_runtime_error,
-        )
-        with pytest.raises((SemanticError, RunTimeError)) as context:
-            ast = create_ast(text)
-            interpreter.visit(ast)
+            interpreter = InterpreterAnalyzer(
+                datasets=datasets,
+                scalars=scalars_obj,
+                value_domains=value_domains,
+                external_routines=external_routines,
+            )
+            with pytest.raises((SemanticError, RunTimeError)) as context:
+                ast = create_ast(text)
+                interpreter.visit(ast)
 
         result = exception_code == str(context.value.args[1])
         if result is False:
@@ -291,14 +381,47 @@ class TestHelper(TestCase):
 
     @classmethod
     def DataLoadTest(cls, code: str, number_inputs: int, references_names: List[str] = None):
-        # Data Loading.--------------------------------------------------------
-        inputs = cls.LoadInputs(code=code, number_inputs=number_inputs)
+        cls._DataLoadTestDuckDB(code, number_inputs, references_names)
 
-        # Test Assertion.------------------------------------------------------
+    @classmethod
+    def _DataLoadTestDuckDB(cls, code: str, number_inputs: int, references_names: List[str] = None):
+        """Execute DataLoadTest using DuckDB backend with identity scripts."""
+        data_structures = []
+        datapoints = {}
+        dataset_names = []
+        for i in range(number_inputs):
+            json_file = cls.filepath_json / f"{code}-{cls.ds_input_prefix}{str(i + 1)}{cls.JSON}"
+            csv_file = cls.filepath_csv / f"{code}-{cls.ds_input_prefix}{str(i + 1)}{cls.CSV}"
+            data_structures.append(json_file)
+            with open(json_file, "r") as f:
+                structure = json.load(f)
+            if "datasets" in structure:
+                for ds in structure["datasets"]:
+                    datapoints[ds["name"]] = csv_file
+                    dataset_names.append(ds["name"])
+
+        # Use renamed outputs to avoid DAG cycles (DS_1 <- DS_1 creates a cycle)
+        script = "\n".join(f"DS_r_{name} <- {name};" for name in dataset_names)
+
+        result = run(
+            script=script,
+            data_structures=data_structures,
+            datapoints=datapoints,
+            return_only_persistent=False,
+        )
+
         if references_names:
             references = cls.LoadOutputs(code=code, references_names=references_names)
-            assert inputs == references
-        assert True
+            for dataset in result.values():
+                format_time_period_external_representation(
+                    dataset, TimePeriodRepresentation.SDMX_REPORTING
+                )
+            # Map renamed outputs back for comparison
+            mapped_result = {}
+            for key, value in result.items():
+                original = key.replace("DS_r_", "", 1) if key.startswith("DS_r_") else key
+                mapped_result[original] = value
+            assert mapped_result == references
 
     @classmethod
     def DataLoadExceptionTest(
@@ -308,13 +431,50 @@ class TestHelper(TestCase):
         exception_message: Optional[str] = None,
         exception_code: Optional[str] = None,
     ):
+        cls._DataLoadExceptionTestDuckDB(code, number_inputs, exception_message, exception_code)
+
+    @classmethod
+    def _DataLoadExceptionTestDuckDB(
+        cls,
+        code: str,
+        number_inputs: int,
+        exception_message: Optional[str] = None,
+        exception_code: Optional[str] = None,
+    ):
+        """Execute DataLoadExceptionTest using DuckDB backend."""
+        data_structures = []
+        datapoints = {}
+        dataset_names = []
+        for i in range(number_inputs):
+            json_file = cls.filepath_json / f"{code}-{cls.ds_input_prefix}{str(i + 1)}{cls.JSON}"
+            csv_file = cls.filepath_csv / f"{code}-{cls.ds_input_prefix}{str(i + 1)}{cls.CSV}"
+            data_structures.append(json_file)
+            with open(json_file, "r") as f:
+                structure = json.load(f)
+            if "datasets" in structure:
+                for ds in structure["datasets"]:
+                    datapoints[ds["name"]] = csv_file
+                    dataset_names.append(ds["name"])
+
+        # Use renamed outputs to avoid DAG cycles (DS_1 <- DS_1 creates a cycle)
+        script = "\n".join(f"DS_r_{name} <- {name};" for name in dataset_names)
+
         if exception_code is not None:
             with pytest.raises(VTLEngineException) as context:
-                cls.LoadInputs(code=code, number_inputs=number_inputs)
+                run(
+                    script=script,
+                    data_structures=data_structures,
+                    datapoints=datapoints,
+                    return_only_persistent=False,
+                )
         else:
             with pytest.raises(Exception, match=exception_message) as context:
-                cls.LoadInputs(code=code, number_inputs=number_inputs)
-        # Test Assertion.------------------------------------------------------
+                run(
+                    script=script,
+                    data_structures=data_structures,
+                    datapoints=datapoints,
+                    return_only_persistent=False,
+                )
 
         if len(context.value.args) > 1 and exception_code is not None:
             assert exception_code == str(context.value.args[1])

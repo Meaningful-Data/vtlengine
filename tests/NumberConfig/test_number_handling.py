@@ -11,6 +11,7 @@ import pandas as pd
 import pytest
 
 from vtlengine.API import run
+from vtlengine.Exceptions import RunTimeError
 from vtlengine.Utils._number_config import (
     DEFAULT_SIGNIFICANT_DIGITS,
     DISABLED_VALUE,
@@ -60,9 +61,19 @@ def test_parse_env_value_valid(env_value: str, expected: int) -> None:
 def test_parse_env_value_invalid(env_value: str) -> None:
     with (
         mock.patch.dict(os.environ, {ENV_COMPARISON_THRESHOLD: env_value}),
-        pytest.raises(ValueError, match="Invalid value"),
+        pytest.raises(RunTimeError, match="Invalid value"),
     ):
         _parse_env_value(ENV_COMPARISON_THRESHOLD)
+
+
+def test_GH_676() -> None:
+    """Invalid env-var value triggers 0-4-1-1."""
+    with (
+        mock.patch.dict(os.environ, {ENV_COMPARISON_THRESHOLD: "abc"}),
+        pytest.raises(RunTimeError) as ctx,
+    ):
+        _parse_env_value(ENV_COMPARISON_THRESHOLD)
+    assert ctx.value.args[1] == "0-4-1-1"
 
 
 # --- Effective Digits ---
@@ -257,7 +268,11 @@ def test_vtl_comparison_with_tolerance(
 ) -> None:
     with mock.patch.dict(os.environ, {ENV_COMPARISON_THRESHOLD: "10"}):
         datapoints = pd.DataFrame({"Id_1": list(range(1, len(me_values) + 1)), "Me_1": me_values})
-        result = run(script=script, data_structures=ds_structure, datapoints={"DS_1": datapoints})
+        result = run(
+            script=script,
+            data_structures=ds_structure,
+            datapoints={"DS_1": datapoints},
+        )
         assert result["DS_r"].data["bool_var"].tolist() == expected
 
 

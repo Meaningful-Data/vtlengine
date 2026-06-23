@@ -40,8 +40,9 @@ jobs:
             const isPrerelease = /rc|alpha|beta|dev/.test(version);
             core.info(`Pre-release: ${isPrerelease}`);
 
-            // Tags reachable from this commit — scopes previous-release lookup and
-            // pre-release cleanup to the current branch's lineage.
+            // Tags reachable from this commit — scopes pre-release cleanup
+            // to the current branch's lineage so a stable on one release
+            // train doesn't sweep pre-releases on another.
             const { execSync } = require('child_process');
             const reachableTags = new Set(
               execSync('git tag --merged HEAD', { encoding: 'utf8' })

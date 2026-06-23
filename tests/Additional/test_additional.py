@@ -3,8 +3,7 @@ from pathlib import Path
 from typing import Union
 
 from tests.Helper import TestHelper
-from vtlengine.API import create_ast
-from vtlengine.Interpreter import InterpreterAnalyzer
+from vtlengine.API import run
 
 
 class AdditionalHelper(TestHelper):
@@ -26,9 +25,12 @@ class AdditionalHelper(TestHelper):
         """ """
         if text is None:
             text = cls.LoadVTL(code)
-        ast = create_ast(text)
-        interpreter = InterpreterAnalyzer({})
-        result = interpreter.visit(ast)
+        result = run(
+            script=text,
+            data_structures={"datasets": []},
+            datapoints={},
+            return_only_persistent=False,
+        )
         assert result["DS_r"].value == reference_value
 
 
@@ -4376,7 +4378,6 @@ class DatesTest(AdditionalHelper):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        # with pytest.raises(Exception, match="cast .+? without providing a mask"):
         self.BaseTest(
             text=None,
             code=code,

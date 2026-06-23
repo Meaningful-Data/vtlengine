@@ -54,7 +54,7 @@ centralised_messages = {
         "description": "Occurs when the input CSV file does not contain any data.",
     },
     "0-1-1-8": {
-        "message": "The following Identifiers {ids} were not found , review file {file}.",
+        "message": "The following Identifiers {ids} were not found, review file {file}.",
         "description": "Raised when certain expected Identifiers are missing in the input Dataset.",
     },
     "0-1-1-9": {
@@ -81,14 +81,15 @@ centralised_messages = {
         "description": "Raised when the provided time period output format "
         "is not one of the supported representations.",
     },
+    "0-1-1-16": {
+        "message": "Invalid output_format value: '{value}'. Allowed formats: {valid_options}.",
+        "description": "Raised when the provided output_format is not one "
+        "of the supported file formats.",
+    },
     "0-1-2-3": {
         "message": "{element_type} '{element}' is/are duplicated.",
         "description": "Occurs when an element (e.g., Identifier or component) "
         "appears more than once.",
-    },
-    "0-1-2-5": {
-        "message": "File {file} must be encoded in utf-8 (without BOM).",
-        "description": "Raised when the file encoding is not UTF-8 without BOM.",
     },
     "0-1-2-6": {
         "message": "Not found scalar {name} in datastructures",
@@ -107,7 +108,7 @@ centralised_messages = {
     # Run SDMX errors
     "0-1-3-1": {
         "message": "Expected exactly one input Dataset in the whole script, "
-        "found: {number_Datasets}",
+        "found: {number_datasets}",
         "description": "Raised when the script expects exactly one input Dataset but finds "
         "more than one.",
     },
@@ -223,12 +224,26 @@ centralised_messages = {
         "description": "Raised when the input data contains columns that are not "
         "defined in the DataStructure.",
     },
+    "0-3-1-16": {
+        "message": "On Dataset {name} loading: the Parquet file is corrupted or invalid. "
+        'Error found: "{error}"',
+        "description": "Raised when DuckDB cannot read a Parquet file because it is "
+        "corrupted, truncated, or not a valid Parquet file (e.g. missing magic bytes).",
+    },
     # Input validation errors for URL datapoints
     "0-1-3-8": {
         "message": "data_structures must be a file path or URL "
         "when datapoints contains HTTP/HTTPS URLs.",
         "description": "Raised when URL datapoints are provided but data_structures is not a "
         "file path or URL for fetching the SDMX structure definition.",
+    },
+    # Env var errors
+    "0-4-1-1": {
+        "message": "Invalid value for {env_var}: {value}. "
+        "Expected an integer between {min_value} and {max_value}, "
+        "or {disable_value} to disable.",
+        "description": "Raised when the provided time period output format "
+        "is not one of the supported representations.",
     },
     # ------------Operators-------------
     # General Semantic errors
@@ -783,6 +798,12 @@ centralised_messages = {
         "description": "Occurs when a Dataset is incorrectly used as a parameter in a "
         "string operation.",
     },
+    "1-1-18-11": {
+        "message": "At op {op}: Hamming distance requires both strings to have the same length, "
+        "got lengths {len1} and {len2}.",
+        "description": "Raised when the hamming method of string_distance is invoked on two "
+        "strings of unequal length.",
+    },
     # Time operators
     "1-1-19-1": {
         "message": "At op {op}: {op} must have a {data_type} type on {comp}.",
@@ -920,6 +941,13 @@ centralised_messages = {
         "description": "Occurs when an aggregation operation is attempted inside a "
         "Calc expression.",
     },
+    "1-2-15": {
+        "message": "At op {op}: incompatible identifier sets between datasets {left_name} {left} "
+        "and {right_name} {right}: the operands must have the same identifiers, or one set must "
+        "be a subset of the other.",
+        "description": "Raised when a binary dataset operator is applied to two datasets whose "
+        "identifier sets are neither equal nor in a subset relationship.",
+    },
     # AST Helpers
     "1-3-1-1": {
         "message": "At op {op}: User defined {option} declared as {type_1}, found {type_2}.",
@@ -995,6 +1023,29 @@ centralised_messages = {
         "aggregation.",
         "description": "Raised when a Time aggregation operator is missing the operand "
         "definition outside an aggregation context.",
+    },
+    # ---------- Viral Propagation ----------
+    "1-3-3-1": {
+        "message": "Duplicate viral propagation rule for variable {name}.",
+        "description": "Raised when two define viral propagation statements "
+        "target the same variable.",
+    },
+    "1-3-3-2": {
+        "message": "Duplicate viral propagation rule for value domain {name}.",
+        "description": "Raised when two define viral propagation statements "
+        "target the same value domain.",
+    },
+    "1-3-3-3": {
+        "message": "Cannot mix enumerated and aggregate clauses in viral "
+        "propagation definition {name}.",
+        "description": "Raised when a viral propagation definition contains both "
+        "enumerated (when/then) and aggregate clauses.",
+    },
+    "1-3-3-4": {
+        "message": "Duplicate enumeration combination {values} in viral "
+        "propagation definition {name}.",
+        "description": "Raised when the same value pair is described more than "
+        "once in an enumerated viral propagation.",
     },
     # ---------- Interpreter ----------
     "1-3-5": {

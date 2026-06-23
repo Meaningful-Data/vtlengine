@@ -37,8 +37,9 @@ class CrossJoinIdentifiersTypeChecking(TestCrossJoinTypeChecking):
         # 4 For clause- for the moment only op cross_join
         # 1 Number of test
         number_inputs = 2
-        references_names = ["DS_r"]
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-9"
+        )
 
     def test_2(self):
         """
@@ -51,9 +52,11 @@ class CrossJoinIdentifiersTypeChecking(TestCrossJoinTypeChecking):
         Goal: Check Exception.
         """
         code = "2-2-4-2"
+        # Same as 2-2-4-1: shared identifiers make the cross_join result ambiguous.
         number_inputs = 2
-        references_names = ["DS_r"]
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-9"
+        )
 
     def test_3(self):
         """

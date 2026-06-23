@@ -118,7 +118,11 @@ class TestDateTimePeriodComparison:
             "DS_date": pd.DataFrame({"Id_1": ids, "Me_1": date_vals}),
             "DS_period": pd.DataFrame({"Id_1": ids, "Me_1": period_vals}),
         }
-        result = run(script=script, data_structures=DATA_STRUCTURES, datapoints=datapoints)
+        result = run(
+            script=script,
+            data_structures=DATA_STRUCTURES,
+            datapoints=datapoints,
+        )
         assert "DS_r" in result
         assert list(result["DS_r"].data["bool_var"]) == expected
 
@@ -174,7 +178,11 @@ class TestDurationComparison:
         ],
     )
     def test_scalar_comparison(self, script: str, expected: bool) -> None:
-        result = run(script=script, data_structures={"datasets": []}, datapoints={})
+        result = run(
+            script=script,
+            data_structures={"datasets": []},
+            datapoints={},
+        )
         scalar = result["DS_r"]
         assert not isinstance(scalar, Dataset)
         assert scalar.value == expected
@@ -196,7 +204,11 @@ class TestDurationComparison:
             "DS_1": pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": ["A", "M", "D"]}),
             "DS_2": pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": ["M", "A", "W"]}),
         }
-        result = run(script=script, data_structures=DURATION_TWO_DS, datapoints=datapoints)
+        result = run(
+            script=script,
+            data_structures=DURATION_TWO_DS,
+            datapoints=datapoints,
+        )
         ds = result["DS_r"]
         assert isinstance(ds, Dataset)
         assert list(ds.data["bool_var"]) == expected
@@ -214,7 +226,11 @@ class TestDurationComparison:
         datapoints = {
             "DS_1": pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": ["A", "Q", "D"]}),
         }
-        result = run(script=script, data_structures=DURATION_SINGLE_DS, datapoints=datapoints)
+        result = run(
+            script=script,
+            data_structures=DURATION_SINGLE_DS,
+            datapoints=datapoints,
+        )
         ds = result["DS_r"]
         assert isinstance(ds, Dataset)
         assert list(ds.data["bool_var"]) == expected
@@ -237,7 +253,11 @@ class TestDurationComparison:
         datapoints = {
             "DS_1": pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": ["A", "M", "D"]}),
         }
-        result = run(script=script, data_structures=DURATION_SINGLE_DS, datapoints=datapoints)
+        result = run(
+            script=script,
+            data_structures=DURATION_SINGLE_DS,
+            datapoints=datapoints,
+        )
         ds = result["DS_r"]
         assert isinstance(ds, Dataset)
         assert list(ds.data["Me_2"]) == expected
@@ -297,7 +317,11 @@ class TestDurationComparison:
                 }
             ),
         }
-        result = run(script=script, data_structures=data_structures, datapoints=datapoints)
+        result = run(
+            script=script,
+            data_structures=data_structures,
+            datapoints=datapoints,
+        )
         ds = result["DS_r"]
         assert isinstance(ds, Dataset)
         assert list(ds.data["Me_3"]) == expected
@@ -350,7 +374,11 @@ class TestTimePeriodComparison:
         ],
     )
     def test_scalar_comparison(self, script: str, expected: bool) -> None:
-        result = run(script=script, data_structures={"datasets": []}, datapoints={})
+        result = run(
+            script=script,
+            data_structures={"datasets": []},
+            datapoints={},
+        )
         scalar = result["DS_r"]
         assert not isinstance(scalar, Dataset)
         assert scalar.value == expected
@@ -370,7 +398,11 @@ class TestTimePeriodComparison:
             "DS_1": pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": ["2020Q1", "2021M06", "2020-A1"]}),
             "DS_2": pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": ["2020Q3", "2020M12", "2021-A1"]}),
         }
-        result = run(script=script, data_structures=TIME_PERIOD_TWO_DS, datapoints=datapoints)
+        result = run(
+            script=script,
+            data_structures=TIME_PERIOD_TWO_DS,
+            datapoints=datapoints,
+        )
         ds = result["DS_r"]
         assert isinstance(ds, Dataset)
         assert list(ds.data["bool_var"]) == expected
@@ -388,7 +420,11 @@ class TestTimePeriodComparison:
         datapoints = {
             "DS_1": pd.DataFrame({"Id_1": [1, 2], "Me_1": ["2020Q1", "2020Q3"]}),
         }
-        result = run(script=script, data_structures=TIME_PERIOD_SINGLE_DS, datapoints=datapoints)
+        result = run(
+            script=script,
+            data_structures=TIME_PERIOD_SINGLE_DS,
+            datapoints=datapoints,
+        )
         ds = result["DS_r"]
         assert isinstance(ds, Dataset)
         assert list(ds.data["bool_var"]) == expected
@@ -411,7 +447,11 @@ class TestTimePeriodComparison:
         datapoints = {
             "DS_1": pd.DataFrame({"Id_1": [1, 2], "Me_1": ["2020Q1", "2020Q3"]}),
         }
-        result = run(script=script, data_structures=TIME_PERIOD_SINGLE_DS, datapoints=datapoints)
+        result = run(
+            script=script,
+            data_structures=TIME_PERIOD_SINGLE_DS,
+            datapoints=datapoints,
+        )
         ds = result["DS_r"]
         assert isinstance(ds, Dataset)
         assert list(ds.data["Me_2"]) == expected
@@ -462,7 +502,11 @@ class TestTimePeriodComparison:
                 }
             ),
         }
-        result = run(script=script, data_structures=data_structures, datapoints=datapoints)
+        result = run(
+            script=script,
+            data_structures=data_structures,
+            datapoints=datapoints,
+        )
         ds = result["DS_r"]
         assert isinstance(ds, Dataset)
         assert list(ds.data["Me_3"]) == expected

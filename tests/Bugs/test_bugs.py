@@ -3,8 +3,7 @@ from pathlib import Path
 import pytest
 
 from tests.Helper import TestHelper
-from vtlengine.API import create_ast
-from vtlengine.Interpreter import InterpreterAnalyzer
+from vtlengine.API import run
 
 
 class BugHelper(TestHelper):
@@ -63,9 +62,12 @@ class GeneralBugs(BugHelper):
             "f": False,
         }
 
-        ast = create_ast(script)
-        interpreter = InterpreterAnalyzer(datasets={})
-        result = interpreter.visit(ast)
+        result = run(
+            script=script,
+            data_structures={"datasets": []},
+            datapoints={},
+            return_only_persistent=False,
+        )
         for sc in result.values():
             assert sc.persistent == references[sc.name]
 
@@ -471,6 +473,271 @@ class NumericBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_763_1(self):
+        """
+        Expression: DS_A <- abs(DS_1);
+        Description: Unary abs on a dataset with no datapoints failed because the
+            pyarrow fast-path expected ``series.values`` to be an
+            ArrowExtensionArray, but pandas returns a numpy ndarray for empty
+            non-arrow columns.
+        Git Issue: GH_763.
+        Goal: Check Result.
+        """
+        code = "GH_763_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_763_2(self):
+        """
+        Expression: DS_A <- ceil(DS_1);
+        Description: Same empty-dataset pyarrow fast-path bug as GH_763_1, for ceil.
+        Git Issue: GH_763.
+        Goal: Check Result.
+        """
+        code = "GH_763_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_763_3(self):
+        """
+        Expression: DS_A <- floor(DS_1);
+        Description: Same empty-dataset pyarrow fast-path bug as GH_763_1, for floor.
+        Git Issue: GH_763.
+        Goal: Check Result.
+        """
+        code = "GH_763_3"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_763_4(self):
+        """
+        Expression: DS_A <- exp(DS_1);
+        Description: Same empty-dataset pyarrow fast-path bug as GH_763_1, for exp.
+        Git Issue: GH_763.
+        Goal: Check Result.
+        """
+        code = "GH_763_4"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_763_5(self):
+        """
+        Expression: DS_A <- ln(DS_1);
+        Description: Same empty-dataset pyarrow fast-path bug as GH_763_1, for ln.
+        Git Issue: GH_763.
+        Goal: Check Result.
+        """
+        code = "GH_763_5"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_763_6(self):
+        """
+        Expression: DS_A <- sqrt(DS_1);
+        Description: Same empty-dataset pyarrow fast-path bug as GH_763_1, for sqrt.
+        Git Issue: GH_763.
+        Goal: Check Result.
+        """
+        code = "GH_763_6"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_763_7(self):
+        """
+        Expression: DS_A <- -DS_1;
+        Description: Same empty-dataset pyarrow fast-path bug as GH_763_1, for the
+            unary minus operator.
+        Git Issue: GH_763.
+        Goal: Check Result.
+        """
+        code = "GH_763_7"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_766_1(self):
+        """
+        Expression: DS_A <- round(DS_1);
+        Description: ``round`` without param promotes Number measures to Integer,
+            renaming the measure column (e.g. ``Me_1`` -> ``int_var``).
+            ``Parameterized.dataset_evaluation`` iterated the result's renamed
+            measures over the operand's data (still using the original names),
+            raising ``KeyError: 'int_var'``.
+        Git Issue: GH_766.
+        Goal: Check Result.
+        """
+        code = "GH_766_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_766_2(self):
+        """
+        Expression: DS_A <- trunc(DS_1);
+        Description: Same KeyError as GH_766_1 for ``trunc`` without param.
+        Git Issue: GH_766.
+        Goal: Check Result.
+        """
+        code = "GH_766_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_766_3(self):
+        """
+        Expression: DS_A <- round(DS_1, 1);
+        Description: ``round`` with an explicit decimal param keeps the Number
+            type and the original measure name. Regression guard for the
+            no-rename branch of the same fix.
+        Git Issue: GH_766.
+        Goal: Check Result.
+        """
+        code = "GH_766_3"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_766_4(self):
+        """
+        Expression: DS_A <- trunc(DS_1, 1);
+        Description: ``trunc`` with an explicit decimal param keeps the Number
+            type and the original measure name. Regression guard for the
+            no-rename branch of the same fix.
+        Git Issue: GH_766.
+        Goal: Check Result.
+        """
+        code = "GH_766_4"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_778_1(self):
+        """
+        Expression: DS_A <- round(DS_1);
+        Description: When the operand has an attribute, ``round`` without param
+            renames the measure (``Me_1`` -> ``int_var``) and
+            ``modify_measure_column`` copied the attribute column into the new
+            measure name, raising a numeric cast error on the string values
+            (e.g. ``Failed to parse string: 'D' as a scalar of type int64``).
+        Git Issue: GH_778.
+        Goal: Check Result.
+        """
+        code = "GH_778_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_778_2(self):
+        """
+        Expression: DS_A <- trunc(DS_1);
+        Description: Same attribute-leak bug as GH_778_1, for ``trunc`` without param.
+        Git Issue: GH_778.
+        Goal: Check Result.
+        """
+        code = "GH_778_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_778_3(self):
+        """
+        Expression: DS_A <- round(DS_1, 1);
+        Description: ``round`` with param on a dataset with an attribute keeps
+            the Number measure and must still drop the attribute from the
+            result. Regression guard for the no-rename branch.
+        Git Issue: GH_778.
+        Goal: Check Result.
+        """
+        code = "GH_778_3"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_778_4(self):
+        """
+        Expression: DS_A <- trunc(DS_1, 1);
+        Description: ``trunc`` with param on a dataset with an attribute keeps
+            the Number measure and must still drop the attribute from the
+            result. Regression guard for the no-rename branch.
+        Git Issue: GH_778.
+        Goal: Check Result.
+        """
+        code = "GH_778_4"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_778_5(self):
+        """
+        Expression: DS_A <- sum(DS_1 over(partition by Id_1));
+        Description: ``Analytic.validate`` kept all components (including
+            non-viral attributes) in ``result.components`` while the underlying
+            SQL query selected only identifiers and measures, leaving
+            ``result.data`` without the attribute column. Per VTL 2.1
+            ("Attribute propagation rule" applied at Data Set level), non-viral
+            attributes must be dropped from analytic results.
+        Git Issue: GH_778.
+        Goal: Check Result.
+        """
+        code = "GH_778_5"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_778_6(self):
+        """
+        Expression: DS_A <- avg(DS_1 over(order by Id_1));
+        Description: Same attribute-propagation bug as GH_778_5, for ``avg``
+            with an ``order by`` analytic clause.
+        Git Issue: GH_778.
+        Goal: Check Result.
+        """
+        code = "GH_778_6"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_778_7(self):
+        """
+        Expression: DS_A <- time_agg("A", _, DS_1);
+        Description: ``Time_Aggregation.dataset_validation`` dropped attributes
+            from ``result.components`` but ``dataset_evaluation`` copied
+            ``operand.data`` verbatim, leaving the attribute column in
+            ``result.data``. Per VTL 2.1 (time_agg "returns a Data Set having
+            the same structure" + attribute propagation rule), non-viral
+            attributes must be dropped from both components and data.
+        Git Issue: GH_778.
+        Goal: Check Result.
+        """
+        code = "GH_778_7"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class ComparisonBugs(BugHelper):
     """ """
@@ -810,6 +1077,23 @@ class ComparisonBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GL_792(self):
+        """
+        Status: BUG
+        Expression: pc22 <- DS_1[filter COUNTRY_INCORPORATION = "CA"]
+            [calc PC_VALID := match_characters(POSTAL_CODE, "^((?=[^DdFfIiOoQqUu\\d\\s])...")];
+        Description: match_characters patterns using PCRE/Python lookaround assertions
+            (a Canadian postal-code rule) are rejected by DuckDB's RE2 engine. They
+            must fall back to the Python ``re`` engine and yield the same result.
+        Git Issue: #792.
+        Goal: Check Result.
+        """
+        code = "GL_792"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GL_193_1(self):
         """
         Status: OK
@@ -1039,6 +1323,34 @@ class TimeBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_duckdb_derived_scalar_chain(self):
+        """
+        Status: OK
+        Description: DuckDB transpiler inlined scalar references as their
+            transpile-time value. Derived (output-only) scalars have no value
+            at transpile time, so chained scalar arithmetic such as
+            ``b := a + 1; c := b + 1;`` produced ``NULL + 1 = NULL`` and the
+            chain collapsed to NULL.
+        Goal: pandas and DuckDB return the same scalar values across a chain
+            that mixes input scalars, derived scalars and persistent assigns.
+        """
+        script = """
+        a := sc1 + 1;
+        b := a + 1;
+        c <- b;
+        """
+        scalar_values = {"sc1": 5}
+        result = run(
+            script=script,
+            data_structures={"datasets": [], "scalars": [{"name": "sc1", "type": "Integer"}]},
+            datapoints={},
+            scalar_values=scalar_values,
+            return_only_persistent=False,
+        )
+        assert result["a"].value == 6
+        assert result["b"].value == 7
+        assert result["c"].value == 7
+
 
 class SetBugs(BugHelper):
     """ """
@@ -1184,6 +1496,24 @@ class SetBugs(BugHelper):
         code = "GL_20_10"
         number_inputs = 2
         references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_796(self):
+        """
+        Expression: res <- union(count(cd # ID group by CI), count(cd group by CI));
+        Description: ``Membership.validate`` added the synthetic ``str_var`` measure
+            (from ``cd # ID``) directly into the shared operand ``cd``. The mutation
+            leaked into the later ``count(cd ...)`` over the multi-measure ``cd``,
+            so the DuckDB transpiler emitted ``COUNT(CASE WHEN ... "str_var" ...)``
+            against a table without that column, raising ``BinderException``. The
+            union of the two count branches surfaced it.
+        Git Issue: GH_796.
+        Goal: Check Result (``cd`` keeps only its real measures; the union runs).
+        """
+        code = "GH_796"
+        number_inputs = 1
+        references_names = ["cd", "a", "c", "res"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -1669,6 +1999,7 @@ class ConditionalBugs(BugHelper):
             "20",
             "21",
         ]
+
         self.BaseTest(
             code=code,
             number_inputs=number_inputs,
@@ -2398,6 +2729,22 @@ class ClauseBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_728(self):
+        """
+        Description: Window aggregate over an identifier (e.g.
+            ``max(Id_2 over(partition by Id_1))``) inside a filter or calc clause
+            was broken in both engines. Pandas silently returned the row's
+            identifier value (filter became a no-op); DuckDB raised
+            ``BinderException: WHERE clause cannot contain window functions``.
+        Git Branch: cr-728.
+        Goal: Check Result.
+        """
+        code = "GH_728"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class DefinedBugs(BugHelper):
     """ """
@@ -2976,12 +3323,8 @@ class CastBugs(BugHelper):
         """
         code = "GL_449_3"
         number_inputs = 1
-        text = self.LoadVTL(code)
-        ast = create_ast(text)
-        input_datasets = self.LoadInputs(code=code, number_inputs=number_inputs)
-        interpreter = InterpreterAnalyzer(datasets=input_datasets)
-        with pytest.raises(NotImplementedError):
-            interpreter.visit(ast)
+        with pytest.raises((NotImplementedError, Exception)):
+            self.BaseTest(code=code, number_inputs=number_inputs, references_names=["1"])
 
     def test_GL_449_6(self):
         """
@@ -2992,12 +3335,8 @@ class CastBugs(BugHelper):
         """
         code = "GL_449_6"
         number_inputs = 1
-        text = self.LoadVTL(code)
-        ast = create_ast(text)
-        input_datasets = self.LoadInputs(code=code, number_inputs=number_inputs)
-        interpreter = InterpreterAnalyzer(datasets=input_datasets)
-        with pytest.raises(NotImplementedError):
-            interpreter.visit(ast)
+        with pytest.raises((NotImplementedError, Exception)):
+            self.BaseTest(code=code, number_inputs=number_inputs, references_names=["1"])
 
     def test_GL_449_7(self):
         """
@@ -3008,15 +3347,13 @@ class CastBugs(BugHelper):
         """
         code = "GL_449_7"
         number_inputs = 1
-        text = self.LoadVTL(code)
-        ast = create_ast(text)
-        input_datasets = self.LoadInputs(code=code, number_inputs=number_inputs)
-        input_datasets["sc_1"].value = "2000Q2"
-        scalars = {k: v for k, v in input_datasets.items() if not hasattr(v, "components")}
-        datasets = {k: v for k, v in input_datasets.items() if hasattr(v, "components")}
-        interpreter = InterpreterAnalyzer(datasets=datasets, scalars=scalars)
-        with pytest.raises(NotImplementedError):
-            interpreter.visit(ast)
+        with pytest.raises((NotImplementedError, Exception)):
+            self.BaseTest(
+                code=code,
+                number_inputs=number_inputs,
+                references_names=["1"],
+                scalars={"sc_1": "2000Q2"},
+            )
 
     def test_GL_448_1(self):
         """

@@ -2,10 +2,12 @@
 
 ## Supported Versions
 
-| Version | Supported |
-| ------- | --------- |
-| 1.5.x   | Yes       |
-| < 1.5.0 | No        |
+We support the latest released minor version and the `1.6.x` long-term support line. Older versions do not receive security fixes.
+
+| Version             | Supported |
+| ------------------- | --------- |
+| 1.6.x (latest, LTS) | Yes       |
+| < 1.6.0             | No        |
 
 ## Reporting a Vulnerability
 

@@ -1,5 +1,5 @@
-grammar Vtl;
-import VtlTokens;
+parser grammar Vtl;
+options { tokenVocab=VtlTokens; }
 
 start:
     (statement  EOL)* EOF
@@ -129,8 +129,10 @@ subspaceClause:
 /************************************************** JOIN FUNCITONS -------------------------------------------*/
 
 joinOperators:
-     joinKeyword=(INNER_JOIN | LEFT_JOIN) LPAREN joinClause joinBody RPAREN                                     # joinExpr
-     | joinKeyword=(FULL_JOIN | CROSS_JOIN) LPAREN joinClauseWithoutUsing joinBody RPAREN                       # joinExpr
+     INNER_JOIN LPAREN joinClause usingClause? joinBody RPAREN                      # innerJoinExpr
+     | LEFT_JOIN LPAREN joinClause (usingClause nvlJoinClause*)? joinBody RPAREN    # leftJoinExpr
+     | FULL_JOIN LPAREN joinClause (usingClause nvlJoinClause*)? joinBody RPAREN    # fullJoinExpr
+     | CROSS_JOIN LPAREN joinClause joinBody RPAREN                                 # crossJoinExpr
 ;
 
 /************************************************** END JOIN FUNCITONS -------------------------------------------*/
@@ -139,6 +141,32 @@ defOperators:
     DEFINE OPERATOR operatorID LPAREN (parameterItem (COMMA parameterItem)*)? RPAREN (RETURNS outputParameterType)? IS (expr) END OPERATOR        # defOperator
     | DEFINE DATAPOINT RULESET rulesetID LPAREN rulesetSignature RPAREN IS ruleClauseDatapoint END DATAPOINT RULESET                            # defDatapointRuleset
     | DEFINE HIERARCHICAL RULESET rulesetID LPAREN hierRuleSignature RPAREN IS ruleClauseHierarchical  END HIERARCHICAL RULESET                 # defHierarchical
+    | DEFINE VIRAL PROPAGATION varID LPAREN vpSignature RPAREN IS vpBody END VIRAL PROPAGATION                                                  # defViralPropagation
+;
+
+vpSignature:
+    (VARIABLE | VALUE_DOMAIN) IDENTIFIER
+;
+
+vpBody:
+    enumeratedVpClause (EOL enumeratedVpClause)* (EOL defaultVpClause)?
+    | aggregationVpClause
+;
+
+enumeratedVpClause:
+    (IDENTIFIER COLON)? WHEN vpCondition THEN constant
+;
+
+aggregationVpClause:
+    AGGREGATE_KW (MIN | MAX | SUM | AVG)
+;
+
+defaultVpClause:
+    ELSE constant
+;
+
+vpCondition:
+    constant (AND constant)?
 ;
 
 /* --------------------------------------------END DEFINE FUNCTIONS------------------------------------------------- */
@@ -146,7 +174,7 @@ defOperators:
 /*---------------------------------------------------FUNCTIONS-------------------------------------------------*/
 genericOperators:
     operatorID LPAREN (parameter (COMMA parameter)*)? RPAREN                                                                                                                    # callDataset
-    | EVAL LPAREN routineName LPAREN (varID|scalarItem)? (COMMA (varID|scalarItem))* RPAREN (LANGUAGE STRING_CONSTANT)? (RETURNS evalDatasetType)? RPAREN                               # evalAtom
+    | EVAL LPAREN routineName LPAREN (varID|scalarItem)? (COMMA (varID|scalarItem))* RPAREN (LANGUAGE STRING_CONSTANT)? (RETURNS evalDatasetType)? RPAREN                       # evalAtom
     | CAST LPAREN expr COMMA (basicScalarType|valueDomainName) (COMMA STRING_CONSTANT)? RPAREN                                                                                  # castExprDataset
 ;
 
@@ -168,11 +196,16 @@ parameter:
     | OPTIONAL
 ;
 
+stringDistanceMethods:
+    LEVENSHTEIN_METHOD | DAMERAU_LEVENSHTEIN_METHOD | HAMMING_METHOD | JARO_WINKLER_METHOD
+;
+
 stringOperators:
     op=(TRIM | LTRIM | RTRIM | UCASE | LCASE | LEN) LPAREN expr RPAREN	                                    # unaryStringFunction
     | SUBSTR LPAREN expr (((COMMA startParameter=optionalExpr) (COMMA endParameter=optionalExpr))? | COMMA startParameter=optionalExpr ) RPAREN     # substrAtom
     | REPLACE LPAREN expr COMMA param=expr ( COMMA optionalExpr)? RPAREN				                    # replaceAtom
     | INSTR LPAREN expr COMMA pattern=expr ( COMMA startParameter=optionalExpr)? (COMMA occurrenceParameter=optionalExpr)? RPAREN	            # instrAtom
+    | STRING_DISTANCE LPAREN method=stringDistanceMethods COMMA string1=expr COMMA string2=expr RPAREN                      # stringDistanceAtom
 ;
 
 stringOperatorsComponent:
@@ -180,6 +213,7 @@ stringOperatorsComponent:
     | SUBSTR LPAREN exprComponent (((COMMA startParameter=optionalExprComponent) (COMMA endParameter=optionalExprComponent))? | COMMA startParameter=optionalExprComponent )  RPAREN  # substrAtomComponent
     | REPLACE LPAREN exprComponent COMMA param=exprComponent ( COMMA optionalExprComponent)? RPAREN                                 # replaceAtomComponent
     | INSTR LPAREN exprComponent COMMA pattern=exprComponent ( COMMA startParameter=optionalExprComponent)? (COMMA occurrenceParameter=optionalExprComponent)? RPAREN    # instrAtomComponent
+    | STRING_DISTANCE LPAREN method=stringDistanceMethods COMMA string1=exprComponent COMMA string2=exprComponent RPAREN                      # stringDistanceAtomComponent
 ;
 
 numericOperators:
@@ -211,8 +245,8 @@ timeOperators:
     PERIOD_INDICATOR LPAREN expr? RPAREN                                                                                                # periodAtom
     | FILL_TIME_SERIES LPAREN expr (COMMA op=(SINGLE|ALL))? RPAREN                                                                         # fillTimeAtom
     | op=(FLOW_TO_STOCK | STOCK_TO_FLOW) LPAREN expr RPAREN	                                                                            # flowAtom
-    | TIMESHIFT LPAREN expr COMMA signedInteger RPAREN                                                                                  # timeShiftAtom
-    | TIME_AGG LPAREN periodIndTo=STRING_CONSTANT (COMMA periodIndFrom=(STRING_CONSTANT| OPTIONAL ))? (COMMA op=optionalExpr)? (COMMA delim=(FIRST|LAST))? RPAREN     # timeAggAtom
+    | TIMESHIFT LPAREN expr COMMA (intShift=signedInteger | varShift=varID) RPAREN                                                      # timeShiftAtom
+    | TIME_AGG LPAREN (periodIndToVar=varID | periodIndToConst=STRING_CONSTANT) (COMMA periodIndFrom=(STRING_CONSTANT| OPTIONAL ))? (COMMA op=optionalExpr)? (COMMA delim=(FIRST|LAST))? RPAREN     # timeAggAtom
     | CURRENT_DATE LPAREN RPAREN                                                                                                        # currentDateAtom
     | DATEDIFF LPAREN dateFrom=expr COMMA dateTo=expr RPAREN                    # dateDiffAtom
     | DATEADD LPAREN op=expr COMMA shiftNumber=expr COMMA periodInd=expr RPAREN # dateAddAtom
@@ -230,15 +264,15 @@ timeOperatorsComponent:
     PERIOD_INDICATOR LPAREN exprComponent? RPAREN                                                                                               # periodAtomComponent
     | FILL_TIME_SERIES LPAREN exprComponent (COMMA op=(SINGLE|ALL))? RPAREN                                                                        # fillTimeAtomComponent
     | op=(FLOW_TO_STOCK | STOCK_TO_FLOW) LPAREN exprComponent RPAREN	                                                                                    # flowAtomComponent
-    | TIMESHIFT LPAREN exprComponent COMMA signedInteger RPAREN                                                                                 # timeShiftAtomComponent
-    | TIME_AGG LPAREN periodIndTo=STRING_CONSTANT (COMMA periodIndFrom=(STRING_CONSTANT| OPTIONAL ))? (COMMA op=optionalExprComponent)? (COMMA delim=(FIRST|LAST))? RPAREN    # timeAggAtomComponent
+    | TIMESHIFT LPAREN exprComponent COMMA (intShift=signedInteger | varShift=varID) RPAREN                                                     # timeShiftAtomComponent
+    | TIME_AGG LPAREN (periodIndToVar=varID | periodIndToConst=STRING_CONSTANT) (COMMA periodIndFrom=(STRING_CONSTANT| OPTIONAL ))? (COMMA op=optionalExprComponent)? (COMMA delim=(FIRST|LAST))? RPAREN    # timeAggAtomComponent
     | CURRENT_DATE LPAREN RPAREN                                                                                                               # currentDateAtomComponent
-    | DATEDIFF LPAREN dateFrom=exprComponent COMMA dateTo=expr RPAREN                    # dateDiffAtomComponent
+    | DATEDIFF LPAREN dateFrom=exprComponent COMMA dateTo=exprComponent RPAREN           # dateDiffAtomComponent
     | DATEADD LPAREN op=exprComponent COMMA shiftNumber=exprComponent COMMA periodInd=exprComponent RPAREN # dateAddAtomComponent
     | YEAR_OP LPAREN exprComponent RPAREN                                                # yearAtomComponent
     | MONTH_OP LPAREN exprComponent RPAREN                                               # monthAtomComponent
     | DAYOFMONTH LPAREN exprComponent RPAREN                                             # dayOfMonthAtomComponent
-    | DAYOFYEAR LPAREN exprComponent RPAREN                                              # datOfYearAtomComponent
+    | DAYOFYEAR LPAREN exprComponent RPAREN                                              # dayOfYearAtomComponent
     | DAYTOYEAR LPAREN exprComponent RPAREN                                              # dayToYearAtomComponent
     | DAYTOMONTH LPAREN exprComponent RPAREN                                             # dayToMonthAtomComponent
     | YEARTODAY LPAREN exprComponent RPAREN                                              # yearTodayAtomComponent
@@ -313,7 +347,7 @@ aggrOperatorsGrouping:
         | FIRST_VALUE
         | LAST_VALUE)
         LPAREN expr OVER LPAREN (partition=partitionByClause? orderBy=orderByClause? windowing=windowingClause?)RPAREN RPAREN       #anSimpleFunction
-    | op=(LAG |LEAD)  LPAREN expr (COMMA offset=signedInteger(COMMA defaultValue=scalarItem)?)?  OVER  LPAREN (partition=partitionByClause? orderBy=orderByClause)   RPAREN RPAREN    # lagOrLeadAn
+    | op=(LAG |LEAD)  LPAREN expr (COMMA (intOffset=signedInteger | varOffset=varID)(COMMA defaultValue=scalarItem)?)?  OVER  LPAREN (partition=partitionByClause? orderBy=orderByClause)   RPAREN RPAREN    # lagOrLeadAn
     | op=RATIO_TO_REPORT LPAREN expr OVER  LPAREN (partition=partitionByClause) RPAREN RPAREN                                                                           # ratioToReportAn
 ;
 
@@ -331,7 +365,7 @@ aggrOperatorsGrouping:
          | FIRST_VALUE
          | LAST_VALUE)
          LPAREN exprComponent OVER LPAREN (partition=partitionByClause? orderBy=orderByClause? windowing=windowingClause?)RPAREN RPAREN       #anSimpleFunctionComponent
-    | op=(LAG |LEAD)  LPAREN exprComponent (COMMA offset=signedInteger(defaultValue=scalarItem)?)?  OVER  LPAREN (partition=partitionByClause? orderBy=orderByClause)   RPAREN RPAREN   # lagOrLeadAnComponent
+    | op=(LAG |LEAD)  LPAREN exprComponent (COMMA (intOffset=signedInteger | varOffset=varID)(COMMA defaultValue=scalarItem)?)?  OVER  LPAREN (partition=partitionByClause? orderBy=orderByClause)   RPAREN RPAREN   # lagOrLeadAnComponent
     | op=RANK LPAREN  OVER  LPAREN (partition=partitionByClause? orderBy=orderByClause) RPAREN RPAREN                                                                           # rankAnComponent
     | op=RATIO_TO_REPORT LPAREN exprComponent OVER  LPAREN (partition=partitionByClause) RPAREN RPAREN                                                                          # ratioToReportAnComponent
 ;
@@ -375,17 +409,17 @@ scalarItem:
 
 /*---------------------------------------------JOIN CLAUSE EXPRESSION---------------------------------------*/
 
-joinClauseWithoutUsing:
-    joinClauseItem (COMMA joinClauseItem)*
-;
-
 joinClause:
-    joinClauseItem (COMMA joinClauseItem)* (USING componentID (COMMA componentID)*)?
-;
+    joinClauseItem (COMMA joinClauseItem)*?;
 
 joinClauseItem:
-    expr (AS alias)?
-;
+    expr (AS alias)?;
+
+usingClause:
+    USING componentID (COMMA componentID)*;
+
+nvlJoinClause:
+    COMMA NVL LPAREN componentID COMMA constant RPAREN;
 
 joinBody:
     filterClause? (calcClause|joinApplyClause|aggrClause)? (keepOrDropClause)? renameClause?
@@ -402,7 +436,8 @@ joinApplyClause:
 /*-----------------------------------------ANALYTIC CLAUSE -----------------------------------------------*/
 
 partitionByClause:
-    PARTITION BY componentID (COMMA componentID)*
+    PARTITION type=(BY|EXCEPT) componentID (COMMA componentID)*   #partitionListed
+    | PARTITION type=EXCEPT all=ALL                               #partitionExceptAll
 ;
 
 orderByClause:
@@ -426,18 +461,18 @@ signedNumber:
 ;
 
 limitClauseItem:
-    signedInteger limitDir=PRECEDING
-    | signedInteger limitDir=FOLLOWING
+    (intLimit=signedInteger | varLimit=varID) dir=PRECEDING
+    | (intLimit=signedInteger | varLimit=varID) dir=FOLLOWING
     | CURRENT DATA POINT
-    | UNBOUNDED limitDir=PRECEDING
-    | UNBOUNDED limitDir=FOLLOWING
+    | UNBOUNDED dir=PRECEDING
+    | UNBOUNDED dir=FOLLOWING
 ;
 
 /*--------------------------------------------END ANALYTIC CLAUSE -----------------------------------------------*/
 /* ------------------------------------------------------------ GROUPING CLAUSE ------------------------------------*/
 groupingClause:
-    GROUP op=(BY | EXCEPT) componentID (COMMA componentID)* ( TIME_AGG LPAREN STRING_CONSTANT (COMMA delim=(FIRST|LAST))? RPAREN )?     # groupByOrExcept
-    | GROUP ALL ( TIME_AGG LPAREN STRING_CONSTANT (COMMA delim=(FIRST|LAST))? RPAREN )?                                                 # groupAll
+    GROUP op=(BY | EXCEPT) componentID (COMMA componentID)* ( TIME_AGG LPAREN (periodVar=varID | periodConst=STRING_CONSTANT) (COMMA delim=(FIRST|LAST))? RPAREN )?     # groupByOrExcept
+    | GROUP ALL ( TIME_AGG LPAREN (periodVar=varID | periodConst=STRING_CONSTANT) (COMMA delim=(FIRST|LAST))? RPAREN )?                                                 # groupAll
   ;
 
 havingClause:
@@ -519,7 +554,7 @@ rulesetID:
 ;
 
 rulesetSignature:
-    (VALUE_DOMAIN|VARIABLE) signature (COMMA signature)*
+    (VALUE_DOMAIN|VARIABLE) (signature (COMMA signature)*)?
 ;
 
 signature:
@@ -683,11 +718,11 @@ routineName:
 ;
 
 constant:
-    signedInteger
-    | signedNumber
-    | BOOLEAN_CONSTANT
-    | STRING_CONSTANT
-    | NULL_CONSTANT
+    signedInteger        # integerLiteral
+    | signedNumber       # numberLiteral
+    | BOOLEAN_CONSTANT   # booleanLiteral
+    | STRING_CONSTANT    # stringLiteral
+    | NULL_CONSTANT      # nullLiteral
 ;
 
 basicScalarType:

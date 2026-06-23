@@ -243,17 +243,34 @@ class UDOCall(AST):
 @dataclass
 class JoinOp(AST):
     """
-    JoinOp: (op, clauses, using)
+    JoinOp: (op, clauses, using, nvl)
 
     op types: INNER_JOIN, LEFT_JOIN, FULL_JOIN, CROSS_JOIN.
     clauses types:
     body types:
+    nvl: optional list of (componentID, Constant) pairs that supply default
+         values for NULLs introduced by left_join / full_join (VTL 2.2).
     """
 
     op: str
     clauses: List[AST]
     using: Optional[List[str]]
+    nvl: Optional[List["NvlJoinPair"]] = None
     isLast: bool = False
+
+    __eq__ = AST.ast_equality
+
+
+@dataclass
+class NvlJoinPair(AST):
+    """
+    NvlJoinPair: (component, default)
+
+    Carries a single `nvl(componentID, constant)` clause from the join header.
+    """
+
+    component: str
+    default: "Constant"
 
     __eq__ = AST.ast_equality
 
@@ -365,12 +382,16 @@ class OrderBy(AST):
 @dataclass
 class Analytic(AST):
     """
-    Analytic: (op, operand, partition_by, order_by, params)
+    Analytic: (op, operand, partition_by, partition_op, order_by, params)
 
     op: SUM, AVG, COUNT, MEDIAN, MIN, MAX, STDDEV_POP, STDDEV_SAMP, VAR_POP, VAR_SAMP,
         FIRST_VALUE, LAST_VALUE, LAG, LEAD, RATIO_TO_REPORT
 
-    partition_by: List of components.
+    partition_by: List of components (as written in the clause).
+    partition_op: "by", "except", or "except all" — VTL 2.2 (sdmx-twg/vtl#699,
+        #391). For "except" the listed components are excluded from the operand's
+        identifiers; for "except all" the partition is empty (single global
+        window). ``None`` means no partition clause was supplied.
     order_by: List of components + mode (ASC, DESC).
     params: Windowing clause (no need to validate them) or Scalar Item in LAG/LEAD.
     """
@@ -380,11 +401,8 @@ class Analytic(AST):
     window: Optional[Windowing] = None
     params: Optional[List[int]] = None
     partition_by: Optional[List[str]] = None
+    partition_op: Optional[str] = None
     order_by: Optional[List[OrderBy]] = None
-
-    def __post_init__(self):
-        if self.partition_by is None and self.order_by is None:
-            raise ValueError("Partition by or order by must be provided on Analytic.")
 
     __eq__ = AST.ast_equality
 
@@ -446,8 +464,10 @@ class TimeAggregation(AST):
     """
 
     op: str
-    period_to: str
+    period_to: Optional[str] = None
+    period_to_ref: Optional[AST] = None  # VarID, mutually exclusive with period_to
     period_from: Optional[str] = None
+    period_from_optional: bool = False
     operand: Optional[AST] = None
     conf: Optional[str] = None
 
@@ -581,11 +601,11 @@ class Operator(AST):
 @dataclass
 class DefIdentifier(AST):
     """
-    DefIdentifier: (value, kind)
-    """
+    DefIdentifier: (value, kind, was_quoted)"""
 
     value: str
     kind: str
+    was_quoted: bool = False
 
     __eq__ = AST.ast_equality
 
@@ -737,6 +757,44 @@ class DPRuleset(AST):
     signature_type: str
     params: Union[DefIdentifier, list]
     rules: List[DPRule]
+
+    __eq__ = AST.ast_equality
+
+
+@dataclass
+class EnumeratedVpClause(AST):
+    """A single enumerated clause: when "A" [and "B"] then "C"."""
+
+    name: Optional[str]
+    values: List[str]
+    result: str
+
+    __eq__ = AST.ast_equality
+
+
+@dataclass
+class AggregateVpClause(AST):
+    """An aggregate clause: aggregate min|max|sum|avg"""
+
+    function: str
+
+    __eq__ = AST.ast_equality
+
+
+@dataclass
+class ViralPropagationDef(AST):
+    """
+    define viral propagation name (valuedomain|variable target) is
+        clauses
+    end viral propagation
+    """
+
+    name: str
+    signature_type: str
+    target: str
+    enumerated_clauses: List[EnumeratedVpClause]
+    aggregate_clause: Optional[AggregateVpClause]
+    default_value: Optional[str]
 
     __eq__ = AST.ast_equality
 

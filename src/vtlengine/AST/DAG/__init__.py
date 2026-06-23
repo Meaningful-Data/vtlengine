@@ -35,6 +35,7 @@ from vtlengine.AST import (
     Start,
     UDOCall,
     VarID,
+    ViralPropagationDef,
 )
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.DAG._models import DatasetSchedule, StatementDeps
@@ -132,7 +133,9 @@ class DAGAnalyzer(ASTTemplate):
                 dag.sort_ast(ast)
             else:
                 ml_statements: list = [
-                    ml for ml in ast.children if not isinstance(ml, (HRuleset, DPRuleset, Operator))
+                    ml
+                    for ml in ast.children
+                    if not isinstance(ml, (HRuleset, DPRuleset, Operator, ViralPropagationDef))
                 ]
                 dag.check_overwriting(ml_statements)
             return dag
@@ -207,7 +210,7 @@ class DAGAnalyzer(ASTTemplate):
         ml_statements: list = [
             node
             for node in statements_nodes
-            if not isinstance(node, (HRuleset, DPRuleset, Operator))
+            if not isinstance(node, (HRuleset, DPRuleset, Operator, ViralPropagationDef))
         ]
 
         intermediate = self.sort_elements(ml_statements)
@@ -287,10 +290,13 @@ class DAGAnalyzer(ASTTemplate):
         self.visit(node.dataset)
         if node.op in [KEEP, DROP, RENAME]:
             return
+        saved_is_dataset = self.is_dataset
+        self.is_dataset = False
         for child in node.children:
             self.is_from_regular_aggregation = True
             self.visit(child)
             self.is_from_regular_aggregation = False
+        self.is_dataset = saved_is_dataset
 
     def visit_BinOp(self, node: BinOp) -> None:
         if node.op == MEMBERSHIP:
@@ -377,6 +383,8 @@ class HRDAGAnalyzer(DAGAnalyzer):
         Modifies node.rules in place: removes rules whose comparison operator is not '='
         and re-sorts the remaining rules based on the dependency DAG.
         """
+        if getattr(node, "_hr_sorted", False):
+            return
         dag = cls()
         dag.visit(node)
         dag.load_vertex()
@@ -384,6 +392,7 @@ class HRDAGAnalyzer(DAGAnalyzer):
         if len(dag.edges) != 0:
             dag._build_and_sort_graph("hierarchy")
             node.rules = dag.sort_elements(node.rules)
+        node._hr_sorted = True  # type: ignore[attr-defined]
 
     def visit_HRuleset(self, node: HRuleset) -> None:
         """

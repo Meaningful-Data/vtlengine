@@ -1,8 +1,8 @@
 {
-  "scalars": [
-    {
-      "name": "sc_1",
-      "type": "Integer"
-    }
-  ]
+    "scalars": [
+        {
+            "name": "sc_1",
+            "type": "String"
+        }
+    ]
 }

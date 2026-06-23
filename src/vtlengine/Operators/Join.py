@@ -1,16 +1,36 @@
 from copy import copy
 from functools import reduce
-from typing import Any, Dict, List, Optional
-
-import pandas as pd
+from typing import Any, Dict, List, Optional, Set
 
 from vtlengine.AST import BinOp
 from vtlengine.AST.Grammar.tokens import CROSS_JOIN, FULL_JOIN, INNER_JOIN, LEFT_JOIN
 from vtlengine.DataTypes import SCALAR_TYPES_CLASS_REVERSE, binary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
-from vtlengine.Operators import Operator, _id_type_promotion_join_keys
+from vtlengine.Operators import Operator
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+
+
+def merged_viral_attribute_names(
+    components_per_operand: List[Dict[str, Component]], exclude: Set[str]
+) -> Set[str]:
+    """Names that MERGE into a single viral column in a join: shared by >=2 operands,
+    viral in every operand that has them, and not a join key (``exclude``)."""
+    counts: Dict[str, int] = {}
+    for comps in components_per_operand:
+        for name in comps:
+            counts[name] = counts.get(name, 0) + 1
+    merged: Set[str] = set()
+    for name, count in counts.items():
+        if count < 2 or name in exclude:
+            continue
+        if all(
+            comps[name].role == Role.VIRAL_ATTRIBUTE
+            for comps in components_per_operand
+            if name in comps
+        ):
+            merged.add(name)
+    return merged
 
 
 class Join(Operator):
@@ -57,6 +77,11 @@ class Join(Operator):
             )
         )
 
+        # Viral attributes shared by the operands are MERGED into one component
+        # (values combined via the viral propagation rule at execution time)
+        # instead of being #-qualified like other shared components.
+        viral_common = merged_viral_attribute_names([op.components for op in operands], set(using))
+
         for op in operands:
             for comp in op.components.values():
                 if comp.name in using:
@@ -92,6 +117,11 @@ class Join(Operator):
 
             for component_name, component in components.items():
                 component.nullable = nullability[component_name]
+                if component_name in viral_common:
+                    if component_name not in merged_components:
+                        component.name = component_name
+                        merged_components[component_name] = component
+                    continue
 
                 if component_name in common and component_name not in using:
                     if component.role != Role.IDENTIFIER or cls.how == "cross":
@@ -131,69 +161,24 @@ class Join(Operator):
         return components
 
     @classmethod
-    def evaluate(cls, operands: List[Dataset], using: List[str]) -> Dataset:
-        result = cls.execute([copy(operand) for operand in operands], using)
-        if result.data is not None and sorted(result.get_components_names()) != sorted(
-            result.data.columns.tolist()
-        ):
-            missing = list(set(result.get_components_names()) - set(result.data.columns.tolist()))
-            if len(missing) == 0:
-                missing.append("None")
-            raise SemanticError("1-1-1-10", comp_name=missing[0], dataset_name=result.name)
-        return result
+    def _validate_nvl(cls, operands: List[Dataset], nvl: Dict[str, Any]) -> None:
+        """Each nvl component must exist in at least one operand."""
+        all_components: set[str] = set()
+        for op in operands:
+            all_components.update(op.components)
+        for component in nvl:
+            if component not in all_components:
+                raise SemanticError("1-1-1-10", comp_name=component, dataset_name=operands[0].name)
 
     @classmethod
-    def execute(cls, operands: List[Dataset], using: List[str]) -> Dataset:
-        result = cls.validate(operands, using)
-        using = using if using else []
-        if len(operands) == 1:
-            result.data = operands[0].data
-            return result
-
-        common_measures = cls.get_components_intersection(
-            [op.get_measures_names() + op.get_attributes_names() for op in operands]
-        )
-        for op in operands:
-            if op.data is not None:
-                for column in op.data.columns.tolist():
-                    if column in common_measures and column not in using:
-                        op.data = op.data.rename(columns={column: op.name + "#" + column})
-        result.data = copy(cls.reference_dataset.data)
-
-        join_keys = using if using else result.get_identifiers_names()
-
-        for op in operands:
-            if op is not cls.reference_dataset:
-                merge_join_keys = (
-                    [key for key in join_keys if key in op.data.columns.tolist()]
-                    if (op.data is not None)
-                    else []
-                )
-                if len(merge_join_keys) == 0:
-                    raise SemanticError("1-1-13-14", name=op.name)
-                for join_key in merge_join_keys:
-                    _id_type_promotion_join_keys(
-                        result.get_component(join_key),
-                        op.get_component(join_key),
-                        join_key,
-                        result.data,
-                        op.data,
-                    )
-                if op.data is not None and result.data is not None:
-                    result.data = pd.merge(
-                        result.data,
-                        op.data,
-                        how=cls.how,  # type: ignore[arg-type]
-                        on=merge_join_keys,
-                    )
-                else:
-                    result.data = pd.DataFrame()
-        if result.data is not None:
-            result.data.reset_index(drop=True, inplace=True)
-        return result
-
-    @classmethod
-    def validate(cls, operands: List[Dataset], using: Optional[List[str]]) -> Dataset:
+    def validate(
+        cls,
+        operands: List[Dataset],
+        using: Optional[List[str]],
+        nvl: Optional[Dict[str, Any]] = None,
+    ) -> Dataset:
+        if nvl:
+            cls._validate_nvl(operands, nvl)
         dataset_name = VirtualCounter._new_ds_name()
         if len(operands) < 1 or sum([isinstance(op, Dataset) for op in operands]) < 1:
             raise Exception("Join operator requires at least 1 dataset")
@@ -352,38 +337,6 @@ class CrossJoin(Join):
     how = "cross"
 
     @classmethod
-    def execute(cls, operands: List[Dataset], using: Optional[List[str]] = None) -> Dataset:
-        result = cls.validate(operands, using)
-        if len(operands) == 1:
-            result.data = operands[0].data
-            return result
-        common = cls.get_components_intersection([op.get_components_names() for op in operands])
-
-        for op in operands:
-            if op.data is None:
-                op.data = pd.DataFrame(columns=op.get_components_names())
-            if op is operands[0]:
-                result.data = op.data
-            else:
-                if result.data is not None:
-                    result.data = pd.merge(
-                        result.data,
-                        op.data,
-                        how=cls.how,  # type: ignore[arg-type]
-                    )
-            if result.data is not None:
-                result.data = result.data.rename(
-                    columns={
-                        column: op.name + "#" + column
-                        for column in result.data.columns.tolist()
-                        if column in common
-                    }
-                )
-        if result.data is not None:
-            result.data.reset_index(drop=True, inplace=True)
-        return result
-
-    @classmethod
     def identifiers_validation(
         cls, operands: List[Dataset], using: Optional[List[str]] = None
     ) -> None:
@@ -392,19 +345,6 @@ class CrossJoin(Join):
 
 
 class Apply(Operator):
-    @classmethod
-    def evaluate(cls, dataset: Dataset, expression: Any, op_map: Dict[str, Any]) -> Dataset:
-        for child in expression:
-            dataset = cls.execute(dataset, op_map[child.op], child.left.value, child.right.value)
-        return dataset
-
-    @classmethod
-    def execute(cls, dataset: Dataset, op: Any, left: str, right: str) -> Dataset:
-        left_dataset = cls.create_dataset("left", left, dataset)
-        right_dataset = cls.create_dataset("right", right, dataset)
-        left_dataset, right_dataset = cls.get_common_components(left_dataset, right_dataset)
-        return op.evaluate(left_dataset, right_dataset)
-
     @classmethod
     def validate(cls, dataset: Dataset, child: Any, op_map: Dict[str, Any]) -> Dataset:
         if isinstance(child, list):
@@ -451,13 +391,6 @@ class Apply(Operator):
             for component in dataset.components.values()
             if component.name.startswith(prefix) or component.role is Role.IDENTIFIER
         }
-        comp_names = list(components.keys())
-        data = (
-            dataset.data[comp_names]
-            if dataset.data is not None
-            else pd.DataFrame(columns=comp_names)
-        )
-
         for component in components.values():
             component.name = (
                 component.name[len(prefix) :]
@@ -465,15 +398,7 @@ class Apply(Operator):
                 else component.name
             )
         components = {component.name: component for component in components.values()}
-        data.rename(
-            columns={
-                column: column[len(prefix) :]
-                for column in data.columns
-                if column.startswith(prefix)
-            },
-            inplace=True,
-        )
-        return Dataset(name=name, components=components, data=data)
+        return Dataset(name=name, components=components, data=None)
 
     @classmethod
     def get_common_components(cls, left: Dataset, right: Dataset) -> (Dataset, Dataset):  # type: ignore[syntax]
@@ -484,6 +409,4 @@ class Apply(Operator):
         right.components = {
             comp.name: comp for comp in right.components.values() if comp.name in common
         }
-        left.data = left.data[list(common)] if left.data is not None else pd.DataFrame()
-        right.data = right.data[list(common)] if right.data is not None else pd.DataFrame()
         return left, right

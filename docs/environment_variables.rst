@@ -1,8 +1,8 @@
 Environment Variables
 #####################
 
-VTL Engine uses environment variables to configure behavior for number handling and S3 connectivity.
-These variables are optional and have sensible defaults.
+VTL Engine uses environment variables to configure number handling, the DuckDB execution
+engine, and S3 connectivity. All variables are optional and have sensible defaults.
 
 Number Handling
 ***************
@@ -23,7 +23,7 @@ Controls the significant digits used for Number comparison operations (``=``, ``
    :widths: 20 80
 
    * - Value
-     - Behavior
+     - Behaviour
    * - Not defined
      - Uses default value of **15** significant digits
    * - ``6`` to ``15``
@@ -36,6 +36,8 @@ The tolerance is calculated as: ``0.5 * 10^(-(N-1))`` where N is the number of s
 For the default of 15, this gives a relative tolerance of ``5e-15``, which filters floating-point
 arithmetic artifacts while preserving meaningful differences.
 
+.. _output_number_significant_digits:
+
 ``OUTPUT_NUMBER_SIGNIFICANT_DIGITS``
 ====================================
 
@@ -43,33 +45,175 @@ Controls the significant digits used for:
 
 1. **Numeric operations**: Precision of arithmetic operations (``+``, ``-``, ``*``, ``/``, ``mod``, ``power``, etc.) by setting the Decimal context precision.
 2. **CSV output**: Formatting Number values when writing to CSV files.
+3. **DuckDB DECIMAL scale**: Number of decimal places used by the DuckDB engine
+   (paired with :ref:`vtl_duckdb_decimal_width` for the precision).
 
 .. list-table::
    :header-rows: 1
    :widths: 20 80
 
    * - Value
-     - Behavior
+     - Behaviour
    * - Not defined
-     - Uses default value of **15** significant digits
+     - Uses default value of **15** significant digits (pandas) / **10** (DuckDB)
    * - ``6`` to ``15``
      - Uses the specified number of significant digits
    * - ``-1``
-     - Disables precision limiting (uses Python/pandas defaults)
+     - Disables precision limiting (uses Python/pandas defaults; DuckDB falls back to its
+       maximum scale of 15)
 
 For output formatting, this variable controls the ``float_format`` parameter in pandas ``to_csv``,
 using the general format specifier (e.g., ``%.15g``) which automatically switches between fixed
 and exponential notation.
 
+DuckDB Engine
+*************
+
+These variables tune the DuckDB execution engine (:doc:`duckdb_engine`) when ``use_duckdb=True``.
+They have no effect on the default pandas backend.
+
+``VTL_MEMORY_LIMIT``
+====================
+
+Maximum memory the DuckDB engine may consume.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 80
+
+   * - Value
+     - Behaviour
+   * - Not defined
+     - Uses DuckDB's built-in default of **80%** of system RAM
+   * - ``"80%"`` (or any percentage)
+     - Deferred to DuckDB's built-in default of 80% of system RAM; percentages
+       other than the default are not computed
+   * - ``"8GB"`` / ``"8192MB"`` / ``"8388608KB"``
+     - Absolute size in GB / MB / KB
+   * - integer
+     - Absolute size in bytes
+
+When DuckDB exceeds this limit it spills to ``VTL_TEMP_DIRECTORY``.
+
+``VTL_THREADS``
+===============
+
+Number of worker threads DuckDB may use during query execution.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 80
+
+   * - Value
+     - Behaviour
+   * - Not defined
+     - Uses default value of **1**
+   * - integer ``>= 1``
+     - Use exactly that many threads
+
+``VTL_TEMP_DIRECTORY``
+======================
+
+Directory where DuckDB writes spill files when memory is exceeded, and where the
+file-backed database lives when :ref:`vtl_use_in_memory_db` is disabled. When unset, the
+engine falls back to Python's
+`tempfile.gettempdir() <https://docs.python.org/3/library/tempfile.html#tempfile.gettempdir>`_,
+which resolves in this order:
+
+1. The directory named by the ``TMPDIR`` environment variable
+2. The directory named by the ``TEMP`` environment variable
+3. The directory named by the ``TMP`` environment variable
+4. A platform-specific location:
+
+   - **Linux/POSIX**: ``/tmp``, ``/var/tmp``, ``/usr/tmp`` (in that order)
+   - **Windows**: ``C:\TEMP``, ``C:\TMP``, ``\TEMP``, ``\TMP`` (in that order)
+   - **macOS**: typically ``/var/folders/`` or ``~/Library/Caches/``
+
+5. The current working directory as a last resort
+
+The engine creates a unique sub-directory per session under the resolved location and
+removes it when the connection closes.
+
+``VTL_MAX_TEMP_DIRECTORY_SIZE``
+===============================
+
+Caps the total disk space DuckDB may use for spill-to-disk.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 80
+
+   * - Value
+     - Behaviour
+   * - Not defined / empty
+     - No cap; DuckDB may use all available disk space in ``VTL_TEMP_DIRECTORY``
+   * - ``"100GB"`` / ``"500MB"``
+     - Absolute size cap; queries that would exceed it fail
+
+.. _vtl_use_in_memory_db:
+
+``VTL_USE_IN_MEMORY_DB``
+========================
+
+Selects the DuckDB storage backend.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 80
+
+   * - Value
+     - Behaviour
+   * - Not defined / ``"1"`` / ``"true"``
+     - Use an in-memory database (default)
+   * - ``"0"`` / any other value
+     - Use a file-backed database under ``VTL_TEMP_DIRECTORY`` (recommended for very large
+       datasets that approach available RAM)
+
+.. _vtl_duckdb_decimal_width:
+
+``VTL_DUCKDB_DECIMAL_WIDTH``
+============================
+
+Total number of digits (precision) used for the DuckDB ``DECIMAL`` type. Decimal scale is
+controlled separately by :ref:`output_number_significant_digits`.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 80
+
+   * - Value
+     - Behaviour
+   * - Not defined
+     - Uses default value of **28**
+   * - ``6`` to ``38``
+     - Uses the specified precision
+   * - ``-1``
+     - Disables precision limiting (uses DuckDB's maximum precision of 38)
+
+``VTL_SKIP_LOAD_VALIDATION``
+============================
+
+Skips the post-load validation that the DuckDB engine runs after each table is created
+(no-duplicates, temporal column format, DWI cardinality). Intended for benchmarking; do
+not use in production.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 80
+
+   * - Value
+     - Behaviour
+   * - Not defined / empty
+     - Validation runs (default)
+   * - ``"1"`` / ``"true"`` / ``"yes"``
+     - Validation is skipped
+
 S3 Configuration
 ****************
 
-The following AWS environment variables are used when working with S3 URIs.
-This requires the ``vtlengine[s3]`` extra to be installed:
-
-.. code-block:: bash
-
-    pip install vtlengine[s3]
+S3 URIs (``s3://...``) are read by DuckDB's built-in
+`httpfs <https://duckdb.org/docs/extensions/httpfs/s3api.html>`_ extension when
+``use_duckdb=True``; the AWS environment variables below are picked up automatically.
 
 ``AWS_ACCESS_KEY_ID``
 =====================
@@ -130,6 +274,23 @@ Controlling numeric precision
     # Disable precision limiting (use Python/pandas defaults)
     export OUTPUT_NUMBER_SIGNIFICANT_DIGITS=-1
 
+Tuning the DuckDB engine
+========================
+
+.. code-block:: bash
+
+    # Cap memory at 16 GB and use 4 threads
+    export VTL_MEMORY_LIMIT=16GB
+    export VTL_THREADS=4
+
+    # Use a file-backed database under a custom spill directory, capped at 200 GB
+    export VTL_USE_IN_MEMORY_DB=0
+    export VTL_TEMP_DIRECTORY=/var/lib/vtlengine/duckdb-spill
+    export VTL_MAX_TEMP_DIRECTORY_SIZE=200GB
+
+    # Increase DECIMAL precision to 38 digits (max)
+    export VTL_DUCKDB_DECIMAL_WIDTH=38
+
 Using S3 with environment variables
 ====================================
 
@@ -149,6 +310,7 @@ Using S3 with environment variables
         data_structures=data_structures,
         datapoints="s3://my-bucket/input/DS_1.csv",
         output_folder="s3://my-bucket/output/",
+        use_duckdb=True,
     )
 
 Using a custom S3 endpoint

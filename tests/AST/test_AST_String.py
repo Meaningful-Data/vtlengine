@@ -26,7 +26,16 @@ params = [
     "GH_358.vtl",
     "comments_end_line.vtl",
     "time_agg.vtl",
+    "time_agg_ref.vtl",
+    "time_agg_optional.vtl",
+    "lag_lead_offset.vtl",
+    "windowing_scalar_bound.vtl",
+    "viral_propagation.vtl",
     "round_with_slash.vtl",
+    "trunc_with_slash.vtl",
+    "component_roles.vtl",
+    "hierarchical_unquoted_codeitems.vtl",
+    "join_body_clauses.vtl",
 ]
 
 params_prettier = [
@@ -54,6 +63,8 @@ params_prettier = [
     ("validation_str_errorlevel.vtl", "reference_validation_str_errorlevel.vtl"),
     ("unbounded.vtl", "reference_unbounded.vtl"),
     ("time_agg.vtl", "reference_time_agg.vtl"),
+    ("time_agg_ref.vtl", "reference_time_agg_ref.vtl"),
+    ("viral_propagation.vtl", "reference_viral_propagation.vtl"),
 ]
 
 
@@ -79,6 +90,30 @@ def test_ast_string_with_comments(filename):
     result_script = ASTString().render(ast)
     ast_result = create_ast_with_comments(result_script)
     assert ast == ast_result
+
+
+partition_clauses = [
+    "partition by id",
+    "partition except anyo",
+    "partition except anyo, id",
+    "partition except all",
+]
+
+
+@pytest.mark.parametrize("clause", partition_clauses)
+def test_ast_string_partition_clause(clause):
+    """ASTString must preserve the partition operator (by / except / except all).
+
+    Regression: ``partition except X`` used to be rendered as ``partition by X``,
+    silently changing the analytic window when round-tripping script -> AST -> script.
+    """
+    script = f"DS_r <- DS_1[calc Me_2 := rank(over({clause} order by me))];"
+
+    rendered = ASTString().render(create_ast(script))
+
+    assert clause in rendered
+    # Stable across a second round-trip
+    assert clause in ASTString().render(create_ast(rendered))
 
 
 def test_comments_parsing():

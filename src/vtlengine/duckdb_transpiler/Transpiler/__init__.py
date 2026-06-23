@@ -1,0 +1,3758 @@
+"""Transpile VTL AST nodes into DuckDB SQL."""
+
+import re
+from collections import Counter
+from contextlib import contextmanager
+from copy import deepcopy
+from dataclasses import dataclass, field
+from typing import Any, Callable, Dict, Generator, List, Optional, Set, Tuple, Union
+
+import vtlengine.AST as AST
+from vtlengine.AST.ASTTemplate import ASTTemplate
+from vtlengine.AST.Grammar import tokens
+from vtlengine.DataTypes import (
+    COMP_NAME_MAPPING,
+    Boolean,
+    Date,
+    Duration,
+    Integer,
+    Number,
+    TimeInterval,
+    TimePeriod,
+)
+from vtlengine.duckdb_transpiler.Transpiler.operators import (
+    _ORDERING_OPS,
+    _STRING_PARAM_OPS,
+    _STRING_UNARY_OPS,
+    FALLBACK_MATCH_FUNCTION,
+    NATIVE_MATCH_FUNCTION,
+    get_duckdb_type,
+    is_re2_incompatible,
+    registry,
+)
+from vtlengine.duckdb_transpiler.Transpiler.sql_builder import (
+    CTEBuilder,
+    SQLBuilder,
+    quote_name,
+)
+from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
+    _COMPONENT,
+    _DATASET,
+    _SCALAR,
+    StructureVisitor,
+    _try_normalize_time_period,
+)
+from vtlengine.Exceptions import RunTimeError, SemanticError
+from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
+from vtlengine.Operators.Join import merged_viral_attribute_names
+from vtlengine.ViralPropagation import get_current_registry
+from vtlengine.ViralPropagation.sql import (
+    vp_group_sql,
+    vp_group_sql_windowed,
+    vp_no_rule_group_sql,
+    vp_pair_sql,
+    vp_reduce_refs,
+)
+
+# Matches a pure single-quoted SQL string literal: 'foo' (no embedded quotes).
+_SQL_PLAIN_STRING_LITERAL = re.compile(r"^'([^'\\]*)'$")
+
+# Matches ``vtl_period_parse('canonical_form')`` where the argument is a literal
+# in canonical form (YYYYA or YYYY-INNN).
+_VTL_PERIOD_PARSE_LITERAL = re.compile(
+    r"vtl_period_parse\('"
+    r"(?P<year>\d{4})"  # year
+    r"(?:"
+    r"A"  # annual: YYYYA
+    r"|"
+    r"-(?P<ind>[SQMWD])(?P<num>\d{1,3})"  # YYYY-INNN
+    r")"
+    r"'\)"
+)
+
+
+def _match_plain_sql_string_literal(expr: str) -> Optional[str]:
+    """Return the inner string of a plain SQL literal, or None if not one."""
+    m = _SQL_PLAIN_STRING_LITERAL.match(expr)
+    return m.group(1) if m else None
+
+
+def _inline_period_parse_literals(sql: str) -> str:
+    """Replace ``vtl_period_parse('canonical')`` with an inline struct literal."""
+
+    def _replace(m: "re.Match[str]") -> str:
+        year = int(m.group("year"))
+        ind = m.group("ind")
+        num = m.group("num")
+        if ind is None:
+            return (
+                f"({{'year': {year}, 'period_indicator': 'A', "
+                f"'period_number': 1}}::vtl_time_period)"
+            )
+        return (
+            f"({{'year': {year}, 'period_indicator': '{ind}', "
+            f"'period_number': {int(num)}}}::vtl_time_period)"
+        )
+
+    return _VTL_PERIOD_PARSE_LITERAL.sub(_replace, sql)
+
+
+def _datediff_to_date(ref: str, dt: Optional[type]) -> str:
+    """Convert a datediff operand to a DATE expression based on its VTL type."""
+    if dt == TimePeriod:
+        return f"vtl_tp_end_date(vtl_period_parse({ref}))"
+    if dt == Date:
+        return f"CAST({ref} AS DATE)"
+    # TimeInterval or unknown: pass through (NULL propagates, non-null errors at runtime)
+    return f"CAST({ref} AS DATE)"
+
+
+def _add_tp_indicator_check(sql: str, table_src: str, tp_cols: List[tuple[str, str]]) -> str:
+    """Add a TimePeriod indicator consistency check to an aggregate query."""
+    checks: List[str] = []
+    for col_name, agg_op in tp_cols:
+        qc = quote_name(col_name)
+        indicator = f"vtl_period_parse({qc}).period_indicator"
+        err = (
+            f"'VTL Error 2-1-19-20: Time Period operands with "
+            f"different period indicators do not support < and > "
+            f"Comparison operations, unable to get the {agg_op}'"
+        )
+        checks.append(
+            f"CASE WHEN COUNT(DISTINCT {indicator}) "
+            f"FILTER (WHERE {qc} IS NOT NULL) > 1 "
+            f"THEN error({err}) ELSE 1 END"
+        )
+    check_cols = ", ".join(f"{c} AS _ok{i}" for i, c in enumerate(checks))
+    subquery = f"(SELECT {check_cols} FROM {table_src}) AS _vtl_tp_check"
+    where_conds = " AND ".join(f"_vtl_tp_check._ok{i} = 1" for i in range(len(checks)))
+    from_pattern = f"FROM {table_src}"
+    return sql.replace(from_pattern, f"FROM {table_src}, {subquery} WHERE {where_conds}", 1)
+
+
+def _is_date_timeperiod_pair(left_type: Optional[type], right_type: Optional[type]) -> bool:
+    """Return True when types are a Date and a TimePeriod."""
+    return {left_type, right_type} == {Date, TimePeriod}
+
+
+def _date_tp_compare_expr(
+    left_ref: str,
+    right_ref: str,
+    left_type: type,
+    right_type: type,
+    op: str,
+) -> str:
+    """Build SQL for Date vs TimePeriod comparison using TimeInterval promotion."""
+    if left_type == Date:
+        left_interval = (
+            f"{{'date1': CAST({left_ref} AS DATE),"
+            f" 'date2': CAST({left_ref} AS DATE)}}::vtl_time_interval"
+        )
+        parsed = f"vtl_period_parse({right_ref})"
+        right_interval = (
+            f"{{'date1': vtl_tp_start_date({parsed}),"
+            f" 'date2': vtl_tp_end_date({parsed})}}::vtl_time_interval"
+        )
+    else:
+        parsed = f"vtl_period_parse({left_ref})"
+        left_interval = (
+            f"{{'date1': vtl_tp_start_date({parsed}),"
+            f" 'date2': vtl_tp_end_date({parsed})}}::vtl_time_interval"
+        )
+        right_interval = (
+            f"{{'date1': CAST({right_ref} AS DATE),"
+            f" 'date2': CAST({right_ref} AS DATE)}}::vtl_time_interval"
+        )
+    return registry.sql(op, left_interval, right_interval)
+
+
+def _bool_to_str(col_ref: str) -> str:
+    """Cast a Boolean expression to Python-style string values."""
+    return f"CASE WHEN {col_ref} IS NULL THEN NULL WHEN {col_ref} THEN 'True' ELSE 'False' END"
+
+
+def _val_col(code_item: str) -> str:
+    """Return the pivot column name holding the value for a code item."""
+    return f"_val_{code_item}"
+
+
+def _has_col(code_item: str) -> str:
+    """Return the pivot column name indicating presence (0/1) of a code item."""
+    return f"_has_{code_item}"
+
+
+def _contains_analytic(node: Any) -> bool:
+    """Return True if any descendant of ``node`` is an ``AST.Analytic``."""
+    if isinstance(node, AST.Analytic):
+        return True
+    if isinstance(node, AST.AST):
+        for key in node.__class__.__annotations__:
+            value = getattr(node, key, None)
+            if _contains_analytic(value):
+                return True
+    elif isinstance(node, (list, tuple)):
+        for item in node:
+            if _contains_analytic(item):
+                return True
+    return False
+
+
+@dataclass
+class _ParsedHRRule:
+    """Parsed pieces of a hierarchical rule."""
+
+    rule: AST.HRule  # Original rule (for name, erCode, erLevel)
+    has_when: bool
+    when_node: Any  # AST node for the WHEN condition, or None
+    comparison_node: Any  # AST node for the comparison (left = right)
+    left_code_item: str  # Left-side code item name
+    right_expr_node: AST.AST  # Right-side expression AST
+    right_code_items: List[str]  # All code item names in the right-side expression
+    left_cond_sql: Optional[str] = None  # Left-side `_right_condition` SQL, when cond_mapping given
+    right_conds: Dict[str, str] = field(default_factory=dict)  # Right-side per-item conditions
+
+
+@dataclass
+class SQLTranspiler(StructureVisitor, ASTTemplate):
+    """Transpiler that converts VTL AST nodes to SQL queries."""
+
+    # Input structures
+    input_datasets: Dict[str, Dataset] = field(default_factory=dict)
+    input_scalars: Dict[str, Scalar] = field(default_factory=dict)
+
+    # Output structures
+    output_datasets: Dict[str, Dataset] = field(default_factory=dict)
+    output_scalars: Dict[str, Scalar] = field(default_factory=dict)
+
+    value_domains: Dict[str, ValueDomain] = field(default_factory=dict)
+    external_routines: Dict[str, ExternalRoutine] = field(default_factory=dict)
+
+    # Dependency graph
+    dag: Any = field(default=None)
+
+    # cast(time_period, string) format
+    time_period_output_format: str = field(default="vtl")
+
+    # Runtime context
+    current_assignment: str = ""
+    inputs: List[str] = field(default_factory=list)
+    clause_context: List[str] = field(default_factory=list)
+
+    # Merged lookups
+    datasets: Dict[str, Dataset] = field(default_factory=dict, init=False)
+    scalars: Dict[str, Scalar] = field(default_factory=dict, init=False)
+    available_tables: Dict[str, Dataset] = field(default_factory=dict, init=False)
+
+    # Clause context
+    _in_clause: bool = field(default=False, init=False)
+    _current_dataset: Optional[Dataset] = field(default=None, init=False)
+    _column_prefix: Optional[str] = field(default=None, init=False)
+
+    # Join context: "alias#comp" -> SQL column name
+    _join_alias_map: Dict[str, str] = field(default_factory=dict, init=False)
+
+    # Qualified names consumed by join clauses
+    _consumed_join_aliases: Set[str] = field(default_factory=set, init=False)
+
+    # UDO definitions
+    _udos: Dict[str, Dict[str, Any]] = field(default_factory=dict, init=False)
+
+    # UDO parameter stack
+    _udo_params: Optional[List[Dict[str, Any]]] = field(default=None, init=False)
+
+    # Datapoint rulesets
+    _dprs: Dict[str, Dict[str, Any]] = field(default_factory=dict, init=False)
+
+    # Datapoint ruleset context
+    _dp_signature: Optional[Dict[str, str]] = field(default=None, init=False)
+
+    # Hierarchical rulesets
+    _hrs: Dict[str, Dict[str, Any]] = field(default_factory=dict, init=False)
+
+    def __post_init__(self) -> None:
+        """Initialize available tables."""
+        self.datasets = {**self.input_datasets, **self.output_datasets}
+        self.scalars = {**self.input_scalars, **self.output_scalars}
+        self.available_tables = dict(self.datasets)
+
+    # Helper methods
+
+    @contextmanager
+    def _clause_scope(
+        self, ds: Optional[Dataset] = None, prefix: Optional[str] = None
+    ) -> Generator[None, None, None]:
+        """Temporarily set clause state and restore it on exit."""
+        old_in_clause = self._in_clause
+        old_current_ds = self._current_dataset
+        old_prefix = self._column_prefix
+        self._in_clause = True
+        self._current_dataset = ds
+        self._column_prefix = prefix
+        try:
+            yield
+        finally:
+            self._in_clause = old_in_clause
+            self._current_dataset = old_current_ds
+            self._column_prefix = old_prefix
+
+    @contextmanager
+    def _stash_assignment(self) -> Generator[None, None, None]:
+        """Temporarily stash the ``current_assignment`` and restore it on exit."""
+        saved = self.current_assignment
+        self.current_assignment = ""
+        try:
+            yield
+        finally:
+            self.current_assignment = saved
+
+    @contextmanager
+    def _stash_dp_signature(
+        self, signature: Optional[Dict[str, str]]
+    ) -> Generator[None, None, None]:
+        """Temporarily set ``_dp_signature`` and restore it on exit."""
+        saved = self._dp_signature
+        self._dp_signature = signature
+        try:
+            yield
+        finally:
+            self._dp_signature = saved
+
+    @staticmethod
+    def _ensure_rule_names(rules: List[Any]) -> None:
+        """Assign ``str(i+1)`` to rules that have no explicit name."""
+        if any(r.name is not None for r in rules):
+            return
+        for i, rule in enumerate(rules):
+            rule.name = str(i + 1)
+
+    def _resolve_clause_dataset(self, node: AST.RegularAggregation) -> Any:
+        """Resolve and return (dataset, table_src) for a clause node."""
+        if not node.dataset:
+            return None
+        ds = self._get_dataset_structure(node.dataset)
+        table_src = self._get_dataset_sql(node.dataset)
+        if ds is None:
+            return None
+        return ds, table_src
+
+    def _get_assignment_inputs(self, name: str) -> List[str]:
+        if self.dag is None:
+            return []
+        if hasattr(self.dag, "dependencies"):
+            for deps in self.dag.dependencies.values():
+                if name in deps.outputs or name in deps.persistent:
+                    return deps.inputs
+        return []
+
+    # Top-level visitors
+
+    def transpile(self, node: AST.Start) -> List[Tuple[str, str, bool]]:
+        """Return (name, sql, is_persistent) tuples for the script."""
+        queries = self.visit(node)
+        # Constant-fold ``vtl_period_parse('canonical')`` calls now that all
+        # nested macro expansion is in place.
+        return [(name, _inline_period_parse_literals(sql), p) for name, sql, p in queries]
+
+    def visit_Start(self, node: AST.Start) -> List[Tuple[str, str, bool]]:
+        """Generate SQL for top-level nodes."""
+        queries: List[Tuple[str, str, bool]] = []
+
+        for child in node.children:
+            if isinstance(child, AST.Operator):
+                self.visit(child)
+            elif isinstance(child, AST.DPRuleset):
+                self.visit_DPRuleset(child)
+            elif isinstance(child, AST.HRuleset):
+                self._visit_HRuleset(child)
+            elif isinstance(child, AST.Assignment):
+                name = child.left.value  # type: ignore[attr-defined]
+                self.current_assignment = name
+                self.inputs = self._get_assignment_inputs(name)
+
+                is_persistent = isinstance(child, AST.PersistentAssignment)
+                if name in self.output_scalars:
+                    value_sql = self.visit(child)
+                    if not value_sql.strip().upper().startswith("SELECT"):
+                        value_sql = f"SELECT {value_sql} AS value"
+                    queries.append((name, value_sql, is_persistent))
+                else:
+                    query = self.visit(child)
+                    query = self._unqualify_join_columns(name, query)
+                    queries.append((name, query, is_persistent))
+
+                self._join_alias_map = {}
+                self._consumed_join_aliases = set()
+
+        return queries
+
+    def _unqualify_join_columns(self, ds_name: str, query: str) -> str:
+        """Rename remaining alias#comp columns to plain component names."""
+        if not self._join_alias_map:
+            return query
+
+        output_ds = self.output_datasets.get(ds_name)
+        if output_ds is None:
+            return query
+
+        output_comp_names = set(output_ds.components.keys())
+        unqual_to_qual: Dict[str, str] = {}
+        for qualified in self._join_alias_map:
+            if qualified in self._consumed_join_aliases or qualified in output_comp_names:
+                continue
+            if "#" in qualified:
+                unqualified = qualified.split("#", 1)[1]
+                if unqualified in output_comp_names and unqualified not in unqual_to_qual:
+                    unqual_to_qual[unqualified] = qualified
+
+        if not unqual_to_qual:
+            return query
+
+        cols: List[str] = []
+        for comp_name in output_ds.components:
+            qual = unqual_to_qual.get(comp_name)
+            if qual is not None:
+                cols.append(f"{quote_name(qual)} AS {quote_name(comp_name)}")
+            else:
+                cols.append(quote_name(comp_name))
+
+        return f"SELECT {', '.join(cols)} FROM ({query})"
+
+    def visit_Assignment(self, node: AST.Assignment) -> str:
+        """Visit an assignment and return the SQL for its right-hand side."""
+        return self.visit(node.right)
+
+    visit_PersistentAssignment = visit_Assignment
+
+    def _get_node_value(self, node: Any) -> str:
+        """Extract ``.value`` from an AST node, falling back to ``str(node)``."""
+        return node.value if hasattr(node, "value") else str(node)
+
+    def _unwrap_assignment(self, child: AST.AST) -> AST.AST:
+        """Return the inner ``Assignment`` from ``UnaryOp(Assignment)`` wrappers."""
+        return child.operand if isinstance(child, AST.UnaryOp) else child
+
+    def _is_numeric(self, value: Any) -> bool:
+        """Return True if ``value`` is ``None`` or coerces to ``float`` without error."""
+        try:
+            float(value)
+        except (ValueError, TypeError):
+            return False
+        return True
+
+    def _as_subquery(self, src: str) -> str:
+        """Wrap *src* as a parenthesized subquery, adding ``SELECT *`` if needed."""
+        stripped = src.strip().upper()
+        if stripped.startswith("("):
+            return src
+        if stripped.startswith("SELECT"):
+            return f"({src})"
+        return f"(SELECT * FROM {src})"
+
+    # Leaf visitors
+
+    def _scalar_literal(self, name: str) -> str:
+        sc = self.scalars[name]
+        return self._to_sql_literal(sc.value, getattr(sc.data_type, "__name__", ""))
+
+    def _resolve_udo_param(self, name: str, udo_val: Any) -> str:
+        if not isinstance(udo_val, AST.VarID):
+            return self.visit(udo_val) if isinstance(udo_val, AST.AST) else quote_name(udo_val)
+        resolved = udo_val.value
+        is_component = isinstance(self._get_udo_param(f"__type__{name}"), Component)
+        if resolved in self.available_tables and not is_component:
+            return f"SELECT * FROM {quote_name(resolved)}"
+        if resolved in self.scalars:
+            return self._scalar_literal(resolved)
+        if resolved != name:
+            return self.visit(udo_val)
+        return quote_name(resolved)
+
+    def _resolve_clause_component(self, name: str) -> Optional[str]:
+        if not (self._in_clause and self._current_dataset):
+            return None
+        if name in self._current_dataset.components:
+            return quote_name(name)
+        matches = [
+            c for c in self._current_dataset.components if "#" in c and c.split("#", 1)[1] == name
+        ]
+        return quote_name(matches[0]) if len(matches) == 1 else None
+
+    def visit_VarID(self, node: AST.VarID) -> str:  # type: ignore[override]
+        """Visit a variable identifier."""
+        name = node.value
+
+        udo_val = self._get_udo_param(name)
+        if udo_val is not None:
+            return self._resolve_udo_param(name, udo_val)
+
+        if name in self.scalars:
+            if name in self.input_scalars:
+                return self._scalar_literal(name)
+            return f"(SELECT value FROM {quote_name(name)})"
+
+        clause_match = self._resolve_clause_component(name)
+        if clause_match is not None:
+            return clause_match
+
+        if name in self.available_tables:
+            return f"SELECT * FROM {quote_name(name)}"
+
+        return quote_name(name)
+
+    def visit_Constant(self, node: AST.Constant) -> str:  # type: ignore[override]
+        """Visit a constant literal."""
+        return self._constant_to_sql(node)
+
+    def visit_ParamConstant(self, node: AST.ParamConstant) -> str:
+        """Visit a parameter constant."""
+        return str(node.value)
+
+    def visit_Identifier(self, node: AST.Identifier) -> str:
+        """Visit an identifier node."""
+        return quote_name(node.value)
+
+    def visit_ID(self, node: AST.ID) -> str:  # type: ignore[override]
+        """Visit an ID node."""
+        return node.value
+
+    def visit_ParFunction(self, node: AST.ParFunction) -> str:  # type: ignore[override]
+        """Visit a parenthesized function/expression."""
+        return self.visit(node.operand)
+
+    def visit_Collection(self, node: AST.Collection) -> str:  # type: ignore[override]
+        """Visit a Collection (Set or ValueDomain reference)."""
+        if node.kind == "ValueDomain":
+            return self._visit_value_domain(node)
+        values = [self._visit_collection_element(child) for child in node.children]
+        return f"({', '.join(values)})"
+
+    def _visit_collection_element(self, child: AST.AST) -> str:
+        """Visit a set element, preserving raw CAST behavior for time_period literals."""
+        if isinstance(child, AST.ParamOp) and child.op == tokens.CAST:
+            type_node = child.children[1]
+            if type_node == TimePeriod:
+                source_type = self._get_source_vtl_type(child.children[0])
+                if source_type not in (Date, TimeInterval):
+                    operand_sql = self.visit(child.children[0])
+                    return f"CAST({operand_sql} AS VARCHAR)"
+        return self.visit(child)
+
+    def _visit_value_domain(self, node: AST.Collection) -> str:
+        """Resolve a ValueDomain reference to SQL literal list."""
+        vd = self.value_domains[node.name]
+        type_name = vd.type.__name__ if hasattr(vd.type, "__name__") else str(vd.type)
+        literals = [self._to_sql_literal(v, type_name) for v in vd.setlist]
+        return f"({', '.join(literals)})"
+
+    # Generic dataset-level helpers
+
+    def _apply_measures(
+        self,
+        ds_node: Optional[AST.AST],
+        expr_fn: "Callable[[str], str]",
+        output_name_override: Optional[str] = None,
+        cast_bool_to_str: bool = False,
+        viral_expr_fn: "Optional[Callable[[str, Any], str]]" = None,
+    ) -> str:
+        """Apply an expression to each dataset measure and pass identifiers through."""
+        ds = self._get_dataset_structure(ds_node)
+        table_src = self._get_dataset_sql(ds_node)
+        output_ds = self._get_output_dataset()
+        output_measures = list(output_ds.get_measures_names()) if output_ds else []
+
+        cols: List[str] = []
+        for name, comp in ds.components.items():
+            if comp.role == Role.IDENTIFIER:
+                cols.append(quote_name(name))
+            elif comp.role == Role.MEASURE:
+                col_ref = quote_name(name)
+                if cast_bool_to_str and comp.data_type == Boolean:
+                    col_ref = _bool_to_str(col_ref)
+                expr = expr_fn(col_ref)
+
+                out_name = name
+                if output_name_override is not None:
+                    out_name = output_name_override
+                elif len(output_measures) == 1 and (
+                    ds.name not in self.input_datasets
+                    or name in self.input_datasets[ds.name].get_measures_names()
+                ):
+                    out_name = output_measures[0]
+                cols.append(f"{expr} AS {quote_name(out_name)}")
+            elif comp.role == Role.VIRAL_ATTRIBUTE:
+                if viral_expr_fn is not None:
+                    cols.append(f"{viral_expr_fn(name, comp)} AS {quote_name(name)}")
+                elif output_ds is not None and name in output_ds.components:
+                    # Single value per row: pass the viral attribute through unchanged,
+                    # but only when the operator's output structure keeps it (so data
+                    # matches the declared structure for unary / dataset-scalar / etc.).
+                    cols.append(quote_name(name))
+
+        return SQLBuilder().select(*cols).from_table(table_src).build()
+
+    # Dataset-level binary helpers
+
+    @staticmethod
+    def _build_agg_expr(
+        op: str, col_ref: str, data_type: Optional[type], *, dataset_level: bool = False
+    ) -> Optional[str]:
+        """Build a type-aware aggregate expression for MIN/MAX on Duration/TimePeriod.
+
+        Returns None when the standard ``registry.sql`` path should be used.
+
+        Args:
+            op: Aggregate operator token (e.g. ``tokens.MIN``).
+            col_ref: Quoted column reference.
+            data_type: Component data type, or None.
+            dataset_level: True for dataset-level aggregation (normalizes TimePeriod
+                and wraps with ``vtl_period_to_string``); False for clause-context
+                aggregation (uses ``ARG_MIN``/``ARG_MAX``).
+        """
+        if op not in (tokens.MIN, tokens.MAX) or data_type is None:
+            return None
+        if data_type == Duration:
+            return f"vtl_int_to_duration({op.upper()}(vtl_duration_to_int({col_ref})))"
+        if data_type == TimePeriod:
+            parsed = f"vtl_period_parse({col_ref})"
+            if dataset_level:
+                return f"vtl_period_to_string({op.upper()}({parsed}))"
+            return f"ARG_{op.upper()}({col_ref}, {parsed})"
+        return None
+
+    @staticmethod
+    def _join_on_clause(common_ids: List[str], left_alias: str, right_alias: str) -> str:
+        """Build ``a."Id" = b."Id" AND ...`` for a JOIN ON or WHERE clause."""
+        if not common_ids:
+            return "1=1"
+        return " AND ".join(
+            f"{left_alias}.{quote_name(i)} = {right_alias}.{quote_name(i)}" for i in common_ids
+        )
+
+    def _left_join_dataset(
+        self,
+        operand: AST.AST,
+        operand_type: str,
+        alias: str,
+        source_ids: List[str],
+        source_alias: str,
+        builder: "SQLBuilder",
+    ) -> Optional[str]:
+        """LEFT JOIN a dataset operand and return a ref to its first ID (for filtering)."""
+        if operand_type != _DATASET:
+            return None
+        sql = self._get_dataset_sql(operand)
+        ds = self._get_dataset_structure(operand)
+        ds_ids = set(ds.get_identifiers_names()) if ds else set()
+        common = [id_ for id_ in source_ids if id_ in ds_ids]
+        if not common:
+            return None
+        on = self._join_on_clause(common, source_alias, alias)
+        builder.join(sql, alias, on=on, join_type="LEFT")
+        return f"{alias}.{quote_name(common[0])}"
+
+    def visit_UnaryOp(self, node: AST.UnaryOp) -> str:  # type: ignore[override]
+        """Visit a unary operation."""
+        op = node.op
+        if op == tokens.PERIOD_INDICATOR:
+            return self._visit_period_indicator(node)
+        if op in (tokens.FLOW_TO_STOCK, tokens.STOCK_TO_FLOW):
+            return self._visit_flow_stock(node, op)
+
+        operand_type = self._get_node_type(node.operand)
+        if operand_type == _DATASET:
+            ds = self._get_dataset_structure(node.operand)
+            name_override: Optional[str] = None
+            if op == tokens.ISNULL and ds and len(ds.get_measures_names()) == 1:
+                name_override = "bool_var"
+
+            def _unary_expr(col_ref: str) -> str:
+                comp = ds.components.get(col_ref.strip('"')) if ds else None
+                dt = comp.data_type if comp else None
+                return registry.sql(op, col_ref, data_type=dt)
+
+            bool_to_str = op in _STRING_UNARY_OPS
+            return self._apply_measures(node.operand, _unary_expr, name_override, bool_to_str)
+        else:
+            dt = self._detect_scalar_type(node.operand)
+            operand_sql = self.visit(node.operand)
+            return registry.sql(op, operand_sql, data_type=dt)
+
+    def visit_BinOp(self, node: AST.BinOp) -> str:  # type: ignore[override]
+        """Visit a binary operation"""
+        op = node.op
+        if op == tokens.MEMBERSHIP:
+            return self._visit_binop_membership(node)
+
+        left_type = self._get_node_type(node.left)
+        right_type = self._get_node_type(node.right)
+        if left_type == _DATASET or right_type == _DATASET:
+            if op in (tokens.IN, tokens.NOT_IN) and left_type == _DATASET:
+                collection = self.visit(node.right)
+
+                def _in_expr(col_ref: str) -> str:
+                    return f"({col_ref} {'IN' if op == tokens.IN else 'NOT IN'} {collection})"
+
+                return self._apply_measures(node.left, _in_expr, output_name_override="bool_var")
+            if left_type == _DATASET and right_type == _DATASET:
+                return self._build_ds_ds_binary(node.left, node.right, op)
+            if left_type == _DATASET:
+                return self._build_ds_scalar_binary(node.left, node.right, op, ds_on_left=True)
+            return self._build_ds_scalar_binary(node.right, node.left, op, ds_on_left=False)
+
+        # Scalar-scalar binary: detect types and delegate to _make_binary_expr
+        left_sql = self.visit(node.left)
+        right_sql = self.visit(node.right)
+        left_dt = self._detect_scalar_type(node.left)
+        right_dt = self._detect_scalar_type(node.right)
+        return self._make_binary_expr(left_sql, right_sql, op, left_dt, right_dt)
+
+    def _make_binary_expr(
+        self,
+        left_ref: str,
+        right_ref: str,
+        op: str,
+        left_type: Optional[type] = None,
+        right_type: Optional[type] = None,
+    ) -> str:
+        """Build a binary SQL expression with type-aware registry dispatch."""
+        dt = left_type or right_type
+        # TimeInterval: ordering not supported
+        if op in _ORDERING_OPS and dt == TimeInterval:
+            raise RunTimeError("2-1-19-17", op=op)
+        # datediff: convert each operand to DATE individually based on its type
+        if op == tokens.DATEDIFF and dt in (TimePeriod, TimeInterval, Date):
+            left_ref = _datediff_to_date(left_ref, left_type)
+            right_ref = _datediff_to_date(right_ref, right_type)
+            return f"ABS(DATE_DIFF('day', {left_ref}, {right_ref}))"
+        # Date↔TimePeriod cross-type promotion
+        if left_type and right_type and _is_date_timeperiod_pair(left_type, right_type):
+            return _date_tp_compare_expr(left_ref, right_ref, left_type, right_type, op)
+        # Typed or generic registry lookup, with function-call fallback
+        return registry.sql(op, left_ref, right_ref, data_type=dt)
+
+    def _build_ds_ds_binary(
+        self,
+        left_node: AST.AST,
+        right_node: AST.AST,
+        op: str,
+    ) -> str:
+        """Build SQL for dataset-dataset binary operations using JOIN."""
+        left_ds = self._get_dataset_structure(left_node)
+        right_ds = self._get_dataset_structure(right_node)
+        output_ds = self._get_output_dataset()
+
+        left_src = self._get_dataset_sql(left_node)
+        right_src = self._get_dataset_sql(right_node)
+
+        alias_a = "a"
+        alias_b = "b"
+
+        left_ids = set(left_ds.get_identifiers_names())
+        right_ids = set(right_ds.get_identifiers_names())
+        common_ids = sorted(left_ids & right_ids)
+        all_ids = sorted(left_ids | right_ids)
+
+        output_measure_names = list(output_ds.get_measures_names()) if output_ds else []
+        left_measures = left_ds.get_measures_names()
+        right_measures = right_ds.get_measures_names()
+        common_measures = [m for m in left_measures if m in right_measures]
+
+        paired_measures: List[Tuple[str, str]] = []
+        if common_measures:
+            paired_measures = [(m, m) for m in common_measures]
+        elif len(left_measures) == 1 and len(right_measures) == 1:
+            if output_measure_names and len(output_measure_names) == 1:
+                out_m = output_measure_names[0]
+                paired_measures = [(out_m, out_m)]
+            else:
+                paired_measures = [(left_measures[0], right_measures[0])]
+
+        cols: List[str] = []
+        for id_name in all_ids:
+            if id_name in left_ids:
+                cols.append(f"{alias_a}.{quote_name(id_name)}")
+            else:
+                cols.append(f"{alias_b}.{quote_name(id_name)}")
+
+        for left_m, right_m in paired_measures:
+            left_ref = f"{alias_a}.{quote_name(left_m)}"
+            right_ref = f"{alias_b}.{quote_name(right_m)}"
+
+            # Boolean→String promotion for concat
+            if op == tokens.CONCAT:
+                left_comp_c = left_ds.components.get(left_m)
+                right_comp_c = right_ds.components.get(right_m)
+                if left_comp_c and left_comp_c.data_type == Boolean:
+                    left_ref = _bool_to_str(left_ref)
+                if right_comp_c and right_comp_c.data_type == Boolean:
+                    right_ref = _bool_to_str(right_ref)
+
+            left_comp = left_ds.components.get(left_m)
+            right_comp = right_ds.components.get(right_m)
+            left_dt = left_comp.data_type if left_comp else None
+            right_dt = right_comp.data_type if right_comp else None
+            expr = self._make_binary_expr(left_ref, right_ref, op, left_dt, right_dt)
+
+            out_name = left_m
+            if (
+                output_measure_names
+                and len(paired_measures) == 1
+                and len(output_measure_names) == 1
+            ):
+                out_name = output_measure_names[0]
+            cols.append(f"{expr} AS {quote_name(out_name)}")
+
+        # Viral attribute propagation: combine values present in both operands.
+        vp_registry = get_current_registry()
+        left_viral = {n for n, c in left_ds.components.items() if c.role == Role.VIRAL_ATTRIBUTE}
+        right_viral = {n for n, c in right_ds.components.items() if c.role == Role.VIRAL_ATTRIBUTE}
+        if output_ds is not None:
+            viral_names = [
+                n for n, c in output_ds.components.items() if c.role == Role.VIRAL_ATTRIBUTE
+            ]
+        else:
+            viral_names = sorted(left_viral | right_viral)
+        for name in viral_names:
+            qn = quote_name(name)
+            in_left = name in left_viral
+            in_right = name in right_viral
+            if in_left and in_right:
+                comp = (
+                    output_ds.components.get(name) if output_ds else None
+                ) or left_ds.components[name]
+                rule = vp_registry.rule_for(comp)
+                if rule is None:
+                    cols.append(f"CAST(NULL AS {get_duckdb_type(comp.data_type.__name__)}) AS {qn}")
+                else:
+                    cols.append(
+                        f"{vp_pair_sql(rule, f'{alias_a}.{qn}', f'{alias_b}.{qn}')} AS {qn}"
+                    )
+            elif in_left:
+                cols.append(f"{alias_a}.{qn} AS {qn}")
+            elif in_right:
+                cols.append(f"{alias_b}.{qn} AS {qn}")
+
+        on_clause = self._join_on_clause(common_ids, alias_a, alias_b)
+
+        builder = SQLBuilder().select(*cols).from_table(left_src, alias_a)
+        if on_clause != "1=1":
+            builder.join(right_src, alias_b, on=on_clause, join_type="INNER")
+        else:
+            builder.cross_join(right_src, alias_b)
+
+        return builder.build()
+
+    def _build_ds_scalar_binary(
+        self,
+        ds_node: AST.AST,
+        scalar_node: AST.AST,
+        op: str,
+        ds_on_left: bool = True,
+    ) -> str:
+        """Build SQL for dataset-scalar binary operation."""
+        ds = self._get_dataset_structure(ds_node)
+        if ds is None or not isinstance(ds, Dataset):
+            left_sql = self.visit(ds_node)
+            right_sql = self.visit(scalar_node)
+            if ds_on_left:
+                return registry.sql(op, left_sql, right_sql)
+            return registry.sql(op, right_sql, left_sql)
+
+        scalar_sql = self.visit(scalar_node)
+
+        def _bin_expr(col_ref: str) -> str:
+            comp = ds.components.get(col_ref.strip('"'))
+            dt = comp.data_type if comp else None
+            if ds_on_left:
+                return self._make_binary_expr(col_ref, scalar_sql, op, dt, None)
+            return self._make_binary_expr(scalar_sql, col_ref, op, None, dt)
+
+        return self._apply_measures(
+            ds_node,
+            _bin_expr,
+            cast_bool_to_str=op == tokens.CONCAT,
+        )
+
+    def _visit_binop_membership(self, node: AST.BinOp) -> str:
+        """Visit MEMBERSHIP (#): DS#comp -> SELECT ids, comp FROM DS."""
+        comp_name = self._resolve_udo_name(self._get_node_value(node.right))
+
+        if self._in_clause:
+            ds_name = self._get_node_value(node.left)
+            qualified = f"{ds_name}#{comp_name}"
+            if qualified in self._join_alias_map:
+                return quote_name(qualified)
+            col = quote_name(comp_name)
+            if self._column_prefix:
+                col = f"{self._column_prefix}.{col}"
+            return col
+
+        ds = self._get_dataset_structure(node.left)
+        table_src = self._get_dataset_sql(node.left)
+
+        if ds is None:
+            ds_name = self._resolve_dataset_name(node.left)
+            return f"SELECT {quote_name(comp_name)} FROM {quote_name(ds_name)}"
+
+        target_comp = ds.components.get(comp_name)
+        alias_name = comp_name
+        if target_comp and target_comp.role in (Role.IDENTIFIER, Role.ATTRIBUTE):
+            alias_name = COMP_NAME_MAPPING.get(target_comp.data_type, comp_name)
+
+        cols: List[str] = []
+        for name, comp in ds.components.items():
+            if comp.role == Role.IDENTIFIER:
+                cols.append(quote_name(name))
+        if alias_name != comp_name:
+            cols.append(f"{quote_name(comp_name)} AS {quote_name(alias_name)}")
+        else:
+            cols.append(quote_name(comp_name))
+
+        return SQLBuilder().select(*cols).from_table(table_src).build()
+
+    def visit_BinOp_match_characters(self, node: AST.BinOp) -> str:
+        """Visit match_characters operator.
+
+        Emits DuckDB's native RE2 ``regexp_full_match`` for patterns RE2 can
+        compile. Literal patterns using PCRE/Python-only constructs RE2 rejects
+        (lookaround, backreferences, ...) are routed to the
+        ``vtl_match_characters`` Python UDF so they match the ``re`` semantics
+        of the legacy engine.
+        """
+        pattern_sql = self.visit(node.right)
+        match_function = self._match_characters_function(node.right)
+
+        def _match_sql(col: str) -> str:
+            if match_function == NATIVE_MATCH_FUNCTION:
+                return registry.sql(tokens.CHARSET_MATCH, col, pattern_sql)
+            return f"{match_function}({col}, {pattern_sql})"
+
+        if self._get_node_type(node.left) == _DATASET:
+            return self._apply_measures(node.left, _match_sql)
+        return _match_sql(self.visit(node.left))
+
+    def _match_characters_function(self, pattern_node: AST.AST) -> str:
+        """Pick the SQL function for a ``match_characters`` pattern.
+
+        Literal patterns are inspected: those RE2 cannot compile use the Python
+        fallback UDF. Non-literal patterns (e.g. a component) keep the native
+        function, since their compatibility is unknown at transpile time.
+        """
+        if (
+            isinstance(pattern_node, AST.Constant)
+            and isinstance(pattern_node.value, str)
+            and is_re2_incompatible(pattern_node.value)
+        ):
+            return FALLBACK_MATCH_FUNCTION
+        return NATIVE_MATCH_FUNCTION
+
+    def visit_BinOp_exists_in(self, node: AST.BinOp) -> str:
+        """Visit EXISTS_IN BinOp."""
+        return self._exists_in_sql(node.left, node.right)
+
+    def _exists_in_sql(self, left_node: AST.AST, right_node: AST.AST) -> str:
+        """Build SQL for exists_in operation."""
+        left_ds = self._get_dataset_structure(left_node)
+        right_ds = self._get_dataset_structure(right_node)
+        left_src = self._get_dataset_sql(left_node)
+        right_src = self._get_dataset_sql(right_node)
+
+        left_ids = left_ds.get_identifiers_names()
+        right_ids = right_ds.get_identifiers_names()
+        id_cols = ", ".join([f"l.{quote_name(id_)}" for id_ in left_ids])
+        common_ids = [id_ for id_ in left_ids if id_ in right_ids]
+        where_clause = self._join_on_clause(common_ids, "l", "r")
+
+        right_subq = self._as_subquery(right_src)
+        exists_subq = f"EXISTS(SELECT 1 FROM {right_subq} AS r WHERE {where_clause})"
+        left_subq = self._as_subquery(left_src)
+
+        return f'SELECT {id_cols}, {exists_subq} AS "bool_var" FROM {left_subq} AS l'
+
+    def _is_operand_type(self, node: AST.AST, target_type: type) -> bool:
+        """Check if an operand resolves to *target_type*."""
+        if isinstance(node, AST.VarID):
+            name = self._resolve_udo_name(node.value)
+            if self._in_clause and self._current_dataset:
+                comp = self._current_dataset.components.get(name)
+                return comp is not None and comp.data_type == target_type
+            return name in self.scalars and self.scalars[name].data_type == target_type
+
+        elif isinstance(node, AST.ParamOp) and node.op == tokens.CAST:
+            type_node = node.children[1]
+            return type_node == target_type
+
+        return False
+
+    def _detect_scalar_type(self, node: AST.AST) -> Optional[type]:
+        """Detect the data type of a scalar operand for typed dispatch."""
+        for tp in (TimePeriod, Duration, TimeInterval):
+            if self._is_operand_type(node, tp):
+                return tp
+        return None
+
+    def _visit_period_indicator(self, node: AST.UnaryOp) -> str:
+        """Visit PERIOD_INDICATOR: extract period indicator from TimePeriod."""
+        operand_type = self._get_node_type(node.operand)
+
+        ds = self._get_dataset_structure(node.operand)
+
+        if operand_type == _DATASET or ds is not None:
+            src = self._get_dataset_sql(node.operand)
+
+            time_id = ""
+            for comp in ds.components.values():
+                if comp.data_type == TimePeriod and comp.role == Role.IDENTIFIER:
+                    time_id = comp.name
+                    break
+
+            id_cols = [quote_name(c.name) for c in ds.get_identifiers()]
+            extract_expr = (
+                f'vtl_period_parse({quote_name(time_id)}).period_indicator AS "duration_var"'
+            )
+            cols_sql = ", ".join(id_cols) + ", " + extract_expr
+
+            if src.strip().upper().startswith("SELECT"):
+                return f"SELECT {cols_sql} FROM ({src}) AS _pi"
+            return f"SELECT {cols_sql} FROM {src}"
+        else:
+            operand_sql = self.visit(node.operand)
+            return f"vtl_period_parse({operand_sql}).period_indicator"
+
+    def visit_ParamOp(self, node: AST.ParamOp) -> str:  # type: ignore[override]
+        """Visit a parameterized operation (default handling)."""
+        op = node.op
+        params_sql = self._visit_params(node.params)
+        if op in (tokens.ROUND, tokens.TRUNC) and not params_sql:
+            params_sql = ["0"]
+
+        if op == tokens.STRING_DISTANCE:
+            return self._visit_string_distance(node)
+
+        operand_type = self._get_node_type(node.children[0]) if node.children else _SCALAR
+
+        if operand_type == _DATASET:
+            ds_node = node.children[0]
+            to_str = op in _STRING_PARAM_OPS
+
+            def _param_expr(col_ref: str) -> str:
+                return registry.sql(op, col_ref, *params_sql)
+
+            return self._apply_measures(ds_node, _param_expr, cast_bool_to_str=to_str)
+
+        children_sql = [self.visit(c) for c in node.children]
+        all_args = children_sql + params_sql
+        return registry.sql(op, *all_args)
+
+    def _visit_string_distance(self, node: AST.ParamOp) -> str:
+        """Visit string_distance(method, s1, s2). Handles dataset/component/scalar mixes."""
+        method_node = node.params[0]
+        method = method_node.value if isinstance(method_node, AST.ParamConstant) else ""
+        macro = f"vtl_{method}"
+
+        left, right = node.children[0], node.children[1]
+        left_type = self._get_node_type(left)
+        right_type = self._get_node_type(right)
+
+        if left_type == _DATASET and right_type == _DATASET:
+            return self._build_string_distance_ds_ds(left, right, macro)
+        if left_type == _DATASET or right_type == _DATASET:
+            ds_node, scalar_node = (left, right) if left_type == _DATASET else (right, left)
+            scalar_sql = self.visit(scalar_node)
+            ds_on_left = left_type == _DATASET
+
+            def _sd_expr(col_ref: str) -> str:
+                if ds_on_left:
+                    return f"{macro}({col_ref}, {scalar_sql})"
+                return f"{macro}({scalar_sql}, {col_ref})"
+
+            return self._apply_measures(ds_node, _sd_expr)
+
+        left_sql = self.visit(left)
+        right_sql = self.visit(right)
+        return f"{macro}({left_sql}, {right_sql})"
+
+    def _build_string_distance_ds_ds(
+        self, left_node: AST.AST, right_node: AST.AST, macro: str
+    ) -> str:
+        """Build JOIN-based SQL for string_distance with two dataset operands."""
+        left_ds = self._get_dataset_structure(left_node)
+        right_ds = self._get_dataset_structure(right_node)
+        output_ds = self._get_output_dataset()
+
+        left_src = self._get_dataset_sql(left_node)
+        right_src = self._get_dataset_sql(right_node)
+
+        alias_a, alias_b = "a", "b"
+        left_ids = set(left_ds.get_identifiers_names())
+        right_ids = set(right_ds.get_identifiers_names())
+        common_ids = sorted(left_ids & right_ids)
+        all_ids = sorted(left_ids | right_ids)
+
+        left_measures = left_ds.get_measures_names()
+        right_measures = right_ds.get_measures_names()
+        common_measures = [m for m in left_measures if m in right_measures]
+        if common_measures:
+            paired = [(m, m) for m in common_measures]
+        elif len(left_measures) == 1 and len(right_measures) == 1:
+            paired = [(left_measures[0], right_measures[0])]
+        else:
+            paired = []
+
+        output_measure_names = list(output_ds.get_measures_names()) if output_ds else []
+
+        cols: List[str] = []
+        for id_name in all_ids:
+            src_alias = alias_a if id_name in left_ids else alias_b
+            cols.append(f"{src_alias}.{quote_name(id_name)}")
+
+        for left_m, right_m in paired:
+            expr = f"{macro}({alias_a}.{quote_name(left_m)}, {alias_b}.{quote_name(right_m)})"
+            out_name = left_m
+            if output_measure_names and len(paired) == 1 and len(output_measure_names) == 1:
+                out_name = output_measure_names[0]
+            cols.append(f"{expr} AS {quote_name(out_name)}")
+
+        on_clause = self._join_on_clause(common_ids, alias_a, alias_b)
+        builder = SQLBuilder().select(*cols).from_table(left_src, alias_a)
+        if on_clause != "1=1":
+            builder.join(right_src, alias_b, on=on_clause, join_type="INNER")
+        else:
+            builder.cross_join(right_src, alias_b)
+        return builder.build()
+
+    def _visit_params(self, params: List[Any]) -> List[Optional[str]]:
+        """Visit param nodes, converting VTL '_' to None and VTL null to 'NULL'."""
+        result: List[Optional[str]] = []
+        for p in params:
+            if p is None or (isinstance(p, AST.ID) and p.value == "_"):
+                result.append(None)
+            elif isinstance(p, AST.Constant) and p.value is None:
+                result.append("NULL")
+            else:
+                result.append(self.visit(p))
+        return result
+
+    def _resolve_time_identifier(self, ds: Dataset, op_name: str) -> Any:
+        """Return the time identifier name and type for time-based operators."""
+        for comp in ds.components.values():
+            if comp.data_type in (TimePeriod, Date) and comp.role == Role.IDENTIFIER:
+                return comp.name, comp.data_type
+
+    def _build_time_grid_parts(
+        self,
+        ds: Dataset,
+        time_id: str,
+    ) -> Tuple[str, List[str], List[str], str, str, str]:
+        """Build common JOIN/select fragments for fill-time-series queries."""
+        time_col = quote_name(time_id)
+        other_id_cols = [quote_name(c.name) for c in ds.get_identifiers() if c.name != time_id]
+        measure_cols = [
+            quote_name(c.name) for c in ds.components.values() if c.role != Role.IDENTIFIER
+        ]
+
+        join_conds = [f"g.{time_col} = s.{time_col}"]
+        join_conds.extend(f"g.{oc} = s.{oc}" for oc in other_id_cols)
+        join_on = " AND ".join(join_conds)
+
+        g_cols = [f"g.{oc}" for oc in other_id_cols] + [f"g.{time_col}"]
+        s_cols = [f"s.{mc}" for mc in measure_cols]
+        final_select = ", ".join(g_cols + s_cols)
+        order_by = ", ".join(g_cols)
+        return time_col, other_id_cols, measure_cols, join_on, final_select, order_by
+
+    # Shared SQL fragment for the RECURSIVE step that increments a vtl_time_period.
+    _TP_NEXT_PERIOD = (
+        "CASE"
+        " WHEN ep.tp.period_number + 1 > vtl_period_limit(ep.tp.period_indicator)"
+        " THEN {'year': ep.tp.year + 1, 'period_indicator': ep.tp.period_indicator,"
+        " 'period_number': 1}::vtl_time_period"
+        " ELSE {'year': ep.tp.year, 'period_indicator': ep.tp.period_indicator,"
+        " 'period_number': ep.tp.period_number + 1}::vtl_time_period END"
+    )
+
+    def visit_ParamOp_fill_time_series(self, node: AST.ParamOp) -> str:
+        """Fill missing time periods/dates with NULL rows."""
+        ds_node = node.children[0]
+        fill_mode = "all"
+        if node.params:
+            mode_val = self.visit(node.params[0])
+            if isinstance(mode_val, str):
+                fill_mode = mode_val.strip("'\"").lower()
+
+        ds = self._get_dataset_structure(ds_node)
+        src = self._get_dataset_sql(ds_node)
+
+        time_id, time_type = self._resolve_time_identifier(ds, "fill_time_series")
+
+        if time_type == Date:
+            return self._fill_time_series_date(ds, src, time_id, fill_mode)
+        return self._fill_time_series_period(ds, src, time_id, fill_mode)
+
+    def _fill_time_series_period(self, ds: Dataset, src: str, time_id: str, fill_mode: str) -> str:
+        """Fill time series for TimePeriod identifiers using RECURSIVE CTE."""
+        time_col, other_id_cols, _, join_on, final_select, order_by = self._build_time_grid_parts(
+            ds, time_id
+        )
+        oid_select = ", ".join(other_id_cols)
+        per_group = fill_mode == "single" and bool(other_id_cols)
+
+        cte = CTEBuilder()
+        cte.cte("source", f"SELECT * FROM {src}")
+        cte.cte("parsed", f"SELECT *, vtl_period_parse({time_col}) AS tp FROM source")
+
+        if per_group:
+            cte.cte(
+                "bounds",
+                f"SELECT {oid_select}, MIN(tp) AS min_tp, MAX(tp) AS max_tp "
+                f"FROM parsed GROUP BY {oid_select}, tp.period_indicator",
+            )
+            oid_ep_refs = ", ".join(f"ep.{oc}" for oc in other_id_cols)
+            cte.recursive_cte(
+                "expected_periods",
+                f"tp, max_tp, {oid_select}",
+                seed=f"SELECT min_tp, max_tp, {oid_select} FROM bounds",
+                step=f"SELECT {self._TP_NEXT_PERIOD}, ep.max_tp, {oid_ep_refs} "
+                f"FROM expected_periods ep WHERE ep.tp < ep.max_tp",
+            )
+            cte.cte(
+                "full_grid",
+                f"SELECT {oid_select}, vtl_period_to_string(tp) AS {time_col} "
+                f"FROM expected_periods",
+            )
+        else:
+            cte.cte(
+                "year_range",
+                "SELECT MIN(tp.year) AS min_year, MAX(tp.year) AS max_year FROM parsed",
+            )
+            cte.cte("freq_list", "SELECT DISTINCT tp.period_indicator AS ind FROM parsed")
+            cte.cte(
+                "bounds",
+                "SELECT ind, "
+                "{'year': min_year, 'period_indicator': ind, "
+                "'period_number': 1}::vtl_time_period AS min_tp, "
+                "{'year': max_year, 'period_indicator': ind, "
+                "'period_number': vtl_period_limit(ind)}::vtl_time_period AS max_tp "
+                "FROM freq_list, year_range",
+            )
+            cte.recursive_cte(
+                "expected_periods",
+                "tp, max_tp",
+                seed="SELECT min_tp, max_tp FROM bounds",
+                step=f"SELECT {self._TP_NEXT_PERIOD}, ep.max_tp "
+                f"FROM expected_periods ep WHERE ep.tp < ep.max_tp",
+            )
+            cte.cte(
+                "period_strings",
+                f"SELECT vtl_period_to_string(tp) AS {time_col} FROM expected_periods",
+            )
+            if other_id_cols:
+                cte.cte(
+                    "group_freq",
+                    f"SELECT DISTINCT {oid_select}, "
+                    f"vtl_period_parse({time_col}).period_indicator AS ind FROM source",
+                )
+                cte.cte(
+                    "full_grid",
+                    "SELECT gf.{gf_cols}, ps.{tc} FROM group_freq gf "
+                    "JOIN period_strings ps "
+                    "ON vtl_period_parse(ps.{tc}).period_indicator = gf.ind".format(
+                        gf_cols=", gf.".join(other_id_cols), tc=time_col
+                    ),
+                )
+            else:
+                cte.cte("full_grid", f"SELECT {time_col} FROM period_strings")
+
+        final = (
+            f"SELECT {final_select} FROM full_grid g "
+            f"LEFT JOIN source s ON {join_on} ORDER BY {order_by}"
+        )
+        return cte.select(final)
+
+    def _fill_time_series_date(self, ds: Dataset, src: str, time_id: str, fill_mode: str) -> str:
+        """Fill time series for Date identifiers using frequency inference."""
+        time_col, other_id_cols, _, join_on, final_select, order_by = self._build_time_grid_parts(
+            ds, time_id
+        )
+        per_group = fill_mode == "single" and bool(other_id_cols)
+        freq_step = "(SELECT step FROM freq)"
+
+        cte = CTEBuilder()
+        cte.cte("source", f"SELECT * FROM {src}")
+        freq_inner = self._build_timeshift_date_frequency_subquery("source", time_col)
+        cte.cte(
+            "freq",
+            f"SELECT vtl_period_ind_to_interval(period_ind) AS step FROM ({freq_inner})",
+        )
+
+        if per_group:
+            oid_csv = ", ".join(other_id_cols)
+            cte.cte(
+                "bounds",
+                f"SELECT {oid_csv}, MIN({time_col}) AS min_d, MAX({time_col}) AS max_d "
+                f"FROM source GROUP BY {oid_csv}",
+            )
+            b_cols = ", ".join(f"b.{oc}" for oc in other_id_cols)
+            cte.cte(
+                "full_grid",
+                f"SELECT {b_cols}, CAST(d AS TIMESTAMP) AS {time_col} "
+                f"FROM bounds b, generate_series(b.min_d, b.max_d, {freq_step}) AS t(d)",
+            )
+        else:
+            cte.cte(
+                "bounds",
+                f"SELECT MIN({time_col}) AS min_d, MAX({time_col}) AS max_d FROM source",
+            )
+            gen = (
+                f"generate_series("
+                f"(SELECT min_d FROM bounds), (SELECT max_d FROM bounds), {freq_step}) AS t(d)"
+            )
+            if other_id_cols:
+                oid_csv = ", ".join(other_id_cols)
+                cte.cte("group_freq", f"SELECT DISTINCT {oid_csv} FROM source")
+                gf_cols = ", ".join(f"gf.{oc}" for oc in other_id_cols)
+                cte.cte(
+                    "full_grid",
+                    f"SELECT {gf_cols}, CAST(d AS TIMESTAMP) AS {time_col} "
+                    f"FROM group_freq gf, {gen}",
+                )
+            else:
+                cte.cte("full_grid", f"SELECT CAST(d AS TIMESTAMP) AS {time_col} FROM {gen}")
+
+        final = (
+            f"SELECT {final_select} FROM full_grid g "
+            f"LEFT JOIN source s ON {join_on} ORDER BY {order_by}"
+        )
+        return cte.select(final)
+
+    def _visit_flow_stock(self, node: AST.UnaryOp, op: str) -> str:
+        """Visit FLOW_TO_STOCK or STOCK_TO_FLOW: window functions over time series."""
+        ds = self._get_dataset_structure(node.operand)
+        src = self._get_dataset_sql(node.operand)
+
+        time_id, time_type = self._resolve_time_identifier(ds, op)
+        other_ids = [quote_name(c.name) for c in ds.get_identifiers() if c.name != time_id]
+
+        partition_parts = list(other_ids)
+        if time_type == TimePeriod:
+            partition_parts.append(f"vtl_period_parse({quote_name(time_id)}).period_indicator")
+
+        partition_clause = f"PARTITION BY {', '.join(partition_parts)}" if partition_parts else ""
+        order_clause = f"ORDER BY {quote_name(time_id)}"
+        window = f"({partition_clause} {order_clause})"
+
+        cols = []
+        for comp in ds.components.values():
+            col = quote_name(comp.name)
+            if comp.role == Role.IDENTIFIER:
+                cols.append(col)
+            elif comp.data_type in (Integer, Number, Boolean):
+                if op == tokens.FLOW_TO_STOCK:
+                    cols.append(
+                        f"CASE WHEN {col} IS NULL THEN NULL ELSE "
+                        f"SUM({col}) OVER ({partition_clause} {order_clause} "
+                        f"ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) END AS {col}"
+                    )
+                else:  # STOCK_TO_FLOW
+                    cols.append(f"COALESCE({col} - LAG({col}) OVER {window}, {col}) AS {col}")
+            else:
+                cols.append(col)
+
+        return SQLBuilder().select(*cols).from_table(src).build()
+
+    def visit_BinOp_timeshift(self, node: AST.BinOp) -> str:
+        """Visit TIMESHIFT: shift time identifier by N periods."""
+        ds_node = node.left
+        shift_sql = self.visit(node.right)
+
+        ds = self._get_dataset_structure(ds_node)
+        src = self._get_dataset_sql(ds_node)
+
+        time_id, time_type = self._resolve_time_identifier(ds, "timeshift")
+        time_col = quote_name(time_id)
+        if time_type == TimePeriod:
+            shifted = (
+                f"vtl_tp_shift(vtl_period_parse({time_col}), "
+                f"CAST({shift_sql} AS INTEGER)) AS {time_col}"
+            )
+            cols = []
+            for comp in ds.components.values():
+                col = quote_name(comp.name)
+                cols.append(shifted if comp.name == time_id else col)
+            return SQLBuilder().select(*cols).from_table(src).build()
+        else:
+            cols = []
+            for comp in ds.components.values():
+                col = quote_name(comp.name)
+                if comp.name == time_id:
+                    shifted_expr = (
+                        f"CASE WHEN freq.period_ind IN ('M','Q','S','A') "
+                        f"AND CAST({col} AS DATE) = LAST_DAY(CAST({col} AS DATE)) "
+                        f"THEN LAST_DAY(CAST("
+                        f"vtl_dateadd({col}, {shift_sql}, freq.period_ind) AS DATE)) "
+                        f"ELSE vtl_dateadd({col}, {shift_sql}, freq.period_ind) END"
+                    )
+                    cols.append(f"{shifted_expr} AS {col}")
+                else:
+                    cols.append(col)
+
+            freq_sql = self._build_timeshift_date_frequency_subquery(src, time_col)
+
+            return f"""SELECT {", ".join(cols)}
+FROM {src}, (
+    {freq_sql}
+) AS freq"""
+
+    @staticmethod
+    def _build_timeshift_date_frequency_subquery(src: str, time_col: str) -> str:
+        """Calendar-aware frequency inference for timeshift on Date."""
+        return f"""
+SELECT vtl_date_timeshift_period_ind(
+    COUNT(*),
+    BOOL_OR(NOT clean_month),
+    BOOL_AND(diff_days % 7 = 0),
+    BOOL_AND(clean_month AND diff_months % 12 = 0),
+    BOOL_AND(clean_month AND diff_months % 6 = 0),
+    BOOL_AND(clean_month AND diff_months % 3 = 0)
+) AS period_ind
+FROM (
+    SELECT
+        DATE_DIFF('day', d_prev, d_next) AS diff_days,
+        DATE_DIFF('month', d_prev, d_next) AS diff_months,
+        vtl_date_gap_clean_month(d_prev, d_next) AS clean_month
+    FROM (
+        SELECT LAG({time_col}) OVER (ORDER BY {time_col}) AS d_prev,
+               {time_col} AS d_next
+        FROM {src}
+        WHERE {time_col} IS NOT NULL
+    )
+    WHERE d_prev IS NOT NULL AND d_prev <> d_next
+)""".strip()
+
+    def visit_ParamOp_dateadd(self, node: AST.ParamOp) -> str:
+        """Visit DATEADD operation: dateadd(op, shiftNumber, periodInd)."""
+        operand_node = node.children[0]
+        operand_type = self._get_node_type(operand_node)
+
+        shift_sql = self.visit(node.params[0]) if node.params else "0"
+        period_sql = self.visit(node.params[1]) if len(node.params) > 1 else "'D'"
+
+        is_tp = self._is_operand_type(operand_node, TimePeriod)
+
+        if operand_type == _DATASET:
+            ds_node = operand_node
+            ds = self._get_dataset_structure(ds_node)
+            has_tp = ds is not None and any(
+                c.data_type == TimePeriod for c in ds.components.values() if c.role == Role.MEASURE
+            )
+
+            if has_tp and self.current_assignment:
+                out_ds = self.output_datasets.get(self.current_assignment)
+                if out_ds is not None:
+                    for comp in out_ds.components.values():
+                        if comp.data_type == TimePeriod:
+                            comp.data_type = Date
+
+            def _dateadd_expr(col_ref: str) -> str:
+                if has_tp:
+                    return f"vtl_tp_dateadd(vtl_period_parse({col_ref}), {shift_sql}, {period_sql})"
+                return f"vtl_dateadd({col_ref}, {shift_sql}, {period_sql})"
+
+            return self._apply_measures(ds_node, _dateadd_expr)
+        else:
+            operand_sql = self.visit(operand_node)
+            if is_tp:
+                return f"vtl_tp_dateadd(vtl_period_parse({operand_sql}), {shift_sql}, {period_sql})"
+            return f"vtl_dateadd({operand_sql}, {shift_sql}, {period_sql})"
+
+    def _get_source_vtl_type(self, node: "AST.AST") -> Any:
+        """Return the VTL type name produced by an AST node when known."""
+        if isinstance(node, AST.Constant):
+            if isinstance(node.value, bool):
+                return "Boolean"
+            if isinstance(node.value, int):
+                return "Integer"
+            if isinstance(node.value, float):
+                return "Number"
+            if isinstance(node.value, str):
+                return "String"
+        if (
+            isinstance(node, AST.ParamOp)
+            and str(getattr(node, "op", "")).lower() == "cast"
+            and len(node.children) >= 2
+        ):
+            type_node = node.children[1]
+            return self._get_node_value(type_node)
+        if isinstance(node, AST.TimeAggregation):
+            return "TimePeriod"
+        if isinstance(node, AST.VarID) and self._current_dataset:
+            comp = self._current_dataset.components.get(node.value)
+            if comp and comp.data_type:
+                type_name = getattr(comp.data_type, "__name__", str(comp.data_type))
+                return type_name
+        return None
+
+    def visit_ParamOp_cast(self, node: AST.ParamOp) -> str:
+        """Visit CAST operation."""
+        operand = node.children[0]
+        target_type_str = ""
+        if len(node.children) >= 2:
+            type_node = node.children[1]
+            target_type_str = self._get_node_value(type_node)
+
+        duckdb_type = get_duckdb_type(target_type_str)
+
+        mask: Optional[str] = None
+        if node.params:
+            mask_node = node.params[0]
+            if hasattr(mask_node, "value"):
+                mask = mask_node.value
+
+        operand_type = self._get_node_type(operand)
+
+        if operand_type == _DATASET:
+            ds = self._get_dataset_structure(operand)
+            comp_types: Dict[str, str] = {}
+            if ds:
+                for cname, comp in ds.components.items():
+                    if comp.data_type:
+                        comp_types[cname] = getattr(comp.data_type, "__name__", str(comp.data_type))
+
+            def _cast_measure(col: str) -> str:
+                col_name = col.strip('"')
+                src_type = comp_types.get(col_name)
+                return self._cast_expr(col, duckdb_type, target_type_str, mask, src_type)
+
+            return self._apply_measures(operand, _cast_measure)
+        else:
+            operand_sql = self.visit(operand)
+            source_type = self._get_source_vtl_type(operand)
+            return self._cast_expr(operand_sql, duckdb_type, target_type_str, mask, source_type)
+
+    def _cast_expr(
+        self,
+        expr: str,
+        duckdb_type: str,
+        target_type_str: str,
+        mask: Optional[str],
+        source_type_str: Optional[str] = None,
+    ) -> str:
+        """Generate a CAST expression for a single value."""
+        target_lower = target_type_str.lower()
+        source_lower = (source_type_str or "").lower()
+
+        if mask and target_type_str == "Date":
+            return f"STRFTIME(STRPTIME({expr}, '{mask}'), '%Y-%m-%d %H:%M:%S')"
+
+        if target_type_str == "Boolean" and source_lower == "string":
+            return f"(LOWER(TRIM(CAST({expr} AS VARCHAR))) = 'true')"
+
+        if target_type_str == "Integer":
+            if source_lower == "boolean":
+                return f"CAST({expr} AS {duckdb_type})"
+            return f"CAST(TRUNC(CAST({expr} AS DOUBLE)) AS {duckdb_type})"
+
+        if target_type_str == "String" and source_lower in ("time_period", "timeperiod"):
+            _tp_string_macros = {
+                "vtl": "vtl_period_to_vtl",
+                "sdmx_reporting": "vtl_period_to_sdmx_reporting",
+                "sdmx_gregorian": "vtl_period_to_sdmx_gregorian",
+                "natural": "vtl_period_to_natural",
+            }
+            macro = _tp_string_macros.get(self.time_period_output_format, "vtl_period_to_vtl")
+            return f"{macro}({expr})"
+
+        if target_lower in ("time_period", "timeperiod"):
+            if source_lower == "date":
+                return f"vtl_date_to_period({expr})"
+            if source_lower in ("time", "timeinterval"):
+                return f"vtl_interval_to_period({expr})"
+            # Pre-normalize string literals at transpile time to avoid invoking
+            # the expensive ``vtl_period_normalize`` macro for every row when
+            # the input is a compile-time constant (e.g. cast("2022Q1", time_period)).
+            literal = _match_plain_sql_string_literal(expr)
+            if literal is not None:
+                canonical = _try_normalize_time_period(literal)
+                if canonical is not None:
+                    return f"'{canonical.replace(chr(39), chr(39) * 2)}'"
+            return f"vtl_period_normalize(CAST({expr} AS VARCHAR))"
+
+        if target_type_str == "Date":
+            if source_lower in ("time_period", "timeperiod"):
+                return f"vtl_period_to_date({expr})"
+            if source_lower in ("time", "timeinterval"):
+                return f"vtl_interval_to_date({expr})"
+
+        return f"CAST({expr} AS {duckdb_type})"
+
+    @staticmethod
+    def _check_random_negative_index(index_node: Optional[AST.AST]) -> None:
+        """Raise SemanticError if the index is a negative literal."""
+        if (
+            isinstance(index_node, AST.UnaryOp)
+            and index_node.op == "-"
+            and isinstance(index_node.operand, AST.Constant)
+        ):
+            raise SemanticError("2-1-15-2", op="random", value=index_node.operand.value)
+
+    def _visit_random_impl(
+        self,
+        seed_node: Optional[AST.AST],
+        index_node: Optional[AST.AST],
+    ) -> str:
+        """Generate SQL for RANDOM (shared by ParamOp and BinOp forms)."""
+        self._check_random_negative_index(index_node)
+        seed_type = self._get_node_type(seed_node) if seed_node else _SCALAR
+
+        if seed_type == _DATASET and seed_node is not None:
+            index_sql = self.visit(index_node) if index_node else "0"
+            return self._apply_measures(
+                seed_node,
+                lambda col: self._random_hash_expr(col, index_sql),
+            )
+
+        seed_sql = self.visit(seed_node) if seed_node else "0"
+        index_sql = self.visit(index_node) if index_node else "0"
+        return self._random_hash_expr(seed_sql, index_sql)
+
+    def visit_ParamOp_random(self, node: AST.ParamOp) -> str:
+        """Visit RANDOM operator (ParamOp form)."""
+        seed_node = node.children[0] if node.children else None
+        index_node = node.params[0] if node.params else None
+        return self._visit_random_impl(seed_node, index_node)
+
+    def visit_BinOp_random(self, node: AST.BinOp) -> str:
+        """Visit RANDOM operator (BinOp form, e.g. inside calc)."""
+        return self._visit_random_impl(node.left, node.right)
+
+    @staticmethod
+    def _random_hash_expr(seed_sql: str, index_sql: str) -> str:
+        """Build a deterministic hash-based random expression in [0, 1)."""
+        return (
+            f"(ABS(hash(CAST({seed_sql} AS VARCHAR) || '_' || "
+            f"CAST({index_sql} AS VARCHAR))) % 1000000) / 1000000.0"
+        )
+
+    # Clause visitor
+
+    def visit_RegularAggregation(self, node: AST.RegularAggregation) -> str:  # type: ignore[override]
+        """Fallback for clause ops without a ``visit_RegularAggregation_{op}`` method."""
+        return str(self.visit(node.dataset))
+
+    def visit_RegularAggregation_filter(self, node: AST.RegularAggregation) -> str:
+        """Visit filter clause: DS[filter condition]."""
+        resolved = self._resolve_clause_dataset(node)
+        ds, table_src = resolved
+
+        with self._clause_scope(ds):
+            conditions = [self.visit(child) for child in node.children]
+
+        if conditions and any(_contains_analytic(child) for child in node.children):
+            # Window functions cannot appear in WHERE; project the predicate in a
+            # subquery and filter on it from the outside.
+            predicate_alias = "__vtl_filter_predicate"
+            inner = (
+                f'SELECT *, ({" AND ".join(conditions)}) AS "{predicate_alias}" FROM {table_src}'
+            )
+            return (
+                f'SELECT * EXCLUDE ("{predicate_alias}") '
+                f'FROM ({inner}) AS "_vtl_filter_src" '
+                f'WHERE "{predicate_alias}"'
+            )
+
+        builder = SQLBuilder().select_all().from_table(table_src)
+        if conditions:
+            builder.where(" AND ".join(conditions))
+        return builder.build()
+
+    def visit_RegularAggregation_calc(self, node: AST.RegularAggregation) -> str:
+        """Visit calc clause: DS[calc new_col := expr, ...]."""
+        resolved = self._resolve_clause_dataset(node)
+        ds, table_src = resolved
+
+        calc_exprs: Dict[str, str] = {}
+        with self._clause_scope(ds):
+            for child in node.children:
+                assignment = self._unwrap_assignment(child)
+                if isinstance(assignment, AST.Assignment):
+                    col_name = self._resolve_udo_name(self._get_node_value(assignment.left))
+                    expr_sql = self.visit(assignment.right)
+                    calc_exprs[col_name] = expr_sql
+                    if "vtl_tp_dateadd" in expr_sql and self.current_assignment:
+                        out_ds = self.output_datasets.get(self.current_assignment)
+                        if (
+                            out_ds
+                            and col_name in out_ds.components
+                            and out_ds.components[col_name].data_type == TimePeriod
+                        ):
+                            out_ds.components[col_name].data_type = Date
+
+        select_cols: List[str] = []
+        for name in ds.components:
+            if name in calc_exprs:
+                select_cols.append(f"{calc_exprs[name]} AS {quote_name(name)}")
+            else:
+                select_cols.append(quote_name(name))
+
+        for col_name, expr_sql in calc_exprs.items():
+            if col_name not in ds.components:
+                select_cols.append(f"{expr_sql} AS {quote_name(col_name)}")
+
+        inner_src = self._as_subquery(table_src)
+
+        return SQLBuilder().select(*select_cols).from_table(inner_src, "t").build()
+
+    def visit_RegularAggregation_keep(self, node: AST.RegularAggregation) -> str:
+        """Visit keep clause."""
+        resolved = self._resolve_clause_dataset(node)
+        ds, table_src = resolved
+
+        keep_names: List[str] = [
+            name for name, comp in ds.components.items() if comp.role == Role.IDENTIFIER
+        ]
+        keep_names.extend(self._extract_component_names(node.children, self._join_alias_map))
+        keep_names.extend(
+            name
+            for name, comp in ds.components.items()
+            if comp.role == Role.VIRAL_ATTRIBUTE and name not in keep_names
+        )
+
+        keep_set = set(keep_names)
+        for qualified in self._join_alias_map:
+            if qualified not in keep_set:
+                self._consumed_join_aliases.add(qualified)
+
+        cols = [quote_name(name) for name in keep_names]
+        return SQLBuilder().select(*cols).from_table(table_src).build()
+
+    def visit_RegularAggregation_drop(self, node: AST.RegularAggregation) -> str:
+        """Visit drop clause."""
+        if not node.dataset:
+            return ""
+
+        table_src = self._get_dataset_sql(node.dataset)
+        drop_names = self._extract_component_names(node.children, self._join_alias_map)
+
+        for name in drop_names:
+            if name in self._join_alias_map:
+                self._consumed_join_aliases.add(name)
+
+        if not drop_names:
+            return SQLBuilder().select_all().from_table(table_src).build()
+
+        exclude = ", ".join(quote_name(n) for n in drop_names)
+        return SQLBuilder().select(f"* EXCLUDE ({exclude})").from_table(table_src).build()
+
+    def visit_RegularAggregation_rename(self, node: AST.RegularAggregation) -> str:
+        """Visit rename clause."""
+        resolved = self._resolve_clause_dataset(node)
+        ds, table_src = resolved
+
+        renames: Dict[str, str] = {}
+        for child in node.children:
+            if isinstance(child, AST.RenameNode):
+                old = self._resolve_membership_name(child.old_name)
+                new = self._resolve_udo_name(child.new_name)
+                if "#" in old:
+                    if old in self._join_alias_map:
+                        self._consumed_join_aliases.add(old)
+                    else:
+                        old = old.split("#", 1)[1]
+                renames[old] = new
+
+        cols: List[str] = []
+        for name in ds.components:
+            matched_new = renames.get(name)
+            if matched_new is None and "#" in name:
+                unqual = name.split("#", 1)[1]
+                matched_new = renames.get(unqual)
+            if matched_new is not None:
+                cols.append(f"{quote_name(name)} AS {quote_name(matched_new)}")
+            else:
+                cols.append(quote_name(name))
+
+        return SQLBuilder().select(*cols).from_table(table_src).build()
+
+    def visit_RegularAggregation_sub(self, node: AST.RegularAggregation) -> str:
+        """Visit subspace clause."""
+        resolved = self._resolve_clause_dataset(node)
+        ds, table_src = resolved
+
+        where_parts: List[str] = []
+        remove_ids: set[str] = set()
+        for child in node.children:
+            if isinstance(child, AST.BinOp):
+                col_name = self._resolve_udo_name(self._get_node_value(child.left))
+                remove_ids.add(col_name)
+                val_sql = self.visit(child.right)
+                where_parts.append(f"{quote_name(col_name)} = {val_sql}")
+
+        cols = [quote_name(name) for name in ds.components if name not in remove_ids]
+
+        builder = SQLBuilder().select(*cols).from_table(table_src)
+        for wp in where_parts:
+            builder.where(wp)
+        return builder.build()
+
+    def visit_RegularAggregation_aggr(self, node: AST.RegularAggregation) -> str:  # noqa: C901
+        """Visit aggregate clause: DS[aggr Me := sum(Me) group by Id, ... having ...]."""
+        resolved = self._resolve_clause_dataset(node)
+        ds, table_src = resolved
+
+        calc_exprs: Dict[str, str] = {}
+        having_sql: Optional[str] = None
+        tp_minmax_cols: List[tuple[str, str]] = []
+
+        with self._clause_scope(ds):
+            for child in node.children:
+                assignment = self._unwrap_assignment(child)
+                if isinstance(assignment, AST.Assignment):
+                    col_name = self._resolve_udo_name(self._get_node_value(assignment.left))
+                    agg_node = assignment.right
+                    if isinstance(agg_node, AST.Aggregation) and agg_node.having_clause is not None:
+                        hc = agg_node.having_clause
+                        if isinstance(hc, AST.ParamOp) and hc.params is not None:
+                            having_sql = self.visit(hc.params)
+
+                    if (
+                        isinstance(agg_node, AST.Aggregation)
+                        and str(agg_node.op).lower() in (tokens.MIN, tokens.MAX)
+                        and agg_node.operand
+                        and hasattr(agg_node.operand, "value")
+                    ):
+                        operand_name = self._resolve_udo_name(agg_node.operand.value)
+                        src_comp = ds.components.get(operand_name)
+                        if src_comp and src_comp.data_type == TimePeriod:
+                            tp_minmax_cols.append((operand_name, str(agg_node.op).lower()))
+
+                    expr_sql = self.visit(agg_node)
+                    calc_exprs[col_name] = expr_sql
+
+        group_ids: List[str] = []
+        grouping_op: str = ""
+        grouping_names: List[str] = []
+        time_agg_expr: Optional[str] = None
+        time_agg_id: Optional[str] = None
+        for child in node.children:
+            assignment = self._unwrap_assignment(child)
+            if isinstance(assignment, AST.Assignment):
+                agg_node = assignment.right
+                if isinstance(agg_node, AST.Aggregation) and agg_node.grouping:
+                    grouping_op = agg_node.grouping_op or ""
+                    for g in agg_node.grouping:
+                        if isinstance(g, (AST.VarID, AST.Identifier)):
+                            resolved = self._resolve_udo_name(g.value)
+                            if resolved not in grouping_names:
+                                grouping_names.append(resolved)
+                        elif isinstance(g, AST.TimeAggregation) and time_agg_expr is None:
+                            with self._clause_scope(ds):
+                                time_agg_expr = self.visit_TimeAggregation(g)
+                            for comp in ds.components.values():
+                                if (
+                                    comp.data_type in (TimePeriod, Date)
+                                    and comp.role == Role.IDENTIFIER
+                                ):
+                                    time_agg_id = comp.name
+                                    break
+
+        all_input_ids = list(ds.get_identifiers_names())
+        if grouping_op == "group by":
+            group_ids = list(grouping_names)
+        elif grouping_op == "group except":
+            except_set = set(grouping_names)
+            group_ids = [n for n in all_input_ids if n not in except_set]
+        elif not grouping_names:
+            output_ds = self._get_output_dataset()
+            group_ids = list(output_ds.get_identifiers_names() if output_ds else all_input_ids)
+
+        if time_agg_id and time_agg_id not in group_ids and grouping_op != "group except":
+            group_ids.append(time_agg_id)
+
+        def _id_select_sql(name: str) -> str:
+            if name == time_agg_id and time_agg_expr is not None:
+                return f"{time_agg_expr} AS {quote_name(name)}"
+            return quote_name(name)
+
+        def _id_group_sql(name: str) -> str:
+            if name == time_agg_id and time_agg_expr is not None:
+                return time_agg_expr
+            return quote_name(name)
+
+        cols: List[str] = [_id_select_sql(id_) for id_ in group_ids]
+        for col_name, expr_sql in calc_exprs.items():
+            cols.append(f"{expr_sql} AS {quote_name(col_name)}")
+
+        vp_registry = get_current_registry()
+        for v_name, v_comp in ds.components.items():
+            if v_comp.role != Role.VIRAL_ATTRIBUTE:
+                continue
+            v_rule = vp_registry.rule_for(v_comp)
+            v_qn = quote_name(v_name)
+            if v_rule is None:
+                cols.append(f"{vp_no_rule_group_sql(v_qn)} AS {v_qn}")
+            else:
+                cols.append(f"{vp_group_sql(v_rule, v_qn)} AS {v_qn}")
+
+        builder = SQLBuilder().select(*cols).from_table(table_src)
+        if group_ids:
+            builder.group_by(*[_id_group_sql(id_) for id_ in group_ids])
+
+        if having_sql:
+            builder.having(having_sql)
+
+        main_sql = builder.build()
+
+        if tp_minmax_cols:
+            main_sql = _add_tp_indicator_check(main_sql, table_src, tp_minmax_cols)
+
+        return main_sql
+
+    def visit_RegularAggregation_apply(self, node: AST.RegularAggregation) -> str:
+        """Visit apply clause."""
+        resolved = self._resolve_clause_dataset(node)
+        ds, table_src = resolved
+
+        output_ds = self.output_datasets.get(self.current_assignment)
+        id_names = ds.get_identifiers_names()
+
+        computed: Dict[str, str] = {}
+        for child in node.children:
+            if not isinstance(child, AST.BinOp):
+                continue
+            left_alias = self._get_node_value(child.left)
+            right_alias = self._get_node_value(child.right)
+
+            left_measures: Dict[str, str] = {}
+            right_measures: Dict[str, str] = {}
+            for qualified in self._join_alias_map:
+                if "#" in qualified:
+                    alias, comp = qualified.split("#", 1)
+                    if alias == left_alias:
+                        left_measures[comp] = qualified
+                    elif alias == right_alias:
+                        right_measures[comp] = qualified
+
+            common_measures = left_measures.keys() & right_measures.keys()
+            for measure in common_measures:
+                left_col = quote_name(left_measures[measure])
+                right_col = quote_name(right_measures[measure])
+                expr = registry.sql(child.op, left_col, right_col)
+                computed[measure] = expr
+                self._consumed_join_aliases.add(left_measures[measure])
+                self._consumed_join_aliases.add(right_measures[measure])
+
+        cols: List[str] = [quote_name(id_) for id_ in id_names]
+        if output_ds:
+            for comp_name in output_ds.get_measures_names():
+                if comp_name in computed:
+                    cols.append(f"{computed[comp_name]} AS {quote_name(comp_name)}")
+                else:
+                    cols.append(quote_name(comp_name))
+        else:
+            for measure, expr in computed.items():
+                cols.append(f"{expr} AS {quote_name(measure)}")
+
+        return SQLBuilder().select(*cols).from_table(table_src).build()
+
+    def visit_RegularAggregation_unpivot(self, node: AST.RegularAggregation) -> str:
+        """Visit unpivot clause."""
+        resolved = self._resolve_clause_dataset(node)
+        ds, table_src = resolved
+
+        new_id_name = self._resolve_udo_name(self._get_node_value(node.children[0]))
+        new_measure_name = self._resolve_udo_name(self._get_node_value(node.children[1]))
+        id_names = ds.get_identifiers_names()
+        measure_names = ds.get_measures_names()
+
+        if not measure_names:
+            return f"SELECT * FROM {table_src}"
+
+        parts: List[str] = []
+        for measure in measure_names:
+            cols: List[str] = [quote_name(i) for i in id_names]
+            cols.append(f"'{measure}' AS {quote_name(new_id_name)}")
+            cols.append(f"{quote_name(measure)} AS {quote_name(new_measure_name)}")
+            select_clause = ", ".join(cols)
+            part = (
+                f"SELECT {select_clause} FROM {table_src} WHERE {quote_name(measure)} IS NOT NULL"
+            )
+            parts.append(part)
+
+        return " UNION ALL ".join(parts)
+
+    # Aggregation visitor
+
+    def _build_agg_group_cols(
+        self, node: AST.Aggregation, ds: Dataset, group_cols: List[str]
+    ) -> Tuple[List[str], List[str]]:
+        """Build SELECT and GROUP BY column lists, handling time_agg."""
+        time_agg_expr: Optional[str] = None
+        time_agg_id: Optional[str] = None
+        if node.grouping:
+            for g in node.grouping:
+                if isinstance(g, AST.TimeAggregation):
+                    with self._clause_scope(ds):
+                        time_agg_expr = self.visit_TimeAggregation(g)
+                    for comp in ds.components.values():
+                        if comp.data_type in (TimePeriod, Date) and comp.role == Role.IDENTIFIER:
+                            time_agg_id = comp.name
+                            break
+
+        if (
+            time_agg_id
+            and time_agg_expr
+            and node.grouping_op != "group except"
+            and time_agg_id not in group_cols
+        ):
+            group_cols = [*group_cols, time_agg_id]
+
+        cols: List[str] = []
+        group_by_cols: List[str] = []
+        for col_name in group_cols:
+            if col_name == time_agg_id and time_agg_expr:
+                cols.append(f"{time_agg_expr} AS {quote_name(col_name)}")
+                group_by_cols.append(time_agg_expr)
+            else:
+                cols.append(quote_name(col_name))
+                group_by_cols.append(quote_name(col_name))
+        return cols, group_by_cols
+
+    def visit_Aggregation(self, node: AST.Aggregation) -> str:  # type: ignore[override]  # noqa: C901
+        """Visit a standalone aggregation: sum(DS group by Id)."""
+        op = node.op
+
+        # Component-level aggregation in clause context
+        if self._in_clause and node.operand:
+            operand_type = self._get_node_type(node.operand)
+            if operand_type in (_COMPONENT, _SCALAR):
+                operand_sql = self.visit(node.operand)
+                # Type-aware MIN/MAX for Duration/TimePeriod
+                if self._current_dataset and hasattr(node.operand, "value"):
+                    comp = self._current_dataset.components.get(node.operand.value)
+                    dt = comp.data_type if comp else None
+                    agg = self._build_agg_expr(op, operand_sql, dt)
+                    if agg is not None:
+                        return agg
+                expr = registry.sql(op, operand_sql)
+                if op == tokens.COUNT:
+                    expr = f"NULLIF({expr}, 0)"
+                return expr
+
+        # count() without operand
+        if node.operand is None:
+            if op == tokens.COUNT:
+                if self._in_clause and self._current_dataset:
+                    measures = self._current_dataset.get_measures_names()
+                    if measures:
+                        or_parts = " OR ".join(f"{quote_name(m)} IS NOT NULL" for m in measures)
+                        return f"NULLIF(COUNT(CASE WHEN {or_parts} THEN 1 END), 0)"
+                return "NULLIF(COUNT(*), 0)"
+            return ""
+
+        ds = self._get_dataset_structure(node.operand)
+        if ds is None:
+            operand_sql = self.visit(node.operand)
+            return registry.sql(op, operand_sql)
+
+        table_src = self._get_dataset_sql(node.operand)
+
+        # Resolve group columns from input identifiers.
+        all_ids = ds.get_identifiers_names()
+        group_cols = self._resolve_group_cols(node, all_ids)
+        cols, group_by_cols = self._build_agg_group_cols(node, ds, group_cols)
+        ds_tp_minmax_cols: List[tuple[str, str]] = []
+
+        # count() produces a single int_var measure.
+        if op == tokens.COUNT:
+            alias = "int_var"
+            source_measures = ds.get_measures_names()
+            if source_measures:
+                and_parts = " AND ".join(f"{quote_name(m)} IS NOT NULL" for m in source_measures)
+                count_expr = f"COUNT(CASE WHEN {and_parts} THEN 1 END)"
+                if group_cols:
+                    count_expr = f"NULLIF({count_expr}, 0)"
+                cols.append(f"{count_expr} AS {quote_name(alias)}")
+            else:
+                cols.append(f"COUNT(*) AS {quote_name(alias)}")
+        else:
+            measures = ds.get_measures_names()
+            for measure in measures:
+                comp = ds.components.get(measure)
+                dt = comp.data_type if comp else None
+                qm = quote_name(measure)
+
+                if dt == TimePeriod and op in (tokens.MIN, tokens.MAX):
+                    ds_tp_minmax_cols.append((measure, op))
+                agg = self._build_agg_expr(op, qm, dt, dataset_level=True)
+                expr = agg if agg is not None else registry.sql(op, qm)
+                cols.append(f"{expr} AS {qm}")
+
+        # Viral attribute propagation across the aggregation group.
+        vp_registry = get_current_registry()
+        for v_name, v_comp in ds.components.items():
+            if v_comp.role != Role.VIRAL_ATTRIBUTE:
+                continue
+            v_rule = vp_registry.rule_for(v_comp)
+            v_qn = quote_name(v_name)
+            if v_rule is None:
+                cols.append(f"{vp_no_rule_group_sql(v_qn)} AS {v_qn}")
+            else:
+                cols.append(f"{vp_group_sql(v_rule, v_qn)} AS {v_qn}")
+
+        builder = SQLBuilder().select(*cols).from_table(table_src)
+
+        if group_cols:
+            builder.group_by(*group_by_cols)
+        elif all_ids:
+            builder.having("COUNT(*) > 0")
+
+        if node.having_clause:
+            with self._clause_scope(ds):
+                hc = node.having_clause
+                if isinstance(hc, AST.ParamOp) and hc.params is not None:
+                    having_sql = self.visit(hc.params)
+                else:
+                    having_sql = self.visit(hc)
+            builder.having(having_sql)
+
+        main_sql = builder.build()
+
+        if ds_tp_minmax_cols:
+            main_sql = _add_tp_indicator_check(main_sql, table_src, ds_tp_minmax_cols)
+
+        return main_sql
+
+    # =========================================================================
+    # Analytic visitor
+    # =========================================================================
+
+    def _build_over_clause(self, node: AST.Analytic) -> str:
+        """Build the OVER (...) clause for an analytic function."""
+        over_parts: List[str] = []
+        partition_cols_list = self._resolve_partition_cols(node)
+        if partition_cols_list:
+            partition_cols = ", ".join(
+                quote_name(self._resolve_udo_name(p)) for p in partition_cols_list
+            )
+            over_parts.append(f"PARTITION BY {partition_cols}")
+        if node.order_by:
+            order_cols = ", ".join(
+                f"{quote_name(self._resolve_udo_name(o.component))} {o.order}"
+                for o in node.order_by
+            )
+            over_parts.append(f"ORDER BY {order_cols}")
+        if node.window:
+            order_is_date = False
+            if node.order_by and self._current_dataset:
+                comp = self._current_dataset.components.get(
+                    self._resolve_udo_name(node.order_by[0].component)
+                )
+                order_is_date = comp is not None and comp.data_type == Date
+            window_sql = self.visit_Windowing(node.window, order_is_date=order_is_date)
+            over_parts.append(window_sql)
+        return " ".join(over_parts)
+
+    def _resolve_partition_cols(self, node: AST.Analytic) -> List[str]:
+        """Resolve the partition column list applying VTL 2.2 EXCEPT semantics."""
+        listed = list(node.partition_by) if node.partition_by else []
+        if node.partition_op == "except all":
+            return []
+        if node.partition_op == "except":
+            id_names = self._operand_identifier_names(node)
+            excluded = set(listed)
+            return [i for i in id_names if i not in excluded]
+        return listed
+
+    def _operand_identifier_names(self, node: AST.Analytic) -> List[str]:
+        """Best-effort identifier list for the analytic operand."""
+        if node.operand is not None:
+            ds = self._get_dataset_structure(node.operand)
+            if ds is not None:
+                return list(ds.get_identifiers_names())
+        if self._current_dataset is not None:
+            return list(self._current_dataset.get_identifiers_names())
+        return []
+
+    def _build_analytic_expr(self, op: str, operand_sql: str, node: AST.Analytic) -> str:
+        """Build the analytic function expression (without OVER).
+
+        For ratio_to_report, returns the complete expression including OVER clause.
+        Callers must check _is_self_contained_analytic() to avoid adding OVER again.
+        """
+        if op == tokens.RATIO_TO_REPORT:
+            over_clause = self._build_over_clause(node)
+            partition_sum = f"SUM({operand_sql}) OVER ({over_clause})"
+            err_msg = (
+                "'VTL Error 2-1-3-1: Division by zero produced infinite values in ratio_to_report'"
+            )
+            return (
+                f"CASE WHEN {partition_sum} = 0 THEN "
+                f"CAST(error({err_msg}) AS DOUBLE) "
+                f"ELSE CAST({operand_sql} AS DOUBLE) / {partition_sum} END"
+            )
+        if op == tokens.RANK:
+            return "RANK()"
+        if op in (tokens.LAG, tokens.LEAD) and node.params:
+            offset = self._resolve_scalar_varid(node.params[0] if node.params else 1)
+            default_val = node.params[1] if len(node.params) > 1 else None
+            func_sql = f"{op.upper()}({operand_sql}, {offset}"
+            if default_val is not None:
+                if isinstance(default_val, AST.AST):
+                    default_sql = self.visit(default_val)
+                else:
+                    default_sql = str(default_val)
+                func_sql += f", {default_sql}"
+            return func_sql + ")"
+        return registry.sql(op, operand_sql)
+
+    def visit_Analytic(self, node: AST.Analytic) -> str:  # type: ignore[override]
+        """Visit an analytic (window) function."""
+        op = node.op
+
+        # Check if operand is a dataset — needs dataset-level handling
+        if node.operand and self._get_node_type(node.operand) == _DATASET:
+            return self._visit_analytic_dataset(node, op)
+
+        # Component-level: single expression with OVER
+        operand_sql = self.visit(node.operand) if node.operand else ""
+        func_sql = self._build_analytic_expr(op, operand_sql, node)
+        # ratio_to_report already includes its own OVER clause
+        if op == tokens.RATIO_TO_REPORT:
+            return func_sql
+        over_clause = self._build_over_clause(node)
+        return f"{func_sql} OVER ({over_clause})"
+
+    def _visit_analytic_dataset(self, node: AST.Analytic, op: str) -> str:
+        """Visit a dataset-level analytic: applies the window function to each measure."""
+        over_clause = self._build_over_clause(node)
+
+        def _analytic_expr(col_ref: str) -> str:
+            func_sql = self._build_analytic_expr(op, col_ref, node)
+            if op == tokens.RATIO_TO_REPORT:
+                return func_sql
+            return f"{func_sql} OVER ({over_clause})"
+
+        # Build a partition-only OVER clause for viral attribute aggregation.
+        # The full over_clause may include ORDER BY and a windowing frame (e.g.
+        # "ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW") which would turn
+        # MAX into a running max rather than a partition-wide max. Viral attribute
+        # rules must reduce over the full partition, so we use only PARTITION BY.
+        partition_cols_list = self._resolve_partition_cols(node)
+        if partition_cols_list:
+            partition_cols = ", ".join(
+                quote_name(self._resolve_udo_name(p)) for p in partition_cols_list
+            )
+            vp_over_clause = f"PARTITION BY {partition_cols}"
+        else:
+            vp_over_clause = ""
+
+        vp_registry = get_current_registry()
+
+        def _viral_expr(v_name: str, v_comp: Any) -> str:
+            v_rule = vp_registry.rule_for(v_comp)
+            if v_rule is None:
+                return quote_name(v_name)
+            return vp_group_sql_windowed(v_rule, quote_name(v_name), vp_over_clause)
+
+        name_override = "int_var" if op == tokens.COUNT else None
+        result = self._apply_measures(
+            node.operand, _analytic_expr, name_override, viral_expr_fn=_viral_expr
+        )
+
+        # Inject TimePeriod indicator validation for MIN/MAX
+        if op in (tokens.MIN, tokens.MAX) and node.operand:
+            ds = self._get_dataset_structure(node.operand)
+            if ds:
+                tp_cols = [
+                    (m, op)
+                    for m in ds.get_measures_names()
+                    if ds.components[m].data_type == TimePeriod
+                ]
+                if tp_cols:
+                    table_src = self._get_dataset_sql(node.operand)
+                    result = _add_tp_indicator_check(result, table_src, tp_cols)
+
+        return result
+
+    def visit_Windowing(  # type: ignore[override]
+        self, node: AST.Windowing, *, order_is_date: bool = False
+    ) -> str:
+        """Visit a windowing specification."""
+        type_str = str(node.type_).upper() if node.type_ else "ROWS"
+        # Map VTL types to SQL: DATA POINTS → ROWS
+        if "DATA" in type_str:
+            type_str = "ROWS"
+        elif "RANGE" in type_str:
+            type_str = "RANGE"
+
+        is_range_date = type_str == "RANGE" and order_is_date
+
+        def bound_str(value: Union[int, str], mode: str) -> str:
+            mode_up = mode.upper()
+            val_str = str(value).upper()
+            if "CURRENT" in mode_up or val_str == "CURRENT ROW":
+                return "CURRENT ROW"
+            if val_str == "UNBOUNDED" or (isinstance(value, int) and value < 0):
+                return f"UNBOUNDED {mode_up}"
+            if is_range_date and isinstance(value, int):
+                return f"INTERVAL '{value}' DAY {mode_up}"
+            return f"{value} {mode_up}"
+
+        start_val = self._resolve_scalar_varid(node.start)
+        stop_val = self._resolve_scalar_varid(node.stop)
+        start = bound_str(start_val, node.start_mode)
+        stop = bound_str(stop_val, node.stop_mode)
+
+        return f"{type_str} BETWEEN {start} AND {stop}"
+
+    # =========================================================================
+    # MulOp visitor (set ops, between, exists_in, current_date)
+    # =========================================================================
+
+    def visit_MulOp(self, node: AST.MulOp) -> str:  # type: ignore[override]
+        """Fallback for MulOp ops without a ``visit_MulOp_{op}`` method."""
+        return ", ".join(self.visit(c) for c in node.children)
+
+    @staticmethod
+    def visit_MulOp_current_date(_node: AST.MulOp) -> str:
+        """Visit CURRENT_DATE — returns the SQL literal."""
+        return "CURRENT_DATE"
+
+    def visit_MulOp_union(self, node: AST.MulOp) -> str:
+        """Visit UNION set operation."""
+        return self._visit_set_operation(node, tokens.UNION)
+
+    def visit_MulOp_intersect(self, node: AST.MulOp) -> str:
+        """Visit INTERSECT set operation."""
+        return self._visit_set_operation(node, tokens.INTERSECT)
+
+    def visit_MulOp_setdiff(self, node: AST.MulOp) -> str:
+        """Visit SETDIFF set operation."""
+        return self._visit_set_operation(node, tokens.SETDIFF)
+
+    def visit_MulOp_symdiff(self, node: AST.MulOp) -> str:
+        """Visit SYMDIFF set operation."""
+        return self._visit_set_operation(node, tokens.SYMDIFF)
+
+    @staticmethod
+    def _between_expr(operand: str, low: str, high: str) -> str:
+        """Build a VTL-compliant BETWEEN expression with NULL propagation.
+
+        VTL requires that if ANY operand of between is NULL, the result is NULL.
+        SQL's three-valued logic differs: FALSE AND NULL = FALSE.  To match VTL
+        semantics we wrap the expression with an explicit NULL check.
+        """
+        return (
+            f"CASE WHEN {operand} IS NULL OR {low} IS NULL OR {high} IS NULL "
+            f"THEN NULL ELSE ({operand} BETWEEN {low} AND {high}) END"
+        )
+
+    def visit_MulOp_between(self, node: AST.MulOp) -> str:
+        """Visit BETWEEN: expr BETWEEN low AND high. Handles dataset operand."""
+        operand_type = self._get_node_type(node.children[0])
+        low_sql = self.visit(node.children[1])
+        high_sql = self.visit(node.children[2])
+
+        if operand_type == _DATASET:
+            return self._apply_measures(
+                node.children[0],
+                lambda col: self._between_expr(col, low_sql, high_sql),
+            )
+
+        operand_sql = self.visit(node.children[0])
+        return self._between_expr(operand_sql, low_sql, high_sql)
+
+    def visit_MulOp_exists_in(self, node: AST.MulOp) -> str:
+        """Visit EXISTS_IN in MulOp form, handling the optional retain parameter."""
+        base_sql = self._exists_in_sql(node.children[0], node.children[1])
+
+        # Check for retain parameter (true / false / all); "all" keeps every row.
+        if len(node.children) >= 3:
+            retain_node = node.children[2]
+            if isinstance(retain_node, AST.Constant) and isinstance(retain_node.value, bool):
+                bool_literal = "TRUE" if retain_node.value else "FALSE"
+                return f'SELECT * FROM ({base_sql}) AS _ei WHERE "bool_var" = {bool_literal}'
+
+        return base_sql
+
+    def _visit_set_operation(self, node: AST.MulOp, op: str) -> str:
+        """Visit set operations: UNION, INTERSECT, SETDIFF, SYMDIFF.
+
+        VTL set operations match data points by **identifiers only**, keeping
+        the measure values from the first (or relevant) dataset.  This differs
+        from SQL INTERSECT/EXCEPT which compare all columns.
+        """
+        child_sqls = []
+        for child in node.children:
+            child_sql = self.visit(child)
+            if not child_sql.strip().upper().startswith("SELECT"):
+                child_sql = (
+                    f"SELECT * FROM "
+                    f"{quote_name(child.value if hasattr(child, 'value') else child_sql)}"
+                )
+            child_sqls.append(child_sql)
+
+        if op == tokens.UNION:
+            first_child = node.children[0]
+            ds = self._get_dataset_structure(first_child)
+            if ds:
+                # Normalize column order across all branches to prevent
+                # positional type mismatches in UNION ALL.
+                output_ds = self._get_output_dataset()
+                order_ds = output_ds if output_ds else ds
+                col_order = list(order_ds.components.keys())
+                ordered_cols = ", ".join(quote_name(c) for c in col_order)
+                ordered_sqls = [f"SELECT {ordered_cols} FROM ({sql}) AS _ord" for sql in child_sqls]
+
+                id_names = order_ds.get_identifiers_names()
+                if id_names:
+                    inner_sql = registry.sql(op, *ordered_sqls)
+                    id_cols = ", ".join(quote_name(i) for i in id_names)
+                    # Preserve UNION ALL row order to match pandas drop_duplicates(keep="first").
+                    # QUALIFY keeps the first occurrence per identifier group by insertion order.
+                    return (
+                        f"SELECT {ordered_cols} FROM ("
+                        f"SELECT *, ROW_NUMBER() OVER () AS _rn "
+                        f"FROM ({inner_sql}) AS _union_inner"
+                        f") AS _union_t "
+                        f"QUALIFY ROW_NUMBER() OVER (PARTITION BY {id_cols} ORDER BY _rn) = 1"
+                    )
+                return registry.sql(op, *ordered_sqls)
+            return registry.sql(op, *child_sqls)
+
+        if len(child_sqls) < 2:
+            return child_sqls[0] if child_sqls else ""
+
+        first_ds = self._get_dataset_structure(node.children[0])
+        id_names = first_ds.get_identifiers_names()
+        a_sql = child_sqls[0]
+        b_sql = child_sqls[1]
+        on_clause = self._join_on_clause(id_names, "a", "b")
+
+        if op == tokens.INTERSECT:
+            return f"SELECT a.* FROM ({a_sql}) AS a SEMI JOIN ({b_sql}) AS b ON {on_clause}"
+        elif op == tokens.SETDIFF:
+            return f"SELECT a.* FROM ({a_sql}) AS a ANTI JOIN ({b_sql}) AS b ON {on_clause}"
+        elif op == tokens.SYMDIFF:
+            second_ds = self._get_dataset_structure(node.children[1])
+            second_ids = second_ds.get_identifiers_names() if second_ds else id_names
+            on_clause_rev = self._join_on_clause(second_ids, "c", "d")
+            # Materialize each side once via CTEs so the two ANTI JOIN passes
+            # don't each re-evaluate the (potentially expensive) input subqueries.
+            cte = CTEBuilder()
+            cte.cte("_sd_a", a_sql, materialized=True)
+            cte.cte("_sd_b", b_sql, materialized=True)
+            return cte.select(
+                f"(SELECT a.* FROM _sd_a AS a "
+                f"ANTI JOIN _sd_b AS b ON {on_clause}) "
+                f"UNION ALL "
+                f"(SELECT c.* FROM _sd_b AS c "
+                f"ANTI JOIN _sd_a AS d ON {on_clause_rev})"
+            )
+
+        return registry.sql(op, *child_sqls)
+
+    # =========================================================================
+    # Conditional visitors (If, Case)
+    # =========================================================================
+
+    def _scalar_if_sql(self, node: AST.If) -> str:
+        """Build a simple CASE WHEN for scalar IF-THEN-ELSE."""
+        cond_sql = self.visit(node.condition)
+        then_sql = self.visit(node.thenOp)
+        else_sql = self.visit(node.elseOp)
+        return f"CASE WHEN {cond_sql} THEN {then_sql} ELSE {else_sql} END"
+
+    def visit_If(self, node: AST.If) -> str:
+        """Visit IF-THEN-ELSE."""
+        if self._get_node_type(node.condition) != _DATASET:
+            return self._scalar_if_sql(node)
+        return self._build_dataset_if(node)
+
+    def _find_condition_source(self, node: AST.AST) -> Optional[AST.AST]:
+        """Find the source dataset AST node from a condition expression."""
+        if isinstance(node, AST.BinOp):
+            if node.op == tokens.MEMBERSHIP:
+                return node.left
+            left = self._find_condition_source(node.left)
+            if left is not None:
+                return left
+            return self._find_condition_source(node.right)
+        if isinstance(node, (AST.UnaryOp, AST.ParFunction)):
+            return self._find_condition_source(node.operand)
+        if isinstance(node, AST.VarID) and self._get_node_type(node) == _DATASET:
+            return node
+        return None
+
+    def _build_dataset_if(self, node: AST.If) -> str:
+        """Build SQL for dataset-level IF-THEN-ELSE with JOINs."""
+        # Find the source dataset that the condition references
+        source_node = self._find_condition_source(node.condition)
+        source_ds = self._get_dataset_structure(source_node)
+        alias = "cond"
+
+        # When the condition is a binary op between two datasets is evaluated
+        # as a subquery and reference its boolean measure column instead.
+        cond_is_ds_vs_ds = (
+            isinstance(node.condition, AST.BinOp)
+            and self._get_node_type(node.condition.left) == _DATASET
+            and self._get_node_type(node.condition.right) == _DATASET
+        )
+        cond_ds = self._get_dataset_structure(node.condition) if cond_is_ds_vs_ds else None
+        if cond_ds is not None:
+            source_sql = self.visit(node.condition)
+            source_ids = list(cond_ds.get_identifiers_names())
+            bool_measures = list(cond_ds.get_measures_names())
+            cond_expr = f"{alias}.{quote_name(bool_measures[0])}" if bool_measures else "TRUE"
+        else:
+            source_sql = self._get_dataset_sql(source_node)
+            source_ids = list(source_ds.get_identifiers_names())
+            # Evaluate condition as a column expression (not a full SELECT)
+            with self._clause_scope(source_ds, prefix=alias):
+                cond_expr = self.visit(node.condition)
+
+        t_type = self._get_node_type(node.thenOp)
+        e_type = self._get_node_type(node.elseOp)
+
+        # Determine output measures and attributes.
+        def _is_plain_dataset(n: AST.AST) -> bool:
+            return isinstance(n, AST.VarID) and self._get_node_type(n) == _DATASET
+
+        ref_ds: Optional[Dataset] = None
+        if t_type == _DATASET and _is_plain_dataset(node.thenOp):
+            ref_ds = self._get_dataset_structure(node.thenOp)
+        elif e_type == _DATASET and _is_plain_dataset(node.elseOp):
+            ref_ds = self._get_dataset_structure(node.elseOp)
+        if ref_ds is None:
+            ref_ds = self._get_output_dataset() or source_ds
+        output_measures = list(ref_ds.get_measures_names())
+        output_attributes = list(ref_ds.get_attributes_names())
+        output_viral = list(ref_ds.get_viral_attributes_names())
+
+        # Build SELECT columns
+        cols: List[str] = [f"{alias}.{quote_name(id_)}" for id_ in source_ids]
+        for col_name in output_measures + output_attributes:
+            t_ref = f"t.{quote_name(col_name)}" if t_type == _DATASET else self.visit(node.thenOp)
+            e_ref = f"e.{quote_name(col_name)}" if e_type == _DATASET else self.visit(node.elseOp)
+            cols.append(
+                f"CASE WHEN {cond_expr} THEN {t_ref} ELSE {e_ref} END AS {quote_name(col_name)}"
+            )
+
+        vp_registry = get_current_registry()
+        for v_name in output_viral:
+            v_qn = quote_name(v_name)
+            v_comp = ref_ds.components.get(v_name)
+            if t_type == _DATASET and e_type == _DATASET:
+                v_rule = vp_registry.rule_for(v_comp) if v_comp is not None else None
+                if v_rule is None:
+                    v_type = get_duckdb_type(v_comp.data_type.__name__) if v_comp else "VARCHAR"
+                    cols.append(f"CAST(NULL AS {v_type}) AS {v_qn}")
+                else:
+                    cols.append(f"{vp_pair_sql(v_rule, f't.{v_qn}', f'e.{v_qn}')} AS {v_qn}")
+            elif t_type == _DATASET:
+                cols.append(f"CASE WHEN {cond_expr} THEN t.{v_qn} ELSE NULL END AS {v_qn}")
+            elif e_type == _DATASET:
+                cols.append(f"CASE WHEN {cond_expr} THEN NULL ELSE e.{v_qn} END AS {v_qn}")
+
+        # Use from_subquery when the source is a SELECT (e.g., dataset-level condition)
+        if source_sql.lstrip().upper().startswith("SELECT"):
+            builder = SQLBuilder().select(*cols).from_subquery(source_sql, alias)
+        else:
+            builder = SQLBuilder().select(*cols).from_table(source_sql, alias)
+
+        # Use LEFT JOINs so empty datasets don't eliminate all rows
+        then_join_id = self._left_join_dataset(node.thenOp, t_type, "t", source_ids, alias, builder)
+        e_join_id = self._left_join_dataset(node.elseOp, e_type, "e", source_ids, alias, builder)
+
+        # Filter: only keep rows where the selected side has a match.
+        # Scalar sides always match; dataset sides need a LEFT JOIN hit.
+        if then_join_id and e_join_id:
+            builder.where(
+                f"CASE WHEN {cond_expr} THEN {then_join_id} IS NOT NULL "
+                f"ELSE {e_join_id} IS NOT NULL END"
+            )
+        elif then_join_id:
+            # then=dataset, else=scalar: filter when condition is true
+            builder.where(f"NOT ({cond_expr}) OR {then_join_id} IS NOT NULL")
+        elif e_join_id:
+            # then=scalar, else=dataset: filter when condition is false
+            builder.where(f"({cond_expr}) OR {e_join_id} IS NOT NULL")
+
+        return builder.build()
+
+    def _build_case_when_sql(
+        self,
+        cases: List[Any],
+        else_op: AST.AST,
+    ) -> str:
+        """Build a scalar CASE WHEN SQL with reversed order (VTL last-match-wins)."""
+        parts = ["CASE"]
+        for case_obj in reversed(cases):
+            cond_sql = self.visit(case_obj.condition)
+            then_sql = self.visit(case_obj.thenOp)
+            parts.append(f"WHEN {cond_sql} THEN {then_sql}")
+        parts.append(f"ELSE {self.visit(else_op)} END")
+        return " ".join(parts)
+
+    def visit_Case(self, node: AST.Case) -> str:
+        """Visit CASE expression.
+
+        VTL CASE uses last-match-wins semantics (later conditions override earlier
+        ones), while SQL CASE uses first-match-wins.  We reverse the WHEN order so
+        the SQL engine evaluates conditions with the same priority as VTL.
+
+        For dataset-level CASE (where conditions are boolean datasets), we build
+        JOINs similar to ``_build_dataset_if``.
+        """
+        cond_types = [self._get_node_type(c.condition) for c in node.cases]
+        if any(t == _DATASET for t in cond_types):
+            return self._build_dataset_case(node)
+
+        return self._build_case_when_sql(node.cases, node.elseOp)
+
+    def _build_case_condition(
+        self,
+        case_obj: AST.CaseObj,
+        alias: str,
+        source_ids: List[str],
+        alias_src: str,
+        builder: SQLBuilder,
+    ) -> str:
+        """Join a CASE condition dataset and return the SQL condition expression."""
+        cond_source = self._find_condition_source(case_obj.condition)
+        cond_ds = self._get_dataset_structure(cond_source) if cond_source else None
+        if cond_source is not None:
+            self._left_join_dataset(cond_source, _DATASET, alias, source_ids, alias_src, builder)
+
+        if isinstance(case_obj.condition, AST.VarID) and cond_ds is not None:
+            bool_measure = list(cond_ds.get_measures_names())[0]
+            return f"{alias}.{quote_name(bool_measure)}"
+
+        with self._clause_scope(cond_ds, prefix=alias):
+            return self.visit(case_obj.condition)
+
+    def _build_dataset_case(self, node: AST.Case) -> str:
+        """Build SQL for dataset-level CASE with JOINs."""
+        source_node = self._find_condition_source(node.cases[0].condition)
+        source_ds = self._get_dataset_structure(source_node)
+        source_sql = self._get_dataset_sql(source_node)
+        source_ids = list(source_ds.get_identifiers_names())
+        alias_src = "src"
+
+        output_ds = self._get_output_dataset() or source_ds
+        output_measures = output_ds.get_measures_names()
+        output_viral = output_ds.get_viral_attributes_names()
+        builder = SQLBuilder().from_table(source_sql, alias_src)
+
+        # Process each WHEN branch
+        cond_exprs: List[str] = []
+        then_aliases: List[Optional[str]] = []
+        then_types: List[str] = []
+        for i, case in enumerate(node.cases):
+            cond_expr = self._build_case_condition(case, f"c{i}", source_ids, alias_src, builder)
+            cond_exprs.append(cond_expr)
+
+            t_type = self._get_node_type(case.thenOp)
+            then_types.append(t_type)
+            if t_type == _DATASET:
+                alias = f"t{i}"
+                self._left_join_dataset(case.thenOp, t_type, alias, source_ids, alias_src, builder)
+                then_aliases.append(alias)
+            else:
+                then_aliases.append(None)
+
+        # Handle else-operand
+        e_type = self._get_node_type(node.elseOp)
+        e_alias = "e"
+        if e_type == _DATASET:
+            self._left_join_dataset(node.elseOp, e_type, e_alias, source_ids, alias_src, builder)
+
+        cols: List[str] = [f"{alias_src}.{quote_name(id_)}" for id_ in source_ids]
+        for measure in output_measures:
+            case_parts = ["CASE"]
+            for i in reversed(range(len(node.cases))):
+                then_ref = (
+                    f"{then_aliases[i]}.{quote_name(measure)}"
+                    if then_types[i] == _DATASET
+                    else self.visit(node.cases[i].thenOp)
+                )
+                case_parts.append(f"WHEN {cond_exprs[i]} THEN {then_ref}")
+            else_ref = (
+                f"{e_alias}.{quote_name(measure)}"
+                if e_type == _DATASET
+                else self.visit(node.elseOp)
+            )
+            case_parts.append(f"ELSE {else_ref} END")
+            cols.append(f"{' '.join(case_parts)} AS {quote_name(measure)}")
+
+        vp_registry = get_current_registry()
+        for v_name in output_viral:
+            v_qn = quote_name(v_name)
+            v_comp = output_ds.components.get(v_name)
+            refs = [f"{then_aliases[i]}.{v_qn}" for i in range(len(node.cases)) if then_aliases[i]]
+            if e_type == _DATASET:
+                refs.append(f"{e_alias}.{v_qn}")
+            if len(refs) >= 2:
+                v_rule = vp_registry.rule_for(v_comp) if v_comp is not None else None
+                if v_rule is None:
+                    v_type = get_duckdb_type(v_comp.data_type.__name__) if v_comp else "VARCHAR"
+                    cols.append(f"CAST(NULL AS {v_type}) AS {v_qn}")
+                else:
+                    cols.append(f"{vp_reduce_refs(v_rule, refs)} AS {v_qn}")
+            elif refs:
+                cols.append(f"{refs[0]} AS {v_qn}")
+
+        builder.select(*cols)
+
+        # Filter: only keep rows where the selected branch has a matching row.
+        # Scalar/null branches always match; dataset branches need a LEFT JOIN hit.
+        has_ds_branch = any(t == _DATASET for t in then_types) or e_type == _DATASET
+        if has_ds_branch:
+            id_col = quote_name(source_ids[0])
+            filter_parts: List[str] = []
+            for i in range(len(node.cases)):
+                if then_types[i] == _DATASET:
+                    match_check = f"{then_aliases[i]}.{id_col} IS NOT NULL"
+                else:
+                    match_check = "TRUE"
+                filter_parts.append(f"({cond_exprs[i]} AND {match_check})")
+            # Else branch: applies when no condition is true
+            neg = " AND ".join(f"(NOT {c} OR {c} IS NULL)" for c in cond_exprs)
+            if e_type == _DATASET:
+                filter_parts.append(f"(({neg}) AND {e_alias}.{id_col} IS NOT NULL)")
+            else:
+                filter_parts.append(f"({neg})")
+            builder.where(" OR ".join(filter_parts))
+
+        return builder.build()
+
+    # =========================================================================
+    # Rulesets
+    # =========================================================================
+
+    # UDO definition and call
+
+    def visit_Operator(self, node: AST.Operator) -> None:
+        """Register a UDO definition."""
+        self._udos[node.op] = {
+            "params": [
+                {"name": p.name, "type": p.type_, "default": p.default} for p in node.parameters
+            ],
+            "output": node.output_type,
+            "expression": node.expression,
+        }
+
+    def visit_UDOCall(self, node: AST.UDOCall) -> str:  # type: ignore[override]
+        """Visit a UDO call by expanding its definition with parameter bindings."""
+        udo_def = self._udos[node.op]
+        bindings = self._build_udo_bindings(udo_def, node.params, include_types=True)
+        expression = deepcopy(udo_def["expression"])
+
+        self._push_udo_params(bindings)
+        try:
+            return self.visit(expression)
+        finally:
+            self._pop_udo_params()
+
+    # Datapoint rulesets
+
+    def visit_DPRuleset(self, node: AST.DPRuleset) -> None:
+        """Register a datapoint ruleset definition."""
+        signature: Dict[str, str] = {}
+        if not isinstance(node.params, AST.DefIdentifier):
+            for param in node.params:
+                alias = param.alias if param.alias is not None else param.value
+                signature[alias] = param.value
+
+        self._ensure_rule_names(node.rules)
+        self._dprs[node.name] = {
+            "rules": node.rules,
+            "signature": signature,
+            "signature_type": node.signature_type,
+        }
+
+    def visit_DPValidation(self, node: AST.DPValidation) -> str:  # type: ignore[override]
+        """Generate SQL for check_datapoint operator."""
+        dpr_info = self._dprs[node.ruleset_name]
+        ds = self._get_dataset_structure(node.dataset)
+        table_src = self._get_dataset_sql(node.dataset)
+        id_cols = ds.get_identifiers_names()
+
+        if not dpr_info["rules"]:
+            cols = [quote_name(c) for c in id_cols]
+            return f"SELECT {', '.join(cols)} FROM {table_src} WHERE 1=0"
+
+        # If the source is a non-trivial subquery and the ruleset has more than
+        # one rule, materialize it once so the UNION ALL below references a
+        # precomputed result instead of recomputing the source per rule.
+        rules = dpr_info["rules"]
+        stripped = table_src.strip()
+        use_cte = len(rules) > 1 and stripped.startswith("(") and stripped.endswith(")")
+        rule_table_src = "_dp_src" if use_cte else table_src
+
+        rule_queries = [
+            self._build_dp_rule_sql(
+                rule=rule,
+                table_src=rule_table_src,
+                signature=dpr_info["signature"],
+                id_cols=id_cols,
+                measure_cols=ds.get_measures_names(),
+                output_mode=node.output.value if node.output else "invalid",
+            )
+            for rule in rules
+        ]
+        union_sql = " UNION ALL ".join(rule_queries)
+
+        if use_cte:
+            cte = CTEBuilder()
+            cte.cte("_dp_src", stripped[1:-1].strip(), materialized=True)
+            return cte.select(union_sql)
+        return union_sql
+
+    def _build_dp_rule_sql(
+        self,
+        rule: AST.DPRule,
+        table_src: str,
+        signature: Dict[str, str],
+        id_cols: List[str],
+        measure_cols: List[str],
+        output_mode: str,
+    ) -> str:
+        """Build SQL for a single datapoint rule."""
+        rule_node = rule.rule
+        has_when = isinstance(rule_node, AST.HRBinOp) and rule_node.op == tokens.WHEN  # type: ignore[redundant-expr]
+        then_node = rule_node.right if has_when else rule_node
+
+        with self._stash_dp_signature(signature):
+            then_expr = self._visit_dp_expr(then_node, signature)
+            when_cond = self._visit_dp_expr(rule_node.left, signature) if has_when else "TRUE"
+
+        if has_when:
+            fail_cond = f"({when_cond}) AND NOT ({then_expr})"
+            bool_expr = (
+                f"CASE WHEN ({when_cond}) THEN ({then_expr}) "
+                f"WHEN NOT ({when_cond}) THEN TRUE ELSE NULL END"
+            )
+        else:
+            fail_cond = f"NOT ({then_expr})"
+            bool_expr = f"({then_expr})"
+
+        rule_name = rule.name or ""
+        ec_sql = self._error_code_sql(rule.erCode)
+        el_sql = self._error_code_sql(rule.erLevel)
+        select_parts = [quote_name(c) for c in id_cols + measure_cols]
+        if output_mode == "invalid":
+            select_parts.append(f"'{rule_name}' AS {quote_name('ruleid')}")
+            select_parts.append(f"{ec_sql} AS {quote_name('errorcode')}")
+            select_parts.append(f"{el_sql} AS {quote_name('errorlevel')}")
+            return f"SELECT {', '.join(select_parts)} FROM {table_src} WHERE {fail_cond}"
+
+        select_parts.append(f"{bool_expr} AS {quote_name('bool_var')}")
+        select_parts.append(f"'{rule_name}' AS {quote_name('ruleid')}")
+        for val, col in [(ec_sql, quote_name("errorcode")), (el_sql, quote_name("errorlevel"))]:
+            select_parts.append(f"CASE WHEN {fail_cond} THEN {val} ELSE NULL END AS {col}")
+        return f"SELECT {', '.join(select_parts)} FROM {table_src}"
+
+    def _visit_dp_expr(self, node: AST.AST, signature: Dict[str, str]) -> str:
+        """Visit an expression in datapoint-rule context."""
+        if isinstance(node, (AST.HRBinOp, AST.BinOp)):
+            left_sql = self._visit_dp_expr(node.left, signature)
+            right_sql = self._visit_dp_expr(node.right, signature)
+            if isinstance(node, AST.HRBinOp) and node.op == tokens.WHEN:
+                return f"CASE WHEN ({left_sql}) THEN ({right_sql}) ELSE TRUE END"
+            return registry.sql(node.op, left_sql, right_sql)
+        if isinstance(node, (AST.HRUnOp, AST.UnaryOp)):
+            operand_sql = self._visit_dp_expr(node.operand, signature)
+            return registry.sql(node.op, operand_sql)
+        if isinstance(node, (AST.DefIdentifier, AST.VarID)):
+            col_name = signature.get(node.value, node.value)
+            return quote_name(col_name)
+        if isinstance(node, AST.Constant):
+            return self._to_sql_literal(node.value)
+        if isinstance(node, AST.If):
+            cond_sql = self._visit_dp_expr(node.condition, signature)
+            then_sql = self._visit_dp_expr(node.thenOp, signature)
+            else_sql = self._visit_dp_expr(node.elseOp, signature)
+            return (
+                f"CASE WHEN ({cond_sql}) THEN CAST(({then_sql}) AS BOOLEAN)"
+                f" ELSE CAST(({else_sql}) AS BOOLEAN) END"
+            )
+        with self._stash_dp_signature(signature):
+            return self.visit(node)
+
+    # Hierarchical ruleset
+
+    def _visit_HRuleset(self, node: AST.HRuleset) -> None:
+        """Register a hierarchical ruleset definition."""
+        self._ensure_rule_names(node.rules)
+
+        cond_comp: List[str] = []
+        if isinstance(node.element, list):
+            cond_comp = [x.value for x in node.element[:-1]]
+            signature_value = node.element[-1].value
+        else:
+            signature_value = node.element.value
+
+        self._hrs[node.name] = {
+            "rules": node.rules,
+            "signature": signature_value,
+            "condition": cond_comp,
+            "signature_type": node.signature_type,
+            "node": node,
+        }
+
+    def visit_HROperation(self, node: AST.HROperation) -> str:  # type: ignore[override]
+        """Generate SQL for hierarchy or check_hierarchy operator."""
+        hr_info = self._hrs[node.ruleset_name]
+        ds = self._get_dataset_structure(node.dataset)
+        table_src = self._get_dataset_sql(node.dataset)
+
+        if hr_info["signature_type"] == "valuedomain" and node.rule_component is not None:
+            component = self._get_node_value(node.rule_component)
+        else:
+            component = hr_info["signature"]
+
+        cond_mapping: Dict[str, str] = {}
+        if node.conditions and hr_info["condition"]:
+            for i, cond_node in enumerate(node.conditions):
+                cond_mapping[hr_info["condition"][i]] = self._get_node_value(cond_node)
+
+        mode = node.validation_mode.value if node.validation_mode else "non_null"
+        parsed_rules = [self._parse_hr_rule(r, cond_mapping) for r in hr_info["rules"]]
+
+        if node.op == tokens.HIERARCHY:
+            eq_rules = [p for p in parsed_rules if p.comparison_node.op == tokens.EQ]
+            return self._build_hierarchy_sql(
+                table_src=table_src,
+                ds=ds,
+                parsed_rules=eq_rules,
+                rule_comp=component,
+                mode=mode,
+                input_mode=node.input_mode.value if node.input_mode else "rule",
+                output=node.output.value if node.output else "computed",
+                cond_mapping=cond_mapping,
+            )
+        return self._build_check_hierarchy_sql(
+            table_src=table_src,
+            ds=ds,
+            parsed_rules=parsed_rules,
+            rule_comp=component,
+            mode=mode,
+            output=node.output.value if node.output else "invalid",
+            cond_mapping=cond_mapping,
+        )
+
+    def _parse_hr_rule(
+        self, rule: AST.HRule, cond_mapping: Optional[Dict[str, str]] = None
+    ) -> _ParsedHRRule:
+        """Parse a hierarchical rule, resolving right-side conditions when given a mapping."""
+        rule_node: Any = rule.rule
+        has_when = isinstance(rule_node, AST.HRBinOp) and rule_node.op == tokens.WHEN
+        comparison_node = rule_node.right if has_when else rule_node
+        right_items, right_conds = self._collect_hr_code_items(comparison_node.right, cond_mapping)
+        left_rc = getattr(comparison_node.left, "_right_condition", None)
+        left_cond_sql: Optional[str] = None
+        if cond_mapping is not None and left_rc is not None:
+            left_cond_sql = self._build_hr_when_sql(left_rc, cond_mapping)
+        return _ParsedHRRule(
+            rule=rule,
+            has_when=has_when,
+            when_node=rule_node.left if has_when else None,
+            comparison_node=comparison_node,
+            left_code_item=comparison_node.left.value,
+            right_expr_node=comparison_node.right,
+            right_code_items=right_items,
+            left_cond_sql=left_cond_sql,
+            right_conds=right_conds,
+        )
+
+    @staticmethod
+    def _collect_all_hr_items(
+        parsed_rules: List[_ParsedHRRule],
+    ) -> Tuple[List[str], Dict[str, str]]:
+        """Collect deduplicated code items and conditions across pre-parsed rules."""
+        all_items: List[str] = []
+        all_conds: Dict[str, str] = {}
+        for p in parsed_rules:
+            all_items.append(p.left_code_item)
+            all_items.extend(p.right_code_items)
+            if p.left_cond_sql is not None:
+                all_conds[p.left_code_item] = p.left_cond_sql
+            all_conds.update(p.right_conds)
+        return list(dict.fromkeys(all_items)), all_conds
+
+    def _build_hr_pivot(
+        self,
+        table_src: str,
+        ds: Dataset,
+        parsed_rules: List[_ParsedHRRule],
+        rule_comp: str,
+        cond_mapping: Dict[str, str],
+    ) -> Tuple[str, str, List[str], List[str]]:
+        """Build the pivot SELECT SQL and metadata for hierarchy operations.
+
+        Returns (pivot_sql, measure_name, other_ids, unique_items).
+        """
+        measure_name = ds.get_measures_names()[0]
+        other_ids = [n for n in ds.get_identifiers_names() if n != rule_comp]
+        unique_items, item_conds = self._collect_all_hr_items(parsed_rules)
+
+        qrc = quote_name(rule_comp)
+        qm = quote_name(measure_name)
+        group_cols = [quote_name(c) for c in (*other_ids, *cond_mapping.values())]
+
+        select_parts = list(group_cols)
+        for ci in unique_items:
+            extra = f" AND {item_conds[ci]}" if ci in item_conds else ""
+            match_case = f"CASE WHEN {qrc} = '{ci}'{extra}"
+            select_parts.append(f"MAX({match_case} THEN {qm} END) AS {_val_col(ci)}")
+            select_parts.append(f"MAX({match_case} THEN 1 ELSE 0 END) AS {_has_col(ci)}")
+
+        in_list = ", ".join(f"'{ci}'" for ci in unique_items)
+        group_by = f" GROUP BY {', '.join(group_cols)}" if group_cols else ""
+        pivot_sql = (
+            f"SELECT {', '.join(select_parts)} "
+            f"FROM {table_src} WHERE {qrc} IN ({in_list}){group_by}"
+        )
+        return pivot_sql, measure_name, other_ids, unique_items
+
+    def _build_check_hierarchy_sql(
+        self,
+        table_src: str,
+        ds: Dataset,
+        parsed_rules: List[_ParsedHRRule],
+        rule_comp: str,
+        mode: str,
+        output: str,
+        cond_mapping: Dict[str, str],
+    ) -> str:
+        """Generate SQL for check_hierarchy using pivot CTE."""
+        if not parsed_rules:
+            out_ds = self._get_output_dataset()
+            cols = [quote_name(c) for c in (out_ds.components if out_ds else ds.components)]
+            return f"SELECT {', '.join(cols)} FROM {table_src} WHERE 1=0"
+
+        pivot_sql, measure_name, other_ids, _ = self._build_hr_pivot(
+            table_src, ds, parsed_rules, rule_comp, cond_mapping
+        )
+        cte = CTEBuilder()
+        # MATERIALIZED so the pivot aggregation is computed once, not once per
+        # rule branch in the UNION ALL below.
+        cte.cte("_pivot", pivot_sql, materialized=True)
+        rule_queries = [
+            self._build_check_hr_rule_select(
+                parsed=p,
+                other_ids=other_ids,
+                rule_comp=rule_comp,
+                measure=measure_name,
+                mode=mode,
+                output=output,
+                cond_mapping=cond_mapping,
+            )
+            for p in parsed_rules
+        ]
+        return cte.select(" UNION ALL ".join(rule_queries))
+
+    def _collect_hr_code_items(
+        self, node: AST.AST, cond_mapping: Optional[Dict[str, str]] = None
+    ) -> Tuple[List[str], Dict[str, str]]:
+        """Extract code-item names and right-side conditions from an HR expression."""
+        if isinstance(node, AST.DefIdentifier):
+            conds: Dict[str, str] = {}
+            if cond_mapping is not None:
+                rc = getattr(node, "_right_condition", None)
+                if rc is not None:
+                    conds[node.value] = self._build_hr_when_sql(rc, cond_mapping)
+            return [node.value], conds
+        if isinstance(node, AST.HRBinOp):
+            li, lc = self._collect_hr_code_items(node.left, cond_mapping)
+            ri, rc = self._collect_hr_code_items(node.right, cond_mapping)
+            lc.update(rc)
+            return li + ri, lc
+        if isinstance(node, AST.HRUnOp):
+            return self._collect_hr_code_items(node.operand, cond_mapping)
+        return [], {}
+
+    def _build_hr_value_expr(self, code_item: str, mode: str) -> str:
+        """Generate the value expression for a code item from pivot columns, per mode."""
+        val_col = _val_col(code_item)
+        if mode in ("always_zero", "non_zero", "partial_zero"):
+            return f"CASE WHEN {_has_col(code_item)} = 0 THEN 0 ELSE {val_col} END"
+        return val_col
+
+    def _build_hr_expr_sql(self, node: AST.AST, mode: str) -> str:
+        """Generate SQL for a hierarchical rule arithmetic expression using pivot columns."""
+        if isinstance(node, AST.DefIdentifier):
+            return self._build_hr_value_expr(node.value, mode)
+        if isinstance(node, AST.HRBinOp):
+            left_sql = self._build_hr_expr_sql(node.left, mode)
+            right_sql = self._build_hr_expr_sql(node.right, mode)
+            return f"({left_sql} {node.op} {right_sql})"
+        # HRUnOp
+        operand_sql = self._build_hr_expr_sql(node.operand, mode)  # type: ignore[attr-defined]
+        return f"({node.op}{operand_sql})"  # type: ignore[attr-defined]
+
+    def _build_check_hr_rule_select(
+        self,
+        parsed: _ParsedHRRule,
+        other_ids: List[str],
+        rule_comp: str,
+        measure: str,
+        mode: str,
+        output: str,
+        cond_mapping: Dict[str, str],
+    ) -> str:
+        """Generate a SELECT for a single check_hierarchy rule from the pivot CTE."""
+        rule = parsed.rule
+        rule_name = rule.name or ""
+
+        l_val = self._build_hr_value_expr(parsed.left_code_item, mode)
+        r_val = self._build_hr_expr_sql(parsed.right_expr_node, mode)
+
+        bool_expr = f"({l_val} {parsed.comparison_node.op} {r_val})"
+        imbalance_expr = f"({l_val} - {r_val})"
+        when_sql: Optional[str] = None
+        if parsed.has_when:
+            when_sql = self._build_hr_when_sql(parsed.when_node, cond_mapping)
+            bool_expr = f"CASE WHEN NOT ({when_sql}) THEN TRUE ELSE {bool_expr} END"
+            imbalance_expr = (
+                f"CASE WHEN NOT ({when_sql}) THEN CAST(NULL AS DOUBLE) ELSE {imbalance_expr} END"
+            )
+
+        inner_cols = [quote_name(c) for c in other_ids]
+        inner_cols.append(f"{l_val} AS _lv")
+        inner_cols.append(f"{bool_expr} AS _bv")
+        inner_cols.append(f"{imbalance_expr} AS _imb")
+
+        inner_where = self._build_hr_mode_filter(
+            mode=mode,
+            left_code_item=parsed.left_code_item,
+            right_code_items=parsed.right_code_items,
+            left_val_expr=l_val,
+            right_val_expr=r_val,
+            is_hierarchy=False,
+        )
+        if output == "invalid" and when_sql is not None:
+            inner_where.append(f"({when_sql})")
+        inner_where_clause = f" WHERE {' AND '.join(inner_where)}" if inner_where else ""
+        inner_sql = f"SELECT {', '.join(inner_cols)} FROM _pivot{inner_where_clause}"
+
+        ec_sql = self._error_code_sql(rule.erCode)
+        el_sql = self._error_code_sql(rule.erLevel)
+        el_null = (
+            "CAST(NULL AS DOUBLE)" if self._is_numeric(rule.erLevel) else "CAST(NULL AS VARCHAR)"
+        )
+
+        q_rc = quote_name(rule_comp)
+        q_m = quote_name(measure)
+        outer_cols: List[str] = [quote_name(c) for c in other_ids]
+        outer_cols.append(f"'{parsed.left_code_item}' AS {q_rc}")
+        if output != "all":
+            outer_cols.append(f"_lv AS {q_m}")
+        if output != "invalid":
+            outer_cols.append(f"_bv AS {quote_name('bool_var')}")
+        outer_cols.append(f"_imb AS {quote_name('imbalance')}")
+        outer_cols.append(f"'{rule_name}' AS {quote_name('ruleid')}")
+
+        for val, null_expr, col in (
+            (ec_sql, "CAST(NULL AS VARCHAR)", "errorcode"),
+            (el_sql, el_null, "errorlevel"),
+        ):
+            if output == "invalid":
+                outer_cols.append(f"{val} AS {quote_name(col)}")
+            else:
+                outer_cols.append(
+                    f"CASE WHEN _bv IS NOT FALSE THEN {null_expr} "
+                    f"ELSE {val} END AS {quote_name(col)}"
+                )
+
+        outer_where = " WHERE _bv = FALSE" if output == "invalid" else ""
+        return f"SELECT {', '.join(outer_cols)} FROM ({inner_sql}) _r{outer_where}"
+
+    def _build_hierarchy_sql(
+        self,
+        table_src: str,
+        ds: Dataset,
+        parsed_rules: List[_ParsedHRRule],
+        rule_comp: str,
+        mode: str,
+        input_mode: str,
+        output: str,
+        cond_mapping: Dict[str, str],
+    ) -> str:
+        """Generate SQL for hierarchy operator using CTE chain."""
+        if not parsed_rules:
+            cols = [quote_name(c) for c in ds.get_components_names()]
+            return f"SELECT {', '.join(cols)} FROM {table_src}"
+
+        pivot_sql, measure, other_ids, unique_items = self._build_hr_pivot(
+            table_src, ds, parsed_rules, rule_comp, cond_mapping
+        )
+        cte = CTEBuilder()
+        # MATERIALIZED to avoid the optimizer re-inlining the pivot aggregation
+        # into every dependent CTE in the chain below.
+        cte.cte("_pivot", pivot_sql, materialized=True)
+        rule_result_refs: List[Tuple[str, str]] = []
+        current_pivot = "_pivot"
+
+        join_keys = [quote_name(c) for c in (*other_ids, *cond_mapping.values())]
+
+        for i, parsed in enumerate(parsed_rules):
+            rule_cte_name = f"_rule_{i}"
+            # Each _rule_i is referenced by the next _pivot_i AND by the final
+            # SELECT projecting the rule output. Materialize so we evaluate once.
+            cte.cte(
+                rule_cte_name,
+                self._build_hierarchy_rule_cte(
+                    parsed=parsed,
+                    pivot_ref=current_pivot,
+                    other_ids=other_ids,
+                    mode=mode,
+                    cond_mapping=cond_mapping,
+                ),
+                materialized=True,
+            )
+            rule_result_refs.append((rule_cte_name, parsed.left_code_item))
+
+            next_pivot = f"_pivot_{i}"
+            # Each _pivot_i is consumed by the next iteration's _rule_{i+1} and
+            # by the next _pivot_{i+1}. Without materialization the chain of N
+            # pivots gets re-inlined N times.
+            cte.cte(
+                next_pivot,
+                self._build_hierarchy_pivot_update(
+                    prev_pivot=current_pivot,
+                    rule_cte=rule_cte_name,
+                    left_code_item=parsed.left_code_item,
+                    join_keys=join_keys,
+                    input_mode=input_mode,
+                    unique_items=unique_items,
+                ),
+                materialized=True,
+            )
+            current_pivot = next_pivot
+
+        # Build final SELECT per rule
+        final_selects: List[str] = []
+        q_rc = quote_name(rule_comp)
+        q_m = quote_name(measure)
+        for rule_cte, left_ci in rule_result_refs:
+            cols = [quote_name(c) for c in other_ids]
+            cols.append(f"'{left_ci}' AS {q_rc}")
+            cols.append(f"_computed AS {q_m}")
+
+            result_filter: List[str] = []
+            if mode == "non_null":
+                result_filter.append("_computed IS NOT NULL")
+            elif mode == "non_zero":
+                result_filter.append("(_computed IS NULL OR _computed != 0)")
+
+            where = f" WHERE {' AND '.join(result_filter)}" if result_filter else ""
+            final_selects.append(f"SELECT {', '.join(cols)} FROM {rule_cte}{where}")
+
+        computed_sql = " UNION ALL ".join(final_selects)
+
+        if output == "computed":
+            return cte.select(computed_sql)
+
+        # output == "all": union(setdiff(op, computed), computed)
+        id_cols = [quote_name(c) for c in ds.get_identifiers_names()]
+        all_cols = [quote_name(c) for c in ds.get_components_names()]
+        all_cols_csv = ", ".join(all_cols)
+        id_cols_csv = ", ".join(id_cols)
+        cte.cte("_computed", computed_sql)
+        cte.cte(
+            "_combined",
+            f"SELECT {all_cols_csv}, 0 AS _src FROM {table_src} "
+            f"UNION ALL SELECT {all_cols_csv}, 1 AS _src FROM _computed",
+        )
+        return cte.select(
+            f"SELECT {all_cols_csv} FROM ("
+            f"SELECT *, ROW_NUMBER() OVER ("
+            f"PARTITION BY {id_cols_csv} ORDER BY _src DESC) AS _rn "
+            f"FROM _combined) WHERE _rn = 1"
+        )
+
+    def _build_hierarchy_rule_cte(
+        self,
+        parsed: _ParsedHRRule,
+        pivot_ref: str,
+        other_ids: List[str],
+        mode: str,
+        cond_mapping: Dict[str, str],
+    ) -> str:
+        """Generate SELECT for _rule_N CTE in hierarchy CTE chain."""
+        r_val = self._build_hr_expr_sql(parsed.right_expr_node, mode)
+        computed_expr = r_val
+        if parsed.has_when:
+            when_sql = self._build_hr_when_sql(parsed.when_node, cond_mapping)
+            computed_expr = f"CASE WHEN {when_sql} THEN {computed_expr} ELSE NULL END"
+
+        select_parts = [quote_name(c) for c in (*other_ids, *cond_mapping.values())]
+        select_parts.append(f"{computed_expr} AS _computed")
+
+        where_parts = self._build_hr_mode_filter(
+            mode=mode,
+            left_code_item=parsed.left_code_item,
+            right_code_items=parsed.right_code_items,
+            left_val_expr=self._build_hr_value_expr(parsed.left_code_item, mode),
+            right_val_expr=r_val,
+            is_hierarchy=True,
+        )
+        right_presence = [f"{_has_col(ci)} = 1" for ci in parsed.right_code_items]
+        if right_presence:
+            where_parts.append(f"({' OR '.join(right_presence)})")
+
+        where_clause = f" WHERE {' AND '.join(where_parts)}" if where_parts else ""
+        return f"  SELECT {', '.join(select_parts)} FROM {pivot_ref}{where_clause}"
+
+    def _build_hierarchy_pivot_update(
+        self,
+        prev_pivot: str,
+        rule_cte: str,
+        left_code_item: str,
+        join_keys: List[str],
+        input_mode: str,
+        unique_items: List[str],
+    ) -> str:
+        """Generate _pivot_N CTE that updates pivot with a rule's computed value."""
+        val_col = _val_col(left_code_item)
+        has_col = _has_col(left_code_item)
+
+        other_val_has: List[str] = []
+        for i in unique_items:
+            if i != left_code_item:
+                other_val_has.append(f"p.{_val_col(i)}")
+                other_val_has.append(f"p.{_has_col(i)}")
+
+        key_cols = [f"p.{k}" for k in join_keys]
+        first_key = join_keys[0] if join_keys else "_computed"
+
+        if input_mode == "rule_priority":
+            guard = "r._computed IS NOT NULL"
+        else:
+            guard = f"r.{first_key} IS NOT NULL"
+        val_expr = f"CASE WHEN {guard} THEN r._computed ELSE p.{val_col} END AS {val_col}"
+        has_expr = f"CASE WHEN r.{first_key} IS NOT NULL THEN 1 ELSE p.{has_col} END AS {has_col}"
+
+        all_select = key_cols + other_val_has + [val_expr, has_expr]
+        using_clause = ", ".join(join_keys) if join_keys else "1=1"
+
+        return (
+            f"  SELECT {', '.join(all_select)}\n"
+            f"  FROM {prev_pivot} p\n"
+            f"  LEFT JOIN {rule_cte} r USING ({using_clause})"
+        )
+
+    def _build_hr_mode_filter(
+        self,
+        mode: str,
+        left_code_item: str,
+        right_code_items: List[str],
+        left_val_expr: str,
+        right_val_expr: str,
+        is_hierarchy: bool,
+    ) -> List[str]:
+        """Generate WHERE filter clauses for the validation mode using pivot columns."""
+        all_items = [left_code_item] + right_code_items
+        filters: List[str] = []
+
+        if mode == "non_null":
+            items = right_code_items if is_hierarchy else all_items
+            filters.extend(f"{_val_col(i)} IS NOT NULL" for i in items)
+
+        elif mode == "non_zero":
+            if is_hierarchy:
+                vals = [self._build_hr_value_expr(i, mode) for i in right_code_items]
+                zero_checks = [f"({v} IS NOT NULL AND {v} = 0)" for v in vals]
+                if zero_checks:
+                    filters.append(f"NOT ({' AND '.join(zero_checks)})")
+            else:
+                filters.append(
+                    f"NOT ("
+                    f"({left_val_expr} IS NOT NULL AND {left_val_expr} = 0) AND "
+                    f"({right_val_expr} IS NOT NULL AND {right_val_expr} = 0))"
+                )
+
+        elif mode in ("partial_null", "partial_zero"):
+            items = right_code_items if is_hierarchy else all_items
+            checks = [f"({_has_col(i)} = 1 AND {_val_col(i)} IS NOT NULL)" for i in items]
+            if checks:
+                filters.append(f"({' OR '.join(checks)})")
+
+        elif mode in ("always_null", "always_zero"):
+            presence = [f"{_has_col(i)} = 1" for i in all_items]
+            filters.append(f"({' OR '.join(presence)})")
+
+        return filters
+
+    def _build_hr_when_sql(self, node: AST.AST, cond_mapping: Dict[str, str]) -> str:
+        """Generate SQL for a WHEN condition in a hierarchical rule."""
+        if isinstance(node, (AST.DefIdentifier, AST.VarID)):
+            col_name = cond_mapping.get(node.value, node.value)
+            return quote_name(col_name)
+        if isinstance(node, AST.Constant):
+            return self._to_sql_literal(node.value)
+        if isinstance(node, (AST.HRUnOp, AST.UnaryOp)):
+            operand_sql = self._build_hr_when_sql(node.operand, cond_mapping)
+            return registry.sql(node.op, operand_sql)
+        if isinstance(node, (AST.HRBinOp, AST.BinOp)):
+            left_sql = self._build_hr_when_sql(node.left, cond_mapping)
+            right_sql = self._build_hr_when_sql(node.right, cond_mapping)
+            return registry.sql(node.op, left_sql, right_sql)
+        if isinstance(node, AST.MulOp):
+            children_sql = [self._build_hr_when_sql(c, cond_mapping) for c in node.children]
+            return registry.sql(node.op, *children_sql)
+        # Fallback to general visitor.
+        return self.visit(node)
+
+    def _error_code_sql(self, value: Any) -> str:
+        """Convert an errorcode value to a SQL literal."""
+        return "CAST(NULL AS VARCHAR)" if value is None else self._to_sql_literal(value=value)
+
+    def visit_Validation(self, node: AST.Validation) -> str:
+        """Visit CHECK validation operator."""
+        # Stash ``current_assignment`` so _build_ds_ds_binary doesn't rename the
+        # inner comparison's measures to match the outer assignment target.
+        with self._stash_assignment():
+            validation_sql = self.visit(node.validation)
+
+        error_code = self._error_code_sql(node.error_code)
+        error_level = self._error_code_sql(node.error_level)
+
+        ds = self._get_dataset_structure(node.validation)
+        if ds is None:
+            return (
+                f'SELECT t.*, CAST(NULL AS DOUBLE) AS "imbalance", '
+                f'{error_code} AS "errorcode", '
+                f'{error_level} AS "errorlevel" '
+                f"FROM ({validation_sql}) AS t"
+            )
+
+        id_names = ds.get_identifiers_names()
+        bool_measure = ds.get_measures_names()[0]
+        bool_ref = f"t.{quote_name(bool_measure)}"
+
+        cols: List[str] = [f"t.{quote_name(n)}" for n in id_names]
+        cols.append(f'{bool_ref} AS "bool_var"')
+
+        imbalance_sql: Optional[str] = None
+        join_cond: Optional[str] = None
+        imbalance_col = 'CAST(NULL AS DOUBLE) AS "imbalance"'
+        if node.imbalance is not None:
+            with self._stash_assignment():
+                imbalance_sql = self.visit(node.imbalance)
+            imb_ds = self._get_dataset_structure(node.imbalance)
+            if imb_ds is not None:
+                join_cond = self._join_on_clause(id_names, "t", "i")
+                imbalance_col = f'i.{quote_name(imb_ds.get_measures_names()[0])} AS "imbalance"'
+        cols.append(imbalance_col)
+
+        for val, col in ((error_code, "errorcode"), (error_level, "errorlevel")):
+            cols.append(f'CASE WHEN {bool_ref} IS FALSE THEN {val} ELSE NULL END AS "{col}"')
+
+        sql = f"SELECT {', '.join(cols)} FROM ({validation_sql}) AS t"
+        if imbalance_sql is not None and join_cond is not None:
+            sql += f" JOIN ({imbalance_sql}) AS i ON {join_cond}"
+        if node.invalid:
+            sql += f" WHERE {bool_ref} IS FALSE"
+        return sql
+
+    # =========================================================================
+    # Join visitor
+    # =========================================================================
+
+    def _resolve_join_nvl_defaults(
+        self, node: AST.JoinOp, clause_info: List[Dict[str, Any]]
+    ) -> Dict[str, str]:
+        """Resolve VTL 2.2 `nvl(component, constant)` join clauses to SQL literals.
+
+        Each pair becomes a `COALESCE(col, <literal>)` in the SELECT list. Raises
+        SemanticError 1-1-1-10 if the referenced component isn't in any operand.
+        """
+        if not node.nvl:
+            return {}
+        all_components: Set[str] = set()
+        for info in clause_info:
+            all_components.update(info["ds"].components)
+        defaults: Dict[str, str] = {}
+        for pair in node.nvl:
+            if pair.component not in all_components:
+                raise SemanticError(
+                    "1-1-1-10",
+                    op=node.op,
+                    comp_name=pair.component,
+                    dataset_name=clause_info[0]["ds"].name,
+                )
+            defaults[pair.component] = self._constant_to_sql(pair.default)
+        return defaults
+
+    @staticmethod
+    def _build_join_viral_cols(
+        clause_info: List[Dict[str, Any]],
+        vp_registry: Any,
+        merged_viral: Set[str],
+    ) -> List[str]:
+        """Emit one merged SQL column for each name in ``merged_viral``.
+
+        Only names that satisfy the shared-viral predicate (viral in every operand
+        that has them, present in >=2 operands, not a join key) are passed in via
+        ``merged_viral``.  Single-operand viral attrs and mixed-role components are
+        handled by the main projection loop instead.
+        """
+        viral_comp: Dict[str, Any] = {}
+        viral_aliases: Dict[str, List[str]] = {}
+        for info in clause_info:
+            for vname, vcomp in info["ds"].components.items():
+                if vname in merged_viral and vcomp.role == Role.VIRAL_ATTRIBUTE:
+                    viral_aliases.setdefault(vname, []).append(info["sql_alias"])
+                    viral_comp.setdefault(vname, vcomp)
+
+        cols: List[str] = []
+        for vname in sorted(merged_viral):
+            aliases = viral_aliases.get(vname, [])
+            if not aliases:
+                continue
+            v_qn = quote_name(vname)
+            refs = [f"{sa}.{v_qn}" for sa in aliases]
+            v_rule = vp_registry.rule_for(viral_comp[vname])
+            if v_rule is None:
+                v_type = get_duckdb_type(viral_comp[vname].data_type.__name__)
+                cols.append(f"CAST(NULL AS {v_type}) AS {v_qn}")
+            else:
+                cols.append(f"{vp_reduce_refs(v_rule, refs)} AS {v_qn}")
+        return cols
+
+    def visit_JoinOp(self, node: AST.JoinOp) -> str:  # type: ignore[override]
+        """Visit a join operation."""
+        clause_info: List[Dict[str, Any]] = []
+        for clause in node.clauses:
+            alias: Optional[str] = None
+            actual_node = clause
+            if isinstance(clause, AST.BinOp) and clause.op == tokens.AS:
+                actual_node = clause.left
+                alias = self._get_node_value(clause.right)
+
+            ds = self._get_dataset_structure(actual_node)
+            alias = alias or ds.name
+            clause_info.append(
+                {
+                    "node": actual_node,
+                    "ds": ds,
+                    "table_src": self._get_dataset_sql(actual_node),
+                    "alias": alias,
+                    "sql_alias": quote_name(alias) if ("." in alias or " " in alias) else alias,
+                    "id_names": set(ds.get_identifiers_names()),
+                }
+            )
+
+        is_cross_join = node.op == tokens.CROSS_JOIN
+        explicit_using = list(node.using) if node.using else None
+
+        # Pairwise keys: for each secondary dataset, the identifiers it shares with any
+        # preceding dataset (or the explicit USING list).
+        if explicit_using is not None:
+            pairwise_keys: List[List[str]] = [explicit_using] * (len(clause_info) - 1)
+        else:
+            pairwise_keys = []
+            accumulated_ids: Set[str] = set(clause_info[0]["id_names"])
+            for info in clause_info[1:]:
+                pairwise_keys.append(sorted(accumulated_ids & info["id_names"]))
+                accumulated_ids |= info["id_names"]
+
+        # Non-cross joins: any identifier (and explicit USING key) is treated as a join
+        # column — emitted once and not aliased as a duplicate.
+        all_join_ids: Set[str] = set()
+        if not is_cross_join:
+            all_join_ids.update(*pairwise_keys)
+            for info in clause_info:
+                all_join_ids |= info["id_names"]
+
+        comp_count: Counter[str] = Counter(
+            name
+            for info in clause_info
+            for name in info["ds"].get_components_names()
+            if name not in all_join_ids
+        )
+        duplicate_comps = {name for name, cnt in comp_count.items() if cnt >= 2}
+
+        nvl_defaults = self._resolve_join_nvl_defaults(node, clause_info)
+
+        # Determine which viral attrs merge into a single bare column (shared by >=2
+        # operands, viral in every operand that has them, not a join key).
+        merged_viral = merged_viral_attribute_names(
+            [info["ds"].components for info in clause_info], all_join_ids
+        )
+
+        # First alias that exposes each component — used to pick the left side of ON
+        # clauses. A USING key may be a measure in one dataset and an identifier in
+        # another, so we track components (not just identifiers).
+        comp_to_alias: Dict[str, str] = {}
+        for info in clause_info:
+            for name in info["ds"].components:
+                comp_to_alias.setdefault(name, info["sql_alias"])
+
+        first_sql_alias = clause_info[0]["sql_alias"]
+        vp_registry = get_current_registry()
+
+        cols: List[str] = []
+        self._join_alias_map = {}
+        seen_identifiers: Set[str] = set()
+        for info in clause_info:
+            sa = info["sql_alias"]
+            for name, comp in info["ds"].components.items():
+                if name in merged_viral:
+                    # Merged viral attrs are emitted once by _build_join_viral_cols.
+                    continue
+                is_join_col = (
+                    comp.role == Role.IDENTIFIER and not is_cross_join
+                ) or name in all_join_ids
+                if is_join_col:
+                    if name in seen_identifiers:
+                        continue
+                    seen_identifiers.add(name)
+                    if node.op == tokens.FULL_JOIN and name in all_join_ids:
+                        # FULL JOIN: COALESCE across sides to pick the non-NULL value.
+                        coalesce_parts = [
+                            f"{i['sql_alias']}.{quote_name(name)}"
+                            for i in clause_info
+                            if name in i["ds"].components
+                        ]
+                        cols.append(f"COALESCE({', '.join(coalesce_parts)}) AS {quote_name(name)}")
+                    else:
+                        cols.append(f"{sa}.{quote_name(name)}")
+                elif name in duplicate_comps:
+                    qualified_name = f"{info['alias']}#{name}"
+                    expr = f"{sa}.{quote_name(name)}"
+                    if name in nvl_defaults:
+                        expr = f"COALESCE({expr}, {nvl_defaults[name]})"
+                    cols.append(f"{expr} AS {quote_name(qualified_name)}")
+                    self._join_alias_map[qualified_name] = qualified_name
+                else:
+                    expr = f"{sa}.{quote_name(name)}"
+                    if name in nvl_defaults:
+                        expr = f"COALESCE({expr}, {nvl_defaults[name]}) AS {quote_name(name)}"
+                    cols.append(expr)
+
+        cols.extend(self._build_join_viral_cols(clause_info, vp_registry, merged_viral))
+
+        builder = SQLBuilder()
+        builder.select(*cols) if cols else builder.select_all()
+        builder.from_table(clause_info[0]["table_src"], first_sql_alias)
+
+        for idx, info in enumerate(clause_info[1:]):
+            if is_cross_join:
+                builder.cross_join(info["table_src"], info["sql_alias"])
+                continue
+            right_alias = info["sql_alias"]
+            on_parts = [
+                f"{comp_to_alias.get(k, first_sql_alias)}.{quote_name(k)} = "
+                f"{right_alias}.{quote_name(k)}"
+                for k in pairwise_keys[idx]
+                if k in info["ds"].components
+            ]
+            on_clause = " AND ".join(on_parts) if on_parts else "1=1"
+            builder.join(info["table_src"], right_alias, on=on_clause, join_type=node.op)
+
+        return builder.build()
+
+    # =========================================================================
+    # Time aggregation visitor
+    # =========================================================================
+
+    def visit_TimeAggregation(self, node: AST.TimeAggregation) -> str:  # type: ignore[override]
+        """Visit TIME_AGG operation."""
+        conf = node.conf
+        target = node.period_to
+        if target is None and node.period_to_ref is not None:
+            target = self._resolve_period_to_ref(node.period_to_ref)
+        if target is None:
+            raise SemanticError("1-3-2-4")
+
+        if node.operand is not None:
+            operand_type = self._get_node_type(node.operand)
+            if operand_type == _DATASET:
+                return self._visit_time_agg_dataset(node, target, conf)
+
+            operand_sql = self.visit(node.operand)
+            if self._is_operand_type(node.operand, TimePeriod):
+                return f"vtl_time_agg_tp(vtl_period_parse({operand_sql}), '{target}')"
+            else:
+                agg_expr = f"vtl_time_agg_date({operand_sql}, '{target}')"
+                return self._apply_time_agg_conf(agg_expr, conf)
+        else:
+            # Without-operand case: inside group all, applies to time identifier
+            if self._in_clause and self._current_dataset:
+                for comp in self._current_dataset.components.values():
+                    if comp.data_type == TimePeriod and comp.role == Role.IDENTIFIER:
+                        col = quote_name(comp.name)
+                        return f"vtl_time_agg_tp(vtl_period_parse({col}), '{target}')"
+                for comp in self._current_dataset.components.values():
+                    if comp.data_type == Date and comp.role == Role.IDENTIFIER:
+                        col = quote_name(comp.name)
+                        agg = f"vtl_time_agg_date({col}, '{target}')"
+                        return self._apply_time_agg_conf(agg, conf)
+            return f"vtl_time_agg_date(CURRENT_DATE, '{target}')"
+
+    @staticmethod
+    def _apply_time_agg_conf(expr: str, conf: Optional[str]) -> str:
+        """Apply time_agg conf (first/last) modifier to a Date aggregation expression."""
+        if conf == "first":
+            return f"vtl_tp_start_date(vtl_period_parse({expr}))"
+        if conf == "last":
+            return f"vtl_tp_end_date(vtl_period_parse({expr}))"
+        return expr
+
+    def _resolve_period_to_ref(self, ref: AST.AST) -> str:
+        name = ref.value  # type: ignore[attr-defined]
+        return str(self.input_scalars[name].value)
+
+    def _resolve_scalar_varid(self, value: Any) -> Any:
+        """Non-VarID values pass through unchanged."""
+        if not isinstance(value, AST.VarID):
+            return value
+        name = value.value
+        return self.input_scalars[name].value
+
+    def _visit_time_agg_dataset(
+        self, node: AST.TimeAggregation, target: str, conf: Optional[str]
+    ) -> str:
+        """Visit TIME_AGG at dataset level: apply to time measure."""
+        ds = self._get_dataset_structure(node.operand)
+        src = self._get_dataset_sql(node.operand)
+
+        # Find time measures to transform
+        cols = []
+        for comp in ds.components.values():
+            col = quote_name(comp.name)
+            if comp.role == Role.IDENTIFIER:
+                cols.append(col)
+            elif comp.data_type == TimePeriod:
+                cols.append(f"vtl_time_agg_tp(vtl_period_parse({col}), '{target}') AS {col}")
+            elif comp.data_type == Date:
+                expr = self._apply_time_agg_conf(f"vtl_time_agg_date({col}, '{target}')", conf)
+                cols.append(f"{expr} AS {col}")
+            else:
+                cols.append(col)
+
+        return SQLBuilder().select(*cols).from_table(src).build()
+
+    # =========================================================================
+    # Eval operator visitor
+    # =========================================================================
+
+    def visit_EvalOp(self, node: AST.EvalOp) -> str:
+        """Visit EVAL operator (external routine execution)."""
+        routine = self.external_routines[node.name]
+        query = routine.query.replace('"', "'")
+
+        # Map SQL table names to actual DuckDB table names.
+        for table_name in routine.dataset_names:
+            for operand in node.operands:
+                short_name = operand.value.rsplit(".", 1)[-1]  # type: ignore[attr-defined]
+                if short_name == table_name:
+                    op_name = quote_name(operand.value)  # type: ignore[attr-defined]
+                    query = re.sub(rf"\b{re.escape(table_name)}\b", op_name, query)
+                    break
+
+        return query

@@ -1,10 +1,12 @@
 name: Ubuntu 24.04 Tests
 
 on:
-  push:
-    branches: [ "main", "1.6.X", "dev" ]
   pull_request:
-    branches: [ "main", "1.6.X", "dev" ]
+    branches: ["main", "1.6.X", "1.9.X"]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -17,11 +19,26 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
+      - name: Cache ANTLR4 runtime prebuilt
+        uses: actions/cache@v4
+        id: antlr4-cache
+        with:
+          path: build/antlr4-prefix
+          key: antlr4-runtime-ubuntu2404-py3.12-${{ hashFiles('scripts/setup_antlr4_runtime.sh', 'CMakeLists.txt') }}
+
+      - name: Cache compiled C++ parser
+        uses: actions/cache@v4
+        id: cpp-cache
+        with:
+          # Just the compiled extension binary — restoring it puts it back
+          # next to its __init__.py with no .py files riding along.
+          path: src/vtlengine/AST/Grammar/_cpp_parser/vtl_cpp_parser*
+          key: cpp-parser-ubuntu2404-py3.12-${{ hashFiles('src/vtlengine/AST/Grammar/_cpp_parser/**', 'CMakeLists.txt', 'pyproject.toml') }}
+
       - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            python3-antlr4 \
             python3-pip \
             python3-httpx \
             python3-pandas \
@@ -31,30 +48,49 @@ jobs:
             python3-jsonschema \
             python3-networkx \
             python3-sqlglot \
-            python3-pytest
+            python3-pytest \
+            cmake \
+            g++ \
+            pybind11-dev
 
       - name: Install pip-only dependencies
         run: |
           pip install --no-dependencies --break-system-packages \
-            pyarrow==14.0.2 \
+            pyarrow==24.0.0 \
             sdmxschemas==1.0.0 \
             parsy==2.2 \
-            msgspec==0.19.0 \
-            duckdb==1.1 \
-            pysdmx==1.9.0
+            msgspec==0.21.1 \
+            duckdb==1.4.4 \
+            pysdmx==1.15.1
 
-      - name: Install Poetry
-        run: |
-          pip install poetry
-          poetry config virtualenvs.create false
+      - name: Download ANTLR4 C++ runtime source
+        if: steps.cpp-cache.outputs.cache-hit != 'true' && steps.antlr4-cache.outputs.cache-hit != 'true'
+        run: bash scripts/setup_antlr4_runtime.sh
 
-      - name: Build wheel
+      - name: Build ANTLR4 runtime
+        if: steps.cpp-cache.outputs.cache-hit != 'true' && steps.antlr4-cache.outputs.cache-hit != 'true'
         run: |
-          poetry build -f wheel -o .
+          cmake -S . -B build/antlr4-build \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DVTLENGINE_BUILD_ANTLR4_PREBUILT=ON
+          cmake --build build/antlr4-build --target antlr4_runtime --config Release
+          cmake --install build/antlr4-build --prefix "$PWD/build/antlr4-prefix" --config Release
 
-      - name: Install built package
+      - name: Build C++ parser binary
+        if: steps.cpp-cache.outputs.cache-hit != 'true'
         run: |
-          pip install "./vtlengine-$(poetry version -s)-py3-none-any.whl" --no-dependencies --break-system-packages
+          pip wheel . -w .build_wheel --no-deps -v \
+            -C cmake.define.VTLENGINE_USE_PREBUILT_ANTLR4=ON \
+            -C "cmake.define.VTLENGINE_ANTLR4_PREFIX=$PWD/build/antlr4-prefix"
+          unzip -o -j .build_wheel/*.whl \
+            'vtlengine/AST/Grammar/_cpp_parser/vtl_cpp_parser*' \
+            -d src/vtlengine/AST/Grammar/_cpp_parser/
+          rm -rf .build_wheel
+        env:
+          PIP_BREAK_SYSTEM_PACKAGES: "1"
 
       - name: Run tests
+        env:
+          VTL_ENGINE_BACKEND: duckdb
         run: pytest --verbose --tb=short --strict-markers --strict-config --durations=10

@@ -12,7 +12,7 @@ on:
 
   pull_request:
     types: [ closed ]
-    branches: [ main, 1.6.X ]
+    branches: [ main, 1.6.X, 1.9.X ]
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
@@ -83,6 +83,75 @@ jobs:
               core.setOutput('should_build', 'false');
             }
 
+  # Build the in-browser JupyterLite demo (vtlengine on the Pyodide kernel).
+  # Cross-compiles the vtlengine WebAssembly wheel and assembles a static site
+  # that the deploy job publishes at /jupyterlite/ alongside the docs. Runs in
+  # parallel with the docs build (build); the two are merged at deploy time.
+  build-jupyterlite:
+    needs: [ check-docs-label ]
+    if: |
+      always() && !cancelled() &&
+      (
+        github.event_name == 'release' ||
+        github.event_name == 'repository_dispatch' ||
+        github.event_name == 'workflow_dispatch' ||
+        needs.check-docs-label.outputs.should_build == 'true'
+      )
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.client_payload.tag_name || github.ref }}
+          fetch-depth: 0
+      - name: Set up host Python 3.13
+        # pyodide-build requires the host interpreter's major.minor to match the
+        # target Pyodide's Python; Pyodide 0.29.3 targets 3.13.
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - name: Cache vtlengine WebAssembly wheel
+        uses: actions/cache@v4
+        id: wasm-wheel-cache
+        with:
+          path: docs/jupyterlite/wheels
+          key: vtl-wasm-wheel-${{ hashFiles('src/vtlengine/**', 'CMakeLists.txt', 'pyproject.toml', 'scripts/setup_antlr4_runtime.sh') }}
+      - name: Cache Emscripten SDK
+        if: steps.wasm-wheel-cache.outputs.cache-hit != 'true'
+        uses: actions/cache@v4
+        with:
+          path: emsdk
+          key: emsdk-4.0.9-${{ runner.os }}
+      - name: Build the vtlengine wasm wheel
+        if: steps.wasm-wheel-cache.outputs.cache-hit != 'true'
+        run: |
+          [ -d emsdk ] || git clone --depth 1 https://github.com/emscripten-core/emsdk.git
+          ( cd emsdk && ./emsdk install 4.0.9 && ./emsdk activate 4.0.9 )
+          python -m venv .pyobuild
+          .pyobuild/bin/pip install pyodide-build wheel
+          .pyobuild/bin/pyodide xbuildenv install 0.29.3
+          source emsdk/emsdk_env.sh
+          export PATH="$PWD/.pyobuild/bin:$PATH"
+          bash docs/jupyterlite/build-wheel.sh
+      - name: Cache Pyodide distribution
+        uses: actions/cache@v4
+        with:
+          path: docs/jupyterlite/.build
+          key: pyodide-dist-0.29.3
+      - name: Assemble the JupyterLite site
+        run: |
+          python -m venv .jlite
+          .jlite/bin/pip install -r docs/jupyterlite/requirements.txt
+          export PATH="$PWD/.jlite/bin:$PATH"
+          export PYTHON="$PWD/.jlite/bin/python"
+          export VTLENGINE_WHEEL="$(ls "$PWD"/docs/jupyterlite/wheels/vtlengine-*-pyodide_2025_0_wasm32.whl)"
+          bash docs/jupyterlite/build.sh
+      - name: Upload JupyterLite site artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: jupyterlite-site
+          path: docs/jupyterlite/_output
+
   # Build job
   build:
     needs: [ check-docs-label ]
@@ -101,23 +170,57 @@ jobs:
         with:
           ref: ${{ github.event.client_payload.tag_name || github.ref }}
           fetch-depth: 0  # Fetch all history for all tags and branches
-      - name: Setup Pages
-        id: pages
-        uses: actions/configure-pages@v5
       - name: Install poetry
         run: pipx install poetry
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.12'
+          python-version: '3.13'
+          cache: poetry
+      - name: Cache ANTLR4 runtime prebuilt
+        uses: actions/cache@v4
+        id: antlr4-cache
+        with:
+          path: build/antlr4-prefix
+          key: antlr4-runtime-${{ runner.os }}-py3.13-${{ hashFiles('scripts/setup_antlr4_runtime.sh', 'CMakeLists.txt') }}
+      - name: Cache C++ parser wheel
+        uses: actions/cache@v4
+        id: cpp-cache
+        with:
+          path: .cpp-wheel
+          key: cpp-parser-${{ runner.os }}-py3.13-${{ hashFiles('src/vtlengine/AST/Grammar/_cpp_parser/**', 'CMakeLists.txt', 'pyproject.toml') }}
+      - name: Download ANTLR4 C++ runtime source
+        if: steps.cpp-cache.outputs.cache-hit != 'true' && steps.antlr4-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: bash scripts/setup_antlr4_runtime.sh
+      - name: Build ANTLR4 runtime
+        if: steps.cpp-cache.outputs.cache-hit != 'true' && steps.antlr4-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          cmake -S . -B build/antlr4-build \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DVTLENGINE_BUILD_ANTLR4_PREBUILT=ON
+          cmake --build build/antlr4-build --target antlr4_runtime --config Release
+          cmake --install build/antlr4-build --prefix "$PWD/build/antlr4-prefix" --config Release
+      - name: Build C++ parser wheel
+        if: steps.cpp-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          pip wheel . -w .cpp-wheel --no-deps -v \
+            -C cmake.define.VTLENGINE_USE_PREBUILT_ANTLR4=ON \
+            -C "cmake.define.VTLENGINE_ANTLR4_PREFIX=$PWD/build/antlr4-prefix"
       - name: Install dependencies
-        run: poetry install
+        shell: bash
+        run: |
+          poetry install --no-root
+          poetry run pip install .cpp-wheel/*.whl
       - name: Configure documentation versions
         run: |
           poetry run python docs/scripts/configure_doc_versions.py
-      - name: Build with Sphinx Multi-Version
+      - name: Build multi-version documentation
         run: |
-          poetry run sphinx-multiversion docs _site
+          poetry run python docs/scripts/build_multiversion.py _site
       - name: Generate latest alias
         run: |
           poetry run python docs/scripts/generate_latest_alias.py _site
@@ -143,19 +246,42 @@ jobs:
           done
           echo "ERROR: All error_messages.html files are empty"
           exit 1
-      - name: Upload artifact
-        # Automatically uploads an artifact from the './_site' directory by default
-        uses: actions/upload-pages-artifact@v4
+      - name: Upload the docs site
+        # Pages is published by the deploy job (which also merges in the demo),
+        # so the heavy wasm build runs in parallel with this docs build.
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-site
+          path: _site
 
-  # Deployment job
+  # Deployment job: merge the docs site + the demo into one Pages artifact and
+  # deploy. Depends on both builds, but only the docs build gates deployment —
+  # a failed or absent demo just leaves out /jupyterlite (download is optional).
   deploy:
     if: always() && !cancelled() && needs.build.result == 'success'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    needs: build
+    needs: [ build, build-jupyterlite ]
     steps:
+      - name: Download the docs site
+        uses: actions/download-artifact@v4
+        with:
+          name: docs-site
+          path: _site
+      - name: Add the JupyterLite demo to the site (/jupyterlite)
+        uses: actions/download-artifact@v4
+        continue-on-error: true  # don't block the docs deploy if the demo build failed
+        with:
+          name: jupyterlite-site
+          path: _site/jupyterlite
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

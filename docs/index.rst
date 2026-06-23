@@ -13,7 +13,7 @@ It is a Python-based library around the `VTL Language 2.1 <https://sdmx-twg.gith
 
 The vtlengine library provides full SDMX compatibility:
 
-- **Direct SDMX file loading**: Load SDMX-ML, SDMX-JSON, and SDMX-CSV files directly in the ``run()`` and ``semantic_analysis()`` functions
+- **Direct SDMX file loading**: Read SDMX structure files (SDMX-ML, SDMX-JSON) and SDMX data files (SDMX-ML, SDMX-CSV) directly in the ``run()`` and ``semantic_analysis()`` functions
 - **pysdmx integration**: Work with pysdmx objects (Schema, DataStructureDefinition, Dataflow, PandasDataset)
 - **Automatic format detection**: SDMX files are automatically detected by extension
 - **Flexible mappings**: Map SDMX URNs to VTL dataset names using the ``sdmx_mappings`` parameter
@@ -24,6 +24,7 @@ Useful links
 ************
 
 - `MeaningfulData: who we are <https://www.meaningfuldata.eu>`_
+- `Try VTL in your browser (JupyterLite) <https://docs.vtlengine.meaningfuldata.eu/jupyterlite/>`_ — runs the engine on the Pyodide kernel, no install required
 - `Source Code <https://github.com/Meaningful-Data/vtlengine>`_
 - `PyPI link <https://pypi.org/project/vtlengine>`_
 - `Bug Tracker <https://github.com/Meaningful-Data/vtlengine/issues?q=is%3Aopen+is%3Aissue+label%3Abug>`_
@@ -51,16 +52,7 @@ To install the VTL Engine on any Operating System, you can download it from `pip
     It is recommended to install any python package in a virtual environment.
     Please follow `these steps <https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/>`_
 
-S3 Extra
-========
-
-If you would like to use the S3 capabilities, you need to install the `s3` extra:
-
-.. code-block:: bash
-
-    pip install vtlengine[s3]
-
-The S3 extra is based on the pandas[aws] extra, which requires to set up some environment variables. Please check the `boto3 documentation <https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html#using-environment-variables>`_
+S3 URI support is provided by the DuckDB execution engine; see :doc:`duckdb_engine`.
 
 .. toctree::
     :caption: Getting Started
@@ -71,8 +63,18 @@ The S3 extra is based on the pandas[aws] extra, which requires to set up some en
     :caption: Using the Engine
 
     api
+    vtl_scripts
+    data_structures
+    datapoints
     data_types
     extra_inputs
+    sdmx_inputs
+
+.. toctree::
+    :caption: Engines
+
+    pandas_engine
+    duckdb_engine
 
 .. toctree::
     :caption: Configuration

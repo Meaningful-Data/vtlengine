@@ -1,22 +1,11 @@
 import re
 from copy import copy
-from typing import Any, Optional, Union
-
-import pandas as pd
+from typing import Any, Union
 
 from vtlengine.AST.Grammar.tokens import (
-    AND,
     CEIL,
-    EQ,
     FLOOR,
-    GT,
-    GTE,
-    LT,
-    LTE,
-    NEQ,
-    OR,
     ROUND,
-    XOR,
 )
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
@@ -25,11 +14,6 @@ from vtlengine.DataTypes import (
     check_binary_implicit_promotion,
     check_unary_implicit_promotion,
     unary_implicit_promotion,
-)
-from vtlengine.DataTypes.TimeHandling import (
-    PERIOD_IND_MAPPING,
-    TimeIntervalHandler,
-    TimePeriodHandler,
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
@@ -41,10 +25,6 @@ ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
 # when the operator is applied to mono-measure Data Sets.
 # TODO: Check if there are more operators that allow this
 MONOMEASURE_CHANGED_ALLOWED = [CEIL, FLOOR, ROUND]
-BINARY_COMPARISON_OPERATORS = [EQ, NEQ, GT, GTE, LT, LTE]
-BINARY_BOOLEAN_OPERATORS = [AND, OR, XOR]
-
-only_semantic = False
 
 
 class Operator:
@@ -56,71 +36,7 @@ class Operator:
     return_type: Any = None
 
     @classmethod
-    def analyze(cls, *args: Any, **kwargs: Any) -> Any:
-        if only_semantic:
-            return cls.validate(*args, **kwargs)
-        return cls.evaluate(*args, **kwargs)
-
-    @classmethod
-    def cast_time_types(cls, data_type: Any, series: Any) -> Any:
-        if cls.op not in BINARY_COMPARISON_OPERATORS:
-            return series
-        if data_type.__name__ == "TimeInterval":
-            series = series.map(
-                lambda x: TimeIntervalHandler.from_iso_format(x), na_action="ignore"
-            )
-        elif data_type.__name__ == "TimePeriod":
-            series = series.map(lambda x: TimePeriodHandler(x), na_action="ignore")
-        elif data_type.__name__ == "Duration":
-            series = series.map(PERIOD_IND_MAPPING)
-        return series
-
-    @classmethod
-    def cast_time_types_scalar(cls, data_type: Any, value: str) -> Any:
-        if cls.op not in BINARY_COMPARISON_OPERATORS:
-            return value
-        if value is None:
-            return None
-        if data_type.__name__ == "TimeInterval":
-            return TimeIntervalHandler.from_iso_format(value)
-        elif data_type.__name__ == "TimePeriod":
-            return TimePeriodHandler(value)
-        elif data_type.__name__ == "Duration":
-            return PERIOD_IND_MAPPING.get(value)
-        return value
-
-    @classmethod
-    def modify_measure_column(cls, result: Dataset) -> None:
-        """
-        If an Operator change the data type of the Variable it is applied to (e.g., from string to
-        number), the result Data Set cannot maintain this Variable as it happens in the previous
-        cases, because a Variable cannot have different data types in different Data Sets.
-        As a consequence, the converted variable cannot follow the same rules described in the
-        sections above and must be replaced, in the result Data Set, by another Variable of the
-        proper data type.
-        For sake of simplicity, the operators changing the data type are allowed only on
-        mono-measure operand Data Sets, so that the conversion happens on just one Measure.
-        A default generic Measure is assigned by default to the result Data Set, depending on the
-        data type of the result (the default Measure Variables are reported in the table below).
-
-        Function used by the evaluate function when a dataset is involved
-        """
-
-        if len(result.get_measures()) == 1 and cls.return_type is not None and result is not None:
-            measure_name = result.get_measures_names()[0]
-            components = list(result.components.keys())
-            columns = list(result.data.columns) if result.data is not None else []
-            for column in columns:
-                if column not in set(components) and result.data is not None:
-                    result.data[measure_name] = result.data[column]
-                    del result.data[column]
-
-    @classmethod
     def validate_dataset_type(cls, *args: Any) -> None:
-        raise Exception("Method should be implemented by inheritors")
-
-    @classmethod
-    def validate_component_type(cls, *args: Any) -> None:
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
@@ -129,10 +45,6 @@ class Operator:
 
     @classmethod
     def validate(cls, *args: Any, **kwargs: Any) -> Any:
-        raise Exception("Method should be implemented by inheritors")
-
-    @classmethod
-    def evaluate(cls, *args: Any, **kwargs: Any) -> Any:
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
@@ -167,93 +79,8 @@ class Operator:
     def apply_return_type_dataset(cls, *args: Any) -> None:
         raise Exception("Method should be implemented by inheritors")
 
-    @classmethod
-    def apply_return_type(cls, *args: Any) -> None:
-        raise Exception("Method should be implemented by inheritors")
-
-
-def _id_type_promotion_join_keys(
-    c_left: Component,
-    c_right: Component,
-    join_key: str,
-    left_data: Optional[pd.DataFrame] = None,
-    right_data: Optional[pd.DataFrame] = None,
-) -> None:
-    if left_data is None:
-        left_data = pd.DataFrame()
-    if right_data is None:
-        right_data = pd.DataFrame()
-
-    left_type_name: str = str(c_left.data_type.__name__)
-    right_type_name: str = str(c_right.data_type.__name__)
-
-    target_dtype = c_left.data_type.dtype()
-    if left_type_name == right_type_name or len(left_data) == 0 or len(right_data) == 0:
-        left_data[join_key] = left_data[join_key].astype(target_dtype)  # type: ignore[call-overload]
-        right_data[join_key] = right_data[join_key].astype(target_dtype)  # type: ignore[call-overload]
-        return
-    if (left_type_name == "Integer" and right_type_name == "Number") or (
-        left_type_name == "Number" and right_type_name == "Integer"
-    ):
-        left_data[join_key] = left_data[join_key].map(lambda x: int(float(x)))
-        right_data[join_key] = right_data[join_key].map(lambda x: int(float(x)))
-        target_dtype = "int64[pyarrow]"
-    elif (left_type_name == "String" and right_type_name in ("Integer", "Number")) or (
-        left_type_name in ("Integer", "Number") and right_type_name == "String"
-    ):
-        left_data[join_key] = left_data[join_key].map(lambda x: _handle_str_number(x))
-        right_data[join_key] = right_data[join_key].map(lambda x: _handle_str_number(x))
-    left_data[join_key] = left_data[join_key].astype(target_dtype)  # type: ignore[call-overload]
-    right_data[join_key] = right_data[join_key].astype(target_dtype)  # type: ignore[call-overload]
-
-
-def _handle_str_number(x: Union[str, int, float]) -> Union[str, int, float]:
-    if isinstance(x, int):
-        return x
-    try:
-        x = float(x)
-        if x.is_integer():
-            return int(x)
-        return x
-    except ValueError:  # Unable to get to string, return the same value that will not be matched
-        return x
-
 
 class Binary(Operator):
-    @classmethod
-    def op_func(cls, *args: Any) -> Any:
-        x, y = args
-
-        if pd.isnull(x) or pd.isnull(y):
-            return None
-        return cls.py_op(x, y)
-
-    @classmethod
-    def apply_operation_two_series(cls, left_series: Any, right_series: Any) -> Any:
-        result = list(map(cls.op_func, left_series.values, right_series.values))
-        index = left_series.index if len(left_series) <= len(right_series) else right_series.index
-        result_dtype = cls.return_type.dtype() if cls.return_type is not None else "string[pyarrow]"
-        return pd.Series(result, index=index, dtype=result_dtype)
-
-    @classmethod
-    def apply_operation_series_scalar(
-        cls,
-        series: Any,
-        scalar: Scalar,
-        series_left: bool,
-    ) -> Any:
-        result_dtype = cls.return_type.dtype() if cls.return_type is not None else "string[pyarrow]"
-        if scalar is None:
-            return pd.Series(None, index=series.index, dtype=result_dtype)
-        if series_left:
-            return series.map(lambda x: cls.py_op(x, scalar), na_action="ignore").astype(
-                result_dtype
-            )
-        else:
-            return series.map(lambda x: cls.py_op(scalar, x), na_action="ignore").astype(
-                result_dtype
-            )
-
     @classmethod
     def validate(cls, *args: Any) -> Any:
         """
@@ -316,18 +143,33 @@ class Binary(Operator):
         del left_measures_names
         del right_measures_names
 
-        join_keys = list(set(left_identifiers).intersection(right_identifiers))
-        if len(join_keys) == 0:
+        left_ids_set = set(left_identifiers)
+        right_ids_set = set(right_identifiers)
+        if not left_ids_set or not right_ids_set:
             raise SemanticError("1-2-10", op=cls.op)
+        if not (left_ids_set.issubset(right_ids_set) or right_ids_set.issubset(left_ids_set)):
+            raise SemanticError(
+                "1-2-15",
+                op=cls.op,
+                left_name=left_operand.name,
+                left=sorted(left_ids_set),
+                right_name=right_operand.name,
+                right=sorted(right_ids_set),
+            )
 
         # Deleting extra identifiers that we do not need anymore
 
         base_operand = right_operand if use_right_components else left_operand
+        other_operand = left_operand if use_right_components else right_operand
         result_components = {
             component_name: copy(component)
             for component_name, component in base_operand.components.items()
-            if component.role in [Role.IDENTIFIER, Role.MEASURE]
+            if component.role in [Role.IDENTIFIER, Role.MEASURE, Role.VIRAL_ATTRIBUTE]
         }
+        # Also include viral attributes from the other operand
+        for comp_name, comp in other_operand.components.items():
+            if comp.role == Role.VIRAL_ATTRIBUTE and comp_name not in result_components:
+                result_components[comp_name] = copy(comp)
 
         for comp in [x for x in result_components.values() if x.role == Role.MEASURE]:
             if comp.name in left_operand.components and comp.name in right_operand.components:
@@ -348,7 +190,7 @@ class Binary(Operator):
         result_components = {
             comp_name: copy(comp)
             for comp_name, comp in dataset.components.items()
-            if comp.role in [Role.IDENTIFIER, Role.MEASURE]
+            if comp.role in [Role.IDENTIFIER, Role.MEASURE, Role.VIRAL_ATTRIBUTE]
         }
         result_dataset = Dataset(name=dataset_name, components=result_components, data=None)
         cls.apply_return_type_dataset(result_dataset, dataset, scalar)
@@ -367,6 +209,7 @@ class Binary(Operator):
             name="result",
             data_type=cls.type_validation(left_operand.data_type, right_operand.data_type),
             value=None,
+            nullable=left_operand.nullable or right_operand.nullable,
         )
 
     @classmethod
@@ -413,7 +256,7 @@ class Binary(Operator):
         result_components = {
             comp_name: copy(comp)
             for comp_name, comp in dataset.components.items()
-            if comp.role in [Role.IDENTIFIER, Role.MEASURE]
+            if comp.role in [Role.IDENTIFIER, Role.MEASURE, Role.VIRAL_ATTRIBUTE]
         }
 
         result_dataset = Dataset(name=dataset_name, components=result_components, data=None)
@@ -442,6 +285,7 @@ class Binary(Operator):
             name="result",
             data_type=cls.type_validation(scalar.data_type, scalar_set.data_type),
             value=None,
+            nullable=scalar.nullable,
         )
 
     # The following class method implements the type promotion
@@ -504,8 +348,6 @@ class Binary(Operator):
                 )
                 result_dataset.delete_component(measure.name)
                 result_dataset.add_component(component)
-                if result_dataset.data is not None:
-                    result_dataset.data.rename(columns={measure.name: component.name}, inplace=True)
             elif (
                 changed_allowed is False
                 and is_mono_measure is False
@@ -515,288 +357,8 @@ class Binary(Operator):
             else:
                 measure.data_type = result_data_type
 
-    @classmethod
-    def dataset_evaluation(cls, left_operand: Dataset, right_operand: Dataset) -> Dataset:
-        result_dataset = cls.dataset_validation(left_operand, right_operand)
-
-        use_right_as_base = False
-        if len(left_operand.get_identifiers_names()) < len(right_operand.get_identifiers_names()):
-            use_right_as_base = True
-            base_operand_data = right_operand.data
-            other_operand_data = left_operand.data
-        else:
-            base_operand_data = left_operand.data
-            other_operand_data = right_operand.data
-
-        join_keys = list(
-            set(left_operand.get_identifiers_names()).intersection(
-                right_operand.get_identifiers_names()
-            )
-        )
-
-        for join_key in join_keys:
-            _id_type_promotion_join_keys(
-                left_operand.get_component(join_key),
-                right_operand.get_component(join_key),
-                join_key,
-                base_operand_data,
-                other_operand_data,
-            )
-
-        try:
-            # Merge the data
-            if base_operand_data is None or other_operand_data is None:
-                result_data: pd.DataFrame = pd.DataFrame()
-            else:
-                result_data = pd.merge(
-                    base_operand_data,
-                    other_operand_data,
-                    how="inner",
-                    on=join_keys,
-                    suffixes=("_x", "_y"),
-                )
-        except ValueError as e:
-            raise Exception(f"Error merging datasets on Binary Operator: {str(e)}")
-
-        # Measures are the same, using left operand measures names
-        for measure in left_operand.get_measures():
-            left_type = measure.data_type
-            right_type = right_operand.get_component(measure.name).data_type
-
-            if left_type != right_type:
-                promoted_type = binary_implicit_promotion(left_type, right_type)
-                # Only apply implicit_cast when both types need conversion
-                # (e.g. Date + TimePeriod → TimeInterval)
-                if promoted_type != left_type and promoted_type != right_type:
-                    if use_right_as_base:
-                        x_type, y_type = right_type, left_type
-                    else:
-                        x_type, y_type = left_type, right_type
-
-                    def _cast_x(v: Any, ft: Any = x_type) -> Any:
-                        return promoted_type.implicit_cast(v, ft)
-
-                    def _cast_y(v: Any, ft: Any = y_type) -> Any:
-                        return promoted_type.implicit_cast(v, ft)
-
-                    result_data[measure.name + "_x"] = result_data[measure.name + "_x"].map(
-                        _cast_x, na_action="ignore"
-                    )
-                    result_data[measure.name + "_y"] = result_data[measure.name + "_y"].map(
-                        _cast_y, na_action="ignore"
-                    )
-                cast_type = promoted_type
-            else:
-                cast_type = left_type
-
-            result_data[measure.name + "_x"] = cls.cast_time_types(
-                cast_type, result_data[measure.name + "_x"]
-            )
-            result_data[measure.name + "_y"] = cls.cast_time_types(
-                cast_type, result_data[measure.name + "_y"]
-            )
-            if use_right_as_base:
-                result_data[measure.name] = cls.apply_operation_two_series(
-                    result_data[measure.name + "_y"], result_data[measure.name + "_x"]
-                )
-            else:
-                result_data[measure.name] = cls.apply_operation_two_series(
-                    result_data[measure.name + "_x"], result_data[measure.name + "_y"]
-                )
-            # Enforce measure dtype from component declaration
-            result_comp = result_dataset.components.get(measure.name)
-            if result_comp is not None:
-                target = result_comp.data_type.dtype()
-                if str(result_data[measure.name].dtype) != target:
-                    result_data[measure.name] = result_data[measure.name].astype(target)  # type: ignore[call-overload]
-            result_data = result_data.drop([measure.name + "_x", measure.name + "_y"], axis=1)
-
-        # Delete attributes from the result data
-        attributes = list(
-            set(left_operand.get_attributes_names()).union(right_operand.get_attributes_names())
-        )
-        for att in attributes:
-            if att in result_data.columns:
-                result_data = result_data.drop(att, axis=1)
-            if att + "_x" in result_data.columns:
-                result_data = result_data.drop(att + "_x", axis=1)
-            if att + "_y" in result_data.columns:
-                result_data = result_data.drop(att + "_y", axis=1)
-
-        result_dataset.data = result_data
-        cls.modify_measure_column(result_dataset)
-        return result_dataset
-
-    @classmethod
-    def scalar_evaluation(cls, left_operand: Scalar, right_operand: Scalar) -> Scalar:
-        result_scalar = cls.scalar_validation(left_operand, right_operand)
-        left_value = cls.cast_time_types_scalar(left_operand.data_type, left_operand.value)
-        right_value = cls.cast_time_types_scalar(right_operand.data_type, right_operand.value)
-        result_scalar.value = cls.op_func(left_value, right_value)
-        return result_scalar
-
-    @classmethod
-    def dataset_scalar_evaluation(
-        cls, dataset: Dataset, scalar: Scalar, dataset_left: bool = True
-    ) -> Dataset:
-        result_dataset = cls.dataset_scalar_validation(dataset, scalar)
-        result_data = dataset.data.copy() if dataset.data is not None else pd.DataFrame()
-        result_dataset.data = result_data
-
-        scalar_value = cls.cast_time_types_scalar(scalar.data_type, scalar.value)
-
-        for measure in dataset.get_measures():
-            measure_data = cls.cast_time_types(measure.data_type, result_data[measure.name].copy())
-            if (
-                measure.data_type.__name__.__str__() == "Duration"
-                and not isinstance(scalar_value, int)
-                and scalar_value is not None
-            ):
-                scalar_value = PERIOD_IND_MAPPING[scalar_value]
-            result_dataset.data[measure.name] = cls.apply_operation_series_scalar(
-                measure_data, scalar_value, dataset_left
-            )
-            # Enforce measure dtype from component declaration
-            result_comp = result_dataset.components.get(measure.name)
-            if result_comp is not None:
-                target = result_comp.data_type.dtype()
-                if str(result_dataset.data[measure.name].dtype) != target:
-                    result_dataset.data[measure.name] = result_dataset.data[  # type: ignore[call-overload]
-                        measure.name
-                    ].astype(target)
-
-        result_dataset.data = result_data
-        cols_to_keep = dataset.get_identifiers_names() + dataset.get_measures_names()
-        result_dataset.data = result_dataset.data[cols_to_keep]
-        cls.modify_measure_column(result_dataset)
-        return result_dataset
-
-    @classmethod
-    def component_evaluation(
-        cls, left_operand: DataComponent, right_operand: DataComponent
-    ) -> DataComponent:
-        result_component = cls.component_validation(left_operand, right_operand)
-        left_data = cls.cast_time_types(
-            left_operand.data_type,
-            left_operand.data.copy() if left_operand.data is not None else pd.Series(),
-        )
-        right_data = cls.cast_time_types(
-            right_operand.data_type,
-            (right_operand.data.copy() if right_operand.data is not None else pd.Series()),
-        )
-        result_component.data = cls.apply_operation_two_series(left_data, right_data)
-        # Enforce dtype from component declaration
-        target = result_component.data_type.dtype()
-        if result_component.data is not None and str(result_component.data.dtype) != target:
-            result_component.data = result_component.data.astype(target)
-        return result_component
-
-    @classmethod
-    def component_scalar_evaluation(
-        cls, component: DataComponent, scalar: Scalar, component_left: bool = True
-    ) -> DataComponent:
-        result_component = cls.component_scalar_validation(component, scalar)
-        comp_data = cls.cast_time_types(
-            component.data_type,
-            component.data.copy() if component.data is not None else pd.Series(),
-        )
-        scalar_value = cls.cast_time_types_scalar(scalar.data_type, scalar.value)
-        if (
-            component.data_type.__name__.__str__() == "Duration"
-            and not isinstance(scalar_value, int)
-            and scalar_value is not None
-        ):
-            scalar_value = PERIOD_IND_MAPPING[scalar_value]
-        result_component.data = cls.apply_operation_series_scalar(
-            comp_data, scalar_value, component_left
-        )
-        # Enforce dtype from component declaration
-        target = result_component.data_type.dtype()
-        if result_component.data is not None and str(result_component.data.dtype) != target:
-            result_component.data = result_component.data.astype(target)
-        return result_component
-
-    @classmethod
-    def dataset_set_evaluation(cls, dataset: Dataset, scalar_set: ScalarSet) -> Dataset:
-        result_dataset = cls.dataset_set_validation(dataset, scalar_set)
-        result_data = dataset.data.copy() if dataset.data is not None else pd.DataFrame()
-
-        for measure_name in dataset.get_measures_names():
-            if dataset.data is not None:
-                result_data[measure_name] = cls.apply_operation_two_series(
-                    dataset.data[measure_name], scalar_set
-                )
-
-        cols_to_keep = dataset.get_identifiers_names() + dataset.get_measures_names()
-        result_dataset.data = result_data[cols_to_keep]
-        cls.modify_measure_column(result_dataset)
-
-        return result_dataset
-
-    @classmethod
-    def component_set_evaluation(
-        cls, component: DataComponent, scalar_set: ScalarSet
-    ) -> DataComponent:
-        result_component = cls.component_set_validation(component, scalar_set)
-        result_component.data = cls.apply_operation_two_series(
-            component.data.copy() if component.data is not None else pd.Series(),
-            scalar_set,
-        )
-        return result_component
-
-    @classmethod
-    def scalar_set_evaluation(cls, scalar: Scalar, scalar_set: ScalarSet) -> Scalar:
-        result_scalar = cls.scalar_set_validation(scalar, scalar_set)
-        result_scalar.value = cls.op_func(scalar.value, scalar_set)
-        return result_scalar
-
-    @classmethod
-    def evaluate(cls, left_operand: Any, right_operand: Any) -> Any:
-        """
-        Evaluate the operation (based on validation output)
-        :param left_operand: The left operand
-        :param right_operand: The right operand
-        :return: The result of the operation
-        """
-
-        if isinstance(left_operand, Dataset) and isinstance(right_operand, Dataset):
-            return cls.dataset_evaluation(left_operand, right_operand)
-        if isinstance(left_operand, Scalar) and isinstance(right_operand, Scalar):
-            return cls.scalar_evaluation(left_operand, right_operand)
-        if isinstance(left_operand, Dataset) and isinstance(right_operand, Scalar):
-            return cls.dataset_scalar_evaluation(left_operand, right_operand, dataset_left=True)
-        if isinstance(left_operand, Scalar) and isinstance(right_operand, Dataset):
-            return cls.dataset_scalar_evaluation(right_operand, left_operand, dataset_left=False)
-        if isinstance(left_operand, DataComponent) and isinstance(right_operand, DataComponent):
-            return cls.component_evaluation(left_operand, right_operand)
-        if isinstance(left_operand, DataComponent) and isinstance(right_operand, Scalar):
-            return cls.component_scalar_evaluation(left_operand, right_operand, component_left=True)
-        if isinstance(left_operand, Scalar) and isinstance(right_operand, DataComponent):
-            return cls.component_scalar_evaluation(
-                right_operand, left_operand, component_left=False
-            )
-        if isinstance(left_operand, Dataset) and isinstance(right_operand, ScalarSet):
-            return cls.dataset_set_evaluation(left_operand, right_operand)
-        if isinstance(left_operand, DataComponent) and isinstance(right_operand, ScalarSet):
-            return cls.component_set_evaluation(left_operand, right_operand)
-        if isinstance(left_operand, Scalar) and isinstance(right_operand, ScalarSet):
-            return cls.scalar_set_evaluation(left_operand, right_operand)
-
 
 class Unary(Operator):
-    @classmethod
-    def op_func(cls, *args: Any) -> Any:
-        x = args[0]
-
-        return None if pd.isnull(x) else cls.py_op(x)
-
-    @classmethod
-    def apply_operation_component(cls, series: Any) -> Any:
-        """
-        Applies the operation to a component
-        """
-        return series.map(cls.py_op, na_action="ignore")
-
     @classmethod
     def validate(cls, operand: Any) -> Any:
         """
@@ -821,7 +383,7 @@ class Unary(Operator):
         result_components = {
             comp_name: copy(comp)
             for comp_name, comp in operand.components.items()
-            if comp.role in [Role.IDENTIFIER, Role.MEASURE]
+            if comp.role in [Role.IDENTIFIER, Role.MEASURE, Role.VIRAL_ATTRIBUTE]
         }
 
         result_dataset = Dataset(name=dataset_name, components=result_components, data=None)
@@ -831,7 +393,7 @@ class Unary(Operator):
     @classmethod
     def scalar_validation(cls, operand: Scalar) -> Scalar:
         result_type = cls.type_validation(operand.data_type)
-        result = Scalar(name="result", data_type=result_type, value=None)
+        result = Scalar(name="result", data_type=result_type, value=None, nullable=operand.nullable)
         return result
 
     @classmethod
@@ -897,8 +459,6 @@ class Unary(Operator):
                 )
                 result_dataset.delete_component(measure.name)
                 result_dataset.add_component(component)
-                if result_dataset.data is not None:
-                    result_dataset.data.rename(columns={measure.name: component.name}, inplace=True)
             elif (
                 changed_allowed is False
                 and is_mono_measure is False
@@ -907,53 +467,6 @@ class Unary(Operator):
                 raise SemanticError("1-1-1-4", op=cls.op)
             else:
                 measure.data_type = result_data_type
-
-    @classmethod
-    def evaluate(cls, operand: ALL_MODEL_DATA_TYPES) -> Any:
-        if isinstance(operand, Dataset):
-            return cls.dataset_evaluation(operand)
-        if isinstance(operand, Scalar):
-            return cls.scalar_evaluation(operand)
-        if isinstance(operand, DataComponent):
-            return cls.component_evaluation(operand)
-
-    @classmethod
-    def dataset_evaluation(cls, operand: Dataset) -> Dataset:
-        result_dataset = cls.dataset_validation(operand)
-        result_data = operand.data.copy() if operand.data is not None else pd.DataFrame()
-        for measure_name in operand.get_measures_names():
-            result_data[measure_name] = cls.apply_operation_component(result_data[measure_name])
-            # Enforce measure dtype from component declaration
-            result_comp = result_dataset.components.get(measure_name)
-            if result_comp is not None:
-                target = result_comp.data_type.dtype()
-                if str(result_data[measure_name].dtype) != target:
-                    result_data[measure_name] = result_data[measure_name].astype(target)  # type: ignore[call-overload]
-
-        cols_to_keep = operand.get_identifiers_names() + operand.get_measures_names()
-        result_data = result_data[cols_to_keep]
-
-        result_dataset.data = result_data
-        cls.modify_measure_column(result_dataset)
-        return result_dataset
-
-    @classmethod
-    def scalar_evaluation(cls, operand: Scalar) -> Scalar:
-        result_scalar = cls.scalar_validation(operand)
-        result_scalar.value = cls.op_func(operand.value)
-        return result_scalar
-
-    @classmethod
-    def component_evaluation(cls, operand: DataComponent) -> DataComponent:
-        result_component = cls.component_validation(operand)
-        result_component.data = cls.apply_operation_component(
-            operand.data.copy() if operand.data is not None else pd.Series()
-        )
-        # Enforce dtype from component declaration
-        target = result_component.data_type.dtype()
-        if result_component.data is not None and str(result_component.data.dtype) != target:
-            result_component.data = result_component.data.astype(target)
-        return result_component
 
     @classmethod
     def to_days(cls, value: str) -> int:

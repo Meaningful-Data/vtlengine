@@ -231,7 +231,7 @@ class Number(ScalarType):
             v = value.strip()
             if v.lower() in {"true", "false"}:
                 return True
-            return bool(re.match(r"^\d+(\.\d*)?$|^\.\d+$", v))
+            return bool(re.match(r"^[+-]?\d+(\.\d*)?$|^[+-]?\.\d+$", v))
         return False
 
 
@@ -327,7 +327,12 @@ class Integer(Number):
         if pd.isnull(value):
             return True
         if isinstance(value, str):
-            return value.isdigit() or value.lower() in {"true", "false"}
+            v = value.strip()
+            if v.lower() in {"true", "false"}:
+                return True
+            if v[:1] in {"+", "-"}:
+                v = v[1:]
+            return v.isdigit()
         if isinstance(value, float):
             return value.is_integer()
         return isinstance(value, (int, bool))
@@ -710,6 +715,17 @@ BASIC_TYPES: Dict[type, Type[ScalarType]] = {
     float: Number,
     bool: Boolean,
     type(None): Null,
+}
+
+_DUCKDB_TYPE_TO_VTL = {
+    "INTEGER": Integer,
+    "BIGINT": Integer,
+    "DOUBLE": Number,
+    "FLOAT": Number,
+    "DECIMAL": Number,
+    "VARCHAR": String,
+    "BOOLEAN": Boolean,
+    "DATE": Date,
 }
 
 COMP_NAME_MAPPING: Dict[Type[ScalarType], str] = {

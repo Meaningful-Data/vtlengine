@@ -962,11 +962,7 @@ def test_run_only_persistent_results(
                     nullable=True,
                 ),
             },
-            data=pd.DataFrame(
-                columns=["Id_1", "Id_2", "Me_1"],
-                index=[0, 1],
-                data=[(1, "A", 3), (1, "B", 6)],
-            ),
+            data=None,
         ),
     }
 
@@ -1383,7 +1379,7 @@ def test_non_mandatory_fill_me():
 
 
 def test_mandatory_at_error():
-    exception_code = "0-3-1-5"
+    exception_code = "0-3-1-3"
 
     script = """
         DS_r := DS_1;
@@ -1436,7 +1432,7 @@ def test_mandatory_at_error():
 
 
 def test_mandatory_me_error():
-    exception_code = "0-3-1-5"
+    exception_code = "0-3-1-3"
 
     script = """
         DS_r := DS_1;
@@ -1515,7 +1511,7 @@ def test_load_data_structure_with_new_schema(data_structure):
             "At_1": Component(
                 name="At_1",
                 data_type=DataTypes.String,
-                role=Role.ATTRIBUTE,
+                role=Role.VIRAL_ATTRIBUTE,
                 nullable=True,
             ),
         },
@@ -1601,7 +1597,7 @@ def test_run_with_scalars(data_structures, datapoints, tmp_path):
                     nullable=True,
                 ),
             },
-            data=pd.DataFrame({"Id_1": [2], "Me_1": [20]}),
+            data=None,
         ),
         "DS_r2": Dataset(
             name="DS_r2",
@@ -1613,7 +1609,7 @@ def test_run_with_scalars(data_structures, datapoints, tmp_path):
                     nullable=True,
                 ),
             },
-            data=pd.DataFrame({"Me_1": []}),
+            data=None,
         ),
         "Sc_r": Scalar(name="Sc_r", data_type=Integer, value=31),
         "Sc_r2": Scalar(name="Sc_r2", data_type=Integer, value=15),
@@ -1673,7 +1669,7 @@ def test_run_with_scalar_being_none(data_structures, datapoints, tmp_path):
                     nullable=True,
                 ),
             },
-            data=pd.DataFrame({"Id_1": [2], "Me_1": [20]}),
+            data=None,
         ),
         "DS_r2": Dataset(
             name="DS_r2",
@@ -1685,7 +1681,7 @@ def test_run_with_scalar_being_none(data_structures, datapoints, tmp_path):
                     nullable=True,
                 ),
             },
-            data=pd.DataFrame({"Me_1": []}),
+            data=None,
         ),
         "Sc_r": Scalar(name="Sc_r", data_type=Integer, value=None),
     }
@@ -1772,7 +1768,7 @@ def test_wrong_type_in_scalar_definition(wrong_type, correct_type):
         run(
             script=script,
             data_structures=data_structures,
-            datapoints=[],
+            datapoints={},
         )
     assert wrong_type in e.value.args[0]
     assert correct_type in e.value.args[0]
@@ -2087,7 +2083,7 @@ def test_validate_dataset(ds_input, dp_input, is_valid, message):
 
 
 def test_run_error_on_extra_dataframe_columns():
-    """Extra columns in the input DataFrame that are not in the DataStructure raise an error."""
+    """Extra columns in the input DataFrame that are not in the DataStructure are silently ignored."""
     script = "DS_r <- DS_1;"
     data_structures = {
         "datasets": [
@@ -2106,8 +2102,9 @@ def test_run_error_on_extra_dataframe_columns():
         )
     }
 
-    with pytest.raises(DataLoadError, match="0-3-1-15"):
-        run(script=script, data_structures=data_structures, datapoints=datapoints)
+    result = run(script=script, data_structures=data_structures, datapoints=datapoints)
+    assert "DS_r" in result
+    assert list(result["DS_r"].data.columns) == ["Id_1", "Me_1"]
 
 
 def test_run_error_on_missing_non_nullable_column():
@@ -2126,7 +2123,7 @@ def test_run_error_on_missing_non_nullable_column():
     }
     datapoints = {"DS_1": pd.DataFrame({"Id_1": [1, 2, 3]})}
 
-    with pytest.raises(DataLoadError, match="0-3-1-5"):
+    with pytest.raises(DataLoadError, match="0-3-1-3"):
         run(script=script, data_structures=data_structures, datapoints=datapoints)
 
 
@@ -2241,12 +2238,12 @@ schema_validation_cases = [
         },
         "is not of type 'boolean'",
     ),
-    # Dataset name does not match the vtl-id pattern (starts with digit)
+    # Dataset name does not match the vtl-id pattern (bare name starting with '_')
     (
         {
             "datasets": [
                 {
-                    "name": "1bad",
+                    "name": "_bad",
                     "DataStructure": [{"name": "Id_1", "type": "Integer", "role": "Identifier"}],
                 }
             ]

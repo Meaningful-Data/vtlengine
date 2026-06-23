@@ -1,8 +1,6 @@
 from copy import copy
 from typing import Any, Optional, Type, Union
 
-import pandas as pd
-
 import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import CAST
 from vtlengine.DataTypes import (
@@ -10,7 +8,9 @@ from vtlengine.DataTypes import (
     EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING,
     IMPLICIT_TYPE_PROMOTION_MAPPING,
     SCALAR_TYPES_CLASS_REVERSE,
+    Date,
     ScalarType,
+    String,
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
@@ -144,69 +144,28 @@ class Cast(Operator.Unary):
         """This method validates the operation when the operand is a Scalar."""
         from_type = operand.data_type
         cls.check_cast(from_type, to_type, mask)
-        return Scalar(name=operand.name, data_type=to_type, value=None)
+        if from_type == String and to_type == Date and operand.value is not None:
+            Date.explicit_cast(operand.value, String)
+        return Scalar(name=operand.name, data_type=to_type, value=None, nullable=operand.nullable)
 
     @classmethod
-    def evaluate(  # type: ignore[override]
-        cls,
-        operand: ALL_MODEL_DATA_TYPES,
-        scalarType: Type[ScalarType],
-        mask: Optional[str] = None,
-    ) -> Any:
-        if isinstance(operand, Dataset):
-            return cls.dataset_evaluation(operand, scalarType, mask)
-        if isinstance(operand, Scalar):
-            return cls.scalar_evaluation(operand, scalarType, mask)
-        if isinstance(operand, DataComponent):
-            return cls.component_evaluation(operand, scalarType, mask)
-
-    @classmethod
-    def dataset_evaluation(  # type: ignore[override]
-        cls,
-        operand: Dataset,
-        to_type: Type[ScalarType],
-        mask: Optional[str] = None,
-    ) -> Dataset:
-        from_type = operand.get_measures()[0].data_type
-        original_measure = operand.get_measures()[0]
-        result_dataset = cls.dataset_validation(operand, to_type, mask)
-        new_measure = result_dataset.get_measures()[0]
-        result_dataset.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
-
-        if original_measure.name != new_measure.name:
-            result_dataset.data.rename(
-                columns={original_measure.name: new_measure.name}, inplace=True
-            )
-        measure_data = result_dataset.data[new_measure.name]
-        result_dataset.data[new_measure.name] = cls.cast_component(measure_data, from_type, to_type)
-        return result_dataset
-
-    @classmethod
-    def scalar_evaluation(  # type: ignore[override]
+    def cast_scalar(
         cls,
         operand: Scalar,
-        to_type: Type[ScalarType],
+        scalarType: Type[ScalarType],
         mask: Optional[str] = None,
     ) -> Scalar:
+        """Cast a scalar operand to the given type and return the resulting Scalar."""
         from_type = operand.data_type
-        result_scalar = cls.scalar_validation(operand, to_type, mask)
-        if pd.isna(operand.value):
-            return Scalar(name=result_scalar.name, data_type=to_type, value=None)
-        if to_type.is_included(IMPLICIT_TYPE_PROMOTION_MAPPING[from_type]):
-            casted_data = to_type.implicit_cast(operand.value, from_type)
+        cls.check_cast(from_type, scalarType, mask)
+        if operand.value is None:
+            return Scalar(
+                name=operand.name, data_type=scalarType, value=None, nullable=operand.nullable
+            )
+        if scalarType.is_included(IMPLICIT_TYPE_PROMOTION_MAPPING[from_type]):
+            value = scalarType.implicit_cast(operand.value, from_type)
         else:
-            casted_data = to_type.explicit_cast(operand.value, from_type)
-        return Scalar(name=result_scalar.name, data_type=to_type, value=casted_data)
-
-    @classmethod
-    def component_evaluation(  # type: ignore[override]
-        cls,
-        operand: DataComponent,
-        to_type: Type[ScalarType],
-        mask: Optional[str] = None,
-    ) -> DataComponent:
-        from_type = operand.data_type
-        result_component = cls.component_validation(operand, to_type, mask)
-        casted_data = cls.cast_component(operand.data, from_type, to_type)
-        result_component.data = casted_data
-        return result_component
+            value = scalarType.explicit_cast(operand.value, from_type)
+        return Scalar(
+            name=operand.name, data_type=scalarType, value=value, nullable=operand.nullable
+        )

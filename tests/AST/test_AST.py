@@ -45,7 +45,7 @@ from vtlengine.AST import (
 from vtlengine.AST.ASTEncoders import ComplexDecoder, ComplexEncoder
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.DataTypes import ScalarType
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import SemanticError, VTLSyntaxError
 from vtlengine.Interpreter import InterpreterAnalyzer
 
 base_path = Path(__file__).parent
@@ -971,3 +971,9 @@ def test_create_ast_with_comments_empty_script(script):
     ast = create_ast_with_comments(text=script)
     assert isinstance(ast, Start)
     assert all(isinstance(child, Comment) for child in ast.children)
+
+
+def test_create_ast_with_comments_syntax_error_raises():
+    script = "DS_r := ;"
+    with pytest.raises(VTLSyntaxError):
+        create_ast_with_comments(text=script)

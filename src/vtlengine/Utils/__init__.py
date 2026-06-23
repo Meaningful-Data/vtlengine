@@ -16,7 +16,6 @@ from vtlengine.AST.Grammar.tokens import (
     CONCAT,
     COUNT,
     CROSS_JOIN,
-    DATE_ADD,
     DATEDIFF,
     DAYOFMONTH,
     DAYOFYEAR,
@@ -26,7 +25,6 @@ from vtlengine.AST.Grammar.tokens import (
     DROP,
     EQ,
     EXP,
-    FILL_TIME_SERIES,
     FILTER,
     FIRST_VALUE,
     FLOOR,
@@ -74,8 +72,6 @@ from vtlengine.AST.Grammar.tokens import (
     RANK,
     RATIO_TO_REPORT,
     RENAME,
-    REPLACE,
-    ROUND,
     RTRIM,
     SETDIFF,
     SQRT,
@@ -83,17 +79,16 @@ from vtlengine.AST.Grammar.tokens import (
     STDDEV_SAMP,
     STOCK_TO_FLOW,
     SUBSPACE,
-    SUBSTR,
     SUM,
     SYMDIFF,
     TIMESHIFT,
     TRIM,
-    TRUNC,
     UCASE,
     UNION,
     UNPIVOT,
     VAR_POP,
     VAR_SAMP,
+    VIRAL_ATTRIBUTE,
     XOR,
     YEAR,
     YEARTODAY,
@@ -200,33 +195,27 @@ from vtlengine.Operators.Numeric import (
     NaturalLogarithm,
     Power,
     Random,
-    Round,
     SquareRoot,
-    Trunc,
     UnMinus,
     UnPlus,
 )
-from vtlengine.Operators.RoleSetter import Attribute, Identifier, Measure
+from vtlengine.Operators.RoleSetter import Attribute, Identifier, Measure, ViralAttribute
 from vtlengine.Operators.Set import Intersection, Setdiff, Symdiff, Union
 from vtlengine.Operators.String import (
     Concatenate,
     Length,
     Lower,
     Ltrim,
-    Replace,
     Rtrim,
-    Substr,
     Trim,
     Upper,
 )
 from vtlengine.Operators.Time import (
-    Date_Add,
     Date_Diff,
     Day_of_Month,
     Day_of_Year,
     Day_to_Month,
     Day_to_Year,
-    Fill_time_series,
     Flow_to_stock,
     Month,
     Month_to_Day,
@@ -310,22 +299,11 @@ UNARY_MAPPING = {
     MONTHTODAY: Month_to_Day,
 }
 
-PARAMETRIC_MAPPING = {
-    # Numeric
-    ROUND: Round,
-    TRUNC: Trunc,
-    # String
-    SUBSTR: Substr,
-    REPLACE: Replace,
-    # Time
-    FILL_TIME_SERIES: Fill_time_series,
-    DATE_ADD: Date_Add,
-}
-
 ROLE_SETTER_MAPPING = {
     IDENTIFIER: Identifier,
     ATTRIBUTE: Attribute,
     MEASURE: Measure,
+    VIRAL_ATTRIBUTE: ViralAttribute,
 }
 
 REGULAR_AGGREGATION_MAPPING = {
@@ -380,8 +358,6 @@ ANALYTIC_MAPPING = {
     RANK: Rank,
 }
 
-THEN_ELSE = {"then": "T", "else": "E"}
-
 JOIN_MAPPING = {
     INNER_JOIN: InnerJoin,
     LEFT_JOIN: LeftJoin,
@@ -410,26 +386,6 @@ HR_UNARY_MAPPING = {
     MINUS: HRUnMinus,
 }
 
-HA_COMP_MAPPING = {
-    # Comparison
-    EQ: HREqual,
-    GT: HRGreater,
-    GTE: HRGreaterEqual,
-    LT: HRLess,
-    LTE: HRLessEqual,
-}
-
-HA_NUM_BINARY_MAPPING = {
-    # Numeric
-    PLUS: HRBinPlus,
-    MINUS: HRBinMinus,
-}
-
-HA_UNARY_MAPPING = {
-    # Numeric
-    PLUS: HRUnPlus,
-    MINUS: HRUnMinus,
-}
 VTL_DTYPES_MAPPING = {
     "String": "String",
     "Alpha": "String",

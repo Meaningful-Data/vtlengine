@@ -1,6 +1,6 @@
 [project]
 name = "vtlengine"
-version = "1.6.11"
+version = "2.0.0rc3"
 description = "Run and Validate VTL Scripts"
 license = "AGPL-3.0"
 readme = "README.md"
@@ -32,22 +32,19 @@ keywords = ['vtl', 'sdmx', 'vtlengine', 'Validation and Transformation Language'
 
 dependencies = [
     # PyPi dependencies
-    "duckdb>=1.4,<1.5",
-    "pysdmx[xml]>=1.5.2,<2.0",
+    "duckdb>=1.4,<2.0",
+    "pysdmx[xml]>=1.15.1,<2.0",
     # APT-supported dependencies
     "jsonschema>=3.2.0,<5.0",
     "sqlglot>=22.2.0,<23.0",
-    "antlr4-python3-runtime>=4.9,<4.10",
     "pandas>=2.1.4,<3.0",
     "networkx>=2.8,<3.0",
-    "pyarrow>=14.0,<25.0",
+    "pyarrow>=14.0,<20.0; python_version < '3.10'",
+    "pyarrow>=14.0,<25.0; python_version >= '3.10' and python_version < '3.14'",
+    "pyarrow>=22.0,<25.0; python_version >= '3.14'",
     "numpy>=2.0.2,<2.1; python_version < '3.10'",
     "numpy>=2.2.0,<2.5; python_version >= '3.10'",
 ]
-
-[project.optional-dependencies]
-s3 = ["s3fs>=2022.11.0"]
-all = ["s3fs>=2022.11.0"]
 
 [project.urls]
 Repository = 'https://github.com/Meaningful-Data/vtlengine'
@@ -57,27 +54,26 @@ IssueTracker = 'https://github.com/Meaningful-Data/vtlengine/issues'
 Authors = 'https://github.com/Meaningful-Data/vtlengine/graphs/contributors'
 
 [tool.poetry.dependencies]
-python = ">=3.9,<4.0"
+python = ">=3.10,<4.0"
 
 # Dependency groups follow PEP 735 (https://peps.python.org/pep-0735/).
 [dependency-groups]
 dev = [
-    "pytest>=8.4,<9.0",
-    "pytest-cov>=7.0.0,<8.0",
-    "coverage>=7.0,!=7.13.0,<8.0",
+    "pytest>=9.0.3,<10.0",
+    "pytest-cov>=7.1.0,<8.0",
+    "coverage>=7.14.0,<8.0",
     "pytest-xdist>=3.8.0,<4.0",
-    "line-profiler-pycharm>=1.2.0,<2.0",
     "mypy>=1.18,<2.0",
-    "pandas-stubs>=2.2.2,<3.0",
-    "pyarrow-stubs>=19.0,<21.0",
+    "pyarrow-stubs>=14.0,<25.0",
+    "pandas-stubs>2.1.4.231227,<2.2.3.240901; python_version < '3.10'",
+    "pandas-stubs>=2.2.3.241009,<3.0.0.260204; python_version >= '3.10'",
     "ruff>=0.15.12,<1.0.0",
     "types-jsonschema>=4.25.1,<5.0",
 ]
 docs = [
-    "sphinx>=7.4.7,<8.0",
-    "sphinx-rtd-theme>=3.0.2,<4.0",
-    "sphinx-multiversion>=0.2.4,<0.3.0",
-    "toml>=0.10.2,<0.11.0",
+    "sphinx>=9.1.0,<10.0; python_version == '3.13'",
+    "sphinx-rtd-theme>=3.0.2,<4.0; python_version == '3.13'",
+    "toml>=0.10.2,<0.11.0; python_version == '3.13'",
 ]
 
 
@@ -93,7 +89,7 @@ lint.select = [
 lint.ignore = ["B023", "B028", "B904", "C403", "D100", "D101", "D102", "D103", "D104", "D105",
     "D107", "D200", "D201", "D202", "D203", "D205", "D209", "D212", "D213", "D301",
     "D400", "D401", "D404", "D411", "D413", "D415", "D419", "E203", "S608"]
-lint.exclude = ["*/Grammar/*", "*/main.py", "*/dev.py"]
+lint.exclude = ["*/Grammar/*", "*/_cpp_parser/*", "*/main.py", "*/dev.py"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101", "PT006", "PT012", "PT013", "E501", "W605"]
@@ -117,12 +113,48 @@ enable_error_code = [
 ]
 warn_return_any = false
 
+[[tool.mypy.overrides]]
+module = "vtlengine.AST.*"
+follow_imports = "silent"
+
 [tool.pytest.ini_options]
 addopts = "--strict-markers"
+pythonpath = ["src"]
 markers = [
     "input_path: directory where tests data files are stored"
 ]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["scikit-build-core>=0.10", "pybind11>=2.12"]
+build-backend = "scikit_build_core.build"
+
+[tool.scikit-build]
+cmake.build-type = "Release"
+wheel.packages = ["src/vtlengine"]
+wheel.exclude = [
+    "vtlengine/AST/Grammar/_cpp_parser/*.cpp",
+    "vtlengine/AST/Grammar/_cpp_parser/*.h",
+    "lib/*",
+    "include/*",
+]
+
+[tool.cibuildwheel]
+build = "cp39-* cp310-* cp311-* cp312-* cp313-* cp314-*"
+# Skip musllinux: duckdb 1.4.x ships no musllinux wheels, so vtlengine cannot resolve deps there.
+skip = "*-musllinux*"
+test-requires = ["pytest"]
+# Smoke test the *installed* wheel. `-o pythonpath=` empties the `["src"]` setting from
+# [tool.pytest.ini_options] so `import vtlengine` resolves to site-packages (where the
+# compiled vtl_cpp_parser.*.so lives) rather than the bind-mounted source at /project/src.
+test-command = "pytest {project}/tests/API -x --tb=short --strict-markers -o pythonpath="
+manylinux-x86_64-image = "manylinux_2_28"
+manylinux-aarch64-image = "manylinux_2_28"
+
+[tool.cibuildwheel.linux]
+before-build = "bash {project}/scripts/setup_antlr4_runtime.sh"
+
+[tool.cibuildwheel.macos]
+before-build = "bash {project}/scripts/setup_antlr4_runtime.sh"
+
+[tool.cibuildwheel.windows]
+before-build = "bash {project}/scripts/setup_antlr4_runtime.sh"

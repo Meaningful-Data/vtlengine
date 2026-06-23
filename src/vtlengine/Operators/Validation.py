@@ -1,8 +1,6 @@
 from copy import copy
 from typing import Any, Dict, Optional, Type, Union
 
-import pandas as pd
-
 from vtlengine.AST.Grammar.tokens import CHECK, CHECK_HIERARCHY
 from vtlengine.DataTypes import (
     Boolean,
@@ -66,7 +64,7 @@ class Check(Operator):
         result_components = {
             comp.name: comp
             for comp in validation_element.components.values()
-            if comp.role in [Role.IDENTIFIER, Role.MEASURE]
+            if comp.role in [Role.IDENTIFIER, Role.MEASURE, Role.VIRAL_ATTRIBUTE]
         }
         if imbalance_measure is None:
             result_components["imbalance"] = Component(
@@ -89,69 +87,9 @@ class Check(Operator):
 
         return Dataset(name=dataset_name, components=result_components, data=None)
 
-    @classmethod
-    def evaluate(
-        cls,
-        validation_element: Dataset,
-        imbalance_element: Optional[Dataset],
-        error_code: Optional[Union[str, int, float, bool]],
-        error_level: Optional[Union[str, int, float, bool]],
-        invalid: bool,
-    ) -> Dataset:
-        result = cls.validate(
-            validation_element, imbalance_element, error_code, error_level, invalid
-        )
-        if validation_element.data is None:
-            validation_element.data = pd.DataFrame()
-        columns_to_keep = (
-            validation_element.get_identifiers_names() + validation_element.get_measures_names()
-        )
-        result.data = validation_element.data.loc[:, columns_to_keep]
-        if imbalance_element is not None and imbalance_element.data is not None:
-            imbalance_measure_name = imbalance_element.get_measures_names()[0]
-            result.data["imbalance"] = imbalance_element.data[imbalance_measure_name]
-        else:
-            result.data["imbalance"] = None
-
-        # Set errorcode/errorlevel ONLY when validation explicitly fails (bool_var is False)
-        # NULL bool_var means indeterminate - should NOT have errorcode/errorlevel
-        validation_measure_name = validation_element.get_measures_names()[0]
-        bool_col = result.data[validation_measure_name]
-        is_false = bool_col.fillna(True) == False  # noqa: E712
-        result.data["errorcode"] = pd.Series(None, index=result.data.index, dtype="string[pyarrow]")
-        ec_value = str(error_code) if error_code is not None else None
-        result.data.loc[is_false, "errorcode"] = ec_value
-        errorlevel_dtype = result.components["errorlevel"].data_type.dtype()
-        result.data["errorlevel"] = pd.Series(None, index=result.data.index, dtype=errorlevel_dtype)
-        if error_level is not None:
-            result.data.loc[is_false, "errorlevel"] = error_level
-
-        if invalid:
-            result.data = result.data[result.data[validation_measure_name] == False]
-            result.data.reset_index(drop=True, inplace=True)
-        return result
-
 
 # noinspection PyTypeChecker
 class Validation(Operator):
-    @classmethod
-    def _generate_result_data(cls, rule_info: Dict[str, Any]) -> pd.DataFrame:
-        rule_list_df = []
-        for rule_name, rule_data in rule_info.items():
-            rule_df = rule_data["output"]
-            rule_df["ruleid"] = rule_name
-            bool_col = rule_df["bool_var"]
-            if str(bool_col.dtype) != "bool[pyarrow]":
-                bool_col = bool_col.astype("bool[pyarrow]")
-            rule_df["errorcode"] = bool_col.map({False: rule_data["errorcode"]})
-            rule_df["errorlevel"] = bool_col.map({False: rule_data["errorlevel"]})
-            rule_list_df.append(rule_df)
-
-        if len(rule_list_df) == 1:
-            return rule_list_df[0]
-        df = pd.concat(rule_list_df, ignore_index=True, copy=False)
-        return df
-
     @classmethod
     def validate(cls, dataset_element: Dataset, rule_info: Dict[str, Any], output: str) -> Dataset:
         error_level_type: Optional[Type[ScalarType]] = None
@@ -204,35 +142,6 @@ class Validation(Operator):
 
         return Dataset(name=dataset_name, components=result_components, data=None)
 
-    @classmethod
-    def evaluate(cls, dataset_element: Dataset, rule_info: Dict[str, Any], output: str) -> Dataset:
-        result = cls.validate(dataset_element, rule_info, output)
-        result.data = cls._generate_result_data(rule_info)
-
-        result.data = result.data.dropna(subset=result.get_identifiers_names(), how="any")
-        result.data = result.data.drop_duplicates(
-            subset=result.get_identifiers_names() + ["ruleid"]
-        ).reset_index(drop=True)
-        validation_measures = ["bool_var", "errorcode", "errorlevel"]
-        # Only for check hierarchy
-        if "imbalance" in result.components:
-            validation_measures.append("imbalance")
-        if output == "invalid":
-            result.data = result.data[result.data["bool_var"] == False]
-            result.data = result.data.drop(columns=["bool_var"])
-            result.data.reset_index(drop=True, inplace=True)
-        elif output == "all":
-            result.data = result.data[result.get_identifiers_names() + validation_measures]
-        else:  # output == 'all_measures'
-            result.data = result.data[
-                result.get_identifiers_names()
-                + dataset_element.get_measures_names()
-                + validation_measures
-            ]
-
-        result.data = result.data[result.get_components_names()]
-        return result
-
 
 class Check_Datapoint(Validation):
     pass
@@ -240,24 +149,6 @@ class Check_Datapoint(Validation):
 
 class Check_Hierarchy(Validation):
     op = CHECK_HIERARCHY
-
-    @classmethod
-    def _generate_result_data(cls, rule_info: Dict[str, Any]) -> pd.DataFrame:
-        df = pd.DataFrame()
-        for rule_name, rule_data in rule_info.items():
-            rule_df = rule_data["output"]
-            rule_df["ruleid"] = rule_name
-            # Set errorcode/errorlevel ONLY when validation explicitly fails (bool_var is False)
-            # NULL bool_var means indeterminate - should NOT have errorcode/errorlevel
-            bool_col = rule_df["bool_var"]
-            if str(bool_col.dtype) != "bool[pyarrow]":
-                bool_col = bool_col.astype("bool[pyarrow]")
-            rule_df["errorcode"] = bool_col.map({False: rule_data["errorcode"]})
-            rule_df["errorlevel"] = bool_col.map({False: rule_data["errorlevel"]})
-            df = pd.concat([df, rule_df], ignore_index=True)
-        if df is None:
-            df = pd.DataFrame()
-        return df
 
     @classmethod
     def validate(cls, dataset_element: Dataset, rule_info: Dict[str, Any], output: str) -> Dataset:

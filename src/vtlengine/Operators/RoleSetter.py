@@ -1,7 +1,5 @@
 from copy import copy
-from typing import Any, Union
-
-import pandas as pd
+from typing import Union
 
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Role, Scalar
@@ -14,11 +12,9 @@ class RoleSetter(Unary):
     role: Role
 
     @classmethod
-    def validate(cls, operand: ALLOWED_MODEL_TYPES, data_size: int = 0) -> DataComponent:
+    def validate(cls, operand: ALLOWED_MODEL_TYPES) -> DataComponent:
         if isinstance(operand, Scalar):
-            nullable = True
-            if cls.role == Role.IDENTIFIER or operand.value is not None:
-                nullable = False
+            nullable = cls.role != Role.IDENTIFIER and operand.nullable
             return DataComponent(
                 name=operand.name,
                 data_type=operand.data_type,
@@ -29,40 +25,16 @@ class RoleSetter(Unary):
         operand.role = cls.role
         return copy(operand)
 
-    @classmethod
-    def evaluate(cls, operand: Any, data_size: int = 0) -> DataComponent:
-        if (
-            isinstance(operand, DataComponent)
-            and operand.data is not None
-            and not operand.nullable
-            and any(operand.data.isnull())
-        ):
-            raise SemanticError("1-1-1-16")
-        result = cls.validate(operand, data_size)
-        if isinstance(operand, Scalar):
-            result.data = pd.Series([operand.value] * data_size, dtype=operand.data_type.dtype())
-        else:
-            result.data = operand.data
-        return result
-
 
 class Identifier(RoleSetter):
     role = Role.IDENTIFIER
 
     @classmethod
-    def validate(cls, operand: ALLOWED_MODEL_TYPES, data_size: int = 0) -> DataComponent:
+    def validate(cls, operand: ALLOWED_MODEL_TYPES) -> DataComponent:
         result = super().validate(operand)
         if result.nullable:
             raise SemanticError("1-1-1-16")
         return result
-
-    @classmethod
-    def evaluate(  # type: ignore[override]
-        cls, operand: ALLOWED_MODEL_TYPES, data_size: int = 0
-    ) -> DataComponent:
-        if isinstance(operand, Scalar) and operand.value is None:
-            raise SemanticError("1-1-1-16")
-        return super().evaluate(operand, data_size)
 
 
 class Attribute(RoleSetter):
@@ -71,3 +43,7 @@ class Attribute(RoleSetter):
 
 class Measure(RoleSetter):
     role = Role.MEASURE
+
+
+class ViralAttribute(RoleSetter):
+    role = Role.VIRAL_ATTRIBUTE

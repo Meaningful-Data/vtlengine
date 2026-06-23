@@ -23,7 +23,8 @@ from pysdmx.model.vtl import VtlDataflowMapping
 from tests.Helper import TestHelper
 from vtlengine.API import generate_sdmx, prettify, run, run_sdmx, semantic_analysis
 from vtlengine.API._InternalApi import _check_script, to_vtl_json
-from vtlengine.Exceptions import DataLoadError, InputValidationException
+from vtlengine.API._sdmx_utils import _build_mapping_dict
+from vtlengine.Exceptions import DataLoadError, InputValidationException, SemanticError
 from vtlengine.Model import Dataset
 
 # Path setup
@@ -130,51 +131,41 @@ def test_run_sdmx_file_via_single_path(sdmx_data_file, sdmx_data_structure):
 # =============================================================================
 
 
-params_sdmx_error_cases = [
-    # (error_type, error_match, file_content_or_path, description)
-    ("invalid_xml", "0-3-1-8", "<invalid>not sdmx</invalid>", "invalid XML content"),
-    ("nonexistent", "0-3-1-1", "/nonexistent/file.xml", "file does not exist"),
-]
-
-
-@pytest.mark.parametrize(
-    "error_type, error_match, file_or_content, description", params_sdmx_error_cases
-)
-def test_run_sdmx_file_errors(
-    sdmx_data_structure, error_type, error_match, file_or_content, description
-):
-    """Test error handling for invalid SDMX files."""
-    if error_type == "invalid_xml":
-        with tempfile.NamedTemporaryFile(suffix=".xml", delete=False, mode="w") as f:
-            f.write(file_or_content)
-            test_file = Path(f.name)
-        try:
-            # Use BIS_DER which matches the structure from sdmx_data_structure fixture
-            with pytest.raises(DataLoadError, match=error_match):
-                run(
-                    script="DS_r <- BIS_DER;",
-                    data_structures=sdmx_data_structure,
-                    datapoints={"BIS_DER": test_file},
-                )
-        finally:
-            test_file.unlink()
-    elif error_type == "nonexistent":
-        with pytest.raises(DataLoadError, match=error_match):
+def test_run_sdmx_file_errors_invalid_xml(sdmx_data_structure):
+    """Test error handling for invalid SDMX XML file: raises InputValidationException."""
+    with tempfile.NamedTemporaryFile(suffix=".xml", delete=False, mode="w") as f:
+        f.write("<invalid>not sdmx</invalid>")
+        test_file = Path(f.name)
+    try:
+        with pytest.raises(InputValidationException, match="0-1-1-8"):
             run(
                 script="DS_r <- BIS_DER;",
                 data_structures=sdmx_data_structure,
-                datapoints={"BIS_DER": Path(file_or_content)},
+                datapoints={"BIS_DER": test_file},
             )
+    finally:
+        test_file.unlink()
+
+
+def test_run_sdmx_file_errors_nonexistent(sdmx_data_structure):
+    """Test that a nonexistent SDMX datapoint path produces an empty result."""
+    result = run(
+        script="DS_r <- BIS_DER;",
+        data_structures=sdmx_data_structure,
+        datapoints={"BIS_DER": Path("/nonexistent/file.xml")},
+    )
+    assert "DS_r" in result
+    assert result["DS_r"].data is not None
 
 
 def test_run_sdmx_missing_structure(sdmx_data_file):
-    """Test that SDMX dataset without matching structure raises error."""
+    """Test that SDMX dataset without matching structure raises SemanticError."""
     # Structure that doesn't match the SDMX dataset name
     wrong_structure = filepath_json / "DS_1.json"
     with open(wrong_structure) as f:
         data_structure = json.load(f)
 
-    with pytest.raises(InputValidationException, match="Not found dataset BIS_DER"):
+    with pytest.raises(SemanticError, match="2-3-6"):
         run(
             script="DS_r <- BIS_DER;",
             data_structures=data_structure,
@@ -294,7 +285,12 @@ def test_run_sdmx_function_with_mappings(data, structure, mappings):
     """Test run_sdmx with various mapping types."""
     script = "DS_r := DS_1 [calc Me_4 := OBS_VALUE];"
     datasets = get_datasets(data, structure)
-    result = run_sdmx(script, datasets, mappings=mappings, return_only_persistent=False)
+    result = run_sdmx(
+        script,
+        datasets,
+        mappings=mappings,
+        return_only_persistent=False,
+    )
 
     assert isinstance(result, dict)
     assert all(isinstance(k, str) and isinstance(v, Dataset) for k, v in result.items())
@@ -352,6 +348,18 @@ def test_run_sdmx_errors_with_mappings(datasets, mappings, expected_exception, m
     script = "DS_r := BIS_DER [calc Me_4 := OBS_VALUE];"
     with pytest.raises(expected_exception, match=match):
         run_sdmx(script, datasets, mappings=mappings)
+
+
+def test_build_mapping_dict_multiple_inputs_message():
+    datasets = [
+        PandasDataset(
+            structure=Schema(id="DS1", components=[], agency="BIS", context="datastructure"),
+            data=pd.DataFrame(),
+        )
+    ]
+    with pytest.raises(InputValidationException, match="0-1-3-1") as exc_info:
+        _build_mapping_dict(datasets, None, ["DS_1", "DS_2"])
+    assert "found: 2" in str(exc_info.value)
 
 
 # =============================================================================
@@ -415,7 +423,9 @@ def test_run_sdmx_output_comparison(code, data, structure):
     """Test run_sdmx with output comparison to reference data."""
     datasets = get_datasets(data, structure)
     result = run_sdmx(
-        "DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", datasets, return_only_persistent=False
+        "DS_r := BIS_DER [calc Me_4 := OBS_VALUE];",
+        datasets,
+        return_only_persistent=False,
     )
     reference = SDMXTestHelper.LoadOutputs(code, ["DS_r"])
     assert result == reference
@@ -896,7 +906,12 @@ def test_run_sdmx_with_dataflow_object_mapping():
     )
 
     script = "DS_r := DS_1 [calc Me_4 := OBS_VALUE];"
-    result = run_sdmx(script, datasets, mappings=mapping, return_only_persistent=False)
+    result = run_sdmx(
+        script,
+        datasets,
+        mappings=mapping,
+        return_only_persistent=False,
+    )
 
     assert "DS_r" in result
     assert isinstance(result["DS_r"].data, pd.DataFrame)
@@ -915,7 +930,12 @@ def test_run_sdmx_with_reference_mapping():
     )
 
     script = "DS_r := DS_1 [calc Me_4 := OBS_VALUE];"
-    result = run_sdmx(script, datasets, mappings=mapping, return_only_persistent=False)
+    result = run_sdmx(
+        script,
+        datasets,
+        mappings=mapping,
+        return_only_persistent=False,
+    )
 
     assert "DS_r" in result
     assert isinstance(result["DS_r"].data, pd.DataFrame)
@@ -934,7 +954,12 @@ def test_run_sdmx_with_dataflow_ref_mapping():
     )
 
     script = "DS_r := DS_1 [calc Me_4 := OBS_VALUE];"
-    result = run_sdmx(script, datasets, mappings=mapping, return_only_persistent=False)
+    result = run_sdmx(
+        script,
+        datasets,
+        mappings=mapping,
+        return_only_persistent=False,
+    )
 
     assert "DS_r" in result
     assert isinstance(result["DS_r"].data, pd.DataFrame)
@@ -1041,21 +1066,22 @@ def test_semantic_analysis_error_nonexistent_sdmx_file():
 
 
 def test_run_error_nonexistent_sdmx_datapoint():
-    """Test run() error for nonexistent SDMX datapoint file."""
+    """Test run() with nonexistent SDMX datapoint path returns empty result."""
     structure_file = filepath_json / "DS_1.json"
     with open(structure_file) as f:
         data_structure = json.load(f)
 
-    with pytest.raises(DataLoadError, match="0-3-1-1"):
-        run(
-            script="DS_r <- DS_1;",
-            data_structures=data_structure,
-            datapoints={"DS_1": Path("/nonexistent/data.xml")},
-        )
+    result = run(
+        script="DS_r <- DS_1;",
+        data_structures=data_structure,
+        datapoints={"DS_1": Path("/nonexistent/data.xml")},
+    )
+    assert "DS_r" in result
+    assert result["DS_r"].data is not None
 
 
 def test_run_error_invalid_sdmx_datapoint():
-    """Test run() error for invalid SDMX datapoint file."""
+    """Test run() error for invalid SDMX datapoint file raises InputValidationException."""
     structure_file = filepath_json / "DS_1.json"
     with open(structure_file) as f:
         data_structure = json.load(f)
@@ -1065,7 +1091,7 @@ def test_run_error_invalid_sdmx_datapoint():
         invalid_data = Path(f.name)
 
     try:
-        with pytest.raises(DataLoadError, match="0-3-1-8"):
+        with pytest.raises(InputValidationException, match="0-1-1-8"):
             run(
                 script="DS_r <- DS_1;",
                 data_structures=data_structure,
@@ -1469,13 +1495,30 @@ def test_mixed_sdmx_csv_memory_efficient(sdmx_data_file, sdmx_data_structure):
 
 
 def test_run_url_datapoints_require_path_or_url_structure():
-    """Test run() error when URL datapoints provided but data_structures is not a path or URL."""
-    with pytest.raises(InputValidationException, match="0-1-3-8"):
-        run(
-            script="DS_r <- DS_1;",
-            data_structures={"datasets": [{"name": "DS_1", "DataStructure": []}]},
-            datapoints={"DS_1": "https://example.com/data.xml"},
-        )
+    """Test run() with URL datapoints and dict data_structures treats URL as a string key."""
+    # When data_structures is a dict (not a file path/URL), URL detection is skipped.
+    # The URL string is treated as a normal string value (unrecognised path) resulting in
+    # empty data being loaded.
+    result = run(
+        script="DS_r <- DS_1;",
+        data_structures={
+            "datasets": [
+                {
+                    "name": "DS_1",
+                    "DataStructure": [
+                        {
+                            "name": "Id_1",
+                            "type": "Integer",
+                            "role": "Identifier",
+                            "nullable": False,
+                        }
+                    ],
+                }
+            ]
+        },
+        datapoints={"DS_1": "https://example.com/data.xml"},
+    )
+    assert "DS_r" in result
 
 
 def test_is_url_detection():
@@ -1619,3 +1662,183 @@ def test_semantic_analysis_with_url_structure(sdmx_structure_file):
 
     assert "DS_r" in result
     assert isinstance(result["DS_r"], Dataset)
+
+
+# =============================================================================
+# Tests for DuckDB backend — SDMX loading
+# =============================================================================
+
+
+@pytest.mark.parametrize("script, ds_key, description", params_run_sdmx_datapoints_dict)
+def test_run_sdmx_file_via_dict_duckdb(
+    sdmx_data_file, sdmx_data_structure, script, ds_key, description
+):
+    """Test loading SDMX-ML file using dict with explicit name via DuckDB backend."""
+    result = run(
+        script=script,
+        data_structures=sdmx_data_structure,
+        datapoints={ds_key: sdmx_data_file},
+        return_only_persistent=False,
+    )
+
+    assert "DS_r" in result
+    assert result["DS_r"].data is not None
+    assert len(result["DS_r"].data) > 0
+
+
+def test_run_sdmx_file_via_list_duckdb(sdmx_data_file, sdmx_data_structure):
+    """Test loading SDMX files via list of paths via DuckDB backend."""
+    script = "DS_r <- BIS_DER;"
+    result = run(
+        script=script,
+        data_structures=sdmx_data_structure,
+        datapoints=[sdmx_data_file],
+        return_only_persistent=False,
+    )
+
+    assert "DS_r" in result
+    assert result["DS_r"].data is not None
+
+
+@pytest.mark.parametrize("data, structure", params_run_sdmx)
+def test_run_sdmx_function_duckdb(data, structure):
+    """Test run_sdmx with DuckDB."""
+    script = "DS_r := BIS_DER [calc Me_4 := OBS_VALUE];"
+    datasets = get_datasets(data, structure)
+    result = run_sdmx(script, datasets, return_only_persistent=False)
+
+    assert isinstance(result, dict)
+    assert all(isinstance(k, str) and isinstance(v, Dataset) for k, v in result.items())
+    assert isinstance(result["DS_r"].data, pd.DataFrame)
+
+
+@pytest.mark.parametrize("data, structure, mappings", params_run_sdmx_with_mappings)
+def test_run_sdmx_function_with_mappings_duckdb(data, structure, mappings):
+    """Test run_sdmx with various mapping types via DuckDB backend."""
+    script = "DS_r := DS_1 [calc Me_4 := OBS_VALUE];"
+    datasets = get_datasets(data, structure)
+    result = run_sdmx(script, datasets, mappings=mappings, return_only_persistent=False)
+
+    assert isinstance(result, dict)
+    assert all(isinstance(k, str) and isinstance(v, Dataset) for k, v in result.items())
+    assert isinstance(result["DS_r"].data, pd.DataFrame)
+
+
+def test_run_with_schema_object_duckdb(sdmx_data_file, sdmx_structure_file):
+    """Test run() with pysdmx Schema object via DuckDB backend."""
+    from pysdmx.io import get_datasets as pysdmx_get_datasets
+
+    pandas_datasets = pysdmx_get_datasets(sdmx_data_file, sdmx_structure_file)
+    schema = pandas_datasets[0].structure
+
+    script = "DS_r <- BIS_DER;"
+    result = run(
+        script=script,
+        data_structures=schema,
+        datapoints={"BIS_DER": sdmx_data_file},
+        return_only_persistent=False,
+    )
+
+    assert "DS_r" in result
+    assert result["DS_r"].data is not None
+
+
+def test_run_with_dsd_object_duckdb(sdmx_structure_file):
+    """Test run() with pysdmx DataStructureDefinition object via DuckDB backend."""
+    from pysdmx.io import read_sdmx
+
+    msg = read_sdmx(sdmx_structure_file)
+    dsd = [s for s in msg.structures if hasattr(s, "components")][0]
+
+    csv_content = "FREQ,DER_TYPE,DER_INSTR,DER_RISK,DER_REP_CTY,TIME_PERIOD,OBS_VALUE\n"
+    csv_content += "A,T,F,D,5J,2020-Q1,100\n"
+
+    with tempfile.NamedTemporaryFile(suffix=".csv", delete=False, mode="w") as f:
+        f.write(csv_content)
+        csv_path = Path(f.name)
+
+    try:
+        script = "DS_r <- BIS_DER;"
+        result = run(
+            script=script,
+            data_structures=dsd,
+            datapoints={"BIS_DER": csv_path},
+            return_only_persistent=False,
+        )
+
+        assert "DS_r" in result
+        assert result["DS_r"].data is not None
+    finally:
+        csv_path.unlink()
+
+
+def test_run_with_url_datapoints_duckdb(sdmx_data_file, sdmx_structure_file):
+    """Test run() with URL datapoints via DuckDB backend using mocked pysdmx."""
+    from unittest.mock import patch
+
+    from pysdmx.io import get_datasets as real_get_datasets
+
+    real_datasets = real_get_datasets(data=sdmx_data_file, structure=sdmx_structure_file)
+
+    data_url = "https://example.com/data.xml"
+    script = "DS_r <- DS_1;"
+
+    with patch("pysdmx.io.get_datasets", return_value=real_datasets):
+        result = run(
+            script=script,
+            data_structures=sdmx_structure_file,
+            datapoints={"DS_1": data_url},
+            sdmx_mappings={"DataStructure=BIS:BIS_DER(1.0)": "DS_1"},
+            return_only_persistent=False,
+        )
+
+    assert "DS_r" in result
+    assert result["DS_r"].data is not None
+    assert len(result["DS_r"].data) > 0
+
+
+def test_run_mixed_sdmx_and_csv_duckdb(sdmx_data_file, sdmx_data_structure):
+    """Test loading both SDMX and CSV files in the same run() call via DuckDB backend."""
+    csv_structure_path = filepath_json / "DS_1.json"
+    with open(csv_structure_path) as f:
+        csv_structure = json.load(f)
+
+    combined_structure = {"datasets": sdmx_data_structure["datasets"] + csv_structure["datasets"]}
+
+    script = "DS_r <- BIS_DER; DS_r2 <- DS_1;"
+    csv_file = filepath_csv / "DS_1.csv"
+
+    result = run(
+        script=script,
+        data_structures=combined_structure,
+        datapoints={
+            "BIS_DER": sdmx_data_file,
+            "DS_1": csv_file,
+        },
+        return_only_persistent=False,
+    )
+
+    assert "DS_r" in result
+    assert "DS_r2" in result
+    assert result["DS_r"].data is not None
+    assert result["DS_r2"].data is not None
+
+
+# =============================================================================
+# DuckDB SDMX — Error cases
+# =============================================================================
+
+
+@pytest.mark.parametrize("datasets, mappings, expected_exception, match", params_run_sdmx_errors)
+def test_run_sdmx_errors_with_mappings_duckdb(datasets, mappings, expected_exception, match):
+    """Test run_sdmx error handling with invalid inputs via DuckDB backend."""
+    script = "DS_r := BIS_DER [calc Me_4 := OBS_VALUE];"
+    with pytest.raises(expected_exception, match=match):
+        run_sdmx(script, datasets, mappings=mappings)
+
+
+def test_run_sdmx_invalid_type_duckdb():
+    """Test run_sdmx with non-PandasDataset input via DuckDB backend."""
+    script = "DS_r := BIS_DER [calc Me_4 := OBS_VALUE];"
+    with pytest.raises(InputValidationException, match="0-1-3-7"):
+        run_sdmx(script, "not a dataset")  # type: ignore[arg-type]

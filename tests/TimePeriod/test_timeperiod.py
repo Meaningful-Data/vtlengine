@@ -1,15 +1,24 @@
+import json
+import os
 import warnings
 from pathlib import Path
 
 import pytest
 from pytest import mark
 
-from vtlengine.API import create_ast
+from vtlengine.API import run, semantic_analysis
 from vtlengine.DataTypes import Date, TimePeriod
+from vtlengine.DataTypes.TimeHandling import (
+    TimeIntervalHandler,
+    TimePeriodHandler,
+    from_input_customer_support_to_internal,
+    generate_period_range,
+    period_to_date,
+)
+from vtlengine.Exceptions import RunTimeError as RT
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Component, Dataset, Role
-from vtlengine.Operators.Time import Time
+from vtlengine.Operators.Time import Time, Year_to_Day
 
 pytestmark = mark.input_path(Path(__file__).parent / "data")
 
@@ -63,12 +72,32 @@ error_param = [
 
 
 @pytest.mark.parametrize("code, expression", ds_param)
-def test_case_ds(load_input, load_reference, code, expression):
+def test_case_ds(request, load_reference, code, expression):
     warnings.filterwarnings("ignore", category=FutureWarning)
-    ast = create_ast(expression)
-    interpreter = InterpreterAnalyzer(datasets=load_input[0], scalars=load_input[1])
-    result = interpreter.visit(ast)
-    assert result == {**load_reference[0], **load_reference[1]}
+    base_path = request.node.get_closest_marker("input_path").args[0]
+
+    ds_dir = base_path / "DataStructure" / "input"
+    prefix = f"{code}-"
+    data_structures = sorted(ds_dir / f for f in os.listdir(ds_dir) if f.startswith(prefix))
+
+    datapoints = {}
+    for ds_file in data_structures:
+        with open(ds_file) as f:
+            structure = json.load(f)
+        if "datasets" in structure:
+            ds_name = structure["datasets"][0]["name"]
+            csv_path = base_path / "DataSet" / "input" / f"{code}-{ds_file.stem.split('-')[-1]}.csv"
+            if csv_path.exists():
+                datapoints[ds_name] = csv_path
+
+    result = run(
+        script=expression,
+        data_structures=data_structures,
+        datapoints=datapoints,
+        return_only_persistent=False,
+    )
+    reference = {**load_reference[0], **load_reference[1]}
+    assert result == reference
 
 
 @pytest.mark.parametrize("code, expression, error_code", error_param)
@@ -95,3 +124,124 @@ def test_get_time_id_error_reference_id():
 
     with pytest.raises(SemanticError, match="1-1-19-8"):
         Time._get_time_id(dataset)
+
+
+def _run_semantic(script: str, data_structures: dict) -> None:
+    semantic_analysis(script=script, data_structures=data_structures)
+
+
+def test_GH_676_1():
+    """time_agg with an invalid duration indicator triggers 1-1-19-3."""
+    script = 'DS_r := time_agg("X", DS_1);'
+    structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {
+                        "name": "TIME_PERIOD",
+                        "type": "Time_Period",
+                        "role": "Identifier",
+                        "nullable": False,
+                    },
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    with pytest.raises(SemanticError) as ctx:
+        _run_semantic(script, structures)
+    assert ctx.value.args[1] == "1-1-19-3"
+
+
+def test_GH_676_2():
+    """time_agg with period_to <= period_from triggers 1-1-19-4."""
+    script = 'DS_r := time_agg("M", "A", DS_1);'
+    structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {
+                        "name": "TIME_PERIOD",
+                        "type": "Time_Period",
+                        "role": "Identifier",
+                        "nullable": False,
+                    },
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    with pytest.raises(SemanticError) as ctx:
+        _run_semantic(script, structures)
+    assert ctx.value.args[1] == "1-1-19-4"
+
+
+def test_GH_676_3():
+    """period_to_date with an unknown period indicator triggers runtime 2-1-19-2."""
+    with pytest.raises(RT) as ctx:
+        period_to_date(2024, "X", 1)
+    assert ctx.value.args[1] == "2-1-19-2"
+
+
+def test_GH_676_4():
+    """generate_period_range with mismatched period indicators triggers 2-1-19-3."""
+    start = TimePeriodHandler("2020A")
+    end = TimePeriodHandler("2020M01")
+    with pytest.raises(RT) as ctx:
+        generate_period_range(start, end)
+    assert ctx.value.args[1] == "2-1-19-3"
+
+
+def test_GH_676_5():
+    """Period string with a too-long second term triggers 2-1-19-6."""
+    with pytest.raises(RT) as ctx:
+        from_input_customer_support_to_internal("2020-XYZWX")
+    assert ctx.value.args[1] == "2-1-19-6"
+
+
+def test_GH_676_6():
+    """A monthly period number outside [1, 12] triggers 2-1-19-7."""
+    with pytest.raises(RT) as ctx:
+        TimePeriodHandler("2020M13")
+    assert ctx.value.args[1] == "2-1-19-7"
+
+
+def test_GH_676_7():
+    """Year out of [0, 9999] triggers 2-1-19-10."""
+    handler = TimePeriodHandler("2020A")
+    with pytest.raises(RT) as ctx:
+        handler.year = 10000
+    assert ctx.value.args[1] == "2-1-19-10"
+
+
+def test_GH_676_8():
+    """A daily period number > 365 in a non-leap year triggers 2-1-19-9."""
+    # 2021 is a non-leap year; D366 is past the 365-day range.
+    with pytest.raises(RT) as ctx:
+        TimePeriodHandler("2021D366")
+    assert ctx.value.args[1] == "2-1-19-9"
+
+
+def test_GH_676_9():
+    """set_date1 with a value greater than date2 triggers 2-1-19-4."""
+    interval = TimeIntervalHandler("2020-01-01", "2020-12-31")
+    with pytest.raises(RT) as ctx:
+        interval.set_date1("2021-06-01")
+    assert ctx.value.args[1] == "2-1-19-4"
+
+
+def test_GH_676_10():
+    """set_date2 with a value lower than date1 triggers 2-1-19-5."""
+    interval = TimeIntervalHandler("2020-01-01", "2020-12-31")
+    with pytest.raises(RT) as ctx:
+        interval.set_date2("2019-06-01")
+    assert ctx.value.args[1] == "2-1-19-5"
+
+
+def test_GH_676_11():
+    """year_to_day with a malformed duration string triggers 2-1-19-22."""
+    with pytest.raises(RT) as ctx:
+        Year_to_Day.py_op("not-a-duration")
+    assert ctx.value.args[1] == "2-1-19-22"

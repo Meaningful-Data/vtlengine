@@ -172,7 +172,7 @@ development/
 _build/
 _site/
 docs/error_messages.rst
-docs/_smv_whitelist.json
+docs/_versions.json
 docs/plans/
 
 # Root level temp files
@@ -187,9 +187,23 @@ docs/plans/
 !/CONTRIBUTING.md
 !/SECURITY.md
 
+# C++ parser build artifacts
+third_party/
+build/
+.cpp-wheel
+
 # Claude Code settings
 .claude/*
 !.claude/CLAUDE.md
 
-# Third party
-third_party/
+# Third-party files that we want to ignore
+third_party/*
+
+# Tests output files
+vtl-output/*
+
+# JupyterLite demo build artifacts
+docs/jupyterlite/_output/
+docs/jupyterlite/.build/
+docs/jupyterlite/wheels/
+docs/jupyterlite/.jupyterlite.doit.db

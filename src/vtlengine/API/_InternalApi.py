@@ -17,7 +17,6 @@ from pysdmx.model.vtl import (
 )
 
 from vtlengine import AST as AST
-from vtlengine.__extras_check import __check_s3_extra
 from vtlengine.AST import Assignment, DPRuleset, HRuleset, Operator, PersistentAssignment, Start
 from vtlengine.AST.ASTString import ASTString
 from vtlengine.DataTypes import SCALAR_TYPES
@@ -77,13 +76,12 @@ def _extract_data_type(component: Dict[str, Any]) -> Tuple[str, Any]:
         InputValidationException: If the data type key or value is invalid
     """
     key = "type" if "type" in component else "data_type"
-    value = component[key]
-    check_key(key, _SCALAR_TYPE_KEYS, value)
-    return key, SCALAR_TYPES[value]
+    check_key(key, _SCALAR_TYPE_KEYS, component[key])
+    return key, SCALAR_TYPES[component[key]]
 
 
 def _build_component(component: Dict[str, Any]) -> VTL_Component:
-    role = Role("Attribute" if component["role"] == "ViralAttribute" else component["role"])
+    role = Role("Viral Attribute" if component["role"] == "ViralAttribute" else component["role"])
     nullable = component.get("nullable", role != Role.IDENTIFIER)
     _, scalar_type = _extract_data_type(component)
     return VTL_Component(
@@ -137,6 +135,7 @@ def _load_dataset_from_structure(
             name=scalar_json["name"],
             data_type=_extract_data_type(scalar_json)[1],
             value=None,
+            nullable=scalar_json.get("nullable", True),
         )
         for scalar_json in structures.get("scalars", [])
     }
@@ -185,25 +184,27 @@ def _load_single_datapoint(
     plain CSV, SDMX-CSV, and SDMX-ML file formats.
 
     Args:
-        datapoint: Path or S3 URI to the datapoint file.
+        datapoint: Path to the datapoint file.
         sdmx_mappings: Optional mapping from SDMX URNs to VTL dataset names.
     """
     if not isinstance(datapoint, (str, Path)):
         raise InputValidationException(
-            code="0-1-1-2", input=datapoint, message="Input must be a Path or an S3 URI"
+            code="0-1-1-2", input=datapoint, message="Input must be a Path"
         )
     # Handling of str values
     if isinstance(datapoint, str):
         if "s3://" in datapoint:
-            __check_s3_extra()
-            dataset_name = datapoint.split("/")[-1].removesuffix(".csv")
-            return {dataset_name: datapoint}
-        # Converting to Path object if it is not an S3 URI
+            raise InputValidationException(
+                code="0-1-1-2",
+                input=datapoint,
+                message="S3 URIs are not supported in this code path.",
+            )
+        # Converting to Path object
         try:
             datapoint = Path(datapoint)
         except Exception:
             raise InputValidationException(
-                code="0-1-1-2", input=datapoint, message="Input must refer to a Path or an S3 URI"
+                code="0-1-1-2", input=datapoint, message="Input must refer to a Path"
             )
     # Validation of Path object
     if not datapoint.exists():
@@ -248,7 +249,7 @@ def _load_datapoints_path(
     happens in load_datapoints() which supports both formats.
 
     Args:
-        datapoints: Dict, List, or single Path/S3 URI with datapoints.
+        datapoints: Dict, List, or single Path with datapoints.
         sdmx_mappings: Optional mapping from SDMX URNs to VTL dataset names.
 
     Returns:
@@ -268,11 +269,17 @@ def _load_datapoints_path(
                 raise InputValidationException(
                     code="0-1-1-2",
                     input=datapoint,
-                    message="Datapoints dictionary values must be Paths or S3 URIs.",
+                    message="Datapoints dictionary values must be Paths.",
                 )
 
             # Convert string to Path if not S3 or URL
-            if isinstance(datapoint, str) and "s3://" not in datapoint and not _is_url(datapoint):
+            if isinstance(datapoint, str) and _is_s3_uri(datapoint):
+                raise InputValidationException(
+                    code="0-1-1-2",
+                    input=datapoint,
+                    message="S3 URIs are not supported in this code path.",
+                )
+            if isinstance(datapoint, str) and not _is_url(datapoint):
                 datapoint = Path(datapoint)
 
             # Validate file exists
@@ -360,7 +367,7 @@ def _load_datastructure_single(
             except DataLoadError:
                 # Not SDMX-JSON, try as VTL JSON
                 pass
-            with open(data_structure, "r") as file:
+            with open(data_structure, "r", encoding="utf-8-sig") as file:
                 structures = json.load(file)
             return _load_dataset_from_structure(structures)
         # Unsupported extension
@@ -496,14 +503,14 @@ def load_datasets_with_data(
         not isinstance(v, (str, Path)) for v in datapoints.values()
     ):
         raise InputValidationException(
-            "Invalid datapoints. All values in the dictionary must be Paths or S3 URIs, "
+            "Invalid datapoints. All values in the dictionary must be Paths, "
             "or all values must be Pandas Dataframes."
         )
 
-    # Handling Individual, List or Dict of Paths, S3 URIs, or URLs
+    # Handling Individual, List or Dict of Paths or URLs
     # At this point, datapoints is narrowed to exclude None and Dict[str, DataFrame]
     # All file types (CSV, SDMX) are returned as paths for lazy loading
-    # URLs are preserved as strings (like S3 URIs)
+    # URLs are preserved as strings
     datapoints_paths = _load_datapoints_path(
         cast(Union[Dict[str, Union[str, Path]], List[Union[str, Path]], str, Path], datapoints),
         sdmx_mappings=sdmx_mappings,
@@ -574,7 +581,7 @@ def load_vtl(input: Union[str, Path]) -> str:
         raise DataLoadError(code="0-3-1-1", file=input)
     if input.suffix != ".vtl":
         raise InputValidationException(code="0-1-1-3", expected_ext=".vtl", ext=input.suffix)
-    with open(input, "r") as f:
+    with open(input, "r", encoding="utf-8-sig") as f:
         return f.read()
 
 
@@ -608,7 +615,7 @@ def _validate_json(
 def _load_single_value_domain(input: Path) -> Dict[str, ValueDomain]:
     if input.suffix != ".json":
         raise InputValidationException(code="0-1-1-3", expected_ext=".json", ext=input.suffix)
-    with open(input, "r") as f:
+    with open(input, "r", encoding="utf-8-sig") as f:
         data = json.load(f)
     name = data.get("name") if isinstance(data, dict) else None
     _validate_json(data, vd_schema, kind="Value Domain", name=name or input.stem)
@@ -725,7 +732,7 @@ def _load_single_external_routine_from_file(input: Path) -> Any:
     if input.suffix != ".json":
         raise InputValidationException(code="0-1-1-3", expected_ext=".json", ext=input.suffix)
     routine_name = input.stem
-    with open(input, "r") as f:
+    with open(input, "r", encoding="utf-8-sig") as f:
         data = json.load(f)
     name = data.get("name") if isinstance(data, dict) else None
     _validate_json(
@@ -741,10 +748,11 @@ def _check_output_folder(output_folder: Union[str, Path]) -> None:
     """
     if isinstance(output_folder, str):
         if "s3://" in output_folder:
-            __check_s3_extra()
-            if not output_folder.endswith("/"):
-                raise DataLoadError("0-3-1-2", folder=str(output_folder))
-            return
+            raise InputValidationException(
+                code="0-1-1-2",
+                input=output_folder,
+                message="S3 URIs are not supported in this code path.",
+            )
         try:
             output_folder = Path(output_folder)
         except Exception:
@@ -900,6 +908,11 @@ def ast_to_sdmx(ast: AST.Start, agency_id: str, id: str, version: str) -> Transf
     return transformation_scheme
 
 
+def _is_s3_uri(value: Any) -> bool:
+    """Check if a value is an S3 URI."""
+    return isinstance(value, str) and "s3://" in value
+
+
 def _is_url(value: Any) -> bool:
     """
     Check if a value is an HTTP/HTTPS URL.
@@ -984,7 +997,7 @@ def _handle_url_datapoints(
                 error=f"Expected Schema object, got {type(schema).__name__}",
             )
 
-        dataframes[dataset_name] = sdmx_dataset.data  # type: ignore[attr-defined]
+        dataframes[dataset_name] = sdmx_dataset.data
 
     return datasets, {}, dataframes
 

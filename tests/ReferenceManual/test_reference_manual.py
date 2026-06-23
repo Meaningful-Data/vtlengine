@@ -7,7 +7,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from vtlengine.API import create_ast
+from vtlengine.API import create_ast, run
 from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.files.parser import load_datapoints
 from vtlengine.Interpreter import InterpreterAnalyzer
@@ -65,6 +65,10 @@ time_operators.remove(100)
 # Remove HR Rules cyclic graph
 validation_operators.remove(159)
 
+# Remove random tests (DuckDB random algorithm differs from reference values)
+new_operators.remove(184)
+new_operators.remove(185)
+
 # Multimeasures on specific operators that must raise errors
 exceptions_tests = [27, 31]
 
@@ -92,13 +96,6 @@ params = [x for x in list(params) if x not in exceptions_tests]
 @pytest.fixture
 def ast(input_datasets, param):
     with open(os.path.join(vtl_dir, f"RM{param:03d}.vtl"), "r") as f:
-        vtl = f.read()
-    return create_ast(vtl)
-
-
-@pytest.fixture
-def ast_defined_operators(input_datasets, param):
-    with open(os.path.join(vtl_def_operators_dir, f"RM{param:03d}.vtl"), "r") as f:
         vtl = f.read()
     return create_ast(vtl)
 
@@ -177,34 +174,65 @@ def load_dataset(dataPoints, dataStructures, dp_dir, param):
     return datasets
 
 
+def get_test_files(dataPoints, dataStructures, dp_dir, param):
+    vtl = Path(f"{vtl_dir}/RM{param:03d}.vtl")
+    ds = []
+    dp = {}
+    for f in dataStructures:
+        ds.append(Path(f))
+        with open(f, "r") as file:
+            structures = json.load(file)
+
+        for dataset_json in structures["datasets"]:
+            dataset_name = dataset_json["name"]
+            if dataset_name not in dataPoints:
+                dp[dataset_name] = None
+            else:
+                dp[dataset_name] = Path(f"{dp_dir}/{param}-{dataset_name}.csv")
+
+    return vtl, ds, dp
+
+
 @pytest.mark.parametrize("param", params)
-def test_reference(input_datasets, reference_datasets, ast, param, value_domains):
-    # try:
+def test_reference_duckdb(input_datasets, reference_datasets, ast, param):
     warnings.filterwarnings("ignore", category=FutureWarning)
-    input_datasets = load_dataset(*input_datasets, dp_dir=input_dp_dir, param=param)
     reference_datasets = load_dataset(*reference_datasets, dp_dir=reference_dp_dir, param=param)
-    interpreter = InterpreterAnalyzer(input_datasets, value_domains=value_domains)
-    result = interpreter.visit(ast)
+
+    vtl, ds, dp = get_test_files(*input_datasets, dp_dir=input_dp_dir, param=param)
+    vd_files = list(value_domain_dir.glob("*.json"))
+    result = run(
+        script=vtl,
+        data_structures=ds,
+        datapoints=dp,
+        value_domains=vd_files if vd_files else None,
+        return_only_persistent=False,
+    )
+
     assert result == reference_datasets
-    # except NotImplementedError:
-    #     pass
 
 
 @pytest.mark.parametrize("param", params)
-def test_reference_defined_operators(
-    input_datasets, reference_datasets, ast_defined_operators, param, value_domains
-):
+def test_reference_defined_operators_duckdb(input_datasets, reference_datasets, param):
+    """Run each reference-manual example via the user-defined-operator VTL variant."""
     warnings.filterwarnings("ignore", category=FutureWarning)
-    input_datasets = load_dataset(*input_datasets, dp_dir=input_dp_dir, param=param)
     reference_datasets = load_dataset(*reference_datasets, dp_dir=reference_dp_dir, param=param)
-    interpreter = InterpreterAnalyzer(input_datasets, value_domains=value_domains)
-    result = interpreter.visit(ast_defined_operators)
+
+    _, ds, dp = get_test_files(*input_datasets, dp_dir=input_dp_dir, param=param)
+    vtl = Path(f"{vtl_def_operators_dir}/RM{param:03d}.vtl")
+    vd_files = list(value_domain_dir.glob("*.json"))
+    result = run(
+        script=vtl,
+        data_structures=ds,
+        datapoints=dp,
+        value_domains=vd_files if vd_files else None,
+        return_only_persistent=False,
+    )
+
     assert result == reference_datasets
 
 
 @pytest.mark.parametrize("param", exceptions_tests)
 def test_reference_exceptions(input_datasets, reference_datasets, ast, param):
-    # try:
     warnings.filterwarnings("ignore", category=FutureWarning)
     input_datasets = load_dataset(*input_datasets, dp_dir=input_dp_dir, param=param)
     interpreter = InterpreterAnalyzer(input_datasets)

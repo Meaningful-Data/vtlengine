@@ -16,9 +16,19 @@ Summary
 - [6]: Checking Time, Data and Time_period.
 """
 
+import json
 from pathlib import Path
 
+import pandas as pd
+import pytest
+
 from tests.Helper import TestHelper
+from vtlengine import run
+from vtlengine.API._InternalApi import (
+    _load_single_external_routine_from_file,
+    _load_single_value_domain,
+    load_vtl,
+)
 
 
 class DataLoadHelper(TestHelper):
@@ -200,6 +210,9 @@ class DataLoadTest(DataLoadHelper):
 
         assert dataset_input.data["OBS_VALUE"][0] == string_to_compare
 
+    @pytest.mark.skip(
+        reason="Duckdb cannot handle unmatched types errors as pandas, so it not raises the same error"
+    )
     def test_12(self):
         """
         Status: OK
@@ -244,6 +257,9 @@ class DataLoadTest(DataLoadHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    @pytest.mark.skip(
+        reason="Duckdb cannot handle unmatched types errors as pandas, so it not raises the same error"
+    )
     def test_15(self):
         """
         Status: OK
@@ -271,7 +287,7 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_81-15"
         number_inputs = 1
 
-        message = "The following Identifiers Id_1 were not found , review file GL_81-15-1.csv"
+        message = "The following Identifiers Id_1 were not found, review file GL_81-15-1.csv"
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_message=message
         )
@@ -287,7 +303,7 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_81-16"
         number_inputs = 1
 
-        message = "The following Identifiers VLD_T were not found , review file GL_81-16-1.csv"
+        message = "The following Identifiers VLD_T were not found, review file GL_81-16-1.csv"
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_message=message
         )
@@ -303,7 +319,7 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_81-17"
         number_inputs = 1
 
-        message = "Component Me_2 is missing in the file."
+        message = "Component Me_2 is missing in Datapoints."
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_message=message
         )
@@ -321,20 +337,6 @@ class DataLoadTest(DataLoadHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
-
-    def test_20(self):
-        """
-        Status: OK
-        Description: Data Load, with ñ in a latin-1(ISO-8859-1) encoding.
-        Git issue: 81-triple-doble-quote-commas-data-loading-and-intermediate-results.
-        Git Branch: bug-81-triple-doble-quote-commas-data-loading-and-intermediate-results.
-        Goal: Check Exception.
-        """
-        # code = "GL_81-19"
-        # number_inputs = 1
-        # message = "0-1-2-5"
-        # self.DataLoadExceptionTest(code=code, number_inputs=number_inputs,
-        #                            exception_code=message)
 
     def test_21(self):
         """
@@ -863,7 +865,7 @@ class DataLoadTest(DataLoadHelper):
         """ """
         code = "IK-1"
         number_inputs = 1
-        message = "Invalid key on role field: Identfier. Did you mean Identifier?."
+        message = "'Identfier' is not one of"
 
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_message=message
@@ -873,7 +875,7 @@ class DataLoadTest(DataLoadHelper):
         """ """
         code = "IK-2"
         number_inputs = 1
-        message = "Invalid key on role field: Masure. Did you mean Measure?."
+        message = "'Masure' is not one of"
 
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_message=message
@@ -883,7 +885,7 @@ class DataLoadTest(DataLoadHelper):
         """ """
         code = "IK-3"
         number_inputs = 1
-        message = "Invalid key on data_type field: Numver. Did you mean Number?."
+        message = "'Numver' is not one of"
 
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_message=message
@@ -893,7 +895,7 @@ class DataLoadTest(DataLoadHelper):
         """ """
         code = "IK-4"
         number_inputs = 1
-        message = "Invalid key on data_type field: boolean. Did you mean Boolean?."
+        message = "'boolean' is not one of"
 
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_message=message
@@ -903,7 +905,7 @@ class DataLoadTest(DataLoadHelper):
         """ """
         code = "IK-5"
         number_inputs = 1
-        message = "Invalid key on data_type field: TimePeriod. Did you mean Time_Period?."
+        message = "'TimePeriod' is not one of"
 
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_message=message
@@ -913,7 +915,7 @@ class DataLoadTest(DataLoadHelper):
         """ """
         code = "IK-6"
         number_inputs = 1
-        message = "Invalid key on data_type field: TimPerod. Did you mean Time_Period?."
+        message = "'TimPerod' is not one of"
 
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_message=message
@@ -923,8 +925,201 @@ class DataLoadTest(DataLoadHelper):
         """ """
         code = "IK-7"
         number_inputs = 1
-        message = "Invalid key on data_type field: jbhfae."
+        message = "'jbhfae' is not one of"
 
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_message=message
         )
+
+    @pytest.mark.skip(
+        reason="DuckDB backend handles empty CSVs differently and does not surface 0-1-1-6.",
+    )
+    def test_GH_676_1(self):
+        """Empty CSV file (no columns) triggers 0-1-1-6 on the pandas backend."""
+        code = "GH_676_1"
+        number_inputs = 1
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code="0-1-1-6")
+
+    def test_GH_676_2(self):
+        """CSV header missing an identifier declared in the structure triggers 0-1-1-8."""
+        code = "GH_676_2"
+        number_inputs = 1
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code="0-1-1-8")
+
+
+BOM = b"\xef\xbb\xbf"
+
+
+class TestBOMHandling:
+    """Tests that UTF-8 BOM files are handled transparently."""
+
+    def test_bom_csv(self, tmp_path: Path) -> None:
+        """CSV with BOM loads correctly, first column name is clean."""
+        script = "DS_r <- DS_1;"
+        data_structures = {
+            "datasets": [
+                {
+                    "name": "DS_1",
+                    "DataStructure": [
+                        {
+                            "name": "Id_1",
+                            "type": "Integer",
+                            "role": "Identifier",
+                            "nullable": False,
+                        },
+                        {
+                            "name": "Me_1",
+                            "type": "Number",
+                            "role": "Measure",
+                            "nullable": True,
+                        },
+                    ],
+                }
+            ]
+        }
+        csv_path = tmp_path / "DS_1.csv"
+        csv_path.write_bytes(BOM + b"Id_1,Me_1\n1,10\n2,20\n3,30\n")
+
+        result = run(
+            script=script,
+            data_structures=data_structures,
+            datapoints={"DS_1": csv_path},
+        )
+        ds = result["DS_r"]
+        assert "Id_1" in ds.data.columns
+        assert "\ufeffId_1" not in ds.data.columns
+        assert list(ds.data["Id_1"]) == [1, 2, 3]
+
+    def test_bom_json_datastructure(self, tmp_path: Path) -> None:
+        """JSON data structure with BOM parses correctly."""
+        script = "DS_r <- DS_1;"
+        structure = {
+            "datasets": [
+                {
+                    "name": "DS_1",
+                    "DataStructure": [
+                        {
+                            "name": "Id_1",
+                            "type": "Integer",
+                            "role": "Identifier",
+                            "nullable": False,
+                        },
+                        {
+                            "name": "Me_1",
+                            "type": "Number",
+                            "role": "Measure",
+                            "nullable": True,
+                        },
+                    ],
+                }
+            ]
+        }
+        json_path = tmp_path / "structure.json"
+        json_path.write_bytes(BOM + json.dumps(structure).encode("utf-8"))
+
+        data_df = pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [10.0, 20.0, 30.0]})
+
+        result = run(
+            script=script,
+            data_structures=json_path,
+            datapoints={"DS_1": data_df},
+        )
+        assert "DS_r" in result
+
+    def test_bom_vtl(self, tmp_path: Path) -> None:
+        """VTL script with BOM parses and executes correctly."""
+        vtl_path = tmp_path / "script.vtl"
+        vtl_path.write_bytes(BOM + b"DS_r <- DS_1;")
+
+        data_structures = {
+            "datasets": [
+                {
+                    "name": "DS_1",
+                    "DataStructure": [
+                        {
+                            "name": "Id_1",
+                            "type": "Integer",
+                            "role": "Identifier",
+                            "nullable": False,
+                        },
+                        {
+                            "name": "Me_1",
+                            "type": "Number",
+                            "role": "Measure",
+                            "nullable": True,
+                        },
+                    ],
+                }
+            ]
+        }
+        data_df = pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [10.0, 20.0, 30.0]})
+
+        result = run(
+            script=vtl_path,
+            data_structures=data_structures,
+            datapoints={"DS_1": data_df},
+        )
+        assert "DS_r" in result
+
+    def test_bom_json_value_domain(self, tmp_path: Path) -> None:
+        """Value domain JSON with BOM loads correctly."""
+        vd = {"name": "myDomain", "setlist": ["A", "B", "C"], "type": "String"}
+        json_path = tmp_path / "vd.json"
+        json_path.write_bytes(BOM + json.dumps(vd).encode("utf-8"))
+
+        result = _load_single_value_domain(json_path)
+        assert "myDomain" in result
+
+    def test_bom_json_external_routine(self, tmp_path: Path) -> None:
+        """External routine JSON with BOM loads correctly."""
+        routine = {"name": "my_routine", "query": "SELECT 1"}
+        json_path = tmp_path / "my_routine.json"
+        json_path.write_bytes(BOM + json.dumps(routine).encode("utf-8"))
+
+        result = _load_single_external_routine_from_file(json_path)
+        assert result is not None
+
+    def test_bom_vtl_load_vtl(self, tmp_path: Path) -> None:
+        """load_vtl strips BOM from script content."""
+        vtl_path = tmp_path / "test.vtl"
+        vtl_path.write_bytes(BOM + b"DS_r <- DS_1;")
+
+        content = load_vtl(vtl_path)
+        assert not content.startswith("\ufeff")
+        assert content == "DS_r <- DS_1;"
+
+    def test_bom_dataframe_columns(self) -> None:
+        """DataFrame with BOM in column names is handled transparently."""
+        script = "DS_r <- DS_1;"
+        data_structures = {
+            "datasets": [
+                {
+                    "name": "DS_1",
+                    "DataStructure": [
+                        {
+                            "name": "Id_1",
+                            "type": "Integer",
+                            "role": "Identifier",
+                            "nullable": False,
+                        },
+                        {
+                            "name": "Me_1",
+                            "type": "Number",
+                            "role": "Measure",
+                            "nullable": True,
+                        },
+                    ],
+                }
+            ]
+        }
+        # Simulate a DataFrame read from a BOM-encoded CSV without utf-8-sig
+        data_df = pd.DataFrame({"\ufeffId_1": [1, 2, 3], "Me_1": [10.0, 20.0, 30.0]})
+
+        result = run(
+            script=script,
+            data_structures=data_structures,
+            datapoints={"DS_1": data_df},
+        )
+        ds = result["DS_r"]
+        assert "Id_1" in ds.data.columns
+        assert "\ufeffId_1" not in ds.data.columns

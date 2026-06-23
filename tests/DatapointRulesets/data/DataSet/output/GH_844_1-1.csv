@@ -1,0 +1,10 @@
+Id_1,ruleid,bool_var,errorcode,errorlevel
+1,r1,True,,
+2,r1,False,A higher than B,
+3,r1,True,,
+1,r2,True,,
+2,r2,False,C not reported,
+3,r2,True,,
+1,r3,True,,
+2,r3,True,,
+3,r3,False,len mismatch,

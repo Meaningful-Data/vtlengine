@@ -41,13 +41,13 @@ SEPARATORS = "".join([",", ";", ":", "|", "\t"])
 def _detect_delimiter(file_path: Union[str, Path], num_bytes: int = 4096) -> str:
     try:
         if _is_remote_path(file_path):
-            import fsspec  # type: ignore[import-untyped]
+            import fsspec  # type: ignore[import-untyped, import-not-found, unused-ignore]
 
             reader = fsspec.open
         else:
             reader = open
 
-        with reader(file_path, "r", encoding="utf-8", errors="replace") as f:
+        with reader(file_path, "r", encoding="utf-8-sig", errors="replace") as f:
             sample = f.read(num_bytes)
         if sample:
             return csv.Sniffer().sniff(sample, delimiters=SEPARATORS).delimiter
@@ -65,7 +65,7 @@ def _validate_csv_path(components: Dict[str, Component], csv_path: Path) -> None
     register_rfc()
     try:
         delimiter = _detect_delimiter(csv_path)
-        with open(csv_path, "r", errors="replace", encoding="utf-8") as f:
+        with open(csv_path, "r", errors="replace", encoding="utf-8-sig") as f:
             reader = DictReader(f, delimiter=delimiter)
             csv_columns = reader.fieldnames
     except InputValidationException as ie:
@@ -124,7 +124,8 @@ def _sanitize_pandas_columns(
     for comp_name, comp in components.items():
         if comp_name not in data:
             if not comp.nullable:
-                raise InputValidationException(f"Component {comp_name} is missing in the file.")
+                name = Path(csv_path).stem
+                raise InputValidationException(code="0-3-1-5", name=name, comp_name=comp_name)
             data[comp_name] = None
     return data
 
@@ -154,6 +155,7 @@ def _pandas_load_csv(components: Dict[str, Component], csv_path: Union[str, Path
         sep=sep,
         keep_default_na=False,
         na_values=na_values,
+        encoding="utf-8-sig",
         encoding_errors="replace",
     )
 
@@ -179,8 +181,12 @@ def _validate_pandas(
     components: Dict[str, Component], data: pd.DataFrame, dataset_name: str
 ) -> pd.DataFrame:
     warnings.filterwarnings("ignore", category=FutureWarning)
-    # Identifier checking
 
+    # Strip UTF-8 BOM from column names (e.g. DataFrames read from BOM-encoded CSVs)
+    bom_stripped = [str(col).removeprefix("\ufeff") for col in data.columns]
+    data.columns = pd.Index(bom_stripped)
+
+    # Identifier checking
     id_names = [comp_name for comp_name, comp in components.items() if comp.role == Role.IDENTIFIER]
 
     missing_columns = [name for name in components if name not in data.columns.tolist()]
