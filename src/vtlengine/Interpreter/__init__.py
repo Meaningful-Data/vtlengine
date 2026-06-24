@@ -1292,6 +1292,26 @@ class InterpreterAnalyzer(ASTTemplate):
                             expected=dpr_info["params"][i],
                             found=comp_name,
                         )
+            if (
+                dpr_info is not None
+                and dpr_info.get("signature_type") == "valuedomain"
+                and dpr_info.get("params")
+            ):
+                vd_names = dpr_info["params"]
+                for i, comp_name in enumerate(node.components):
+                    comp = dataset_element.components[comp_name]
+                    if (
+                        comp.value_domain is not None
+                        and i < len(vd_names)
+                        and comp.value_domain != vd_names[i]
+                    ):
+                        raise SemanticError(
+                            "1-1-10-11",
+                            op=CHECK_DATAPOINT,
+                            comp=comp_name,
+                            found=comp.value_domain,
+                            expected=vd_names[i],
+                        )
 
         # Get output mode with default
         output = node.output.value if node.output else "invalid"

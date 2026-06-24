@@ -3094,3 +3094,62 @@ def test_exists_in_incompatible_identifiers() -> None:
     with pytest.raises(SemanticError) as ctx:
         semantic_analysis(script=script, data_structures=_INCOMPATIBLE_IDS_STRUCTURES)
     assert ctx.value.args[1] == "1-2-15"
+
+
+# check_datapoint on a value-domain signature: the components mapped via `components ...`
+# must be defined on the value domains named in the signature (error 1-1-10-11). Components
+# without a declared value domain (no `subset`) are skipped.
+
+_DP_VD_SIGNATURE_SCRIPT = """
+define datapoint ruleset dpr1 ( valuedomain Id_3, Me_1 ) is
+    when Id_3 = "CREDIT" then Me_1 >= 0 errorcode "bad"
+end datapoint ruleset;
+DS_r <- check_datapoint ( DS_1, dpr1 components Id_3, Me_1 invalid );
+"""
+
+
+def _dp_vd_signature_structures(id3_vd, me1_vd):
+    id3 = {"name": "Id_3", "type": "String", "role": "Identifier", "nullable": False}
+    me1 = {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True}
+    if id3_vd:
+        id3["subset"] = id3_vd
+    if me1_vd:
+        me1["subset"] = me1_vd
+    return {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    id3,
+                    me1,
+                ],
+            }
+        ]
+    }
+
+
+def test_dp_value_domain_signature_matching_ok() -> None:
+    """check_datapoint succeeds when mapped components take values on the signature domains."""
+    semantic_analysis(
+        script=_DP_VD_SIGNATURE_SCRIPT,
+        data_structures=_dp_vd_signature_structures("Id_3", "Me_1"),
+    )
+
+
+def test_dp_value_domain_signature_mismatch() -> None:
+    """check_datapoint fails when a mapped component is on a different value domain (1-1-10-11)."""
+    with pytest.raises(SemanticError) as ctx:
+        semantic_analysis(
+            script=_DP_VD_SIGNATURE_SCRIPT,
+            data_structures=_dp_vd_signature_structures("WRONG", "Me_1"),
+        )
+    assert ctx.value.args[1] == "1-1-10-11"
+
+
+def test_dp_value_domain_signature_skipped_when_unknown() -> None:
+    """check_datapoint skips the check for components without a declared value domain."""
+    semantic_analysis(
+        script=_DP_VD_SIGNATURE_SCRIPT,
+        data_structures=_dp_vd_signature_structures(None, None),
+    )

@@ -581,6 +581,12 @@ centralised_messages = {
         "description": "Raised when there are no applicable rules in a Hierarchy Roll-up "
         "due to missing '=' operators.",
     },
+    "1-1-10-11": {
+        "message": "At op {op}: Component {comp} is defined on value domain {found} but the "
+        "ruleset signature expects {expected}.",
+        "description": "Raised when a component mapped to a value-domain-signature ruleset is "
+        "defined on a different value domain than the one in the signature.",
+    },
     # General Operators
     "2-1-12-1": {
         "message": "At op {op}: Create a null Measure without a Scalar type is not allowed. "
