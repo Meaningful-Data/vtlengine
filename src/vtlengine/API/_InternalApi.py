@@ -133,6 +133,7 @@ def _load_dataset_from_structure(
                         data_type=scalar_type,
                         role=Role(component["role"]),
                         nullable=component["nullable"],
+                        value_domain=component.get("subset"),
                     )
 
             if "DataStructure" in dataset_json:
@@ -147,6 +148,7 @@ def _load_dataset_from_structure(
                         data_type=scalar_type,
                         role=Role(component["role"]),
                         nullable=component["nullable"],
+                        value_domain=component.get("subset"),
                     )
 
             datasets[dataset_name] = Dataset(name=dataset_name, components=components, data=None)
