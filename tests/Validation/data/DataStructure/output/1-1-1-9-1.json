@@ -6,7 +6,7 @@
         {
           "name": "errorlevel_N",
           "role": "Measure",
-          "type": "Number",
+          "type": "Integer",
           "nullable": true
         },
         {

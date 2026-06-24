@@ -1,5 +1,6 @@
+import pandas as pd
 
-from vtlengine import semantic_analysis
+from vtlengine import run, semantic_analysis
 from vtlengine.DataTypes import Integer, String
 from vtlengine.Model import ValueDomain
 from vtlengine.Operators.Validation import resolve_error_types
@@ -47,4 +48,17 @@ def test_check_datapoint_default_errorlevel_is_integer():
 def test_check_datapoint_errorlevel_vd_override():
     vds = [{"name": "errorlevel_vd", "setlist": ["high", "low"], "type": "String"}]
     res = semantic_analysis(script=DPR_SCRIPT, data_structures=DS_STRUCT, value_domains=vds)
+    assert res["DS_r"].components["errorlevel"].data_type == String
+
+
+def test_check_datapoint_run_errorlevel_integer():
+    data = {"DS_1": pd.DataFrame({"Id_1": [1, 2], "Me_1": [5.0, 200.0]})}
+    res = run(script=DPR_SCRIPT, data_structures=DS_STRUCT, datapoints=data)
+    assert res["DS_r"].components["errorlevel"].data_type == Integer
+
+
+def test_check_datapoint_run_errorlevel_vd_override():
+    data = {"DS_1": pd.DataFrame({"Id_1": [1, 2], "Me_1": [5.0, 200.0]})}
+    vds = [{"name": "errorlevel_vd", "setlist": ["high", "low"], "type": "String"}]
+    res = run(script=DPR_SCRIPT, data_structures=DS_STRUCT, datapoints=data, value_domains=vds)
     assert res["DS_r"].components["errorlevel"].data_type == String

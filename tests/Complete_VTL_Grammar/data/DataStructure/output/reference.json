@@ -2638,7 +2638,7 @@
         },
         {
           "name": "errorlevel",
-          "type": "Number",
+          "type": "Integer",
           "role": "Measure",
           "nullable": true
         }
@@ -2833,7 +2833,7 @@
         },
         {
           "name": "errorlevel",
-          "type": "Number",
+          "type": "Integer",
           "role": "Measure",
           "nullable": true
         },
