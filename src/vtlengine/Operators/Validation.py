@@ -1,5 +1,5 @@
 from copy import copy
-from typing import Any, Dict, Optional, Type, Union
+from typing import Any, Dict, Optional, Tuple, Type, Union
 
 from vtlengine.AST.Grammar.tokens import CHECK, CHECK_HIERARCHY
 from vtlengine.DataTypes import (
@@ -11,9 +11,23 @@ from vtlengine.DataTypes import (
     check_unary_implicit_promotion,
 )
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Model import Component, Dataset, Role
+from vtlengine.Model import Component, Dataset, Role, ValueDomain
 from vtlengine.Operators import Operator
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+
+
+def resolve_error_types(
+    value_domains: Optional[Dict[str, ValueDomain]],
+) -> Tuple[Type[ScalarType], Type[ScalarType]]:
+    """Resolve the (errorcode, errorlevel) output types per VTL 2.2.
+
+    errorcode -> type of the ``errorcode_vd`` Value Domain if provided, else String.
+    errorlevel -> type of the ``errorlevel_vd`` Value Domain if provided, else Integer.
+    """
+    vds = value_domains or {}
+    errorcode_type = vds["errorcode_vd"].type if "errorcode_vd" in vds else String
+    errorlevel_type = vds["errorlevel_vd"].type if "errorlevel_vd" in vds else Integer
+    return errorcode_type, errorlevel_type
 
 
 # noinspection PyTypeChecker
@@ -28,6 +42,7 @@ class Check(Operator):
         error_code: Optional[Union[str, int, float, bool]],
         error_level: Optional[Union[str, int, float, bool]],
         invalid: bool,
+        value_domains: Optional[Dict[str, ValueDomain]] = None,
     ) -> Dataset:
         dataset_name = VirtualCounter._new_ds_name()
         if len(validation_element.get_measures()) != 1:
@@ -35,15 +50,7 @@ class Check(Operator):
         measure = validation_element.get_measures()[0]
         if measure.data_type != Boolean:
             raise SemanticError("1-1-10-1", op=cls.op, op_type="validation", me_type="Boolean")
-        error_level_type: Optional[Type[ScalarType]] = None
-        if isinstance(error_level, bool):
-            error_level_type = Boolean
-        elif error_level is None or isinstance(error_level, int):
-            error_level_type = Integer
-        elif isinstance(error_level, str):
-            error_level_type = String
-        else:
-            error_level_type = String
+        error_code_type, error_level_type = resolve_error_types(value_domains)
 
         imbalance_measure = None
         if imbalance_element is not None:
@@ -75,7 +82,7 @@ class Check(Operator):
             result_components["imbalance"].name = "imbalance"
 
         result_components["errorcode"] = Component(
-            name="errorcode", data_type=String, role=Role.MEASURE, nullable=True
+            name="errorcode", data_type=error_code_type, role=Role.MEASURE, nullable=True
         )
 
         result_components["errorlevel"] = Component(
@@ -91,23 +98,14 @@ class Check(Operator):
 # noinspection PyTypeChecker
 class Validation(Operator):
     @classmethod
-    def validate(cls, dataset_element: Dataset, rule_info: Dict[str, Any], output: str) -> Dataset:
-        error_level_type: Optional[Type[ScalarType]] = None
-        error_levels = [
-            rule_data.get("errorlevel")
-            for rule_data in rule_info.values()
-            if "errorlevel" in rule_data
-        ]
-        non_null_levels = [el for el in error_levels if el is not None]
-
-        if all(isinstance(el, bool) for el in non_null_levels) and len(non_null_levels) > 0:
-            error_level_type = Boolean
-        elif len(non_null_levels) == 0 or all(isinstance(el, int) for el in non_null_levels):
-            error_level_type = Number
-        elif all(isinstance(el, str) for el in non_null_levels):
-            error_level_type = String
-        else:
-            error_level_type = String
+    def validate(
+        cls,
+        dataset_element: Dataset,
+        rule_info: Dict[str, Any],
+        output: str,
+        value_domains: Optional[Dict[str, ValueDomain]] = None,
+    ) -> Dataset:
+        error_code_type, error_level_type = resolve_error_types(value_domains)
         dataset_name = VirtualCounter._new_ds_name()
         result_components = {comp.name: comp for comp in dataset_element.get_identifiers()}
         result_components["ruleid"] = Component(
@@ -131,7 +129,7 @@ class Validation(Operator):
                 ),
             }
         result_components["errorcode"] = Component(
-            name="errorcode", data_type=String, role=Role.MEASURE, nullable=True
+            name="errorcode", data_type=error_code_type, role=Role.MEASURE, nullable=True
         )
         result_components["errorlevel"] = Component(
             name="errorlevel",
@@ -151,8 +149,14 @@ class Check_Hierarchy(Validation):
     op = CHECK_HIERARCHY
 
     @classmethod
-    def validate(cls, dataset_element: Dataset, rule_info: Dict[str, Any], output: str) -> Dataset:
-        result = super().validate(dataset_element, rule_info, output)
+    def validate(
+        cls,
+        dataset_element: Dataset,
+        rule_info: Dict[str, Any],
+        output: str,
+        value_domains: Optional[Dict[str, ValueDomain]] = None,
+    ) -> Dataset:
+        result = super().validate(dataset_element, rule_info, output, value_domains)
         result.components["imbalance"] = Component(
             name="imbalance", data_type=Number, role=Role.MEASURE, nullable=True
         )

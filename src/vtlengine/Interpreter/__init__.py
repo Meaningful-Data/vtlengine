@@ -1249,6 +1249,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     dataset_element=dataset,
                     rule_info=rule_output_values,
                     output=output,
+                    value_domains=self.value_domains,
                 )
             return Hierarchy.validate(dataset, output)
 
@@ -1323,6 +1324,7 @@ class InterpreterAnalyzer(ASTTemplate):
             dataset_element=dataset_element,
             rule_info=rule_output_values,
             output=output,
+            value_domains=self.value_domains,
         )
 
     def visit_DPRule(self, node: AST.DPRule) -> Any:
@@ -1378,6 +1380,7 @@ class InterpreterAnalyzer(ASTTemplate):
             error_code=node.error_code,
             error_level=node.error_level,
             invalid=node.invalid,
+            value_domains=self.value_domains,
         )
 
     def visit_EvalOp(self, node: AST.EvalOp) -> Dataset:
