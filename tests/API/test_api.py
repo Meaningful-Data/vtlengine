@@ -344,11 +344,11 @@ params_schema = [(filepath_json / "DS_Schema.json")]
 
 param_id_null = [((filepath_json / "DS_ID_null.json"), "Identifier Id_1 cannot be nullable")]
 
-param_wrong_role = [((filepath_json / "DS_Role_wrong.json"), "0-1-1-13")]
+param_wrong_role = [((filepath_json / "DS_Role_wrong.json"), "0-2-1-1")]
 
-param_wrong_data_type = [((filepath_json / "DS_wrong_datatype.json"), "0-1-1-13")]
+param_wrong_data_type = [((filepath_json / "DS_wrong_datatype.json"), "0-2-1-1")]
 
-param_viral_attr = [((filepath_json / "DS_Viral_attr.json"), "0-1-1-13")]
+param_viral_attr = [((filepath_json / "DS_Viral_attr.json"), "0-2-1-1")]
 
 params_check_script = [
     (
@@ -1529,13 +1529,13 @@ def test_load_data_structure_with_null_id(ds_r, error_message):
 
 @pytest.mark.parametrize("ds_r, error_code", param_wrong_role)
 def test_load_data_structure_with_wrong_role(ds_r, error_code):
-    with pytest.raises(SemanticError, match=error_code):
+    with pytest.raises(InputValidationException, match=error_code):
         load_datasets(ds_r)
 
 
 @pytest.mark.parametrize("ds_r, error_code", param_wrong_data_type)
 def test_load_data_structure_with_wrong_data_type(ds_r, error_code):
-    with pytest.raises(SemanticError, match=error_code):
+    with pytest.raises(InputValidationException, match=error_code):
         load_datasets(ds_r)
 
 
@@ -1764,10 +1764,11 @@ def test_wrong_type_in_scalar_definition(wrong_type, correct_type):
         ]
     }
 
-    with pytest.raises(SemanticError, match="0-1-1-13") as e:
-        semantic_analysis(
+    with pytest.raises(InputValidationException, match="0-2-1-1") as e:
+        run(
             script=script,
             data_structures=data_structures,
+            datapoints={},
         )
     assert wrong_type in e.value.args[0]
     assert correct_type in e.value.args[0]
@@ -2124,3 +2125,213 @@ def test_run_error_on_missing_non_nullable_column():
 
     with pytest.raises(DataLoadError, match="0-3-1-3"):
         run(script=script, data_structures=data_structures, datapoints=datapoints)
+
+
+schema_validation_cases = [
+    # Unknown top-level property
+    (
+        {"unknown_key": []},
+        "Additional properties are not allowed",
+    ),
+    # Dataset missing 'name'
+    (
+        {
+            "datasets": [
+                {"DataStructure": [{"name": "Id_1", "type": "Integer", "role": "Identifier"}]}
+            ]
+        },
+        "'name' is a required property",
+    ),
+    # Dataset has neither DataStructure nor structure
+    (
+        {"datasets": [{"name": "DS_1"}]},
+        "is not valid under any of the given schemas",
+    ),
+    # Dataset has both DataStructure and structure (oneOf violation)
+    (
+        {
+            "datasets": [
+                {
+                    "name": "DS_1",
+                    "DataStructure": [{"name": "Id_1", "type": "Integer", "role": "Identifier"}],
+                    "structure": "Struct_1",
+                }
+            ],
+            "structures": [
+                {
+                    "name": "Struct_1",
+                    "components": [{"name": "Id_1", "data_type": "Integer", "role": "Identifier"}],
+                }
+            ],
+        },
+        "is valid under each of",
+    ),
+    # Component missing 'role'
+    (
+        {"datasets": [{"name": "DS_1", "DataStructure": [{"name": "Id_1", "type": "Integer"}]}]},
+        "'role' is a required property",
+    ),
+    # Component missing both 'type' and 'data_type'
+    (
+        {"datasets": [{"name": "DS_1", "DataStructure": [{"name": "Id_1", "role": "Identifier"}]}]},
+        "is not valid under any of the given schemas",
+    ),
+    # Component with both 'type' and 'data_type'
+    (
+        {
+            "datasets": [
+                {
+                    "name": "DS_1",
+                    "DataStructure": [
+                        {
+                            "name": "Id_1",
+                            "type": "Integer",
+                            "data_type": "Integer",
+                            "role": "Identifier",
+                        }
+                    ],
+                }
+            ]
+        },
+        "is valid under each of",
+    ),
+    # Component with invalid role enum
+    (
+        {
+            "datasets": [
+                {
+                    "name": "DS_1",
+                    "DataStructure": [{"name": "Id_1", "type": "Integer", "role": "BadRole"}],
+                }
+            ]
+        },
+        "'BadRole' is not one of",
+    ),
+    # Component with invalid data type enum
+    (
+        {
+            "datasets": [
+                {
+                    "name": "DS_1",
+                    "DataStructure": [{"name": "Id_1", "type": "BadType", "role": "Identifier"}],
+                }
+            ]
+        },
+        "'BadType' is not one of",
+    ),
+    # Component with nullable as non-boolean
+    (
+        {
+            "datasets": [
+                {
+                    "name": "DS_1",
+                    "DataStructure": [
+                        {
+                            "name": "Id_1",
+                            "type": "Integer",
+                            "role": "Identifier",
+                            "nullable": "yes",
+                        }
+                    ],
+                }
+            ]
+        },
+        "is not of type 'boolean'",
+    ),
+    # Dataset name does not match the vtl-id pattern (bare name starting with '_')
+    (
+        {
+            "datasets": [
+                {
+                    "name": "_bad",
+                    "DataStructure": [{"name": "Id_1", "type": "Integer", "role": "Identifier"}],
+                }
+            ]
+        },
+        "does not match",
+    ),
+    # Scalar missing both 'type' and 'data_type'
+    (
+        {"scalars": [{"name": "sc_1"}]},
+        "is not valid under any of the given schemas",
+    ),
+    # Scalar with invalid type enum
+    (
+        {"scalars": [{"name": "sc_1", "type": "BadType"}]},
+        "'BadType' is not one of",
+    ),
+    # Structure missing 'components'
+    (
+        {
+            "datasets": [{"name": "DS_1", "structure": "Struct_1"}],
+            "structures": [{"name": "Struct_1"}],
+        },
+        "'components' is a required property",
+    ),
+]
+
+
+@pytest.mark.parametrize("data_structures, expected_fragment", schema_validation_cases)
+def test_data_structure_schema_validation(data_structures, expected_fragment):
+    """Schema validation rejects malformed data_structures with informative messages."""
+    with pytest.raises(InputValidationException, match="0-2-1-1") as excinfo:
+        load_datasets(data_structures)
+    assert expected_fragment in excinfo.value.args[0]
+
+
+schema_failing_element_cases = [
+    # Dataset error -> message includes "Dataset '<name>'"
+    (
+        {
+            "datasets": [
+                {
+                    "name": "DS_named",
+                    "DataStructure": [{"name": "Id_1", "type": "Integer"}],
+                }
+            ]
+        },
+        "Dataset 'DS_named'",
+    ),
+    # Scalar error -> message includes "Scalar '<name>'"
+    (
+        {"scalars": [{"name": "sc_named", "type": "BadType"}]},
+        "Scalar 'sc_named'",
+    ),
+    # Structure error -> message includes "Structure '<name>'"
+    (
+        {
+            "datasets": [{"name": "DS_1", "structure": "Struct_named"}],
+            "structures": [
+                {
+                    "name": "Struct_named",
+                    "components": [{"name": "Id_1", "role": "BadRole", "data_type": "Integer"}],
+                }
+            ],
+        },
+        "Structure 'Struct_named'",
+    ),
+]
+
+
+@pytest.mark.parametrize("data_structures, expected_fragment", schema_failing_element_cases)
+def test_data_structure_schema_error_identifies_element(data_structures, expected_fragment):
+    """The validation error message points to the specific dataset/scalar/structure that failed."""
+    with pytest.raises(InputValidationException, match="0-2-1-1") as excinfo:
+        load_datasets(data_structures)
+    assert expected_fragment in excinfo.value.args[0]
+
+
+def test_referenced_structure_not_found():
+    """A dataset that references a non-existent structure raises a clear error."""
+    data_structures = {
+        "datasets": [{"name": "DS_1", "structure": "Missing"}],
+        "structures": [
+            {
+                "name": "Other",
+                "components": [{"name": "Id_1", "data_type": "Integer", "role": "Identifier"}],
+            }
+        ],
+    }
+    with pytest.raises(InputValidationException, match="0-2-1-1") as excinfo:
+        load_datasets(data_structures)
+    assert "Missing" in excinfo.value.args[0]
