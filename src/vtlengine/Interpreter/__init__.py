@@ -1189,6 +1189,35 @@ class InterpreterAnalyzer(ASTTemplate):
                     )
                 cond_info[cond_comp] = cond_components[i]
 
+            if hr_info["node"].signature_type == "valuedomain":
+                rule_comp = dataset.components.get(component) if component else None
+                if (
+                    rule_comp is not None
+                    and rule_comp.value_domain is not None
+                    and rule_comp.value_domain != hr_info["signature"]
+                ):
+                    raise SemanticError(
+                        "1-1-10-11",
+                        op=node.op,
+                        comp=component,
+                        found=rule_comp.value_domain,
+                        expected=hr_info["signature"],
+                    )
+                for i, cond_vd in enumerate(hr_info["condition"]):
+                    cond_comp_obj = dataset.components.get(cond_components[i])
+                    if (
+                        cond_comp_obj is not None
+                        and cond_comp_obj.value_domain is not None
+                        and cond_comp_obj.value_domain != cond_vd
+                    ):
+                        raise SemanticError(
+                            "1-1-10-11",
+                            op=node.op,
+                            comp=cond_components[i],
+                            found=cond_comp_obj.value_domain,
+                            expected=cond_vd,
+                        )
+
             if node.op == HIERARCHY:
                 aux = []
                 for rule in hr_info["rules"]:

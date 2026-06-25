@@ -76,6 +76,7 @@ class TestHelper(TestCase):
                         data_type=SCALAR_TYPES[component["type"]],
                         role=Role(component["role"]),
                         nullable=component["nullable"],
+                        value_domain=component.get("subset"),
                     )
 
                 if only_semantic:
