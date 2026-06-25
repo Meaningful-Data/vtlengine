@@ -411,3 +411,66 @@ def test_rename_duplicate_source_different_case_raises():
 def test_rename_duplicate_target_different_case_raises():
     with pytest.raises(SemanticError, match="1-2-1"):
         _run("DS_r <- DS_1[rename Id_2 to X, Me_1 to x];")
+
+
+# ---------------------------------------------------------------------------
+# 13. Operand case-insensitivity in a normal VTL run (data is computed)
+# ---------------------------------------------------------------------------
+
+
+def test_binary_op_dataset_operands_mixed_case():
+    # Both operands of '+' reference DS_1 with different casing.
+    result = _run("DS_r <- ds_1 + DS_1;")
+    assert result["DS_r"].data["Me_1"].tolist() == [20.0, 40.0, 60.0]
+
+
+def test_membership_component_operand_mixed_case():
+    # The membership operand references Me_1 as ME_1.
+    result = _run("DS_r <- ds_1#ME_1;")
+    assert "Me_1" in result["DS_r"].components
+    assert result["DS_r"].data["Me_1"].tolist() == [10.0, 20.0, 30.0]
+
+
+def test_comparison_operand_mixed_case():
+    result = _run("DS_r <- ds_1[calc gt := ME_1 > 15];")
+    assert result["DS_r"].data["gt"].tolist() == [False, True, True]
+
+
+def test_if_then_else_operands_mixed_case():
+    result = _run("DS_r <- ds_1[calc m2 := if ME_1 > 15 then me_1 else 0];")
+    assert result["DS_r"].data["m2"].tolist() == [0.0, 20.0, 30.0]
+
+
+_JOIN_STRUCT = {
+    "datasets": [
+        {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+            ],
+        },
+        {
+            "name": "DS_2",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Me_2", "type": "Number", "role": "Measure", "nullable": True},
+            ],
+        },
+    ]
+}
+_JOIN_DATAPOINTS = {
+    "DS_1": pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [10.0, 20.0, 30.0]}),
+    "DS_2": pd.DataFrame({"Id_1": [1, 2, 3], "Me_2": [1.0, 2.0, 3.0]}),
+}
+
+
+def test_join_body_component_operands_mixed_case():
+    # Component operands inside a join body must resolve case-insensitively
+    # against the join's (virtual) dataset.
+    result = run(
+        script="DS_r <- inner_join(ds_1 as a, DS_2 as b calc Me_3 := ME_1 + me_2);",
+        data_structures=_JOIN_STRUCT,
+        datapoints=_JOIN_DATAPOINTS,
+    )
+    assert result["DS_r"].data["Me_3"].tolist() == [11.0, 22.0, 33.0]

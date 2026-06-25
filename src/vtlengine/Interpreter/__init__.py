@@ -732,16 +732,16 @@ class InterpreterAnalyzer(ASTTemplate):
                     return copy(self.scalars[node.value])
                 if (
                     self.is_from_join
-                    and node.value not in self.regular_aggregation_dataset.get_components_names()
+                    and node.value not in self.regular_aggregation_dataset.components
                 ):
                     is_partial_present = 0
                     found_comp = None
                     for comp_name in self.regular_aggregation_dataset.get_components_names():
                         if (
                             "#" in comp_name
-                            and comp_name.split("#")[1] == node.value
+                            and names_equal(comp_name.split("#")[1], node.value)
                             or "#" in node.value
-                            and node.value.split("#")[1] == comp_name
+                            and names_equal(node.value.split("#")[1], comp_name)
                         ):
                             is_partial_present += 1
                             found_comp = comp_name
