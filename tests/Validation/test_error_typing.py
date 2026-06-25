@@ -24,6 +24,10 @@ end datapoint ruleset;
 DS_r <- check_datapoint ( DS_1, dpr1 all );
 """
 
+CHECK_SCRIPT = """
+DS_r <- check ( DS_1 > 0 errorcode "x" errorlevel 1 invalid );
+"""
+
 
 def test_resolve_error_types_defaults():
     assert resolve_error_types(None) == (String, Integer)
@@ -49,6 +53,30 @@ def test_check_datapoint_errorlevel_vd_override():
     vds = [{"name": "errorlevel_vd", "setlist": ["high", "low"], "type": "String"}]
     res = semantic_analysis(script=DPR_SCRIPT, data_structures=DS_STRUCT, value_domains=vds)
     assert res["DS_r"].components["errorlevel"].data_type == String
+
+
+def test_check_datapoint_errorcode_vd_override():
+    vds = [{"name": "errorcode_vd", "setlist": [1, 2], "type": "Integer"}]
+    res = semantic_analysis(script=DPR_SCRIPT, data_structures=DS_STRUCT, value_domains=vds)
+    assert res["DS_r"].components["errorcode"].data_type == Integer
+
+
+def test_check_operator_default_types():
+    res = semantic_analysis(script=CHECK_SCRIPT, data_structures=DS_STRUCT)
+    comps = res["DS_r"].components
+    assert comps["errorcode"].data_type == String
+    assert comps["errorlevel"].data_type == Integer
+
+
+def test_check_operator_value_domains_override():
+    vds = [
+        {"name": "errorcode_vd", "setlist": [1, 2], "type": "Integer"},
+        {"name": "errorlevel_vd", "setlist": ["high", "low"], "type": "String"},
+    ]
+    res = semantic_analysis(script=CHECK_SCRIPT, data_structures=DS_STRUCT, value_domains=vds)
+    comps = res["DS_r"].components
+    assert comps["errorcode"].data_type == Integer
+    assert comps["errorlevel"].data_type == String
 
 
 def test_check_datapoint_run_errorlevel_integer():
