@@ -36,7 +36,7 @@
         {
           "name": "Id_6",
           "role": "Identifier",
-          "type": "TimePeriod",
+          "type": "Time_Period",
           "nullable": false
         },
         {

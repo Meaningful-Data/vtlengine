@@ -901,7 +901,7 @@ class DataLoadTest(DataLoadHelper):
         """ """
         code = "IK-1"
         number_inputs = 1
-        message = "Invalid key on role field: Identfier. Did you mean Identifier?."
+        message = "'Identfier' is not one of"
 
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_message=message
@@ -911,7 +911,7 @@ class DataLoadTest(DataLoadHelper):
         """ """
         code = "IK-2"
         number_inputs = 1
-        message = "Invalid key on role field: Masure. Did you mean Measure?."
+        message = "'Masure' is not one of"
 
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_message=message
@@ -921,7 +921,7 @@ class DataLoadTest(DataLoadHelper):
         """ """
         code = "IK-3"
         number_inputs = 1
-        message = "Invalid key on type field: Numver. Did you mean Number?."
+        message = "'Numver' is not one of"
 
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_message=message
@@ -931,7 +931,7 @@ class DataLoadTest(DataLoadHelper):
         """ """
         code = "IK-4"
         number_inputs = 1
-        message = "Invalid key on type field: boolean. Did you mean Boolean?."
+        message = "'boolean' is not one of"
 
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_message=message
@@ -941,7 +941,7 @@ class DataLoadTest(DataLoadHelper):
         """ """
         code = "IK-5"
         number_inputs = 1
-        message = "Invalid key on type field: TimePeriod. Did you mean Time_Period?."
+        message = "'TimePeriod' is not one of"
 
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_message=message
@@ -951,7 +951,7 @@ class DataLoadTest(DataLoadHelper):
         """ """
         code = "IK-6"
         number_inputs = 1
-        message = "Invalid key on type field: TimPerod. Did you mean Time_Period?."
+        message = "'TimPerod' is not one of"
 
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_message=message
@@ -961,7 +961,7 @@ class DataLoadTest(DataLoadHelper):
         """ """
         code = "IK-7"
         number_inputs = 1
-        message = "Invalid key on type field: jbhfae."
+        message = "'jbhfae' is not one of"
 
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_message=message
