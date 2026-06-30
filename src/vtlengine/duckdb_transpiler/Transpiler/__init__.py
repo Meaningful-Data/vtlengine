@@ -43,7 +43,15 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
     _try_normalize_time_period,
 )
 from vtlengine.Exceptions import RunTimeError, SemanticError
-from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
+from vtlengine.Model import (
+    CaseInsensitiveDict,
+    Component,
+    Dataset,
+    ExternalRoutine,
+    Role,
+    Scalar,
+    ValueDomain,
+)
 from vtlengine.Operators.Join import merged_viral_attribute_names
 from vtlengine.ViralPropagation import get_current_registry
 from vtlengine.ViralPropagation.sql import (
@@ -255,25 +263,35 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     _consumed_join_aliases: Set[str] = field(default_factory=set, init=False)
 
     # UDO definitions
-    _udos: Dict[str, Dict[str, Any]] = field(default_factory=dict, init=False)
+    _udos: Dict[str, Dict[str, Any]] = field(default_factory=CaseInsensitiveDict, init=False)
 
     # UDO parameter stack
     _udo_params: Optional[List[Dict[str, Any]]] = field(default=None, init=False)
 
     # Datapoint rulesets
-    _dprs: Dict[str, Dict[str, Any]] = field(default_factory=dict, init=False)
+    _dprs: Dict[str, Dict[str, Any]] = field(default_factory=CaseInsensitiveDict, init=False)
 
     # Datapoint ruleset context
     _dp_signature: Optional[Dict[str, str]] = field(default=None, init=False)
 
     # Hierarchical rulesets
-    _hrs: Dict[str, Dict[str, Any]] = field(default_factory=dict, init=False)
+    _hrs: Dict[str, Dict[str, Any]] = field(default_factory=CaseInsensitiveDict, init=False)
 
     def __post_init__(self) -> None:
-        """Initialize available tables."""
-        self.datasets = {**self.input_datasets, **self.output_datasets}
-        self.scalars = {**self.input_scalars, **self.output_scalars}
-        self.available_tables = dict(self.datasets)
+        """Initialize available tables.
+
+        VTL regular names are case-insensitive: keep all name-keyed lookups in
+        CaseInsensitiveDict so references resolve regardless of the written casing.
+        """
+        self.input_datasets = CaseInsensitiveDict(self.input_datasets)
+        self.output_datasets = CaseInsensitiveDict(self.output_datasets)
+        self.input_scalars = CaseInsensitiveDict(self.input_scalars)
+        self.output_scalars = CaseInsensitiveDict(self.output_scalars)
+        self.value_domains = CaseInsensitiveDict(self.value_domains)
+        self.external_routines = CaseInsensitiveDict(self.external_routines)
+        self.datasets = CaseInsensitiveDict({**self.input_datasets, **self.output_datasets})
+        self.scalars = CaseInsensitiveDict({**self.input_scalars, **self.output_scalars})
+        self.available_tables = CaseInsensitiveDict(self.datasets)
 
     # Helper methods
 
@@ -1670,7 +1688,9 @@ FROM (
         resolved = self._resolve_clause_dataset(node)
         ds, table_src = resolved
 
-        calc_exprs: Dict[str, str] = {}
+        # calc_exprs is case-insensitive: a calc target that matches an existing
+        # component case-insensitively overrides it, and the written casing wins.
+        calc_exprs: CaseInsensitiveDict[str] = CaseInsensitiveDict()
         with self._clause_scope(ds):
             for child in node.children:
                 assignment = self._unwrap_assignment(child)
@@ -1690,7 +1710,9 @@ FROM (
         select_cols: List[str] = []
         for name in ds.components:
             if name in calc_exprs:
-                select_cols.append(f"{calc_exprs[name]} AS {quote_name(name)}")
+                # Alias to the written casing (canonical key in calc_exprs).
+                written = calc_exprs.canonical_key(name)
+                select_cols.append(f"{calc_exprs[name]} AS {quote_name(written)}")
             else:
                 select_cols.append(quote_name(name))
 
@@ -1748,7 +1770,7 @@ FROM (
         resolved = self._resolve_clause_dataset(node)
         ds, table_src = resolved
 
-        renames: Dict[str, str] = {}
+        renames: CaseInsensitiveDict[str] = CaseInsensitiveDict()
         for child in node.children:
             if isinstance(child, AST.RenameNode):
                 old = self._resolve_membership_name(child.old_name)

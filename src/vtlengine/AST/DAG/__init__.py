@@ -48,7 +48,7 @@ from vtlengine.AST.Grammar.tokens import (
     TO,
 )
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Model import Component
+from vtlengine.Model import Component, normalize_name
 
 
 @dataclass
@@ -82,13 +82,15 @@ class DAGAnalyzer(ASTTemplate):
         deletion: Dict[int, List[str]] = defaultdict(list)
         insertion: Dict[int, List[str]] = defaultdict(list)
         all_outputs: Set[str] = set()
+        # Casefolded mirror of all_outputs, used only for case-insensitive matching.
+        all_outputs_norm: Set[str] = set()
         persistent_datasets: List[str] = []
 
-        # Reverse index: dataset_name -> last statement that uses it as input
+        # Reverse index: dataset_name (casefolded) -> last statement that uses it as input
         last_consumer: Dict[str, int] = {}
         for key, statement in self.dependencies.items():
             for input_name in statement.inputs:
-                last_consumer[input_name] = key
+                last_consumer[normalize_name(input_name)] = key
 
         # Schedule deletion for statement outputs at their last consumer
         for key, statement in self.dependencies.items():
@@ -100,17 +102,19 @@ class DAGAnalyzer(ASTTemplate):
                 persistent_datasets.append(statement.persistent[0])
             ds_name = reference[0]
             all_outputs.add(ds_name)
-            deletion[last_consumer.get(ds_name, key)].append(ds_name)
+            all_outputs_norm.add(normalize_name(ds_name))
+            deletion[last_consumer.get(normalize_name(ds_name), key)].append(ds_name)
 
         # Schedule insertion (first use) and deletion (last use) for global inputs
         global_inputs: List[str] = []
         global_set: Set[str] = set()
         for key, statement in self.dependencies.items():
             for element in statement.inputs:
-                if element not in all_outputs and element not in global_set:
-                    global_set.add(element)
+                norm = normalize_name(element)
+                if norm not in all_outputs_norm and norm not in global_set:
+                    global_set.add(norm)
                     global_inputs.append(element)
-                    deletion[last_consumer.get(element, key)].append(element)
+                    deletion[last_consumer.get(norm, key)].append(element)
                     insertion[key].append(element)
 
         return DatasetSchedule(
@@ -183,12 +187,12 @@ class DAGAnalyzer(ASTTemplate):
             for key, statement in self.dependencies.items():
                 reference = statement.outputs + statement.persistent
                 if reference:
-                    ref_to_keys[reference[0]] = key
+                    ref_to_keys[normalize_name(reference[0])] = key
 
             for sub_key, sub_statement in self.dependencies.items():
                 for input_val in sub_statement.inputs:
-                    if input_val in ref_to_keys:
-                        key = ref_to_keys[input_val]
+                    if normalize_name(input_val) in ref_to_keys:
+                        key = ref_to_keys[normalize_name(input_val)]
                         self.edges[count_edges] = (key, sub_key)
                         count_edges += 1
 
@@ -196,11 +200,12 @@ class DAGAnalyzer(ASTTemplate):
         return [statements[x - 1] for x in self.sorting]  # type: ignore[union-attr]
 
     def check_overwriting(self, statements: list) -> None:
+        # Regular names are case-insensitive: DS_r and DS_R are the same output.
         seen: Set[str] = set()
         for statement in statements:
-            if statement.left.value in seen:
+            if normalize_name(statement.left.value) in seen:
                 raise SemanticError("1-2-2", varId_value=statement.left.value)
-            seen.add(statement.left.value)
+            seen.add(normalize_name(statement.left.value))
 
     def sort_ast(self, ast: AST) -> None:
         statements_nodes = ast.children
@@ -290,13 +295,11 @@ class DAGAnalyzer(ASTTemplate):
         self.visit(node.dataset)
         if node.op in [KEEP, DROP, RENAME]:
             return
-        saved_is_dataset = self.is_dataset
         self.is_dataset = False
         for child in node.children:
             self.is_from_regular_aggregation = True
             self.visit(child)
             self.is_from_regular_aggregation = False
-        self.is_dataset = saved_is_dataset
 
     def visit_BinOp(self, node: BinOp) -> None:
         if node.op == MEMBERSHIP:
@@ -306,20 +309,20 @@ class DAGAnalyzer(ASTTemplate):
             self.visit(node.right)
         elif node.op == AS or node.op == TO:
             self.visit(node.left)
-            self.alias.add(node.right.value)
+            self.alias.add(normalize_name(node.right.value))
         else:
             self.visit(node.left)
             self.visit(node.right)
 
     def visit_VarID(self, node: VarID) -> None:
-        if (
-            not self.is_from_regular_aggregation or self.is_dataset
-        ) and node.value not in self.alias:
+        if (not self.is_from_regular_aggregation or self.is_dataset) and normalize_name(
+            node.value
+        ) not in self.alias:
             if node.value not in self.current_deps.inputs:
                 self.current_deps.inputs.append(node.value)
         elif (
             self.is_from_regular_aggregation
-            and node.value not in self.alias
+            and normalize_name(node.value) not in self.alias
             and not self.is_dataset
             and node.value not in self.current_deps.unknown_variables
         ):
@@ -328,7 +331,7 @@ class DAGAnalyzer(ASTTemplate):
     def visit_Identifier(self, node: Identifier) -> None:
         if (
             node.kind == "DatasetID"
-            and node.value not in self.alias
+            and normalize_name(node.value) not in self.alias
             and node.value not in self.current_deps.inputs
         ):
             self.current_deps.inputs.append(node.value)

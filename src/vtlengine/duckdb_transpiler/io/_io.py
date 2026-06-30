@@ -31,7 +31,7 @@ from vtlengine.files.sdmx_handler import (
     is_sdmx_datapoint_file,
     load_sdmx_datapoints,
 )
-from vtlengine.Model import Component, Dataset, Role, Scalar
+from vtlengine.Model import CaseInsensitiveDict, Component, Dataset, Role, Scalar
 
 
 def _skip_load_validation() -> bool:
@@ -468,8 +468,10 @@ def extract_datapoint_paths(
     if datapoints is None:
         return None, {}
 
-    path_dict: Dict[str, Path] = {}
-    df_dict: Dict[str, pd.DataFrame] = {}
+    # Regular names are case-insensitive: key by-name lookups must match the
+    # dataset name regardless of the casing the user used for the datapoint key.
+    path_dict: CaseInsensitiveDict[Path] = CaseInsensitiveDict()
+    df_dict: CaseInsensitiveDict[pd.DataFrame] = CaseInsensitiveDict()
 
     # Handle dictionary input
     if isinstance(datapoints, dict):

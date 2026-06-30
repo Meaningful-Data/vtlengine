@@ -1,9 +1,10 @@
 import inspect
 import json
 from collections import Counter
+from copy import deepcopy
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any, Dict, Iterator, List, Optional, Tuple, Type, TypeVar, Union
 
 import pandas as pd
 import sqlglot
@@ -15,6 +16,160 @@ import vtlengine.DataTypes as DataTypes
 from vtlengine.DataTypes import SCALAR_TYPES, ScalarType
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.Exceptions import InputValidationException, SemanticError
+
+V = TypeVar("V")
+
+
+def normalize_name(name: str) -> str:
+    """Canonical form of a VTL regular name, used for case-insensitive matching."""
+    return name.casefold()
+
+
+def names_equal(a: Optional[str], b: Optional[str]) -> bool:
+    """Case-insensitive equality of two VTL regular names (None-safe)."""
+    if a is None or b is None:
+        return a is b
+    return normalize_name(a) == normalize_name(b)
+
+
+class CaseInsensitiveDict(Dict[str, V]):
+    """A dict subclass that treats string keys as case-insensitive."""
+
+    def __init__(self, *args: Any, **kwargs: V) -> None:
+        self._key_map: Dict[str, str] = {}  # lowercase -> original key
+        super().__init__()
+        if args:
+            arg = args[0]
+            if isinstance(arg, dict):
+                for k, v in arg.items():
+                    self[k] = v
+            elif hasattr(arg, "__iter__"):
+                for k, v in arg:
+                    self[k] = v
+        for k, v in kwargs.items():
+            self[k] = v
+
+    def _normalize(self, key: str) -> str:
+        return normalize_name(key)
+
+    def __setitem__(self, key: str, value: V) -> None:
+        norm = self._normalize(key)
+        if norm not in self._key_map:
+            self._key_map[norm] = key
+        original = self._key_map[norm]
+        super().__setitem__(original, value)
+
+    def __getitem__(self, key: str) -> V:
+        norm = self._normalize(key)
+        if norm not in self._key_map:
+            raise KeyError(key)
+        return super().__getitem__(self._key_map[norm])
+
+    def __contains__(self, key: object) -> bool:
+        if not isinstance(key, str):
+            return False
+        return self._normalize(key) in self._key_map
+
+    def __delitem__(self, key: str) -> None:
+        norm = self._normalize(key)
+        if norm not in self._key_map:
+            raise KeyError(key)
+        original = self._key_map.pop(norm)
+        super().__delitem__(original)
+
+    def get(self, key: str, default: Optional[V] = None) -> Optional[V]:  # type: ignore[override]
+        norm = self._normalize(key)
+        if norm not in self._key_map:
+            return default
+        return super().__getitem__(self._key_map[norm])
+
+    def pop(self, key: str, *args: V) -> V:  # type: ignore[override]
+        norm = self._normalize(key)
+        if norm not in self._key_map:
+            if args:
+                return args[0]
+            raise KeyError(key)
+        original = self._key_map.pop(norm)
+        return super().pop(original)
+
+    def setdefault(self, key: str, default: Optional[V] = None) -> V:
+        norm = self._normalize(key)
+        if norm not in self._key_map:
+            self[key] = default  # type: ignore[assignment]
+        return self[key]
+
+    def update(self, *args: Any, **kwargs: V) -> None:
+        if args:
+            other = args[0]
+            if isinstance(other, dict):
+                for k, v in other.items():
+                    self[k] = v
+            elif hasattr(other, "__iter__"):
+                for k, v in other:
+                    self[k] = v
+        for k, v in kwargs.items():
+            self[k] = v
+
+    def canonical_key(self, key: str) -> str:
+        """Return the original-case key for a given (possibly different-case) key.
+
+        Raises KeyError if the key doesn't exist.
+        """
+        norm = self._normalize(key)
+        if norm not in self._key_map:
+            raise KeyError(key)
+        return self._key_map[norm]
+
+    def __iter__(self) -> Iterator[str]:
+        return super().__iter__()
+
+    def copy(self) -> "CaseInsensitiveDict[V]":
+        result: CaseInsensitiveDict[V] = CaseInsensitiveDict()
+        result._key_map = self._key_map.copy()
+        for key in dict.keys(self):
+            dict.__setitem__(result, key, dict.__getitem__(self, key))
+        return result
+
+    def __repr__(self) -> str:
+        return f"CaseInsensitiveDict({dict(self.items())})"
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, CaseInsensitiveDict):
+            return dict.__eq__(self, other)
+        if isinstance(other, dict):
+            if len(self) != len(other):
+                return False
+            return all(k in self and self[k] == v for k, v in other.items())
+        return NotImplemented
+
+    def __deepcopy__(self, memo: Dict[int, Any]) -> "CaseInsensitiveDict[V]":
+        new: CaseInsensitiveDict[V] = CaseInsensitiveDict.__new__(CaseInsensitiveDict)
+        memo[id(self)] = new
+        dict.__init__(new)
+        new._key_map = deepcopy(self._key_map, memo)
+        for key in dict.keys(self):
+            dict.__setitem__(new, key, deepcopy(dict.__getitem__(self, key), memo))
+        return new
+
+    def __copy__(self) -> "CaseInsensitiveDict[V]":
+        new: CaseInsensitiveDict[V] = CaseInsensitiveDict.__new__(CaseInsensitiveDict)
+        dict.__init__(new)
+        new._key_map = self._key_map.copy()
+        for key in dict.keys(self):
+            dict.__setitem__(new, key, dict.__getitem__(self, key))
+        return new
+
+    @classmethod
+    def from_dict(cls, d: Dict[str, V]) -> "CaseInsensitiveDict[V]":
+        """Create a CaseInsensitiveDict from a regular dict."""
+        return cls(d)
+
+    def to_dict(self) -> Dict[str, V]:
+        """Convert back to a regular dict with original-cased keys."""
+        return dict(self.items())
+
+    def __reduce__(self) -> Tuple[type, Tuple[Dict[str, V]]]:
+        return (CaseInsensitiveDict, (dict(self.items()),))
 
 
 @dataclass
@@ -220,6 +375,8 @@ class Dataset:
     persistent: bool = False
 
     def __post_init__(self) -> None:
+        if not isinstance(self.components, CaseInsensitiveDict):
+            self.components = CaseInsensitiveDict(self.components)
         if self.data is not None:
             if len(self.components) != len(self.data.columns):
                 raise ValueError(
@@ -339,7 +496,8 @@ class Dataset:
         self.components[component.name] = component
 
     def delete_component(self, component_name: str) -> None:
-        self.components.pop(component_name, None)
+        if component_name in self.components:
+            del self.components[component_name]
         if self.data is not None:
             self.data.drop(columns=[component_name], inplace=True)
 
