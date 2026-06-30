@@ -69,7 +69,7 @@ dev = [
     "coverage>=7.14.0,<8.0",
     "pytest-xdist>=3.8.0,<4.0",
     "mypy>=1.18,<2.0",
-    "pyarrow-stubs>=14.0,<25.0",
+    "pyarrow-stubs>=20.0.0.20260625,<25.0",
     "pandas-stubs>2.1.4.231227,<2.2.3.240901; python_version < '3.10'",
     "pandas-stubs>=2.2.3.241009,<3.0.0.260204; python_version >= '3.10'",
     "ruff>=0.15.12,<1.0.0",
