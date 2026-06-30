@@ -1580,31 +1580,31 @@ windows-terminal = ["colorama (>=0.4.6)"]
 
 [[package]]
 name = "pysdmx"
-version = "1.15.1"
+version = "1.17.0"
 description = "Your opinionated Python SDMX library"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "pysdmx-1.15.1-py3-none-any.whl", hash = "sha256:2b378dcadd4c38ab75c1b37e8c7aede67a24ab80268b28e5e27ba4d2814361d0"},
-    {file = "pysdmx-1.15.1.tar.gz", hash = "sha256:f1b7682eb3b7c9bc5987779ecf49829554efdb22def2fc3c86b127398b90a6b6"},
+    {file = "pysdmx-1.17.0-py3-none-any.whl", hash = "sha256:95f6d9f3d53e0e9b9df5e1be759ada0b1b65f7b502070bb25e08a09b5b882ca4"},
+    {file = "pysdmx-1.17.0.tar.gz", hash = "sha256:cf20508beb101ff34ee9339ee4d2200561f6ee5cc89ee18cdcfafbbd6934d2fa"},
 ]
 
 [package.dependencies]
-httpx = {version = ">=0", extras = ["http2"]}
-lxml = {version = ">=5.2", optional = true, markers = "extra == \"xml\""}
-msgspec = ">=0"
+httpx = {version = ">=0.28.1", extras = ["http2"]}
+lxml = {version = ">=6.1.0", optional = true, markers = "extra == \"xml\""}
+msgspec = ">=0.20.0"
 parsy = ">=2.1"
 sdmxschemas = {version = ">=1.0.0", optional = true, markers = "extra == \"xml\""}
 xmltodict = {version = ">=0.13", optional = true, markers = "extra == \"xml\""}
 
 [package.extras]
-all = ["lxml (>=5.2)", "numpy (>=2.0.2,<2.1) ; python_version < \"3.10\"", "numpy (>=2.1.0,<2.3) ; python_version >= \"3.10\"", "pandas (>=2.1.4)", "pyarrow (>=14.0,<20.0) ; python_version < \"3.10\"", "pyarrow (>=14.0,<25.0) ; python_version >= \"3.10\"", "python-dateutil (>=2.8.2)", "sdmxschemas (>=1.0.0)", "vtlengine (>=1.6.2,<2.0)", "xmltodict (>=0.13)"]
-data = ["numpy (>=2.0.2,<2.1) ; python_version < \"3.10\"", "numpy (>=2.1.0,<2.3) ; python_version >= \"3.10\"", "pandas (>=2.1.4)", "pyarrow (>=14.0,<20.0) ; python_version < \"3.10\"", "pyarrow (>=14.0,<25.0) ; python_version >= \"3.10\""]
+all = ["lxml (>=6.1.0)", "numpy (>=2.0.2,<2.1) ; python_version < \"3.10\"", "numpy (>=2.1.0,<2.3) ; python_version >= \"3.10\"", "pandas (>=2.1.4)", "python-dateutil (>=2.8.2)", "sdmxschemas (>=1.0.0)", "vtlengine (>=1.8.0,<2.0)", "xmltodict (>=0.13)"]
+data = ["numpy (>=2.0.2,<2.1) ; python_version < \"3.10\"", "numpy (>=2.1.0,<2.3) ; python_version >= \"3.10\"", "pandas (>=2.1.4)", "pyarrow (>=14.0,<20.0) ; python_version < \"3.10\"", "pyarrow (>=14.0,<25.0) ; python_version >= \"3.10\" and python_version < \"3.14\"", "pyarrow (>=22.0,<25.0) ; python_version >= \"3.14\""]
 dc = ["python-dateutil (>=2.8.2)"]
 json = ["jsonschema (>=4.10)", "sdmxschemas (>=1.0.0)"]
-vtl = ["vtlengine (>=1.6.2,<2.0)"]
-xml = ["lxml (>=5.2)", "sdmxschemas (>=1.0.0)", "xmltodict (>=0.13)"]
+vtl = ["vtlengine (>=1.8.0,<2.0)"]
+xml = ["lxml (>=6.1.0)", "sdmxschemas (>=1.0.0)", "xmltodict (>=0.13)"]
 
 [[package]]
 name = "pytest"
@@ -2292,4 +2292,4 @@ test = ["pytest", "pytest-cov"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4.0"
-content-hash = "c915b5fb5fb58109f9ac6ae3942007ed23639661e894b97903f93035e943f387"
+content-hash = "16cc603ae77e4ed710171a747fb016623b6517f1951af5857757754952a06224"
