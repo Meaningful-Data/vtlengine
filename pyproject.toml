@@ -43,7 +43,12 @@ dependencies = [
     "pyarrow>=14.0,<25.0; python_version >= '3.10' and python_version < '3.14'",
     "pyarrow>=22.0,<25.0; python_version >= '3.14'",
     "numpy>=2.0.2,<2.1; python_version < '3.10'",
-    "numpy>=2.2.0,<2.5; python_version >= '3.10'",
+    # Split so no single numpy version covers the whole range: 2.2.x is the last
+    # series supporting 3.10 but ships no cp314 wheels, so pin >=3.11 to 2.4.x
+    # (which has them). This keeps Dependabot lock regenerations from collapsing
+    # numpy to 2.2.6 for all versions and breaking the Python 3.14 build.
+    "numpy>=2.2.0,<2.5; python_version == '3.10'",
+    "numpy>=2.4.4,<2.5; python_version >= '3.11'",
 ]
 
 [project.urls]
