@@ -73,7 +73,7 @@ dev = [
     "pandas-stubs>2.1.4.231227,<2.2.3.240901; python_version < '3.10'",
     "pandas-stubs>=2.2.3.241009,<3.0.0.260204; python_version >= '3.10'",
     "ruff>=0.15.12,<1.0.0",
-    "types-jsonschema>=4.25.1,<5.0",
+    "types-jsonschema>=4.26.0.20260518,<5.0",
 ]
 docs = [
     "sphinx>=9.1.0,<10.0; python_version == '3.13'",
