@@ -19,8 +19,9 @@ from vtlengine.DataTypes import (
 from vtlengine.DataTypes import String as StringType
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.duckdb_transpiler.Transpiler.sql_builder import quote_name
-from vtlengine.Model import Component, Dataset, Role
+from vtlengine.Model import Component, Dataset, Role, ValueDomain
 from vtlengine.Operators.Join import merged_viral_attribute_names
+from vtlengine.Operators.Validation import resolve_error_types
 
 
 def _try_normalize_time_period(value: str) -> Optional[str]:
@@ -59,6 +60,7 @@ class StructureVisitor(ASTTemplate):
             **self.output_datasets,
         }
         self.scalars: Dict[str, Any] = scalars or {}
+        self.value_domains: Dict[str, ValueDomain] = {}
         self.current_assignment: str = ""
         self._in_clause: bool = False
         self._current_dataset: Optional[Dataset] = None
@@ -533,7 +535,6 @@ class StructureVisitor(ASTTemplate):
         val_comps = self._identifiers_dict(inner_ds)
         self._add_error_measures(
             val_comps,
-            errorlevel_type=Integer,
             with_ruleid=False,
             with_bool_var=True,
         )
@@ -564,19 +565,19 @@ class StructureVisitor(ASTTemplate):
         self,
         comps: Dict[str, Component],
         *,
-        errorlevel_type: Any = Number,
         with_ruleid: bool = True,
         with_imbalance: bool = True,
         with_bool_var: bool = False,
     ) -> None:
         """Append the standard validation/hierarchy error-reporting measures."""
+        errorcode_type, errorlevel_type = resolve_error_types(self.value_domains)
         if with_bool_var:
             comps["bool_var"] = self._make_comp("bool_var", Boolean)
         if with_imbalance:
             comps["imbalance"] = self._make_comp("imbalance", Number)
         if with_ruleid:
             comps["ruleid"] = self._make_comp("ruleid", StringType, Role.IDENTIFIER, False)
-        comps["errorcode"] = self._make_comp("errorcode", StringType)
+        comps["errorcode"] = self._make_comp("errorcode", errorcode_type)
         comps["errorlevel"] = self._make_comp("errorlevel", errorlevel_type)
 
     # =========================================================================

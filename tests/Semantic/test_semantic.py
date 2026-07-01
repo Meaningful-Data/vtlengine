@@ -3094,3 +3094,23 @@ def test_exists_in_incompatible_identifiers() -> None:
     with pytest.raises(SemanticError) as ctx:
         semantic_analysis(script=script, data_structures=_INCOMPATIBLE_IDS_STRUCTURES)
     assert ctx.value.args[1] == "1-2-15"
+
+
+class ValueDomainSignatureTests(SemanticHelper):
+    classTest = "Semantictests.ValueDomainSignatureTests"
+
+    def test_datapoint_value_domain_signature_matching(self):
+        code = "GH_632_1"
+        self.BaseTest(code=code, number_inputs=1, references_names=["1"], only_semantic=True)
+
+    def test_datapoint_value_domain_signature_mismatch(self):
+        code = "GH_632_2"
+        self.NewSemanticExceptionTest(code=code, number_inputs=1, exception_code="1-1-10-11")
+
+    def test_hierarchy_value_domain_signature_matching(self):
+        code = "GH_632_3"
+        self.BaseTest(code=code, number_inputs=1, references_names=["1"], only_semantic=True)
+
+    def test_hierarchy_value_domain_signature_mismatch(self):
+        code = "GH_632_4"
+        self.NewSemanticExceptionTest(code=code, number_inputs=1, exception_code="1-1-10-11")

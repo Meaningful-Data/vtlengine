@@ -51,15 +51,11 @@ class ViralPropagationRegistry:
         return rules.get(target)
 
     def rule_for(self, component: Any) -> Optional["ViralPropagationRule"]:
-        """Resolve the rule for a component: variable-level overrides value-domain-level.
-
-        ``component.value_domain`` may not exist yet (added in a later phase); use
-        getattr so this is forward-compatible.
-        """
+        """Resolve the rule for a component: variable-level overrides value-domain-level."""
         rule = self._variable_rules.get(component.name)
         if rule is not None:
             return rule
-        value_domain = getattr(component, "value_domain", None)
+        value_domain = component.value_domain
         if value_domain is not None:
             return self._valuedomain_rules.get(value_domain)
         return None

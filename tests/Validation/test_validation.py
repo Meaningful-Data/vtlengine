@@ -364,7 +364,12 @@ class ValidationOperatorsTests(ValidationHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["errorlevel_vd_str"],
+        )
 
     def test_14(self):
         """
@@ -470,7 +475,12 @@ class ValidationOperatorsTests(ValidationHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["errorlevel_vd_bool"],
+        )
 
     def test_GH_598_3_roundtrip(self):
         """
@@ -487,5 +497,9 @@ class ValidationOperatorsTests(ValidationHelper):
         text = self.LoadVTL(code)
         rendered = ASTString().render(create_ast(text))
         self.BaseTest(
-            code=code, number_inputs=number_inputs, references_names=references_names, text=rendered
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            text=rendered,
+            vd_names=["errorlevel_vd_bool"],
         )

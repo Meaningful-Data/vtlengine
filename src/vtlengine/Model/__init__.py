@@ -166,6 +166,7 @@ class Component:
     data_type: Type[ScalarType]
     role: Role
     nullable: bool
+    value_domain: Optional[str] = None
 
     def __post_init__(self) -> None:
         if self.role == Role.IDENTIFIER and self.nullable:
@@ -175,7 +176,7 @@ class Component:
         return self.to_dict() == other.to_dict()
 
     def copy(self) -> "Component":
-        return Component(self.name, self.data_type, self.role, self.nullable)
+        return Component(self.name, self.data_type, self.role, self.nullable, self.value_domain)
 
     @classmethod
     def from_json(cls, json_str: Any) -> "Component":
@@ -186,19 +187,23 @@ class Component:
             SCALAR_TYPES[data_type_value],
             Role(json_str["role"]),
             json_str["nullable"],
+            json_str.get("subset"),
         )
 
     def to_dict(self) -> Dict[str, Any]:
         data_type = self.data_type
         if not inspect.isclass(self.data_type):
             data_type = self.data_type.__class__  # type: ignore[assignment]
-        return {
+        result: Dict[str, Any] = {
             "name": self.name,
             "type": DataTypes.SCALAR_TYPES_CLASS_REVERSE[data_type],
             # Need to check here for NoneType as UDO argument has it
             "role": self.role.value if self.role is not None else None,  # type: ignore[redundant-expr]
             "nullable": self.nullable,
         }
+        if self.value_domain is not None:
+            result["subset"] = self.value_domain
+        return result
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict())

@@ -1,0 +1,4 @@
+define hierarchical ruleset hr1 ( valuedomain rule Geo ) is
+    EU = BE + LU + NL
+end hierarchical ruleset;
+DS_r <- check_hierarchy ( DS_1, hr1 rule Id_2 all );

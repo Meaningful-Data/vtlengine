@@ -89,6 +89,7 @@ def _build_component(component: Dict[str, Any]) -> VTL_Component:
         data_type=scalar_type,
         role=role,
         nullable=nullable,
+        value_domain=component.get("subset"),
     )
 
 

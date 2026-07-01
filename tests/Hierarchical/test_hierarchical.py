@@ -1460,7 +1460,12 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["errorlevel_vd_bool"],
+        )
 
     def test_GH_598_1_roundtrip(self):
         """
@@ -1477,7 +1482,11 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         text = self.LoadVTL(code)
         rendered = ASTString().render(create_ast(text))
         self.BaseTest(
-            code=code, number_inputs=number_inputs, references_names=references_names, text=rendered
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            text=rendered,
+            vd_names=["errorlevel_vd_bool"],
         )
 
 
