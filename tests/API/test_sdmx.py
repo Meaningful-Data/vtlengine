@@ -18,7 +18,7 @@ from pysdmx.io import get_datasets
 from pysdmx.io.pd import PandasDataset
 from pysdmx.model import DataflowRef, Reference, Ruleset, TransformationScheme, UserDefinedOperator
 from pysdmx.model.dataflow import Dataflow, Schema
-from pysdmx.model.vtl import VtlDataflowMapping
+from pysdmx.model.vtl import VtlDataflowMapping, VtlMappingScheme
 
 from tests.Helper import TestHelper
 from vtlengine.API import generate_sdmx, prettify, run, run_sdmx, semantic_analysis
@@ -38,6 +38,7 @@ filepath_json = base_path / "data" / "DataStructure" / "input"
 class SDMXTestHelper(TestHelper):
     """Helper class for SDMX tests with output loading support."""
 
+    filepath_VTL = base_path / "data" / "vtl"
     filepath_out_json = base_path / "data" / "DataStructure" / "output"
     filepath_out_csv = base_path / "data" / "DataSet" / "output"
     ds_input_prefix = "DS_"
@@ -1842,3 +1843,111 @@ def test_run_sdmx_invalid_type_duckdb():
     script = "DS_r := BIS_DER [calc Me_4 := OBS_VALUE];"
     with pytest.raises(InputValidationException, match="0-1-3-7"):
         run_sdmx(script, "not a dataset")  # type: ignore[arg-type]
+
+
+# =============================================================================
+# One SDMX Dataflow -> multiple VTL datasets, and explicit inputs in run_sdmx
+# =============================================================================
+
+df_data_file = filepath_sdmx_input / "str_all_minimal_df.xml"
+df_structure_file = filepath_sdmx_input / "metadata_minimal_df.xml"
+df_short_urn = "Dataflow=MD:TEST_DF(1.0)"
+
+
+def _df_datasets():
+    return get_datasets(data=df_data_file, structure=df_structure_file)
+
+
+# The same dataflow mapped to DS_1 and DS_2, expressed in the three accepted forms.
+_df_mapping_seq = [
+    VtlDataflowMapping(dataflow=df_short_urn, dataflow_alias="DS_1", id="m1"),
+    VtlDataflowMapping(dataflow=df_short_urn, dataflow_alias="DS_2", id="m2"),
+]
+params_run_sdmx_one_to_many = [
+    {df_short_urn: ["DS_1", "DS_2"]},
+    _df_mapping_seq,
+    VtlMappingScheme(id="MS", agency="MD", items=_df_mapping_seq),
+]
+
+
+@pytest.mark.parametrize("mappings", params_run_sdmx_one_to_many)
+def test_run_sdmx_one_dataflow_to_two_datasets(mappings):
+    """One SDMX dataflow feeds two VTL datasets (dict list, mapping sequence, scheme)."""
+    result = run_sdmx(
+        SDMXTestHelper.LoadVTL("3-1"),
+        _df_datasets(),
+        mappings=mappings,
+        return_only_persistent=False,
+    )
+    reference = SDMXTestHelper.LoadOutputs("3-1", ["DS_r1", "DS_r2"])
+    assert result == reference
+
+
+def test_run_sdmx_with_explicit_data_structures_and_datapoints():
+    """Extra VTL dataset (structure + data files) merged alongside an SDMX dataflow."""
+    result = run_sdmx(
+        SDMXTestHelper.LoadVTL("3-2"),
+        _df_datasets(),
+        mappings={df_short_urn: "DS_1"},
+        data_structures=filepath_json / "3-2-extra.json",
+        datapoints={"DS_extra": filepath_csv / "3-2-extra.csv"},
+        return_only_persistent=False,
+    )
+    reference = SDMXTestHelper.LoadOutputs("3-2", ["DS_r1", "DS_r2"])
+    assert result == reference
+
+
+def test_run_sdmx_duplicate_datapoint_name_raises():
+    with pytest.raises(InputValidationException, match="0-1-3-9"):
+        run_sdmx(
+            "DS_r1 := DS_1;",
+            _df_datasets(),
+            mappings={df_short_urn: "DS_1"},
+            datapoints={"DS_1": pd.DataFrame()},
+            return_only_persistent=False,
+        )
+
+
+def test_run_sdmx_non_dict_datapoints_with_sdmx_raises():
+    with pytest.raises(InputValidationException, match="0-1-3-10"):
+        run_sdmx(
+            "DS_r1 := DS_1; DS_r2 := DS_2;",
+            _df_datasets(),
+            mappings={df_short_urn: "DS_1"},
+            datapoints=[filepath_csv / "DS_1.csv"],
+            return_only_persistent=False,
+        )
+
+
+def test_run_sdmx_duplicate_alias_across_dataflows_raises():
+    with pytest.raises(InputValidationException, match="0-1-3-11"):
+        run_sdmx(
+            "DS_r1 := DS_1;",
+            _df_datasets(),
+            mappings={
+                "Dataflow=MD:DF_A(1.0)": ["DS_1"],
+                "Dataflow=MD:DF_B(1.0)": ["DS_1"],
+            },
+            return_only_persistent=False,
+        )
+
+
+def test_run_sdmx_duplicate_structure_name_raises():
+    ds1_structure = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                ],
+            }
+        ]
+    }
+    with pytest.raises(InputValidationException, match="0-1-3-9"):
+        run_sdmx(
+            "DS_r1 := DS_1;",
+            _df_datasets(),
+            mappings={df_short_urn: "DS_1"},
+            data_structures=ds1_structure,
+            return_only_persistent=False,
+        )
