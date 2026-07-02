@@ -141,6 +141,18 @@ centralised_messages = {
         "description": "Raised when the type of input Datasets is incorrect; "
         "a sequence of PandasDataset is expected.",
     },
+    "0-1-3-9": {
+        "message": "Duplicate dataset name(s) {names} provided both by SDMX datasets and "
+        "explicit datapoints.",
+        "description": "Raised when an explicit datapoints entry uses a dataset name that is "
+        "already provided by one of the SDMX datasets.",
+    },
+    "0-1-3-10": {
+        "message": "Explicit datapoints must be a dict of dataset name to data when SDMX "
+        "datasets are provided.",
+        "description": "Raised when non-dict datapoints (list, path or URL) are combined with "
+        "SDMX datasets, which carry no dataset name to merge on.",
+    },
     # JSON Schema errors
     "0-2-1-1": {
         "message": "The JSON of {element} does not follow the required JSON Schema: {error}",
