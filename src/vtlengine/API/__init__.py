@@ -1,12 +1,11 @@
 import copy
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Sequence, Union, cast
+from typing import Any, Dict, List, Literal, Optional, Sequence, Union
 
 import pandas as pd
 from pysdmx.io.pd import PandasDataset
 from pysdmx.model import TransformationScheme
 from pysdmx.model.dataflow import Dataflow, DataStructureDefinition, Schema
-from pysdmx.model.vtl import VtlDataflowMapping
 
 from vtlengine.API._InternalApi import (
     _check_script,
@@ -19,7 +18,15 @@ from vtlengine.API._InternalApi import (
     load_value_domains,
     load_vtl,
 )
-from vtlengine.API._sdmx_utils import _build_mapping_dict, _convert_sdmx_mappings
+from vtlengine.API._sdmx_utils import (
+    DatapointsInput,
+    DataStructuresInput,
+    MappingsInput,
+    _build_mapping_dict,
+    _convert_sdmx_mappings,
+    _merge_sdmx_data_structures,
+    _merge_sdmx_datapoints,
+)
 from vtlengine.AST import Start
 from vtlengine.AST.ASTConstructor import ASTVisitor
 from vtlengine.AST.ASTString import ASTString
@@ -171,7 +178,7 @@ def semantic_analysis(
     external_routines: Optional[
         Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
     ] = None,
-    sdmx_mappings: Optional[Union[VtlDataflowMapping, Dict[str, str]]] = None,
+    sdmx_mappings: Optional[MappingsInput] = None,
 ) -> Dict[str, Dataset]:
     """
     Checks if the vtl scripts and its related datastructures are valid. As part of the compatibility
@@ -270,7 +277,7 @@ def run(
     return_only_persistent: bool = True,
     output_folder: Optional[Union[str, Path]] = None,
     scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
-    sdmx_mappings: Optional[Union[VtlDataflowMapping, Dict[str, str]]] = None,
+    sdmx_mappings: Optional[MappingsInput] = None,
     output_format: Literal["csv", "parquet"] = "csv",
 ) -> Dict[str, Union[Dataset, Scalar]]:
     """
@@ -485,7 +492,9 @@ def run(
 def run_sdmx(
     script: Union[str, TransformationScheme, Path],
     datasets: Sequence[PandasDataset],
-    mappings: Optional[Union[VtlDataflowMapping, Dict[str, str]]] = None,
+    mappings: Optional[MappingsInput] = None,
+    data_structures: Optional[DataStructuresInput] = None,
+    datapoints: Optional[DatapointsInput] = None,
     value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
     external_routines: Optional[
         Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
@@ -517,6 +526,19 @@ def run_sdmx(
         the script. See `PandasDataset
         <https://py.sdmx.io/howto/io_data.html>`_ in the pysdmx documentation.
 
+    .. important::
+        A single SDMX dataflow can feed several VTL datasets: map its short-URN
+        to a list of VTL names (``{"Dataflow=MD:DF(1.0)": ["DS_1", "DS_2"]}``),
+        pass several ``VtlDataflowMapping`` objects that share the same dataflow
+        with different ``dataflow_alias``, or pass a ``VtlMappingScheme``.
+
+    .. important::
+        ``data_structures`` and ``datapoints`` let you supply extra VTL inputs
+        (plain VTL JSON structures, CSV/parquet paths or DataFrames) alongside the
+        SDMX datasets, mirroring :obj:`run <vtlengine.API>`. They are merged with the
+        SDMX-derived inputs; ``datapoints`` must be a dict keyed by dataset name when
+        SDMX datasets are also present, and a name may not be provided twice.
+
     The function then calls the :obj:`run <vtlengine.API>` function with the provided VTL
     script and prepared inputs.
 
@@ -528,7 +550,16 @@ def run_sdmx(
 
         datasets: A list of PandasDataset.
 
-        mappings: A dictionary or VtlDataflowMapping object that maps the dataset names.
+        mappings: Mapping from SDMX dataflows to VTL dataset names. Accepts a dict \
+        (``{short_urn: name}`` or ``{short_urn: [name, ...]}``), a ``VtlDataflowMapping``, \
+        a sequence of ``VtlDataflowMapping``, or a ``VtlMappingScheme``. (default: None)
+
+        data_structures: Optional extra data structures merged with the SDMX-derived ones, \
+        using the same forms accepted by :obj:`run <vtlengine.API>`. (default: None)
+
+        datapoints: Optional extra datapoints merged with the SDMX-derived ones, using the \
+        same forms accepted by :obj:`run <vtlengine.API>`. Must be a dict keyed by dataset \
+        name when SDMX datasets are also provided. (default: None)
 
         value_domains: Dict or Path, or List of Dicts or Paths of the \
         value domains JSON files. (default:None) It is passed as an object, that can be read from \
@@ -571,17 +602,19 @@ def run_sdmx(
             type_ = f"{type_}[{', '.join(object_typing)}]"
         raise InputValidationException(code="0-1-3-7", type_=type_)
 
-    # Build mapping from SDMX URNs to VTL dataset names
+    # Build mapping from SDMX URNs to the VTL dataset names they feed (one-to-many)
     input_names = _extract_input_datasets(script)
     mapping_dict = _build_mapping_dict(datasets, mappings, input_names)
 
     # Validate all mapped names exist in the script
-    for vtl_name in mapping_dict.values():
-        if vtl_name not in input_names:
-            raise InputValidationException(code="0-1-3-5", dataset_name=vtl_name)
+    for vtl_names in mapping_dict.values():
+        for vtl_name in vtl_names:
+            if vtl_name not in input_names:
+                raise InputValidationException(code="0-1-3-5", dataset_name=vtl_name)
 
-    # Convert PandasDatasets to VTL data structures and datapoints
-    datapoints_dict: Dict[str, pd.DataFrame] = {}
+    # Convert PandasDatasets to VTL data structures and datapoints, fanning out each
+    # dataflow to every VTL dataset name it is mapped to.
+    datapoints_dict: Dict[str, Union[pd.DataFrame, str, Path]] = {}
     data_structures_list: List[Dict[str, Any]] = []
     for dataset in datasets:
         schema = dataset.structure
@@ -589,23 +622,26 @@ def run_sdmx(
             raise InputValidationException(code="0-1-3-2", schema=schema)
         if schema.short_urn not in mapping_dict:
             raise InputValidationException(code="0-1-3-4", short_urn=schema.short_urn)
-        dataset_name = mapping_dict[schema.short_urn]
-        vtl_structure = to_vtl_json(schema, dataset_name)
-        data_structures_list.append(vtl_structure)
-        datapoints_dict[dataset_name] = dataset.data
+        for dataset_name in mapping_dict[schema.short_urn]:
+            data_structures_list.append(to_vtl_json(schema, dataset_name))
+            datapoints_dict[dataset_name] = dataset.data
 
-    # Validate all script inputs are mapped
-    missing = [name for name in input_names if name not in mapping_dict.values()]
-    if missing:
-        raise InputValidationException(code="0-1-3-6", missing=missing)
+    # Merge explicitly-provided structures and datapoints with the SDMX-derived ones
+    combined_structures = _merge_sdmx_data_structures(data_structures_list, data_structures)
+    combined_datapoints = _merge_sdmx_datapoints(datapoints_dict, datapoints)
+
+    # Validate all script inputs are provided (via mapping or explicit datapoints)
+    provided_names = {name for names in mapping_dict.values() for name in names}
+    if isinstance(combined_datapoints, dict):
+        provided_names |= set(combined_datapoints)
+        missing = [name for name in input_names if name not in provided_names]
+        if missing:
+            raise InputValidationException(code="0-1-3-6", missing=missing)
 
     return run(
         script=script,
-        data_structures=cast(
-            List[Union[Dict[str, Any], Path, str, Schema, DataStructureDefinition, Dataflow]],
-            data_structures_list,
-        ),
-        datapoints=cast(Dict[str, Union[pd.DataFrame, str, Path]], datapoints_dict),
+        data_structures=combined_structures,
+        datapoints=combined_datapoints,
         value_domains=value_domains,
         external_routines=external_routines,
         time_period_output_format=time_period_output_format,
