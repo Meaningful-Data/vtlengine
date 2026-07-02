@@ -1917,3 +1917,37 @@ def test_run_sdmx_non_dict_datapoints_with_sdmx_raises():
             datapoints=[filepath_csv / "DS_1.csv"],
             return_only_persistent=False,
         )
+
+
+def test_run_sdmx_duplicate_alias_across_dataflows_raises():
+    with pytest.raises(InputValidationException, match="0-1-3-11"):
+        run_sdmx(
+            "DS_r1 := DS_1;",
+            _df_datasets(),
+            mappings={
+                "Dataflow=MD:DF_A(1.0)": ["DS_1"],
+                "Dataflow=MD:DF_B(1.0)": ["DS_1"],
+            },
+            return_only_persistent=False,
+        )
+
+
+def test_run_sdmx_duplicate_structure_name_raises():
+    ds1_structure = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                ],
+            }
+        ]
+    }
+    with pytest.raises(InputValidationException, match="0-1-3-9"):
+        run_sdmx(
+            "DS_r1 := DS_1;",
+            _df_datasets(),
+            mappings={df_short_urn: "DS_1"},
+            data_structures=ds1_structure,
+            return_only_persistent=False,
+        )

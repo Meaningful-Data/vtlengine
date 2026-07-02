@@ -179,8 +179,29 @@ def _build_mapping_dict(
             raise InputValidationException(code="0-1-3-2", schema=schema)
         return {schema.short_urn: [input_names[0]]}
 
-    normalized = _normalize_mappings(mappings)
-    return normalized if normalized is not None else {}
+    normalized = _normalize_mappings(mappings) or {}
+
+    # A VTL dataset name may come from exactly one dataflow; duplicates across (or within)
+    # dataflows would overwrite data silently.
+    all_names = [name for names in normalized.values() for name in names]
+    duplicates = sorted({name for name in all_names if all_names.count(name) > 1})
+    if duplicates:
+        raise InputValidationException(code="0-1-3-11", names=duplicates)
+
+    return normalized
+
+
+def _structure_dataset_names(structure: DataStructureItem) -> List[str]:
+    """Return the dataset/scalar names declared in a VTL JSON structure dict.
+
+    Only VTL JSON dicts expose their names cheaply; for other forms (Path, URL or
+    pysdmx objects) an empty list is returned and no collision check is performed.
+    """
+    if not isinstance(structure, dict):
+        return []
+    names = [ds["name"] for ds in structure.get("datasets", []) if "name" in ds]
+    names += [sc["name"] for sc in structure.get("scalars", []) if "name" in sc]
+    return names
 
 
 def _merge_sdmx_data_structures(
@@ -196,6 +217,10 @@ def _merge_sdmx_data_structures(
 
     Returns:
         A single list with the SDMX-derived structures first, followed by the extras.
+
+    Raises:
+        InputValidationException: On duplicate dataset names between the SDMX-derived
+            structures and dict-form extras (``0-1-3-9``).
     """
     combined: List[DataStructureItem] = list(sdmx_structures)
     if extra is None:
@@ -204,6 +229,13 @@ def _merge_sdmx_data_structures(
         combined.extend(extra)
     else:
         combined.append(extra)
+
+    seen: List[str] = []
+    for structure in combined:
+        seen.extend(_structure_dataset_names(structure))
+    duplicates = sorted({name for name in seen if seen.count(name) > 1})
+    if duplicates:
+        raise InputValidationException(code="0-1-3-9", names=duplicates)
     return combined
 
 

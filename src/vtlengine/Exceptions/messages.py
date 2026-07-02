@@ -143,15 +143,20 @@ centralised_messages = {
     },
     "0-1-3-9": {
         "message": "Duplicate dataset name(s) {names} provided both by SDMX datasets and "
-        "explicit datapoints.",
-        "description": "Raised when an explicit datapoints entry uses a dataset name that is "
-        "already provided by one of the SDMX datasets.",
+        "explicit inputs.",
+        "description": "Raised when an explicit data structure or datapoints entry uses a "
+        "dataset name that is already provided by one of the SDMX datasets.",
     },
     "0-1-3-10": {
         "message": "Explicit datapoints must be a dict of dataset name to data when SDMX "
         "datasets are provided.",
         "description": "Raised when non-dict datapoints (list, path or URL) are combined with "
         "SDMX datasets, which carry no dataset name to merge on.",
+    },
+    "0-1-3-11": {
+        "message": "VTL dataset name(s) {names} are mapped from more than one SDMX dataflow.",
+        "description": "Raised when the mappings assign the same VTL dataset name to more than "
+        "one SDMX dataflow, which would overwrite data silently.",
     },
     # JSON Schema errors
     "0-2-1-1": {
