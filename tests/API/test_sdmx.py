@@ -1951,3 +1951,15 @@ def test_run_sdmx_duplicate_structure_name_raises():
             data_structures=ds1_structure,
             return_only_persistent=False,
         )
+
+
+def test_run_sdmx_multiple_datasets_same_dataflow_raises():
+    # Two PandasDatasets sharing a short-URN would silently overwrite each other.
+    datasets = _df_datasets() + _df_datasets()
+    with pytest.raises(InputValidationException, match="0-1-3-12"):
+        run_sdmx(
+            "DS_r1 := DS_1; DS_r2 := DS_2;",
+            datasets,
+            mappings={df_short_urn: ["DS_1", "DS_2"]},
+            return_only_persistent=False,
+        )

@@ -616,12 +616,16 @@ def run_sdmx(
     # dataflow to every VTL dataset name it is mapped to.
     datapoints_dict: Dict[str, Union[pd.DataFrame, str, Path]] = {}
     data_structures_list: List[Dict[str, Any]] = []
+    seen_urns: set[str] = set()
     for dataset in datasets:
         schema = dataset.structure
         if not isinstance(schema, Schema):
             raise InputValidationException(code="0-1-3-2", schema=schema)
         if schema.short_urn not in mapping_dict:
             raise InputValidationException(code="0-1-3-4", short_urn=schema.short_urn)
+        if schema.short_urn in seen_urns:
+            raise InputValidationException(code="0-1-3-12", short_urn=schema.short_urn)
+        seen_urns.add(schema.short_urn)
         for dataset_name in mapping_dict[schema.short_urn]:
             data_structures_list.append(to_vtl_json(schema, dataset_name))
             datapoints_dict[dataset_name] = dataset.data

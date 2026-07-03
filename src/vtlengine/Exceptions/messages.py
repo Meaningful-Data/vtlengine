@@ -158,6 +158,12 @@ centralised_messages = {
         "description": "Raised when the mappings assign the same VTL dataset name to more than "
         "one SDMX dataflow, which would overwrite data silently.",
     },
+    "0-1-3-12": {
+        "message": "Multiple SDMX datasets share the short-URN {short_urn}; run_sdmx expects "
+        "one dataset per dataflow.",
+        "description": "Raised when more than one input PandasDataset resolves to the same "
+        "short-URN, which would silently overwrite the datapoints of the earlier one.",
+    },
     # JSON Schema errors
     "0-2-1-1": {
         "message": "The JSON of {element} does not follow the required JSON Schema: {error}",
