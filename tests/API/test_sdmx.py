@@ -1974,3 +1974,13 @@ def test_run_rejects_one_to_many_sdmx_mapping():
             datapoints={"DS_1": pd.DataFrame()},
             sdmx_mappings={df_short_urn: ["DS_1", "DS_2"]},
         )
+
+
+def test_run_sdmx_empty_mapping_list_raises():
+    with pytest.raises(InputValidationException, match="0-1-3-14"):
+        run_sdmx(
+            "DS_r1 := DS_1;",
+            _df_datasets(),
+            mappings={df_short_urn: []},
+            return_only_persistent=False,
+        )

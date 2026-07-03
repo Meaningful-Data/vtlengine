@@ -171,6 +171,11 @@ centralised_messages = {
         "more than one VTL dataset name to a single SDMX structure, which those functions "
         "cannot fan out.",
     },
+    "0-1-3-14": {
+        "message": "Mapping for {short_urn} must list at least one VTL dataset name.",
+        "description": "Raised when a mapping entry provides an empty list of VTL dataset "
+        "names for an SDMX dataflow.",
+    },
     # JSON Schema errors
     "0-2-1-1": {
         "message": "The JSON of {element} does not follow the required JSON Schema: {error}",

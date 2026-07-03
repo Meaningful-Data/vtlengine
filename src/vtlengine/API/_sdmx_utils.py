@@ -98,10 +98,13 @@ def _normalize_mappings(
     if mappings is None:
         return None
     if isinstance(mappings, dict):
-        return {
-            urn: [names] if isinstance(names, str) else list(names)
-            for urn, names in mappings.items()
-        }
+        normalized: Dict[str, List[str]] = {}
+        for urn, names in mappings.items():
+            name_list = [names] if isinstance(names, str) else list(names)
+            if not name_list:
+                raise InputValidationException(code="0-1-3-14", short_urn=urn)
+            normalized[urn] = name_list
+        return normalized
     if isinstance(mappings, VtlDataflowMapping):
         items: Sequence[VtlDataflowMapping] = [mappings]
     elif isinstance(mappings, VtlMappingScheme):
