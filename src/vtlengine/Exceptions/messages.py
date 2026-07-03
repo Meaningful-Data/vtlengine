@@ -142,10 +142,9 @@ centralised_messages = {
         "a sequence of PandasDataset is expected.",
     },
     "0-1-3-9": {
-        "message": "Duplicate dataset name(s) {names} provided both by SDMX datasets and "
-        "explicit inputs.",
-        "description": "Raised when an explicit data structure or datapoints entry uses a "
-        "dataset name that is already provided by one of the SDMX datasets.",
+        "message": "Duplicate dataset name(s) {names} in the combined SDMX and explicit inputs.",
+        "description": "Raised when a dataset name appears more than once across the SDMX "
+        "datasets and the explicit data structures, which would overwrite data silently.",
     },
     "0-1-3-10": {
         "message": "Explicit datapoints must be a dict of dataset name to data when SDMX "
@@ -154,9 +153,10 @@ centralised_messages = {
         "SDMX datasets, which carry no dataset name to merge on.",
     },
     "0-1-3-11": {
-        "message": "VTL dataset name(s) {names} are mapped from more than one SDMX dataflow.",
-        "description": "Raised when the mappings assign the same VTL dataset name to more than "
-        "one SDMX dataflow, which would overwrite data silently.",
+        "message": "VTL dataset name(s) {names} are mapped more than once.",
+        "description": "Raised when the mappings assign the same VTL dataset name more than "
+        "once (within a dataflow's list or across several dataflows), which would overwrite "
+        "data silently.",
     },
     "0-1-3-12": {
         "message": "Multiple SDMX datasets share the short-URN {short_urn}; run_sdmx expects "

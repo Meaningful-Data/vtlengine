@@ -595,6 +595,11 @@ def run_sdmx(
 
     Raises:
         SemanticError: If any dataset does not contain a valid `Schema` instance as its structure.
+        InputValidationException: On invalid inputs or conflicting names — including a name \
+            provided by both an SDMX dataset and an explicit input (``0-1-3-9``), non-dict \
+            datapoints combined with SDMX datasets (``0-1-3-10``), the same VTL name mapped \
+            more than once (``0-1-3-11``), several datasets sharing a short-URN (``0-1-3-12``), \
+            or an empty mapping name list (``0-1-3-14``).
 
     """
     # Validate datasets input type
