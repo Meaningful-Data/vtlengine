@@ -126,10 +126,10 @@ def _convert_sdmx_mappings(
     Convert sdmx_mappings parameter to the single-name dict used by the shared
     structure-loading path (``run``/``semantic_analysis``).
 
-    That path resolves one SDMX structure to one dataset name, so when a dataflow is
-    mapped to several VTL datasets only the first name is used here. The full
-    one-to-many fan-out is materialized by :func:`_build_mapping_dict` inside
-    ``run_sdmx``.
+    That path resolves one SDMX structure to exactly one dataset name. Mapping several
+    VTL datasets to a single structure is only possible through :func:`_build_mapping_dict`
+    inside ``run_sdmx``; here it is rejected so the caller gets a clear error instead of a
+    silently dropped alias.
 
     Args:
         mappings: None, dict, VtlDataflowMapping, sequence of VtlDataflowMapping, or
@@ -139,11 +139,15 @@ def _convert_sdmx_mappings(
         None if mappings is None, otherwise dict mapping SDMX URNs to VTL dataset names.
 
     Raises:
-        InputValidationException: If mappings type is invalid.
+        InputValidationException: If mappings type is invalid (or a single structure is
+            mapped to more than one VTL dataset name, ``0-1-3-13``).
     """
     normalized = _normalize_mappings(mappings)
     if normalized is None:
         return None
+    for urn, names in normalized.items():
+        if len(names) > 1:
+            raise InputValidationException(code="0-1-3-13", short_urn=urn, names=names)
     return {urn: names[0] for urn, names in normalized.items()}
 
 

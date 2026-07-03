@@ -216,8 +216,11 @@ def semantic_analysis(
         Check the following example: \
         :doc:`Extra Inputs <extra_inputs>`.
 
-        sdmx_mappings: A dictionary or VtlDataflowMapping object that maps SDMX URNs \
-        (e.g., "Dataflow=MD:TEST_DF(1.0)") to VTL dataset names. (default: None)
+        sdmx_mappings: A dictionary or VtlDataflowMapping object (or a sequence of them / \
+        a VtlMappingScheme) that maps SDMX URNs (e.g., "Dataflow=MD:TEST_DF(1.0)") to VTL \
+        dataset names. Each SDMX structure must map to exactly one VTL dataset name; \
+        one-to-many mappings are only supported by :obj:`run_sdmx <vtlengine.API>`. \
+        (default: None)
 
     Returns:
         The computed datasets.
@@ -369,9 +372,11 @@ def run(
 
         scalar_values: Dict with the scalar values to be used in the VTL script.
 
-        sdmx_mappings: A dictionary or VtlDataflowMapping object that maps SDMX URNs \
-        (e.g., "Dataflow=MD:TEST_DF(1.0)") to VTL dataset names. This parameter is \
-        primarily used when calling run() from run_sdmx() to pass mapping configuration.
+        sdmx_mappings: A dictionary or VtlDataflowMapping object (or a sequence of them / \
+        a VtlMappingScheme) that maps SDMX URNs (e.g., "Dataflow=MD:TEST_DF(1.0)") to VTL \
+        dataset names. Each SDMX structure must map to exactly one VTL dataset name; \
+        mapping one structure to several datasets is only supported by \
+        :obj:`run_sdmx <vtlengine.API>`. (default: None)
 
         output_format: Output file format used when ``output_folder`` is set. \
         Either ``"csv"`` (default) or ``"parquet"``.
@@ -642,6 +647,8 @@ def run_sdmx(
         if missing:
             raise InputValidationException(code="0-1-3-6", missing=missing)
 
+    # Inputs are already resolved to named VTL JSON structures, so no mapping is
+    # forwarded (run() only supports one VTL name per SDMX structure).
     return run(
         script=script,
         data_structures=combined_structures,
@@ -651,7 +658,7 @@ def run_sdmx(
         time_period_output_format=time_period_output_format,
         return_only_persistent=return_only_persistent,
         output_folder=output_folder,
-        sdmx_mappings=mappings,
+        sdmx_mappings=None,
         output_format=output_format,
     )
 

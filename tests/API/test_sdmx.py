@@ -1963,3 +1963,14 @@ def test_run_sdmx_multiple_datasets_same_dataflow_raises():
             mappings={df_short_urn: ["DS_1", "DS_2"]},
             return_only_persistent=False,
         )
+
+
+def test_run_rejects_one_to_many_sdmx_mapping():
+    # run() maps each SDMX structure to a single dataset; one-to-many needs run_sdmx.
+    with pytest.raises(InputValidationException, match="0-1-3-13"):
+        run(
+            "DS_r := DS_1;",
+            data_structures={"datasets": [{"name": "DS_1", "DataStructure": []}]},
+            datapoints={"DS_1": pd.DataFrame()},
+            sdmx_mappings={df_short_urn: ["DS_1", "DS_2"]},
+        )

@@ -164,6 +164,13 @@ centralised_messages = {
         "description": "Raised when more than one input PandasDataset resolves to the same "
         "short-URN, which would silently overwrite the datapoints of the earlier one.",
     },
+    "0-1-3-13": {
+        "message": "SDMX structure {short_urn} is mapped to multiple VTL datasets {names}; "
+        "use run_sdmx for one-to-many mappings.",
+        "description": "Raised when run() or semantic_analysis() receive a mapping that assigns "
+        "more than one VTL dataset name to a single SDMX structure, which those functions "
+        "cannot fan out.",
+    },
     # JSON Schema errors
     "0-2-1-1": {
         "message": "The JSON of {element} does not follow the required JSON Schema: {error}",
