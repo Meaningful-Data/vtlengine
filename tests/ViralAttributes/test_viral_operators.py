@@ -531,3 +531,44 @@ class TestViralAttributeUnpivot:
         expected = {1: "A", 2: "B"}
         for _, row in ds_r.data.iterrows():
             assert row["VAt_1"] == expected[row["Id_1"]]
+
+
+# -- Period_indicator time operator --
+
+
+class TestViralAttributePeriodIndicator:
+    """Viral attributes must pass through period_indicator unchanged (issue #877)."""
+
+    @staticmethod
+    def _ds() -> dict:
+        return {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Time_Period", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                {"name": "VAt_1", "type": "String", "role": "Viral Attribute", "nullable": True},
+            ],
+        }
+
+    @staticmethod
+    def _dp() -> pd.DataFrame:
+        return pd.DataFrame(
+            {"Id_1": ["2020-01", "2020-02"], "Me_1": [1.0, 2.0], "VAt_1": ["A", "B"]}
+        )
+
+    @pytest.mark.parametrize("use_duckdb", BACKENDS)
+    def test_period_indicator_preserves_viral_attrs(self, use_duckdb: bool) -> None:
+        result = run(
+            script="DS_r <- period_indicator(DS_1);",
+            data_structures={"datasets": [self._ds()]},
+            datapoints={"DS_1": self._dp()},
+            use_duckdb=use_duckdb,
+        )
+        ds_r = result["DS_r"]
+        assert "VAt_1" in ds_r.components, "VAt_1 missing from result components"
+        assert ds_r.components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
+        assert "VAt_1" in ds_r.data.columns, "VAt_1 missing from result data"
+        # Row-wise op: viral value carried over unchanged, matched to the source time period.
+        expected = {"2020M1": "A", "2020M2": "B"}
+        for _, row in ds_r.data.iterrows():
+            assert row["VAt_1"] == expected[str(row["Id_1"])]

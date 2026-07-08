@@ -262,7 +262,7 @@ class Period_indicator(Unary):
             result_components = {
                 comp.name: comp
                 for comp in operand.components.values()
-                if comp.role == Role.IDENTIFIER
+                if comp.role in (Role.IDENTIFIER, Role.VIRAL_ATTRIBUTE)
             }
             result_components["duration_var"] = Component(
                 name="duration_var",
@@ -296,7 +296,9 @@ class Period_indicator(Unary):
             return result
         cls.time_id = cls._get_time_id(operand)
         result.data = (
-            operand.data.copy()[result.get_identifiers_names()]
+            operand.data.copy()[
+                result.get_identifiers_names() + result.get_viral_attributes_names()
+            ]
             if (operand.data is not None)
             else pd.Series()
         )

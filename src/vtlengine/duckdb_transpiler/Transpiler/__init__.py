@@ -1006,10 +1006,12 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                     break
 
             id_cols = [quote_name(c.name) for c in ds.get_identifiers()]
+            # Viral attributes pass through unchanged (issue #877).
+            viral_cols = [quote_name(v) for v in ds.get_viral_attributes_names()]
             extract_expr = (
                 f'vtl_period_parse({quote_name(time_id)}).period_indicator AS "duration_var"'
             )
-            cols_sql = ", ".join(id_cols) + ", " + extract_expr
+            cols_sql = ", ".join(id_cols + viral_cols) + ", " + extract_expr
 
             if src.strip().upper().startswith("SELECT"):
                 return f"SELECT {cols_sql} FROM ({src}) AS _pi"
