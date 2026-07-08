@@ -1,6 +1,6 @@
 import re
 from copy import copy
-from typing import Any, Optional, Union
+from typing import Any, List, Optional, Union
 
 import pandas as pd
 
@@ -46,6 +46,20 @@ BINARY_COMPARISON_OPERATORS = [EQ, NEQ, GT, GTE, LT, LTE]
 BINARY_BOOLEAN_OPERATORS = [AND, OR, XOR]
 
 only_semantic = False
+
+
+def check_viral_combination_rules(viral_components: List[Component], op: Any) -> None:
+    """Require a viral propagation rule for every viral attribute that will be *combined*.
+
+    Combining/aggregating operators (aggregation, analytic, binary/join over the same
+    attribute in >=2 operands, hierarchy nodes) must know how to reduce two or more
+    values; without a ``define viral propagation`` rule the result is undefined, so a
+    SemanticError is raised instead of silently producing NULL (issue #877).
+    """
+    registry = get_current_registry()
+    for comp in viral_components:
+        if registry.rule_for(comp) is None:
+            raise SemanticError("1-3-3-6", name=comp.name, op=op)
 
 
 class Operator:
@@ -344,6 +358,14 @@ class Binary(Operator):
         for comp_name, comp in other_operand.components.items():
             if comp.role == Role.VIRAL_ATTRIBUTE and comp_name not in result_components:
                 result_components[comp_name] = copy(comp)
+
+        # Viral attributes present in BOTH operands are combined; require a rule (issue #877).
+        both_viral = [
+            copy(comp)
+            for name, comp in base_operand.components.items()
+            if comp.role == Role.VIRAL_ATTRIBUTE and name in other_operand.components
+        ]
+        check_viral_combination_rules(both_viral, cls.op)
 
         for comp in [x for x in result_components.values() if x.role == Role.MEASURE]:
             if comp.name in left_operand.components and comp.name in right_operand.components:

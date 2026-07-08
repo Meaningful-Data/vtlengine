@@ -1628,6 +1628,8 @@ class InterpreterAnalyzer(ASTTemplate):
                 )
                 del rule_output_values
             else:
+                # Hierarchy computed nodes combine child viral values; require a rule.
+                Operators.check_viral_combination_rules(hr_viral_components, node.op)
                 result = Hierarchy.analyze(
                     dataset,
                     self.hr_agg_rules_computed,

@@ -197,17 +197,18 @@ class TestViralPropagationEndToEnd:
         # X+X→else "NO_COINCIDENCE"; null+null→"Nullable" (when null) on both engines.
         assert list(result["DS_r"].data["VAt_1"]) == ["NO_COINCIDENCE", "Nullable"]
 
-    def test_no_rule_gives_null(self) -> None:
-        """Both operands viral but no rule defined → null."""
-        result = run(
-            script="DS_r <- DS_1 + DS_2;",
-            data_structures=_ds_pair(DS_1VA),
-            datapoints={
-                "DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "VAt_1": ["A"]}),
-                "DS_2": pd.DataFrame({"Id_1": [1], "Me_1": [5.0], "VAt_1": ["B"]}),
-            },
-        )
-        assert pd.isna(result["DS_r"].data["VAt_1"].iloc[0])
+    def test_no_rule_combine_raises(self) -> None:
+        """Both operands viral but no rule defined → SemanticError (issue #877)."""
+        with pytest.raises(SemanticError) as exc:
+            run(
+                script="DS_r <- DS_1 + DS_2;",
+                data_structures=_ds_pair(DS_1VA),
+                datapoints={
+                    "DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "VAt_1": ["A"]}),
+                    "DS_2": pd.DataFrame({"Id_1": [1], "Me_1": [5.0], "VAt_1": ["B"]}),
+                },
+            )
+        assert "1-3-3-6" in str(exc.value)
 
     def test_aggregate_max_in_aggregation(self) -> None:
         """Aggregate max propagation in group by."""
@@ -497,33 +498,31 @@ class TestViralPropagationJoins:
         assert list(ds_r.data["VAt_1"]) == ["C"]
 
     @pytest.mark.parametrize("join_op", ["inner_join", "left_join", "full_join"])
-    def test_no_rule_gives_null_join(self, join_op: str) -> None:
-        """Both operands viral but no rule defined → combined value is null."""
-        result = run(
-            script=f"DS_r <- {join_op}(DS_1, DS_2);",
-            data_structures={"datasets": [DS_JOIN_1, DS_JOIN_2]},
-            datapoints={
-                "DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "VAt_1": ["A"]}),
-                "DS_2": pd.DataFrame({"Id_1": [1], "Me_2": [5.0], "VAt_1": ["B"]}),
-            },
-        )
-        ds_r = result["DS_r"]
-        assert ds_r.components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
-        assert pd.isna(ds_r.data["VAt_1"].iloc[0])
+    def test_no_rule_combine_raises_join(self, join_op: str) -> None:
+        """Both operands viral but no rule defined → SemanticError (issue #877)."""
+        with pytest.raises(SemanticError) as exc:
+            run(
+                script=f"DS_r <- {join_op}(DS_1, DS_2);",
+                data_structures={"datasets": [DS_JOIN_1, DS_JOIN_2]},
+                datapoints={
+                    "DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "VAt_1": ["A"]}),
+                    "DS_2": pd.DataFrame({"Id_1": [1], "Me_2": [5.0], "VAt_1": ["B"]}),
+                },
+            )
+        assert "1-3-3-6" in str(exc.value)
 
-    def test_no_rule_gives_null_cross_join(self) -> None:
-        """cross_join, both operands viral, no rule defined → combined value null."""
-        result = run(
-            script="DS_r <- cross_join(DS_1, DS_2);",
-            data_structures={"datasets": [DS_JOIN_1, DS_CROSS_2]},
-            datapoints={
-                "DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "VAt_1": ["A"]}),
-                "DS_2": pd.DataFrame({"Id_2": [1], "Me_2": [5.0], "VAt_1": ["B"]}),
-            },
-        )
-        ds_r = result["DS_r"]
-        assert ds_r.components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
-        assert pd.isna(ds_r.data["VAt_1"].iloc[0])
+    def test_no_rule_combine_raises_cross_join(self) -> None:
+        """cross_join, both operands viral, no rule defined → SemanticError (issue #877)."""
+        with pytest.raises(SemanticError) as exc:
+            run(
+                script="DS_r <- cross_join(DS_1, DS_2);",
+                data_structures={"datasets": [DS_JOIN_1, DS_CROSS_2]},
+                datapoints={
+                    "DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "VAt_1": ["A"]}),
+                    "DS_2": pd.DataFrame({"Id_2": [1], "Me_2": [5.0], "VAt_1": ["B"]}),
+                },
+            )
+        assert "1-3-3-6" in str(exc.value)
 
     @pytest.mark.parametrize("join_op", ["inner_join", "left_join", "full_join"])
     def test_viral_from_one_operand_kept(self, join_op: str) -> None:

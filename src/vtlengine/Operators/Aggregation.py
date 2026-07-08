@@ -110,6 +110,8 @@ class Aggregation(Operator.Unary):
         having_data: Any,
     ) -> Dataset:
         result_components = {k: copy(v) for k, v in operand.components.items()}
+        # Aggregation combines viral values per group; a rule is required (issue #877).
+        Operator.check_viral_combination_rules(operand.get_viral_attributes(), cls.op)
         if cls.op not in [COUNT, MIN, MAX] and len(operand.get_measures_names()) == 0:
             raise SemanticError("1-1-1-8", op=cls.op, name=operand.name)
         if group_op is not None:

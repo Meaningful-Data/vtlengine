@@ -1054,6 +1054,12 @@ centralised_messages = {
         "targets a viral attribute (variable or value domain) whose data type is not "
         "Number or Integer.",
     },
+    "1-3-3-6": {
+        "message": "Viral attribute {name} is combined by operator {op} but has no viral "
+        "propagation rule; declare a 'define viral propagation' rule for it.",
+        "description": "Raised when a combining or aggregating operator would combine two or "
+        "more values of a viral attribute that has no define viral propagation rule.",
+    },
     # ---------- Interpreter ----------
     "1-3-5": {
         "message": "{node_op} not found or not valid for {op_type}.",

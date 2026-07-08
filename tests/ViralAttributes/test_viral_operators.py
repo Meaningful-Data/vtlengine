@@ -22,6 +22,13 @@ VA_COMPONENTS = [VA_1, VA_2, VA_3]
 VA_NAMES = ["VAt_1", "VAt_2", "VAt_3"]
 VA_VALUES = [["A", "B"], ["X", "Y"], ["P", "Q"]]
 
+# Combining operators (aggregation, binary/join over the same attr, analytic, hierarchy)
+# require a viral propagation rule; String attributes use `aggregate max` (issue #877).
+VP_RULES = "".join(
+    f"define viral propagation VP_{n} (variable {n}) is aggregate max end viral propagation;\n"
+    for n in VA_NAMES
+)
+
 
 def _make_ds(name: str, num_viral: int) -> dict:
     """Build a dataset definition with 0..3 viral attributes."""
@@ -37,19 +44,19 @@ def _make_dp(num_viral: int) -> pd.DataFrame:
     return pd.DataFrame(data)
 
 
-def _run_single(expr: str, num_viral: int) -> dict:
+def _run_single(expr: str, num_viral: int, rules: str = "") -> dict:
     """Run an expression with a single dataset (DS_1)."""
     return run(
-        script=f"DS_r <- {expr};",
+        script=f"{rules}DS_r <- {expr};",
         data_structures={"datasets": [_make_ds("DS_1", num_viral)]},
         datapoints={"DS_1": _make_dp(num_viral)},
     )
 
 
-def _run_pair(expr: str, num_viral: int) -> dict:
+def _run_pair(expr: str, num_viral: int, rules: str = "") -> dict:
     """Run an expression with two datasets (DS_1, DS_2)."""
     return run(
-        script=f"DS_r <- {expr};",
+        script=f"{rules}DS_r <- {expr};",
         data_structures={"datasets": [_make_ds("DS_1", num_viral), _make_ds("DS_2", num_viral)]},
         datapoints={"DS_1": _make_dp(num_viral), "DS_2": _make_dp(num_viral)},
     )
@@ -108,7 +115,8 @@ class TestViralAttributeBinaryOps:
     @pytest.mark.parametrize("expr", binary_params)
     @pytest.mark.parametrize("num_viral", [1, 2, 3])
     def test_binary_preserves_viral_attrs(self, expr: str, num_viral: int) -> None:
-        result = _run_pair(expr, num_viral)
+        # The attribute is in both operands -> combined -> requires a rule (issue #877).
+        result = _run_pair(expr, num_viral, rules=VP_RULES)
         _assert_viral_attrs(result, num_viral)
 
 
@@ -164,7 +172,7 @@ class TestViralAttributeOtherOps:
         for i in range(num_viral):
             data[VA_NAMES[i]] = [VA_VALUES[i][0], VA_VALUES[i][0], VA_VALUES[i][1]]
         result = run(
-            script=f"DS_r <- {agg_op}(DS_1 group by Id_1);",
+            script=f"{VP_RULES}DS_r <- {agg_op}(DS_1 group by Id_1);",
             data_structures={"datasets": [{"name": "DS_1", "DataStructure": comps}]},
             datapoints={"DS_1": pd.DataFrame(data)},
         )
@@ -200,7 +208,7 @@ class TestViralAttributeOtherOps:
         for i in range(num_viral):
             data[VA_NAMES[i]] = [VA_VALUES[i][0], VA_VALUES[i][0], VA_VALUES[i][1]]
         result = run(
-            script=f"DS_r <- {expr};",
+            script=f"{VP_RULES}DS_r <- {expr};",
             data_structures={"datasets": [{"name": "DS_1", "DataStructure": comps}]},
             datapoints={"DS_1": pd.DataFrame(data)},
             use_duckdb=use_duckdb,
@@ -269,7 +277,7 @@ class TestViralAttributeConditionalOps:
         for i in range(num_viral):
             data[VA_NAMES[i]] = [VA_VALUES[i][0], VA_VALUES[i][0], VA_VALUES[i][1]]
         result = run(
-            script='DS_r <- count(if DS_1#Id_2 = "A" then DS_1 else DS_1 group by Id_1);',
+            script=f'{VP_RULES}DS_r <- count(if DS_1#Id_2 = "A" then DS_1 else DS_1 group by Id_1);',
             data_structures={"datasets": [{"name": "DS_1", "DataStructure": comps}]},
             datapoints={"DS_1": pd.DataFrame(data)},
             use_duckdb=use_duckdb,
