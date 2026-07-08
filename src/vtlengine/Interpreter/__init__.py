@@ -51,6 +51,8 @@ from vtlengine.DataTypes import (
     BASIC_TYPES,
     SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
+    Integer,
+    Number,
     ScalarType,
     check_unary_implicit_promotion,
 )
@@ -282,6 +284,11 @@ class InterpreterAnalyzer(ASTTemplate):
             # Enforce output dtypes match DataStructure declarations
             if isinstance(result, Dataset):
                 result.enforce_dtypes()
+                # Every viral attribute must declare a viral propagation rule (issue #877).
+                vp_registry = get_current_registry()
+                for viral_comp in result.get_viral_attributes():
+                    if vp_registry.rule_for(viral_comp) is None:
+                        raise SemanticError("1-3-3-6", name=viral_comp.name)
 
             # Removing output dataset
             vtlengine.Exceptions.dataset_output = None
@@ -460,6 +467,32 @@ class InterpreterAnalyzer(ASTTemplate):
             default_value=node.default_value,
         )
         registry.register(rule)
+
+        # sum/avg require a numeric viral attribute; raise a clear error at semantic time
+        # instead of a cryptic runtime crash (issue #877).
+        if aggregate_function in ("sum", "avg"):
+            incompatible: Optional[Type[ScalarType]] = None
+            if node.signature_type == "variable":
+                for ds in (self.datasets or {}).values():
+                    comp = ds.components.get(node.target)
+                    if (
+                        comp is not None
+                        and comp.role == Role.VIRAL_ATTRIBUTE
+                        and comp.data_type not in (Integer, Number)
+                    ):
+                        incompatible = comp.data_type
+                        break
+            else:  # valuedomain
+                vd = (self.value_domains or {}).get(node.target)
+                if vd is not None and vd.type not in (Integer, Number):
+                    incompatible = vd.type
+            if incompatible is not None:
+                raise SemanticError(
+                    "1-3-3-5",
+                    name=node.target,
+                    function=aggregate_function,
+                    type=incompatible.__name__,
+                )
 
     # Execution Language
     def visit_Assignment(self, node: AST.Assignment) -> Any:
@@ -1443,13 +1476,24 @@ class InterpreterAnalyzer(ASTTemplate):
             output = node.output.value if node.output else "invalid"
         return mode, input_, output
 
+    def _collect_hr_code_items(self, node: Any) -> List[str]:
+        """Collect the code-item names referenced in a hierarchy rule expression."""
+        if isinstance(node, AST.DefIdentifier):
+            return [node.value] if node.kind == "CodeItemID" else []
+        items: List[str] = []
+        for attr in ("left", "right", "operand"):
+            child = getattr(node, attr, None)
+            if child is not None:
+                items.extend(self._collect_hr_code_items(child))
+        return items
+
     def visit_HROperation(self, node: AST.HROperation) -> None:  # noqa: C901
         """Handle hierarchy and check_hierarchy operators."""
         # Visit dataset and get component if present
         # Deep copy the dataset when there are conditions to avoid modifying the original
         conditions = node.conditions or []
         has_conditions = len(conditions) > 0
-        dataset = deepcopy(self.visit(node.dataset)) if has_conditions else self.visit(node.dataset)
+        dataset = deepcopy(self.visit(node.dataset))
         component: Optional[str] = self.visit(node.rule_component) if node.rule_component else None
         hr_name = node.ruleset_name
         cond_components = [self.visit(c) for c in conditions] if has_conditions else []
@@ -1498,6 +1542,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     )
                 cond_info[cond_comp] = cond_components[i]
 
+            node_children: Dict[str, List[str]] = {}
             if node.op == HIERARCHY:
                 aux = []
                 for rule in hr_info["rules"]:
@@ -1516,6 +1561,15 @@ class InterpreterAnalyzer(ASTTemplate):
 
                 hr_info["rules"] = aux
 
+                # Map each computed node to the code items it combines, for viral combination
+                # at the final evaluate (outside the rule handling, issue #877).
+                for agg_rule in aux:
+                    if agg_rule.rule.op == EQ:
+                        lhs_id, rhs_expr = agg_rule.rule.left, agg_rule.rule.right
+                    else:  # WHEN ... EQ
+                        lhs_id, rhs_expr = agg_rule.rule.right.left, agg_rule.rule.right.right
+                    node_children[lhs_id.value] = self._collect_hr_code_items(rhs_expr)
+
                 hierarchy_ast = AST.HRuleset(
                     name=hr_name,
                     signature_type=hr_info["node"].signature_type,
@@ -1527,6 +1581,15 @@ class InterpreterAnalyzer(ASTTemplate):
                     column_stop=node.column_stop,
                 )
                 HRDAGAnalyzer().visit(hierarchy_ast)
+
+            # Capture viral attributes before the strip; re-attached/combined at the final
+            # evaluate, outside the rule handling (issue #877).
+            hr_viral_components = dataset.get_viral_attributes()
+            hr_viral_values = None
+            if hr_viral_components and dataset.data is not None:
+                hr_viral_values = dataset.data[
+                    dataset.get_identifiers_names() + [c.name for c in hr_viral_components]
+                ].copy()
 
             Check_Hierarchy.validate_hr_dataset(dataset, component)
 
@@ -1565,10 +1628,20 @@ class InterpreterAnalyzer(ASTTemplate):
                     dataset_element=dataset,
                     rule_info=rule_output_values,
                     output=output,
+                    viral_components=hr_viral_components,
+                    viral_values=hr_viral_values,
                 )
                 del rule_output_values
             else:
-                result = Hierarchy.analyze(dataset, self.hr_agg_rules_computed, output)
+                result = Hierarchy.analyze(
+                    dataset,
+                    self.hr_agg_rules_computed,
+                    output,
+                    viral_components=hr_viral_components,
+                    viral_values=hr_viral_values,
+                    node_children=node_children,
+                    rule_component=component,
+                )
                 self.hr_agg_rules_computed = None
             return result
 
@@ -1619,10 +1692,29 @@ class InterpreterAnalyzer(ASTTemplate):
             dpr_info = {}
 
         rule_output_values = {}
-        self.ruleset_dataset = dataset_element
+        # Keep viral attributes out of rule handling; they are re-attached from the
+        # original dataset in Validation.evaluate (issue #877).
+        ruleset_dataset = dataset_element
+        dp_viral_names = dataset_element.get_viral_attributes_names()
+        if dp_viral_names:
+            stripped_data = (
+                dataset_element.data.drop(columns=dp_viral_names)
+                if dataset_element.data is not None
+                else None
+            )
+            ruleset_dataset = Dataset(
+                name=dataset_element.name,
+                components={
+                    name: comp
+                    for name, comp in dataset_element.components.items()
+                    if comp.role != Role.VIRAL_ATTRIBUTE
+                },
+                data=stripped_data,
+            )
+        self.ruleset_dataset = ruleset_dataset
         self.ruleset_signature = dpr_info.get("signature")
         if dpr_info.get("signature_type") == "variable" and not self.ruleset_signature:
-            self.ruleset_signature = {name: name for name in dataset_element.components}
+            self.ruleset_signature = {name: name for name in ruleset_dataset.components}
         self.ruleset_mode = output
 
         # Gather rule data

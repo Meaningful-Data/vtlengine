@@ -17,6 +17,7 @@ from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
 from vtlengine.Operators import Operator
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.ViralPropagation import get_current_registry
 
 
 class Calc(Operator):
@@ -302,20 +303,34 @@ class Unpivot(Operator):
         result_dataset.add_component(
             Component(name=measure, data_type=final_type, role=Role.MEASURE, nullable=True)
         )
+        # Viral attributes propagate to the result, replicated across the unpivoted rows.
+        for viral_comp in dataset.get_viral_attributes():
+            result_dataset.add_component(copy(viral_comp))
         return result_dataset
 
     @classmethod
     def evaluate(cls, operands: List[str], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
         if dataset.data is not None:
-            result_dataset.data = dataset.data.melt(
-                id_vars=dataset.get_identifiers_names(),
+            viral_names = dataset.get_viral_attributes_names()
+            src = dataset.data
+            if viral_names:
+                # Execute the rule over the source (one value per source row) BEFORE the
+                # melt, so aggregate rules are not distorted by row replication (issue #877).
+                src = src.copy()
+                get_current_registry().apply_row_preserving(src, viral_names)
+            result_dataset.data = src.melt(
+                id_vars=dataset.get_identifiers_names() + viral_names,
                 value_vars=dataset.get_measures_names(),
                 var_name=operands[0],
                 value_name="NEW_COLUMN",
             )
             result_dataset.data.rename(columns={"NEW_COLUMN": operands[1]}, inplace=True)
-            result_dataset.data = result_dataset.data.dropna().reset_index(drop=True)
+            # Drop rows only where the unpivoted measure is NULL (RM 7200); keep rows with
+            # NULL viral attributes.
+            result_dataset.data = result_dataset.data.dropna(subset=[operands[1]]).reset_index(
+                drop=True
+            )
         return result_dataset
 
 

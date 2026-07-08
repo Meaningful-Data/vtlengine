@@ -54,13 +54,15 @@ jobs:
         if: steps.cpp-cache.outputs.cache-hit != 'true' && steps.antlr4-cache.outputs.cache-hit != 'true'
         shell: bash
         run: |
-          # On Windows, use the Visual Studio generator so the static library
-          # is built with MSVC (matching scikit-build-core's wheel build);
-          # on Linux/macOS, Ninja parallelises better than the default
-          # Unix Makefiles generator.
+          # On Windows, let CMake pick its default generator: it selects the
+          # newest installed Visual Studio (MSVC), matching what
+          # scikit-build-core uses for the wheel build so the prebuilt static
+          # library stays ABI-compatible. Pinning an explicit version (e.g.
+          # "Visual Studio 17 2022") breaks whenever the runner image bumps
+          # the bundled VS. On Linux/macOS, Ninja parallelises better than the
+          # default Unix Makefiles generator.
           if [[ "${{ runner.os }}" == "Windows" ]]; then
             cmake -S . -B build/antlr4-build \
-              -G "Visual Studio 17 2022" -A x64 \
               -DVTLENGINE_BUILD_ANTLR4_PREBUILT=ON
           else
             cmake -S . -B build/antlr4-build \

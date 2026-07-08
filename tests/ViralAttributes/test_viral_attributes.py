@@ -34,13 +34,11 @@ class ViralHelper(TestHelper):
 execution_codes = [
     ("1-1", 2),  # binary, enumerated rule
     ("1-2", 2),  # binary, clause precedence (binary clause before unary)
-    ("1-3", 2),  # binary, no rule -> NULL
     ("1-4", 2),  # binary, viral attr in one operand only (passthrough)
     ("1-5", 2),  # binary, two rules (enumerated VAt_1 + aggregate-max VAt_2)
     ("2-1", 1),  # aggregation, aggregate-max
     ("2-2", 1),  # aggregation, enumerated pairwise reduction
     ("3-1", 1),  # analytic, aggregate-max over the partition
-    ("3-2", 1),  # analytic, no rule (per-row passthrough)
     ("7-1", 1),  # unary (abs), per-row passthrough
     ("8-1", 1),  # dataset-scalar (DS_1 + 5), per-row passthrough
     ("10-3", 1),  # legacy 'ViralAttribute' input role
@@ -50,6 +48,20 @@ execution_codes = [
 @pytest.mark.parametrize("code,number_inputs", execution_codes)
 def test_execution(code: str, number_inputs: int) -> None:
     ViralHelper.BaseTest(code=code, number_inputs=number_inputs, references_names=["DS_r"])
+
+
+# -- Combining a viral attribute without a rule is a semantic error (issue #877) --
+combine_no_rule_codes = [
+    ("1-3", 2, "1-3-3-6"),  # binary, both operands viral, no rule
+    ("3-2", 1, "1-3-3-6"),  # analytic, viral combined over the partition, no rule
+]
+
+
+@pytest.mark.parametrize("code,number_inputs,exception_code", combine_no_rule_codes)
+def test_combine_without_rule(code: str, number_inputs: int, exception_code: str) -> None:
+    ViralHelper.NewSemanticExceptionTest(
+        code=code, number_inputs=number_inputs, exception_code=exception_code
+    )
 
 
 # -- Structure-only (semantic) --

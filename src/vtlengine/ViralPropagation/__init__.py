@@ -103,12 +103,28 @@ class ViralPropagationRegistry:
 
         return rule.default_value
 
+    def resolve_single(self, variable_name: str, value: Any) -> Any:
+        """Resolve a single viral value through the rule (row-preserving operators).
+
+        Enumerated rules apply the matching single-value clause, else the default;
+        aggregate rules and "no rule" leave a lone value unchanged.
+        """
+        rule = self.get_rule_for_variable(variable_name)
+        if rule is None or rule.aggregate_function is not None:
+            return value
+        for clause in rule.enumerated_clauses:
+            if len(clause["values"]) == 1 and self._normalize_null(
+                clause["values"][0]
+            ) == self._normalize_null(value):
+                return clause["result"]
+        return rule.default_value
+
     def resolve_group(self, variable_name: str, values: List[Any]) -> Any:
         """Resolve N values (for aggregation/analytic operators)."""
         if len(values) == 0:
             return None
         if len(values) == 1:
-            return values[0]
+            return self.resolve_single(variable_name, values[0])
         rule = self.get_rule_for_variable(variable_name)
         if rule is None:
             return None
@@ -129,6 +145,30 @@ class ViralPropagationRegistry:
 
         # Enumerated: reduce pairwise (associative + commutative guarantees correctness)
         return reduce(lambda a, b: self.resolve_pair(variable_name, a, b), values)
+
+    def apply_row_preserving(self, data: pd.DataFrame, viral_names: List[str]) -> None:
+        """Execute the propagation rule on each viral column of a row-preserving
+        operator result, in place.
+
+        Aggregate rules collapse the whole column to a single value applied to every
+        row; enumerated rules map each value (matching unary clause, else default); a
+        no-rule attribute is left unchanged.
+        """
+        for name in viral_names:
+            if name not in data.columns:
+                continue
+            rule = self.get_rule_for_variable(name)
+            if rule is None:
+                continue
+            col_dtype = data[name].dtype
+            if rule.aggregate_function is not None:
+                value = self.resolve_group(name, list(data[name]))
+                new_col = pd.Series([value] * len(data), index=data.index)
+            else:
+                new_col = pd.Series(
+                    [self.resolve_single(name, v) for v in data[name]], index=data.index
+                )
+            data[name] = new_col.astype(col_dtype)
 
     def clear(self) -> None:
         """Clear all registered rules."""

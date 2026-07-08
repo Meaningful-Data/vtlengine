@@ -1,6 +1,6 @@
 import operator
 from copy import copy
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 from pandas import DataFrame
@@ -15,6 +15,7 @@ from vtlengine.Utils._number_config import (
     numbers_are_greater_equal,
     numbers_are_less_equal,
 )
+from vtlengine.ViralPropagation import get_current_registry
 
 REMOVE = "REMOVE_VALUE"
 
@@ -241,37 +242,127 @@ class Hierarchy(Operators.Operator):
 
     @classmethod
     def validate(
-        cls, dataset: Dataset, computed_dict: Dict[str, DataFrame], output: str
+        cls,
+        dataset: Dataset,
+        computed_dict: Dict[str, DataFrame],
+        output: str,
+        viral_components: Optional[List[Component]] = None,
+        viral_values: Optional[DataFrame] = None,
+        node_children: Optional[Dict[str, List[str]]] = None,
+        rule_component: Optional[str] = None,
     ) -> Dataset:
         dataset_name = VirtualCounter._new_ds_name()
         result_components = {
             comp_name: copy(comp) for comp_name, comp in dataset.components.items()
         }
+        # Viral attributes propagate to the hierarchy result (issue #877).
+        for viral_comp in viral_components or []:
+            result_components[viral_comp.name] = copy(viral_comp)
         return Dataset(name=dataset_name, components=result_components, data=None)
+
+    @staticmethod
+    def _combine_node_viral(
+        viral_values: DataFrame,
+        viral_names: List[str],
+        node_children: Dict[str, List[str]],
+        rule_component: str,
+        other_ids: List[str],
+    ) -> Optional[DataFrame]:
+        """Combine child viral values into each computed node via the propagation rule.
+
+        Nodes are processed in topological order (``node_children`` is insertion-ordered by
+        the rule sequence); a child that is itself a computed node reuses its combined value.
+        """
+        registry = get_current_registry()
+        node_viral: Dict[str, DataFrame] = {}
+        tagged_frames: List[DataFrame] = []
+        for node, children in node_children.items():
+            child_frames = []
+            for child in children:
+                if child in node_viral:
+                    child_frames.append(node_viral[child])
+                else:
+                    child_frames.append(
+                        viral_values.loc[
+                            viral_values[rule_component] == child, other_ids + viral_names
+                        ]
+                    )
+            if not child_frames:
+                continue
+            combined = pd.concat(child_frames, ignore_index=True)
+            if other_ids:
+                grouped = combined.groupby(other_ids, sort=False)
+                agg = {
+                    va: (lambda vals, name=va: registry.resolve_group(name, list(vals)))
+                    for va in viral_names
+                }
+                nv = grouped.agg(agg).reset_index()
+            else:
+                nv = pd.DataFrame(
+                    {va: [registry.resolve_group(va, list(combined[va]))] for va in viral_names}
+                )
+            node_viral[node] = nv
+            tagged = nv.copy()
+            tagged[rule_component] = node
+            tagged_frames.append(tagged)
+        if not tagged_frames:
+            return None
+        return pd.concat(tagged_frames, ignore_index=True)
 
     @classmethod
     def evaluate(
-        cls, dataset: Dataset, computed_dict: Dict[str, DataFrame], output: str
+        cls,
+        dataset: Dataset,
+        computed_dict: Dict[str, DataFrame],
+        output: str,
+        viral_components: Optional[List[Component]] = None,
+        viral_values: Optional[DataFrame] = None,
+        node_children: Optional[Dict[str, List[str]]] = None,
+        rule_component: Optional[str] = None,
     ) -> Dataset:
-        result = cls.validate(dataset, computed_dict, output)
+        result = cls.validate(dataset, computed_dict, output, viral_components=viral_components)
         if len(computed_dict) == 0:
-            computed_data = pd.DataFrame(columns=dataset.get_components_names())
+            computed_data = pd.DataFrame(columns=result.get_components_names())
         else:
             computed_data = cls.generate_computed_data(computed_dict)
-        # Convert computed data columns to proper pyarrow dtypes
+        # Convert computed id/measure columns to proper pyarrow dtypes (so merge keys match).
         for comp_name, comp in result.components.items():
             if comp_name in computed_data.columns:
                 computed_data[comp_name] = computed_data[comp_name].astype(comp.data_type.dtype())  # type: ignore[call-overload]
 
+        viral_names = [vc.name for vc in (viral_components or [])]
+        # Combine child viral values for the computed nodes (issue #877).
+        if (
+            viral_names
+            and viral_values is not None
+            and node_children
+            and rule_component is not None
+            and len(computed_data) > 0
+        ):
+            other_ids = [i for i in dataset.get_identifiers_names() if i != rule_component]
+            computed_viral = cls._combine_node_viral(
+                viral_values, viral_names, node_children, rule_component, other_ids
+            )
+            if computed_viral is not None:
+                computed_data = computed_data.merge(
+                    computed_viral, on=other_ids + [rule_component], how="left"
+                )
+
         if output == "computed":
             result.data = computed_data
-            return result
+        else:
+            # union(setdiff(op, R), R): union then drop duplicates, keeping the computed row.
+            original = dataset.data
+            if viral_names and viral_values is not None and original is not None:
+                original = original.merge(
+                    viral_values, on=dataset.get_identifiers_names(), how="left"
+                )
+            result.data = pd.concat([original, computed_data], axis=0, ignore_index=True)
+            result.data.drop_duplicates(
+                subset=dataset.get_identifiers_names(), keep="last", inplace=True
+            )
+            result.data.reset_index(drop=True, inplace=True)
 
-        # union(setdiff(op, R), R) where R is the computed data.
-        # It is the same as union(op, R) and drop duplicates, selecting the last one available
-        result.data = pd.concat([dataset.data, computed_data], axis=0, ignore_index=True)
-        result.data.drop_duplicates(
-            subset=dataset.get_identifiers_names(), keep="last", inplace=True
-        )
-        result.data.reset_index(drop=True, inplace=True)
+        result.data = result.data[result.get_components_names()]
+        result.enforce_dtypes()
         return result

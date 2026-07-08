@@ -204,6 +204,9 @@ class DAGAnalyzer(ASTTemplate):
 
     def sort_ast(self, ast: AST) -> None:
         statements_nodes = ast.children
+        vp_statements: list = [
+            node for node in statements_nodes if isinstance(node, ViralPropagationDef)
+        ]
         hr_statements: list = [node for node in statements_nodes if isinstance(node, HRuleset)]
         dp_statements: list = [node for node in statements_nodes if isinstance(node, DPRuleset)]
         do_statements: list = [node for node in statements_nodes if isinstance(node, Operator)]
@@ -215,7 +218,9 @@ class DAGAnalyzer(ASTTemplate):
 
         intermediate = self.sort_elements(ml_statements)
         self.check_overwriting(intermediate)
-        ast.children = hr_statements + dp_statements + do_statements + intermediate
+        # Keep viral propagation definitions (they were previously dropped here, so the
+        # rule was never registered in multi-statement scripts, issue #877).
+        ast.children = vp_statements + hr_statements + dp_statements + do_statements + intermediate
 
     def statement_structure(self) -> StatementDeps:
         result = StatementDeps(

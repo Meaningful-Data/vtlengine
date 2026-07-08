@@ -1,5 +1,5 @@
 from copy import copy
-from typing import Any, Dict, Optional, Type, Union
+from typing import Any, Dict, List, Optional, Type, Union
 
 import pandas as pd
 
@@ -16,6 +16,7 @@ from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators import Operator
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.ViralPropagation import get_current_registry
 
 
 # noinspection PyTypeChecker
@@ -153,7 +154,14 @@ class Validation(Operator):
         return df
 
     @classmethod
-    def validate(cls, dataset_element: Dataset, rule_info: Dict[str, Any], output: str) -> Dataset:
+    def validate(
+        cls,
+        dataset_element: Dataset,
+        rule_info: Dict[str, Any],
+        output: str,
+        viral_components: Optional[List[Component]] = None,
+        viral_values: Optional[pd.DataFrame] = None,
+    ) -> Dataset:
         error_level_type: Optional[Type[ScalarType]] = None
         error_levels = [
             rule_data.get("errorlevel")
@@ -201,12 +209,29 @@ class Validation(Operator):
             role=Role.MEASURE,
             nullable=True,
         )
+        # Viral attributes propagate to the validation result; their values are
+        # re-attached in evaluate (issue #877). check_datapoint uses the operand's own
+        # viral; check_hierarchy passes captured viral (its dataset is stripped).
+        viral_comps = (
+            viral_components
+            if viral_components is not None
+            else dataset_element.get_viral_attributes()
+        )
+        for viral_comp in viral_comps:
+            result_components[viral_comp.name] = copy(viral_comp)
 
         return Dataset(name=dataset_name, components=result_components, data=None)
 
     @classmethod
-    def evaluate(cls, dataset_element: Dataset, rule_info: Dict[str, Any], output: str) -> Dataset:
-        result = cls.validate(dataset_element, rule_info, output)
+    def evaluate(
+        cls,
+        dataset_element: Dataset,
+        rule_info: Dict[str, Any],
+        output: str,
+        viral_components: Optional[List[Component]] = None,
+        viral_values: Optional[pd.DataFrame] = None,
+    ) -> Dataset:
+        result = cls.validate(dataset_element, rule_info, output, viral_components=viral_components)
         result.data = cls._generate_result_data(rule_info)
 
         result.data = result.data.dropna(subset=result.get_identifiers_names(), how="any")
@@ -229,6 +254,24 @@ class Validation(Operator):
                 + dataset_element.get_measures_names()
                 + validation_measures
             ]
+
+        # Re-attach viral attributes matched per datapoint on the identifiers, then execute
+        # the propagation rule (issue #877). Source: the operand's own data (check_datapoint)
+        # or the captured pre-strip viral (check_hierarchy).
+        viral_comps = (
+            viral_components
+            if viral_components is not None
+            else dataset_element.get_viral_attributes()
+        )
+        viral_names = [c.name for c in viral_comps]
+        viral_src_data = viral_values if viral_values is not None else dataset_element.data
+        if viral_names and viral_src_data is not None:
+            join_ids = [
+                name for name in result.get_identifiers_names() if name in viral_src_data.columns
+            ]
+            viral_src = viral_src_data[join_ids + viral_names].drop_duplicates(subset=join_ids)
+            result.data = result.data.merge(viral_src, on=join_ids, how="left")
+            get_current_registry().apply_row_preserving(result.data, viral_names)
 
         result.data = result.data[result.get_components_names()]
         return result
@@ -260,8 +303,17 @@ class Check_Hierarchy(Validation):
         return df
 
     @classmethod
-    def validate(cls, dataset_element: Dataset, rule_info: Dict[str, Any], output: str) -> Dataset:
-        result = super().validate(dataset_element, rule_info, output)
+    def validate(
+        cls,
+        dataset_element: Dataset,
+        rule_info: Dict[str, Any],
+        output: str,
+        viral_components: Optional[List[Component]] = None,
+        viral_values: Optional[pd.DataFrame] = None,
+    ) -> Dataset:
+        result = super().validate(
+            dataset_element, rule_info, output, viral_components=viral_components
+        )
         result.components["imbalance"] = Component(
             name="imbalance", data_type=Number, role=Role.MEASURE, nullable=True
         )
@@ -294,4 +346,8 @@ class Check_Hierarchy(Validation):
         # Remove attributes from dataset
         if len(dataset.get_attributes()) > 0:
             for x in dataset.get_attributes():
+                dataset.delete_component(x.name)
+
+        if len(dataset.get_viral_attributes()) > 0:
+            for x in dataset.get_viral_attributes():
                 dataset.delete_component(x.name)
