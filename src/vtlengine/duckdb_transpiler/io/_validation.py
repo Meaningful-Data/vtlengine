@@ -57,6 +57,15 @@ TIME_INTERVAL_PATTERN = (
 
 DURATION_PATTERN = r"^(A|S|Q|M|W|D)$"  # Year, Semester, Quarter, Month, Week, Day
 
+# Canonical Date/datetime input format shared by the CSV and DataFrame loaders and
+# kept in sync with the pandas validator (_time_checking._STRICT_DATETIME_RE):
+# a bare date, or a date + (T|space) + complete HH:MM:SS + optional fractional seconds
+# + optional timezone (+HH:MM or Z). Month/day allow 1-2 digits (DuckDB casts them).
+VALID_DATE_REGEX = (
+    r"^\d{4}-\d{1,2}-\d{1,2}"
+    r"([ T]([01]\d|2[0-3]):[0-5]\d:[0-5]\d(\.\d+)?([+-]\d{2}:\d{2}|Z)?)?$"
+)
+
 
 # =============================================================================
 # Error Mapping
@@ -423,10 +432,11 @@ def build_select_columns(
                 )
             elif csv_type == "DOUBLE" and "DECIMAL" in table_type:
                 select_cols.append(f'CAST("{comp_name}" AS {table_type}) AS "{comp_name}"')
-            # Date columns: read as VARCHAR, validate format, cast to DATE or TIMESTAMP
+            # Date columns: read as VARCHAR, validate format, cast to DATE or TIMESTAMP.
+            # Accepts a bare date or a full datetime with the T or space separator and an
+            # optional timezone (+HH:MM or Z); the same set the pandas loader accepts.
             elif csv_type == "VARCHAR" and comp.data_type == Date:
-                # VTL accepts hyphen-separated dates: YYYY-M-D or YYYY-MM-DD HH:MM:SS[.f]
-                date_regex = r"^\d{4}-\d{1,2}-\d{1,2}( \d{2}:\d{2}:\d{2}(\.\d+)?)?$"
+                date_regex = VALID_DATE_REGEX
                 null_check = f'"{comp_name}" IS NOT NULL'
                 if comp.nullable:
                     null_check += f""" AND "{comp_name}" != ''"""

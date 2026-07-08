@@ -14,6 +14,7 @@ import pandas as pd
 
 from vtlengine.DataTypes import Date, Number, TimePeriod
 from vtlengine.duckdb_transpiler.io._validation import (
+    VALID_DATE_REGEX,
     build_create_table_sql,
     build_csv_column_types,
     build_select_columns,
@@ -580,6 +581,24 @@ def _build_dataframe_select_columns(
             exprs.append(f'CAST(NULL AS {target_type}) AS "{comp_name}"')
         elif comp.data_type == Number:
             exprs.append(f'CAST(CAST("{comp_name}" AS VARCHAR) AS {target_type}) AS "{comp_name}"')
+        elif comp.data_type == Date:
+            # Accept only a bare date, or a date with a COMPLETE, in-range time
+            # (HH:MM:SS, optional fractional seconds / timezone), matching the strict
+            # rule on the pandas path. This rejects partial times ("...HH" / "...HH:MM"),
+            # a bad separator ("2020-01-01X12:30:45") and out-of-range times
+            # ("2020-01-01T25:00:00") here with a clear message, instead of letting the
+            # cast silently truncate them or surface a cryptic out-of-range error.
+            col_as_varchar = f'CAST("{comp_name}" AS VARCHAR)'
+            err = (
+                f"'Date ' || {col_as_varchar} || "
+                f"' has an invalid or incomplete time; expected YYYY-MM-DD HH:MM:SS.'"
+            )
+            exprs.append(
+                f'CASE WHEN "{comp_name}" IS NOT NULL '
+                f"AND NOT regexp_matches({col_as_varchar}, '{VALID_DATE_REGEX}') "
+                f"THEN error({err}) "
+                f'ELSE CAST("{comp_name}" AS {target_type}) END AS "{comp_name}"'
+            )
         else:
             exprs.append(f'CAST("{comp_name}" AS {target_type}) AS "{comp_name}"')
     return exprs
