@@ -34,7 +34,11 @@ check_date_valid_params = [
     pytest.param("2020-01-15 10:30:00", "2020-01-15 10:30:00", id="datetime_space_separator"),
     pytest.param("2020-01-15T00:00:00", "2020-01-15 00:00:00", id="datetime_midnight"),
     pytest.param("2020-12-31T23:59:59", "2020-12-31 23:59:59", id="datetime_end_of_day"),
-    pytest.param("2020-01-15T10:30", "2020-01-15 10:30:00", id="datetime_no_seconds_normalized"),
+    pytest.param(
+        "2020-01-15T10:30:00+02:00",
+        "2020-01-15 10:30:00+02:00",
+        id="datetime_timezone_offset",
+    ),
     pytest.param(
         "2020-01-15T10:30:00.123456",
         "2020-01-15 10:30:00.123456",
@@ -55,6 +59,10 @@ check_date_valid_params = [
 check_date_invalid_params = [
     pytest.param("2020-01-15T25:00:00", InputValidationException, id="invalid_datetime_bad_hour"),
     pytest.param("1799-12-31", InputValidationException, id="invalid_year_below_range"),
+    pytest.param("2020-01-01T12", InputValidationException, id="invalid_partial_hour_t"),
+    pytest.param("2020-01-01T12:30", InputValidationException, id="invalid_partial_no_sec_t"),
+    pytest.param("2020-01-01 12", InputValidationException, id="invalid_partial_hour_space"),
+    pytest.param("2020-01-01 12:30", InputValidationException, id="invalid_partial_no_sec_space"),
 ]
 
 check_max_date_valid_params = [
@@ -71,10 +79,19 @@ check_max_date_valid_params = [
         "2020-01-15 10:30:00.123456",
         id="datetime_nanoseconds_truncated",
     ),
+    pytest.param(
+        "2020-01-15T10:30:00+02:00",
+        "2020-01-15 10:30:00+02:00",
+        id="datetime_timezone_offset",
+    ),
 ]
 
 check_max_date_invalid_params = [
     pytest.param("2020/01/15", RunTimeError, id="invalid_format"),
+    pytest.param("2020-01-01T12", RunTimeError, id="invalid_partial_hour_t"),
+    pytest.param("2020-01-01T12:30", RunTimeError, id="invalid_partial_no_sec_t"),
+    pytest.param("2020-01-01 12", RunTimeError, id="invalid_partial_hour_space"),
+    pytest.param("2020-01-01 12:30", RunTimeError, id="invalid_partial_no_sec_space"),
 ]
 
 scalar_time_params = [
@@ -496,6 +513,30 @@ def test_check_date_valid(input_value, expected):
 def test_check_date_invalid(input_value, expected_exception):
     with pytest.raises(expected_exception):
         check_date(input_value)
+
+
+check_date_message_params = [
+    pytest.param("2020-01-01T25:00:00", "has an invalid or incomplete time", id="bad_hour"),
+    pytest.param("2020-01-01X12:30:45", "has an invalid or incomplete time", id="bad_separator"),
+    pytest.param("2020-01-01T12:30", "has an invalid or incomplete time", id="partial_no_seconds"),
+]
+
+
+@pytest.mark.parametrize("input_value, expected_substring", check_date_message_params)
+def test_check_date_invalid_message(input_value, expected_substring):
+    with pytest.raises(InputValidationException) as exc_info:
+        check_date(input_value)
+    message = str(exc_info.value.args[0])
+    assert expected_substring in message
+    assert "out of range for the month" not in message
+
+
+def test_check_date_year_range_message():
+    with pytest.raises(InputValidationException) as exc_info:
+        check_date("1799-12-31")
+    message = str(exc_info.value.args[0])
+    assert "1800" in message
+    assert "1900" not in message
 
 
 @pytest.mark.parametrize("input_value, expected", check_max_date_valid_params)

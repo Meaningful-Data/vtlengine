@@ -29,45 +29,83 @@ def _truncate_nanoseconds(value: str) -> str:
     return value
 
 
+# A full date followed by a COMPLETE HH:MM:SS time. Hours, minutes AND seconds
+# are required when a time component is present; fractional seconds and an optional
+# timezone (+HH:MM, -HH:MM or Z) are allowed. Partial times ("HH" / "HH:MM") are
+# rejected here; value ranges (hour <= 23, real calendar day) are validated
+# afterwards by datetime.fromisoformat.
+_STRICT_DATETIME_RE = re.compile(
+    r"^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(\.\d+)?([+-]\d{2}:\d{2}|Z)?$"
+)
+
+
+def normalize_datetime(value: str) -> str:
+    """Validate a datetime string carrying a time component and normalize it.
+
+    Requires a full ``YYYY-MM-DD[T| ]HH:MM:SS`` value (hours, minutes and seconds);
+    fractional seconds and a timezone suffix are accepted. Sub-second precision beyond
+    microseconds is truncated. Output uses a single space separator. Raises
+    ``ValueError`` if the time component is missing, truncated, malformed or out of range.
+    """
+    if _STRICT_DATETIME_RE.match(value) is None:
+        raise ValueError(f"Invalid or incomplete time component in {value!r}")
+    return datetime.fromisoformat(_truncate_nanoseconds(value)).isoformat(sep=" ")
+
+
 def parse_date_value(value: str) -> date:
     """Parse a date or datetime string into a date object (time part is discarded)."""
     return date.fromisoformat(value[:10])
 
 
-def check_date(value: str) -> str:
+def _build_date_error(value: str) -> InputValidationException:
+    """Build a precise error for a value that failed date parsing.
+
+    Distinguishes an unusable format, a month outside 1..12, a real-but-out-of-range
+    calendar day (e.g. 2020-02-31), and a valid date part carrying an invalid or
+    incomplete time (e.g. 2020-01-01T25:00:00, 2020-01-01T12:30, 2020-01-01X12:30:45).
     """
-    Check if the date is in the correct format.
-    Accepts YYYY-MM-DD and YYYY-MM-DD[T| ]HH:MM:SS[.fffffffff] (ISO 8601).
-    Output always uses T separator for datetime values, no timezone.
-    Nanosecond input is truncated to microsecond precision.
+    date_part_match = _DATE_PART_RE.match(value)
+    if not date_part_match:
+        return InputValidationException(
+            f"Date {value} is not in the correct format. Use YYYY-MM-DD or YYYY-MM-DD HH:MM:SS."
+        )
+    month = int(date_part_match.group("month"))
+    if not 1 <= month <= 12:
+        return InputValidationException(f"Date {value} is invalid. Month must be between 1 and 12.")
+    try:
+        date.fromisoformat(value[:10])
+    except ValueError:
+        return InputValidationException(f"Date {value} is out of range for the month.")
+    return InputValidationException(
+        f"Date {value} has an invalid or incomplete time; expected YYYY-MM-DD HH:MM:SS."
+    )
+
+
+def check_date(value: str) -> str:
+    """Check a date is in the correct format.
+
+    Accepts ``YYYY-MM-DD`` and ``YYYY-MM-DD[T| ]HH:MM:SS[.ffffff][+HH:MM|Z]`` (ISO 8601).
+    A time component, when present, must be a COMPLETE ``HH:MM:SS``; partial times such
+    as ``HH`` or ``HH:MM`` are rejected. Datetime output uses a single space separator;
+    nanosecond input is truncated to microsecond precision.
     """
     value = value.strip()
     has_time = _has_time_component(value)
     try:
         if has_time:
-            iso_result = datetime.fromisoformat(_truncate_nanoseconds(value)).isoformat(sep=" ")
+            iso_result = normalize_datetime(value)
         else:
             if len(value) == 9 and value[7] == "-":
                 value = value[:-1] + "0" + value[-1]
             iso_result = date.fromisoformat(value).isoformat()
     except ValueError:
-        date_part_match = _DATE_PART_RE.match(value)
-        if date_part_match:
-            month = int(date_part_match.group("month"))
-            if not 1 <= month <= 12:
-                raise InputValidationException(
-                    f"Date {value} is invalid. Month must be between 1 and 12."
-                )
-            raise InputValidationException(f"Date {value} is out of range for the month.")
-        raise InputValidationException(
-            f"Date {value} is not in the correct format. Use YYYY-MM-DD or YYYY-MM-DD HH:MM:SS."
-        )
+        raise _build_date_error(value) from None
 
     # Check date is between 1800 and 9999
     year = int(value[:4])
     if not 1800 <= year <= 9999:
         raise InputValidationException(
-            f"Date {value} is invalid. Year must be between 1900 and 9999."
+            f"Date {value} is invalid. Year must be between 1800 and 9999."
         )
 
     return iso_result
