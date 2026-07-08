@@ -302,6 +302,9 @@ class Unpivot(Operator):
         result_dataset.add_component(
             Component(name=measure, data_type=final_type, role=Role.MEASURE, nullable=True)
         )
+        # Viral attributes propagate to the result, replicated across the unpivoted rows.
+        for viral_comp in dataset.get_viral_attributes():
+            result_dataset.add_component(copy(viral_comp))
         return result_dataset
 
     @classmethod
@@ -309,13 +312,17 @@ class Unpivot(Operator):
         result_dataset = cls.validate(operands, dataset)
         if dataset.data is not None:
             result_dataset.data = dataset.data.melt(
-                id_vars=dataset.get_identifiers_names(),
+                id_vars=dataset.get_identifiers_names() + dataset.get_viral_attributes_names(),
                 value_vars=dataset.get_measures_names(),
                 var_name=operands[0],
                 value_name="NEW_COLUMN",
             )
             result_dataset.data.rename(columns={"NEW_COLUMN": operands[1]}, inplace=True)
-            result_dataset.data = result_dataset.data.dropna().reset_index(drop=True)
+            # Drop rows only where the unpivoted measure is NULL (RM 7200); keep rows with
+            # NULL viral attributes.
+            result_dataset.data = result_dataset.data.dropna(subset=[operands[1]]).reset_index(
+                drop=True
+            )
         return result_dataset
 
 

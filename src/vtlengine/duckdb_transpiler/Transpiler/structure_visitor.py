@@ -648,6 +648,10 @@ class StructureVisitor(ASTTemplate):
         ]
         m_type = measure_types[0] if measure_types else StringType
         comps[new_measure] = self._make_comp(new_measure, m_type)
+        # Viral attributes propagate to the unpivot result (issue #877).
+        for name, comp in input_ds.components.items():
+            if comp.role == Role.VIRAL_ATTRIBUTE:
+                comps[name] = comp
         return Dataset(name="_unpivot", components=comps, data=None)
 
     def _build_calc_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:

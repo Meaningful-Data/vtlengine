@@ -1961,6 +1961,7 @@ FROM (
         new_measure_name = self._resolve_udo_name(self._get_node_value(node.children[1]))
         id_names = ds.get_identifiers_names()
         measure_names = ds.get_measures_names()
+        viral_names = ds.get_viral_attributes_names()
 
         if not measure_names:
             return f"SELECT * FROM {table_src}"
@@ -1970,6 +1971,8 @@ FROM (
             cols: List[str] = [quote_name(i) for i in id_names]
             cols.append(f"'{measure}' AS {quote_name(new_id_name)}")
             cols.append(f"{quote_name(measure)} AS {quote_name(new_measure_name)}")
+            # Viral attributes replicate across the unpivoted rows (issue #877).
+            cols.extend(quote_name(v) for v in viral_names)
             select_clause = ", ".join(cols)
             part = (
                 f"SELECT {select_clause} FROM {table_src} WHERE {quote_name(measure)} IS NOT NULL"

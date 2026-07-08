@@ -483,3 +483,51 @@ class TestViralAttributeSpecialCases:
         _assert_viral_attrs(result, 2)
         assert list(result["DS_r"].data["VAt_1"]) == ["A", "B"]
         assert list(result["DS_r"].data["VAt_2"]) == ["X", "Y"]
+
+
+# -- Backends exercised by the operator-specific suites below (issue #877) --
+
+BACKENDS = [False, True]
+
+
+# -- Unpivot clause --
+
+
+class TestViralAttributeUnpivot:
+    """Viral attributes must replicate across the rows produced by unpivot (issue #877)."""
+
+    @staticmethod
+    def _ds() -> dict:
+        return {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                {"name": "Me_2", "type": "Number", "role": "Measure", "nullable": True},
+                {"name": "VAt_1", "type": "String", "role": "Viral Attribute", "nullable": True},
+            ],
+        }
+
+    @staticmethod
+    def _dp() -> pd.DataFrame:
+        return pd.DataFrame(
+            {"Id_1": [1, 2], "Me_1": [10.0, 20.0], "Me_2": [100.0, 200.0], "VAt_1": ["A", "B"]}
+        )
+
+    @pytest.mark.parametrize("use_duckdb", BACKENDS)
+    def test_unpivot_replicates_viral_attrs(self, use_duckdb: bool) -> None:
+        result = run(
+            script="DS_r <- DS_1[unpivot Id_2, Val];",
+            data_structures={"datasets": [self._ds()]},
+            datapoints={"DS_1": self._dp()},
+            use_duckdb=use_duckdb,
+        )
+        ds_r = result["DS_r"]
+        assert "VAt_1" in ds_r.components, "VAt_1 missing from result components"
+        assert ds_r.components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
+        assert "VAt_1" in ds_r.data.columns, "VAt_1 missing from result data"
+        # Two source measures -> two melted rows per source row, viral value replicated.
+        assert len(ds_r.data) == 4
+        expected = {1: "A", 2: "B"}
+        for _, row in ds_r.data.iterrows():
+            assert row["VAt_1"] == expected[row["Id_1"]]
