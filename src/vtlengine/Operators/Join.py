@@ -9,11 +9,7 @@ from vtlengine.AST.Grammar.tokens import CROSS_JOIN, FULL_JOIN, INNER_JOIN, LEFT
 from vtlengine.DataTypes import SCALAR_TYPES_CLASS_REVERSE, binary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
-from vtlengine.Operators import (
-    Operator,
-    _id_type_promotion_join_keys,
-    check_viral_combination_rules,
-)
+from vtlengine.Operators import Operator, _id_type_promotion_join_keys
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.ViralPropagation import get_current_registry
 
@@ -309,18 +305,6 @@ class Join(Operator):
         components = cls.merge_components(operands, using)
         if len(set(components.keys())) != len(components):
             raise SemanticError("1-1-13-9", comp_name="")
-
-        # Viral attributes shared across >=2 operands are merged (combined); require a rule.
-        merged_viral = merged_viral_attribute_names(
-            [op.components for op in operands], set(using or [])
-        )
-        merged_comps = []
-        for name in merged_viral:
-            for op in operands:
-                if name in op.components:
-                    merged_comps.append(op.components[name])
-                    break
-        check_viral_combination_rules(merged_comps, cls.op)
 
         return Dataset(name=dataset_name, components=components, data=None)
 

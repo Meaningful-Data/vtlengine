@@ -284,6 +284,11 @@ class InterpreterAnalyzer(ASTTemplate):
             # Enforce output dtypes match DataStructure declarations
             if isinstance(result, Dataset):
                 result.enforce_dtypes()
+                # Every viral attribute must declare a viral propagation rule (issue #877).
+                vp_registry = get_current_registry()
+                for viral_comp in result.get_viral_attributes():
+                    if vp_registry.rule_for(viral_comp) is None:
+                        raise SemanticError("1-3-3-6", name=viral_comp.name)
 
             # Removing output dataset
             vtlengine.Exceptions.dataset_output = None
@@ -1628,8 +1633,6 @@ class InterpreterAnalyzer(ASTTemplate):
                 )
                 del rule_output_values
             else:
-                # Hierarchy computed nodes combine child viral values; require a rule.
-                Operators.check_viral_combination_rules(hr_viral_components, node.op)
                 result = Hierarchy.analyze(
                     dataset,
                     self.hr_agg_rules_computed,

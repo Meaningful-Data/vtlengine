@@ -1055,10 +1055,10 @@ centralised_messages = {
         "Number or Integer.",
     },
     "1-3-3-6": {
-        "message": "Viral attribute {name} is combined by operator {op} but has no viral "
-        "propagation rule; declare a 'define viral propagation' rule for it.",
-        "description": "Raised when a combining or aggregating operator would combine two or "
-        "more values of a viral attribute that has no define viral propagation rule.",
+        "message": "Viral attribute {name} has no viral propagation rule; declare a "
+        "'define viral propagation' rule for it.",
+        "description": "Raised when a viral attribute appears in a result without a "
+        "define viral propagation rule. Every viral attribute must declare one.",
     },
     # ---------- Interpreter ----------
     "1-3-5": {

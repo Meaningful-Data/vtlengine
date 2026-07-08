@@ -5,7 +5,7 @@ from typing import Optional
 import pandas as pd
 import pytest
 
-from vtlengine import run
+from vtlengine import run, semantic_analysis
 from vtlengine.API import create_ast
 from vtlengine.Exceptions import SemanticError, VTLSyntaxError
 from vtlengine.Model import Role
@@ -286,6 +286,89 @@ class TestViralPropagationEndToEnd:
         else:
             assert int(va.iloc[1]) == one_null
         assert pd.isna(va.iloc[2])
+
+
+# -- Every viral attribute requires a rule, even in pure passthrough (issue #877) --
+
+
+class TestEveryViralAttributeRequiresRule:
+    """Strict policy: a viral attribute reaching a result without a ``define viral
+    propagation`` rule is a SemanticError (1-3-3-6), even when no combination happens
+    (single-operand assignment, unary, keep, calc). A rule is not optional."""
+
+    def test_identity_assignment_no_rule_raises(self) -> None:
+        """``DS_r <- DS_1`` with a viral attribute and no rule → error."""
+        with pytest.raises(SemanticError) as exc:
+            run(
+                script="DS_r <- DS_1;",
+                data_structures={"datasets": [DS_1VA]},
+                datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "VAt_1": ["A"]})},
+            )
+        assert "1-3-3-6" in str(exc.value)
+
+    def test_unary_no_rule_raises(self) -> None:
+        """A unary (row-preserving) operator over a viral attribute with no rule → error."""
+        with pytest.raises(SemanticError) as exc:
+            run(
+                script="DS_r <- abs(DS_1);",
+                data_structures={"datasets": [DS_1VA]},
+                datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [-10.0], "VAt_1": ["A"]})},
+            )
+        assert "1-3-3-6" in str(exc.value)
+
+    def test_keep_no_rule_raises(self) -> None:
+        """A keep clause carries the viral attribute through; without a rule → error."""
+        with pytest.raises(SemanticError) as exc:
+            run(
+                script="DS_r <- DS_1[keep Me_1];",
+                data_structures={"datasets": [DS_1VA]},
+                datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "VAt_1": ["A"]})},
+            )
+        assert "1-3-3-6" in str(exc.value)
+
+    def test_calc_creates_viral_no_rule_raises(self) -> None:
+        """A calc that creates a viral attribute must also declare a rule for it."""
+        with pytest.raises(SemanticError) as exc:
+            run(
+                script='DS_r <- DS_1[calc viral attribute VAt_1 := "X"];',
+                data_structures={"datasets": [DS_NO_VA]},
+                datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0]})},
+            )
+        assert "1-3-3-6" in str(exc.value)
+
+    def test_partial_rules_missing_one_raises(self) -> None:
+        """Two viral attributes but only one rule → the un-ruled one still errors."""
+        with pytest.raises(SemanticError) as exc:
+            run(
+                script=AGGR_MAX_RULE + "DS_r <- DS_1;",  # rule only for VAt_1
+                data_structures={"datasets": [DS_2VA]},
+                datapoints={
+                    "DS_1": pd.DataFrame(
+                        {"Id_1": [1], "Me_1": [10.0], "VAt_1": ["A"], "VAt_2": [7]}
+                    )
+                },
+            )
+        # VAt_2 has no rule.
+        assert "1-3-3-6" in str(exc.value)
+        assert "VAt_2" in str(exc.value)
+
+    def test_semantic_analysis_no_rule_raises(self) -> None:
+        """The rule requirement is enforced at semantic-analysis time (no execution)."""
+        with pytest.raises(SemanticError) as exc:
+            semantic_analysis(
+                script="DS_r <- DS_1;",
+                data_structures={"datasets": [DS_1VA]},
+            )
+        assert "1-3-3-6" in str(exc.value)
+
+    def test_rule_present_does_not_raise(self) -> None:
+        """Positive control: declaring the rule makes the same script valid."""
+        result = run(
+            script=CONF_RULE + "DS_r <- DS_1;",
+            data_structures={"datasets": [DS_1VA]},
+            datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "VAt_1": ["C"]})},
+        )
+        assert result["DS_r"].components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
 
 
 # -- Multi-attribute propagation (enumerated + aggregate in one script) --
@@ -725,9 +808,9 @@ class TestKeepPreservesViralAttributes:
 
     @pytest.mark.parametrize("use_duckdb", [False, True])
     def test_keep_preserves_multiple_viral(self, use_duckdb: bool) -> None:
-        """All viral attributes survive a keep, even those without a rule."""
+        """All viral attributes survive a keep (each has a declared rule)."""
         result = run(
-            script=CONF_RULE + "DS_r <- DS_1[keep Me_1];",
+            script=TWO_RULES + "DS_r <- DS_1[keep Me_1];",
             data_structures={"datasets": [DS_KEEP_2VA]},
             datapoints={
                 "DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "VAt_1": ["C"], "VAt_2": [7]})

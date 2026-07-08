@@ -22,11 +22,19 @@ VA_COMPONENTS = [VA_1, VA_2, VA_3]
 VA_NAMES = ["VAt_1", "VAt_2", "VAt_3"]
 VA_VALUES = [["A", "B"], ["X", "Y"], ["P", "Q"]]
 
-# Combining operators (aggregation, binary/join over the same attr, analytic, hierarchy)
-# require a viral propagation rule; String attributes use `aggregate max` (issue #877).
+# Every viral attribute requires a viral propagation rule (issue #877). Structural tests
+# use `aggregate max`; value-asserting (per-row) tests use identity-enumerated rules so the
+# source value is preserved on each row (an aggregate rule would collapse it dataset-wide).
 VP_RULES = "".join(
     f"define viral propagation VP_{n} (variable {n}) is aggregate max end viral propagation;\n"
     for n in VA_NAMES
+)
+VP_IDENTITY = "".join(
+    "define viral propagation VP_{n} (variable {n}) is {clauses} end viral propagation;\n".format(
+        n=VA_NAMES[i],
+        clauses="; ".join(f'when "{v}" then "{v}"' for v in VA_VALUES[i]),
+    )
+    for i in range(len(VA_NAMES))
 )
 
 
@@ -96,7 +104,7 @@ class TestViralAttributeUnaryOps:
     @pytest.mark.parametrize("expr", unary_params)
     @pytest.mark.parametrize("num_viral", [1, 2, 3])
     def test_unary_preserves_viral_attrs(self, expr: str, num_viral: int) -> None:
-        result = _run_single(expr, num_viral)
+        result = _run_single(expr, num_viral, rules=VP_RULES)
         _assert_viral_attrs(result, num_viral)
 
 
@@ -133,7 +141,7 @@ class TestViralAttributeBinaryScalarOps:
     @pytest.mark.parametrize("expr", binary_scalar_params)
     @pytest.mark.parametrize("num_viral", [1, 2, 3])
     def test_binary_scalar_preserves_viral_attrs(self, expr: str, num_viral: int) -> None:
-        result = _run_single(expr, num_viral)
+        result = _run_single(expr, num_viral, rules=VP_RULES)
         _assert_viral_attrs(result, num_viral)
 
 
@@ -148,12 +156,12 @@ class TestViralAttributeOtherOps:
     @pytest.mark.parametrize("expr", other_single_params)
     @pytest.mark.parametrize("num_viral", [1, 2, 3])
     def test_other_single_preserves_viral_attrs(self, expr: str, num_viral: int) -> None:
-        result = _run_single(expr, num_viral)
+        result = _run_single(expr, num_viral, rules=VP_RULES)
         _assert_viral_attrs(result, num_viral)
 
     @pytest.mark.parametrize("num_viral", [1, 2, 3])
     def test_intersect_preserves_viral_attrs(self, num_viral: int) -> None:
-        result = _run_pair("intersect(DS_1, DS_2)", num_viral)
+        result = _run_pair("intersect(DS_1, DS_2)", num_viral, rules=VP_RULES)
         _assert_viral_attrs(result, num_viral)
 
     @pytest.mark.parametrize("agg_op", ["sum", "avg", "count", "min", "max"])
@@ -228,8 +236,8 @@ class TestViralAttributeConditionalOps:
     The condition dataset (e.g. ``DS_1#Id_2 = "A"``) also carries the viral
     attribute, which previously collided on merge with the branch operands and
     corrupted the result (component/data mismatch -> downstream crash). The
-    viral attribute itself combines across branches like a binary operator: with
-    no propagation rule its combined value is NULL."""
+    viral attribute itself combines across branches like a binary operator; with
+    an identity rule (each value maps to itself) the per-row value is preserved."""
 
     @pytest.mark.parametrize("use_duckdb", [False, True])
     @pytest.mark.parametrize("num_viral", [1, 2, 3])
@@ -249,16 +257,18 @@ class TestViralAttributeConditionalOps:
         for i in range(num_viral):
             data[VA_NAMES[i]] = [VA_VALUES[i][0], VA_VALUES[i][0], VA_VALUES[i][1]]
         result = run(
-            script='DS_r <- if DS_1#Id_2 = "A" then DS_1 else DS_1;',
+            script=f'{VP_IDENTITY}DS_r <- if DS_1#Id_2 = "A" then DS_1 else DS_1;',
             data_structures={"datasets": [{"name": "DS_1", "DataStructure": comps}]},
             datapoints={"DS_1": pd.DataFrame(data)},
             use_duckdb=use_duckdb,
         )
         _assert_viral_attrs(result, num_viral)
         _assert_component_data_parity(result)
+        # Both branches are DS_1 and the rule is identity -> per-row value preserved.
         for i in range(num_viral):
             va = VA_NAMES[i]
-            assert result["DS_r"].data[va].isna().all()
+            expected = sorted([VA_VALUES[i][0], VA_VALUES[i][0], VA_VALUES[i][1]])
+            assert sorted(result["DS_r"].data[va].tolist()) == expected
 
     @pytest.mark.parametrize("use_duckdb", [False, True])
     @pytest.mark.parametrize("num_viral", [1, 2, 3])
@@ -305,7 +315,7 @@ class TestViralAttributeConditionalOps:
         for i in range(num_viral):
             data[VA_NAMES[i]] = [VA_VALUES[i][0], VA_VALUES[i][0], VA_VALUES[i][1]]
         result = run(
-            script='DS_r <- case when DS_1#Id_2 = "A" then DS_1 else DS_1;',
+            script=f'{VP_IDENTITY}DS_r <- case when DS_1#Id_2 = "A" then DS_1 else DS_1;',
             data_structures={"datasets": [{"name": "DS_1", "DataStructure": comps}]},
             datapoints={"DS_1": pd.DataFrame(data)},
             use_duckdb=use_duckdb,
@@ -327,7 +337,7 @@ class TestViralAttributeConditionalOps:
             structures.append({"name": "DS_2", "DataStructure": comps})
             datapoints["DS_2"] = _make_dp(num_viral)
         result = run(
-            script=f"DS_r <- {expr};",
+            script=f"{VP_IDENTITY}DS_r <- {expr};",
             data_structures={"datasets": structures},
             datapoints=datapoints,
             use_duckdb=use_duckdb,
@@ -370,7 +380,7 @@ class TestViralAttributeStringParameterizedOps:
     @pytest.mark.parametrize("num_viral", [1, 2, 3])
     def test_string_param_preserves_viral_attrs(self, expr: str, num_viral: int) -> None:
         result = run(
-            script=f"DS_r <- {expr};",
+            script=f"{VP_IDENTITY}DS_r <- {expr};",
             data_structures={"datasets": [self._string_ds(num_viral)]},
             datapoints={"DS_1": self._string_dp(num_viral)},
         )
@@ -405,7 +415,7 @@ class TestViralAttributeNumericParameterizedOps:
     )
     @pytest.mark.parametrize("num_viral", [1, 2, 3])
     def test_numeric_param_preserves_viral_attrs(self, expr: str, num_viral: int) -> None:
-        result = _run_single(expr, num_viral)
+        result = _run_single(expr, num_viral, rules=VP_IDENTITY)
         _assert_viral_attrs(result, num_viral)
         _assert_component_data_parity(result)
         # The viral attribute data values must be carried over unchanged.
@@ -425,7 +435,7 @@ class TestViralAttributeCompOps:
     @pytest.mark.parametrize("expr", ["DS_1 in {10, 30}", "DS_1 not_in {10, 30}"])
     @pytest.mark.parametrize("num_viral", [1, 2, 3])
     def test_set_membership_preserves_viral_attrs(self, expr: str, num_viral: int) -> None:
-        result = _run_single(expr, num_viral)
+        result = _run_single(expr, num_viral, rules=VP_IDENTITY)
         _assert_viral_attrs(result, num_viral)
         # The viral attribute data values must be carried over unchanged.
         for i in range(num_viral):
@@ -458,7 +468,7 @@ class TestViralAttributeSpecialCases:
 
     def test_calc_viral_attribute(self) -> None:
         result = run(
-            script='DS_r <- DS_1 [calc viral attribute VAt_1 := "X"];',
+            script=f'{VP_RULES}DS_r <- DS_1 [calc viral attribute VAt_1 := "X"];',
             data_structures={"datasets": [{"name": "DS_1", "DataStructure": BASE_COMPS}]},
             datapoints={"DS_1": pd.DataFrame({"Id_1": [1, 2], "Me_1": [10.0, 20.0]})},
         )
@@ -473,16 +483,19 @@ class TestViralAttributeSpecialCases:
             ],
         }
         result = run(
-            script="DS_r <- DS_1;",
+            script=f"{VP_RULES}DS_r <- DS_1;",
             data_structures={"datasets": [ds]},
             datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "VAt_1": ["A"]})},
         )
         assert result["DS_r"].components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
 
     def test_binary_one_operand_viral(self) -> None:
-        """Only DS_1 has viral attr, DS_2 doesn't — viral attr propagated from DS_1."""
+        """Only DS_1 has viral attr, DS_2 doesn't — viral attr propagated from DS_1.
+
+        With no combination happening (DS_2 has no viral attr) an identity rule keeps
+        each source value on its row."""
         result = run(
-            script="DS_r <- DS_1 + DS_2;",
+            script=f"{VP_IDENTITY}DS_r <- DS_1 + DS_2;",
             data_structures={"datasets": [_make_ds("DS_1", 2), _make_ds("DS_2", 0)]},
             datapoints={
                 "DS_1": _make_dp(2),
@@ -526,7 +539,7 @@ class TestViralAttributeUnpivot:
     @pytest.mark.parametrize("use_duckdb", BACKENDS)
     def test_unpivot_replicates_viral_attrs(self, use_duckdb: bool) -> None:
         result = run(
-            script="DS_r <- DS_1[unpivot Id_2, Val];",
+            script=f"{VP_IDENTITY}DS_r <- DS_1[unpivot Id_2, Val];",
             data_structures={"datasets": [self._ds()]},
             datapoints={"DS_1": self._dp()},
             use_duckdb=use_duckdb,
@@ -592,7 +605,7 @@ class TestViralAttributePeriodIndicator:
     @pytest.mark.parametrize("use_duckdb", BACKENDS)
     def test_period_indicator_preserves_viral_attrs(self, use_duckdb: bool) -> None:
         result = run(
-            script="DS_r <- period_indicator(DS_1);",
+            script=f"{VP_IDENTITY}DS_r <- period_indicator(DS_1);",
             data_structures={"datasets": [self._ds()]},
             datapoints={"DS_1": self._dp()},
             use_duckdb=use_duckdb,
@@ -661,7 +674,7 @@ class TestViralAttributeCheckDatapoint:
     def test_check_datapoint_reattaches_viral(self, output: str, use_duckdb: bool) -> None:
         expr = f"check_datapoint(DS_1, R {output})" if output else "check_datapoint(DS_1, R)"
         result = run(
-            script=f"{_DPR}\nDS_r <- {expr};",
+            script=f"{VP_IDENTITY}{_DPR}\nDS_r <- {expr};",
             data_structures={"datasets": [self._ds()]},
             datapoints={"DS_1": self._dp()},
             use_duckdb=use_duckdb,
