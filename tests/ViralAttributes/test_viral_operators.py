@@ -3,7 +3,8 @@
 import pandas as pd
 import pytest
 
-from vtlengine import run
+from vtlengine import run, semantic_analysis
+from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Role
 
 # -- Layered dataset builders --
@@ -846,3 +847,86 @@ class TestViralAttributeCheckHierarchy:
         # validation row for A carries A's viral value (100), rule-applied
         rows = ds_r.data[ds_r.data["Id_2"] == "A"]
         assert list(rows["VAt_1"]) == [100]
+
+
+# -- Aggregate viral-rule type validation (issue #877) --
+
+
+class TestViralAggregateRuleTypeValidation:
+    """`aggregate sum`/`avg` require a numeric viral attribute; a clear SemanticError
+    (1-3-3-5) must be raised at semantic analysis time, not a runtime crash."""
+
+    @staticmethod
+    def _ds(vtype: str) -> dict:
+        return {
+            "datasets": [
+                {
+                    "name": "DS_1",
+                    "DataStructure": [
+                        {
+                            "name": "Id_1",
+                            "type": "Integer",
+                            "role": "Identifier",
+                            "nullable": False,
+                        },
+                        {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                        {
+                            "name": "VAt_1",
+                            "type": vtype,
+                            "role": "Viral Attribute",
+                            "nullable": True,
+                        },
+                    ],
+                }
+            ]
+        }
+
+    @pytest.mark.parametrize("fn", ["sum", "avg"])
+    @pytest.mark.parametrize("vtype", ["String", "Date", "Boolean"])
+    def test_sum_avg_non_numeric_raises(self, fn: str, vtype: str) -> None:
+        script = (
+            f"define viral propagation VP (variable VAt_1) is aggregate {fn} "
+            "end viral propagation;\nDS_r <- DS_1 * 2;"
+        )
+        with pytest.raises(SemanticError) as exc:
+            semantic_analysis(script=script, data_structures=self._ds(vtype))
+        assert "1-3-3-5" in str(exc.value)
+
+    @pytest.mark.parametrize(
+        "fn,vtype",
+        [("sum", "Number"), ("avg", "Integer"), ("max", "String"), ("min", "Date")],
+    )
+    def test_valid_combinations_pass(self, fn: str, vtype: str) -> None:
+        script = (
+            f"define viral propagation VP (variable VAt_1) is aggregate {fn} "
+            "end viral propagation;\nDS_r <- DS_1 * 2;"
+        )
+        # Must not raise.
+        semantic_analysis(script=script, data_structures=self._ds(vtype))
+
+    @pytest.mark.parametrize("fn", ["sum", "avg"])
+    def test_valuedomain_sum_avg_non_numeric_raises(self, fn: str) -> None:
+        ds = {
+            "datasets": [
+                {
+                    "name": "DS_1",
+                    "DataStructure": [
+                        {
+                            "name": "Id_1",
+                            "type": "Integer",
+                            "role": "Identifier",
+                            "nullable": False,
+                        },
+                        {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                    ],
+                }
+            ]
+        }
+        vd = {"name": "CL_X", "setlist": ["A", "B"], "type": "String"}
+        script = (
+            f"define viral propagation VP (valuedomain CL_X) is aggregate {fn} "
+            "end viral propagation;\nDS_r <- DS_1 * 2;"
+        )
+        with pytest.raises(SemanticError) as exc:
+            semantic_analysis(script=script, data_structures=ds, value_domains=vd)
+        assert "1-3-3-5" in str(exc.value)

@@ -51,6 +51,8 @@ from vtlengine.DataTypes import (
     BASIC_TYPES,
     SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
+    Integer,
+    Number,
     ScalarType,
     check_unary_implicit_promotion,
 )
@@ -460,6 +462,32 @@ class InterpreterAnalyzer(ASTTemplate):
             default_value=node.default_value,
         )
         registry.register(rule)
+
+        # sum/avg require a numeric viral attribute; raise a clear error at semantic time
+        # instead of a cryptic runtime crash (issue #877).
+        if aggregate_function in ("sum", "avg"):
+            incompatible: Optional[Type[ScalarType]] = None
+            if node.signature_type == "variable":
+                for ds in (self.datasets or {}).values():
+                    comp = ds.components.get(node.target)
+                    if (
+                        comp is not None
+                        and comp.role == Role.VIRAL_ATTRIBUTE
+                        and comp.data_type not in (Integer, Number)
+                    ):
+                        incompatible = comp.data_type
+                        break
+            else:  # valuedomain
+                vd = (self.value_domains or {}).get(node.target)
+                if vd is not None and vd.type not in (Integer, Number):
+                    incompatible = vd.type
+            if incompatible is not None:
+                raise SemanticError(
+                    "1-3-3-5",
+                    name=node.target,
+                    function=aggregate_function,
+                    type=incompatible.__name__,
+                )
 
     # Execution Language
     def visit_Assignment(self, node: AST.Assignment) -> Any:

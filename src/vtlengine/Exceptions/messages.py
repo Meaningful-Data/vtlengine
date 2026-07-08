@@ -1047,6 +1047,13 @@ centralised_messages = {
         "description": "Raised when the same value pair is described more than "
         "once in an enumerated viral propagation.",
     },
+    "1-3-3-5": {
+        "message": "Viral propagation rule for {name} uses aggregate '{function}', which "
+        "requires a numeric attribute, but {name} has type {type}.",
+        "description": "Raised when an aggregate viral propagation rule using sum or avg "
+        "targets a viral attribute (variable or value domain) whose data type is not "
+        "Number or Integer.",
+    },
     # ---------- Interpreter ----------
     "1-3-5": {
         "message": "{node_op} not found or not valid for {op_type}.",
