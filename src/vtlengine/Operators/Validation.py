@@ -295,3 +295,7 @@ class Check_Hierarchy(Validation):
         if len(dataset.get_attributes()) > 0:
             for x in dataset.get_attributes():
                 dataset.delete_component(x.name)
+
+        if len(dataset.get_viral_attributes()) > 0:
+            for x in dataset.get_viral_attributes():
+                dataset.delete_component(x.name)

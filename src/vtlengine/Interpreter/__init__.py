@@ -1449,7 +1449,7 @@ class InterpreterAnalyzer(ASTTemplate):
         # Deep copy the dataset when there are conditions to avoid modifying the original
         conditions = node.conditions or []
         has_conditions = len(conditions) > 0
-        dataset = deepcopy(self.visit(node.dataset)) if has_conditions else self.visit(node.dataset)
+        dataset = deepcopy(self.visit(node.dataset))
         component: Optional[str] = self.visit(node.rule_component) if node.rule_component else None
         hr_name = node.ruleset_name
         cond_components = [self.visit(c) for c in conditions] if has_conditions else []
