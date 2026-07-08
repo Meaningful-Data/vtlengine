@@ -43,13 +43,20 @@ def normalize_datetime(value: str) -> str:
     """Validate a datetime string carrying a time component and normalize it.
 
     Requires a full ``YYYY-MM-DD[T| ]HH:MM:SS`` value (hours, minutes and seconds);
-    fractional seconds and a timezone suffix are accepted. Sub-second precision beyond
-    microseconds is truncated. Output uses a single space separator. Raises
+    fractional seconds and a timezone suffix (``Z`` or ``+HH:MM``) are accepted.
+    Sub-second precision beyond microseconds is truncated. Any timezone offset is
+    discarded (the wall-clock time is kept) so the result is a naive datetime,
+    consistent across backends. Output uses a single space separator. Raises
     ``ValueError`` if the time component is missing, truncated, malformed or out of range.
     """
     if _STRICT_DATETIME_RE.match(value) is None:
         raise ValueError(f"Invalid or incomplete time component in {value!r}")
-    return datetime.fromisoformat(_truncate_nanoseconds(value)).isoformat(sep=" ")
+    normalized = _truncate_nanoseconds(value)
+    # datetime.fromisoformat only parses a trailing "Z" on Python 3.11+; rewrite it
+    # so 3.9/3.10 behave the same, then drop the offset (keep wall-clock -> naive).
+    if normalized.endswith("Z"):
+        normalized = normalized[:-1] + "+00:00"
+    return datetime.fromisoformat(normalized).replace(tzinfo=None).isoformat(sep=" ")
 
 
 def parse_date_value(value: str) -> date:

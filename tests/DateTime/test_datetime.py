@@ -36,9 +36,10 @@ check_date_valid_params = [
     pytest.param("2020-12-31T23:59:59", "2020-12-31 23:59:59", id="datetime_end_of_day"),
     pytest.param(
         "2020-01-15T10:30:00+02:00",
-        "2020-01-15 10:30:00+02:00",
+        "2020-01-15 10:30:00",
         id="datetime_timezone_offset",
     ),
+    pytest.param("2020-01-15T10:30:00Z", "2020-01-15 10:30:00", id="datetime_utc_z"),
     pytest.param(
         "2020-01-15T10:30:00.123456",
         "2020-01-15 10:30:00.123456",
@@ -81,9 +82,10 @@ check_max_date_valid_params = [
     ),
     pytest.param(
         "2020-01-15T10:30:00+02:00",
-        "2020-01-15 10:30:00+02:00",
+        "2020-01-15 10:30:00",
         id="datetime_timezone_offset",
     ),
+    pytest.param("2020-01-15T10:30:00Z", "2020-01-15 10:30:00", id="datetime_utc_z"),
 ]
 
 check_max_date_invalid_params = [
