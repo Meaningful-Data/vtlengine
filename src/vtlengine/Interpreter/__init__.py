@@ -1443,6 +1443,17 @@ class InterpreterAnalyzer(ASTTemplate):
             output = node.output.value if node.output else "invalid"
         return mode, input_, output
 
+    def _collect_hr_code_items(self, node: Any) -> List[str]:
+        """Collect the code-item names referenced in a hierarchy rule expression."""
+        if isinstance(node, AST.DefIdentifier):
+            return [node.value] if node.kind == "CodeItemID" else []
+        items: List[str] = []
+        for attr in ("left", "right", "operand"):
+            child = getattr(node, attr, None)
+            if child is not None:
+                items.extend(self._collect_hr_code_items(child))
+        return items
+
     def visit_HROperation(self, node: AST.HROperation) -> None:  # noqa: C901
         """Handle hierarchy and check_hierarchy operators."""
         # Visit dataset and get component if present
@@ -1498,6 +1509,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     )
                 cond_info[cond_comp] = cond_components[i]
 
+            node_children: Dict[str, List[str]] = {}
             if node.op == HIERARCHY:
                 aux = []
                 for rule in hr_info["rules"]:
@@ -1516,6 +1528,15 @@ class InterpreterAnalyzer(ASTTemplate):
 
                 hr_info["rules"] = aux
 
+                # Map each computed node to the code items it combines, for viral combination
+                # at the final evaluate (outside the rule handling, issue #877).
+                for agg_rule in aux:
+                    if agg_rule.rule.op == EQ:
+                        lhs_id, rhs_expr = agg_rule.rule.left, agg_rule.rule.right
+                    else:  # WHEN ... EQ
+                        lhs_id, rhs_expr = agg_rule.rule.right.left, agg_rule.rule.right.right
+                    node_children[lhs_id.value] = self._collect_hr_code_items(rhs_expr)
+
                 hierarchy_ast = AST.HRuleset(
                     name=hr_name,
                     signature_type=hr_info["node"].signature_type,
@@ -1527,6 +1548,15 @@ class InterpreterAnalyzer(ASTTemplate):
                     column_stop=node.column_stop,
                 )
                 HRDAGAnalyzer().visit(hierarchy_ast)
+
+            # Capture viral attributes before the strip; re-attached/combined at the final
+            # evaluate, outside the rule handling (issue #877).
+            hr_viral_components = dataset.get_viral_attributes()
+            hr_viral_values = None
+            if hr_viral_components and dataset.data is not None:
+                hr_viral_values = dataset.data[
+                    dataset.get_identifiers_names() + [c.name for c in hr_viral_components]
+                ].copy()
 
             Check_Hierarchy.validate_hr_dataset(dataset, component)
 
@@ -1568,7 +1598,15 @@ class InterpreterAnalyzer(ASTTemplate):
                 )
                 del rule_output_values
             else:
-                result = Hierarchy.analyze(dataset, self.hr_agg_rules_computed, output)
+                result = Hierarchy.analyze(
+                    dataset,
+                    self.hr_agg_rules_computed,
+                    output,
+                    viral_components=hr_viral_components,
+                    viral_values=hr_viral_values,
+                    node_children=node_children,
+                    rule_component=component,
+                )
                 self.hr_agg_rules_computed = None
             return result
 

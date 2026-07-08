@@ -3215,6 +3215,70 @@ FROM (
         outer_where = " WHERE _bv = FALSE" if output == "invalid" else ""
         return f"SELECT {', '.join(outer_cols)} FROM ({inner_sql}) _r{outer_where}"
 
+    def _build_hierarchy_viral_ctes(
+        self,
+        cte: CTEBuilder,
+        ds: Dataset,
+        parsed_rules: List[_ParsedHRRule],
+        rule_comp: str,
+        other_ids: List[str],
+        table_src: str,
+    ) -> Optional[Tuple[str, List[str]]]:
+        """Combine child viral values per computed node, outside the measure rule chain.
+
+        For each node the child viral values (leaf code items from the source, nested
+        nodes from their own CTE) are unioned, grouped by the non-rule identifiers and
+        reduced with the propagation rule (issue #877). Returns (cte_name, viral_names)
+        or None when there are no viral attributes.
+        """
+        viral_comps = [c for c in ds.components.values() if c.role == Role.VIRAL_ATTRIBUTE]
+        if not viral_comps:
+            return None
+        reg = get_current_registry()
+        other_q = [quote_name(c) for c in other_ids]
+        raw_cols = [quote_name(c.name) for c in viral_comps]
+        node_cte: Dict[str, str] = {}
+        for i, parsed in enumerate(parsed_rules):
+            child_selects = []
+            for child in parsed.right_code_items:
+                proj = ", ".join(other_q + raw_cols)
+                if child in node_cte:
+                    child_selects.append(f"SELECT {proj} FROM {node_cte[child]}")
+                else:
+                    child_selects.append(
+                        f"SELECT {proj} FROM {table_src} WHERE {quote_name(rule_comp)} = '{child}'"
+                    )
+            if not child_selects:
+                continue
+            union = " UNION ALL ".join(child_selects)
+            agg_cols = []
+            for v in viral_comps:
+                vq = quote_name(v.name)
+                v_rule = reg.rule_for(v)
+                expr = vp_group_sql(v_rule, vq) if v_rule is not None else vp_no_rule_group_sql(vq)
+                agg_cols.append(f"{expr} AS {vq}")
+            gb = f" GROUP BY {', '.join(other_q)}" if other_q else ""
+            name = f"_vp_{i}"
+            cte.cte(
+                name,
+                f"SELECT {', '.join(other_q + agg_cols)} FROM ({union}) AS _vps_{i}{gb}",
+                materialized=True,
+            )
+            node_cte[parsed.left_code_item] = name
+        tagged = []
+        for parsed in parsed_rules:
+            cte_name = node_cte.get(parsed.left_code_item)
+            if cte_name is None:
+                continue
+            proj = ", ".join(
+                [*other_q, f"'{parsed.left_code_item}' AS {quote_name(rule_comp)}", *raw_cols]
+            )
+            tagged.append(f"SELECT {proj} FROM {cte_name}")
+        if not tagged:
+            return None
+        cte.cte("_vp_all", " UNION ALL ".join(tagged))
+        return "_vp_all", [v.name for v in viral_comps]
+
     def _build_hierarchy_sql(
         self,
         table_src: str,
@@ -3297,6 +3361,22 @@ FROM (
             final_selects.append(f"SELECT {', '.join(cols)} FROM {rule_cte}{where}")
 
         computed_sql = " UNION ALL ".join(final_selects)
+
+        # Combine child viral values into each computed node (issue #877).
+        vp_info = self._build_hierarchy_viral_ctes(
+            cte, ds, parsed_rules, rule_comp, other_ids, table_src
+        )
+        if vp_info is not None:
+            vp_name, viral_names = vp_info
+            conds = [f"c.{q_rc} = v.{q_rc}"]
+            conds += [
+                f"c.{quote_name(o)} IS NOT DISTINCT FROM v.{quote_name(o)}" for o in other_ids
+            ]
+            viral_sel = ", ".join(f"v.{quote_name(vn)}" for vn in viral_names)
+            computed_sql = (
+                f"SELECT c.*, {viral_sel} FROM ({computed_sql}) AS c "
+                f"LEFT JOIN {vp_name} AS v ON {' AND '.join(conds)}"
+            )
 
         if output == "computed":
             return cte.select(computed_sql)

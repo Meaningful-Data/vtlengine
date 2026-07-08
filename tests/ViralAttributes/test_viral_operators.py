@@ -741,3 +741,55 @@ class TestViralRuleExecutionRowPreserving:
         df = result["DS_r"].data.sort_values("Id_1")
         # "A" matches the unary clause -> "Z"; "B" is unmatched -> else "D"
         assert list(df["VAt_1"]) == ["Z", "D"]
+
+
+# -- hierarchy aggregation operator --
+
+
+class TestViralAttributeHierarchy:
+    """hierarchy computed nodes must combine child viral values via the rule; passthrough
+    rows keep their own value (issue #877)."""
+
+    _RULE = "define viral propagation VP (variable VAt_1) is aggregate max end viral propagation;"
+    _HR = (
+        "define hierarchical ruleset H (valuedomain rule Id_2) is "
+        "A = B + C; T = A + D end hierarchical ruleset;"
+    )
+
+    @staticmethod
+    def _ds() -> dict:
+        return {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Id_2", "type": "String", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                {"name": "VAt_1", "type": "Number", "role": "Viral Attribute", "nullable": True},
+            ],
+        }
+
+    @staticmethod
+    def _dp() -> pd.DataFrame:
+        return pd.DataFrame(
+            {
+                "Id_1": [1, 1, 1],
+                "Id_2": ["B", "C", "D"],
+                "Me_1": [1.0, 1.0, 1.0],
+                "VAt_1": [100, 200, 50],
+            }
+        )
+
+    @pytest.mark.parametrize("use_duckdb", BACKENDS)
+    def test_hierarchy_combines_child_viral(self, use_duckdb: bool) -> None:
+        result = run(
+            script=f"{self._RULE}{self._HR}\nDS_r <- hierarchy(DS_1, H rule Id_2 non_null);",
+            data_structures={"datasets": [self._ds()]},
+            datapoints={"DS_1": self._dp()},
+            use_duckdb=use_duckdb,
+        )
+        ds_r = result["DS_r"]
+        assert ds_r.components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
+        vat = {row["Id_2"]: row["VAt_1"] for _, row in ds_r.data.iterrows()}
+        # A = max(B 100, C 200) = 200; T = max(A 200, D 50) = 200
+        assert vat["A"] == 200
+        assert vat["T"] == 200
