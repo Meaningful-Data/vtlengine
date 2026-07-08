@@ -793,3 +793,56 @@ class TestViralAttributeHierarchy:
         # A = max(B 100, C 200) = 200; T = max(A 200, D 50) = 200
         assert vat["A"] == 200
         assert vat["T"] == 200
+
+
+# -- check_hierarchy validation operator --
+
+
+class TestViralAttributeCheckHierarchy:
+    """check_hierarchy re-attaches the validated code item's viral value and executes
+    the propagation rule (issue #877)."""
+
+    _RULE = "define viral propagation VP (variable VAt_1) is aggregate max end viral propagation;"
+    _HR = (
+        "define hierarchical ruleset H (valuedomain rule Id_2) is "
+        "A = B + C end hierarchical ruleset;"
+    )
+
+    @staticmethod
+    def _ds() -> dict:
+        return {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Id_2", "type": "String", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                {"name": "VAt_1", "type": "Number", "role": "Viral Attribute", "nullable": True},
+            ],
+        }
+
+    @staticmethod
+    def _dp() -> pd.DataFrame:
+        # A = 3 == B(1) + C(2), so the A-row validation passes.
+        return pd.DataFrame(
+            {
+                "Id_1": [1, 1, 1],
+                "Id_2": ["A", "B", "C"],
+                "Me_1": [3.0, 1.0, 2.0],
+                "VAt_1": [100, 200, 50],
+            }
+        )
+
+    @pytest.mark.parametrize("use_duckdb", BACKENDS)
+    def test_check_hierarchy_propagates_viral(self, use_duckdb: bool) -> None:
+        result = run(
+            script=f"{self._RULE}{self._HR}\nDS_r <- check_hierarchy(DS_1, H rule Id_2 all);",
+            data_structures={"datasets": [self._ds()]},
+            datapoints={"DS_1": self._dp()},
+            use_duckdb=use_duckdb,
+        )
+        ds_r = result["DS_r"]
+        assert ds_r.components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
+        assert "VAt_1" in ds_r.data.columns
+        # validation row for A carries A's viral value (100), rule-applied
+        rows = ds_r.data[ds_r.data["Id_2"] == "A"]
+        assert list(rows["VAt_1"]) == [100]

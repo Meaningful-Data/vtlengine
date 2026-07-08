@@ -3097,7 +3097,31 @@ FROM (
             )
             for p in parsed_rules
         ]
-        return cte.select(" UNION ALL ".join(rule_queries))
+        union_sql = " UNION ALL ".join(rule_queries)
+
+        # Re-attach the validated code item's viral value from the source and execute the
+        # rule over the result (issue #877).
+        viral_comps = [c for c in ds.components.values() if c.role == Role.VIRAL_ATTRIBUTE]
+        if viral_comps:
+            reg = get_current_registry()
+            keys = [*other_ids, rule_comp]
+            keys_q = ", ".join(quote_name(k) for k in keys)
+            raw = ", ".join(quote_name(c.name) for c in viral_comps)
+            cte.cte("_chv", f"SELECT {keys_q}, {raw} FROM {table_src}")
+            viral_sel = []
+            for c in viral_comps:
+                v_rule = reg.rule_for(c)
+                qn = quote_name(c.name)
+                expr = f"v.{qn}" if v_rule is None else vp_dataset_wide_sql(v_rule, f"v.{qn}")
+                viral_sel.append(f"{expr} AS {qn}")
+            join = " AND ".join(
+                f"r.{quote_name(k)} IS NOT DISTINCT FROM v.{quote_name(k)}" for k in keys
+            )
+            union_sql = (
+                f"SELECT r.*, {', '.join(viral_sel)} "
+                f"FROM ({union_sql}) r LEFT JOIN _chv v ON {join}"
+            )
+        return cte.select(union_sql)
 
     def _collect_hr_code_items(
         self, node: AST.AST, cond_mapping: Optional[Dict[str, str]] = None

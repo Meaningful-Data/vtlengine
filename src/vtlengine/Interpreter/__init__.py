@@ -1595,6 +1595,8 @@ class InterpreterAnalyzer(ASTTemplate):
                     dataset_element=dataset,
                     rule_info=rule_output_values,
                     output=output,
+                    viral_components=hr_viral_components,
+                    viral_values=hr_viral_values,
                 )
                 del rule_output_values
             else:
