@@ -483,3 +483,56 @@ class TestRegisterDataframesPartialTime:
             use_duckdb=True,
         )
         assert result["DS_A"].data["Me_1"].notna().all()
+
+
+class TestCsvLoadDateFormats:
+    """DuckDB CSV loader must accept the same Date formats as pandas (T, tz, Z)."""
+
+    _STRUCT = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Date", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+
+    def test_csv_accepts_t_separator_and_timezone(self, tmp_path):
+        from vtlengine.API import run
+
+        csv = tmp_path / "DS_1.csv"
+        csv.write_text(
+            "Id_1,Me_1\n"
+            "1,2020-01-01T12:30:45\n"
+            "2,2020-01-01T12:30:45+02:00\n"
+            "3,2020-01-01T12:30:45Z\n"
+        )
+        res = run(
+            script="DS_A <- DS_1;",
+            data_structures=self._STRUCT,
+            datapoints={"DS_1": str(csv)},
+            use_duckdb=True,
+        )
+        # All three normalize to the same naive datetime (offset dropped).
+        assert res["DS_A"].data["Me_1"].tolist() == [
+            "2020-01-01T12:30:45",
+            "2020-01-01T12:30:45",
+            "2020-01-01T12:30:45",
+        ]
+
+    def test_csv_rejects_partial_time(self, tmp_path):
+        from vtlengine.API import run
+        from vtlengine.Exceptions import DataLoadError
+
+        csv = tmp_path / "DS_1.csv"
+        csv.write_text("Id_1,Me_1\n1,2020-01-01T12:30\n")
+        with pytest.raises(DataLoadError):
+            run(
+                script="DS_A <- DS_1;",
+                data_structures=self._STRUCT,
+                datapoints={"DS_1": str(csv)},
+                use_duckdb=True,
+            )

@@ -14,6 +14,7 @@ import pandas as pd
 
 from vtlengine.DataTypes import Date, Number, TimePeriod
 from vtlengine.duckdb_transpiler.io._validation import (
+    VALID_DATE_REGEX,
     build_create_table_sql,
     build_csv_column_types,
     build_select_columns,
@@ -587,10 +588,6 @@ def _build_dataframe_select_columns(
             # a bad separator ("2020-01-01X12:30:45") and out-of-range times
             # ("2020-01-01T25:00:00") here with a clear message, instead of letting the
             # cast silently truncate them or surface a cryptic out-of-range error.
-            valid_date_regex = (
-                r"^\d{4}-\d{1,2}-\d{1,2}"
-                r"([ T]([01]\d|2[0-3]):[0-5]\d:[0-5]\d(\.\d+)?([+-]\d{2}(:?\d{2})?|Z)?)?$"
-            )
             col_as_varchar = f'CAST("{comp_name}" AS VARCHAR)'
             err = (
                 f"'Date ' || {col_as_varchar} || "
@@ -598,7 +595,7 @@ def _build_dataframe_select_columns(
             )
             exprs.append(
                 f'CASE WHEN "{comp_name}" IS NOT NULL '
-                f"AND NOT regexp_matches({col_as_varchar}, '{valid_date_regex}') "
+                f"AND NOT regexp_matches({col_as_varchar}, '{VALID_DATE_REGEX}') "
                 f"THEN error({err}) "
                 f'ELSE CAST("{comp_name}" AS {target_type}) END AS "{comp_name}"'
             )
