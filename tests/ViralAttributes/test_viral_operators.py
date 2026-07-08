@@ -532,6 +532,30 @@ class TestViralAttributeUnpivot:
         for _, row in ds_r.data.iterrows():
             assert row["VAt_1"] == expected[row["Id_1"]]
 
+    @pytest.mark.parametrize("use_duckdb", BACKENDS)
+    def test_unpivot_executes_aggregate_rule(self, use_duckdb: bool) -> None:
+        vp = "define viral propagation VP (variable VAt_1) is aggregate max end viral propagation;"
+        ds = {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                {"name": "Me_2", "type": "Number", "role": "Measure", "nullable": True},
+                {"name": "VAt_1", "type": "Number", "role": "Viral Attribute", "nullable": True},
+            ],
+        }
+        df = pd.DataFrame(
+            {"Id_1": [1, 2], "Me_1": [10.0, 20.0], "Me_2": [100.0, 200.0], "VAt_1": [1, 2]}
+        )
+        result = run(
+            script=f"{vp}\nDS_r <- DS_1[unpivot Id_2, Val];",
+            data_structures={"datasets": [ds]},
+            datapoints={"DS_1": df},
+            use_duckdb=use_duckdb,
+        )
+        # aggregate max over the source VAt_1 [1, 2] = 2, replicated to all 4 melted rows
+        assert list(result["DS_r"].data["VAt_1"]) == [2, 2, 2, 2]
+
 
 # -- Period_indicator time operator --
 
@@ -572,6 +596,27 @@ class TestViralAttributePeriodIndicator:
         expected = {"2020M1": "A", "2020M2": "B"}
         for _, row in ds_r.data.iterrows():
             assert row["VAt_1"] == expected[str(row["Id_1"])]
+
+    @pytest.mark.parametrize("use_duckdb", BACKENDS)
+    def test_period_indicator_executes_aggregate_rule(self, use_duckdb: bool) -> None:
+        vp = "define viral propagation VP (variable VAt_1) is aggregate max end viral propagation;"
+        ds = {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Time_Period", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                {"name": "VAt_1", "type": "Number", "role": "Viral Attribute", "nullable": True},
+            ],
+        }
+        df = pd.DataFrame({"Id_1": ["2020-01", "2020-02"], "Me_1": [1.0, 2.0], "VAt_1": [100, 200]})
+        result = run(
+            script=f"{vp}\nDS_r <- period_indicator(DS_1);",
+            data_structures={"datasets": [ds]},
+            datapoints={"DS_1": df},
+            use_duckdb=use_duckdb,
+        )
+        # aggregate max over the whole dataset -> 200 on every result row
+        assert list(result["DS_r"].data["VAt_1"]) == [200, 200]
 
 
 # -- check_datapoint validation operator --

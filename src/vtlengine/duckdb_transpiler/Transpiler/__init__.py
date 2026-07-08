@@ -1013,8 +1013,17 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                     break
 
             id_cols = [quote_name(c.name) for c in ds.get_identifiers()]
-            # Viral attributes pass through unchanged (issue #877).
-            viral_cols = [quote_name(v) for v in ds.get_viral_attributes_names()]
+            # Execute the viral propagation rule on the (row-preserving) result (issue #877).
+            reg = get_current_registry()
+            viral_cols: List[str] = []
+            for v_comp in ds.components.values():
+                if v_comp.role != Role.VIRAL_ATTRIBUTE:
+                    continue
+                v_qn = quote_name(v_comp.name)
+                v_rule = reg.rule_for(v_comp)
+                viral_cols.append(
+                    v_qn if v_rule is None else f"{vp_dataset_wide_sql(v_rule, v_qn)} AS {v_qn}"
+                )
             extract_expr = (
                 f'vtl_period_parse({quote_name(time_id)}).period_indicator AS "duration_var"'
             )
@@ -1971,6 +1980,26 @@ FROM (
         id_names = ds.get_identifiers_names()
         measure_names = ds.get_measures_names()
         viral_names = ds.get_viral_attributes_names()
+
+        # Execute the rule over the whole source before the melt so aggregate rules are not
+        # distorted by row replication; each UNION arm then reads the resolved value (issue #877).
+        reg = get_current_registry()
+        excl_list: List[str] = []
+        expr_list: List[str] = []
+        for comp in ds.components.values():
+            if comp.role != Role.VIRAL_ATTRIBUTE:
+                continue
+            v_rule = reg.rule_for(comp)
+            if v_rule is None:
+                continue
+            qn = quote_name(comp.name)
+            excl_list.append(qn)
+            expr_list.append(f"{vp_dataset_wide_sql(v_rule, qn)} AS {qn}")
+        if expr_list:
+            table_src = (
+                f"(SELECT * EXCLUDE ({', '.join(excl_list)}), {', '.join(expr_list)} "
+                f"FROM {table_src} AS _uv_in) AS _uv_src"
+            )
 
         if not measure_names:
             return f"SELECT * FROM {table_src}"

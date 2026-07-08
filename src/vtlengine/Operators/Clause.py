@@ -17,6 +17,7 @@ from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
 from vtlengine.Operators import Operator
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.ViralPropagation import get_current_registry
 
 
 class Calc(Operator):
@@ -311,8 +312,15 @@ class Unpivot(Operator):
     def evaluate(cls, operands: List[str], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
         if dataset.data is not None:
-            result_dataset.data = dataset.data.melt(
-                id_vars=dataset.get_identifiers_names() + dataset.get_viral_attributes_names(),
+            viral_names = dataset.get_viral_attributes_names()
+            src = dataset.data
+            if viral_names:
+                # Execute the rule over the source (one value per source row) BEFORE the
+                # melt, so aggregate rules are not distorted by row replication (issue #877).
+                src = src.copy()
+                get_current_registry().apply_row_preserving(src, viral_names)
+            result_dataset.data = src.melt(
+                id_vars=dataset.get_identifiers_names() + viral_names,
                 value_vars=dataset.get_measures_names(),
                 var_name=operands[0],
                 value_name="NEW_COLUMN",
