@@ -718,6 +718,10 @@ class Binary(Operator):
             + dataset.get_viral_attributes_names()
         )
         result_dataset.data = result_dataset.data[cols_to_keep]
+        # Execute the viral propagation rule on the (row-preserving) result (issue #877).
+        get_current_registry().apply_row_preserving(
+            result_dataset.data, result_dataset.get_viral_attributes_names()
+        )
         cls.modify_measure_column(result_dataset)
         return result_dataset
 
@@ -988,6 +992,10 @@ class Unary(Operator):
         result_data = result_data[cols_to_keep]
 
         result_dataset.data = result_data
+        # Execute the viral propagation rule on the (row-preserving) result (issue #877).
+        get_current_registry().apply_row_preserving(
+            result_dataset.data, result_dataset.get_viral_attributes_names()
+        )
         cls.modify_measure_column(result_dataset)
         return result_dataset
 

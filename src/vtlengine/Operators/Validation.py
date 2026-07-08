@@ -16,6 +16,7 @@ from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators import Operator
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.ViralPropagation import get_current_registry
 
 
 # noinspection PyTypeChecker
@@ -201,6 +202,10 @@ class Validation(Operator):
             role=Role.MEASURE,
             nullable=True,
         )
+        # Viral attributes propagate to the validation result; their values are
+        # re-attached from the original dataset in evaluate (issue #877).
+        for viral_comp in dataset_element.get_viral_attributes():
+            result_components[viral_comp.name] = copy(viral_comp)
 
         return Dataset(name=dataset_name, components=result_components, data=None)
 
@@ -229,6 +234,21 @@ class Validation(Operator):
                 + dataset_element.get_measures_names()
                 + validation_measures
             ]
+
+        # Re-attach viral attributes from the original dataset, matched per datapoint
+        # on the original identifiers, then execute the propagation rule (issue #877).
+        viral_names = dataset_element.get_viral_attributes_names()
+        if viral_names and dataset_element.data is not None:
+            join_ids = [
+                name
+                for name in result.get_identifiers_names()
+                if name in dataset_element.components
+            ]
+            viral_src = dataset_element.data[join_ids + viral_names].drop_duplicates(
+                subset=join_ids
+            )
+            result.data = result.data.merge(viral_src, on=join_ids, how="left")
+            get_current_registry().apply_row_preserving(result.data, viral_names)
 
         result.data = result.data[result.get_components_names()]
         return result

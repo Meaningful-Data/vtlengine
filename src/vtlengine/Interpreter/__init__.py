@@ -1619,10 +1619,29 @@ class InterpreterAnalyzer(ASTTemplate):
             dpr_info = {}
 
         rule_output_values = {}
-        self.ruleset_dataset = dataset_element
+        # Keep viral attributes out of rule handling; they are re-attached from the
+        # original dataset in Validation.evaluate (issue #877).
+        ruleset_dataset = dataset_element
+        dp_viral_names = dataset_element.get_viral_attributes_names()
+        if dp_viral_names:
+            stripped_data = (
+                dataset_element.data.drop(columns=dp_viral_names)
+                if dataset_element.data is not None
+                else None
+            )
+            ruleset_dataset = Dataset(
+                name=dataset_element.name,
+                components={
+                    name: comp
+                    for name, comp in dataset_element.components.items()
+                    if comp.role != Role.VIRAL_ATTRIBUTE
+                },
+                data=stripped_data,
+            )
+        self.ruleset_dataset = ruleset_dataset
         self.ruleset_signature = dpr_info.get("signature")
         if dpr_info.get("signature_type") == "variable" and not self.ruleset_signature:
-            self.ruleset_signature = {name: name for name in dataset_element.components}
+            self.ruleset_signature = {name: name for name in ruleset_dataset.components}
         self.ruleset_mode = output
 
         # Gather rule data

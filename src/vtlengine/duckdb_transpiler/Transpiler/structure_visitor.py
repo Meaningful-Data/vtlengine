@@ -618,6 +618,10 @@ class StructureVisitor(ASTTemplate):
             with_imbalance=False,
             with_bool_var=output_mode in ("all", "all_measures"),
         )
+        # Viral attributes propagate to the validation result (issue #877).
+        for name, comp in inner_ds.components.items():
+            if comp.role == Role.VIRAL_ATTRIBUTE:
+                comps[name] = comp
         return Dataset(name="", components=comps, data=None)
 
     def _build_exists_in_structure(self, node: AST.MulOp) -> Optional[Dataset]:

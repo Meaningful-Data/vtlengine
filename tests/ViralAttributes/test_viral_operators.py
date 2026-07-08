@@ -572,3 +572,127 @@ class TestViralAttributePeriodIndicator:
         expected = {"2020M1": "A", "2020M2": "B"}
         for _, row in ds_r.data.iterrows():
             assert row["VAt_1"] == expected[str(row["Id_1"])]
+
+
+# -- check_datapoint validation operator --
+
+_DPR = """
+define datapoint ruleset R (variable Me_1) is
+    r1: when Me_1 > 0 then Me_1 < 15 errorcode "e1" errorlevel 1
+end datapoint ruleset;
+"""
+
+
+class TestViralAttributeCheckDatapoint:
+    """Viral attributes must be re-attached to the check_datapoint result, per source
+    datapoint (issue #877)."""
+
+    @staticmethod
+    def _ds() -> dict:
+        return {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                {"name": "VAt_1", "type": "String", "role": "Viral Attribute", "nullable": True},
+            ],
+        }
+
+    @staticmethod
+    def _dp() -> pd.DataFrame:
+        return pd.DataFrame({"Id_1": [1, 2], "Me_1": [10.0, 20.0], "VAt_1": ["A", "B"]})
+
+    @pytest.mark.parametrize("output", ["", "all", "all_measures"])
+    @pytest.mark.parametrize("use_duckdb", BACKENDS)
+    def test_check_datapoint_reattaches_viral(self, output: str, use_duckdb: bool) -> None:
+        expr = f"check_datapoint(DS_1, R {output})" if output else "check_datapoint(DS_1, R)"
+        result = run(
+            script=f"{_DPR}\nDS_r <- {expr};",
+            data_structures={"datasets": [self._ds()]},
+            datapoints={"DS_1": self._dp()},
+            use_duckdb=use_duckdb,
+        )
+        ds_r = result["DS_r"]
+        assert "VAt_1" in ds_r.components, "VAt_1 missing from result components"
+        assert ds_r.components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
+        assert "VAt_1" in ds_r.data.columns, "VAt_1 missing from result data"
+        expected = {1: "A", 2: "B"}
+        for _, row in ds_r.data.iterrows():
+            assert row["VAt_1"] == expected[row["Id_1"]]
+
+    @pytest.mark.parametrize("use_duckdb", BACKENDS)
+    def test_check_datapoint_executes_aggregate_rule(self, use_duckdb: bool) -> None:
+        vp = "define viral propagation VP (variable VAt_1) is aggregate max end viral propagation;"
+        ds = {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                {"name": "VAt_1", "type": "Number", "role": "Viral Attribute", "nullable": True},
+            ],
+        }
+        df = pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [10.0, 20.0, 30.0], "VAt_1": [100, 200, 300]})
+        result = run(
+            script=f"{vp}{_DPR}\nDS_r <- check_datapoint(DS_1, R all);",
+            data_structures={"datasets": [ds]},
+            datapoints={"DS_1": df},
+            use_duckdb=use_duckdb,
+        )
+        # aggregate max over all datapoints -> 300 on every validation row
+        assert list(result["DS_r"].data["VAt_1"]) == [300, 300, 300]
+
+
+# -- Rule execution on row-preserving dataset-level operators (issue #877) --
+
+_AGG_RULE = "define viral propagation VP (variable VAt_1) is aggregate max end viral propagation;"
+_ENUM_RULE = (
+    'define viral propagation VP (variable VAt_1) is when "A" then "Z"; else "D" '
+    "end viral propagation;"
+)
+
+
+class TestViralRuleExecutionRowPreserving:
+    """Row-preserving dataset-level operators must EXECUTE the rule: aggregate rules
+    collapse over the whole dataset (one value on every row); enumerated rules map
+    per row (issue #877)."""
+
+    @staticmethod
+    def _ds(vtype: str) -> dict:
+        return {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                {"name": "VAt_1", "type": vtype, "role": "Viral Attribute", "nullable": True},
+            ],
+        }
+
+    @pytest.mark.parametrize("expr", ["round(DS_1)", "abs(DS_1)", "DS_1 * 2"])
+    @pytest.mark.parametrize("use_duckdb", BACKENDS)
+    def test_aggregate_rule_is_dataset_wide(self, expr: str, use_duckdb: bool) -> None:
+        result = run(
+            script=f"{_AGG_RULE}\nDS_r <- {expr};",
+            data_structures={"datasets": [self._ds("Number")]},
+            datapoints={
+                "DS_1": pd.DataFrame(
+                    {"Id_1": [1, 2, 3], "Me_1": [1.0, 2.0, 3.0], "VAt_1": [100, 200, 300]}
+                )
+            },
+            use_duckdb=use_duckdb,
+        )
+        # aggregate max over the whole dataset -> 300 on every result row
+        assert list(result["DS_r"].data["VAt_1"]) == [300, 300, 300]
+
+    @pytest.mark.parametrize("use_duckdb", BACKENDS)
+    def test_enumerated_rule_is_per_row(self, use_duckdb: bool) -> None:
+        result = run(
+            script=f"{_ENUM_RULE}\nDS_r <- round(DS_1);",
+            data_structures={"datasets": [self._ds("String")]},
+            datapoints={
+                "DS_1": pd.DataFrame({"Id_1": [1, 2], "Me_1": [1.0, 2.0], "VAt_1": ["A", "B"]})
+            },
+            use_duckdb=use_duckdb,
+        )
+        df = result["DS_r"].data.sort_values("Id_1")
+        # "A" matches the unary clause -> "Z"; "B" is unmatched -> else "D"
+        assert list(df["VAt_1"]) == ["Z", "D"]

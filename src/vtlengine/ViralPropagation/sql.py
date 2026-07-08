@@ -60,6 +60,25 @@ def _enumerated_case(rule: ViralPropagationRule, a_ref: str, b_ref: str) -> str:
     return "CASE " + " ".join(whens) + f" ELSE {default} END"
 
 
+def _enumerated_single_case(rule: ViralPropagationRule, ref: str) -> str:
+    """A CASE expr mapping a single value: only unary clauses apply, else the default.
+
+    A single value cannot match a binary clause (which needs a pair), so only the
+    ``when <value> then ...`` (unary) clauses are considered, mirroring
+    ``resolve_single`` in the pandas path.
+    """
+    whens: List[str] = []
+    unary = [c for c in rule.enumerated_clauses if len(c["values"]) == 1]
+    for clause in unary:
+        value = clause["values"][0]
+        cond = f"{ref} IS NULL" if value is None else f"{ref} = {_sql_literal(value)}"
+        whens.append(f"WHEN {cond} THEN {_sql_literal(clause['result'])}")
+    default = _sql_literal(rule.default_value)
+    if not whens:
+        return default
+    return "CASE " + " ".join(whens) + f" ELSE {default} END"
+
+
 def vp_pair_sql(rule: ViralPropagationRule, a_ref: str, b_ref: str) -> str:
     """SQL expression combining two viral values for a binary operator."""
     if rule.aggregate_function is not None:
@@ -96,3 +115,14 @@ def vp_group_sql_windowed(rule: ViralPropagationRule, col_ref: str, over_clause:
 def vp_no_rule_group_sql(col_ref: str) -> str:
     """Group no-rule keep: copy the value of a single-row group, else NULL."""
     return f"CASE WHEN COUNT(*) = 1 THEN MAX({col_ref}) ELSE NULL END"
+
+
+def vp_dataset_wide_sql(rule: ViralPropagationRule, col_ref: str) -> str:
+    """SQL executing the rule over a whole row-preserving operator result.
+
+    Aggregate rules collapse every viral value to one (``AGG(col) OVER ()``) applied
+    to every row; enumerated rules map each value per row.
+    """
+    if rule.aggregate_function is not None:
+        return f"{_AGG_GROUP[rule.aggregate_function]}({col_ref}) OVER ()"
+    return _enumerated_single_case(rule, col_ref)

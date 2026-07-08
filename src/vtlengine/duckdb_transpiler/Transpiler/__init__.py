@@ -47,6 +47,7 @@ from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, V
 from vtlengine.Operators.Join import merged_viral_attribute_names
 from vtlengine.ViralPropagation import get_current_registry
 from vtlengine.ViralPropagation.sql import (
+    vp_dataset_wide_sql,
     vp_group_sql,
     vp_group_sql_windowed,
     vp_no_rule_group_sql,
@@ -583,10 +584,16 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 if viral_expr_fn is not None:
                     cols.append(f"{viral_expr_fn(name, comp)} AS {quote_name(name)}")
                 elif output_ds is not None and name in output_ds.components:
-                    # Single value per row: pass the viral attribute through unchanged,
-                    # but only when the operator's output structure keeps it (so data
-                    # matches the declared structure for unary / dataset-scalar / etc.).
-                    cols.append(quote_name(name))
+                    # Row-preserving op: execute the viral propagation rule over the
+                    # result (aggregate rules collapse dataset-wide, enumerated map per
+                    # row); no rule = passthrough. Only when the output keeps it (issue #877).
+                    rule = get_current_registry().rule_for(comp)
+                    if rule is None:
+                        cols.append(quote_name(name))
+                    else:
+                        cols.append(
+                            f"{vp_dataset_wide_sql(rule, quote_name(name))} AS {quote_name(name)}"
+                        )
 
         return SQLBuilder().select(*cols).from_table(table_src).build()
 
@@ -2786,6 +2793,7 @@ FROM (
         use_cte = len(rules) > 1 and stripped.startswith("(") and stripped.endswith(")")
         rule_table_src = "_dp_src" if use_cte else table_src
 
+        viral_comps = [c for c in ds.components.values() if c.role == Role.VIRAL_ATTRIBUTE]
         rule_queries = [
             self._build_dp_rule_sql(
                 rule=rule,
@@ -2794,6 +2802,7 @@ FROM (
                 id_cols=id_cols,
                 measure_cols=ds.get_measures_names(),
                 output_mode=node.output.value if node.output else "invalid",
+                viral_comps=viral_comps,
             )
             for rule in rules
         ]
@@ -2813,6 +2822,7 @@ FROM (
         id_cols: List[str],
         measure_cols: List[str],
         output_mode: str,
+        viral_comps: Optional[List[Any]] = None,
     ) -> str:
         """Build SQL for a single datapoint rule."""
         rule_node = rule.rule
@@ -2837,16 +2847,27 @@ FROM (
         ec_sql = self._error_code_sql(rule.erCode)
         el_sql = self._error_code_sql(rule.erLevel)
         select_parts = [quote_name(c) for c in id_cols + measure_cols]
+        # Viral attributes: execute the propagation rule over the result (issue #877).
+        reg = get_current_registry()
+        viral_parts: List[str] = []
+        for comp in viral_comps or []:
+            qn = quote_name(comp.name)
+            v_rule = reg.rule_for(comp)
+            viral_parts.append(
+                qn if v_rule is None else f"{vp_dataset_wide_sql(v_rule, qn)} AS {qn}"
+            )
         if output_mode == "invalid":
             select_parts.append(f"'{rule_name}' AS {quote_name('ruleid')}")
             select_parts.append(f"{ec_sql} AS {quote_name('errorcode')}")
             select_parts.append(f"{el_sql} AS {quote_name('errorlevel')}")
+            select_parts.extend(viral_parts)
             return f"SELECT {', '.join(select_parts)} FROM {table_src} WHERE {fail_cond}"
 
         select_parts.append(f"{bool_expr} AS {quote_name('bool_var')}")
         select_parts.append(f"'{rule_name}' AS {quote_name('ruleid')}")
         for val, col in [(ec_sql, quote_name("errorcode")), (el_sql, quote_name("errorlevel"))]:
             select_parts.append(f"CASE WHEN {fail_cond} THEN {val} ELSE NULL END AS {col}")
+        select_parts.extend(viral_parts)
         return f"SELECT {', '.join(select_parts)} FROM {table_src}"
 
     def _visit_dp_expr(self, node: AST.AST, signature: Dict[str, str]) -> str:
