@@ -28,6 +28,18 @@
           "nullable": true
         },
         {
+          "name": "At_11",
+          "role": "Attribute",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "At_12",
+          "role": "Attribute",
+          "type": "Number",
+          "nullable": true
+        },
+        {
           "name": "Me_21",
           "role": "Measure",
           "type": "Number",
@@ -36,6 +48,18 @@
         {
           "name": "Me_22",
           "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "At_21",
+          "role": "Attribute",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "At_22",
+          "role": "Attribute",
           "type": "Number",
           "nullable": true
         }
