@@ -34,6 +34,18 @@
           "nullable": true
         },
         {
+          "name": "At11",
+          "role": "Attribute",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "At12",
+          "role": "Attribute",
+          "type": "Number",
+          "nullable": true
+        },
+        {
           "name": "Id21",
           "role": "Identifier",
           "type": "Integer",
@@ -54,6 +66,18 @@
         {
           "name": "Me22",
           "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "At_1",
+          "role": "Attribute",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "At_2",
+          "role": "Attribute",
           "type": "Number",
           "nullable": true
         }

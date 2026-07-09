@@ -16,6 +16,12 @@
           "nullable": false
         },
         {
+          "name": "At_1",
+          "role": "Attribute",
+          "type": "Number",
+          "nullable": true
+        },
+        {
           "name": "Id_21",
           "role": "Identifier",
           "type": "Integer",
@@ -26,6 +32,12 @@
           "role": "Identifier",
           "type": "String",
           "nullable": false
+        },
+        {
+          "name": "At_2",
+          "role": "Attribute",
+          "type": "Number",
+          "nullable": true
         }
       ]
     }
