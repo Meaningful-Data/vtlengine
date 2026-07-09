@@ -2477,11 +2477,10 @@ class JoinsGeneralTests(JoinHelper):
     def test_GH_847_9(self):
         """
         Expression: DS_r := inner_join(DS_1, DS_2);
-        Description: Non-viral attributes are NOT propagated through a join
-                     (VTL 2.2): the result keeps only identifiers, measures and
-                     viral attributes. DS_1's non-viral attribute At_1 is dropped,
-                     leaving Id_1, Me_1, Me_2.
-        Git Issue: GH_847.
+        Description: Attributes are maintained through a join. DS_1's attribute
+                     At_1 is not present in DS_2, so it carries over unchanged and
+                     the result keeps Id_1, Me_1, At_1, Me_2.
+        Git Issue: GH_847, GH_881.
         """
         code = "GH_847_9"
         number_inputs = 2
