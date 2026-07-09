@@ -45,8 +45,11 @@ dependencies = [
     "numpy>=2.0.2,<2.1; python_version < '3.10'",
     # Split so no single numpy version covers the whole range: 2.2.x is the last
     # series supporting 3.10 but ships no cp314 wheels, so pin >=3.11 to 2.4.x
-    # (which has them). This keeps Dependabot lock regenerations from collapsing
-    # numpy to 2.2.6 for all versions and breaking the Python 3.14 build.
+    # (which has them). Poetry regenerations respect this split, but Dependabot
+    # does NOT: dependabot/dependabot-core#5862 makes any Dependabot update drop
+    # the numpy >=3.11 lock entry, yielding a lock that violates these markers
+    # (numpy 2.2.6 everywhere) and segfaults windows/3.14 CI. Before merging a
+    # Dependabot PR, check its poetry.lock diff keeps both numpy entries.
     "numpy>=2.2.0,<2.5; python_version == '3.10'",
     "numpy>=2.4.4,<2.5; python_version >= '3.11'",
 ]
