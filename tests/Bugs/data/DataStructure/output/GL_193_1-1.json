@@ -46,6 +46,18 @@
           "nullable": false
         },
         {
+          "name": "NEVS_PRTCTN_ALLCTD_VL",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "NEVS_THRD_PRTY_PRRTY_CLMS",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
           "name": "PRTCTN_ALLCTD_VL",
           "role": "Measure",
           "type": "Number",
