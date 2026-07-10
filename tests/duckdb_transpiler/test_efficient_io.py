@@ -425,3 +425,143 @@ class TestExtractDatapointPathsSDMX:
 
         assert path_dict is None
         assert "DS_1" in df_dict
+
+
+class TestRegisterDataframesPartialTime:
+    """DuckDB DataFrame-register path must reject truncated time components."""
+
+    _STRUCT = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Date", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+
+    @pytest.mark.parametrize(
+        "value",
+        [
+            "2020-01-01 12:30",  # partial: no seconds (space separator)
+            "2020-01-01T12:30",  # partial: no seconds (T separator)
+            "2020-01-01T12",  # partial: hour only
+            "2020-01-01X12:30:45",  # bad separator (must not be truncated to date)
+            "2020-01-01T25:00:00",  # time value out of range
+        ],
+    )
+    def test_rejects_invalid_datetime(self, value):
+        from vtlengine.API import run
+        from vtlengine.Exceptions import DataLoadError
+
+        df = pd.DataFrame({"Id_1": [1], "Me_1": [value]})
+        with pytest.raises(DataLoadError) as exc_info:
+            run(
+                script="DS_A <- DS_1;",
+                data_structures=self._STRUCT,
+                datapoints={"DS_1": df},
+            )
+        # The offending value must be named in the error, never "unknown".
+        assert "unknown" not in str(exc_info.value.args[0])
+
+    @pytest.mark.parametrize("value", ["2020-01-01T12:30:45", "2020-01-01 12:30:45", "2020-01-01"])
+    def test_accepts_full_or_date_only(self, value):
+        from vtlengine.API import run
+
+        df = pd.DataFrame({"Id_1": [1], "Me_1": [value]})
+        result = run(
+            script="DS_A <- DS_1;",
+            data_structures=self._STRUCT,
+            datapoints={"DS_1": df},
+        )
+        assert result["DS_A"].data["Me_1"].notna().all()
+
+    @pytest.mark.parametrize(
+        "values",
+        [
+            pd.to_datetime(["2020-01-01 12:30:45"]).tz_localize("Europe/Madrid"),
+            pd.to_datetime(["2020-01-01 12:30:45"]),
+            pd.to_datetime(["2020-01-01"]).date,
+        ],
+        ids=["tz-aware-datetime64", "naive-datetime64", "date-objects"],
+    )
+    def test_typed_columns_bypass_string_guard(self, values):
+        """Typed temporal columns cannot hold malformed strings; the regex guard must
+        not reject them (a TIMESTAMPTZ renders to VARCHAR with a '+01' offset that is
+        not the string input format)."""
+        from vtlengine.API import run
+
+        df = pd.DataFrame({"Id_1": [1], "Me_1": values})
+        result = run(
+            script="DS_A <- DS_1;",
+            data_structures=self._STRUCT,
+            datapoints={"DS_1": df},
+        )
+        assert result["DS_A"].data["Me_1"].notna().all()
+
+    def test_categorical_strings_are_still_validated(self):
+        """A pandas categorical of strings registers as ENUM in DuckDB; the guard must
+        treat it as a string source and reject malformed values."""
+        from vtlengine.API import run
+        from vtlengine.Exceptions import DataLoadError
+
+        df = pd.DataFrame({"Id_1": [1], "Me_1": pd.Series(["2020-01-01T12:30"], dtype="category")})
+        with pytest.raises(DataLoadError):
+            run(
+                script="DS_A <- DS_1;",
+                data_structures=self._STRUCT,
+                datapoints={"DS_1": df},
+            )
+
+
+class TestCsvLoadDateFormats:
+    """DuckDB CSV loader must accept the same Date formats as pandas (T, tz, Z)."""
+
+    _STRUCT = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Date", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+
+    def test_csv_accepts_t_separator_and_timezone(self, tmp_path):
+        from vtlengine.API import run
+
+        csv = tmp_path / "DS_1.csv"
+        csv.write_text(
+            "Id_1,Me_1\n"
+            "1,2020-01-01T12:30:45\n"
+            "2,2020-01-01T12:30:45+02:00\n"
+            "3,2020-01-01T12:30:45Z\n"
+        )
+        res = run(
+            script="DS_A <- DS_1;",
+            data_structures=self._STRUCT,
+            datapoints={"DS_1": str(csv)},
+        )
+        # All three normalize to the same naive datetime (offset dropped).
+        assert res["DS_A"].data["Me_1"].tolist() == [
+            "2020-01-01T12:30:45",
+            "2020-01-01T12:30:45",
+            "2020-01-01T12:30:45",
+        ]
+
+    def test_csv_rejects_partial_time(self, tmp_path):
+        from vtlengine.API import run
+        from vtlengine.Exceptions import DataLoadError
+
+        csv = tmp_path / "DS_1.csv"
+        csv.write_text("Id_1,Me_1\n1,2020-01-01T12:30\n")
+        with pytest.raises(DataLoadError):
+            run(
+                script="DS_A <- DS_1;",
+                data_structures=self._STRUCT,
+                datapoints={"DS_1": str(csv)},
+            )
