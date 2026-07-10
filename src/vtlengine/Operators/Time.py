@@ -153,7 +153,7 @@ class Period_indicator(Unary):
             result_components = {
                 comp.name: comp
                 for comp in operand.components.values()
-                if comp.role == Role.IDENTIFIER
+                if comp.role in (Role.IDENTIFIER, Role.VIRAL_ATTRIBUTE)
             }
             result_components["duration_var"] = Component(
                 name="duration_var",

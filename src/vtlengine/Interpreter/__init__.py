@@ -41,6 +41,8 @@ from vtlengine.DataTypes import (
     BASIC_TYPES,
     SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
+    Integer,
+    Number,
     ScalarType,
     check_unary_implicit_promotion,
 )
@@ -164,6 +166,13 @@ class InterpreterAnalyzer(ASTTemplate):
 
             if result is None:
                 continue
+
+            if isinstance(result, Dataset):
+                # Every viral attribute must declare a viral propagation rule (issue #877).
+                vp_registry = get_current_registry()
+                for viral_comp in result.get_viral_attributes():
+                    if vp_registry.rule_for(viral_comp) is None:
+                        raise SemanticError("1-3-3-6", name=viral_comp.name)
 
             vtlengine.Exceptions.dataset_output = None
             self.datasets[result.name] = copy(result)
@@ -326,6 +335,32 @@ class InterpreterAnalyzer(ASTTemplate):
             default_value=node.default_value,
         )
         registry.register(rule)
+
+        # sum/avg require a numeric viral attribute; raise a clear error at semantic time
+        # instead of a cryptic runtime crash (issue #877).
+        if aggregate_function in ("sum", "avg"):
+            incompatible: Optional[Type[ScalarType]] = None
+            if node.signature_type == "variable":
+                for ds in (self.datasets or {}).values():
+                    comp = ds.components.get(node.target)
+                    if (
+                        comp is not None
+                        and comp.role == Role.VIRAL_ATTRIBUTE
+                        and comp.data_type not in (Integer, Number)
+                    ):
+                        incompatible = comp.data_type
+                        break
+            else:  # valuedomain
+                vd = (self.value_domains or {}).get(node.target)
+                if vd is not None and vd.type not in (Integer, Number):
+                    incompatible = vd.type
+            if incompatible is not None:
+                raise SemanticError(
+                    "1-3-3-5",
+                    name=node.target,
+                    function=aggregate_function,
+                    type=incompatible.__name__,
+                )
 
     # Execution Language
     def visit_Assignment(self, node: AST.Assignment) -> Any:
@@ -1124,7 +1159,9 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_HROperation(self, node: AST.HROperation) -> Any:  # noqa: C901
         conditions = node.conditions or []
         has_conditions = len(conditions) > 0
-        dataset = deepcopy(self.visit(node.dataset)) if has_conditions else self.visit(node.dataset)
+        # Always deep-copy: validate_hr_dataset strips attributes in place, which would
+        # otherwise corrupt the shared operand structure for later statements (issue #877).
+        dataset = deepcopy(self.visit(node.dataset))
         component: Optional[str] = self.visit(node.rule_component) if node.rule_component else None
         hr_name = node.ruleset_name
         cond_components = [self.visit(c) for c in conditions] if has_conditions else []
@@ -1201,6 +1238,10 @@ class InterpreterAnalyzer(ASTTemplate):
                 )
                 HRDAGAnalyzer().visit(hierarchy_ast)
 
+            # Capture viral attributes before the strip; re-attached at the final
+            # validate, outside the rule handling (issue #877).
+            hr_viral_components = dataset.get_viral_attributes()
+
             Check_Hierarchy.validate_hr_dataset(dataset, component)
 
             # Set up interpreter state for rule processing
@@ -1231,8 +1272,9 @@ class InterpreterAnalyzer(ASTTemplate):
                     dataset_element=dataset,
                     rule_info=rule_output_values,
                     output=output,
+                    viral_components=hr_viral_components,
                 )
-            return Hierarchy.validate(dataset, output)
+            return Hierarchy.validate(dataset, output, viral_components=hr_viral_components)
 
         raise SemanticError("1-3-5", op_type="HROperation", node_op=node.op)
 
@@ -1281,10 +1323,23 @@ class InterpreterAnalyzer(ASTTemplate):
             dpr_info = {}
 
         rule_output_values = {}
-        self.ruleset_dataset = dataset_element
+        # Keep viral attributes out of rule handling; they are re-attached from the
+        # operand in Check_Datapoint.validate (issue #877).
+        ruleset_dataset = dataset_element
+        if dataset_element.get_viral_attributes_names():
+            ruleset_dataset = Dataset(
+                name=dataset_element.name,
+                components={
+                    name: comp
+                    for name, comp in dataset_element.components.items()
+                    if comp.role != Role.VIRAL_ATTRIBUTE
+                },
+                data=None,
+            )
+        self.ruleset_dataset = ruleset_dataset
         self.ruleset_signature = dpr_info.get("signature")
         if dpr_info.get("signature_type") == "variable" and not self.ruleset_signature:
-            self.ruleset_signature = {name: name for name in dataset_element.components}
+            self.ruleset_signature = {name: name for name in ruleset_dataset.components}
         self.ruleset_mode = output
 
         # Gather rule data

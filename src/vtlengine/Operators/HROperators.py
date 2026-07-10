@@ -1,5 +1,6 @@
 import operator
 from copy import copy
+from typing import List, Optional
 
 import vtlengine.Operators as Operators
 from vtlengine.AST.Grammar.tokens import HIERARCHY
@@ -108,9 +109,17 @@ class Hierarchy(Operators.Operator):
     op = HIERARCHY
 
     @classmethod
-    def validate(cls, dataset: Dataset, output: str) -> Dataset:
+    def validate(
+        cls,
+        dataset: Dataset,
+        output: str,
+        viral_components: Optional[List[Component]] = None,
+    ) -> Dataset:
         dataset_name = VirtualCounter._new_ds_name()
         result_components = {
             comp_name: copy(comp) for comp_name, comp in dataset.components.items()
         }
+        # Viral attributes propagate to the hierarchy result (issue #877).
+        for viral_comp in viral_components or []:
+            result_components[viral_comp.name] = copy(viral_comp)
         return Dataset(name=dataset_name, components=result_components, data=None)

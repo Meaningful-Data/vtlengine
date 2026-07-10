@@ -14,6 +14,7 @@ import pandas as pd
 
 from vtlengine.DataTypes import Date, Number, TimePeriod
 from vtlengine.duckdb_transpiler.io._validation import (
+    VALID_DATE_REGEX,
     build_create_table_sql,
     build_csv_column_types,
     build_select_columns,
@@ -180,10 +181,10 @@ def _detect_csv_format(
 def _read_parquet_columns(
     conn: duckdb.DuckDBPyConnection,
     file_path: Path,
-) -> List[str]:
-    """Read the column list of a parquet file via a zero-row scan."""
+) -> Tuple[List[str], Dict[str, str]]:
+    """Read the column list and DuckDB column types of a parquet file via a zero-row scan."""
     rel = conn.sql(f"SELECT * FROM read_parquet('{file_path}') LIMIT 0")
-    return list(rel.columns)
+    return list(rel.columns), {c: str(t) for c, t in zip(rel.columns, rel.types)}
 
 
 def load_datapoints_duckdb(
@@ -337,7 +338,7 @@ def _load_parquet(
     conn.execute(build_create_table_sql(dataset_name, components))
 
     try:
-        parquet_cols = _read_parquet_columns(conn, file_path)
+        parquet_cols, parquet_types = _read_parquet_columns(conn, file_path)
 
         if len(set(parquet_cols)) != len(parquet_cols):
             duplicates = list({item for item in parquet_cols if parquet_cols.count(item) > 1})
@@ -350,7 +351,9 @@ def _load_parquet(
         keep_columns = handle_sdmx_columns(parquet_cols, components)
         check_missing_identifiers(id_columns, keep_columns, file_path)
 
-        select_exprs = _build_dataframe_select_columns(components, df_columns=parquet_cols)
+        select_exprs = _build_dataframe_select_columns(
+            components, df_columns=parquet_cols, source_types=parquet_types
+        )
 
         action_filter = ""
         if "ACTION" in parquet_cols and "ACTION" not in components:
@@ -565,21 +568,51 @@ def _build_dataframe_select_columns(
     components: Dict[str, Component],
     df_columns: Optional[List[str]] = None,
     type_overrides: Optional[Dict[str, str]] = None,
+    source_types: Optional[Dict[str, str]] = None,
 ) -> List[str]:
     """Build SELECT expressions with explicit CAST for DataFrame → DuckDB table insertion.
 
     Ensures type enforcement matches the CSV loading path (load_datapoints_duckdb).
-    Columns missing from the DataFrame are filled with NULL.
+    Columns missing from the DataFrame are filled with NULL. ``source_types`` maps
+    source column names to their DuckDB types; a column absent from it is assumed
+    to be VARCHAR.
     """
     df_col_set = set(df_columns) if df_columns is not None else None
     overrides = type_overrides or {}
+    src_types = source_types or {}
     exprs: List[str] = []
     for comp_name, comp in components.items():
         target_type = overrides.get(comp_name, get_column_sql_type(comp))
+        source_type = src_types.get(comp_name, "VARCHAR").upper()
         if df_col_set is not None and comp_name not in df_col_set:
             exprs.append(f'CAST(NULL AS {target_type}) AS "{comp_name}"')
         elif comp.data_type == Number:
             exprs.append(f'CAST(CAST("{comp_name}" AS VARCHAR) AS {target_type}) AS "{comp_name}"')
+        elif comp.data_type == Date and (
+            "VARCHAR" in source_type or source_type.startswith("ENUM")
+        ):
+            # Accept only a bare date, or a date with a COMPLETE, in-range time
+            # (HH:MM:SS, optional fractional seconds / timezone), matching the strict
+            # rule on the pandas path. This rejects partial times ("...HH" / "...HH:MM"),
+            # a bad separator ("2020-01-01X12:30:45") and out-of-range times
+            # ("2020-01-01T25:00:00") here with a clear message, instead of letting the
+            # cast silently truncate them or surface a cryptic out-of-range error.
+            # The guard only applies to string-like source columns (VARCHAR, or ENUM
+            # from pandas categoricals): a temporal source (DATE/TIMESTAMP/TIMESTAMPTZ)
+            # cannot hold a malformed string, and its VARCHAR rendering (e.g. a "+01"
+            # offset) is not the input format the regex validates, so those keep the
+            # plain CAST.
+            col_as_varchar = f'CAST("{comp_name}" AS VARCHAR)'
+            err = (
+                f"'Date ' || {col_as_varchar} || "
+                f"' has an invalid or incomplete time; expected YYYY-MM-DD HH:MM:SS.'"
+            )
+            exprs.append(
+                f'CASE WHEN "{comp_name}" IS NOT NULL '
+                f"AND NOT regexp_matches({col_as_varchar}, '{VALID_DATE_REGEX}') "
+                f"THEN error({err}) "
+                f'ELSE CAST("{comp_name}" AS {target_type}) END AS "{comp_name}"'
+            )
         else:
             exprs.append(f'CAST("{comp_name}" AS {target_type}) AS "{comp_name}"')
     return exprs
@@ -620,8 +653,12 @@ def register_dataframes(
         temp_view = f"_temp_{name}"
         conn.register(temp_view, df)
         try:
+            source_types = {
+                str(row[0]): str(row[1])
+                for row in conn.execute(f'DESCRIBE "{temp_view}"').fetchall()
+            }
             select_exprs = _build_dataframe_select_columns(
-                components, list(df.columns), type_overrides
+                components, list(df.columns), type_overrides, source_types
             )
             col_list = ", ".join(f'"{c}"' for c in components)
             conn.execute(

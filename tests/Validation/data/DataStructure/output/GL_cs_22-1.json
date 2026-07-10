@@ -26,6 +26,18 @@
           "role": "Identifier",
           "type": "Time_Period",
           "nullable": false
+        },
+        {
+          "name": "CONF_STATUS",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "OBS_STATUS",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
         }
       ],
       "DataPoints": null

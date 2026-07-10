@@ -145,6 +145,11 @@ Date
       - ISO 8601 date: ``"2020-01-15"``,
         ``"2020-01-15 10:30:00"``,
         ``"2020-01-15T10:30:00"``.
+        A time component, when present, must be a
+        complete ``HH:MM:SS`` (``T`` or space
+        separator). An optional timezone suffix
+        (``Z`` or ``±HH:MM``) is accepted; the offset
+        is discarded and the wall-clock time is kept.
         Nanosecond precision is truncated to
         microseconds. Year range: 1800–9999.
     * - **Input (DataFrame)**
@@ -157,6 +162,7 @@ Date
     * - **Output format**
       - ISO 8601 with ``T`` separator:
         ``"YYYY-MM-DD"`` or ``"YYYY-MM-DDThh:mm:ss"``.
+        Timezone offsets are not included in the output.
     * - **Output dtype**
       - ``string[pyarrow]``
 

@@ -598,12 +598,15 @@ def check_max_date(str_: Optional[str]) -> Optional[str]:
     if len(str_) == 9 and str_[7] == "-":
         str_ = str_[:-1] + "0" + str_[-1]
 
-    # Accept YYYY-MM-DD (len 10) or YYYY-MM-DD[T| ]HH:MM:SS[.fffffffff]
-    has_time = len(str_) > 10 and str_[10] in ("T", " ")
-    if has_time:
-        from vtlengine.DataTypes._time_checking import _truncate_nanoseconds
+    # Accept YYYY-MM-DD (len 10) or a full YYYY-MM-DD[T| ]HH:MM:SS[.ffffff][+HH:MM|Z].
+    # A time component, when present, must be a COMPLETE HH:MM:SS.
+    from vtlengine.DataTypes._time_checking import _has_time_component, normalize_datetime
 
-        return dt.fromisoformat(_truncate_nanoseconds(str_)).isoformat(sep=" ")
+    if _has_time_component(str_):
+        try:
+            return normalize_datetime(str_)
+        except ValueError:
+            raise RunTimeError("2-1-19-8", date=str_) from None
     elif len(str_) == 10 and str_[7] == "-":
         return date.fromisoformat(str_).isoformat()
     else:
