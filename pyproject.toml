@@ -4,7 +4,7 @@ version = "2.0.0rc3"
 description = "Run and Validate VTL Scripts"
 license = "AGPL-3.0"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [
     {name = "MeaningfulData", email = "info@meaningfuldata.eu"},
 ]
@@ -20,7 +20,6 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -39,10 +38,8 @@ dependencies = [
     "sqlglot>=22.2.0,<23.0",
     "pandas>=2.1.4,<3.0",
     "networkx>=2.8,<3.0",
-    "pyarrow>=14.0,<20.0; python_version < '3.10'",
-    "pyarrow>=14.0,<25.0; python_version >= '3.10' and python_version < '3.14'",
+    "pyarrow>=14.0,<25.0; python_version < '3.14'",
     "pyarrow>=22.0,<25.0; python_version >= '3.14'",
-    "numpy>=2.0.2,<2.1; python_version < '3.10'",
     # Split so no single numpy version covers the whole range: 2.2.x is the last
     # series supporting 3.10 but ships no cp314 wheels, so pin >=3.11 to 2.4.x
     # (which has them). This keeps Dependabot lock regenerations from collapsing
@@ -70,8 +67,7 @@ dev = [
     "pytest-xdist>=3.8.0,<4.0",
     "mypy>=1.18,<2.0",
     "pyarrow-stubs>=14.0,<25.0",
-    "pandas-stubs>2.1.4.231227,<2.2.3.240901; python_version < '3.10'",
-    "pandas-stubs>=2.2.3.241009,<3.0.0.260204; python_version >= '3.10'",
+    "pandas-stubs>=2.2.3.241009,<3.0.0.260204",
     "ruff>=0.15.12,<1.0.0",
     "types-jsonschema>=4.25.1,<5.0",
 ]

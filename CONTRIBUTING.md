@@ -3,7 +3,7 @@
 Thanks for your interest in contributing! This guide covers the basics to get you productive quickly.
 
 ## Getting Started
-- Use Python 3.9+.
+- Use Python 3.10+.
 - Install dependencies with poetry:
   ```bash
   poetry install

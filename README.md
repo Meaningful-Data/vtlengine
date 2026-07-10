@@ -26,7 +26,7 @@ the [VTL Language 2.1](https://sdmx-twg.github.io/vtl/2.1/html/index.html).
 
 ### Requirements
 
-The VTL Engine requires Python 3.9 or higher.
+The VTL Engine requires Python 3.10 or higher.
 
 ### Install with pip
 
