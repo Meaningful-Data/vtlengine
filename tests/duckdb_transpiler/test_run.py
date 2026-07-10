@@ -800,7 +800,7 @@ class TestUnaryOperations:
         # Get the measure column (may be renamed by VTL semantic analysis based on result type)
         measure_col = [c for c in result_df.columns if c != "Id_1"][0]
         result_values = list(result_df[measure_col])
-        for rv, ev in zip(result_values, expected_values):
+        for rv, ev in zip(result_values, expected_values, strict=False):
             assert rv == ev, f"Expected {ev}, got {rv}"
 
 
@@ -844,7 +844,7 @@ class TestParameterizedOperations:
         results = execute_vtl_with_duckdb(vtl_script, data_structures, {"DS_1": input_df})
 
         result_values = list(results["DS_r"].sort_values("Id_1")["Me_1"])
-        for rv, ev in zip(result_values, expected_values):
+        for rv, ev in zip(result_values, expected_values, strict=False):
             assert rv == ev, f"Expected {ev}, got {rv}"
 
 
@@ -907,7 +907,7 @@ class TestTimeOperators:
         extracted_col = [c for c in result_df.columns if c.endswith("_val")][0]
         result_values = list(result_df[extracted_col])
 
-        for rv, ev in zip(result_values, expected_values):
+        for rv, ev in zip(result_values, expected_values, strict=False):
             assert rv == ev, f"Expected {ev}, got {rv}"
 
     # NOTE: Tests for flow_to_stock and stock_to_flow are deferred to
@@ -1051,7 +1051,7 @@ class TestComplexMultiOperatorStatements:
         # Should have A,1 and C,1
         assert len(result_df) == 2
         expected_ids = [("A", 1), ("C", 1)]
-        actual_ids = list(zip(result_df["Id_1"].tolist(), result_df["Id_2"].tolist()))
+        actual_ids = list(zip(result_df["Id_1"].tolist(), result_df["Id_2"].tolist(), strict=False))
         assert sorted(actual_ids) == sorted(expected_ids)
 
     def test_calc_with_arithmetic_and_functions(self, temp_data_dir):

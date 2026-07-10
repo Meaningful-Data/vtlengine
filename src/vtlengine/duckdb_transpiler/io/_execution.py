@@ -258,7 +258,7 @@ def _build_dataset_fetch_select(
         )
         row = conn.execute(f"SELECT {exists_clauses}").fetchone()
         if row is not None:
-            has_time_cols = dict(zip(timestamp_cols, row))
+            has_time_cols = dict(zip(timestamp_cols, row, strict=False))
 
     exprs = []
     for col in ordered_cols:

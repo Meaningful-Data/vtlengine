@@ -241,7 +241,7 @@ class Hamming(StringDistance):
     def py_op(s1: str, s2: str) -> int:
         if len(s1) != len(s2):
             raise SemanticError("1-1-18-11", op=STRING_DISTANCE, len1=len(s1), len2=len(s2))
-        return sum(1 for a, b in zip(s1, s2) if a != b)
+        return sum(1 for a, b in zip(s1, s2, strict=False) if a != b)
 
 
 class JaroWinkler(StringDistance):

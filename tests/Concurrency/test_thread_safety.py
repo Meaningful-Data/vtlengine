@@ -60,7 +60,7 @@ class TestConcurrentAggregation:
         for r in results:
             df = r["DS_r"].data
             assert len(df) == 3
-            sums = dict(zip(df["Id_1"], df["Me_1"]))
+            sums = dict(zip(df["Id_1"], df["Me_1"], strict=False))
             assert sums == {1: 30.0, 2: 70.0, 3: 50.0}
 
 
@@ -89,5 +89,5 @@ class TestConcurrentEval:
         for r in results:
             df = r["DS_r"].data
             assert len(df) == 5
-            doubled = dict(zip(df["Id_2"], df["Me_1"]))
+            doubled = dict(zip(df["Id_2"], df["Me_1"], strict=False))
             assert doubled["A"] in {20.0, 60.0, 100.0}

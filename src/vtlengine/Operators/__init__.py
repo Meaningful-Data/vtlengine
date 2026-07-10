@@ -134,7 +134,7 @@ class Binary(Operator):
             )
         elif len(left_measures) == 0:
             raise SemanticError("1-1-1-8", op=cls.op, name=left_operand.name)
-        for left_measure, right_measure in zip(left_measures, right_measures):
+        for left_measure, right_measure in zip(left_measures, right_measures, strict=False):
             cls.type_validation(left_measure.data_type, right_measure.data_type)
 
         # We do not need anymore these variables

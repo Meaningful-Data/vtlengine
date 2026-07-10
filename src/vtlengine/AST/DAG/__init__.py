@@ -362,7 +362,7 @@ class DAGAnalyzer(ASTTemplate):
             super().visit_UDOCall(node)
         else:
             node_sig = [type(p.type_) for p in node_args.parameters]
-            for sig, param in zip(node_sig, node.params):
+            for sig, param in zip(node_sig, node.params, strict=False):
                 if not isinstance(param, Constant) and sig is not Component:
                     self.visit(param)
 
