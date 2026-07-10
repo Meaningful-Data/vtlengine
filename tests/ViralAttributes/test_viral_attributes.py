@@ -24,13 +24,11 @@ class ViralHelper(TestHelper):
 execution_codes = [
     ("1-1", 2),
     ("1-2", 2),
-    ("1-3", 2),
     ("1-4", 2),
     ("1-5", 2),
     ("2-1", 1),
     ("2-2", 1),
     ("3-1", 1),
-    ("3-2", 1),
     ("7-1", 1),
     ("8-1", 1),
     ("10-3", 1),
@@ -41,7 +39,6 @@ execution_codes = [
     ("4-6", 2),
     ("4-7", 2),
     ("4-8", 2),
-    ("4-9", 2),
     ("4-10", 2),
     ("4-11", 2),
     ("4-12", 2),
@@ -61,6 +58,21 @@ execution_codes = [
 @pytest.mark.parametrize("code,number_inputs", execution_codes)
 def test_execution(code: str, number_inputs: int) -> None:
     ViralHelper.BaseTest(code=code, number_inputs=number_inputs, references_names=["DS_r"])
+
+
+# -- Combining a viral attribute without a rule is a semantic error (issue #877) --
+combine_no_rule_codes = [
+    ("1-3", 2, "1-3-3-6"),  # binary, both operands viral, no rule
+    ("3-2", 1, "1-3-3-6"),  # analytic, viral combined over the partition, no rule
+    ("4-9", 2, "1-3-3-6"),  # inner_join, viral in both operands, no rule
+]
+
+
+@pytest.mark.parametrize("code,number_inputs,exception_code", combine_no_rule_codes)
+def test_combine_without_rule(code: str, number_inputs: int, exception_code: str) -> None:
+    ViralHelper.NewSemanticExceptionTest(
+        code=code, number_inputs=number_inputs, exception_code=exception_code
+    )
 
 
 semantic_codes = [

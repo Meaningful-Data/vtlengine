@@ -233,6 +233,9 @@ class Unpivot(Operator):
         result_dataset.add_component(
             Component(name=measure, data_type=final_type, role=Role.MEASURE, nullable=True)
         )
+        # Viral attributes propagate to the result, replicated across the unpivoted rows.
+        for viral_comp in dataset.get_viral_attributes():
+            result_dataset.add_component(copy(viral_comp))
         return result_dataset
 
 

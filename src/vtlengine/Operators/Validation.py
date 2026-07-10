@@ -1,5 +1,5 @@
 from copy import copy
-from typing import Any, Dict, Optional, Type, Union
+from typing import Any, Dict, List, Optional, Type, Union
 
 from vtlengine.AST.Grammar.tokens import CHECK, CHECK_HIERARCHY
 from vtlengine.DataTypes import (
@@ -91,7 +91,13 @@ class Check(Operator):
 # noinspection PyTypeChecker
 class Validation(Operator):
     @classmethod
-    def validate(cls, dataset_element: Dataset, rule_info: Dict[str, Any], output: str) -> Dataset:
+    def validate(
+        cls,
+        dataset_element: Dataset,
+        rule_info: Dict[str, Any],
+        output: str,
+        viral_components: Optional[List[Component]] = None,
+    ) -> Dataset:
         error_level_type: Optional[Type[ScalarType]] = None
         error_levels = [
             rule_data.get("errorlevel")
@@ -139,6 +145,16 @@ class Validation(Operator):
             role=Role.MEASURE,
             nullable=True,
         )
+        # Viral attributes propagate to the validation result (issue #877). check_datapoint
+        # uses the operand's own viral; check_hierarchy passes captured viral (its dataset
+        # is stripped by validate_hr_dataset).
+        viral_comps = (
+            viral_components
+            if viral_components is not None
+            else dataset_element.get_viral_attributes()
+        )
+        for viral_comp in viral_comps:
+            result_components[viral_comp.name] = copy(viral_comp)
 
         return Dataset(name=dataset_name, components=result_components, data=None)
 
@@ -151,8 +167,16 @@ class Check_Hierarchy(Validation):
     op = CHECK_HIERARCHY
 
     @classmethod
-    def validate(cls, dataset_element: Dataset, rule_info: Dict[str, Any], output: str) -> Dataset:
-        result = super().validate(dataset_element, rule_info, output)
+    def validate(
+        cls,
+        dataset_element: Dataset,
+        rule_info: Dict[str, Any],
+        output: str,
+        viral_components: Optional[List[Component]] = None,
+    ) -> Dataset:
+        result = super().validate(
+            dataset_element, rule_info, output, viral_components=viral_components
+        )
         result.components["imbalance"] = Component(
             name="imbalance", data_type=Number, role=Role.MEASURE, nullable=True
         )
@@ -185,4 +209,8 @@ class Check_Hierarchy(Validation):
         # Remove attributes from dataset
         if len(dataset.get_attributes()) > 0:
             for x in dataset.get_attributes():
+                dataset.delete_component(x.name)
+
+        if len(dataset.get_viral_attributes()) > 0:
+            for x in dataset.get_viral_attributes():
                 dataset.delete_component(x.name)

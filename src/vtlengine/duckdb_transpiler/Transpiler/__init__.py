@@ -47,6 +47,7 @@ from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, V
 from vtlengine.Operators.Join import merged_viral_attribute_names
 from vtlengine.ViralPropagation import get_current_registry
 from vtlengine.ViralPropagation.sql import (
+    vp_dataset_wide_sql,
     vp_group_sql,
     vp_group_sql_windowed,
     vp_no_rule_group_sql,
@@ -583,10 +584,16 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 if viral_expr_fn is not None:
                     cols.append(f"{viral_expr_fn(name, comp)} AS {quote_name(name)}")
                 elif output_ds is not None and name in output_ds.components:
-                    # Single value per row: pass the viral attribute through unchanged,
-                    # but only when the operator's output structure keeps it (so data
-                    # matches the declared structure for unary / dataset-scalar / etc.).
-                    cols.append(quote_name(name))
+                    # Row-preserving op: execute the viral propagation rule over the
+                    # result (aggregate rules collapse dataset-wide, enumerated map per
+                    # row); no rule = passthrough. Only when the output keeps it (issue #877).
+                    rule = get_current_registry().rule_for(comp)
+                    if rule is None:
+                        cols.append(quote_name(name))
+                    else:
+                        cols.append(
+                            f"{vp_dataset_wide_sql(rule, quote_name(name))} AS {quote_name(name)}"
+                        )
 
         return SQLBuilder().select(*cols).from_table(table_src).build()
 
@@ -1007,10 +1014,21 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                     break
 
             id_cols = [quote_name(c.name) for c in ds.get_identifiers()]
+            # Execute the viral propagation rule on the (row-preserving) result (issue #877).
+            reg = get_current_registry()
+            viral_cols: List[str] = []
+            for v_comp in ds.components.values():
+                if v_comp.role != Role.VIRAL_ATTRIBUTE:
+                    continue
+                v_qn = quote_name(v_comp.name)
+                v_rule = reg.rule_for(v_comp)
+                viral_cols.append(
+                    v_qn if v_rule is None else f"{vp_dataset_wide_sql(v_rule, v_qn)} AS {v_qn}"
+                )
             extract_expr = (
                 f'vtl_period_parse({quote_name(time_id)}).period_indicator AS "duration_var"'
             )
-            cols_sql = ", ".join(id_cols) + ", " + extract_expr
+            cols_sql = ", ".join(id_cols + viral_cols) + ", " + extract_expr
 
             if src.strip().upper().startswith("SELECT"):
                 return f"SELECT {cols_sql} FROM ({src}) AS _pi"
@@ -1963,6 +1981,27 @@ FROM (
         new_measure_name = self._resolve_udo_name(self._get_node_value(node.children[1]))
         id_names = ds.get_identifiers_names()
         measure_names = ds.get_measures_names()
+        viral_names = ds.get_viral_attributes_names()
+
+        # Execute the rule over the whole source before the melt so aggregate rules are not
+        # distorted by row replication; each UNION arm then reads the resolved value (issue #877).
+        reg = get_current_registry()
+        excl_list: List[str] = []
+        expr_list: List[str] = []
+        for comp in ds.components.values():
+            if comp.role != Role.VIRAL_ATTRIBUTE:
+                continue
+            v_rule = reg.rule_for(comp)
+            if v_rule is None:
+                continue
+            qn = quote_name(comp.name)
+            excl_list.append(qn)
+            expr_list.append(f"{vp_dataset_wide_sql(v_rule, qn)} AS {qn}")
+        if expr_list:
+            table_src = (
+                f"(SELECT * EXCLUDE ({', '.join(excl_list)}), {', '.join(expr_list)} "
+                f"FROM {table_src} AS _uv_in) AS _uv_src"
+            )
 
         if not measure_names:
             return f"SELECT * FROM {table_src}"
@@ -1972,6 +2011,8 @@ FROM (
             cols: List[str] = [quote_name(i) for i in id_names]
             cols.append(f"'{measure}' AS {quote_name(new_id_name)}")
             cols.append(f"{quote_name(measure)} AS {quote_name(new_measure_name)}")
+            # Viral attributes replicate across the unpivoted rows (issue #877).
+            cols.extend(quote_name(v) for v in viral_names)
             select_clause = ", ".join(cols)
             part = (
                 f"SELECT {select_clause} FROM {table_src} WHERE {quote_name(measure)} IS NOT NULL"
@@ -2790,6 +2831,7 @@ FROM (
         use_cte = len(rules) > 1 and stripped.startswith("(") and stripped.endswith(")")
         rule_table_src = "_dp_src" if use_cte else table_src
 
+        viral_comps = [c for c in ds.components.values() if c.role == Role.VIRAL_ATTRIBUTE]
         rule_queries = [
             self._build_dp_rule_sql(
                 rule=rule,
@@ -2798,6 +2840,7 @@ FROM (
                 id_cols=id_cols,
                 measure_cols=ds.get_measures_names(),
                 output_mode=node.output.value if node.output else "invalid",
+                viral_comps=viral_comps,
             )
             for rule in rules
         ]
@@ -2817,6 +2860,7 @@ FROM (
         id_cols: List[str],
         measure_cols: List[str],
         output_mode: str,
+        viral_comps: Optional[List[Any]] = None,
     ) -> str:
         """Build SQL for a single datapoint rule."""
         rule_node = rule.rule
@@ -2841,16 +2885,27 @@ FROM (
         ec_sql = self._error_code_sql(rule.erCode)
         el_sql = self._error_code_sql(rule.erLevel)
         select_parts = [quote_name(c) for c in id_cols + measure_cols]
+        # Viral attributes: execute the propagation rule over the result (issue #877).
+        reg = get_current_registry()
+        viral_parts: List[str] = []
+        for comp in viral_comps or []:
+            qn = quote_name(comp.name)
+            v_rule = reg.rule_for(comp)
+            viral_parts.append(
+                qn if v_rule is None else f"{vp_dataset_wide_sql(v_rule, qn)} AS {qn}"
+            )
         if output_mode == "invalid":
             select_parts.append(f"'{rule_name}' AS {quote_name('ruleid')}")
             select_parts.append(f"{ec_sql} AS {quote_name('errorcode')}")
             select_parts.append(f"{el_sql} AS {quote_name('errorlevel')}")
+            select_parts.extend(viral_parts)
             return f"SELECT {', '.join(select_parts)} FROM {table_src} WHERE {fail_cond}"
 
         select_parts.append(f"{bool_expr} AS {quote_name('bool_var')}")
         select_parts.append(f"'{rule_name}' AS {quote_name('ruleid')}")
         for val, col in [(ec_sql, quote_name("errorcode")), (el_sql, quote_name("errorlevel"))]:
             select_parts.append(f"CASE WHEN {fail_cond} THEN {val} ELSE NULL END AS {col}")
+        select_parts.extend(viral_parts)
         return f"SELECT {', '.join(select_parts)} FROM {table_src}"
 
     def _visit_dp_expr(self, node: AST.AST, signature: Dict[str, str]) -> str:
@@ -3051,7 +3106,31 @@ FROM (
             )
             for p in parsed_rules
         ]
-        return cte.select(" UNION ALL ".join(rule_queries))
+        union_sql = " UNION ALL ".join(rule_queries)
+
+        # Re-attach the validated code item's viral value from the source and execute the
+        # rule over the result (issue #877).
+        viral_comps = [c for c in ds.components.values() if c.role == Role.VIRAL_ATTRIBUTE]
+        if viral_comps:
+            reg = get_current_registry()
+            keys = [*other_ids, rule_comp]
+            keys_q = ", ".join(quote_name(k) for k in keys)
+            raw = ", ".join(quote_name(c.name) for c in viral_comps)
+            cte.cte("_chv", f"SELECT {keys_q}, {raw} FROM {table_src}")
+            viral_sel = []
+            for c in viral_comps:
+                v_rule = reg.rule_for(c)
+                qn = quote_name(c.name)
+                expr = f"v.{qn}" if v_rule is None else vp_dataset_wide_sql(v_rule, f"v.{qn}")
+                viral_sel.append(f"{expr} AS {qn}")
+            join = " AND ".join(
+                f"r.{quote_name(k)} IS NOT DISTINCT FROM v.{quote_name(k)}" for k in keys
+            )
+            union_sql = (
+                f"SELECT r.*, {', '.join(viral_sel)} "
+                f"FROM ({union_sql}) r LEFT JOIN _chv v ON {join}"
+            )
+        return cte.select(union_sql)
 
     def _collect_hr_code_items(
         self, node: AST.AST, cond_mapping: Optional[Dict[str, str]] = None
@@ -3169,6 +3248,70 @@ FROM (
         outer_where = " WHERE _bv = FALSE" if output == "invalid" else ""
         return f"SELECT {', '.join(outer_cols)} FROM ({inner_sql}) _r{outer_where}"
 
+    def _build_hierarchy_viral_ctes(
+        self,
+        cte: CTEBuilder,
+        ds: Dataset,
+        parsed_rules: List[_ParsedHRRule],
+        rule_comp: str,
+        other_ids: List[str],
+        table_src: str,
+    ) -> Optional[Tuple[str, List[str]]]:
+        """Combine child viral values per computed node, outside the measure rule chain.
+
+        For each node the child viral values (leaf code items from the source, nested
+        nodes from their own CTE) are unioned, grouped by the non-rule identifiers and
+        reduced with the propagation rule (issue #877). Returns (cte_name, viral_names)
+        or None when there are no viral attributes.
+        """
+        viral_comps = [c for c in ds.components.values() if c.role == Role.VIRAL_ATTRIBUTE]
+        if not viral_comps:
+            return None
+        reg = get_current_registry()
+        other_q = [quote_name(c) for c in other_ids]
+        raw_cols = [quote_name(c.name) for c in viral_comps]
+        node_cte: Dict[str, str] = {}
+        for i, parsed in enumerate(parsed_rules):
+            child_selects = []
+            for child in parsed.right_code_items:
+                proj = ", ".join(other_q + raw_cols)
+                if child in node_cte:
+                    child_selects.append(f"SELECT {proj} FROM {node_cte[child]}")
+                else:
+                    child_selects.append(
+                        f"SELECT {proj} FROM {table_src} WHERE {quote_name(rule_comp)} = '{child}'"
+                    )
+            if not child_selects:
+                continue
+            union = " UNION ALL ".join(child_selects)
+            agg_cols = []
+            for v in viral_comps:
+                vq = quote_name(v.name)
+                v_rule = reg.rule_for(v)
+                expr = vp_group_sql(v_rule, vq) if v_rule is not None else vp_no_rule_group_sql(vq)
+                agg_cols.append(f"{expr} AS {vq}")
+            gb = f" GROUP BY {', '.join(other_q)}" if other_q else ""
+            name = f"_vp_{i}"
+            cte.cte(
+                name,
+                f"SELECT {', '.join(other_q + agg_cols)} FROM ({union}) AS _vps_{i}{gb}",
+                materialized=True,
+            )
+            node_cte[parsed.left_code_item] = name
+        tagged = []
+        for parsed in parsed_rules:
+            cte_name = node_cte.get(parsed.left_code_item)
+            if cte_name is None:
+                continue
+            proj = ", ".join(
+                [*other_q, f"'{parsed.left_code_item}' AS {quote_name(rule_comp)}", *raw_cols]
+            )
+            tagged.append(f"SELECT {proj} FROM {cte_name}")
+        if not tagged:
+            return None
+        cte.cte("_vp_all", " UNION ALL ".join(tagged))
+        return "_vp_all", [v.name for v in viral_comps]
+
     def _build_hierarchy_sql(
         self,
         table_src: str,
@@ -3251,6 +3394,22 @@ FROM (
             final_selects.append(f"SELECT {', '.join(cols)} FROM {rule_cte}{where}")
 
         computed_sql = " UNION ALL ".join(final_selects)
+
+        # Combine child viral values into each computed node (issue #877).
+        vp_info = self._build_hierarchy_viral_ctes(
+            cte, ds, parsed_rules, rule_comp, other_ids, table_src
+        )
+        if vp_info is not None:
+            vp_name, viral_names = vp_info
+            conds = [f"c.{q_rc} = v.{q_rc}"]
+            conds += [
+                f"c.{quote_name(o)} IS NOT DISTINCT FROM v.{quote_name(o)}" for o in other_ids
+            ]
+            viral_sel = ", ".join(f"v.{quote_name(vn)}" for vn in viral_names)
+            computed_sql = (
+                f"SELECT c.*, {viral_sel} FROM ({computed_sql}) AS c "
+                f"LEFT JOIN {vp_name} AS v ON {' AND '.join(conds)}"
+            )
 
         if output == "computed":
             return cte.select(computed_sql)
