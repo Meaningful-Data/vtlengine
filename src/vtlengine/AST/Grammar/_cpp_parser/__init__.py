@@ -1,3 +1,5 @@
+import threading
+
 from vtlengine.AST.Grammar._cpp_parser.vtl_cpp_parser import (  # type: ignore[import-untyped]
     ParseNode,
     TerminalNode,
@@ -6,12 +8,23 @@ from vtlengine.AST.Grammar._cpp_parser.vtl_cpp_parser import (  # type: ignore[i
     parse,
 )
 
+# The compiled parser keeps the tree of the LAST parse() call in a single
+# process-global buffer, and the ParseNode/TerminalNode objects returned to
+# Python hold raw pointers into it. A concurrent parse() from another thread
+# frees that buffer, leaving those pointers dangling (use-after-free, observed
+# as a corrupted AST or a segfault). Callers must therefore hold this lock
+# across parse() AND the full parse-tree traversal that materialises the Python
+# AST from it. It is re-entrant because create_ast_with_comments() parses and
+# then calls create_ast(), which parses again while still holding the lock.
+parser_lock = threading.RLock()
+
 __all__ = [
     "ParseNode",
     "TerminalNode",
     "parse",
     "get_input_text",
     "get_comments",
+    "parser_lock",
     "LITERAL_NAMES",
 ]
 

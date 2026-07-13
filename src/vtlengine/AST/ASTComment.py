@@ -2,7 +2,7 @@ from typing import Any, Dict
 
 from vtlengine.API import create_ast
 from vtlengine.AST import Comment, Start
-from vtlengine.AST.Grammar._cpp_parser import vtl_cpp_parser
+from vtlengine.AST.Grammar._cpp_parser import parser_lock, vtl_cpp_parser
 
 
 def generate_ast_comment(comment: Dict[str, Any]) -> Comment:
@@ -46,23 +46,24 @@ def create_ast_with_comments(text: str) -> Start:
     Returns:
         AST: The generated AST with comments.
     """
-    # Parse with C++ parser (this also collects comments)
     text_with_newline = text + "\n"
-    vtl_cpp_parser.parse(text_with_newline)
+    with parser_lock:
+        # Parse with C++ parser (this also collects comments)
+        vtl_cpp_parser.parse(text_with_newline)
 
-    # Get comments from the last parse
-    comment_tokens = vtl_cpp_parser.get_comments()
+        # Get comments from the last parse
+        comment_tokens = vtl_cpp_parser.get_comments()
 
-    comments = [generate_ast_comment(c) for c in comment_tokens]
+        comments = [generate_ast_comment(c) for c in comment_tokens]
 
-    # Parse the statements. A script with no statements (only comments or empty) yields a
-    # Start node with no children; a malformed script raises VTLSyntaxError, which must
-    # propagate instead of being silently swallowed into an empty AST.
-    ast = create_ast(text)
-    if not ast.children:
-        ast = Start(line_start=1, line_stop=1, column_start=0, column_stop=0, children=[])
+        # Parse the statements. A script with no statements (only comments or empty) yields a
+        # Start node with no children; a malformed script raises VTLSyntaxError, which must
+        # propagate instead of being silently swallowed into an empty AST.
+        ast = create_ast(text)
+        if not ast.children:
+            ast = Start(line_start=1, line_stop=1, column_start=0, column_stop=0, children=[])
 
-    ast.children.extend(comments)
-    ast.children.sort(key=lambda x: (x.line_start, x.column_start))
+        ast.children.extend(comments)
+        ast.children.sort(key=lambda x: (x.line_start, x.column_start))
 
     return ast
