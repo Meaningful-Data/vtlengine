@@ -90,6 +90,19 @@ def test_structure(code: str, number_inputs: int) -> None:
     )
 
 
+statement_ordering_codes = [
+    ("13-1", 1),
+    ("13-2", 1),
+]
+
+
+@pytest.mark.parametrize("code,number_inputs", statement_ordering_codes)
+def test_definition_statement_ordering(code: str, number_inputs: int) -> None:
+    ViralHelper.BaseTest(
+        code=code, number_inputs=number_inputs, references_names=["DS_r"], only_semantic=True
+    )
+
+
 validation_codes = [
     ("6-1", "1-3-3-1"),
     ("6-2", "1-3-3-4"),
