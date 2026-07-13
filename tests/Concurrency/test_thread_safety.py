@@ -4,6 +4,7 @@ Verifies that concurrent vtlengine executions using DuckDB work correctly
 when called from multiple threads in the same process.
 """
 
+import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Dict, Optional
 
@@ -62,6 +63,40 @@ class TestConcurrentAggregation:
             assert len(df) == 3
             sums = dict(zip(df["Id_1"], df["Me_1"]))
             assert sums == {1: 30.0, 2: 70.0, 3: 50.0}
+
+
+class TestConcurrentParsing:
+    """The C++ parser keeps the last parse tree in process-global state and hands
+    Python raw pointers into it; a concurrent parse must not free it mid-traversal.
+    Different scripts per thread surface any cross-contamination, and a tiny GIL
+    switch interval widens the race window so a regression fails reliably here."""
+
+    def test_concurrent_mixed_scripts(self) -> None:
+        expectations = {
+            "DS_r <- sum(DS_1 group by Id_1);": {1: 30.0, 2: 70.0, 3: 50.0},
+            "DS_r <- max(DS_1 group by Id_1);": {1: 20.0, 2: 40.0, 3: 50.0},
+            "DS_r <- min(DS_1 group by Id_1);": {1: 10.0, 2: 30.0, 3: 50.0},
+        }
+        scripts = list(expectations)
+
+        def task(idx: int) -> Dict[Any, Any]:
+            script = scripts[idx % len(scripts)]
+            df = run(script=script, data_structures=DATA_STRUCTURES, datapoints=DATAPOINTS)[
+                "DS_r"
+            ].data
+            assert dict(zip(df["Id_1"], df["Me_1"])) == expectations[script]
+            return {}
+
+        previous_interval = sys.getswitchinterval()
+        sys.setswitchinterval(1e-6)
+        try:
+            for _ in range(40):
+                with ThreadPoolExecutor(max_workers=6) as executor:
+                    futures = [executor.submit(task, i) for i in range(6)]
+                    for future in as_completed(futures):
+                        future.result()
+        finally:
+            sys.setswitchinterval(previous_interval)
 
 
 class TestConcurrentAnalytic:

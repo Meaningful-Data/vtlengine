@@ -605,6 +605,10 @@ class StructureVisitor(ASTTemplate):
             if output_mode == "invalid" and measure_name:
                 comps[measure_name] = inner_ds.components[measure_name]
             self._add_error_measures(comps, with_bool_var=with_bool_var)
+            # Viral attributes propagate to the check_hierarchy result (issue #877).
+            for name, comp in inner_ds.components.items():
+                if comp.role == Role.VIRAL_ATTRIBUTE:
+                    comps[name] = comp
         return Dataset(name="", components=comps, data=None)
 
     def _build_dp_validation_structure(self, node: AST.DPValidation) -> Optional[Dataset]:
@@ -625,6 +629,10 @@ class StructureVisitor(ASTTemplate):
             with_imbalance=False,
             with_bool_var=output_mode in ("all", "all_measures"),
         )
+        # Viral attributes propagate to the validation result (issue #877).
+        for name, comp in inner_ds.components.items():
+            if comp.role == Role.VIRAL_ATTRIBUTE:
+                comps[name] = comp
         return Dataset(name="", components=comps, data=None)
 
     def _build_exists_in_structure(self, node: AST.MulOp) -> Optional[Dataset]:
@@ -655,6 +663,10 @@ class StructureVisitor(ASTTemplate):
         ]
         m_type = measure_types[0] if measure_types else StringType
         comps[new_measure] = self._make_comp(new_measure, m_type)
+        # Viral attributes propagate to the unpivot result (issue #877).
+        for name, comp in input_ds.components.items():
+            if comp.role == Role.VIRAL_ATTRIBUTE:
+                comps[name] = comp
         return Dataset(name="_unpivot", components=comps, data=None)
 
     def _build_calc_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:
