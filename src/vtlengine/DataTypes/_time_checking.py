@@ -14,19 +14,26 @@ def _has_time_component(value: str) -> bool:
     return len(value) > 10 and value[10] in ("T", " ")
 
 
-def _truncate_nanoseconds(value: str) -> str:
-    """Truncate sub-second precision beyond 6 digits (microseconds) for Python compatibility."""
+def _normalize_fractional_seconds(value: str) -> str:
+    """Normalize sub-second precision to exactly 6 digits (microseconds).
+
+    ``_STRICT_DATETIME_RE`` accepts a fractional part of any length, but
+    ``datetime.fromisoformat`` before Python 3.11 only parses fractions of
+    exactly 3 or 6 digits. Padding short fractions and truncating long ones to 6
+    digits keeps the regex the single source of truth for what is accepted and
+    yields identical parsing on every supported interpreter (3.9+).
+    """
     dot_idx = value.find(".")
     if dot_idx == -1:
         return value
-    # Keep at most 6 decimal digits after the dot
+    # Span the run of digits forming the fractional part (a timezone suffix,
+    # if any, follows it and must be preserved).
     frac_end = dot_idx + 1
     while frac_end < len(value) and value[frac_end].isdigit():
         frac_end += 1
     frac_digits = value[dot_idx + 1 : frac_end]
-    if len(frac_digits) > 6:
-        return value[:dot_idx] + "." + frac_digits[:6] + value[frac_end:]
-    return value
+    normalized_frac = (frac_digits + "000000")[:6]
+    return value[:dot_idx] + "." + normalized_frac + value[frac_end:]
 
 
 # A full date followed by a COMPLETE HH:MM:SS time. Hours, minutes AND seconds
@@ -44,14 +51,16 @@ def normalize_datetime(value: str) -> str:
 
     Requires a full ``YYYY-MM-DD[T| ]HH:MM:SS`` value (hours, minutes and seconds);
     fractional seconds and a timezone suffix (``Z`` or ``+HH:MM``) are accepted.
-    Sub-second precision beyond microseconds is truncated. Any timezone offset is
-    discarded (the wall-clock time is kept) so the result is a naive datetime,
-    consistent across backends. Output uses a single space separator. Raises
-    ``ValueError`` if the time component is missing, truncated, malformed or out of range.
+    Sub-second precision is normalized to microseconds (padded or truncated to 6
+    digits) so ``datetime.fromisoformat`` parses it identically on every
+    supported interpreter. Any timezone offset is discarded (the wall-clock time
+    is kept) so the result is a naive datetime, consistent across backends.
+    Output uses a single space separator. Raises ``ValueError`` if the time
+    component is missing, truncated, malformed or out of range.
     """
     if _STRICT_DATETIME_RE.match(value) is None:
         raise ValueError(f"Invalid or incomplete time component in {value!r}")
-    normalized = _truncate_nanoseconds(value)
+    normalized = _normalize_fractional_seconds(value)
     # datetime.fromisoformat only parses a trailing "Z" on Python 3.11+; rewrite it
     # so 3.9/3.10 behave the same, then drop the offset (keep wall-clock -> naive).
     if normalized.endswith("Z"):
@@ -94,7 +103,7 @@ def check_date(value: str) -> str:
     Accepts ``YYYY-MM-DD`` and ``YYYY-MM-DD[T| ]HH:MM:SS[.ffffff][+HH:MM|Z]`` (ISO 8601).
     A time component, when present, must be a COMPLETE ``HH:MM:SS``; partial times such
     as ``HH`` or ``HH:MM`` are rejected. Datetime output uses a single space separator;
-    nanosecond input is truncated to microsecond precision.
+    fractional-second input is normalized to microsecond precision.
     """
     value = value.strip()
     has_time = _has_time_component(value)

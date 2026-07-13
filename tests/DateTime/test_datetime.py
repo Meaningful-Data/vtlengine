@@ -53,6 +53,36 @@ check_date_valid_params = [
         "2020-01-15 10:30:00.123456",
         id="datetime_nanoseconds_truncated",
     ),
+    pytest.param(
+        "2020-01-01 12:30:45.1",
+        "2020-01-01 12:30:45.100000",
+        id="datetime_fraction_1_digit",
+    ),
+    pytest.param(
+        "2020-01-01 12:30:45.12",
+        "2020-01-01 12:30:45.120000",
+        id="datetime_fraction_2_digits",
+    ),
+    pytest.param(
+        "2020-01-01T12:30:45.1234",
+        "2020-01-01 12:30:45.123400",
+        id="datetime_fraction_4_digits",
+    ),
+    pytest.param(
+        "2020-01-01T12:30:45.12345",
+        "2020-01-01 12:30:45.123450",
+        id="datetime_fraction_5_digits",
+    ),
+    pytest.param(
+        "2020-01-01T12:30:45.12Z",
+        "2020-01-01 12:30:45.120000",
+        id="datetime_fraction_2_digits_utc_z",
+    ),
+    pytest.param(
+        "2020-01-01T12:30:45.12+02:00",
+        "2020-01-01 12:30:45.120000",
+        id="datetime_fraction_2_digits_offset",
+    ),
 ]
 
 check_date_invalid_params = [
@@ -77,6 +107,16 @@ check_max_date_valid_params = [
         "2020-01-15T10:30:00.123456789",
         "2020-01-15 10:30:00.123456",
         id="datetime_nanoseconds_truncated",
+    ),
+    pytest.param(
+        "2020-01-15T10:30:00.12",
+        "2020-01-15 10:30:00.120000",
+        id="datetime_fraction_2_digits",
+    ),
+    pytest.param(
+        "2020-01-15T10:30:00.1234",
+        "2020-01-15 10:30:00.123400",
+        id="datetime_fraction_4_digits",
     ),
     pytest.param(
         "2020-01-15T10:30:00+02:00",
