@@ -1,0 +1,9 @@
+
+    define viral propagation VP (variable VAt_1) is
+        aggregate max
+    end viral propagation;
+    define datapoint ruleset R (variable Me_1) is
+        r1: Me_1 < 15 errorcode "e1" errorlevel 1;
+        r2: Me_1 > 5 errorcode "e2" errorlevel 1
+    end datapoint ruleset;
+    DS_r <- check_datapoint(DS_1, R invalid);
