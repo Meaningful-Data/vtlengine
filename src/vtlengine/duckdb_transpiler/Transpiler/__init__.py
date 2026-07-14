@@ -1997,14 +1997,20 @@ FROM (
             qn = quote_name(comp.name)
             excl_list.append(qn)
             expr_list.append(f"{vp_dataset_wide_sql(v_rule, qn)} AS {qn}")
+        cte: Optional[CTEBuilder] = None
         if expr_list:
-            table_src = (
-                f"(SELECT * EXCLUDE ({', '.join(excl_list)}), {', '.join(expr_list)} "
-                f"FROM {table_src} AS _uv_in) AS _uv_src"
+            cte = CTEBuilder()
+            cte.cte(
+                "_uv_src",
+                f"SELECT * EXCLUDE ({', '.join(excl_list)}), {', '.join(expr_list)} "
+                f"FROM {table_src} AS _uv_in",
+                materialized=True,
             )
+            table_src = "_uv_src"
 
         if not measure_names:
-            return f"SELECT * FROM {table_src}"
+            sql = f"SELECT * FROM {table_src}"
+            return cte.select(sql) if cte is not None else sql
 
         parts: List[str] = []
         for measure in measure_names:
@@ -2019,7 +2025,8 @@ FROM (
             )
             parts.append(part)
 
-        return " UNION ALL ".join(parts)
+        union_sql = " UNION ALL ".join(parts)
+        return cte.select(union_sql) if cte is not None else union_sql
 
     # Aggregation visitor
 
@@ -3337,10 +3344,16 @@ FROM (
             cols = [quote_name(c) for c in ds.get_components_names()]
             return f"SELECT {', '.join(cols)} FROM {table_src}"
 
-        pivot_sql, measure, other_ids, unique_items = self._build_hr_pivot(
-            table_src, ds, parsed_rules, rule_comp, cond_mapping
-        )
         cte = CTEBuilder()
+        has_viral = any(c.role == Role.VIRAL_ATTRIBUTE for c in ds.components.values())
+        base_src = table_src
+        if has_viral and table_src.lstrip().startswith("("):
+            cte.cte("_op", f"SELECT * FROM {table_src}", materialized=True)
+            base_src = "_op"
+
+        pivot_sql, measure, other_ids, unique_items = self._build_hr_pivot(
+            base_src, ds, parsed_rules, rule_comp, cond_mapping
+        )
         # MATERIALIZED to avoid the optimizer re-inlining the pivot aggregation
         # into every dependent CTE in the chain below.
         cte.cte("_pivot", pivot_sql, materialized=True)
@@ -3406,7 +3419,7 @@ FROM (
 
         # Combine child viral values into each computed node (issue #877).
         vp_info = self._build_hierarchy_viral_ctes(
-            cte, ds, parsed_rules, rule_comp, other_ids, table_src
+            cte, ds, parsed_rules, rule_comp, other_ids, base_src
         )
         if vp_info is not None:
             vp_name, viral_names = vp_info
@@ -3431,7 +3444,7 @@ FROM (
         cte.cte("_computed", computed_sql)
         cte.cte(
             "_combined",
-            f"SELECT {all_cols_csv}, 0 AS _src FROM {table_src} "
+            f"SELECT {all_cols_csv}, 0 AS _src FROM {base_src} "
             f"UNION ALL SELECT {all_cols_csv}, 1 AS _src FROM _computed",
         )
         return cte.select(
