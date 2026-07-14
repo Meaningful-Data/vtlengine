@@ -3,6 +3,7 @@
 import networkx as nx
 import pytest
 
+from vtlengine.API import create_ast
 from vtlengine.AST.DAG import DAGAnalyzer
 from vtlengine.AST.DAG._models import StatementDeps
 from vtlengine.Exceptions import SemanticError
@@ -137,3 +138,25 @@ class TestMemoryOptimalSort:
         result = _build_dag_and_sort(vertices, edges)
         assert _is_valid_topological_order(result, edges)
         assert result[-1] == 4
+
+
+class TestCreateDagOverwriting:
+    """Declaring the same output dataset twice must raise SemanticError 1-2-2.
+
+    create_dag now always calls sort_ast (which runs check_overwriting), replacing
+    the edgeless-only check_overwriting branch removed while fixing issue #887. These
+    tests lock in that the overwriting check still fires on both DAG shapes: an
+    edgeless script (the path that lost its explicit check) and one with edges.
+    """
+
+    def test_duplicate_output_edgeless_raises(self):
+        script = "DS_r <- DS_1;\nDS_r <- DS_2;"
+        with pytest.raises(SemanticError) as exc:
+            DAGAnalyzer.create_dag(create_ast(script))
+        assert exc.value.args[1] == "1-2-2"
+
+    def test_duplicate_output_with_edges_raises(self):
+        script = "DS_1b <- DS_1;\nDS_r <- DS_1b;\nDS_r <- DS_2;"
+        with pytest.raises(SemanticError) as exc:
+            DAGAnalyzer.create_dag(create_ast(script))
+        assert exc.value.args[1] == "1-2-2"

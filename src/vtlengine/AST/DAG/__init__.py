@@ -129,15 +129,7 @@ class DAGAnalyzer(ASTTemplate):
         dag.load_edges()
         try:
             dag._build_and_sort_graph("createDAG")
-            if len(dag.edges) != 0:
-                dag.sort_ast(ast)
-            else:
-                ml_statements: list = [
-                    ml
-                    for ml in ast.children
-                    if not isinstance(ml, (HRuleset, DPRuleset, Operator, ViralPropagationDef))
-                ]
-                dag.check_overwriting(ml_statements)
+            dag.sort_ast(ast)
             return dag
         except SemanticError:
             raise
