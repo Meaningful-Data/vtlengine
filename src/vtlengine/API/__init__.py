@@ -24,7 +24,7 @@ from vtlengine.AST import Start
 from vtlengine.AST.ASTConstructor import ASTVisitor
 from vtlengine.AST.ASTString import ASTString
 from vtlengine.AST.DAG import DAGAnalyzer
-from vtlengine.AST.Grammar._cpp_parser import vtl_cpp_parser
+from vtlengine.AST.Grammar._cpp_parser import parser_lock, vtl_cpp_parser
 from vtlengine.duckdb_transpiler.Config.config import configured_connection
 from vtlengine.duckdb_transpiler.io import execute_queries, extract_datapoint_paths
 from vtlengine.duckdb_transpiler.Transpiler import SQLTranspiler
@@ -87,18 +87,22 @@ def create_ast(text: str) -> Start:
         Exception: When the vtl syntax expression is wrong.
     """
     text = text + "\n"
-    cst = vtl_cpp_parser.parse(text)
-    error = vtl_cpp_parser.get_syntax_error()
-    if error is not None:
-        raise VTLSyntaxError(
-            line=error["line"],
-            column=error["column"] + 1,
-            detail=error["message"],
-            source_line=error["source_line"],
-            underline_length=error["underline_length"],
-        )
-    visitor = ASTVisitor()
-    ast = visitor.visitStart(cst)
+    # The C++ parser holds the parse tree in process-global state and hands Python
+    # raw pointers into it, so parse() and the lazy tree traversal in visitStart()
+    # must run under parser_lock to stay safe across threads (see parser_lock docs).
+    with parser_lock:
+        cst = vtl_cpp_parser.parse(text)
+        error = vtl_cpp_parser.get_syntax_error()
+        if error is not None:
+            raise VTLSyntaxError(
+                line=error["line"],
+                column=error["column"] + 1,
+                detail=error["message"],
+                source_line=error["source_line"],
+                underline_length=error["underline_length"],
+            )
+        visitor = ASTVisitor()
+        ast = visitor.visitStart(cst)
     DAGAnalyzer.create_dag(ast)
     return ast
 
