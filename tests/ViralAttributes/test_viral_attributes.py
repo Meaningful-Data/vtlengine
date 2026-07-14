@@ -64,6 +64,8 @@ execution_codes = [
     ("12-8", 1),  # boolean result (in) under keep, no rule needed
     # -- reserved component names, issue #944 --
     ("13-4", 1),  # non-viral roles may use reserved names (bool_var measure, int_var attr)
+    # -- datapoint ruleset whose signature variable is a viral attribute, issue #898 --
+    ("14-3", 1),
 ]
 
 
