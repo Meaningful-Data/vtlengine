@@ -1323,16 +1323,20 @@ class InterpreterAnalyzer(ASTTemplate):
             dpr_info = {}
 
         rule_output_values = {}
-        # Keep viral attributes out of rule handling; they are re-attached from the
-        # operand in Check_Datapoint.validate (issue #877).
+        signature_components = set((dpr_info.get("signature") or {}).values())
+        stripped_viral = [
+            name
+            for name in dataset_element.get_viral_attributes_names()
+            if name not in signature_components
+        ]
         ruleset_dataset = dataset_element
-        if dataset_element.get_viral_attributes_names():
+        if stripped_viral:
             ruleset_dataset = Dataset(
                 name=dataset_element.name,
                 components={
                     name: comp
                     for name, comp in dataset_element.components.items()
-                    if comp.role != Role.VIRAL_ATTRIBUTE
+                    if name not in stripped_viral
                 },
                 data=None,
             )

@@ -52,6 +52,8 @@ execution_codes = [
     ("12-2", 1),
     ("12-3", 2),
     ("12-4", 2),
+    ("13-1", 1),
+    ("13-2", 1),
 ]
 
 
@@ -91,8 +93,8 @@ def test_structure(code: str, number_inputs: int) -> None:
 
 
 statement_ordering_codes = [
-    ("13-1", 1),
-    ("13-2", 1),
+    ("13-3", 1),
+    ("13-4", 1),
 ]
 
 

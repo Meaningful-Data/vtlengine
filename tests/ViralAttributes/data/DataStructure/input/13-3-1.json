@@ -20,12 +20,6 @@
           "type": "String",
           "role": "Viral Attribute",
           "nullable": true
-        },
-        {
-          "name": "VAt_2",
-          "type": "String",
-          "role": "Viral Attribute",
-          "nullable": true
         }
       ]
     }

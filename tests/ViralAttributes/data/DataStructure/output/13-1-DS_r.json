@@ -10,7 +10,25 @@
           "nullable": false
         },
         {
+          "name": "ruleid",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
           "name": "Me_1",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "errorcode",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "errorlevel",
           "role": "Measure",
           "type": "Number",
           "nullable": true
@@ -18,7 +36,7 @@
         {
           "name": "VAt_1",
           "role": "Viral Attribute",
-          "type": "String",
+          "type": "Number",
           "nullable": true
         }
       ]

@@ -2846,6 +2846,23 @@ FROM (
         ]
         union_sql = " UNION ALL ".join(rule_queries)
 
+        if viral_comps:
+            reg = get_current_registry()
+            excl_list: List[str] = []
+            expr_list: List[str] = []
+            for comp in viral_comps:
+                v_rule = reg.rule_for(comp)
+                if v_rule is None:
+                    continue
+                qn = quote_name(comp.name)
+                excl_list.append(qn)
+                expr_list.append(f"{vp_dataset_wide_sql(v_rule, qn)} AS {qn}")
+            if expr_list:
+                union_sql = (
+                    f"SELECT * EXCLUDE ({', '.join(excl_list)}), {', '.join(expr_list)} "
+                    f"FROM ({union_sql}) AS _dp_viral"
+                )
+
         if use_cte:
             cte = CTEBuilder()
             cte.cte("_dp_src", stripped[1:-1].strip(), materialized=True)
@@ -2885,15 +2902,7 @@ FROM (
         ec_sql = self._error_code_sql(rule.erCode)
         el_sql = self._error_code_sql(rule.erLevel)
         select_parts = [quote_name(c) for c in id_cols + measure_cols]
-        # Viral attributes: execute the propagation rule over the result (issue #877).
-        reg = get_current_registry()
-        viral_parts: List[str] = []
-        for comp in viral_comps or []:
-            qn = quote_name(comp.name)
-            v_rule = reg.rule_for(comp)
-            viral_parts.append(
-                qn if v_rule is None else f"{vp_dataset_wide_sql(v_rule, qn)} AS {qn}"
-            )
+        viral_parts = [quote_name(comp.name) for comp in viral_comps or []]
         if output_mode == "invalid":
             select_parts.append(f"'{rule_name}' AS {quote_name('ruleid')}")
             select_parts.append(f"{ec_sql} AS {quote_name('errorcode')}")
