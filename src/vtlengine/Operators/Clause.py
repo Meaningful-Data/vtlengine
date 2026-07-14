@@ -3,7 +3,7 @@ from copy import copy
 from typing import List, Type, Union
 
 from vtlengine.AST import RenameNode
-from vtlengine.AST.Grammar.tokens import AGGREGATE, CALC, DROP, KEEP, RENAME, SUBSPACE
+from vtlengine.AST.Grammar.tokens import AGGREGATE, CALC, DROP, KEEP, RENAME, SUBSPACE, UNPIVOT
 from vtlengine.DataTypes import (
     Boolean,
     ScalarType,
@@ -202,6 +202,8 @@ class Pivot(Operator):
 
 
 class Unpivot(Operator):
+    op = UNPIVOT
+
     @classmethod
     def validate(cls, operands: List[str], dataset: Dataset) -> Dataset:
         dataset_name = VirtualCounter._new_ds_name()
@@ -213,6 +215,11 @@ class Unpivot(Operator):
             raise SemanticError("1-2-10", op=cls.op)
         if identifier in dataset.components:
             raise SemanticError("1-1-6-2", op=cls.op, name=identifier, dataset=dataset_name)
+        retained_names = set(dataset.get_identifiers_names())
+        retained_names.update(dataset.get_viral_attributes_names())
+        retained_names.add(identifier)
+        if measure in retained_names:
+            raise SemanticError("1-1-6-14", op=cls.op, name=measure, dataset=dataset_name)
 
         result_components = {comp.name: comp for comp in dataset.get_identifiers()}
         result_dataset = Dataset(name=dataset_name, components=result_components, data=None)

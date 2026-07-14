@@ -1016,6 +1016,24 @@ class ClauseClauseTests(SemanticHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_59(self):
+        """
+        Dataset --> Dataset
+        Status:
+        Expression: DS_r := DS_1 [unpivot Id_2, VAt_1];
+        Description: The unpivot measure name collides with a viral attribute name.
+
+        Git Branch: cr-890
+        Goal: The collision must raise a SemanticError, not a bare ValueError.
+        """
+        code = "CC_59"
+        number_inputs = 1
+        error_code = "1-1-6-14"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
 
 class MembershipTests(SemanticHelper):
     """
