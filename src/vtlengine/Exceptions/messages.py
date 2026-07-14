@@ -438,6 +438,12 @@ centralised_messages = {
         "message": "At op {op}: Not allowed to overwrite an Identifier: {comp_name}",
         "description": "Raised when an operation attempts to overwrite an existing Identifier.",
     },
+    "1-1-6-14": {
+        "message": "At op {op}: The component {name} in Dataset {dataset} could not be "
+        "included in the {op} op.",
+        "description": "Raised when a component cannot be included in the specified operation "
+        "because its name collides with a component already present in the result.",
+    },
     # Comparison errors
     "1-1-7-1": {
         "message": "At op {op}: Value in {left_name} of type {left_type} is not comparable "
