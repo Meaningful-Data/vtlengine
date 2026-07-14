@@ -16,9 +16,9 @@
           "nullable": false
         },
         {
-          "name": "Me_1",
+          "name": "bool_var",
           "role": "Measure",
-          "type": "Number",
+          "type": "Boolean",
           "nullable": true
         },
         {
@@ -36,7 +36,13 @@
         {
           "name": "VAt_1",
           "role": "Viral Attribute",
-          "type": "Number",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "VAt_2",
+          "role": "Viral Attribute",
+          "type": "String",
           "nullable": true
         }
       ]

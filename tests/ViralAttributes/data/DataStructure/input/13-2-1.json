@@ -1,42 +1,30 @@
 {
   "datasets": [
     {
-      "name": "DS_r",
+      "name": "DS_1",
       "DataStructure": [
         {
           "name": "Id_1",
-          "role": "Identifier",
           "type": "Integer",
-          "nullable": false
-        },
-        {
-          "name": "ruleid",
           "role": "Identifier",
-          "type": "String",
           "nullable": false
         },
         {
           "name": "Me_1",
-          "role": "Measure",
           "type": "Number",
-          "nullable": true
-        },
-        {
-          "name": "errorcode",
           "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "errorlevel",
-          "role": "Measure",
-          "type": "Number",
           "nullable": true
         },
         {
           "name": "VAt_1",
+          "type": "String",
           "role": "Viral Attribute",
-          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "VAt_2",
+          "type": "String",
+          "role": "Viral Attribute",
           "nullable": true
         }
       ]
