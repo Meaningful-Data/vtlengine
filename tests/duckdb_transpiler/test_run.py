@@ -3266,3 +3266,45 @@ class TestHierarchy:
         )
         expected = expected.sort_values(["Id_1", "Id_2"]).reset_index(drop=True)
         pd.testing.assert_frame_equal(result, expected, check_dtype=False, check_like=True)
+
+
+class TestViralPropagationSQLDeduplication:
+    def test_unpivot_viral_window_computed_once(self):
+        """The dataset-wide viral window appears once, referenced by every measure arm."""
+        script = (
+            "define viral propagation VP (variable VAt_1) is aggregate max "
+            "end viral propagation;\n"
+            "DS_u <- DS_2[unpivot Id_2, Val];"
+        )
+        data_structures = {
+            "datasets": [
+                {
+                    "name": "DS_2",
+                    "DataStructure": [
+                        {
+                            "name": "Id_1",
+                            "type": "Integer",
+                            "role": "Identifier",
+                            "nullable": False,
+                        },
+                        {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                        {"name": "Me_2", "type": "Number", "role": "Measure", "nullable": True},
+                        {"name": "Me_3", "type": "Number", "role": "Measure", "nullable": True},
+                        {
+                            "name": "VAt_1",
+                            "type": "Number",
+                            "role": "Viral Attribute",
+                            "nullable": True,
+                        },
+                    ],
+                }
+            ]
+        }
+
+        queries = {name: sql for name, sql, _ in transpile(script, data_structures)}
+
+        window = 'MAX("VAt_1") OVER ()'
+        assert queries["DS_u"].count(window) == 1, (
+            f"Dataset-wide viral window should be computed once, found "
+            f"{queries['DS_u'].count(window)} copies:\n{queries['DS_u']}"
+        )

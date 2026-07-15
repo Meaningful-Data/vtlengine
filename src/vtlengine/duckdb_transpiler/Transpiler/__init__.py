@@ -1997,14 +1997,20 @@ FROM (
             qn = quote_name(comp.name)
             excl_list.append(qn)
             expr_list.append(f"{vp_dataset_wide_sql(v_rule, qn)} AS {qn}")
+        cte: Optional[CTEBuilder] = None
         if expr_list:
-            table_src = (
-                f"(SELECT * EXCLUDE ({', '.join(excl_list)}), {', '.join(expr_list)} "
-                f"FROM {table_src} AS _uv_in) AS _uv_src"
+            cte = CTEBuilder()
+            cte.cte(
+                "_uv_src",
+                f"SELECT * EXCLUDE ({', '.join(excl_list)}), {', '.join(expr_list)} "
+                f"FROM {table_src} AS _uv_in",
+                materialized=True,
             )
+            table_src = "_uv_src"
 
         if not measure_names:
-            return f"SELECT * FROM {table_src}"
+            sql = f"SELECT * FROM {table_src}"
+            return cte.select(sql) if cte is not None else sql
 
         parts: List[str] = []
         for measure in measure_names:
@@ -2019,7 +2025,8 @@ FROM (
             )
             parts.append(part)
 
-        return " UNION ALL ".join(parts)
+        union_sql = " UNION ALL ".join(parts)
+        return cte.select(union_sql) if cte is not None else union_sql
 
     # Aggregation visitor
 
