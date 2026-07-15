@@ -3344,16 +3344,10 @@ FROM (
             cols = [quote_name(c) for c in ds.get_components_names()]
             return f"SELECT {', '.join(cols)} FROM {table_src}"
 
-        cte = CTEBuilder()
-        has_viral = any(c.role == Role.VIRAL_ATTRIBUTE for c in ds.components.values())
-        base_src = table_src
-        if has_viral and table_src.lstrip().startswith("("):
-            cte.cte("_op", f"SELECT * FROM {table_src}", materialized=True)
-            base_src = "_op"
-
         pivot_sql, measure, other_ids, unique_items = self._build_hr_pivot(
-            base_src, ds, parsed_rules, rule_comp, cond_mapping
+            table_src, ds, parsed_rules, rule_comp, cond_mapping
         )
+        cte = CTEBuilder()
         # MATERIALIZED to avoid the optimizer re-inlining the pivot aggregation
         # into every dependent CTE in the chain below.
         cte.cte("_pivot", pivot_sql, materialized=True)
@@ -3419,7 +3413,7 @@ FROM (
 
         # Combine child viral values into each computed node (issue #877).
         vp_info = self._build_hierarchy_viral_ctes(
-            cte, ds, parsed_rules, rule_comp, other_ids, base_src
+            cte, ds, parsed_rules, rule_comp, other_ids, table_src
         )
         if vp_info is not None:
             vp_name, viral_names = vp_info
@@ -3444,7 +3438,7 @@ FROM (
         cte.cte("_computed", computed_sql)
         cte.cte(
             "_combined",
-            f"SELECT {all_cols_csv}, 0 AS _src FROM {base_src} "
+            f"SELECT {all_cols_csv}, 0 AS _src FROM {table_src} "
             f"UNION ALL SELECT {all_cols_csv}, 1 AS _src FROM _computed",
         )
         return cte.select(

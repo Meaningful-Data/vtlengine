@@ -3269,54 +3269,6 @@ class TestHierarchy:
 
 
 class TestViralPropagationSQLDeduplication:
-    """SQL-structure tests for viral propagation transpilation (issue #892).
-
-    The generated SQL must not repeat expensive work: a derived hierarchy operand
-    is materialized once instead of re-embedded per leaf child, and the unpivot's
-    dataset-wide viral window is computed once instead of per measure arm.
-    """
-
-    def test_hierarchy_derived_operand_materialized_once(self):
-        """The derived operand appears once, referenced by both pivot and viral CTEs."""
-        script = """
-            define viral propagation VP (variable VAt_1) is aggregate max end viral propagation;
-            define hierarchical ruleset H (valuedomain rule Id_2) is
-                A = B + C; T = A + D; U = T + E
-            end hierarchical ruleset;
-            DS_r <- hierarchy(DS_1[filter Me_1 > 0], H rule Id_2 non_null);
-        """
-        data_structures = {
-            "datasets": [
-                {
-                    "name": "DS_1",
-                    "DataStructure": [
-                        {
-                            "name": "Id_1",
-                            "type": "Integer",
-                            "role": "Identifier",
-                            "nullable": False,
-                        },
-                        {"name": "Id_2", "type": "String", "role": "Identifier", "nullable": False},
-                        {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
-                        {
-                            "name": "VAt_1",
-                            "type": "Number",
-                            "role": "Viral Attribute",
-                            "nullable": True,
-                        },
-                    ],
-                }
-            ]
-        }
-
-        queries = {name: sql for name, sql, _ in transpile(script, data_structures)}
-
-        operand = 'FROM "DS_1" WHERE ("Me_1" > 0)'
-        assert queries["DS_r"].count(operand) == 1, (
-            f"Derived operand should be materialized once, found "
-            f"{queries['DS_r'].count(operand)} copies:\n{queries['DS_r']}"
-        )
-
     def test_unpivot_viral_window_computed_once(self):
         """The dataset-wide viral window appears once, referenced by every measure arm."""
         script = (
