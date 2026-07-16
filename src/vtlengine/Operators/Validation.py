@@ -16,7 +16,6 @@ from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators import Operator
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.ViralPropagation import get_current_registry
 
 
 # noinspection PyTypeChecker
@@ -255,9 +254,10 @@ class Validation(Operator):
                 + validation_measures
             ]
 
-        # Re-attach viral attributes matched per datapoint on the identifiers, then execute
-        # the propagation rule (issue #877). Source: the operand's own data (check_datapoint)
-        # or the captured pre-strip viral (check_hierarchy).
+        # Re-attach viral attributes matched per datapoint on the identifiers (copied, not
+        # combined: check_datapoint/check_hierarchy are row-preserving validations) (issue
+        # #906). Source: the operand's own data (check_datapoint) or the captured pre-strip
+        # viral (check_hierarchy).
         viral_comps = (
             viral_components
             if viral_components is not None
@@ -271,7 +271,6 @@ class Validation(Operator):
             ]
             viral_src = viral_src_data[join_ids + viral_names].drop_duplicates(subset=join_ids)
             result.data = result.data.merge(viral_src, on=join_ids, how="left")
-            get_current_registry().apply_row_preserving(result.data, viral_names)
 
         result.data = result.data[result.get_components_names()]
         return result

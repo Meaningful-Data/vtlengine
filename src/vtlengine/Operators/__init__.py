@@ -34,7 +34,11 @@ from vtlengine.DataTypes.TimeHandling import (
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.ViralPropagation import get_current_registry
+from vtlengine.ViralPropagation import (
+    combined_viral_components,
+    get_current_registry,
+    require_rules,
+)
 
 ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
 
@@ -350,6 +354,11 @@ class Binary(Operator):
                 left_comp = left_operand.components[comp.name]
                 right_comp = right_operand.components[comp.name]
                 comp.nullable = left_comp.nullable or right_comp.nullable
+
+        # Viral attributes present in BOTH operands have their data points merged, so they
+        # are combined and require a propagation rule; a viral attribute in a single operand
+        # is copied through and needs none (issue #906).
+        require_rules(combined_viral_components([left_operand, right_operand]))
 
         result_dataset = Dataset(name=dataset_name, components=result_components, data=None)
         cls.apply_return_type_dataset(result_dataset, left_operand, right_operand)
@@ -718,10 +727,8 @@ class Binary(Operator):
             + dataset.get_viral_attributes_names()
         )
         result_dataset.data = result_dataset.data[cols_to_keep]
-        # Execute the viral propagation rule on the (row-preserving) result (issue #877).
-        get_current_registry().apply_row_preserving(
-            result_dataset.data, result_dataset.get_viral_attributes_names()
-        )
+        # Row-preserving operator: viral attributes are copied through unchanged (they are
+        # not combined), per the VTL 2.2 attribute propagation rule (issue #906).
         cls.modify_measure_column(result_dataset)
         return result_dataset
 
@@ -992,10 +999,8 @@ class Unary(Operator):
         result_data = result_data[cols_to_keep]
 
         result_dataset.data = result_data
-        # Execute the viral propagation rule on the (row-preserving) result (issue #877).
-        get_current_registry().apply_row_preserving(
-            result_dataset.data, result_dataset.get_viral_attributes_names()
-        )
+        # Row-preserving operator: viral attributes are copied through unchanged (they are
+        # not combined), per the VTL 2.2 attribute propagation rule (issue #906).
         cls.modify_measure_column(result_dataset)
         return result_dataset
 

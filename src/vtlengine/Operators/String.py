@@ -25,7 +25,6 @@ from vtlengine.AST.Grammar.tokens import (
 from vtlengine.DataTypes import Integer, Number, String, check_unary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Role, Scalar
-from vtlengine.ViralPropagation import get_current_registry
 
 
 class Unary(Operator.Unary):
@@ -190,10 +189,7 @@ class Parameterized(Unary):
 
         cols_to_keep = [c.name for c in operand.get_components() if c.role != Role.ATTRIBUTE]
         result.data = result.data[cols_to_keep]
-        # Execute the viral propagation rule on the (row-preserving) result (issue #877).
-        get_current_registry().apply_row_preserving(
-            result.data, result.get_viral_attributes_names()
-        )
+        # Row-preserving operator: viral attributes are copied through unchanged (issue #906).
         cls.modify_measure_column(result)
         return result
 
@@ -624,10 +620,7 @@ class Instr(Parameterized):
                 )
         cols_to_keep = [c.name for c in operand.get_components() if c.role != Role.ATTRIBUTE]
         result.data = result.data[cols_to_keep]
-        # Execute the viral propagation rule on the (row-preserving) result (issue #877).
-        get_current_registry().apply_row_preserving(
-            result.data, result.get_viral_attributes_names()
-        )
+        # Row-preserving operator: viral attributes are copied through unchanged (issue #906).
         cls.modify_measure_column(result)
         return result
 

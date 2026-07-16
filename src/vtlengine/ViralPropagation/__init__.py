@@ -9,7 +9,7 @@ in :mod:`vtlengine.ViralPropagation.sql`.
 
 from dataclasses import dataclass, field
 from functools import reduce
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 import pandas as pd
 
@@ -146,30 +146,6 @@ class ViralPropagationRegistry:
         # Enumerated: reduce pairwise (associative + commutative guarantees correctness)
         return reduce(lambda a, b: self.resolve_pair(variable_name, a, b), values)
 
-    def apply_row_preserving(self, data: pd.DataFrame, viral_names: List[str]) -> None:
-        """Execute the propagation rule on each viral column of a row-preserving
-        operator result, in place.
-
-        Aggregate rules collapse the whole column to a single value applied to every
-        row; enumerated rules map each value (matching unary clause, else default); a
-        no-rule attribute is left unchanged.
-        """
-        for name in viral_names:
-            if name not in data.columns:
-                continue
-            rule = self.get_rule_for_variable(name)
-            if rule is None:
-                continue
-            col_dtype = data[name].dtype
-            if rule.aggregate_function is not None:
-                value = self.resolve_group(name, list(data[name]))
-                new_col = pd.Series([value] * len(data), index=data.index)
-            else:
-                new_col = pd.Series(
-                    [self.resolve_single(name, v) for v in data[name]], index=data.index
-                )
-            data[name] = new_col.astype(col_dtype)
-
     def clear(self) -> None:
         """Clear all registered rules."""
         self._variable_rules.clear()
@@ -198,3 +174,35 @@ def set_current_registry(registry: ViralPropagationRegistry) -> None:
     """Set the current viral propagation registry (called by Interpreter)."""
     global _current_registry  # noqa: PLW0603
     _current_registry = registry
+
+
+def require_rules(components: Iterable[Any]) -> None:
+    """Raise SemanticError 1-3-3-6 for any viral component lacking a propagation rule.
+
+    Call this at the combination points defined by the VTL 2.2 attribute propagation
+    rule (an operation over two or more datasets, an aggregation/analytic group-by, or
+    a hierarchy roll-up), where the default propagation algorithm must be executed. A
+    viral attribute that is only copied through (row-preserving operators) needs no rule.
+    """
+    from vtlengine.Exceptions import SemanticError  # local import avoids an import cycle
+
+    registry = get_current_registry()
+    for comp in components:
+        if registry.rule_for(comp) is None:
+            raise SemanticError("1-3-3-6", name=comp.name)
+
+
+def combined_viral_components(operands: Iterable[Any]) -> List[Any]:
+    """Return the viral components combined across ``operands``.
+
+    A viral attribute whose data points are combined appears (by name) as a viral
+    attribute in two or more operands; those require a propagation rule. A viral
+    attribute present in a single operand is copied through and needs no rule.
+    """
+    counts: Dict[str, int] = {}
+    comp_by_name: Dict[str, Any] = {}
+    for op in operands:
+        for comp in op.get_viral_attributes():
+            counts[comp.name] = counts.get(comp.name, 0) + 1
+            comp_by_name[comp.name] = comp
+    return [comp_by_name[name] for name, n in counts.items() if n >= 2]
