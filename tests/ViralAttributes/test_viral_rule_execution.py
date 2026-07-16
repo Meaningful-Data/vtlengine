@@ -431,9 +431,10 @@ class TestViralRuleRequiredOnlyWhenCombined:
 
     # -- non-combining operators: viral attribute copied through, no rule required --
 
-    def test_identity_assignment_no_rule_ok(self) -> None:
+    def test_calc_measure_no_rule_ok(self) -> None:
+        """A calc clause is row-preserving: it copies the viral attribute; no rule needed."""
         result = run(
-            script="DS_r <- DS_1;",
+            script="DS_r <- DS_1[calc Me_2 := Me_1 * 2];",
             data_structures={"datasets": [DS_1VA]},
             datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "VAt_1": ["A"]})},
         )
@@ -466,10 +467,12 @@ class TestViralRuleRequiredOnlyWhenCombined:
         assert result["DS_r"].components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
         assert list(result["DS_r"].data["VAt_1"]) == ["X"]
 
-    def test_two_viral_partial_rule_passthrough_ok(self) -> None:
-        # rule only for VAt_1; VAt_2 has none — pure passthrough combines neither.
+    def test_two_viral_partial_rule_row_preserving_ok(self) -> None:
+        """Two viral attributes, a rule for only one, through a row-preserving operator →
+        no error (neither is combined, so even the un-ruled VAt_2 is fine)."""
+        # rule only for VAt_1; VAt_2 has none — a row-preserving op combines neither.
         result = run(
-            script=AGGR_MAX_RULE + "DS_r <- DS_1;",
+            script=AGGR_MAX_RULE + "DS_r <- abs(DS_1);",
             data_structures={"datasets": [DS_2VA]},
             datapoints={
                 "DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "VAt_1": ["A"], "VAt_2": [7]})
@@ -478,8 +481,9 @@ class TestViralRuleRequiredOnlyWhenCombined:
         assert set(result["DS_r"].get_viral_attributes_names()) == {"VAt_1", "VAt_2"}
 
     def test_semantic_analysis_no_rule_ok(self) -> None:
+        """A row-preserving op with no rule passes semantic analysis (no execution)."""
         result = semantic_analysis(
-            script="DS_r <- DS_1;",
+            script="DS_r <- DS_1 * 2;",
             data_structures={"datasets": [DS_1VA]},
         )
         assert result["DS_r"].components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
@@ -521,6 +525,119 @@ class TestViralRuleRequiredOnlyWhenCombined:
             },
         )
         assert result["DS_r"].components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
+
+
+# -- The rule COMBINES per group / partition at aggregation & analytic (issue #906) --
+
+# Two identifiers; group/partition Id_1=1 -> {10, null, 30}; Id_1=2 -> {5}.
+_GP_NUM_DS = {
+    "name": "DS_1",
+    "DataStructure": [
+        {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+        {"name": "Id_2", "type": "Integer", "role": "Identifier", "nullable": False},
+        {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+        {"name": "VAt_1", "type": "Number", "role": "Viral Attribute", "nullable": True},
+    ],
+}
+_GP_STR_DS = {
+    **_GP_NUM_DS,
+    "DataStructure": [
+        *_GP_NUM_DS["DataStructure"][:3],
+        {"name": "VAt_1", "type": "String", "role": "Viral Attribute", "nullable": True},
+    ],
+}
+
+_ENUM_PAIR_RULE = """
+    define viral propagation R (variable VAt_1) is
+        when "A" and "B" then "AB";
+        when "C" and "D" then "CD";
+        else "F"
+    end viral propagation;
+"""
+
+
+def _gp_num_dp() -> pd.DataFrame:
+    return pd.DataFrame(
+        {
+            "Id_1": [1, 1, 1, 2],
+            "Id_2": [1, 2, 3, 1],
+            "Me_1": [10.0, 20.0, 30.0, 40.0],
+            "VAt_1": [10.0, None, 30.0, 5.0],
+        }
+    )
+
+
+def _gp_str_dp() -> pd.DataFrame:
+    return pd.DataFrame(
+        {
+            "Id_1": [1, 1, 2, 2],
+            "Id_2": [1, 2, 1, 2],
+            "Me_1": [10.0, 20.0, 30.0, 40.0],
+            "VAt_1": ["A", "B", "C", "D"],
+        }
+    )
+
+
+class TestViralRuleCombinesInGroupAndPartition:
+    """At the aggregation and analytic combination points the propagation rule is executed
+    within each group / partition (issue #906): an aggregate rule combines the group's
+    values (skipping nulls), analytic broadcasts the combined value to every row of the
+    partition, and an enumerated rule combines the group's values through its clauses."""
+
+    @pytest.mark.parametrize(
+        "agg_fn, group1",
+        # group Id_1=1 = {10, null, 30}; nulls are skipped: min 10, max 30, sum 40, avg 20.
+        [("min", 10.0), ("max", 30.0), ("sum", 40.0), ("avg", 20.0)],
+    )
+    def test_aggregate_rule_combines_per_group_skipping_nulls(
+        self, agg_fn: str, group1: float
+    ) -> None:
+        rule = (
+            f"define viral propagation S (variable VAt_1) is\n"
+            f"    aggregate {agg_fn}\n"
+            f"end viral propagation;\n"
+        )
+        result = run(
+            script=rule + "DS_r <- sum(DS_1 group by Id_1);",
+            data_structures={"datasets": [_GP_NUM_DS]},
+            datapoints={"DS_1": _gp_num_dp()},
+        )
+        d = result["DS_r"].data.sort_values("Id_1").reset_index(drop=True)
+        # One combined value per group; group Id_1=2 keeps its lone value 5.
+        assert d["VAt_1"].iloc[0] == group1
+        assert d["VAt_1"].iloc[1] == 5.0
+
+    def test_analytic_rule_combines_per_partition_and_broadcasts(self) -> None:
+        result = run(
+            script=AGGR_MAX_RULE + "DS_r <- sum(DS_1 over (partition by Id_1));",
+            data_structures={"datasets": [_GP_NUM_DS]},
+            datapoints={"DS_1": _gp_num_dp()},
+        )
+        d = result["DS_r"].data.sort_values(["Id_1", "Id_2"]).reset_index(drop=True)
+        # max over partition Id_1=1 {10, null, 30} = 30, broadcast to all 3 rows; partition 2 = 5.
+        assert list(d[d["Id_1"] == 1]["VAt_1"]) == [30.0, 30.0, 30.0]
+        assert list(d[d["Id_1"] == 2]["VAt_1"]) == [5.0]
+
+    def test_enumerated_rule_combines_per_group(self) -> None:
+        result = run(
+            script=_ENUM_PAIR_RULE + "DS_r <- sum(DS_1 group by Id_1);",
+            data_structures={"datasets": [_GP_STR_DS]},
+            datapoints={"DS_1": _gp_str_dp()},
+        )
+        d = result["DS_r"].data.sort_values("Id_1").reset_index(drop=True)
+        # group {"A","B"} matches the binary clause -> "AB"; group {"C","D"} -> "CD".
+        assert list(d["VAt_1"]) == ["AB", "CD"]
+
+    def test_enumerated_rule_combines_per_partition(self) -> None:
+        result = run(
+            script=_ENUM_PAIR_RULE + "DS_r <- sum(DS_1 over (partition by Id_1));",
+            data_structures={"datasets": [_GP_STR_DS]},
+            datapoints={"DS_1": _gp_str_dp()},
+        )
+        d = result["DS_r"].data.sort_values(["Id_1", "Id_2"]).reset_index(drop=True)
+        # Combined per partition and broadcast to each row.
+        assert list(d[d["Id_1"] == 1]["VAt_1"]) == ["AB", "AB"]
+        assert list(d[d["Id_1"] == 2]["VAt_1"]) == ["CD", "CD"]
 
 
 # -- DAG statement sorting keeps the rule registered (issue #877) --
