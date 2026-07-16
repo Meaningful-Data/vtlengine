@@ -7,8 +7,16 @@ import pytest
 
 from vtlengine import run, semantic_analysis
 from vtlengine.API import create_ast
+from vtlengine.DataTypes import Integer, String
 from vtlengine.Exceptions import SemanticError, VTLSyntaxError
-from vtlengine.Model import Role
+from vtlengine.Model import Component, Dataset, Role
+from vtlengine.ViralPropagation import (
+    ViralPropagationRegistry,
+    ViralPropagationRule,
+    combined_viral_components,
+    require_rules,
+    set_current_registry,
+)
 
 # -- Shared propagation rules --
 
@@ -863,3 +871,48 @@ class TestKeepPreservesViralAttributes:
         # (null, "Z") -> "F" (else), not the leaked "Z".
         assert ds.data["VAt_1"].iloc[0] == "F"
         assert ds.data["At_1"].iloc[0] == "y"
+
+
+# -- Unit tests for the combination-point check helpers --
+
+
+def _viral_ds(name: str, viral_names: list) -> Dataset:
+    comps = {"Id_1": Component("Id_1", Integer, Role.IDENTIFIER, False)}
+    for v in viral_names:
+        comps[v] = Component(v, String, Role.VIRAL_ATTRIBUTE, True)
+    return Dataset(name=name, components=comps, data=None)
+
+
+class TestViralCheckHelpers:
+    """``require_rules`` / ``combined_viral_components`` back the combination-point check."""
+
+    def test_require_rules_raises_when_missing(self) -> None:
+        set_current_registry(ViralPropagationRegistry())
+        comp = Component("VAt_1", String, Role.VIRAL_ATTRIBUTE, True)
+        with pytest.raises(SemanticError) as exc:
+            require_rules([comp])
+        assert "1-3-3-6" in str(exc.value)
+
+    def test_require_rules_passes_when_present(self) -> None:
+        registry = ViralPropagationRegistry()
+        registry.register(
+            ViralPropagationRule(
+                name="VAt_1",
+                signature_type="variable",
+                target="VAt_1",
+                enumerated_clauses=[],
+                aggregate_function="max",
+            )
+        )
+        set_current_registry(registry)
+        require_rules([Component("VAt_1", String, Role.VIRAL_ATTRIBUTE, True)])  # must not raise
+
+    def test_combined_viral_components_only_shared(self) -> None:
+        # VAt_1 is viral in both operands (combined); VAt_2 only in one (copied, no rule needed).
+        combined = combined_viral_components(
+            [_viral_ds("A", ["VAt_1", "VAt_2"]), _viral_ds("B", ["VAt_1"])]
+        )
+        assert {c.name for c in combined} == {"VAt_1"}
+
+    def test_combined_viral_components_empty_for_single_operand(self) -> None:
+        assert combined_viral_components([_viral_ds("A", ["VAt_1"])]) == []

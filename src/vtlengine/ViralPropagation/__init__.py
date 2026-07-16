@@ -9,7 +9,7 @@ in :mod:`vtlengine.ViralPropagation.sql`.
 
 from dataclasses import dataclass, field
 from functools import reduce
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 import pandas as pd
 
@@ -198,3 +198,35 @@ def set_current_registry(registry: ViralPropagationRegistry) -> None:
     """Set the current viral propagation registry (called by Interpreter)."""
     global _current_registry  # noqa: PLW0603
     _current_registry = registry
+
+
+def require_rules(components: Iterable[Any]) -> None:
+    """Raise SemanticError 1-3-3-6 for any viral component lacking a propagation rule.
+
+    Call this at the combination points defined by the VTL 2.2 attribute propagation
+    rule (an operation over two or more datasets, an aggregation/analytic group-by, or
+    a hierarchy roll-up), where the default propagation algorithm must be executed. A
+    viral attribute that is only copied through (row-preserving operators) needs no rule.
+    """
+    from vtlengine.Exceptions import SemanticError  # local import avoids an import cycle
+
+    registry = get_current_registry()
+    for comp in components:
+        if registry.rule_for(comp) is None:
+            raise SemanticError("1-3-3-6", name=comp.name)
+
+
+def combined_viral_components(operands: Iterable[Any]) -> List[Any]:
+    """Return the viral components combined across ``operands``.
+
+    A viral attribute whose data points are combined appears (by name) as a viral
+    attribute in two or more operands; those require a propagation rule. A viral
+    attribute present in a single operand is copied through and needs no rule.
+    """
+    counts: Dict[str, int] = {}
+    comp_by_name: Dict[str, Any] = {}
+    for op in operands:
+        for comp in op.get_viral_attributes():
+            counts[comp.name] = counts.get(comp.name, 0) + 1
+            comp_by_name[comp.name] = comp
+    return [comp_by_name[name] for name, n in counts.items() if n >= 2]
