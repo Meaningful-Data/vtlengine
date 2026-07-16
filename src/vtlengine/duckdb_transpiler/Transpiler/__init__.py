@@ -47,7 +47,6 @@ from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, V
 from vtlengine.Operators.Join import merged_viral_attribute_names
 from vtlengine.ViralPropagation import get_current_registry
 from vtlengine.ViralPropagation.sql import (
-    vp_dataset_wide_sql,
     vp_group_sql,
     vp_group_sql_windowed,
     vp_no_rule_group_sql,
@@ -584,16 +583,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 if viral_expr_fn is not None:
                     cols.append(f"{viral_expr_fn(name, comp)} AS {quote_name(name)}")
                 elif output_ds is not None and name in output_ds.components:
-                    # Row-preserving op: execute the viral propagation rule over the
-                    # result (aggregate rules collapse dataset-wide, enumerated map per
-                    # row); no rule = passthrough. Only when the output keeps it (issue #877).
-                    rule = get_current_registry().rule_for(comp)
-                    if rule is None:
-                        cols.append(quote_name(name))
-                    else:
-                        cols.append(
-                            f"{vp_dataset_wide_sql(rule, quote_name(name))} AS {quote_name(name)}"
-                        )
+                    # Row-preserving op: data points are not combined, so the viral
+                    # attribute is copied through unchanged (issue #906).
+                    cols.append(quote_name(name))
 
         return SQLBuilder().select(*cols).from_table(table_src).build()
 
@@ -737,6 +729,64 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         # Typed or generic registry lookup, with function-call fallback
         return registry.sql(op, left_ref, right_ref, data_type=dt)
 
+    def _ds_ds_viral_cols(
+        self,
+        op: str,
+        left_ds: Dataset,
+        right_ds: Dataset,
+        output_ds: Optional[Dataset],
+        alias_a: str,
+        alias_b: str,
+    ) -> List[str]:
+        """Build the viral-attribute SELECT columns for a two-dataset binary op.
+
+        Operators that combine data points run the propagation rule (``vp_pair_sql``);
+        ``nvl`` is single-operand and copies the primary operand (COALESCE-filled) (#906).
+        A viral attribute present in only one operand is copied from that operand.
+        """
+        vp_registry = get_current_registry()
+        left_viral = {n for n, c in left_ds.components.items() if c.role == Role.VIRAL_ATTRIBUTE}
+        right_viral = {n for n, c in right_ds.components.items() if c.role == Role.VIRAL_ATTRIBUTE}
+        if output_ds is not None:
+            viral_names = [
+                n for n, c in output_ds.components.items() if c.role == Role.VIRAL_ATTRIBUTE
+            ]
+        else:
+            viral_names = sorted(left_viral | right_viral)
+        result: List[str] = []
+        for name in viral_names:
+            qn = quote_name(name)
+            in_left = name in left_viral
+            in_right = name in right_viral
+            if op == tokens.NVL:
+                # nvl copies the primary operand's viral value, filling nulls from the
+                # secondary operand; no rule is run (issue #906).
+                if in_left and in_right:
+                    result.append(f"COALESCE({alias_a}.{qn}, {alias_b}.{qn}) AS {qn}")
+                elif in_left:
+                    result.append(f"{alias_a}.{qn} AS {qn}")
+                elif in_right:
+                    result.append(f"{alias_b}.{qn} AS {qn}")
+                continue
+            if in_left and in_right:
+                comp = (
+                    output_ds.components.get(name) if output_ds else None
+                ) or left_ds.components[name]
+                rule = vp_registry.rule_for(comp)
+                if rule is None:
+                    result.append(
+                        f"CAST(NULL AS {get_duckdb_type(comp.data_type.__name__)}) AS {qn}"
+                    )
+                else:
+                    result.append(
+                        f"{vp_pair_sql(rule, f'{alias_a}.{qn}', f'{alias_b}.{qn}')} AS {qn}"
+                    )
+            elif in_left:
+                result.append(f"{alias_a}.{qn} AS {qn}")
+            elif in_right:
+                result.append(f"{alias_b}.{qn} AS {qn}")
+        return result
+
     def _build_ds_ds_binary(
         self,
         left_node: AST.AST,
@@ -809,35 +859,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 out_name = output_measure_names[0]
             cols.append(f"{expr} AS {quote_name(out_name)}")
 
-        # Viral attribute propagation: combine values present in both operands.
-        vp_registry = get_current_registry()
-        left_viral = {n for n, c in left_ds.components.items() if c.role == Role.VIRAL_ATTRIBUTE}
-        right_viral = {n for n, c in right_ds.components.items() if c.role == Role.VIRAL_ATTRIBUTE}
-        if output_ds is not None:
-            viral_names = [
-                n for n, c in output_ds.components.items() if c.role == Role.VIRAL_ATTRIBUTE
-            ]
-        else:
-            viral_names = sorted(left_viral | right_viral)
-        for name in viral_names:
-            qn = quote_name(name)
-            in_left = name in left_viral
-            in_right = name in right_viral
-            if in_left and in_right:
-                comp = (
-                    output_ds.components.get(name) if output_ds else None
-                ) or left_ds.components[name]
-                rule = vp_registry.rule_for(comp)
-                if rule is None:
-                    cols.append(f"CAST(NULL AS {get_duckdb_type(comp.data_type.__name__)}) AS {qn}")
-                else:
-                    cols.append(
-                        f"{vp_pair_sql(rule, f'{alias_a}.{qn}', f'{alias_b}.{qn}')} AS {qn}"
-                    )
-            elif in_left:
-                cols.append(f"{alias_a}.{qn} AS {qn}")
-            elif in_right:
-                cols.append(f"{alias_b}.{qn} AS {qn}")
+        # Viral attribute propagation across the two operands (issue #906).
+        cols.extend(self._ds_ds_viral_cols(op, left_ds, right_ds, output_ds, alias_a, alias_b))
 
         on_clause = self._join_on_clause(common_ids, alias_a, alias_b)
 
@@ -1015,16 +1038,12 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
             id_cols = [quote_name(c.name) for c in ds.get_identifiers()]
             # Execute the viral propagation rule on the (row-preserving) result (issue #877).
-            reg = get_current_registry()
             viral_cols: List[str] = []
             for v_comp in ds.components.values():
                 if v_comp.role != Role.VIRAL_ATTRIBUTE:
                     continue
-                v_qn = quote_name(v_comp.name)
-                v_rule = reg.rule_for(v_comp)
-                viral_cols.append(
-                    v_qn if v_rule is None else f"{vp_dataset_wide_sql(v_rule, v_qn)} AS {v_qn}"
-                )
+                # Row-preserving op: viral attribute copied through unchanged (issue #906).
+                viral_cols.append(quote_name(v_comp.name))
             extract_expr = (
                 f'vtl_period_parse({quote_name(time_id)}).period_indicator AS "duration_var"'
             )
@@ -1983,25 +2002,8 @@ FROM (
         measure_names = ds.get_measures_names()
         viral_names = ds.get_viral_attributes_names()
 
-        # Execute the rule over the whole source before the melt so aggregate rules are not
-        # distorted by row replication; each UNION arm then reads the resolved value (issue #877).
-        reg = get_current_registry()
-        excl_list: List[str] = []
-        expr_list: List[str] = []
-        for comp in ds.components.values():
-            if comp.role != Role.VIRAL_ATTRIBUTE:
-                continue
-            v_rule = reg.rule_for(comp)
-            if v_rule is None:
-                continue
-            qn = quote_name(comp.name)
-            excl_list.append(qn)
-            expr_list.append(f"{vp_dataset_wide_sql(v_rule, qn)} AS {qn}")
-        if expr_list:
-            table_src = (
-                f"(SELECT * EXCLUDE ({', '.join(excl_list)}), {', '.join(expr_list)} "
-                f"FROM {table_src} AS _uv_in) AS _uv_src"
-            )
+        # Viral attributes are copied (replicated) across the unpivoted rows below; no rule
+        # is executed on this row-preserving reshape (issue #906).
 
         if not measure_names:
             return f"SELECT * FROM {table_src}"
@@ -2846,22 +2848,8 @@ FROM (
         ]
         union_sql = " UNION ALL ".join(rule_queries)
 
-        if viral_comps:
-            reg = get_current_registry()
-            excl_list: List[str] = []
-            expr_list: List[str] = []
-            for comp in viral_comps:
-                v_rule = reg.rule_for(comp)
-                if v_rule is None:
-                    continue
-                qn = quote_name(comp.name)
-                excl_list.append(qn)
-                expr_list.append(f"{vp_dataset_wide_sql(v_rule, qn)} AS {qn}")
-            if expr_list:
-                union_sql = (
-                    f"SELECT * EXCLUDE ({', '.join(excl_list)}), {', '.join(expr_list)} "
-                    f"FROM ({union_sql}) AS _dp_viral"
-                )
+        # check_datapoint is row-preserving: viral attributes are copied per datapoint from
+        # union_sql; no rule is executed (issue #906, superseding #897's dataset-wide aggregate).
 
         if use_cte:
             cte = CTEBuilder()
@@ -3121,17 +3109,16 @@ FROM (
         # rule over the result (issue #877).
         viral_comps = [c for c in ds.components.values() if c.role == Role.VIRAL_ATTRIBUTE]
         if viral_comps:
-            reg = get_current_registry()
+            get_current_registry()
             keys = [*other_ids, rule_comp]
             keys_q = ", ".join(quote_name(k) for k in keys)
             raw = ", ".join(quote_name(c.name) for c in viral_comps)
             cte.cte("_chv", f"SELECT {keys_q}, {raw} FROM {table_src}")
             viral_sel = []
             for c in viral_comps:
-                v_rule = reg.rule_for(c)
+                # check_hierarchy is row-preserving: viral attribute copied unchanged (#906).
                 qn = quote_name(c.name)
-                expr = f"v.{qn}" if v_rule is None else vp_dataset_wide_sql(v_rule, f"v.{qn}")
-                viral_sel.append(f"{expr} AS {qn}")
+                viral_sel.append(f"v.{qn} AS {qn}")
             join = " AND ".join(
                 f"r.{quote_name(k)} IS NOT DISTINCT FROM v.{quote_name(k)}" for k in keys
             )

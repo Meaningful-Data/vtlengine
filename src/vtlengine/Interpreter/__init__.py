@@ -167,13 +167,6 @@ class InterpreterAnalyzer(ASTTemplate):
             if result is None:
                 continue
 
-            if isinstance(result, Dataset):
-                # Every viral attribute must declare a viral propagation rule (issue #877).
-                vp_registry = get_current_registry()
-                for viral_comp in result.get_viral_attributes():
-                    if vp_registry.rule_for(viral_comp) is None:
-                        raise SemanticError("1-3-3-6", name=viral_comp.name)
-
             vtlengine.Exceptions.dataset_output = None
             self.datasets[result.name] = copy(result)
             results[result.name] = result

@@ -7,6 +7,7 @@ from vtlengine.AST.Grammar.tokens import HIERARCHY
 from vtlengine.DataTypes import Boolean, Number
 from vtlengine.Model import Component, DataComponent, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.ViralPropagation import require_rules
 
 
 def get_measure_from_dataset(dataset: Dataset, code_item: str) -> DataComponent:
@@ -122,4 +123,7 @@ class Hierarchy(Operators.Operator):
         # Viral attributes propagate to the hierarchy result (issue #877).
         for viral_comp in viral_components or []:
             result_components[viral_comp.name] = copy(viral_comp)
+        # The roll-up combines child nodes into each computed node, so the combined viral
+        # attributes require a propagation rule (issue #906).
+        require_rules(viral_components or [])
         return Dataset(name=dataset_name, components=result_components, data=None)

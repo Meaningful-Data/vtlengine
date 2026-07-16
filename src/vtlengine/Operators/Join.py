@@ -9,6 +9,7 @@ from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators import Operator
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.ViralPropagation import require_rules
 
 
 def merged_viral_attribute_names(
@@ -81,6 +82,15 @@ class Join(Operator):
         # (values combined via the viral propagation rule at execution time)
         # instead of being #-qualified like other shared components.
         viral_common = merged_viral_attribute_names([op.components for op in operands], set(using))
+        # A merged viral attribute has its data points combined across operands, so it
+        # requires a propagation rule (issue #906).
+        merged_viral_comps = {
+            name: op.components[name]
+            for op in operands
+            for name in viral_common
+            if name in op.components
+        }
+        require_rules(merged_viral_comps.values())
 
         for op in operands:
             for comp in op.components.values():
