@@ -1057,8 +1057,10 @@ centralised_messages = {
     "1-3-3-6": {
         "message": "Viral attribute {name} has no viral propagation rule; declare a "
         "'define viral propagation' rule for it.",
-        "description": "Raised when a viral attribute appears in a result without a "
-        "define viral propagation rule. Every viral attribute must declare one.",
+        "description": "Raised when a viral attribute is combined -- in an operation over "
+        "two or more datasets, an aggregation/analytic group-by, or a hierarchy roll-up -- "
+        "without a 'define viral propagation' rule. Viral attributes that are only copied "
+        "through row-preserving operators do not require a rule.",
     },
     # ---------- Interpreter ----------
     "1-3-5": {
