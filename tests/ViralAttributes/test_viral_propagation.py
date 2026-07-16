@@ -518,6 +518,42 @@ class TestViralRuleCombinesInGroupAndPartition:
         assert list(d[d["Id_1"] == 1]["VAt_1"]) == ["AB", "AB"]
         assert list(d[d["Id_1"] == 2]["VAt_1"]) == ["CD", "CD"]
 
+    @pytest.mark.parametrize(
+        "invocation",
+        ["sum(DS_1 group by Id_1)", "sum(DS_1 over (partition by Id_1))"],
+    )
+    @pytest.mark.parametrize("use_duckdb", [False, True])
+    def test_enumerated_rule_applies_to_single_element_group(
+        self, invocation: str, use_duckdb: bool
+    ) -> None:
+        """A group / partition with a single data point still has the enumerated rule
+        applied to it, exactly as a larger group does — the rule runs in every group
+        regardless of size (regression: DuckDB's ``list_reduce`` skipped the lambda for a
+        one-element list, leaving the lone value unmapped, issue #906)."""
+        rule = (
+            "define viral propagation R (variable VAt_1) is\n"
+            '    when "A" then "A1";\n'
+            '    else "F"\n'
+            "end viral propagation;\n"
+        )
+        # group/partition Id_1=1 -> two rows {"A","A"}; Id_1=2 -> a lone {"A"}.
+        dp = pd.DataFrame(
+            {
+                "Id_1": [1, 1, 2],
+                "Id_2": [1, 2, 1],
+                "Me_1": [10.0, 20.0, 30.0],
+                "VAt_1": ["A", "A", "A"],
+            }
+        )
+        result = run(
+            script=rule + f"DS_r <- {invocation};",
+            data_structures={"datasets": [_GP_STR_DS]},
+            datapoints={"DS_1": dp},
+            use_duckdb=use_duckdb,
+        )
+        # Every output row maps "A" -> "A1"; the lone group is NOT copied through as "A".
+        assert set(result["DS_r"].data["VAt_1"]) == {"A1"}
+
 
 # -- Multi-attribute propagation (enumerated + aggregate in one script) --
 

@@ -96,20 +96,35 @@ def vp_reduce_refs(rule: ViralPropagationRule, refs: List[str]) -> str:
     return acc
 
 
+def _enumerated_group_sql(rule: ViralPropagationRule, lst: str) -> str:
+    """Combine an enumerated rule over a group given as a DuckDB list expression ``lst``.
+
+    Mirrors ``resolve_group`` in the pandas path: an empty group is NULL, a single
+    value goes through the unary-clause mapping (``resolve_single``), and two or more
+    values are folded pairwise. ``list_reduce`` alone would skip the lambda for a
+    one-element list, leaving a lone value unmapped, so the single case is explicit.
+    """
+    single = _enumerated_single_case(rule, f"({lst})[1]")
+    pair = _enumerated_case(rule, "acc", "x")
+    return (
+        f"CASE WHEN len({lst}) = 0 THEN NULL "
+        f"WHEN len({lst}) = 1 THEN {single} "
+        f"ELSE list_reduce({lst}, (acc, x) -> {pair}) END"
+    )
+
+
 def vp_group_sql(rule: ViralPropagationRule, col_ref: str) -> str:
     """SQL aggregate expression combining a group of viral values."""
     if rule.aggregate_function is not None:
         return f"{_AGG_GROUP[rule.aggregate_function]}({col_ref})"
-    case = _enumerated_case(rule, "acc", "x")
-    return f"list_reduce(list({col_ref}), (acc, x) -> {case})"
+    return _enumerated_group_sql(rule, f"list({col_ref})")
 
 
 def vp_group_sql_windowed(rule: ViralPropagationRule, col_ref: str, over_clause: str) -> str:
     """Windowed form of vp_group_sql for analytic invocation (... OVER (window))."""
     if rule.aggregate_function is not None:
         return f"{_AGG_GROUP[rule.aggregate_function]}({col_ref}) OVER ({over_clause})"
-    case = _enumerated_case(rule, "acc", "x")
-    return f"list_reduce(list({col_ref}) OVER ({over_clause}), (acc, x) -> {case})"
+    return _enumerated_group_sql(rule, f"list({col_ref}) OVER ({over_clause})")
 
 
 def vp_no_rule_group_sql(col_ref: str) -> str:
