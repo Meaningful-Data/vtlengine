@@ -774,6 +774,28 @@ class TestViralRuleExecutionRowPreserving:
         # Copied unchanged (NOT remapped "A"->"Z", "B"->"D").
         assert list(df["VAt_1"]) == ["A", "B"]
 
+    @pytest.mark.parametrize("use_duckdb", BACKENDS)
+    def test_dataset_scalar_binary_copies_and_needs_no_rule(self, use_duckdb: bool) -> None:
+        """A dataset-scalar binary (DS ⊕ scalar) is row-preserving: it copies the viral
+        attribute (an aggregate rule must NOT collapse it) and requires no rule (#906)."""
+        dp = pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [1.0, 2.0, 3.0], "VAt_1": [100, 200, 300]})
+        # (a) rule present but not executed -> values copied per row (not the dataset-wide max)
+        result = run(
+            script=f"{_AGG_RULE}\nDS_r <- DS_1 + 5;",
+            data_structures={"datasets": [self._ds("Number")]},
+            datapoints={"DS_1": dp},
+            use_duckdb=use_duckdb,
+        )
+        assert list(result["DS_r"].data.sort_values("Id_1")["VAt_1"]) == [100, 200, 300]
+        # (b) no rule at all -> succeeds (no 1-3-3-6), values copied
+        result = run(
+            script="DS_r <- DS_1 + 5;",
+            data_structures={"datasets": [self._ds("Number")]},
+            datapoints={"DS_1": dp},
+            use_duckdb=use_duckdb,
+        )
+        assert list(result["DS_r"].data.sort_values("Id_1")["VAt_1"]) == [100, 200, 300]
+
 
 # -- hierarchy aggregation operator --
 
