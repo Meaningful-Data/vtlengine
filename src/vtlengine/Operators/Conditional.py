@@ -13,7 +13,11 @@ from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Role, Scalar
 from vtlengine.Operators import Binary, Operator
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.ViralPropagation import get_current_registry
+from vtlengine.ViralPropagation import (
+    combined_viral_components,
+    get_current_registry,
+    require_rules,
+)
 
 COND_COL = "__cond__"
 
@@ -237,6 +241,11 @@ class If(Operator):
             if left.get_identifiers() != condition.get_identifiers():
                 raise SemanticError("1-1-9-6", op=cls.op)
         result_components = {comp_name: copy(comp) for comp_name, comp in left.components.items()}
+        # if-then-else over two datasets combines their data points per row, so viral
+        # attributes carried by both branches require a propagation rule (issue #906).
+        require_rules(
+            combined_viral_components([b for b in (left, right) if isinstance(b, Dataset)])
+        )
         return Dataset(name=dataset_name, components=result_components, data=None)
 
 
@@ -468,4 +477,7 @@ class Case(Operator):
             if isinstance(op, Dataset) and op.get_components_names() != comp_names:
                 raise SemanticError("2-1-9-7", op=cls.op)
 
+        # case over two or more datasets combines their data points, so viral attributes
+        # carried by two or more branches require a propagation rule (issue #906).
+        require_rules(combined_viral_components([op for op in ops if isinstance(op, Dataset)]))
         return Dataset(name=dataset_name, components=components, data=None)

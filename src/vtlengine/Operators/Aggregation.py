@@ -35,7 +35,7 @@ from vtlengine.DataTypes.TimeHandling import (
 )
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, Dataset, Role
-from vtlengine.ViralPropagation import get_current_registry
+from vtlengine.ViralPropagation import get_current_registry, require_rules
 
 
 def extract_grouping_identifiers(
@@ -171,6 +171,9 @@ class Aggregation(Operator.Unary):
             )
             result_components["int_var"] = new_comp
 
+        # Aggregation combines the data points of each group, so the surviving viral
+        # attributes are combined and require a propagation rule (issue #906).
+        require_rules(operand.get_viral_attributes())
         # VDS is handled in visit_Aggregation
         return Dataset(name="result", components=result_components, data=None)
 

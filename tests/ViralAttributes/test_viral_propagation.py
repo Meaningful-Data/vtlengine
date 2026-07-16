@@ -296,85 +296,104 @@ class TestViralPropagationEndToEnd:
         assert pd.isna(va.iloc[2])
 
 
-# -- Every viral attribute requires a rule, even in pure passthrough (issue #877) --
+# -- A viral attribute requires a rule ONLY when it is combined (issue #906) --
 
 
-class TestEveryViralAttributeRequiresRule:
-    """Strict policy: a viral attribute reaching a result without a ``define viral
-    propagation`` rule is a SemanticError (1-3-3-6), even when no combination happens
-    (single-operand assignment, unary, keep, calc). A rule is not optional."""
+class TestViralRuleRequiredOnlyWhenCombined:
+    """Per the VTL 2.2 attribute propagation rule, a rule is required (and executed) only
+    where input data points are combined. A viral attribute merely copied through a
+    row-preserving / single-operand operator needs no rule."""
 
-    def test_identity_assignment_no_rule_raises(self) -> None:
-        """``DS_r <- DS_1`` with a viral attribute and no rule → error."""
-        with pytest.raises(SemanticError) as exc:
-            run(
-                script="DS_r <- DS_1;",
-                data_structures={"datasets": [DS_1VA]},
-                datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "VAt_1": ["A"]})},
-            )
-        assert "1-3-3-6" in str(exc.value)
+    # -- non-combining operators: viral attribute copied through, no rule required --
 
-    def test_unary_no_rule_raises(self) -> None:
-        """A unary (row-preserving) operator over a viral attribute with no rule → error."""
-        with pytest.raises(SemanticError) as exc:
-            run(
-                script="DS_r <- abs(DS_1);",
-                data_structures={"datasets": [DS_1VA]},
-                datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [-10.0], "VAt_1": ["A"]})},
-            )
-        assert "1-3-3-6" in str(exc.value)
+    def test_identity_assignment_no_rule_ok(self) -> None:
+        """``DS_r <- DS_1`` copies the viral attribute; no rule needed."""
+        result = run(
+            script="DS_r <- DS_1;",
+            data_structures={"datasets": [DS_1VA]},
+            datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "VAt_1": ["A"]})},
+        )
+        assert result["DS_r"].components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
+        assert list(result["DS_r"].data["VAt_1"]) == ["A"]
 
-    def test_keep_no_rule_raises(self) -> None:
-        """A keep clause carries the viral attribute through; without a rule → error."""
-        with pytest.raises(SemanticError) as exc:
-            run(
-                script="DS_r <- DS_1[keep Me_1];",
-                data_structures={"datasets": [DS_1VA]},
-                datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "VAt_1": ["A"]})},
-            )
-        assert "1-3-3-6" in str(exc.value)
+    def test_unary_no_rule_ok(self) -> None:
+        """A unary (row-preserving) operator copies the viral attribute; no rule needed."""
+        result = run(
+            script="DS_r <- abs(DS_1);",
+            data_structures={"datasets": [DS_1VA]},
+            datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [-10.0], "VAt_1": ["A"]})},
+        )
+        assert list(result["DS_r"].data["VAt_1"]) == ["A"]
 
-    def test_calc_creates_viral_no_rule_raises(self) -> None:
-        """A calc that creates a viral attribute must also declare a rule for it."""
-        with pytest.raises(SemanticError) as exc:
-            run(
-                script='DS_r <- DS_1[calc viral attribute VAt_1 := "X"];',
-                data_structures={"datasets": [DS_NO_VA]},
-                datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0]})},
-            )
-        assert "1-3-3-6" in str(exc.value)
+    def test_keep_no_rule_ok(self) -> None:
+        """A keep clause carries the viral attribute through unchanged; no rule needed."""
+        result = run(
+            script="DS_r <- DS_1[keep Me_1];",
+            data_structures={"datasets": [DS_1VA]},
+            datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "VAt_1": ["A"]})},
+        )
+        assert result["DS_r"].components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
+        assert list(result["DS_r"].data["VAt_1"]) == ["A"]
 
-    def test_partial_rules_missing_one_raises(self) -> None:
-        """Two viral attributes but only one rule → the un-ruled one still errors."""
-        with pytest.raises(SemanticError) as exc:
-            run(
-                script=AGGR_MAX_RULE + "DS_r <- DS_1;",  # rule only for VAt_1
-                data_structures={"datasets": [DS_2VA]},
-                datapoints={
-                    "DS_1": pd.DataFrame(
-                        {"Id_1": [1], "Me_1": [10.0], "VAt_1": ["A"], "VAt_2": [7]}
-                    )
-                },
-            )
-        # VAt_2 has no rule.
-        assert "1-3-3-6" in str(exc.value)
-        assert "VAt_2" in str(exc.value)
+    def test_calc_creates_viral_no_rule_ok(self) -> None:
+        """A calc that creates a viral attribute (never combined) needs no rule."""
+        result = run(
+            script='DS_r <- DS_1[calc viral attribute VAt_1 := "X"];',
+            data_structures={"datasets": [DS_NO_VA]},
+            datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0]})},
+        )
+        assert result["DS_r"].components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
+        assert list(result["DS_r"].data["VAt_1"]) == ["X"]
 
-    def test_semantic_analysis_no_rule_raises(self) -> None:
-        """The rule requirement is enforced at semantic-analysis time (no execution)."""
+    def test_two_viral_partial_rule_passthrough_ok(self) -> None:
+        """Two viral attributes, a rule for only one, pure passthrough → no error
+        (neither is combined)."""
+        result = run(
+            script=AGGR_MAX_RULE + "DS_r <- DS_1;",  # rule only for VAt_1; VAt_2 has none
+            data_structures={"datasets": [DS_2VA]},
+            datapoints={
+                "DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "VAt_1": ["A"], "VAt_2": [7]})
+            },
+        )
+        assert set(result["DS_r"].get_viral_attributes_names()) == {"VAt_1", "VAt_2"}
+
+    def test_semantic_analysis_no_rule_ok(self) -> None:
+        """A pure passthrough with no rule passes semantic analysis (no execution)."""
+        result = semantic_analysis(
+            script="DS_r <- DS_1;",
+            data_structures={"datasets": [DS_1VA]},
+        )
+        assert result["DS_r"].components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
+
+    # -- combination points: a rule IS required (SemanticError 1-3-3-6) --
+
+    def test_aggregation_no_rule_raises(self) -> None:
+        """Aggregation combines each group's data points → a rule is required."""
         with pytest.raises(SemanticError) as exc:
             semantic_analysis(
-                script="DS_r <- DS_1;",
+                script="DS_r <- sum(DS_1 group by Id_1);",
+                data_structures={"datasets": [DS_1VA]},
+            )
+        assert "1-3-3-6" in str(exc.value)
+
+    def test_analytic_no_rule_raises(self) -> None:
+        """Analytic combines each partition's data points → a rule is required."""
+        with pytest.raises(SemanticError) as exc:
+            semantic_analysis(
+                script="DS_r <- sum(DS_1 over (partition by Id_1));",
                 data_structures={"datasets": [DS_1VA]},
             )
         assert "1-3-3-6" in str(exc.value)
 
     def test_rule_present_does_not_raise(self) -> None:
-        """Positive control: declaring the rule makes the same script valid."""
+        """Positive control: declaring the rule makes a combining script valid."""
         result = run(
-            script=CONF_RULE + "DS_r <- DS_1;",
-            data_structures={"datasets": [DS_1VA]},
-            datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "VAt_1": ["C"]})},
+            script=CONF_RULE + "DS_r <- DS_1 + DS_2;",
+            data_structures=_ds_pair(DS_1VA),
+            datapoints={
+                "DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "VAt_1": ["C"]}),
+                "DS_2": pd.DataFrame({"Id_1": [1], "Me_1": [5.0], "VAt_1": ["N"]}),
+            },
         )
         assert result["DS_r"].components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
 
