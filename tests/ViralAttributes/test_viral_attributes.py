@@ -4,6 +4,7 @@ import pandas as pd
 import pytest
 
 from tests.Helper import TestHelper
+from vtlengine import run
 from vtlengine.API import create_ast
 from vtlengine.DataTypes import Integer, Number, String
 from vtlengine.Exceptions import VTLSyntaxError
@@ -196,3 +197,60 @@ class TestVpBodyGrammar:
         script = f"define viral propagation R (variable VAt_1) is\n{body}\nend viral propagation;"
         with pytest.raises(VTLSyntaxError):
             create_ast(script)
+
+    def test_valid_enumerated_then_else_propagates(self) -> None:
+        """Valid body (enumerated clauses + trailing else): resolves on a binary op."""
+        rule = (
+            "define viral propagation R (variable VAt_1) is\n"
+            'when "C" then "C";\nelse "F"\n'
+            "end viral propagation;"
+        )
+        va = {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                {"name": "VAt_1", "type": "String", "role": "Viral Attribute", "nullable": True},
+            ],
+        }
+        result = run(
+            script=rule + "\nDS_r <- DS_1 + DS_2;",
+            data_structures={"datasets": [va, {**va, "name": "DS_2"}]},
+            datapoints={
+                "DS_1": pd.DataFrame({"Id_1": [1, 2], "Me_1": [10.0, 20.0], "VAt_1": ["C", "X"]}),
+                "DS_2": pd.DataFrame({"Id_1": [1, 2], "Me_1": [5.0, 15.0], "VAt_1": ["C", "Y"]}),
+            },
+        )
+        # C+C -> "C" (when "C"); X+Y -> "F" (else)
+        assert list(result["DS_r"].data["VAt_1"]) == ["C", "F"]
+
+    def test_valid_single_aggregate_propagates(self) -> None:
+        """Valid body (single aggregate clause): max propagated through a group by."""
+        rule = (
+            "define viral propagation R (variable VAt_1) is\naggregate max\nend viral propagation;"
+        )
+        ds = {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Id_2", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                {"name": "VAt_1", "type": "Integer", "role": "Viral Attribute", "nullable": True},
+            ],
+        }
+        result = run(
+            script=rule + "\nDS_r <- sum(DS_1 group by Id_1);",
+            data_structures={"datasets": [ds]},
+            datapoints={
+                "DS_1": pd.DataFrame(
+                    {
+                        "Id_1": [1, 1, 2],
+                        "Id_2": [1, 2, 1],
+                        "Me_1": [10.0, 20.0, 30.0],
+                        "VAt_1": [3, 7, 5],
+                    }
+                )
+            },
+        )
+        sorted_data = result["DS_r"].data.sort_values("Id_1").reset_index(drop=True)
+        assert list(sorted_data["VAt_1"]) == [7, 5]
