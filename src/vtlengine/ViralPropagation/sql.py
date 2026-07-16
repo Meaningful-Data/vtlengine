@@ -115,14 +115,3 @@ def vp_group_sql_windowed(rule: ViralPropagationRule, col_ref: str, over_clause:
 def vp_no_rule_group_sql(col_ref: str) -> str:
     """Group no-rule keep: copy the value of a single-row group, else NULL."""
     return f"CASE WHEN COUNT(*) = 1 THEN MAX({col_ref}) ELSE NULL END"
-
-
-def vp_dataset_wide_sql(rule: ViralPropagationRule, col_ref: str) -> str:
-    """SQL executing the rule over a whole row-preserving operator result.
-
-    Aggregate rules collapse every viral value to one (``AGG(col) OVER ()``) applied
-    to every row; enumerated rules map each value per row.
-    """
-    if rule.aggregate_function is not None:
-        return f"{_AGG_GROUP[rule.aggregate_function]}({col_ref}) OVER ()"
-    return _enumerated_single_case(rule, col_ref)

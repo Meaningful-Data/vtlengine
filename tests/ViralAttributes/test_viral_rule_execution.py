@@ -1,19 +1,27 @@
-"""Viral propagation rule execution across operators (issue #877, ported from 1.9.X).
+"""Viral propagation rule execution across operators (issues #877, #906).
 
-Covers the operator-level propagation and rule-execution behaviour introduced by
-#878: unpivot, period_indicator, check_datapoint, hierarchy and check_hierarchy
-propagate viral attributes and execute the propagation rule; row-preserving
-operators execute aggregate rules dataset-wide and enumerated rules per row; and
-the strict semantic checks 1-3-3-5 (aggregate sum/avg needs a numeric viral
-attribute) and 1-3-3-6 (every viral attribute requires a rule).
+The propagation rule is executed (and required) ONLY where input data points are
+combined: an operation over two or more datasets, an aggregation/analytic group-by,
+or a hierarchy roll-up. Row-preserving operators (unary, dataset-scalar, unpivot,
+period_indicator, check_datapoint, check_hierarchy) COPY viral attributes unchanged.
+Also covers the strict semantic checks 1-3-3-5 (aggregate sum/avg needs a numeric
+viral attribute) and 1-3-3-6 (a combined viral attribute requires a rule).
 """
 
 import pandas as pd
 import pytest
 
 from vtlengine import run, semantic_analysis
+from vtlengine.DataTypes import Integer, String
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Model import Role
+from vtlengine.Model import Component, Dataset, Role
+from vtlengine.ViralPropagation import (
+    ViralPropagationRegistry,
+    ViralPropagationRule,
+    combined_viral_components,
+    require_rules,
+    set_current_registry,
+)
 
 # -- Shared propagation rules --
 
@@ -117,7 +125,9 @@ class TestViralAttributeUnpivot:
         for _, row in ds_r.data.iterrows():
             assert row["VAt_1"] == expected[row["Id_1"]]
 
-    def test_unpivot_executes_aggregate_rule(self) -> None:
+    def test_unpivot_copies_viral_not_aggregate(self) -> None:
+        """Unpivot is row-preserving: an aggregate rule must NOT collapse the viral column;
+        each source row's value is copied (replicated) across the unpivoted rows (#906)."""
         df = pd.DataFrame(
             {"Id_1": [1, 2], "Me_1": [10.0, 20.0], "Me_2": [100.0, 200.0], "VAt_1": [1, 2]}
         )
@@ -126,8 +136,10 @@ class TestViralAttributeUnpivot:
             data_structures={"datasets": [self._ds("Number")]},
             datapoints={"DS_1": df},
         )
-        # aggregate max over the source VAt_1 [1, 2] = 2, replicated to all 4 melted rows
-        assert list(result["DS_r"].data["VAt_1"]) == [2, 2, 2, 2]
+        # Copied per source row (NOT collapsed to the dataset-wide max 2).
+        expected = {1: 1, 2: 2}
+        for _, row in result["DS_r"].data.iterrows():
+            assert row["VAt_1"] == expected[row["Id_1"]]
 
 
 # -- Period_indicator time operator --
@@ -163,15 +175,17 @@ class TestViralAttributePeriodIndicator:
         for _, row in ds_r.data.iterrows():
             assert row["VAt_1"] == expected[str(row["Id_1"])]
 
-    def test_period_indicator_executes_aggregate_rule(self) -> None:
+    def test_period_indicator_copies_viral_not_aggregate(self) -> None:
+        """period_indicator is row-preserving: an aggregate rule must NOT collapse the
+        viral column; each row's value is copied unchanged (issue #906)."""
         df = pd.DataFrame({"Id_1": ["2020-01", "2020-02"], "Me_1": [1.0, 2.0], "VAt_1": [100, 200]})
         result = run(
             script=f"{AGGR_MAX_RULE}DS_r <- period_indicator(DS_1);",
             data_structures={"datasets": [self._ds("Number")]},
             datapoints={"DS_1": df},
         )
-        # aggregate max over the whole dataset -> 200 on every result row
-        assert list(result["DS_r"].data["VAt_1"]) == [200, 200]
+        # Copied per row (NOT collapsed to the dataset-wide max 200).
+        assert sorted(result["DS_r"].data["VAt_1"].tolist()) == [100, 200]
 
 
 # -- check_datapoint validation operator --
@@ -205,27 +219,31 @@ class TestViralAttributeCheckDatapoint:
         for _, row in ds_r.data.iterrows():
             assert row["VAt_1"] == expected[row["Id_1"]]
 
-    def test_check_datapoint_executes_aggregate_rule(self) -> None:
+    def test_check_datapoint_copies_viral_not_aggregate(self) -> None:
+        """check_datapoint is row-preserving: an aggregate rule must NOT collapse the viral
+        column; each source datapoint's value is copied unchanged (issue #906, superseding
+        #897's dataset-wide aggregate)."""
         df = pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [10.0, 20.0, 30.0], "VAt_1": [100, 200, 300]})
         result = run(
             script=f"{AGGR_MAX_RULE}{_DPR}\nDS_r <- check_datapoint(DS_1, R all);",
             data_structures={"datasets": [_single_va_ds("Number")]},
             datapoints={"DS_1": df},
         )
-        # aggregate max over all datapoints -> 300 on every validation row
-        assert list(result["DS_r"].data["VAt_1"]) == [300, 300, 300]
+        # Copied per datapoint (NOT collapsed to the dataset-wide max 300).
+        d = result["DS_r"].data.sort_values("Id_1")
+        assert list(d["VAt_1"]) == [100, 200, 300]
 
 
 # -- Rule execution on row-preserving dataset-level operators (issue #877) --
 
 
 class TestViralRuleExecutionRowPreserving:
-    """Row-preserving dataset-level operators must EXECUTE the rule: aggregate rules
-    collapse over the whole dataset (one value on every row); enumerated rules map
-    per row (issue #877)."""
+    """Row-preserving dataset-level operators must COPY the viral attribute, NOT execute
+    the rule: an aggregate rule does not collapse it and an enumerated rule does not remap
+    it, because no data points are combined (issue #906)."""
 
     @pytest.mark.parametrize("expr", ["round(DS_1)", "abs(DS_1)", "DS_1 * 2"])
-    def test_aggregate_rule_is_dataset_wide(self, expr: str) -> None:
+    def test_aggregate_rule_copies_per_row(self, expr: str) -> None:
         result = run(
             script=f"{AGGR_MAX_RULE}DS_r <- {expr};",
             data_structures={"datasets": [_single_va_ds("Number")]},
@@ -235,10 +253,11 @@ class TestViralRuleExecutionRowPreserving:
                 )
             },
         )
-        # aggregate max over the whole dataset -> 300 on every result row
-        assert list(result["DS_r"].data["VAt_1"]) == [300, 300, 300]
+        # Copied per row (NOT collapsed to the dataset-wide max 300).
+        d = result["DS_r"].data.sort_values("Id_1")
+        assert list(d["VAt_1"]) == [100, 200, 300]
 
-    def test_enumerated_rule_is_per_row(self) -> None:
+    def test_enumerated_rule_copies_per_row(self) -> None:
         result = run(
             script=f"{_ENUM_RULE}\nDS_r <- round(DS_1);",
             data_structures={"datasets": [_single_va_ds()]},
@@ -247,8 +266,8 @@ class TestViralRuleExecutionRowPreserving:
             },
         )
         df = result["DS_r"].data.sort_values("Id_1")
-        # "A" matches the unary clause -> "Z"; "B" is unmatched -> else "D"
-        assert list(df["VAt_1"]) == ["Z", "D"]
+        # Copied unchanged (NOT remapped "A"->"Z", "B"->"D").
+        assert list(df["VAt_1"]) == ["A", "B"]
 
 
 # -- hierarchy aggregation operator --
@@ -386,82 +405,101 @@ class TestViralAggregateRuleTypeValidation:
 # -- Every viral attribute requires a rule (issue #877) --
 
 
-class TestEveryViralAttributeRequiresRule:
-    """Strict policy: a viral attribute reaching a result without a ``define viral
-    propagation`` rule is a SemanticError (1-3-3-6), even when no combination happens
-    (single-operand assignment, unary, keep, calc). A rule is not optional."""
+class TestViralRuleRequiredOnlyWhenCombined:
+    """Per the VTL 2.2 attribute propagation rule, a rule is required (and executed) only
+    where input data points are combined. A viral attribute merely copied through a
+    row-preserving / single-operand operator needs no rule (issue #906)."""
 
-    def test_identity_assignment_no_rule_raises(self) -> None:
-        """``DS_r <- DS_1`` with a viral attribute and no rule → error."""
-        with pytest.raises(SemanticError) as exc:
-            run(
-                script="DS_r <- DS_1;",
-                data_structures={"datasets": [DS_1VA]},
-                datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "VAt_1": ["A"]})},
-            )
-        assert "1-3-3-6" in str(exc.value)
+    # -- non-combining operators: viral attribute copied through, no rule required --
 
-    def test_unary_no_rule_raises(self) -> None:
-        """A unary (row-preserving) operator over a viral attribute with no rule → error."""
-        with pytest.raises(SemanticError) as exc:
-            run(
-                script="DS_r <- abs(DS_1);",
-                data_structures={"datasets": [DS_1VA]},
-                datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [-10.0], "VAt_1": ["A"]})},
-            )
-        assert "1-3-3-6" in str(exc.value)
+    def test_identity_assignment_no_rule_ok(self) -> None:
+        result = run(
+            script="DS_r <- DS_1;",
+            data_structures={"datasets": [DS_1VA]},
+            datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "VAt_1": ["A"]})},
+        )
+        assert result["DS_r"].components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
+        assert list(result["DS_r"].data["VAt_1"]) == ["A"]
 
-    def test_keep_no_rule_raises(self) -> None:
-        """A keep clause carries the viral attribute through; without a rule → error."""
-        with pytest.raises(SemanticError) as exc:
-            run(
-                script="DS_r <- DS_1[keep Me_1];",
-                data_structures={"datasets": [DS_1VA]},
-                datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "VAt_1": ["A"]})},
-            )
-        assert "1-3-3-6" in str(exc.value)
+    def test_unary_no_rule_ok(self) -> None:
+        result = run(
+            script="DS_r <- abs(DS_1);",
+            data_structures={"datasets": [DS_1VA]},
+            datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [-10.0], "VAt_1": ["A"]})},
+        )
+        assert list(result["DS_r"].data["VAt_1"]) == ["A"]
 
-    def test_calc_creates_viral_no_rule_raises(self) -> None:
-        """A calc that creates a viral attribute must also declare a rule for it."""
-        with pytest.raises(SemanticError) as exc:
-            run(
-                script='DS_r <- DS_1[calc viral attribute VAt_1 := "X"];',
-                data_structures={"datasets": [DS_NO_VA]},
-                datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0]})},
-            )
-        assert "1-3-3-6" in str(exc.value)
+    def test_keep_no_rule_ok(self) -> None:
+        result = run(
+            script="DS_r <- DS_1[keep Me_1];",
+            data_structures={"datasets": [DS_1VA]},
+            datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "VAt_1": ["A"]})},
+        )
+        assert result["DS_r"].components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
+        assert list(result["DS_r"].data["VAt_1"]) == ["A"]
 
-    def test_partial_rules_missing_one_raises(self) -> None:
-        """Two viral attributes but only one rule → the un-ruled one still errors."""
-        with pytest.raises(SemanticError) as exc:
-            run(
-                script=AGGR_MAX_RULE + "DS_r <- DS_1;",  # rule only for VAt_1
-                data_structures={"datasets": [DS_2VA]},
-                datapoints={
-                    "DS_1": pd.DataFrame(
-                        {"Id_1": [1], "Me_1": [10.0], "VAt_1": ["A"], "VAt_2": [7]}
-                    )
-                },
-            )
-        # VAt_2 has no rule.
-        assert "1-3-3-6" in str(exc.value)
-        assert "VAt_2" in str(exc.value)
+    def test_calc_creates_viral_no_rule_ok(self) -> None:
+        result = run(
+            script='DS_r <- DS_1[calc viral attribute VAt_1 := "X"];',
+            data_structures={"datasets": [DS_NO_VA]},
+            datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0]})},
+        )
+        assert result["DS_r"].components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
+        assert list(result["DS_r"].data["VAt_1"]) == ["X"]
 
-    def test_semantic_analysis_no_rule_raises(self) -> None:
-        """The rule requirement is enforced at semantic-analysis time (no execution)."""
+    def test_two_viral_partial_rule_passthrough_ok(self) -> None:
+        # rule only for VAt_1; VAt_2 has none — pure passthrough combines neither.
+        result = run(
+            script=AGGR_MAX_RULE + "DS_r <- DS_1;",
+            data_structures={"datasets": [DS_2VA]},
+            datapoints={
+                "DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "VAt_1": ["A"], "VAt_2": [7]})
+            },
+        )
+        assert set(result["DS_r"].get_viral_attributes_names()) == {"VAt_1", "VAt_2"}
+
+    def test_semantic_analysis_no_rule_ok(self) -> None:
+        result = semantic_analysis(
+            script="DS_r <- DS_1;",
+            data_structures={"datasets": [DS_1VA]},
+        )
+        assert result["DS_r"].components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
+
+    # -- combination points: a rule IS required (SemanticError 1-3-3-6) --
+
+    def test_aggregation_no_rule_raises(self) -> None:
         with pytest.raises(SemanticError) as exc:
             semantic_analysis(
-                script="DS_r <- DS_1;",
+                script="DS_r <- sum(DS_1 group by Id_1);",
                 data_structures={"datasets": [DS_1VA]},
+            )
+        assert "1-3-3-6" in str(exc.value)
+
+    def test_analytic_no_rule_raises(self) -> None:
+        with pytest.raises(SemanticError) as exc:
+            semantic_analysis(
+                script="DS_r <- sum(DS_1 over (partition by Id_1));",
+                data_structures={"datasets": [DS_1VA]},
+            )
+        assert "1-3-3-6" in str(exc.value)
+
+    def test_binary_two_datasets_no_rule_raises(self) -> None:
+        with pytest.raises(SemanticError) as exc:
+            semantic_analysis(
+                script="DS_r <- DS_1 + DS_2;",
+                data_structures={"datasets": [DS_1VA, {**DS_1VA, "name": "DS_2"}]},
             )
         assert "1-3-3-6" in str(exc.value)
 
     def test_rule_present_does_not_raise(self) -> None:
-        """Positive control: declaring the rule makes the same script valid."""
+        """Positive control: declaring the rule makes a combining script valid."""
         result = run(
-            script=CONF_RULE + "DS_r <- DS_1;",
-            data_structures={"datasets": [DS_1VA]},
-            datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "VAt_1": ["C"]})},
+            script=CONF_RULE + "DS_r <- DS_1 + DS_2;",
+            data_structures={"datasets": [DS_1VA, {**DS_1VA, "name": "DS_2"}]},
+            datapoints={
+                "DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "VAt_1": ["C"]}),
+                "DS_2": pd.DataFrame({"Id_1": [1], "Me_1": [5.0], "VAt_1": ["N"]}),
+            },
         )
         assert result["DS_r"].components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
 
@@ -488,3 +526,47 @@ class TestViralPropagationDefSurvivesDagSort:
         )
         # The rule is registered and applied: max("A", "A") = "A", not NULL.
         assert list(result["DS_r"].data["VAt_1"]) == ["A"]
+
+
+# -- Unit tests for the combination-point check helpers (issue #906) --
+
+
+def _viral_ds(name: str, viral_names: list) -> Dataset:
+    comps = {"Id_1": Component("Id_1", Integer, Role.IDENTIFIER, False)}
+    for v in viral_names:
+        comps[v] = Component(v, String, Role.VIRAL_ATTRIBUTE, True)
+    return Dataset(name=name, components=comps, data=None)
+
+
+class TestViralCheckHelpers:
+    """``require_rules`` / ``combined_viral_components`` back the combination-point check."""
+
+    def test_require_rules_raises_when_missing(self) -> None:
+        set_current_registry(ViralPropagationRegistry())
+        comp = Component("VAt_1", String, Role.VIRAL_ATTRIBUTE, True)
+        with pytest.raises(SemanticError) as exc:
+            require_rules([comp])
+        assert "1-3-3-6" in str(exc.value)
+
+    def test_require_rules_passes_when_present(self) -> None:
+        registry = ViralPropagationRegistry()
+        registry.register(
+            ViralPropagationRule(
+                name="VAt_1",
+                signature_type="variable",
+                target="VAt_1",
+                enumerated_clauses=[],
+                aggregate_function="max",
+            )
+        )
+        set_current_registry(registry)
+        require_rules([Component("VAt_1", String, Role.VIRAL_ATTRIBUTE, True)])  # must not raise
+
+    def test_combined_viral_components_only_shared(self) -> None:
+        combined = combined_viral_components(
+            [_viral_ds("A", ["VAt_1", "VAt_2"]), _viral_ds("B", ["VAt_1"])]
+        )
+        assert {c.name for c in combined} == {"VAt_1"}
+
+    def test_combined_viral_components_empty_for_single_operand(self) -> None:
+        assert combined_viral_components([_viral_ds("A", ["VAt_1"])]) == []
