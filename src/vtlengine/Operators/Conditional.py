@@ -287,8 +287,9 @@ class Nvl(Binary):
                     else:
                         result.data = left.data.fillna(right.value)
                 else:
+                    # nvl is single-operand: the primary operand's viral attributes are
+                    # copied through unchanged; no rule is executed (issue #906).
                     result.data = left.data.fillna(right.data)
-                    _combine_viral_attributes(result, [left, right])
                 if isinstance(result, Dataset):
                     result.data = result.data[result.get_components_names()]
         return result

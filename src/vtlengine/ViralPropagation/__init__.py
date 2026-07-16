@@ -146,30 +146,6 @@ class ViralPropagationRegistry:
         # Enumerated: reduce pairwise (associative + commutative guarantees correctness)
         return reduce(lambda a, b: self.resolve_pair(variable_name, a, b), values)
 
-    def apply_row_preserving(self, data: pd.DataFrame, viral_names: List[str]) -> None:
-        """Execute the propagation rule on each viral column of a row-preserving
-        operator result, in place.
-
-        Aggregate rules collapse the whole column to a single value applied to every
-        row; enumerated rules map each value (matching unary clause, else default); a
-        no-rule attribute is left unchanged.
-        """
-        for name in viral_names:
-            if name not in data.columns:
-                continue
-            rule = self.get_rule_for_variable(name)
-            if rule is None:
-                continue
-            col_dtype = data[name].dtype
-            if rule.aggregate_function is not None:
-                value = self.resolve_group(name, list(data[name]))
-                new_col = pd.Series([value] * len(data), index=data.index)
-            else:
-                new_col = pd.Series(
-                    [self.resolve_single(name, v) for v in data[name]], index=data.index
-                )
-            data[name] = new_col.astype(col_dtype)
-
     def clear(self) -> None:
         """Clear all registered rules."""
         self._variable_rules.clear()

@@ -555,7 +555,9 @@ class TestViralAttributeUnpivot:
             assert row["VAt_1"] == expected[row["Id_1"]]
 
     @pytest.mark.parametrize("use_duckdb", BACKENDS)
-    def test_unpivot_executes_aggregate_rule(self, use_duckdb: bool) -> None:
+    def test_unpivot_copies_viral_not_aggregate(self, use_duckdb: bool) -> None:
+        """Unpivot is row-preserving: an aggregate rule must NOT collapse the viral column;
+        each source row's value is copied (replicated) across the unpivoted rows (#906)."""
         vp = "define viral propagation VP (variable VAt_1) is aggregate max end viral propagation;"
         ds = {
             "name": "DS_1",
@@ -575,8 +577,10 @@ class TestViralAttributeUnpivot:
             datapoints={"DS_1": df},
             use_duckdb=use_duckdb,
         )
-        # aggregate max over the source VAt_1 [1, 2] = 2, replicated to all 4 melted rows
-        assert list(result["DS_r"].data["VAt_1"]) == [2, 2, 2, 2]
+        # Copied per source row (NOT collapsed to the dataset-wide max 2).
+        expected = {1: 1, 2: 2}
+        for _, row in result["DS_r"].data.iterrows():
+            assert row["VAt_1"] == expected[row["Id_1"]]
 
 
 # -- Period_indicator time operator --
@@ -620,7 +624,9 @@ class TestViralAttributePeriodIndicator:
             assert row["VAt_1"] == expected[str(row["Id_1"])]
 
     @pytest.mark.parametrize("use_duckdb", BACKENDS)
-    def test_period_indicator_executes_aggregate_rule(self, use_duckdb: bool) -> None:
+    def test_period_indicator_copies_viral_not_aggregate(self, use_duckdb: bool) -> None:
+        """period_indicator is row-preserving: an aggregate rule must NOT collapse the
+        viral column; each row's value is copied unchanged (issue #906)."""
         vp = "define viral propagation VP (variable VAt_1) is aggregate max end viral propagation;"
         ds = {
             "name": "DS_1",
@@ -637,8 +643,8 @@ class TestViralAttributePeriodIndicator:
             datapoints={"DS_1": df},
             use_duckdb=use_duckdb,
         )
-        # aggregate max over the whole dataset -> 200 on every result row
-        assert list(result["DS_r"].data["VAt_1"]) == [200, 200]
+        # Copied per row (NOT collapsed to the dataset-wide max 200).
+        assert sorted(result["DS_r"].data["VAt_1"].tolist()) == [100, 200]
 
 
 # -- check_datapoint validation operator --
@@ -688,7 +694,9 @@ class TestViralAttributeCheckDatapoint:
             assert row["VAt_1"] == expected[row["Id_1"]]
 
     @pytest.mark.parametrize("use_duckdb", BACKENDS)
-    def test_check_datapoint_executes_aggregate_rule(self, use_duckdb: bool) -> None:
+    def test_check_datapoint_copies_viral_not_aggregate(self, use_duckdb: bool) -> None:
+        """check_datapoint is row-preserving: an aggregate rule must NOT collapse the viral
+        column; each source datapoint's value is copied unchanged (issue #906)."""
         vp = "define viral propagation VP (variable VAt_1) is aggregate max end viral propagation;"
         ds = {
             "name": "DS_1",
@@ -705,8 +713,9 @@ class TestViralAttributeCheckDatapoint:
             datapoints={"DS_1": df},
             use_duckdb=use_duckdb,
         )
-        # aggregate max over all datapoints -> 300 on every validation row
-        assert list(result["DS_r"].data["VAt_1"]) == [300, 300, 300]
+        # Copied per datapoint (NOT collapsed to the dataset-wide max 300).
+        d = result["DS_r"].data.sort_values("Id_1")
+        assert list(d["VAt_1"]) == [100, 200, 300]
 
 
 # -- Rule execution on row-preserving dataset-level operators (issue #877) --
@@ -719,9 +728,9 @@ _ENUM_RULE = (
 
 
 class TestViralRuleExecutionRowPreserving:
-    """Row-preserving dataset-level operators must EXECUTE the rule: aggregate rules
-    collapse over the whole dataset (one value on every row); enumerated rules map
-    per row (issue #877)."""
+    """Row-preserving dataset-level operators must COPY the viral attribute, NOT execute
+    the rule: an aggregate rule does not collapse it and an enumerated rule does not remap
+    it, because no data points are combined (issue #906)."""
 
     @staticmethod
     def _ds(vtype: str) -> dict:
@@ -736,7 +745,7 @@ class TestViralRuleExecutionRowPreserving:
 
     @pytest.mark.parametrize("expr", ["round(DS_1)", "abs(DS_1)", "DS_1 * 2"])
     @pytest.mark.parametrize("use_duckdb", BACKENDS)
-    def test_aggregate_rule_is_dataset_wide(self, expr: str, use_duckdb: bool) -> None:
+    def test_aggregate_rule_copies_per_row(self, expr: str, use_duckdb: bool) -> None:
         result = run(
             script=f"{_AGG_RULE}\nDS_r <- {expr};",
             data_structures={"datasets": [self._ds("Number")]},
@@ -747,11 +756,12 @@ class TestViralRuleExecutionRowPreserving:
             },
             use_duckdb=use_duckdb,
         )
-        # aggregate max over the whole dataset -> 300 on every result row
-        assert list(result["DS_r"].data["VAt_1"]) == [300, 300, 300]
+        # Copied per row (NOT collapsed to the dataset-wide max 300).
+        d = result["DS_r"].data.sort_values("Id_1")
+        assert list(d["VAt_1"]) == [100, 200, 300]
 
     @pytest.mark.parametrize("use_duckdb", BACKENDS)
-    def test_enumerated_rule_is_per_row(self, use_duckdb: bool) -> None:
+    def test_enumerated_rule_copies_per_row(self, use_duckdb: bool) -> None:
         result = run(
             script=f"{_ENUM_RULE}\nDS_r <- round(DS_1);",
             data_structures={"datasets": [self._ds("String")]},
@@ -761,8 +771,8 @@ class TestViralRuleExecutionRowPreserving:
             use_duckdb=use_duckdb,
         )
         df = result["DS_r"].data.sort_values("Id_1")
-        # "A" matches the unary clause -> "Z"; "B" is unmatched -> else "D"
-        assert list(df["VAt_1"]) == ["Z", "D"]
+        # Copied unchanged (NOT remapped "A"->"Z", "B"->"D").
+        assert list(df["VAt_1"]) == ["A", "B"]
 
 
 # -- hierarchy aggregation operator --

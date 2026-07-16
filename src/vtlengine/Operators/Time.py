@@ -45,7 +45,6 @@ from vtlengine.DataTypes.TimeHandling import (
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.ViralPropagation import get_current_registry
 
 
 class Time(Operators.Operator):
@@ -305,10 +304,7 @@ class Period_indicator(Unary):
         )
         period_series: Any = result.data[cls.time_id].map(cls._get_period)
         result.data["duration_var"] = period_series
-        # Execute the viral propagation rule on the (row-preserving) result (issue #877).
-        get_current_registry().apply_row_preserving(
-            result.data, result.get_viral_attributes_names()
-        )
+        # Row-preserving operator: viral attributes are copied through unchanged (issue #906).
         return result
 
 

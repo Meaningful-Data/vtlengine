@@ -935,3 +935,62 @@ class TestViralCheckHelpers:
 
     def test_combined_viral_components_empty_for_single_operand(self) -> None:
         assert combined_viral_components([_viral_ds("A", ["VAt_1"])]) == []
+
+
+# -- Row-preserving operators copy viral attributes, they do NOT execute the rule (#906) --
+
+NUM_VA_2ID = {
+    "name": "DS_1",
+    "DataStructure": [
+        {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+        {"name": "Id_2", "type": "String", "role": "Identifier", "nullable": False},
+        {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+        {"name": "VAt_1", "type": "Number", "role": "Viral Attribute", "nullable": True},
+    ],
+}
+
+ENUM_REMAP_RULE = """
+    define viral propagation R (variable VAt_1) is
+        when "A" then "Z";
+        else "F"
+    end viral propagation;
+"""
+
+
+class TestRowPreservingCopiesViral:
+    """A rule may be declared, but a row-preserving operator copies the viral attribute
+    unchanged: an aggregate rule must NOT collapse it and an enumerated rule must NOT
+    remap it, because no data points are combined (issue #906)."""
+
+    def test_unary_aggregate_rule_copies_not_collapses(self) -> None:
+        result = run(
+            script=AGGR_MAX_RULE + "DS_r <- abs(DS_1);",
+            data_structures={"datasets": [NUM_VA_2ID]},
+            datapoints={
+                "DS_1": pd.DataFrame(
+                    {
+                        "Id_1": [1, 1, 2],
+                        "Id_2": ["A", "B", "A"],
+                        "Me_1": [-1.0, -2.0, -3.0],
+                        "VAt_1": [10.0, None, 30.0],
+                    }
+                )
+            },
+        )
+        d = result["DS_r"].data.sort_values(["Id_1", "Id_2"]).reset_index(drop=True)
+        # Copied per row, NOT collapsed to the dataset-wide max (30).
+        assert d["VAt_1"].iloc[0] == 10.0
+        assert pd.isna(d["VAt_1"].iloc[1])
+        assert d["VAt_1"].iloc[2] == 30.0
+
+    def test_scalar_enumerated_rule_copies_not_remaps(self) -> None:
+        result = run(
+            script=ENUM_REMAP_RULE + "DS_r <- DS_1 + 5;",
+            data_structures={"datasets": [DS_1VA]},
+            datapoints={
+                "DS_1": pd.DataFrame({"Id_1": [1, 2], "Me_1": [10.0, 20.0], "VAt_1": ["A", "B"]})
+            },
+        )
+        d = result["DS_r"].data.sort_values("Id_1").reset_index(drop=True)
+        # "A" copied (NOT remapped to "Z"); "B" copied (NOT defaulted to "F").
+        assert list(d["VAt_1"]) == ["A", "B"]

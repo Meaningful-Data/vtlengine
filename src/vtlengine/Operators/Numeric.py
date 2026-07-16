@@ -32,7 +32,6 @@ from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Scalar
 from vtlengine.Operators import ALL_MODEL_DATA_TYPES
 from vtlengine.Utils._number_config import get_effective_numeric_digits
-from vtlengine.ViralPropagation import get_current_registry
 
 
 class Unary(Operator.Unary):
@@ -381,10 +380,7 @@ class Parameterized(Unary):
             + operand.get_measures_names()
             + operand.get_viral_attributes_names()
         ]
-        # Execute the viral propagation rule on the (row-preserving) result (issue #877).
-        get_current_registry().apply_row_preserving(
-            result.data, result.get_viral_attributes_names()
-        )
+        # Row-preserving operator: viral attributes are copied through unchanged (issue #906).
         cls.modify_measure_column(result)
         return result
 

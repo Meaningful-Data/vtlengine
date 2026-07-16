@@ -17,7 +17,6 @@ from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
 from vtlengine.Operators import Operator
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.ViralPropagation import get_current_registry
 
 
 class Calc(Operator):
@@ -313,12 +312,9 @@ class Unpivot(Operator):
         result_dataset = cls.validate(operands, dataset)
         if dataset.data is not None:
             viral_names = dataset.get_viral_attributes_names()
+            # Unpivot replicates each source row's viral attribute values across the
+            # unpivoted rows (kept as id_vars); no rule is executed — copy only (issue #906).
             src = dataset.data
-            if viral_names:
-                # Execute the rule over the source (one value per source row) BEFORE the
-                # melt, so aggregate rules are not distorted by row replication (issue #877).
-                src = src.copy()
-                get_current_registry().apply_row_preserving(src, viral_names)
             result_dataset.data = src.melt(
                 id_vars=dataset.get_identifiers_names() + viral_names,
                 value_vars=dataset.get_measures_names(),
