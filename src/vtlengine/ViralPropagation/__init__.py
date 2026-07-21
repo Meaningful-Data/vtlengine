@@ -7,11 +7,15 @@ Registry for viral attribute propagation rules as defined by the VTL 2.2
 in :mod:`vtlengine.ViralPropagation.sql`.
 """
 
+from copy import copy
 from dataclasses import dataclass, field
 from functools import reduce
 from typing import Any, Dict, Iterable, List, Optional
 
 import pandas as pd
+
+from vtlengine.DataTypes import Integer, Number
+from vtlengine.Exceptions import SemanticError
 
 
 @dataclass
@@ -188,9 +192,6 @@ def require_rules(components: Iterable[Any]) -> None:
     non-numeric viral attribute: the check runs only where the rule actually executes,
     so a non-numeric attribute that is never combined raises nothing (issue #910).
     """
-    from vtlengine.DataTypes import Integer, Number  # local imports avoid an import cycle
-    from vtlengine.Exceptions import SemanticError
-
     registry = get_current_registry()
     for comp in components:
         rule = registry.rule_for(comp)
@@ -216,10 +217,6 @@ def apply_viral_return_types(components: Iterable[Any], result_components: Dict[
     Call this right after :func:`require_rules` at every combination point, with the
     same combined components and the result-components mapping under construction.
     """
-    from copy import copy
-
-    from vtlengine.DataTypes import Number  # local import avoids an import cycle
-
     registry = get_current_registry()
     for comp in components:
         rule = registry.rule_for(comp)
