@@ -15,7 +15,11 @@ from vtlengine.Utils._number_config import (
     numbers_are_greater_equal,
     numbers_are_less_equal,
 )
-from vtlengine.ViralPropagation import get_current_registry, require_rules
+from vtlengine.ViralPropagation import (
+    apply_viral_return_types,
+    get_current_registry,
+    require_rules,
+)
 
 REMOVE = "REMOVE_VALUE"
 
@@ -261,6 +265,7 @@ class Hierarchy(Operators.Operator):
         # The roll-up combines child nodes into each computed node, so the combined viral
         # attributes require a propagation rule (issue #906).
         require_rules(viral_components or [])
+        apply_viral_return_types(viral_components or [], result_components)
         return Dataset(name=dataset_name, components=result_components, data=None)
 
     @staticmethod

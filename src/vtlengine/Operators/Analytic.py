@@ -40,7 +40,11 @@ from vtlengine.DataTypes import (
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.ViralPropagation import get_current_registry, require_rules
+from vtlengine.ViralPropagation import (
+    apply_viral_return_types,
+    get_current_registry,
+    require_rules,
+)
 
 return_integer_operators = [MAX, MIN, SUM]
 
@@ -212,7 +216,9 @@ class Analytic(Operator.Unary):
         dataset_name = VirtualCounter._new_ds_name()
         # Analytic combines the data points within each partition, so the surviving viral
         # attributes are combined and require a propagation rule (issue #906).
-        require_rules(operand.get_viral_attributes())
+        viral_attributes = operand.get_viral_attributes()
+        require_rules(viral_attributes)
+        apply_viral_return_types(viral_attributes, result_components)
         return Dataset(name=dataset_name, components=result_components, data=None)
 
     @classmethod

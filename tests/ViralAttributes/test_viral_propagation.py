@@ -7,12 +7,13 @@ import pytest
 
 from vtlengine import run, semantic_analysis
 from vtlengine.API import create_ast
-from vtlengine.DataTypes import Integer, String
+from vtlengine.DataTypes import Integer, Number, String
 from vtlengine.Exceptions import SemanticError, VTLSyntaxError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.ViralPropagation import (
     ViralPropagationRegistry,
     ViralPropagationRule,
+    apply_viral_return_types,
     combined_viral_components,
     require_rules,
     set_current_registry,
@@ -1049,6 +1050,162 @@ class TestKeepPreservesViralAttributes:
         assert ds.data["At_1"].iloc[0] == "y"
 
 
+# -- avg promotes a combined Integer viral attribute to Number (issue #910) --
+
+_AVG_RULE = (
+    "define viral propagation AV (variable VAt_1) is\n    aggregate avg\nend viral propagation;\n"
+)
+
+_SUM_RULE = (
+    "define viral propagation SM (variable VAt_1) is\n    aggregate sum\nend viral propagation;\n"
+)
+
+_INT_VA_DS = {
+    "name": "DS_1",
+    "DataStructure": [
+        {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+        {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+        {"name": "VAt_1", "type": "Integer", "role": "Viral Attribute", "nullable": True},
+    ],
+}
+
+_INT_VA_2ID_DS = {
+    "name": "DS_1",
+    "DataStructure": [
+        {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+        {"name": "Id_2", "type": "Integer", "role": "Identifier", "nullable": False},
+        {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+        {"name": "VAt_1", "type": "Integer", "role": "Viral Attribute", "nullable": True},
+    ],
+}
+
+
+def _int_va_dp() -> dict:
+    return {
+        "DS_1": pd.DataFrame({"Id_1": [1, 2], "Me_1": [10.0, 20.0], "VAt_1": [1, 2]}),
+        "DS_2": pd.DataFrame({"Id_1": [1, 2], "Me_1": [5.0, 15.0], "VAt_1": [2, 3]}),
+    }
+
+
+def _int_va_2id_dp() -> dict:
+    return {
+        "DS_1": pd.DataFrame(
+            {
+                "Id_1": [1, 1, 2],
+                "Id_2": [1, 2, 1],
+                "Me_1": [10.0, 20.0, 30.0],
+                "VAt_1": [1, 2, 5],
+            }
+        )
+    }
+
+
+class TestAvgRulePromotesIntegerViral:
+    """An `aggregate avg` rule yields fractional values, so a combined Integer viral
+    attribute is promoted to Number in the result — mirroring the Avg operator's
+    return type; `sum` keeps the input type, mirroring Sum (issue #910)."""
+
+    @pytest.mark.parametrize("use_duckdb", [False, True])
+    def test_avg_binary_promotes_to_number(self, use_duckdb: bool) -> None:
+        result = run(
+            script=_AVG_RULE + "DS_r <- DS_1 + DS_2;",
+            data_structures=_ds_pair(_INT_VA_DS),
+            datapoints=_int_va_dp(),
+            use_duckdb=use_duckdb,
+        )
+        ds_r = result["DS_r"]
+        assert ds_r.components["VAt_1"].data_type == Number
+        d = ds_r.data.sort_values("Id_1").reset_index(drop=True)
+        assert list(d["VAt_1"]) == [1.5, 2.5]
+
+    @pytest.mark.parametrize("use_duckdb", [False, True])
+    def test_avg_join_promotes_to_number(self, use_duckdb: bool) -> None:
+        # Distinct measure names per operand: a shared non-identifier would be ambiguous.
+        ds_2 = {
+            "name": "DS_2",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Me_2", "type": "Number", "role": "Measure", "nullable": True},
+                {"name": "VAt_1", "type": "Integer", "role": "Viral Attribute", "nullable": True},
+            ],
+        }
+        result = run(
+            script=_AVG_RULE + "DS_r <- inner_join(DS_1, DS_2);",
+            data_structures={"datasets": [_INT_VA_DS, ds_2]},
+            datapoints={
+                "DS_1": pd.DataFrame({"Id_1": [1, 2], "Me_1": [10.0, 20.0], "VAt_1": [1, 2]}),
+                "DS_2": pd.DataFrame({"Id_1": [1, 2], "Me_2": [5.0, 15.0], "VAt_1": [2, 3]}),
+            },
+            use_duckdb=use_duckdb,
+        )
+        ds_r = result["DS_r"]
+        assert ds_r.components["VAt_1"].data_type == Number
+        d = ds_r.data.sort_values("Id_1").reset_index(drop=True)
+        assert list(d["VAt_1"]) == [1.5, 2.5]
+
+    @pytest.mark.parametrize("use_duckdb", [False, True])
+    def test_avg_aggregation_promotes_to_number(self, use_duckdb: bool) -> None:
+        result = run(
+            script=_AVG_RULE + "DS_r <- sum(DS_1 group by Id_1);",
+            data_structures={"datasets": [_INT_VA_2ID_DS]},
+            datapoints=_int_va_2id_dp(),
+            use_duckdb=use_duckdb,
+        )
+        ds_r = result["DS_r"]
+        assert ds_r.components["VAt_1"].data_type == Number
+        d = ds_r.data.sort_values("Id_1").reset_index(drop=True)
+        # group Id_1=1 avg(1, 2) = 1.5; group Id_1=2 keeps its lone value 5.
+        assert list(d["VAt_1"]) == [1.5, 5.0]
+
+    @pytest.mark.parametrize("use_duckdb", [False, True])
+    def test_avg_analytic_promotes_and_input_untouched(self, use_duckdb: bool) -> None:
+        result = run(
+            script=_AVG_RULE + "DS_r <- sum(DS_1 over (partition by Id_1)); DS_r2 <- DS_1;",
+            data_structures={"datasets": [_INT_VA_2ID_DS]},
+            datapoints=_int_va_2id_dp(),
+            use_duckdb=use_duckdb,
+        )
+        ds_r = result["DS_r"]
+        assert ds_r.components["VAt_1"].data_type == Number
+        d = ds_r.data.sort_values(["Id_1", "Id_2"]).reset_index(drop=True)
+        # avg over partition Id_1=1 {1, 2} = 1.5, broadcast; partition Id_1=2 keeps 5.
+        assert list(d[d["Id_1"] == 1]["VAt_1"]) == [1.5, 1.5]
+        assert list(d[d["Id_1"] == 2]["VAt_1"]) == [5.0]
+        # The analytic result shares component objects with its input: the promotion
+        # must not leak into the input dataset structure (DS_r2 copies DS_1).
+        assert result["DS_r2"].components["VAt_1"].data_type == Integer
+
+    @pytest.mark.parametrize("use_duckdb", [False, True])
+    def test_avg_case_promotes_and_input_untouched(self, use_duckdb: bool) -> None:
+        result = run(
+            script=_AVG_RULE
+            + "DS_r <- case when DS_1#Me_1 > 12.0 then DS_1 else DS_2; DS_r2 <- DS_1;",
+            data_structures=_ds_pair(_INT_VA_DS),
+            datapoints=_int_va_dp(),
+            use_duckdb=use_duckdb,
+        )
+        ds_r = result["DS_r"]
+        assert ds_r.components["VAt_1"].data_type == Number
+        d = ds_r.data.sort_values("Id_1").reset_index(drop=True)
+        # Viral values are combined across the branch datasets row by row.
+        assert list(d["VAt_1"]) == [1.5, 2.5]
+        # Case reuses the first branch dataset's components: no leak into the input.
+        assert result["DS_r2"].components["VAt_1"].data_type == Integer
+
+    @pytest.mark.parametrize("use_duckdb", [False, True])
+    def test_sum_binary_stays_integer(self, use_duckdb: bool) -> None:
+        result = run(
+            script=_SUM_RULE + "DS_r <- DS_1 + DS_2;",
+            data_structures=_ds_pair(_INT_VA_DS),
+            datapoints=_int_va_dp(),
+            use_duckdb=use_duckdb,
+        )
+        ds_r = result["DS_r"]
+        assert ds_r.components["VAt_1"].data_type == Integer
+        d = ds_r.data.sort_values("Id_1").reset_index(drop=True)
+        assert list(d["VAt_1"]) == [3, 5]
+
+
 # -- Unit tests for the combination-point check helpers --
 
 
@@ -1092,6 +1249,47 @@ class TestViralCheckHelpers:
 
     def test_combined_viral_components_empty_for_single_operand(self) -> None:
         assert combined_viral_components([_viral_ds("A", ["VAt_1"])]) == []
+
+    @pytest.mark.parametrize("fn", ["sum", "avg"])
+    def test_require_rules_sum_avg_non_numeric_raises(self, fn: str) -> None:
+        registry = ViralPropagationRegistry()
+        registry.register(
+            ViralPropagationRule(
+                name="VP", signature_type="variable", target="VAt_1", aggregate_function=fn
+            )
+        )
+        set_current_registry(registry)
+        with pytest.raises(SemanticError) as exc:
+            require_rules([Component("VAt_1", String, Role.VIRAL_ATTRIBUTE, True)])
+        assert "1-3-3-5" in str(exc.value)
+
+    def test_apply_viral_return_types_promotes_avg_without_mutating_input(self) -> None:
+        registry = ViralPropagationRegistry()
+        registry.register(
+            ViralPropagationRule(
+                name="AV", signature_type="variable", target="VAt_1", aggregate_function="avg"
+            )
+        )
+        set_current_registry(registry)
+        comp = Component("VAt_1", Integer, Role.VIRAL_ATTRIBUTE, True)
+        # The result entry shares the input object, as in Analytic/Case validate.
+        result_components = {"VAt_1": comp}
+        apply_viral_return_types([comp], result_components)
+        assert result_components["VAt_1"].data_type == Number
+        assert comp.data_type == Integer
+
+    def test_apply_viral_return_types_sum_keeps_type(self) -> None:
+        registry = ViralPropagationRegistry()
+        registry.register(
+            ViralPropagationRule(
+                name="SM", signature_type="variable", target="VAt_1", aggregate_function="sum"
+            )
+        )
+        set_current_registry(registry)
+        comp = Component("VAt_1", Integer, Role.VIRAL_ATTRIBUTE, True)
+        result_components = {"VAt_1": comp}
+        apply_viral_return_types([comp], result_components)
+        assert result_components["VAt_1"].data_type == Integer
 
 
 # -- Row-preserving operators copy viral attributes, they do NOT execute the rule (#906) --
