@@ -11,7 +11,11 @@ from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators import Operator, _id_type_promotion_join_keys
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.ViralPropagation import get_current_registry, require_rules
+from vtlengine.ViralPropagation import (
+    apply_viral_return_types,
+    get_current_registry,
+    require_rules,
+)
 
 
 def merged_viral_attribute_names(
@@ -155,6 +159,7 @@ class Join(Operator):
                         component.data_type = data_type
                     merged_components[component_name] = component
 
+        apply_viral_return_types(merged_viral_comps.values(), merged_components)
         return merged_components
 
     @classmethod

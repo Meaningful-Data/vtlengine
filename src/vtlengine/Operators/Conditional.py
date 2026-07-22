@@ -14,6 +14,7 @@ from vtlengine.Model import DataComponent, Dataset, Role, Scalar
 from vtlengine.Operators import Binary, Operator
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.ViralPropagation import (
+    apply_viral_return_types,
     combined_viral_components,
     get_current_registry,
     require_rules,
@@ -243,9 +244,9 @@ class If(Operator):
         result_components = {comp_name: copy(comp) for comp_name, comp in left.components.items()}
         # if-then-else over two datasets combines their data points per row, so viral
         # attributes carried by both branches require a propagation rule (issue #906).
-        require_rules(
-            combined_viral_components([b for b in (left, right) if isinstance(b, Dataset)])
-        )
+        combined = combined_viral_components([b for b in (left, right) if isinstance(b, Dataset)])
+        require_rules(combined)
+        apply_viral_return_types(combined, result_components)
         return Dataset(name=dataset_name, components=result_components, data=None)
 
 
@@ -472,7 +473,9 @@ class Case(Operator):
         if Dataset not in then_else_types:
             raise SemanticError("2-1-9-6", op=cls.op)
 
-        components = next(op for op in ops if isinstance(op, Dataset)).components
+        # Rebuild the dict: the result must never share it with the branch dataset, as
+        # apply_viral_return_types may replace entries in it.
+        components = dict(next(op for op in ops if isinstance(op, Dataset)).components)
         comp_names = [comp.name for comp in components.values()]
         for op in ops:
             if isinstance(op, Dataset) and op.get_components_names() != comp_names:
@@ -480,5 +483,7 @@ class Case(Operator):
 
         # case over two or more datasets combines their data points, so viral attributes
         # carried by two or more branches require a propagation rule (issue #906).
-        require_rules(combined_viral_components([op for op in ops if isinstance(op, Dataset)]))
+        combined = combined_viral_components([op for op in ops if isinstance(op, Dataset)])
+        require_rules(combined)
+        apply_viral_return_types(combined, components)
         return Dataset(name=dataset_name, components=components, data=None)

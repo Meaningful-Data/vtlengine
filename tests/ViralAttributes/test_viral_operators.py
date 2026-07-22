@@ -907,7 +907,9 @@ class TestViralAttributeCheckHierarchy:
 
 class TestViralAggregateRuleTypeValidation:
     """`aggregate sum`/`avg` require a numeric viral attribute; a clear SemanticError
-    (1-3-3-5) must be raised at semantic analysis time, not a runtime crash."""
+    (1-3-3-5) must be raised at semantic analysis time, not a runtime crash. The check
+    runs where the rule is actually applied (a combination point), so a non-numeric
+    viral attribute that is never combined raises nothing (issue #910)."""
 
     @staticmethod
     def _ds(vtype: str) -> dict:
@@ -936,14 +938,35 @@ class TestViralAggregateRuleTypeValidation:
 
     @pytest.mark.parametrize("fn", ["sum", "avg"])
     @pytest.mark.parametrize("vtype", ["String", "Date", "Boolean"])
-    def test_sum_avg_non_numeric_raises(self, fn: str, vtype: str) -> None:
+    @pytest.mark.parametrize(
+        "combination",
+        ["DS_r <- DS_1 + DS_1;", "DS_r <- sum(DS_1 group by Id_1);"],
+    )
+    def test_sum_avg_non_numeric_raises_at_combination(
+        self, fn: str, vtype: str, combination: str
+    ) -> None:
         script = (
             f"define viral propagation VP (variable VAt_1) is aggregate {fn} "
-            "end viral propagation;\nDS_r <- DS_1 * 2;"
+            f"end viral propagation;\n{combination}"
         )
         with pytest.raises(SemanticError) as exc:
             semantic_analysis(script=script, data_structures=self._ds(vtype))
         assert "1-3-3-5" in str(exc.value)
+
+    @pytest.mark.parametrize("fn", ["sum", "avg"])
+    @pytest.mark.parametrize("vtype", ["String", "Date", "Boolean"])
+    def test_row_preserving_only_no_error(self, fn: str, vtype: str) -> None:
+        """The rule never executes (no combination point), so no type error is raised —
+        not for the row-preserving usage of DS_1 and not for a dataset the script never
+        references (issue #910)."""
+        structures = self._ds(vtype)
+        structures["datasets"].append({**structures["datasets"][0], "name": "DS_9"})
+        script = (
+            f"define viral propagation VP (variable VAt_1) is aggregate {fn} "
+            "end viral propagation;\nDS_r <- DS_1 * 2;"
+        )
+        # Must not raise.
+        semantic_analysis(script=script, data_structures=structures)
 
     @pytest.mark.parametrize(
         "fn,vtype",
@@ -952,7 +975,7 @@ class TestViralAggregateRuleTypeValidation:
     def test_valid_combinations_pass(self, fn: str, vtype: str) -> None:
         script = (
             f"define viral propagation VP (variable VAt_1) is aggregate {fn} "
-            "end viral propagation;\nDS_r <- DS_1 * 2;"
+            "end viral propagation;\nDS_r <- DS_1 + DS_1;"
         )
         # Must not raise.
         semantic_analysis(script=script, data_structures=self._ds(vtype))

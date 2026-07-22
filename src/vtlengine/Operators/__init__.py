@@ -35,6 +35,7 @@ from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.ViralPropagation import (
+    apply_viral_return_types,
     combined_viral_components,
     get_current_registry,
     require_rules,
@@ -358,7 +359,9 @@ class Binary(Operator):
         # Viral attributes present in BOTH operands have their data points merged, so they
         # are combined and require a propagation rule; a viral attribute in a single operand
         # is copied through and needs none (issue #906).
-        require_rules(combined_viral_components([left_operand, right_operand]))
+        combined = combined_viral_components([left_operand, right_operand])
+        require_rules(combined)
+        apply_viral_return_types(combined, result_components)
 
         result_dataset = Dataset(name=dataset_name, components=result_components, data=None)
         cls.apply_return_type_dataset(result_dataset, left_operand, right_operand)

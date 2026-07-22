@@ -462,30 +462,18 @@ class InterpreterAnalyzer(ASTTemplate):
         )
         registry.register(rule)
 
-        # sum/avg require a numeric viral attribute; raise a clear error at semantic time
-        # instead of a cryptic runtime crash (issue #877).
-        if aggregate_function in ("sum", "avg"):
-            incompatible: Optional[Type[ScalarType]] = None
-            if node.signature_type == "variable":
-                for ds in (self.datasets or {}).values():
-                    comp = ds.components.get(node.target)
-                    if (
-                        comp is not None
-                        and comp.role == Role.VIRAL_ATTRIBUTE
-                        and comp.data_type not in (Integer, Number)
-                    ):
-                        incompatible = comp.data_type
-                        break
-            else:  # valuedomain
-                vd = (self.value_domains or {}).get(node.target)
-                if vd is not None and vd.type not in (Integer, Number):
-                    incompatible = vd.type
-            if incompatible is not None:
+        # sum/avg on a value-domain rule is checked at definition time: the value
+        # domain's type is intrinsic to the rule target. Variable rules are checked in
+        # require_rules, where the rule is actually applied — a non-numeric viral
+        # attribute that is never combined must not raise (issue #910).
+        if aggregate_function in ("sum", "avg") and node.signature_type == "valuedomain":
+            vd = (self.value_domains or {}).get(node.target)
+            if vd is not None and vd.type not in (Integer, Number):
                 raise SemanticError(
                     "1-3-3-5",
                     name=node.target,
                     function=aggregate_function,
-                    type=incompatible.__name__,
+                    type=vd.type.__name__,
                 )
 
     # Execution Language

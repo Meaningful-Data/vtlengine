@@ -7,11 +7,15 @@ Registry for viral attribute propagation rules as defined by the VTL 2.2
 in :mod:`vtlengine.ViralPropagation.sql`.
 """
 
+from copy import copy
 from dataclasses import dataclass, field
 from functools import reduce
 from typing import Any, Dict, Iterable, List, Optional
 
 import pandas as pd
+
+from vtlengine.DataTypes import Integer, Number
+from vtlengine.Exceptions import SemanticError
 
 
 @dataclass
@@ -183,13 +187,47 @@ def require_rules(components: Iterable[Any]) -> None:
     rule (an operation over two or more datasets, an aggregation/analytic group-by, or
     a hierarchy roll-up), where the default propagation algorithm must be executed. A
     viral attribute that is only copied through (row-preserving operators) needs no rule.
-    """
-    from vtlengine.Exceptions import SemanticError  # local import avoids an import cycle
 
+    Also raises SemanticError 1-3-3-5 when a ``sum``/``avg`` rule applies to a
+    non-numeric viral attribute: the check runs only where the rule actually executes,
+    so a non-numeric attribute that is never combined raises nothing (issue #910).
+    """
     registry = get_current_registry()
     for comp in components:
-        if registry.rule_for(comp) is None:
+        rule = registry.rule_for(comp)
+        if rule is None:
             raise SemanticError("1-3-3-6", name=comp.name)
+        if rule.aggregate_function in ("sum", "avg") and comp.data_type not in (Integer, Number):
+            raise SemanticError(
+                "1-3-3-5",
+                name=comp.name,
+                function=rule.aggregate_function,
+                type=comp.data_type.__name__,
+            )
+
+
+def apply_viral_return_types(components: Iterable[Any], result_components: Dict[str, Any]) -> None:
+    """Set the result data type of viral attributes combined under an ``avg`` rule to
+    Number: avg yields fractional values, mirroring the Avg operator's return type.
+    min/max/sum and enumerated rules keep the input type (sum mirrors Sum, which has no
+    return type). Promoted entries are always replaced with a copy, because some
+    operators share the result component objects (or the dict itself) with their input
+    datasets and the input structure must never be mutated.
+
+    Call this right after :func:`require_rules` at every combination point, with the
+    same combined components and the result-components mapping under construction.
+    """
+    registry = get_current_registry()
+    for comp in components:
+        rule = registry.rule_for(comp)
+        if rule is None or rule.aggregate_function != "avg":
+            continue
+        result_comp = result_components.get(comp.name)
+        if result_comp is None:
+            continue
+        promoted = copy(result_comp)
+        promoted.data_type = Number
+        result_components[comp.name] = promoted
 
 
 def combined_viral_components(operands: Iterable[Any]) -> List[Any]:
