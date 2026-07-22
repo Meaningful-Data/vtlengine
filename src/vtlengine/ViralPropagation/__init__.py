@@ -223,7 +223,7 @@ def apply_viral_return_types(components: Iterable[Any], result_components: Dict[
         if rule is None or rule.aggregate_function != "avg":
             continue
         result_comp = result_components.get(comp.name)
-        if result_comp is None or result_comp.data_type == Number:
+        if result_comp is None:
             continue
         promoted = copy(result_comp)
         promoted.data_type = Number
