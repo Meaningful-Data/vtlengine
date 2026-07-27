@@ -16,6 +16,10 @@ from vtlengine.Exceptions import SemanticError
 # Ordering-only comparisons (TimeInterval ordering is forbidden).
 _ORDERING_OPS: Set[str] = {tokens.GT, tokens.GTE, tokens.LT, tokens.LTE}
 
+# Comparisons collapse a mono-measure dataset operand to a single ``bool_var``
+# measure, the same way IN / NOT_IN / ISNULL do.
+COMPARISON_OPS: Set[str] = _ORDERING_OPS | {tokens.EQ, tokens.NEQ}
+
 # String operators needing VARCHAR input.
 _STRING_UNARY_OPS: Set[str] = {
     tokens.UCASE,

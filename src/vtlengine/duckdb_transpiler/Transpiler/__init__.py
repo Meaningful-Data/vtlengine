@@ -24,6 +24,7 @@ from vtlengine.duckdb_transpiler.Transpiler.operators import (
     _ORDERING_OPS,
     _STRING_PARAM_OPS,
     _STRING_UNARY_OPS,
+    COMPARISON_OPS,
     FALLBACK_MATCH_FUNCTION,
     NATIVE_MATCH_FUNCTION,
     get_duckdb_type,
@@ -326,11 +327,17 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             rule.name = str(i + 1)
 
     def _resolve_clause_dataset(self, node: AST.RegularAggregation) -> Any:
-        """Resolve and return (dataset, table_src) for a clause node."""
+        """Resolve and return (dataset, table_src) for a clause node.
+
+        ``current_assignment`` is stashed so the operand names its measures
+        naturally: the clause still refers to them by those names, and only its
+        own result has to match the assignment target (issue #920).
+        """
         if not node.dataset:
             return None
-        ds = self._get_dataset_structure(node.dataset)
-        table_src = self._get_dataset_sql(node.dataset)
+        with self._stash_assignment():
+            ds = self._get_dataset_structure(node.dataset)
+            table_src = self._get_dataset_sql(node.dataset)
         if ds is None:
             return None
         return ds, table_src
@@ -851,7 +858,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             expr = self._make_binary_expr(left_ref, right_ref, op, left_dt, right_dt)
 
             out_name = left_m
-            if (
+            if op in COMPARISON_OPS and len(paired_measures) == 1:
+                out_name = "bool_var"
+            elif (
                 output_measure_names
                 and len(paired_measures) == 1
                 and len(output_measure_names) == 1
@@ -897,9 +906,15 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 return self._make_binary_expr(col_ref, scalar_sql, op, dt, None)
             return self._make_binary_expr(scalar_sql, col_ref, op, None, dt)
 
+        # A mono-measure comparison yields bool_var, matching the structure the
+        # visitor reports for this node (issue #920).
+        name_override = (
+            "bool_var" if op in COMPARISON_OPS and len(ds.get_measures_names()) == 1 else None
+        )
         return self._apply_measures(
             ds_node,
             _bin_expr,
+            output_name_override=name_override,
             cast_bool_to_str=op == tokens.CONCAT,
         )
 
@@ -1762,7 +1777,8 @@ FROM (
         if not node.dataset:
             return ""
 
-        table_src = self._get_dataset_sql(node.dataset)
+        with self._stash_assignment():
+            table_src = self._get_dataset_sql(node.dataset)
         drop_names = self._extract_component_names(node.children, self._join_alias_map)
 
         for name in drop_names:

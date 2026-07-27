@@ -18,6 +18,7 @@ from vtlengine.DataTypes import (
 )
 from vtlengine.DataTypes import String as StringType
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
+from vtlengine.duckdb_transpiler.Transpiler.operators import COMPARISON_OPS
 from vtlengine.duckdb_transpiler.Transpiler.sql_builder import quote_name
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators.Join import merged_viral_attribute_names
@@ -458,15 +459,28 @@ class StructureVisitor(ASTTemplate):
         left_is_ds = self._get_node_type(node.left) == _DATASET
         right_is_ds = self._get_node_type(node.right) == _DATASET
         if left_is_ds and right_is_ds:
-            return self._build_ds_ds_binop_structure(node)
+            ds = self._build_ds_ds_binop_structure(node)
+            return self._as_boolean_if_mono(ds, op)
         if left_is_ds:
             ds = self._get_dataset_structure(node.left)
             if ds is not None and op in (tokens.IN, tokens.NOT_IN):
                 return self._build_boolean_result_structure(ds)
-            return ds
+            return self._as_boolean_if_mono(ds, op)
         if right_is_ds:
-            return self._get_dataset_structure(node.right)
+            return self._as_boolean_if_mono(self._get_dataset_structure(node.right), op)
         return None
+
+    def _as_boolean_if_mono(self, ds: Optional[Dataset], op: str) -> Optional[Dataset]:
+        """Collapse a mono-measure operand to ``bool_var`` for comparison ops.
+
+        Multi-measure comparisons are rejected by the semantic analyzer, so the
+        structure is only rewritten when there is exactly one measure.
+        """
+        if ds is None or op not in COMPARISON_OPS:
+            return ds
+        if len(ds.get_measures_names()) != 1:
+            return ds
+        return self._build_boolean_result_structure(ds)
 
     def _resolve_unaryop_structure(self, node: AST.UnaryOp) -> Optional[Dataset]:
         """Resolve a UnaryOp to its dataset structure."""
@@ -685,7 +699,11 @@ class StructureVisitor(ASTTemplate):
                 elif col not in comps and output_ds and col in output_ds.components:
                     comps[col] = output_ds.components[col]
                 elif col not in comps:
-                    comps[col] = self._make_comp(col, Number)
+                    # calc_role comes from the clause itself, so a new component keeps
+                    # its declared role even without an output structure to consult.
+                    comps[col] = self._make_comp(
+                        col, Number, calc_role, calc_role != Role.IDENTIFIER
+                    )
         return Dataset(name=input_ds.name, components=comps, data=None)
 
     def _build_ds_ds_binop_structure(self, node: AST.BinOp) -> Optional[Dataset]:
