@@ -7,6 +7,7 @@ from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.Grammar import tokens
 from vtlengine.DataTypes import (
     _DUCKDB_TYPE_TO_VTL,
+    BASIC_TYPES,
     COMP_NAME_MAPPING,
     SCALAR_TYPES,
     Boolean,
@@ -692,8 +693,25 @@ class StructureVisitor(ASTTemplate):
                 elif col not in comps and output_ds and col in output_ds.components:
                     comps[col] = output_ds.components[col]
                 elif col not in comps:
-                    comps[col] = self._make_comp(col, Number)
+                    comps[col] = self._make_comp(
+                        col, self._calc_value_type(assignment.right, input_ds)
+                    )
         return Dataset(name=input_ds.name, components=comps, data=None)
+
+    def _calc_value_type(self, node: AST.AST, source: Dataset) -> Any:
+        """Data type of a calc expression, defaulting to ``Number`` when unknown.
+
+        Only literals and plain component references are resolved; everything
+        else keeps the historical ``Number`` placeholder. Callers must treat the
+        result as a best effort, not as a guarantee that the column is numeric.
+        """
+        if isinstance(node, AST.Constant) and node.value is not None:
+            return BASIC_TYPES.get(type(node.value), Number)
+        if isinstance(node, AST.VarID):
+            comp = source.components.get(self._resolve_udo_name(node.value))
+            if comp is not None:
+                return comp.data_type
+        return Number
 
     def _build_ds_ds_binop_structure(self, node: AST.BinOp) -> Optional[Dataset]:
         """Build structure for dataset-dataset binary ops."""

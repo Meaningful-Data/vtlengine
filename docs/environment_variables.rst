@@ -18,6 +18,10 @@ These variables control how VTL Engine handles floating-point precision in numer
 
 Controls the significant digits used for Number comparison operations (``=``, ``<>``, ``>=``, ``<=``, ``between``).
 
+This covers the comparisons in hierarchical rulesets as well, so ``check_hierarchy`` does not
+report an imbalance that falls below the threshold. Strict ``>`` and ``<`` are always exact:
+the tolerance only ever affects whether two values count as *equal*.
+
 .. list-table::
    :header-rows: 1
    :widths: 20 80
@@ -29,12 +33,17 @@ Controls the significant digits used for Number comparison operations (``=``, ``
    * - ``6`` to ``15``
      - Uses the specified number of significant digits
    * - ``-1``
-     - Disables tolerance (uses Python's default exact comparison)
+     - Disables tolerance (comparisons become exact)
 
 The tolerance is calculated as: ``0.5 * 10^(-(N-1))`` where N is the number of significant digits.
 
 For the default of 15, this gives a relative tolerance of ``5e-15``, which filters floating-point
-arithmetic artifacts while preserving meaningful differences.
+arithmetic artifacts while preserving meaningful differences. Two values ``a`` and ``b`` count as
+equal when ``|a - b| <= tolerance * max(|a|, |b|)``.
+
+.. note::
+    Comparing values that are not exactly equal costs more than a plain comparison, since the
+    tolerance has to be evaluated. Setting the variable to ``-1`` removes that work entirely.
 
 .. _output_number_significant_digits:
 
