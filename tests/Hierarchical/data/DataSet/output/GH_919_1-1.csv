@@ -1,0 +1,11 @@
+Id_1,Id_2,ruleid,bool_var,errorcode,errorlevel,imbalance
+1,A,1,True,,,0.0000000001
+1,A,2,True,,,300000.0000000001
+2,A,1,False,totalComparedToBanks,4.0,0.004
+2,A,2,True,,,300000.004
+3,A,1,True,,,0.0
+3,A,2,True,,,300000.0
+4,A,1,True,,,-0.0000000001
+4,A,2,True,,,-0.0000000001
+5,A,1,False,totalComparedToBanks,4.0,-0.5
+5,A,2,False,totalGeUnal,3.0,-0.5
