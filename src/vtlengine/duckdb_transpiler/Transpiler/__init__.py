@@ -2539,9 +2539,12 @@ FROM (
         else:
             source_sql = self._get_dataset_sql(source_node)
             source_ids = list(source_ds.get_identifiers_names())
-            # Evaluate condition as a column expression (not a full SELECT)
-            with self._clause_scope(source_ds, prefix=alias):
-                cond_expr = self.visit(node.condition)
+            if node.condition is source_node:
+                cond_measures = list(source_ds.get_measures_names())
+                cond_expr = f"{alias}.{quote_name(cond_measures[0])}" if cond_measures else "TRUE"
+            else:
+                with self._clause_scope(source_ds, prefix=alias):
+                    cond_expr = self.visit(node.condition)
 
         t_type = self._get_node_type(node.thenOp)
         e_type = self._get_node_type(node.elseOp)
