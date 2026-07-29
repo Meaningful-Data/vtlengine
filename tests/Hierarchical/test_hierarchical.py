@@ -2903,3 +2903,29 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code
         )
+
+    def test_GH_919_1(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset sectorsHierarchy (variable rule Id_2) is
+                        A = B + N + U errorcode "totalComparedToBanks" errorlevel 4;
+                        A >= U        errorcode "totalGeUnal"          errorlevel 3
+                    end hierarchical ruleset;
+
+                    DS_r := check_hierarchy(DS_1, sectorsHierarchy rule Id_2 all);
+
+        Description: Number comparisons in hierarchical rules honour the
+        COMPARISON_ABSOLUTE_THRESHOLD tolerance, so residues below the
+        significant-digits threshold are not reported as violations.
+
+        Git Branch: #919.
+        Goal: Verify that = and >= only flag imbalances above the tolerance.
+        """
+
+        code = "GH_919_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
