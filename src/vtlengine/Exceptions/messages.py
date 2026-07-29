@@ -141,6 +141,41 @@ centralised_messages = {
         "description": "Raised when the type of input Datasets is incorrect; "
         "a sequence of PandasDataset is expected.",
     },
+    "0-1-3-9": {
+        "message": "Duplicate dataset name(s) {names} in the combined SDMX and explicit inputs.",
+        "description": "Raised when a dataset name appears more than once across the SDMX "
+        "datasets and the explicit data structures, which would overwrite data silently.",
+    },
+    "0-1-3-10": {
+        "message": "Explicit datapoints must be a dict of dataset name to data when SDMX "
+        "datasets are provided.",
+        "description": "Raised when non-dict datapoints (list, path or URL) are combined with "
+        "SDMX datasets, which carry no dataset name to merge on.",
+    },
+    "0-1-3-11": {
+        "message": "VTL dataset name(s) {names} are mapped more than once.",
+        "description": "Raised when the mappings assign the same VTL dataset name more than "
+        "once (within a dataflow's list or across several dataflows), which would overwrite "
+        "data silently.",
+    },
+    "0-1-3-12": {
+        "message": "Multiple SDMX datasets share the short-URN {short_urn}; run_sdmx expects "
+        "one dataset per dataflow.",
+        "description": "Raised when more than one input PandasDataset resolves to the same "
+        "short-URN, which would silently overwrite the datapoints of the earlier one.",
+    },
+    "0-1-3-13": {
+        "message": "SDMX structure {short_urn} is mapped to multiple VTL datasets {names}; "
+        "use run_sdmx for one-to-many mappings.",
+        "description": "Raised when run() or semantic_analysis() receive a mapping that assigns "
+        "more than one VTL dataset name to a single SDMX structure, which those functions "
+        "cannot fan out.",
+    },
+    "0-1-3-14": {
+        "message": "Mapping for {short_urn} must list at least one VTL dataset name.",
+        "description": "Raised when a mapping entry provides an empty list of VTL dataset "
+        "names for an SDMX dataflow.",
+    },
     # JSON Schema errors
     "0-2-1-1": {
         "message": "The JSON of {element} does not follow the required JSON Schema: {error}",

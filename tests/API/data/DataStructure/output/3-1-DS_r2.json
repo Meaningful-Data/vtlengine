@@ -1,0 +1,27 @@
+{
+  "datasets": [
+    {
+      "name": "DS_r2",
+      "DataStructure": [
+        {
+          "name": "DIM_1",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "DIM_2",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "OBS_VALUE",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}
