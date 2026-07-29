@@ -1,0 +1,6 @@
+define hierarchical ruleset sectorsHierarchy (variable rule Id_2) is
+    A = B + N + U    errorcode "totalComparedToBanks"  errorlevel 4;
+    A >= U           errorcode "totalGeUnal"           errorlevel 3
+end hierarchical ruleset;
+
+DS_r := check_hierarchy(DS_1, sectorsHierarchy rule Id_2 all);
