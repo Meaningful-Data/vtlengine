@@ -27,8 +27,11 @@ from vtlengine.duckdb_transpiler.Transpiler.operators import (
     COMPARISON_OPS,
     FALLBACK_MATCH_FUNCTION,
     NATIVE_MATCH_FUNCTION,
+    NUMBER_TOLERANCE_OPS,
     get_duckdb_type,
+    is_number_comparison,
     is_re2_incompatible,
+    number_tolerance_sql,
     registry,
 )
 from vtlengine.duckdb_transpiler.Transpiler.sql_builder import (
@@ -721,7 +724,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         right_type: Optional[type] = None,
     ) -> str:
         """Build a binary SQL expression with type-aware registry dispatch."""
-        dt = left_type or right_type
+        # A Number operand must not shadow a time-typed one: the time types are the
+        # ones with registry overrides, and Number is inferred for bare literals.
+        dt = next((t for t in (left_type, right_type) if t not in (None, Number)), None)
+        dt = dt or left_type or right_type
         # TimeInterval: ordering not supported
         if op in _ORDERING_OPS and dt == TimeInterval:
             raise RunTimeError("2-1-19-17", op=op)
@@ -733,6 +739,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         # Date↔TimePeriod cross-type promotion
         if left_type and right_type and _is_date_timeperiod_pair(left_type, right_type):
             return _date_tp_compare_expr(left_ref, right_ref, left_type, right_type, op)
+        # Number equality honours the configured comparison tolerance (issue #919)
+        if op in NUMBER_TOLERANCE_OPS and is_number_comparison(left_type, right_type):
+            tolerant_sql = number_tolerance_sql(op, left_ref, right_ref)
+            if tolerant_sql is not None:
+                return tolerant_sql
         # Typed or generic registry lookup, with function-call fallback
         return registry.sql(op, left_ref, right_ref, data_type=dt)
 
@@ -1033,6 +1044,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         for tp in (TimePeriod, Duration, TimeInterval):
             if self._is_operand_type(node, tp):
                 return tp
+        # Number is checked last so it never shadows a time type above.
+        if isinstance(node, AST.Constant) and isinstance(node.value, float):
+            return Number
+        if self._is_operand_type(node, Number):
+            return Number
         return None
 
     def _visit_period_indicator(self, node: AST.UnaryOp) -> str:
@@ -2383,16 +2399,25 @@ FROM (
         return self._visit_set_operation(node, tokens.SYMDIFF)
 
     @staticmethod
-    def _between_expr(operand: str, low: str, high: str) -> str:
+    def _between_expr(operand: str, low: str, high: str, is_number: bool = False) -> str:
         """Build a VTL-compliant BETWEEN expression with NULL propagation.
 
         VTL requires that if ANY operand of between is NULL, the result is NULL.
         SQL's three-valued logic differs: FALSE AND NULL = FALSE.  To match VTL
         semantics we wrap the expression with an explicit NULL check.
+
+        Number operands compare through the configured tolerance (issue #919),
+        mirroring ``x >= low and x <= high``.
         """
+        inner = f"({operand} BETWEEN {low} AND {high})"
+        if is_number:
+            ge_sql = number_tolerance_sql(tokens.GTE, operand, low)
+            le_sql = number_tolerance_sql(tokens.LTE, operand, high)
+            if ge_sql is not None and le_sql is not None:
+                inner = f"({ge_sql} AND {le_sql})"
         return (
             f"CASE WHEN {operand} IS NULL OR {low} IS NULL OR {high} IS NULL "
-            f"THEN NULL ELSE ({operand} BETWEEN {low} AND {high}) END"
+            f"THEN NULL ELSE {inner} END"
         )
 
     def visit_MulOp_between(self, node: AST.MulOp) -> str:
@@ -2400,15 +2425,28 @@ FROM (
         operand_type = self._get_node_type(node.children[0])
         low_sql = self.visit(node.children[1])
         high_sql = self.visit(node.children[2])
+        bound_types = [self._detect_scalar_type(c) for c in node.children[1:3]]
 
         if operand_type == _DATASET:
-            return self._apply_measures(
-                node.children[0],
-                lambda col: self._between_expr(col, low_sql, high_sql),
-            )
+            ds = self._get_dataset_structure(node.children[0])
+
+            def _between(col: str) -> str:
+                comp = ds.components.get(col.strip('"')) if ds else None
+                dt = comp.data_type if comp else None
+                return self._between_expr(
+                    col, low_sql, high_sql, is_number_comparison(dt, *bound_types)
+                )
+
+            return self._apply_measures(node.children[0], _between)
 
         operand_sql = self.visit(node.children[0])
-        return self._between_expr(operand_sql, low_sql, high_sql)
+        operand_dt = self._detect_scalar_type(node.children[0])
+        return self._between_expr(
+            operand_sql,
+            low_sql,
+            high_sql,
+            is_number_comparison(operand_dt, *bound_types),
+        )
 
     def visit_MulOp_exists_in(self, node: AST.MulOp) -> str:
         """Visit EXISTS_IN in MulOp form, handling the optional retain parameter."""
@@ -3096,12 +3134,14 @@ FROM (
         # MATERIALIZED so the pivot aggregation is computed once, not once per
         # rule branch in the UNION ALL below.
         cte.cte("_pivot", pivot_sql, materialized=True)
+        measure_comp = ds.components.get(measure_name)
         rule_queries = [
             self._build_check_hr_rule_select(
                 parsed=p,
                 other_ids=other_ids,
                 rule_comp=rule_comp,
                 measure=measure_name,
+                measure_type=measure_comp.data_type if measure_comp else None,
                 mode=mode,
                 output=output,
                 cond_mapping=cond_mapping,
@@ -3178,6 +3218,7 @@ FROM (
         other_ids: List[str],
         rule_comp: str,
         measure: str,
+        measure_type: Optional[type],
         mode: str,
         output: str,
         cond_mapping: Dict[str, str],
@@ -3189,22 +3230,18 @@ FROM (
         l_val = self._build_hr_value_expr(parsed.left_code_item, mode)
         r_val = self._build_hr_expr_sql(parsed.right_expr_node, mode)
 
-        bool_expr = f"({l_val} {parsed.comparison_node.op} {r_val})"
-        imbalance_expr = f"({l_val} - {r_val})"
-        when_sql: Optional[str] = None
-        if parsed.has_when:
-            when_sql = self._build_hr_when_sql(parsed.when_node, cond_mapping)
-            bool_expr = f"CASE WHEN NOT ({when_sql}) THEN TRUE ELSE {bool_expr} END"
-            imbalance_expr = (
-                f"CASE WHEN NOT ({when_sql}) THEN CAST(NULL AS DOUBLE) ELSE {imbalance_expr} END"
-            )
+        # Both sides are projected once into _lv/_rv and the comparison runs over
+        # those aliases, so the emitted SQL stays readable: the tolerance macro
+        # names each side several times, and the rule expressions can be large.
+        when_sql: Optional[str] = (
+            self._build_hr_when_sql(parsed.when_node, cond_mapping) if parsed.has_when else None
+        )
 
-        inner_cols = [quote_name(c) for c in other_ids]
-        inner_cols.append(f"{l_val} AS _lv")
-        inner_cols.append(f"{bool_expr} AS _bv")
-        inner_cols.append(f"{imbalance_expr} AS _imb")
+        val_cols = [quote_name(c) for c in (*other_ids, *cond_mapping.values())]
+        val_cols.append(f"{l_val} AS _lv")
+        val_cols.append(f"{r_val} AS _rv")
 
-        inner_where = self._build_hr_mode_filter(
+        val_where = self._build_hr_mode_filter(
             mode=mode,
             left_code_item=parsed.left_code_item,
             right_code_items=parsed.right_code_items,
@@ -3213,9 +3250,29 @@ FROM (
             is_hierarchy=False,
         )
         if output == "invalid" and when_sql is not None:
-            inner_where.append(f"({when_sql})")
-        inner_where_clause = f" WHERE {' AND '.join(inner_where)}" if inner_where else ""
-        inner_sql = f"SELECT {', '.join(inner_cols)} FROM _pivot{inner_where_clause}"
+            val_where.append(f"({when_sql})")
+        val_where_clause = f" WHERE {' AND '.join(val_where)}" if val_where else ""
+        val_sql = f"SELECT {', '.join(val_cols)} FROM _pivot{val_where_clause}"
+
+        rule_op = parsed.comparison_node.op
+        bool_expr = None
+        # Number rules honour the configured comparison tolerance.
+        if rule_op in NUMBER_TOLERANCE_OPS and is_number_comparison(measure_type):
+            bool_expr = number_tolerance_sql(rule_op, "_lv", "_rv")
+        if bool_expr is None:
+            bool_expr = f"(_lv {rule_op} _rv)"
+        imbalance_expr = "(_lv - _rv)"
+        if when_sql is not None:
+            bool_expr = f"CASE WHEN NOT ({when_sql}) THEN TRUE ELSE {bool_expr} END"
+            imbalance_expr = (
+                f"CASE WHEN NOT ({when_sql}) THEN CAST(NULL AS DOUBLE) ELSE {imbalance_expr} END"
+            )
+
+        inner_cols = [quote_name(c) for c in other_ids]
+        inner_cols.append("_lv")
+        inner_cols.append(f"{bool_expr} AS _bv")
+        inner_cols.append(f"{imbalance_expr} AS _imb")
+        inner_sql = f"SELECT {', '.join(inner_cols)} FROM ({val_sql}) _v"
 
         ec_sql = self._error_code_sql(rule.erCode)
         el_sql = self._error_code_sql(rule.erLevel)

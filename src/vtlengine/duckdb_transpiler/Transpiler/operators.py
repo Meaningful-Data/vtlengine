@@ -10,8 +10,9 @@ import duckdb
 from duckdb.sqltypes import BOOLEAN, VARCHAR
 
 import vtlengine.AST.Grammar.tokens as tokens
-from vtlengine.DataTypes import Duration, TimePeriod
+from vtlengine.DataTypes import Duration, Integer, Number, TimePeriod
 from vtlengine.Exceptions import SemanticError
+from vtlengine.Utils._number_config import get_effective_comparison_digits
 
 # Ordering-only comparisons (TimeInterval ordering is forbidden).
 _ORDERING_OPS: Set[str] = {tokens.GT, tokens.GTE, tokens.LT, tokens.LTE}
@@ -382,6 +383,34 @@ def _create_default_registry() -> OperatorRegistry:
 
 # Global registry instance
 registry = _create_default_registry()
+
+# Equality-based comparisons honouring the Number tolerance. Strict ``>`` and
+# ``<`` stay exact, mirroring the documented COMPARISON_ABSOLUTE_THRESHOLD scope.
+_NUMBER_TOLERANCE_MACROS: Dict[str, str] = {
+    tokens.EQ: "vtl_num_eq",
+    tokens.NEQ: "vtl_num_eq",
+    tokens.GTE: "vtl_num_ge",
+    tokens.LTE: "vtl_num_le",
+}
+
+NUMBER_TOLERANCE_OPS: Set[str] = set(_NUMBER_TOLERANCE_MACROS)
+
+
+def is_number_comparison(*data_types: Optional[type]) -> bool:
+    known = {dt for dt in data_types if dt is not None}
+    return Number in known and known <= {Number, Integer}
+
+
+def number_tolerance_sql(op: str, left: str, right: str) -> Optional[str]:
+    digits = get_effective_comparison_digits()
+    if digits is None:
+        return None
+    macro = _NUMBER_TOLERANCE_MACROS[op]
+    # Relative tolerance of _get_rel_tol, written straight out as a literal so the
+    # value DuckDB parses is the nearest double to 5 * 10^-digits exactly.
+    expr = f"{macro}({left}, {right}, 5e-{digits})"
+    return f"(NOT {expr})" if op == tokens.NEQ else f"({expr})"
+
 
 # DuckDB's ``regexp_*`` functions use Google's RE2 library, which deliberately
 # omits regex features that cannot be matched in linear time: lookaround
