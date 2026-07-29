@@ -1,7 +1,7 @@
 {
     "insertion": {
         "2": [
-            "A"
+            "Z"
         ]
     },
     "deletion": {
@@ -19,11 +19,11 @@
             "mdl2.f"
         ],
         "2": [
-            "A"
+            "Z"
         ]
     },
     "global_inputs": [
-        "A"
+        "Z"
     ],
     "persistent": [
         "a",

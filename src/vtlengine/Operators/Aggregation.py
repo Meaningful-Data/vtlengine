@@ -21,7 +21,7 @@ from vtlengine.DataTypes import (
     unary_implicit_promotion,
 )
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Model import Component, Dataset, Role
+from vtlengine.Model import Component, Dataset, Role, normalize_name
 
 
 def extract_grouping_identifiers(
@@ -30,7 +30,9 @@ def extract_grouping_identifiers(
     if group_op == "group by":
         return grouping_components
     elif group_op == "group except":
-        return [comp for comp in identifier_names if comp not in grouping_components]
+        # Regular names are case-insensitive.
+        excluded = {normalize_name(comp) for comp in grouping_components}
+        return [comp for comp in identifier_names if normalize_name(comp) not in excluded]
     elif group_op == "group all":
         return identifier_names if grouping_components else []
     else:
@@ -69,8 +71,9 @@ class Aggregation(Operator.Unary):
             identifiers_to_keep = extract_grouping_identifiers(
                 operand.get_identifiers_names(), group_op, grouping_columns
             )
+            keep_norm = {normalize_name(name) for name in identifiers_to_keep}
             for comp_name, comp in operand.components.items():
-                if comp.role == Role.IDENTIFIER and comp_name not in identifiers_to_keep:
+                if comp.role == Role.IDENTIFIER and normalize_name(comp_name) not in keep_norm:
                     del result_components[comp_name]
         else:
             for comp_name, comp in operand.components.items():

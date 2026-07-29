@@ -19,7 +19,7 @@ from vtlengine.DataTypes import (
 from vtlengine.DataTypes import String as StringType
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.duckdb_transpiler.Transpiler.sql_builder import quote_name
-from vtlengine.Model import Component, Dataset, Role
+from vtlengine.Model import CaseInsensitiveDict, Component, Dataset, Role
 from vtlengine.Operators.Join import merged_viral_attribute_names
 
 
@@ -53,12 +53,13 @@ class StructureVisitor(ASTTemplate):
         output_datasets: Optional[Dict[str, Dataset]] = None,
         scalars: Optional[Dict[str, Any]] = None,
     ) -> None:
-        self.output_datasets: Dict[str, Dataset] = output_datasets or {}
-        self.available_tables: Dict[str, Dataset] = {
-            **(available_tables or {}),
-            **self.output_datasets,
-        }
-        self.scalars: Dict[str, Any] = scalars or {}
+        # VTL regular names are case-insensitive: keep name-keyed lookups in
+        # CaseInsensitiveDict so references resolve regardless of the written casing.
+        self.output_datasets: Dict[str, Dataset] = CaseInsensitiveDict(output_datasets or {})
+        self.available_tables: Dict[str, Dataset] = CaseInsensitiveDict(
+            {**(available_tables or {}), **self.output_datasets}
+        )
+        self.scalars: Dict[str, Any] = CaseInsensitiveDict(scalars or {})
         self.current_assignment: str = ""
         self._in_clause: bool = False
         self._current_dataset: Optional[Dataset] = None

@@ -36,14 +36,15 @@ from vtlengine.files.sdmx_handler import (
     to_vtl_json,
 )
 from vtlengine.Model import (
-    Component as VTL_Component,
-)
-from vtlengine.Model import (
+    CaseInsensitiveDict,
     Dataset,
     ExternalRoutine,
     Role,
     Scalar,
     ValueDomain,
+)
+from vtlengine.Model import (
+    Component as VTL_Component,
 )
 
 # Cache SCALAR_TYPES keys for performance
@@ -118,27 +119,34 @@ def _load_dataset_from_structure(
     """
     _validate_json(structures, schema, kind="DataStructures")
 
-    datasets = {
-        dataset_json["name"]: Dataset(
-            name=dataset_json["name"],
-            components={
-                c["name"]: _build_component(c)
-                for c in _resolve_components(dataset_json, structures)
-            },
-            data=None,
-        )
-        for dataset_json in structures.get("datasets", [])
-    }
+    # VTL regular names are case-insensitive: keep datasets/scalars in
+    # CaseInsensitiveDict so lookups match regardless of the written casing
+    # (component dicts are wrapped by Dataset.__post_init__).
+    datasets: CaseInsensitiveDict[Dataset] = CaseInsensitiveDict(
+        {
+            dataset_json["name"]: Dataset(
+                name=dataset_json["name"],
+                components={
+                    c["name"]: _build_component(c)
+                    for c in _resolve_components(dataset_json, structures)
+                },
+                data=None,
+            )
+            for dataset_json in structures.get("datasets", [])
+        }
+    )
 
-    scalars = {
-        scalar_json["name"]: Scalar(
-            name=scalar_json["name"],
-            data_type=_extract_data_type(scalar_json)[1],
-            value=None,
-            nullable=scalar_json.get("nullable", True),
-        )
-        for scalar_json in structures.get("scalars", [])
-    }
+    scalars: CaseInsensitiveDict[Scalar] = CaseInsensitiveDict(
+        {
+            scalar_json["name"]: Scalar(
+                name=scalar_json["name"],
+                data_type=_extract_data_type(scalar_json)[1],
+                value=None,
+                nullable=scalar_json.get("nullable", True),
+            )
+            for scalar_json in structures.get("scalars", [])
+        }
+    )
 
     return datasets, scalars
 
@@ -344,15 +352,15 @@ def _load_datastructure_single(
     if not data_structure.exists():
         raise DataLoadError(code="0-3-1-1", file=data_structure)
     if data_structure.is_dir():
-        datasets: Dict[str, Dataset] = {}
-        scalars: Dict[str, Scalar] = {}
+        dir_datasets: CaseInsensitiveDict[Dataset] = CaseInsensitiveDict()
+        dir_scalars: CaseInsensitiveDict[Scalar] = CaseInsensitiveDict()
         for f in data_structure.iterdir():
             if f.suffix not in (".json", ".xml"):
                 continue
             ds, sc = _load_datastructure_single(f, sdmx_mappings=sdmx_mappings)
-            datasets = {**datasets, **ds}
-            scalars = {**scalars, **sc}
-        return datasets, scalars
+            dir_datasets.update(ds)
+            dir_scalars.update(sc)
+        return dir_datasets, dir_scalars
     else:
         suffix = data_structure.suffix.lower()
         # Handle SDMX-ML structure files (.xml) - strict, must be SDMX

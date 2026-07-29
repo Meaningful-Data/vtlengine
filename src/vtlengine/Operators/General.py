@@ -5,7 +5,7 @@ import duckdb
 
 from vtlengine.DataTypes import COMP_NAME_MAPPING
 from vtlengine.Exceptions import RunTimeError, SemanticError
-from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar
+from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, names_equal
 from vtlengine.Operators import Binary, Unary
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
@@ -41,7 +41,7 @@ class Membership(Binary):
             for name, comp in left_operand.components.items()
             if comp.role == Role.IDENTIFIER
             or comp.role == Role.VIRAL_ATTRIBUTE
-            or (not promote_to_measure and comp.name == right_operand)
+            or (not promote_to_measure and names_equal(comp.name, right_operand))
         }
         if promote_to_measure:
             measure_name = COMP_NAME_MAPPING[component.data_type]
