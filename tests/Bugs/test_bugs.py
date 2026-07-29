@@ -3423,3 +3423,18 @@ class CastBugs(BugHelper):
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_931_1(self):
+        """
+        Status: OK
+        Description: stock_to_flow and flow_to_stock only compute over number
+                     measures; Boolean and String measures pass through, as the
+                     reference manual types the operand as measure<number>.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/931
+        Goal: Check Result.
+        """
+        code = "GH_931_1"
+        number_inputs = 2
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
