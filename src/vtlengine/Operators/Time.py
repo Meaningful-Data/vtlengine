@@ -96,26 +96,42 @@ class Time(Operators.Operator):
     def parse_date(cls, date_str: str) -> date:
         return parse_date_value(date_str)
 
-    @classmethod
-    def get_frequencies(cls, dates: Any) -> Any:
-        dates = pd.to_datetime(dates)
-        dates = dates.sort_values()
-        deltas = dates.diff().dropna()
-        return deltas
+    @staticmethod
+    def _is_whole_month_gap(start: Any, end: Any, months: int) -> bool:
+        """Whether the gap spans a whole number of calendar months."""
+        if months <= 0:
+            return False
+        if start + pd.DateOffset(months=months) == end:
+            return True
+        # Month ends stay month ends even though their day numbers differ.
+        return start.day == start.days_in_month and end.day == end.days_in_month
 
     @classmethod
-    def find_min_frequency(cls, differences: Any) -> str:
-        months_deltas = differences.apply(lambda x: x.days // 30)
-        days_deltas = differences.apply(lambda x: x.days)
-        min_months = min(
-            (diff for diff in months_deltas if diff > 0 and diff % 12 != 0),
-            default=None,
-        )
-        min_days = min(
-            (diff for diff in days_deltas if diff > 0 and diff % 365 != 0 and diff % 366 != 0),
-            default=None,
-        )
-        return "D" if min_days else "M" if min_months else "Y"
+    def find_min_frequency(cls, dates: Any) -> str:
+        """Infer the period of a Date time series from the gaps between its points."""
+        ordered = pd.to_datetime(pd.Series(list(dates))).dropna().sort_values()
+        ordered = ordered.drop_duplicates().reset_index(drop=True)
+        if len(ordered) < 2:
+            return "Y"
+
+        gaps = list(zip(ordered.iloc[:-1], ordered.iloc[1:]))
+        day_diffs = [(end - start).days for start, end in gaps]
+        month_diffs = [
+            (end.year - start.year) * 12 + (end.month - start.month) for start, end in gaps
+        ]
+
+        if not all(
+            cls._is_whole_month_gap(start, end, months)
+            for (start, end), months in zip(gaps, month_diffs)
+        ):
+            return "W" if all(diff % 7 == 0 for diff in day_diffs) else "D"
+        if all(months % 12 == 0 for months in month_diffs):
+            return "Y"
+        if all(months % 6 == 0 for months in month_diffs):
+            return "S"
+        if all(months % 3 == 0 for months in month_diffs):
+            return "Q"
+        return "M"
 
     _PERIOD_BY_RELATIVEDELTA = {
         (1, 0, 0): "Y",
@@ -170,25 +186,54 @@ class Time(Operators.Operator):
 
     _PERIOD_DURATION_RE = re.compile(r"^P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)D)?$")
 
+    _OFFSET_ARGS_BY_PERIOD = {
+        "A": {"years": 1},
+        "Y": {"years": 1},
+        "S": {"months": 6},
+        "Q": {"months": 3},
+        "M": {"months": 1},
+        "W": {"days": 7},
+        "D": {"days": 1},
+    }
+
     @classmethod
-    def _to_pandas_freq(cls, code: str) -> str:
-        if code == "S":
-            return "6MS"
-        if code == "Q":
-            return "3MS"
-        if not code.startswith("P"):
-            return code
-        m = cls._PERIOD_DURATION_RE.match(code)
-        if m is None:
-            return code
-        years = int(m.group(1) or 0)
-        months = int(m.group(2) or 0)
-        days = int(m.group(3) or 0)
-        if days and not (years or months):
-            return f"{days}D"
-        if (years or months) and not days:
-            return f"{years * 12 + months}MS"
-        return f"{years * 365 + months * 30 + days}D"
+    def _period_offset(cls, code: str) -> Any:
+        """One period as a date offset, for stepping a series from its lower limit."""
+        args = cls._OFFSET_ARGS_BY_PERIOD.get(code)
+        if args is None and code.startswith("P"):
+            m = cls._PERIOD_DURATION_RE.match(code)
+            if m is not None:
+                args = {
+                    "years": int(m.group(1) or 0),
+                    "months": int(m.group(2) or 0),
+                    "days": int(m.group(3) or 0),
+                }
+        args = args or {"days": 1}
+        return pd.DateOffset(
+            years=args.get("years", 0),
+            months=args.get("months", 0),
+            days=args.get("days", 0),
+        )
+
+    @classmethod
+    def _period_range(cls, start: Any, end: Any, code: str) -> List[pd.Timestamp]:
+        """Dates from *start* to *end*, one period at a time.
+
+        Stepping from the lower limit is what the reference manual describes, and it
+        keeps the grid on the dates the series actually uses: a month-based frequency
+        anchored with a pandas offset alias would instead land on every month end.
+        """
+        offset = cls._period_offset(code)
+        current = pd.Timestamp(start)
+        limit = pd.Timestamp(end)
+        dates = []
+        while current <= limit:
+            dates.append(current)
+            nxt = current + offset
+            if nxt <= current:  # guard against a zero-length period
+                break
+            current = nxt
+        return dates
 
 
 class Unary(Time):
@@ -360,10 +405,8 @@ class Fill_time_series(Binary):
         if data_type == TimePeriod:
             result.data = cls.fill_periods(result.data, fill_type)
         elif data_type == Date:
-            frequencies = cls.get_frequencies(operand.data[cls.time_id].apply(cls.parse_date))
-            result.data = cls.fill_dates(
-                result.data, fill_type, cls.find_min_frequency(frequencies)
-            )
+            dates = operand.data[cls.time_id].apply(cls.parse_date)
+            result.data = cls.fill_dates(result.data, fill_type, cls.find_min_frequency(dates))
         elif data_type == TimeInterval:
             categories = result.data[cls.time_id].apply(cls._classify_interval_period).unique()
             if len(categories) > 1:
@@ -493,10 +536,8 @@ class Fill_time_series(Binary):
         date_format = None
         filled_data = []
 
-        pandas_freq = cls._to_pandas_freq(min_frequency)
-
         def create_filled_dates(group: Any, min_max: Dict[str, Any]) -> (pd.DataFrame, str):  # type: ignore[syntax]
-            date_range = pd.date_range(start=min_max["min"], end=min_max["max"], freq=pandas_freq)
+            date_range = cls._period_range(min_max["min"], min_max["max"], min_frequency)
             date_df = pd.DataFrame(date_range, columns=[cls.time_id])
             date_df[cls.other_ids] = group.iloc[0][cls.other_ids]
             date_df[cls.measures] = None
@@ -597,9 +638,7 @@ class Time_Shift(Binary):
 
         if data_type == Date:
             freq = cls.find_min_frequency(
-                cls.get_frequencies(
-                    result.data[cls.time_id].map(cls.parse_date, na_action="ignore")
-                )
+                result.data[cls.time_id].map(cls.parse_date, na_action="ignore")
             )
             result.data[cls.time_id] = cls.shift_dates(result.data[cls.time_id], shift_value, freq)
         elif data_type == TimeInterval:
