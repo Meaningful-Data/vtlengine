@@ -141,6 +141,53 @@ def test_run_default_output_format_is_csv(tmp_path: Path) -> None:
     assert not (out_dir / "DS_A.parquet").exists()
 
 
+def test_run_output_format_parquet_boolean_native(tmp_path: Path) -> None:
+    """Boolean measures keep the native BOOLEAN type in parquet output (issue #923):
+    the Python-style 'True'/'False' text formatting applies to CSV output only."""
+    bool_structure = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Boolean", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    df = pd.DataFrame({"Id_1": [1, 2], "Me_1": [True, False]})
+
+    out_dir = tmp_path / "out"
+    out_dir.mkdir()
+
+    run(
+        script="DS_A <- DS_1;",
+        data_structures=bool_structure,
+        datapoints={"DS_1": df},
+        output_folder=out_dir,
+        use_duckdb=True,
+        output_format="parquet",
+    )
+
+    produced = out_dir / "DS_A.parquet"
+    assert produced.exists(), list(out_dir.iterdir())
+
+    conn = duckdb.connect()
+    try:
+        type_row = conn.execute(
+            f"SELECT typeof(Me_1) FROM read_parquet('{produced}') LIMIT 1"
+        ).fetchone()
+        rows = conn.execute(
+            f"SELECT Id_1, Me_1 FROM read_parquet('{produced}') ORDER BY Id_1"
+        ).fetchall()
+    finally:
+        conn.close()
+
+    assert type_row is not None
+    assert type_row[0] == "BOOLEAN"
+    assert rows == [(1, True), (2, False)]
+
+
 TWO_DS_STRUCTURE = {
     "datasets": [
         {
