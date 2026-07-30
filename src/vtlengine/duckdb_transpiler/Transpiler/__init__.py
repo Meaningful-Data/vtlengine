@@ -957,9 +957,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             if comp.role == Role.IDENTIFIER:
                 cols.append(quote_name(name))
                 emitted.add(name)
-            elif comp.role == Role.VIRAL_ATTRIBUTE:
+            elif comp.role == Role.VIRAL_ATTRIBUTE and name != alias_name:
                 # Membership is row-preserving: viral attributes are copied
                 # through unchanged, no propagation rule runs (issues #906/#944).
+                # A viral named like the promoted alias is skipped: the promotion
+                # replaces it and the measure carries the target's data.
                 cols.append(quote_name(name))
                 emitted.add(name)
         if alias_name not in emitted:

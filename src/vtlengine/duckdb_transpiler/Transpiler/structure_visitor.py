@@ -491,6 +491,10 @@ class StructureVisitor(ASTTemplate):
                 comps[name] = comp
         if is_count:
             comps["int_var"] = self._make_comp("int_var", Integer)
+        # Viral attributes propagate through the aggregation (issue #944).
+        for name, comp in ds.components.items():
+            if comp.role == Role.VIRAL_ATTRIBUTE:
+                comps[name] = comp
         return Dataset(name=ds.name, components=comps, data=None)
 
     def _build_udo_bindings(
@@ -728,6 +732,11 @@ class StructureVisitor(ASTTemplate):
         for name, comp in right_ds.components.items():
             if comp.role == Role.IDENTIFIER and name not in comps:
                 comps[name] = comp
+        # Viral attributes from either operand propagate to the result (issue #944).
+        for operand_ds in (left_ds, right_ds):
+            for name, comp in operand_ds.components.items():
+                if comp.role == Role.VIRAL_ATTRIBUTE:
+                    comps[name] = comp
 
         return Dataset(name=left_ds.name, components=comps, data=None)
 
@@ -812,6 +821,10 @@ class StructureVisitor(ASTTemplate):
         """Replace all measures with a single ``bool_var`` Boolean measure."""
         comps = self._identifiers_dict(ds)
         comps["bool_var"] = self._make_comp("bool_var", Boolean)
+        # Viral attributes propagate to the boolean result (issue #944).
+        for name, comp in ds.components.items():
+            if comp.role == Role.VIRAL_ATTRIBUTE:
+                comps[name] = comp
         return Dataset(name=ds.name, components=comps, data=None)
 
     def _build_rename_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:

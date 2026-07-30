@@ -1149,9 +1149,9 @@ class TestViralAttributeMembership:
     @pytest.mark.parametrize("use_duckdb", BACKENDS)
     def test_membership_promoted_alias_collides_with_viral(self, use_duckdb: bool) -> None:
         """Degenerate case: a viral attribute named like the promoted measure alias
-        (int_var). The viral column wins the name, matching the pandas reference
-        (``Membership.evaluate`` resolves the output name to the same-named source
-        column); the result must have a single int_var column, not a duplicate."""
+        (int_var). The promotion replaces the viral component, so the single int_var
+        column must carry the membership TARGET's data (Id_1), not the shadowed
+        viral attribute's values."""
         structures = {
             "datasets": [
                 {
@@ -1190,4 +1190,121 @@ class TestViralAttributeMembership:
         assert ds_r.components["int_var"].role == Role.MEASURE
         _assert_component_data_parity(result)
         df = ds_r.data.sort_values("Id_1")
-        assert list(df["int_var"]) == [100, 200]
+        assert list(df["int_var"]) == [1, 2]
+
+
+# -- Viral attributes across nested (intermediate) expressions (issue #944) --
+
+
+class TestViralAttributeNestedStructures:
+    """Viral attributes must survive *intermediate* results: a ds-ds binary,
+    an aggregation or a boolean-producing operator nested inside a larger
+    expression. On the DuckDB backend these intermediate structures previously
+    dropped viral attributes, losing the data downstream (issue #944)."""
+
+    @staticmethod
+    def _run_pair(expr: str, use_duckdb: bool, rules: str = VP_IDENTITY) -> dict:
+        return run(
+            script=f"{rules}DS_r <- {expr};",
+            data_structures={"datasets": [_make_ds("DS_1", 1), _make_ds("DS_2", 1)]},
+            datapoints={"DS_1": _make_dp(1), "DS_2": _make_dp(1)},
+            use_duckdb=use_duckdb,
+        )
+
+    @staticmethod
+    def _run_single(expr: str, use_duckdb: bool, rules: str = "") -> dict:
+        return run(
+            script=f"{rules}DS_r <- {expr};",
+            data_structures={"datasets": [_make_ds("DS_1", 1)]},
+            datapoints={"DS_1": _make_dp(1)},
+            use_duckdb=use_duckdb,
+        )
+
+    @pytest.mark.parametrize("use_duckdb", BACKENDS)
+    def test_binop_under_aggregation(self, use_duckdb: bool) -> None:
+        result = self._run_pair("sum((DS_1 + DS_2) group by Id_1)", use_duckdb)
+        _assert_viral_attrs(result, 1)
+        _assert_component_data_parity(result)
+        df = result["DS_r"].data.sort_values("Id_1")
+        assert list(df["Me_1"]) == [20.0, 40.0]
+        assert list(df["VAt_1"]) == ["A", "B"]
+
+    @pytest.mark.parametrize("use_duckdb", BACKENDS)
+    def test_binop_under_unary(self, use_duckdb: bool) -> None:
+        result = self._run_pair("abs(DS_1 + DS_2)", use_duckdb)
+        _assert_viral_attrs(result, 1)
+        _assert_component_data_parity(result)
+        df = result["DS_r"].data.sort_values("Id_1")
+        assert list(df["Me_1"]) == [20.0, 40.0]
+        assert list(df["VAt_1"]) == ["A", "B"]
+
+    @pytest.mark.parametrize("use_duckdb", BACKENDS)
+    def test_binop_under_keep(self, use_duckdb: bool) -> None:
+        result = self._run_pair("(DS_1 + DS_2)[keep Me_1]", use_duckdb)
+        _assert_viral_attrs(result, 1)
+        _assert_component_data_parity(result)
+        df = result["DS_r"].data.sort_values("Id_1")
+        assert list(df["VAt_1"]) == ["A", "B"]
+
+    @pytest.mark.parametrize("use_duckdb", BACKENDS)
+    def test_aggregation_under_binop_combines(self, use_duckdb: bool) -> None:
+        """The aggregation's intermediate structure must expose the viral attribute
+        so the outer binary pair-combines it with DS_2's (previously the DuckDB
+        backend silently copied DS_2's value instead of running the rule)."""
+        result = run(
+            script=f"{VP_RULES}DS_r <- sum(DS_1 group by Id_1) + DS_2;",
+            data_structures={"datasets": [_make_ds("DS_1", 1), _make_ds("DS_2", 1)]},
+            datapoints={
+                "DS_1": _make_dp(1),
+                "DS_2": pd.DataFrame({"Id_1": [1, 2], "Me_1": [10.0, 20.0], "VAt_1": ["C", "A"]}),
+            },
+            use_duckdb=use_duckdb,
+        )
+        _assert_viral_attrs(result, 1)
+        _assert_component_data_parity(result)
+        df = result["DS_r"].data.sort_values("Id_1")
+        assert list(df["Me_1"]) == [20.0, 40.0]
+        # max("A","C") and max("B","A") per row.
+        assert list(df["VAt_1"]) == ["C", "B"]
+
+    @pytest.mark.parametrize("use_duckdb", BACKENDS)
+    def test_aggregation_under_unary(self, use_duckdb: bool) -> None:
+        result = self._run_single("abs(sum(DS_1 group by Id_1))", use_duckdb, rules=VP_IDENTITY)
+        _assert_viral_attrs(result, 1)
+        _assert_component_data_parity(result)
+        df = result["DS_r"].data.sort_values("Id_1")
+        assert list(df["Me_1"]) == [10.0, 20.0]
+        assert list(df["VAt_1"]) == ["A", "B"]
+
+    @pytest.mark.parametrize("use_duckdb", BACKENDS)
+    def test_aggregation_under_calc(self, use_duckdb: bool) -> None:
+        result = self._run_single(
+            "sum(DS_1 group by Id_1)[calc Me_2 := Me_1]", use_duckdb, rules=VP_IDENTITY
+        )
+        _assert_viral_attrs(result, 1)
+        _assert_component_data_parity(result)
+        df = result["DS_r"].data.sort_values("Id_1")
+        assert list(df["Me_2"]) == [10.0, 20.0]
+        assert list(df["VAt_1"]) == ["A", "B"]
+
+    @pytest.mark.parametrize("use_duckdb", BACKENDS)
+    def test_isnull_under_keep(self, use_duckdb: bool) -> None:
+        """Isnull is row-preserving: no rule is required and the viral attribute
+        is copied through the intermediate boolean structure."""
+        result = self._run_single("isnull(DS_1)[keep bool_var]", use_duckdb)
+        _assert_viral_attrs(result, 1)
+        _assert_component_data_parity(result)
+        df = result["DS_r"].data.sort_values("Id_1")
+        assert list(df["bool_var"]) == [False, False]
+        assert list(df["VAt_1"]) == ["A", "B"]
+
+    @pytest.mark.parametrize("use_duckdb", BACKENDS)
+    def test_in_under_keep(self, use_duckdb: bool) -> None:
+        """In is row-preserving: no rule is required and the viral attribute is
+        copied through the intermediate boolean structure."""
+        result = self._run_single("(DS_1 in {10, 30})[keep bool_var]", use_duckdb)
+        _assert_viral_attrs(result, 1)
+        _assert_component_data_parity(result)
+        df = result["DS_r"].data.sort_values("Id_1")
+        assert list(df["bool_var"]) == [True, False]
+        assert list(df["VAt_1"]) == ["A", "B"]
