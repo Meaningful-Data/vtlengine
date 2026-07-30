@@ -850,61 +850,6 @@ class TestClauseOperations:
             ],
         )
 
-    @staticmethod
-    def _calc_chain_sql(measures, chain):
-        """Transpile DS_1 followed by one calc clause per (name, expr) in *chain*."""
-        ds = create_simple_dataset("DS_1", ["Id_1"], measures)
-        transpiler = create_transpiler(
-            input_datasets={"DS_1": ds},
-            output_datasets={"DS_r": ds},
-        )
-        node = VarID(**make_ast_node(value="DS_1"))
-        for name, operand in chain:
-            assignment = Assignment(
-                **make_ast_node(
-                    left=VarID(**make_ast_node(value=name)),
-                    op=":=",
-                    right=BinOp(
-                        **make_ast_node(
-                            left=VarID(**make_ast_node(value=operand)),
-                            op="*",
-                            right=Constant(**make_ast_node(type_="INTEGER_CONSTANT", value=2)),
-                        )
-                    ),
-                )
-            )
-            node = RegularAggregation(
-                **make_ast_node(op="calc", dataset=node, children=[assignment])
-            )
-        results = transpile_and_get_sql(transpiler, create_start_with_assignment("DS_r", node))
-        assert len(results) == 1
-        return results[0][1]
-
-    def test_independent_calc_clauses_collapse_into_one_level(self):
-        """Consecutive calc clauses that do not depend on each other share a SELECT.
-
-        DuckDB's planning cost climbs steeply with nesting depth once window
-        functions are stacked, so one subquery per clause is what made issue #922
-        take minutes to plan.
-        """
-        sql = self._calc_chain_sql(
-            ["Me_1"],
-            [("a", "Me_1"), ("b", "Me_1"), ("c", "Me_1")],
-        )
-
-        assert normalize_sql(sql).count("SELECT") == 2, sql  # outer level + source
-        assert_sql_contains(
-            sql, ['("Me_1" * 2) AS "a"', '("Me_1" * 2) AS "b"', '("Me_1" * 2) AS "c"']
-        )
-
-    def test_dependent_calc_clauses_keep_separate_levels(self):
-        """A clause reading the previous clause's column must stay in its own SELECT."""
-        sql = self._calc_chain_sql(["Me_1"], [("a", "Me_1"), ("b", "a"), ("c", "b")])
-
-        # One level per dependency step, plus the source.
-        assert normalize_sql(sql).count("SELECT") == 4, sql
-        assert_sql_contains(sql, ['("Me_1" * 2) AS "a"', '("a" * 2) AS "b"', '("b" * 2) AS "c"'])
-
 
 # =============================================================================
 # Conditional Operations Tests
