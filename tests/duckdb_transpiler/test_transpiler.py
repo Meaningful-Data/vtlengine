@@ -62,6 +62,20 @@ def assert_sql_contains(actual: str, expected_parts: list):
         assert part in normalized, f"Expected '{part}' not found in SQL:\n{actual}"
 
 
+# Equality-based comparisons on Number go through the tolerance macros
+# (COMPARISON_ABSOLUTE_THRESHOLD); strict > and < stay exact.
+_NUMBER_CMP_MACROS = {"=": "vtl_num_eq", "<>": "vtl_num_eq", ">=": "vtl_num_ge", "<=": "vtl_num_le"}
+
+
+def number_cmp_sql(left: str, op: str, right: str) -> str:
+    """Expected SQL for comparing two Number operands with ``op``."""
+    macro = _NUMBER_CMP_MACROS.get(op)
+    if macro is None:
+        return f"({left} {op} {right})"
+    expr = f"{macro}({left}, {right}, 5e-15)"
+    return f"(NOT {expr})" if op == "<>" else f"({expr})"
+
+
 def create_simple_dataset(name: str, id_cols: list, measure_cols: list) -> Dataset:
     """Helper to create a simple Dataset for testing."""
     components = {}
@@ -194,11 +208,13 @@ class TestBetweenOperator:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        # VTL-compliant BETWEEN with NULL propagation
+        # VTL-compliant BETWEEN with NULL propagation, over the Number tolerance macros
+        ge_sql = number_cmp_sql('"Me_1"', ">=", str(low_value))
+        le_sql = number_cmp_sql('"Me_1"', "<=", str(high_value))
         expected_sql = (
             f'SELECT * FROM "DS_1" WHERE CASE WHEN "Me_1" IS NULL'
             f" OR {low_value} IS NULL OR {high_value} IS NULL"
-            f' THEN NULL ELSE ("Me_1" BETWEEN {low_value} AND {high_value}) END'
+            f" THEN NULL ELSE ({ge_sql} AND {le_sql}) END"
         )
         assert_sql_equal(sql, expected_sql)
 
@@ -1491,7 +1507,8 @@ class TestStructureComputation:
         assert name == "DS_r"
 
         # Should output bool_var for mono-measure comparison
-        expected_sql = f'''SELECT a."Id_1", (a."Me_1" {sql_op} b."Me_1") AS "bool_var"
+        cmp_sql = number_cmp_sql('a."Me_1"', sql_op, 'b."Me_1"')
+        expected_sql = f'''SELECT a."Id_1", {cmp_sql} AS "bool_var"
                           FROM "DS_1" AS a INNER JOIN "DS_2" AS b ON a."Id_1" = b."Id_1"'''
         assert_sql_equal(sql, expected_sql)
 
@@ -1532,8 +1549,9 @@ class TestStructureComputation:
         assert name == "DS_r"
 
         # Should keep original measure names for multi-measure comparison
-        expected_sql = f'''SELECT a."Id_1", (a."Me_1" {sql_op} b."Me_1") AS "Me_1",
-                          (a."Me_2" {sql_op} b."Me_2") AS "Me_2"
+        cmp_1 = number_cmp_sql('a."Me_1"', sql_op, 'b."Me_1"')
+        cmp_2 = number_cmp_sql('a."Me_2"', sql_op, 'b."Me_2"')
+        expected_sql = f'''SELECT a."Id_1", {cmp_1} AS "Me_1", {cmp_2} AS "Me_2"
                           FROM "DS_1" AS a INNER JOIN "DS_2" AS b ON a."Id_1" = b."Id_1"'''
         assert_sql_equal(sql, expected_sql)
 
@@ -1571,7 +1589,8 @@ class TestStructureComputation:
         assert name == "DS_r"
 
         # Should output bool_var for mono-measure comparison
-        expected_sql = f'SELECT "Id_1", ("Me_1" {sql_op} 10) AS "bool_var" FROM "DS_1"'
+        cmp_sql = number_cmp_sql('"Me_1"', sql_op, "10")
+        expected_sql = f'SELECT "Id_1", {cmp_sql} AS "bool_var" FROM "DS_1"'
         assert_sql_equal(sql, expected_sql)
 
     def test_dataset_scalar_comparison_multi_measure(self):
