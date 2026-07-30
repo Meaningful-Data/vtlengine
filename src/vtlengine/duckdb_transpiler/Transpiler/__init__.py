@@ -51,6 +51,7 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 from vtlengine.Operators.Join import merged_viral_attribute_names
+from vtlengine.Utils._recursion import recursion_headroom
 from vtlengine.ViralPropagation import get_current_registry
 from vtlengine.ViralPropagation.sql import (
     vp_group_sql,
@@ -360,7 +361,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     def transpile(self, node: AST.Start) -> List[Tuple[str, str, bool]]:
         """Return (name, sql, is_persistent) tuples for the script."""
-        queries = self.visit(node)
+        with recursion_headroom():
+            queries = self.visit(node)
         # Constant-fold ``vtl_period_parse('canonical')`` calls now that all
         # nested macro expansion is in place.
         return [(name, _inline_period_parse_literals(sql), p) for name, sql, p in queries]
