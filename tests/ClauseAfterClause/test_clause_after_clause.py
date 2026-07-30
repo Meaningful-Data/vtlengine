@@ -997,3 +997,26 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_51(self):
+        """
+        DROP/RENAME/CALC: clause after operator
+        Dataset --> Dataset
+        Status: OK
+        Expression: DS_r1 := round(DS_1, 2) [drop Me_2];
+                    DS_r2 := ((DS_2 + DS_2) / 2) [rename Me_1 to Me_9];
+                    DS_r3 := (DS_2 = DS_2) [calc Me_3 := bool_var];
+                            DS_1 Dataset, DS_2 Dataset
+
+        Description: clause over the result of an operator in one statement. The
+        clause refers to the operand's own component names, so the operator below
+        must not be renamed to match the assignment target.
+
+        Git Branch: cr-920.
+        Goal: Check the result of drop, rename and calc after an operator.
+        """
+        code = "1-1-1-51"
+        number_inputs = 2
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
