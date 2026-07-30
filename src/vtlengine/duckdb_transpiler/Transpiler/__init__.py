@@ -952,13 +952,21 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             alias_name = COMP_NAME_MAPPING.get(target_comp.data_type, comp_name)
 
         cols: List[str] = []
+        emitted: Set[str] = set()
         for name, comp in ds.components.items():
             if comp.role == Role.IDENTIFIER:
                 cols.append(quote_name(name))
-        if alias_name != comp_name:
-            cols.append(f"{quote_name(comp_name)} AS {quote_name(alias_name)}")
-        else:
-            cols.append(quote_name(comp_name))
+                emitted.add(name)
+            elif comp.role == Role.VIRAL_ATTRIBUTE:
+                # Membership is row-preserving: viral attributes are copied
+                # through unchanged, no propagation rule runs (issues #906/#944).
+                cols.append(quote_name(name))
+                emitted.add(name)
+        if alias_name not in emitted:
+            if alias_name != comp_name:
+                cols.append(f"{quote_name(comp_name)} AS {quote_name(alias_name)}")
+            else:
+                cols.append(quote_name(comp_name))
 
         return SQLBuilder().select(*cols).from_table(table_src).build()
 

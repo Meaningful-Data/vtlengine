@@ -1006,3 +1006,188 @@ class TestViralAggregateRuleTypeValidation:
         with pytest.raises(SemanticError) as exc:
             semantic_analysis(script=script, data_structures=ds, value_domains=vd)
         assert "1-3-3-5" in str(exc.value)
+
+
+# -- Membership operator (issue #944) --
+
+
+class TestViralAttributeMembership:
+    """Membership (#) keeps identifiers plus ALL viral attributes: a measure target
+    keeps its name and role; an identifier or plain-attribute target is promoted to a
+    measure named after its type; a viral target stays viral under its original name
+    and adds no measure. Membership is row-preserving: viral values are copied per row
+    and no propagation rule is required (issues #906/#944)."""
+
+    @staticmethod
+    def _ds(num_viral: int) -> dict:
+        comps = [
+            {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+            {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+            {"name": "At_1", "type": "String", "role": "Attribute", "nullable": True},
+        ] + VA_COMPONENTS[:num_viral]
+        return {"name": "DS_1", "DataStructure": comps}
+
+    @staticmethod
+    def _dp(num_viral: int) -> pd.DataFrame:
+        data: dict = {"Id_1": [1, 2], "Me_1": [10.0, 20.0], "At_1": ["p", "q"]}
+        for i in range(num_viral):
+            data[VA_NAMES[i]] = VA_VALUES[i]
+        return pd.DataFrame(data)
+
+    def _run(self, expr: str, num_viral: int, use_duckdb: bool, rules: str = "") -> dict:
+        return run(
+            script=f"{rules}DS_r <- {expr};",
+            data_structures={"datasets": [self._ds(num_viral)]},
+            datapoints={"DS_1": self._dp(num_viral)},
+            use_duckdb=use_duckdb,
+        )
+
+    @pytest.mark.parametrize("num_viral", [1, 3])
+    @pytest.mark.parametrize("use_duckdb", BACKENDS)
+    def test_membership_measure_keeps_virals(self, use_duckdb: bool, num_viral: int) -> None:
+        result = self._run("DS_1#Me_1", num_viral, use_duckdb)
+        ds_r = result["DS_r"]
+        assert set(ds_r.components) == {"Id_1", "Me_1", *VA_NAMES[:num_viral]}
+        assert ds_r.components["Me_1"].role == Role.MEASURE
+        _assert_viral_attrs(result, num_viral)
+        _assert_component_data_parity(result)
+        df = ds_r.data.sort_values("Id_1")
+        assert list(df["Me_1"]) == [10.0, 20.0]
+        for i in range(num_viral):
+            assert list(df[VA_NAMES[i]]) == VA_VALUES[i]
+
+    @pytest.mark.parametrize("use_duckdb", BACKENDS)
+    def test_membership_identifier_promotes_and_keeps_virals(self, use_duckdb: bool) -> None:
+        result = self._run("DS_1#Id_1", 1, use_duckdb)
+        ds_r = result["DS_r"]
+        assert set(ds_r.components) == {"Id_1", "int_var", "VAt_1"}
+        assert ds_r.components["int_var"].role == Role.MEASURE
+        _assert_viral_attrs(result, 1)
+        _assert_component_data_parity(result)
+        df = ds_r.data.sort_values("Id_1")
+        assert list(df["int_var"]) == [1, 2]
+        assert list(df["VAt_1"]) == ["A", "B"]
+
+    @pytest.mark.parametrize("use_duckdb", BACKENDS)
+    def test_membership_attribute_promotes_and_keeps_virals(self, use_duckdb: bool) -> None:
+        result = self._run("DS_1#At_1", 1, use_duckdb)
+        ds_r = result["DS_r"]
+        assert set(ds_r.components) == {"Id_1", "str_var", "VAt_1"}
+        assert ds_r.components["str_var"].role == Role.MEASURE
+        _assert_viral_attrs(result, 1)
+        _assert_component_data_parity(result)
+        df = ds_r.data.sort_values("Id_1")
+        assert list(df["str_var"]) == ["p", "q"]
+        assert list(df["VAt_1"]) == ["A", "B"]
+
+    @pytest.mark.parametrize("use_duckdb", BACKENDS)
+    def test_membership_viral_target_stays_viral(self, use_duckdb: bool) -> None:
+        result = self._run("DS_1#VAt_1", 2, use_duckdb)
+        ds_r = result["DS_r"]
+        assert set(ds_r.components) == {"Id_1", "VAt_1", "VAt_2"}
+        assert ds_r.get_measures_names() == []
+        _assert_viral_attrs(result, 2)
+        _assert_component_data_parity(result)
+        df = ds_r.data.sort_values("Id_1")
+        assert list(df["VAt_1"]) == ["A", "B"]
+        assert list(df["VAt_2"]) == ["X", "Y"]
+
+    @pytest.mark.parametrize("use_duckdb", BACKENDS)
+    def test_membership_aggregate_rule_copies_per_row(self, use_duckdb: bool) -> None:
+        """Membership is row-preserving: an aggregate rule must NOT collapse the
+        viral column dataset-wide; each row's value is copied (issue #906)."""
+        result = self._run("DS_1#Me_1", 1, use_duckdb, rules=VP_RULES)
+        df = result["DS_r"].data.sort_values("Id_1")
+        assert list(df["VAt_1"]) == ["A", "B"]
+
+    @pytest.mark.parametrize("use_duckdb", BACKENDS)
+    def test_membership_unary_copies_virals(self, use_duckdb: bool) -> None:
+        result = self._run("abs(DS_1#Me_1)", 1, use_duckdb)
+        _assert_viral_attrs(result, 1)
+        _assert_component_data_parity(result)
+        df = result["DS_r"].data.sort_values("Id_1")
+        assert list(df["Me_1"]) == [10.0, 20.0]
+        assert list(df["VAt_1"]) == ["A", "B"]
+
+    @pytest.mark.parametrize("use_duckdb", BACKENDS)
+    def test_membership_viral_target_calc(self, use_duckdb: bool) -> None:
+        result = self._run("DS_1#VAt_1 [calc Me_x := 1]", 1, use_duckdb)
+        ds_r = result["DS_r"]
+        assert set(ds_r.components) == {"Id_1", "VAt_1", "Me_x"}
+        assert ds_r.components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
+        assert ds_r.components["Me_x"].role == Role.MEASURE
+        _assert_component_data_parity(result)
+        df = ds_r.data.sort_values("Id_1")
+        assert list(df["VAt_1"]) == ["A", "B"]
+        assert list(df["Me_x"]) == [1, 1]
+
+    @pytest.mark.parametrize("use_duckdb", BACKENDS)
+    def test_membership_binop_combines_virals(self, use_duckdb: bool) -> None:
+        """Nested membership: virals must survive into the binary combination point."""
+        result = run(
+            script=f"{VP_IDENTITY}DS_r <- DS_1#Me_1 + DS_2#Me_1;",
+            data_structures={"datasets": [_make_ds("DS_1", 1), _make_ds("DS_2", 1)]},
+            datapoints={"DS_1": _make_dp(1), "DS_2": _make_dp(1)},
+            use_duckdb=use_duckdb,
+        )
+        _assert_viral_attrs(result, 1)
+        _assert_component_data_parity(result)
+        df = result["DS_r"].data.sort_values("Id_1")
+        assert list(df["Me_1"]) == [20.0, 40.0]
+        assert list(df["VAt_1"]) == ["A", "B"]
+
+    @pytest.mark.parametrize("use_duckdb", BACKENDS)
+    def test_membership_aggregation_propagates_virals(self, use_duckdb: bool) -> None:
+        """Nested membership: virals must survive into the group-by combination point."""
+        result = self._run("sum(DS_1#Me_1 group by Id_1)", 1, use_duckdb, rules=VP_RULES)
+        _assert_viral_attrs(result, 1)
+        _assert_component_data_parity(result)
+        df = result["DS_r"].data.sort_values("Id_1")
+        assert list(df["Me_1"]) == [10.0, 20.0]
+        assert list(df["VAt_1"]) == ["A", "B"]
+
+    @pytest.mark.parametrize("use_duckdb", BACKENDS)
+    def test_membership_promoted_alias_collides_with_viral(self, use_duckdb: bool) -> None:
+        """Degenerate case: a viral attribute named like the promoted measure alias
+        (int_var). The viral column wins the name, matching the pandas reference
+        (``Membership.evaluate`` resolves the output name to the same-named source
+        column); the result must have a single int_var column, not a duplicate."""
+        structures = {
+            "datasets": [
+                {
+                    "name": "DS_1",
+                    "DataStructure": [
+                        {
+                            "name": "Id_1",
+                            "type": "Integer",
+                            "role": "Identifier",
+                            "nullable": False,
+                        },
+                        {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                        {
+                            "name": "int_var",
+                            "type": "Integer",
+                            "role": "Viral Attribute",
+                            "nullable": True,
+                        },
+                    ],
+                }
+            ]
+        }
+        result = run(
+            script=(
+                "define viral propagation VP (variable int_var) is aggregate max "
+                "end viral propagation;\nDS_r <- DS_1#Id_1;"
+            ),
+            data_structures=structures,
+            datapoints={
+                "DS_1": pd.DataFrame({"Id_1": [1, 2], "Me_1": [1.0, 2.0], "int_var": [100, 200]})
+            },
+            use_duckdb=use_duckdb,
+        )
+        ds_r = result["DS_r"]
+        assert set(ds_r.components) == {"Id_1", "int_var"}
+        assert ds_r.components["int_var"].role == Role.MEASURE
+        _assert_component_data_parity(result)
+        df = ds_r.data.sort_values("Id_1")
+        assert list(df["int_var"]) == [100, 200]
