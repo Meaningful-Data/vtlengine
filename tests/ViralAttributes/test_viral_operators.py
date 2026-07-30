@@ -1146,12 +1146,11 @@ class TestViralAttributeMembership:
         assert list(df["Me_1"]) == [10.0, 20.0]
         assert list(df["VAt_1"]) == ["A", "B"]
 
-    @pytest.mark.parametrize("use_duckdb", BACKENDS)
-    def test_membership_promoted_alias_collides_with_viral(self, use_duckdb: bool) -> None:
-        """Degenerate case: a viral attribute named like the promoted measure alias
-        (int_var). The promotion replaces the viral component, so the single int_var
-        column must carry the membership TARGET's data (Id_1), not the shadowed
-        viral attribute's values."""
+    def test_membership_promoted_alias_collision_prevented(self) -> None:
+        """A viral attribute cannot be named like a promoted measure alias
+        (int_var, str_var, ...): reserved names are rejected when the structure
+        is loaded, so membership promotion can never collide with a viral
+        attribute column (issue #944)."""
         structures = {
             "datasets": [
                 {
@@ -1174,23 +1173,9 @@ class TestViralAttributeMembership:
                 }
             ]
         }
-        result = run(
-            script=(
-                "define viral propagation VP (variable int_var) is aggregate max "
-                "end viral propagation;\nDS_r <- DS_1#Id_1;"
-            ),
-            data_structures=structures,
-            datapoints={
-                "DS_1": pd.DataFrame({"Id_1": [1, 2], "Me_1": [1.0, 2.0], "int_var": [100, 200]})
-            },
-            use_duckdb=use_duckdb,
-        )
-        ds_r = result["DS_r"]
-        assert set(ds_r.components) == {"Id_1", "int_var"}
-        assert ds_r.components["int_var"].role == Role.MEASURE
-        _assert_component_data_parity(result)
-        df = ds_r.data.sort_values("Id_1")
-        assert list(df["int_var"]) == [1, 2]
+        with pytest.raises(SemanticError) as exc:
+            semantic_analysis(script="DS_r <- DS_1#Id_1;", data_structures=structures)
+        assert "1-3-3-7" in str(exc.value)
 
 
 # -- Viral attributes across nested (intermediate) expressions (issue #944) --
@@ -1308,3 +1293,106 @@ class TestViralAttributeNestedStructures:
         df = result["DS_r"].data.sort_values("Id_1")
         assert list(df["bool_var"]) == [True, False]
         assert list(df["VAt_1"]) == ["A", "B"]
+
+
+# -- Reserved component names for viral attributes (issue #944) --
+
+RESERVED_NAMES = [
+    "str_var",
+    "num_var",
+    "int_var",
+    "time_var",
+    "time_period_var",
+    "date_var",
+    "duration_var",
+    "bool_var",
+    "null_var",
+]
+
+
+class TestViralReservedNames:
+    """Viral attributes must not use the reserved component names the engine
+    employs for automatically named measures (COMP_NAME_MAPPING values):
+    they are rejected at structure load, in calc and in rename (error 1-3-3-7).
+    Other roles may still use them -- the engine itself produces bool_var and
+    int_var measures, and those outputs must round-trip as inputs."""
+
+    @staticmethod
+    def _ds_with_viral(viral_name: str) -> dict:
+        return {
+            "datasets": [
+                {
+                    "name": "DS_1",
+                    "DataStructure": [
+                        {
+                            "name": "Id_1",
+                            "type": "Integer",
+                            "role": "Identifier",
+                            "nullable": False,
+                        },
+                        {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                        {
+                            "name": viral_name,
+                            "type": "String",
+                            "role": "Viral Attribute",
+                            "nullable": True,
+                        },
+                    ],
+                }
+            ]
+        }
+
+    @pytest.mark.parametrize("viral_name", RESERVED_NAMES)
+    def test_structure_load_rejects_reserved_viral_name(self, viral_name: str) -> None:
+        with pytest.raises(SemanticError) as exc:
+            semantic_analysis(
+                script="DS_r <- DS_1;", data_structures=self._ds_with_viral(viral_name)
+            )
+        assert "1-3-3-7" in str(exc.value)
+
+    def test_calc_viral_attribute_rejects_reserved_name(self) -> None:
+        with pytest.raises(SemanticError) as exc:
+            semantic_analysis(
+                script="DS_r <- DS_1[calc viral attribute int_var := Me_1];",
+                data_structures={"datasets": [_make_ds("DS_1", 0)]},
+            )
+        assert "1-3-3-7" in str(exc.value)
+
+    def test_rename_viral_attribute_rejects_reserved_name(self) -> None:
+        with pytest.raises(SemanticError) as exc:
+            semantic_analysis(
+                script="DS_r <- DS_1[rename VAt_1 to str_var];",
+                data_structures={"datasets": [_make_ds("DS_1", 1)]},
+            )
+        assert "1-3-3-7" in str(exc.value)
+
+    def test_non_viral_roles_may_use_reserved_names(self) -> None:
+        structures = {
+            "datasets": [
+                {
+                    "name": "DS_1",
+                    "DataStructure": [
+                        {
+                            "name": "Id_1",
+                            "type": "Integer",
+                            "role": "Identifier",
+                            "nullable": False,
+                        },
+                        {
+                            "name": "bool_var",
+                            "type": "Boolean",
+                            "role": "Measure",
+                            "nullable": True,
+                        },
+                        {
+                            "name": "int_var",
+                            "type": "Integer",
+                            "role": "Attribute",
+                            "nullable": True,
+                        },
+                    ],
+                }
+            ]
+        }
+        result = semantic_analysis(script="DS_r <- DS_1;", data_structures=structures)
+        assert set(result["DS_r"].components) == {"Id_1", "bool_var", "int_var"}
