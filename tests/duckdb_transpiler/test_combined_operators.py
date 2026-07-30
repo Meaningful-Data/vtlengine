@@ -16,6 +16,7 @@ import pandas as pd
 import pytest
 
 from vtlengine.duckdb_transpiler import transpile
+from vtlengine.duckdb_transpiler.sql import initialize_time_types
 
 # =============================================================================
 # Test Utilities
@@ -62,6 +63,7 @@ def execute_vtl_with_duckdb(
 ) -> Dict:
     """Execute VTL script using DuckDB transpiler and return results."""
     conn = duckdb.connect(":memory:")
+    initialize_time_types(conn)
 
     # Register input datasets
     for name, df in datapoints.items():

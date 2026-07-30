@@ -419,6 +419,46 @@ CREATE OR REPLACE MACRO vtl_div(a, b) AS (
 
 
 -- =========================================================================
+-- VTL Number Comparison (COMPARISON_ABSOLUTE_THRESHOLD)
+-- =========================================================================
+-- Equality-based comparisons on Number treat operands as equal when they
+-- differ by less than the relative tolerance derived from the configured
+-- significant digits, so arithmetic residues are not reported as
+-- differences. `tol` is inlined by the transpiler as 5 * 10^-digits.
+--
+-- Each macro leads with the plain SQL comparison and only falls through to the
+-- tolerance term for rows it rejects. Values that already match exactly — the
+-- common case in validation data — therefore cost no more than before.
+--
+-- The transpiler only emits these for operands it types as Number, but some
+-- derived structures carry a placeholder type, so `vtl_is_num` re-checks the
+-- actual runtime type. Non-numeric operands keep the plain comparison, which
+-- matters for numeric-looking strings ('123' and '0123' must stay different)
+-- and lets the tolerance term bind at all.
+--
+-- NULL propagates: both terms are NULL for a NULL operand, and NULL OR NULL
+-- is NULL, matching plain SQL comparison semantics.
+
+CREATE OR REPLACE MACRO vtl_is_num(x) AS (
+    typeof(x) LIKE 'DECIMAL%' OR typeof(x) IN
+    ('TINYINT', 'SMALLINT', 'INTEGER', 'BIGINT', 'HUGEINT', 'UTINYINT',
+     'USMALLINT', 'UINTEGER', 'UBIGINT', 'UHUGEINT', 'FLOAT', 'DOUBLE')
+);
+
+CREATE OR REPLACE MACRO vtl_num_close(a, b, tol) AS (
+    vtl_is_num(a) AND vtl_is_num(b)
+    AND ABS(TRY_CAST(a AS DOUBLE) - TRY_CAST(b AS DOUBLE))
+        <= tol * GREATEST(ABS(TRY_CAST(a AS DOUBLE)), ABS(TRY_CAST(b AS DOUBLE)))
+);
+
+CREATE OR REPLACE MACRO vtl_num_eq(a, b, tol) AS (a = b OR vtl_num_close(a, b, tol));
+
+CREATE OR REPLACE MACRO vtl_num_ge(a, b, tol) AS (a >= b OR vtl_num_close(a, b, tol));
+
+CREATE OR REPLACE MACRO vtl_num_le(a, b, tol) AS (a <= b OR vtl_num_close(a, b, tol));
+
+
+-- =========================================================================
 -- VTL String Distance Functions
 -- =========================================================================
 
