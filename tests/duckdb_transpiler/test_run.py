@@ -3268,3 +3268,68 @@ class TestHierarchy:
         )
         expected = expected.sort_values(["Id_1", "Id_2"]).reset_index(drop=True)
         pd.testing.assert_frame_equal(result, expected, check_dtype=False, check_like=True)
+
+
+class TestFillTimeSeries:
+    """Tests for FILL_TIME_SERIES operator - adding the missing Data Points."""
+
+    @pytest.fixture
+    def month_end_structures(self):
+        """A Date reference identifier plus one grouping identifier."""
+        return create_data_structure(
+            [
+                create_dataset_structure(
+                    "DS_1",
+                    [("Id_1", "String"), ("Id_2", "Date")],
+                    [("Me_1", "Number", True)],
+                )
+            ]
+        )
+
+    @pytest.fixture
+    def month_end_input_df(self):
+        """A month-end series whose last Data Point misses the generated grid.
+
+        Stepping one month from 2020-01-31 clamps to 2020-02-29 and then drifts to
+        the 29th, so 2020-04-30 is not on the grid.
+        """
+        return pd.DataFrame(
+            {
+                "Id_1": ["A", "A", "A"],
+                "Id_2": ["2020-01-31", "2020-02-29", "2020-04-30"],
+                "Me_1": [1.0, 2.0, 3.0],
+            }
+        )
+
+    @pytest.mark.parametrize("fill_mode", ["single", "all"])
+    def test_keeps_data_point_off_the_grid(
+        self, fill_mode, month_end_input_df, month_end_structures
+    ):
+        """An operand Data Point survives even when its date misses the grid.
+
+        fill_time_series only adds Data Points, so 2020-04-30 and its measure value
+        have to reach the result alongside the generated dates (issue #949).
+        """
+        vtl_script = f"""
+            DS_r <- fill_time_series(DS_1, {fill_mode});
+        """
+        results = execute_vtl_with_duckdb(
+            vtl_script, month_end_structures, {"DS_1": month_end_input_df}
+        )
+        result = results["DS_r"].sort_values(["Id_1", "Id_2"]).reset_index(drop=True)
+        result["Id_2"] = result["Id_2"].astype(str)
+
+        expected = pd.DataFrame(
+            {
+                "Id_1": ["A", "A", "A", "A", "A"],
+                "Id_2": [
+                    "2020-01-31",
+                    "2020-02-29",
+                    "2020-03-29",
+                    "2020-04-29",
+                    "2020-04-30",
+                ],
+                "Me_1": [1.0, 2.0, None, None, 3.0],
+            }
+        )
+        pd.testing.assert_frame_equal(result, expected, check_dtype=False, check_like=True)
