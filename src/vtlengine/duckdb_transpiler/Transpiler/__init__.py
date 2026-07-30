@@ -1275,6 +1275,12 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         order_by = ", ".join(g_cols)
         return time_col, other_id_cols, measure_cols, join_on, final_select, order_by
 
+    @staticmethod
+    def _grid_with_source_keys(other_id_cols: List[str], time_col: str) -> str:
+        """The expected grid plus the operand's own keys."""
+        key_cols = ", ".join([*other_id_cols, time_col])
+        return f"SELECT {key_cols} FROM full_grid UNION SELECT {key_cols} FROM source"
+
     # Shared SQL fragment for the RECURSIVE step that increments a vtl_time_period.
     _TP_NEXT_PERIOD = (
         "CASE"
@@ -1377,8 +1383,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             else:
                 cte.cte("full_grid", f"SELECT {time_col} FROM period_strings")
 
+        keys = self._grid_with_source_keys(other_id_cols, time_col)
         final = (
-            f"SELECT {final_select} FROM full_grid g "
+            f"SELECT {final_select} FROM ({keys}) g "
             f"LEFT JOIN source s ON {join_on} ORDER BY {order_by}"
         )
         return cte.select(final)
@@ -1433,8 +1440,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             else:
                 cte.cte("full_grid", f"SELECT CAST(d AS TIMESTAMP) AS {time_col} FROM {gen}")
 
+        keys = self._grid_with_source_keys(other_id_cols, time_col)
         final = (
-            f"SELECT {final_select} FROM full_grid g "
+            f"SELECT {final_select} FROM ({keys}) g "
             f"LEFT JOIN source s ON {join_on} ORDER BY {order_by}"
         )
         return cte.select(final)
