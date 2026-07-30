@@ -2016,6 +2016,42 @@ class SetOperatorsTest(AdditionalHelper):
             references_names=references_names,
         )
 
+    def test_11(self):
+        """
+        Basic behaviour.
+        Description: Second operand is a subset of the first.
+        """
+        text = """DS_r := symdiff(DS_1 ,DS_2);"""
+
+        code = "8-11"
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
+
+    def test_12(self):
+        """
+        Basic behaviour.
+        Description: Operands share no Data Point.
+        """
+        text = """DS_r := symdiff(DS_1 ,DS_2);"""
+
+        code = "8-12"
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
+
 
 class AggregateOperatorsTest(AdditionalHelper):
     """
