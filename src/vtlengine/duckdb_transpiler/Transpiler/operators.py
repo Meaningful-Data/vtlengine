@@ -33,6 +33,25 @@ _STRING_UNARY_OPS: Set[str] = {
 
 _STRING_PARAM_OPS: Set[str] = {tokens.SUBSTR, tokens.REPLACE, tokens.INSTR}
 
+# Operators whose scalar/component result is always Boolean (used to apply the
+# Python-style boolean→string coercion, issue #923).
+_BOOLEAN_RESULT_BINOPS: Set[str] = {
+    tokens.EQ,
+    tokens.NEQ,
+    tokens.GT,
+    tokens.GTE,
+    tokens.LT,
+    tokens.LTE,
+    tokens.AND,
+    tokens.OR,
+    tokens.XOR,
+    tokens.IN,
+    tokens.NOT_IN,
+    tokens.CHARSET_MATCH,
+}
+
+_BOOLEAN_RESULT_UNARY_OPS: Set[str] = {tokens.NOT, tokens.ISNULL}
+
 # Type mappings
 VTL_TO_DUCKDB_TYPES: Dict[str, str] = {
     "Integer": "BIGINT",

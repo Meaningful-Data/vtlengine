@@ -318,21 +318,13 @@ class Parametrized(Time):
         pass
 
 
-def _cast_bool_columns(x: Any) -> Any:
-    """Cast bool[pyarrow] columns to int64[pyarrow] for cumsum/diff support."""
-    if isinstance(x, pd.DataFrame):
-        for col in x.columns:
-            if str(x[col].dtype) == "bool[pyarrow]":
-                x[col] = x[col].astype("int64[pyarrow]")
-    elif hasattr(x, "dtype") and str(x.dtype) == "bool[pyarrow]":
-        return x.astype("int64[pyarrow]")
-    return x
-
-
 class Flow_to_stock(Unary):
+    """Only number measures accumulate; the reference manual types the operand as
+    ``measure<number>``, so Boolean and the other types pass through untouched
+    (issue #931)."""
+
     @classmethod
     def py_op(cls, x: Any) -> Any:
-        x = _cast_bool_columns(x)
         if isinstance(x, pd.DataFrame):
             numeric = x.select_dtypes(include="number")
             x[numeric.columns] = numeric.cumsum().fillna(numeric)
@@ -341,9 +333,10 @@ class Flow_to_stock(Unary):
 
 
 class Stock_to_flow(Unary):
+    """Counterpart of :class:`Flow_to_stock`; see its note on measure types."""
+
     @classmethod
     def py_op(cls, x: Any) -> Any:
-        x = _cast_bool_columns(x)
         if isinstance(x, pd.DataFrame):
             numeric = x.select_dtypes(include="number")
             x[numeric.columns] = numeric.diff().fillna(numeric)

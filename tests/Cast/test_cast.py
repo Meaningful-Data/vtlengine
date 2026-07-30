@@ -670,6 +670,10 @@ class TestCastInterpreter:
             ("cast(42.0, integer)", 42, Integer),
             ("cast(42.5, string)", "42.5", String),
             ("cast(42, string)", "42", String),
+            # Boolean → String must be Python-style in both engines (issue #923)
+            ("cast(true, string)", "True", String),
+            ("cast(false, string)", "False", String),
+            ("cast(1 = 1, string)", "True", String),
             ('cast("42", integer)', 42, Integer),
             ('cast("3.14", number)', 3.14, Number),
             # date → time_period
