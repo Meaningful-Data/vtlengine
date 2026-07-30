@@ -3335,6 +3335,93 @@ class CastBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_923_2(self):
+        """
+        Expression: DS_r <- DS_1;
+        Description: dataset CSVs written to output_folder must serialize
+            booleans Python-style (True/False) in both engines; the DuckDB
+            engine wrote SQL-style lowercase (true/false) via COPY TO.
+        Git Issue: GH_923.
+        Goal: Check written CSV text.
+        """
+        code = "GH_923_2"
+        script = self.LoadVTL(code)
+        with TemporaryDirectory() as tmpdir:
+            run(
+                script=script,
+                data_structures=self.filepath_json / f"{code}-1.json",
+                datapoints={"DS_1": self.filepath_csv / f"{code}-1.csv"},
+                output_folder=Path(tmpdir),
+                use_duckdb=_use_duckdb_backend(),
+            )
+            content = (Path(tmpdir) / "DS_r.csv").read_text()
+        lines = content.strip().splitlines()
+        assert lines[0] == "Id_1,Me_1"
+        assert sorted(lines[1:]) == ["1,True", "2,False", "3,"]
+
+    def test_GH_923_2_in_memory(self):
+        """
+        Expression: DS_r <- DS_1;
+        Description: in-memory results must keep boolean values (not 'True'
+            strings) in both engines; only the CSV text serialization is
+            formatted.
+        Git Issue: GH_923.
+        Goal: Check returned DataFrame values.
+        """
+        code = "GH_923_2"
+        script = self.LoadVTL(code)
+        result = run(
+            script=script,
+            data_structures=self.filepath_json / f"{code}-1.json",
+            datapoints={"DS_1": self.filepath_csv / f"{code}-1.csv"},
+            use_duckdb=_use_duckdb_backend(),
+        )
+        me_1 = result["DS_r"].data["Me_1"]
+        assert me_1.tolist()[:2] == [True, False]
+        assert pd.isna(me_1.iloc[2])
+
+    def test_GH_923_3(self):
+        """
+        Expression: sc_r <- true || "_x";
+        Description: scalar boolean || string must give Python-style text in
+            both engines; the DuckDB engine produced 'true_x'.
+        Git Issue: GH_923.
+        Goal: Check scalar result value.
+        """
+        code = "GH_923_3"
+        script = self.LoadVTL(code)
+        result = run(
+            script=script,
+            data_structures=self.filepath_json / f"{code}-1.json",
+            datapoints={},
+            use_duckdb=_use_duckdb_backend(),
+        )
+        assert result["sc_r"].value == "True_x"
+
+    def test_GH_923_4(self):
+        """
+        Expression: DS_r <- DS_1[calc Me_2 := Me_1 || "_x"];
+        Description: component-level boolean || string must give Python-style
+            text; the DuckDB engine let DuckDB coerce the boolean ('true_x').
+            Runs only under the DuckDB backend: the pandas engine raises
+            TypeError on this expression (issue GH_940).
+        Git Issue: GH_923.
+        Goal: Check component result values.
+        """
+        if not _use_duckdb_backend():
+            pytest.skip("pandas engine raises TypeError on boolean component concat (issue GH_940)")
+        code = "GH_923_4"
+        script = self.LoadVTL(code)
+        result = run(
+            script=script,
+            data_structures=self.filepath_json / f"{code}-1.json",
+            datapoints={"DS_1": self.filepath_csv / f"{code}-1.csv"},
+            use_duckdb=True,
+        )
+        me_2 = result["DS_r"].data["Me_2"]
+        assert me_2.tolist()[:2] == ["True_x", "False_x"]
+        assert pd.isna(me_2.iloc[2])
+
     def test_GL_449_2(self):
         """
         Status: OK
@@ -3442,99 +3529,3 @@ class CastBugs(BugHelper):
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
-
-
-# =============================================================================
-# GH_923: boolean output format parity between the pandas and DuckDB engines
-# =============================================================================
-
-GH_923_STRUCTURE = {
-    "datasets": [
-        {
-            "name": "DS_1",
-            "DataStructure": [
-                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
-                {"name": "Me_1", "type": "Boolean", "role": "Measure", "nullable": True},
-            ],
-        }
-    ]
-}
-
-
-def test_GH_923_boolean_csv_output_format():
-    """
-    Description: dataset CSVs written to output_folder must serialize booleans
-        Python-style (True/False) in both engines; the DuckDB engine wrote
-        SQL-style lowercase (true/false) via COPY TO.
-    Git Issue: GH_923.
-    Goal: Check written CSV text.
-    """
-    datapoints = pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [True, False, None]})
-    with TemporaryDirectory() as tmpdir:
-        run(
-            script="DS_r <- DS_1;",
-            data_structures=GH_923_STRUCTURE,
-            datapoints={"DS_1": datapoints},
-            output_folder=Path(tmpdir),
-            use_duckdb=_use_duckdb_backend(),
-        )
-        content = (Path(tmpdir) / "DS_r.csv").read_text()
-    lines = content.strip().splitlines()
-    assert lines[0] == "Id_1,Me_1"
-    assert sorted(lines[1:]) == ["1,True", "2,False", "3,"]
-
-
-def test_GH_923_boolean_in_memory_values_unchanged():
-    """
-    Description: in-memory results must keep boolean values (not 'True' strings)
-        in both engines; only the CSV text serialization is formatted.
-    Git Issue: GH_923.
-    Goal: Check returned DataFrame values.
-    """
-    datapoints = pd.DataFrame({"Id_1": [1, 2], "Me_1": [True, False]})
-    result = run(
-        script="DS_r <- DS_1;",
-        data_structures=GH_923_STRUCTURE,
-        datapoints={"DS_1": datapoints},
-        use_duckdb=_use_duckdb_backend(),
-    )
-    assert result["DS_r"].data["Me_1"].tolist() == [True, False]
-
-
-def test_GH_923_boolean_scalar_concat():
-    """
-    Description: scalar boolean || string must give Python-style text in both
-        engines; the DuckDB engine produced 'true_x'.
-    Git Issue: GH_923.
-    Goal: Check scalar result value.
-    """
-    result = run(
-        script='sc_r := true || "_x";',
-        data_structures={"datasets": []},
-        datapoints={},
-        return_only_persistent=False,
-        use_duckdb=_use_duckdb_backend(),
-    )
-    assert result["sc_r"].value == "True_x"
-
-
-def test_GH_923_boolean_component_concat():
-    """
-    Description: component-level boolean || string must give Python-style text;
-        the DuckDB engine let DuckDB coerce the boolean ('true_x'). Runs only
-        under the DuckDB backend: the pandas engine raises TypeError on this
-        expression (issue GH_940).
-    Git Issue: GH_923.
-    Goal: Check component result values.
-    """
-    if not _use_duckdb_backend():
-        pytest.skip("pandas engine raises TypeError on boolean component concat (issue GH_940)")
-    datapoints = pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [True, False, None]})
-    result = run(
-        script='DS_r := DS_1[calc Me_2 := Me_1 || "_x"];',
-        data_structures=GH_923_STRUCTURE,
-        datapoints={"DS_1": datapoints},
-        return_only_persistent=False,
-        use_duckdb=True,
-    )
-    assert result["DS_r"].data["Me_2"].tolist() == ["True_x", "False_x", None]
