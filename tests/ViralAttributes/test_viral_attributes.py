@@ -16,6 +16,7 @@ import pytest
 
 from tests.Helper import TestHelper
 from vtlengine.DataTypes import Integer, Number, String
+from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role, Role_keys
 
 
@@ -42,6 +43,27 @@ execution_codes = [
     ("7-1", 1),  # unary (abs), per-row passthrough
     ("8-1", 1),  # dataset-scalar (DS_1 + 5), per-row passthrough
     ("10-3", 1),  # legacy 'ViralAttribute' input role
+    # -- membership keeps viral attributes, issue #944 (row-preserving: no rule needed) --
+    ("11-1", 1),  # measure target: Me_1 kept + all three virals copied per row
+    ("11-2", 1),  # identifier target: promoted to int_var, virals kept
+    ("11-3", 1),  # plain-attribute target: promoted to str_var (At_1 gone), virals kept
+    ("11-4", 1),  # viral target: stays viral under its own name, no measure added
+    ("11-5", 1),  # aggregate-max rule defined: still copied per row, NOT collapsed (#906)
+    ("11-6", 1),  # unary over membership: abs(DS_1#Me_1)
+    ("11-7", 1),  # calc over a viral-target membership (regression: BinderException)
+    ("11-8", 2),  # binary over two memberships: virals pair-combined (identity rule)
+    ("11-9", 1),  # aggregation over membership: viral propagated through group-by
+    # -- viral attributes survive nested intermediate results, issue #944 --
+    ("12-1", 2),  # ds-ds binary under aggregation: sum((DS_1 + DS_2) group by Id_1)
+    ("12-2", 2),  # ds-ds binary under unary: abs(DS_1 + DS_2)
+    ("12-3", 2),  # ds-ds binary under keep
+    ("12-4", 2),  # aggregation under binary: pair-combines with DS_2 (max rule)
+    ("12-5", 1),  # aggregation under unary
+    ("12-6", 1),  # aggregation under calc
+    ("12-7", 1),  # boolean result (isnull) under keep, no rule needed
+    ("12-8", 1),  # boolean result (in) under keep, no rule needed
+    # -- reserved component names, issue #944 --
+    ("13-4", 1),  # non-viral roles may use reserved names (bool_var measure, int_var attr)
 ]
 
 
@@ -91,6 +113,28 @@ validation_codes = [
 @pytest.mark.parametrize("code,exception_code", validation_codes)
 def test_validation(code: str, exception_code: str) -> None:
     ViralHelper.NewSemanticExceptionTest(code=code, number_inputs=1, exception_code=exception_code)
+
+
+# -- Reserved component names: a viral attribute may not use the names the engine
+# assigns to automatically generated measures (str_var, int_var, ...), issue #944 --
+reserved_name_script_codes = [
+    ("13-2", "1-3-3-7"),  # rename a viral attribute to str_var
+    ("13-3", "1-3-3-7"),  # calc viral attribute bool_var
+]
+
+
+@pytest.mark.parametrize("code,exception_code", reserved_name_script_codes)
+def test_reserved_viral_name_in_script(code: str, exception_code: str) -> None:
+    ViralHelper.NewSemanticExceptionTest(code=code, number_inputs=1, exception_code=exception_code)
+
+
+def test_reserved_viral_name_in_structure() -> None:
+    """Declaring a viral attribute named int_var is rejected when the input
+    structure is loaded (before any statement runs), so membership promotion
+    can never collide with a viral attribute column (code 13-1, issue #944)."""
+    with pytest.raises(SemanticError) as context:
+        ViralHelper.BaseTest(code="13-1", number_inputs=1, references_names=["DS_r"])
+    assert str(context.value.args[1]) == "1-3-3-7"
 
 
 # -- Join ambiguity: a component shared (and not disambiguated) by both join
