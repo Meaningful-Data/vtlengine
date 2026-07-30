@@ -26,6 +26,7 @@ from vtlengine.duckdb_transpiler.Transpiler.operators import (
     _ORDERING_OPS,
     _STRING_PARAM_OPS,
     _STRING_UNARY_OPS,
+    COMPARISON_OPS,
     FALLBACK_MATCH_FUNCTION,
     NATIVE_MATCH_FUNCTION,
     NUMBER_TOLERANCE_OPS,
@@ -50,6 +51,7 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 from vtlengine.Operators.Join import merged_viral_attribute_names
+from vtlengine.Utils._recursion import recursion_headroom
 from vtlengine.ViralPropagation import get_current_registry
 from vtlengine.ViralPropagation.sql import (
     vp_group_sql,
@@ -331,11 +333,17 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             rule.name = str(i + 1)
 
     def _resolve_clause_dataset(self, node: AST.RegularAggregation) -> Any:
-        """Resolve and return (dataset, table_src) for a clause node."""
+        """Resolve and return (dataset, table_src) for a clause node.
+
+        ``current_assignment`` is stashed so the operand names its measures
+        naturally: the clause still refers to them by those names, and only its
+        own result has to match the assignment target (issue #920).
+        """
         if not node.dataset:
             return None
-        ds = self._get_dataset_structure(node.dataset)
-        table_src = self._get_dataset_sql(node.dataset)
+        with self._stash_assignment():
+            ds = self._get_dataset_structure(node.dataset)
+            table_src = self._get_dataset_sql(node.dataset)
         if ds is None:
             return None
         return ds, table_src
@@ -353,7 +361,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     def transpile(self, node: AST.Start) -> List[Tuple[str, str, bool]]:
         """Return (name, sql, is_persistent) tuples for the script."""
-        queries = self.visit(node)
+        with recursion_headroom():
+            queries = self.visit(node)
         # Constant-fold ``vtl_period_parse('canonical')`` calls now that all
         # nested macro expansion is in place.
         return [(name, _inline_period_parse_literals(sql), p) for name, sql, p in queries]
@@ -871,7 +880,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             expr = self._make_binary_expr(left_ref, right_ref, op, left_dt, right_dt)
 
             out_name = left_m
-            if (
+            if op in COMPARISON_OPS and len(paired_measures) == 1:
+                out_name = "bool_var"
+            elif (
                 output_measure_names
                 and len(paired_measures) == 1
                 and len(output_measure_names) == 1
@@ -919,9 +930,15 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 return self._make_binary_expr(col_ref, scalar_sql, op, dt, None)
             return self._make_binary_expr(scalar_sql, col_ref, op, None, dt)
 
+        # A mono-measure comparison yields bool_var, matching the structure the
+        # visitor reports for this node (issue #920).
+        name_override = (
+            "bool_var" if op in COMPARISON_OPS and len(ds.get_measures_names()) == 1 else None
+        )
         return self._apply_measures(
             ds_node,
             _bin_expr,
+            output_name_override=name_override,
             cast_bool_to_str=op == tokens.CONCAT,
         )
 
@@ -1816,7 +1833,8 @@ FROM (
         if not node.dataset:
             return ""
 
-        table_src = self._get_dataset_sql(node.dataset)
+        with self._stash_assignment():
+            table_src = self._get_dataset_sql(node.dataset)
         drop_names = self._extract_component_names(node.children, self._join_alias_map)
 
         for name in drop_names:
@@ -2127,7 +2145,7 @@ FROM (
                     if agg is not None:
                         return agg
                 expr = registry.sql(op, operand_sql)
-                if op == tokens.COUNT:
+                if op == tokens.COUNT and (node.grouping or node.grouping_op):
                     expr = f"NULLIF({expr}, 0)"
                 return expr
 
@@ -2196,7 +2214,7 @@ FROM (
 
         if group_cols:
             builder.group_by(*group_by_cols)
-        elif all_ids:
+        elif all_ids and op != tokens.COUNT:
             builder.having("COUNT(*) > 0")
 
         if node.having_clause:
@@ -2615,9 +2633,12 @@ FROM (
         else:
             source_sql = self._get_dataset_sql(source_node)
             source_ids = list(source_ds.get_identifiers_names())
-            # Evaluate condition as a column expression (not a full SELECT)
-            with self._clause_scope(source_ds, prefix=alias):
-                cond_expr = self.visit(node.condition)
+            if node.condition is source_node:
+                cond_measures = list(source_ds.get_measures_names())
+                cond_expr = f"{alias}.{quote_name(cond_measures[0])}" if cond_measures else "TRUE"
+            else:
+                with self._clause_scope(source_ds, prefix=alias):
+                    cond_expr = self.visit(node.condition)
 
         t_type = self._get_node_type(node.thenOp)
         e_type = self._get_node_type(node.elseOp)

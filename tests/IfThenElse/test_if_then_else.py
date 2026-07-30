@@ -604,3 +604,29 @@ class IfThenElseTest(TestIfThenElse):
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code="1-1-9-10"
         )
+
+    def test_GH_921_1(self):
+        """A NULL condition takes the else branch, for if-then-else and for case.
+
+        The reference manual returns the elseOperand when the condition does not
+        evaluate to true, so a NULL condition must not yield a NULL result.
+        Covers scalar branches (R1, R3) and component branches (R2), the latter
+        being the shape that produced NULL instead of the else value.
+        """
+        code = "GH_921_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_921_2(self):
+        """Data Set level if-then-else over a boolean Data Set condition.
+
+        The condition Data Set is referenced by its measure, and a NULL value in
+        it takes the else branch. No other fixture executes this form.
+        """
+        code = "GH_921_2"
+        number_inputs = 3
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)

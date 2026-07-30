@@ -1253,7 +1253,7 @@ class InterpreterAnalyzer(ASTTemplate):
             if isinstance(merge_ds, Dataset) and merge_ds.data is not None:
                 cond = cond.loc[merge_ds.data.index]
 
-            valid = cond.dropna().astype("bool[pyarrow]")
+            valid = cond.fillna(False).astype("bool[pyarrow]")
             if isinstance(condition, Dataset) and condition.data is not None:
                 then_df = condition.data.loc[valid.index[valid]]
                 else_df = condition.data.loc[valid.index[~valid]]
