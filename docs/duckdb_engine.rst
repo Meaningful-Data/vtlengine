@@ -199,3 +199,7 @@ Behavioural notes
   benchmarking via ``VTL_SKIP_LOAD_VALIDATION``.
 * **Storage compatibility**: the engine pins DuckDB's storage format to ``v1.4.0`` so
   file-backed databases remain readable by the supported DuckDB version range.
+* **Boolean serialization**: booleans are written to CSV output as Python-style
+  ``True``/``False``, and boolean→string casts and implicit coercions produce
+  ``"True"``/``"False"``, matching the pandas engine. Parquet output and
+  in-memory results keep the native boolean type.

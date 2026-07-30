@@ -588,26 +588,28 @@ class TestCastOperator:
     """Tests for CAST operator."""
 
     @pytest.mark.parametrize(
-        "vtl_script,input_data,expected_type",
+        "vtl_script,input_data,measure_name,expected_type",
         [
-            # Cast to Integer
+            # Cast to Integer (same numeric family: measure keeps its name)
             (
                 "DS_r := cast(DS_1, integer);",
                 [["A", 10.5], ["B", 20.7]],
+                "Me_1",
                 "int",
             ),
-            # TODO: Deactivated until revision
-            # Cast to String
-            # (
-            #     "DS_r := cast(DS_1, string);",
-            #     [["A", 10], ["B", 20]],
-            #     "str",
-            # ),
+            # Cast to String (mono-measure type change: measure renamed to str_var)
+            (
+                "DS_r := cast(DS_1, string);",
+                [["A", 10], ["B", 20]],
+                "str_var",
+                "str",
+            ),
         ],
-        # ids=["to_integer", "to_string"],
-        ids=["to_integer"],
+        ids=["to_integer", "to_string"],
     )
-    def test_cast_type_conversion(self, temp_data_dir, vtl_script, input_data, expected_type):
+    def test_cast_type_conversion(
+        self, temp_data_dir, vtl_script, input_data, measure_name, expected_type
+    ):
         """Test CAST type conversion."""
         structure = create_dataset_structure(
             "DS_1",
@@ -621,7 +623,7 @@ class TestCastOperator:
         results = execute_vtl_with_duckdb(vtl_script, data_structures, {"DS_1": input_df})
 
         # Check the result type
-        result_dtype = results["DS_r"]["Me_1"].dtype
+        result_dtype = results["DS_r"][measure_name].dtype
         if expected_type == "int":
             assert "int" in str(result_dtype).lower()
         elif expected_type == "str":
