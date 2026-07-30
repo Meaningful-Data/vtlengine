@@ -1776,42 +1776,74 @@ FROM (
             builder.where(" AND ".join(conditions))
         return builder.build()
 
-    def visit_RegularAggregation_calc(self, node: AST.RegularAggregation) -> str:
-        """Visit calc clause: DS[calc new_col := expr, ...]."""
-        resolved = self._resolve_clause_dataset(node)
-        ds, table_src = resolved
+    def _calc_chain(self, node: AST.RegularAggregation) -> List[AST.RegularAggregation]:
+        """Return consecutive calc clauses ending at *node*, outermost last."""
+        chain = [node]
+        while (
+            isinstance(chain[-1].dataset, AST.RegularAggregation)
+            and chain[-1].dataset.op == tokens.CALC
+        ):
+            chain.append(chain[-1].dataset)
+        chain.reverse()
+        return chain
 
-        calc_exprs: Dict[str, str] = {}
+    def _calc_clause_exprs(self, clause: AST.RegularAggregation, ds: Dataset) -> Dict[str, str]:
+        """Evaluate one calc clause's assignments against *ds*."""
+        exprs: Dict[str, str] = {}
         with self._clause_scope(ds):
-            for child in node.children:
+            for child in clause.children:
                 assignment = self._unwrap_assignment(child)
-                if isinstance(assignment, AST.Assignment):
-                    col_name = self._resolve_udo_name(self._get_node_value(assignment.left))
-                    expr_sql = self.visit(assignment.right)
-                    calc_exprs[col_name] = expr_sql
-                    if "vtl_tp_dateadd" in expr_sql and self.current_assignment:
-                        out_ds = self.output_datasets.get(self.current_assignment)
-                        if (
-                            out_ds
-                            and col_name in out_ds.components
-                            and out_ds.components[col_name].data_type == TimePeriod
-                        ):
-                            out_ds.components[col_name].data_type = Date
+                if not isinstance(assignment, AST.Assignment):
+                    continue
+                col_name = self._resolve_udo_name(self._get_node_value(assignment.left))
+                expr_sql = self.visit(assignment.right)
+                exprs[col_name] = expr_sql
+                if "vtl_tp_dateadd" in expr_sql and self.current_assignment:
+                    out_ds = self.output_datasets.get(self.current_assignment)
+                    if (
+                        out_ds
+                        and col_name in out_ds.components
+                        and out_ds.components[col_name].data_type == TimePeriod
+                    ):
+                        out_ds.components[col_name].data_type = Date
+        return exprs
 
-        select_cols: List[str] = []
-        for name in ds.components:
-            if name in calc_exprs:
-                select_cols.append(f"{calc_exprs[name]} AS {quote_name(name)}")
+    def visit_RegularAggregation_calc(self, node: AST.RegularAggregation) -> str:
+        chain = self._calc_chain(node)
+        base_ds = self._get_dataset_structure(chain[0].dataset)
+        src = self._get_dataset_sql(chain[0].dataset)
+        levels: List[Tuple[Dataset, Dict[str, str]]] = []
+        level_ds: Optional[Dataset] = None
+        level_exprs: Dict[str, str] = {}
+        for i, clause in enumerate(chain):
+            clause_ds = base_ds if i == 0 else self._get_dataset_structure(clause.dataset)
+            exprs = self._calc_clause_exprs(clause, clause_ds)
+            conflicts = set(exprs) & set(level_exprs) or any(
+                f'"{produced}"' in expr for expr in exprs.values() for produced in level_exprs
+            )
+            if level_exprs and conflicts:
+                levels.append((level_ds, level_exprs))  # type: ignore[arg-type]
+                level_ds, level_exprs = clause_ds, dict(exprs)
             else:
-                select_cols.append(quote_name(name))
+                if level_ds is None:
+                    level_ds = clause_ds
+                level_exprs.update(exprs)
+        if level_exprs or level_ds is not None:
+            levels.append((level_ds, level_exprs))  # type: ignore[arg-type]
 
-        for col_name, expr_sql in calc_exprs.items():
-            if col_name not in ds.components:
-                select_cols.append(f"{expr_sql} AS {quote_name(col_name)}")
+        for ds, calc_exprs in levels:
+            select_cols: List[str] = []
+            for name in ds.components:
+                if name in calc_exprs:
+                    select_cols.append(f"{calc_exprs[name]} AS {quote_name(name)}")
+                else:
+                    select_cols.append(quote_name(name))
+            for col_name, expr_sql in calc_exprs.items():
+                if col_name not in ds.components:
+                    select_cols.append(f"{expr_sql} AS {quote_name(col_name)}")
+            src = SQLBuilder().select(*select_cols).from_table(self._as_subquery(src), "t").build()
 
-        inner_src = self._as_subquery(table_src)
-
-        return SQLBuilder().select(*select_cols).from_table(inner_src, "t").build()
+        return src
 
     def visit_RegularAggregation_keep(self, node: AST.RegularAggregation) -> str:
         """Visit keep clause."""
