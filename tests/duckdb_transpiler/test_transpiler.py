@@ -451,6 +451,36 @@ class TestCastOperator:
 
         assert_sql_equal(sql, expected_sql)
 
+    def test_dataset_cast_boolean_to_string(self):
+        """Boolean → String cast emits Python-style 'True'/'False' values (issue #923)."""
+        components = {
+            "Id_1": Component(name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False),
+            "Me_1": Component(name="Me_1", data_type=Boolean, role=Role.MEASURE, nullable=True),
+        }
+        ds = Dataset(name="DS_1", components=components, data=None)
+        transpiler = create_transpiler(
+            input_datasets={"DS_1": ds},
+            output_datasets={"DS_r": ds},
+        )
+
+        # Create AST: DS_r := cast(DS_1, String)
+        operand = VarID(**make_ast_node(value="DS_1"))
+        type_node = VarID(**make_ast_node(value="String"))
+        expr = ParamOp(**make_ast_node(op="cast", children=[operand, type_node], params=[]))
+        ast = create_start_with_assignment("DS_r", expr)
+
+        results = transpile_and_get_sql(transpiler, ast)
+
+        assert len(results) == 1
+        name, sql, _ = results[0]
+        assert name == "DS_r"
+
+        expected_sql = (
+            'SELECT "Id_1", CASE WHEN "Me_1" IS NULL THEN NULL'
+            ' WHEN "Me_1" THEN \'True\' ELSE \'False\' END AS "Me_1" FROM "DS_1"'
+        )
+        assert_sql_equal(sql, expected_sql)
+
     def test_cast_with_date_mask(self):
         """Test CAST to Date with mask producing STRPTIME SQL."""
         ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])

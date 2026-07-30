@@ -21,6 +21,8 @@ from vtlengine.DataTypes import (
     TimePeriod,
 )
 from vtlengine.duckdb_transpiler.Transpiler.operators import (
+    _BOOLEAN_RESULT_BINOPS,
+    _BOOLEAN_RESULT_UNARY_OPS,
     _ORDERING_OPS,
     _STRING_PARAM_OPS,
     _STRING_UNARY_OPS,
@@ -674,6 +676,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         else:
             dt = self._detect_scalar_type(node.operand)
             operand_sql = self.visit(node.operand)
+            if op in _STRING_UNARY_OPS and self._is_boolean_expr(node.operand):
+                operand_sql = _bool_to_str(operand_sql)
             return registry.sql(op, operand_sql, data_type=dt)
 
     def visit_BinOp(self, node: AST.BinOp) -> str:  # type: ignore[override]
@@ -701,6 +705,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         # Scalar-scalar binary: detect types and delegate to _make_binary_expr
         left_sql = self.visit(node.left)
         right_sql = self.visit(node.right)
+        if op == tokens.CONCAT:
+            if self._is_boolean_expr(node.left):
+                left_sql = _bool_to_str(left_sql)
+            if self._is_boolean_expr(node.right):
+                right_sql = _bool_to_str(right_sql)
         left_dt = self._detect_scalar_type(node.left)
         right_dt = self._detect_scalar_type(node.right)
         return self._make_binary_expr(left_sql, right_sql, op, left_dt, right_dt)
@@ -889,6 +898,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return registry.sql(op, right_sql, left_sql)
 
         scalar_sql = self.visit(scalar_node)
+        if op == tokens.CONCAT and self._is_boolean_expr(scalar_node):
+            scalar_sql = _bool_to_str(scalar_sql)
 
         def _bin_expr(col_ref: str) -> str:
             comp = ds.components.get(col_ref.strip('"'))
@@ -1020,6 +1031,26 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 return tp
         return None
 
+    def _is_boolean_expr(self, node: AST.AST) -> bool:
+        """Return True when *node* is statically known to produce a Boolean value.
+
+        Used to apply the Python-style boolean→string coercion ('True'/'False')
+        at component/scalar level, matching the pandas engine (issue #923).
+        """
+        if isinstance(node, AST.Constant):
+            return isinstance(node.value, bool)
+        if isinstance(node, (AST.VarID, AST.ParamOp)):
+            return self._is_operand_type(node, Boolean)
+        if isinstance(node, AST.BinOp):
+            return node.op in _BOOLEAN_RESULT_BINOPS
+        if isinstance(node, AST.UnaryOp):
+            return node.op in _BOOLEAN_RESULT_UNARY_OPS
+        if isinstance(node, AST.MulOp):
+            return node.op == tokens.BETWEEN
+        if isinstance(node, AST.ParFunction):
+            return self._is_boolean_expr(node.operand)
+        return False
+
     def _visit_period_indicator(self, node: AST.UnaryOp) -> str:
         """Visit PERIOD_INDICATOR: extract period indicator from TimePeriod."""
         operand_type = self._get_node_type(node.operand)
@@ -1076,6 +1107,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return self._apply_measures(ds_node, _param_expr, cast_bool_to_str=to_str)
 
         children_sql = [self.visit(c) for c in node.children]
+        if op in _STRING_PARAM_OPS and node.children and self._is_boolean_expr(node.children[0]):
+            children_sql[0] = _bool_to_str(children_sql[0])
         all_args = children_sql + params_sql
         return registry.sql(op, *all_args)
 
@@ -1559,6 +1592,8 @@ FROM (
         else:
             operand_sql = self.visit(operand)
             source_type = self._get_source_vtl_type(operand)
+            if source_type is None and self._is_boolean_expr(operand):
+                source_type = "Boolean"
             return self._cast_expr(operand_sql, duckdb_type, target_type_str, mask, source_type)
 
     def _cast_expr(
@@ -1583,6 +1618,9 @@ FROM (
             if source_lower == "boolean":
                 return f"CAST({expr} AS {duckdb_type})"
             return f"CAST(TRUNC(CAST({expr} AS DOUBLE)) AS {duckdb_type})"
+
+        if target_type_str == "String" and source_lower == "boolean":
+            return _bool_to_str(expr)
 
         if target_type_str == "String" and source_lower in ("time_period", "timeperiod"):
             _tp_string_macros = {
