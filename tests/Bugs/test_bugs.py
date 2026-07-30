@@ -3428,19 +3428,13 @@ class CastBugs(BugHelper):
             text; the pandas engine raised TypeError from the series-scalar
             path.
         Git Issue: GH_940.
-        Goal: Check component result values.
+        Goal: Check Result.
         """
         code = "GH_940"
-        script = self.LoadVTL(code)
-        result = run(
-            script=script,
-            data_structures=self.filepath_json / f"{code}-1.json",
-            datapoints={"DS_1": self.filepath_csv / f"{code}-1.csv"},
-            use_duckdb=_use_duckdb_backend(),
-        )
-        me_2 = result["DS_r"].data["Me_2"]
-        assert me_2.tolist()[:2] == ["x_True", "x_False"]
-        assert pd.isna(me_2.iloc[2])
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GH_940_2(self):
         """
@@ -3449,19 +3443,13 @@ class CastBugs(BugHelper):
             Boolean measure to Python-style text; the pandas engine raised
             TypeError from the series-scalar path.
         Git Issue: GH_940.
-        Goal: Check measure result values.
+        Goal: Check Result.
         """
         code = "GH_940_2"
-        script = self.LoadVTL(code)
-        result = run(
-            script=script,
-            data_structures=self.filepath_json / f"{code}-1.json",
-            datapoints={"DS_1": self.filepath_csv / f"{code}-1.csv"},
-            use_duckdb=_use_duckdb_backend(),
-        )
-        str_var = result["DS_r"].data["str_var"]
-        assert str_var.tolist()[:2] == ["True_x", "False_x"]
-        assert pd.isna(str_var.iloc[2])
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_449_2(self):
         """
