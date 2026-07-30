@@ -1,5 +1,6 @@
 import csv
 import json
+import sys
 from pathlib import Path
 
 import pandas as pd
@@ -12,6 +13,7 @@ from pysdmx.model import (
 import vtlengine.DataTypes as DataTypes
 from tests.Helper import _use_duckdb_backend
 from vtlengine.API import (
+    create_ast,
     prettify,
     run,
     semantic_analysis,
@@ -31,6 +33,7 @@ from vtlengine.API._InternalApi import (
 from vtlengine.DataTypes import Integer, Null, String
 from vtlengine.Exceptions import DataLoadError, InputValidationException, SemanticError
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
+from vtlengine.Utils._recursion import MIN_RECURSION_LIMIT, recursion_headroom
 
 # Path selection
 base_path = Path(__file__).parent
@@ -2141,3 +2144,68 @@ def test_run_error_on_missing_non_nullable_column():
 
     with pytest.raises(DataLoadError, match="0-3-1-5"):
         run(script=script, data_structures=data_structures, datapoints=datapoints)
+
+
+def _chained_expression_script(operands: int) -> str:
+    """A script whose last statement adds *operands* datasets together."""
+    lines = [f"A_{i} := DS_1[calc Me_1 := Me_1 + {i}];" for i in range(operands)]
+    lines.append("DS_r := " + " + ".join(f"A_{i}" for i in range(operands)) + ";")
+    return "\n".join(lines)
+
+
+_CHAIN_STRUCTURE = {
+    "datasets": [
+        {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "String", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+            ],
+        }
+    ]
+}
+
+
+def test_recursion_headroom_restores_previous_limit():
+    """The helper raises the limit only for its own scope."""
+    previous = sys.getrecursionlimit()
+    with recursion_headroom():
+        assert sys.getrecursionlimit() >= MIN_RECURSION_LIMIT
+    assert sys.getrecursionlimit() == previous
+
+
+def test_recursion_headroom_keeps_a_higher_limit():
+    """An already generous limit set by the caller is left untouched."""
+    previous = sys.getrecursionlimit()
+    sys.setrecursionlimit(MIN_RECURSION_LIMIT + 1000)
+    try:
+        with recursion_headroom():
+            assert sys.getrecursionlimit() == MIN_RECURSION_LIMIT + 1000
+        assert sys.getrecursionlimit() == MIN_RECURSION_LIMIT + 1000
+    finally:
+        sys.setrecursionlimit(previous)
+
+
+def test_create_ast_handles_deeply_chained_expression():
+    """A long ``a + b + c + ...`` chain builds without exhausting the stack.
+
+    Each operand costs several frames while building the left-nested BinOp, so at
+    CPython's default limit this raised RecursionError past roughly 300 operands.
+    """
+    chain = " + ".join(f"DS_{i}" for i in range(400))
+    assert create_ast(f"DS_r := {chain};") is not None
+
+
+def test_run_handles_deeply_chained_expression():
+    """The same chain also transpiles and executes end to end."""
+    script = _chained_expression_script(250)
+    datapoints = {"DS_1": pd.DataFrame({"Id_1": ["a", "b"], "Me_1": [1.0, 2.0]})}
+
+    result = run(
+        script=script,
+        data_structures=_CHAIN_STRUCTURE,
+        datapoints=datapoints,
+        return_only_persistent=False,
+    )
+
+    assert len(result["DS_r"].data) == 2
