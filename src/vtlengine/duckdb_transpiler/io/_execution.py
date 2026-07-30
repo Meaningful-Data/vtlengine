@@ -215,6 +215,7 @@ def _build_dataset_fetch_select(
     conn: duckdb.DuckDBPyConnection,
     result_name: str,
     ds: Dataset,
+    bool_as_python_str: bool = False,
 ) -> str:
     """Build a SELECT query with column projection and in-SQL date/timestamp formatting.
 
@@ -226,6 +227,10 @@ def _build_dataset_fetch_select(
     - DATE columns → strftime('%Y-%m-%d', col) → 'YYYY-MM-DD' strings
     - TIMESTAMP with any non-midnight value → ISO 8601 'YYYY-MM-DDTHH:MM:SS'
     - TIMESTAMP with all-midnight values → formatted as date-only
+    - BOOLEAN columns → Python-style 'True'/'False' text, only when
+      ``bool_as_python_str`` is set (CSV output; matches the pandas engine's
+      ``to_csv`` serialization, issue #923). Parquet output and in-memory
+      fetches keep the native BOOLEAN type.
     - Other columns → passed through unchanged
 
     The non-midnight check uses LIMIT 1 so DuckDB stops at the first match.
@@ -277,6 +282,11 @@ def _build_dataset_fetch_select(
                 exprs.append(f'strftime(\'%Y-%m-%d\', "{col}") AS "{col}"')
         elif col_type == "DATE":
             exprs.append(f'strftime(\'%Y-%m-%d\', "{col}") AS "{col}"')
+        elif col_type == "BOOLEAN" and bool_as_python_str:
+            exprs.append(
+                f'CASE WHEN "{col}" IS NULL THEN NULL'
+                f" WHEN \"{col}\" THEN 'True' ELSE 'False' END AS \"{col}\""
+            )
         else:
             exprs.append(f'"{col}"')
 
@@ -436,7 +446,12 @@ def fetch_result(
     # Build fetch query: column projection + ISO 8601 date/timestamp
     # formatting inside DuckDB.
     ds = output_datasets.get(result_name, Dataset(name=result_name, components={}, data=None))
-    fetch_sql = _build_dataset_fetch_select(conn, result_name, ds)
+    fetch_sql = _build_dataset_fetch_select(
+        conn,
+        result_name,
+        ds,
+        bool_as_python_str=output_folder is not None and output_format == "csv",
+    )
 
     if output_folder:
         save_datapoints_duckdb(
