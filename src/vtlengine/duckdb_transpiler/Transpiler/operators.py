@@ -17,6 +17,10 @@ from vtlengine.Utils._number_config import get_effective_comparison_digits
 # Ordering-only comparisons (TimeInterval ordering is forbidden).
 _ORDERING_OPS: Set[str] = {tokens.GT, tokens.GTE, tokens.LT, tokens.LTE}
 
+# Comparisons collapse a mono-measure dataset operand to a single ``bool_var``
+# measure, the same way IN / NOT_IN / ISNULL do.
+COMPARISON_OPS: Set[str] = _ORDERING_OPS | {tokens.EQ, tokens.NEQ}
+
 # String operators needing VARCHAR input.
 _STRING_UNARY_OPS: Set[str] = {
     tokens.UCASE,
@@ -28,6 +32,25 @@ _STRING_UNARY_OPS: Set[str] = {
 }
 
 _STRING_PARAM_OPS: Set[str] = {tokens.SUBSTR, tokens.REPLACE, tokens.INSTR}
+
+# Operators whose scalar/component result is always Boolean (used to apply the
+# Python-style boolean→string coercion, issue #923).
+_BOOLEAN_RESULT_BINOPS: Set[str] = {
+    tokens.EQ,
+    tokens.NEQ,
+    tokens.GT,
+    tokens.GTE,
+    tokens.LT,
+    tokens.LTE,
+    tokens.AND,
+    tokens.OR,
+    tokens.XOR,
+    tokens.IN,
+    tokens.NOT_IN,
+    tokens.CHARSET_MATCH,
+}
+
+_BOOLEAN_RESULT_UNARY_OPS: Set[str] = {tokens.NOT, tokens.ISNULL}
 
 # Type mappings
 VTL_TO_DUCKDB_TYPES: Dict[str, str] = {
