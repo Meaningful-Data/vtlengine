@@ -84,6 +84,51 @@ class GeneralBugs(BugHelper):
         for sc in result.values():
             assert sc.persistent == references[sc.name]
 
+    def test_GH_945_1(self):
+        """
+        Expression: ds_from_membership_3 := max(DS_1#Me_int)#Me_int;
+                    in_member_one_row <- ds_from_membership_3 = 9;
+        Description: a derived scalar (membership on an ungrouped aggregation)
+            referenced by a later statement must resolve in both engines; the
+            DuckDB engine stored the scalar table with the measure column name
+            instead of ``value`` and raised ``BinderException``.
+        Git Issue: GH_945.
+        Goal: Check scalar result values.
+        """
+        code = "GH_945_1"
+        script = self.LoadVTL(code)
+        result = run(
+            script=script,
+            data_structures=self.filepath_json / f"{code}-1.json",
+            datapoints={"DS_1": self.filepath_csv / f"{code}-1.csv"},
+            return_only_persistent=False,
+            use_duckdb=_use_duckdb_backend(),
+        )
+        assert result["ds_from_membership_3"].value == 9
+        assert result["in_member_one_row"].value is True
+
+    def test_GH_945_2(self):
+        """
+        Expression: x := max(DS_1#Me_int)#Me_int;
+                    DS_r <- DS_1[calc Me_2 := Me_int + x];
+        Description: a derived scalar (membership on an ungrouped aggregation)
+            referenced inside a dataset expression must resolve in both
+            engines; the DuckDB engine raised ``BinderException`` because the
+            scalar table exposed no ``value`` column.
+        Git Issue: GH_945.
+        Goal: Check component result values.
+        """
+        code = "GH_945_2"
+        script = self.LoadVTL(code)
+        result = run(
+            script=script,
+            data_structures=self.filepath_json / f"{code}-1.json",
+            datapoints={"DS_1": self.filepath_csv / f"{code}-1.csv"},
+            use_duckdb=_use_duckdb_backend(),
+        )
+        data = result["DS_r"].data.sort_values("Id_1")
+        assert data["Me_2"].tolist() == [16, 17, 18]
+
 
 class JoinBugs(BugHelper):
     """ """

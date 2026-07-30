@@ -386,7 +386,12 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 is_persistent = isinstance(child, AST.PersistentAssignment)
                 if name in self.output_scalars:
                     value_sql = self.visit(child)
-                    if not value_sql.strip().upper().startswith("SELECT"):
+                    if value_sql.strip().upper().startswith("SELECT"):
+                        # Full SELECT (e.g. membership on an ungrouped
+                        # aggregation): fold to a scalar subquery so the table
+                        # exposes the single ``value`` column consumers expect.
+                        value_sql = f"SELECT ({value_sql}) AS value"
+                    else:
                         value_sql = f"SELECT {value_sql} AS value"
                     queries.append((name, value_sql, is_persistent))
                 else:
