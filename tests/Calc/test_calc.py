@@ -519,3 +519,48 @@ class CalcOperatorTest(TestCalcHelper):
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_922_1(self):
+        """
+        CALC: chained calc clauses
+        Dataset --> Dataset
+        Status: OK
+        Expression: DS_r := DS_1 [calc Me_2 := Me_1 + 1] [calc Me_3 := Me_1 * 2]
+                                 [calc Me_4 := Me_2 + Me_3] [calc Me_2 := Me_4 - 1]
+                                 [calc Me_5 := Me_2 * 10];
+                    DS_1 Dataset
+
+        Description: Consecutive calc clauses share a computation level only when
+        they are independent. Here Me_4 reads what the previous clauses produced,
+        Me_2 is then recalculated, and Me_5 must see that new value.
+
+        Git Branch: cr-922.
+        Goal: Check the performance of the calc operator.
+        """
+        code = "GH_922_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_922_2(self):
+        """
+        CALC: chained calc clauses with analytics
+        Dataset --> Dataset
+        Status: OK
+        Expression: DS_r := DS_1 [calc Me_2 := lag(Me_1, 1 over(order by Id_1))]
+                                 [calc Me_3 := lag(Me_1, 2 over(order by Id_1))]
+                                 [calc Me_4 := Me_1 - Me_2] [calc Me_5 := Me_1 - Me_3];
+                    DS_1 Dataset
+
+        Description: Independent lags resolve together while the clauses reading
+        them follow, which is the shape that made the reported script slow.
+
+        Git Branch: cr-922.
+        Goal: Check the performance of the calc operator.
+        """
+        code = "GH_922_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)

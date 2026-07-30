@@ -2016,6 +2016,42 @@ class SetOperatorsTest(AdditionalHelper):
             references_names=references_names,
         )
 
+    def test_11(self):
+        """
+        Basic behaviour.
+        Description: Second operand is a subset of the first.
+        """
+        text = """DS_r := symdiff(DS_1 ,DS_2);"""
+
+        code = "8-11"
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
+
+    def test_12(self):
+        """
+        Basic behaviour.
+        Description: Operands share no Data Point.
+        """
+        text = """DS_r := symdiff(DS_1 ,DS_2);"""
+
+        code = "8-12"
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
+
 
 class AggregateOperatorsTest(AdditionalHelper):
     """
@@ -3978,6 +4014,40 @@ class TimeOperatorsTest(AdditionalHelper):
         """
         text = """DS_r := sum(DS_1 group except Id_2, Id_3 time_agg("A", last));"""
         code = "7-35"
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
+
+    def test_36(self):
+        """
+        Basic behaviour for datasets with date type.
+        Description: Monthly series, filled one month at a time.
+        """
+        text = """DS_r := fill_time_series(DS_1, single);"""
+        code = "7-36"
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
+
+    def test_37(self):
+        """
+        Basic behaviour for datasets with date type.
+        Description: Quarterly series, filled one quarter at a time.
+        """
+        text = """DS_r := fill_time_series(DS_1, all);"""
+        code = "7-37"
         number_inputs = 1
         references_names = ["DS_r"]
 

@@ -40,6 +40,7 @@ from vtlengine.files.output._time_period_representation import (
 from vtlengine.files.sdmx_handler import to_vtl_json
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Dataset, Scalar
+from vtlengine.Utils._recursion import recursion_headroom, with_recursion_headroom
 
 pd.options.mode.chained_assignment = None
 
@@ -101,8 +102,9 @@ def create_ast(text: str) -> Start:
             underline_length=error["underline_length"],
         )
     visitor = ASTVisitor()
-    ast = visitor.visitStart(cst)
-    DAGAnalyzer.create_dag(ast)
+    with recursion_headroom():
+        ast = visitor.visitStart(cst)
+        DAGAnalyzer.create_dag(ast)
     return ast
 
 
@@ -159,6 +161,7 @@ def validate_external_routine(
     load_external_routines(input)
 
 
+@with_recursion_headroom
 def semantic_analysis(
     script: Union[str, TransformationScheme, Path],
     data_structures: Union[
@@ -254,6 +257,7 @@ def semantic_analysis(
     return result
 
 
+@with_recursion_headroom
 def _run_with_duckdb(
     script: Union[str, TransformationScheme, Path],
     data_structures: Union[
@@ -392,6 +396,7 @@ def _run_with_duckdb(
     return results
 
 
+@with_recursion_headroom
 def run(
     script: Union[str, TransformationScheme, Path],
     data_structures: Union[

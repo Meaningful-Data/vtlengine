@@ -1,0 +1,5 @@
+DS_r := DS_1
+    [calc Me_2 := lag(Me_1, 1 over(order by Id_1))]
+    [calc Me_3 := lag(Me_1, 2 over(order by Id_1))]
+    [calc Me_4 := Me_1 - Me_2]
+    [calc Me_5 := Me_1 - Me_3];

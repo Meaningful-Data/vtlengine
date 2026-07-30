@@ -26,6 +26,7 @@ from vtlengine.duckdb_transpiler.Transpiler.operators import (
     _ORDERING_OPS,
     _STRING_PARAM_OPS,
     _STRING_UNARY_OPS,
+    COMPARISON_OPS,
     FALLBACK_MATCH_FUNCTION,
     NATIVE_MATCH_FUNCTION,
     NUMBER_TOLERANCE_OPS,
@@ -50,6 +51,7 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 from vtlengine.Operators.Join import merged_viral_attribute_names
+from vtlengine.Utils._recursion import recursion_headroom
 from vtlengine.ViralPropagation import get_current_registry
 from vtlengine.ViralPropagation.sql import (
     vp_group_sql,
@@ -331,11 +333,17 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             rule.name = str(i + 1)
 
     def _resolve_clause_dataset(self, node: AST.RegularAggregation) -> Any:
-        """Resolve and return (dataset, table_src) for a clause node."""
+        """Resolve and return (dataset, table_src) for a clause node.
+
+        ``current_assignment`` is stashed so the operand names its measures
+        naturally: the clause still refers to them by those names, and only its
+        own result has to match the assignment target (issue #920).
+        """
         if not node.dataset:
             return None
-        ds = self._get_dataset_structure(node.dataset)
-        table_src = self._get_dataset_sql(node.dataset)
+        with self._stash_assignment():
+            ds = self._get_dataset_structure(node.dataset)
+            table_src = self._get_dataset_sql(node.dataset)
         if ds is None:
             return None
         return ds, table_src
@@ -353,7 +361,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     def transpile(self, node: AST.Start) -> List[Tuple[str, str, bool]]:
         """Return (name, sql, is_persistent) tuples for the script."""
-        queries = self.visit(node)
+        with recursion_headroom():
+            queries = self.visit(node)
         # Constant-fold ``vtl_period_parse('canonical')`` calls now that all
         # nested macro expansion is in place.
         return [(name, _inline_period_parse_literals(sql), p) for name, sql, p in queries]
@@ -871,7 +880,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             expr = self._make_binary_expr(left_ref, right_ref, op, left_dt, right_dt)
 
             out_name = left_m
-            if (
+            if op in COMPARISON_OPS and len(paired_measures) == 1:
+                out_name = "bool_var"
+            elif (
                 output_measure_names
                 and len(paired_measures) == 1
                 and len(output_measure_names) == 1
@@ -919,9 +930,15 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 return self._make_binary_expr(col_ref, scalar_sql, op, dt, None)
             return self._make_binary_expr(scalar_sql, col_ref, op, None, dt)
 
+        # A mono-measure comparison yields bool_var, matching the structure the
+        # visitor reports for this node (issue #920).
+        name_override = (
+            "bool_var" if op in COMPARISON_OPS and len(ds.get_measures_names()) == 1 else None
+        )
         return self._apply_measures(
             ds_node,
             _bin_expr,
+            output_name_override=name_override,
             cast_bool_to_str=op == tokens.CONCAT,
         )
 
@@ -1761,42 +1778,74 @@ FROM (
             builder.where(" AND ".join(conditions))
         return builder.build()
 
-    def visit_RegularAggregation_calc(self, node: AST.RegularAggregation) -> str:
-        """Visit calc clause: DS[calc new_col := expr, ...]."""
-        resolved = self._resolve_clause_dataset(node)
-        ds, table_src = resolved
+    def _calc_chain(self, node: AST.RegularAggregation) -> List[AST.RegularAggregation]:
+        """Return consecutive calc clauses ending at *node*, outermost last."""
+        chain = [node]
+        while (
+            isinstance(chain[-1].dataset, AST.RegularAggregation)
+            and chain[-1].dataset.op == tokens.CALC
+        ):
+            chain.append(chain[-1].dataset)
+        chain.reverse()
+        return chain
 
-        calc_exprs: Dict[str, str] = {}
+    def _calc_clause_exprs(self, clause: AST.RegularAggregation, ds: Dataset) -> Dict[str, str]:
+        """Evaluate one calc clause's assignments against *ds*."""
+        exprs: Dict[str, str] = {}
         with self._clause_scope(ds):
-            for child in node.children:
+            for child in clause.children:
                 assignment = self._unwrap_assignment(child)
-                if isinstance(assignment, AST.Assignment):
-                    col_name = self._resolve_udo_name(self._get_node_value(assignment.left))
-                    expr_sql = self.visit(assignment.right)
-                    calc_exprs[col_name] = expr_sql
-                    if "vtl_tp_dateadd" in expr_sql and self.current_assignment:
-                        out_ds = self.output_datasets.get(self.current_assignment)
-                        if (
-                            out_ds
-                            and col_name in out_ds.components
-                            and out_ds.components[col_name].data_type == TimePeriod
-                        ):
-                            out_ds.components[col_name].data_type = Date
+                if not isinstance(assignment, AST.Assignment):
+                    continue
+                col_name = self._resolve_udo_name(self._get_node_value(assignment.left))
+                expr_sql = self.visit(assignment.right)
+                exprs[col_name] = expr_sql
+                if "vtl_tp_dateadd" in expr_sql and self.current_assignment:
+                    out_ds = self.output_datasets.get(self.current_assignment)
+                    if (
+                        out_ds
+                        and col_name in out_ds.components
+                        and out_ds.components[col_name].data_type == TimePeriod
+                    ):
+                        out_ds.components[col_name].data_type = Date
+        return exprs
 
-        select_cols: List[str] = []
-        for name in ds.components:
-            if name in calc_exprs:
-                select_cols.append(f"{calc_exprs[name]} AS {quote_name(name)}")
+    def visit_RegularAggregation_calc(self, node: AST.RegularAggregation) -> str:
+        chain = self._calc_chain(node)
+        base_ds = self._get_dataset_structure(chain[0].dataset)
+        src = self._get_dataset_sql(chain[0].dataset)
+        levels: List[Tuple[Dataset, Dict[str, str]]] = []
+        level_ds: Optional[Dataset] = None
+        level_exprs: Dict[str, str] = {}
+        for i, clause in enumerate(chain):
+            clause_ds = base_ds if i == 0 else self._get_dataset_structure(clause.dataset)
+            exprs = self._calc_clause_exprs(clause, clause_ds)
+            conflicts = set(exprs) & set(level_exprs) or any(
+                f'"{produced}"' in expr for expr in exprs.values() for produced in level_exprs
+            )
+            if level_exprs and conflicts:
+                levels.append((level_ds, level_exprs))  # type: ignore[arg-type]
+                level_ds, level_exprs = clause_ds, dict(exprs)
             else:
-                select_cols.append(quote_name(name))
+                if level_ds is None:
+                    level_ds = clause_ds
+                level_exprs.update(exprs)
+        if level_exprs or level_ds is not None:
+            levels.append((level_ds, level_exprs))  # type: ignore[arg-type]
 
-        for col_name, expr_sql in calc_exprs.items():
-            if col_name not in ds.components:
-                select_cols.append(f"{expr_sql} AS {quote_name(col_name)}")
+        for ds, calc_exprs in levels:
+            select_cols: List[str] = []
+            for name in ds.components:
+                if name in calc_exprs:
+                    select_cols.append(f"{calc_exprs[name]} AS {quote_name(name)}")
+                else:
+                    select_cols.append(quote_name(name))
+            for col_name, expr_sql in calc_exprs.items():
+                if col_name not in ds.components:
+                    select_cols.append(f"{expr_sql} AS {quote_name(col_name)}")
+            src = SQLBuilder().select(*select_cols).from_table(self._as_subquery(src), "t").build()
 
-        inner_src = self._as_subquery(table_src)
-
-        return SQLBuilder().select(*select_cols).from_table(inner_src, "t").build()
+        return src
 
     def visit_RegularAggregation_keep(self, node: AST.RegularAggregation) -> str:
         """Visit keep clause."""
@@ -1826,7 +1875,8 @@ FROM (
         if not node.dataset:
             return ""
 
-        table_src = self._get_dataset_sql(node.dataset)
+        with self._stash_assignment():
+            table_src = self._get_dataset_sql(node.dataset)
         drop_names = self._extract_component_names(node.children, self._join_alias_map)
 
         for name in drop_names:
@@ -2137,7 +2187,7 @@ FROM (
                     if agg is not None:
                         return agg
                 expr = registry.sql(op, operand_sql)
-                if op == tokens.COUNT:
+                if op == tokens.COUNT and (node.grouping or node.grouping_op):
                     expr = f"NULLIF({expr}, 0)"
                 return expr
 
@@ -2206,7 +2256,7 @@ FROM (
 
         if group_cols:
             builder.group_by(*group_by_cols)
-        elif all_ids:
+        elif all_ids and op != tokens.COUNT:
             builder.having("COUNT(*) > 0")
 
         if node.having_clause:
@@ -2625,9 +2675,12 @@ FROM (
         else:
             source_sql = self._get_dataset_sql(source_node)
             source_ids = list(source_ds.get_identifiers_names())
-            # Evaluate condition as a column expression (not a full SELECT)
-            with self._clause_scope(source_ds, prefix=alias):
-                cond_expr = self.visit(node.condition)
+            if node.condition is source_node:
+                cond_measures = list(source_ds.get_measures_names())
+                cond_expr = f"{alias}.{quote_name(cond_measures[0])}" if cond_measures else "TRUE"
+            else:
+                with self._clause_scope(source_ds, prefix=alias):
+                    cond_expr = self.visit(node.condition)
 
         t_type = self._get_node_type(node.thenOp)
         e_type = self._get_node_type(node.elseOp)
