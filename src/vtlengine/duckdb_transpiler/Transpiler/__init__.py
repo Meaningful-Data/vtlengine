@@ -2145,7 +2145,7 @@ FROM (
                     if agg is not None:
                         return agg
                 expr = registry.sql(op, operand_sql)
-                if op == tokens.COUNT:
+                if op == tokens.COUNT and (node.grouping or node.grouping_op):
                     expr = f"NULLIF({expr}, 0)"
                 return expr
 
@@ -2214,7 +2214,7 @@ FROM (
 
         if group_cols:
             builder.group_by(*group_by_cols)
-        elif all_ids:
+        elif all_ids and op != tokens.COUNT:
             builder.having("COUNT(*) > 0")
 
         if node.having_clause:
