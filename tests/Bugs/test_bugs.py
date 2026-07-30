@@ -1388,6 +1388,22 @@ class TimeBugs(BugHelper):
             assert result["b"].value == 7, f"engine={engine}"
             assert result["c"].value == 7, f"engine={engine}"
 
+    def test_GH_949_1(self):
+        """
+        Status: OK
+        Description: fill_time_series only adds Data Points, so an operand Data
+                     Point whose date misses the generated grid still reaches the
+                     result. Stepping one month from 2020-01-31 clamps to 02-29 and
+                     then drifts to the 29th, leaving 2020-04-30 off the grid.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/949
+        Goal: Check Result.
+        """
+        code = "GH_949_1"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class SetBugs(BugHelper):
     """ """
