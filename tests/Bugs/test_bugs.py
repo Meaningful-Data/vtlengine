@@ -1,5 +1,7 @@
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
+import pandas as pd
 import pytest
 
 from tests.Helper import TestHelper, _use_duckdb_backend
@@ -3316,6 +3318,110 @@ class ExternalRoutineBugs(BugHelper):
 class CastBugs(BugHelper):
     classTest = "Bugs.CastTest"
 
+    def test_GH_923(self):
+        """
+        Expression: DS_r <- DS_1[calc Me_2 := cast(Me_1, string), Me_3 := upper(Me_1), ...];
+        Description: Boolean-to-string results must be Python-style ("True"/"False")
+            in both engines. The DuckDB transpiler emitted ``CAST(x AS VARCHAR)``
+            ('true'/'false') for explicit casts, and component-level string
+            operators (upper, substr, replace, length, instr) on a Boolean raised
+            ``BinderException`` because no implicit coercion was applied.
+        Git Issue: GH_923.
+        Goal: Check Result matches the pandas engine output.
+        """
+        code = "GH_923"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_923_2(self):
+        """
+        Expression: DS_r <- DS_1;
+        Description: dataset CSVs written to output_folder must serialize
+            booleans Python-style (True/False) in both engines; the DuckDB
+            engine wrote SQL-style lowercase (true/false) via COPY TO.
+        Git Issue: GH_923.
+        Goal: Check written CSV text.
+        """
+        code = "GH_923_2"
+        script = self.LoadVTL(code)
+        with TemporaryDirectory() as tmpdir:
+            run(
+                script=script,
+                data_structures=self.filepath_json / f"{code}-1.json",
+                datapoints={"DS_1": self.filepath_csv / f"{code}-1.csv"},
+                output_folder=Path(tmpdir),
+                use_duckdb=_use_duckdb_backend(),
+            )
+            content = (Path(tmpdir) / "DS_r.csv").read_text()
+        lines = content.strip().splitlines()
+        assert lines[0] == "Id_1,Me_1"
+        assert sorted(lines[1:]) == ["1,True", "2,False", "3,"]
+
+    def test_GH_923_2_in_memory(self):
+        """
+        Expression: DS_r <- DS_1;
+        Description: in-memory results must keep boolean values (not 'True'
+            strings) in both engines; only the CSV text serialization is
+            formatted.
+        Git Issue: GH_923.
+        Goal: Check returned DataFrame values.
+        """
+        code = "GH_923_2"
+        script = self.LoadVTL(code)
+        result = run(
+            script=script,
+            data_structures=self.filepath_json / f"{code}-1.json",
+            datapoints={"DS_1": self.filepath_csv / f"{code}-1.csv"},
+            use_duckdb=_use_duckdb_backend(),
+        )
+        me_1 = result["DS_r"].data["Me_1"]
+        assert me_1.tolist()[:2] == [True, False]
+        assert pd.isna(me_1.iloc[2])
+
+    def test_GH_923_3(self):
+        """
+        Expression: sc_r <- true || "_x";
+        Description: scalar boolean || string must give Python-style text in
+            both engines; the DuckDB engine produced 'true_x'.
+        Git Issue: GH_923.
+        Goal: Check scalar result value.
+        """
+        code = "GH_923_3"
+        script = self.LoadVTL(code)
+        result = run(
+            script=script,
+            data_structures=self.filepath_json / f"{code}-1.json",
+            datapoints={},
+            use_duckdb=_use_duckdb_backend(),
+        )
+        assert result["sc_r"].value == "True_x"
+
+    def test_GH_923_4(self):
+        """
+        Expression: DS_r <- DS_1[calc Me_2 := Me_1 || "_x"];
+        Description: component-level boolean || string must give Python-style
+            text; the DuckDB engine let DuckDB coerce the boolean ('true_x').
+            Runs only under the DuckDB backend: the pandas engine raises
+            TypeError on this expression (issue GH_940).
+        Git Issue: GH_923.
+        Goal: Check component result values.
+        """
+        if not _use_duckdb_backend():
+            pytest.skip("pandas engine raises TypeError on boolean component concat (issue GH_940)")
+        code = "GH_923_4"
+        script = self.LoadVTL(code)
+        result = run(
+            script=script,
+            data_structures=self.filepath_json / f"{code}-1.json",
+            datapoints={"DS_1": self.filepath_csv / f"{code}-1.csv"},
+            use_duckdb=True,
+        )
+        me_2 = result["DS_r"].data["Me_2"]
+        assert me_2.tolist()[:2] == ["True_x", "False_x"]
+        assert pd.isna(me_2.iloc[2])
+
     def test_GL_449_2(self):
         """
         Status: OK
@@ -3421,5 +3527,20 @@ class CastBugs(BugHelper):
         code = "GL_90_2"
         number_inputs = 1
         references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_931_1(self):
+        """
+        Status: OK
+        Description: stock_to_flow and flow_to_stock only compute over number
+                     measures; Boolean and String measures pass through, as the
+                     reference manual types the operand as measure<number>.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/931
+        Goal: Check Result.
+        """
+        code = "GH_931_1"
+        number_inputs = 2
+        references_names = ["1", "2", "3"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
