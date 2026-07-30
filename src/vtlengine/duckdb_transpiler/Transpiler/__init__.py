@@ -1397,7 +1397,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             col = quote_name(comp.name)
             if comp.role == Role.IDENTIFIER:
                 cols.append(col)
-            elif comp.data_type in (Integer, Number, Boolean):
+            elif comp.data_type in (Integer, Number):
                 if op == tokens.FLOW_TO_STOCK:
                     cols.append(
                         f"CASE WHEN {col} IS NULL THEN NULL ELSE "
