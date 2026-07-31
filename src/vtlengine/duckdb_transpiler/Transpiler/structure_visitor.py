@@ -505,6 +505,10 @@ class StructureVisitor(ASTTemplate):
                 comps[name] = comp
         if is_count:
             comps["int_var"] = self._make_comp("int_var", Integer)
+        # Viral attributes propagate through the aggregation (issue #944).
+        for name, comp in ds.components.items():
+            if comp.role == Role.VIRAL_ATTRIBUTE:
+                comps[name] = comp
         return Dataset(name=ds.name, components=comps, data=None)
 
     def _build_udo_bindings(
@@ -747,6 +751,11 @@ class StructureVisitor(ASTTemplate):
         for name, comp in right_ds.components.items():
             if comp.role == Role.IDENTIFIER and name not in comps:
                 comps[name] = comp
+        # Viral attributes from either operand propagate to the result (issue #944).
+        for operand_ds in (left_ds, right_ds):
+            for name, comp in operand_ds.components.items():
+                if comp.role == Role.VIRAL_ATTRIBUTE:
+                    comps[name] = comp
 
         return Dataset(name=left_ds.name, components=comps, data=None)
 
@@ -799,25 +808,42 @@ class StructureVisitor(ASTTemplate):
         return Dataset(name=input_ds.name, components=comps, data=None)
 
     def _build_membership_structure(self, node: AST.BinOp) -> Optional[Dataset]:
-        """Build the output structure for a membership (#) operation."""
+        """Build the output structure for a membership (#) operation.
+
+        Mirrors ``Membership.validate``: identifiers and all viral attributes are
+        kept; a measure target keeps its name and role; an identifier or plain
+        attribute target is promoted to a measure named ``COMP_NAME_MAPPING[dtype]``;
+        a viral-attribute target stays viral under its original name (issue #944).
+        """
         parent_ds = self._get_dataset_structure(node.left)
         if parent_ds is None:
             return None
 
         name = self._resolve_udo_name(self._resolve_name(node.right))
         comps = self._identifiers_dict(parent_ds)
+        # Viral attributes propagate through membership unchanged (issue #944).
+        for n, c in parent_ds.components.items():
+            if c.role == Role.VIRAL_ATTRIBUTE:
+                comps[n] = c
         orig = parent_ds.components.get(name)
         if orig is None:
             comps[name] = self._make_comp(name, Number)
-        else:
-            alias_name = COMP_NAME_MAPPING[orig.data_type] if orig.role != Role.MEASURE else name
-            comps[alias_name] = self._make_comp(alias_name, orig.data_type)
+        elif orig.role in (Role.IDENTIFIER, Role.ATTRIBUTE):
+            alias_name = COMP_NAME_MAPPING[orig.data_type]
+            comps[alias_name] = self._make_comp(alias_name, orig.data_type, nullable=orig.nullable)
+        elif orig.role == Role.MEASURE:
+            comps[name] = orig
+        # A VIRAL_ATTRIBUTE target is already in comps from the loop above (no promotion).
         return Dataset(name=parent_ds.name, components=comps, data=None)
 
     def _build_boolean_result_structure(self, ds: Dataset) -> Dataset:
         """Replace all measures with a single ``bool_var`` Boolean measure."""
         comps = self._identifiers_dict(ds)
         comps["bool_var"] = self._make_comp("bool_var", Boolean)
+        # Viral attributes propagate to the boolean result (issue #944).
+        for name, comp in ds.components.items():
+            if comp.role == Role.VIRAL_ATTRIBUTE:
+                comps[name] = comp
         return Dataset(name=ds.name, components=comps, data=None)
 
     def _build_rename_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:

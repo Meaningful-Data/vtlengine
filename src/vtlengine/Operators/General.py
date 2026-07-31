@@ -84,9 +84,14 @@ class Membership(Binary):
             return result
 
         result_dataset = result
+        promoted_name = None
+        if component.role in (Role.IDENTIFIER, Role.ATTRIBUTE):
+            promoted_name = COMP_NAME_MAPPING[component.data_type]
         result_data = pd.DataFrame()
         for name in result_dataset.components:
-            source_name = name if name in left_operand.data.columns else component.name
+            # The promoted measure always carries the target component's data, even
+            # when its alias collides with an existing (viral attribute) column.
+            source_name = component.name if name == promoted_name else name
             result_data[name] = left_operand.data[source_name]
         result_dataset.data = result_data.reset_index(drop=True)
         return result_dataset
