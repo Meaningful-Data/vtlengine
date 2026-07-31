@@ -84,6 +84,28 @@ class GeneralBugs(BugHelper):
         for sc in result.values():
             assert sc.persistent == references[sc.name]
 
+    def test_GH_917(self):
+        """
+        Status: OK
+        Description: The DuckDB path applied ``scalar_values`` to the input
+            scalars without casting them to the declared data type. A string
+            value for an Integer scalar (``{"sc1": "1"}``) was inlined into
+            the SQL as a string literal, so ``99 + sc1`` failed with a DuckDB
+            Binder Error. The pandas path casts the values and works.
+        Git issue: https://github.com/Meaningful-Data/vtlengine/issues/917
+        Goal: Check Result.
+        """
+        code = "GH_917"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            scalars={"sc1": "1"},
+        )
+
 
 class JoinBugs(BugHelper):
     """ """
