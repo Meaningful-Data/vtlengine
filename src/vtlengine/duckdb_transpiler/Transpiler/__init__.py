@@ -2219,8 +2219,6 @@ FROM (
         # count() without operand
         if node.operand is None:
             if op == tokens.COUNT:
-                # count() without an operand counts Data Points, so a Data Point whose
-                # Measures are null still contributes (issue #937).
                 return "NULLIF(COUNT(*), 0)"
             return ""
 
