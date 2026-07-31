@@ -151,6 +151,33 @@ class GeneralBugs(BugHelper):
         data = result["DS_r"].data.sort_values("Id_1")
         assert data["Me_2"].tolist() == [16, 17, 18]
 
+    def test_GH_945_3(self):
+        """
+        Expression: define viral propagation VP_VAt_1 (variable VAt_1)
+                        is aggregate max end viral propagation;
+                    x := max(DS_1#Me_int)#Me_int;
+                    y <- x + 1;
+        Description: membership on an ungrouped aggregation that kept a viral
+            attribute is a scalar extraction, so the viral attribute is
+            dropped (a scalar has no attributes, mirroring
+            ``Membership.validate``); the DuckDB engine emitted the viral
+            column too and the scalar subquery raised ``BinderException``
+            (Subquery returns 2 columns).
+        Git Issue: GH_945.
+        Goal: Check scalar result values.
+        """
+        code = "GH_945_3"
+        script = self.LoadVTL(code)
+        result = run(
+            script=script,
+            data_structures=self.filepath_json / f"{code}-1.json",
+            datapoints={"DS_1": self.filepath_csv / f"{code}-1.csv"},
+            return_only_persistent=False,
+            use_duckdb=_use_duckdb_backend(),
+        )
+        assert result["x"].value == 9
+        assert result["y"].value == 10
+
 
 class JoinBugs(BugHelper):
     """ """
