@@ -666,7 +666,16 @@ class InterpreterAnalyzer(ASTTemplate):
             # Setting here group by as we have already selected the identifiers we need
             grouping_op = "group by"
 
-        result = AGGREGATION_MAPPING[node.op].analyze(operand, grouping_op, groupings, having)
+        # count over a Component counts that Component's non-null values, while count
+        # over a Data Set counts Data Points; the manual gives them separate syntaxes.
+        component_operand = (
+            not self.is_from_having
+            and self.is_from_regular_aggregation
+            and node.operand is not None
+        )
+        result = AGGREGATION_MAPPING[node.op].analyze(
+            operand, grouping_op, groupings, having, component_operand
+        )
         if not self.is_from_regular_aggregation:
             result.name = VirtualCounter._new_ds_name()
         return result

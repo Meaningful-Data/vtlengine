@@ -1945,6 +1945,24 @@ class AggregationBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=message
         )
 
+    def test_GH_937_1(self):
+        """
+        Status: OK
+        Description: count only reports the number of Data Points, so it does not
+                     aggregate the Measures it is given: the reference manual types its
+                     operand as a plain dataset, states no Additional Constraints, and
+                     counts a String Measure in its own example. A Time Measure was
+                     rejected anyway, because the guard against aggregating one ran
+                     before count replaced every Measure with int_var.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/937
+        Goal: Check Result.
+        """
+        code = "GH_937_1"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class DataValidationBugs(BugHelper):
     """ """
