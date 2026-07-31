@@ -106,6 +106,78 @@ class GeneralBugs(BugHelper):
             scalars={"sc1": "1"},
         )
 
+    def test_GH_945_1(self):
+        """
+        Expression: ds_from_membership_3 := max(DS_1#Me_int)#Me_int;
+                    in_member_one_row <- ds_from_membership_3 = 9;
+        Description: a derived scalar (membership on an ungrouped aggregation)
+            referenced by a later statement must resolve in both engines; the
+            DuckDB engine stored the scalar table with the measure column name
+            instead of ``value`` and raised ``BinderException``.
+        Git Issue: GH_945.
+        Goal: Check scalar result values.
+        """
+        code = "GH_945_1"
+        script = self.LoadVTL(code)
+        result = run(
+            script=script,
+            data_structures=self.filepath_json / f"{code}-1.json",
+            datapoints={"DS_1": self.filepath_csv / f"{code}-1.csv"},
+            return_only_persistent=False,
+            use_duckdb=_use_duckdb_backend(),
+        )
+        assert result["ds_from_membership_3"].value == 9
+        assert result["in_member_one_row"].value is True
+
+    def test_GH_945_2(self):
+        """
+        Expression: x := max(DS_1#Me_int)#Me_int;
+                    DS_r <- DS_1[calc Me_2 := Me_int + x];
+        Description: a derived scalar (membership on an ungrouped aggregation)
+            referenced inside a dataset expression must resolve in both
+            engines; the DuckDB engine raised ``BinderException`` because the
+            scalar table exposed no ``value`` column.
+        Git Issue: GH_945.
+        Goal: Check component result values.
+        """
+        code = "GH_945_2"
+        script = self.LoadVTL(code)
+        result = run(
+            script=script,
+            data_structures=self.filepath_json / f"{code}-1.json",
+            datapoints={"DS_1": self.filepath_csv / f"{code}-1.csv"},
+            use_duckdb=_use_duckdb_backend(),
+        )
+        data = result["DS_r"].data.sort_values("Id_1")
+        assert data["Me_2"].tolist() == [16, 17, 18]
+
+    def test_GH_945_3(self):
+        """
+        Expression: define viral propagation VP_VAt_1 (variable VAt_1)
+                        is aggregate max end viral propagation;
+                    x := max(DS_1#Me_int)#Me_int;
+                    y <- x + 1;
+        Description: membership on an ungrouped aggregation that kept a viral
+            attribute is a scalar extraction, so the viral attribute is
+            dropped (a scalar has no attributes, mirroring
+            ``Membership.validate``); the DuckDB engine emitted the viral
+            column too and the scalar subquery raised ``BinderException``
+            (Subquery returns 2 columns).
+        Git Issue: GH_945.
+        Goal: Check scalar result values.
+        """
+        code = "GH_945_3"
+        script = self.LoadVTL(code)
+        result = run(
+            script=script,
+            data_structures=self.filepath_json / f"{code}-1.json",
+            datapoints={"DS_1": self.filepath_csv / f"{code}-1.csv"},
+            return_only_persistent=False,
+            use_duckdb=_use_duckdb_backend(),
+        )
+        assert result["x"].value == 9
+        assert result["y"].value == 10
+
 
 class JoinBugs(BugHelper):
     """ """

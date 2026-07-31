@@ -386,7 +386,12 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 is_persistent = isinstance(child, AST.PersistentAssignment)
                 if name in self.output_scalars:
                     value_sql = self.visit(child)
-                    if not value_sql.strip().upper().startswith("SELECT"):
+                    if value_sql.strip().upper().startswith("SELECT"):
+                        # Full SELECT (e.g. membership on an ungrouped
+                        # aggregation): fold to a scalar subquery so the table
+                        # exposes the single ``value`` column consumers expect.
+                        value_sql = f"SELECT ({value_sql}) AS value"
+                    else:
                         value_sql = f"SELECT {value_sql} AS value"
                     queries.append((name, value_sql, is_persistent))
                 else:
@@ -971,13 +976,22 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if target_comp and target_comp.role in (Role.IDENTIFIER, Role.ATTRIBUTE):
             alias_name = COMP_NAME_MAPPING.get(target_comp.data_type, comp_name)
 
+        # Without identifiers membership is a scalar extraction
+        # (``Membership.validate`` returns a Scalar), so viral attributes are
+        # dropped: a scalar has no attributes (issue #945).
+        is_scalar_extraction = len(ds.get_identifiers_names()) == 0
+
         cols: List[str] = []
         emitted: Set[str] = set()
         for name, comp in ds.components.items():
             if comp.role == Role.IDENTIFIER:
                 cols.append(quote_name(name))
                 emitted.add(name)
-            elif comp.role == Role.VIRAL_ATTRIBUTE and name != alias_name:
+            elif (
+                not is_scalar_extraction
+                and comp.role == Role.VIRAL_ATTRIBUTE
+                and name != alias_name
+            ):
                 # Membership is row-preserving: viral attributes are copied
                 # through unchanged, no propagation rule runs (issues #906/#944).
                 # A viral named like the promoted alias is skipped: the promotion
