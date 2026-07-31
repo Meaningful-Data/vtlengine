@@ -1476,6 +1476,25 @@ class TimeBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_936_1(self):
+        """
+        Status: OK
+        Description: pins the period inferred for a Date series by timeshift. Every
+                     point of DS_1 falls on the first of a month and every gap is a
+                     whole number of months, so the period is a month and shifting by
+                     -1 moves back one month. Before #934 the day-count heuristic read
+                     these gaps as days, because none of them is an exact multiple of
+                     365, and shifted by a single day instead. DS_2 keeps a day-long
+                     period covered, so a future change cannot trade one for the other.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/936
+        Goal: Check Result.
+        """
+        code = "GH_936_1"
+        number_inputs = 2
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class SetBugs(BugHelper):
     """ """
