@@ -3,9 +3,11 @@ from tempfile import TemporaryDirectory
 
 import pandas as pd
 import pytest
+from pandas.api.types import is_integer_dtype
 
 from tests.Helper import TestHelper, _use_duckdb_backend
 from vtlengine.API import create_ast, run
+from vtlengine.DataTypes import Integer
 from vtlengine.Interpreter import InterpreterAnalyzer
 
 
@@ -1387,6 +1389,53 @@ class TimeBugs(BugHelper):
             assert result["a"].value == 6, f"engine={engine}"
             assert result["b"].value == 7, f"engine={engine}"
             assert result["c"].value == 7, f"engine={engine}"
+
+    def test_GH_935_1(self):
+        """
+        Status: OK
+        Description: flow_to_stock accumulates with SUM() OVER (), and DuckDb
+                     widens SUM() over an integer to HUGEINT. HUGEINT has no pandas
+                     integer counterpart, so an Integer measure came back as a float
+                     (1.0, 3.0, 6.0) even though the component is still declared
+                     Integer. stock_to_flow was unaffected because it subtracts.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/935
+        Goal: Check Result.
+        """
+        code = "GH_935_1"
+        number_inputs = 2
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_935_1_integer_dtype(self):
+        """
+        Status: OK
+        Description: guards the #935 fix itself. Dataset equality coerces Integer
+                     components to int64 and compares with check_dtype=False and a
+                     1% tolerance, so the reference-based test above passes whether
+                     or not the accumulated measure is widened to a float.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/935
+        Goal: an Integer measure stays integral through flow_to_stock on both engines.
+        """
+        code = "GH_935_1"
+        data_structures = [self.filepath_json / f"{code}-{i}.json" for i in (1, 2)]
+        for engine in (False, True):
+            result = run(
+                script=self.LoadVTL(code),
+                data_structures=data_structures,
+                datapoints={
+                    f"DS_{i}": pd.read_csv(self.filepath_csv / f"{code}-{i}.csv") for i in (1, 2)
+                },
+                return_only_persistent=False,
+                use_duckdb=engine,
+            )
+            for name in ("DS_r1", "DS_r2"):
+                measure = result[name].data["Me_2"]
+                assert result[name].components["Me_2"].data_type == Integer
+                assert is_integer_dtype(measure), (
+                    f"engine={engine}, {name}: Me_2 is declared Integer but came "
+                    f"back as {measure.dtype}"
+                )
 
     def test_GH_949_1(self):
         """
