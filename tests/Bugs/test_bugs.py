@@ -84,6 +84,28 @@ class GeneralBugs(BugHelper):
         for sc in result.values():
             assert sc.persistent == references[sc.name]
 
+    def test_GH_917(self):
+        """
+        Status: OK
+        Description: The DuckDB path applied ``scalar_values`` to the input
+            scalars without casting them to the declared data type. A string
+            value for an Integer scalar (``{"sc1": "1"}``) was inlined into
+            the SQL as a string literal, so ``99 + sc1`` failed with a DuckDB
+            Binder Error. The pandas path casts the values and works.
+        Git issue: https://github.com/Meaningful-Data/vtlengine/issues/917
+        Goal: Check Result.
+        """
+        code = "GH_917"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            scalars={"sc1": "1"},
+        )
+
 
 class JoinBugs(BugHelper):
     """ """
@@ -3418,25 +3440,54 @@ class CastBugs(BugHelper):
         """
         Expression: DS_r <- DS_1[calc Me_2 := Me_1 || "_x"];
         Description: component-level boolean || string must give Python-style
-            text; the DuckDB engine let DuckDB coerce the boolean ('true_x').
-            Runs only under the DuckDB backend: the pandas engine raises
-            TypeError on this expression (issue GH_940).
+            text in both engines; the DuckDB engine let DuckDB coerce the
+            boolean ('true_x') and the pandas engine raised TypeError from
+            the series-scalar path (issue GH_940).
         Git Issue: GH_923.
         Goal: Check component result values.
         """
-        if not _use_duckdb_backend():
-            pytest.skip("pandas engine raises TypeError on boolean component concat (issue GH_940)")
         code = "GH_923_4"
         script = self.LoadVTL(code)
         result = run(
             script=script,
             data_structures=self.filepath_json / f"{code}-1.json",
             datapoints={"DS_1": self.filepath_csv / f"{code}-1.csv"},
-            use_duckdb=True,
+            use_duckdb=_use_duckdb_backend(),
         )
         me_2 = result["DS_r"].data["Me_2"]
         assert me_2.tolist()[:2] == ["True_x", "False_x"]
         assert pd.isna(me_2.iloc[2])
+
+    def test_GH_940(self):
+        """
+        Expression: DS_r <- DS_1[calc Me_2 := "x_" || Me_1];
+        Description: component-level string || boolean (component on the
+            right) must implicitly cast the Boolean component to Python-style
+            text; the pandas engine raised TypeError from the series-scalar
+            path.
+        Git Issue: GH_940.
+        Goal: Check Result.
+        """
+        code = "GH_940"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_940_2(self):
+        """
+        Expression: DS_r <- DS_1 || "_x";
+        Description: dataset-level boolean || string must implicitly cast the
+            Boolean measure to Python-style text; the pandas engine raised
+            TypeError from the series-scalar path.
+        Git Issue: GH_940.
+        Goal: Check Result.
+        """
+        code = "GH_940_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_449_2(self):
         """

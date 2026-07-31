@@ -12,6 +12,7 @@ from pysdmx.model.vtl import VtlDataflowMapping
 from vtlengine.API._InternalApi import (
     _check_output_folder,
     _check_script,
+    _handle_scalars_values,
     _handle_url_datapoints,
     _is_url,
     _return_only_persistent_datasets,
@@ -301,11 +302,8 @@ def _run_with_duckdb(
     # Load datasets structure (without data)
     input_datasets, input_scalars = load_datasets(data_structures, sdmx_mappings=mapping_dict)
 
-    # Apply scalar values if provided
-    if scalar_values:
-        for name, value in scalar_values.items():
-            if name in input_scalars:
-                input_scalars[name].value = value
+    # Apply scalar values if provided, casting them to the declared data type
+    _handle_scalars_values(input_scalars, scalar_values)
 
     # Run semantic analysis to get output structures
     loaded_vds = load_value_domains(value_domains) if value_domains else None
