@@ -122,6 +122,20 @@ class Binary(Operator.Binary):
             return None
         return cls.py_op(str(x), str(y))
 
+    @classmethod
+    def apply_operation_series_scalar(cls, series: Any, scalar: Any, series_left: bool) -> Any:
+        # The base fast path maps py_op directly, which skips the implicit
+        # str() cast of non-string operands (e.g. Boolean measures) that
+        # op_func provides (issue #940).
+        result_dtype = cls.return_type.dtype() if cls.return_type is not None else "string[pyarrow]"
+        if scalar is None:
+            return pd.Series(None, index=series.index, dtype=result_dtype)
+        if series_left:
+            result = series.map(lambda x: cls.op_func(x, scalar), na_action="ignore")
+        else:
+            result = series.map(lambda x: cls.op_func(scalar, x), na_action="ignore")
+        return result.astype(result_dtype)
+
 
 class Concatenate(Binary):
     op = CONCAT
