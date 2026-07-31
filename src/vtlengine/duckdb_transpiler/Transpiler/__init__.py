@@ -386,7 +386,12 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 is_persistent = isinstance(child, AST.PersistentAssignment)
                 if name in self.output_scalars:
                     value_sql = self.visit(child)
-                    if not value_sql.strip().upper().startswith("SELECT"):
+                    if value_sql.strip().upper().startswith("SELECT"):
+                        # Full SELECT (e.g. membership on an ungrouped
+                        # aggregation): fold to a scalar subquery so the table
+                        # exposes the single ``value`` column consumers expect.
+                        value_sql = f"SELECT ({value_sql}) AS value"
+                    else:
                         value_sql = f"SELECT {value_sql} AS value"
                     queries.append((name, value_sql, is_persistent))
                 else:
@@ -596,9 +601,12 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             elif comp.role == Role.VIRAL_ATTRIBUTE:
                 if viral_expr_fn is not None:
                     cols.append(f"{viral_expr_fn(name, comp)} AS {quote_name(name)}")
-                elif output_ds is not None and name in output_ds.components:
+                else:
                     # Row-preserving op: data points are not combined, so the viral
-                    # attribute is copied through unchanged (issue #906).
+                    # attribute is copied through unchanged (issue #906). The input
+                    # structure is authoritative; the output dataset cannot be used
+                    # as a gate because it is unavailable inside a clause operand
+                    # (``current_assignment`` is stashed there, issue #920).
                     cols.append(quote_name(name))
 
         return SQLBuilder().select(*cols).from_table(table_src).build()
@@ -968,14 +976,33 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if target_comp and target_comp.role in (Role.IDENTIFIER, Role.ATTRIBUTE):
             alias_name = COMP_NAME_MAPPING.get(target_comp.data_type, comp_name)
 
+        # Without identifiers membership is a scalar extraction
+        # (``Membership.validate`` returns a Scalar), so viral attributes are
+        # dropped: a scalar has no attributes (issue #945).
+        is_scalar_extraction = len(ds.get_identifiers_names()) == 0
+
         cols: List[str] = []
+        emitted: Set[str] = set()
         for name, comp in ds.components.items():
             if comp.role == Role.IDENTIFIER:
                 cols.append(quote_name(name))
-        if alias_name != comp_name:
-            cols.append(f"{quote_name(comp_name)} AS {quote_name(alias_name)}")
-        else:
-            cols.append(quote_name(comp_name))
+                emitted.add(name)
+            elif (
+                not is_scalar_extraction
+                and comp.role == Role.VIRAL_ATTRIBUTE
+                and name != alias_name
+            ):
+                # Membership is row-preserving: viral attributes are copied
+                # through unchanged, no propagation rule runs (issues #906/#944).
+                # A viral named like the promoted alias is skipped: the promotion
+                # replaces it and the measure carries the target's data.
+                cols.append(quote_name(name))
+                emitted.add(name)
+        if alias_name not in emitted:
+            if alias_name != comp_name:
+                cols.append(f"{quote_name(comp_name)} AS {quote_name(alias_name)}")
+            else:
+                cols.append(quote_name(comp_name))
 
         return SQLBuilder().select(*cols).from_table(table_src).build()
 

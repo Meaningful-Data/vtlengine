@@ -12,7 +12,7 @@ from pandas import DataFrame as PandasDataFrame
 from pandas._testing import assert_frame_equal
 
 import vtlengine.DataTypes as DataTypes
-from vtlengine.DataTypes import SCALAR_TYPES, ScalarType
+from vtlengine.DataTypes import RESERVED_COMPONENT_NAMES, SCALAR_TYPES, ScalarType
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.Exceptions import InputValidationException, SemanticError
 
@@ -157,6 +157,12 @@ class Component:
     def __post_init__(self) -> None:
         if self.role == Role.IDENTIFIER and self.nullable:
             raise ValueError(f"Identifier {self.name} cannot be nullable")
+        if self.role == Role.VIRAL_ATTRIBUTE and self.name in RESERVED_COMPONENT_NAMES:
+            raise SemanticError(
+                "1-3-3-7",
+                name=self.name,
+                reserved=", ".join(sorted(RESERVED_COMPONENT_NAMES)),
+            )
 
     def __eq__(self, other: Any) -> bool:
         return self.to_dict() == other.to_dict()

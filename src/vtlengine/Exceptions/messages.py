@@ -1062,6 +1062,14 @@ centralised_messages = {
         "without a 'define viral propagation' rule. Viral attributes that are only copied "
         "through row-preserving operators do not require a rule.",
     },
+    "1-3-3-7": {
+        "message": "Viral attribute {name} uses a reserved component name; "
+        "reserved names are: {reserved}.",
+        "description": "Raised when a viral attribute is declared or renamed with one of "
+        "the component names the engine reserves for automatically named measures "
+        "(str_var, num_var, int_var, time_var, time_period_var, date_var, duration_var, "
+        "bool_var, null_var), which would collide with a promoted measure of the same name.",
+    },
     # ---------- Interpreter ----------
     "1-3-5": {
         "message": "{node_op} not found or not valid for {op_type}.",

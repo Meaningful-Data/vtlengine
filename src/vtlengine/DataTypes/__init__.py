@@ -1,5 +1,5 @@
 import re
-from typing import Any, Dict, Optional, Set, Type, Union
+from typing import Any, Dict, FrozenSet, Optional, Set, Type, Union
 
 import pandas as pd
 
@@ -739,6 +739,11 @@ COMP_NAME_MAPPING: Dict[Type[ScalarType], str] = {
     Boolean: "bool_var",
     Null: "null_var",
 }
+
+# The engine assigns these names to automatically generated measures (membership
+# promotion, count, boolean results). Viral attributes must not use them, as they
+# would collide with a promoted measure of the same name (issue #944).
+RESERVED_COMPONENT_NAMES: FrozenSet[str] = frozenset(COMP_NAME_MAPPING.values())
 
 # Key is the data type, value is the set of types to which it can be implicitly promoted
 IMPLICIT_TYPE_PROMOTION_MAPPING: Dict[Type[ScalarType], Any] = {
