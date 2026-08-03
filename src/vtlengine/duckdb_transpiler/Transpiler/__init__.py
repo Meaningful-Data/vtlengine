@@ -1470,8 +1470,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         The start dates and the end dates are each stepped by one frequency from
         their own lower bound, and then the k-th start is paired with the k-th
-        end. That mirrors Fill_time_series.time_filler, which fills the two
-        halves of the interval independently and re-joins them with str.cat.
+        end. That mirrors Fill_time_series.fill_time_intervals, and like it only
+        adds the Data Points whose key the operand is missing.
         """
         time_col, other_id_cols, _, join_on, final_select, order_by = self._build_time_grid_parts(
             ds, time_id
@@ -1482,20 +1482,21 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         cte = CTEBuilder()
         cte.cte("source", f"SELECT * FROM {src}")
         # One frequency for the whole operand, as Fill_time_series.evaluate requires.
+        # sample carries the operand's own representation over to the added intervals.
         cte.cte(
             "freq",
             "SELECT CASE WHEN COUNT(DISTINCT f) > 1 THEN error("
             "'VTL 1-1-19-9: fill_time_series needs a single time interval frequency') "
-            "ELSE vtl_interval_freq_to_step(MIN(f)) END AS step "
-            f"FROM (SELECT vtl_interval_freq({time_col}) AS f FROM source "
-            f"WHERE {time_col} IS NOT NULL)",
+            "ELSE vtl_interval_freq_to_step(MIN(f)) END AS step, MIN(iv) AS sample "
+            f"FROM (SELECT vtl_interval_freq({time_col}) AS f, {time_col} AS iv "
+            f"FROM source WHERE {time_col} IS NOT NULL)",
         )
 
         bounds_cols = (
-            f"MIN(vtl_interval_start_date({time_col})) AS min_s, "
-            f"MAX(vtl_interval_start_date({time_col})) AS max_s, "
-            f"MIN(vtl_interval_end_date({time_col})) AS min_e, "
-            f"MAX(vtl_interval_end_date({time_col})) AS max_e"
+            f"MIN(vtl_interval_start_ts({time_col})) AS min_s, "
+            f"MAX(vtl_interval_start_ts({time_col})) AS max_s, "
+            f"MIN(vtl_interval_end_ts({time_col})) AS min_e, "
+            f"MAX(vtl_interval_end_ts({time_col})) AS max_e"
         )
         if per_group:
             oid_csv = ", ".join(other_id_cols)
@@ -1513,11 +1514,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             cte.cte(
                 name,
                 f"SELECT {b_cols}ROW_NUMBER() OVER ({partition}ORDER BY d) AS k, "
-                f"CAST(d AS DATE) AS {alias} "
+                f"CAST(d AS TIMESTAMP) AS {alias} "
                 f"FROM bounds b, generate_series(b.{lo}, b.{hi}, {freq_step}) AS t(d)",
             )
 
-        grid = f"CAST(st.d1 AS VARCHAR) || '/' || CAST(en.d2 AS VARCHAR) AS {time_col}"
+        grid = f"vtl_interval_build(st.d1, en.d2, (SELECT sample FROM freq)) AS {time_col}"
         if per_group:
             on_ids = "".join(f" AND st.{oc} = en.{oc}" for oc in other_id_cols)
             st_cols = ", ".join(f"st.{oc}" for oc in other_id_cols)

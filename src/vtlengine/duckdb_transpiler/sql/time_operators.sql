@@ -389,21 +389,33 @@ CREATE OR REPLACE MACRO vtl_interval_step(s) AS (
     vtl_interval_freq_to_step(vtl_interval_freq(s))
 );
 
+-- The endpoints again, keeping any time component this time, for the operators
+-- that have to reproduce the operand's own representation.
+CREATE OR REPLACE MACRO vtl_interval_start_ts(s) AS (
+    CAST(SPLIT_PART(s, '/', 1) AS TIMESTAMP)
+);
+
+CREATE OR REPLACE MACRO vtl_interval_end_ts(s) AS (
+    CAST(SPLIT_PART(s, '/', 2) AS TIMESTAMP)
+);
+
+-- Assemble an interval out of two endpoints, in the representation sample uses.
+-- STRFTIME needs a literal format, hence the duplicated arms.
+CREATE OR REPLACE MACRO vtl_interval_build(a, b, sample) AS (
+    CASE
+        WHEN LENGTH(SPLIT_PART(sample, '/', 1)) > 10
+            THEN STRFTIME(a, '%Y-%m-%dT%H:%M:%S') || '/' || STRFTIME(b, '%Y-%m-%dT%H:%M:%S')
+        ELSE STRFTIME(a, '%Y-%m-%d') || '/' || STRFTIME(b, '%Y-%m-%d')
+    END
+);
+
 -- Shift both endpoints by n periods, mirroring Time_Shift.shift_interval: plain
--- calendar addition (pd.DateOffset clamps but never snaps to a month end), with
--- the output format taken from the start endpoint. STRFTIME needs a literal
--- format, hence the duplicated arms.
+-- calendar addition, since pd.DateOffset clamps but never snaps to a month end.
 CREATE OR REPLACE MACRO vtl_interval_shift(s, n, step) AS (
     CASE
         WHEN s IS NULL THEN NULL
-        ELSE (SELECT CASE
-            WHEN LENGTH(SPLIT_PART(s, '/', 1)) > 10
-                THEN STRFTIME(a + step * n, '%Y-%m-%dT%H:%M:%S') || '/'
-                     || STRFTIME(b + step * n, '%Y-%m-%dT%H:%M:%S')
-            ELSE STRFTIME(a + step * n, '%Y-%m-%d') || '/'
-                 || STRFTIME(b + step * n, '%Y-%m-%d')
-        END
-        FROM (SELECT CAST(SPLIT_PART(s, '/', 1) AS TIMESTAMP) AS a,
-                     CAST(SPLIT_PART(s, '/', 2) AS TIMESTAMP) AS b) AS _iv)
+        ELSE vtl_interval_build(
+            vtl_interval_start_ts(s) + step * n, vtl_interval_end_ts(s) + step * n, s
+        )
     END
 );
