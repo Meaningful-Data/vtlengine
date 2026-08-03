@@ -1476,6 +1476,39 @@ class TimeBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_918_1(self):
+        """
+        Status: OK
+        Description: the time operators accept an identifier of type Time
+                     (TimeInterval), not only Date and Time_Period. The DuckDB
+                     backend used to reject those Data Sets before generating any
+                     SQL, so flow_to_stock, stock_to_flow, timeshift and
+                     fill_time_series all raised a TypeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/918
+        Goal: Check Result.
+        """
+        code = "GH_918_1"
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4", "5"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_918_2(self):
+        """
+        Status: OK
+        Description: on a Date identifier, timeshift adds calendar periods without
+                     snapping a month end to the month end of the target month, and
+                     only number measures accumulate, so a number Attribute passes
+                     through flow_to_stock and stock_to_flow untouched.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/918
+        Goal: Check Result.
+        """
+        code = "GH_918_2"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class SetBugs(BugHelper):
     """ """

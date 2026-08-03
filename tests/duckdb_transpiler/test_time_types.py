@@ -352,3 +352,103 @@ class TestIntervalParse:
             "SELECT '2021-01-01/2022-01-01' = '2021-01-01/2022-06-30'"
         ).fetchone()[0]
         assert result is False
+
+
+# =========================================================================
+# vtl_interval_freq / vtl_interval_shift: TimeInterval frequency and shifting
+# =========================================================================
+
+
+class TestIntervalFrequency:
+    """The frequency of a TimeInterval must match Time._classify_interval_period."""
+
+    # (months, days) for every case of test_classify_interval_period, with the
+    # P<n>Y<n>M<n>D codes flattened into the offset they stand for.
+    @pytest.mark.parametrize(
+        "interval,months,days",
+        [
+            # Daily and weekly
+            ("2020-01-01/2020-01-02", 0, 1),
+            ("2020-01-01/2020-01-01", 0, 1),
+            ("2020-01-01/2020-01-08", 0, 7),
+            ("2020-01-01/2020-01-07", 0, 7),
+            # Monthly, both the "start of next" and "end of current" conventions
+            ("2020-01-01/2020-02-01", 1, 0),
+            ("2020-01-01/2020-01-31", 1, 0),
+            ("2020-02-01/2020-03-01", 1, 0),
+            ("2020-02-01/2020-02-29", 1, 0),  # leap year February
+            ("2021-02-01/2021-02-28", 1, 0),  # non-leap year February
+            # Quarterly and semesterly
+            ("2020-01-01/2020-04-01", 3, 0),
+            ("2020-01-01/2020-03-31", 3, 0),
+            ("2020-01-01/2020-07-01", 6, 0),
+            ("2020-01-01/2020-06-30", 6, 0),
+            # Yearly, not anchored to January
+            ("2020-01-01/2021-01-01", 12, 0),
+            ("2020-01-01/2020-12-31", 12, 0),
+            ("2001-06-15/2002-06-14", 12, 0),
+            # Multi-period spans, which have no canonical period indicator
+            ("2020-01-01/2022-01-01", 24, 0),  # P2Y
+            ("2020-01-01/2021-12-31", 24, 0),  # P2Y, "end of period"
+            ("2020-01-01/2027-01-01", 84, 0),  # P7Y
+            ("2020-01-01/2020-08-01", 7, 0),  # P7M
+            ("2020-01-01/2020-07-31", 7, 0),  # P7M, "end of period"
+            ("2020-01-01/2021-03-01", 14, 0),  # P1Y2M
+            ("2020-01-01/2020-01-15", 0, 14),  # P14D
+            ("2020-01-01/2020-01-16", 0, 15),  # P15D
+        ],
+    )
+    def test_interval_freq(self, conn, interval, months, days):
+        result = conn.execute(f"SELECT vtl_interval_freq('{interval}')").fetchone()[0]
+        assert (result["months"], result["days"]) == (months, days)
+
+    def test_interval_freq_matches_pandas(self, conn):
+        """Cross-check against the pandas classifier the macro mirrors."""
+        from vtlengine.Operators.Time import Time
+
+        for interval in ("2020-01-01/2020-12-31", "2020-01-01/2022-01-01", "2020-01-01/2020-01-15"):
+            code = Time._classify_interval_period(interval)
+            offset = Time._period_offset(code).kwds
+            expected = (
+                offset.get("years", 0) * 12 + offset.get("months", 0),
+                offset.get("days", 0),
+            )
+            result = conn.execute(f"SELECT vtl_interval_freq('{interval}')").fetchone()[0]
+            assert (result["months"], result["days"]) == expected, interval
+
+    def test_interval_step(self, conn):
+        """The step drives generate_series, so it must stay a native INTERVAL."""
+        result = conn.execute(
+            "SELECT CAST(DATE '2020-01-31' + vtl_interval_step('2020-01-01/2020-01-31') AS DATE)"
+        ).fetchone()[0]
+        assert result.isoformat() == "2020-02-29"
+
+    @pytest.mark.parametrize(
+        "interval,shift,expected",
+        [
+            ("2001-01-01/2001-12-31", 1, "2002-01-01/2002-12-31"),
+            ("2001-01-01/2001-12-31", -2, "1999-01-01/1999-12-31"),
+            ("2001-01-01/2001-12-31", 0, "2001-01-01/2001-12-31"),
+            # A month end clamps but is not snapped to the target month end
+            ("2020-01-31/2020-02-29", 1, "2020-02-29/2020-03-29"),
+            # Non-canonical durations shift by their own length
+            ("2020-01-01/2022-01-01", 2, "2024-01-01/2026-01-01"),
+            ("2020-01-01/2020-01-15", 3, "2020-02-12/2020-02-26"),
+        ],
+    )
+    def test_interval_shift(self, conn, interval, shift, expected):
+        result = conn.execute(
+            f"SELECT vtl_interval_shift('{interval}', {shift}, vtl_interval_step('{interval}'))"
+        ).fetchone()[0]
+        assert result == expected
+
+    def test_interval_shift_keeps_time_component(self, conn):
+        result = conn.execute(
+            "SELECT vtl_interval_shift('2020-01-01T00:00:00/2020-12-31T00:00:00', 1, "
+            "vtl_interval_step('2020-01-01T00:00:00/2020-12-31T00:00:00'))"
+        ).fetchone()[0]
+        assert result == "2021-01-01T00:00:00/2021-12-31T00:00:00"
+
+    def test_interval_shift_null(self, conn):
+        result = conn.execute("SELECT vtl_interval_shift(NULL, 1, INTERVAL 1 YEAR)").fetchone()[0]
+        assert result is None

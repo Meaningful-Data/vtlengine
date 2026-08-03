@@ -9,7 +9,7 @@ from vtlengine import run
 from vtlengine.DataTypes import Date, Integer
 from vtlengine.DataTypes._time_checking import check_date
 from vtlengine.DataTypes.TimeHandling import check_max_date
-from vtlengine.Exceptions import InputValidationException, RunTimeError
+from vtlengine.Exceptions import InputValidationException, RunTimeError, SemanticError
 
 
 def _run_scalar(expression):
@@ -818,8 +818,99 @@ def test_fill_time_series_interval_uniform_frequency(intervals):
         script="DS_r <- fill_time_series(DS_1, single);",
         data_structures=structure,
         datapoints={"DS_1": data_df},
+        use_duckdb=_use_duckdb_backend(),
     )
     assert set(result["DS_r"].data["Id_2"].tolist()) >= set(intervals)
+
+
+@pytest.mark.parametrize(
+    "intervals, shift, expected",
+    [
+        pytest.param(
+            ["2001-01-01/2001-12-31", "2002-01-01/2002-12-31"],
+            1,
+            ["2002-01-01/2002-12-31", "2003-01-01/2003-12-31"],
+            id="yearly",
+        ),
+        pytest.param(
+            ["2020-01-31/2020-02-29", "2020-02-29/2020-03-29"],
+            1,
+            ["2020-02-29/2020-03-29", "2020-03-29/2020-04-29"],
+            id="monthly_month_end_clamps_without_snapping",
+        ),
+        pytest.param(
+            ["2020-01-01/2022-01-01", "2022-01-01/2024-01-01"],
+            -1,
+            ["2018-01-01/2020-01-01", "2020-01-01/2022-01-01"],
+            id="biennial_negative_shift",
+        ),
+        pytest.param(
+            ["2020-01-01/2020-08-01", "2020-08-01/2021-03-01"],
+            1,
+            ["2020-08-01/2021-03-01", "2021-03-01/2021-10-01"],
+            id="seven_month_span",
+        ),
+    ],
+)
+def test_timeshift_interval(intervals, shift, expected):
+    """Timeshift moves both endpoints of a TimeInterval by the frequency the
+    interval's own duration implies, canonical or not."""
+    structure = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "String", "role": "Identifier", "nullable": False},
+                    {"name": "Id_2", "type": "Time", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Integer", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    data_df = pd.DataFrame(
+        {"Id_1": ["A"] * len(intervals), "Id_2": intervals, "Me_1": list(range(len(intervals)))}
+    )
+    result = run(
+        script=f"DS_r <- timeshift(DS_1, {shift});",
+        data_structures=structure,
+        datapoints={"DS_1": data_df},
+        use_duckdb=_use_duckdb_backend(),
+    )
+    assert sorted(_to_pylist(result["DS_r"].data["Id_2"])) == sorted(expected)
+
+
+def test_fill_time_series_interval_mixed_frequency():
+    """Intervals of more than one frequency cannot define a grid (1-1-19-9)."""
+    structure = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "String", "role": "Identifier", "nullable": False},
+                    {"name": "Id_2", "type": "Time", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Integer", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    data_df = pd.DataFrame(
+        {
+            "Id_1": ["A"] * 3,
+            "Id_2": [
+                "2020-01-01/2020-01-31",
+                "2020-02-01/2020-02-29",
+                "2020-03-01/2021-03-01",
+            ],
+            "Me_1": [1, 2, 3],
+        }
+    )
+    with pytest.raises(SemanticError, match="1-1-19-9"):
+        run(
+            script="DS_r <- fill_time_series(DS_1, single);",
+            data_structures=structure,
+            datapoints={"DS_1": data_df},
+            use_duckdb=_use_duckdb_backend(),
+        )
 
 
 @pytest.mark.parametrize(

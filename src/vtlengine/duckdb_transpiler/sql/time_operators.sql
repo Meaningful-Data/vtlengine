@@ -313,3 +313,97 @@ CREATE OR REPLACE MACRO vtl_tp_shift(p vtl_time_period, n INTEGER) AS (
             }::vtl_time_period)
     END
 );
+
+
+-- ============================================================================
+-- TIMEINTERVAL FREQUENCY AND SHIFT
+-- ============================================================================
+-- The frequency of a TimeInterval series is the DURATION of a single interval,
+-- not a calendar anchor, so vtl_interval_to_period is not an equivalent here.
+-- Reference: Time._classify_interval_period in Operators/Time.py.
+
+-- The endpoints. vtl_interval_parse cannot be reused: it assumes the date part
+-- is exactly 10 characters, which breaks on the 2020-01-01T00:00:00/... form.
+CREATE OR REPLACE MACRO vtl_interval_start_date(s) AS (
+    CAST(SUBSTR(SPLIT_PART(s, '/', 1), 1, 10) AS DATE)
+);
+
+CREATE OR REPLACE MACRO vtl_interval_end_date(s) AS (
+    CAST(SUBSTR(SPLIT_PART(s, '/', 2), 1, 10) AS DATE)
+);
+
+-- Whole calendar months from d1 to c: the largest m with d1 + m months <= c.
+CREATE OR REPLACE MACRO vtl_interval_months(d1, c) AS (
+    date_diff('month', d1, c)
+    - CASE WHEN d1 + INTERVAL (date_diff('month', d1, c)) MONTH > c THEN 1 ELSE 0 END
+);
+
+-- The days left over once those whole months are taken out. Together with
+-- vtl_interval_months this reproduces relativedelta's normalisation.
+CREATE OR REPLACE MACRO vtl_interval_days(d1, c) AS (
+    date_diff('day', d1 + INTERVAL (vtl_interval_months(d1, c)) MONTH, c)
+);
+
+-- The six canonical VTL frequencies as (months, days): Y S Q M W D.
+CREATE OR REPLACE MACRO vtl_interval_is_canonical(m, d) AS (
+    (d = 0 AND m IN (12, 6, 3, 1)) OR (m = 0 AND d IN (7, 1))
+);
+
+-- Non-zero component count, over relativedelta's (years, months, days) split.
+CREATE OR REPLACE MACRO vtl_interval_nonzero(m, d) AS (
+    CASE WHEN m // 12 <> 0 THEN 1 ELSE 0 END
+    + CASE WHEN m % 12 <> 0 THEN 1 ELSE 0 END
+    + CASE WHEN d <> 0 THEN 1 ELSE 0 END
+);
+
+-- The frequency of one interval as a (months, days) STRUCT. Both the interval
+-- end and end + 1 day are candidates, the first canonical one wins, and
+-- otherwise the one with fewer non-zero components does, ties going to the end
+-- itself. A STRUCT rather than an INTERVAL because DuckDB normalises a month to
+-- 30 days when comparing intervals, which would equate 30 days with one month.
+CREATE OR REPLACE MACRO vtl_interval_freq(s) AS ((
+    SELECT CASE
+        WHEN (m1 > 0 OR d1 > 0) AND vtl_interval_is_canonical(m1, d1)
+            THEN {'months': m1, 'days': d1}
+        WHEN vtl_interval_is_canonical(m2, d2) THEN {'months': m2, 'days': d2}
+        -- A zero-length candidate is dropped, as relativedelta's filter does.
+        WHEN m1 = 0 AND d1 = 0 THEN {'months': m2, 'days': d2}
+        WHEN vtl_interval_nonzero(m1, d1) <= vtl_interval_nonzero(m2, d2)
+            THEN {'months': m1, 'days': d1}
+        ELSE {'months': m2, 'days': d2}
+    END
+    FROM (SELECT vtl_interval_months(a, b) AS m1,
+                 vtl_interval_days(a, b) AS d1,
+                 vtl_interval_months(a, b + INTERVAL 1 DAY) AS m2,
+                 vtl_interval_days(a, b + INTERVAL 1 DAY) AS d2
+          FROM (SELECT vtl_interval_start_date(s) AS a,
+                       vtl_interval_end_date(s) AS b) AS _iv) AS _cand
+));
+
+-- The same frequency as a native step, for generate_series and date arithmetic.
+CREATE OR REPLACE MACRO vtl_interval_freq_to_step(f) AS (
+    INTERVAL (f.months) MONTH + INTERVAL (f.days) DAY
+);
+
+CREATE OR REPLACE MACRO vtl_interval_step(s) AS (
+    vtl_interval_freq_to_step(vtl_interval_freq(s))
+);
+
+-- Shift both endpoints by n periods, mirroring Time_Shift.shift_interval: plain
+-- calendar addition (pd.DateOffset clamps but never snaps to a month end), with
+-- the output format taken from the start endpoint. STRFTIME needs a literal
+-- format, hence the duplicated arms.
+CREATE OR REPLACE MACRO vtl_interval_shift(s, n, step) AS (
+    CASE
+        WHEN s IS NULL THEN NULL
+        ELSE (SELECT CASE
+            WHEN LENGTH(SPLIT_PART(s, '/', 1)) > 10
+                THEN STRFTIME(a + step * n, '%Y-%m-%dT%H:%M:%S') || '/'
+                     || STRFTIME(b + step * n, '%Y-%m-%dT%H:%M:%S')
+            ELSE STRFTIME(a + step * n, '%Y-%m-%d') || '/'
+                 || STRFTIME(b + step * n, '%Y-%m-%d')
+        END
+        FROM (SELECT CAST(SPLIT_PART(s, '/', 1) AS TIMESTAMP) AS a,
+                     CAST(SPLIT_PART(s, '/', 2) AS TIMESTAMP) AS b) AS _iv)
+    END
+);
