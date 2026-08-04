@@ -1592,11 +1592,16 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             # as measure<number>, so attributes pass through untouched (issue #931).
             elif comp.role == Role.MEASURE and comp.data_type in (Integer, Number):
                 if op == tokens.FLOW_TO_STOCK:
-                    cols.append(
-                        f"CASE WHEN {col} IS NULL THEN NULL ELSE "
+                    total = (
                         f"SUM({col}) OVER ({partition_clause} {order_clause} "
-                        f"ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) END AS {col}"
+                        f"ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)"
                     )
+                    if comp.data_type == Integer:
+                        # DuckDb widens SUM() over an integer to HUGEINT, which has no
+                        # pandas integer counterpart, so the measure would surface as a
+                        # float while still being declared Integer (issue #935).
+                        total = f"CAST({total} AS {get_duckdb_type('Integer')})"
+                    cols.append(f"CASE WHEN {col} IS NULL THEN NULL ELSE {total} END AS {col}")
                 else:  # STOCK_TO_FLOW
                     cols.append(f"COALESCE({col} - LAG({col}) OVER {window}, {col}) AS {col}")
             else:
