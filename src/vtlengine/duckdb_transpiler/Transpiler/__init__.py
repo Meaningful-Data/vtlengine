@@ -1264,7 +1264,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     def _resolve_time_identifier(self, ds: Dataset, op_name: str) -> Any:
         """Return the time identifier name and type for time-based operators."""
         for comp in ds.components.values():
-            if comp.data_type in (TimePeriod, Date) and comp.role == Role.IDENTIFIER:
+            if comp.data_type in (TimePeriod, Date, TimeInterval) and comp.role == Role.IDENTIFIER:
                 return comp.name, comp.data_type
 
     def _build_time_grid_parts(
@@ -1321,6 +1321,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         if time_type == Date:
             return self._fill_time_series_date(ds, src, time_id, fill_mode)
+        if time_type == TimeInterval:
+            return self._fill_time_series_interval(ds, src, time_id, fill_mode)
         return self._fill_time_series_period(ds, src, time_id, fill_mode)
 
     def _fill_time_series_period(self, ds: Dataset, src: str, time_id: str, fill_mode: str) -> str:
@@ -1461,6 +1463,88 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         )
         return cte.select(final)
 
+    def _fill_time_series_interval(
+        self, ds: Dataset, src: str, time_id: str, fill_mode: str
+    ) -> str:
+        """Fill time series for TimeInterval identifiers.
+
+        The start dates and the end dates are each stepped by one frequency from
+        their own lower bound, and then the k-th start is paired with the k-th
+        end. That mirrors Fill_time_series.fill_time_intervals, and like it only
+        adds the Data Points whose key the operand is missing.
+        """
+        time_col, other_id_cols, _, join_on, final_select, order_by = self._build_time_grid_parts(
+            ds, time_id
+        )
+        per_group = fill_mode == "single" and bool(other_id_cols)
+        freq_step = "(SELECT step FROM freq)"
+
+        cte = CTEBuilder()
+        cte.cte("source", f"SELECT * FROM {src}")
+        # One frequency for the whole operand, as Fill_time_series.evaluate requires.
+        # sample carries the operand's own representation over to the added intervals.
+        cte.cte(
+            "freq",
+            "SELECT CASE WHEN COUNT(DISTINCT f) > 1 THEN error("
+            "'VTL 1-1-19-9: fill_time_series needs a single time interval frequency') "
+            "ELSE vtl_interval_freq_to_step(MIN(f)) END AS step, MIN(iv) AS sample "
+            f"FROM (SELECT vtl_interval_freq({time_col}) AS f, {time_col} AS iv "
+            f"FROM source WHERE {time_col} IS NOT NULL)",
+        )
+
+        bounds_cols = (
+            f"MIN(vtl_interval_start_ts({time_col})) AS min_s, "
+            f"MAX(vtl_interval_start_ts({time_col})) AS max_s, "
+            f"MIN(vtl_interval_end_ts({time_col})) AS min_e, "
+            f"MAX(vtl_interval_end_ts({time_col})) AS max_e"
+        )
+        if per_group:
+            oid_csv = ", ".join(other_id_cols)
+            cte.cte("bounds", f"SELECT {oid_csv}, {bounds_cols} FROM source GROUP BY {oid_csv}")
+            b_cols = ", ".join(f"b.{oc}" for oc in other_id_cols) + ", "
+            partition = "PARTITION BY " + ", ".join(f"b.{oc}" for oc in other_id_cols) + " "
+        else:
+            cte.cte("bounds", f"SELECT {bounds_cols} FROM source")
+            b_cols = partition = ""
+
+        for name, lo, hi, alias in (
+            ("starts", "min_s", "max_s", "d1"),
+            ("ends", "min_e", "max_e", "d2"),
+        ):
+            cte.cte(
+                name,
+                f"SELECT {b_cols}ROW_NUMBER() OVER ({partition}ORDER BY d) AS k, "
+                f"CAST(d AS TIMESTAMP) AS {alias} "
+                f"FROM bounds b, generate_series(b.{lo}, b.{hi}, {freq_step}) AS t(d)",
+            )
+
+        grid = f"vtl_interval_build(st.d1, en.d2, (SELECT sample FROM freq)) AS {time_col}"
+        if per_group:
+            on_ids = "".join(f" AND st.{oc} = en.{oc}" for oc in other_id_cols)
+            st_cols = ", ".join(f"st.{oc}" for oc in other_id_cols)
+            cte.cte(
+                "full_grid",
+                f"SELECT {st_cols}, {grid} FROM starts st JOIN ends en ON st.k = en.k{on_ids}",
+            )
+        elif other_id_cols:
+            oid_csv = ", ".join(other_id_cols)
+            cte.cte("interval_grid", f"SELECT {grid} FROM starts st JOIN ends en ON st.k = en.k")
+            cte.cte("group_keys", f"SELECT DISTINCT {oid_csv} FROM source")
+            gk_cols = ", ".join(f"gk.{oc}" for oc in other_id_cols)
+            cte.cte(
+                "full_grid",
+                f"SELECT {gk_cols}, ig.{time_col} FROM group_keys gk, interval_grid ig",
+            )
+        else:
+            cte.cte("full_grid", f"SELECT {grid} FROM starts st JOIN ends en ON st.k = en.k")
+
+        keys = self._grid_with_source_keys(other_id_cols, time_col)
+        final = (
+            f"SELECT {final_select} FROM ({keys}) g "
+            f"LEFT JOIN source s ON {join_on} ORDER BY {order_by}"
+        )
+        return cte.select(final)
+
     def _visit_flow_stock(self, node: AST.UnaryOp, op: str) -> str:
         """Visit FLOW_TO_STOCK or STOCK_TO_FLOW: window functions over time series."""
         ds = self._get_dataset_structure(node.operand)
@@ -1482,7 +1566,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             col = quote_name(comp.name)
             if comp.role == Role.IDENTIFIER:
                 cols.append(col)
-            elif comp.data_type in (Integer, Number):
+            # Only number measures accumulate: the reference manual types the operand
+            # as measure<number>, so attributes pass through untouched (issue #931).
+            elif comp.role == Role.MEASURE and comp.data_type in (Integer, Number):
                 if op == tokens.FLOW_TO_STOCK:
                     cols.append(
                         f"CASE WHEN {col} IS NULL THEN NULL ELSE "
@@ -1513,19 +1599,34 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 col = quote_name(comp.name)
                 cols.append(shifted if comp.name == time_id else col)
             return SQLBuilder().select(*cols).from_table(src).build()
+        elif time_type == TimeInterval:
+            # A TimeInterval series has a single frequency, taken from the duration of
+            # one interval. Time_Shift.evaluate reads it off row 0 of the unsorted
+            # operand; MIN() is the deterministic equivalent in SQL, and it agrees
+            # with row 0 for any operand in chronological order.
+            cols = [
+                (
+                    f"vtl_interval_shift({quote_name(comp.name)}, {shift_sql}, freq.step) "
+                    f"AS {quote_name(comp.name)}"
+                )
+                if comp.name == time_id
+                else quote_name(comp.name)
+                for comp in ds.components.values()
+            ]
+            freq_sql = (
+                f"SELECT vtl_interval_step(MIN({time_col})) AS step "
+                f"FROM {src} WHERE {time_col} IS NOT NULL"
+            )
+            return f"""SELECT {", ".join(cols)}
+FROM {src}, (
+    {freq_sql}
+) AS freq"""
         else:
             cols = []
             for comp in ds.components.values():
                 col = quote_name(comp.name)
                 if comp.name == time_id:
-                    shifted_expr = (
-                        f"CASE WHEN freq.period_ind IN ('M','Q','S','A') "
-                        f"AND CAST({col} AS DATE) = LAST_DAY(CAST({col} AS DATE)) "
-                        f"THEN LAST_DAY(CAST("
-                        f"vtl_dateadd({col}, {shift_sql}, freq.period_ind) AS DATE)) "
-                        f"ELSE vtl_dateadd({col}, {shift_sql}, freq.period_ind) END"
-                    )
-                    cols.append(f"{shifted_expr} AS {col}")
+                    cols.append(f"vtl_dateadd({col}, {shift_sql}, freq.period_ind) AS {col}")
                 else:
                     cols.append(col)
 
