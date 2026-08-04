@@ -1,0 +1,6 @@
+Id_1,Id_2,Me_1,Me_2,Me_3,Me_4
+a,2000M1,True,1,1.5,hello
+a,2000M2,,3,3.75,world
+a,2000M3,True,6,7.0,abc
+b,2000M4,False,4,4.5,ES
+b,2000M5,True,,10.0,

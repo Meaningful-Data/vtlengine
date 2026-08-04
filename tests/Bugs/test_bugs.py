@@ -1460,6 +1460,23 @@ class TimeBugs(BugHelper):
             assert result["b"].value == 7, f"engine={engine}"
             assert result["c"].value == 7, f"engine={engine}"
 
+    def test_GH_935_1(self):
+        """
+        Status: OK
+        Description: flow_to_stock accumulates with SUM() OVER (), and DuckDb
+                     widens SUM() over an integer to HUGEINT. HUGEINT has no pandas
+                     integer counterpart, so an Integer measure came back as a float
+                     (1.0, 3.0, 6.0) even though the component is still declared
+                     Integer. stock_to_flow was unaffected because it subtracts.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/935
+        Goal: Check Result.
+        """
+        code = "GH_935_1"
+        number_inputs = 2
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_949_1(self):
         """
         Status: OK
@@ -1471,6 +1488,128 @@ class TimeBugs(BugHelper):
         Goal: Check Result.
         """
         code = "GH_949_1"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_918_1(self):
+        """
+        Status: OK
+        Description: the time operators accept an identifier of type Time
+                     (TimeInterval), not only Date and Time_Period. The DuckDB
+                     backend used to reject those Data Sets before generating any
+                     SQL, so flow_to_stock, stock_to_flow, timeshift and
+                     fill_time_series all raised a TypeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/918
+        Goal: Check Result.
+        """
+        code = "GH_918_1"
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4", "5"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_918_2(self):
+        """
+        Status: OK
+        Description: on a Date identifier, timeshift adds calendar periods without
+                     snapping a month end to the month end of the target month, and
+                     only number measures accumulate, so a number Attribute passes
+                     through flow_to_stock and stock_to_flow untouched.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/918
+        Goal: Check Result.
+        """
+        code = "GH_918_2"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_918_3(self):
+        """
+        Status: OK
+        Description: fill_time_series adds every Data Point the grid expects even
+                     when the Data Set has Attribute components. The added Data
+                     Points carry no values, so their Attributes are null too.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/918
+        Goal: Check Result.
+        """
+        code = "GH_918_3"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_918_4(self):
+        """
+        Status: OK
+        Description: fill_time_series with the single limits method works whatever
+                     the type of the other identifiers, which used to be looked up
+                     by their string representation.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/918
+        Goal: Check Result.
+        """
+        code = "GH_918_4"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_918_5(self):
+        """
+        Status: OK
+        Description: a Data Set may hold a single series, with the time identifier
+                     as its only identifier. The time operators then have nothing
+                     to group by, which used to raise a Pandas ValueError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/918
+        Goal: Check Result.
+        """
+        code = "GH_918_5"
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_918_6(self):
+        """
+        Status: OK
+        Description: same single series as GH_918_5, on a Date identifier.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/918
+        Goal: Check Result.
+        """
+        code = "GH_918_6"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_918_7(self):
+        """
+        Status: OK
+        Description: fill_time_series only adds Data Points, so intervals that
+                     overlap keep their own values. Their two endpoint grids come
+                     out different lengths, which used to rewrite the operand's
+                     intervals into ones it never held.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/918
+        Goal: Check Result.
+        """
+        code = "GH_918_7"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_918_8(self):
+        """
+        Status: OK
+        Description: a Time value may carry a time component, which the operators
+                     read past when they measure an interval's duration and keep in
+                     the intervals they add.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/918
+        Goal: Check Result.
+        """
+        code = "GH_918_8"
         number_inputs = 1
         references_names = ["1", "2"]
 
@@ -1963,6 +2102,24 @@ class AggregationBugs(BugHelper):
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
+
+    def test_GH_937_1(self):
+        """
+        Status: OK
+        Description: count only reports the number of Data Points, so it does not
+                     aggregate the Measures it is given: the reference manual types its
+                     operand as a plain dataset, states no Additional Constraints, and
+                     counts a String Measure in its own example. A Time Measure was
+                     rejected anyway, because the guard against aggregating one ran
+                     before count replaced every Measure with int_var.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/937
+        Goal: Check Result.
+        """
+        code = "GH_937_1"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
 
 class DataValidationBugs(BugHelper):
