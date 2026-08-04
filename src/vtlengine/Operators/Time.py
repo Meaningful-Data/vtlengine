@@ -93,6 +93,28 @@ class Time(Operators.Operator):
         return tp_value.period_indicator
 
     @classmethod
+    def _iter_groups(cls, data: pd.DataFrame) -> Any:
+        """Iterate over the series the operand holds, one per combination of the
+        non-time identifiers.
+
+        A Data Set may have the time identifier as its only identifier, in which
+        case it holds a single series and Pandas cannot group it.
+        """
+        if not cls.other_ids:
+            return [((), data)]
+        return data.groupby(cls.other_ids)
+
+    @staticmethod
+    def _group_key(values: Any) -> Any:
+        """The dictionary key a group of non-time identifier values maps to.
+
+        Pandas hands over a one-element tuple when grouping by a single column, so
+        the values have to be unwrapped the same way on both sides of a lookup.
+        """
+        values = tuple(values)
+        return values[0] if len(values) == 1 else values
+
+    @classmethod
     def parse_date(cls, date_str: str) -> date:
         return parse_date_value(date_str)
 
@@ -143,15 +165,23 @@ class Time(Operators.Operator):
     }
 
     @classmethod
+    def _interval_endpoints(cls, interval: str) -> Any:
+        """The two endpoint dates of a TimeInterval.
+
+        The endpoints may carry a time component, which the input format allows,
+        so only the date part is read.
+        """
+        start_str, end_str = interval.split("/")
+        return date.fromisoformat(start_str[:10]), date.fromisoformat(end_str[:10])
+
+    @classmethod
     def get_frequency_from_time(cls, interval: str) -> Any:
-        start_date, end_date = interval.split("/")
-        return date.fromisoformat(end_date) - date.fromisoformat(start_date)
+        start, end = cls._interval_endpoints(interval)
+        return end - start
 
     @classmethod
     def _classify_interval_period(cls, interval: str) -> str:
-        start_str, end_str = interval.split("/")
-        start = date.fromisoformat(start_str)
-        end = date.fromisoformat(end_str)
+        start, end = cls._interval_endpoints(interval)
         candidates = [relativedelta(endpoint, start) for endpoint in (end, end + timedelta(days=1))]
         candidates = [
             rd
@@ -264,11 +294,15 @@ class Unary(Time):
         if data_type == TimePeriod:
             result.data = cls._period_accumulation(result.data, measure_names)
         elif data_type in (Date, TimeInterval):
-            result.data[measure_names] = (
-                result.data.groupby(cls.other_ids)[measure_names]
-                .apply(cls.py_op)
-                .reset_index(drop=True)
-            )
+            if cls.other_ids:
+                accumulated = (
+                    result.data.groupby(cls.other_ids)[measure_names]
+                    .apply(cls.py_op)
+                    .reset_index(drop=True)
+                )
+            else:
+                accumulated = cls.py_op(result.data[measure_names].copy()).reset_index(drop=True)
+            result.data[measure_names] = accumulated
         else:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="dataset", param="date type")
         return result
@@ -401,6 +435,9 @@ class Fill_time_series(Binary):
         result.data[cls.time_id] = result.data[cls.time_id].astype("string[pyarrow]")
         if len(result.data) < 2:
             return result
+        if not cls.other_ids:
+            # The operand holds a single series, so both limits span the same range.
+            fill_type = "all"
         data_type = result.components[cls.time_id].data_type
         if data_type == TimePeriod:
             result.data = cls.fill_periods(result.data, fill_type)
@@ -516,12 +553,10 @@ class Fill_time_series(Binary):
         if fill_type == "all":
             return compute_min_max(data[cls.time_id])
 
-        grouped = data.groupby(cls.other_ids)
-        result_dict = {
-            name if len(name) > 1 else name[0]: compute_min_max(group[cls.time_id])
-            for name, group in grouped
+        return {
+            cls._group_key(name): compute_min_max(group[cls.time_id])
+            for name, group in cls._iter_groups(data)
         }
-        return result_dict
 
     @classmethod
     def fill_dates(cls, data: pd.DataFrame, fill_type: str, min_frequency: str) -> pd.DataFrame:
@@ -539,12 +574,13 @@ class Fill_time_series(Binary):
         def create_filled_dates(group: Any, min_max: Dict[str, Any]) -> (pd.DataFrame, str):  # type: ignore[syntax]
             date_range = cls._period_range(min_max["min"], min_max["max"], min_frequency)
             date_df = pd.DataFrame(date_range, columns=[cls.time_id])
-            date_df[cls.other_ids] = group.iloc[0][cls.other_ids]
+            if cls.other_ids:
+                date_df[cls.other_ids] = group.iloc[0][cls.other_ids]
             date_df[cls.measures] = None
             return date_df, min_max["date_format"]
 
-        for name, group in data.groupby(cls.other_ids):
-            min_max = MAX_MIN if fill_type == "all" else MAX_MIN[name if len(name) > 1 else name[0]]
+        for name, group in cls._iter_groups(data):
+            min_max = MAX_MIN if fill_type == "all" else MAX_MIN[cls._group_key(name)]
             filled_dates, date_format = create_filled_dates(group, min_max)
             filled_data.append(filled_dates)
 
@@ -556,13 +592,12 @@ class Fill_time_series(Binary):
 
     @classmethod
     def max_min_from_time(cls, data: pd.DataFrame, fill_type: str = "all") -> Dict[str, Any]:
-        data = data.applymap(str).sort_values(  # type: ignore[operator]
-            by=cls.other_ids + [cls.time_id]
-        )
+        data = data.sort_values(by=cls.other_ids + [cls.time_id])
 
         def extract_max_min(group: Any) -> Dict[str, Any]:
-            start_dates = group.str.split("/").str[0]
-            end_dates = group.str.split("/").str[1]
+            intervals = group.astype(str)
+            start_dates = intervals.str.split("/").str[0]
+            end_dates = intervals.str.split("/").str[1]
             return {
                 "start": {"min": start_dates.min(), "max": start_dates.max()},
                 "end": {"min": end_dates.min(), "max": end_dates.max()},
@@ -570,58 +605,48 @@ class Fill_time_series(Binary):
 
         if fill_type == "all":
             return extract_max_min(data[cls.time_id])
-        else:
-            return {
-                (name if len(name) > 1 else name[0]): extract_max_min(group[cls.time_id])
-                for name, group in data.groupby(cls.other_ids)
-            }
+        return {
+            cls._group_key(name): extract_max_min(group[cls.time_id])
+            for name, group in cls._iter_groups(data)
+        }
 
     @classmethod
     def fill_time_intervals(
         cls, data: pd.DataFrame, fill_type: str, frequency: str
     ) -> pd.DataFrame:
-        result_data = cls.time_filler(data, fill_type, frequency)
-        not_na = result_data[cls.measures].notna().any(axis=1)
-        duplicated = result_data.duplicated(subset=(cls.other_ids + [cls.time_id]), keep=False)
-        return result_data[~duplicated | not_na]
+        """Add the Data Points the interval grid expects and keep the operand's own.
 
-    @classmethod
-    def time_filler(cls, data: pd.DataFrame, fill_type: str, frequency: str) -> pd.DataFrame:
+        Both endpoints are stepped by one frequency from their own lower limit, and
+        the k-th start is then paired with the k-th end. Only Data Points whose key
+        is missing are added, so the operand's own intervals always survive, even
+        when they overlap and the two endpoint grids come out different lengths.
+        """
         MAX_MIN = cls.max_min_from_time(data, fill_type)
+        non_ids = [c for c in data.columns if c not in cls.other_ids and c != cls.time_id]
 
-        def fill_group(group_df: pd.DataFrame) -> pd.DataFrame:
-            group_key = group_df.iloc[0][cls.other_ids].values
-            if fill_type != "all":
-                group_key = group_key[0] if len(group_key) == 1 else tuple(group_key)
-            group_dict = MAX_MIN if fill_type == "all" else MAX_MIN[group_key]
+        def grid_intervals(limits: Dict[str, Any], sample: str) -> List[str]:
+            # The limits stay ISO strings so that a time of day survives the range.
+            starts = cls._period_range(limits["start"]["min"], limits["start"]["max"], frequency)
+            ends = cls._period_range(limits["end"]["min"], limits["end"]["max"], frequency)
+            fmt = "%Y-%m-%dT%H:%M:%S" if _has_time_component(sample.split("/")[0]) else "%Y-%m-%d"
+            return [f"{s.strftime(fmt)}/{e.strftime(fmt)}" for s, e in zip(starts, ends)]
 
-            intervals = [
-                f"{group_dict['start']['min']}/{group_dict['end']['min']}",
-                f"{group_dict['start']['max']}/{group_dict['end']['max']}",
-            ]
-            for interval in intervals:
-                if interval not in group_df[cls.time_id].values:
-                    empty_row = group_df.iloc[0].copy()
-                    empty_row[cls.time_id] = interval
-                    empty_row[cls.measures] = None
-                    group_df = pd.concat([group_df, pd.DataFrame([empty_row])], ignore_index=True)
-            start_group_df = group_df.copy()
-            start_group_df[cls.time_id] = start_group_df[cls.time_id].str.split("/").str[0]
-            end_group_df = group_df.copy()
-            end_group_df[cls.time_id] = end_group_df[cls.time_id].str.split("/").str[1]
-            start_filled = cls.date_filler(start_group_df, fill_type, frequency)
-            end_filled = cls.date_filler(end_group_df, fill_type, frequency)
-            start_filled[cls.time_id] = start_filled[cls.time_id].str.cat(
-                end_filled[cls.time_id], sep="/"
-            )
-            return start_filled
+        filled_rows: List[Dict[str, Any]] = []
+        for name, group_df in cls._iter_groups(data):
+            limits = MAX_MIN if fill_type == "all" else MAX_MIN[cls._group_key(name)]
+            existing = set(group_df[cls.time_id].astype(str))
+            other_vals = dict(zip(cls.other_ids, tuple(name)))
+            for interval in grid_intervals(limits, str(group_df[cls.time_id].iloc[0])):
+                if interval not in existing:
+                    filled_rows.append(
+                        {**other_vals, cls.time_id: interval, **dict.fromkeys(non_ids)}
+                    )
 
-        filled_data = [fill_group(group_df) for _, group_df in data.groupby(cls.other_ids)]
-        return (
-            pd.concat(filled_data, ignore_index=True)
-            .sort_values(by=cls.other_ids + [cls.time_id])
-            .drop_duplicates()
-        )
+        result = data
+        if filled_rows:
+            result = pd.concat([data, pd.DataFrame(filled_rows)], ignore_index=True)
+        result[cls.time_id] = result[cls.time_id].astype("string[pyarrow]")
+        return result.sort_values(by=cls.other_ids + [cls.time_id]).reset_index(drop=True)
 
 
 class Time_Shift(Binary):
