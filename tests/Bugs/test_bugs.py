@@ -1460,6 +1460,23 @@ class TimeBugs(BugHelper):
             assert result["b"].value == 7, f"engine={engine}"
             assert result["c"].value == 7, f"engine={engine}"
 
+    def test_GH_935_1(self):
+        """
+        Status: OK
+        Description: flow_to_stock accumulates with SUM() OVER (), and DuckDb
+                     widens SUM() over an integer to HUGEINT. HUGEINT has no pandas
+                     integer counterpart, so an Integer measure came back as a float
+                     (1.0, 3.0, 6.0) even though the component is still declared
+                     Integer. stock_to_flow was unaffected because it subtracts.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/935
+        Goal: Check Result.
+        """
+        code = "GH_935_1"
+        number_inputs = 2
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_949_1(self):
         """
         Status: OK
