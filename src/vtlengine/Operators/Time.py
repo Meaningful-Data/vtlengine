@@ -1005,15 +1005,13 @@ class Current_Date(Time):
 
 
 class SimpleBinaryTime(Operators.Binary):
-    @classmethod
-    def validate_type_compatibility(cls, left: Any, right: Any) -> bool:
-        if left == Date and right == TimePeriod:
-            return False
+    """Binary time operators taking a scalar or component on both sides.
 
-        if left == TimePeriod and right == Date:
-            return False
-
-        return not (left == TimePeriod and right == Date)
+    The two operands do not have to share a time type. datediff is typed on a plain
+    time operand and states no additional constraints, and the reference manual mixes a
+    Date with a Time_Period both in its valid syntaxes and in its example, so the
+    ordinary implicit promotion applies here rather than a stricter rule.
+    """
 
     @classmethod
     def validate(
