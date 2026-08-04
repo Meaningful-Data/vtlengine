@@ -1945,6 +1945,24 @@ class AggregationBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=message
         )
 
+    def test_GH_959_1(self):
+        """
+        Status: OK
+        Description: count over a Data Set reports the number of Data Points, so a Data
+                     Point counts even where one of its Measures is null. It used to be
+                     skipped, through a dropna and a COUNT over the first Measure on the
+                     pandas engine and a COUNT over a CASE on DuckDb. count over a
+                     Component still reports that Component's non-null values, which is
+                     why the manual gives the two forms separate syntaxes.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/959
+        Goal: Check Result.
+        """
+        code = "GH_959_1"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class DataValidationBugs(BugHelper):
     """ """

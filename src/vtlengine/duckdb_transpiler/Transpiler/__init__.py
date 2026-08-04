@@ -2219,11 +2219,6 @@ FROM (
         # count() without operand
         if node.operand is None:
             if op == tokens.COUNT:
-                if self._in_clause and self._current_dataset:
-                    measures = self._current_dataset.get_measures_names()
-                    if measures:
-                        or_parts = " OR ".join(f"{quote_name(m)} IS NOT NULL" for m in measures)
-                        return f"NULLIF(COUNT(CASE WHEN {or_parts} THEN 1 END), 0)"
                 return "NULLIF(COUNT(*), 0)"
             return ""
 
@@ -2240,18 +2235,8 @@ FROM (
         cols, group_by_cols = self._build_agg_group_cols(node, ds, group_cols)
         ds_tp_minmax_cols: List[tuple[str, str]] = []
 
-        # count() produces a single int_var measure.
         if op == tokens.COUNT:
-            alias = "int_var"
-            source_measures = ds.get_measures_names()
-            if source_measures:
-                and_parts = " AND ".join(f"{quote_name(m)} IS NOT NULL" for m in source_measures)
-                count_expr = f"COUNT(CASE WHEN {and_parts} THEN 1 END)"
-                if group_cols:
-                    count_expr = f"NULLIF({count_expr}, 0)"
-                cols.append(f"{count_expr} AS {quote_name(alias)}")
-            else:
-                cols.append(f"COUNT(*) AS {quote_name(alias)}")
+            cols.append(f"COUNT(*) AS {quote_name('int_var')}")
         else:
             measures = ds.get_measures_names()
             for measure in measures:
