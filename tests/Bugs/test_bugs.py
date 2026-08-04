@@ -1460,13 +1460,32 @@ class TimeBugs(BugHelper):
             assert result["b"].value == 7, f"engine={engine}"
             assert result["c"].value == 7, f"engine={engine}"
 
+    def test_GH_935_1(self):
+        """
+        Status: OK
+        Description: flow_to_stock accumulates with SUM() OVER (), and DuckDb
+                     widens SUM() over an integer to HUGEINT. HUGEINT has no pandas
+                     integer counterpart, so an Integer measure came back as a float
+                     (1.0, 3.0, 6.0) even though the component is still declared
+                     Integer. stock_to_flow was unaffected because it subtracts.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/935
+        Goal: Check Result.
+        """
+        code = "GH_935_1"
+        number_inputs = 2
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_949_1(self):
         """
         Status: OK
         Description: fill_time_series only adds Data Points, so an operand Data
                      Point whose date misses the generated grid still reaches the
-                     result. Stepping one month from 2020-01-31 clamps to 02-29 and
-                     then drifts to the 29th, leaving 2020-04-30 off the grid.
+                     result. The grid runs from 2020-01-30 one month at a time, so it
+                     holds 02-29 and 03-30 and the operand's 2020-03-31 falls outside
+                     it. The original dates for this test no longer leave anything off
+                     the grid, because #961 stopped the grid drifting off period ends.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/949
         Goal: Check Result.
         """
@@ -1595,6 +1614,25 @@ class TimeBugs(BugHelper):
         code = "GH_918_8"
         number_inputs = 1
         references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_961_1(self):
+        """
+        Status: OK
+        Description: the expected grid is measured from the lower limit rather than from
+                     the previous date. A month-based step out of a period end clamps in
+                     the shorter month, and carrying that clamped day forward drifted the
+                     grid off the period ends, so 2020-01-31 reached 2020-03-29 instead
+                     of 2020-03-31. The manual identifies a date-typed period by its last
+                     day. DS_3 keeps a mid-month series covered, since it must stay where
+                     it was.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/961
+        Goal: Check Result.
+        """
+        code = "GH_961_1"
+        number_inputs = 3
+        references_names = ["1", "2", "3"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -2082,6 +2120,24 @@ class AggregationBugs(BugHelper):
         code = "GH_959_1"
         number_inputs = 1
         references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_937_1(self):
+        """
+        Status: OK
+        Description: count only reports the number of Data Points, so it does not
+                     aggregate the Measures it is given: the reference manual types its
+                     operand as a plain dataset, states no Additional Constraints, and
+                     counts a String Measure in its own example. A Time Measure was
+                     rejected anyway, because the guard against aggregating one ran
+                     before count replaced every Measure with int_var.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/937
+        Goal: Check Result.
+        """
+        code = "GH_937_1"
+        number_inputs = 1
+        references_names = ["1", "2"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 

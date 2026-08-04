@@ -1290,6 +1290,20 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         return time_col, other_id_cols, measure_cols, join_on, final_select, order_by
 
     @staticmethod
+    def _grid_step_from_origin(origin: str, step: str) -> str:
+        """The nth expected date, measured from the lower limit rather than the previous one.
+
+        ``generate_series`` with an INTERVAL walks the grid one step at a time, and a
+        month-based step out of a period end clamps in the shorter month: from
+        2020-01-31 it reaches 2020-02-29 and then carries that day forward to
+        2020-03-29. The reference manual identifies a date-typed period by its last
+        day, so the expected date is 2020-03-31 (issue #961). Multiplying the interval
+        instead keeps a period-end series on period ends and leaves every other series
+        where it was.
+        """
+        return f"({origin} + ({step} * t.n))"
+
+    @staticmethod
     def _grid_with_source_keys(other_id_cols: List[str], time_col: str) -> str:
         """The expected grid plus the operand's own keys."""
         key_cols = ", ".join([*other_id_cols, time_col])
@@ -1430,31 +1444,36 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 f"FROM source GROUP BY {oid_csv}",
             )
             b_cols = ", ".join(f"b.{oc}" for oc in other_id_cols)
+            step_expr = self._grid_step_from_origin("b.min_d", freq_step)
             cte.cte(
                 "full_grid",
-                f"SELECT {b_cols}, CAST(d AS TIMESTAMP) AS {time_col} "
-                f"FROM bounds b, generate_series(b.min_d, b.max_d, {freq_step}) AS t(d)",
+                f"SELECT {b_cols}, CAST({step_expr} AS TIMESTAMP) AS {time_col} "
+                f"FROM bounds b, generate_series("
+                f"0, DATE_DIFF('day', b.min_d, b.max_d)) AS t(n) "
+                f"WHERE {step_expr} <= b.max_d",
             )
         else:
             cte.cte(
                 "bounds",
                 f"SELECT MIN({time_col}) AS min_d, MAX({time_col}) AS max_d FROM source",
             )
-            gen = (
-                f"generate_series("
-                f"(SELECT min_d FROM bounds), (SELECT max_d FROM bounds), {freq_step}) AS t(d)"
-            )
+            step_expr = self._grid_step_from_origin("b.min_d", freq_step)
+            gen = "bounds b, generate_series(0, DATE_DIFF('day', b.min_d, b.max_d)) AS t(n)"
             if other_id_cols:
                 oid_csv = ", ".join(other_id_cols)
                 cte.cte("group_freq", f"SELECT DISTINCT {oid_csv} FROM source")
                 gf_cols = ", ".join(f"gf.{oc}" for oc in other_id_cols)
                 cte.cte(
                     "full_grid",
-                    f"SELECT {gf_cols}, CAST(d AS TIMESTAMP) AS {time_col} "
-                    f"FROM group_freq gf, {gen}",
+                    f"SELECT {gf_cols}, CAST({step_expr} AS TIMESTAMP) AS {time_col} "
+                    f"FROM group_freq gf, {gen} WHERE {step_expr} <= b.max_d",
                 )
             else:
-                cte.cte("full_grid", f"SELECT CAST(d AS TIMESTAMP) AS {time_col} FROM {gen}")
+                cte.cte(
+                    "full_grid",
+                    f"SELECT CAST({step_expr} AS TIMESTAMP) AS {time_col} "
+                    f"FROM {gen} WHERE {step_expr} <= b.max_d",
+                )
 
         keys = self._grid_with_source_keys(other_id_cols, time_col)
         final = (
@@ -1511,11 +1530,14 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             ("starts", "min_s", "max_s", "d1"),
             ("ends", "min_e", "max_e", "d2"),
         ):
+            d = self._grid_step_from_origin(f"b.{lo}", freq_step)
             cte.cte(
                 name,
-                f"SELECT {b_cols}ROW_NUMBER() OVER ({partition}ORDER BY d) AS k, "
-                f"CAST(d AS TIMESTAMP) AS {alias} "
-                f"FROM bounds b, generate_series(b.{lo}, b.{hi}, {freq_step}) AS t(d)",
+                f"SELECT {b_cols}ROW_NUMBER() OVER ({partition}ORDER BY {d}) AS k, "
+                f"CAST({d} AS TIMESTAMP) AS {alias} "
+                f"FROM bounds b, generate_series("
+                f"0, DATE_DIFF('day', b.{lo}, b.{hi})) AS t(n) "
+                f"WHERE {d} <= b.{hi}",
             )
 
         grid = f"vtl_interval_build(st.d1, en.d2, (SELECT sample FROM freq)) AS {time_col}"
@@ -1570,11 +1592,16 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             # as measure<number>, so attributes pass through untouched (issue #931).
             elif comp.role == Role.MEASURE and comp.data_type in (Integer, Number):
                 if op == tokens.FLOW_TO_STOCK:
-                    cols.append(
-                        f"CASE WHEN {col} IS NULL THEN NULL ELSE "
+                    total = (
                         f"SUM({col}) OVER ({partition_clause} {order_clause} "
-                        f"ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) END AS {col}"
+                        f"ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)"
                     )
+                    if comp.data_type == Integer:
+                        # DuckDb widens SUM() over an integer to HUGEINT, which has no
+                        # pandas integer counterpart, so the measure would surface as a
+                        # float while still being declared Integer (issue #935).
+                        total = f"CAST({total} AS {get_duckdb_type('Integer')})"
+                    cols.append(f"CASE WHEN {col} IS NULL THEN NULL ELSE {total} END AS {col}")
                 else:  # STOCK_TO_FLOW
                     cols.append(f"COALESCE({col} - LAG({col}) OVER {window}, {col}) AS {col}")
             else:

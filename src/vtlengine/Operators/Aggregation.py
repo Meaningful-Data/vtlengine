@@ -148,8 +148,10 @@ class Aggregation(Operator.Unary):
         for comp_name, comp in operand.components.items():
             if comp.role == Role.ATTRIBUTE:
                 del result_components[comp_name]
-        # TimeInterval is not supported as a measure in aggregate operations
-        if any(
+        # TimeInterval is not supported as a measure in aggregate operations.
+        # count is exempt: it only reports the number of Data Points, so the Measures it
+        # is given are replaced by int_var below rather than aggregated (issue #937).
+        if cls.op != COUNT and any(
             comp.role == Role.MEASURE and comp.data_type is TimeInterval
             for comp in result_components.values()
         ):
