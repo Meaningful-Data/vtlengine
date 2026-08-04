@@ -249,21 +249,28 @@ class Time(Operators.Operator):
     def _period_range(cls, start: Any, end: Any, code: str) -> List[pd.Timestamp]:
         """Dates from *start* to *end*, one period at a time.
 
-        Stepping from the lower limit is what the reference manual describes, and it
-        keeps the grid on the dates the series actually uses: a month-based frequency
-        anchored with a pandas offset alias would instead land on every month end.
+        Every date is measured from the lower limit rather than from its predecessor.
+        A month-based step out of a period end clamps in the shorter month, and
+        carrying that clamped day forward drifts the grid off the period ends:
+        stepping one month at a time from 2020-01-31 reaches 2020-02-29 and then
+        2020-03-29, whereas the reference manual identifies a date-typed period by its
+        last day and so expects 2020-03-31 (issue #961). Measuring from the lower
+        limit keeps a period-end series on period ends and leaves any other series
+        exactly where it was.
         """
         offset = cls._period_offset(code)
-        current = pd.Timestamp(start)
+        start_ts = pd.Timestamp(start)
         limit = pd.Timestamp(end)
-        dates = []
-        while current <= limit:
+        if start_ts + offset <= start_ts:  # guard against a zero-length period
+            return [start_ts] if start_ts <= limit else []
+        dates: List[pd.Timestamp] = []
+        step = 0
+        while True:
+            current = start_ts + step * offset if step else start_ts
+            if current > limit:
+                return dates
             dates.append(current)
-            nxt = current + offset
-            if nxt <= current:  # guard against a zero-length period
-                break
-            current = nxt
-        return dates
+            step += 1
 
 
 class Unary(Time):
