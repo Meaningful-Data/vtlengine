@@ -1,0 +1,15 @@
+{
+  "datasets": [
+    {
+      "name": "DS_r1",
+      "DataStructure": [
+        {
+          "name": "int_var",
+          "role": "Measure",
+          "type": "Integer",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}
