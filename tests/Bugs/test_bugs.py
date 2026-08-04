@@ -1476,6 +1476,25 @@ class TimeBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_962_1(self):
+        """
+        Status: OK
+        Description: datediff takes a time operand on either side, so a Date and a
+                     Time_Period can be mixed. The manual lists
+                     ``datediff (2021Q2, 2021-11-04)`` as a valid syntax, states no
+                     Additional Constraints, and mixes the two in its own example.
+                     SimpleBinaryTime rejected the pair outright even though py_op
+                     already resolved a Time_Period to the last day of its period.
+                     The rows and the expected 546, 639 and 90 are the manual's.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/962
+        Goal: Check Result.
+        """
+        code = "GH_962_1"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_918_1(self):
         """
         Status: OK
