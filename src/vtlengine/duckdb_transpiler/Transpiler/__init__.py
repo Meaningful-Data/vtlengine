@@ -3831,7 +3831,8 @@ FROM (
 
         elif mode in ("partial_null", "partial_zero"):
             items = right_code_items if is_hierarchy else all_items
-            checks = [f"({_has_col(i)} = 1 AND {_val_col(i)} IS NOT NULL)" for i in items]
+            # At least one *existing* involved data point; a null value still exists.
+            checks = [f"{_has_col(i)} = 1" for i in items]
             if checks:
                 filters.append(f"({' OR '.join(checks)})")
 

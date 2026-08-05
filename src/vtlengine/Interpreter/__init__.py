@@ -1939,10 +1939,15 @@ class InterpreterAnalyzer(ASTTemplate):
 
     def update_partial_data(self, df: pd.DataFrame, measure: str, name: str) -> None:
         if self.compute_partial_data:
+            # partial_null/partial_zero require at least one *existing* involved data
+            # point; a null measure still exists — only the REMOVE sentinel marks
+            # absence. fillna covers pd.NA measures, whose comparison against the
+            # sentinel yields NA instead of True.
+            exists = (df[measure] != REMOVE).fillna(True).astype(bool)
             if self.partial_rule_data is None:
-                self.partial_rule_data = (df[measure] != REMOVE) & df[measure].notna()
+                self.partial_rule_data = exists
             else:
-                self.partial_rule_data |= (df[measure] != REMOVE) & df[measure].notna()
+                self.partial_rule_data |= exists
             self.partial_rule_elements.add(name)  # type: ignore[union-attr]
 
     def visit_UDOCall(self, node: AST.UDOCall) -> None:  # noqa: C901
