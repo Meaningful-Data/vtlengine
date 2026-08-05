@@ -4,8 +4,10 @@ DuckDB results must materialize the declared component dtypes exactly like
 the pandas backend does via ``Dataset.enforce_dtypes()``.
 """
 
+from pathlib import Path
 from typing import Any, Dict
 
+import duckdb
 import pandas as pd
 
 from vtlengine import run
@@ -91,3 +93,49 @@ def test_output_dtypes_identical_across_backends() -> None:
         )
         dtypes[use_duckdb] = {c: str(t) for c, t in result["DS_r"].data.dtypes.items()}
     assert dtypes[True] == dtypes[False]
+
+
+CSV_SCRIPT = """
+    define datapoint ruleset DR_1 (variable Me_1) is
+        R_1: Me_1 >= 0 errorcode "R_1" errorlevel 2
+    end datapoint ruleset;
+
+    DS_r <- check_datapoint(DS_1, DR_1 all_measures);
+"""
+
+
+def _csv_datapoints() -> Dict[str, pd.DataFrame]:
+    return {"DS_1": pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [10.5, -5, None]})}
+
+
+def test_csv_output_identical_across_backends(tmp_path: Path) -> None:
+    contents = {}
+    for use_duckdb in (False, True):
+        folder = tmp_path / ("duckdb" if use_duckdb else "pandas")
+        folder.mkdir()
+        run(
+            script=CSV_SCRIPT,
+            data_structures=DPR_STRUCTURES,
+            datapoints=_csv_datapoints(),
+            use_duckdb=use_duckdb,
+            output_folder=folder,
+        )
+        contents[use_duckdb] = sorted((folder / "DS_r.csv").read_text().splitlines())
+    assert contents[True] == contents[False]
+
+
+def test_parquet_output_types_match_declared(tmp_path: Path) -> None:
+    run(
+        script=DPR_SCRIPT,
+        data_structures=DPR_STRUCTURES,
+        datapoints=_dpr_datapoints(),
+        use_duckdb=True,
+        output_folder=tmp_path,
+        output_format="parquet",
+    )
+    conn = duckdb.connect()
+    rows = conn.execute(
+        f"DESCRIBE SELECT * FROM read_parquet('{tmp_path / 'DS_r.parquet'}')"
+    ).fetchall()
+    types = {name: sql_type for name, sql_type, *_ in rows}
+    assert types["errorlevel"] == "DOUBLE"
