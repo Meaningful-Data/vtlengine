@@ -1690,6 +1690,28 @@ FROM (
     WHERE d_prev IS NOT NULL AND d_prev <> d_next
 )""".strip()
 
+    @staticmethod
+    def _dateadd_targets(ds: Dataset) -> List[Component]:
+        """The Components a Data Set operand of dateadd shifts.
+
+        The reference time Identifier when the Data Set has one, matching the operand
+        type the manual gives, and otherwise its Date or Time_Period Measures. Any other
+        Component is passed through: applying a date shift to a String Measure used to
+        abort the whole query.
+        """
+        time_ids = [
+            c
+            for c in ds.components.values()
+            if c.role == Role.IDENTIFIER and c.data_type in (Date, TimePeriod)
+        ]
+        if time_ids:
+            return time_ids
+        return [
+            c
+            for c in ds.components.values()
+            if c.role == Role.MEASURE and c.data_type in (Date, TimePeriod)
+        ]
+
     def visit_ParamOp_dateadd(self, node: AST.ParamOp) -> str:
         """Visit DATEADD operation: dateadd(op, shiftNumber, periodInd)."""
         operand_node = node.children[0]
@@ -1703,23 +1725,30 @@ FROM (
         if operand_type == _DATASET:
             ds_node = operand_node
             ds = self._get_dataset_structure(ds_node)
-            has_tp = ds is not None and any(
-                c.data_type == TimePeriod for c in ds.components.values() if c.role == Role.MEASURE
-            )
+            targets = self._dateadd_targets(ds)
+            target_names = {c.name for c in targets}
 
-            if has_tp and self.current_assignment:
+            if self.current_assignment:
                 out_ds = self.output_datasets.get(self.current_assignment)
                 if out_ds is not None:
                     for comp in out_ds.components.values():
-                        if comp.data_type == TimePeriod:
+                        if comp.name in target_names and comp.data_type == TimePeriod:
                             comp.data_type = Date
 
-            def _dateadd_expr(col_ref: str) -> str:
-                if has_tp:
+            def _dateadd_expr(col_ref: str, is_period: bool) -> str:
+                if is_period:
                     return f"vtl_tp_dateadd(vtl_period_parse({col_ref}), {shift_sql}, {period_sql})"
                 return f"vtl_dateadd({col_ref}, {shift_sql}, {period_sql})"
 
-            return self._apply_measures(ds_node, _dateadd_expr)
+            cols = []
+            for name, comp in ds.components.items():
+                col = quote_name(name)
+                if name in target_names:
+                    cols.append(f"{_dateadd_expr(col, comp.data_type == TimePeriod)} AS {col}")
+                else:
+                    cols.append(col)
+            src = self._get_dataset_sql(ds_node)
+            return SQLBuilder().select(*cols).from_table(src).build()
         else:
             operand_sql = self.visit(operand_node)
             if is_tp:
