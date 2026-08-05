@@ -3582,6 +3582,40 @@ class OtherBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_969_1(self):
+        """
+        Description: hierarchy roll-up per the reference-manual roll-up examples
+                     (non_null default / non_zero / partial_null) over a dataset
+                     with a viral attribute. partial_null must keep a computed
+                     node whose children all exist with null measures (H = D + E),
+                     and a missing child data point (R in D = R + S) contributes a
+                     null attribute value to the propagation rule, so the
+                     when-null clause wins instead of the sibling's value.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/969
+        Goal: Check Result.
+        """
+        code = "GH_969_1"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_969_2(self):
+        """
+        Description: same roll-up examples as GH_969_1 but the rule component is
+                     the only identifier. This used to crash on both backends
+                     (pandas IndexError from a merge on an empty key list; DuckDB
+                     'USING (1=1)' parse error) instead of aggregating over the
+                     single global group.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/969
+        Goal: Check Result.
+        """
+        code = "GH_969_2"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_564(self):
         """
         Description: Can't subspace a component named unit
