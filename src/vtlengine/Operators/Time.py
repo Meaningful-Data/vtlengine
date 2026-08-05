@@ -1092,6 +1092,10 @@ class Date_Add(Parametrized):
                     expected="Scalar" if error == 12 else expected_types[i].__name__,
                 )
 
+        period_ind = param_list[1].value if len(param_list) > 1 else None
+        if isinstance(period_ind, str) and period_ind not in PERIOD_IND_MAPPING:
+            raise SemanticError("2-1-19-2", period=period_ind)
+
         if isinstance(operand, (Scalar, DataComponent)) and operand.data_type not in [
             Date,
             TimePeriod,
