@@ -299,6 +299,12 @@ class Hierarchy(Operators.Operator):
                 continue
             combined = pd.concat(child_frames, ignore_index=True)
             if other_ids:
+                # A missing child data point contributes a null attribute value to the
+                # combination (issue #969): left-join every child onto the node's group
+                # universe so the propagation rule sees one value per child and group.
+                groups = combined[other_ids].drop_duplicates()
+                padded = [groups.merge(cf, on=other_ids, how="left") for cf in child_frames]
+                combined = pd.concat(padded, ignore_index=True)
                 grouped = combined.groupby(other_ids, sort=False)
                 agg = {
                     va: (lambda vals, name=va: registry.resolve_group(name, list(vals)))

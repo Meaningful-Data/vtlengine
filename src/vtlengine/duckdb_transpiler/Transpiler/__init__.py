@@ -3579,7 +3579,28 @@ FROM (
                     )
             if not child_selects:
                 continue
-            union = " UNION ALL ".join(child_selects)
+            if other_q:
+                # A missing child data point contributes a null attribute value to
+                # the combination (issue #969): left-join every child onto the
+                # node's group universe so the propagation rule sees one value per
+                # child and group.
+                grp = f"_vp_grp_{i}"
+                union_raw = " UNION ALL ".join(child_selects)
+                cte.cte(
+                    grp,
+                    f"SELECT DISTINCT {', '.join(other_q)} FROM ({union_raw}) AS _vpu_{i}",
+                    materialized=True,
+                )
+                join_on = " AND ".join(f"g.{o} IS NOT DISTINCT FROM c.{o}" for o in other_q)
+                padded = [
+                    f"SELECT {', '.join(f'g.{o}' for o in other_q)}, "
+                    f"{', '.join(f'c.{v}' for v in raw_cols)} "
+                    f"FROM {grp} AS g LEFT JOIN ({sel}) AS c ON {join_on}"
+                    for sel in child_selects
+                ]
+                union = " UNION ALL ".join(padded)
+            else:
+                union = " UNION ALL ".join(child_selects)
             agg_cols = []
             for v in viral_comps:
                 vq = quote_name(v.name)
