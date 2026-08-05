@@ -73,7 +73,9 @@ Controls the significant digits used for:
 
 For output formatting, this variable controls the ``float_format`` parameter in pandas ``to_csv``,
 using the general format specifier (e.g., ``%.15g``) which automatically switches between fixed
-and exponential notation.
+and exponential notation. When running with ``use_duckdb=True``, the same setting drives the text
+rendering of Number columns in the CSV files written by the DuckDB engine, so both execution
+backends produce identical CSV output.
 
 DuckDB Engine
 *************
