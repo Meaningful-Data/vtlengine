@@ -34,6 +34,8 @@ error_param = [
     ("18", "DS_r := dateadd(DS_1, 1, 1);", "2-1-19-13"),
     ("19", 'DS_r := dateadd(DS_1, 1, "D");', "2-1-19-14"),
     ("20", 'DS_r := DS_1[calc Me_2 := dateadd(Me_1, 1, "D")];', "1-1-1-1"),
+    ("27", 'DS_r := dateadd(DS_1, 1, "Y");', "2-1-19-2"),
+    ("27", 'DS_r := DS_1[calc Me_2 := dateadd(Me_1, 1, "Y")];', "2-1-19-2"),
 ]
 
 
