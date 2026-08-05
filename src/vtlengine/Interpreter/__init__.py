@@ -1914,21 +1914,34 @@ class InterpreterAnalyzer(ASTTemplate):
 
         df = rule_data.copy()
         code_data = df[other_ids].drop_duplicates().reset_index(drop=True)
+        if not other_ids:
+            # Without extra identifiers there is exactly one (global) group; a
+            # zero-column frame keeps one row per data point otherwise.
+            code_data = code_data.iloc[:1]
         condition = getattr(node, "_right_condition", None)
         if condition is not None:
             condition = self.visit(condition)
             if condition is not None and condition.data is not None:
                 df = df.loc[condition.data]
-                keys = pd.MultiIndex.from_frame(df[other_ids].drop_duplicates())
-                mask = pd.MultiIndex.from_frame(code_data[other_ids]).isin(keys)
-                code_data = code_data.loc[mask]  # type: ignore[index, unused-ignore]
+                if other_ids:
+                    keys = pd.MultiIndex.from_frame(df[other_ids].drop_duplicates())
+                    mask = pd.MultiIndex.from_frame(code_data[other_ids]).isin(keys)
+                    code_data = code_data.loc[mask]  # type: ignore[index, unused-ignore]
+                else:
+                    code_data = code_data.iloc[: 1 if len(df) else 0]
 
         if node.value in df[hr_component].values:
             value_data = df[df[hr_component] == node.value]
-            merged = value_data.merge(code_data, how="right", on=other_ids, indicator=True)
-            merged[me_name] = merged[me_name].astype(object)
-            merged.loc[merged["_merge"] == "right_only", me_name] = REMOVE
-            df = merged.drop(columns=["_merge"]).set_index(code_data.index)
+            if other_ids:
+                merged = value_data.merge(code_data, how="right", on=other_ids, indicator=True)
+                merged[me_name] = merged[me_name].astype(object)
+                merged.loc[merged["_merge"] == "right_only", me_name] = REMOVE
+                df = merged.drop(columns=["_merge"]).set_index(code_data.index)
+            else:
+                # The rule component is the only identifier, so the code item has
+                # exactly one row and needs no group-universe alignment.
+                df = value_data.reset_index(drop=True)
+                df[me_name] = df[me_name].astype(object)
         else:
             df = code_data.copy()
             df[me_name] = REMOVE

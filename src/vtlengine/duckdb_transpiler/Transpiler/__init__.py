@@ -3600,7 +3600,14 @@ FROM (
                 ]
                 union = " UNION ALL ".join(padded)
             else:
-                union = " UNION ALL ".join(child_selects)
+                # One row per child even when the child is missing (issue #969):
+                # a LEFT JOIN onto a one-row relation null-fills absent children.
+                padded = [
+                    f"SELECT {', '.join(f'c.{v}' for v in raw_cols)} "
+                    f"FROM (SELECT 1 AS _one) AS _pad LEFT JOIN ({sel}) AS c ON TRUE"
+                    for sel in child_selects
+                ]
+                union = " UNION ALL ".join(padded)
             agg_cols = []
             for v in viral_comps:
                 vq = quote_name(v.name)
@@ -3766,6 +3773,9 @@ FROM (
 
         select_parts = [quote_name(c) for c in (*other_ids, *cond_mapping.values())]
         select_parts.append(f"{computed_expr} AS _computed")
+        # Constant marker so a rule row is detectable after a LEFT JOIN even when
+        # its computed value is NULL and there are no join keys (issue #969).
+        select_parts.append("1 AS _present")
 
         where_parts = self._build_hr_mode_filter(
             mode=mode,
@@ -3802,7 +3812,7 @@ FROM (
                 other_val_has.append(f"p.{_has_col(i)}")
 
         key_cols = [f"p.{k}" for k in join_keys]
-        first_key = join_keys[0] if join_keys else "_computed"
+        first_key = join_keys[0] if join_keys else "_present"
 
         if input_mode == "rule_priority":
             guard = "r._computed IS NOT NULL"
@@ -3812,12 +3822,14 @@ FROM (
         has_expr = f"CASE WHEN r.{first_key} IS NOT NULL THEN 1 ELSE p.{has_col} END AS {has_col}"
 
         all_select = key_cols + other_val_has + [val_expr, has_expr]
-        using_clause = ", ".join(join_keys) if join_keys else "1=1"
+        # Without join keys the pivot is a single global row; LEFT JOIN ON TRUE
+        # keeps it (with NULL r.*) when the rule CTE produced no row.
+        join_sql = f"USING ({', '.join(join_keys)})" if join_keys else "ON TRUE"
 
         return (
             f"  SELECT {', '.join(all_select)}\n"
             f"  FROM {prev_pivot} p\n"
-            f"  LEFT JOIN {rule_cte} r USING ({using_clause})"
+            f"  LEFT JOIN {rule_cte} r {join_sql}"
         )
 
     def _build_hr_mode_filter(

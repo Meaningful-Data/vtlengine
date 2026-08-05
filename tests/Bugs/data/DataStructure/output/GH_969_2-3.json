@@ -1,0 +1,27 @@
+{
+    "datasets": [
+        {
+            "name": "hr_pn",
+            "DataStructure": [
+                {
+                    "name": "Id_2",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_1",
+                    "role": "Measure",
+                    "type": "Integer",
+                    "nullable": true
+                },
+                {
+                    "name": "At_1",
+                    "role": "Viral Attribute",
+                    "type": "String",
+                    "nullable": true
+                }
+            ]
+        }
+    ]
+}

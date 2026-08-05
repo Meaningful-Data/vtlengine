@@ -1,0 +1,25 @@
+define hierarchical ruleset HR_1(valuedomain rule VD_1) is
+    A = J + K + L;
+    B = M + N + O;
+    C = P + Q;
+    D = R + S;
+    E = T + U + V;
+    G = B + C;
+    H = D + E;
+    I = D + G;
+    F = Y + W + Z
+end hierarchical ruleset;
+
+define viral propagation At_1(variable At_1) is
+    when null then null;
+    when "Ay" then "Ay";
+    when "Bq" then "Bq";
+    when "Dx" then "Dx";
+    when "Ko" then "Ko";
+    when "Nj" then "Nj";
+    when "Pz" then "Pz"
+end viral propagation;
+
+hr_nn := hierarchy(DS_1, HR_1 rule Id_2);
+hr_nz := hierarchy(DS_1, HR_1 rule Id_2 non_zero);
+hr_pn := hierarchy(DS_1, HR_1 rule Id_2 partial_null);

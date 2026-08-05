@@ -3600,6 +3600,22 @@ class OtherBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_969_2(self):
+        """
+        Description: same roll-up examples as GH_969_1 but the rule component is
+                     the only identifier. This used to crash on both backends
+                     (pandas IndexError from a merge on an empty key list; DuckDB
+                     'USING (1=1)' parse error) instead of aggregating over the
+                     single global group.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/969
+        Goal: Check Result.
+        """
+        code = "GH_969_2"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_564(self):
         """
         Description: Can't subspace a component named unit

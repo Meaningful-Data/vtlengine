@@ -312,8 +312,17 @@ class Hierarchy(Operators.Operator):
                 }
                 nv = grouped.agg(agg).reset_index()
             else:
+                # One value per child; a missing child contributes a null (issue #969).
                 nv = pd.DataFrame(
-                    {va: [registry.resolve_group(va, list(combined[va]))] for va in viral_names}
+                    {
+                        va: [
+                            registry.resolve_group(
+                                va,
+                                [cf[va].iloc[0] if len(cf) else None for cf in child_frames],
+                            )
+                        ]
+                        for va in viral_names
+                    }
                 )
             node_viral[node] = nv
             tagged = nv.copy()
