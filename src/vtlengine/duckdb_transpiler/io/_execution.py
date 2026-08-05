@@ -482,6 +482,10 @@ def fetch_result(
         )
     else:
         ds.data = conn.execute(fetch_sql).fetchdf()
+        # fetchdf() returns numpy-backed dtypes inferred from the physical SQL
+        # types; materialize the declared component dtypes so both backends
+        # return identical frames (issue #976).
+        ds.enforce_dtypes()
 
     return ds
 
