@@ -25,6 +25,7 @@ ds_param = [
     ("12", 'DS_r := dateadd(DS_1, 9, "A");'),
     ("13", 'DS_r := DS_1[calc Me_2 := dateadd(Me_1, 1889432, "D")];'),
     ("14", 'DS_r := DS_1[calc Me_2 := dateadd(Me_1, 1889432, "D")];'),
+    ("28", 'DS_r := dateadd(DS_1, 2, "W");'),
 ]
 
 error_param = [
