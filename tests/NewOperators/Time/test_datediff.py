@@ -15,11 +15,11 @@ ds_param = [
     ("22", "DS_r := DS_1[calc Me_3 := datediff(Me_1, Me_2)];"),
     ("23", "DS_r := DS_1[calc Me_3 := datediff(Me_1, Me_2)];"),
     ("24", "DS_r := DS_1[calc Me_3 := datediff(Me_1, Me_2)];"),
+    ("26", "DS_r := DS_1[calc Me_3 := datediff(Me_1, Me_2)];"),
 ]
 
 error_param = [
     ("25", "DS_r := DS_1[calc Me_3 := datediff(Me_1, Me_2)];", "1-1-1-2"),
-    ("26", "DS_r := DS_1[calc Me_3 := datediff(Me_1, Me_2)];", "1-1-1-2"),
 ]
 
 scalar_time_params = [
@@ -27,13 +27,13 @@ scalar_time_params = [
     ('datediff(cast("2020-01-01",date),cast("2021-01-01",date))', 366),
     ('datediff(cast("2022Q1",time_period),cast("2023Q2",time_period))', 456),
     ('datediff(cast("2020D1",time_period),cast("2020D15",time_period))', 14),
+    ('datediff(cast("2022-06-30",date),cast("2023Q2",time_period))', 365),
+    ('datediff(cast("2022Q2",time_period),cast("2023-06-30",date))', 365),
 ]
 
 scalar_time_error_params = [
     ('datediff(cast("2022Q1",date),cast("2023Q2",time_period))', RunTimeError, "2-1-19-8"),
     ('datediff(cast("2020D1",time_period),cast("2020D15",date))', RunTimeError, "2-1-19-8"),
-    ('datediff(cast("2022-06-30",date),cast("2023Q2",time_period))', SemanticError, "1-1-1-2"),
-    ('datediff(cast("2022Q2",time_period),cast("2023-06-30",date))', SemanticError, "1-1-1-2"),
 ]
 
 
