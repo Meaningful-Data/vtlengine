@@ -120,6 +120,15 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
                 date_val = parts[1]
         return RunTimeError("2-1-19-8", date=date_val)
 
+    # yeartoday / monthtoday: the duration does not have the shape the operator takes
+    # (mirrors 2-1-19-22)
+    if "vtl 2-1-19-22" in msg_lower:
+        op = "monthtoday" if "monthtoday" in msg_lower else "yeartoday"
+        m = re.search(r"expected (\S+) got (.*?)(?:\n|$)", msg)
+        expected = m.group(1) if m else ("PnMnD" if op == "monthtoday" else "PnYnD")
+        value = m.group(2).strip() if m else "unknown"
+        return RunTimeError("2-1-19-22", op=op, value=value, expected=expected)
+
     # VTL macro vtl_div: denominator was 0 (mirrors Python engine error 2-1-15-6)
     if "vtl 2-1-15-6" in msg_lower:
         return RunTimeError("2-1-15-6", op="/")

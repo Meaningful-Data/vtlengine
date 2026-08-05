@@ -179,20 +179,28 @@ CREATE OR REPLACE MACRO vtl_daytomonth(days) AS (
 -- ============================================================================
 
 CREATE OR REPLACE MACRO vtl_yeartoday(dur) AS (
-    CASE WHEN dur IS NULL THEN 
-        NULL 
-    ELSE
-        COALESCE(TRY_CAST(REGEXP_EXTRACT(dur, '(\d+)Y', 1) AS INTEGER), 0) * 365
-        + COALESCE(TRY_CAST(REGEXP_EXTRACT(dur, '(\d+)D', 1) AS INTEGER), 0)
+    CASE
+        WHEN dur IS NULL THEN
+            NULL
+        -- Only PnYnD is accepted. Extracting the parts alone treated anything else as
+        -- zero, so an unrelated mask returned a number instead of failing.
+        WHEN NOT REGEXP_MATCHES(dur, '^P(\d+Y\d+D|\d+Y|\d+D)$') THEN
+            error('VTL 2-1-19-22: yeartoday expected PnYnD got ' || dur)
+        ELSE
+            COALESCE(TRY_CAST(REGEXP_EXTRACT(dur, '(\d+)Y', 1) AS INTEGER), 0) * 365
+            + COALESCE(TRY_CAST(REGEXP_EXTRACT(dur, '(\d+)D', 1) AS INTEGER), 0)
     END
 );
 
 CREATE OR REPLACE MACRO vtl_monthtoday(dur) AS (
-    CASE WHEN dur IS NULL THEN 
-        NULL 
-    ELSE
-        COALESCE(TRY_CAST(REGEXP_EXTRACT(dur, '(\d+)M', 1) AS INTEGER), 0) * 30
-        + COALESCE(TRY_CAST(REGEXP_EXTRACT(dur, '(\d+)D', 1) AS INTEGER), 0)
+    CASE
+        WHEN dur IS NULL THEN
+            NULL
+        WHEN NOT REGEXP_MATCHES(dur, '^P(\d+M\d+D|\d+M|\d+D)$') THEN
+            error('VTL 2-1-19-22: monthtoday expected PnMnD got ' || dur)
+        ELSE
+            COALESCE(TRY_CAST(REGEXP_EXTRACT(dur, '(\d+)M', 1) AS INTEGER), 0) * 30
+            + COALESCE(TRY_CAST(REGEXP_EXTRACT(dur, '(\d+)D', 1) AS INTEGER), 0)
     END
 );
 
