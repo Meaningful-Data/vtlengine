@@ -1,0 +1,4 @@
+Id_1,ruleid,Me_1,bool_var,errorcode,errorlevel
+1,R_1,10.5,True,,
+2,R_1,-5,False,R_1,2
+3,R_1,,,,

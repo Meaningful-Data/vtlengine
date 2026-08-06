@@ -1,6 +1,7 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+import duckdb
 import pandas as pd
 import pytest
 
@@ -177,6 +178,156 @@ class GeneralBugs(BugHelper):
         )
         assert result["x"].value == 9
         assert result["y"].value == 10
+
+    def test_GH_976_1(self):
+        """
+        Expression: DS_r <- check_datapoint(DS_1, DR_1);
+        Description: check_datapoint result values must match the reference
+            in both engines (the errorlevel component is declared as Number).
+        Git Issue: GH_976.
+        Goal: Check Result.
+        """
+        code = "GH_976_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_976_1_dtypes(self):
+        """
+        Expression: DS_r <- check_datapoint(DS_1, DR_1);
+        Description: in-memory outputs must materialize the declared component
+            dtypes in both engines; the DuckDB engine returned the physical
+            SQL type from fetchdf() (errorlevel INTEGER -> int32) instead of
+            the declared Number (double[pyarrow]).
+        Git Issue: GH_976.
+        Goal: Check returned DataFrame dtypes.
+        """
+        code = "GH_976_1"
+        script = self.LoadVTL(code)
+        result = run(
+            script=script,
+            data_structures=self.filepath_json / f"{code}-1.json",
+            datapoints={"DS_1": self.filepath_csv / f"{code}-1.csv"},
+            use_duckdb=_use_duckdb_backend(),
+        )
+        assert str(result["DS_r"].data["errorlevel"].dtype) == "double[pyarrow]"
+
+    @pytest.mark.skipif(not _use_duckdb_backend(), reason="parquet output_format is DuckDB-only")
+    def test_GH_976_1_parquet(self):
+        """
+        Expression: DS_r <- check_datapoint(DS_1, DR_1);
+        Description: parquet files written to output_folder must carry the
+            declared component type for physical/declared mismatches; the
+            errorlevel column (declared Number) was written as INT32 instead
+            of DOUBLE.
+        Git Issue: GH_976.
+        Goal: Check written parquet schema.
+        """
+        code = "GH_976_1"
+        script = self.LoadVTL(code)
+        with TemporaryDirectory() as tmpdir:
+            run(
+                script=script,
+                data_structures=self.filepath_json / f"{code}-1.json",
+                datapoints={"DS_1": self.filepath_csv / f"{code}-1.csv"},
+                output_folder=Path(tmpdir),
+                output_format="parquet",
+                use_duckdb=True,
+            )
+            with duckdb.connect() as conn:
+                rows = conn.execute(
+                    f"DESCRIBE SELECT * FROM read_parquet('{Path(tmpdir) / 'DS_r.parquet'}')"
+                ).fetchall()
+        types = {name: sql_type for name, sql_type, *_ in rows}
+        assert types["errorlevel"] == "DOUBLE"
+
+    def test_GH_976_2(self):
+        """
+        Expression: DS_r <- check_datapoint(DS_1, DR_1 all_measures);
+        Description: check_datapoint all_measures result values (bool_var,
+            errorcode and errorlevel nulls included) must match the reference
+            in both engines.
+        Git Issue: GH_976.
+        Goal: Check Result.
+        """
+        code = "GH_976_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_976_2_csv_text(self):
+        """
+        Expression: DS_r <- check_datapoint(DS_1, DR_1 all_measures);
+        Description: dataset CSVs written to output_folder must render Number
+            values with the shared significant-digits format in both engines;
+            the DuckDB engine wrote the DECIMAL(28,10) text (10.5000000000)
+            via COPY TO where the pandas engine writes 10.5.
+        Git Issue: GH_976.
+        Goal: Check written CSV text.
+        """
+        code = "GH_976_2"
+        script = self.LoadVTL(code)
+        with TemporaryDirectory() as tmpdir:
+            run(
+                script=script,
+                data_structures=self.filepath_json / f"{code}-1.json",
+                datapoints={"DS_1": self.filepath_csv / f"{code}-1.csv"},
+                output_folder=Path(tmpdir),
+                use_duckdb=_use_duckdb_backend(),
+            )
+            content = (Path(tmpdir) / "DS_r.csv").read_text()
+        lines = content.strip().splitlines()
+        assert lines[0] == "Id_1,ruleid,Me_1,bool_var,errorcode,errorlevel"
+        assert sorted(lines[1:]) == [
+            "1,R_1,10.5,True,,",
+            "2,R_1,-5,False,R_1,2",
+            "3,R_1,,,,",
+        ]
+
+    def test_GH_976_3(self):
+        """
+        Expression: DS_r <- DS_1;
+        Description: a passthrough of every scalar type (Number, Integer,
+            String, Boolean, Date) with nulls must match the reference in
+            both engines.
+        Git Issue: GH_976.
+        Goal: Check Result.
+        """
+        code = "GH_976_3"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_976_3_dtypes(self):
+        """
+        Expression: DS_r <- DS_1;
+        Description: in-memory outputs must materialize the declared component
+            dtypes (DTYPE_MAPPING, pyarrow-backed) for every scalar type in
+            both engines; the DuckDB engine returned numpy-backed dtypes from
+            fetchdf() (object/float64/int32).
+        Git Issue: GH_976.
+        Goal: Check returned DataFrame dtypes.
+        """
+        code = "GH_976_3"
+        script = self.LoadVTL(code)
+        result = run(
+            script=script,
+            data_structures=self.filepath_json / f"{code}-1.json",
+            datapoints={"DS_1": self.filepath_csv / f"{code}-1.csv"},
+            use_duckdb=_use_duckdb_backend(),
+        )
+        dtypes = {name: str(dtype) for name, dtype in result["DS_r"].data.dtypes.items()}
+        assert dtypes == {
+            "Id_1": "int64[pyarrow]",
+            "Me_1": "double[pyarrow]",
+            "Me_2": "int64[pyarrow]",
+            "Me_3": "string",
+            "Me_4": "bool[pyarrow]",
+            "Me_5": "string",
+        }
 
 
 class JoinBugs(BugHelper):
