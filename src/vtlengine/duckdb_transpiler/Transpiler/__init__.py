@@ -1149,8 +1149,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         """Visit a parameterized operation (default handling)."""
         op = node.op
         params_sql = self._visit_params(node.params)
-        if op in (tokens.ROUND, tokens.TRUNC) and not params_sql:
-            params_sql = ["0"]
 
         if op == tokens.STRING_DISTANCE:
             return self._visit_string_distance(node)
