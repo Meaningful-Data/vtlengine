@@ -133,9 +133,9 @@ def test_parquet_output_types_match_declared(tmp_path: Path) -> None:
         output_folder=tmp_path,
         output_format="parquet",
     )
-    conn = duckdb.connect()
-    rows = conn.execute(
-        f"DESCRIBE SELECT * FROM read_parquet('{tmp_path / 'DS_r.parquet'}')"
-    ).fetchall()
+    with duckdb.connect() as conn:
+        rows = conn.execute(
+            f"DESCRIBE SELECT * FROM read_parquet('{tmp_path / 'DS_r.parquet'}')"
+        ).fetchall()
     types = {name: sql_type for name, sql_type, *_ in rows}
     assert types["errorlevel"] == "DOUBLE"

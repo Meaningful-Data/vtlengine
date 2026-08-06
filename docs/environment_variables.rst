@@ -64,7 +64,8 @@ Controls the significant digits used for:
    * - Value
      - Behaviour
    * - Not defined
-     - Uses default value of **15** significant digits (pandas) / **10** (DuckDB)
+     - Uses default value of **15** significant digits for output rendering (both
+       engines); **10** is the DuckDB-internal DECIMAL storage scale
    * - ``6`` to ``15``
      - Uses the specified number of significant digits
    * - ``-1``

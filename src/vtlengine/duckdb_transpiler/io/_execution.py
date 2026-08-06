@@ -258,6 +258,8 @@ def _declared_type_expr(
             digits = get_effective_output_digits()
             if digits is not None:
                 return f"printf('%.{digits}g', {double_expr}) AS {quoted}"
+            # digits disabled (env -1): native DOUBLE text, like pandas
+            # float_format=None; exact byte parity is not guaranteed in exponent edge cases
             return f"{double_expr} AS {quoted}"
         if col_type != "DOUBLE" and not col_type.startswith("DECIMAL"):
             return f"{double_expr} AS {quoted}"
