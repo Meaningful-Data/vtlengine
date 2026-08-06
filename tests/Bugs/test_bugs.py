@@ -1674,6 +1674,25 @@ class TimeBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_960_1(self):
+        """
+        Status: OK
+        Description: timeshift reads the period from each time series rather than from
+                     the whole time Identifier column, as the manual shifts "for each
+                     time series of the Data Set" by a number of periods "of the time
+                     series". DS_1 is the Data Set from the issue, where a daily series
+                     shares the Data Set with a monthly one and both used to move by a
+                     day. DS_2 adds an annual series and a single-point one, whose
+                     period the data does not determine.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/960
+        Goal: Check Result.
+        """
+        code = "GH_960_1"
+        number_inputs = 2
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class SetBugs(BugHelper):
     """ """

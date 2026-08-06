@@ -1649,26 +1649,50 @@ FROM {src}, (
     {freq_sql}
 ) AS freq"""
         else:
+            other_ids = [
+                quote_name(c.name)
+                for c in ds.components.values()
+                if c.role == Role.IDENTIFIER and c.name != time_id
+            ]
+            period = "COALESCE(freq.period_ind, 'A')"
+
             cols = []
             for comp in ds.components.values():
                 col = quote_name(comp.name)
                 if comp.name == time_id:
-                    cols.append(f"vtl_dateadd({col}, {shift_sql}, freq.period_ind) AS {col}")
+                    cols.append(f"vtl_dateadd(s.{col}, {shift_sql}, {period}) AS {col}")
                 else:
-                    cols.append(col)
+                    cols.append(f"s.{col}")
 
-            freq_sql = self._build_timeshift_date_frequency_subquery(src, time_col)
-
-            return f"""SELECT {", ".join(cols)}
-FROM {src}, (
-    {freq_sql}
-) AS freq"""
+            cte = CTEBuilder()
+            cte.cte("source", f"SELECT * FROM {src}")
+            cte.cte(
+                "freq", self._build_timeshift_date_frequency_subquery("source", time_col, other_ids)
+            )
+            if other_ids:
+                on = " AND ".join(f"s.{oc} IS NOT DISTINCT FROM freq.{oc}" for oc in other_ids)
+                joined = f"SELECT {', '.join(cols)} FROM source s LEFT JOIN freq ON {on}"
+            else:
+                joined = f"SELECT {', '.join(cols)} FROM source s, freq"
+            return cte.select(joined)
 
     @staticmethod
-    def _build_timeshift_date_frequency_subquery(src: str, time_col: str) -> str:
-        """Calendar-aware frequency inference for timeshift on Date."""
+    def _build_timeshift_date_frequency_subquery(
+        src: str, time_col: str, other_ids: Optional[List[str]] = None
+    ) -> str:
+        """Calendar-aware frequency inference for timeshift on Date.
+
+        The period is read from each time series rather than from the whole column, so
+        the gaps are taken within the non-time Identifiers and the result carries one
+        row per series. A series of a single Data Point contributes no gap
+        and so no row at all, which the caller reads as the annual default.
+        """
+        other_ids = other_ids or []
+        keys = "".join(f"{oc}, " for oc in other_ids)
+        partition = f"PARTITION BY {', '.join(other_ids)} " if other_ids else ""
+        group_by = f"\nGROUP BY {', '.join(other_ids)}" if other_ids else ""
         return f"""
-SELECT vtl_date_timeshift_period_ind(
+SELECT {keys}vtl_date_timeshift_period_ind(
     COUNT(*),
     BOOL_OR(NOT clean_month),
     BOOL_AND(diff_days % 7 = 0),
@@ -1677,18 +1701,18 @@ SELECT vtl_date_timeshift_period_ind(
     BOOL_AND(clean_month AND diff_months % 3 = 0)
 ) AS period_ind
 FROM (
-    SELECT
+    SELECT {keys}
         DATE_DIFF('day', d_prev, d_next) AS diff_days,
         DATE_DIFF('month', d_prev, d_next) AS diff_months,
         vtl_date_gap_clean_month(d_prev, d_next) AS clean_month
     FROM (
-        SELECT LAG({time_col}) OVER (ORDER BY {time_col}) AS d_prev,
+        SELECT {keys}LAG({time_col}) OVER ({partition}ORDER BY {time_col}) AS d_prev,
                {time_col} AS d_next
         FROM {src}
         WHERE {time_col} IS NOT NULL
     )
     WHERE d_prev IS NOT NULL AND d_prev <> d_next
-)""".strip()
+){group_by}""".strip()
 
     @staticmethod
     def _dateadd_targets(ds: Dataset) -> List[Component]:

@@ -667,17 +667,30 @@ class Time_Shift(Binary):
         cls.time_id = cls._get_time_id(result)
 
         data_type: Any = result.components[cls.time_id].data_type
+        cls.other_ids = [i.name for i in result.get_identifiers() if i.name != cls.time_id]
 
         if data_type == Date:
-            freq = cls.find_min_frequency(
-                result.data[cls.time_id].map(cls.parse_date, na_action="ignore")
-            )
-            result.data[cls.time_id] = cls.shift_dates(result.data[cls.time_id], shift_value, freq)
+            parsed = result.data[cls.time_id].map(cls.parse_date, na_action="ignore")
+            shifted = [
+                cls.shift_dates(
+                    group[cls.time_id],
+                    shift_value,
+                    cls.find_min_frequency(parsed.loc[group.index]),
+                )
+                for _, group in cls._iter_groups(result.data)
+            ]
+            result.data[cls.time_id] = pd.concat(shifted).reindex(result.data.index)
         elif data_type == TimeInterval:
-            freq = cls._classify_interval_period(result.data[cls.time_id].iloc[0])
-            result.data[cls.time_id] = result.data[cls.time_id].apply(
-                lambda x: cls.shift_interval(x, shift_value, freq)
-            )
+            parts = []
+            for _, group in cls._iter_groups(result.data):
+                freq = cls._classify_interval_period(group[cls.time_id].iloc[0])
+                parts.append(
+                    group[cls.time_id].map(
+                        lambda x: cls.shift_interval(x, shift_value, freq),  # noqa: B023
+                        na_action="ignore",
+                    )
+                )
+            result.data[cls.time_id] = pd.concat(parts).reindex(result.data.index)
         elif data_type == TimePeriod:
             result.data[cls.time_id] = result.data[cls.time_id].apply(
                 lambda x: cls.shift_period(x, shift_value)
