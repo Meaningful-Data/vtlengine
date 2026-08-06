@@ -15,8 +15,12 @@ import pandas as pd
 from vtlengine.AST.DAG._models import DatasetSchedule
 from vtlengine.DataTypes import (
     _DUCKDB_TYPE_TO_VTL,
+    Boolean,
     Duration,
+    Integer,
     Null,
+    Number,
+    String,
     TimeInterval,
     TimePeriod,
 )
@@ -33,8 +37,8 @@ from vtlengine.duckdb_transpiler.io._time_handling import (
 from vtlengine.duckdb_transpiler.sql import initialize_time_types
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.files.output._time_period_representation import TimePeriodRepresentation
-from vtlengine.Model import Dataset, Scalar
-from vtlengine.Utils._number_config import get_effective_numeric_digits
+from vtlengine.Model import Component, Dataset, Scalar
+from vtlengine.Utils._number_config import get_effective_numeric_digits, get_effective_output_digits
 
 
 def _contains_time_components(datasets: Dict[str, Dataset]) -> bool:
@@ -229,11 +233,51 @@ def _normalize_scalar_value(raw_value: Any) -> Any:
     return raw_value
 
 
+def _declared_type_expr(
+    col: str,
+    col_type: str,
+    comp: Optional[Component],
+    csv_text_mode: bool,
+) -> str:
+    """SQL expression aligning a fetched column with its declared component type.
+
+    A physical type that already satisfies the declared type passes through;
+    a mismatch (e.g. an INTEGER errorlevel declared as Number, issue #976) is
+    CAST so both COPY files and fetched frames carry the declared type.
+    DECIMAL is the engine's canonical Number representation, so it is not a
+    mismatch; in CSV mode Number columns are rendered as text with the same
+    significant-digits format the pandas engine passes to ``to_csv``
+    (OUTPUT_NUMBER_SIGNIFICANT_DIGITS), keeping both backends' files equal.
+    """
+    quoted = f'"{col}"'
+    if comp is None:
+        return quoted
+    if comp.data_type == Number:
+        double_expr = f"CAST({quoted} AS DOUBLE)"
+        if csv_text_mode:
+            digits = get_effective_output_digits()
+            if digits is not None:
+                return f"printf('%.{digits}g', {double_expr}) AS {quoted}"
+            # digits disabled (env -1): native DOUBLE text, like pandas
+            # float_format=None; exact byte parity is not guaranteed in exponent edge cases
+            return f"{double_expr} AS {quoted}"
+        if col_type != "DOUBLE" and not col_type.startswith("DECIMAL"):
+            return f"{double_expr} AS {quoted}"
+        return quoted
+    if comp.data_type == Integer and "INT" not in col_type:
+        return f"CAST({quoted} AS BIGINT) AS {quoted}"
+    if comp.data_type == Boolean and col_type != "BOOLEAN":
+        return f"CAST({quoted} AS BOOLEAN) AS {quoted}"
+    if comp.data_type == String and col_type != "VARCHAR":
+        return f"CAST({quoted} AS VARCHAR) AS {quoted}"
+    return quoted
+
+
 def _build_dataset_fetch_select(
     conn: duckdb.DuckDBPyConnection,
     result_name: str,
     ds: Dataset,
-    bool_as_python_str: bool = False,
+    csv_text_mode: bool = False,
 ) -> str:
     """Build a SELECT query with column projection and in-SQL date/timestamp formatting.
 
@@ -246,10 +290,11 @@ def _build_dataset_fetch_select(
     - TIMESTAMP with any non-midnight value → ISO 8601 'YYYY-MM-DDTHH:MM:SS'
     - TIMESTAMP with all-midnight values → formatted as date-only
     - BOOLEAN columns → Python-style 'True'/'False' text, only when
-      ``bool_as_python_str`` is set (CSV output; matches the pandas engine's
+      ``csv_text_mode`` is set (CSV output; matches the pandas engine's
       ``to_csv`` serialization, issue #923). Parquet output and in-memory
       fetches keep the native BOOLEAN type.
-    - Other columns → passed through unchanged
+    - Other columns → aligned with the declared component type via
+      ``_declared_type_expr`` (issue #976)
 
     The non-midnight check uses LIMIT 1 so DuckDB stops at the first match.
     """
@@ -300,13 +345,13 @@ def _build_dataset_fetch_select(
                 exprs.append(f'strftime(\'%Y-%m-%d\', "{col}") AS "{col}"')
         elif col_type == "DATE":
             exprs.append(f'strftime(\'%Y-%m-%d\', "{col}") AS "{col}"')
-        elif col_type == "BOOLEAN" and bool_as_python_str:
+        elif col_type == "BOOLEAN" and csv_text_mode:
             exprs.append(
                 f'CASE WHEN "{col}" IS NULL THEN NULL'
                 f" WHEN \"{col}\" THEN 'True' ELSE 'False' END AS \"{col}\""
             )
         else:
-            exprs.append(f'"{col}"')
+            exprs.append(_declared_type_expr(col, col_type, ds.components.get(col), csv_text_mode))
 
     return f'SELECT {", ".join(exprs)} FROM "{result_name}"'
 
@@ -468,7 +513,7 @@ def fetch_result(
         conn,
         result_name,
         ds,
-        bool_as_python_str=output_folder is not None and output_format == "csv",
+        csv_text_mode=output_folder is not None and output_format == "csv",
     )
 
     if output_folder:
@@ -482,6 +527,10 @@ def fetch_result(
         )
     else:
         ds.data = conn.execute(fetch_sql).fetchdf()
+        # fetchdf() returns numpy-backed dtypes inferred from the physical SQL
+        # types; materialize the declared component dtypes so both backends
+        # return identical frames (issue #976).
+        ds.enforce_dtypes()
 
     return ds
 
