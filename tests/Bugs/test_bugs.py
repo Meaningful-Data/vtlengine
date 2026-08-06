@@ -2143,6 +2143,24 @@ class AggregationBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=message
         )
 
+    def test_GH_978_1(self):
+        """
+        Status: OK
+        Description: a clause reads its operand as the operand actually comes out. An
+                     operator applied over the Measures leaves the plain Attributes out
+                     of its query while still reporting them in its structure, so naming
+                     the Components one by one asked DuckDb for a column the subquery
+                     never selected and the binder rejected the statement. DS_r3 keeps a
+                     calc overwriting an existing Measure covered.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/978
+        Goal: Check Result.
+        """
+        code = "GH_978_1"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_937_1(self):
         """
         Status: OK

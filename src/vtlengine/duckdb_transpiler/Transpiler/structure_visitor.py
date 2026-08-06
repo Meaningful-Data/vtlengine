@@ -139,7 +139,10 @@ class StructureVisitor(ASTTemplate):
                 else:
                     comps[name] = comp
             return Dataset(name=ds.name, components=comps, data=None)
-        return self._get_dataset_structure(node)
+        ds = self._get_dataset_structure(node)
+        if node.op in (tokens.ROUND, tokens.TRUNC) and not node.params:
+            return self._as_integer_if_mono(ds)
+        return ds
 
     def visit_RegularAggregation(  # type: ignore[override]
         self, node: AST.RegularAggregation
@@ -483,11 +486,43 @@ class StructureVisitor(ASTTemplate):
             return ds
         return self._build_boolean_result_structure(ds)
 
+    # Operators whose result is an Integer whatever they are given.
+    _INTEGER_RESULT_UNARY_OPS = frozenset({tokens.CEIL, tokens.FLOOR, tokens.LEN})
+
+    def _build_integer_result_structure(self, ds: Dataset) -> Dataset:
+        """Replace all measures with a single ``int_var`` Integer measure."""
+        comps = self._identifiers_dict(ds)
+        comps["int_var"] = self._make_comp("int_var", Integer)
+        for name, comp in ds.components.items():
+            if comp.role == Role.VIRAL_ATTRIBUTE:
+                comps[name] = comp
+        return Dataset(name=ds.name, components=comps, data=None)
+
+    def _as_integer_if_mono(self, ds: Optional[Dataset]) -> Optional[Dataset]:
+        """Collapse a mono-measure operand to ``int_var`` where the type changes.
+
+        A single Measure is renamed to the generic name only when the operator changes
+        its data type, so ``ceil`` over an Integer Measure keeps the name it had while
+        ``ceil`` over a Number one does not.
+        """
+        if ds is None:
+            return None
+        measures = ds.get_measures_names()
+        if len(measures) != 1:
+            return ds
+        if ds.components[measures[0]].data_type is Integer:
+            return ds
+        return self._build_integer_result_structure(ds)
+
     def _resolve_unaryop_structure(self, node: AST.UnaryOp) -> Optional[Dataset]:
         """Resolve a UnaryOp to its dataset structure."""
         ds = self._get_dataset_structure(node.operand)
-        if ds is not None and node.op == tokens.ISNULL and len(ds.get_measures_names()) == 1:
+        if ds is None:
+            return None
+        if node.op == tokens.ISNULL and len(ds.get_measures_names()) == 1:
             return self._build_boolean_result_structure(ds)
+        if node.op in self._INTEGER_RESULT_UNARY_OPS:
+            return self._as_integer_if_mono(ds)
         return ds
 
     def _build_aggregation_structure(self, node: AST.Aggregation) -> Optional[Dataset]:
