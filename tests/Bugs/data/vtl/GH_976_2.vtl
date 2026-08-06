@@ -1,0 +1,5 @@
+define datapoint ruleset DR_1 (variable Me_1) is
+    R_1: Me_1 >= 0 errorcode "R_1" errorlevel 2
+end datapoint ruleset;
+
+DS_r <- check_datapoint(DS_1, DR_1 all_measures);

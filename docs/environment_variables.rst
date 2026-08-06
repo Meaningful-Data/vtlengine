@@ -64,7 +64,8 @@ Controls the significant digits used for:
    * - Value
      - Behaviour
    * - Not defined
-     - Uses default value of **15** significant digits (pandas) / **10** (DuckDB)
+     - Uses default value of **15** significant digits for output rendering (both
+       engines); **10** is the DuckDB-internal DECIMAL storage scale
    * - ``6`` to ``15``
      - Uses the specified number of significant digits
    * - ``-1``
@@ -73,7 +74,9 @@ Controls the significant digits used for:
 
 For output formatting, this variable controls the ``float_format`` parameter in pandas ``to_csv``,
 using the general format specifier (e.g., ``%.15g``) which automatically switches between fixed
-and exponential notation.
+and exponential notation. When running with ``use_duckdb=True``, the same setting drives the text
+rendering of Number columns in the CSV files written by the DuckDB engine, so both execution
+backends produce identical CSV output.
 
 DuckDB Engine
 *************
