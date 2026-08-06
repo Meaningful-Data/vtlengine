@@ -1070,6 +1070,22 @@ class Date_Add(Parametrized):
     op = DATE_ADD
 
     @classmethod
+    def _dateadd_targets(cls, operand: Dataset) -> List[Component]:
+        """The Components a Data Set operand shifts.
+
+        The reference manual types the operand as ``dataset {identifier<time> _,
+        identifier _*}``, so the reference time Identifier is what moves. A Data Set
+        whose only time Components are Measures is accepted as well, and those Measures
+        move instead, which is what the operator did before it reached an Identifier at
+        all. Components of any other type are left alone either way, since
+        there is no date to add to.
+        """
+        time_ids = [c for c in operand.get_identifiers() if c.data_type in (Date, TimePeriod)]
+        if time_ids:
+            return time_ids
+        return [m for m in operand.get_measures() if m.data_type in (Date, TimePeriod)]
+
+    @classmethod
     def validate(
         cls, operand: Union[Scalar, DataComponent, Dataset], param_list: List[Scalar]
     ) -> Union[Scalar, DataComponent, Dataset]:
@@ -1091,6 +1107,10 @@ class Date_Add(Parametrized):
                     name="shiftNumber" if error == 12 else "periodInd",
                     expected="Scalar" if error == 12 else expected_types[i].__name__,
                 )
+
+        period_ind = param_list[1].value if len(param_list) > 1 else None
+        if isinstance(period_ind, str) and period_ind not in PERIOD_IND_MAPPING:
+            raise SemanticError("2-1-19-2", period=period_ind)
 
         if isinstance(operand, (Scalar, DataComponent)) and operand.data_type not in [
             Date,
@@ -1133,13 +1153,13 @@ class Date_Add(Parametrized):
             and operand.data is not None
         ):
             result.data = operand.data.copy()
-            for measure in operand.get_measures():
-                if measure.data_type in [Date, TimePeriod]:
-                    result.data[measure.name] = result.data[measure.name].map(
-                        lambda x: cls.py_op(str(x), shift, period, measure.data_type == TimePeriod),
-                        na_action="ignore",
-                    )
-                    measure.data_type = Date
+            for comp in cls._dateadd_targets(operand):
+                is_period = comp.data_type == TimePeriod
+                result.data[comp.name] = result.data[comp.name].map(
+                    lambda x: cls.py_op(str(x), shift, period, is_period),  # noqa: B023
+                    na_action="ignore",
+                )
+                comp.data_type = Date
 
         if isinstance(result, (Scalar, DataComponent)):
             result.data_type = Date

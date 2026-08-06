@@ -39,6 +39,11 @@ scalar_time_params = [
     ('dayofmonth(cast("2022Q1", time_period))', 31),
     ('dayofyear(cast("2023-01-12", date))', 12),
     ('dayofyear(cast("2022Q1", time_period))', 90),
+    ('yeartoday("P1Y2D")', 367),
+    ('yeartoday("P1Y")', 365),
+    ('yeartoday("P10D")', 10),
+    ('monthtoday("P3M2D")', 92),
+    ('monthtoday("P5D")', 5),
 ]
 
 scalar_time_error_params = [
@@ -50,6 +55,10 @@ scalar_time_error_params = [
     ('getmonth(cast("2023-01-12/2024-03-25", time))', SemanticError, "1-1-19-10"),
     ('dayofmonth(cast("2023-01-12/2024-05-29", time))', SemanticError, "1-1-19-10"),
     ('dayofyear(cast("2023-01-12/2024-06-08", time))', SemanticError, "1-1-19-10"),
+    ('yeartoday("P1M")', RunTimeError, "2-1-19-22"),
+    ('yeartoday("hello")', RunTimeError, "2-1-19-22"),
+    ('monthtoday("P3Y")', RunTimeError, "2-1-19-22"),
+    ('monthtoday("P1Y1M")', RunTimeError, "2-1-19-22"),
 ]
 
 

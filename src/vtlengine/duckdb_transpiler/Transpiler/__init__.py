@@ -1690,6 +1690,28 @@ FROM (
     WHERE d_prev IS NOT NULL AND d_prev <> d_next
 )""".strip()
 
+    @staticmethod
+    def _dateadd_targets(ds: Dataset) -> List[Component]:
+        """The Components a Data Set operand of dateadd shifts.
+
+        The reference time Identifier when the Data Set has one, matching the operand
+        type the manual gives, and otherwise its Date or Time_Period Measures. Any other
+        Component is passed through: applying a date shift to a String Measure used to
+        abort the whole query.
+        """
+        time_ids = [
+            c
+            for c in ds.components.values()
+            if c.role == Role.IDENTIFIER and c.data_type in (Date, TimePeriod)
+        ]
+        if time_ids:
+            return time_ids
+        return [
+            c
+            for c in ds.components.values()
+            if c.role == Role.MEASURE and c.data_type in (Date, TimePeriod)
+        ]
+
     def visit_ParamOp_dateadd(self, node: AST.ParamOp) -> str:
         """Visit DATEADD operation: dateadd(op, shiftNumber, periodInd)."""
         operand_node = node.children[0]
@@ -1703,23 +1725,30 @@ FROM (
         if operand_type == _DATASET:
             ds_node = operand_node
             ds = self._get_dataset_structure(ds_node)
-            has_tp = ds is not None and any(
-                c.data_type == TimePeriod for c in ds.components.values() if c.role == Role.MEASURE
-            )
+            targets = self._dateadd_targets(ds)
+            target_names = {c.name for c in targets}
 
-            if has_tp and self.current_assignment:
+            if self.current_assignment:
                 out_ds = self.output_datasets.get(self.current_assignment)
                 if out_ds is not None:
                     for comp in out_ds.components.values():
-                        if comp.data_type == TimePeriod:
+                        if comp.name in target_names and comp.data_type == TimePeriod:
                             comp.data_type = Date
 
-            def _dateadd_expr(col_ref: str) -> str:
-                if has_tp:
+            def _dateadd_expr(col_ref: str, is_period: bool) -> str:
+                if is_period:
                     return f"vtl_tp_dateadd(vtl_period_parse({col_ref}), {shift_sql}, {period_sql})"
                 return f"vtl_dateadd({col_ref}, {shift_sql}, {period_sql})"
 
-            return self._apply_measures(ds_node, _dateadd_expr)
+            cols = []
+            for name, comp in ds.components.items():
+                col = quote_name(name)
+                if name in target_names:
+                    cols.append(f"{_dateadd_expr(col, comp.data_type == TimePeriod)} AS {col}")
+                else:
+                    cols.append(col)
+            src = self._get_dataset_sql(ds_node)
+            return SQLBuilder().select(*cols).from_table(src).build()
         else:
             operand_sql = self.visit(operand_node)
             if is_tp:
@@ -3564,7 +3593,35 @@ FROM (
                     )
             if not child_selects:
                 continue
-            union = " UNION ALL ".join(child_selects)
+            if other_q:
+                # A missing child data point contributes a null attribute value to
+                # the combination (issue #969): left-join every child onto the
+                # node's group universe so the propagation rule sees one value per
+                # child and group.
+                grp = f"_vp_grp_{i}"
+                union_raw = " UNION ALL ".join(child_selects)
+                cte.cte(
+                    grp,
+                    f"SELECT DISTINCT {', '.join(other_q)} FROM ({union_raw}) AS _vpu_{i}",
+                    materialized=True,
+                )
+                join_on = " AND ".join(f"g.{o} IS NOT DISTINCT FROM c.{o}" for o in other_q)
+                padded = [
+                    f"SELECT {', '.join(f'g.{o}' for o in other_q)}, "
+                    f"{', '.join(f'c.{v}' for v in raw_cols)} "
+                    f"FROM {grp} AS g LEFT JOIN ({sel}) AS c ON {join_on}"
+                    for sel in child_selects
+                ]
+                union = " UNION ALL ".join(padded)
+            else:
+                # One row per child even when the child is missing (issue #969):
+                # a LEFT JOIN onto a one-row relation null-fills absent children.
+                padded = [
+                    f"SELECT {', '.join(f'c.{v}' for v in raw_cols)} "
+                    f"FROM (SELECT 1 AS _one) AS _pad LEFT JOIN ({sel}) AS c ON TRUE"
+                    for sel in child_selects
+                ]
+                union = " UNION ALL ".join(padded)
             agg_cols = []
             for v in viral_comps:
                 vq = quote_name(v.name)
@@ -3730,6 +3787,9 @@ FROM (
 
         select_parts = [quote_name(c) for c in (*other_ids, *cond_mapping.values())]
         select_parts.append(f"{computed_expr} AS _computed")
+        # Constant marker so a rule row is detectable after a LEFT JOIN even when
+        # its computed value is NULL and there are no join keys (issue #969).
+        select_parts.append("1 AS _present")
 
         where_parts = self._build_hr_mode_filter(
             mode=mode,
@@ -3766,7 +3826,7 @@ FROM (
                 other_val_has.append(f"p.{_has_col(i)}")
 
         key_cols = [f"p.{k}" for k in join_keys]
-        first_key = join_keys[0] if join_keys else "_computed"
+        first_key = join_keys[0] if join_keys else "_present"
 
         if input_mode == "rule_priority":
             guard = "r._computed IS NOT NULL"
@@ -3776,12 +3836,14 @@ FROM (
         has_expr = f"CASE WHEN r.{first_key} IS NOT NULL THEN 1 ELSE p.{has_col} END AS {has_col}"
 
         all_select = key_cols + other_val_has + [val_expr, has_expr]
-        using_clause = ", ".join(join_keys) if join_keys else "1=1"
+        # Without join keys the pivot is a single global row; LEFT JOIN ON TRUE
+        # keeps it (with NULL r.*) when the rule CTE produced no row.
+        join_sql = f"USING ({', '.join(join_keys)})" if join_keys else "ON TRUE"
 
         return (
             f"  SELECT {', '.join(all_select)}\n"
             f"  FROM {prev_pivot} p\n"
-            f"  LEFT JOIN {rule_cte} r USING ({using_clause})"
+            f"  LEFT JOIN {rule_cte} r {join_sql}"
         )
 
     def _build_hr_mode_filter(
@@ -3816,7 +3878,8 @@ FROM (
 
         elif mode in ("partial_null", "partial_zero"):
             items = right_code_items if is_hierarchy else all_items
-            checks = [f"({_has_col(i)} = 1 AND {_val_col(i)} IS NOT NULL)" for i in items]
+            # At least one *existing* involved data point; a null value still exists.
+            checks = [f"{_has_col(i)} = 1" for i in items]
             if checks:
                 filters.append(f"({' OR '.join(checks)})")
 
