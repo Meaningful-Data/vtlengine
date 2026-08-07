@@ -575,7 +575,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     ) -> str:
         """Apply an expression to each dataset measure and pass identifiers through."""
         ds = self._get_dataset_structure(ds_node)
-        table_src = self._get_dataset_sql(ds_node)
+        with self._stash_assignment():
+            table_src = self._get_dataset_sql(ds_node)
         output_ds = self._get_output_dataset()
         output_measures = list(output_ds.get_measures_names()) if output_ds else []
 
