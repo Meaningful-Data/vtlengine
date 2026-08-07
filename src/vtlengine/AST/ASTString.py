@@ -240,19 +240,35 @@ class ASTString(ASTTemplate):
             )
 
     # ---------------------- Viral Propagation ----------------------
+    @staticmethod
+    def _vp_constant(value: Any) -> str:
+        """A viral propagation constant written the way it was read.
+
+        ``null`` reaches the rule as None and is a keyword rather than a value, so
+        quoting it turned it into the string "None". Numbers and booleans
+        are not quoted either.
+        """
+        if value is None:
+            return "null"
+        if isinstance(value, bool):
+            return "true" if value else "false"
+        if isinstance(value, (int, float)):
+            return str(value)
+        return f'"{value}"'
+
     def visit_ViralPropagationDef(self, node: AST.ViralPropagationDef) -> None:
         clauses_strs: list[str] = []
         for clause in node.enumerated_clauses:
             clause_str = ""
             if clause.name is not None:
                 clause_str += f"{clause.name} : "
-            values_str = " and ".join([f'"{v}"' for v in clause.values])
-            clause_str += f'when {values_str} then "{clause.result}"'
+            values_str = " and ".join([self._vp_constant(v) for v in clause.values])
+            clause_str += f"when {values_str} then {self._vp_constant(clause.result)}"
             clauses_strs.append(clause_str)
         if node.aggregate_clause is not None:
             clauses_strs.append(f"aggregate {node.aggregate_clause.function}")
-        if node.default_value is not None:
-            clauses_strs.append(f'else "{node.default_value}"')
+        if node.has_default:
+            clauses_strs.append(f"else {self._vp_constant(node.default_value)}")
 
         if self.pretty:
             self.vtl_script += (
