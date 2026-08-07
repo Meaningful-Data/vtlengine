@@ -795,6 +795,7 @@ class ViralPropagationDef(AST):
     enumerated_clauses: List[EnumeratedVpClause]
     aggregate_clause: Optional[AggregateVpClause]
     default_value: Optional[str]
+    has_default: bool = False
 
     __eq__ = AST.ast_equality
 
