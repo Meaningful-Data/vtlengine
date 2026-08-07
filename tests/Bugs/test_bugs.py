@@ -4121,3 +4121,27 @@ class CastBugs(BugHelper):
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1002_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc m1 := sum(Me_1 over (partition by Id_1
+                                                             order by Id_2)),
+                                        m2 := count(...), m3 := last_value(...),
+                                        m4 := sum(... data points between
+                                              unbounded preceding and current
+                                              data point) ];
+        Description: an omitted window clause defaults to the whole partition,
+                     so every Data Point of a partition gets the same value.
+                     Both engines instead inherited the SQL default of every
+                     Data Point up to the current one and returned a running
+                     aggregate. m4 gives that running aggregate explicitly and
+                     must keep working.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1002
+        Goal: Check Result.
+        """
+        code = "GH_1002_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
