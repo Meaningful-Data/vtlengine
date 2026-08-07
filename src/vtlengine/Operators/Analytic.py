@@ -315,8 +315,6 @@ class Analytic(Operator.Unary):
         identifiers_sql = ", ".join(f'"{name}"' for name in identifier_names)
         query = f"SELECT {identifiers_sql} , {measures_sql} FROM df"
 
-        if cls.op == COUNT:
-            df[measure_names] = df[measure_names].fillna(-1)
         conn = duckdb.connect(database=":memory:", read_only=False)
         try:
             conn.register("df", df)

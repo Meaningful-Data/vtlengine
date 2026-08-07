@@ -4085,6 +4085,43 @@ class CastBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_990_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- count ( DS_1#Me_1 group by Id_1 having count() > 2 );
+        Description: an aggregation with a having clause over an operand that
+                     carries a viral attribute failed on the Pandas engine: the
+                     having analysis dropped the viral attribute from the data
+                     while keeping it as a component, and the propagated values
+                     were then assigned positionally to the groups the having
+                     clause had already filtered out.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/990
+        Goal: Check Result.
+        """
+        code = "GH_990_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_990_2(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := count ( Me_1 over ( partition by Id_1 ) ) ];
+        Description: the analytic count replaced the nulls of every measure with
+                     the numeric sentinel -1 before querying, which corrupts a
+                     String measure and made the Pandas engine fail; it also made
+                     the count include the null values, disagreeing with the
+                     DuckDB engine.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/990
+        Goal: Check Result.
+        """
+        code = "GH_990_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_994_1(self):
         """
         Status: OK
