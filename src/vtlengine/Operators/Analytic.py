@@ -48,8 +48,6 @@ from vtlengine.ViralPropagation import (
 
 return_integer_operators = [MAX, MIN, SUM]
 
-# An omitted window clause defaults to the whole partition, not to the SQL default of
-# every Data Point up to the current one (issue #1002).
 DEFAULT_ANALYTIC_WINDOW = "ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING"
 
 
