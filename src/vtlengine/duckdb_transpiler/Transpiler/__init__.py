@@ -2489,6 +2489,9 @@ FROM (
             id_names = self._operand_identifier_names(node)
             excluded = set(listed)
             return [i for i in id_names if i not in excluded]
+        if node.partition_by is None and node.order_by:
+            ordered = {o.component for o in node.order_by}
+            return [i for i in self._operand_identifier_names(node) if i not in ordered]
         return listed
 
     def _operand_identifier_names(self, node: AST.Analytic) -> List[str]:
