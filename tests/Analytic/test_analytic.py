@@ -730,10 +730,12 @@ class AnalyticOperatorsTest(AnalyticHelper):
 
     def test_GH_750_8(self):
         """
-        Description: Baseline `partition by Id_1` — running sum partitioned per
-                     Id_1, ordered by Id_2. Companion test to GH_750_9/_10 so
-                     the three variants can be visually compared with the same
-                     data.
+        Description: Baseline `partition by Id_1` — sum partitioned per Id_1,
+                     ordered by Id_2. Companion test to GH_750_9/_10 so the
+                     three variants can be visually compared with the same data.
+                     No window clause is given, so the window spans the whole
+                     partition and every Data Point of a partition gets its
+                     total (see issue #1002).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/750
         Goal: Check Result.
         """
@@ -762,7 +764,9 @@ class AnalyticOperatorsTest(AnalyticHelper):
         """
         Description: `partition except all` collapses every identifier into a
                      single global window. Same dataset as GH_750_8/_9 so the
-                     three forms can be directly compared.
+                     three forms can be directly compared. No window clause is
+                     given, so every Data Point gets the total of that single
+                     partition (see issue #1002).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/750
         Goal: Check Result.
         """

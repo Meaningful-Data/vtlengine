@@ -48,6 +48,10 @@ from vtlengine.ViralPropagation import (
 
 return_integer_operators = [MAX, MIN, SUM]
 
+# An omitted window clause defaults to the whole partition, not to the SQL default of
+# every Data Point up to the current one (issue #1002).
+DEFAULT_ANALYTIC_WINDOW = "ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING"
+
 
 # noinspection PyMethodOverriding
 class Analytic(Operator.Unary):
@@ -246,7 +250,7 @@ class Analytic(Operator.Unary):
             params: No params are related to this class.
         """
         # Windowing
-        window_str = ""
+        window_str = DEFAULT_ANALYTIC_WINDOW
         if window is not None:
             mode = "ROWS" if window.type_ == "data" else "RANGE"
             start_mode = (
