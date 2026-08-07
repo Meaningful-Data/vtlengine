@@ -307,12 +307,17 @@ class Aggregation(Operator.Unary):
             registry = get_current_registry()
             if grouping_keys:
                 grouped = viral_df.groupby(grouping_keys, sort=False)
-                for va_name in viral_attr_names:
-                    aux_df[va_name] = (
-                        grouped[va_name]
-                        .agg(lambda vals: registry.resolve_group(va_name, list(vals)))
-                        .values
-                    )
+                resolved = pd.DataFrame(
+                    {
+                        va_name: grouped[va_name].agg(
+                            lambda vals, _n=va_name: registry.resolve_group(_n, list(vals))
+                        )
+                        for va_name in viral_attr_names
+                    }
+                ).reset_index()
+                aux_df = aux_df.drop(columns=viral_attr_names, errors="ignore").merge(
+                    resolved, how="left", on=grouping_keys
+                )
             else:
                 for va_name in viral_attr_names:
                     aux_df[va_name] = registry.resolve_group(va_name, list(viral_df[va_name]))
