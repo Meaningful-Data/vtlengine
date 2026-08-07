@@ -596,7 +596,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 comps_to_keep[op_comp.name] = Component(
                     name=op_comp.name,
                     data_type=op_comp.data_type,
-                    role=op_comp.role,
+                    role=Role.MEASURE,
                     nullable=op_comp.nullable,
                 )
                 if operand.data is not None:

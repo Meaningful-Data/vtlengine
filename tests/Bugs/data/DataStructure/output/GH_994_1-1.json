@@ -1,0 +1,51 @@
+{
+  "datasets": [
+    {
+      "name": "DS_r",
+      "DataStructure": [
+        {
+          "name": "Id_3",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "m1",
+          "role": "Measure",
+          "type": "Integer",
+          "nullable": false
+        },
+        {
+          "name": "m2",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "m3",
+          "role": "Measure",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "m4",
+          "role": "Measure",
+          "type": "Time_Period",
+          "nullable": false
+        },
+        {
+          "name": "m5",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "m6",
+          "role": "Measure",
+          "type": "Integer",
+          "nullable": false
+        }
+      ]
+    }
+  ]
+}
