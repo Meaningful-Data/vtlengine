@@ -593,8 +593,11 @@ class InterpreterAnalyzer(ASTTemplate):
                 ) in self.regular_aggregation_dataset.components.items():
                     if comp.role in (Role.IDENTIFIER, Role.VIRAL_ATTRIBUTE):
                         comps_to_keep[comp_name] = copy(comp)
-                comps_to_keep[op_comp.name] = Component(
-                    name=op_comp.name,
+                agg_name = op_comp.name
+                if op_comp.role == Role.IDENTIFIER:
+                    agg_name = f"__agg_{op_comp.name}__"
+                comps_to_keep[agg_name] = Component(
+                    name=agg_name,
                     data_type=op_comp.data_type,
                     role=Role.MEASURE,
                     nullable=op_comp.nullable,
@@ -604,7 +607,7 @@ class InterpreterAnalyzer(ASTTemplate):
                         operand.get_identifiers_names() + operand.get_viral_attributes_names()
                     )
                     data_to_keep = operand.data[cols_to_keep].copy()
-                    data_to_keep[op_comp.name] = op_comp.data
+                    data_to_keep[agg_name] = op_comp.data
                 else:
                     data_to_keep = None
                 return Dataset(name=operand.name, components=comps_to_keep, data=data_to_keep)

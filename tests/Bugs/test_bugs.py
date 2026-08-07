@@ -4090,14 +4090,17 @@ class CastBugs(BugHelper):
         Status: OK
         Expression: DS_r <- DS_1 [ aggr m1 := min(Id_1), m2 := min(Id_2),
                                         m3 := min(Id_date), m4 := min(Id_period),
-                                        m5 := min(At_1), m6 := max(Id_1)
+                                        m5 := min(At_1), m6 := max(Id_1),
+                                        m7 := min(Id_3)
                                    group by Id_3 ];
         Description: an aggregate operator inside an aggr clause is applied to the
                      operand Component whatever its role is, so that Component is
                      the Measure of the Data Set it aggregates. Keeping the original
                      role left that Data Set without Measures, and both engines
                      raised IndexError whenever the aggregated Component was an
-                     Identifier or an Attribute.
+                     Identifier or an Attribute. An aggregated Identifier is held
+                     under an internal name so that it stays an Identifier of the
+                     operand and can still be used as a grouping key (m7).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/994
         Goal: Check Result.
         """
