@@ -2294,6 +2294,24 @@ class AggregationBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=message
         )
 
+    def test_GH_988_1(self):
+        """
+        Status: OK
+        Description: an operator nested inside another names its Measures for itself.
+                     Only the one producing the assignment's result takes the name the
+                     target declares, so trim inside length used to rename the Measure
+                     to length's int_var and the length around it then looked for a
+                     column that was no longer there. DS_r3 keeps a lone operator
+                     covered, where the target's name does apply.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/988
+        Goal: Check Result.
+        """
+        code = "GH_988_1"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_981_1(self):
         """
         Status: OK
