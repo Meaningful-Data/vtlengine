@@ -52,8 +52,7 @@ class Identifier(RoleSetter):
     @classmethod
     def validate(cls, operand: ALLOWED_MODEL_TYPES, data_size: int = 0) -> DataComponent:
         result = super().validate(operand)
-        if result.nullable:
-            raise SemanticError("1-1-1-16")
+        result.nullable = False
         return result
 
     @classmethod
@@ -61,6 +60,12 @@ class Identifier(RoleSetter):
         cls, operand: ALLOWED_MODEL_TYPES, data_size: int = 0
     ) -> DataComponent:
         if isinstance(operand, Scalar) and operand.value is None:
+            raise SemanticError("1-1-1-16")
+        if (
+            isinstance(operand, DataComponent)
+            and operand.data is not None
+            and operand.data.isnull().any()
+        ):
             raise SemanticError("1-1-1-16")
         return super().evaluate(operand, data_size)
 

@@ -65,16 +65,11 @@ def _map_time_agg_error(msg: str, msg_lower: str) -> RunTimeError:
     return RunTimeError("2-1-19-1", value=value, new_indicator=new_indicator)
 
 
-def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
-    """Map a DuckDB query execution error to a VTL exception.
-
-    Patterns:
-    - Conversion errors on timestamp/date → RunTimeError 2-1-19-8
-    - Division by zero → RunTimeError 2-1-3-1
-    - Cast errors → SemanticError 1-1-5-1
-    """
-    msg = str(error)
-    msg_lower = msg.lower()
+def _map_vtl_macro_error(msg: str, msg_lower: str) -> Optional[Exception]:
+    """Map the errors raised by the VTL SQL macros, which carry their own code."""
+    # calc identifier: the calculated expression produced a null
+    if "vtl 1-1-1-16" in msg_lower:
+        return SemanticError("1-1-1-16")
 
     # VTL macro: TimePeriod aggregation with mixed indicators (max/min)
     if "vtl error 2-1-19-20" in msg_lower:
@@ -95,6 +90,24 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
     if "vtl error 2-1-19-16" in msg_lower:
         op = "daytoyear" if "daytoyear" in msg_lower else "daytomonth"
         return RunTimeError("2-1-19-16", op=op)
+
+    return None
+
+
+def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
+    """Map a DuckDB query execution error to a VTL exception.
+
+    Patterns:
+    - Conversion errors on timestamp/date → RunTimeError 2-1-19-8
+    - Division by zero → RunTimeError 2-1-3-1
+    - Cast errors → SemanticError 1-1-5-1
+    """
+    msg = str(error)
+    msg_lower = msg.lower()
+
+    macro_error = _map_vtl_macro_error(msg, msg_lower)
+    if macro_error is not None:
+        return macro_error
 
     # time_agg: period indicator too coarse for target
     if "vtl error 2-1-19-1" in msg_lower:
