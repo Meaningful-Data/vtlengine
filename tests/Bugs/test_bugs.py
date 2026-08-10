@@ -4229,6 +4229,26 @@ class CastBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1000_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- first_value ( DS_1 over (partition by Id_2 order by Id_1) );
+        Description: an analytic invocation over a Data Set that carries viral
+                     attributes re-attaches them by merging on the Identifiers.
+                     The merge took them from the operand, which still holds the
+                     values as they were loaded, while the result carries the
+                     dates as the query returned them, so a Date Identifier made
+                     the Pandas engine raise "You are trying to merge on
+                     datetime64[us] and string columns".
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1000
+        Goal: Check Result.
+        """
+        code = "GH_1000_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_998_1(self):
         """
         Status: OK

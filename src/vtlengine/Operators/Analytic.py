@@ -383,7 +383,8 @@ class Analytic(Operator.Unary):
         viral_attr_names = operand.get_viral_attributes_names()
         if viral_attr_names and operand.data is not None and result.data is not None:
             registry = get_current_registry()
-            viral_src = operand.data[identifier_names + viral_attr_names].copy()
+            result.data = cls.normalize_dates(result.data, result.components)
+            viral_src = df[identifier_names + viral_attr_names].copy()
             for va_name in viral_attr_names:
                 if registry.get_rule_for_variable(va_name) is None:
                     # No rule -> per-row passthrough (keep the original value).
