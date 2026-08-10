@@ -444,6 +444,7 @@ class Sum(Analytic):
     """
 
     op = SUM
+    type_to_check = Number
     sql_op = "SUM"
     return_integer = False
 
