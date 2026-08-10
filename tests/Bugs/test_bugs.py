@@ -2294,6 +2294,41 @@ class AggregationBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=message
         )
 
+    def test_GH_988_1(self):
+        """
+        Status: OK
+        Description: an operator nested inside another names its Measures for itself.
+                     Only the one producing the assignment's result takes the name the
+                     target declares, so trim inside length used to rename the Measure
+                     to length's int_var and the length around it then looked for a
+                     column that was no longer there. DS_r3 keeps a lone operator
+                     covered, where the target's name does apply.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/988
+        Goal: Check Result.
+        """
+        code = "GH_988_1"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_981_1(self):
+        """
+        Status: OK
+        Description: ceil, floor and the parameterless round and trunc give an Integer
+                     Measure. DuckDb hands back the type it was given, so a Number
+                     Measure stayed a float while the Component said Integer. round and
+                     trunc with a number of digits keep giving a Number, which DS_r4
+                     covers.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/981
+        Goal: Check Result.
+        """
+        code = "GH_981_1"
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_937_1(self):
         """
         Status: OK
@@ -4122,6 +4157,31 @@ class CastBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_994_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr m1 := min(Id_1), m2 := min(Id_2),
+                                        m3 := min(Id_date), m4 := min(Id_period),
+                                        m5 := min(At_1), m6 := max(Id_1),
+                                        m7 := min(Id_3)
+                                   group by Id_3 ];
+        Description: an aggregate operator inside an aggr clause is applied to the
+                     operand Component whatever its role is, so that Component is
+                     the Measure of the Data Set it aggregates. Keeping the original
+                     role left that Data Set without Measures, and both engines
+                     raised IndexError whenever the aggregated Component was an
+                     Identifier or an Attribute. An aggregated Identifier is held
+                     under an internal name so that it stays an Identifier of the
+                     operand and can still be used as a grouping key (m7).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/994
+        Goal: Check Result.
+        """
+        code = "GH_994_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_995_1(self):
         """
         Status: OK
@@ -4186,6 +4246,70 @@ class CastBugs(BugHelper):
         code = "GH_1005_1"
         number_inputs = 1
         error_code = "1-1-3-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
+    def test_GH_1004_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc m1 := lag(Me_1 over (partition by Id_2
+                                                             order by Id_1)),
+                                        m2 := lead(Me_1 over (...)),
+                                        m3 := lag(Id_1, 1 over (...)),
+                                        m4 := lead(Id_1, 1 over (...)) ];
+        Description: the offset of lag and lead is optional, but an absent
+                     parameter list was rendered as LAG("Me_1", ) and the query
+                     failed to parse (m1, m2). Both operators also have no value
+                     to shift in at the edges of the partition, so their result
+                     is nullable whatever the operand declared; taking it from a
+                     non nullable Identifier was rejected as null values in a non
+                     nullable structure (m3, m4).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1004
+        Goal: Check Result.
+        """
+        code = "GH_1004_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1000_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- first_value ( DS_1 over (partition by Id_2 order by Id_1) );
+        Description: an analytic invocation over a Data Set that carries viral
+                     attributes re-attaches them by merging on the Identifiers.
+                     The merge took them from the operand, which still holds the
+                     values as they were loaded, while the result carries the
+                     dates as the query returned them, so a Date Identifier made
+                     the Pandas engine raise "You are trying to merge on
+                     datetime64[us] and string columns".
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1000
+        Goal: Check Result.
+        """
+        code = "GH_1000_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_998_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc m := sum(Me_1 over (partition by Id_1)) ];
+        Description: the analytic sum takes measure<number>, but its operator
+                     declared no type to check, unlike the aggregate sum and
+                     unlike the other numeric analytic operators. A String
+                     Measure reached the query and both engines surfaced a raw
+                     BinderException for sum(VARCHAR) instead of a SemanticError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/998
+        Goal: Check Exception.
+        """
+        code = "GH_998_1"
+        number_inputs = 1
+        error_code = "1-1-1-1"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code
