@@ -948,6 +948,11 @@ centralised_messages = {
         "description": "Raised when a binary dataset operator is applied to two datasets whose "
         "identifier sets are neither equal nor in a subset relationship.",
     },
+    "1-2-16": {
+        "message": "At op {op}: The condition must be a Component expression, found a Scalar.",
+        "description": "Raised when the condition of a filter clause does not depend on the "
+        "Components of the operand, so it cannot be evaluated for each Data Point.",
+    },
     # AST Helpers
     "1-3-1-1": {
         "message": "At op {op}: User defined {option} declared as {type_1}, found {type_2}.",
