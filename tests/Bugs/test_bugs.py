@@ -4229,6 +4229,28 @@ class CastBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1005_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr m := count(Me_1) group by Id_2
+                                   having rank(over (order by Id_2)) > 1 ];
+        Description: a having condition refers to the groups, so the reference
+                     manual requires it to invoke aggregate operators, and an
+                     analytic invocation cannot be nested in an aggregate one.
+                     The analytic was evaluated anyway and the having clause then
+                     read it as a Data Set, raising AttributeError: 'DataComponent'
+                     object has no attribute 'get_measures' on both engines.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1005
+        Goal: Check Exception.
+        """
+        code = "GH_1005_1"
+        number_inputs = 1
+        error_code = "1-1-3-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
     def test_GH_1004_1(self):
         """
         Status: OK

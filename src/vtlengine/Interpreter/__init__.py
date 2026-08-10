@@ -701,6 +701,8 @@ class InterpreterAnalyzer(ASTTemplate):
         return having
 
     def visit_Analytic(self, node: AST.Analytic) -> Any:  # noqa: C901
+        if self.is_from_having:
+            raise SemanticError("1-1-3-1", op=node.op)
         component_name = None
         analytic_component_name: Optional[str] = None
         operand_id_collision = False

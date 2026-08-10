@@ -333,6 +333,12 @@ centralised_messages = {
         "is not boolean as required.",
     },
     # Analytic errors
+    "1-1-3-1": {
+        "message": "At op {op}: An analytic operator cannot be used in a having clause, "
+        "which must invoke aggregate operators.",
+        "description": "Raised when an analytic operator is invoked inside a having "
+        "clause, as an analytic invocation cannot be nested in an aggregate one.",
+    },
     "1-1-3-2": {
         "message": "At op {op}: Only Identifiers are allowed for partitioning, "
         "found {id_name} - {id_type}.",
