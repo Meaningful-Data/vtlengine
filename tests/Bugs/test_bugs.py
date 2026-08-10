@@ -4122,6 +4122,29 @@ class CastBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_995_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc m1 := min(Me_1 over (order by Id_2, Id_1)),
+                                        m2 := max(Me_1 over (order by Id_2 desc, Id_1 desc)),
+                                        m3 := median(Me_1 over (order by Id_2, Id_1)),
+                                        m4 := sum(Me_1 over (order by Id_1)) ];
+        Description: an analytic invocation that omits the partition clause is
+                     partitioned by the Identifiers the order clause does not name.
+                     The DuckDB engine emitted no PARTITION BY at all, so it
+                     analysed the whole Data Set as a single partition and
+                     disagreed with the Pandas engine for every analytic operator.
+                     No window clause is given either, so each value covers the
+                     whole partition (see issue #1002).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/995
+        Goal: Check Result.
+        """
+        code = "GH_995_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_1002_1(self):
         """
         Status: OK
