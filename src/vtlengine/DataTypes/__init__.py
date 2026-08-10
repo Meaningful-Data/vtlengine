@@ -833,6 +833,8 @@ def binary_implicit_promotion(
     ):
         return return_type
     if left_type.is_included(right_implicities):
+        if left_type.is_subtype(right_type):  # For Integer and Number
+            return right_type
         return left_type
     if right_type.is_included(left_implicities):
         return right_type
