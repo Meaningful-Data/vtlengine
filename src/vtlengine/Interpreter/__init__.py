@@ -58,7 +58,10 @@ from vtlengine.DataTypes import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.files.output import save_datapoints
-from vtlengine.files.output._time_period_representation import TimePeriodRepresentation
+from vtlengine.files.output._time_period_representation import (
+    TimePeriodRepresentation,
+    format_time_period_external_representation,
+)
 from vtlengine.files.parser import _fill_dataset_empty_data, load_datapoints
 from vtlengine.Model import (
     Component,
@@ -230,6 +233,10 @@ class InterpreterAnalyzer(ASTTemplate):
                 writer = csv.writer(csv_file)
                 writer.writerow(["name", "value"])
                 for name, scalar in sorted(result_scalars.items(), key=lambda item: item[0]):
+                    if self.time_period_representation is not None:
+                        format_time_period_external_representation(
+                            scalar, self.time_period_representation
+                        )
                     value_to_write = "" if scalar.value is None else scalar.value
                     writer.writerow([name, str(value_to_write)])
 
