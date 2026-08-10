@@ -220,7 +220,9 @@ class If(Operator):
         if isinstance(right, Dataset):
             if left.get_identifiers() != condition.get_identifiers():
                 raise SemanticError("1-1-9-10", op=cls.op, clause=right.name)
-            if left.get_components_names() != right.get_components_names():
+            # The branches must hold the same Components, in whatever order each one
+            # happens to declare them (issue #1008).
+            if set(left.get_components_names()) != set(right.get_components_names()):
                 raise SemanticError("1-1-9-13", op=cls.op, then=left.name, else_clause=right.name)
             for component in left.get_measures():
                 if component.data_type != right.components[component.name].data_type:
@@ -279,14 +281,17 @@ class Nvl(Binary):
         else:
             if not isinstance(result, Scalar):
                 if isinstance(right, Scalar):
+                    # A null applicable value replaces nothing, so the operand is
+                    # returned as it is instead of filling with it (issue #1008).
+                    fill_null = right.value is None
                     if isinstance(result, Dataset):
                         measure_names = result.get_measures_names()
                         result.data = left.data.copy()
                         for me in measure_names:
-                            if me in result.data.columns:
+                            if me in result.data.columns and not fill_null:
                                 result.data[me] = result.data[me].fillna(right.value)
                     else:
-                        result.data = left.data.fillna(right.value)
+                        result.data = left.data if fill_null else left.data.fillna(right.value)
                 else:
                     # nvl is single-operand: the primary operand's viral attributes are
                     # copied through unchanged; no rule is executed (issue #906).
@@ -300,19 +305,20 @@ class Nvl(Binary):
         dataset_name = VirtualCounter._new_ds_name()
         comp_name = VirtualCounter._new_dc_name()
         result_components = {}
+        # A null applicable value replaces nothing, so the nulls of the operand survive
+        # and the result stays as nullable as the operand was (issue #1008).
+        keeps_nulls = isinstance(right, Scalar) and (right.data_type is Null or right.value is None)
         if isinstance(left, Scalar):
             if not isinstance(right, Scalar):
-                raise ValueError(
-                    "Nvl operation at scalar level must have scalar "
-                    "types on right (applicable) side"
+                raise SemanticError(
+                    "1-1-9-2", op=cls.op, left_type="Scalar", right_type=type(right).__name__
                 )
             cls.type_validation(left.data_type, right.data_type)
             return Scalar(name="result", value=None, data_type=left.data_type)
         if isinstance(left, DataComponent):
             if isinstance(right, Dataset):
-                raise ValueError(
-                    "Nvl operation at component level cannot have "
-                    "dataset type on right (applicable) side"
+                raise SemanticError(
+                    "1-1-9-2", op=cls.op, left_type="Component", right_type="Data Set"
                 )
             cls.type_validation(left.data_type, right.data_type)
             return DataComponent(
@@ -320,13 +326,12 @@ class Nvl(Binary):
                 data=pd.Series(dtype=left.data_type.dtype()),
                 data_type=left.data_type,
                 role=Role.MEASURE,
-                nullable=False,
+                nullable=keeps_nulls and left.nullable,
             )
         if isinstance(left, Dataset):
             if isinstance(right, DataComponent):
-                raise ValueError(
-                    "Nvl operation at dataset level cannot have component "
-                    "type on right (applicable) side"
+                raise SemanticError(
+                    "1-1-9-2", op=cls.op, left_type="Data Set", right_type="Component"
                 )
             if isinstance(right, Scalar):
                 for component in left.get_measures():
@@ -342,7 +347,7 @@ class Nvl(Binary):
                 if comp.role != Role.ATTRIBUTE
             }
             for comp in result_components.values():
-                comp.nullable = False
+                comp.nullable = keeps_nulls and comp.nullable
         return Dataset(name=dataset_name, components=result_components, data=None)
 
 
@@ -352,7 +357,14 @@ class Case(Operator):
         cls, conditions: List[Any], thenOps: List[Any], elseOp: Any
     ) -> Union[Scalar, DataComponent, Dataset]:
         result = cls.validate(conditions, thenOps, elseOp)
-        if not isinstance(result, Scalar):
+        if isinstance(result, Scalar):
+            # Take the value of the then operand whose condition holds, following the
+            # same order validate uses to take the data type (issue #1008).
+            result.value = elseOp.value
+            for condition, thenOp in zip(conditions, thenOps):
+                if condition.value:
+                    result.value = thenOp.value
+        else:
             operation_level = list({type(c) for c in conditions if not isinstance(c, Scalar)})
             if operation_level[0] == DataComponent:
                 result.data = cls.component_level_evaluation(conditions, thenOps, elseOp)
@@ -476,9 +488,11 @@ class Case(Operator):
         # Rebuild the dict: the result must never share it with the branch dataset, as
         # apply_viral_return_types may replace entries in it.
         components = dict(next(op for op in ops if isinstance(op, Dataset)).components)
-        comp_names = [comp.name for comp in components.values()]
+        comp_names = {comp.name for comp in components.values()}
         for op in ops:
-            if isinstance(op, Dataset) and op.get_components_names() != comp_names:
+            # The operands must hold the same Components, in whatever order each one
+            # happens to declare them (issue #1008).
+            if isinstance(op, Dataset) and set(op.get_components_names()) != comp_names:
                 raise SemanticError("2-1-9-7", op=cls.op)
 
         # case over two or more datasets combines their data points, so viral attributes
