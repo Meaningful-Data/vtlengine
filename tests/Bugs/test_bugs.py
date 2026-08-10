@@ -1,6 +1,7 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+import duckdb
 import pandas as pd
 import pytest
 
@@ -177,6 +178,156 @@ class GeneralBugs(BugHelper):
         )
         assert result["x"].value == 9
         assert result["y"].value == 10
+
+    def test_GH_976_1(self):
+        """
+        Expression: DS_r <- check_datapoint(DS_1, DR_1);
+        Description: check_datapoint result values must match the reference
+            in both engines (the errorlevel component is declared as Number).
+        Git Issue: GH_976.
+        Goal: Check Result.
+        """
+        code = "GH_976_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_976_1_dtypes(self):
+        """
+        Expression: DS_r <- check_datapoint(DS_1, DR_1);
+        Description: in-memory outputs must materialize the declared component
+            dtypes in both engines; the DuckDB engine returned the physical
+            SQL type from fetchdf() (errorlevel INTEGER -> int32) instead of
+            the declared Number (double[pyarrow]).
+        Git Issue: GH_976.
+        Goal: Check returned DataFrame dtypes.
+        """
+        code = "GH_976_1"
+        script = self.LoadVTL(code)
+        result = run(
+            script=script,
+            data_structures=self.filepath_json / f"{code}-1.json",
+            datapoints={"DS_1": self.filepath_csv / f"{code}-1.csv"},
+            use_duckdb=_use_duckdb_backend(),
+        )
+        assert str(result["DS_r"].data["errorlevel"].dtype) == "double[pyarrow]"
+
+    @pytest.mark.skipif(not _use_duckdb_backend(), reason="parquet output_format is DuckDB-only")
+    def test_GH_976_1_parquet(self):
+        """
+        Expression: DS_r <- check_datapoint(DS_1, DR_1);
+        Description: parquet files written to output_folder must carry the
+            declared component type for physical/declared mismatches; the
+            errorlevel column (declared Number) was written as INT32 instead
+            of DOUBLE.
+        Git Issue: GH_976.
+        Goal: Check written parquet schema.
+        """
+        code = "GH_976_1"
+        script = self.LoadVTL(code)
+        with TemporaryDirectory() as tmpdir:
+            run(
+                script=script,
+                data_structures=self.filepath_json / f"{code}-1.json",
+                datapoints={"DS_1": self.filepath_csv / f"{code}-1.csv"},
+                output_folder=Path(tmpdir),
+                output_format="parquet",
+                use_duckdb=True,
+            )
+            with duckdb.connect() as conn:
+                rows = conn.execute(
+                    f"DESCRIBE SELECT * FROM read_parquet('{Path(tmpdir) / 'DS_r.parquet'}')"
+                ).fetchall()
+        types = {name: sql_type for name, sql_type, *_ in rows}
+        assert types["errorlevel"] == "DOUBLE"
+
+    def test_GH_976_2(self):
+        """
+        Expression: DS_r <- check_datapoint(DS_1, DR_1 all_measures);
+        Description: check_datapoint all_measures result values (bool_var,
+            errorcode and errorlevel nulls included) must match the reference
+            in both engines.
+        Git Issue: GH_976.
+        Goal: Check Result.
+        """
+        code = "GH_976_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_976_2_csv_text(self):
+        """
+        Expression: DS_r <- check_datapoint(DS_1, DR_1 all_measures);
+        Description: dataset CSVs written to output_folder must render Number
+            values with the shared significant-digits format in both engines;
+            the DuckDB engine wrote the DECIMAL(28,10) text (10.5000000000)
+            via COPY TO where the pandas engine writes 10.5.
+        Git Issue: GH_976.
+        Goal: Check written CSV text.
+        """
+        code = "GH_976_2"
+        script = self.LoadVTL(code)
+        with TemporaryDirectory() as tmpdir:
+            run(
+                script=script,
+                data_structures=self.filepath_json / f"{code}-1.json",
+                datapoints={"DS_1": self.filepath_csv / f"{code}-1.csv"},
+                output_folder=Path(tmpdir),
+                use_duckdb=_use_duckdb_backend(),
+            )
+            content = (Path(tmpdir) / "DS_r.csv").read_text()
+        lines = content.strip().splitlines()
+        assert lines[0] == "Id_1,ruleid,Me_1,bool_var,errorcode,errorlevel"
+        assert sorted(lines[1:]) == [
+            "1,R_1,10.5,True,,",
+            "2,R_1,-5,False,R_1,2",
+            "3,R_1,,,,",
+        ]
+
+    def test_GH_976_3(self):
+        """
+        Expression: DS_r <- DS_1;
+        Description: a passthrough of every scalar type (Number, Integer,
+            String, Boolean, Date) with nulls must match the reference in
+            both engines.
+        Git Issue: GH_976.
+        Goal: Check Result.
+        """
+        code = "GH_976_3"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_976_3_dtypes(self):
+        """
+        Expression: DS_r <- DS_1;
+        Description: in-memory outputs must materialize the declared component
+            dtypes (DTYPE_MAPPING, pyarrow-backed) for every scalar type in
+            both engines; the DuckDB engine returned numpy-backed dtypes from
+            fetchdf() (object/float64/int32).
+        Git Issue: GH_976.
+        Goal: Check returned DataFrame dtypes.
+        """
+        code = "GH_976_3"
+        script = self.LoadVTL(code)
+        result = run(
+            script=script,
+            data_structures=self.filepath_json / f"{code}-1.json",
+            datapoints={"DS_1": self.filepath_csv / f"{code}-1.csv"},
+            use_duckdb=_use_duckdb_backend(),
+        )
+        dtypes = {name: str(dtype) for name, dtype in result["DS_r"].data.dtypes.items()}
+        assert dtypes == {
+            "Id_1": "int64[pyarrow]",
+            "Me_1": "double[pyarrow]",
+            "Me_2": "int64[pyarrow]",
+            "Me_3": "string",
+            "Me_4": "bool[pyarrow]",
+            "Me_5": "string",
+        }
 
 
 class JoinBugs(BugHelper):
@@ -3949,5 +4100,66 @@ class CastBugs(BugHelper):
         code = "GH_931_1"
         number_inputs = 2
         references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_990_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- count ( DS_1#Me_1 group by Id_1 having count() > 2 );
+        Description: an aggregation with a having clause over an operand that
+                     carries a viral attribute failed on the Pandas engine: the
+                     having analysis dropped the viral attribute from the data
+                     while keeping it as a component, and the propagated values
+                     were then assigned positionally to the groups the having
+                     clause had already filtered out.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/990
+        Goal: Check Result.
+        """
+        code = "GH_990_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_990_2(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := count ( Me_1 over ( partition by Id_1 ) ) ];
+        Description: the analytic count replaced the nulls of every measure with
+                     the numeric sentinel -1 before querying, which corrupts a
+                     String measure and made the Pandas engine fail; it also made
+                     the count include the null values, disagreeing with the
+                     DuckDB engine.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/990
+        Goal: Check Result.
+        """
+        code = "GH_990_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1002_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc m1 := sum(Me_1 over (partition by Id_1
+                                                             order by Id_2)),
+                                        m2 := count(...), m3 := last_value(...),
+                                        m4 := sum(... data points between
+                                              unbounded preceding and current
+                                              data point) ];
+        Description: an omitted window clause defaults to the whole partition,
+                     so every Data Point of a partition gets the same value.
+                     Both engines instead inherited the SQL default of every
+                     Data Point up to the current one and returned a running
+                     aggregate. m4 gives that running aggregate explicitly and
+                     must keep working.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1002
+        Goal: Check Result.
+        """
+        code = "GH_1002_1"
+        number_inputs = 1
+        references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)

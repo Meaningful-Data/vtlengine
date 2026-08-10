@@ -50,6 +50,7 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
 )
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
+from vtlengine.Operators.Analytic import DEFAULT_ANALYTIC_WINDOW
 from vtlengine.Operators.Join import merged_viral_attribute_names
 from vtlengine.Utils._recursion import recursion_headroom
 from vtlengine.ViralPropagation import get_current_registry
@@ -2463,6 +2464,8 @@ FROM (
                 order_is_date = comp is not None and comp.data_type == Date
             window_sql = self.visit_Windowing(node.window, order_is_date=order_is_date)
             over_parts.append(window_sql)
+        else:
+            over_parts.append(DEFAULT_ANALYTIC_WINDOW)
         return " ".join(over_parts)
 
     def _resolve_partition_cols(self, node: AST.Analytic) -> List[str]:

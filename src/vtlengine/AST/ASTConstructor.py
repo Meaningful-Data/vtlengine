@@ -173,7 +173,9 @@ class ASTVisitor:
 
         propagation_name = Terminals().visitVarID(ctx_list[3]).value
         signature_type, target = self.visitVpSignature(ctx_list[5])
-        enumerated_clauses, aggregate_clause, default_value = self.visitVpBody(ctx_list[8])
+        enumerated_clauses, aggregate_clause, default_value, has_default = self.visitVpBody(
+            ctx_list[8]
+        )
 
         token_info = extract_token_info(ctx)
 
@@ -184,6 +186,7 @@ class ASTVisitor:
             enumerated_clauses=enumerated_clauses,
             aggregate_clause=aggregate_clause,
             default_value=default_value,
+            has_default=has_default,
             **token_info,
         )
 
@@ -200,6 +203,7 @@ class ASTVisitor:
         enumerated_clauses: List[EnumeratedVpClause] = []
         aggregate_clause: Optional[AggregateVpClause] = None
         default_value: Optional[str] = None
+        has_default = False
 
         for child in ctx_list:
             if child.is_terminal:
@@ -210,8 +214,9 @@ class ASTVisitor:
                 aggregate_clause = self.visitAggregationVpClause(child)
             elif child.ctx_id == RC.DEFAULT_VP_CLAUSE:
                 default_value = self.visitDefaultVpClause(child)
+                has_default = True
 
-        return enumerated_clauses, aggregate_clause, default_value
+        return enumerated_clauses, aggregate_clause, default_value, has_default
 
     def visitEnumeratedVpClause(self, ctx: Any) -> Any:
         """enumeratedVpClause: (IDENTIFIER COLON)? WHEN vpCondition THEN constant ;"""

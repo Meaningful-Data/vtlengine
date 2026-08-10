@@ -1412,6 +1412,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     self.aggregation_dataset.data[
                         self.aggregation_dataset.get_identifiers_names()
                         + self.aggregation_dataset.get_measures_names()
+                        + self.aggregation_dataset.get_viral_attributes_names()
                     ]
                     if (self.aggregation_dataset.data is not None)
                     else None

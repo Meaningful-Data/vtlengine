@@ -48,6 +48,8 @@ from vtlengine.ViralPropagation import (
 
 return_integer_operators = [MAX, MIN, SUM]
 
+DEFAULT_ANALYTIC_WINDOW = "ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING"
+
 
 # noinspection PyMethodOverriding
 class Analytic(Operator.Unary):
@@ -246,7 +248,7 @@ class Analytic(Operator.Unary):
             params: No params are related to this class.
         """
         # Windowing
-        window_str = ""
+        window_str = DEFAULT_ANALYTIC_WINDOW
         if window is not None:
             mode = "ROWS" if window.type_ == "data" else "RANGE"
             start_mode = (
@@ -315,8 +317,6 @@ class Analytic(Operator.Unary):
         identifiers_sql = ", ".join(f'"{name}"' for name in identifier_names)
         query = f"SELECT {identifiers_sql} , {measures_sql} FROM df"
 
-        if cls.op == COUNT:
-            df[measure_names] = df[measure_names].fillna(-1)
         conn = duckdb.connect(database=":memory:", read_only=False)
         try:
             conn.register("df", df)
