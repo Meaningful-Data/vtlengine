@@ -937,9 +937,9 @@ centralised_messages = {
         "GROUP BY clause.",
     },
     "1-2-14": {
-        "message": "At op {op}: Cannot perform aggregation inside a Calc.",
-        "description": "Occurs when an aggregation operation is attempted inside a "
-        "Calc expression.",
+        "message": "At op {op}: Cannot perform an aggregation inside this clause.",
+        "description": "Occurs when an aggregation operation is attempted inside a clause "
+        "that is evaluated for each Data Point, such as calc or filter.",
     },
     "1-2-15": {
         "message": "At op {op}: incompatible identifier sets between datasets {left_name} {left} "

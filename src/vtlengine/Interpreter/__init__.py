@@ -1080,7 +1080,7 @@ class InterpreterAnalyzer(ASTTemplate):
             self.is_from_regular_aggregation = True
             operands.append(self.visit(child))
             self.is_from_regular_aggregation = False
-        if node.op == CALC and any(isinstance(operand, Dataset) for operand in operands):
+        if node.op in (CALC, FILTER) and any(isinstance(operand, Dataset) for operand in operands):
             raise SemanticError("1-2-14", op=node.op)
         if node.op == AGGREGATE:
             # Extracting the role encoded inside the children assignments
