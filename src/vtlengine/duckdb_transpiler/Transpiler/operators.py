@@ -234,8 +234,8 @@ def _create_default_registry() -> OperatorRegistry:
     # Arithmetic functions
     ops.register(tokens.PLUS, "+{0}", is_prefix=True)
     ops.register(tokens.MINUS, "-{0}", is_prefix=True)
-    ops.register(tokens.CEIL, "CEIL({0})")
-    ops.register(tokens.FLOOR, "FLOOR({0})")
+    ops.register(tokens.CEIL, "CAST(CEIL({0}) AS BIGINT)")
+    ops.register(tokens.FLOOR, "CAST(FLOOR({0}) AS BIGINT)")
     ops.register(tokens.ABS, "ABS({0})")
     ops.register(tokens.EXP, "EXP({0})")
     ops.register(tokens.LN, "LN({0})")
@@ -292,8 +292,10 @@ def _create_default_registry() -> OperatorRegistry:
     # ROUND/TRUNC require DOUBLE when precision is not constant in DuckDB.
     def _precision_generator(sql_fn: str) -> Callable[..., str]:
         def gen(*args: Optional[str]) -> str:
-            precision = "0" if (len(args) < 2 or args[1] is None) else str(args[1])
-            return f"{sql_fn}(CAST({args[0]} AS DOUBLE), COALESCE(CAST({precision} AS INTEGER), 0))"
+            without_digits = len(args) < 2 or args[1] is None
+            precision = "0" if without_digits else str(args[1])
+            expr = f"{sql_fn}(CAST({args[0]} AS DOUBLE), COALESCE(CAST({precision} AS INTEGER), 0))"
+            return f"CAST({expr} AS BIGINT)" if without_digits else expr
 
         return gen
 
