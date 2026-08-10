@@ -58,7 +58,10 @@ from vtlengine.DataTypes import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.files.output import save_datapoints
-from vtlengine.files.output._time_period_representation import TimePeriodRepresentation
+from vtlengine.files.output._time_period_representation import (
+    TimePeriodRepresentation,
+    format_time_period_external_representation,
+)
 from vtlengine.files.parser import _fill_dataset_empty_data, load_datapoints
 from vtlengine.Model import (
     Component,
@@ -230,6 +233,10 @@ class InterpreterAnalyzer(ASTTemplate):
                 writer = csv.writer(csv_file)
                 writer.writerow(["name", "value"])
                 for name, scalar in sorted(result_scalars.items(), key=lambda item: item[0]):
+                    if self.time_period_representation is not None:
+                        format_time_period_external_representation(
+                            scalar, self.time_period_representation
+                        )
                     value_to_write = "" if scalar.value is None else scalar.value
                     writer.writerow([name, str(value_to_write)])
 
@@ -593,10 +600,13 @@ class InterpreterAnalyzer(ASTTemplate):
                 ) in self.regular_aggregation_dataset.components.items():
                     if comp.role in (Role.IDENTIFIER, Role.VIRAL_ATTRIBUTE):
                         comps_to_keep[comp_name] = copy(comp)
-                comps_to_keep[op_comp.name] = Component(
-                    name=op_comp.name,
+                agg_name = op_comp.name
+                if op_comp.role == Role.IDENTIFIER:
+                    agg_name = f"__agg_{op_comp.name}__"
+                comps_to_keep[agg_name] = Component(
+                    name=agg_name,
                     data_type=op_comp.data_type,
-                    role=op_comp.role,
+                    role=Role.MEASURE,
                     nullable=op_comp.nullable,
                 )
                 if operand.data is not None:
@@ -604,7 +614,7 @@ class InterpreterAnalyzer(ASTTemplate):
                         operand.get_identifiers_names() + operand.get_viral_attributes_names()
                     )
                     data_to_keep = operand.data[cols_to_keep].copy()
-                    data_to_keep[op_comp.name] = op_comp.data
+                    data_to_keep[agg_name] = op_comp.data
                 else:
                     data_to_keep = None
                 return Dataset(name=operand.name, components=comps_to_keep, data=data_to_keep)
