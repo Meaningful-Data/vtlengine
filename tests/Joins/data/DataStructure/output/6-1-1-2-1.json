@@ -25,13 +25,13 @@
           "name": "Me_1",
           "role": "Measure",
           "type": "Number",
-          "nullable": false
+          "nullable": true
         },
         {
           "name": "Me_2",
           "role": "Measure",
           "type": "Number",
-          "nullable": false
+          "nullable": true
         },
         {
           "name": "Me_11",
@@ -47,7 +47,7 @@
         },
         {
           "name": "Me_3",
-          "role": "Measure",
+          "role": "Identifier",
           "type": "Number",
           "nullable": false
         }

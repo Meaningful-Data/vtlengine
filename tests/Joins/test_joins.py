@@ -1981,22 +1981,22 @@ class JoinsGeneralTests(JoinHelper):
         """
         Join: left_join
         Dataset --> Dataset
-        Status: BUG
+        Status: OK
         Expression: DS_r := left_join (DS_1 as d1, DS_2 as d2 calc identifier Me_3 :=d1#Me_1 + d2#Me_11);
-        Description: Join with reuse calcs and calc identifier NOTE: the components Me_1, Me_11 provided from DS_1 and DS_2 has "isNull":	true, so shoul fail
-        ***There is a discrepancy between semantic and Base. In this case the semantic is wrong because
-        the component Me_3 with structure nullable=true and Base Me_3 with structure nullable=false
+        Description: Join with reuse calcs and calc identifier. Me_1 and Me_11 are
+        declared nullable, but their values are not null, so the calculated Identifier
+        is accepted; it is the data that decides and not the declared nullability of
+        the expression (issue #1010). This resolves the discrepancy this test used to
+        record between the semantic result and the computed one.
 
         Git Branch: #339-joins-with-reuse-calcs-and-calc-identifier.
         Goal: Check the result of joins reuse calcs and calc identifier.
         """
         code = "6-1-1-2"
         number_inputs = 2
-        error_code = "1-1-1-16"
+        references_names = ["1"]
 
-        self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code=error_code
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_3(self):
         """
@@ -2004,18 +2004,17 @@ class JoinsGeneralTests(JoinHelper):
         Dataset --> Dataset
         Status:
         Expression: DS_r := full_join (DS_1 as d1, DS_2 as d2 calc identifier Me_3 :=d1#Me_1 + d2#Me_11);
-        Description: Join with reuse calcs and calc identifier the same as test-1 with full join
+        Description: Join with reuse calcs and calc identifier the same as test-1 with full join.
+        Accepted for the same reason as test_2 (issue #1010).
 
         Git Branch: #339-joins-with-reuse-calcs-and-calc-identifier.
         Goal: Check the result of joins reuse calcs and calc identifier.
         """
         code = "6-1-1-3"
         number_inputs = 2
-        error_code = "1-1-1-16"
+        references_names = ["1"]
 
-        self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code=error_code
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_4(self):
         """

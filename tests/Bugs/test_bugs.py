@@ -2652,16 +2652,16 @@ class ConditionalBugs(BugHelper):
     def test_GL_196_4(self):
         """
         Status: OK
-        Description:
+        Description: calc identifier whose else branch is null, so the expression does
+                     produce nulls and an Identifier cannot hold them. Checked through
+                     run(), as that is decided on the data (issue #1010). The script is
+                     also invalid for a second reason, it ends with a keep of that same
+                     Identifier, so the DuckDB engine reports that one first.
         Git Branch: fix-196-isnull-for-evaluate-on-if-then-else.
         Goal: Check Exception.
         """
-        code = "GL_196_4"
-        number_inputs = 1
-
-        message = "1-1-1-16"
-        self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code=message
+        self._assert_null_identifier_rejected(
+            "GL_196_4", "comp_cred.CD0060_P", expected=("1-1-1-16", "1-1-6-2")
         )
 
     def test_GL_196_5(self):
@@ -2680,16 +2680,24 @@ class ConditionalBugs(BugHelper):
     def test_GL_196_6(self):
         """
         Status: OK
-        Description: if-then-else inside a calc measure but else=null.
+        Description: calc identifier that returns the operand itself when it is null, so
+                     the expression does produce nulls. Checked through run(), as that is
+                     decided on the data (issue #1010).
         Git Branch: fix-196-isnull-for-evaluate-on-if-then-else.
-        Goal: Check Result.
+        Goal: Check Exception.
         """
-        code = "GL_196_6"
-        number_inputs = 1
-        message = "1-1-1-16"
-        self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code=message
-        )
+        self._assert_null_identifier_rejected("GL_196_6", "dsPrep.ENTTY_INSTRMNT_HDQRTR")
+
+    def _assert_null_identifier_rejected(self, code, dataset_name, expected=("1-1-1-16",)):
+        """Run a calc identifier whose expression produces nulls and check it is rejected."""
+        with pytest.raises(SemanticError) as context:
+            run(
+                script=self.LoadVTL(code),
+                data_structures=self.filepath_json / f"{code}-1.json",
+                datapoints={dataset_name: self.filepath_csv / f"{code}-1.csv"},
+                use_duckdb=_use_duckdb_backend(),
+            )
+        assert context.value.args[1] in expected
 
 
 class ClauseBugs(BugHelper):
