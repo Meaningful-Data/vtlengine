@@ -4229,6 +4229,30 @@ class CastBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1004_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc m1 := lag(Me_1 over (partition by Id_2
+                                                             order by Id_1)),
+                                        m2 := lead(Me_1 over (...)),
+                                        m3 := lag(Id_1, 1 over (...)),
+                                        m4 := lead(Id_1, 1 over (...)) ];
+        Description: the offset of lag and lead is optional, but an absent
+                     parameter list was rendered as LAG("Me_1", ) and the query
+                     failed to parse (m1, m2). Both operators also have no value
+                     to shift in at the edges of the partition, so their result
+                     is nullable whatever the operand declared; taking it from a
+                     non nullable Identifier was rejected as null values in a non
+                     nullable structure (m3, m4).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1004
+        Goal: Check Result.
+        """
+        code = "GH_1004_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_1000_1(self):
         """
         Status: OK
