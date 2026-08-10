@@ -2294,6 +2294,23 @@ class AggregationBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=message
         )
 
+    def test_GH_981_1(self):
+        """
+        Status: OK
+        Description: ceil, floor and the parameterless round and trunc give an Integer
+                     Measure. DuckDb hands back the type it was given, so a Number
+                     Measure stayed a float while the Component said Integer. round and
+                     trunc with a number of digits keep giving a Number, which DS_r4
+                     covers.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/981
+        Goal: Check Result.
+        """
+        code = "GH_981_1"
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_937_1(self):
         """
         Status: OK
