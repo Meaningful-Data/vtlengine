@@ -1,0 +1,4 @@
+DS_r <- DS_1 [ calc m1 := min(Me_1 over (order by Id_2, Id_1)),
+                    m2 := max(Me_1 over (order by Id_2 desc, Id_1 desc)),
+                    m3 := median(Me_1 over (order by Id_2, Id_1)),
+                    m4 := sum(Me_1 over (order by Id_1)) ];
