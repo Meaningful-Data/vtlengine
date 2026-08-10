@@ -4101,3 +4101,87 @@ class CastBugs(BugHelper):
         references_names = ["1", "2", "3"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_990_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- count ( DS_1#Me_1 group by Id_1 having count() > 2 );
+        Description: an aggregation with a having clause over an operand that
+                     carries a viral attribute failed on the Pandas engine: the
+                     having analysis dropped the viral attribute from the data
+                     while keeping it as a component, and the propagated values
+                     were then assigned positionally to the groups the having
+                     clause had already filtered out.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/990
+        Goal: Check Result.
+        """
+        code = "GH_990_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_990_2(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := count ( Me_1 over ( partition by Id_1 ) ) ];
+        Description: the analytic count replaced the nulls of every measure with
+                     the numeric sentinel -1 before querying, which corrupts a
+                     String measure and made the Pandas engine fail; it also made
+                     the count include the null values, disagreeing with the
+                     DuckDB engine.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/990
+        Goal: Check Result.
+        """
+        code = "GH_990_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_995_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc m1 := min(Me_1 over (order by Id_2, Id_1)),
+                                        m2 := max(Me_1 over (order by Id_2 desc, Id_1 desc)),
+                                        m3 := median(Me_1 over (order by Id_2, Id_1)),
+                                        m4 := sum(Me_1 over (order by Id_1)) ];
+        Description: an analytic invocation that omits the partition clause is
+                     partitioned by the Identifiers the order clause does not name.
+                     The DuckDB engine emitted no PARTITION BY at all, so it
+                     analysed the whole Data Set as a single partition and
+                     disagreed with the Pandas engine for every analytic operator.
+                     No window clause is given either, so each value covers the
+                     whole partition (see issue #1002).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/995
+        Goal: Check Result.
+        """
+        code = "GH_995_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1002_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc m1 := sum(Me_1 over (partition by Id_1
+                                                             order by Id_2)),
+                                        m2 := count(...), m3 := last_value(...),
+                                        m4 := sum(... data points between
+                                              unbounded preceding and current
+                                              data point) ];
+        Description: an omitted window clause defaults to the whole partition,
+                     so every Data Point of a partition gets the same value.
+                     Both engines instead inherited the SQL default of every
+                     Data Point up to the current one and returned a running
+                     aggregate. m4 gives that running aggregate explicitly and
+                     must keep working.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1002
+        Goal: Check Result.
+        """
+        code = "GH_1002_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
