@@ -4185,3 +4185,23 @@ class CastBugs(BugHelper):
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_998_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc m := sum(Me_1 over (partition by Id_1)) ];
+        Description: the analytic sum takes measure<number>, but its operator
+                     declared no type to check, unlike the aggregate sum and
+                     unlike the other numeric analytic operators. A String
+                     Measure reached the query and both engines surfaced a raw
+                     BinderException for sum(VARCHAR) instead of a SemanticError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/998
+        Goal: Check Exception.
+        """
+        code = "GH_998_1"
+        number_inputs = 1
+        error_code = "1-1-1-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
