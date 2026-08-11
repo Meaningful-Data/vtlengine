@@ -2369,10 +2369,11 @@ FROM (
                     agg = self._build_agg_expr(op, operand_sql, dt)
                     if agg is not None:
                         return agg
-                expr = registry.sql(op, operand_sql)
-                if op == tokens.COUNT and (node.grouping or node.grouping_op):
-                    expr = f"NULLIF({expr}, 0)"
-                return expr
+                if op == tokens.COUNT:
+                    # count reports the number of Data Points whatever the operand is,
+                    # so the Component it names does not exclude its nulls (issue #959).
+                    return "COUNT(*)"
+                return registry.sql(op, operand_sql)
 
         # count() without operand
         if node.operand is None:

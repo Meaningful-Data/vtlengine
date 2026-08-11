@@ -112,7 +112,6 @@ class Aggregation(Operator.Unary):
         group_op: Optional[str],
         grouping_columns: Any,
         having_data: Any,
-        component_operand: bool = False,
     ) -> Dataset:
         result_components = {k: copy(v) for k, v in operand.components.items()}
         if cls.op not in [COUNT, MIN, MAX] and len(operand.get_measures_names()) == 0:
@@ -193,7 +192,6 @@ class Aggregation(Operator.Unary):
         grouping_keys: Optional[List[str]],
         measure_names: Optional[List[str]],
         having_expression: Optional[str],
-        component_operand: bool = False,
     ) -> pd.DataFrame:
         grouping_names = (
             [f'"{name}"' for name in grouping_keys] if grouping_keys is not None else None
@@ -230,11 +228,7 @@ class Aggregation(Operator.Unary):
                         f"{cls.py_op}(CAST({e} AS DOUBLE)) AS {e}, "  # Count can only be one here
                     )
                 elif cls.op == COUNT:
-                    functions += (
-                        f"{cls.py_op}({e}) AS int_var, "
-                        if component_operand
-                        else "COUNT(*) AS int_var, "
-                    )
+                    functions += "COUNT(*) AS int_var, "
                     break
                 else:
                     functions += f"{cls.py_op}({e}) AS {e}, "
@@ -271,7 +265,6 @@ class Aggregation(Operator.Unary):
         group_op: Optional[str],
         grouping_columns: Optional[List[str]],
         having_expr: Optional[str],
-        component_operand: bool = False,
     ) -> Dataset:
         result = cls.validate(operand, group_op, grouping_columns, having_expr)
 
@@ -282,16 +275,12 @@ class Aggregation(Operator.Unary):
         # Keep a copy of viral attrs for post-aggregation propagation
         viral_df = result_df[grouping_keys + viral_attr_names].copy() if viral_attr_names else None
         result_df = result_df[grouping_keys + measure_names]
-        if cls.op == COUNT and component_operand:
-            result_df = result_df.dropna(subset=measure_names, how="any")
         if cls.op in [MAX, MIN]:
             for measure in operand.get_measures():
                 if measure.data_type == TimeInterval:
                     raise RunTimeError("2-1-19-18", op=cls.op)
         cls._handle_data_types(result_df, operand.get_measures(), "input")
-        result_df = cls._agg_func(
-            result_df, grouping_keys, measure_names, having_expr, component_operand
-        )
+        result_df = cls._agg_func(result_df, grouping_keys, measure_names, having_expr)
 
         cls._handle_data_types(result_df, operand.get_measures(), "result")
         # Handle correct order on result

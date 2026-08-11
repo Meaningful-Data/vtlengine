@@ -2297,12 +2297,13 @@ class AggregationBugs(BugHelper):
     def test_GH_959_1(self):
         """
         Status: OK
-        Description: count over a Data Set reports the number of Data Points, so a Data
-                     Point counts even where one of its Measures is null. It used to be
-                     skipped, through a dropna and a COUNT over the first Measure on the
-                     pandas engine and a COUNT over a CASE on DuckDb. count over a
-                     Component still reports that Component's non-null values, which is
-                     why the manual gives the two forms separate syntaxes.
+        Description: count reports the number of Data Points, so a Data Point counts
+                     even where one of its Measures is null. It used to be skipped,
+                     through a dropna and a COUNT over the first Measure on the pandas
+                     engine and a COUNT over a CASE on DuckDb. The manual states that
+                     one behaviour for every syntax it lists, so naming a Component
+                     (DS_r3) counts the same Data Points as count() does, and does not
+                     exclude that Component's nulls.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/959
         Goal: Check Result.
         """

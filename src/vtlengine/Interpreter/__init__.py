@@ -666,14 +666,7 @@ class InterpreterAnalyzer(ASTTemplate):
             # Setting here group by as we have already selected the identifiers we need
             grouping_op = "group by"
 
-        component_operand = (
-            not self.is_from_having
-            and self.is_from_regular_aggregation
-            and node.operand is not None
-        )
-        result = AGGREGATION_MAPPING[node.op].analyze(
-            operand, grouping_op, groupings, having, component_operand
-        )
+        result = AGGREGATION_MAPPING[node.op].analyze(operand, grouping_op, groupings, having)
         if not self.is_from_regular_aggregation:
             result.name = VirtualCounter._new_ds_name()
         return result
