@@ -652,17 +652,18 @@ class TestUnaryOperations:
     """Tests for unary operations."""
 
     @pytest.mark.parametrize(
-        "op,expected_sql_func",
+        "op,expected_expr",
         [
-            ("ceil", "CEIL"),
-            ("floor", "FLOOR"),
-            ("abs", "ABS"),
-            ("exp", "EXP"),
-            ("ln", "LN"),
-            ("sqrt", "SQRT"),
+            # ceil and floor give an Integer, so the value is cast back (#981).
+            ("ceil", 'CAST(CEIL("{0}") AS BIGINT)'),
+            ("floor", 'CAST(FLOOR("{0}") AS BIGINT)'),
+            ("abs", 'ABS("{0}")'),
+            ("exp", 'EXP("{0}")'),
+            ("ln", 'LN("{0}")'),
+            ("sqrt", 'SQRT("{0}")'),
         ],
     )
-    def test_dataset_unary_op(self, op: str, expected_sql_func: str):
+    def test_dataset_unary_op(self, op: str, expected_expr: str):
         """Test dataset-level unary operation with complete SQL output."""
         ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1", "Me_2"])
         transpiler = create_transpiler(
@@ -681,7 +682,10 @@ class TestUnaryOperations:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = f'SELECT "Id_1", {expected_sql_func}("Me_1") AS "Me_1", {expected_sql_func}("Me_2") AS "Me_2" FROM "DS_1"'
+        expected_sql = (
+            f'SELECT "Id_1", {expected_expr.format("Me_1")} AS "Me_1", '
+            f'{expected_expr.format("Me_2")} AS "Me_2" FROM "DS_1"'
+        )
         assert_sql_equal(sql, expected_sql)
 
     def test_isnull_dataset_op(self):
@@ -838,13 +842,11 @@ class TestClauseOperations:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        # Verify SELECT contains original columns and new calculated column
         assert_sql_contains(
             sql,
             [
                 "SELECT",
-                '"Id_1"',
-                '"Me_1"',
+                "t.*",
                 '("Me_1" * 2) AS "Me_2"',
                 'FROM (SELECT * FROM "DS_1") AS t',
             ],
