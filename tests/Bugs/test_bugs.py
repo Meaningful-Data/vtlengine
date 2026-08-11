@@ -4229,6 +4229,30 @@ class CastBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1007_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc m1 := if Me_bool then 1 else 2.5,
+                                        m2 := case when Me_bool then 1 else 2.5,
+                                        m3 := if Me_bool then Me_int else Me_num,
+                                        m4 := nvl(Me_int, 2.5),
+                                        m5 := nvl(Me_int, 7) ];
+        Description: the implicit promotion of two types was resolved in favour of
+                     the left one, so an Integer on the left of a Number gave an
+                     Integer result. The conditionals then truncated or rounded the
+                     Number branch, differently on each engine (m1, m2, m3). nvl
+                     also declared the type of its first operand and filled in that
+                     type, so the applicable value was truncated as well (m4). m5
+                     keeps two Integers as an Integer, so nothing is over promoted.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1007
+        Goal: Check Result.
+        """
+        code = "GH_1007_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_1005_1(self):
         """
         Status: OK
