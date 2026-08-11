@@ -457,6 +457,12 @@ centralised_messages = {
         "description": "Raised when the condition in a conditional operation does not evaluate "
         "to Boolean.",
     },
+    "1-1-9-2": {
+        "message": "At op {op}: The applicable operand cannot be a {right_type} when the "
+        "operand is a {left_type}.",
+        "description": "Raised when the applicable operand of nvl is at a level that cannot "
+        "be combined with the level of the first operand.",
+    },
     "1-1-9-3": {
         "message": "At op {op}: Then clause {then_name} and else clause {else_name}, "
         "both must be Scalars.",

@@ -4380,3 +4380,107 @@ class CastBugs(BugHelper):
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code
         )
+
+    def test_GH_1008_1_if_component_order(self):
+        """
+        Expression: DS_r <- if H_c then H_a else H_b;
+        Description: the branches of if were required to declare their Components in
+                     the same order, as the check compared the ordered lists of names.
+                     A calc moves the Component it recalculates to the end, so two
+                     Data Sets holding the same Components were rejected. Written
+                     inline because the branches must be named Data Sets: an inline
+                     clause chain as a branch fails on the DuckDB engine for an
+                     unrelated reason.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1008
+        Goal: Check Result.
+        """
+        self._assert_1008_branch_order("if H_c then H_a else H_b")
+
+    def test_GH_1008_2_case_component_order(self):
+        """
+        Expression: DS_r <- case when H_c then H_a else H_b;
+        Description: same ordered comparison as GH_1008_1, in the operand check of
+                     case instead of the then-else check of if.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1008
+        Goal: Check Result.
+        """
+        self._assert_1008_branch_order("case when H_c then H_a else H_b")
+
+    def _assert_1008_branch_order(self, expression):
+        """Run a conditional whose branches hold the same Components in a different
+        order, and check the result."""
+        code = "GH_1008_3"
+        script = (
+            "H_a := DS_1 [keep Me_1, Me_2];\n"
+            "H_b := H_a [calc Me_1 := 0];\n"
+            "H_c := DS_1 [keep Me_bool] [rename Me_bool to c];\n"
+            f"DS_r <- {expression};"
+        )
+        result = run(
+            script=script,
+            data_structures=self.filepath_json / f"{code}-1.json",
+            datapoints={"DS_1": self.filepath_csv / f"{code}-1.csv"},
+            use_duckdb=_use_duckdb_backend(),
+        )
+        data = result["DS_r"].data.sort_values("Id_1").reset_index(drop=True)
+        assert sorted(result["DS_r"].components) == ["Id_1", "Me_1", "Me_2"]
+        assert list(data["Me_1"].astype("string").fillna("")) == ["1", "0", ""]
+        assert list(data["Me_2"].astype("string").fillna("")) == ["a", "", "c"]
+
+    def test_GH_1008_3(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc m2 := nvl(Me_1, null),
+                                        m3 := nvl(Me_2, null) ];
+        Description: a null applicable value replaces nothing, but nvl filled with
+                     it, which the Pandas engine rejected with ValueError: Must
+                     specify a fill 'value' or 'method'. The operand is now returned
+                     as it is, and the result keeps the nullability of the operand
+                     since its nulls survive.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1008
+        Goal: Check Result.
+        """
+        code = "GH_1008_3"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1008_4(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc m := nvl(2.5, Me_1) ];
+        Description: nvl raised a bare Python ValueError when its operands were at
+                     levels that cannot be combined, instead of a SemanticError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1008
+        Goal: Check Exception.
+        """
+        code = "GH_1008_4"
+        number_inputs = 1
+        error_code = "1-1-9-2"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
+    def test_GH_1008_5_case_scalar_condition(self):
+        """
+        Expression: DS_r <- DS_1 [calc m := case when 1 > 0 then 10 else 20];
+        Description: case never took a value when its condition was a Scalar, so the
+                     Pandas engine returned null for every Data Point while the
+                     DuckDB engine returned 10. Checked on the values alone: the
+                     engines still disagree on the declared nullability of a calc
+                     Component built from a scalar case, which is not part of this
+                     issue.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1008
+        Goal: Check Result.
+        """
+        code = "GH_1008_3"
+        script = "DS_r <- DS_1 [calc m := case when 1 > 0 then 10 else 20];"
+        result = run(
+            script=script,
+            data_structures=self.filepath_json / f"{code}-1.json",
+            datapoints={"DS_1": self.filepath_csv / f"{code}-1.csv"},
+            use_duckdb=_use_duckdb_backend(),
+        )
+        assert list(result["DS_r"].data["m"]) == [10, 10, 10]
