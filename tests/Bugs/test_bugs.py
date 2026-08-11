@@ -2313,6 +2313,59 @@ class AggregationBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=message
         )
 
+    def test_GH_978_1(self):
+        """
+        Status: OK
+        Description: a clause reads its operand as the operand actually comes out. An
+                     operator applied over the Measures leaves the plain Attributes out
+                     of its query while still reporting them in its structure, so naming
+                     the Components one by one asked DuckDb for a column the subquery
+                     never selected and the binder rejected the statement. DS_r3 keeps a
+                     calc overwriting an existing Measure covered.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/978
+        Goal: Check Result.
+        """
+        code = "GH_978_1"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_988_1(self):
+        """
+        Status: OK
+        Description: an operator nested inside another names its Measures for itself.
+                     Only the one producing the assignment's result takes the name the
+                     target declares, so trim inside length used to rename the Measure
+                     to length's int_var and the length around it then looked for a
+                     column that was no longer there. DS_r3 keeps a lone operator
+                     covered, where the target's name does apply.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/988
+        Goal: Check Result.
+        """
+        code = "GH_988_1"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_981_1(self):
+        """
+        Status: OK
+        Description: ceil, floor and the parameterless round and trunc give an Integer
+                     Measure. DuckDb hands back the type it was given, so a Number
+                     Measure stayed a float while the Component said Integer. round and
+                     trunc with a number of digits keep giving a Number, which DS_r4
+                     covers.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/981
+        Goal: Check Result.
+        """
+        code = "GH_981_1"
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_937_1(self):
         """
         Status: OK
@@ -4103,3 +4156,368 @@ class CastBugs(BugHelper):
         references_names = ["1", "2", "3"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_990_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- count ( DS_1#Me_1 group by Id_1 having count() > 2 );
+        Description: an aggregation with a having clause over an operand that
+                     carries a viral attribute failed on the Pandas engine: the
+                     having analysis dropped the viral attribute from the data
+                     while keeping it as a component, and the propagated values
+                     were then assigned positionally to the groups the having
+                     clause had already filtered out.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/990
+        Goal: Check Result.
+        """
+        code = "GH_990_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_990_2(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := count ( Me_1 over ( partition by Id_1 ) ) ];
+        Description: the analytic count replaced the nulls of every measure with
+                     the numeric sentinel -1 before querying, which corrupts a
+                     String measure and made the Pandas engine fail; it also made
+                     the count include the null values, disagreeing with the
+                     DuckDB engine.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/990
+        Goal: Check Result.
+        """
+        code = "GH_990_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_994_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr m1 := min(Id_1), m2 := min(Id_2),
+                                        m3 := min(Id_date), m4 := min(Id_period),
+                                        m5 := min(At_1), m6 := max(Id_1),
+                                        m7 := min(Id_3)
+                                   group by Id_3 ];
+        Description: an aggregate operator inside an aggr clause is applied to the
+                     operand Component whatever its role is, so that Component is
+                     the Measure of the Data Set it aggregates. Keeping the original
+                     role left that Data Set without Measures, and both engines
+                     raised IndexError whenever the aggregated Component was an
+                     Identifier or an Attribute. An aggregated Identifier is held
+                     under an internal name so that it stays an Identifier of the
+                     operand and can still be used as a grouping key (m7).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/994
+        Goal: Check Result.
+        """
+        code = "GH_994_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_995_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc m1 := min(Me_1 over (order by Id_2, Id_1)),
+                                        m2 := max(Me_1 over (order by Id_2 desc, Id_1 desc)),
+                                        m3 := median(Me_1 over (order by Id_2, Id_1)),
+                                        m4 := sum(Me_1 over (order by Id_1)) ];
+        Description: an analytic invocation that omits the partition clause is
+                     partitioned by the Identifiers the order clause does not name.
+                     The DuckDB engine emitted no PARTITION BY at all, so it
+                     analysed the whole Data Set as a single partition and
+                     disagreed with the Pandas engine for every analytic operator.
+                     No window clause is given either, so each value covers the
+                     whole partition (see issue #1002).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/995
+        Goal: Check Result.
+        """
+        code = "GH_995_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1002_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc m1 := sum(Me_1 over (partition by Id_1
+                                                             order by Id_2)),
+                                        m2 := count(...), m3 := last_value(...),
+                                        m4 := sum(... data points between
+                                              unbounded preceding and current
+                                              data point) ];
+        Description: an omitted window clause defaults to the whole partition,
+                     so every Data Point of a partition gets the same value.
+                     Both engines instead inherited the SQL default of every
+                     Data Point up to the current one and returned a running
+                     aggregate. m4 gives that running aggregate explicitly and
+                     must keep working.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1002
+        Goal: Check Result.
+        """
+        code = "GH_1002_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1007_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc m1 := if Me_bool then 1 else 2.5,
+                                        m2 := case when Me_bool then 1 else 2.5,
+                                        m3 := if Me_bool then Me_int else Me_num,
+                                        m4 := nvl(Me_int, 2.5),
+                                        m5 := nvl(Me_int, 7) ];
+        Description: the implicit promotion of two types was resolved in favour of
+                     the left one, so an Integer on the left of a Number gave an
+                     Integer result. The conditionals then truncated or rounded the
+                     Number branch, differently on each engine (m1, m2, m3). nvl
+                     also declared the type of its first operand and filled in that
+                     type, so the applicable value was truncated as well (m4). m5
+                     keeps two Integers as an Integer, so nothing is over promoted.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1007
+        Goal: Check Result.
+        """
+        code = "GH_1007_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1005_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr m := count(Me_1) group by Id_2
+                                   having rank(over (order by Id_2)) > 1 ];
+        Description: a having condition refers to the groups, so the reference
+                     manual requires it to invoke aggregate operators, and an
+                     analytic invocation cannot be nested in an aggregate one.
+                     The analytic was evaluated anyway and the having clause then
+                     read it as a Data Set, raising AttributeError: 'DataComponent'
+                     object has no attribute 'get_measures' on both engines.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1005
+        Goal: Check Exception.
+        """
+        code = "GH_1005_1"
+        number_inputs = 1
+        error_code = "1-1-3-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
+    def test_GH_1004_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc m1 := lag(Me_1 over (partition by Id_2
+                                                             order by Id_1)),
+                                        m2 := lead(Me_1 over (...)),
+                                        m3 := lag(Id_1, 1 over (...)),
+                                        m4 := lead(Id_1, 1 over (...)) ];
+        Description: the offset of lag and lead is optional, but an absent
+                     parameter list was rendered as LAG("Me_1", ) and the query
+                     failed to parse (m1, m2). Both operators also have no value
+                     to shift in at the edges of the partition, so their result
+                     is nullable whatever the operand declared; taking it from a
+                     non nullable Identifier was rejected as null values in a non
+                     nullable structure (m3, m4).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1004
+        Goal: Check Result.
+        """
+        code = "GH_1004_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1000_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- first_value ( DS_1 over (partition by Id_2 order by Id_1) );
+        Description: an analytic invocation over a Data Set that carries viral
+                     attributes re-attaches them by merging on the Identifiers.
+                     The merge took them from the operand, which still holds the
+                     values as they were loaded, while the result carries the
+                     dates as the query returned them, so a Date Identifier made
+                     the Pandas engine raise "You are trying to merge on
+                     datetime64[us] and string columns".
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1000
+        Goal: Check Result.
+        """
+        code = "GH_1000_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_998_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc m := sum(Me_1 over (partition by Id_1)) ];
+        Description: the analytic sum takes measure<number>, but its operator
+                     declared no type to check, unlike the aggregate sum and
+                     unlike the other numeric analytic operators. A String
+                     Measure reached the query and both engines surfaced a raw
+                     BinderException for sum(VARCHAR) instead of a SemanticError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/998
+        Goal: Check Exception.
+        """
+        code = "GH_998_1"
+        number_inputs = 1
+        error_code = "1-1-1-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
+    def test_GH_1009_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ filter sum(Me_1) > 1 ];
+        Description: a filter condition is evaluated for each Data Point, so an
+                     aggregation cannot be its operand. The aggregation came back as
+                     a Data Set and the clause then read a Component name off it,
+                     raising AttributeError: 'Aggregation' object has no attribute
+                     'value' on both engines. The calc clause already rejected the
+                     same construction, and filter now does too.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1009
+        Goal: Check Exception.
+        """
+        code = "GH_1009_1"
+        number_inputs = 1
+        error_code = "1-2-14"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
+    def test_GH_1011_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ filter true ];
+        Description: a filter condition is a Component expression evaluated for each
+                     Data Point, so it cannot be a constant. The Pandas engine raised
+                     AttributeError: 'Scalar' object has no attribute 'data' for every
+                     constant condition, while the DuckDB engine accepted four of them
+                     and raised the same AttributeError for 1 = 1. Both engines now
+                     reject them with the same SemanticError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1011
+        Goal: Check Exception.
+        """
+        code = "GH_1011_1"
+        number_inputs = 1
+        error_code = "1-2-16"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
+    def test_GH_1008_1_if_component_order(self):
+        """
+        Expression: DS_r <- if H_c then H_a else H_b;
+        Description: the branches of if were required to declare their Components in
+                     the same order, as the check compared the ordered lists of names.
+                     A calc moves the Component it recalculates to the end, so two
+                     Data Sets holding the same Components were rejected. Written
+                     inline because the branches must be named Data Sets: an inline
+                     clause chain as a branch fails on the DuckDB engine for an
+                     unrelated reason.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1008
+        Goal: Check Result.
+        """
+        self._assert_1008_branch_order("if H_c then H_a else H_b")
+
+    def test_GH_1008_2_case_component_order(self):
+        """
+        Expression: DS_r <- case when H_c then H_a else H_b;
+        Description: same ordered comparison as GH_1008_1, in the operand check of
+                     case instead of the then-else check of if.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1008
+        Goal: Check Result.
+        """
+        self._assert_1008_branch_order("case when H_c then H_a else H_b")
+
+    def _assert_1008_branch_order(self, expression):
+        """Run a conditional whose branches hold the same Components in a different
+        order, and check the result."""
+        code = "GH_1008_3"
+        script = (
+            "H_a := DS_1 [keep Me_1, Me_2];\n"
+            "H_b := H_a [calc Me_1 := 0];\n"
+            "H_c := DS_1 [keep Me_bool] [rename Me_bool to c];\n"
+            f"DS_r <- {expression};"
+        )
+        result = run(
+            script=script,
+            data_structures=self.filepath_json / f"{code}-1.json",
+            datapoints={"DS_1": self.filepath_csv / f"{code}-1.csv"},
+            use_duckdb=_use_duckdb_backend(),
+        )
+        data = result["DS_r"].data.sort_values("Id_1").reset_index(drop=True)
+        assert sorted(result["DS_r"].components) == ["Id_1", "Me_1", "Me_2"]
+        assert list(data["Me_1"].astype("string").fillna("")) == ["1", "0", ""]
+        assert list(data["Me_2"].astype("string").fillna("")) == ["a", "", "c"]
+
+    def test_GH_1008_3(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc m2 := nvl(Me_1, null),
+                                        m3 := nvl(Me_2, null) ];
+        Description: a null applicable value replaces nothing, but nvl filled with
+                     it, which the Pandas engine rejected with ValueError: Must
+                     specify a fill 'value' or 'method'. The operand is now returned
+                     as it is, and the result keeps the nullability of the operand
+                     since its nulls survive.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1008
+        Goal: Check Result.
+        """
+        code = "GH_1008_3"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1008_4(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc m := nvl(2.5, Me_1) ];
+        Description: nvl raised a bare Python ValueError when its operands were at
+                     levels that cannot be combined, instead of a SemanticError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1008
+        Goal: Check Exception.
+        """
+        code = "GH_1008_4"
+        number_inputs = 1
+        error_code = "1-1-9-2"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
+    def test_GH_1008_5_case_scalar_condition(self):
+        """
+        Expression: DS_r <- DS_1 [calc m := case when 1 > 0 then 10 else 20];
+        Description: case never took a value when its condition was a Scalar, so the
+                     Pandas engine returned null for every Data Point while the
+                     DuckDB engine returned 10. Checked on the values alone: the
+                     engines still disagree on the declared nullability of a calc
+                     Component built from a scalar case, which is not part of this
+                     issue.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1008
+        Goal: Check Result.
+        """
+        code = "GH_1008_3"
+        script = "DS_r <- DS_1 [calc m := case when 1 > 0 then 10 else 20];"
+        result = run(
+            script=script,
+            data_structures=self.filepath_json / f"{code}-1.json",
+            datapoints={"DS_1": self.filepath_csv / f"{code}-1.csv"},
+            use_duckdb=_use_duckdb_backend(),
+        )
+        assert list(result["DS_r"].data["m"]) == [10, 10, 10]
