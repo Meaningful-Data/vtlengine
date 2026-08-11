@@ -4338,3 +4338,24 @@ class CastBugs(BugHelper):
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code
         )
+
+    def test_GH_1009_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ filter sum(Me_1) > 1 ];
+        Description: a filter condition is evaluated for each Data Point, so an
+                     aggregation cannot be its operand. The aggregation came back as
+                     a Data Set and the clause then read a Component name off it,
+                     raising AttributeError: 'Aggregation' object has no attribute
+                     'value' on both engines. The calc clause already rejected the
+                     same construction, and filter now does too.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1009
+        Goal: Check Exception.
+        """
+        code = "GH_1009_1"
+        number_inputs = 1
+        error_code = "1-2-14"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
