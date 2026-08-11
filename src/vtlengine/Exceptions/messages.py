@@ -333,6 +333,12 @@ centralised_messages = {
         "is not boolean as required.",
     },
     # Analytic errors
+    "1-1-3-1": {
+        "message": "At op {op}: An analytic operator cannot be used in a having clause, "
+        "which must invoke aggregate operators.",
+        "description": "Raised when an analytic operator is invoked inside a having "
+        "clause, as an analytic invocation cannot be nested in an aggregate one.",
+    },
     "1-1-3-2": {
         "message": "At op {op}: Only Identifiers are allowed for partitioning, "
         "found {id_name} - {id_type}.",
@@ -450,6 +456,12 @@ centralised_messages = {
         "found '{type}'.",
         "description": "Raised when the condition in a conditional operation does not evaluate "
         "to Boolean.",
+    },
+    "1-1-9-2": {
+        "message": "At op {op}: The applicable operand cannot be a {right_type} when the "
+        "operand is a {left_type}.",
+        "description": "Raised when the applicable operand of nvl is at a level that cannot "
+        "be combined with the level of the first operand.",
     },
     "1-1-9-3": {
         "message": "At op {op}: Then clause {then_name} and else clause {else_name}, "
@@ -937,9 +949,9 @@ centralised_messages = {
         "GROUP BY clause.",
     },
     "1-2-14": {
-        "message": "At op {op}: Cannot perform aggregation inside a Calc.",
-        "description": "Occurs when an aggregation operation is attempted inside a "
-        "Calc expression.",
+        "message": "At op {op}: Cannot perform an aggregation inside this clause.",
+        "description": "Occurs when an aggregation operation is attempted inside a clause "
+        "that is evaluated for each Data Point, such as calc or filter.",
     },
     "1-2-15": {
         "message": "At op {op}: incompatible identifier sets between datasets {left_name} {left} "
@@ -947,6 +959,11 @@ centralised_messages = {
         "be a subset of the other.",
         "description": "Raised when a binary dataset operator is applied to two datasets whose "
         "identifier sets are neither equal nor in a subset relationship.",
+    },
+    "1-2-16": {
+        "message": "At op {op}: The condition must be a Component expression, found a Scalar.",
+        "description": "Raised when the condition of a filter clause does not depend on the "
+        "Components of the operand, so it cannot be evaluated for each Data Point.",
     },
     # AST Helpers
     "1-3-1-1": {

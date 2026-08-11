@@ -24,7 +24,7 @@
         {
           "name": "R3",
           "role": "Measure",
-          "type": "Integer",
+          "type": "Number",
           "nullable": true
         }
       ]
