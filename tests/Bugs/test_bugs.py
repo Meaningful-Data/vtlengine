@@ -4359,3 +4359,24 @@ class CastBugs(BugHelper):
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code
         )
+
+    def test_GH_1011_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ filter true ];
+        Description: a filter condition is a Component expression evaluated for each
+                     Data Point, so it cannot be a constant. The Pandas engine raised
+                     AttributeError: 'Scalar' object has no attribute 'data' for every
+                     constant condition, while the DuckDB engine accepted four of them
+                     and raised the same AttributeError for 1 = 1. Both engines now
+                     reject them with the same SemanticError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1011
+        Goal: Check Exception.
+        """
+        code = "GH_1011_1"
+        number_inputs = 1
+        error_code = "1-2-16"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )

@@ -1139,6 +1139,8 @@ class InterpreterAnalyzer(ASTTemplate):
             operands = aux_operands
         self.regular_aggregation_dataset = None
         if node.op == FILTER:
+            if isinstance(operands[0], Scalar):
+                raise SemanticError("1-2-16", op=node.op)
             if not isinstance(operands[0], DataComponent) and hasattr(child, "left"):
                 measure = child.left.value
                 operands[0] = DataComponent(
