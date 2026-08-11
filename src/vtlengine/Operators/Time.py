@@ -671,26 +671,22 @@ class Time_Shift(Binary):
 
         if data_type == Date:
             parsed = result.data[cls.time_id].map(cls.parse_date, na_action="ignore")
-            shifted = [
-                cls.shift_dates(
-                    group[cls.time_id],
-                    shift_value,
-                    cls.find_min_frequency(parsed.loc[group.index]),
-                )
-                for _, group in cls._iter_groups(result.data)
-            ]
-            result.data[cls.time_id] = pd.concat(shifted).reindex(result.data.index)
+            freq = cls._series_frequency(parsed, result.data)
+            result.data[cls.time_id] = cls.shift_dates(result.data[cls.time_id], shift_value, freq)
         elif data_type == TimeInterval:
-            parts = []
-            for _, group in cls._iter_groups(result.data):
-                freq = cls._classify_interval_period(group[cls.time_id].iloc[0])
-                parts.append(
-                    group[cls.time_id].map(
-                        lambda x: cls.shift_interval(x, shift_value, freq),  # noqa: B023
-                        na_action="ignore",
-                    )
+            categories = result.data[cls.time_id].apply(cls._classify_interval_period).unique()
+            if len(categories) > 1:
+                raise SemanticError(
+                    "1-1-19-9",
+                    op=cls.op,
+                    comp_type="dataset",
+                    param="single time series frequency",
                 )
-            result.data[cls.time_id] = pd.concat(parts).reindex(result.data.index)
+            interval_freq = categories[0]
+            result.data[cls.time_id] = result.data[cls.time_id].map(
+                lambda x: cls.shift_interval(x, shift_value, interval_freq),
+                na_action="ignore",
+            )
         elif data_type == TimePeriod:
             result.data[cls.time_id] = result.data[cls.time_id].apply(
                 lambda x: cls.shift_period(x, shift_value)
@@ -698,6 +694,30 @@ class Time_Shift(Binary):
         else:
             raise SemanticError("1-1-19-2", op=cls.op)
         return result
+
+    @classmethod
+    def _series_frequency(cls, parsed: Any, data: pd.DataFrame) -> str:
+        """The period of the reference time Identifier, read from each time series.
+
+        The reference time Identifier has to be periodical, so every series that shows
+        a gap must agree on one period; the gaps are taken within a series rather than
+        over the whole column, where two series of the same period interleave into
+        shorter ones. A series of a single Data Point shows no gap and
+        takes the period the rest of the Data Set agrees on.
+        """
+        frequencies = set()
+        for _, group in cls._iter_groups(data):
+            series = parsed.loc[group.index].dropna()
+            if series.nunique() > 1:
+                frequencies.add(cls.find_min_frequency(series))
+        if len(frequencies) > 1:
+            raise SemanticError(
+                "1-1-19-9",
+                op=cls.op,
+                comp_type="dataset",
+                param="single time series frequency",
+            )
+        return frequencies.pop() if frequencies else "Y"
 
     @classmethod
     def validate(cls, operand: Dataset, shift_value: str) -> Dataset:

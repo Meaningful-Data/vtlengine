@@ -1651,10 +1651,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 cols.append(shifted if comp.name == time_id else col)
             return SQLBuilder().select(*cols).from_table(src).build()
         elif time_type == TimeInterval:
-            # A TimeInterval series has a single frequency, taken from the duration of
-            # one interval. Time_Shift.evaluate reads it off row 0 of the unsorted
-            # operand; MIN() is the deterministic equivalent in SQL, and it agrees
-            # with row 0 for any operand in chronological order.
+            # The reference time Identifier has to be periodical, so every interval must
+            # carry the same duration, as Time_Shift.evaluate requires.
             cols = [
                 (
                     f"vtl_interval_shift({quote_name(comp.name)}, {shift_sql}, freq.step) "
@@ -1665,8 +1663,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 for comp in ds.components.values()
             ]
             freq_sql = (
-                f"SELECT vtl_interval_step(MIN({time_col})) AS step "
-                f"FROM {src} WHERE {time_col} IS NOT NULL"
+                "SELECT CASE WHEN COUNT(DISTINCT vtl_interval_freq(iv)) > 1 THEN error("
+                "'VTL 1-1-19-9: timeshift needs a single time series frequency') "
+                "ELSE vtl_interval_step(MIN(iv)) END AS step "
+                f"FROM (SELECT {time_col} AS iv FROM {src} WHERE {time_col} IS NOT NULL)"
             )
             return f"""SELECT {", ".join(cols)}
 FROM {src}, (
@@ -1678,27 +1678,30 @@ FROM {src}, (
                 for c in ds.components.values()
                 if c.role == Role.IDENTIFIER and c.name != time_id
             ]
-            period = "COALESCE(freq.period_ind, 'A')"
-
             cols = []
             for comp in ds.components.values():
                 col = quote_name(comp.name)
                 if comp.name == time_id:
-                    cols.append(f"vtl_dateadd(s.{col}, {shift_sql}, {period}) AS {col}")
+                    cols.append(f"vtl_dateadd(s.{col}, {shift_sql}, freq.period_ind) AS {col}")
                 else:
                     cols.append(f"s.{col}")
 
             cte = CTEBuilder()
             cte.cte("source", f"SELECT * FROM {src}")
             cte.cte(
-                "freq", self._build_timeshift_date_frequency_subquery("source", time_col, other_ids)
+                "freq_series",
+                self._build_timeshift_date_frequency_subquery("source", time_col, other_ids),
             )
-            if other_ids:
-                on = " AND ".join(f"s.{oc} IS NOT DISTINCT FROM freq.{oc}" for oc in other_ids)
-                joined = f"SELECT {', '.join(cols)} FROM source s LEFT JOIN freq ON {on}"
-            else:
-                joined = f"SELECT {', '.join(cols)} FROM source s, freq"
-            return cte.select(joined)
+            # The reference time Identifier has to be periodical, so the series must
+            # agree on one period. A Data Set of single Data Points shows no gap at
+            # all and takes the annual default, as find_min_frequency does.
+            cte.cte(
+                "freq",
+                "SELECT CASE WHEN COUNT(DISTINCT period_ind) > 1 THEN error("
+                "'VTL 1-1-19-9: timeshift needs a single time series frequency') "
+                "ELSE COALESCE(MIN(period_ind), 'A') END AS period_ind FROM freq_series",
+            )
+            return cte.select(f"SELECT {', '.join(cols)} FROM source s, freq")
 
     @staticmethod
     def _build_timeshift_date_frequency_subquery(

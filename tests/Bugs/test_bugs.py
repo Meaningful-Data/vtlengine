@@ -7,6 +7,7 @@ import pytest
 
 from tests.Helper import TestHelper, _use_duckdb_backend
 from vtlengine.API import create_ast, run
+from vtlengine.Exceptions import SemanticError
 from vtlengine.Interpreter import InterpreterAnalyzer
 
 
@@ -1828,13 +1829,11 @@ class TimeBugs(BugHelper):
     def test_GH_960_1(self):
         """
         Status: OK
-        Description: timeshift reads the period from each time series rather than from
-                     the whole time Identifier column, as the manual shifts "for each
-                     time series of the Data Set" by a number of periods "of the time
-                     series". DS_1 is the Data Set from the issue, where a daily series
-                     shares the Data Set with a monthly one and both used to move by a
-                     day. DS_2 adds an annual series and a single-point one, whose
-                     period the data does not determine.
+        Description: timeshift reads the period of the reference time Identifier from
+                     each time series. DS_1 interleaves two monthly series, whose
+                     combined column shows two-week gaps and used to move the Data Set
+                     by a day. DS_2 adds a series of a single Data Point, which shows
+                     no gap and takes the period the rest of the Data Set agrees on.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/960
         Goal: Check Result.
         """
@@ -1843,6 +1842,24 @@ class TimeBugs(BugHelper):
         references_names = ["1", "2"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_960_2(self):
+        """
+        Status: OK
+        Description: the reference time Identifier must be periodical, so a Data Set
+                     holding a daily series beside a monthly one has no period to shift
+                     by and timeshift rejects it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/960
+        Goal: Check Exception.
+        """
+        code = "GH_960_2"
+        with pytest.raises(SemanticError, match="1-1-19-9"):
+            run(
+                script=self.LoadVTL(code),
+                data_structures=self.filepath_json / f"{code}-1.json",
+                datapoints={"DS_1": self.filepath_csv / f"{code}-1.csv"},
+                use_duckdb=_use_duckdb_backend(),
+            )
 
 
 class SetBugs(BugHelper):
