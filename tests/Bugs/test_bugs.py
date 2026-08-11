@@ -2297,19 +2297,32 @@ class AggregationBugs(BugHelper):
     def test_GH_959_1(self):
         """
         Status: OK
-        Description: count reports the number of Data Points, so a Data Point counts
-                     even where one of its Measures is null. It used to be skipped,
-                     through a dropna and a COUNT over the first Measure on the pandas
-                     engine and a COUNT over a CASE on DuckDb. The manual states that
-                     one behaviour for every syntax it lists, so naming a Component
-                     (DS_r3) counts the same Data Points as count() does, and does not
-                     exclude that Component's nulls.
+        Description: count over a Data Set holding a single Measure counts that Measure
+                     and renames it to int_var, so it reports the same number as count
+                     over that Measure as a Component. Only count() with no operand
+                     reports the number of Data Points.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/959
         Goal: Check Result.
         """
         code = "GH_959_1"
         number_inputs = 1
         references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_959_2(self):
+        """
+        Status: OK
+        Description: count over a Data Set applies to each Measure and gives back that
+                     same Measure, counted, so it reports the same numbers as counting
+                     each Measure as a Component. A Measure that holds no value in a
+                     group counts 0 and not null.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/959
+        Goal: Check Result.
+        """
+        code = "GH_959_2"
+        number_inputs = 1
+        references_names = ["1", "2"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 

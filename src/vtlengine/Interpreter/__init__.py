@@ -583,12 +583,25 @@ class InterpreterAnalyzer(ASTTemplate):
                 regular_groupings.append(time_comp.name)
         return regular_groupings
 
+    @staticmethod
+    def _data_point_count_operand(node: AST.Aggregation, operand: Any) -> Any:
+        """count() with no operand counts Data Points, so it is given no Measures."""
+        if node.operand is not None or node.op != COUNT or not isinstance(operand, Dataset):
+            return operand
+        components = {
+            comp_name: copy(comp)
+            for comp_name, comp in operand.components.items()
+            if comp.role in (Role.IDENTIFIER, Role.VIRAL_ATTRIBUTE)
+        }
+        data = operand.data[list(components)].copy() if operand.data is not None else None
+        return Dataset(name=operand.name, components=components, data=data)
+
     def _resolve_aggregation_operand(self, node: AST.Aggregation) -> Any:
         """Resolve the operand for an aggregation node."""
         if self.is_from_having:
             if node.operand is not None:
                 self.visit(node.operand)
-            return self.aggregation_dataset
+            return self._data_point_count_operand(node, self.aggregation_dataset)
         if self.is_from_regular_aggregation and self.regular_aggregation_dataset is not None:
             operand = self.regular_aggregation_dataset
             if node.operand is not None and operand is not None:
@@ -618,7 +631,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 else:
                     data_to_keep = None
                 return Dataset(name=operand.name, components=comps_to_keep, data=data_to_keep)
-            return operand
+            return self._data_point_count_operand(node, operand)
         return self.visit(node.operand)
 
     def visit_Aggregation(self, node: AST.Aggregation) -> None:

@@ -2398,16 +2398,12 @@ FROM (
                     agg = self._build_agg_expr(op, operand_sql, dt)
                     if agg is not None:
                         return agg
-                if op == tokens.COUNT:
-                    # count reports the number of Data Points whatever the operand is,
-                    # so the Component it names does not exclude its nulls (issue #959).
-                    return "COUNT(*)"
                 return registry.sql(op, operand_sql)
 
         # count() without operand
         if node.operand is None:
             if op == tokens.COUNT:
-                return "NULLIF(COUNT(*), 0)"
+                return "COUNT(*)"
             return ""
 
         ds = self._get_dataset_structure(node.operand)
@@ -2424,7 +2420,16 @@ FROM (
         ds_tp_minmax_cols: List[tuple[str, str]] = []
 
         if op == tokens.COUNT:
-            cols.append(f"COUNT(*) AS {quote_name('int_var')}")
+            # count applies to each Measure and gives back that same Measure, counted.
+            # A lone Measure is renamed to int_var, so that the Data Set form and the
+            # Component form of the operator agree (issue #959).
+            measures = ds.get_measures_names()
+            if len(measures) > 1:
+                for measure in measures:
+                    cols.append(f"COUNT({quote_name(measure)}) AS {quote_name(measure)}")
+            else:
+                counted = quote_name(measures[0]) if measures else "*"
+                cols.append(f"COUNT({counted}) AS {quote_name('int_var')}")
         else:
             measures = ds.get_measures_names()
             for measure in measures:
