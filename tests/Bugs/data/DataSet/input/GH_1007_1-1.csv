@@ -1,0 +1,4 @@
+Id_1,Me_bool,Me_int,Me_num
+1,true,1,1.1
+2,false,2,2.2
+3,true,,3.3

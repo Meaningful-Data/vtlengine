@@ -189,8 +189,9 @@ class TestGlobalRegistry:
     @pytest.mark.parametrize(
         "token,expected_output",
         [
-            (CEIL, 'CEIL("x")'),
-            (FLOOR, 'FLOOR("x")'),
+            # ceil and floor give an Integer, so the value is cast back (#981).
+            (CEIL, 'CAST(CEIL("x") AS BIGINT)'),
+            (FLOOR, 'CAST(FLOOR("x") AS BIGINT)'),
             (ABS, 'ABS("x")'),
             (SQRT, 'SQRT("x")'),
             (LN, 'LN("x")'),

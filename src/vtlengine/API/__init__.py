@@ -600,11 +600,14 @@ def run(
     result = interpreter.visit(ast)
 
     # Applying output format (Date ISO 8601 T separator, TimePeriod representation)
-    if output_folder is None:
-        for obj in result.values():
-            if isinstance(obj, (Dataset, Scalar)):
-                format_date_iso8601(obj)
-                format_time_period_external_representation(obj, time_period_representation)
+    for obj in result.values():
+        if not isinstance(obj, (Dataset, Scalar)):
+            continue
+        if output_folder is None:
+            format_date_iso8601(obj)
+            format_time_period_external_representation(obj, time_period_representation)
+        elif isinstance(obj, Scalar):
+            format_time_period_external_representation(obj, time_period_representation)
 
     # Returning only persistent datasets
     if return_only_persistent:

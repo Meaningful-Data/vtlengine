@@ -6,25 +6,31 @@
         {
           "name": "Id_1",
           "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "R1",
-          "role": "Measure",
           "type": "Integer",
           "nullable": false
         },
         {
-          "name": "R2",
+          "name": "Id_2",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "Id_date",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "Me_1",
           "role": "Measure",
-          "type": "Boolean",
+          "type": "Number",
           "nullable": true
         },
         {
-          "name": "R3",
-          "role": "Measure",
-          "type": "Number",
+          "name": "Va_1",
+          "role": "ViralAttribute",
+          "type": "String",
           "nullable": true
         }
       ]

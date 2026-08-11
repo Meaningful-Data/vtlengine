@@ -1,7 +1,7 @@
 {
   "datasets": [
     {
-      "name": "DS_r",
+      "name": "DS_r4",
       "DataStructure": [
         {
           "name": "Id_1",
@@ -10,19 +10,7 @@
           "nullable": false
         },
         {
-          "name": "R1",
-          "role": "Measure",
-          "type": "Integer",
-          "nullable": false
-        },
-        {
-          "name": "R2",
-          "role": "Measure",
-          "type": "Boolean",
-          "nullable": true
-        },
-        {
-          "name": "R3",
+          "name": "Me_1",
           "role": "Measure",
           "type": "Number",
           "nullable": true
