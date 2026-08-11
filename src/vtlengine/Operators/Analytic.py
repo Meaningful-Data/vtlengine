@@ -48,6 +48,8 @@ from vtlengine.ViralPropagation import (
 
 return_integer_operators = [MAX, MIN, SUM]
 
+DEFAULT_ANALYTIC_WINDOW = "ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING"
+
 
 # noinspection PyMethodOverriding
 class Analytic(Operator.Unary):
@@ -171,6 +173,10 @@ class Analytic(Operator.Unary):
                 )
                 if component_name in result_components:
                     del result_components[component_name]
+            if cls.op in (LAG, LEAD) and component_name in result_components:
+                result_components[component_name] = cls._as_nullable(
+                    result_components[component_name]
+                )
         else:
             measures = operand.get_measures()
             if len(measures) == 0:
@@ -213,6 +219,13 @@ class Analytic(Operator.Unary):
                     role=Role.MEASURE,
                     nullable=nullable,
                 )
+
+            if cls.op in (LAG, LEAD):
+                for measure in measures:
+                    if measure.name in result_components:
+                        result_components[measure.name] = cls._as_nullable(
+                            result_components[measure.name]
+                        )
         dataset_name = VirtualCounter._new_ds_name()
         # Analytic combines the data points within each partition, so the surviving viral
         # attributes are combined and require a propagation rule (issue #906).
@@ -246,7 +259,7 @@ class Analytic(Operator.Unary):
             params: No params are related to this class.
         """
         # Windowing
-        window_str = ""
+        window_str = DEFAULT_ANALYTIC_WINDOW
         if window is not None:
             mode = "ROWS" if window.type_ == "data" else "RANGE"
             start_mode = (
@@ -296,7 +309,8 @@ class Analytic(Operator.Unary):
             elif cls.op == RATIO_TO_REPORT:
                 measure_query = f'CAST("{measure}" AS DOUBLE) / SUM(CAST("{measure}" AS DOUBLE))'
             elif cls.op in [LAG, LEAD]:
-                measure_query = f'{cls.sql_op}("{measure}", {",".join(map(str, params or []))})'
+                args = "".join(f", {param}" for param in params or [])
+                measure_query = f'{cls.sql_op}("{measure}"{args})'
             else:
                 measure_query = f'{cls.sql_op}("{measure}")'
             if cls.op == COUNT and len(measure_names) == 1:
@@ -315,8 +329,6 @@ class Analytic(Operator.Unary):
         identifiers_sql = ", ".join(f'"{name}"' for name in identifier_names)
         query = f"SELECT {identifiers_sql} , {measures_sql} FROM df"
 
-        if cls.op == COUNT:
-            df[measure_names] = df[measure_names].fillna(-1)
         conn = duckdb.connect(database=":memory:", read_only=False)
         try:
             conn.register("df", df)
@@ -383,7 +395,8 @@ class Analytic(Operator.Unary):
         viral_attr_names = operand.get_viral_attributes_names()
         if viral_attr_names and operand.data is not None and result.data is not None:
             registry = get_current_registry()
-            viral_src = operand.data[identifier_names + viral_attr_names].copy()
+            result.data = cls.normalize_dates(result.data, result.components)
+            viral_src = df[identifier_names + viral_attr_names].copy()
             for va_name in viral_attr_names:
                 if registry.get_rule_for_variable(va_name) is None:
                     # No rule -> per-row passthrough (keep the original value).
@@ -402,6 +415,19 @@ class Analytic(Operator.Unary):
                     result.data[comp_name] = result.data[comp_name].astype(comp.data_type.dtype())  # type: ignore[call-overload]
 
         return result
+
+    @classmethod
+    def _as_nullable(cls, component: Component) -> Component:
+        """Copy of the Component marked as nullable.
+
+        lag and lead have no value to shift in at the edges of the partition, so their
+        result holds nulls whatever the operand declared.
+        """
+        if component.nullable:
+            return component
+        nullable_component = copy(component)
+        nullable_component.nullable = True
+        return nullable_component
 
     @classmethod
     def normalize_dates(
@@ -443,6 +469,7 @@ class Sum(Analytic):
     """
 
     op = SUM
+    type_to_check = Number
     sql_op = "SUM"
     return_integer = False
 

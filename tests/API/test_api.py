@@ -1578,6 +1578,43 @@ def test_check_script_with_transformation_scheme(transformation_scheme, result_s
     assert prettify(result) == prettify(reference)
 
 
+@pytest.mark.parametrize(
+    "time_period_format, expected",
+    [
+        ("vtl", "2020M1"),
+        ("sdmx_reporting", "2020-M01"),
+        ("sdmx_gregorian", "2020-01"),
+        ("natural", "2020-01"),
+    ],
+)
+def test_scalar_time_period_output_format_with_output_folder(
+    time_period_format, expected, tmp_path
+):
+    """A Time_Period scalar written to a folder carries the requested representation.
+
+    The API only formats the results it hands back when nothing is written to disk, so
+    a scalar going to a file used to keep whatever representation it had.
+    """
+    script = 'Sc_r <- cast("2020-M01", time_period);'
+    run_result = run(
+        script=script,
+        data_structures={"datasets": []},
+        datapoints={},
+        output_folder=tmp_path,
+        time_period_output_format=time_period_format,
+        use_duckdb=_use_duckdb_backend(),
+    )
+
+    sc_csv = tmp_path / "_scalars.csv"
+    assert sc_csv.exists()
+    with open(sc_csv, newline="") as f:
+        rows = list(csv.reader(f))
+    assert rows[0] == ["name", "value"]
+    assert rows[1] == ["Sc_r", expected]
+    # What is returned and what is written agree.
+    assert run_result["Sc_r"].value == expected
+
+
 @pytest.mark.parametrize("data_structures, datapoints", params_run_with_scalars)
 def test_run_with_scalars(data_structures, datapoints, tmp_path):
     script = """
