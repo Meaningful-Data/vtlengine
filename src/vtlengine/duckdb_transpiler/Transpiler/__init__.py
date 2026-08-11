@@ -673,6 +673,18 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         builder.join(sql, alias, on=on, join_type="LEFT")
         return f"{alias}.{quote_name(common[0])}"
 
+    _INTEGER_RESULT_OPS = frozenset({tokens.CEIL, tokens.FLOOR, tokens.LEN})
+
+    @classmethod
+    def _renames_mono_measure_to_int(cls, op: str, ds: Optional[Dataset]) -> bool:
+        """Whether the operator turns a lone Measure into the generic ``int_var``."""
+        if ds is None or op not in cls._INTEGER_RESULT_OPS:
+            return False
+        measures = ds.get_measures_names()
+        if len(measures) != 1:
+            return False
+        return ds.components[measures[0]].data_type is not Integer
+
     def visit_UnaryOp(self, node: AST.UnaryOp) -> str:  # type: ignore[override]
         """Visit a unary operation."""
         op = node.op
@@ -687,6 +699,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             name_override: Optional[str] = None
             if op == tokens.ISNULL and ds and len(ds.get_measures_names()) == 1:
                 name_override = "bool_var"
+            elif self._renames_mono_measure_to_int(op, ds):
+                name_override = "int_var"
 
             def _unary_expr(col_ref: str) -> str:
                 comp = ds.components.get(col_ref.strip('"')) if ds else None
@@ -1164,7 +1178,17 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             def _param_expr(col_ref: str) -> str:
                 return registry.sql(op, col_ref, *params_sql)
 
-            return self._apply_measures(ds_node, _param_expr, cast_bool_to_str=to_str)
+            ds_struct = self._get_dataset_structure(ds_node)
+            int_override = (
+                "int_var"
+                if op in (tokens.ROUND, tokens.TRUNC)
+                and not node.params
+                and self._renames_mono_measure_to_int(tokens.CEIL, ds_struct)
+                else None
+            )
+            return self._apply_measures(
+                ds_node, _param_expr, output_name_override=int_override, cast_bool_to_str=to_str
+            )
 
         children_sql = [self.visit(c) for c in node.children]
         if op in _STRING_PARAM_OPS and node.children and self._is_boolean_expr(node.children[0]):
@@ -1994,8 +2018,9 @@ FROM (
 
     def visit_RegularAggregation_calc(self, node: AST.RegularAggregation) -> str:
         chain = self._calc_chain(node)
-        base_ds = self._get_dataset_structure(chain[0].dataset)
-        src = self._get_dataset_sql(chain[0].dataset)
+        with self._stash_assignment():
+            base_ds = self._get_dataset_structure(chain[0].dataset)
+            src = self._get_dataset_sql(chain[0].dataset)
         levels: List[Tuple[Dataset, Dict[str, str]]] = []
         level_ds: Optional[Dataset] = None
         level_exprs: Dict[str, str] = {}
@@ -2016,15 +2041,20 @@ FROM (
             levels.append((level_ds, level_exprs))  # type: ignore[arg-type]
 
         for ds, calc_exprs in levels:
-            select_cols: List[str] = []
-            for name in ds.components:
-                if name in calc_exprs:
-                    select_cols.append(f"{calc_exprs[name]} AS {quote_name(name)}")
-                else:
-                    select_cols.append(quote_name(name))
-            for col_name, expr_sql in calc_exprs.items():
-                if col_name not in ds.components:
-                    select_cols.append(f"{expr_sql} AS {quote_name(col_name)}")
+            # Carry the operand through as it actually comes out rather than naming its
+            # Components one by one. An operator applied over the Measures drops the
+            # plain Attributes from its query while still reporting them in its
+            # structure, and listing them here asked the binder for columns the
+            # subquery never selected (issue #978).
+            replaced = [name for name in calc_exprs if name in ds.components]
+            passthrough = "t.*"
+            if replaced:
+                excluded = ", ".join(quote_name(name) for name in replaced)
+                passthrough = f"t.* EXCLUDE ({excluded})"
+            select_cols: List[str] = [passthrough]
+            select_cols += [
+                f"{expr_sql} AS {quote_name(col_name)}" for col_name, expr_sql in calc_exprs.items()
+            ]
             src = SQLBuilder().select(*select_cols).from_table(self._as_subquery(src), "t").build()
 
         return src

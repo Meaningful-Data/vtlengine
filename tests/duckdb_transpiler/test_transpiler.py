@@ -842,13 +842,11 @@ class TestClauseOperations:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        # Verify SELECT contains original columns and new calculated column
         assert_sql_contains(
             sql,
             [
                 "SELECT",
-                '"Id_1"',
-                '"Me_1"',
+                "t.*",
                 '("Me_1" * 2) AS "Me_2"',
                 'FROM (SELECT * FROM "DS_1") AS t',
             ],
