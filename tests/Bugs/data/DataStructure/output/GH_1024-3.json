@@ -1,0 +1,21 @@
+{
+  "datasets": [
+    {
+      "name": "H_c",
+      "DataStructure": [
+        {
+          "name": "Id_1",
+          "role": "Identifier",
+          "type": "Integer",
+          "nullable": false
+        },
+        {
+          "name": "c",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

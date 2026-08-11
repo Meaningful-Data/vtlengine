@@ -1,0 +1,6 @@
+H_a := DS_1[drop Va_str][keep Me_num, Me_int];
+H_b := H_a[calc Me_int := 0];
+H_c := DS_1[drop Va_str][keep Me_bool][rename Me_bool to c];
+
+DS_r1 := if H_c then H_a else H_b;
+DS_r2 := case when H_c then H_a else H_b;
