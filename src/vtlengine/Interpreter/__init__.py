@@ -1170,9 +1170,6 @@ class InterpreterAnalyzer(ASTTemplate):
                     )
                     for operand in operands
                 ]
-                # A Dataset operand stands for its Measures, so the names are
-                # flattened; a name reaching the clause twice is left for the clause
-                # to reject rather than quietly dropped (issue #1027).
                 operands = [
                     item
                     for sublist in operands
