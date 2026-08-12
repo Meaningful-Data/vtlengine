@@ -3340,6 +3340,26 @@ class ClauseBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1028_1(self):
+        """
+        Status: OK
+        Expression: DS_r1 <- DS_1[unpivot Id_x, Me_v];
+        Description: unpivot stacks the Measures into a single one, which took the type
+                     of the first Measure rather than the type they all fit in. An
+                     Integer Measure declared before a Number one typed the result
+                     Integer, so the pandas engine aborted with an ArrowInvalid and the
+                     DuckDb engine rounded 1.1 to 1 and 7.7 to 8. DS_2 declares the same
+                     Measures the other way round, where the type already came out
+                     right.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1028
+        Goal: Check Result.
+        """
+        code = "GH_1028_1"
+        number_inputs = 2
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class DefinedBugs(BugHelper):
     """ """

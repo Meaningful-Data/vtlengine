@@ -10,8 +10,7 @@ from vtlengine.DataTypes import (
     Boolean,
     ScalarType,
     String,
-    check_unary_implicit_promotion,
-    unary_implicit_promotion,
+    binary_implicit_promotion,
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
@@ -298,15 +297,13 @@ class Unpivot(Operator):
         result_dataset.add_component(
             Component(name=identifier, data_type=String, role=Role.IDENTIFIER, nullable=False)
         )
-        base_type = None
         final_type: Type[ScalarType] = String
-        for comp in dataset.get_measures():
-            if base_type is None:
-                base_type = comp.data_type
-            else:
-                if check_unary_implicit_promotion(base_type, comp.data_type) is None:
-                    raise ValueError("All measures must have the same data type on unpivot clause")
-            final_type = unary_implicit_promotion(base_type, comp.data_type)
+        for position, comp in enumerate(dataset.get_measures()):
+            final_type = (
+                comp.data_type
+                if position == 0
+                else binary_implicit_promotion(final_type, comp.data_type)
+            )
 
         result_dataset.add_component(
             Component(name=measure, data_type=final_type, role=Role.MEASURE, nullable=True)
