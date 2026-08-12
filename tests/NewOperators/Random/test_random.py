@@ -24,6 +24,8 @@ ds_param = [
 error_param = [
     ("8", "DS_r := DS_1[calc Me_1 := random(Id_1, 0)];", "1-1-1-1"),
     ("9", "DS_r := random(1, -1);", "2-1-15-2"),
+    ("10", "DS_r := DS_1[calc x := random(3.14159, 0.3)];", "1-1-1-1"),
+    ("11", "DS_r := DS_1[calc x := random(Me_int, Me_num)];", "1-1-1-1"),
 ]
 
 

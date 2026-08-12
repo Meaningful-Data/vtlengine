@@ -1949,7 +1949,8 @@ FROM (
             and index_node.op == "-"
             and isinstance(index_node.operand, AST.Constant)
         ):
-            raise SemanticError("2-1-15-2", op="random", value=index_node.operand.value)
+            # The literal sits inside the minus, so the index reads as its negation.
+            raise SemanticError("2-1-15-2", op="random", value=f"-{index_node.operand.value}")
 
     def _visit_random_impl(
         self,

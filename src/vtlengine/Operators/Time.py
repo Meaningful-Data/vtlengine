@@ -675,10 +675,13 @@ class Time_Shift(Binary):
             )
             result.data[cls.time_id] = cls.shift_dates(result.data[cls.time_id], shift_value, freq)
         elif data_type == TimeInterval:
-            freq = cls._classify_interval_period(result.data[cls.time_id].iloc[0])
-            result.data[cls.time_id] = result.data[cls.time_id].apply(
-                lambda x: cls.shift_interval(x, shift_value, freq)
-            )
+            # The frequency is inferred from the first Data Point, so an empty
+            # operand has nothing to infer from and nothing to shift.
+            if not result.data.empty:
+                freq = cls._classify_interval_period(result.data[cls.time_id].iloc[0])
+                result.data[cls.time_id] = result.data[cls.time_id].apply(
+                    lambda x: cls.shift_interval(x, shift_value, freq)
+                )
         elif data_type == TimePeriod:
             result.data[cls.time_id] = result.data[cls.time_id].apply(
                 lambda x: cls.shift_period(x, shift_value)

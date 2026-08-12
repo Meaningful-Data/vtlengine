@@ -1866,6 +1866,24 @@ class TimeBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1034(self):
+        """
+        Status: OK
+        Expression: DS_r <- timeshift(DS_1, 1);
+        Description: timeshift over a Time (interval) identifier read the first
+                     Data Point to infer the shift frequency, so an operand with
+                     no Data Points raised IndexError: single positional indexer
+                     is out-of-bounds on the Pandas engine, while the DuckDB
+                     engine returned the empty dataset.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1034
+        Goal: Check Result.
+        """
+        code = "GH_1034"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class SetBugs(BugHelper):
     """ """
@@ -3359,6 +3377,26 @@ class ClauseBugs(BugHelper):
         code = "GH_728"
         number_inputs = 1
         references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1028_1(self):
+        """
+        Status: OK
+        Expression: DS_r1 <- DS_1[unpivot Id_x, Me_v];
+        Description: unpivot stacks the Measures into a single one, which took the type
+                     of the first Measure rather than the type they all fit in. An
+                     Integer Measure declared before a Number one typed the result
+                     Integer, so the pandas engine aborted with an ArrowInvalid and the
+                     DuckDb engine rounded 1.1 to 1 and 7.7 to 8. DS_2 declares the same
+                     Measures the other way round, where the type already came out
+                     right.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1028
+        Goal: Check Result.
+        """
+        code = "GH_1028_1"
+        number_inputs = 2
+        references_names = ["1", "2"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
