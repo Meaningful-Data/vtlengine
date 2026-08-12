@@ -206,13 +206,15 @@ class Aggregation(Operator.Unary):
             having_expression = ""
 
         if measure_names is not None and len(measure_names) == 0 and cls.op == COUNT:
-            if grouping_names is not None:
-                query = (
-                    f"SELECT {', '.join(grouping_names)}, COUNT() AS "
-                    f"int_var from df {grouping} {having_expression}"
-                )
-            else:
-                query = f"SELECT COUNT() AS int_var from df {grouping}"
+            if not grouping_names:
+                # Counting the Data Points of a Data Set that is not grouped leaves no
+                # column to read them from, and a frame of no columns cannot even be
+                # registered, so the count is taken off the frame itself (issue #996).
+                return pd.DataFrame({"int_var": [len(df)]})
+            query = (
+                f"SELECT {', '.join(grouping_names)}, COUNT() AS "
+                f"int_var from df {grouping} {having_expression}"
+            )
             conn = duckdb.connect(database=":memory:", read_only=False)
             try:
                 conn.register("df", df)

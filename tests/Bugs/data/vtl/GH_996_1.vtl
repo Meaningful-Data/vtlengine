@@ -1,0 +1,12 @@
+define viral propagation Va_rule (variable Va_str) is
+    when "C" then "C"; else "P"
+end viral propagation;
+DS_r1 <- count ( DS_1 );
+DS_r2 <- count ( DS_1 group by Id_1 );
+DS_r3 <- DS_1 [ aggr n := count(Me_int) group by Id_2 ];
+DS_r4 <- DS_1 [ aggr n := count() group by Id_2 ];
+DS_r5 <- DS_1 [ calc n := count(Me_int over (partition by Id_2)) ];
+DS_r6 <- DS_1 [ calc n := count(Me_num over (order by Id_2, Id_1)) ];
+DS_r7 <- DS_1 [ aggr n := count(Me_num) group by Id_2 having count(Me_num) > 2 ];
+DS_r8 <- DS_1 [ calc n := count(Me_str over (partition by Id_2)) ];
+DS_r9 <- DS_1 [ aggr n := count() ];

@@ -350,6 +350,11 @@ centralised_messages = {
         "description": "Raised when DuckDB encounters an unexpected runtime error "
         "during query execution.",
     },
+    "2-1-1-16": {
+        "message": "Found null values in a structure that is not nullable.",
+        "description": "Raised when a component that is not nullable holds null values, "
+        "which the data shows and the structure alone cannot.",
+    },
     "2-1-3-1": {
         "message": "At op {op}: Division by zero produced infinite values.",
         "description": "Raised when a division by zero in a DuckDB query produces "

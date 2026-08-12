@@ -1,0 +1,27 @@
+{
+  "datasets": [
+    {
+      "name": "DS_r4",
+      "DataStructure": [
+        {
+          "name": "Id_2",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "Va_str",
+          "role": "Viral Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "n",
+          "role": "Measure",
+          "type": "Integer",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}
