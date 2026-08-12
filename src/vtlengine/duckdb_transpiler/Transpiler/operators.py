@@ -52,6 +52,21 @@ _BOOLEAN_RESULT_BINOPS: Set[str] = {
 
 _BOOLEAN_RESULT_UNARY_OPS: Set[str] = {tokens.NOT, tokens.ISNULL}
 
+# Binary operators whose result type follows the VTL numeric promotion rules
+# — Number if any operand is Number, Integer if all are Integer — except
+# division, which always yields Number. Used to detect Number operands in
+# cast-to-string (issue #1031). nvl belongs here because its result type is
+# the promotion of its two operands; on non-numeric operands the promotion
+# resolves to no type and the caller falls back to the default rendering.
+_NUMERIC_RESULT_BINOPS: Set[str] = {
+    tokens.PLUS,
+    tokens.MINUS,
+    tokens.MULT,
+    tokens.DIV,
+    tokens.MOD,
+    tokens.NVL,
+}
+
 # Type mappings
 VTL_TO_DUCKDB_TYPES: Dict[str, str] = {
     "Integer": "BIGINT",

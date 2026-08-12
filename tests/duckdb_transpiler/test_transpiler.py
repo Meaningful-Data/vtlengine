@@ -462,6 +462,10 @@ class TestCastOperator:
 
         if target_type == "Integer":
             expected_sql = f'SELECT "Id_1", CAST(TRUNC(CAST("Me_1" AS DOUBLE)) AS {expected_duckdb_type}) AS "Me_1", CAST(TRUNC(CAST("Me_2" AS DOUBLE)) AS {expected_duckdb_type}) AS "Me_2" FROM "DS_1"'
+        elif target_type == "String":
+            # Number → String renders through DOUBLE so DECIMAL columns match the
+            # pandas engine's str(float) output (issue #1031).
+            expected_sql = 'SELECT "Id_1", CAST(CAST("Me_1" AS DOUBLE) AS VARCHAR) AS "Me_1", CAST(CAST("Me_2" AS DOUBLE) AS VARCHAR) AS "Me_2" FROM "DS_1"'
         else:
             expected_sql = f'SELECT "Id_1", CAST("Me_1" AS {expected_duckdb_type}) AS "Me_1", CAST("Me_2" AS {expected_duckdb_type}) AS "Me_2" FROM "DS_1"'
 
