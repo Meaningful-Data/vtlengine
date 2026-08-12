@@ -2326,6 +2326,26 @@ class AggregationBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_996_1(self):
+        """
+        Status: OK
+        Description: the count cases reported at once. A Data Set operand counts each
+                     Measure and reports 0 where a group holds no value (DS_r1, DS_r2,
+                     DS_r3); count() with no operand counts the Data Points (DS_r4);
+                     an analytic count reports 0 for a partition of nulls (DS_r5) and
+                     covers the whole partition where the window clause is omitted
+                     (DS_r6); a having condition keeps the viral attributes (DS_r7);
+                     and an analytic count over a String Measure counts its values
+                     (DS_r8).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/996
+        Goal: Check Result.
+        """
+        code = "GH_996_1"
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4", "5", "6", "7", "8"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_978_1(self):
         """
         Status: OK
