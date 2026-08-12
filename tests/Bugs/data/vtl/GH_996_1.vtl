@@ -9,3 +9,4 @@ DS_r5 <- DS_1 [ calc n := count(Me_int over (partition by Id_2)) ];
 DS_r6 <- DS_1 [ calc n := count(Me_num over (order by Id_2, Id_1)) ];
 DS_r7 <- DS_1 [ aggr n := count(Me_num) group by Id_2 having count(Me_num) > 2 ];
 DS_r8 <- DS_1 [ calc n := count(Me_str over (partition by Id_2)) ];
+DS_r9 <- DS_1 [ aggr n := count() ];

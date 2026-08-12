@@ -2335,14 +2335,15 @@ class AggregationBugs(BugHelper):
                      an analytic count reports 0 for a partition of nulls (DS_r5) and
                      covers the whole partition where the window clause is omitted
                      (DS_r6); a having condition keeps the viral attributes (DS_r7);
-                     and an analytic count over a String Measure counts its values
-                     (DS_r8).
+                     an analytic count over a String Measure counts its values
+                     (DS_r8); and count() reports the Data Points of a Data Set that
+                     is not grouped (DS_r9).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/996
         Goal: Check Result.
         """
         code = "GH_996_1"
         number_inputs = 1
-        references_names = ["1", "2", "3", "4", "5", "6", "7", "8"]
+        references_names = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
