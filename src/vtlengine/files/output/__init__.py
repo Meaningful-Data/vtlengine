@@ -42,15 +42,22 @@ def save_datapoints(
 ) -> None:
     if dataset.data is None:
         dataset.data = pd.DataFrame()
-    format_date_iso8601(dataset)
-    if time_period_representation is not None:
-        format_time_period_external_representation(dataset, time_period_representation)
+    # Format a detached copy: the dataset may share its DataFrame with other live
+    # datasets (e.g. `A <- DS_1`), which must keep the internal representation
+    original_data = dataset.data
+    dataset.data = original_data.copy(deep=False)
+    try:
+        format_date_iso8601(dataset)
+        if time_period_representation is not None:
+            format_time_period_external_representation(dataset, time_period_representation)
 
-    # Get float format based on environment configuration
-    float_format = get_float_format()
+        # Get float format based on environment configuration
+        float_format = get_float_format()
 
-    if isinstance(output_path, str):
-        output_path = Path(output_path)
+        if isinstance(output_path, str):
+            output_path = Path(output_path)
 
-    output_file = output_path / f"{dataset.name}.csv"
-    dataset.data.to_csv(output_file, index=False, float_format=float_format)
+        output_file = output_path / f"{dataset.name}.csv"
+        dataset.data.to_csv(output_file, index=False, float_format=float_format)
+    finally:
+        dataset.data = original_data
