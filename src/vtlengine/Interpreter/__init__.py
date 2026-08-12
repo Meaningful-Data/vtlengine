@@ -1170,15 +1170,14 @@ class InterpreterAnalyzer(ASTTemplate):
                     )
                     for operand in operands
                 ]
-                operands = list(
-                    set(
-                        [
-                            item
-                            for sublist in operands
-                            for item in (sublist if isinstance(sublist, list) else [sublist])
-                        ]
-                    )
-                )
+                # A Dataset operand stands for its Measures, so the names are
+                # flattened; a name reaching the clause twice is left for the clause
+                # to reject rather than quietly dropped (issue #1027).
+                operands = [
+                    item
+                    for sublist in operands
+                    for item in (sublist if isinstance(sublist, list) else [sublist])
+                ]
             result = REGULAR_AGGREGATION_MAPPING[node.op].analyze(operands, dataset)
             if node.isLast:
                 self._strip_join_prefixes(result)
