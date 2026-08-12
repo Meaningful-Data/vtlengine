@@ -52,6 +52,10 @@ _BOOLEAN_RESULT_BINOPS: Set[str] = {
 
 _BOOLEAN_RESULT_UNARY_OPS: Set[str] = {tokens.NOT, tokens.ISNULL}
 
+# Arithmetic operators whose result type follows the VTL numeric promotion
+# rules (used to detect Number operands in cast-to-string, issue #1031).
+_ARITHMETIC_BINOPS: Set[str] = {tokens.PLUS, tokens.MINUS, tokens.MULT, tokens.DIV}
+
 # Type mappings
 VTL_TO_DUCKDB_TYPES: Dict[str, str] = {
     "Integer": "BIGINT",
