@@ -68,6 +68,48 @@
           "role": "Measure",
           "type": "String",
           "nullable": true
+        },
+        {
+          "name": "Me_11",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "Me_12",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "Me_13",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "Me_14",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "Me_15",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "Me_16",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "Me_17",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
         }
       ]
     }
