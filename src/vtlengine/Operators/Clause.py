@@ -18,6 +18,13 @@ from vtlengine.Operators import Operator
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
 
+def _check_repeated(op: str, operands: List[str]) -> None:
+    """A Component named twice in a clause would come out of it twice."""
+    duplicates = {name for name in operands if operands.count(name) > 1}
+    if duplicates:
+        raise SemanticError("1-1-6-9", op=op, from_components=duplicates)
+
+
 class Calc(Operator):
     op = CALC
 
@@ -144,6 +151,7 @@ class Keep(Operator):
     @classmethod
     def validate(cls, operands: List[str], dataset: Dataset) -> Dataset:
         dataset_name = VirtualCounter._new_ds_name()
+        _check_repeated(cls.op, operands)
         for operand in operands:
             if operand not in dataset.get_components_names():
                 raise SemanticError(
@@ -181,6 +189,7 @@ class Drop(Operator):
     @classmethod
     def validate(cls, operands: List[str], dataset: Dataset) -> Dataset:
         dataset_name = VirtualCounter._new_ds_name()
+        _check_repeated(cls.op, operands)
         for operand in operands:
             if operand not in dataset.components:
                 raise SemanticError("1-1-1-10", comp_name=operand, dataset_name=dataset_name)
