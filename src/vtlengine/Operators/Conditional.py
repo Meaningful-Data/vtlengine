@@ -136,9 +136,11 @@ class If(Operator):
         measures = result.get_measures_names()
 
         cond_measure = condition.get_measures_names()[0]
-        cond = condition.data
-        cond[COND_COL] = cond.pop(cond_measure).fillna(False).astype("bool[pyarrow]")
-        cond = cond[ids + [COND_COL]]
+        # condition.data is the DataFrame the stored condition variable holds, so it
+        # must not be mutated: popping the measure out of it broke every statement
+        # that read the condition dataset afterwards (issue #1024).
+        cond = condition.data[ids].copy()
+        cond[COND_COL] = condition.data[cond_measure].fillna(False).astype("bool[pyarrow]")
 
         t_base = dataset_assign(cond[cond[COND_COL]], true_branch, ids, measures)
         f_base = dataset_assign(cond[~cond[COND_COL]], false_branch, ids, measures)
