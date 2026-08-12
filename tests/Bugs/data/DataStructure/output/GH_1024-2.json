@@ -1,0 +1,27 @@
+{
+  "datasets": [
+    {
+      "name": "H_b",
+      "DataStructure": [
+        {
+          "name": "Id_1",
+          "role": "Identifier",
+          "type": "Integer",
+          "nullable": false
+        },
+        {
+          "name": "Me_num",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "Me_int",
+          "role": "Measure",
+          "type": "Integer",
+          "nullable": false
+        }
+      ]
+    }
+  ]
+}
