@@ -2294,6 +2294,38 @@ class AggregationBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=message
         )
 
+    def test_GH_959_1(self):
+        """
+        Status: OK
+        Description: count over a Data Set holding a single Measure counts that Measure
+                     and renames it to int_var, so it reports the same number as count
+                     over that Measure as a Component. Only count() with no operand
+                     reports the number of Data Points.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/959
+        Goal: Check Result.
+        """
+        code = "GH_959_1"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_959_2(self):
+        """
+        Status: OK
+        Description: count over a Data Set applies to each Measure and gives back that
+                     same Measure, counted, so it reports the same numbers as counting
+                     each Measure as a Component. A Measure that holds no value in a
+                     group counts 0 and not null.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/959
+        Goal: Check Result.
+        """
+        code = "GH_959_2"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_978_1(self):
         """
         Status: OK

@@ -319,7 +319,7 @@ C08.ANAMART_PRTCTN_ALLCTN := inner_join ( C08.SHR_PV_DS [ keep SHR_PAV_PRTCTN , 
 /*******************************************************************************
 *       Module C09
 *******************************************************************************/
-C09.NMBR_INSTRMNT_SCRD_DS_P := count ( INSTRMNT_PRTCTN_RCVD group except CNTRCT_ID , INSTRMNT_ID ) ; 
+C09.NMBR_INSTRMNT_SCRD_DS_P := count ( INSTRMNT_PRTCTN_RCVD#INSTRMNT_ID group except CNTRCT_ID , INSTRMNT_ID ) ; 
 C09.NMBR_INSTRMNT_SCRD_DS := C09.NMBR_INSTRMNT_SCRD_DS_P [ keep int_var ] [ rename int_var to NMBR_INSTRMNT_SCRD ] ; 
 C09.MX_3PPC_DS := max ( INSTRMNT_PRTCTN_RCVD group except CNTRCT_ID , INSTRMNT_ID ) ; 
 C09.INCRMNTL_3PPC_JN := inner_join ( C09.MX_3PPC_DS [ keep THRD_PRTY_PRRTY_CLMS ] [ rename THRD_PRTY_PRRTY_CLMS to THRD_PRTY_PRRTY_CLMS_MX ] as A , INSTRMNT_PRTCTN_RCVD , C09.NMBR_INSTRMNT_SCRD_DS ) ; 

@@ -167,15 +167,16 @@ class Aggregation(Operator.Unary):
                 if cls.return_type is not None:
                     comp.data_type = cls.return_type
         if cls.op == COUNT:
-            for measure_name in operand.get_measures_names():
+            measure_names = operand.get_measures_names()
+            for measure_name in measure_names:
                 result_components.pop(measure_name)
-            new_comp = Component(
-                name="int_var",
-                role=Role.MEASURE,
-                data_type=Integer,
-                nullable=True,
-            )
-            result_components["int_var"] = new_comp
+            for counted_name in measure_names if len(measure_names) > 1 else ["int_var"]:
+                result_components[counted_name] = Component(
+                    name=counted_name,
+                    role=Role.MEASURE,
+                    data_type=Integer,
+                    nullable=True,
+                )
 
         # Aggregation combines the data points of each group, so the surviving viral
         # attributes are combined and require a propagation rule (issue #906).
@@ -221,17 +222,17 @@ class Aggregation(Operator.Unary):
 
         if measure_names is not None and len(measure_names) > 0:
             functions = ""
-            for e in measure_names:
-                e = f'"{e}"'
-                if cls.type_to_check is not None and cls.op != COUNT:
-                    functions += (
-                        f"{cls.py_op}(CAST({e} AS DOUBLE)) AS {e}, "  # Count can only be one here
-                    )
-                elif cls.op == COUNT:
-                    functions += f"{cls.py_op}({e}) AS int_var, "
-                    break
-                else:
-                    functions += f"{cls.py_op}({e}) AS {e}, "
+            if cls.op == COUNT:
+                for name in measure_names:
+                    alias = f'"{name}"' if len(measure_names) > 1 else "int_var"
+                    functions += f'{cls.py_op}("{name}") AS {alias}, '
+            else:
+                for e in measure_names:
+                    e = f'"{e}"'
+                    if cls.type_to_check is not None:
+                        functions += f"{cls.py_op}(CAST({e} AS DOUBLE)) AS {e}, "
+                    else:
+                        functions += f"{cls.py_op}({e}) AS {e}, "
             if grouping_names is not None and len(grouping_names) > 0:
                 query = (
                     f"SELECT {', '.join(grouping_names) + ', '}{functions[:-2]} "
@@ -275,8 +276,6 @@ class Aggregation(Operator.Unary):
         # Keep a copy of viral attrs for post-aggregation propagation
         viral_df = result_df[grouping_keys + viral_attr_names].copy() if viral_attr_names else None
         result_df = result_df[grouping_keys + measure_names]
-        if cls.op == COUNT:
-            result_df = result_df.dropna(subset=measure_names, how="any")
         if cls.op in [MAX, MIN]:
             for measure in operand.get_measures():
                 if measure.data_type == TimeInterval:
@@ -302,6 +301,13 @@ class Aggregation(Operator.Unary):
             aux_df = pd.merge(aux_df, result_df, how="left", on=grouping_keys)
         if having_expr is not None:
             aux_df.dropna(subset=result.get_measures_names(), how="any", inplace=True)
+        if cls.op == COUNT and grouping_keys:
+            # Groups whose counted values are all null keep no row through the
+            # aggregation, but counting none of them is zero and not null. This runs
+            # after the having filter, which reads those same absent rows.
+            for measure_name in result.get_measures_names():
+                if measure_name in aux_df.columns:
+                    aux_df[measure_name] = aux_df[measure_name].fillna(0)
         # Propagate viral attributes using the registry
         if viral_df is not None and viral_attr_names:
             registry = get_current_registry()
