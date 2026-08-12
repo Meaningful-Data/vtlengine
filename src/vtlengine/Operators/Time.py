@@ -1,4 +1,5 @@
 import re
+from copy import copy
 from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional, Type, Union
 
@@ -1119,15 +1120,20 @@ class Date_Add(Parametrized):
             unary_implicit_promotion(operand.data_type, Date)
 
         if isinstance(operand, Scalar):
-            return Scalar(name=operand.name, data_type=operand.data_type, value=None)
+            return Scalar(name=operand.name, data_type=Date, value=None)
         if isinstance(operand, DataComponent):
             return DataComponent(
-                name=operand.name, data_type=operand.data_type, data=None, nullable=operand.nullable
+                name=operand.name, data_type=Date, data=None, nullable=operand.nullable
             )
 
         if all(comp.data_type not in [Date, TimePeriod] for comp in operand.components.values()):
             raise SemanticError("2-1-19-14", op=cls.op, name=operand.name)
-        return Dataset(name=dataset_name, components=operand.components.copy(), data=None)
+        # Fresh Component copies: the retype below must not reach the operand's
+        # (shared) Component objects (#1032)
+        result_components = {name: copy(comp) for name, comp in operand.components.items()}
+        for target in cls._dateadd_targets(operand):
+            result_components[target.name].data_type = Date
+        return Dataset(name=dataset_name, components=result_components, data=None)
 
     @classmethod
     def evaluate(
@@ -1159,10 +1165,7 @@ class Date_Add(Parametrized):
                     lambda x: cls.py_op(str(x), shift, period, is_period),  # noqa: B023
                     na_action="ignore",
                 )
-                comp.data_type = Date
 
-        if isinstance(result, (Scalar, DataComponent)):
-            result.data_type = Date
         return result
 
     @classmethod
