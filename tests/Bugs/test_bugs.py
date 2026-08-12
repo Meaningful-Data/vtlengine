@@ -4278,20 +4278,38 @@ class CastBugs(BugHelper):
     def test_GH_1010_1(self):
         """
         Status: OK
-        Expression: DS_r <- DS_1 [ calc identifier i := Me_1 * 2 ];
-        Description: an Identifier calculated from an expression was rejected on the
-                     declared nullability of that expression, so calculating one from
-                     a nullable Measure never worked even when the values were not
-                     null. Whether the Identifier holds nulls is now decided on the
-                     data.
+        Expression: DS_r <- DS_1 [ calc identifier i := if Me_1 > 1 then Me_1
+                                                        else cast(null, number) ];
+        Description: an expression declared not nullable can still hold a null, which
+                     only the data shows. A calculated Identifier is checked on its
+                     data as well, and reports it at run time.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1010
-        Goal: Check Result.
+        Goal: Check Exception.
         """
         code = "GH_1010_1"
         number_inputs = 1
-        references_names = ["1"]
+        message = "2-1-1-16"
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1010_2(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc identifier i := Me_1 * 2 ];
+        Description: an Identifier cannot be nullable, so an expression declared
+                     nullable is rejected on the structure, whatever its values are.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1010
+        Goal: Check Exception.
+        """
+        code = "GH_1010_2"
+        number_inputs = 1
+        message = "1-1-1-16"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GH_1007_1(self):
         """
@@ -4316,27 +4334,6 @@ class CastBugs(BugHelper):
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
-
-    def test_GH_1010_2_null_identifier_rejected(self):
-        """
-        Expression: DS_r <- DS_1 [ calc identifier i := Me_2 * 2 ];
-        Description: an Identifier still cannot hold nulls, so calculating one from an
-                     expression that does produce them is rejected on both engines.
-                     Checked through run(), as semantic analysis has no data and
-                     cannot decide it.
-        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1010
-        Goal: Check Exception.
-        """
-        code = "GH_1010_1"
-        script = "DS_r <- DS_1 [ calc identifier i := Me_2 * 2 ];"
-        with pytest.raises(SemanticError) as context:
-            run(
-                script=script,
-                data_structures=self.filepath_json / f"{code}-1.json",
-                datapoints={"DS_1": self.filepath_csv / f"{code}-1.csv"},
-                use_duckdb=_use_duckdb_backend(),
-            )
-        assert context.value.args[1] == "1-1-1-16"
 
     def test_GH_1005_1(self):
         """

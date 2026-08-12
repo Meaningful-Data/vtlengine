@@ -68,8 +68,8 @@ def _map_time_agg_error(msg: str, msg_lower: str) -> RunTimeError:
 def _map_vtl_macro_error(msg: str, msg_lower: str) -> Optional[Exception]:
     """Map the errors raised by the VTL SQL macros, which carry their own code."""
     # calc identifier: the calculated expression produced a null
-    if "vtl 1-1-1-16" in msg_lower:
-        return SemanticError("1-1-1-16")
+    if "vtl 2-1-1-16" in msg_lower:
+        return RunTimeError("2-1-1-16")
 
     # VTL macro: TimePeriod aggregation with mixed indicators (max/min)
     if "vtl error 2-1-19-20" in msg_lower:

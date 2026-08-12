@@ -639,17 +639,16 @@ class Clause(DWIHelper):
         """
         Status: OK
         Expression: DS_r := DS_1[ calc identifier Id_1 := BLNC_SHT_TTL_CRRNCY + NMBR_EMPLYS];
-        Description: an Identifier calculated from nullable Measures is accepted when
-                     the values are not null; it is the data that decides, not the
-                     declared nullability of the expression (issue #1010).
+        Description:
         Git Issue: #218.
-        Goal: Check Result.
+        Goal: Check Exception.
         """
         code = "GL_218_22"
         number_inputs = 1
-        references_names = ["1"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        message = "1-1-1-16"
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
 
 class Join(DWIHelper):

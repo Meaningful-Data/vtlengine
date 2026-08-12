@@ -2009,7 +2009,7 @@ FROM (
                 if _CALC_ROLE_BY_TOKEN.get(getattr(child, "op", "")) is Role.IDENTIFIER:
                     expr_sql = (
                         f"CASE WHEN ({expr_sql}) IS NULL THEN "
-                        f"error('VTL 1-1-1-16: Found structure not nullable and null values') "
+                        f"error('VTL 2-1-1-16: null value on a calculated Identifier') "
                         f"ELSE ({expr_sql}) END"
                     )
                 exprs[col_name] = expr_sql
