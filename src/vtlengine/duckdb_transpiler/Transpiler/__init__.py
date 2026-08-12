@@ -43,6 +43,7 @@ from vtlengine.duckdb_transpiler.Transpiler.sql_builder import (
     quote_name,
 )
 from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
+    _CALC_ROLE_BY_TOKEN,
     _COMPONENT,
     _DATASET,
     _SCALAR,
@@ -2048,6 +2049,12 @@ FROM (
                     continue
                 col_name = self._resolve_udo_name(self._get_node_value(assignment.left))
                 expr_sql = self.visit(assignment.right)
+                if _CALC_ROLE_BY_TOKEN.get(getattr(child, "op", "")) is Role.IDENTIFIER:
+                    expr_sql = (
+                        f"CASE WHEN ({expr_sql}) IS NULL THEN "
+                        f"error('VTL 2-1-1-16: null value on a calculated Identifier') "
+                        f"ELSE ({expr_sql}) END"
+                    )
                 exprs[col_name] = expr_sql
                 if "vtl_tp_dateadd" in expr_sql and self.current_assignment:
                     out_ds = self.output_datasets.get(self.current_assignment)
