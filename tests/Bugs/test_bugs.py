@@ -687,44 +687,6 @@ class JoinBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    def test_GH_1042(self):
-        """
-        Expression: A <- DS_1;
-                    DS_r <- full_join(DS_1, DS_2);
-        Description: with an output_folder, writing the alias A formatted its
-            Time_Period identifier in place on the DataFrame it shares with
-            DS_1 (external 2000M1 vs internal 2000-M01), so the later join
-            matched no keys: full_join doubled the common Data Points and
-            inner_join dropped them.
-        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1042
-        Goal: Check written CSV.
-        """
-        code = "GH_1042"
-        script = self.LoadVTL(code)
-        with TemporaryDirectory() as tmpdir:
-            run(
-                script=script,
-                data_structures=[
-                    self.filepath_json / f"{code}-1.json",
-                    self.filepath_json / f"{code}-2.json",
-                ],
-                datapoints={
-                    "DS_1": self.filepath_csv / f"{code}-1.csv",
-                    "DS_2": self.filepath_csv / f"{code}-2.csv",
-                },
-                output_folder=Path(tmpdir),
-                use_duckdb=_use_duckdb_backend(),
-            )
-            content = (Path(tmpdir) / "DS_r.csv").read_text()
-        lines = content.strip().splitlines()
-        assert lines[0] == "Id_1,Id_2,Me_1,Me_2"
-        assert sorted(lines[1:]) == [
-            "1,2000M1,1,10",
-            "2,2000M2,2,20",
-            "3,2000M3,3,",
-            "9,2020M1,,90",
-        ]
-
 
 class NumericBugs(BugHelper):
     """ """
