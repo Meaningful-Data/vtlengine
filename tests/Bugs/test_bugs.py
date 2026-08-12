@@ -2775,6 +2775,25 @@ class ConditionalBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=message
         )
 
+    def test_GH_1024(self):
+        """
+        Status: OK
+        Expression: DS_r1 := if H_c then H_a else H_b;
+                    DS_r2 := case when H_c then H_a else H_b;
+        Description: a dataset-level if mutated its condition dataset in place,
+                     popping the boolean measure column out of the DataFrame the
+                     stored variable shares, so any later statement reading the
+                     condition dataset (the case here, but another if fails the
+                     same way) raised KeyError: 'c'.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1024
+        Goal: Check Result.
+        """
+        code = "GH_1024"
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4", "5"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class ClauseBugs(BugHelper):
     """ """

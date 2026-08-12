@@ -23,6 +23,7 @@ from vtlengine.DataTypes import (
 from vtlengine.duckdb_transpiler.Transpiler.operators import (
     _BOOLEAN_RESULT_BINOPS,
     _BOOLEAN_RESULT_UNARY_OPS,
+    _NUMERIC_RESULT_BINOPS,
     _ORDERING_OPS,
     _STRING_PARAM_OPS,
     _STRING_UNARY_OPS,
@@ -1804,6 +1805,42 @@ FROM (
             if comp and comp.data_type:
                 type_name = getattr(comp.data_type, "__name__", str(comp.data_type))
                 return type_name
+        if isinstance(node, AST.UnaryOp) and node.op in (tokens.PLUS, tokens.MINUS, tokens.ABS):
+            # Type-preserving numeric unary operators: Integer stays Integer.
+            return self._get_source_vtl_type(node.operand)
+        if isinstance(node, AST.BinOp) and node.op in _NUMERIC_RESULT_BINOPS:
+            if node.op == tokens.DIV:
+                # VTL division always yields Number, even between Integers.
+                return "Number"
+            return self._promote_numeric(
+                self._get_source_vtl_type(node.left),
+                self._get_source_vtl_type(node.right),
+            )
+        if isinstance(node, AST.If):
+            return self._promote_numeric(
+                self._get_source_vtl_type(node.thenOp),
+                self._get_source_vtl_type(node.elseOp),
+            )
+        if isinstance(node, AST.Case):
+            branch_types = [self._get_source_vtl_type(case.thenOp) for case in node.cases]
+            branch_types.append(self._get_source_vtl_type(node.elseOp))
+            return self._promote_numeric(*branch_types)
+        if isinstance(node, AST.ParFunction):
+            return self._get_source_vtl_type(node.operand)
+        return None
+
+    @staticmethod
+    def _promote_numeric(*operand_types: Optional[str]) -> Optional[str]:
+        """VTL numeric promotion: Number if any operand is Number, Integer if all are.
+
+        Anything else (a non-numeric or unknown operand) resolves to None so the
+        caller keeps the default rendering.
+        """
+        types = set(operand_types)
+        if "Number" in types:
+            return "Number"
+        if types == {"Integer"}:
+            return "Integer"
         return None
 
     def visit_ParamOp_cast(self, node: AST.ParamOp) -> str:
@@ -1870,6 +1907,12 @@ FROM (
 
         if target_type_str == "String" and source_lower == "boolean":
             return _bool_to_str(expr)
+
+        if target_type_str == "String" and source_lower == "number":
+            # Number columns are stored as DECIMAL, whose VARCHAR rendering keeps
+            # the full scale ('1.1000000000'); render through DOUBLE so the result
+            # matches the pandas engine's str(float) ('1.1') — issue #1031.
+            return f"CAST(CAST({expr} AS DOUBLE) AS VARCHAR)"
 
         if target_type_str == "String" and source_lower in ("time_period", "timeperiod"):
             _tp_string_macros = {
