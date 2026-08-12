@@ -4372,6 +4372,75 @@ class CastBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=message
         )
 
+    def test_GH_1027_1(self):
+        """
+        Status: OK
+        Expression: DS_r := DS_1[keep Me_1, Me_1];
+        Description: a Component named twice in a keep clause came out of it twice, so
+                     the Data Set carried more columns than Components and the CSV it
+                     wrote could not be read back. The repeated name is rejected, as
+                     the rename clause already rejects one.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1027
+        Goal: Check Exception.
+        """
+        code = "GH_1027_1"
+        number_inputs = 1
+        message = "1-1-6-9"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1027_2(self):
+        """
+        Status: OK
+        Expression: DS_r := DS_1[drop Me_1, Me_1];
+        Description: the same repeated name in a drop clause, which the DuckDb engine
+                     reported as a raw parser error over its EXCLUDE list.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1027
+        Goal: Check Exception.
+        """
+        code = "GH_1027_2"
+        number_inputs = 1
+        message = "1-1-6-9"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1027_3(self):
+        """
+        Status: OK
+        Expression: DS_r := left_join(DS_1 as a, DS_2 as b keep Me_1, Me_1);
+        Description: a join clause quietly deduplicated the names it was given, so the
+                     repeated one never reached the clause that rejects it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1027
+        Goal: Check Exception.
+        """
+        code = "GH_1027_3"
+        number_inputs = 2
+        message = "1-1-6-9"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1027_4(self):
+        """
+        Status: OK
+        Expression: DS_r := left_join(DS_1 as a, DS_2 as b drop Me_1, Me_1);
+        Description: the same repeated name in the drop of a join clause.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1027
+        Goal: Check Exception.
+        """
+        code = "GH_1027_4"
+        number_inputs = 2
+        message = "1-1-6-9"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
     def test_GH_1010_2(self):
         """
         Status: OK
