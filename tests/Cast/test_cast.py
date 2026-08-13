@@ -92,6 +92,20 @@ class CastExplicitWithoutMask(CastHelper):
 
         self.NewSemanticExceptionTest(code, number_inputs, exception_code)
 
+    def test_GH_1031(self):
+        """
+        Solves bug report in github issue #1031: cast(Number, string) on the DuckDB
+        backend rendered the internal DECIMAL scale ('1.1000000000' instead of '1.1'),
+        for direct components as well as computed operands (Me_1 * 2, -Me_1, (Me_1)).
+        Integer operands must keep their integer rendering ('5', never '5.0'), and
+        integer division must yield Number rendering ('3.5', '2.0').
+        """
+        code = "GH_1031"
+        number_inputs = 1
+        reference_names = ["1"]
+
+        self.BaseTest(code, number_inputs, references_names=reference_names)
+
 
 # ===========================================================================
 # Comprehensive explicit cast tests (VTL 2.2) - Without mask

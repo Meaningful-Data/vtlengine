@@ -23,6 +23,7 @@ from vtlengine.DataTypes import (
 from vtlengine.duckdb_transpiler.Transpiler.operators import (
     _BOOLEAN_RESULT_BINOPS,
     _BOOLEAN_RESULT_UNARY_OPS,
+    _NUMERIC_RESULT_BINOPS,
     _ORDERING_OPS,
     _STRING_PARAM_OPS,
     _STRING_UNARY_OPS,
@@ -42,6 +43,7 @@ from vtlengine.duckdb_transpiler.Transpiler.sql_builder import (
     quote_name,
 )
 from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
+    _CALC_ROLE_BY_TOKEN,
     _COMPONENT,
     _DATASET,
     _SCALAR,
@@ -276,6 +278,15 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     # Hierarchical rulesets
     _hrs: Dict[str, Dict[str, Any]] = field(default_factory=dict, init=False)
+
+    # Nested analytics (#1026): SQL forbids nesting window functions, so an
+    # analytic found inside another analytic's operand is collected here as an
+    # (alias, expression) pair and computed in a wrapping subquery by the
+    # consumer that enables _materialize_nested_analytics
+    _nested_analytic_depth: int = field(default=0, init=False)
+    _nested_analytic_counter: int = field(default=0, init=False)
+    _pending_nested_analytics: List[Tuple[str, str]] = field(default_factory=list, init=False)
+    _materialize_nested_analytics: bool = field(default=False, init=False)
 
     def __post_init__(self) -> None:
         """Initialize available tables."""
@@ -1779,13 +1790,6 @@ FROM (
             targets = self._dateadd_targets(ds)
             target_names = {c.name for c in targets}
 
-            if self.current_assignment:
-                out_ds = self.output_datasets.get(self.current_assignment)
-                if out_ds is not None:
-                    for comp in out_ds.components.values():
-                        if comp.name in target_names and comp.data_type == TimePeriod:
-                            comp.data_type = Date
-
             def _dateadd_expr(col_ref: str, is_period: bool) -> str:
                 if is_period:
                     return f"vtl_tp_dateadd(vtl_period_parse({col_ref}), {shift_sql}, {period_sql})"
@@ -1831,6 +1835,42 @@ FROM (
             if comp and comp.data_type:
                 type_name = getattr(comp.data_type, "__name__", str(comp.data_type))
                 return type_name
+        if isinstance(node, AST.UnaryOp) and node.op in (tokens.PLUS, tokens.MINUS, tokens.ABS):
+            # Type-preserving numeric unary operators: Integer stays Integer.
+            return self._get_source_vtl_type(node.operand)
+        if isinstance(node, AST.BinOp) and node.op in _NUMERIC_RESULT_BINOPS:
+            if node.op == tokens.DIV:
+                # VTL division always yields Number, even between Integers.
+                return "Number"
+            return self._promote_numeric(
+                self._get_source_vtl_type(node.left),
+                self._get_source_vtl_type(node.right),
+            )
+        if isinstance(node, AST.If):
+            return self._promote_numeric(
+                self._get_source_vtl_type(node.thenOp),
+                self._get_source_vtl_type(node.elseOp),
+            )
+        if isinstance(node, AST.Case):
+            branch_types = [self._get_source_vtl_type(case.thenOp) for case in node.cases]
+            branch_types.append(self._get_source_vtl_type(node.elseOp))
+            return self._promote_numeric(*branch_types)
+        if isinstance(node, AST.ParFunction):
+            return self._get_source_vtl_type(node.operand)
+        return None
+
+    @staticmethod
+    def _promote_numeric(*operand_types: Optional[str]) -> Optional[str]:
+        """VTL numeric promotion: Number if any operand is Number, Integer if all are.
+
+        Anything else (a non-numeric or unknown operand) resolves to None so the
+        caller keeps the default rendering.
+        """
+        types = set(operand_types)
+        if "Number" in types:
+            return "Number"
+        if types == {"Integer"}:
+            return "Integer"
         return None
 
     def visit_ParamOp_cast(self, node: AST.ParamOp) -> str:
@@ -1898,6 +1938,12 @@ FROM (
         if target_type_str == "String" and source_lower == "boolean":
             return _bool_to_str(expr)
 
+        if target_type_str == "String" and source_lower == "number":
+            # Number columns are stored as DECIMAL, whose VARCHAR rendering keeps
+            # the full scale ('1.1000000000'); render through DOUBLE so the result
+            # matches the pandas engine's str(float) ('1.1') — issue #1031.
+            return f"CAST(CAST({expr} AS DOUBLE) AS VARCHAR)"
+
         if target_type_str == "String" and source_lower in ("time_period", "timeperiod"):
             _tp_string_macros = {
                 "vtl": "vtl_period_to_vtl",
@@ -1939,7 +1985,8 @@ FROM (
             and index_node.op == "-"
             and isinstance(index_node.operand, AST.Constant)
         ):
-            raise SemanticError("2-1-15-2", op="random", value=index_node.operand.value)
+            # The literal sits inside the minus, so the index reads as its negation.
+            raise SemanticError("2-1-15-2", op="random", value=f"-{index_node.operand.value}")
 
     def _visit_random_impl(
         self,
@@ -1990,18 +2037,39 @@ FROM (
         resolved = self._resolve_clause_dataset(node)
         ds, table_src = resolved
 
-        with self._clause_scope(ds):
-            conditions = [self.visit(child) for child in node.children]
+        old_materialize = self._materialize_nested_analytics
+        self._materialize_nested_analytics = True
+        try:
+            with self._clause_scope(ds):
+                conditions = [self.visit(child) for child in node.children]
+        finally:
+            self._materialize_nested_analytics = old_materialize
+        nested_cols = list(self._pending_nested_analytics)
+        self._pending_nested_analytics.clear()
 
         if conditions and any(_contains_analytic(child) for child in node.children):
+            # Analytics nested inside another analytic of the condition are
+            # computed one wrapping subquery at a time, innermost first, as the
+            # calc clause does
+            for alias, win_sql in nested_cols:
+                table_src = (
+                    SQLBuilder()
+                    .select("t.*", f"{win_sql} AS {quote_name(alias)}")
+                    .from_table(self._as_subquery(table_src), "t")
+                    .build()
+                )
             # Window functions cannot appear in WHERE; project the predicate in a
             # subquery and filter on it from the outside.
             predicate_alias = "__vtl_filter_predicate"
+            filter_src = self._as_subquery(table_src) if nested_cols else table_src
             inner = (
-                f'SELECT *, ({" AND ".join(conditions)}) AS "{predicate_alias}" FROM {table_src}'
+                f'SELECT *, ({" AND ".join(conditions)}) AS "{predicate_alias}" FROM {filter_src}'
+            )
+            hidden = ", ".join(
+                [f'"{predicate_alias}"'] + [quote_name(alias) for alias, _ in nested_cols]
             )
             return (
-                f'SELECT * EXCLUDE ("{predicate_alias}") '
+                f"SELECT * EXCLUDE ({hidden}) "
                 f'FROM ({inner}) AS "_vtl_filter_src" '
                 f'WHERE "{predicate_alias}"'
             )
@@ -2022,61 +2090,87 @@ FROM (
         chain.reverse()
         return chain
 
-    def _calc_clause_exprs(self, clause: AST.RegularAggregation, ds: Dataset) -> Dict[str, str]:
-        """Evaluate one calc clause's assignments against *ds*."""
+    def _calc_clause_exprs(
+        self, clause: AST.RegularAggregation, ds: Dataset
+    ) -> Tuple[Dict[str, str], List[Tuple[str, str]]]:
+        """Evaluate one calc clause's assignments against *ds*.
+
+        Returns the column expressions together with the nested analytic columns
+        they reference, which the caller must compute in a wrapping subquery.
+        """
         exprs: Dict[str, str] = {}
-        with self._clause_scope(ds):
-            for child in clause.children:
-                assignment = self._unwrap_assignment(child)
-                if not isinstance(assignment, AST.Assignment):
-                    continue
-                col_name = self._resolve_udo_name(self._get_node_value(assignment.left))
-                expr_sql = self.visit(assignment.right)
-                exprs[col_name] = expr_sql
-                if "vtl_tp_dateadd" in expr_sql and self.current_assignment:
-                    out_ds = self.output_datasets.get(self.current_assignment)
-                    if (
-                        out_ds
-                        and col_name in out_ds.components
-                        and out_ds.components[col_name].data_type == TimePeriod
-                    ):
-                        out_ds.components[col_name].data_type = Date
-        return exprs
+        old_materialize = self._materialize_nested_analytics
+        self._materialize_nested_analytics = True
+        try:
+            with self._clause_scope(ds):
+                for child in clause.children:
+                    assignment = self._unwrap_assignment(child)
+                    if not isinstance(assignment, AST.Assignment):
+                        continue
+                    col_name = self._resolve_udo_name(self._get_node_value(assignment.left))
+                    expr_sql = self.visit(assignment.right)
+                    if _CALC_ROLE_BY_TOKEN.get(getattr(child, "op", "")) is Role.IDENTIFIER:
+                        expr_sql = (
+                            f"CASE WHEN ({expr_sql}) IS NULL THEN "
+                            f"error('VTL 2-1-1-16: null value on a calculated Identifier') "
+                            f"ELSE ({expr_sql}) END"
+                        )
+                    exprs[col_name] = expr_sql
+        finally:
+            self._materialize_nested_analytics = old_materialize
+        nested_cols = list(self._pending_nested_analytics)
+        self._pending_nested_analytics.clear()
+        return exprs, nested_cols
 
     def visit_RegularAggregation_calc(self, node: AST.RegularAggregation) -> str:
         chain = self._calc_chain(node)
         with self._stash_assignment():
             base_ds = self._get_dataset_structure(chain[0].dataset)
             src = self._get_dataset_sql(chain[0].dataset)
-        levels: List[Tuple[Dataset, Dict[str, str]]] = []
+        levels: List[Tuple[Dataset, Dict[str, str], List[Tuple[str, str]]]] = []
         level_ds: Optional[Dataset] = None
         level_exprs: Dict[str, str] = {}
+        level_nested: List[Tuple[str, str]] = []
         for i, clause in enumerate(chain):
             clause_ds = base_ds if i == 0 else self._get_dataset_structure(clause.dataset)
-            exprs = self._calc_clause_exprs(clause, clause_ds)
+            exprs, nested_cols = self._calc_clause_exprs(clause, clause_ds)
+            # A column produced by an earlier clause may be referenced from the
+            # clause expressions or from the nested analytics they hand over
+            clause_sqls = list(exprs.values()) + [sql for _, sql in nested_cols]
             conflicts = set(exprs) & set(level_exprs) or any(
-                f'"{produced}"' in expr for expr in exprs.values() for produced in level_exprs
+                f'"{produced}"' in sql for sql in clause_sqls for produced in level_exprs
             )
             if level_exprs and conflicts:
-                levels.append((level_ds, level_exprs))  # type: ignore[arg-type]
-                level_ds, level_exprs = clause_ds, dict(exprs)
+                levels.append((level_ds, level_exprs, level_nested))  # type: ignore[arg-type]
+                level_ds, level_exprs, level_nested = clause_ds, dict(exprs), list(nested_cols)
             else:
                 if level_ds is None:
                     level_ds = clause_ds
                 level_exprs.update(exprs)
+                level_nested.extend(nested_cols)
         if level_exprs or level_ds is not None:
-            levels.append((level_ds, level_exprs))  # type: ignore[arg-type]
+            levels.append((level_ds, level_exprs, level_nested))  # type: ignore[arg-type]
 
-        for ds, calc_exprs in levels:
+        for ds, calc_exprs, nested_cols in levels:
+            # Analytics nested inside another analytic are computed one wrapping
+            # subquery at a time, innermost first, so no SELECT nests window calls
+            for alias, win_sql in nested_cols:
+                src = (
+                    SQLBuilder()
+                    .select("t.*", f"{win_sql} AS {quote_name(alias)}")
+                    .from_table(self._as_subquery(src), "t")
+                    .build()
+                )
             # Carry the operand through as it actually comes out rather than naming its
             # Components one by one. An operator applied over the Measures drops the
             # plain Attributes from its query while still reporting them in its
             # structure, and listing them here asked the binder for columns the
             # subquery never selected (issue #978).
             replaced = [name for name in calc_exprs if name in ds.components]
+            hidden = replaced + [alias for alias, _ in nested_cols]
             passthrough = "t.*"
-            if replaced:
-                excluded = ", ".join(quote_name(name) for name in replaced)
+            if hidden:
+                excluded = ", ".join(quote_name(name) for name in hidden)
                 passthrough = f"t.* EXCLUDE ({excluded})"
             select_cols: List[str] = [passthrough]
             select_cols += [
@@ -2425,20 +2519,12 @@ FROM (
                     agg = self._build_agg_expr(op, operand_sql, dt)
                     if agg is not None:
                         return agg
-                expr = registry.sql(op, operand_sql)
-                if op == tokens.COUNT and (node.grouping or node.grouping_op):
-                    expr = f"NULLIF({expr}, 0)"
-                return expr
+                return registry.sql(op, operand_sql)
 
         # count() without operand
         if node.operand is None:
             if op == tokens.COUNT:
-                if self._in_clause and self._current_dataset:
-                    measures = self._current_dataset.get_measures_names()
-                    if measures:
-                        or_parts = " OR ".join(f"{quote_name(m)} IS NOT NULL" for m in measures)
-                        return f"NULLIF(COUNT(CASE WHEN {or_parts} THEN 1 END), 0)"
-                return "NULLIF(COUNT(*), 0)"
+                return "COUNT(*)"
             return ""
 
         ds = self._get_dataset_structure(node.operand)
@@ -2454,18 +2540,17 @@ FROM (
         cols, group_by_cols = self._build_agg_group_cols(node, ds, group_cols)
         ds_tp_minmax_cols: List[tuple[str, str]] = []
 
-        # count() produces a single int_var measure.
         if op == tokens.COUNT:
-            alias = "int_var"
-            source_measures = ds.get_measures_names()
-            if source_measures:
-                and_parts = " AND ".join(f"{quote_name(m)} IS NOT NULL" for m in source_measures)
-                count_expr = f"COUNT(CASE WHEN {and_parts} THEN 1 END)"
-                if group_cols:
-                    count_expr = f"NULLIF({count_expr}, 0)"
-                cols.append(f"{count_expr} AS {quote_name(alias)}")
+            # count applies to each Measure and gives back that same Measure, counted.
+            # A lone Measure is renamed to int_var, so that the Data Set form and the
+            # Component form of the operator agree (issue #959).
+            measures = ds.get_measures_names()
+            if len(measures) > 1:
+                for measure in measures:
+                    cols.append(f"COUNT({quote_name(measure)}) AS {quote_name(measure)}")
             else:
-                cols.append(f"COUNT(*) AS {quote_name(alias)}")
+                counted = quote_name(measures[0]) if measures else "*"
+                cols.append(f"COUNT({counted}) AS {quote_name('int_var')}")
         else:
             measures = ds.get_measures_names()
             for measure in measures:
@@ -2604,13 +2689,28 @@ FROM (
             return self._visit_analytic_dataset(node, op)
 
         # Component-level: single expression with OVER
-        operand_sql = self.visit(node.operand) if node.operand else ""
+        if node.operand is not None:
+            self._nested_analytic_depth += 1
+            try:
+                operand_sql = self.visit(node.operand)
+            finally:
+                self._nested_analytic_depth -= 1
+        else:
+            operand_sql = ""
         func_sql = self._build_analytic_expr(op, operand_sql, node)
         # ratio_to_report already includes its own OVER clause
-        if op == tokens.RATIO_TO_REPORT:
-            return func_sql
-        over_clause = self._build_over_clause(node)
-        return f"{func_sql} OVER ({over_clause})"
+        if op != tokens.RATIO_TO_REPORT:
+            over_clause = self._build_over_clause(node)
+            func_sql = f"{func_sql} OVER ({over_clause})"
+        # An analytic inside another analytic's operand cannot be emitted inline
+        # (SQL forbids nesting window functions): hand it to the enclosing clause
+        # as a pending column and reference it by alias (#1026)
+        if self._nested_analytic_depth > 0 and self._materialize_nested_analytics:
+            alias = f"__vtl_nested_analytic_{self._nested_analytic_counter}__"
+            self._nested_analytic_counter += 1
+            self._pending_nested_analytics.append((alias, func_sql))
+            return quote_name(alias)
+        return func_sql
 
     def _visit_analytic_dataset(self, node: AST.Analytic, op: str) -> str:
         """Visit a dataset-level analytic: applies the window function to each measure."""

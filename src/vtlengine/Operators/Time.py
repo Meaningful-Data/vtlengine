@@ -1,4 +1,5 @@
 import re
+from copy import copy
 from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional, Type, Union
 
@@ -374,7 +375,8 @@ class Period_indicator(Unary):
         if isinstance(operand, str):
             return cls._get_period(str(operand))
         if isinstance(operand, Scalar):
-            result.value = cls._get_period(str(operand.value))
+            value = operand.value
+            result.value = None if value is None else cls._get_period(str(value))
             return result
         if isinstance(operand, DataComponent):
             if operand.data is not None:
@@ -674,19 +676,22 @@ class Time_Shift(Binary):
             freq = cls._series_frequency(parsed, result.data)
             result.data[cls.time_id] = cls.shift_dates(result.data[cls.time_id], shift_value, freq)
         elif data_type == TimeInterval:
-            categories = result.data[cls.time_id].apply(cls._classify_interval_period).unique()
-            if len(categories) > 1:
-                raise SemanticError(
-                    "1-1-19-9",
-                    op=cls.op,
-                    comp_type="dataset",
-                    param="single time series frequency",
+            # An empty operand carries no interval to read a frequency from and
+            # nothing to shift (issue #1034).
+            if not result.data.empty:
+                categories = result.data[cls.time_id].apply(cls._classify_interval_period).unique()
+                if len(categories) > 1:
+                    raise SemanticError(
+                        "1-1-19-9",
+                        op=cls.op,
+                        comp_type="dataset",
+                        param="single time series frequency",
+                    )
+                interval_freq = categories[0]
+                result.data[cls.time_id] = result.data[cls.time_id].map(
+                    lambda x: cls.shift_interval(x, shift_value, interval_freq),
+                    na_action="ignore",
                 )
-            interval_freq = categories[0]
-            result.data[cls.time_id] = result.data[cls.time_id].map(
-                lambda x: cls.shift_interval(x, shift_value, interval_freq),
-                na_action="ignore",
-            )
         elif data_type == TimePeriod:
             result.data[cls.time_id] = result.data[cls.time_id].apply(
                 lambda x: cls.shift_period(x, shift_value)
@@ -972,9 +977,10 @@ class Time_Aggregation(Time):
         cls, operand: Scalar, period_from: Optional[str], period_to: str, conf: Optional[str]
     ) -> Scalar:
         result = cls.scalar_validation(operand, period_from, period_to, conf)
-        result.value = cls._execute_time_aggregation(
-            operand.value, operand.data_type, period_from, period_to, conf
-        )
+        if operand.value is not None:
+            result.value = cls._execute_time_aggregation(
+                operand.value, operand.data_type, period_from, period_to, conf
+            )
         return result
 
     @classmethod
@@ -1152,15 +1158,20 @@ class Date_Add(Parametrized):
             unary_implicit_promotion(operand.data_type, Date)
 
         if isinstance(operand, Scalar):
-            return Scalar(name=operand.name, data_type=operand.data_type, value=None)
+            return Scalar(name=operand.name, data_type=Date, value=None)
         if isinstance(operand, DataComponent):
             return DataComponent(
-                name=operand.name, data_type=operand.data_type, data=None, nullable=operand.nullable
+                name=operand.name, data_type=Date, data=None, nullable=operand.nullable
             )
 
         if all(comp.data_type not in [Date, TimePeriod] for comp in operand.components.values()):
             raise SemanticError("2-1-19-14", op=cls.op, name=operand.name)
-        return Dataset(name=dataset_name, components=operand.components.copy(), data=None)
+        # Fresh Component copies: the retype below must not reach the operand's
+        # (shared) Component objects (#1032)
+        result_components = {name: copy(comp) for name, comp in operand.components.items()}
+        for target in cls._dateadd_targets(operand):
+            result_components[target.name].data_type = Date
+        return Dataset(name=dataset_name, components=result_components, data=None)
 
     @classmethod
     def evaluate(
@@ -1192,10 +1203,7 @@ class Date_Add(Parametrized):
                     lambda x: cls.py_op(str(x), shift, period, is_period),  # noqa: B023
                     na_action="ignore",
                 )
-                comp.data_type = Date
 
-        if isinstance(result, (Scalar, DataComponent)):
-            result.data_type = Date
         return result
 
     @classmethod

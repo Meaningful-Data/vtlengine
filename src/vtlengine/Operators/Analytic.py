@@ -325,6 +325,16 @@ class Analytic(Operator.Unary):
                 f'COUNT(*) {analytic_str} as "{COMP_NAME_MAPPING[cls.return_type]}"'
             )
 
+        # ratio_to_report divides by the partition sum: select it too, so that a
+        # zero denominator (including 0/0, which yields NaN, not inf) is detected
+        denominator_prefix = "__vtl_rtr_denominator_"
+        if cls.op == RATIO_TO_REPORT:
+            for measure in measure_names:
+                measure_queries.append(
+                    f'SUM(CAST("{measure}" AS DOUBLE)) {analytic_str} '
+                    f'as "{denominator_prefix}{measure}"'
+                )
+
         measures_sql = ", ".join(measure_queries)
         identifiers_sql = ", ".join(f'"{name}"' for name in identifier_names)
         query = f"SELECT {identifiers_sql} , {measures_sql} FROM df"
@@ -342,9 +352,12 @@ class Analytic(Operator.Unary):
             conn.close()
         if cls.op == RATIO_TO_REPORT:
             for col_name in measure_names:
+                if (result[f"{denominator_prefix}{col_name}"] == 0).any():
+                    raise RunTimeError("2-1-3-1", op=cls.op)
                 arr = pa.array(result[col_name])
                 if pa.types.is_floating(arr.type) and pc.any(pc.is_inf(arr)).as_py():
                     raise RunTimeError("2-1-3-1", op=cls.op)
+            result = result.drop(columns=[f"{denominator_prefix}{name}" for name in measure_names])
         return result
 
     @classmethod

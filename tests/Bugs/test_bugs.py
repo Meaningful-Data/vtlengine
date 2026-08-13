@@ -7,7 +7,7 @@ import pytest
 
 from tests.Helper import TestHelper, _use_duckdb_backend
 from vtlengine.API import create_ast, run
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Interpreter import InterpreterAnalyzer
 
 
@@ -1843,6 +1843,27 @@ class TimeBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1032_1(self):
+        """
+        Status: OK
+        Expression: DS_r1 := dateadd(DS_1, 2, "A");
+                    DS_r2 := timeshift(DS_1, 2);
+        Description: dateadd on a Time_Period Identifier retyped the operand's
+                     shared Component to Date in place, so every structure
+                     sharing it (the operand and the sibling results) reported a
+                     Date Identifier holding period strings, the Time_Period
+                     output formatting was skipped, and reloading the operand
+                     from disk crashed the pandas engine
+                     (ValueError: Invalid isoformat string).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1032
+        Goal: Check Result.
+        """
+        code = "GH_1032_1"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_960_2(self):
         """
         Status: OK
@@ -1860,6 +1881,43 @@ class TimeBugs(BugHelper):
                 datapoints={"DS_1": self.filepath_csv / f"{code}-1.csv"},
                 use_duckdb=_use_duckdb_backend(),
             )
+
+    def test_GH_1032_2(self):
+        """
+        Status: OK
+        Expression: DS_r1 := timeshift(DS_1, 2);
+                    DS_r2 := dateadd(DS_1, 2, "A");
+        Description: with dateadd placed after the timeshift, the shared
+                     Component mutation retroactively retyped the already
+                     computed timeshift result to Date, so both engines skipped
+                     its Time_Period output formatting and reported a Date
+                     Identifier holding period strings.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1032
+        Goal: Check Result.
+        """
+        code = "GH_1032_2"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1034(self):
+        """
+        Status: OK
+        Expression: DS_r <- timeshift(DS_1, 1);
+        Description: timeshift over a Time (interval) identifier read the first
+                     Data Point to infer the shift frequency, so an operand with
+                     no Data Points raised IndexError: single positional indexer
+                     is out-of-bounds on the Pandas engine, while the DuckDB
+                     engine returned the empty dataset.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1034
+        Goal: Check Result.
+        """
+        code = "GH_1034"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
 
 class SetBugs(BugHelper):
@@ -2330,6 +2388,59 @@ class AggregationBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=message
         )
 
+    def test_GH_959_1(self):
+        """
+        Status: OK
+        Description: count over a Data Set holding a single Measure counts that Measure
+                     and renames it to int_var, so it reports the same number as count
+                     over that Measure as a Component. Only count() with no operand
+                     reports the number of Data Points.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/959
+        Goal: Check Result.
+        """
+        code = "GH_959_1"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_959_2(self):
+        """
+        Status: OK
+        Description: count over a Data Set applies to each Measure and gives back that
+                     same Measure, counted, so it reports the same numbers as counting
+                     each Measure as a Component. A Measure that holds no value in a
+                     group counts 0 and not null.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/959
+        Goal: Check Result.
+        """
+        code = "GH_959_2"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_996_1(self):
+        """
+        Status: OK
+        Description: the count cases reported at once. A Data Set operand counts each
+                     Measure and reports 0 where a group holds no value (DS_r1, DS_r2,
+                     DS_r3); count() with no operand counts the Data Points (DS_r4);
+                     an analytic count reports 0 for a partition of nulls (DS_r5) and
+                     covers the whole partition where the window clause is omitted
+                     (DS_r6); a having condition keeps the viral attributes (DS_r7);
+                     an analytic count over a String Measure counts its values
+                     (DS_r8); and count() reports the Data Points of a Data Set that
+                     is not grouped (DS_r9).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/996
+        Goal: Check Result.
+        """
+        code = "GH_996_1"
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_978_1(self):
         """
         Status: OK
@@ -2740,16 +2851,16 @@ class ConditionalBugs(BugHelper):
     def test_GL_196_4(self):
         """
         Status: OK
-        Description:
+        Description: calc identifier whose else branch is null, so the expression does
+                     produce nulls and an Identifier cannot hold them. Checked through
+                     run(), as that is decided on the data (issue #1010). The script is
+                     also invalid for a second reason, it ends with a keep of that same
+                     Identifier, so the DuckDB engine reports that one first.
         Git Branch: fix-196-isnull-for-evaluate-on-if-then-else.
         Goal: Check Exception.
         """
-        code = "GL_196_4"
-        number_inputs = 1
-
-        message = "1-1-1-16"
-        self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code=message
+        self._assert_null_identifier_rejected(
+            "GL_196_4", "comp_cred.CD0060_P", expected=("1-1-1-16", "1-1-6-2")
         )
 
     def test_GL_196_5(self):
@@ -2768,16 +2879,43 @@ class ConditionalBugs(BugHelper):
     def test_GL_196_6(self):
         """
         Status: OK
-        Description: if-then-else inside a calc measure but else=null.
+        Description: calc identifier that returns the operand itself when it is null, so
+                     the expression does produce nulls. Checked through run(), as that is
+                     decided on the data (issue #1010).
         Git Branch: fix-196-isnull-for-evaluate-on-if-then-else.
+        Goal: Check Exception.
+        """
+        self._assert_null_identifier_rejected("GL_196_6", "dsPrep.ENTTY_INSTRMNT_HDQRTR")
+
+    def _assert_null_identifier_rejected(self, code, dataset_name, expected=("1-1-1-16",)):
+        """Run a calc identifier whose expression produces nulls and check it is rejected."""
+        with pytest.raises(SemanticError) as context:
+            run(
+                script=self.LoadVTL(code),
+                data_structures=self.filepath_json / f"{code}-1.json",
+                datapoints={dataset_name: self.filepath_csv / f"{code}-1.csv"},
+                use_duckdb=_use_duckdb_backend(),
+            )
+        assert context.value.args[1] in expected
+
+    def test_GH_1024(self):
+        """
+        Status: OK
+        Expression: DS_r1 := if H_c then H_a else H_b;
+                    DS_r2 := case when H_c then H_a else H_b;
+        Description: a dataset-level if mutated its condition dataset in place,
+                     popping the boolean measure column out of the DataFrame the
+                     stored variable shares, so any later statement reading the
+                     condition dataset (the case here, but another if fails the
+                     same way) raised KeyError: 'c'.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1024
         Goal: Check Result.
         """
-        code = "GL_196_6"
+        code = "GH_1024"
         number_inputs = 1
-        message = "1-1-1-16"
-        self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code=message
-        )
+        references_names = ["1", "2", "3", "4", "5"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
 
 class ClauseBugs(BugHelper):
@@ -3327,6 +3465,26 @@ class ClauseBugs(BugHelper):
         code = "GH_728"
         number_inputs = 1
         references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1028_1(self):
+        """
+        Status: OK
+        Expression: DS_r1 <- DS_1[unpivot Id_x, Me_v];
+        Description: unpivot stacks the Measures into a single one, which took the type
+                     of the first Measure rather than the type they all fit in. An
+                     Integer Measure declared before a Number one typed the result
+                     Integer, so the pandas engine aborted with an ArrowInvalid and the
+                     DuckDb engine rounded 1.1 to 1 and 7.7 to 8. DS_2 declares the same
+                     Measures the other way round, where the type already came out
+                     right.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1028
+        Goal: Check Result.
+        """
+        code = "GH_1028_1"
+        number_inputs = 2
+        references_names = ["1", "2"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -4283,6 +4441,111 @@ class CastBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1010_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc identifier i := if Me_1 > 1 then Me_1
+                                                        else cast(null, number) ];
+        Description: an expression declared not nullable can still hold a null, which
+                     only the data shows. A calculated Identifier is checked on its
+                     data as well, and reports it at run time.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1010
+        Goal: Check Exception.
+        """
+        code = "GH_1010_1"
+        number_inputs = 1
+        message = "2-1-1-16"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1027_1(self):
+        """
+        Status: OK
+        Expression: DS_r := DS_1[keep Me_1, Me_1];
+        Description: a Component named twice in a keep clause came out of it twice, so
+                     the Data Set carried more columns than Components and the CSV it
+                     wrote could not be read back. The repeated name is rejected, as
+                     the rename clause already rejects one.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1027
+        Goal: Check Exception.
+        """
+        code = "GH_1027_1"
+        number_inputs = 1
+        message = "1-1-6-9"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1027_2(self):
+        """
+        Status: OK
+        Expression: DS_r := DS_1[drop Me_1, Me_1];
+        Description: the same repeated name in a drop clause, which the DuckDb engine
+                     reported as a raw parser error over its EXCLUDE list.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1027
+        Goal: Check Exception.
+        """
+        code = "GH_1027_2"
+        number_inputs = 1
+        message = "1-1-6-9"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1027_3(self):
+        """
+        Status: OK
+        Expression: DS_r := left_join(DS_1 as a, DS_2 as b keep Me_1, Me_1);
+        Description: a join clause quietly deduplicated the names it was given, so the
+                     repeated one never reached the clause that rejects it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1027
+        Goal: Check Exception.
+        """
+        code = "GH_1027_3"
+        number_inputs = 2
+        message = "1-1-6-9"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1027_4(self):
+        """
+        Status: OK
+        Expression: DS_r := left_join(DS_1 as a, DS_2 as b drop Me_1, Me_1);
+        Description: the same repeated name in the drop of a join clause.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1027
+        Goal: Check Exception.
+        """
+        code = "GH_1027_4"
+        number_inputs = 2
+        message = "1-1-6-9"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1010_2(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc identifier i := Me_1 * 2 ];
+        Description: an Identifier cannot be nullable, so an expression declared
+                     nullable is rejected on the structure, whatever its values are.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1010
+        Goal: Check Exception.
+        """
+        code = "GH_1010_2"
+        number_inputs = 1
+        message = "1-1-1-16"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
     def test_GH_1007_1(self):
         """
         Status: OK
@@ -4538,3 +4801,146 @@ class CastBugs(BugHelper):
             use_duckdb=_use_duckdb_backend(),
         )
         assert list(result["DS_r"].data["m"]) == [10, 10, 10]
+
+
+class AnalyticBugs(BugHelper):
+    """Bugs on analytic (window) operators."""
+
+    classTest = "Bugs.AnalyticBugs"
+
+    def test_GH_1026_1(self):
+        """
+        Status: OK
+        Expression: DS_r := DS_1[drop Va_str][calc m := ratio_to_report(
+                        ratio_to_report(Me_num over (partition by Id_2))
+                        over (partition by Id_3))];
+                    and the same nesting with sum(ratio_to_report(...) over ...),
+                    first_value(lag(...) over ...), and a calc chain whose second
+                    clause nests an analytic over the first clause's output.
+        Description: nested analytic invocations landed in a single SELECT on the
+                     DuckDB engine and SQL forbids nesting window functions, so any
+                     analytic over the result of another raised BinderException; the
+                     inner analytic is now materialised in a subquery. The pandas
+                     engine already computed it correctly.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1026
+        Goal: Check Result.
+        """
+        code = "GH_1026_1"
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1026_2(self):
+        """
+        Status: OK
+        Expression: DS_r := DS_1[drop Va_str][calc m := ratio_to_report(
+                        Me_num - Me_num over (partition by Id_2))];
+        Description: a partition whose values sum to zero makes ratio_to_report
+                     divide 0/0; the pandas engine only caught infinity (x/0 with
+                     x <> 0) and quietly returned null for the whole partition,
+                     while the DuckDB engine raised 2-1-3-1. Both engines now
+                     raise 2-1-3-1 on any zero-sum partition.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1026
+        Goal: Check Exception.
+        """
+        code = "GH_1026_2"
+        number_inputs = 1
+        message = "2-1-3-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1026_3(self):
+        """
+        Status: OK
+        Expression: DS_r := DS_1[drop Va_str][calc m := ratio_to_report(
+                        Me_num - 5.5 over (partition by Id_2))];
+        Description: on a genuine division by zero (x/0 with x <> 0) both engines
+                     raised 2-1-3-1 but blamed different operators: pandas said
+                     ratio_to_report and DuckDB said division, because the generic
+                     division-by-zero pattern in the query error mapping shadowed
+                     the specific ratio_to_report one. Both engines now blame
+                     ratio_to_report.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1026
+        Goal: Check Exception message.
+        """
+        code = "GH_1026_3"
+        script = self.LoadVTL(code)
+
+        with pytest.raises(RunTimeError) as context:
+            run(
+                script=script,
+                data_structures=self.filepath_json / f"{code}-1.json",
+                datapoints={"DS_1": self.filepath_csv / f"{code}-1.csv"},
+                return_only_persistent=False,
+                use_duckdb=_use_duckdb_backend(),
+            )
+        assert str(context.value.args[1]) == "2-1-3-1"
+        assert "ratio_to_report" in str(context.value.args[0])
+
+    def test_GH_1026_4(self):
+        """
+        Status: OK
+        Expression: DS_r := DS_1[drop Va_str][calc m := ratio_to_report(Me_num
+                        over (partition by Me_bool))];
+        Description: partitioning by a Measure inside a calc clause reported
+                     "Component Me_bool not found in Dataset __VDS_1__" because the
+                     virtual dataset built for the component-level analytic keeps
+                     only the identifiers and the operand, so the role check that
+                     the dataset-level branch reaches (1-1-3-2, as rank gives) never
+                     ran. The partition components are now checked against the real
+                     dataset first.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1026
+        Goal: Check Exception.
+        """
+        code = "GH_1026_4"
+        number_inputs = 1
+        message = "1-1-3-2"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1026_5(self):
+        """
+        Status: OK
+        Expression: DS_r := DS_1[drop Va_str][filter ratio_to_report(
+                        ratio_to_report(Me_num over (partition by Id_2))
+                        over (partition by Id_3)) >= 0.3];
+        Description: an analytic nested inside another analytic of a filter
+                     condition raised BinderException on the DuckDB engine, as the
+                     whole predicate landed in a single SELECT; the nested analytic
+                     is now materialised in a subquery below the predicate, as the
+                     calc clause already does. The pandas engine already computed
+                     it correctly.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1026
+        Goal: Check Result.
+        """
+        code = "GH_1026_5"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1026_6(self):
+        """
+        Status: OK
+        Expression: DS_r := DS_1[drop Va_str][calc m := first_value(
+                        Me_num over (partition by Id_2 order by Me_bool, Id_1))];
+        Description: ordering by a Measure inside a calc clause reported "Component
+                     Me_bool not found in Dataset __VDS_1__" because the virtual
+                     dataset built for the component-level analytic keeps only the
+                     identifiers and the operand, while the dataset-level branch
+                     orders by any existing component (e.g. rank over a Measure).
+                     The components named in the ordering are now carried into the
+                     virtual dataset, so both forms behave the same.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1026
+        Goal: Check Result.
+        """
+        code = "GH_1026_6"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)

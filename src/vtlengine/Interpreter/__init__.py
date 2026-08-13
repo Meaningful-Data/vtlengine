@@ -583,12 +583,25 @@ class InterpreterAnalyzer(ASTTemplate):
                 regular_groupings.append(time_comp.name)
         return regular_groupings
 
+    @staticmethod
+    def _data_point_count_operand(node: AST.Aggregation, operand: Any) -> Any:
+        """count() with no operand counts Data Points, so it is given no Measures."""
+        if node.operand is not None or node.op != COUNT or not isinstance(operand, Dataset):
+            return operand
+        components = {
+            comp_name: copy(comp)
+            for comp_name, comp in operand.components.items()
+            if comp.role in (Role.IDENTIFIER, Role.VIRAL_ATTRIBUTE)
+        }
+        data = operand.data[list(components)].copy() if operand.data is not None else None
+        return Dataset(name=operand.name, components=components, data=data)
+
     def _resolve_aggregation_operand(self, node: AST.Aggregation) -> Any:
         """Resolve the operand for an aggregation node."""
         if self.is_from_having:
             if node.operand is not None:
                 self.visit(node.operand)
-            return self.aggregation_dataset
+            return self._data_point_count_operand(node, self.aggregation_dataset)
         if self.is_from_regular_aggregation and self.regular_aggregation_dataset is not None:
             operand = self.regular_aggregation_dataset
             if node.operand is not None and operand is not None:
@@ -618,7 +631,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 else:
                     data_to_keep = None
                 return Dataset(name=operand.name, components=comps_to_keep, data=data_to_keep)
-            return operand
+            return self._data_point_count_operand(node, operand)
         return self.visit(node.operand)
 
     def visit_Aggregation(self, node: AST.Aggregation) -> None:
@@ -739,10 +752,26 @@ class InterpreterAnalyzer(ASTTemplate):
                     nullable=operand_comp.nullable,
                 )
 
+                # Any existing component can be ordered by, as in the dataset-level
+                # form: carry the ones named in the ordering into the virtual
+                # dataset so the analytic can sort by them (#1026)
+                carried_names = []
+                if node.order_by is not None:
+                    for order_by in node.order_by:
+                        order_name = order_by.component
+                        if (
+                            order_name not in dataset_components
+                            and order_name in self.regular_aggregation_dataset.components
+                        ):
+                            dataset_components[order_name] = copy(
+                                self.regular_aggregation_dataset.components[order_name]
+                            )
+                            carried_names.append(order_name)
+
                 if self.only_semantic or self.regular_aggregation_dataset.data is None:
                     data = None
                 else:
-                    data = self.regular_aggregation_dataset.data[id_names].copy()
+                    data = self.regular_aggregation_dataset.data[id_names + carried_names].copy()
                     data[analytic_component_name] = operand_comp.data
 
                 operand = Dataset(
@@ -801,6 +830,25 @@ class InterpreterAnalyzer(ASTTemplate):
         elif node.partition_op == "except":
             listed = set(partitioning or [])
             partitioning = [i for i in operand.get_identifiers_names() if i not in listed]
+
+        # The virtual operand built for a component-level analytic keeps only the
+        # identifiers and the operand, so a non-Identifier partition component must
+        # be checked against the full dataset or it is reported as not found (#1026)
+        if (
+            self.is_from_regular_aggregation
+            and component_name is not None
+            and self.regular_aggregation_dataset is not None
+            and partitioning
+        ):
+            for comp_name in partitioning:
+                partition_comp = self.regular_aggregation_dataset.components.get(comp_name)
+                if partition_comp is not None and partition_comp.role != Role.IDENTIFIER:
+                    raise SemanticError(
+                        "1-1-3-2",
+                        op=node.op,
+                        id_name=comp_name,
+                        id_type=partition_comp.role,
+                    )
 
         params = []
         if node.params is not None:
@@ -1170,15 +1218,11 @@ class InterpreterAnalyzer(ASTTemplate):
                     )
                     for operand in operands
                 ]
-                operands = list(
-                    set(
-                        [
-                            item
-                            for sublist in operands
-                            for item in (sublist if isinstance(sublist, list) else [sublist])
-                        ]
-                    )
-                )
+                operands = [
+                    item
+                    for sublist in operands
+                    for item in (sublist if isinstance(sublist, list) else [sublist])
+                ]
             result = REGULAR_AGGREGATION_MAPPING[node.op].analyze(operands, dataset)
             if node.isLast:
                 self._strip_join_prefixes(result)

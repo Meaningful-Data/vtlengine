@@ -82,16 +82,11 @@ def _mixed_frequency_error(msg_lower: str) -> Exception:
     )
 
 
-def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
-    """Map a DuckDB query execution error to a VTL exception.
-
-    Patterns:
-    - Conversion errors on timestamp/date → RunTimeError 2-1-19-8
-    - Division by zero → RunTimeError 2-1-3-1
-    - Cast errors → SemanticError 1-1-5-1
-    """
-    msg = str(error)
-    msg_lower = msg.lower()
+def _map_vtl_macro_error(msg: str, msg_lower: str) -> Optional[Exception]:
+    """Map the errors raised by the VTL SQL macros, which carry their own code."""
+    # calc identifier: the calculated expression produced a null
+    if "vtl 2-1-1-16" in msg_lower:
+        return RunTimeError("2-1-1-16")
 
     # VTL macro: TimePeriod aggregation with mixed indicators (max/min)
     if "vtl error 2-1-19-20" in msg_lower:
@@ -112,6 +107,24 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
     if "vtl error 2-1-19-16" in msg_lower:
         op = "daytoyear" if "daytoyear" in msg_lower else "daytomonth"
         return RunTimeError("2-1-19-16", op=op)
+
+    return None
+
+
+def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
+    """Map a DuckDB query execution error to a VTL exception.
+
+    Patterns:
+    - Conversion errors on timestamp/date → RunTimeError 2-1-19-8
+    - Division by zero → RunTimeError 2-1-3-1
+    - Cast errors → SemanticError 1-1-5-1
+    """
+    msg = str(error)
+    msg_lower = msg.lower()
+
+    macro_error = _map_vtl_macro_error(msg, msg_lower)
+    if macro_error is not None:
+        return macro_error
 
     # time_agg: period indicator too coarse for target
     if "vtl error 2-1-19-1" in msg_lower:
@@ -164,11 +177,12 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
     if "vtl 1-1-19-9" in msg_lower:
         return _mixed_frequency_error(msg_lower)
 
-    # Division by zero (explicit DuckDB error or VTL error from ratio_to_report)
-    if "division by zero" in msg_lower or "divide by zero" in msg_lower:
-        return RunTimeError("2-1-3-1", op="division")
+    # Division by zero: the specific VTL error crafted by ratio_to_report must be
+    # checked before the generic DuckDB pattern, as its message contains both.
     if "vtl error 2-1-3-1" in msg_lower:
         return RunTimeError("2-1-3-1", op="ratio_to_report")
+    if "division by zero" in msg_lower or "divide by zero" in msg_lower:
+        return RunTimeError("2-1-3-1", op="division")
 
     # Logarithm of a non-positive number (log(0) or log(x, negative_x))
     if "logarithm of zero" in msg_lower or "logarithm of negative" in msg_lower:

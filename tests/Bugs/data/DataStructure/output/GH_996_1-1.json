@@ -1,0 +1,33 @@
+{
+  "datasets": [
+    {
+      "name": "DS_r1",
+      "DataStructure": [
+        {
+          "name": "Va_str",
+          "role": "Viral Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "Me_int",
+          "role": "Measure",
+          "type": "Integer",
+          "nullable": true
+        },
+        {
+          "name": "Me_num",
+          "role": "Measure",
+          "type": "Integer",
+          "nullable": true
+        },
+        {
+          "name": "Me_str",
+          "role": "Measure",
+          "type": "Integer",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}
