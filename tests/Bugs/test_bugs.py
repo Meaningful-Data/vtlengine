@@ -1826,6 +1826,46 @@ class TimeBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1032_1(self):
+        """
+        Status: OK
+        Expression: DS_r1 := dateadd(DS_1, 2, "A");
+                    DS_r2 := timeshift(DS_1, 2);
+        Description: dateadd on a Time_Period Identifier retyped the operand's
+                     shared Component to Date in place, so every structure
+                     sharing it (the operand and the sibling results) reported a
+                     Date Identifier holding period strings, the Time_Period
+                     output formatting was skipped, and reloading the operand
+                     from disk crashed the pandas engine
+                     (ValueError: Invalid isoformat string).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1032
+        Goal: Check Result.
+        """
+        code = "GH_1032_1"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1032_2(self):
+        """
+        Status: OK
+        Expression: DS_r1 := timeshift(DS_1, 2);
+                    DS_r2 := dateadd(DS_1, 2, "A");
+        Description: with dateadd placed after the timeshift, the shared
+                     Component mutation retroactively retyped the already
+                     computed timeshift result to Date, so both engines skipped
+                     its Time_Period output formatting and reported a Date
+                     Identifier holding period strings.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1032
+        Goal: Check Result.
+        """
+        code = "GH_1032_2"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_1034(self):
         """
         Status: OK
@@ -3393,6 +3433,26 @@ class ClauseBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1028_1(self):
+        """
+        Status: OK
+        Expression: DS_r1 <- DS_1[unpivot Id_x, Me_v];
+        Description: unpivot stacks the Measures into a single one, which took the type
+                     of the first Measure rather than the type they all fit in. An
+                     Integer Measure declared before a Number one typed the result
+                     Integer, so the pandas engine aborted with an ArrowInvalid and the
+                     DuckDb engine rounded 1.1 to 1 and 7.7 to 8. DS_2 declares the same
+                     Measures the other way round, where the type already came out
+                     right.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1028
+        Goal: Check Result.
+        """
+        code = "GH_1028_1"
+        number_inputs = 2
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class DefinedBugs(BugHelper):
     """ """
@@ -4360,6 +4420,75 @@ class CastBugs(BugHelper):
         code = "GH_1010_1"
         number_inputs = 1
         message = "2-1-1-16"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1027_1(self):
+        """
+        Status: OK
+        Expression: DS_r := DS_1[keep Me_1, Me_1];
+        Description: a Component named twice in a keep clause came out of it twice, so
+                     the Data Set carried more columns than Components and the CSV it
+                     wrote could not be read back. The repeated name is rejected, as
+                     the rename clause already rejects one.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1027
+        Goal: Check Exception.
+        """
+        code = "GH_1027_1"
+        number_inputs = 1
+        message = "1-1-6-9"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1027_2(self):
+        """
+        Status: OK
+        Expression: DS_r := DS_1[drop Me_1, Me_1];
+        Description: the same repeated name in a drop clause, which the DuckDb engine
+                     reported as a raw parser error over its EXCLUDE list.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1027
+        Goal: Check Exception.
+        """
+        code = "GH_1027_2"
+        number_inputs = 1
+        message = "1-1-6-9"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1027_3(self):
+        """
+        Status: OK
+        Expression: DS_r := left_join(DS_1 as a, DS_2 as b keep Me_1, Me_1);
+        Description: a join clause quietly deduplicated the names it was given, so the
+                     repeated one never reached the clause that rejects it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1027
+        Goal: Check Exception.
+        """
+        code = "GH_1027_3"
+        number_inputs = 2
+        message = "1-1-6-9"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1027_4(self):
+        """
+        Status: OK
+        Expression: DS_r := left_join(DS_1 as a, DS_2 as b drop Me_1, Me_1);
+        Description: the same repeated name in the drop of a join clause.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1027
+        Goal: Check Exception.
+        """
+        code = "GH_1027_4"
+        number_inputs = 2
+        message = "1-1-6-9"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
