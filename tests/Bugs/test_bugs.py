@@ -7,7 +7,7 @@ import pytest
 
 from tests.Helper import TestHelper, _use_duckdb_backend
 from vtlengine.API import create_ast, run
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Interpreter import InterpreterAnalyzer
 
 
@@ -4713,3 +4713,104 @@ class CastBugs(BugHelper):
             use_duckdb=_use_duckdb_backend(),
         )
         assert list(result["DS_r"].data["m"]) == [10, 10, 10]
+
+
+class AnalyticBugs(BugHelper):
+    """Bugs on analytic (window) operators."""
+
+    classTest = "Bugs.AnalyticBugs"
+
+    def test_GH_1026_1(self):
+        """
+        Status: OK
+        Expression: DS_r := DS_1[drop Va_str][calc m := ratio_to_report(
+                        ratio_to_report(Me_num over (partition by Id_2))
+                        over (partition by Id_3))];
+                    and the same nesting with sum(ratio_to_report(...) over ...),
+                    first_value(lag(...) over ...), and a calc chain whose second
+                    clause nests an analytic over the first clause's output.
+        Description: nested analytic invocations landed in a single SELECT on the
+                     DuckDB engine and SQL forbids nesting window functions, so any
+                     analytic over the result of another raised BinderException; the
+                     inner analytic is now materialised in a subquery. The pandas
+                     engine already computed it correctly.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1026
+        Goal: Check Result.
+        """
+        code = "GH_1026_1"
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1026_2(self):
+        """
+        Status: OK
+        Expression: DS_r := DS_1[drop Va_str][calc m := ratio_to_report(
+                        Me_num - Me_num over (partition by Id_2))];
+        Description: a partition whose values sum to zero makes ratio_to_report
+                     divide 0/0; the pandas engine only caught infinity (x/0 with
+                     x <> 0) and quietly returned null for the whole partition,
+                     while the DuckDB engine raised 2-1-3-1. Both engines now
+                     raise 2-1-3-1 on any zero-sum partition.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1026
+        Goal: Check Exception.
+        """
+        code = "GH_1026_2"
+        number_inputs = 1
+        message = "2-1-3-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1026_3(self):
+        """
+        Status: OK
+        Expression: DS_r := DS_1[drop Va_str][calc m := ratio_to_report(
+                        Me_num - 5.5 over (partition by Id_2))];
+        Description: on a genuine division by zero (x/0 with x <> 0) both engines
+                     raised 2-1-3-1 but blamed different operators: pandas said
+                     ratio_to_report and DuckDB said division, because the generic
+                     division-by-zero pattern in the query error mapping shadowed
+                     the specific ratio_to_report one. Both engines now blame
+                     ratio_to_report.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1026
+        Goal: Check Exception message.
+        """
+        code = "GH_1026_3"
+        script = self.LoadVTL(code)
+
+        with pytest.raises(RunTimeError) as context:
+            run(
+                script=script,
+                data_structures=self.filepath_json / f"{code}-1.json",
+                datapoints={"DS_1": self.filepath_csv / f"{code}-1.csv"},
+                return_only_persistent=False,
+                use_duckdb=_use_duckdb_backend(),
+            )
+        assert str(context.value.args[1]) == "2-1-3-1"
+        assert "ratio_to_report" in str(context.value.args[0])
+
+    def test_GH_1026_4(self):
+        """
+        Status: OK
+        Expression: DS_r := DS_1[drop Va_str][calc m := ratio_to_report(Me_num
+                        over (partition by Me_bool))];
+        Description: partitioning by a Measure inside a calc clause reported
+                     "Component Me_bool not found in Dataset __VDS_1__" because the
+                     virtual dataset built for the component-level analytic keeps
+                     only the identifiers and the operand, so the role check that
+                     the dataset-level branch reaches (1-1-3-2, as rank gives) never
+                     ran. The partition components are now checked against the real
+                     dataset first.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1026
+        Goal: Check Exception.
+        """
+        code = "GH_1026_4"
+        number_inputs = 1
+        message = "1-1-3-2"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )

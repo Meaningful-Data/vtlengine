@@ -165,11 +165,12 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
             param="single time interval frequency",
         )
 
-    # Division by zero (explicit DuckDB error or VTL error from ratio_to_report)
-    if "division by zero" in msg_lower or "divide by zero" in msg_lower:
-        return RunTimeError("2-1-3-1", op="division")
+    # Division by zero: the specific VTL error crafted by ratio_to_report must be
+    # checked before the generic DuckDB pattern, as its message contains both.
     if "vtl error 2-1-3-1" in msg_lower:
         return RunTimeError("2-1-3-1", op="ratio_to_report")
+    if "division by zero" in msg_lower or "divide by zero" in msg_lower:
+        return RunTimeError("2-1-3-1", op="division")
 
     # Logarithm of a non-positive number (log(0) or log(x, negative_x))
     if "logarithm of zero" in msg_lower or "logarithm of negative" in msg_lower:

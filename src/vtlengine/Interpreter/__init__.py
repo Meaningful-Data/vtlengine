@@ -802,6 +802,25 @@ class InterpreterAnalyzer(ASTTemplate):
             listed = set(partitioning or [])
             partitioning = [i for i in operand.get_identifiers_names() if i not in listed]
 
+        # The virtual operand built for a component-level analytic keeps only the
+        # identifiers and the operand, so a non-Identifier partition component must
+        # be checked against the full dataset or it is reported as not found (#1026)
+        if (
+            self.is_from_regular_aggregation
+            and component_name is not None
+            and self.regular_aggregation_dataset is not None
+            and partitioning
+        ):
+            for comp_name in partitioning:
+                partition_comp = self.regular_aggregation_dataset.components.get(comp_name)
+                if partition_comp is not None and partition_comp.role != Role.IDENTIFIER:
+                    raise SemanticError(
+                        "1-1-3-2",
+                        op=node.op,
+                        id_name=comp_name,
+                        id_type=partition_comp.role,
+                    )
+
         params = []
         if node.params is not None:
             for param in node.params:

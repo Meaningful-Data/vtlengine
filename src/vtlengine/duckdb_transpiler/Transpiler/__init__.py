@@ -279,6 +279,15 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     # Hierarchical rulesets
     _hrs: Dict[str, Dict[str, Any]] = field(default_factory=dict, init=False)
 
+    # Nested analytics (#1026): SQL forbids nesting window functions, so an
+    # analytic found inside another analytic's operand is collected here as an
+    # (alias, expression) pair and computed in a wrapping subquery by the
+    # consumer that enables _materialize_nested_analytics
+    _nested_analytic_depth: int = field(default=0, init=False)
+    _nested_analytic_counter: int = field(default=0, init=False)
+    _pending_nested_analytics: List[Tuple[str, str]] = field(default_factory=list, init=False)
+    _materialize_nested_analytics: bool = field(default=False, init=False)
+
     def __post_init__(self) -> None:
         """Initialize available tables."""
         self.datasets = {**self.input_datasets, **self.output_datasets}
@@ -2033,59 +2042,87 @@ FROM (
         chain.reverse()
         return chain
 
-    def _calc_clause_exprs(self, clause: AST.RegularAggregation, ds: Dataset) -> Dict[str, str]:
-        """Evaluate one calc clause's assignments against *ds*."""
+    def _calc_clause_exprs(
+        self, clause: AST.RegularAggregation, ds: Dataset
+    ) -> Tuple[Dict[str, str], List[Tuple[str, str]]]:
+        """Evaluate one calc clause's assignments against *ds*.
+
+        Returns the column expressions together with the nested analytic columns
+        they reference, which the caller must compute in a wrapping subquery.
+        """
         exprs: Dict[str, str] = {}
-        with self._clause_scope(ds):
-            for child in clause.children:
-                assignment = self._unwrap_assignment(child)
-                if not isinstance(assignment, AST.Assignment):
-                    continue
-                col_name = self._resolve_udo_name(self._get_node_value(assignment.left))
-                expr_sql = self.visit(assignment.right)
-                if _CALC_ROLE_BY_TOKEN.get(getattr(child, "op", "")) is Role.IDENTIFIER:
-                    expr_sql = (
-                        f"CASE WHEN ({expr_sql}) IS NULL THEN "
-                        f"error('VTL 2-1-1-16: null value on a calculated Identifier') "
-                        f"ELSE ({expr_sql}) END"
-                    )
-                exprs[col_name] = expr_sql
-        return exprs
+        old_materialize = self._materialize_nested_analytics
+        self._materialize_nested_analytics = True
+        try:
+            with self._clause_scope(ds):
+                for child in clause.children:
+                    assignment = self._unwrap_assignment(child)
+                    if not isinstance(assignment, AST.Assignment):
+                        continue
+                    col_name = self._resolve_udo_name(self._get_node_value(assignment.left))
+                    expr_sql = self.visit(assignment.right)
+                    if _CALC_ROLE_BY_TOKEN.get(getattr(child, "op", "")) is Role.IDENTIFIER:
+                        expr_sql = (
+                            f"CASE WHEN ({expr_sql}) IS NULL THEN "
+                            f"error('VTL 2-1-1-16: null value on a calculated Identifier') "
+                            f"ELSE ({expr_sql}) END"
+                        )
+                    exprs[col_name] = expr_sql
+        finally:
+            self._materialize_nested_analytics = old_materialize
+        nested_cols = list(self._pending_nested_analytics)
+        self._pending_nested_analytics.clear()
+        return exprs, nested_cols
 
     def visit_RegularAggregation_calc(self, node: AST.RegularAggregation) -> str:
         chain = self._calc_chain(node)
         with self._stash_assignment():
             base_ds = self._get_dataset_structure(chain[0].dataset)
             src = self._get_dataset_sql(chain[0].dataset)
-        levels: List[Tuple[Dataset, Dict[str, str]]] = []
+        levels: List[Tuple[Dataset, Dict[str, str], List[Tuple[str, str]]]] = []
         level_ds: Optional[Dataset] = None
         level_exprs: Dict[str, str] = {}
+        level_nested: List[Tuple[str, str]] = []
         for i, clause in enumerate(chain):
             clause_ds = base_ds if i == 0 else self._get_dataset_structure(clause.dataset)
-            exprs = self._calc_clause_exprs(clause, clause_ds)
+            exprs, nested_cols = self._calc_clause_exprs(clause, clause_ds)
+            # A column produced by an earlier clause may be referenced from the
+            # clause expressions or from the nested analytics they hand over
+            clause_sqls = list(exprs.values()) + [sql for _, sql in nested_cols]
             conflicts = set(exprs) & set(level_exprs) or any(
-                f'"{produced}"' in expr for expr in exprs.values() for produced in level_exprs
+                f'"{produced}"' in sql for sql in clause_sqls for produced in level_exprs
             )
             if level_exprs and conflicts:
-                levels.append((level_ds, level_exprs))  # type: ignore[arg-type]
-                level_ds, level_exprs = clause_ds, dict(exprs)
+                levels.append((level_ds, level_exprs, level_nested))  # type: ignore[arg-type]
+                level_ds, level_exprs, level_nested = clause_ds, dict(exprs), list(nested_cols)
             else:
                 if level_ds is None:
                     level_ds = clause_ds
                 level_exprs.update(exprs)
+                level_nested.extend(nested_cols)
         if level_exprs or level_ds is not None:
-            levels.append((level_ds, level_exprs))  # type: ignore[arg-type]
+            levels.append((level_ds, level_exprs, level_nested))  # type: ignore[arg-type]
 
-        for ds, calc_exprs in levels:
+        for ds, calc_exprs, nested_cols in levels:
+            # Analytics nested inside another analytic are computed one wrapping
+            # subquery at a time, innermost first, so no SELECT nests window calls
+            for alias, win_sql in nested_cols:
+                src = (
+                    SQLBuilder()
+                    .select("t.*", f"{win_sql} AS {quote_name(alias)}")
+                    .from_table(self._as_subquery(src), "t")
+                    .build()
+                )
             # Carry the operand through as it actually comes out rather than naming its
             # Components one by one. An operator applied over the Measures drops the
             # plain Attributes from its query while still reporting them in its
             # structure, and listing them here asked the binder for columns the
             # subquery never selected (issue #978).
             replaced = [name for name in calc_exprs if name in ds.components]
+            hidden = replaced + [alias for alias, _ in nested_cols]
             passthrough = "t.*"
-            if replaced:
-                excluded = ", ".join(quote_name(name) for name in replaced)
+            if hidden:
+                excluded = ", ".join(quote_name(name) for name in hidden)
                 passthrough = f"t.* EXCLUDE ({excluded})"
             select_cols: List[str] = [passthrough]
             select_cols += [
@@ -2613,13 +2650,28 @@ FROM (
             return self._visit_analytic_dataset(node, op)
 
         # Component-level: single expression with OVER
-        operand_sql = self.visit(node.operand) if node.operand else ""
+        if node.operand is not None:
+            self._nested_analytic_depth += 1
+            try:
+                operand_sql = self.visit(node.operand)
+            finally:
+                self._nested_analytic_depth -= 1
+        else:
+            operand_sql = ""
         func_sql = self._build_analytic_expr(op, operand_sql, node)
         # ratio_to_report already includes its own OVER clause
-        if op == tokens.RATIO_TO_REPORT:
-            return func_sql
-        over_clause = self._build_over_clause(node)
-        return f"{func_sql} OVER ({over_clause})"
+        if op != tokens.RATIO_TO_REPORT:
+            over_clause = self._build_over_clause(node)
+            func_sql = f"{func_sql} OVER ({over_clause})"
+        # An analytic inside another analytic's operand cannot be emitted inline
+        # (SQL forbids nesting window functions): hand it to the enclosing clause
+        # as a pending column and reference it by alias (#1026)
+        if self._nested_analytic_depth > 0 and self._materialize_nested_analytics:
+            alias = f"__vtl_nested_analytic_{self._nested_analytic_counter}__"
+            self._nested_analytic_counter += 1
+            self._pending_nested_analytics.append((alias, func_sql))
+            return quote_name(alias)
+        return func_sql
 
     def _visit_analytic_dataset(self, node: AST.Analytic, op: str) -> str:
         """Visit a dataset-level analytic: applies the window function to each measure."""
