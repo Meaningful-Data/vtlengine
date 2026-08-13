@@ -1662,10 +1662,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 cols.append(shifted if comp.name == time_id else col)
             return SQLBuilder().select(*cols).from_table(src).build()
         elif time_type == TimeInterval:
-            # A TimeInterval series has a single frequency, taken from the duration of
-            # one interval. Time_Shift.evaluate reads it off row 0 of the unsorted
-            # operand; MIN() is the deterministic equivalent in SQL, and it agrees
-            # with row 0 for any operand in chronological order.
+            # The reference time Identifier has to be periodical, so every interval must
+            # carry the same duration, as Time_Shift.evaluate requires.
             cols = [
                 (
                     f"vtl_interval_shift({quote_name(comp.name)}, {shift_sql}, freq.step) "
@@ -1676,34 +1674,63 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 for comp in ds.components.values()
             ]
             freq_sql = (
-                f"SELECT vtl_interval_step(MIN({time_col})) AS step "
-                f"FROM {src} WHERE {time_col} IS NOT NULL"
+                "SELECT CASE WHEN COUNT(DISTINCT vtl_interval_freq(iv)) > 1 THEN error("
+                "'VTL 1-1-19-9: timeshift needs a single time series frequency') "
+                "ELSE vtl_interval_step(MIN(iv)) END AS step "
+                f"FROM (SELECT {time_col} AS iv FROM {src} WHERE {time_col} IS NOT NULL)"
             )
             return f"""SELECT {", ".join(cols)}
 FROM {src}, (
     {freq_sql}
 ) AS freq"""
         else:
+            other_ids = [
+                quote_name(c.name)
+                for c in ds.components.values()
+                if c.role == Role.IDENTIFIER and c.name != time_id
+            ]
             cols = []
             for comp in ds.components.values():
                 col = quote_name(comp.name)
                 if comp.name == time_id:
-                    cols.append(f"vtl_dateadd({col}, {shift_sql}, freq.period_ind) AS {col}")
+                    cols.append(f"vtl_dateadd(s.{col}, {shift_sql}, freq.period_ind) AS {col}")
                 else:
-                    cols.append(col)
+                    cols.append(f"s.{col}")
 
-            freq_sql = self._build_timeshift_date_frequency_subquery(src, time_col)
-
-            return f"""SELECT {", ".join(cols)}
-FROM {src}, (
-    {freq_sql}
-) AS freq"""
+            cte = CTEBuilder()
+            cte.cte("source", f"SELECT * FROM {src}")
+            cte.cte(
+                "freq_series",
+                self._build_timeshift_date_frequency_subquery("source", time_col, other_ids),
+            )
+            # The reference time Identifier has to be periodical, so the series must
+            # agree on one period. A Data Set of single Data Points shows no gap at
+            # all and takes the annual default, as find_min_frequency does.
+            cte.cte(
+                "freq",
+                "SELECT CASE WHEN COUNT(DISTINCT period_ind) > 1 THEN error("
+                "'VTL 1-1-19-9: timeshift needs a single time series frequency') "
+                "ELSE COALESCE(MIN(period_ind), 'A') END AS period_ind FROM freq_series",
+            )
+            return cte.select(f"SELECT {', '.join(cols)} FROM source s, freq")
 
     @staticmethod
-    def _build_timeshift_date_frequency_subquery(src: str, time_col: str) -> str:
-        """Calendar-aware frequency inference for timeshift on Date."""
+    def _build_timeshift_date_frequency_subquery(
+        src: str, time_col: str, other_ids: Optional[List[str]] = None
+    ) -> str:
+        """Calendar-aware frequency inference for timeshift on Date.
+
+        The period is read from each time series rather than from the whole column, so
+        the gaps are taken within the non-time Identifiers and the result carries one
+        row per series. A series of a single Data Point contributes no gap
+        and so no row at all, which the caller reads as the annual default.
+        """
+        other_ids = other_ids or []
+        keys = "".join(f"{oc}, " for oc in other_ids)
+        partition = f"PARTITION BY {', '.join(other_ids)} " if other_ids else ""
+        group_by = f"\nGROUP BY {', '.join(other_ids)}" if other_ids else ""
         return f"""
-SELECT vtl_date_timeshift_period_ind(
+SELECT {keys}vtl_date_timeshift_period_ind(
     COUNT(*),
     BOOL_OR(NOT clean_month),
     BOOL_AND(diff_days % 7 = 0),
@@ -1712,18 +1739,18 @@ SELECT vtl_date_timeshift_period_ind(
     BOOL_AND(clean_month AND diff_months % 3 = 0)
 ) AS period_ind
 FROM (
-    SELECT
+    SELECT {keys}
         DATE_DIFF('day', d_prev, d_next) AS diff_days,
         DATE_DIFF('month', d_prev, d_next) AS diff_months,
         vtl_date_gap_clean_month(d_prev, d_next) AS clean_month
     FROM (
-        SELECT LAG({time_col}) OVER (ORDER BY {time_col}) AS d_prev,
+        SELECT {keys}LAG({time_col}) OVER ({partition}ORDER BY {time_col}) AS d_prev,
                {time_col} AS d_next
         FROM {src}
         WHERE {time_col} IS NOT NULL
     )
     WHERE d_prev IS NOT NULL AND d_prev <> d_next
-)""".strip()
+){group_by}""".strip()
 
     @staticmethod
     def _dateadd_targets(ds: Dataset) -> List[Component]:

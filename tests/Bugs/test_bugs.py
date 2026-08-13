@@ -1826,6 +1826,23 @@ class TimeBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_960_1(self):
+        """
+        Status: OK
+        Description: timeshift reads the period of the reference time Identifier from
+                     each time series. DS_1 interleaves two monthly series, whose
+                     combined column shows two-week gaps and used to move the Data Set
+                     by a day. DS_2 adds a series of a single Data Point, which shows
+                     no gap and takes the period the rest of the Data Set agrees on.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/960
+        Goal: Check Result.
+        """
+        code = "GH_960_1"
+        number_inputs = 2
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_1032_1(self):
         """
         Status: OK
@@ -1846,6 +1863,24 @@ class TimeBugs(BugHelper):
         references_names = ["1", "2"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_960_2(self):
+        """
+        Status: OK
+        Description: the reference time Identifier must be periodical, so a Data Set
+                     holding a daily series beside a monthly one has no period to shift
+                     by and timeshift rejects it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/960
+        Goal: Check Exception.
+        """
+        code = "GH_960_2"
+        with pytest.raises(SemanticError, match="1-1-19-9"):
+            run(
+                script=self.LoadVTL(code),
+                data_structures=self.filepath_json / f"{code}-1.json",
+                datapoints={"DS_1": self.filepath_csv / f"{code}-1.csv"},
+                use_duckdb=_use_duckdb_backend(),
+            )
 
     def test_GH_1032_2(self):
         """

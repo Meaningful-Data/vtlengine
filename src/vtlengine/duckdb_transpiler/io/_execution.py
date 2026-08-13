@@ -65,6 +65,23 @@ def _map_time_agg_error(msg: str, msg_lower: str) -> RunTimeError:
     return RunTimeError("2-1-19-1", value=value, new_indicator=new_indicator)
 
 
+def _mixed_frequency_error(msg_lower: str) -> Exception:
+    """The time operator that rejected an operand holding more than one frequency."""
+    if "timeshift" in msg_lower:
+        return SemanticError(
+            "1-1-19-9",
+            op="timeshift",
+            comp_type="dataset",
+            param="single time series frequency",
+        )
+    return SemanticError(
+        "1-1-19-9",
+        op="fill_time_series",
+        comp_type="dataset",
+        param="single time interval frequency",
+    )
+
+
 def _map_vtl_macro_error(msg: str, msg_lower: str) -> Optional[Exception]:
     """Map the errors raised by the VTL SQL macros, which carry their own code."""
     # calc identifier: the calculated expression produced a null
@@ -156,14 +173,9 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
         len1, len2 = (m.group(1), m.group(2)) if m else ("?", "?")
         return SemanticError("1-1-18-11", op="string_distance", len1=len1, len2=len2)
 
-    # fill_time_series over TimeIntervals of more than one frequency (mirrors 1-1-19-9)
+    # A time operator over an operand of more than one frequency (mirrors 1-1-19-9)
     if "vtl 1-1-19-9" in msg_lower:
-        return SemanticError(
-            "1-1-19-9",
-            op="fill_time_series",
-            comp_type="dataset",
-            param="single time interval frequency",
-        )
+        return _mixed_frequency_error(msg_lower)
 
     # Division by zero: the specific VTL error crafted by ratio_to_report must be
     # checked before the generic DuckDB pattern, as its message contains both.
