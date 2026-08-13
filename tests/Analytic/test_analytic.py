@@ -1529,6 +1529,28 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_980_1(self):
+        """
+        Count: count
+        Dataset --> Dataset
+        Status: OK
+        Expression: DS_r <- count(DS_1#Me_int over
+                    (partition by Id_1, Id_2 order by Id_3 asc));
+
+        Description: an analytic count reports the values of the Component it is
+        given, so a partition holding only a null counts 0. The pandas engine
+        counted the Data Point instead and reported 1, while the DuckDb engine
+        already reported 0.
+
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/980
+        Goal: Check Result.
+        """
+        code = "GH_980_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_833_2(self):
         """
         Max: max
