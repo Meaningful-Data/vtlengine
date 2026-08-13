@@ -19,7 +19,7 @@ from vtlengine.DataTypes import (
 )
 from vtlengine.DataTypes import String as StringType
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
-from vtlengine.duckdb_transpiler.Transpiler.operators import COMPARISON_OPS
+from vtlengine.duckdb_transpiler.Transpiler.operators import COMPARISON_OPS, get_duckdb_type
 from vtlengine.duckdb_transpiler.Transpiler.sql_builder import quote_name
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators.Join import merged_viral_attribute_names
@@ -273,7 +273,7 @@ class StructureVisitor(ASTTemplate):
     def _to_sql_literal(self, value: Any, type_name: str = "") -> str:
         """Convert a Python value to a SQL literal string."""
         if value is None:
-            return "NULL"
+            return f"CAST(NULL AS {get_duckdb_type(type_name)})" if type_name else "NULL"
         if isinstance(value, bool):
             return "TRUE" if value else "FALSE"
         if isinstance(value, str):

@@ -374,7 +374,8 @@ class Period_indicator(Unary):
         if isinstance(operand, str):
             return cls._get_period(str(operand))
         if isinstance(operand, Scalar):
-            result.value = cls._get_period(str(operand.value))
+            value = operand.value
+            result.value = None if value is None else cls._get_period(str(value))
             return result
         if isinstance(operand, DataComponent):
             if operand.data is not None:
@@ -942,9 +943,10 @@ class Time_Aggregation(Time):
         cls, operand: Scalar, period_from: Optional[str], period_to: str, conf: Optional[str]
     ) -> Scalar:
         result = cls.scalar_validation(operand, period_from, period_to, conf)
-        result.value = cls._execute_time_aggregation(
-            operand.value, operand.data_type, period_from, period_to, conf
-        )
+        if operand.value is not None:
+            result.value = cls._execute_time_aggregation(
+                operand.value, operand.data_type, period_from, period_to, conf
+            )
         return result
 
     @classmethod
