@@ -739,10 +739,26 @@ class InterpreterAnalyzer(ASTTemplate):
                     nullable=operand_comp.nullable,
                 )
 
+                # Any existing component can be ordered by, as in the dataset-level
+                # form: carry the ones named in the ordering into the virtual
+                # dataset so the analytic can sort by them (#1026)
+                carried_names = []
+                if node.order_by is not None:
+                    for order_by in node.order_by:
+                        order_name = order_by.component
+                        if (
+                            order_name not in dataset_components
+                            and order_name in self.regular_aggregation_dataset.components
+                        ):
+                            dataset_components[order_name] = copy(
+                                self.regular_aggregation_dataset.components[order_name]
+                            )
+                            carried_names.append(order_name)
+
                 if self.only_semantic or self.regular_aggregation_dataset.data is None:
                     data = None
                 else:
-                    data = self.regular_aggregation_dataset.data[id_names].copy()
+                    data = self.regular_aggregation_dataset.data[id_names + carried_names].copy()
                     data[analytic_component_name] = operand_comp.data
 
                 operand = Dataset(

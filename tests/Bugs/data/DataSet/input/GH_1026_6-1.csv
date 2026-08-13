@@ -1,0 +1,7 @@
+Id_1,Id_2,Id_3,Me_num,Me_bool,Va_str
+1,A,X,10,true,foo
+2,A,Y,20,false,foo
+3,A,X,30,true,foo
+4,B,Y,40,false,foo
+5,B,X,50,true,foo
+6,B,Y,100,false,foo

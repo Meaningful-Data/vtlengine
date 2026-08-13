@@ -2010,18 +2010,39 @@ FROM (
         resolved = self._resolve_clause_dataset(node)
         ds, table_src = resolved
 
-        with self._clause_scope(ds):
-            conditions = [self.visit(child) for child in node.children]
+        old_materialize = self._materialize_nested_analytics
+        self._materialize_nested_analytics = True
+        try:
+            with self._clause_scope(ds):
+                conditions = [self.visit(child) for child in node.children]
+        finally:
+            self._materialize_nested_analytics = old_materialize
+        nested_cols = list(self._pending_nested_analytics)
+        self._pending_nested_analytics.clear()
 
         if conditions and any(_contains_analytic(child) for child in node.children):
+            # Analytics nested inside another analytic of the condition are
+            # computed one wrapping subquery at a time, innermost first, as the
+            # calc clause does
+            for alias, win_sql in nested_cols:
+                table_src = (
+                    SQLBuilder()
+                    .select("t.*", f"{win_sql} AS {quote_name(alias)}")
+                    .from_table(self._as_subquery(table_src), "t")
+                    .build()
+                )
             # Window functions cannot appear in WHERE; project the predicate in a
             # subquery and filter on it from the outside.
             predicate_alias = "__vtl_filter_predicate"
+            filter_src = self._as_subquery(table_src) if nested_cols else table_src
             inner = (
-                f'SELECT *, ({" AND ".join(conditions)}) AS "{predicate_alias}" FROM {table_src}'
+                f'SELECT *, ({" AND ".join(conditions)}) AS "{predicate_alias}" FROM {filter_src}'
+            )
+            hidden = ", ".join(
+                [f'"{predicate_alias}"'] + [quote_name(alias) for alias, _ in nested_cols]
             )
             return (
-                f'SELECT * EXCLUDE ("{predicate_alias}") '
+                f"SELECT * EXCLUDE ({hidden}) "
                 f'FROM ({inner}) AS "_vtl_filter_src" '
                 f'WHERE "{predicate_alias}"'
             )

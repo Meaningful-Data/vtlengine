@@ -4814,3 +4814,45 @@ class AnalyticBugs(BugHelper):
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
+
+    def test_GH_1026_5(self):
+        """
+        Status: OK
+        Expression: DS_r := DS_1[drop Va_str][filter ratio_to_report(
+                        ratio_to_report(Me_num over (partition by Id_2))
+                        over (partition by Id_3)) >= 0.3];
+        Description: an analytic nested inside another analytic of a filter
+                     condition raised BinderException on the DuckDB engine, as the
+                     whole predicate landed in a single SELECT; the nested analytic
+                     is now materialised in a subquery below the predicate, as the
+                     calc clause already does. The pandas engine already computed
+                     it correctly.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1026
+        Goal: Check Result.
+        """
+        code = "GH_1026_5"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1026_6(self):
+        """
+        Status: OK
+        Expression: DS_r := DS_1[drop Va_str][calc m := first_value(
+                        Me_num over (partition by Id_2 order by Me_bool, Id_1))];
+        Description: ordering by a Measure inside a calc clause reported "Component
+                     Me_bool not found in Dataset __VDS_1__" because the virtual
+                     dataset built for the component-level analytic keeps only the
+                     identifiers and the operand, while the dataset-level branch
+                     orders by any existing component (e.g. rank over a Measure).
+                     The components named in the ordering are now carried into the
+                     virtual dataset, so both forms behave the same.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1026
+        Goal: Check Result.
+        """
+        code = "GH_1026_6"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
