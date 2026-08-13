@@ -1,0 +1,21 @@
+{
+  "datasets": [
+    {
+      "name": "DS_r9",
+      "DataStructure": [
+        {
+          "name": "Va_str",
+          "role": "Viral Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "n",
+          "role": "Measure",
+          "type": "Integer",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

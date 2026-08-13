@@ -1106,7 +1106,7 @@ dsPrep.PRTCTN_RCVD_P := ANCRDT_PRTCTN_RCVD_C [ filter not isnull ( PRTCTN_PRVDR_
 dsPrep.ENTTY_INSTRMNT_P := ANCRDT_ENTTY_INSTRMNT_C [ sub ENTTY_RL = "2" ] ; 
 dsPrep.DBTRS_PRTCTRS := union ( min ( dsPrep.ENTTY_INSTRMNT_P group by DT_RFRNC , OBSRVD_AGNT_CD , ENTTY_RIAD_CD ) , drop_identifier ( dsPrep.PRTCTN_RCVD_P , PRTCTN_ID ) ) ; 
 dsPrep.DBTRS := ANCRDT_ENTTY_INSTRMNT_C [ sub ENTTY_RL = "2" ] ; 
-dsPrep.NMBR_DBTRS := count ( dsPrep.DBTRS group except ENTTY_RIAD_CD ) ; 
+dsPrep.NMBR_DBTRS := count ( dsPrep.DBTRS#ENTTY_RIAD_CD group except ENTTY_RIAD_CD ) ; 
 dsPrep.ENTTY_INSTRMNTS_OVR_1_DBTR := inner_join ( dsPrep.DBTRS , dsPrep.NMBR_DBTRS [ filter int_var > 1 ] as B ) ; 
 dsPrep.INSTRMNTS_FLL_MNTHLY := inner_join ( ANCRDT_INSTRMNT_C , ANCRDT_FNNCL_C ) ; 
 dsPrep.CNTRPRTY_DFLT_T_T1 := inner_join ( drop_identifier ( ANCRDT_ENTTY_DFLT_C , DT_RFRNC ) [ keep DT_DFLT_STTS , DFLT_STTS ] as A , drop_identifier ( ANCRDT_ENTTY_DFLT_C_T1 , DT_RFRNC ) [ keep DT_DFLT_STTS , DFLT_STTS ] [ rename DT_DFLT_STTS to DT_DFLT_STTS_T1 , DFLT_STTS to DFLT_STTS_T1 ] as B ) ; 
@@ -1131,7 +1131,7 @@ dsPrep.ENTTY_PD := left_join ( dsPrep.ENTTY_DFLT_RSK , ANCRDT_ENTTY using DT_RFR
 dsPrep.ENTTY_INSTRMNT_CMA := left_join ( dsPrep.FNNCL_NT_JN [ keep DFLT_STTS , NEVS_DFLT_STTS , DT_DFLT_STTS , NEVS_DT_DFLT_STTS ] [ rename DFLT_STTS to DFLT_STTS_INSTRMNT , NEVS_DFLT_STTS to NEVS_DFLT_STTS_INSTRMNT , DT_DFLT_STTS to DT_DFLT_STTS_INSTRMNT , NEVS_DT_DFLT_STTS to NEVS_DT_DFLT_STTS_INSTRMNT ] as A , dsPrep.ENTTY_PD using DT_RFRNC , OBSRVD_AGNT_CD , ENTTY_RIAD_CD ) ; 
 dsPrep.ENTTY_INSTRMNTS_OVR_1_DBTR_FNNCL := inner_join ( dsPrep.ENTTY_INSTRMNTS_OVR_1_DBTR , ANCRDT_ENTTY_DFLT_C [ keep DFLT_STTS ] as B ) ; 
 dsPrep.DBTRS_DFLT := dsPrep.ENTTY_INSTRMNTS_OVR_1_DBTR_FNNCL [ filter DFLT_STTS <> "14" ] ; 
-dsPrep.NMBR_DBTRS_DFLT := count ( dsPrep.DBTRS_DFLT group except ENTTY_RIAD_CD ) ; 
+dsPrep.NMBR_DBTRS_DFLT := count ( dsPrep.DBTRS_DFLT#ENTTY_RIAD_CD group except ENTTY_RIAD_CD ) ; 
 dsPrep.OVR_1_DBTR_DFLTS := inner_join ( dsPrep.NMBR_DBTRS [ rename int_var to TTL_NMBR_DBTRS ] as A , dsPrep.NMBR_DBTRS_DFLT [ rename int_var to TTL_NMBR_DFLT_DBTRS ] as B , ANCRDT_FNNCL_C [ keep DFLT_STTS ] as C ) ; 
 dsPrep.OVR_1_DBTR_ALL_DFLTD := dsPrep.OVR_1_DBTR_DFLTS [ filter TTL_NMBR_DBTRS = TTL_NMBR_DFLT_DBTRS ] ; 
 dsPrep.LST_RIAD_CDS := drop_identifier ( ANCRDT_ENTTY [ filter DT_RFRNC >= DT_BRTH ] , DT_RFRNC ) ; 

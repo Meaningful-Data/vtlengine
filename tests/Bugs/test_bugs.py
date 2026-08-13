@@ -2353,6 +2353,59 @@ class AggregationBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=message
         )
 
+    def test_GH_959_1(self):
+        """
+        Status: OK
+        Description: count over a Data Set holding a single Measure counts that Measure
+                     and renames it to int_var, so it reports the same number as count
+                     over that Measure as a Component. Only count() with no operand
+                     reports the number of Data Points.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/959
+        Goal: Check Result.
+        """
+        code = "GH_959_1"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_959_2(self):
+        """
+        Status: OK
+        Description: count over a Data Set applies to each Measure and gives back that
+                     same Measure, counted, so it reports the same numbers as counting
+                     each Measure as a Component. A Measure that holds no value in a
+                     group counts 0 and not null.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/959
+        Goal: Check Result.
+        """
+        code = "GH_959_2"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_996_1(self):
+        """
+        Status: OK
+        Description: the count cases reported at once. A Data Set operand counts each
+                     Measure and reports 0 where a group holds no value (DS_r1, DS_r2,
+                     DS_r3); count() with no operand counts the Data Points (DS_r4);
+                     an analytic count reports 0 for a partition of nulls (DS_r5) and
+                     covers the whole partition where the window clause is omitted
+                     (DS_r6); a having condition keeps the viral attributes (DS_r7);
+                     an analytic count over a String Measure counts its values
+                     (DS_r8); and count() reports the Data Points of a Data Set that
+                     is not grouped (DS_r9).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/996
+        Goal: Check Result.
+        """
+        code = "GH_996_1"
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_978_1(self):
         """
         Status: OK
