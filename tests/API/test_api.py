@@ -1615,6 +1615,42 @@ def test_scalar_time_period_output_format_with_output_folder(
     assert run_result["Sc_r"].value == expected
 
 
+def test_output_folder_does_not_mutate_shared_time_period_data(tmp_path):
+    """Writing an alias to the output folder must not reformat the DataFrame it
+    shares with its operand (GH #1042).
+
+    save_datapoints applied the external Time_Period representation in place on
+    the alias' data, which is the same DataFrame DS_1 holds (2000M1 external vs
+    2000-M01 internal), so the later join matched no keys: full_join doubled the
+    common Data Points and inner_join dropped them.
+    """
+    script = """
+        A <- DS_1;
+        DS_r <- full_join(DS_1, DS_2);
+    """
+    run(
+        script=script,
+        data_structures=[
+            filepath_json / "GH_1042_DS_1.json",
+            filepath_json / "GH_1042_DS_2.json",
+        ],
+        datapoints={
+            "DS_1": filepath_csv / "GH_1042_DS_1.csv",
+            "DS_2": filepath_csv / "GH_1042_DS_2.csv",
+        },
+        output_folder=tmp_path,
+        use_duckdb=_use_duckdb_backend(),
+    )
+    lines = (tmp_path / "DS_r.csv").read_text().strip().splitlines()
+    assert lines[0] == "Id_1,Id_2,Me_1,Me_2"
+    assert sorted(lines[1:]) == [
+        "1,2000M1,1,10",
+        "2,2000M2,2,20",
+        "3,2000M3,3,",
+        "9,2020M1,,90",
+    ]
+
+
 @pytest.mark.parametrize("data_structures, datapoints", params_run_with_scalars)
 def test_run_with_scalars(data_structures, datapoints, tmp_path):
     script = """
