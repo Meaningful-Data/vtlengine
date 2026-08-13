@@ -1,0 +1,7 @@
+Id_1,Id_2,Id_3,Me_num,Me_bool,m
+1,A,X,10.0,True,20.0
+2,A,Y,20.0,False,20.0
+3,A,X,30.0,True,20.0
+4,B,Y,40.0,False,40.0
+5,B,X,50.0,True,40.0
+6,B,Y,100.0,False,40.0

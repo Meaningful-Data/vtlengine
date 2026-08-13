@@ -1,0 +1,4 @@
+DS_r := DS_1[drop Va_str][calc m := ratio_to_report(ratio_to_report(Me_num over (partition by Id_2)) over (partition by Id_3))];
+DS_r2 := DS_1[drop Va_str][calc m := sum(ratio_to_report(Me_num over (partition by Id_2)) over (partition by Id_3))];
+DS_r3 := DS_1[drop Va_str][calc m := first_value(lag(Me_num, 1 over (partition by Id_2 order by Id_1)) over (partition by Id_2 order by Id_1 desc))];
+DS_r4 := DS_1[drop Va_str][calc a := ratio_to_report(Me_num over (partition by Id_2))][calc b := sum(ratio_to_report(a over (partition by Id_2)) over (partition by Id_3))];
