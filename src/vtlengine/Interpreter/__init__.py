@@ -1183,15 +1183,11 @@ class InterpreterAnalyzer(ASTTemplate):
                     )
                     for operand in operands
                 ]
-                operands = list(
-                    set(
-                        [
-                            item
-                            for sublist in operands
-                            for item in (sublist if isinstance(sublist, list) else [sublist])
-                        ]
-                    )
-                )
+                operands = [
+                    item
+                    for sublist in operands
+                    for item in (sublist if isinstance(sublist, list) else [sublist])
+                ]
             result = REGULAR_AGGREGATION_MAPPING[node.op].analyze(operands, dataset)
             if node.isLast:
                 self._strip_join_prefixes(result)

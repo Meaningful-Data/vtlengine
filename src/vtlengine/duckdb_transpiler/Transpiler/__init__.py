@@ -1754,13 +1754,6 @@ FROM (
             targets = self._dateadd_targets(ds)
             target_names = {c.name for c in targets}
 
-            if self.current_assignment:
-                out_ds = self.output_datasets.get(self.current_assignment)
-                if out_ds is not None:
-                    for comp in out_ds.components.values():
-                        if comp.name in target_names and comp.data_type == TimePeriod:
-                            comp.data_type = Date
-
             def _dateadd_expr(col_ref: str, is_period: bool) -> str:
                 if is_period:
                     return f"vtl_tp_dateadd(vtl_period_parse({col_ref}), {shift_sql}, {period_sql})"
@@ -1956,7 +1949,8 @@ FROM (
             and index_node.op == "-"
             and isinstance(index_node.operand, AST.Constant)
         ):
-            raise SemanticError("2-1-15-2", op="random", value=index_node.operand.value)
+            # The literal sits inside the minus, so the index reads as its negation.
+            raise SemanticError("2-1-15-2", op="random", value=f"-{index_node.operand.value}")
 
     def _visit_random_impl(
         self,
@@ -2056,14 +2050,6 @@ FROM (
                         f"ELSE ({expr_sql}) END"
                     )
                 exprs[col_name] = expr_sql
-                if "vtl_tp_dateadd" in expr_sql and self.current_assignment:
-                    out_ds = self.output_datasets.get(self.current_assignment)
-                    if (
-                        out_ds
-                        and col_name in out_ds.components
-                        and out_ds.components[col_name].data_type == TimePeriod
-                    ):
-                        out_ds.components[col_name].data_type = Date
         return exprs
 
     def visit_RegularAggregation_calc(self, node: AST.RegularAggregation) -> str:

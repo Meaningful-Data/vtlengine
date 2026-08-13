@@ -27,7 +27,7 @@ from vtlengine.AST.Grammar.tokens import (
     SQRT,
     TRUNC,
 )
-from vtlengine.DataTypes import Integer, Number, binary_implicit_promotion
+from vtlengine.DataTypes import SCALAR_TYPES_CLASS_REVERSE, Integer, Number
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Scalar
 from vtlengine.Operators import ALL_MODEL_DATA_TYPES
@@ -480,11 +480,17 @@ class Random(Parameterized):
 
     @classmethod
     def validate(cls, seed: Any, index: Any = None) -> Any:
-        if index.data_type != Integer:
-            index.data_type = binary_implicit_promotion(index.data_type, Integer)
-        if index.value is not None and index.value < 0:
-            raise SemanticError("2-1-15-2", op=cls.op, value=index)
-        if index.value is not None and index.value > 10000:
+        if index is not None and index.data_type is not Integer:
+            raise SemanticError(
+                "1-1-1-1",
+                type_1=SCALAR_TYPES_CLASS_REVERSE[index.data_type],
+                type_2=SCALAR_TYPES_CLASS_REVERSE[Integer],
+            )
+        # A Component carries its values in its data, so only a Scalar can be read here.
+        value = index.value if isinstance(index, Scalar) else None
+        if value is not None and value < 0:
+            raise SemanticError("2-1-15-2", op=cls.op, value=value)
+        if value is not None and value > 10000:
             warnings.warn(
                 "Random: The value of 'index' is very big. This can affect performance.",
                 UserWarning,
