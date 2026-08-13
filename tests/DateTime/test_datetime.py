@@ -1059,3 +1059,39 @@ def test_GH_390_time_agg_periodIndTo_with_varID():
         "2024-01-01",
         "2024-01-01",
     ]
+
+
+_NULL_SCALARS_STRUCT = {
+    "datasets": [],
+    "scalars": [
+        {"name": "sc_date", "type": "Date"},
+        {"name": "sc_period", "type": "Time_Period"},
+    ],
+}
+
+
+@pytest.mark.parametrize(
+    "expression",
+    [
+        "getyear(sc_date)",
+        "getmonth(sc_date)",
+        "dayofmonth(sc_date)",
+        "dayofyear(sc_date)",
+        "period_indicator(sc_period)",
+        'time_agg("A", sc_period)',
+    ],
+)
+def test_time_operator_over_null_scalar(expression):
+    """A time operator over a Scalar that holds no value reports none.
+
+    The DuckDb engine wrote the value as an untyped NULL, which left it no overload to
+    choose from, and the pandas engine read the absent value as the string "None".
+    """
+    result = run(
+        script=f"DS_r <- {expression};",
+        data_structures=_NULL_SCALARS_STRUCT,
+        datapoints={},
+        scalar_values={"sc_date": None, "sc_period": None},
+        use_duckdb=_use_duckdb_backend(),
+    )
+    assert result["DS_r"].value is None

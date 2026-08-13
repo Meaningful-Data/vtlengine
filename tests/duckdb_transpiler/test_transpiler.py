@@ -1094,8 +1094,9 @@ class TestValueDomains:
             output_scalars={},
         )
 
-        result = transpiler._to_sql_literal(None, "String")
-        assert result == "NULL"
+        assert transpiler._to_sql_literal(None, "String") == "CAST(NULL AS VARCHAR)"
+        assert transpiler._to_sql_literal(None, "Date") == "CAST(NULL AS TIMESTAMP)"
+        assert transpiler._to_sql_literal(None) == "NULL"
 
 
 # =============================================================================
