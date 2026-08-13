@@ -1826,6 +1826,46 @@ class TimeBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1032_1(self):
+        """
+        Status: OK
+        Expression: DS_r1 := dateadd(DS_1, 2, "A");
+                    DS_r2 := timeshift(DS_1, 2);
+        Description: dateadd on a Time_Period Identifier retyped the operand's
+                     shared Component to Date in place, so every structure
+                     sharing it (the operand and the sibling results) reported a
+                     Date Identifier holding period strings, the Time_Period
+                     output formatting was skipped, and reloading the operand
+                     from disk crashed the pandas engine
+                     (ValueError: Invalid isoformat string).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1032
+        Goal: Check Result.
+        """
+        code = "GH_1032_1"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1032_2(self):
+        """
+        Status: OK
+        Expression: DS_r1 := timeshift(DS_1, 2);
+                    DS_r2 := dateadd(DS_1, 2, "A");
+        Description: with dateadd placed after the timeshift, the shared
+                     Component mutation retroactively retyped the already
+                     computed timeshift result to Date, so both engines skipped
+                     its Time_Period output formatting and reported a Date
+                     Identifier holding period strings.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1032
+        Goal: Check Result.
+        """
+        code = "GH_1032_2"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_1034(self):
         """
         Status: OK
