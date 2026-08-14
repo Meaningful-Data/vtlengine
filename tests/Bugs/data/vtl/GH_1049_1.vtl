@@ -1,0 +1,4 @@
+DS_r1 <- count(DS_1 group by Id_1);
+DS_r2 <- count(DS_1);
+DS_r3 <- DS_1[aggr A := count(Me_1), B := count(Me_2) group by Id_1];
+DS_r4 <- DS_1[aggr int_var := count() group by Id_1];
