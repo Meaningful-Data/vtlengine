@@ -167,16 +167,16 @@ class Aggregation(Operator.Unary):
                 if cls.return_type is not None:
                     comp.data_type = cls.return_type
         if cls.op == COUNT:
-            measure_names = operand.get_measures_names()
-            for measure_name in measure_names:
+            # count reports the number of Data Points, so whatever the Measures of the
+            # operand, the result holds the single Integer Measure int_var (issue #1049).
+            for measure_name in operand.get_measures_names():
                 result_components.pop(measure_name)
-            for counted_name in measure_names if len(measure_names) > 1 else ["int_var"]:
-                result_components[counted_name] = Component(
-                    name=counted_name,
-                    role=Role.MEASURE,
-                    data_type=Integer,
-                    nullable=True,
-                )
+            result_components["int_var"] = Component(
+                name="int_var",
+                role=Role.MEASURE,
+                data_type=Integer,
+                nullable=True,
+            )
 
         # Aggregation combines the data points of each group, so the surviving viral
         # attributes are combined and require a propagation rule (issue #906).
@@ -225,9 +225,11 @@ class Aggregation(Operator.Unary):
         if measure_names is not None and len(measure_names) > 0:
             functions = ""
             if cls.op == COUNT:
-                for name in measure_names:
-                    alias = f'"{name}"' if len(measure_names) > 1 else "int_var"
-                    functions += f'{cls.py_op}("{name}") AS {alias}, '
+                # A Data Point whose Measures are all null is ignored; one holding at
+                # least one non-null Measure is counted. A count that would yield null
+                # reports 0 (issue #1049).
+                any_non_null = " OR ".join(f'"{name}" IS NOT NULL' for name in measure_names)
+                functions += f"COALESCE(COUNT(CASE WHEN {any_non_null} THEN 1 END), 0) AS int_var, "
             else:
                 for e in measure_names:
                     e = f'"{e}"'

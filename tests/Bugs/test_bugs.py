@@ -2407,10 +2407,11 @@ class AggregationBugs(BugHelper):
     def test_GH_959_2(self):
         """
         Status: OK
-        Description: count over a Data Set applies to each Measure and gives back that
-                     same Measure, counted, so it reports the same numbers as counting
-                     each Measure as a Component. A Measure that holds no value in a
-                     group counts 0 and not null.
+        Description: count over a Data Set holding several Measures reports the Data
+                     Points holding at least one non-null Measure, as the single
+                     Measure int_var (issue #1049). A group whose Measures are all
+                     null counts 0 and not null. The aggr Component form still counts
+                     each Measure on its own.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/959
         Goal: Check Result.
         """
@@ -2423,9 +2424,11 @@ class AggregationBugs(BugHelper):
     def test_GH_996_1(self):
         """
         Status: OK
-        Description: the count cases reported at once. A Data Set operand counts each
-                     Measure and reports 0 where a group holds no value (DS_r1, DS_r2,
-                     DS_r3); count() with no operand counts the Data Points (DS_r4);
+        Description: the count cases reported at once. A Data Set operand counts the
+                     Data Points holding at least one non-null Measure, as the single
+                     Measure int_var (DS_r1, DS_r2, issue #1049); a Component operand
+                     counts its values and reports 0 where a group holds none (DS_r3);
+                     count() with no operand counts the Data Points (DS_r4);
                      an analytic count reports 0 for a partition of nulls (DS_r5) and
                      covers the whole partition where the window clause is omitted
                      (DS_r6); a having condition keeps the viral attributes (DS_r7);
@@ -2502,13 +2505,31 @@ class AggregationBugs(BugHelper):
                      operand as a plain dataset, states no Additional Constraints, and
                      counts a String Measure in its own example. A Time Measure was
                      rejected anyway, because the guard against aggregating one ran
-                     before count replaced every Measure with int_var.
+                     before count replaced the Measures with int_var.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/937
         Goal: Check Result.
         """
         code = "GH_937_1"
         number_inputs = 1
         references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1049_1(self):
+        """
+        Status: OK
+        Description: count over a Data Set returns the single Integer Measure int_var,
+                     whatever the number of Measures of the operand. A Data Point whose
+                     Measures are all null is ignored; one holding at least one non-null
+                     Measure is counted (DS_r1, DS_r2). The Component forms keep their
+                     behaviour: count over a Component counts its non-null values
+                     (DS_r3) and count() with no operand counts the Data Points (DS_r4).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1049
+        Goal: Check Result.
+        """
+        code = "GH_1049_1"
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 

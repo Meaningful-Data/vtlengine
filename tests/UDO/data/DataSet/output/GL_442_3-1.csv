@@ -1,31 +1,31 @@
-Entity.LegalAddress.PostalCode,Entity.EntityCategory,Entity.EntityCreationDate,Entity.EntityStatus,Entity.EntitySubCategory,Entity.HeadquartersAddress.City,Entity.HeadquartersAddress.FirstAddressLine,Entity.HeadquartersAddress.PostalCode,Entity.HeadquartersAddress.Region,Entity.HeadquartersAddress.xmllang,Entity.LegalAddress.City,Entity.LegalAddress.Country,Entity.LegalAddress.FirstAddressLine,Entity.LegalAddress.Region,Entity.LegalForm.EntityLegalFormCode,Entity.LegalForm.OtherLegalForm,Entity.LegalJurisdiction,Entity.LegalName,Entity.OtherEntityNames.OtherEntityName.1,Entity.OtherEntityNames.OtherEntityName.1.type,Entity.RegistrationAuthority.OtherRegistrationAuthorityID,Entity.RegistrationAuthority.RegistrationAuthorityEntityID,Entity.RegistrationAuthority.RegistrationAuthorityID,Entity.TransliteratedOtherEntityNames.TransliteratedOtherEntityName.1,Entity.TransliteratedOtherEntityNames.TransliteratedOtherEntityName.1.type,Entity.TransliteratedOtherEntityNames.TransliteratedOtherEntityName.1.xmllang,Registration.InitialRegistrationDate,Registration.ValidationSources
-VG1110,10,10,10,0,10,10,10,8,10,10,10,10,0,10,2,10,10,0,0,0,10,10,0,0,0,10,10
-KY1-1001,16,16,16,0,16,16,16,11,16,16,16,16,0,16,8,16,16,0,0,0,16,16,0,0,0,16,16
-0,1,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,0,0,1,1,0,0,0,1,1
-KY1-1108,1,1,1,0,1,1,1,1,1,1,1,1,0,1,0,1,1,0,0,0,1,1,0,0,0,1,1
-KY1-1002,2,2,2,0,2,2,2,1,2,2,2,2,0,2,0,2,2,0,0,0,2,2,0,0,0,2,2
-238891,1,1,1,0,1,1,1,0,1,1,1,1,1,1,0,1,1,1,1,0,1,1,0,0,0,1,1
-59817,2,2,2,0,2,2,2,1,2,2,2,2,2,2,1,2,2,0,0,0,2,2,0,0,0,2,2
-KY1-9008,4,4,4,0,4,4,4,4,4,4,4,4,0,4,0,4,4,0,0,0,4,4,0,0,0,4,4
-HM 12,1,1,1,0,1,1,1,0,1,1,1,1,0,1,0,1,1,0,0,0,1,1,0,0,0,1,1
-KY1-1104,16,16,16,0,16,16,16,10,16,16,16,16,0,16,4,16,16,1,1,0,16,16,0,0,0,16,16
-560042,1,1,1,0,1,1,1,0,1,1,1,1,1,1,0,1,1,0,0,0,1,1,0,0,0,1,1
-19801,1,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,0,0,1,1,0,0,0,1,1
-673310,1,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,0,0,1,1,0,0,0,1,1
-EC2N 1HQ,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,1,1,0,0,0,1,1
-19904,1,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,0,0,1,1,0,0,0,1,1
-89703-4934,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,1,1,0,0,0,1,1
-N/A for tests,1,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,0,0,1,1,0,0,0,1,1
-KY1-9002,1,1,1,0,1,1,1,1,1,1,1,1,0,1,0,1,1,0,0,0,1,1,0,0,0,1,1
-KY1-1110,1,1,1,0,1,1,1,1,1,1,1,1,0,1,0,1,1,0,0,0,1,1,0,0,0,1,1
-M5X 1G5,1,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,0,0,1,1,0,0,0,1,1
-KY1-9005,3,3,3,0,3,3,3,3,3,3,3,3,0,3,0,3,3,1,1,0,3,3,0,0,0,3,3
-KY1-1100,1,1,1,0,1,1,1,0,1,1,1,1,0,1,0,1,1,0,0,0,1,1,0,0,0,1,1
-81677,1,1,1,0,1,1,1,0,1,1,1,1,1,1,0,1,1,0,0,0,1,1,0,0,0,1,1
-19808,1,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,0,0,1,1,0,0,0,1,1
-816,1,1,1,0,1,1,1,0,1,1,1,1,0,1,0,1,1,0,0,0,1,1,0,0,0,1,1
-1134,1,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,0,0,1,1,1,1,1,1,1
-MH 96960,1,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,0,0,1,1,0,0,0,1,1
-PO Box 3511,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,1,1,0,0,0,1,1
-P.O. Box 3511,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,1,1,0,0,0,1,1
-1087 HW,1,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,0,0,1,1,0,0,0,1,1
+Entity.LegalAddress.PostalCode,int_var
+0,1
+1087 HW,1
+1134,1
+19801,1
+19808,1
+19904,1
+238891,1
+560042,1
+59817,2
+673310,1
+816,1
+81677,1
+89703-4934,1
+EC2N 1HQ,1
+HM 12,1
+KY1-1001,16
+KY1-1002,2
+KY1-1100,1
+KY1-1104,16
+KY1-1108,1
+KY1-1110,1
+KY1-9002,1
+KY1-9005,3
+KY1-9008,4
+M5X 1G5,1
+MH 96960,1
+N/A for tests,1
+P.O. Box 3511,1
+PO Box 3511,1
+VG1110,10

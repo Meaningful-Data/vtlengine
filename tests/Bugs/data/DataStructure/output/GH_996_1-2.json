@@ -16,19 +16,7 @@
           "nullable": true
         },
         {
-          "name": "Me_int",
-          "role": "Measure",
-          "type": "Integer",
-          "nullable": true
-        },
-        {
-          "name": "Me_num",
-          "role": "Measure",
-          "type": "Integer",
-          "nullable": true
-        },
-        {
-          "name": "Me_str",
+          "name": "int_var",
           "role": "Measure",
           "type": "Integer",
           "nullable": true

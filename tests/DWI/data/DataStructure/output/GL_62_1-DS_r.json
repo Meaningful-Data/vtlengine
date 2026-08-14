@@ -4,19 +4,7 @@
       "name": "DS_r",
       "DataStructure": [
         {
-          "name": "BLNC_SHT_TTL_CRRNCY",
-          "role": "Measure",
-          "type": "Integer",
-          "nullable": true
-        },
-        {
-          "name": "ANNL_TRNVR_CRRNCY",
-          "role": "Measure",
-          "type": "Integer",
-          "nullable": true
-        },
-        {
-          "name": "NMBR_EMPLYS",
+          "name": "int_var",
           "role": "Measure",
           "type": "Integer",
           "nullable": true
