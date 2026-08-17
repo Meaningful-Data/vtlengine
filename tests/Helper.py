@@ -30,6 +30,7 @@ from vtlengine.Model import (
     Scalar,
     ValueDomain,
 )
+from vtlengine.Utils._number_config import get_float_format
 
 # VTL_ENGINE_BACKEND can be "pandas" (default) or "duckdb"
 VTL_ENGINE_BACKEND = os.environ.get("VTL_ENGINE_BACKEND", "duckdb").lower()
@@ -305,7 +306,9 @@ class TestHelper(TestCase):
             ref_dataset = reference_datasets[dataset.name]
             param_name = ref_dataset.ref_name
             csv_file_name = str(cls.filepath_out_csv / f"{code}-{param_name}{cls.CSV}")
-            dataset.data.to_csv(csv_file_name, index=False, header=True)
+            dataset.data.to_csv(
+                csv_file_name, index=False, header=True, float_format=get_float_format()
+            )
 
     @classmethod
     def NewSemanticExceptionTest(

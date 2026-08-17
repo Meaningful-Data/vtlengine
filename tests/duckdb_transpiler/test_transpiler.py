@@ -609,18 +609,34 @@ class TestBinaryOperations:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = '''SELECT a."Id_1", (a."Me_1" + b."Me_1") AS "Me_1" FROM "DS_1" AS a INNER JOIN "DS_2" AS b ON a."Id_1" = b."Id_1"'''
+        expected_sql = (
+            'SELECT a."Id_1", vtl_round_sig((a."Me_1" + b."Me_1"), 15) AS "Me_1" '
+            'FROM "DS_1" AS a INNER JOIN "DS_2" AS b ON a."Id_1" = b."Id_1"'
+        )
         assert_sql_equal(sql, expected_sql)
 
     @pytest.mark.parametrize(
         "op,expected_sql",
         [
-            ("+", 'SELECT "Id_1", ("Me_1" + 10) AS "Me_1", ("Me_2" + 10) AS "Me_2" FROM "DS_1"'),
-            ("-", 'SELECT "Id_1", ("Me_1" - 10) AS "Me_1", ("Me_2" - 10) AS "Me_2" FROM "DS_1"'),
-            ("*", 'SELECT "Id_1", ("Me_1" * 10) AS "Me_1", ("Me_2" * 10) AS "Me_2" FROM "DS_1"'),
+            (
+                "+",
+                'SELECT "Id_1", vtl_round_sig(("Me_1" + 10), 15) AS "Me_1", '
+                'vtl_round_sig(("Me_2" + 10), 15) AS "Me_2" FROM "DS_1"',
+            ),
+            (
+                "-",
+                'SELECT "Id_1", vtl_round_sig(("Me_1" - 10), 15) AS "Me_1", '
+                'vtl_round_sig(("Me_2" - 10), 15) AS "Me_2" FROM "DS_1"',
+            ),
+            (
+                "*",
+                'SELECT "Id_1", vtl_round_sig(("Me_1" * 10), 15) AS "Me_1", '
+                'vtl_round_sig(("Me_2" * 10), 15) AS "Me_2" FROM "DS_1"',
+            ),
             (
                 "/",
-                'SELECT "Id_1", vtl_div("Me_1", 10) AS "Me_1", vtl_div("Me_2", 10) AS "Me_2" FROM "DS_1"',
+                'SELECT "Id_1", vtl_round_sig(vtl_div("Me_1", 10), 15) AS "Me_1", '
+                'vtl_round_sig(vtl_div("Me_2", 10), 15) AS "Me_2" FROM "DS_1"',
             ),
         ],
     )
@@ -663,8 +679,8 @@ class TestUnaryOperations:
             ("floor", 'CAST(FLOOR("{0}") AS BIGINT)'),
             ("abs", 'ABS("{0}")'),
             ("exp", 'EXP("{0}")'),
-            ("ln", 'LN("{0}")'),
-            ("sqrt", 'SQRT("{0}")'),
+            ("ln", 'vtl_ln("{0}")'),
+            ("sqrt", 'vtl_sqrt("{0}")'),
         ],
     )
     def test_dataset_unary_op(self, op: str, expected_expr: str):
@@ -851,7 +867,7 @@ class TestClauseOperations:
             [
                 "SELECT",
                 "t.*",
-                '("Me_1" * 2) AS "Me_2"',
+                'vtl_round_sig(("Me_1" * 2), 15) AS "Me_2"',
                 'FROM (SELECT * FROM "DS_1") AS t',
             ],
         )
@@ -976,13 +992,13 @@ class TestMultipleAssignments:
         # First assignment
         name1, sql1, _ = results[0]
         assert name1 == "DS_2"
-        expected_sql1 = 'SELECT "Id_1", ("Me_1" * 2) AS "Me_1" FROM "DS_1"'
+        expected_sql1 = 'SELECT "Id_1", vtl_round_sig(("Me_1" * 2), 15) AS "Me_1" FROM "DS_1"'
         assert_sql_equal(sql1, expected_sql1)
 
         # Second assignment (now DS_2 is available)
         name2, sql2, _ = results[1]
         assert name2 == "DS_3"
-        expected_sql2 = 'SELECT "Id_1", ("Me_1" + 10) AS "Me_1" FROM "DS_2"'
+        expected_sql2 = 'SELECT "Id_1", vtl_round_sig(("Me_1" + 10), 15) AS "Me_1" FROM "DS_2"'
         assert_sql_equal(sql2, expected_sql2)
 
 
@@ -1067,7 +1083,7 @@ class TestValueDomains:
             ("String", "hello", "'hello'"),
             ("String", "it's", "'it''s'"),  # Escaped single quote
             ("Integer", 42, "42"),
-            ("Number", 3.14, "3.14"),
+            ("Number", 3.14, "CAST(3.14 AS DOUBLE)"),
             ("Boolean", True, "TRUE"),
             ("Boolean", False, "FALSE"),
             ("Date", "2024-01-15", "DATE '2024-01-15'"),
@@ -1684,7 +1700,7 @@ class TestStructureComputation:
         assert name == "DS_r"
 
         # Arithmetic should keep Me_1, not convert to bool_var
-        expected_sql = 'SELECT "Id_1", ("Me_1" + 10) AS "Me_1" FROM "DS_1"'
+        expected_sql = 'SELECT "Id_1", vtl_round_sig(("Me_1" + 10), 15) AS "Me_1" FROM "DS_1"'
         assert_sql_equal(sql, expected_sql)
 
 
