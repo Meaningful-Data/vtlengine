@@ -26,11 +26,31 @@ ds_param = [
     pytest.param("5", "DS_r := string_distance(hamming, DS_1, DS_2);", id="hamming_ds_ds"),
 ]
 
+_VIRAL_RULE = (
+    "define viral propagation Va_rule (variable Va_1) is\n"
+    '    when "C" then "C"; else "P"\n'
+    "end viral propagation;\n"
+)
+
+viral_param = [
+    pytest.param("6", "DS_r := string_distance(levenshtein, DS_1, DS_2);", id="viral_one_operand"),
+    pytest.param(
+        "7", "DS_r := string_distance(levenshtein, DS_1, DS_2);", id="viral_both_operands"
+    ),
+]
+
 
 @pytest.mark.parametrize("code, expression", ds_param)
 def test_string_distance_ds(load_reference, input_paths, code, expression):
     warnings.filterwarnings("ignore", category=FutureWarning)
     result = run_expression(expression, input_paths)
+    assert result == load_reference
+
+
+@pytest.mark.parametrize("code, expression", viral_param)
+def test_string_distance_viral(load_reference, input_paths, code, expression):
+    warnings.filterwarnings("ignore", category=FutureWarning)
+    result = run_expression(_VIRAL_RULE + expression, input_paths)
     assert result == load_reference
 
 

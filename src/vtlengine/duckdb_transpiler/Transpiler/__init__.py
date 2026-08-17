@@ -1276,6 +1276,12 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 out_name = output_measure_names[0]
             cols.append(f"{expr} AS {quote_name(out_name)}")
 
+        cols.extend(
+            self._ds_ds_viral_cols(
+                tokens.STRING_DISTANCE, left_ds, right_ds, output_ds, alias_a, alias_b
+            )
+        )
+
         on_clause = self._join_on_clause(common_ids, alias_a, alias_b)
         builder = SQLBuilder().select(*cols).from_table(left_src, alias_a)
         if on_clause != "1=1":
