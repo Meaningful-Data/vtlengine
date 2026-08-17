@@ -18,6 +18,7 @@ from vtlengine.duckdb_transpiler.io._validation import (
     build_create_table_sql,
     build_csv_column_types,
     build_select_columns,
+    check_extra_columns,
     check_missing_identifiers,
     get_column_sql_type,
     handle_sdmx_columns,
@@ -260,8 +261,9 @@ def load_datapoints_duckdb(
         # 4. Handle SDMX-CSV special columns
         keep_columns = handle_sdmx_columns(csv_columns, components)
 
-        # Check required identifier columns exist
+        # Check required identifier columns exist, and that no other column is left
         check_missing_identifiers(id_columns, keep_columns, file_path)
+        check_extra_columns(keep_columns, components, dataset_name)
 
         # 5. Build column type mapping and SELECT expressions
         csv_dtypes = build_csv_column_types(components, keep_columns)
@@ -350,6 +352,7 @@ def _load_parquet(
 
         keep_columns = handle_sdmx_columns(parquet_cols, components)
         check_missing_identifiers(id_columns, keep_columns, file_path)
+        check_extra_columns(keep_columns, components, dataset_name)
 
         select_exprs = _build_dataframe_select_columns(components, df_columns=parquet_cols)
 
@@ -624,6 +627,10 @@ def register_dataframes(
             continue
 
         components = input_datasets[name].components
+
+        # A DataFrame carries its columns as they are, so the SDMX markers are taken
+        # out before what is left is checked against the DataStructure.
+        check_extra_columns(handle_sdmx_columns(list(df.columns), components), components, name)
 
         # Detect Date columns that contain time values → TIMESTAMP instead of DATE
         type_overrides = _detect_date_type_overrides(df, components)
