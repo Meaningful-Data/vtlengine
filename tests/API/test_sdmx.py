@@ -612,6 +612,118 @@ def test_sdmx_csv_file_exists(csv_file, description):
     assert csv_file.exists()
 
 
+_CUSTOM_COLUMN_STRUCTURE = {
+    "datasets": [
+        {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+            ],
+        }
+    ]
+}
+
+params_sdmx_csv_custom_columns = [
+    pytest.param(
+        "DATAFLOW,Id_1,Me_1,UPDATED\n"
+        "MD:DS_1(1.0),1,10.0,2026-01-01\n"
+        "MD:DS_1(1.0),2,20.0,2026-01-01\n",
+        id="v1_custom_column",
+    ),
+    pytest.param(
+        "STRUCTURE,STRUCTURE_ID,ACTION,Id_1,Me_1,UPDATED\n"
+        "dataflow,MD:DS_1(1.0),I,1,10.0,x\n"
+        "dataflow,MD:DS_1(1.0),I,2,20.0,x\n",
+        id="v2_custom_column",
+    ),
+    pytest.param(
+        "STRUCTURE,STRUCTURE_ID,STRUCTURE_NAME,ACTION,Id_1,Me_1\n"
+        "dataflow,MD:DS_1(1.0),Dataflow 1,I,1,10.0\n"
+        "dataflow,MD:DS_1(1.0),Dataflow 1,I,2,20.0\n",
+        id="v2_structure_name",
+    ),
+]
+
+
+@pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+@pytest.mark.parametrize("content", params_sdmx_csv_custom_columns)
+def test_sdmx_csv_drops_columns_outside_the_datastructure(tmp_path, content, use_duckdb):
+    """A column an SDMX-CSV file may carry is dropped, not rejected."""
+    csv_path = tmp_path / "DS_1.csv"
+    csv_path.write_text(content)
+
+    result = run(
+        script="DS_r <- DS_1 * 10;",
+        data_structures=_CUSTOM_COLUMN_STRUCTURE,
+        datapoints={"DS_1": csv_path},
+        use_duckdb=use_duckdb,
+    )
+
+    assert list(result["DS_r"].data.columns) == ["Id_1", "Me_1"]
+    assert result["DS_r"].data["Me_1"].tolist() == [100.0, 200.0]
+
+
+@pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+def test_plain_csv_still_rejects_columns_outside_the_datastructure(tmp_path, use_duckdb):
+    """A plain CSV is not an SDMX one, so its extra column is still rejected (#1053)."""
+    csv_path = tmp_path / "DS_1.csv"
+    csv_path.write_text("Id_1,Me_1,UPDATED\n1,10.0,x\n2,20.0,x\n")
+
+    with pytest.raises(DataLoadError, match="0-3-1-15"):
+        run(
+            script="DS_r <- DS_1 * 10;",
+            data_structures=_CUSTOM_COLUMN_STRUCTURE,
+            datapoints={"DS_1": csv_path},
+            use_duckdb=use_duckdb,
+        )
+
+
+@pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+def test_run_sdmx_drops_columns_outside_the_schema(tmp_path, use_duckdb):
+    """A custom column pysdmx keeps in PandasDataset.data is dropped by run_sdmx."""
+    from pysdmx.model import DataType
+    from pysdmx.model.concept import Concept
+    from pysdmx.model.dataflow import Component, Components
+    from pysdmx.model.dataflow import Role as SDMXRole
+
+    csv_path = tmp_path / "data.csv"
+    csv_path.write_text(
+        "DATAFLOW,Id_1,Me_1,UPDATED\n"
+        "MD:DS_1(1.0),1,10.0,2026-01-01\n"
+        "MD:DS_1(1.0),2,20.0,2026-01-01\n"
+    )
+    pd_dataset = get_datasets(data=csv_path)[0]
+    assert "UPDATED" in pd_dataset.data.columns
+    pd_dataset.structure = Schema(
+        context="dataflow",
+        agency="MD",
+        id="DS_1",
+        version="1.0",
+        components=Components(
+            [
+                Component(
+                    id="Id_1",
+                    required=True,
+                    role=SDMXRole.DIMENSION,
+                    concept=Concept(id="Id_1", dtype=DataType.INTEGER),
+                ),
+                Component(
+                    id="Me_1",
+                    required=False,
+                    role=SDMXRole.MEASURE,
+                    concept=Concept(id="Me_1", dtype=DataType.DOUBLE),
+                ),
+            ]
+        ),
+    )
+
+    result = run_sdmx(script="DS_r <- DS_1 * 10;", datasets=[pd_dataset], use_duckdb=use_duckdb)
+
+    assert list(result["DS_r"].data.columns) == ["Id_1", "Me_1"]
+    assert result["DS_r"].data["Me_1"].tolist() == [100.0, 200.0]
+
+
 # =============================================================================
 # Integration tests for mixed SDMX inputs
 # =============================================================================

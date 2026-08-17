@@ -30,6 +30,7 @@ from vtlengine.duckdb_transpiler.io._validation import (
 from vtlengine.Exceptions import DataLoadError, InputValidationException
 from vtlengine.files.sdmx_handler import (
     extract_sdmx_dataset_name,
+    is_sdmx_csv_file,
     is_sdmx_datapoint_file,
     load_sdmx_datapoints,
 )
@@ -261,9 +262,9 @@ def load_datapoints_duckdb(
         # 4. Handle SDMX-CSV special columns
         keep_columns = handle_sdmx_columns(csv_columns, components)
 
-        # Check required identifier columns exist, and that no other column is left
         check_missing_identifiers(id_columns, keep_columns, file_path)
-        check_extra_columns(keep_columns, components, dataset_name)
+        if not is_sdmx_csv_file(file_path, components):
+            check_extra_columns(keep_columns, components, dataset_name)
 
         # 5. Build column type mapping and SELECT expressions
         csv_dtypes = build_csv_column_types(components, keep_columns)

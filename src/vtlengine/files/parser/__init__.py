@@ -26,7 +26,11 @@ from vtlengine.DataTypes._time_checking import (
 from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING
 from vtlengine.Exceptions import DataLoadError, InputValidationException
 from vtlengine.files.parser._rfc_dialect import register_rfc
-from vtlengine.files.sdmx_handler import is_sdmx_datapoint_file, load_sdmx_datapoints
+from vtlengine.files.sdmx_handler import (
+    is_sdmx_csv_file,
+    is_sdmx_datapoint_file,
+    load_sdmx_datapoints,
+)
 from vtlengine.Model import Component, Dataset, Role
 
 TIME_CHECKS_MAPPING: Dict[Type[ScalarType], Any] = {
@@ -311,8 +315,7 @@ def load_datapoints(
         # Convert string to Path for extension checking
         file_path = Path(csv_path) if isinstance(csv_path, str) else csv_path
 
-        # Check if SDMX file by extension
-        if is_sdmx_datapoint_file(file_path):
+        if is_sdmx_datapoint_file(file_path) or is_sdmx_csv_file(file_path, components):
             data = load_sdmx_datapoints(components, dataset_name, file_path)
         else:
             # CSV file (plain or SDMX-CSV)

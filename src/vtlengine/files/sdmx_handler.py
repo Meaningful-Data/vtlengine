@@ -8,6 +8,7 @@ This module consolidates all SDMX-related file operations including:
 - Extracting dataset names from SDMX files
 """
 
+import csv
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
@@ -33,9 +34,44 @@ SDMX_DATAPOINT_EXTENSIONS = {".xml", ".json"}
 SDMX_STRUCTURE_EXTENSIONS = {".xml", ".json"}
 
 
+# The first header column an SDMX-CSV file carries: DATAFLOW in 1.0, STRUCTURE in 2.x.
+SDMX_CSV_MARKERS = ("DATAFLOW", "STRUCTURE")
+
+
 def is_sdmx_datapoint_file(file_path: Path) -> bool:
     """Check if a file should be treated as SDMX when loading datapoints."""
     return file_path.suffix.lower() in SDMX_DATAPOINT_EXTENSIONS
+
+
+def is_sdmx_csv_file(file_path: Path, components: Dict[str, Component]) -> bool:
+    """Whether a CSV file is an SDMX-CSV one.
+
+    A plain CSV and an SDMX-CSV share the .csv extension, so they are told apart by
+    the first header column, which names the structure the rows belong to. A
+    DataStructure that defines a Component of that name keeps its file plain.
+    """
+    if file_path.suffix.lower() != ".csv":
+        return False
+    try:
+        with open(file_path, newline="", encoding="utf-8") as file:
+            header = next(csv.reader(file), [])
+    except (OSError, UnicodeDecodeError):
+        return False
+    if not header:
+        return False
+    marker = header[0].removeprefix("\ufeff")
+    return marker in SDMX_CSV_MARKERS and marker not in components
+
+
+def drop_undefined_columns(data: pd.DataFrame, components: Dict[str, Component]) -> pd.DataFrame:
+    """Drop the columns the DataStructure does not define.
+
+    SDMX-CSV lets implementers append custom columns, and pysdmx keeps them, so an
+    SDMX input carries columns with no VTL meaning. They are dropped rather than
+    rejected, which is what plain input gets.
+    """
+    undefined = [name for name in data.columns if name not in components]
+    return data.drop(columns=undefined) if undefined else data
 
 
 def is_sdmx_structure_file(file_path: Path) -> bool:
@@ -206,6 +242,8 @@ def _sanitize_sdmx_columns(
         if "ACTION" in data.columns:
             data = data[data["ACTION"] != "D"]
             data.drop(columns=["ACTION"], inplace=True)
+
+    data = drop_undefined_columns(data, components)
 
     # Validate identifiers are present
     comp_names = {c.name for c in components.values() if c.role == Role.IDENTIFIER}
