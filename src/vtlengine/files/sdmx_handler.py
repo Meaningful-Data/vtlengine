@@ -8,12 +8,13 @@ This module consolidates all SDMX-related file operations including:
 - Extracting dataset names from SDMX files
 """
 
-import csv
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 import pandas as pd
 from pysdmx.io import get_datasets as sdmx_get_datasets
+from pysdmx.io.format import Format
+from pysdmx.io.input_processor import process_string_to_read
 from pysdmx.io.pd import PandasDataset
 from pysdmx.model.dataflow import Component as SDMXComponent
 from pysdmx.model.dataflow import Dataflow, DataStructureDefinition, Schema
@@ -34,8 +35,15 @@ SDMX_DATAPOINT_EXTENSIONS = {".xml", ".json"}
 SDMX_STRUCTURE_EXTENSIONS = {".xml", ".json"}
 
 
-# The first header column an SDMX-CSV file carries: DATAFLOW in 1.0, STRUCTURE in 2.x.
-SDMX_CSV_MARKERS = ("DATAFLOW", "STRUCTURE")
+# The SDMX-CSV flavours pysdmx reads data from.
+SDMX_CSV_DATA_FORMATS = (
+    Format.DATA_SDMX_CSV_1_0_0,
+    Format.DATA_SDMX_CSV_2_0_0,
+    Format.DATA_SDMX_CSV_2_1_0,
+)
+
+# The header column that names the structure, which a DataStructure may also define.
+SDMX_CSV_STRUCTURE_COLUMNS = ("DATAFLOW", "STRUCTURE")
 
 
 def is_sdmx_datapoint_file(file_path: Path) -> bool:
@@ -44,23 +52,26 @@ def is_sdmx_datapoint_file(file_path: Path) -> bool:
 
 
 def is_sdmx_csv_file(file_path: Path, components: Dict[str, Component]) -> bool:
-    """Whether a CSV file is an SDMX-CSV one.
+    """Whether pysdmx reads this CSV file as SDMX-CSV.
 
-    A plain CSV and an SDMX-CSV share the .csv extension, so they are told apart by
-    the first header column, which names the structure the rows belong to. A
-    DataStructure that defines a Component of that name keeps its file plain.
+    A plain CSV file and an SDMX-CSV one share the .csv extension, so the format is
+    read off the header, which names the structure the rows belong to. The verdict is
+    the one pysdmx gives its own readers, so a file called SDMX-CSV here is a file
+    pysdmx parses. It is taken on the header line alone, which is all the CSV branch
+    of that detection reads. A DataStructure that defines a Component of the name
+    carrying the structure keeps its file plain.
     """
     if file_path.suffix.lower() != ".csv":
         return False
     try:
-        with open(file_path, newline="", encoding="utf-8") as file:
-            header = next(csv.reader(file), [])
-    except (OSError, UnicodeDecodeError):
+        with open(file_path, encoding="utf-8-sig", errors="replace") as file:
+            header = file.readline()
+        _, sdmx_format = process_string_to_read(header)
+    except Exception:
         return False
-    if not header:
+    if sdmx_format not in SDMX_CSV_DATA_FORMATS:
         return False
-    marker = header[0].removeprefix("\ufeff")
-    return marker in SDMX_CSV_MARKERS and marker not in components
+    return not any(column in components for column in SDMX_CSV_STRUCTURE_COLUMNS)
 
 
 def drop_undefined_columns(data: pd.DataFrame, components: Dict[str, Component]) -> pd.DataFrame:
