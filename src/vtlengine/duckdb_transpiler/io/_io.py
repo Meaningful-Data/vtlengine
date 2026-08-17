@@ -12,7 +12,7 @@ from typing import Dict, List, Literal, Optional, Tuple, Union
 import duckdb
 import pandas as pd
 
-from vtlengine.DataTypes import Date, Number, TimePeriod
+from vtlengine.DataTypes import Date, TimePeriod
 from vtlengine.duckdb_transpiler.io._validation import (
     VALID_DATE_REGEX,
     build_create_table_sql,
@@ -33,6 +33,7 @@ from vtlengine.files.sdmx_handler import (
     load_sdmx_datapoints,
 )
 from vtlengine.Model import Component, Dataset, Role, Scalar
+from vtlengine.Utils._number_config import format_scalar_value_for_csv
 
 
 def _skip_load_validation() -> bool:
@@ -438,8 +439,10 @@ def save_scalars_duckdb(
         writer = csv.writer(csv_file)
         writer.writerow(["name", "value"])
         for name, scalar in sorted(scalars.items(), key=lambda item: item[0]):
-            value_to_write = "" if scalar.value is None else scalar.value
-            writer.writerow([name, str(value_to_write)])
+            if scalar.value is None:
+                writer.writerow([name, ""])
+            else:
+                writer.writerow([name, format_scalar_value_for_csv(scalar.value)])
 
 
 def extract_datapoint_paths(
@@ -579,8 +582,6 @@ def _build_dataframe_select_columns(
         target_type = overrides.get(comp_name, get_column_sql_type(comp))
         if df_col_set is not None and comp_name not in df_col_set:
             exprs.append(f'CAST(NULL AS {target_type}) AS "{comp_name}"')
-        elif comp.data_type == Number:
-            exprs.append(f'CAST(CAST("{comp_name}" AS VARCHAR) AS {target_type}) AS "{comp_name}"')
         elif comp.data_type == Date:
             # Accept only a bare date, or a date with a COMPLETE, in-range time
             # (HH:MM:SS, optional fractional seconds / timezone), matching the strict

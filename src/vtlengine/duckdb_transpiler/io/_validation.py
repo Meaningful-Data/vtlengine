@@ -23,7 +23,6 @@ from vtlengine.DataTypes import (
     TimeInterval,
     TimePeriod,
 )
-from vtlengine.duckdb_transpiler.Config.config import get_decimal_type
 from vtlengine.Exceptions import DataLoadError, InputValidationException
 from vtlengine.Model import Component, Role
 
@@ -173,7 +172,7 @@ def get_column_sql_type(comp: Component) -> str:
     Get SQL type for a component with special handling for VTL types.
 
     - Integer → BIGINT
-    - Number → DECIMAL(precision, scale) from config
+    - Number → DOUBLE (IEEE 754 float64, same as the pandas engine)
     - Boolean → BOOLEAN
     - Date → DATE (may be overridden to TIMESTAMP when values contain time)
     - TimePeriod, TimeInterval, Duration, String → VARCHAR
@@ -181,7 +180,7 @@ def get_column_sql_type(comp: Component) -> str:
     if comp.data_type == Integer:
         return "BIGINT"
     elif comp.data_type == Number:
-        return get_decimal_type()
+        return "DOUBLE"
     elif comp.data_type == Boolean:
         return "BOOLEAN"
     elif comp.data_type == Date:
@@ -206,7 +205,7 @@ def get_csv_read_type(comp: Component) -> str:
     if comp.data_type == Integer:
         return "DOUBLE"  # Read as DOUBLE to validate no decimal component
     elif comp.data_type == Number:
-        return get_decimal_type()  # Read directly as DECIMAL to preserve exact precision
+        return "DOUBLE"  # float64, matching the pandas engine's parse
     elif comp.data_type == Boolean:
         return "VARCHAR"  # Read as VARCHAR to handle quoted values; cast during INSERT
     elif comp.data_type == Date:
@@ -430,8 +429,6 @@ def build_select_columns(
                         ELSE CAST("{comp_name}" AS BIGINT)
                     END AS "{comp_name}\""""
                 )
-            elif csv_type == "DOUBLE" and "DECIMAL" in table_type:
-                select_cols.append(f'CAST("{comp_name}" AS {table_type}) AS "{comp_name}"')
             # Date columns: read as VARCHAR, validate format, cast to DATE or TIMESTAMP.
             # Accepts a bare date or a full datetime with the T or space separator and an
             # optional timezone (+HH:MM or Z); the same set the pandas loader accepts.

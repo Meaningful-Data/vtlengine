@@ -2,7 +2,6 @@ import _random
 import math
 import operator
 import warnings
-from decimal import Decimal, getcontext
 from typing import Any, Optional, Union
 
 import pandas as pd
@@ -33,6 +32,10 @@ from vtlengine.Model import DataComponent, Dataset, Scalar
 from vtlengine.Operators import ALL_MODEL_DATA_TYPES
 from vtlengine.Utils._number_config import get_effective_numeric_digits
 
+# Binary arithmetic whose results are rounded to the configured significant
+# digits — the same set the DuckDB transpiler wraps in vtl_round_sig (issue #985).
+_ROUNDED_NUMERIC_OPS = frozenset({PLUS, MINUS, MULT, DIV, MOD, POWER})
+
 
 class Unary(Operator.Unary):
     """
@@ -43,7 +46,16 @@ class Unary(Operator.Unary):
     pc_func: Any = None
 
     @classmethod
+    def _check_domain(cls, series: Any) -> None:
+        """Hook for operators with a restricted domain (sqrt, ln).
+
+        The pyarrow fast path would silently produce NaN for out-of-domain
+        values, so subclasses raise the VTL error here first (issue #985).
+        """
+
+    @classmethod
     def apply_operation_component(cls, series: Any) -> Any:
+        cls._check_domain(series)
         if cls.pc_func is not None and isinstance(
             series.values,
             pd.arrays.ArrowExtensionArray,  # type: ignore[attr-defined,unused-ignore]
@@ -64,22 +76,47 @@ class Binary(Operator.Binary):
     type_to_check = Number
 
     @classmethod
-    def _decimal_op(cls, x: Any, y: Any, precision: Optional[int]) -> Any:
-        """Apply the operator with Decimal precision. Assumes x, y are non-null."""
+    def _numeric_op(cls, x: Any, y: Any, digits: Optional[int]) -> Any:
+        """Apply the operator on float64 and round the result to ``digits``
+        significant digits (round-half-even) — the same kernel the DuckDB
+        engine applies via ``vtl_round_sig`` (issue #985). Assumes x, y are
+        non-null.
+        """
         if isinstance(x, int) and isinstance(y, int):
             if cls.op == DIV and y == 0:
                 raise SemanticError("2-1-15-6", op=cls.op, value=y)
             if cls.op == RANDOM:
                 return cls.py_op(x, y)
+            if cls.op in (PLUS, MINUS, MULT):
+                # Exact integer arithmetic, matching DuckDB BIGINT semantics.
+                return cls.py_op(x, y)
         x = float(x)
         y = float(y)
         if cls.op == DIV and y == 0:
             raise SemanticError("2-1-15-6", op=cls.op, value=y)
-        if precision is not None:
-            getcontext().prec = precision
-        decimal_value = cls.py_op(Decimal(x), Decimal(y))
-        result = float(decimal_value)
-        if result.is_integer():
+        if cls.op == MOD:
+            if y == 0:
+                raise SemanticError("2-1-15-6", op=cls.op, value=y)
+            # fmod keeps the dividend's sign, like DuckDB ``%`` (and the former
+            # Decimal remainder): -5 mod 3 is -2, not Python's 1.
+            result = math.fmod(x, y)
+        elif cls.op == POWER:
+            if x < 0 and not y.is_integer():
+                raise SemanticError("2-1-15-2", op=cls.op, value=x)
+            if x == 0 and y < 0:
+                raise SemanticError("2-1-15-6", op=cls.op, value=x)
+            result = cls.py_op(x, y)
+        else:
+            result = cls.py_op(x, y)
+        if not isinstance(result, float):
+            return result
+        if math.isnan(result):
+            return None
+        if cls.op in _ROUNDED_NUMERIC_OPS and digits is not None:
+            result = float(f"{result:.{digits}g}")
+        # Whole results render as ints, but only within float64's exact-integer
+        # range: pyarrow refuses larger Python ints when building double arrays.
+        if result.is_integer() and abs(result) <= 2**53:
             return int(result)
         return result
 
@@ -87,20 +124,20 @@ class Binary(Operator.Binary):
     def op_func(cls, x: Any, y: Any) -> Any:
         if pd.isnull(x) or pd.isnull(y):
             return None
-        return cls._decimal_op(x, y, get_effective_numeric_digits())
+        return cls._numeric_op(x, y, get_effective_numeric_digits())
 
     @classmethod
-    def _null_aware_decimal_op(cls, x: Any, y: Any, precision: Optional[int]) -> Any:
+    def _null_aware_numeric_op(cls, x: Any, y: Any, digits: Optional[int]) -> Any:
         if pd.isnull(x) or pd.isnull(y):
             return None
-        return cls._decimal_op(x, y, precision)
+        return cls._numeric_op(x, y, digits)
 
     @classmethod
     def apply_operation_two_series(cls, left_series: Any, right_series: Any) -> Any:
-        precision = get_effective_numeric_digits()
+        digits = get_effective_numeric_digits()
         result = list(
             map(
-                lambda x, y: cls._null_aware_decimal_op(x, y, precision),
+                lambda x, y: cls._null_aware_numeric_op(x, y, digits),
                 left_series.values,
                 right_series.values,
             )
@@ -119,14 +156,14 @@ class Binary(Operator.Binary):
         result_dtype = cls.return_type.dtype() if cls.return_type is not None else "string[pyarrow]"
         if scalar is None:
             return pd.Series(None, index=series.index, dtype=result_dtype)
-        precision = get_effective_numeric_digits()
+        digits = get_effective_numeric_digits()
         if series_left:
             return series.map(
-                lambda x: cls._decimal_op(x, scalar, precision), na_action="ignore"
+                lambda x: cls._numeric_op(x, scalar, digits), na_action="ignore"
             ).astype(result_dtype)
         else:
             return series.map(
-                lambda x: cls._decimal_op(scalar, x, precision), na_action="ignore"
+                lambda x: cls._numeric_op(scalar, x, digits), na_action="ignore"
             ).astype(result_dtype)
 
 
@@ -181,9 +218,21 @@ class NaturalLogarithm(Unary):
     """  # noqa E501
 
     op = LN
-    py_op = math.log
     return_type = Number
     pc_func = staticmethod(pc.ln)
+
+    @classmethod
+    def py_op(cls, x: Any) -> Any:
+        if x <= 0:
+            raise SemanticError("2-1-15-8", op=cls.op, value=x)
+        return math.log(x)
+
+    @classmethod
+    def _check_domain(cls, series: Any) -> None:
+        bad = series.dropna()
+        bad = bad[bad <= 0]
+        if len(bad):
+            raise SemanticError("2-1-15-8", op=cls.op, value=bad.iloc[0])
 
 
 class SquareRoot(Unary):
@@ -193,9 +242,21 @@ class SquareRoot(Unary):
     """  # noqa E501
 
     op = SQRT
-    py_op = math.sqrt
     return_type = Number
     pc_func = staticmethod(pc.sqrt)
+
+    @classmethod
+    def py_op(cls, x: Any) -> Any:
+        if x < 0:
+            raise SemanticError("2-1-15-2", op=cls.op, value=x)
+        return math.sqrt(x)
+
+    @classmethod
+    def _check_domain(cls, series: Any) -> None:
+        bad = series.dropna()
+        bad = bad[bad < 0]
+        if len(bad):
+            raise SemanticError("2-1-15-2", op=cls.op, value=bad.iloc[0])
 
 
 class Ceil(Unary):

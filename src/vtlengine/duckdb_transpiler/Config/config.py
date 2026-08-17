@@ -2,9 +2,6 @@
 DuckDB Transpiler Configuration.
 
 Configuration values can be set via environment variables:
-- VTL_DUCKDB_DECIMAL_WIDTH: DECIMAL precision, total digits (default: 28, -1 to disable)
-- OUTPUT_NUMBER_SIGNIFICANT_DIGITS: DECIMAL scale, decimal places
-  (default: 10, -1 to disable; shared with the pandas backend)
 - VTL_MEMORY_LIMIT: Max memory for DuckDB (e.g., "8GB", "80%") (default: "80%")
 - VTL_THREADS: Number of threads for DuckDB (default: 1)
 - VTL_TEMP_DIRECTORY: Directory for spill-to-disk (default: system temp)
@@ -12,9 +9,13 @@ Configuration values can be set via environment variables:
   (e.g., "100GB") (default: available disk space)
 - VTL_USE_IN_MEMORY_DB: Use in-memory database (default: "1"; set to "0" for file-backed)
 
+Number columns are stored as DOUBLE (IEEE 754 float64), the same representation
+the pandas engine uses. Arithmetic and output precision are controlled by
+OUTPUT_NUMBER_SIGNIFICANT_DIGITS (see vtlengine.Utils._number_config). The
+legacy VTL_DUCKDB_DECIMAL_WIDTH variable is ignored and only triggers a
+DeprecationWarning.
+
 Example:
-    export VTL_DUCKDB_DECIMAL_WIDTH=28
-    export OUTPUT_NUMBER_SIGNIFICANT_DIGITS=10
     export VTL_MEMORY_LIMIT=16GB
     export VTL_THREADS=4
     export VTL_USE_IN_MEMORY_DB=0
@@ -24,94 +25,33 @@ import os
 import shutil
 import tempfile
 import uuid
+import warnings
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterator, Tuple, Union
+from typing import Iterator, Union
 
 import duckdb
 import psutil  # type: ignore[import-untyped]
 
 from vtlengine.duckdb_transpiler.Transpiler.operators import register_regex_functions
-from vtlengine.Exceptions import RunTimeError
 
 # =============================================================================
-# Decimal Configuration
+# Deprecated Decimal Configuration
 # =============================================================================
 
+# Number columns were stored as DECIMAL(width, scale) until 1.9.2; they are now
+# DOUBLE so both engines agree to 15 significant digits (issue #985).
 DECIMAL_WIDTH_ENV_VAR = "VTL_DUCKDB_DECIMAL_WIDTH"
-DECIMAL_SCALE_ENV_VAR = "OUTPUT_NUMBER_SIGNIFICANT_DIGITS"
-
-DEFAULT_DECIMAL_WIDTH = 28
-DEFAULT_DECIMAL_SCALE = 10
-
-MAX_DECIMAL_WIDTH = 38
-MIN_DECIMAL_WIDTH = 6
-
-MAX_DECIMAL_SCALE = 15
-MIN_DECIMAL_SCALE = 6
-
-DISABLE_VALUE = -1
-
-DECIMAL_WIDTH = DEFAULT_DECIMAL_WIDTH
-DECIMAL_SCALE = DEFAULT_DECIMAL_SCALE
 
 
-def get_decimal_type() -> str:
-    """
-    Get the DuckDB type string for Number columns.
-
-    Returns:
-        "DOUBLE" if disabled (scale or precision is -1),
-        otherwise DECIMAL type string, e.g., "DECIMAL(28,15)"
-    """
-    return f"DECIMAL({DECIMAL_WIDTH},{DECIMAL_SCALE})"
-
-
-def get_decimal_config() -> Tuple[int, int]:
-    """
-    Get the current decimal precision and scale configuration.
-
-    Returns:
-        Tuple of (precision, scale)
-    """
-    return (DECIMAL_WIDTH, DECIMAL_SCALE)
-
-
-def set_decimal_config() -> None:
-    """
-    Set decimal precision and scale at runtime.
-
-    Args:
-        precision: Total number of digits
-        scale: Number of decimal places
-    """
-    global DECIMAL_WIDTH, DECIMAL_SCALE
-    DECIMAL_WIDTH = int(os.getenv(DECIMAL_WIDTH_ENV_VAR, DECIMAL_WIDTH))
-    DECIMAL_SCALE = int(os.getenv(DECIMAL_SCALE_ENV_VAR, DECIMAL_SCALE))
-
-    if DECIMAL_WIDTH == DISABLE_VALUE:
-        DECIMAL_WIDTH = MAX_DECIMAL_WIDTH
-    if DECIMAL_SCALE == DISABLE_VALUE:
-        DECIMAL_SCALE = MAX_DECIMAL_SCALE
-
-    if DECIMAL_SCALE < MIN_DECIMAL_SCALE or DECIMAL_SCALE > MAX_DECIMAL_SCALE:
-        raise RunTimeError(
-            code="0-4-1-1",
-            env_var=DECIMAL_SCALE_ENV_VAR,
-            value=DECIMAL_SCALE,
-            min_value=MIN_DECIMAL_SCALE,
-            max_value=MAX_DECIMAL_SCALE,
-            disable_value=DISABLE_VALUE,
-        )
-
-    if DECIMAL_WIDTH < MIN_DECIMAL_WIDTH or DECIMAL_SCALE > MAX_DECIMAL_WIDTH:
-        raise RunTimeError(
-            code="0-4-1-1",
-            env_var=DECIMAL_WIDTH_ENV_VAR,
-            value=DECIMAL_WIDTH,
-            min_value=MIN_DECIMAL_WIDTH,
-            max_value=MAX_DECIMAL_WIDTH,
-            disable_value=DISABLE_VALUE,
+def _warn_deprecated_decimal_width() -> None:
+    if os.environ.get(DECIMAL_WIDTH_ENV_VAR):
+        warnings.warn(
+            f"{DECIMAL_WIDTH_ENV_VAR} is deprecated and ignored: Number columns are "
+            "stored as DOUBLE. Use OUTPUT_NUMBER_SIGNIFICANT_DIGITS to control "
+            "arithmetic precision.",
+            DeprecationWarning,
+            stacklevel=2,
         )
 
 
@@ -212,7 +152,6 @@ def configure_duckdb_connection(conn: duckdb.DuckDBPyConnection) -> None:
         expression depth limit which can be too low for complex VTL queries
     - Enable object cache for better performance on repeated queries: DuckDB can cache query plans
         and data structures to speed up repeated queries
-    - Set decimal configuration: Apply the configured decimal precision and scale
     """
     max_temp_dir_size = _max_temp_directory_size()
     statements = [
@@ -231,8 +170,8 @@ def configure_duckdb_connection(conn: duckdb.DuckDBPyConnection) -> None:
     # Register Python UDFs (regex fallback for patterns RE2 cannot compile).
     register_regex_functions(conn)
 
-    # Module-level decimal config
-    set_decimal_config()
+    # Legacy decimal storage configuration (Number is DOUBLE since issue #985)
+    _warn_deprecated_decimal_width()
 
 
 def create_configured_connection(database: str = ":memory:") -> duckdb.DuckDBPyConnection:
