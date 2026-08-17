@@ -11,9 +11,7 @@ Configuration values can be set via environment variables:
 
 Number columns are stored as DOUBLE (IEEE 754 float64), the same representation
 the pandas engine uses. Arithmetic and output precision are controlled by
-OUTPUT_NUMBER_SIGNIFICANT_DIGITS (see vtlengine.Utils._number_config). The
-legacy VTL_DUCKDB_DECIMAL_WIDTH variable is ignored and only triggers a
-DeprecationWarning.
+OUTPUT_NUMBER_SIGNIFICANT_DIGITS (see vtlengine.Utils._number_config).
 
 Example:
     export VTL_MEMORY_LIMIT=16GB
@@ -25,7 +23,6 @@ import os
 import shutil
 import tempfile
 import uuid
-import warnings
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator, Union
@@ -34,26 +31,6 @@ import duckdb
 import psutil  # type: ignore[import-untyped]
 
 from vtlengine.duckdb_transpiler.Transpiler.operators import register_regex_functions
-
-# =============================================================================
-# Deprecated Decimal Configuration
-# =============================================================================
-
-# Number columns were stored as DECIMAL(width, scale) until 1.9.2; they are now
-# DOUBLE so both engines agree to 15 significant digits (issue #985).
-DECIMAL_WIDTH_ENV_VAR = "VTL_DUCKDB_DECIMAL_WIDTH"
-
-
-def _warn_deprecated_decimal_width() -> None:
-    if os.environ.get(DECIMAL_WIDTH_ENV_VAR):
-        warnings.warn(
-            f"{DECIMAL_WIDTH_ENV_VAR} is deprecated and ignored: Number columns are "
-            "stored as DOUBLE. Use OUTPUT_NUMBER_SIGNIFICANT_DIGITS to control "
-            "arithmetic precision.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-
 
 # =============================================================================
 # Memory & Performance Configuration
@@ -169,9 +146,6 @@ def configure_duckdb_connection(conn: duckdb.DuckDBPyConnection) -> None:
 
     # Register Python UDFs (regex fallback for patterns RE2 cannot compile).
     register_regex_functions(conn)
-
-    # Legacy decimal storage configuration (Number is DOUBLE since issue #985)
-    _warn_deprecated_decimal_width()
 
 
 def create_configured_connection(database: str = ":memory:") -> duckdb.DuckDBPyConnection:

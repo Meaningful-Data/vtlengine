@@ -180,17 +180,6 @@ Selects the DuckDB storage backend.
      - Use a file-backed database under ``VTL_TEMP_DIRECTORY`` (recommended for very large
        datasets that approach available RAM)
 
-.. _vtl_duckdb_decimal_width:
-
-``VTL_DUCKDB_DECIMAL_WIDTH``
-============================
-
-.. deprecated:: 1.9.3
-    This variable is **ignored**. Number columns are stored as ``DOUBLE`` (IEEE 754
-    float64) in the DuckDB engine, exactly like the pandas engine, so both backends
-    agree to 15 significant digits. Setting it emits a ``DeprecationWarning``. Use
-    :ref:`output_number_significant_digits` to control arithmetic precision.
-
 ``VTL_SKIP_LOAD_VALIDATION``
 ============================
 

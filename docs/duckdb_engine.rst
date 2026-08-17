@@ -194,8 +194,7 @@ Behavioural notes
   the same representation the pandas engine uses. Every binary arithmetic result
   (``+``, ``-``, ``*``, ``/``, ``mod``, ``power``) is rounded to
   :ref:`output_number_significant_digits` significant digits (15 by default), so both
-  engines produce identical values and identical CSV output. The legacy
-  :ref:`vtl_duckdb_decimal_width` variable is deprecated and ignored.
+  engines produce identical values and identical CSV output.
 * **Post-load validation**: after each table is created the engine runs no-duplicates,
   temporal column format, and DWI cardinality checks. Disable them only for
   benchmarking via ``VTL_SKIP_LOAD_VALIDATION``.
