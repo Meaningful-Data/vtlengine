@@ -2,9 +2,10 @@ from typing import Any, Dict, List
 
 import pandas as pd
 
+from vtlengine.AST.Grammar.tokens import INTERSECT, SETDIFF, SYMDIFF, UNION
 from vtlengine.DataTypes import binary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Model import Dataset
+from vtlengine.Model import Component, Dataset
 from vtlengine.Operators import Operator
 
 
@@ -21,7 +22,13 @@ class Set(Operator):
 
         for comp in dataset_1.components.values():
             if comp.name not in dataset_2.components:
-                raise Exception(f"Component {comp.name} not found in dataset {dataset_2.name}")
+                raise SemanticError(
+                    "1-1-17-2",
+                    op=cls.op,
+                    comp_name=comp.name,
+                    dataset_1=dataset_1.name,
+                    dataset_2=dataset_2.name,
+                )
             second_comp = dataset_2.components[comp.name]
             binary_implicit_promotion(
                 comp.data_type,
@@ -30,9 +37,12 @@ class Set(Operator):
                 cls.return_type,
             )
             if comp.role != second_comp.role:
-                raise Exception(
-                    f"Component {comp.name} has different roles "
-                    f"in datasets {dataset_1.name} and {dataset_2.name}"
+                raise SemanticError(
+                    "1-1-17-3",
+                    op=cls.op,
+                    comp_name=comp.name,
+                    dataset_1=dataset_1.name,
+                    dataset_2=dataset_2.name,
                 )
 
     @classmethod
@@ -41,23 +51,26 @@ class Set(Operator):
         for operand in operands[1:]:
             cls.check_same_structure(base_operand, operand)
 
-        result_components: Dict[str, Any] = {}
-        for operand in operands:
-            if len(result_components) == 0:
-                result_components = operand.components
-            else:
-                for comp_name, comp in operand.components.items():
-                    current_comp = result_components[comp_name]
-                    result_components[comp_name].data_type = binary_implicit_promotion(
-                        current_comp.data_type, comp.data_type
-                    )
-                    result_components[comp_name].nullable = current_comp.nullable or comp.nullable
+        # Copy the components so the promoted data_type and nullable are written
+        # on the result structure, never back onto the first operand (#1057).
+        result_components: Dict[str, Component] = {
+            comp_name: comp.copy() for comp_name, comp in base_operand.components.items()
+        }
+        for operand in operands[1:]:
+            for comp_name, comp in operand.components.items():
+                current_comp = result_components[comp_name]
+                current_comp.data_type = binary_implicit_promotion(
+                    current_comp.data_type, comp.data_type
+                )
+                current_comp.nullable = current_comp.nullable or comp.nullable
 
         result = Dataset(name="result", components=result_components, data=None)
         return result
 
 
 class Union(Set):
+    op = UNION
+
     @classmethod
     def evaluate(cls, operands: List[Dataset]) -> Dataset:
         result = cls.validate(operands)
@@ -70,6 +83,8 @@ class Union(Set):
 
 
 class Intersection(Set):
+    op = INTERSECT
+
     @classmethod
     def evaluate(cls, operands: List[Dataset]) -> Dataset:
         result = cls.validate(operands)
@@ -100,6 +115,8 @@ class Intersection(Set):
 
 
 class Symdiff(Set):
+    op = SYMDIFF
+
     @classmethod
     def evaluate(cls, operands: List[Dataset]) -> Dataset:
         result = cls.validate(operands)
@@ -134,6 +151,8 @@ class Symdiff(Set):
 
 
 class Setdiff(Set):
+    op = SETDIFF
+
     @staticmethod
     def has_null(row: Any) -> bool:
         return row.isnull().any()

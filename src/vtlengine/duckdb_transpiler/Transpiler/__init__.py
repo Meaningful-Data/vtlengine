@@ -2949,23 +2949,36 @@ FROM (
         on_clause = self._join_on_clause(id_names, "a", "b")
 
         if op == tokens.INTERSECT:
-            return f"SELECT a.* FROM ({a_sql}) AS a SEMI JOIN ({b_sql}) AS b ON {on_clause}"
+            # Fold over all operands: intersect is n-ary in the grammar.
+            result_sql = a_sql
+            for other_sql in child_sqls[1:]:
+                result_sql = (
+                    f"SELECT a.* FROM ({result_sql}) AS a "
+                    f"SEMI JOIN ({other_sql}) AS b ON {on_clause}"
+                )
+            return result_sql
         elif op == tokens.SETDIFF:
             return f"SELECT a.* FROM ({a_sql}) AS a ANTI JOIN ({b_sql}) AS b ON {on_clause}"
         elif op == tokens.SYMDIFF:
             second_ds = self._get_dataset_structure(node.children[1])
             second_ids = second_ds.get_identifiers_names() if second_ds else id_names
             on_clause_rev = self._join_on_clause(second_ids, "c", "d")
+            # UNION ALL is positional: select both branches in the first operand's
+            # column order so operands declared in a different order keep their
+            # values on the right columns.
+            col_order = list(first_ds.components.keys())
+            cols_a = ", ".join(f"a.{quote_name(c)}" for c in col_order)
+            cols_c = ", ".join(f"c.{quote_name(c)}" for c in col_order)
             # Materialize each side once via CTEs so the two ANTI JOIN passes
             # don't each re-evaluate the (potentially expensive) input subqueries.
             cte = CTEBuilder()
             cte.cte("_sd_a", a_sql, materialized=True)
             cte.cte("_sd_b", b_sql, materialized=True)
             return cte.select(
-                f"(SELECT a.* FROM _sd_a AS a "
+                f"(SELECT {cols_a} FROM _sd_a AS a "
                 f"ANTI JOIN _sd_b AS b ON {on_clause}) "
                 f"UNION ALL "
-                f"(SELECT c.* FROM _sd_b AS c "
+                f"(SELECT {cols_c} FROM _sd_b AS c "
                 f"ANTI JOIN _sd_a AS d ON {on_clause_rev})"
             )
 
