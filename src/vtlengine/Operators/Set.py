@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Dict, List
 
 import pandas as pd
 
@@ -152,10 +152,6 @@ class Symdiff(Set):
 
 class Setdiff(Set):
     op = SETDIFF
-
-    @staticmethod
-    def has_null(row: Any) -> bool:
-        return row.isnull().any()
 
     @classmethod
     def evaluate(cls, operands: List[Dataset]) -> Dataset:
