@@ -1,14 +1,8 @@
 {
   "datasets": [
     {
-      "name": "DS_r1",
+      "name": "DS_r2",
       "DataStructure": [
-        {
-          "name": "Id_1",
-          "role": "Identifier",
-          "type": "Integer",
-          "nullable": false
-        },
         {
           "name": "int_var",
           "role": "Measure",

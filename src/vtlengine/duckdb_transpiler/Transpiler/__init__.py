@@ -2547,16 +2547,17 @@ FROM (
         ds_tp_minmax_cols: List[tuple[str, str]] = []
 
         if op == tokens.COUNT:
-            # count applies to each Measure and gives back that same Measure, counted.
-            # A lone Measure is renamed to int_var, so that the Data Set form and the
-            # Component form of the operator agree (issue #959).
+            # count reports the number of Data Points as the single Integer Measure
+            # int_var, whatever the Measures of the operand. A Data Point whose
+            # Measures are all null is ignored; one holding at least one non-null
+            # Measure is counted. A count that would yield null reports 0 (issue #1049).
             measures = ds.get_measures_names()
-            if len(measures) > 1:
-                for measure in measures:
-                    cols.append(f"COUNT({quote_name(measure)}) AS {quote_name(measure)}")
+            if measures:
+                any_non_null = " OR ".join(f"{quote_name(m)} IS NOT NULL" for m in measures)
+                counted = f"COALESCE(COUNT(CASE WHEN {any_non_null} THEN 1 END), 0)"
             else:
-                counted = quote_name(measures[0]) if measures else "*"
-                cols.append(f"COUNT({counted}) AS {quote_name('int_var')}")
+                counted = "COUNT(*)"
+            cols.append(f"{counted} AS {quote_name('int_var')}")
         else:
             measures = ds.get_measures_names()
             for measure in measures:
