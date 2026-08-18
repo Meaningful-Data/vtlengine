@@ -1149,6 +1149,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             if node.op in (tokens.PLUS, tokens.MINUS):
                 inner = self._detect_scalar_type(node.operand)
                 return Number if inner == Number else None
+        elif isinstance(node, AST.ParamOp):
+            # round/trunc with a digits parameter yield Number (without one they
+            # yield Integer, which needs no rounding wrap).
+            if node.op in (tokens.ROUND, tokens.TRUNC) and node.params:
+                return Number
         elif isinstance(node, AST.ParFunction):
             inner = self._detect_scalar_type(node.operand)
             return Number if inner == Number else None
@@ -3366,6 +3371,7 @@ FROM (
                 measure_cols=ds.get_measures_names(),
                 output_mode=node.output.value if node.output else "invalid",
                 viral_comps=viral_comps,
+                components=ds.components,
             )
             for rule in rules
         ]
@@ -3386,6 +3392,7 @@ FROM (
         measure_cols: List[str],
         output_mode: str,
         viral_comps: Optional[List[Any]] = None,
+        components: Optional[Dict[str, Component]] = None,
     ) -> str:
         """Build SQL for a single datapoint rule."""
         rule_node = rule.rule
@@ -3393,8 +3400,10 @@ FROM (
         then_node = rule_node.right if has_when else rule_node
 
         with self._stash_dp_signature(signature):
-            then_expr = self._visit_dp_expr(then_node, signature)
-            when_cond = self._visit_dp_expr(rule_node.left, signature) if has_when else "TRUE"
+            then_expr = self._visit_dp_expr(then_node, signature, components)
+            when_cond = (
+                self._visit_dp_expr(rule_node.left, signature, components) if has_when else "TRUE"
+            )
 
         if has_when:
             fail_cond = f"({when_cond}) AND NOT ({then_expr})"
@@ -3428,16 +3437,65 @@ FROM (
         select_parts.extend(viral_parts)
         return f"SELECT {', '.join(select_parts)} FROM {table_src}"
 
-    def _visit_dp_expr(self, node: AST.AST, signature: Dict[str, str]) -> str:
+    def _detect_dp_type(
+        self,
+        node: AST.AST,
+        signature: Dict[str, str],
+        components: Optional[Dict[str, Component]],
+    ) -> Optional[type]:
+        """Detect the data type of a datapoint-rule operand, mirroring
+        ``_detect_scalar_type`` so rules get the same tolerance and per-op
+        rounding dispatch as ordinary expressions (issue #985)."""
+        if isinstance(node, (AST.DefIdentifier, AST.VarID)):
+            comp = (components or {}).get(signature.get(node.value, node.value))
+            return comp.data_type if comp else None
+        if isinstance(node, AST.Constant):
+            return Number if isinstance(node.value, float) else None
+        if isinstance(node, (AST.HRBinOp, AST.BinOp)):
+            if node.op in (tokens.DIV, tokens.POWER):
+                return Number
+            if node.op in (tokens.PLUS, tokens.MINUS, tokens.MULT, tokens.MOD) and Number in (
+                self._detect_dp_type(node.left, signature, components),
+                self._detect_dp_type(node.right, signature, components),
+            ):
+                return Number
+        elif isinstance(node, (AST.HRUnOp, AST.UnaryOp)):
+            if node.op in (tokens.SQRT, tokens.EXP, tokens.LN):
+                return Number
+            if node.op in (tokens.PLUS, tokens.MINUS):
+                inner = self._detect_dp_type(node.operand, signature, components)
+                return Number if inner == Number else None
+        elif (
+            isinstance(node, AST.ParamOp)
+            and node.op in (tokens.ROUND, tokens.TRUNC)
+            and node.params
+        ):
+            return Number
+        return None
+
+    def _visit_dp_expr(
+        self,
+        node: AST.AST,
+        signature: Dict[str, str],
+        components: Optional[Dict[str, Component]] = None,
+    ) -> str:
         """Visit an expression in datapoint-rule context."""
         if isinstance(node, (AST.HRBinOp, AST.BinOp)):
-            left_sql = self._visit_dp_expr(node.left, signature)
-            right_sql = self._visit_dp_expr(node.right, signature)
+            left_sql = self._visit_dp_expr(node.left, signature, components)
+            right_sql = self._visit_dp_expr(node.right, signature, components)
             if isinstance(node, AST.HRBinOp) and node.op == tokens.WHEN:
                 return f"CASE WHEN ({left_sql}) THEN ({right_sql}) ELSE TRUE END"
-            return registry.sql(node.op, left_sql, right_sql)
+            # Route through the shared builder so rule expressions carry the
+            # Number comparison tolerance and per-op rounding (issue #985).
+            return self._make_binary_expr(
+                left_sql,
+                right_sql,
+                node.op,
+                self._detect_dp_type(node.left, signature, components),
+                self._detect_dp_type(node.right, signature, components),
+            )
         if isinstance(node, (AST.HRUnOp, AST.UnaryOp)):
-            operand_sql = self._visit_dp_expr(node.operand, signature)
+            operand_sql = self._visit_dp_expr(node.operand, signature, components)
             return registry.sql(node.op, operand_sql)
         if isinstance(node, (AST.DefIdentifier, AST.VarID)):
             col_name = signature.get(node.value, node.value)
@@ -3445,9 +3503,9 @@ FROM (
         if isinstance(node, AST.Constant):
             return self._to_sql_literal(node.value)
         if isinstance(node, AST.If):
-            cond_sql = self._visit_dp_expr(node.condition, signature)
-            then_sql = self._visit_dp_expr(node.thenOp, signature)
-            else_sql = self._visit_dp_expr(node.elseOp, signature)
+            cond_sql = self._visit_dp_expr(node.condition, signature, components)
+            then_sql = self._visit_dp_expr(node.thenOp, signature, components)
+            else_sql = self._visit_dp_expr(node.elseOp, signature, components)
             return (
                 f"CASE WHEN ({cond_sql}) THEN CAST(({then_sql}) AS BOOLEAN)"
                 f" ELSE CAST(({else_sql}) AS BOOLEAN) END"

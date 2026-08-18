@@ -128,6 +128,7 @@ ARITHMETIC_SCRIPTS = {
     "negative_zero": "DS_r <- DS_1[calc Me_1 := Me_1 * -1];",
     "mod_mixed_sign": "DS_r <- DS_1[calc Me_1 := mod(Me_1, 3)];",
     "power_int": "DS_r <- DS_1[calc Me_1 := power(Me_1, 2)];",
+    "round_trunc": "DS_r <- DS_1[calc Me_1 := round(Me_1 / 7, 3) + trunc(Me_1 * 3, 2)];",
 }
 
 
@@ -391,3 +392,142 @@ def test_integer_load_exactness() -> None:
                 )
                 loaded = result["DS_r"].data.sort_values("Id_1")["Me_1"].tolist()
                 assert [int(v) for v in loaded] == big, f"use_duckdb={use_duckdb}"
+
+
+def _run_both_multi(script, data_structures, datapoints_factory):
+    warnings.filterwarnings("ignore", category=FutureWarning)
+    results = {}
+    for use_duckdb in (False, True):
+        results[use_duckdb] = run(
+            script=script,
+            data_structures=data_structures,
+            datapoints=datapoints_factory(),
+            use_duckdb=use_duckdb,
+            return_only_persistent=False,
+        )
+    return results
+
+
+def test_check_datapoint_parity() -> None:
+    """Datapoint-rule expressions carry the same per-op rounding and comparison
+    tolerance as ordinary expressions in both engines: Me_1 * 3 = Me_2 passes for
+    Me_1 = 1/3 (the kernel rounds 0.999999999999999 within tolerance of 1.0) and
+    fails for a 1e-12 deviation."""
+    ds = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                    {"name": "Me_2", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    values = [
+        (1 / 3, 1.0),  # r1 passes via kernel rounding + tolerance
+        (0.333333333333, 1.0),  # 1e-12 off: r1 fails
+        (1.23456789012345, 3.70370367037035),  # exactly Me_1*3 at 15 digits: r1 passes
+        (2.0, 1.0),  # r1 fails
+    ]
+    script = """
+        define datapoint ruleset dr985 (variable Me_1, Me_2) is
+            r1: Me_1 * 3 = Me_2 errorcode "triple" errorlevel 1;
+            r2: when Me_1 > 0 then sqrt(Me_1 * Me_1) = Me_1 errorcode "sqrtsq" errorlevel 2
+        end datapoint ruleset;
+        DS_c1 := check_datapoint(DS_1, dr985);
+        DS_c2 := check_datapoint(DS_1, dr985 all);
+    """
+
+    def factory():
+        return {
+            "DS_1": pd.DataFrame(
+                {
+                    "Id_1": range(1, len(values) + 1),
+                    "Me_1": [v[0] for v in values],
+                    "Me_2": [v[1] for v in values],
+                }
+            )
+        }
+
+    results = _run_both_multi(script, ds, factory)
+    for use_duckdb in (False, True):
+        all_mode = results[use_duckdb]["DS_c2"].data.sort_values(["ruleid", "Id_1"])
+        r1 = all_mode[all_mode["ruleid"] == "r1"]
+        assert r1["bool_var"].tolist() == [True, False, True, False], f"use_duckdb={use_duckdb}"
+        r2 = all_mode[all_mode["ruleid"] == "r2"]
+        assert r2["bool_var"].tolist() == [True, True, True, True], f"use_duckdb={use_duckdb}"
+        invalid = results[use_duckdb]["DS_c1"].data
+        assert sorted(invalid["Id_1"].tolist()) == [2, 4], f"use_duckdb={use_duckdb}"
+        assert set(invalid["errorcode"]) == {"triple"}, f"use_duckdb={use_duckdb}"
+
+
+def test_check_hierarchy_parity() -> None:
+    """check_hierarchy honours the comparison tolerance identically in both
+    engines (issue #919 semantics on the new float64 kernel): an imbalance of
+    1e-10 on a 6e5 aggregate is within 5e-15 relative tolerance, 0.004 is not.
+    The imbalance column itself must be bit-identical."""
+    ds = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Id_2", "type": "String", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    groups = [
+        (600000.0000000001, 100000.0, 200000.0, 300000.0),  # within tolerance -> OK
+        (600000.004, 100000.0, 200000.0, 300000.0),  # outside tolerance -> FAIL
+        (123456789012345.0, 41152263004115.0, 41152263004115.0, 41152263004115.0),  # exact
+        (0.30000000000000004, 0.1, 0.1, 0.1),  # 0.1*3 residue -> within tolerance
+    ]
+    script = """
+        define hierarchical ruleset hr985 (variable rule Id_2) is
+            A = B + N + U errorcode "eq_total" errorlevel 4;
+            A >= U errorcode "ge_unal" errorlevel 3
+        end hierarchical ruleset;
+        DS_h := check_hierarchy(DS_1, hr985 rule Id_2 all);
+    """
+
+    def factory():
+        rows = []
+        for i, (a, b, n, u) in enumerate(groups, start=1):
+            rows += [(i, "A", a), (i, "B", b), (i, "N", n), (i, "U", u)]
+        return {
+            "DS_1": pd.DataFrame(
+                {
+                    "Id_1": [r[0] for r in rows],
+                    "Id_2": [r[1] for r in rows],
+                    "Me_1": [r[2] for r in rows],
+                }
+            )
+        }
+
+    results = _run_both_multi(script, ds, factory)
+    frames = {}
+    for use_duckdb in (False, True):
+        data = (
+            results[use_duckdb]["DS_h"].data.sort_values(["Id_1", "ruleid"]).reset_index(drop=True)
+        )
+        eq_rule = data[data["errorcode"].isna() | (data["errorcode"] != "ge_unal")]
+        frames[use_duckdb] = data
+        eq_bools = data[data["ruleid"] == "1"]["bool_var"].tolist()
+        assert eq_bools == [True, False, True, True], f"use_duckdb={use_duckdb}: {eq_bools}"
+        assert data[data["ruleid"] == "2"]["bool_var"].tolist() == [True] * len(groups), (
+            f"use_duckdb={use_duckdb}"
+        )
+        del eq_rule
+    for col in frames[False].columns:
+        pandas_vals = frames[False][col].tolist()
+        duckdb_vals = frames[True][col].tolist()
+        for i, (pv, dv) in enumerate(zip(pandas_vals, duckdb_vals)):
+            if pd.isna(pv) or pd.isna(dv):
+                both_null = bool(pd.isna(pv)) and bool(pd.isna(dv))
+                assert both_null, f"{col}[{i}]: {pv!r} != {dv!r}"
+            else:
+                assert pv == dv, f"{col}[{i}]: {pv!r} != {dv!r}"

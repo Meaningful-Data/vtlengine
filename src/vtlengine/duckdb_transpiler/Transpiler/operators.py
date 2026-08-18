@@ -313,7 +313,11 @@ def _create_default_registry() -> OperatorRegistry:
             without_digits = len(args) < 2 or args[1] is None
             precision = "0" if without_digits else str(args[1])
             expr = f"{sql_fn}(CAST({args[0]} AS DOUBLE), COALESCE(CAST({precision} AS INTEGER), 0))"
-            return f"CAST({expr} AS BIGINT)" if without_digits else expr
+            if without_digits:
+                return f"CAST({expr} AS BIGINT)"
+            # Number result: normalize to the configured significant digits so
+            # both engines' round/trunc agree bit-for-bit (issue #985)
+            return numeric_rounding_sql(expr)
 
         return gen
 

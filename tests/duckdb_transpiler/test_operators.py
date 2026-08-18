@@ -229,8 +229,16 @@ class TestGlobalRegistry:
     @pytest.mark.parametrize(
         "token,args,expected_output",
         [
-            (ROUND, ('"x"', "2"), 'ROUND(CAST("x" AS DOUBLE), COALESCE(CAST(2 AS INTEGER), 0))'),
-            (TRUNC, ('"x"', "0"), 'TRUNC(CAST("x" AS DOUBLE), COALESCE(CAST(0 AS INTEGER), 0))'),
+            (
+                ROUND,
+                ('"x"', "2"),
+                'vtl_round_sig(ROUND(CAST("x" AS DOUBLE), COALESCE(CAST(2 AS INTEGER), 0)), 15)',
+            ),
+            (
+                TRUNC,
+                ('"x"', "0"),
+                'vtl_round_sig(TRUNC(CAST("x" AS DOUBLE), COALESCE(CAST(0 AS INTEGER), 0)), 15)',
+            ),
             (INSTR, ('"str"', "'a'"), "vtl_instr(\"str\", 'a', NULL, NULL)"),
             (LOG, ('"x"', "10"), 'vtl_log("x", 10)'),
             (POWER, ('"x"', "2"), 'vtl_power("x", 2)'),

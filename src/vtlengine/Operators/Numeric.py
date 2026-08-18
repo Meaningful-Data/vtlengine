@@ -37,6 +37,14 @@ from vtlengine.Utils._number_config import get_effective_numeric_digits
 _ROUNDED_NUMERIC_OPS = frozenset({PLUS, MINUS, MULT, DIV, MOD, POWER})
 
 
+def _round_to_significant(value: float, digits: Optional[int]) -> float:
+    """Round a float to the configured significant digits (round-half-even),
+    the same normalization vtl_round_sig applies in the DuckDB engine."""
+    if digits is None or math.isnan(value) or math.isinf(value):
+        return value
+    return float(f"{value:.{digits}g}")
+
+
 class Unary(Operator.Unary):
     """
     Checks that the unary operation is performed with a number.
@@ -112,8 +120,8 @@ class Binary(Operator.Binary):
             return result
         if math.isnan(result):
             return None
-        if cls.op in _ROUNDED_NUMERIC_OPS and digits is not None:
-            result = float(f"{result:.{digits}g}")
+        if cls.op in _ROUNDED_NUMERIC_OPS:
+            result = _round_to_significant(result, digits)
         # Whole results render as ints, but only within float64's exact-integer
         # range: pyarrow refuses larger Python ints when building double arrays.
         if result.is_integer() and abs(result) <= 2**53:
@@ -503,7 +511,9 @@ class Round(Parameterized):
             rounded_value = math.ceil(x * multiplier - 0.5) / multiplier
 
         if param is not None:
-            return rounded_value
+            # Number result: normalize like every arithmetic result so both
+            # engines' round() agree bit-for-bit (issue #985)
+            return _round_to_significant(rounded_value, get_effective_numeric_digits())
 
         return int(rounded_value)
 
@@ -524,7 +534,8 @@ class Trunc(Parameterized):
         truncated_value = int(x * multiplier) / multiplier
 
         if not pd.isnull(param):
-            return truncated_value
+            # Number result: normalize like every arithmetic result (issue #985)
+            return _round_to_significant(truncated_value, get_effective_numeric_digits())
 
         return int(truncated_value)
 
