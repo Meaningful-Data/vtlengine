@@ -479,6 +479,21 @@ def build_select_columns(
     return select_cols
 
 
+def check_extra_columns(
+    columns: List[str],
+    components: Dict[str, Component],
+    dataset_name: str,
+) -> None:
+    """Reject the columns the DataStructure does not define.
+
+    The SDMX marker columns are taken out by ``handle_sdmx_columns`` before this
+    runs, so what is left is what the pandas loader rejects too.
+    """
+    extra_columns = sorted(set(columns) - set(components))
+    if extra_columns:
+        raise DataLoadError("0-3-1-15", name=dataset_name, extra_columns=", ".join(extra_columns))
+
+
 def check_missing_identifiers(
     id_columns: List[str],
     keep_columns: List[str],

@@ -2199,6 +2199,49 @@ def test_run_error_on_extra_dataframe_columns():
         run(script=script, data_structures=data_structures, datapoints=datapoints)
 
 
+@pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+@pytest.mark.parametrize("input_kind", ["dataframe", "csv", "parquet"])
+def test_run_error_on_extra_columns(tmp_path, input_kind, use_duckdb):
+    """Whatever carries the input, a column outside the DataStructure is rejected.
+
+    The DuckDb engine selected the DataStructure components and read past the rest,
+    so it ran a script the pandas engine refused to load (issue #1053).
+    """
+    if input_kind == "parquet" and not use_duckdb:
+        pytest.skip("the pandas loader reads a Parquet file as a CSV and fails earlier")
+
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    df = pd.DataFrame({"Id_1": [1, 2], "Me_1": [10.0, 20.0], "Me_2": ["a", "b"]})
+    if input_kind == "dataframe":
+        datapoints = {"DS_1": df}
+    elif input_kind == "csv":
+        csv_path = tmp_path / "DS_1.csv"
+        df.to_csv(csv_path, index=False)
+        datapoints = {"DS_1": str(csv_path)}
+    else:
+        parquet_path = tmp_path / "DS_1.parquet"
+        df.to_parquet(parquet_path, index=False)
+        datapoints = {"DS_1": str(parquet_path)}
+
+    with pytest.raises(DataLoadError, match="0-3-1-15"):
+        run(
+            script="DS_r <- DS_1 * 10;",
+            data_structures=data_structures,
+            datapoints=datapoints,
+            use_duckdb=use_duckdb,
+        )
+
+
 def test_run_error_on_missing_non_nullable_column():
     """Missing non-nullable columns in the input DataFrame raise an error."""
     script = "DS_r <- DS_1;"
