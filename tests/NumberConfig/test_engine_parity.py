@@ -290,3 +290,66 @@ def test_valid_domain_edges_parity() -> None:
     results = _run_both("DS_r <- DS_1[calc Me_1 := sqrt(Me_1)];", NUMBER_DS, df)
     for use_duckdb in (False, True):
         assert results[use_duckdb]["DS_r"].data["Me_1"].tolist() == [0.0]
+
+
+def test_number_comparison_tolerance_parity() -> None:
+    """Equality-based comparisons on Number honour the 5e-15 relative tolerance
+    identically in both engines; strict > and < stay exact in both."""
+    rows = [
+        1.000000000000003,  # ~3e-15 above 1.0: within tolerance
+        1.00000000000001,  # ~1e-14 above 1.0: outside tolerance
+        0.999999999999997,  # ~3e-15 below 1.0: within tolerance
+        0.9999999999999,  # ~1e-13 below 1.0: outside tolerance
+    ]
+    df = pd.DataFrame({"Id_1": range(1, len(rows) + 1), "Me_1": rows})
+    script = """
+        DS_r <- DS_1[calc eq := Me_1 = 1.0, le := Me_1 <= 1.0, gt := Me_1 > 1.0,
+                     btw := between(Me_1, 1.0, 2.0)];
+    """
+    results = _run_both(script, NUMBER_DS, df)
+    for use_duckdb in (False, True):
+        data = results[use_duckdb]["DS_r"].data.sort_values("Id_1")
+        assert data["eq"].tolist() == [True, False, True, False], f"use_duckdb={use_duckdb}"
+        assert data["le"].tolist() == [True, False, True, True], f"use_duckdb={use_duckdb}"
+        # strict > is exact: the tolerance never applies to > and <
+        assert data["gt"].tolist() == [True, True, False, False], f"use_duckdb={use_duckdb}"
+        # the lower edge admits 1 - 3e-15 through the tolerant >=
+        assert data["btw"].tolist() == [True, True, True, False], f"use_duckdb={use_duckdb}"
+
+
+def test_integer_comparisons_stay_exact() -> None:
+    """Two distinct Integers never compare equal through the Number tolerance:
+    10^15 and 10^15 + 5 differ by less than 5e-15 * 10^15, but integer
+    comparisons are exact in both engines (values are float64-representable so
+    both loaders keep them intact)."""
+    ds = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Integer", "role": "Measure", "nullable": True},
+                    {"name": "Me_2", "type": "Integer", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    df = pd.DataFrame({"Id_1": [1], "Me_1": [10**15 + 5], "Me_2": [10**15]})
+    script = """
+        DS_r <- DS_1[calc eq := Me_1 = Me_2, neq := Me_1 <> Me_2,
+                     le := Me_1 <= Me_2, gt := Me_1 > Me_2];
+    """
+    warnings.filterwarnings("ignore", category=FutureWarning)
+    for use_duckdb in (False, True):
+        result = run(
+            script=script,
+            data_structures=ds,
+            datapoints={"DS_1": df.copy()},
+            use_duckdb=use_duckdb,
+            return_only_persistent=False,
+        )
+        data = result["DS_r"].data
+        assert data["eq"].tolist() == [False], f"use_duckdb={use_duckdb}"
+        assert data["neq"].tolist() == [True], f"use_duckdb={use_duckdb}"
+        assert data["le"].tolist() == [False], f"use_duckdb={use_duckdb}"
+        assert data["gt"].tolist() == [True], f"use_duckdb={use_duckdb}"
