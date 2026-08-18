@@ -31,10 +31,12 @@ from vtlengine.duckdb_transpiler.Transpiler.operators import (
     FALLBACK_MATCH_FUNCTION,
     NATIVE_MATCH_FUNCTION,
     NUMBER_TOLERANCE_OPS,
+    ROUNDED_NUMERIC_OPS,
     get_duckdb_type,
     is_number_comparison,
     is_re2_incompatible,
     number_tolerance_sql,
+    numeric_rounding_sql,
     registry,
 )
 from vtlengine.duckdb_transpiler.Transpiler.sql_builder import (
@@ -791,7 +793,18 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             if tolerant_sql is not None:
                 return tolerant_sql
         # Typed or generic registry lookup, with function-call fallback
-        return registry.sql(op, left_ref, right_ref, data_type=dt)
+        sql = registry.sql(op, left_ref, right_ref, data_type=dt)
+        # Number arithmetic results are rounded per operation to the configured
+        # significant digits, mirroring the pandas kernel (issue #985). DIV and
+        # POWER always produce Number; + - * mod stay exact BIGINT unless a
+        # Number operand is involved. Time-typed operands are never wrapped.
+        if (
+            op in ROUNDED_NUMERIC_OPS
+            and dt in (None, Number, Integer)
+            and (op in (tokens.DIV, tokens.POWER) or Number in (left_type, right_type))
+        ):
+            sql = numeric_rounding_sql(sql)
+        return sql
 
     def _ds_ds_viral_cols(
         self,
@@ -948,6 +961,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         """Build SQL for dataset-scalar binary operation."""
         ds = self._get_dataset_structure(ds_node)
         if ds is None or not isinstance(ds, Dataset):
+            # No structure info: untyped registry dispatch (no rounding wrap; the
+            # cross-engine parity suite guards this path — issue #985).
             left_sql = self.visit(ds_node)
             right_sql = self.visit(scalar_node)
             if ds_on_left:
@@ -957,13 +972,14 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         scalar_sql = self.visit(scalar_node)
         if op == tokens.CONCAT and self._is_boolean_expr(scalar_node):
             scalar_sql = _bool_to_str(scalar_sql)
+        scalar_dt = self._detect_scalar_type(scalar_node)
 
         def _bin_expr(col_ref: str) -> str:
             comp = ds.components.get(col_ref.strip('"'))
             dt = comp.data_type if comp else None
             if ds_on_left:
-                return self._make_binary_expr(col_ref, scalar_sql, op, dt, None)
-            return self._make_binary_expr(scalar_sql, col_ref, op, None, dt)
+                return self._make_binary_expr(col_ref, scalar_sql, op, dt, scalar_dt)
+            return self._make_binary_expr(scalar_sql, col_ref, op, scalar_dt, dt)
 
         # A mono-measure comparison yields bool_var, matching the structure the
         # visitor reports for this node (issue #920).
@@ -1116,6 +1132,31 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return Number
         if self._is_operand_type(node, Number):
             return Number
+        # Recurse into nested numeric expressions so chained arithmetic keeps the
+        # per-op rounding wrap (issue #985). Only Number propagates upward; any
+        # other inner type keeps the previous None (no dispatch change).
+        if isinstance(node, AST.BinOp):
+            if node.op in (tokens.DIV, tokens.POWER):
+                return Number
+            if node.op in (tokens.PLUS, tokens.MINUS, tokens.MULT, tokens.MOD) and Number in (
+                self._detect_scalar_type(node.left),
+                self._detect_scalar_type(node.right),
+            ):
+                return Number
+        elif isinstance(node, AST.UnaryOp):
+            if node.op in (tokens.SQRT, tokens.EXP, tokens.LN):
+                return Number
+            if node.op in (tokens.PLUS, tokens.MINUS):
+                inner = self._detect_scalar_type(node.operand)
+                return Number if inner == Number else None
+        elif isinstance(node, AST.ParamOp):
+            # round/trunc with a digits parameter yield Number (without one they
+            # yield Integer, which needs no rounding wrap).
+            if node.op in (tokens.ROUND, tokens.TRUNC) and node.params:
+                return Number
+        elif isinstance(node, AST.ParFunction):
+            inner = self._detect_scalar_type(node.operand)
+            return Number if inner == Number else None
         return None
 
     def _is_boolean_expr(self, node: AST.AST) -> bool:
@@ -1945,8 +1986,8 @@ FROM (
             return _bool_to_str(expr)
 
         if target_type_str == "String" and source_lower == "number":
-            # Number columns are stored as DECIMAL, whose VARCHAR rendering keeps
-            # the full scale ('1.1000000000'); render through DOUBLE so the result
+            # Render through DOUBLE so stray DECIMAL expressions (e.g. bare float
+            # literals) never leak their fixed scale ('1.1000000000') and the result
             # matches the pandas engine's str(float) ('1.1') — issue #1031.
             return f"CAST(CAST({expr} AS DOUBLE) AS VARCHAR)"
 
@@ -2421,12 +2462,20 @@ FROM (
 
             common_measures = left_measures.keys() & right_measures.keys()
             for measure in common_measures:
-                left_col = quote_name(left_measures[measure])
-                right_col = quote_name(right_measures[measure])
-                expr = registry.sql(child.op, left_col, right_col)
+                left_q = left_measures[measure]
+                right_q = right_measures[measure]
+                left_comp = ds.components.get(left_q)
+                right_comp = ds.components.get(right_q)
+                expr = self._make_binary_expr(
+                    quote_name(left_q),
+                    quote_name(right_q),
+                    child.op,
+                    left_comp.data_type if left_comp else None,
+                    right_comp.data_type if right_comp else None,
+                )
                 computed[measure] = expr
-                self._consumed_join_aliases.add(left_measures[measure])
-                self._consumed_join_aliases.add(right_measures[measure])
+                self._consumed_join_aliases.add(left_q)
+                self._consumed_join_aliases.add(right_q)
 
         cols: List[str] = [quote_name(id_) for id_ in id_names]
         if output_ds:
@@ -3335,6 +3384,7 @@ FROM (
                 measure_cols=ds.get_measures_names(),
                 output_mode=node.output.value if node.output else "invalid",
                 viral_comps=viral_comps,
+                components=ds.components,
             )
             for rule in rules
         ]
@@ -3355,6 +3405,7 @@ FROM (
         measure_cols: List[str],
         output_mode: str,
         viral_comps: Optional[List[Any]] = None,
+        components: Optional[Dict[str, Component]] = None,
     ) -> str:
         """Build SQL for a single datapoint rule."""
         rule_node = rule.rule
@@ -3362,8 +3413,10 @@ FROM (
         then_node = rule_node.right if has_when else rule_node
 
         with self._stash_dp_signature(signature):
-            then_expr = self._visit_dp_expr(then_node, signature)
-            when_cond = self._visit_dp_expr(rule_node.left, signature) if has_when else "TRUE"
+            then_expr = self._visit_dp_expr(then_node, signature, components)
+            when_cond = (
+                self._visit_dp_expr(rule_node.left, signature, components) if has_when else "TRUE"
+            )
 
         if has_when:
             fail_cond = f"({when_cond}) AND NOT ({then_expr})"
@@ -3397,16 +3450,65 @@ FROM (
         select_parts.extend(viral_parts)
         return f"SELECT {', '.join(select_parts)} FROM {table_src}"
 
-    def _visit_dp_expr(self, node: AST.AST, signature: Dict[str, str]) -> str:
+    def _detect_dp_type(
+        self,
+        node: AST.AST,
+        signature: Dict[str, str],
+        components: Optional[Dict[str, Component]],
+    ) -> Optional[type]:
+        """Detect the data type of a datapoint-rule operand, mirroring
+        ``_detect_scalar_type`` so rules get the same tolerance and per-op
+        rounding dispatch as ordinary expressions (issue #985)."""
+        if isinstance(node, (AST.DefIdentifier, AST.VarID)):
+            comp = (components or {}).get(signature.get(node.value, node.value))
+            return comp.data_type if comp else None
+        if isinstance(node, AST.Constant):
+            return Number if isinstance(node.value, float) else None
+        if isinstance(node, (AST.HRBinOp, AST.BinOp)):
+            if node.op in (tokens.DIV, tokens.POWER):
+                return Number
+            if node.op in (tokens.PLUS, tokens.MINUS, tokens.MULT, tokens.MOD) and Number in (
+                self._detect_dp_type(node.left, signature, components),
+                self._detect_dp_type(node.right, signature, components),
+            ):
+                return Number
+        elif isinstance(node, (AST.HRUnOp, AST.UnaryOp)):
+            if node.op in (tokens.SQRT, tokens.EXP, tokens.LN):
+                return Number
+            if node.op in (tokens.PLUS, tokens.MINUS):
+                inner = self._detect_dp_type(node.operand, signature, components)
+                return Number if inner == Number else None
+        elif (
+            isinstance(node, AST.ParamOp)
+            and node.op in (tokens.ROUND, tokens.TRUNC)
+            and node.params
+        ):
+            return Number
+        return None
+
+    def _visit_dp_expr(
+        self,
+        node: AST.AST,
+        signature: Dict[str, str],
+        components: Optional[Dict[str, Component]] = None,
+    ) -> str:
         """Visit an expression in datapoint-rule context."""
         if isinstance(node, (AST.HRBinOp, AST.BinOp)):
-            left_sql = self._visit_dp_expr(node.left, signature)
-            right_sql = self._visit_dp_expr(node.right, signature)
+            left_sql = self._visit_dp_expr(node.left, signature, components)
+            right_sql = self._visit_dp_expr(node.right, signature, components)
             if isinstance(node, AST.HRBinOp) and node.op == tokens.WHEN:
                 return f"CASE WHEN ({left_sql}) THEN ({right_sql}) ELSE TRUE END"
-            return registry.sql(node.op, left_sql, right_sql)
+            # Route through the shared builder so rule expressions carry the
+            # Number comparison tolerance and per-op rounding (issue #985).
+            return self._make_binary_expr(
+                left_sql,
+                right_sql,
+                node.op,
+                self._detect_dp_type(node.left, signature, components),
+                self._detect_dp_type(node.right, signature, components),
+            )
         if isinstance(node, (AST.HRUnOp, AST.UnaryOp)):
-            operand_sql = self._visit_dp_expr(node.operand, signature)
+            operand_sql = self._visit_dp_expr(node.operand, signature, components)
             return registry.sql(node.op, operand_sql)
         if isinstance(node, (AST.DefIdentifier, AST.VarID)):
             col_name = signature.get(node.value, node.value)
@@ -3414,9 +3516,9 @@ FROM (
         if isinstance(node, AST.Constant):
             return self._to_sql_literal(node.value)
         if isinstance(node, AST.If):
-            cond_sql = self._visit_dp_expr(node.condition, signature)
-            then_sql = self._visit_dp_expr(node.thenOp, signature)
-            else_sql = self._visit_dp_expr(node.elseOp, signature)
+            cond_sql = self._visit_dp_expr(node.condition, signature, components)
+            then_sql = self._visit_dp_expr(node.thenOp, signature, components)
+            else_sql = self._visit_dp_expr(node.elseOp, signature, components)
             return (
                 f"CASE WHEN ({cond_sql}) THEN CAST(({then_sql}) AS BOOLEAN)"
                 f" ELSE CAST(({else_sql}) AS BOOLEAN) END"

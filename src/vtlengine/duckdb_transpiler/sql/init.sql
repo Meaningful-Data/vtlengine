@@ -419,6 +419,73 @@ CREATE OR REPLACE MACRO vtl_div(a, b) AS (
 
 
 -- =========================================================================
+-- VTL Number Arithmetic (OUTPUT_NUMBER_SIGNIFICANT_DIGITS)
+-- =========================================================================
+-- Round to N significant decimal digits (round-half-even), the same kernel the
+-- pandas engine applies after each arithmetic operation (issue #985). printf
+-- propagates NULL and 'inf' round-trips the VARCHAR -> DOUBLE cast. NaN
+-- (e.g. inf - inf) maps to NULL, matching pandas null semantics. Zero gets its
+-- own branch because DuckDB's runtime printf renders -0.0 as '-0' (only the
+-- constant folder gives '0'), and the pandas kernel normalizes -0.0 to 0.
+-- The transpiler inlines `digits` as a literal.
+CREATE OR REPLACE MACRO vtl_round_sig(x, digits) AS (
+    CASE WHEN isnan(CAST(x AS DOUBLE)) THEN NULL
+         WHEN CAST(x AS DOUBLE) = 0 THEN CAST(0 AS DOUBLE)
+         ELSE CAST(printf('%.' || CAST(digits AS VARCHAR) || 'g', CAST(x AS DOUBLE)) AS DOUBLE)
+    END
+);
+
+-- Modulo that mirrors VTL error 2-1-15-6: raise when the divisor is 0.
+-- BIGINT operands keep exact integer semantics, DOUBLE uses fmod like pandas.
+-- (Never put a semicolon inside a comment here: the macro loader splits
+-- statements on that character before stripping comments.)
+CREATE OR REPLACE MACRO vtl_mod(a, b) AS (
+    CASE WHEN b = 0 THEN error('VTL 2-1-15-6 mod: Scalar division by Zero') ELSE a % b END
+);
+
+-- Power that mirrors VTL error 2-1-15-2: a negative base raised to a
+-- fractional exponent has no real result. Zero raised to a negative exponent
+-- is a division by zero (2-1-15-6), like the pandas engine.
+CREATE OR REPLACE MACRO vtl_power(a, b) AS (
+    CASE WHEN a < 0 AND CAST(b AS DOUBLE) != trunc(CAST(b AS DOUBLE))
+         THEN error('VTL 2-1-15-2 power: negative base ' || CAST(a AS VARCHAR))
+         WHEN a = 0 AND b < 0
+         THEN error('VTL 2-1-15-6 power: Scalar division by Zero')
+         ELSE POWER(a, b)
+    END
+);
+
+-- Square root that mirrors VTL error 2-1-15-2 on negative values.
+CREATE OR REPLACE MACRO vtl_sqrt(x) AS (
+    CASE WHEN x IS NULL OR isnan(CAST(x AS DOUBLE)) THEN NULL
+         WHEN x < 0 THEN error('VTL 2-1-15-2 sqrt: negative value ' || CAST(x AS VARCHAR))
+         ELSE SQRT(x)
+    END
+);
+
+-- Natural logarithm that mirrors VTL error 2-1-15-8 on non-positive values.
+CREATE OR REPLACE MACRO vtl_ln(x) AS (
+    CASE WHEN x IS NULL OR isnan(CAST(x AS DOUBLE)) THEN NULL
+         WHEN x <= 0 THEN error('VTL 2-1-15-8 ln: non-positive value ' || CAST(x AS VARCHAR))
+         ELSE LN(x)
+    END
+);
+
+-- Logarithm with the pandas engine's guard order: null base -> NULL,
+-- base <= 0 -> 2-1-15-3, null value -> NULL, value <= 0 -> 2-1-15-8.
+CREATE OR REPLACE MACRO vtl_log(x, base) AS (
+    CASE WHEN base IS NULL THEN NULL
+         WHEN base <= 0
+         THEN error('VTL 2-1-15-3 log: non-positive base ' || CAST(base AS VARCHAR))
+         WHEN x IS NULL OR isnan(CAST(x AS DOUBLE)) THEN NULL
+         WHEN x <= 0
+         THEN error('VTL 2-1-15-8 log: non-positive value ' || CAST(x AS VARCHAR))
+         ELSE LOG(CAST(base AS DOUBLE), CAST(x AS DOUBLE))
+    END
+);
+
+
+-- =========================================================================
 -- VTL Number Comparison (COMPARISON_ABSOLUTE_THRESHOLD)
 -- =========================================================================
 -- Equality-based comparisons on Number treat operands as equal when they

@@ -28,7 +28,7 @@ class GeneralBugs(BugHelper):
     classTest = "Bugs.GeneralBugs"
 
     @pytest.mark.skipif(
-        _use_duckdb_backend,
+        _use_duckdb_backend(),
         reason="deactivated on duckdb until nullability over scalars is implemented",
     )
     def test_GL_22(self):
@@ -992,6 +992,40 @@ class NumericBugs(BugHelper):
         Goal: Check Result.
         """
         code = "GH_778_7"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_985_1(self):
+        """
+        Expression: DS_copy := DS_1; DS_r := DS_1[calc Me_1 := Me_1 / 3];
+        Description: the DuckDB engine stored Number as DECIMAL(28,10), so a
+            plain copy already truncated 15-significant-digit values to 10
+            decimal places (0.123456789012345 -> 0.123456789, small values lost
+            almost every digit) and |x| >= 1e18 failed to load. Number is now
+            DOUBLE end to end and both engines keep 15 significant digits.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/985
+        Goal: Check Result.
+        """
+        code = "GH_985_1"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_985_2(self):
+        """
+        Expression: DS_r := DS_1[calc Me_1 := (Me_1 / 3) * 3, Me_2 := 1/3];
+        Description: per-operation rounding to 15 significant digits is
+            observable ((1/3)*3 is 0.999999999999999, not 1) and previously only
+            the pandas engine applied it. Both engines now share the same
+            float64 + round-half-even kernel, so the chained result and the
+            literal division pin identical values on both backends.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/985
+        Goal: Check Result.
+        """
+        code = "GH_985_2"
         number_inputs = 1
         references_names = ["1"]
 

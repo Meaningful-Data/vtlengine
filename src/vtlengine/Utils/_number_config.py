@@ -6,7 +6,7 @@ that control Number type behavior in numeric operations, comparisons, and output
 """
 
 import os
-from typing import Optional
+from typing import Any, Optional
 
 from vtlengine.Exceptions import RunTimeError
 
@@ -160,6 +160,21 @@ def get_float_format() -> Optional[str]:
     if digits is None:
         return None
     return f"%.{digits}g"
+
+
+def format_scalar_value_for_csv(value: Any) -> str:
+    """
+    Format a scalar value for the ``_scalars.csv`` output file.
+
+    Floats use the same significant-digits ``%g`` rule as dataset columns
+    (``get_float_format``), so both engines write identical scalar text.
+    Any other type (int, str, bool) keeps its ``str()`` rendering.
+    """
+    if isinstance(value, float):
+        float_format = get_float_format()
+        if float_format is not None:
+            return float_format % value
+    return str(value)
 
 
 def _get_rel_tol(significant_digits: Optional[int]) -> Optional[float]:

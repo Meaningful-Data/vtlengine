@@ -112,9 +112,15 @@ Number
     * - **Input (DataFrame)**
       - Values are cast via ``str → float``.
     * - **Internal representation**
-      - Python ``float``, stored as ``double[pyarrow]``.
+      - IEEE 754 float64 in both execution engines: Python ``float`` stored as
+        ``double[pyarrow]`` (pandas engine) and ``DOUBLE`` (DuckDB engine).
     * - **Output dtype**
       - ``double[pyarrow]``
+
+Number arithmetic keeps **15 significant digits**: every binary arithmetic result is
+rounded to :ref:`output_number_significant_digits` significant digits by the same
+kernel in both execution engines, so results and CSV output are identical across
+engines.
 
 Boolean
 =======

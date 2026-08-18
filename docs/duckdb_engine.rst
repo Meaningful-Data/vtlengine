@@ -116,8 +116,8 @@ The DuckDB backend reads the following environment variables. See
 * ``VTL_TEMP_DIRECTORY`` — spill-to-disk and file-backed database location.
 * ``VTL_MAX_TEMP_DIRECTORY_SIZE`` — cap on spill disk usage.
 * ``VTL_USE_IN_MEMORY_DB`` — toggle in-memory vs. file-backed database.
-* :ref:`vtl_duckdb_decimal_width` — DECIMAL precision (paired with
-  :ref:`output_number_significant_digits` for the scale).
+* :ref:`output_number_significant_digits` — significant digits for arithmetic
+  rounding and CSV rendering (shared with the pandas engine).
 * ``VTL_SKIP_LOAD_VALIDATION`` — skip post-load validation (benchmarking only).
 
 Parquet IO
@@ -190,10 +190,11 @@ Authentication uses the standard AWS environment variables (``AWS_ACCESS_KEY_ID`
 Behavioural notes
 *****************
 
-* **Decimal precision**: numbers are stored using the DuckDB ``DECIMAL(width, scale)``
-  type. ``width`` and ``scale`` come from
-  :ref:`vtl_duckdb_decimal_width` and :ref:`output_number_significant_digits`
-  respectively.
+* **Number precision**: Number columns are stored as ``DOUBLE`` (IEEE 754 float64),
+  the same representation the pandas engine uses. Every binary arithmetic result
+  (``+``, ``-``, ``*``, ``/``, ``mod``, ``power``) is rounded to
+  :ref:`output_number_significant_digits` significant digits (15 by default), so both
+  engines produce identical values and identical CSV output.
 * **Post-load validation**: after each table is created the engine runs no-duplicates,
   temporal column format, and DWI cardinality checks. Disable them only for
   benchmarking via ``VTL_SKIP_LOAD_VALIDATION``.
