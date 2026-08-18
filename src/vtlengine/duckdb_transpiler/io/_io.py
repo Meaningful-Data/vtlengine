@@ -262,6 +262,9 @@ def load_datapoints_duckdb(
         # 4. Handle SDMX-CSV special columns
         keep_columns = handle_sdmx_columns(csv_columns, components)
 
+        # Check required identifier columns exist, and that no other column is left.
+        # An SDMX file does not reach here: extract_datapoint_paths reads it with
+        # pysdmx and hands over a DataFrame.
         check_missing_identifiers(id_columns, keep_columns, file_path)
         check_extra_columns(keep_columns, components, dataset_name)
 
