@@ -169,6 +169,26 @@ def _parse_boolean(value: str) -> bool:
     return result
 
 
+_INT64_MIN = -(2**63)
+_INT64_MAX = 2**63 - 1
+
+
+def _cast_exact_integer(value: Any) -> Optional[int]:
+    """Cast Integer input exactly: parsing through float would corrupt values
+    beyond 2**53 (issue #985). Decimal-form text ("1.0", "1e5") keeps the float
+    path and its non-integral validation ("1.5" raises). Values outside int64
+    raise here so the loader reports 0-3-1-6 instead of a raw pyarrow error,
+    like the DuckDB engine's BIGINT range error."""
+    text = str(value)
+    try:
+        result: Optional[int] = int(text)
+    except ValueError:
+        result = Integer.cast(float(text))
+    if result is not None and not _INT64_MIN <= result <= _INT64_MAX:
+        raise ValueError(f"Value {text} is out of range for Integer (int64)")
+    return result
+
+
 def _check_extra_columns(
     components: Dict[str, Component], data: pd.DataFrame, dataset_name: str
 ) -> None:
@@ -220,9 +240,7 @@ def _validate_pandas(
                     TIME_CHECKS_MAPPING[comp.data_type], na_action="ignore"
                 )
             elif comp.data_type == Integer:
-                data[comp_name] = data[comp_name].map(
-                    lambda x: Integer.cast(float(str(x))), na_action="ignore"
-                )
+                data[comp_name] = data[comp_name].map(_cast_exact_integer, na_action="ignore")
             elif comp.data_type == Number:
                 data[comp_name] = data[comp_name].map(lambda x: float((str(x))), na_action="ignore")
             elif comp.data_type == Boolean:

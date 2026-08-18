@@ -195,15 +195,17 @@ def get_csv_read_type(comp: Component) -> str:
     Get type for CSV reading. DuckDB read_csv needs slightly different types.
 
     For temporal strings (TimePeriod, etc.) we read as VARCHAR.
-    For numerics, we let DuckDB parse directly.
+    For Number, we let DuckDB parse directly.
 
-    Note: Integer columns are read as DOUBLE to enable strict validation
-    that rejects non-integer values (e.g., 1.5) instead of silently rounding.
+    Note: Integer columns are read as VARCHAR so integer text casts exactly to
+    BIGINT (a DOUBLE hop would corrupt values beyond 2^53, issue #985); the
+    strict validation that rejects non-integer values (e.g., 1.5) happens in
+    ``build_select_columns``.
     Date columns are read as VARCHAR to preserve original format (date-only vs datetime).
     Boolean columns are read as VARCHAR to handle quoted values (e.g., ``"TRUE"``).
     """
     if comp.data_type == Integer:
-        return "DOUBLE"  # Read as DOUBLE to validate no decimal component
+        return "VARCHAR"  # Exact BIGINT cast + strict validation in build_select_columns
     elif comp.data_type == Number:
         return "DOUBLE"  # float64, matching the pandas engine's parse
     elif comp.data_type == Boolean:
@@ -415,18 +417,31 @@ def build_select_columns(
             csv_type = csv_dtypes.get(comp_name, "VARCHAR")
             table_type = overrides.get(comp_name, get_column_sql_type(comp))
 
-            # Strict Integer validation: reject non-integer values (e.g., 1.5)
-            # Read as DOUBLE, validate no decimal component, then cast to BIGINT
-            if csv_type == "DOUBLE" and table_type == "BIGINT":
-                error_msg = (
+            # Strict Integer validation on VARCHAR input. Integer-form text casts
+            # straight to BIGINT so values beyond 2^53 stay exact (issue #985);
+            # decimal-form text ("1.0", "1e5") goes through DOUBLE and keeps the
+            # non-integer rejection (a direct VARCHAR->BIGINT cast would silently
+            # round "1.5"); anything else is a conversion error.
+            if csv_type == "VARCHAR" and table_type == "BIGINT":
+                val = f"NULLIF(\"{comp_name}\", '')" if comp.nullable else f'"{comp_name}"'
+                decimal_msg = (
                     f"'Column {comp_name}: value ' || \"{comp_name}\" || "
                     f"' has non-zero decimal component for Integer type'"
                 )
+                convert_msg = (
+                    f"'Column {comp_name}: could not convert value ' || \"{comp_name}\" || "
+                    f"' to Integer type'"
+                )
                 select_cols.append(
                     f"""CASE
-                        WHEN "{comp_name}" IS NOT NULL AND "{comp_name}" <> FLOOR("{comp_name}")
-                        THEN error({error_msg})
-                        ELSE CAST("{comp_name}" AS BIGINT)
+                        WHEN {val} IS NULL THEN NULL
+                        WHEN regexp_matches(TRIM({val}), '^[+-]?[0-9]+$')
+                        THEN CAST({val} AS BIGINT)
+                        WHEN TRY_CAST({val} AS DOUBLE) IS NULL
+                        THEN error({convert_msg})
+                        WHEN CAST({val} AS DOUBLE) <> FLOOR(CAST({val} AS DOUBLE))
+                        THEN error({decimal_msg})
+                        ELSE CAST(CAST({val} AS DOUBLE) AS BIGINT)
                     END AS "{comp_name}\""""
                 )
             # Date columns: read as VARCHAR, validate format, cast to DATE or TIMESTAMP.

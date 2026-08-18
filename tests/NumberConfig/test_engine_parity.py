@@ -353,3 +353,41 @@ def test_integer_comparisons_stay_exact() -> None:
         assert data["neq"].tolist() == [True], f"use_duckdb={use_duckdb}"
         assert data["le"].tolist() == [False], f"use_duckdb={use_duckdb}"
         assert data["gt"].tolist() == [True], f"use_duckdb={use_duckdb}"
+
+
+def test_integer_load_exactness() -> None:
+    """Integer values beyond 2^53 load exactly on both engines, from CSV and
+    DataFrame inputs alike (the loaders used to hop through float64, collapsing
+    10^16 + 1 into 10^16 — issue #985). '1.0'/'1e5' text stays accepted and the
+    whole int64 range round-trips."""
+    big = [2**53 + 1, 10**16 + 1, -(2**53 + 1), 2**63 - 1, -(2**63)]
+    ds = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Integer", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    warnings.filterwarnings("ignore", category=FutureWarning)
+    csv_text = "Id_1,Me_1\n" + "".join(f"{i},{v}\n" for i, v in enumerate(big, start=1))
+    for use_duckdb in (False, True):
+        with TemporaryDirectory() as tmp:
+            csv_path = Path(tmp) / "DS_1.csv"
+            csv_path.write_text(csv_text)
+            for datapoints in (
+                {"DS_1": csv_path},
+                {"DS_1": pd.DataFrame({"Id_1": range(1, len(big) + 1), "Me_1": big})},
+            ):
+                result = run(
+                    script="DS_r <- DS_1;",
+                    data_structures=ds,
+                    datapoints=datapoints,
+                    use_duckdb=use_duckdb,
+                    return_only_persistent=False,
+                )
+                loaded = result["DS_r"].data.sort_values("Id_1")["Me_1"].tolist()
+                assert [int(v) for v in loaded] == big, f"use_duckdb={use_duckdb}"
