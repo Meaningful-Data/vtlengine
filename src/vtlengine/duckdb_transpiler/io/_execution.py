@@ -38,7 +38,7 @@ from vtlengine.duckdb_transpiler.sql import initialize_time_types
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.files.output._time_period_representation import TimePeriodRepresentation
 from vtlengine.Model import Component, Dataset, Scalar
-from vtlengine.Utils._number_config import get_effective_numeric_digits, get_effective_output_digits
+from vtlengine.Utils._number_config import get_effective_output_digits
 
 
 def _contains_time_components(datasets: Dict[str, Dataset]) -> bool:
@@ -108,6 +108,28 @@ def _map_vtl_macro_error(msg: str, msg_lower: str) -> Optional[Exception]:
         op = "daytoyear" if "daytoyear" in msg_lower else "daytomonth"
         return RunTimeError("2-1-19-16", op=op)
 
+    # VTL macros vtl_div / vtl_mod / vtl_power: divisor was 0 (mirrors 2-1-15-6)
+    if "vtl 2-1-15-6" in msg_lower:
+        op = "/"
+        for macro_op in ("mod", "power"):
+            if f"2-1-15-6 {macro_op}:" in msg_lower:
+                op = macro_op
+        return RunTimeError("2-1-15-6", op=op)
+
+    # VTL macros vtl_power / vtl_sqrt: negative operand (mirrors 2-1-15-2)
+    if "vtl 2-1-15-2" in msg_lower:
+        op = "power" if "2-1-15-2 power:" in msg_lower else "sqrt"
+        return RunTimeError("2-1-15-2", op=op, value=msg.rsplit(" ", 1)[-1])
+
+    # VTL macro vtl_log: non-positive base (mirrors 2-1-15-3)
+    if "vtl 2-1-15-3" in msg_lower:
+        return RunTimeError("2-1-15-3", op="log", value=msg.rsplit(" ", 1)[-1])
+
+    # VTL macros vtl_ln / vtl_log: non-positive value (mirrors 2-1-15-8)
+    if "vtl 2-1-15-8" in msg_lower:
+        op = "ln" if "2-1-15-8 ln:" in msg_lower else "log"
+        return RunTimeError("2-1-15-8", op=op, value=msg.rsplit(" ", 1)[-1])
+
     return None
 
 
@@ -162,10 +184,6 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
         expected = m.group(1) if m else ("PnMnD" if op == "monthtoday" else "PnYnD")
         value = m.group(2).strip() if m else "unknown"
         return RunTimeError("2-1-19-22", op=op, value=value, expected=expected)
-
-    # VTL macro vtl_div: denominator was 0 (mirrors Python engine error 2-1-15-6)
-    if "vtl 2-1-15-6" in msg_lower:
-        return RunTimeError("2-1-15-6", op="/")
 
     # VTL macro vtl_hamming: strings of unequal length (mirrors 1-1-18-11)
     if "vtl 1-1-18-11" in msg_lower:
@@ -222,24 +240,14 @@ def _infer_scalar_type_from_duckdb(col_description: Any) -> Any:
     return None
 
 
-def _round_significant(value: float, sig_digits: int) -> float:
-    """Round a float to a given number of significant digits."""
-    import math
-
-    if value == 0.0:
-        return 0.0
-    d = math.ceil(math.log10(abs(value)))
-    return round(value, sig_digits - d)
-
-
 def _normalize_scalar_value(raw_value: Any) -> Any:
     """Convert pandas/numpy types to plain Python values.
 
     DuckDB's ``fetchdf()`` may return ``pd.NA``, ``pd.NaT`` or
     ``numpy.nan`` for SQL NULLs.  The rest of the engine expects
     plain ``None``.  Timestamps are converted to VTL date strings.
-    Float results are rounded to match the Decimal precision used by
-    the core engine (OUTPUT_NUMBER_SIGNIFICANT_DIGITS, default 15).
+    Float values arrive already rounded per operation (vtl_round_sig),
+    exactly like the pandas engine's scalars.
     """
     if hasattr(raw_value, "item"):
         raw_value = raw_value.item()
@@ -252,10 +260,6 @@ def _normalize_scalar_value(raw_value: Any) -> Any:
 
     if isinstance(raw_value, (datetime.datetime, datetime.date)):
         return _format_timestamp(raw_value)
-    if isinstance(raw_value, float):
-        precision = get_effective_numeric_digits()
-        if precision is not None:
-            raw_value = _round_significant(raw_value, precision)
     return raw_value
 
 
@@ -268,11 +272,11 @@ def _declared_type_expr(
     """SQL expression aligning a fetched column with its declared component type.
 
     A physical type that already satisfies the declared type passes through;
-    a mismatch (e.g. an INTEGER errorlevel declared as Number, issue #976) is
-    CAST so both COPY files and fetched frames carry the declared type.
-    DECIMAL is the engine's canonical Number representation, so it is not a
-    mismatch; in CSV mode Number columns are rendered as text with the same
-    significant-digits format the pandas engine passes to ``to_csv``
+    a mismatch (e.g. an INTEGER errorlevel declared as Number, issue #976, or a
+    DECIMAL column produced by a bare float literal) is CAST so both COPY files
+    and fetched frames carry the declared type. DOUBLE is the engine's canonical
+    Number representation; in CSV mode Number columns are rendered as text with
+    the same significant-digits format the pandas engine passes to ``to_csv``
     (OUTPUT_NUMBER_SIGNIFICANT_DIGITS), keeping both backends' files equal.
     """
     quoted = f'"{col}"'
@@ -287,7 +291,7 @@ def _declared_type_expr(
             # digits disabled (env -1): native DOUBLE text, like pandas
             # float_format=None; exact byte parity is not guaranteed in exponent edge cases
             return f"{double_expr} AS {quoted}"
-        if col_type != "DOUBLE" and not col_type.startswith("DECIMAL"):
+        if col_type != "DOUBLE":
             return f"{double_expr} AS {quoted}"
         return quoted
     if comp.data_type == Integer and "INT" not in col_type:

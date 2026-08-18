@@ -170,7 +170,7 @@ class TestGlobalRegistry:
             (MINUS, '("a" - "b")'),
             (MULT, '("a" * "b")'),
             (DIV, 'vtl_div("a", "b")'),
-            (MOD, '("a" % "b")'),
+            (MOD, 'vtl_mod("a", "b")'),
             (EQ, '("a" = "b")'),
             (NEQ, '("a" <> "b")'),
             (GT, '("a" > "b")'),
@@ -193,8 +193,8 @@ class TestGlobalRegistry:
             (CEIL, 'CAST(CEIL("x") AS BIGINT)'),
             (FLOOR, 'CAST(FLOOR("x") AS BIGINT)'),
             (ABS, 'ABS("x")'),
-            (SQRT, 'SQRT("x")'),
-            (LN, 'LN("x")'),
+            (SQRT, 'vtl_sqrt("x")'),
+            (LN, 'vtl_ln("x")'),
             (LEN, 'LENGTH("x")'),
             (TRIM, 'TRIM("x")'),
             (LTRIM, 'LTRIM("x")'),
@@ -229,11 +229,19 @@ class TestGlobalRegistry:
     @pytest.mark.parametrize(
         "token,args,expected_output",
         [
-            (ROUND, ('"x"', "2"), 'ROUND(CAST("x" AS DOUBLE), COALESCE(CAST(2 AS INTEGER), 0))'),
-            (TRUNC, ('"x"', "0"), 'TRUNC(CAST("x" AS DOUBLE), COALESCE(CAST(0 AS INTEGER), 0))'),
+            (
+                ROUND,
+                ('"x"', "2"),
+                'vtl_round_sig(ROUND(CAST("x" AS DOUBLE), COALESCE(CAST(2 AS INTEGER), 0)), 15)',
+            ),
+            (
+                TRUNC,
+                ('"x"', "0"),
+                'vtl_round_sig(TRUNC(CAST("x" AS DOUBLE), COALESCE(CAST(0 AS INTEGER), 0)), 15)',
+            ),
             (INSTR, ('"str"', "'a'"), "vtl_instr(\"str\", 'a', NULL, NULL)"),
-            (LOG, ('"x"', "10"), 'LOG(10, "x")'),
-            (POWER, ('"x"', "2"), 'POWER("x", 2)'),
+            (LOG, ('"x"', "10"), 'vtl_log("x", 10)'),
+            (POWER, ('"x"', "2"), 'vtl_power("x", 2)'),
             (
                 SUBSTR,
                 ('"str"', "1", "5"),
