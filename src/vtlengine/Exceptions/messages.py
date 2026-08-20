@@ -779,6 +779,18 @@ centralised_messages = {
         "description": "Raised when set operations are performed on Datasets with differing "
         "numbers of components.",
     },
+    "1-1-17-2": {
+        "message": "At op {op}: Component {comp_name} of dataset {dataset_1} not found "
+        "in dataset {dataset_2}",
+        "description": "Raised when set operations are performed on Datasets whose components "
+        "do not match by name.",
+    },
+    "1-1-17-3": {
+        "message": "At op {op}: Component {comp_name} has different roles in datasets "
+        "{dataset_1} and {dataset_2}",
+        "description": "Raised when set operations are performed on Datasets where a common "
+        "component holds a different role in each Dataset.",
+    },
     # String Operators
     "1-1-18-1": {
         "message": "At op {op}: Invalid Dataset {name}. Dataset with one Measure expected.",

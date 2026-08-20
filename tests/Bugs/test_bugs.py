@@ -2119,6 +2119,87 @@ class SetBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1057_1(self):
+        """
+        Status: OK
+        Description: symdiff matches the Measures of the second operand by name, so a
+                     Data Point taken from it keeps its values on the right Measures
+                     even when the second operand declares the same components in a
+                     different order. The DuckDb engine glued the two ANTI JOIN branches
+                     with a positional UNION ALL, silently swapping the values.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1057
+        Goal: Check Result.
+        """
+        code = "GH_1057_1"
+        number_inputs = 2
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1057_2(self):
+        """
+        Status: OK
+        Description: intersect accepts more than two operands and keeps only the Data
+                     Points present in every one of them. The DuckDb engine used the
+                     first two operands and silently ignored the rest.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1057
+        Goal: Check Result.
+        """
+        code = "GH_1057_2"
+        number_inputs = 3
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1057_3(self):
+        """
+        Status: OK
+        Description: the set operators promote the result structure (data type and
+                     nullability) across their operands, but must not write the
+                     promotion back onto the first operand. DS_1 declares Me_1 as a
+                     non-nullable Integer and setdiff promoted it in place to a nullable
+                     Number, so DS_s <- DS_1 carried the poisoned structure.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1057
+        Goal: Check Result.
+        """
+        code = "GH_1057_3"
+        number_inputs = 2
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1057_4(self):
+        """
+        Status: OK
+        Description: a component present in one operand of a set operator but missing
+                     in the other raised a bare Exception instead of a SemanticError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1057
+        Goal: Check Exception.
+        """
+        code = "GH_1057_4"
+        number_inputs = 2
+        message = "1-1-17-2"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1057_5(self):
+        """
+        Status: OK
+        Description: a component holding different roles across the operands of a set
+                     operator raised a bare Exception instead of a SemanticError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1057
+        Goal: Check Exception.
+        """
+        code = "GH_1057_5"
+        number_inputs = 2
+        message = "1-1-17-3"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
 
 class AggregationBugs(BugHelper):
     """ """
