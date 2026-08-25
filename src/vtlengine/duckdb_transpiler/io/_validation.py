@@ -317,6 +317,11 @@ def handle_sdmx_columns(columns: List[str], components: Dict[str, Component]) ->
     """
     Identify SDMX-CSV special columns to exclude.
     Returns list of columns to keep.
+
+    A file is SDMX-CSV when its first column names the structure its rows belong to,
+    and only then does it carry the columns around it. A plain CSV that happens to
+    hold a column of one of those names holds a column of the Data Set, which the
+    DataStructure has to define, as the pandas loader reads it.
     """
     exclude = set()
 
@@ -324,15 +329,14 @@ def handle_sdmx_columns(columns: List[str], components: Dict[str, Component]) ->
     if columns and columns[0] == "DATAFLOW" and "DATAFLOW" not in components:
         exclude.add("DATAFLOW")
 
-    # STRUCTURE columns
-    if "STRUCTURE" in columns and "STRUCTURE" not in components:
+    # STRUCTURE columns, and the ones an SDMX-CSV file carries beside them
+    if columns and columns[0] == "STRUCTURE" and "STRUCTURE" not in components:
         exclude.add("STRUCTURE")
-    if "STRUCTURE_ID" in columns and "STRUCTURE_ID" not in components:
-        exclude.add("STRUCTURE_ID")
-
-    # ACTION column (handled specially - need to filter, not just exclude)
-    if "ACTION" in columns and "ACTION" not in components:
-        exclude.add("ACTION")
+        if "STRUCTURE_ID" in columns and "STRUCTURE_ID" not in components:
+            exclude.add("STRUCTURE_ID")
+        # ACTION is handled specially - the rows it marks deleted are filtered out
+        if "ACTION" in columns and "ACTION" not in components:
+            exclude.add("ACTION")
 
     return [c for c in columns if c not in exclude]
 
