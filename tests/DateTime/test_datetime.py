@@ -7,9 +7,14 @@ import pytest
 from tests.Helper import _use_duckdb_backend
 from vtlengine import run
 from vtlengine.DataTypes import Date, Integer
-from vtlengine.DataTypes._time_checking import check_date
+from vtlengine.DataTypes._time_checking import check_date, check_time
 from vtlengine.DataTypes.TimeHandling import check_max_date
-from vtlengine.Exceptions import InputValidationException, RunTimeError, SemanticError
+from vtlengine.Exceptions import (
+    DataLoadError,
+    InputValidationException,
+    RunTimeError,
+    SemanticError,
+)
 
 
 def _run_scalar(expression):
@@ -64,6 +69,25 @@ check_date_invalid_params = [
     pytest.param("2020-01-01T12:30", InputValidationException, id="invalid_partial_no_sec_t"),
     pytest.param("2020-01-01 12", InputValidationException, id="invalid_partial_hour_space"),
     pytest.param("2020-01-01 12:30", InputValidationException, id="invalid_partial_no_sec_space"),
+]
+
+# A Time interval is written as a pair of dates, or as the year or the month it covers
+# (issue #1066)
+check_time_valid_params = [
+    pytest.param("2020", "2020-01-01/2020-12-31", id="whole_year"),
+    pytest.param("2020-05", "2020-05-01/2020-05-31", id="whole_month"),
+    pytest.param("2020-5", "2020-05-01/2020-05-31", id="whole_month_short"),
+    pytest.param("2020-02", "2020-02-01/2020-02-29", id="february_of_a_leap_year"),
+    pytest.param("2019-02", "2019-02-01/2019-02-28", id="february"),
+    pytest.param("2020-01-01/2020-12-31", "2020-01-01/2020-12-31", id="pair_of_dates"),
+    pytest.param("2020-01-01/2020-01-01", "2020-01-01/2020-01-01", id="one_day"),
+]
+
+check_time_invalid_params = [
+    pytest.param("2021-01-01/2020-01-01", "Start date is greater", id="start_after_end"),
+    # The month pattern reads 13 and the conversion then refuses it, on either engine
+    pytest.param("2020-13", "unconverted data remains", id="month_past_december"),
+    pytest.param("abc", "not in the correct format", id="no_interval_at_all"),
 ]
 
 check_max_date_valid_params = [
@@ -1095,3 +1119,57 @@ def test_time_operator_over_null_scalar(expression):
         use_duckdb=_use_duckdb_backend(),
     )
     assert result["DS_r"].value is None
+
+
+_TIME_STRUCTURE = {
+    "datasets": [
+        {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Time", "role": "Measure", "nullable": True},
+            ],
+        }
+    ]
+}
+
+
+@pytest.mark.parametrize("input_value, expected", check_time_valid_params)
+def test_check_time_valid(input_value, expected):
+    assert check_time(input_value) == expected
+
+
+@pytest.mark.parametrize("input_value, message", check_time_invalid_params)
+def test_check_time_invalid(input_value, message):
+    with pytest.raises(ValueError, match=message):
+        check_time(input_value)
+
+
+def _load_time(value, tmp_path):
+    """Load a single Time value from a CSV file, on the engine under test."""
+    csv_path = tmp_path / "DS_1.csv"
+    csv_path.write_text(f"Id_1,Me_1\n1,{value}\n")
+    result = run(
+        script="DS_r <- DS_1;",
+        data_structures=_TIME_STRUCTURE,
+        datapoints={"DS_1": csv_path},
+        use_duckdb=_use_duckdb_backend(),
+    )
+    return result["DS_r"].data["Me_1"].tolist()
+
+
+@pytest.mark.parametrize("value, loaded", check_time_valid_params)
+def test_time_load_valid(tmp_path, value, loaded):
+    """Both engines read the same Time values, and expand them the same way.
+
+    The DuckDb loader read only a pair of dates, so a file writing the year or the
+    month an interval covers failed to load (issue #1066).
+    """
+    assert _load_time(value, tmp_path) == [loaded]
+
+
+@pytest.mark.parametrize("value, message", check_time_invalid_params)
+def test_time_load_invalid(tmp_path, value, message):
+    """Both engines refuse the same Time values, an interval read backwards included."""
+    with pytest.raises(DataLoadError, match="0-3-1-6"):
+        _load_time(value, tmp_path)

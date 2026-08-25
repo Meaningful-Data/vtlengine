@@ -12,7 +12,7 @@ from typing import Dict, List, Literal, Optional, Tuple, Union
 import duckdb
 import pandas as pd
 
-from vtlengine.DataTypes import Date, TimePeriod
+from vtlengine.DataTypes import Date, TimeInterval, TimePeriod
 from vtlengine.duckdb_transpiler.io._validation import (
     VALID_DATE_REGEX,
     build_create_table_sql,
@@ -67,8 +67,8 @@ def _validate_loaded_table(
             conn.execute(f'DROP TABLE IF EXISTS "{table_name}"')
             raise
 
-    # Normalize TimePeriod columns to canonical internal representation
     _normalize_time_period_columns(conn, table_name, components)
+    _normalize_time_interval_columns(conn, table_name, components)
 
     if skip_validation:
         return
@@ -117,6 +117,45 @@ def _normalize_time_period_columns(
                     type="Time_Period",
                     error=str(e),
                 )
+
+
+def _normalize_time_interval_columns(
+    conn: duckdb.DuckDBPyConnection,
+    table_name: str,
+    components: Dict[str, Component],
+) -> None:
+    """Expand a Time interval written as the year or the month it covers.
+
+    2020 covers 2020-01-01/2020-12-31 and 2020-05 covers 2020-05-01/2020-05-31, which
+    the pandas loader reads them as; a value already written as a pair of dates is
+    left as it is.
+    """
+    for comp_name, comp in components.items():
+        if comp.data_type != TimeInterval:
+            continue
+        value = f'TRIM("{comp_name}")'
+        year = f"CAST(SUBSTR({value}, 1, 4) AS INTEGER)"
+        month = f"CAST(SUBSTR({value}, 6) AS INTEGER)"
+        first_day = f"MAKE_DATE({year}, {month}, 1)"
+        try:
+            conn.execute(
+                f'UPDATE "{table_name}" SET "{comp_name}" = CASE '
+                f"WHEN regexp_matches({value}, '^\\d{{4}}$') "
+                f"THEN {value} || '-01-01/' || {value} || '-12-31' "
+                f"WHEN regexp_matches({value}, '^\\d{{4}}-[0-1]?\\d$') "
+                f"THEN strftime({first_day}, '%Y-%m-%d') || '/' "
+                f"|| strftime(LAST_DAY({first_day}), '%Y-%m-%d') "
+                f"ELSE {value} END "
+                f'WHERE "{comp_name}" IS NOT NULL AND "{comp_name}" != \'\''
+            )
+        except duckdb.Error as e:
+            raise DataLoadError(
+                "0-3-1-6",
+                name=table_name,
+                column=comp_name,
+                type="Time",
+                error=str(e),
+            )
 
 
 def _detect_csv_format(
