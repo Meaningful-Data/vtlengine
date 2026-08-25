@@ -401,6 +401,29 @@ def validate_temporal_columns(
         )
 
 
+def build_boolean_cast(value_expr: str, column_name: str) -> str:
+    """SQL reading a Boolean input value on the documented set: "true"/"false"/"1"/"0"
+    whatever the case, a real boolean, or a number, which is compared against zero.
+
+    DuckDB's own VARCHAR->BOOLEAN cast reads "yes", "y" and "t" as well, so a value
+    that arrives as text is mapped by hand here and anything outside the set is an
+    error, the same answer the pandas loader gives. A column that is
+    already a boolean or a number keeps DuckDB's cast, which reads it as pandas does.
+    """
+    text = f"lower(CAST({value_expr} AS VARCHAR))"
+    err = (
+        f"'Column {column_name}: value ' || CAST({value_expr} AS VARCHAR) || "
+        f"' is not a Boolean, use true, false, 1 or 0'"
+    )
+    return f"""CASE
+        WHEN {value_expr} IS NULL THEN NULL
+        WHEN typeof({value_expr}) != 'VARCHAR' THEN CAST({value_expr} AS BOOLEAN)
+        WHEN {text} IN ('true', '1') THEN TRUE
+        WHEN {text} IN ('false', '0') THEN FALSE
+        ELSE error({err})
+    END"""
+
+
 def build_select_columns(
     components: Dict[str, Component],
     keep_columns: List[str],
@@ -467,11 +490,11 @@ def build_select_columns(
                     END AS "{comp_name}\""""
                 )
             elif csv_type == "VARCHAR" and comp.data_type == Boolean:
-                # Strip double quotes and cast to BOOLEAN (handles """TRUE""" from CSV)
+                # Strip double quotes and read as BOOLEAN (handles """TRUE""" from CSV)
                 stripped = f"""REPLACE("{comp_name}", '"', '')"""
                 if comp.nullable:
                     stripped = f"NULLIF({stripped}, '')"
-                select_cols.append(f'CAST({stripped} AS BOOLEAN) AS "{comp_name}"')
+                select_cols.append(f'{build_boolean_cast(stripped, comp_name)} AS "{comp_name}"')
             elif csv_type == "VARCHAR" and comp.data_type == String:
                 # Strip double quotes from String values (match pandas loader behavior)
                 expr = f"""REPLACE("{comp_name}", '"', '')"""

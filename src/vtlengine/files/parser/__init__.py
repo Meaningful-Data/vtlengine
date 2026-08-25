@@ -162,11 +162,22 @@ def _pandas_load_csv(components: Dict[str, Component], csv_path: Union[str, Path
     return _sanitize_pandas_columns(components, csv_path, data)
 
 
-def _parse_boolean(value: str) -> bool:
-    if isinstance(value, bool):
-        return value
-    result = value.lower() == "true" or value == "1"
-    return result
+def _parse_boolean(value: Any) -> bool:
+    """Read a Boolean input value on the set the Boolean type declares and the
+    documentation states: "true"/"false"/"1"/"0" whatever the case, a real boolean,
+    or a number, which is compared against zero. Anything else raises here so the
+    loader reports 0-3-1-6, instead of the old mapping that turned every value it
+    could not read -- "abc", "yes", "2" -- into a perfectly valid False."""
+    if pd.api.types.is_bool(value):
+        return bool(value)
+    if pd.api.types.is_number(value):
+        return bool(value != 0)
+    # A quoted CSV value ("""TRUE""") reaches here with its quotes, which the other
+    # types and the DuckDb engine's own Boolean reading take out the same way.
+    text = str(value).replace('"', "")
+    if not Boolean.check(text):
+        raise ValueError(f"Value {value} is not a Boolean")
+    return bool(Boolean.cast(text))
 
 
 _INT64_MIN = -(2**63)
@@ -178,7 +189,10 @@ def _cast_exact_integer(value: Any) -> Optional[int]:
     beyond 2**53 (issue #985). Decimal-form text ("1.0", "1e5") keeps the float
     path and its non-integral validation ("1.5" raises). Values outside int64
     raise here so the loader reports 0-3-1-6 instead of a raw pyarrow error,
-    like the DuckDB engine's BIGINT range error."""
+    like the DuckDB engine's BIGINT range error. A boolean is read as 1 or 0, the
+    Integer type's own reading of it, and the DuckDb engine's."""
+    if pd.api.types.is_bool(value):
+        return int(value)
     text = str(value)
     try:
         result: Optional[int] = int(text)
@@ -244,9 +258,7 @@ def _validate_pandas(
             elif comp.data_type == Number:
                 data[comp_name] = data[comp_name].map(lambda x: float((str(x))), na_action="ignore")
             elif comp.data_type == Boolean:
-                data[comp_name] = data[comp_name].map(
-                    lambda x: _parse_boolean(str(x)), na_action="ignore"
-                )
+                data[comp_name] = data[comp_name].map(_parse_boolean, na_action="ignore")
             elif comp.data_type == Duration:
                 values_correct = (
                     data[comp_name]

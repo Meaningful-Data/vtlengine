@@ -12,9 +12,10 @@ from typing import Dict, List, Literal, Optional, Tuple, Union
 import duckdb
 import pandas as pd
 
-from vtlengine.DataTypes import Date, TimePeriod
+from vtlengine.DataTypes import Boolean, Date, TimePeriod
 from vtlengine.duckdb_transpiler.io._validation import (
     VALID_DATE_REGEX,
+    build_boolean_cast,
     build_create_table_sql,
     build_csv_column_types,
     build_select_columns,
@@ -610,6 +611,9 @@ def _build_dataframe_select_columns(
                 f"THEN error({err}) "
                 f'ELSE CAST("{comp_name}" AS {target_type}) END AS "{comp_name}"'
             )
+        elif comp.data_type == Boolean:
+            boolean_cast = build_boolean_cast(f'"{comp_name}"', comp_name)
+            exprs.append(f'{boolean_cast} AS "{comp_name}"')
         else:
             exprs.append(f'CAST("{comp_name}" AS {target_type}) AS "{comp_name}"')
     return exprs
