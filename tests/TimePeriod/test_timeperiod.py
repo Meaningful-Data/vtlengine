@@ -1,3 +1,5 @@
+import json
+import os
 import warnings
 from pathlib import Path
 
@@ -15,8 +17,8 @@ from vtlengine.DataTypes.TimeHandling import (
     generate_period_range,
     period_to_date,
 )
+from vtlengine.Exceptions import DataLoadError, SemanticError
 from vtlengine.Exceptions import RunTimeError as RT
-from vtlengine.Exceptions import SemanticError
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators.Time import Time, Year_to_Day
@@ -65,10 +67,20 @@ ds_param = [
         DS_r <- timeshift(DS_1, 12);
         """,
     ),
+    # The period number at the edge of what each indicator holds, leap year included
+    ("GH_1063_1", "DS_r := DS_1;"),
 ]
 
 error_param = [
     ("GL_440_2", "DS_r := DS_1;", "0-3-1-6"),
+    ("GH_1063_2", "DS_r := DS_1;", "0-3-1-6"),
+    ("GH_1063_3", "DS_r := DS_1;", "0-3-1-6"),
+    ("GH_1063_4", "DS_r := DS_1;", "0-3-1-6"),
+    ("GH_1063_5", "DS_r := DS_1;", "0-3-1-6"),
+    ("GH_1063_6", "DS_r := DS_1;", "0-3-1-6"),
+    ("GH_1063_7", "DS_r := DS_1;", "0-3-1-6"),
+    ("GH_1063_8", "DS_r := DS_1;", "0-3-1-6"),
+    ("GH_1063_9", "DS_r := DS_1;", "0-3-1-6"),
 ]
 
 
@@ -112,12 +124,50 @@ def test_case_ds(request, load_input, load_reference, code, expression):
     assert result == reference
 
 
+def _duckdb_load_error(request, code, expression):
+    """The code the DuckDb engine reports while loading the inputs of a test code.
+
+    The pandas engine reports it as the inputs are read, which is what ``load_error``
+    catches; the DuckDb engine reads them through ``run``, so an error test has to
+    reach the engine under test to say anything about it.
+    """
+    base_path = request.node.get_closest_marker("input_path").args[0]
+    ds_dir = base_path / "DataStructure" / "input"
+    prefix = f"{code}-"
+    data_structures = sorted(ds_dir / f for f in os.listdir(ds_dir) if f.startswith(prefix))
+
+    datapoints = {}
+    for ds_file in data_structures:
+        with open(ds_file) as f:
+            structure = json.load(f)
+        if "datasets" in structure:
+            ds_name = structure["datasets"][0]["name"]
+            csv_path = base_path / "DataSet" / "input" / f"{code}-{ds_file.stem.split('-')[-1]}.csv"
+            if csv_path.exists():
+                datapoints[ds_name] = csv_path
+
+    try:
+        run(
+            script=expression,
+            data_structures=data_structures,
+            datapoints=datapoints,
+            return_only_persistent=False,
+            use_duckdb=True,
+        )
+    except (SemanticError, DataLoadError) as ex:
+        return ex.args[1] if len(ex.args) > 1 else ex.args[0]
+    return None
+
+
 @pytest.mark.parametrize("code, expression, error_code", error_param)
-def test_errors(load_error, code, expression, error_code):
+def test_errors(request, load_error, code, expression, error_code):
     warnings.filterwarnings("ignore", category=FutureWarning)
-    result = error_code == load_error
+    reported = (
+        _duckdb_load_error(request, code, expression) if _use_duckdb_backend() else load_error
+    )
+    result = error_code == reported
     if result is False:
-        print(f"\n{error_code} != {load_error}")
+        print(f"\n{error_code} != {reported}")
     assert result
 
 
@@ -259,3 +309,51 @@ def test_GH_676_11():
     with pytest.raises(RT) as ctx:
         Year_to_Day.py_op("not-a-duration")
     assert ctx.value.args[1] == "2-1-19-22"
+
+
+out_of_range_periods = [
+    "2024M13",  # a month past December
+    "2024W54",  # a week past the last of the year
+    "2023D366",  # the 366th day of a year that holds 365
+    "1900D366",  # a century year is a leap year only every four hundred
+]
+
+
+@pytest.mark.parametrize("value", out_of_range_periods)
+def test_out_of_range_time_period_is_rejected(tmp_path, value):
+    """A Time_Period whose period number is out of range never reaches the output."""
+    csv_path = tmp_path / "DS_1.csv"
+    csv_path.write_text(f"Id_1,Me_1\n1,{value}\n")
+    output_folder = tmp_path / "out"
+    output_folder.mkdir()
+
+    with pytest.raises((DataLoadError, RT)):
+        run(
+            script="DS_r <- DS_1;",
+            data_structures={
+                "datasets": [
+                    {
+                        "name": "DS_1",
+                        "DataStructure": [
+                            {
+                                "name": "Id_1",
+                                "type": "Integer",
+                                "role": "Identifier",
+                                "nullable": False,
+                            },
+                            {
+                                "name": "Me_1",
+                                "type": "Time_Period",
+                                "role": "Measure",
+                                "nullable": True,
+                            },
+                        ],
+                    }
+                ]
+            },
+            datapoints={"DS_1": csv_path},
+            output_folder=output_folder,
+            use_duckdb=_use_duckdb_backend(),
+        )
+
+    assert not (output_folder / "DS_r.csv").exists()

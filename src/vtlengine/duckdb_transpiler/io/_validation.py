@@ -30,22 +30,26 @@ from vtlengine.Model import Component, Role
 # Regex patterns for VTL temporal types (only these need explicit validation)
 # =============================================================================
 
+_MONTH = r"(0?[1-9]|1[0-2])"
+_WEEK = r"(0?[1-9]|[1-4]\d|5[0-3])"
+_DAY_OF_YEAR = r"(0{0,2}[1-9]|0?[1-9]\d|[12]\d\d|3[0-5]\d|36[0-6])"
+
 TIME_PERIOD_PATTERN = (
     r"^\d{4}$|"  # Year - 2024
     r"^\d{4}[A]\d?$|"  # Annual - 2024A, 2024A1
     r"^\d{4}[S][1-2]$|"  # Semester - 2024S1
     r"^\d{4}[Q][1-4]$|"  # Quarter - 2024Q1
-    r"^\d{4}[M]\d{1,2}$|"  # Month - 2024M01, 2024M1
-    r"^\d{4}[W]\d{1,2}$|"  # Week - 2024W01, 2024W1
-    r"^\d{4}[D]\d{1,3}$|"  # Day - 2024D001, 2024D01, 2024D1
+    rf"^\d{{4}}[M]{_MONTH}$|"  # Month - 2024M01, 2024M1
+    rf"^\d{{4}}[W]{_WEEK}$|"  # Week - 2024W01, 2024W1
+    rf"^\d{{4}}[D]{_DAY_OF_YEAR}$|"  # Day - 2024D001, 2024D01, 2024D1
     # SDMX Gregorian formats (hyphen-separated)
-    r"^\d{4}-\d{1,2}$|"  # Month numeric - 2024-01, 2024-1
+    rf"^\d{{4}}-{_MONTH}$|"  # Month numeric - 2024-01, 2024-1
     r"^\d{4}-A\d?$|"  # Annual - 2024-A1, 2024-A
     r"^\d{4}-S[1-2]$|"  # Semester - 2024-S1
     r"^\d{4}-Q[1-4]$|"  # Quarter - 2024-Q1
-    r"^\d{4}-M\d{1,2}$|"  # Month - 2024-M01, 2024-M1
-    r"^\d{4}-W\d{1,2}$|"  # Week - 2024-W01, 2024-W1
-    r"^\d{4}-D\d{1,3}$|"  # Day - 2024-D001, 2024-D01, 2024-D1
+    rf"^\d{{4}}-M{_MONTH}$|"  # Month - 2024-M01, 2024-M1
+    rf"^\d{{4}}-W{_WEEK}$|"  # Week - 2024-W01, 2024-W1
+    rf"^\d{{4}}-D{_DAY_OF_YEAR}$|"  # Day - 2024-D001, 2024-D01, 2024-D1
     r"^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$"  # Full date - 2024-01-15
 )
 
@@ -338,6 +342,21 @@ def handle_sdmx_columns(columns: List[str], components: Dict[str, Component]) ->
 # =============================================================================
 
 
+def _time_period_day_out_of_range(col_name: str) -> str:
+    """Whether the day of year a Time_Period carries passes the days its year holds.
+
+    Only the year tells 366 apart from an invalid day, so the regex cannot bound this
+    one: 2024D366 is a day of a leap year and 2023D366 is no day at all.
+    """
+    value = f'UPPER(TRIM("{col_name}"))'
+    day = f"TRY_CAST(regexp_extract({value}, 'D0*(\\d+)$', 1) AS INTEGER)"
+    year = f"TRY_CAST(SUBSTR({value}, 1, 4) AS INTEGER)"
+    return (
+        f"({day} IS NOT NULL AND {year} IS NOT NULL "
+        f"AND {day} > DAYOFYEAR(MAKE_DATE({year}, 12, 31)))"
+    )
+
+
 def validate_temporal_columns(
     conn: duckdb.DuckDBPyConnection,
     table_name: str,
@@ -371,9 +390,12 @@ def validate_temporal_columns(
     # Returns first invalid value found for any column
     case_expressions = []
     for col_name, pattern, type_name in temporal_checks:
+        invalid = f"""NOT regexp_matches(UPPER(TRIM("{col_name}")), '{pattern}')"""
+        if type_name == "Time_Period":
+            invalid = f"({invalid} OR {_time_period_day_out_of_range(col_name)})"
         case_expressions.append(f"""
             CASE WHEN "{col_name}" IS NOT NULL AND "{col_name}" != ''
-                 AND NOT regexp_matches(UPPER(TRIM("{col_name}")), '{pattern}')
+                 AND {invalid}
             THEN '{col_name}|{type_name}|' || "{col_name}"
             ELSE NULL END
         """)
