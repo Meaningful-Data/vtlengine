@@ -36,7 +36,7 @@ _DAY_OF_YEAR = r"(0{0,2}[1-9]|0?[1-9]\d|[12]\d\d|3[0-5]\d|36[0-6])"
 
 TIME_PERIOD_PATTERN = (
     r"^\d{4}$|"  # Year - 2024
-    r"^\d{4}[A]\d?$|"  # Annual - 2024A, 2024A1
+    r"^\d{4}A$|"  # Annual - 2024A
     r"^\d{4}[S][1-2]$|"  # Semester - 2024S1
     r"^\d{4}[Q][1-4]$|"  # Quarter - 2024Q1
     rf"^\d{{4}}[M]{_MONTH}$|"  # Month - 2024M01, 2024M1
@@ -44,7 +44,7 @@ TIME_PERIOD_PATTERN = (
     rf"^\d{{4}}[D]{_DAY_OF_YEAR}$|"  # Day - 2024D001, 2024D01, 2024D1
     # SDMX Gregorian formats (hyphen-separated)
     rf"^\d{{4}}-{_MONTH}$|"  # Month numeric - 2024-01, 2024-1
-    r"^\d{4}-A\d?$|"  # Annual - 2024-A1, 2024-A
+    r"^\d{4}-A1$|"  # Annual - 2024-A1
     r"^\d{4}-S[1-2]$|"  # Semester - 2024-S1
     r"^\d{4}-Q[1-4]$|"  # Quarter - 2024-Q1
     rf"^\d{{4}}-M{_MONTH}$|"  # Month - 2024-M01, 2024-M1
@@ -348,7 +348,7 @@ def _time_period_day_out_of_range(col_name: str) -> str:
     Only the year tells 366 apart from an invalid day, so the regex cannot bound this
     one: 2024D366 is a day of a leap year and 2023D366 is no day at all.
     """
-    value = f'UPPER(TRIM("{col_name}"))'
+    value = f'TRIM("{col_name}")'
     day = f"TRY_CAST(regexp_extract({value}, 'D0*(\\d+)$', 1) AS INTEGER)"
     year = f"TRY_CAST(SUBSTR({value}, 1, 4) AS INTEGER)"
     return (
@@ -390,7 +390,7 @@ def validate_temporal_columns(
     # Returns first invalid value found for any column
     case_expressions = []
     for col_name, pattern, type_name in temporal_checks:
-        invalid = f"""NOT regexp_matches(UPPER(TRIM("{col_name}")), '{pattern}')"""
+        invalid = f"""NOT regexp_matches(TRIM("{col_name}"), '{pattern}')"""
         if type_name == "Time_Period":
             invalid = f"({invalid} OR {_time_period_day_out_of_range(col_name)})"
         case_expressions.append(f"""

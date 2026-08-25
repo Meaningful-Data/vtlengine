@@ -67,12 +67,20 @@ ds_param = [
         DS_r <- timeshift(DS_1, 12);
         """,
     ),
+    ("GH_1062_1", "DS_r := DS_1;"),
     # The period number at the edge of what each indicator holds, leap year included
     ("GH_1063_1", "DS_r := DS_1;"),
 ]
 
 error_param = [
     ("GL_440_2", "DS_r := DS_1;", "0-3-1-6"),
+    ("GH_1062_2", "DS_r := DS_1;", "0-3-1-6"),
+    ("GH_1062_3", "DS_r := DS_1;", "0-3-1-6"),
+    ("GH_1062_4", "DS_r := DS_1;", "0-3-1-6"),
+    ("GH_1062_5", "DS_r := DS_1;", "0-3-1-6"),
+    ("GH_1062_6", "DS_r := DS_1;", "0-3-1-6"),
+    # A period number past what its indicator holds is no period at all. The DuckDb
+    # loader checked the shape of a Time_Period and never its range (issue #1063)
     ("GH_1063_2", "DS_r := DS_1;", "0-3-1-6"),
     ("GH_1063_3", "DS_r := DS_1;", "0-3-1-6"),
     ("GH_1063_4", "DS_r := DS_1;", "0-3-1-6"),
