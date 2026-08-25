@@ -65,6 +65,10 @@ VALID_DATE_REGEX = (
     r"([ T]([01]\d|2[0-3]):[0-5]\d:[0-5]\d(\.\d+)?([+-]\d{2}:\d{2}|Z)?)?$"
 )
 
+# A Date runs from the year 1800 to 9999, which the pandas loader reads it under, and
+# reports apart from a value of the wrong shape (issue #1065).
+VALID_DATE_YEAR_REGEX = r"^(1[89]\d{2}|[2-9]\d{3})-"
+
 
 # =============================================================================
 # Error Mapping
@@ -457,12 +461,22 @@ def build_select_columns(
                     f"' is not in the correct format. "
                     f"Use YYYY-MM-DD or YYYY-MM-DD HH:MM:SS.'"
                 )
-                val_expr = f"NULLIF(\"{comp_name}\", '')" if comp.nullable else f'"{comp_name}"'
+                year_err = (
+                    f"'Date ' || \"{comp_name}\" || "
+                    f"' is invalid. Year must be between 1800 and 9999.'"
+                )
+                # The value is read with the space around it taken off, as the pandas
+                # loader strips it before reading (issue #1065)
+                trimmed = f'TRIM("{comp_name}")'
+                val_expr = f"NULLIF({trimmed}, '')" if comp.nullable else trimmed
                 select_cols.append(
                     f"""CASE
                         WHEN {null_check}
-                             AND NOT regexp_matches("{comp_name}", '{date_regex}')
+                             AND NOT regexp_matches({trimmed}, '{date_regex}')
                         THEN error({format_err})
+                        WHEN {null_check}
+                             AND NOT regexp_matches({trimmed}, '{VALID_DATE_YEAR_REGEX}')
+                        THEN error({year_err})
                         ELSE CAST({val_expr} AS {table_type})
                     END AS "{comp_name}\""""
                 )
