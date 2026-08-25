@@ -12,7 +12,7 @@ from typing import Dict, List, Literal, Optional, Tuple, Union
 import duckdb
 import pandas as pd
 
-from vtlengine.DataTypes import Date, TimePeriod
+from vtlengine.DataTypes import Date, TimeInterval, TimePeriod
 from vtlengine.duckdb_transpiler.io._validation import (
     VALID_DATE_REGEX,
     VALID_DATE_YEAR_REGEX,
@@ -68,8 +68,8 @@ def _validate_loaded_table(
             conn.execute(f'DROP TABLE IF EXISTS "{table_name}"')
             raise
 
-    # Normalize TimePeriod columns to canonical internal representation
     _normalize_time_period_columns(conn, table_name, components)
+    _normalize_time_interval_columns(conn, table_name, components)
 
     if skip_validation:
         return
@@ -107,7 +107,7 @@ def _normalize_time_period_columns(
             try:
                 conn.execute(
                     f'UPDATE "{table_name}" SET "{comp_name}" = '
-                    f'vtl_period_normalize("{comp_name}") '
+                    f'vtl_period_normalize(TRIM("{comp_name}")) '
                     f'WHERE "{comp_name}" IS NOT NULL AND "{comp_name}" != \'\''
                 )
             except duckdb.Error as e:
@@ -118,6 +118,34 @@ def _normalize_time_period_columns(
                     type="Time_Period",
                     error=str(e),
                 )
+
+
+def _normalize_time_interval_columns(
+    conn: duckdb.DuckDBPyConnection,
+    table_name: str,
+    components: Dict[str, Component],
+) -> None:
+    """Store a Time interval without the space around it.
+
+    Its check reads the value without that space, and the pandas loader strips it
+    before reading, so the value stored is the value that was read.
+    """
+    for comp_name, comp in components.items():
+        if comp.data_type != TimeInterval:
+            continue
+        try:
+            conn.execute(
+                f'UPDATE "{table_name}" SET "{comp_name}" = TRIM("{comp_name}") '
+                f'WHERE "{comp_name}" IS NOT NULL AND "{comp_name}" != \'\''
+            )
+        except duckdb.Error as e:
+            raise DataLoadError(
+                "0-3-1-6",
+                name=table_name,
+                column=comp_name,
+                type="Time",
+                error=str(e),
+            )
 
 
 def _detect_csv_format(
