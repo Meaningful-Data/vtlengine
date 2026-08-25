@@ -58,10 +58,19 @@ def _validate_loaded_table(
     On validation failure, drops the table and re-raises DataLoadError.
     Respects VTL_SKIP_LOAD_VALIDATION (skips checks 2-4 when set).
     """
+    skip_validation = _skip_load_validation()
+
+    if not skip_validation:
+        try:
+            validate_temporal_columns(conn, table_name, components)
+        except DataLoadError:
+            conn.execute(f'DROP TABLE IF EXISTS "{table_name}"')
+            raise
+
     # Normalize TimePeriod columns to canonical internal representation
     _normalize_time_period_columns(conn, table_name, components)
 
-    if _skip_load_validation():
+    if skip_validation:
         return
 
     try:
@@ -73,11 +82,9 @@ def _validate_loaded_table(
             if result and result[0] > 1:
                 raise DataLoadError("0-3-1-4", name=table_name)
 
-        # Duplicate check (GROUP BY HAVING)
+        # Duplicate check (GROUP BY HAVING), on the normalized values so that two
+        # spellings of one period are read as the same Data Point
         validate_no_duplicates(conn, table_name, id_columns)
-
-        # Temporal type validation
-        validate_temporal_columns(conn, table_name, components)
 
     except DataLoadError:
         conn.execute(f'DROP TABLE IF EXISTS "{table_name}"')

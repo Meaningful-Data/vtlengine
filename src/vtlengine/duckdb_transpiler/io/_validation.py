@@ -32,7 +32,7 @@ from vtlengine.Model import Component, Role
 
 TIME_PERIOD_PATTERN = (
     r"^\d{4}$|"  # Year - 2024
-    r"^\d{4}[A]\d?$|"  # Annual - 2024A, 2024A1
+    r"^\d{4}A$|"  # Annual - 2024A
     r"^\d{4}[S][1-2]$|"  # Semester - 2024S1
     r"^\d{4}[Q][1-4]$|"  # Quarter - 2024Q1
     r"^\d{4}[M]\d{1,2}$|"  # Month - 2024M01, 2024M1
@@ -40,7 +40,7 @@ TIME_PERIOD_PATTERN = (
     r"^\d{4}[D]\d{1,3}$|"  # Day - 2024D001, 2024D01, 2024D1
     # SDMX Gregorian formats (hyphen-separated)
     r"^\d{4}-\d{1,2}$|"  # Month numeric - 2024-01, 2024-1
-    r"^\d{4}-A\d?$|"  # Annual - 2024-A1, 2024-A
+    r"^\d{4}-A1$|"  # Annual - 2024-A1
     r"^\d{4}-S[1-2]$|"  # Semester - 2024-S1
     r"^\d{4}-Q[1-4]$|"  # Quarter - 2024-Q1
     r"^\d{4}-M\d{1,2}$|"  # Month - 2024-M01, 2024-M1
@@ -373,7 +373,7 @@ def validate_temporal_columns(
     for col_name, pattern, type_name in temporal_checks:
         case_expressions.append(f"""
             CASE WHEN "{col_name}" IS NOT NULL AND "{col_name}" != ''
-                 AND NOT regexp_matches(UPPER(TRIM("{col_name}")), '{pattern}')
+                 AND NOT regexp_matches(TRIM("{col_name}"), '{pattern}')
             THEN '{col_name}|{type_name}|' || "{col_name}"
             ELSE NULL END
         """)
