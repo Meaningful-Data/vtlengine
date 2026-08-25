@@ -2242,7 +2242,7 @@ def test_run_error_on_extra_columns(tmp_path, input_kind, use_duckdb):
         )
 
 
-_PARITY_STRUCTURE = {
+_DS_1_STRUCTURE = {
     "datasets": [
         {
             "name": "DS_1",
@@ -2275,7 +2275,7 @@ def test_run_rejects_a_datapoint_path_that_does_not_exist(tmp_path, use_duckdb):
     with pytest.raises(DataLoadError, match="0-3-1-1"):
         run(
             script="DS_r <- DS_1;",
-            data_structures=_PARITY_STRUCTURE,
+            data_structures=_DS_1_STRUCTURE,
             datapoints={"DS_1": tmp_path / "does_not_exist.csv"},
             use_duckdb=use_duckdb,
         )
@@ -2288,7 +2288,7 @@ def test_run_reads_the_datapoint_files_of_a_directory(tmp_path, use_duckdb):
 
     result = run(
         script="DS_r <- DS_1;",
-        data_structures=_PARITY_STRUCTURE,
+        data_structures=_DS_1_STRUCTURE,
         datapoints=folder,
         use_duckdb=use_duckdb,
     )
@@ -2304,7 +2304,7 @@ def test_run_rejects_a_datapoint_file_naming_no_dataset(tmp_path, use_duckdb):
     with pytest.raises(InputValidationException, match="Not found dataset UNKNOWN"):
         run(
             script="DS_r <- DS_1;",
-            data_structures=_PARITY_STRUCTURE,
+            data_structures=_DS_1_STRUCTURE,
             datapoints=[unknown],
             use_duckdb=use_duckdb,
         )
@@ -2316,10 +2316,51 @@ def test_run_rejects_a_datapoint_dictionary_value_that_is_no_input(tmp_path, use
     with pytest.raises(InputValidationException, match="All values in the dictionary"):
         run(
             script="DS_r <- DS_1;",
-            data_structures=_PARITY_STRUCTURE,
+            data_structures=_DS_1_STRUCTURE,
             datapoints={"DS_1": None},
             use_duckdb=use_duckdb,
         )
+
+
+@pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+@pytest.mark.parametrize("marker", ["ACTION", "STRUCTURE", "STRUCTURE_ID", "DATAFLOW"])
+def test_run_error_on_sdmx_marker_column_of_a_plain_csv(tmp_path, marker, use_duckdb):
+    """A plain CSV carries no SDMX markers, so a column of that name is a column of it.
+
+    The DuckDb engine took them for SDMX markers wherever they appeared, so a plain
+    CSV holding an ACTION column lost the rows it marked deleted and the column with
+    them, with no signal (issue #1064).
+    """
+    csv_path = tmp_path / "DS_1.csv"
+    csv_path.write_text(f"Id_1,Me_1,{marker}\n1,10,I\n2,20,D\n")
+
+    with pytest.raises(DataLoadError, match="0-3-1-15"):
+        run(
+            script="DS_r <- DS_1;",
+            data_structures=_DS_1_STRUCTURE,
+            datapoints={"DS_1": csv_path},
+            use_duckdb=use_duckdb,
+        )
+
+
+@pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+def test_run_sdmx_csv_still_filters_the_rows_action_deletes(tmp_path, use_duckdb):
+    """An SDMX-CSV file does carry them, and the rows ACTION deletes stay out."""
+    csv_path = tmp_path / "DS_1.csv"
+    csv_path.write_text(
+        "STRUCTURE,STRUCTURE_ID,ACTION,Id_1,Me_1\n"
+        "dataflow,MD:DS_1(1.0),I,1,10\n"
+        "dataflow,MD:DS_1(1.0),D,2,20\n"
+    )
+
+    result = run(
+        script="DS_r <- DS_1;",
+        data_structures=_DS_1_STRUCTURE,
+        datapoints={"DS_1": csv_path},
+        use_duckdb=use_duckdb,
+    )
+
+    assert result["DS_r"].data.to_dict("records") == [{"Id_1": 1, "Me_1": 10.0}]
 
 
 def test_run_error_on_missing_non_nullable_column():
