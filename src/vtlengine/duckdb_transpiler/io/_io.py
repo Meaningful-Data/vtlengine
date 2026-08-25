@@ -162,7 +162,7 @@ def _detect_csv_format(
     """
     if expected_columns:
         try:
-            with open(csv_path, newline="", encoding="utf-8") as f:
+            with open(csv_path, newline="", encoding="utf-8-sig") as f:
                 reader = csv.reader(f, delimiter=",")
                 header = next(reader, [])
             header_set = {h.strip() for h in header}
@@ -280,11 +280,13 @@ def load_datapoints_duckdb(
         # when the header already parses cleanly with a comma delimiter.
         _sniffed_fmt = _detect_csv_format(conn, file_path, expected_columns=list(components.keys()))
 
-        # 3. Read CSV header and check for duplicate columns
         sniffed_delim = _sniffed_fmt.split("'")[1] if "delim=" in _sniffed_fmt else ","
-        with open(file_path, newline="", encoding="utf-8") as f:
-            reader = csv.reader(f, delimiter=sniffed_delim)
-            csv_columns = next(reader, [])
+        try:
+            with open(file_path, newline="", encoding="utf-8-sig") as f:
+                reader = csv.reader(f, delimiter=sniffed_delim)
+                csv_columns = next(reader, [])
+        except UnicodeDecodeError:
+            raise InputValidationException(code="0-1-2-5", file=Path(file_path).name) from None
 
         if len(set(csv_columns)) != len(csv_columns):
             duplicates = list({item for item in csv_columns if csv_columns.count(item) > 1})

@@ -65,9 +65,11 @@ def _validate_csv_path(components: Dict[str, Component], csv_path: Path) -> None
     register_rfc()
     try:
         delimiter = _detect_delimiter(csv_path)
-        with open(csv_path, "r", errors="replace", encoding="utf-8-sig") as f:
+        with open(csv_path, "r", encoding="utf-8-sig") as f:
             reader = DictReader(f, delimiter=delimiter)
             csv_columns = reader.fieldnames
+    except UnicodeDecodeError:
+        raise InputValidationException(code="0-1-2-5", file=csv_path.name) from None
     except InputValidationException as ie:
         raise InputValidationException("{}".format(str(ie))) from None
     except Exception as e:
@@ -148,16 +150,19 @@ def _pandas_load_csv(components: Dict[str, Component], csv_path: Union[str, Path
 
     sep = _detect_delimiter(csv_path)
 
-    data = pd.read_csv(  # type: ignore[call-overload, unused-ignore]
-        csv_path,
-        dtype=obj_dtypes,
-        engine="c",
-        sep=sep,
-        keep_default_na=False,
-        na_values=na_values,
-        encoding="utf-8-sig",
-        encoding_errors="replace",
-    )
+    try:
+        data = pd.read_csv(  # type: ignore[call-overload, unused-ignore]
+            csv_path,
+            dtype=obj_dtypes,
+            engine="c",
+            sep=sep,
+            keep_default_na=False,
+            na_values=na_values,
+            encoding="utf-8-sig",
+        )
+    except UnicodeDecodeError:
+        name = csv_path if isinstance(csv_path, str) else csv_path.name
+        raise InputValidationException(code="0-1-2-5", file=name) from None
 
     return _sanitize_pandas_columns(components, csv_path, data)
 

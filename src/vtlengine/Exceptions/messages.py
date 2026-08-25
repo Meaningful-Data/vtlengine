@@ -91,6 +91,12 @@ centralised_messages = {
         "description": "Occurs when an element (e.g., Identifier or component) "
         "appears more than once.",
     },
+    "0-1-2-5": {
+        "message": "File {file} must be encoded in UTF-8.",
+        "description": "Raised when a file is not valid UTF-8. A UTF-8 BOM is read "
+        "transparently, but any other encoding is refused instead of read with the "
+        "characters it holds replaced.",
+    },
     "0-1-2-6": {
         "message": "Not found scalar {name} in datastructures",
         "description": "Occurs when a scalar value expected in the data structures is missing.",

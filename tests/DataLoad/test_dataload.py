@@ -357,18 +357,20 @@ class DataLoadTest(DataLoadHelper):
     def test_22(self):
         """
         Status: OK
-        Description: Data Load, with utf-16 encoding.
+        Description: Data Load, with utf-16 encoding. It used to surface as
+                     "line contains NUL"; a file in an encoding other than UTF-8
+                     now has an error of its own, on both engines (issue #1070).
         Git issue: 81-triple-doble-quote-commas-data-loading-and-intermediate-results.
         Git Branch: bug-81-triple-doble-quote-commas-data-loading-and-intermediate-results.
         Goal: Check Exception.
         """
-        # code = "GL_81-21"
-        # number_inputs = 1
-        # message = "ERROR: line contains NUL"
-        # TODO: Check the dialect on the Dataload.
-        # self.DataLoadExceptionTest(code=code, number_inputs=number_inputs,
-        #                            exception_message=message)
-        assert True
+        code = "GH_1070_2"
+        number_inputs = 1
+
+        exception_code = "0-1-2-5"
+        self.DataLoadExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
 
     # Quotes on the types
     def test_23(self):
@@ -949,6 +951,26 @@ class DataLoadTest(DataLoadHelper):
         number_inputs = 1
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code="0-1-1-8")
 
+    def test_GH_1070_1(self):
+        """A latin-1 file is refused, not read with the characters it holds replaced."""
+        code = "GH_1070_1"
+        number_inputs = 1
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code="0-1-2-5")
+
+    def test_GH_1070_3(self):
+        """
+        Status: OK
+        Expression: DS_r := DS_1;
+        Description: a UTF-8 BOM is taken off the first column name on both engines.
+        Git issue: 1070.
+        Goal: Check Result.
+        """
+        code = "GH_1070_3"
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_1067_1(self):
         """A Duration with space around it is rejected, not silently accepted."""
         code = "GH_1067_1"
@@ -976,8 +998,13 @@ BOM = b"\xef\xbb\xbf"
 class TestBOMHandling:
     """Tests that UTF-8 BOM files are handled transparently."""
 
-    def test_bom_csv(self, tmp_path: Path) -> None:
-        """CSV with BOM loads correctly, first column name is clean."""
+    @pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+    def test_bom_csv(self, tmp_path: Path, use_duckdb: bool) -> None:
+        """CSV with BOM loads correctly, first column name is clean.
+
+        Both engines are asked: this test read the default engine only, so the
+        DuckDb loader reading the header as plain UTF-8 went unseen (issue #1070).
+        """
         script = "DS_r <- DS_1;"
         data_structures = {
             "datasets": [
@@ -1007,6 +1034,7 @@ class TestBOMHandling:
             script=script,
             data_structures=data_structures,
             datapoints={"DS_1": csv_path},
+            use_duckdb=use_duckdb,
         )
         ds = result["DS_r"]
         assert "Id_1" in ds.data.columns

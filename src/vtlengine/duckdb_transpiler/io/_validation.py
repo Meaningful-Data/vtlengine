@@ -87,6 +87,9 @@ def map_duckdb_error(
     """
     error_msg = str(error).lower()
 
+    if "invalid unicode" in error_msg:
+        return InputValidationException(code="0-1-2-5", file=dataset_name)
+
     # Corrupt or invalid Parquet file
     if "magic bytes" in error_msg or "no magic bytes" in error_msg:
         return DataLoadError(
