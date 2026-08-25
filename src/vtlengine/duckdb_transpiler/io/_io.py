@@ -290,9 +290,9 @@ def load_datapoints_duckdb(
         ordered_dtypes = {col: all_csv_dtypes[col] for col in csv_columns if col in all_csv_dtypes}
         type_str = ", ".join(f"'{k}': '{v}'" for k, v in ordered_dtypes.items())
 
-        # 7. Build filter for SDMX ACTION column
+        # 7. Build filter for SDMX ACTION column, which only an SDMX-CSV file carries
         action_filter = ""
-        if "ACTION" in csv_columns and "ACTION" not in components:
+        if "ACTION" in csv_columns and "ACTION" not in keep_columns:
             action_filter = 'WHERE "ACTION" != \'D\' OR "ACTION" IS NULL'
 
         # 8. Execute INSERT
@@ -365,7 +365,7 @@ def _load_parquet(
         select_exprs = _build_dataframe_select_columns(components, df_columns=parquet_cols)
 
         action_filter = ""
-        if "ACTION" in parquet_cols and "ACTION" not in components:
+        if "ACTION" in parquet_cols and "ACTION" not in keep_columns:
             action_filter = 'WHERE "ACTION" != \'D\' OR "ACTION" IS NULL'
 
         col_list = ", ".join(f'"{c}"' for c in components)
