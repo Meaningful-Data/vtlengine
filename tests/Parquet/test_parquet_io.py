@@ -5,6 +5,7 @@ import pandas as pd
 import pytest
 
 from vtlengine import run
+from vtlengine.Exceptions import DataLoadError
 
 SCRIPT = "DS_A <- DS_1 * 10;"
 
@@ -245,16 +246,20 @@ def test_parquet_duplicate_identifier_raises(tmp_path: Path) -> None:
     assert "0-3-1-7" in str(excinfo.value)
 
 
-def test_parquet_nonexistent_path_empty_table(tmp_path: Path) -> None:
+def test_parquet_nonexistent_path_is_rejected(tmp_path: Path) -> None:
+    """A path that does not exist names data that never arrived, and is reported.
+
+    It used to load an empty table, so a run whose input was missing returned an
+    empty result with no signal (issue #1061).
+    """
     missing = tmp_path / "DS_1.parquet"  # never created
-    result = run(
-        script="DS_A <- DS_1;",
-        data_structures=DATA_STRUCTURE,
-        datapoints={"DS_1": missing},
-        use_duckdb=True,
-    )
-    assert result["DS_A"].data is not None
-    assert len(result["DS_A"].data) == 0
+    with pytest.raises(DataLoadError, match="0-3-1-1"):
+        run(
+            script="DS_A <- DS_1;",
+            data_structures=DATA_STRUCTURE,
+            datapoints={"DS_1": missing},
+            use_duckdb=True,
+        )
 
 
 def test_parquet_output_roundtrip(tmp_path: Path) -> None:

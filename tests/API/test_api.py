@@ -2242,6 +2242,86 @@ def test_run_error_on_extra_columns(tmp_path, input_kind, use_duckdb):
         )
 
 
+_PARITY_STRUCTURE = {
+    "datasets": [
+        {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+            ],
+        }
+    ]
+}
+
+
+def _datapoint_files(tmp_path):
+    """A folder holding DS_1.csv, and a CSV whose name matches no dataset."""
+    folder = tmp_path / "input"
+    folder.mkdir()
+    (folder / "DS_1.csv").write_text("Id_1,Me_1\n1,10\n")
+    unknown = tmp_path / "UNKNOWN.csv"
+    unknown.write_text("Id_1,Me_1\n1,10\n")
+    return folder, unknown
+
+
+@pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+def test_run_rejects_a_datapoint_path_that_does_not_exist(tmp_path, use_duckdb):
+    """A path naming data that never arrived is reported, not read as no data.
+
+    The DuckDb engine loaded an empty dataset, so the script ran to completion over
+    nothing (issue #1061).
+    """
+    with pytest.raises(DataLoadError, match="0-3-1-1"):
+        run(
+            script="DS_r <- DS_1;",
+            data_structures=_PARITY_STRUCTURE,
+            datapoints={"DS_1": tmp_path / "does_not_exist.csv"},
+            use_duckdb=use_duckdb,
+        )
+
+
+@pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+def test_run_reads_the_datapoint_files_of_a_directory(tmp_path, use_duckdb):
+    """A directory stands for the datapoint files in it."""
+    folder, _ = _datapoint_files(tmp_path)
+
+    result = run(
+        script="DS_r <- DS_1;",
+        data_structures=_PARITY_STRUCTURE,
+        datapoints=folder,
+        use_duckdb=use_duckdb,
+    )
+
+    assert result["DS_r"].data.to_dict("records") == [{"Id_1": 1, "Me_1": 10.0}]
+
+
+@pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+def test_run_rejects_a_datapoint_file_naming_no_dataset(tmp_path, use_duckdb):
+    """A file whose name matches no dataset is reported, not dropped."""
+    _, unknown = _datapoint_files(tmp_path)
+
+    with pytest.raises(InputValidationException, match="Not found dataset UNKNOWN"):
+        run(
+            script="DS_r <- DS_1;",
+            data_structures=_PARITY_STRUCTURE,
+            datapoints=[unknown],
+            use_duckdb=use_duckdb,
+        )
+
+
+@pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+def test_run_rejects_a_datapoint_dictionary_value_that_is_no_input(tmp_path, use_duckdb):
+    """A dictionary value that is neither a Path nor a DataFrame names no data."""
+    with pytest.raises(InputValidationException, match="All values in the dictionary"):
+        run(
+            script="DS_r <- DS_1;",
+            data_structures=_PARITY_STRUCTURE,
+            datapoints={"DS_1": None},
+            use_duckdb=use_duckdb,
+        )
+
+
 def test_run_error_on_missing_non_nullable_column():
     """Missing non-nullable columns in the input DataFrame raise an error."""
     script = "DS_r <- DS_1;"
