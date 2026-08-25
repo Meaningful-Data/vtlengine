@@ -388,7 +388,11 @@ def validate_temporal_columns(
     # Returns first invalid value found for any column
     case_expressions = []
     for col_name, pattern, type_name in temporal_checks:
-        invalid = f"""NOT regexp_matches(TRIM("{col_name}"), '{pattern}')"""
+        # A Time_Period and a Time interval are read with the space around them taken
+        # off, and stored that way; a Duration is read as it was written, which is how
+        # the pandas loader reads each of them (issue #1067).
+        checked = f'"{col_name}"' if type_name == "Duration" else f'TRIM("{col_name}")'
+        invalid = f"NOT regexp_matches({checked}, '{pattern}')"
         if type_name == "Time":
             invalid = f"({invalid} OR {_time_interval_out_of_order(col_name)})"
         case_expressions.append(f"""
