@@ -99,13 +99,13 @@ def map_duckdb_error(
     if "duplicate" in error_msg or "primary key" in error_msg:
         return DataLoadError("0-3-1-7", name=dataset_name, row_index="unknown")
 
-    # NULL in identifier (NOT NULL violation)
     if "null" in error_msg and "constraint" in error_msg:
-        # Try to extract column name from error
+        violated = error_msg.rsplit(".", 1)[-1].strip()
         for comp_name, comp in components.items():
-            if comp.role == Role.IDENTIFIER and comp_name.lower() in error_msg:
-                return DataLoadError("0-3-1-3", null_identifier=comp_name, name=dataset_name)
-        # Generic null error for identifier
+            if comp_name.lower() == violated:
+                if comp.role == Role.IDENTIFIER:
+                    return DataLoadError("0-3-1-3", null_identifier=comp_name, name=dataset_name)
+                return DataLoadError("0-3-1-17", name=dataset_name, comp_name=comp_name)
         return DataLoadError("0-3-1-3", null_identifier="unknown", name=dataset_name)
 
     # Date/timestamp range error (e.g. 2014-02-31)

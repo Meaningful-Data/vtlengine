@@ -362,7 +362,9 @@ def _load_parquet(
         check_missing_identifiers(id_columns, keep_columns, file_path)
         check_extra_columns(keep_columns, components, dataset_name)
 
-        select_exprs = _build_dataframe_select_columns(components, df_columns=parquet_cols)
+        select_exprs = _build_dataframe_select_columns(
+            components, dataset_name, df_columns=parquet_cols
+        )
 
         action_filter = ""
         if "ACTION" in parquet_cols and "ACTION" not in keep_columns:
@@ -577,13 +579,16 @@ def _detect_date_type_overrides(
 
 def _build_dataframe_select_columns(
     components: Dict[str, Component],
+    dataset_name: str,
     df_columns: Optional[List[str]] = None,
     type_overrides: Optional[Dict[str, str]] = None,
 ) -> List[str]:
     """Build SELECT expressions with explicit CAST for DataFrame → DuckDB table insertion.
 
     Ensures type enforcement matches the CSV loading path (load_datapoints_duckdb).
-    Columns missing from the DataFrame are filled with NULL.
+    A missing column is filled with NULL, and, when the component is not nullable,
+    reported as missing the way the CSV path and the pandas loader report it: filling
+    it left a DataFrame with no rows loading a structure it did not carry.
     """
     df_col_set = set(df_columns) if df_columns is not None else None
     overrides = type_overrides or {}
@@ -591,6 +596,8 @@ def _build_dataframe_select_columns(
     for comp_name, comp in components.items():
         target_type = overrides.get(comp_name, get_column_sql_type(comp))
         if df_col_set is not None and comp_name not in df_col_set:
+            if not comp.nullable:
+                raise DataLoadError("0-3-1-5", name=dataset_name, comp_name=comp_name)
             exprs.append(f'CAST(NULL AS {target_type}) AS "{comp_name}"')
         elif comp.data_type == Date:
             # Accept only a bare date, or a date with a COMPLETE, in-range time
@@ -651,7 +658,7 @@ def register_dataframes(
         conn.register(temp_view, df)
         try:
             select_exprs = _build_dataframe_select_columns(
-                components, list(df.columns), type_overrides
+                components, name, list(df.columns), type_overrides
             )
             col_list = ", ".join(f'"{c}"' for c in components)
             conn.execute(

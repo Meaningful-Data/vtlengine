@@ -2545,7 +2545,7 @@
           "name": "Me_str",
           "type": "String",
           "role": "Measure",
-          "nullable": false
+          "nullable": true
         },
         {
           "name": "Id_date",

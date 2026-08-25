@@ -5080,3 +5080,24 @@ class AnalyticBugs(BugHelper):
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1069_1(self):
+        """
+        Status: OK
+        Expression: DS_r1 <- nvl(DS_1, DS_2);
+                    DS_r2 <- nvl(DS_1, DS_3);
+                    DS_r3 <- DS_1[calc Me_2 := nvl(Me_1, Me_1)];
+        Description: nvl declared its result as not nullable whatever the replacement
+                     was, so a null replaced by another null came out as a null in a
+                     Measure the structure said could not hold one. The result now
+                     stays nullable where the replacement is itself nullable (DS_r1
+                     and DS_r3), and is not nullable where the replacement cannot be
+                     null (DS_r2).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1069
+        Goal: Check Result.
+        """
+        code = "GH_1069_1"
+        number_inputs = 3
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)

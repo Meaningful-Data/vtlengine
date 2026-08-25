@@ -197,6 +197,18 @@ def _check_extra_columns(
         raise DataLoadError("0-3-1-15", name=dataset_name, extra_columns=", ".join(extra_columns))
 
 
+def _check_non_nullable_components(
+    components: Dict[str, Component], data: pd.DataFrame, dataset_name: str
+) -> None:
+    """A component the DataStructure declares as not nullable cannot carry a null,
+    whatever its role: an empty value in one used to load as a null and leave the
+    declared structure violated with no error. An Identifier keeps its
+    own error, which is checked before this one."""
+    for comp_name, comp in components.items():
+        if not comp.nullable and comp.role != Role.IDENTIFIER and data[comp_name].isnull().any():
+            raise DataLoadError("0-3-1-17", name=dataset_name, comp_name=comp_name)
+
+
 def _validate_pandas(
     components: Dict[str, Component], data: pd.DataFrame, dataset_name: str
 ) -> pd.DataFrame:
@@ -231,6 +243,9 @@ def _validate_pandas(
             data[comp_name] = data[comp_name].replace("", pd.NA)
 
     data = data.fillna(value=pd.NA)
+
+    _check_non_nullable_components(components, data, dataset_name)
+
     # Checking data types on all data types
     comp_name = ""
     try:

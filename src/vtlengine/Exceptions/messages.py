@@ -230,6 +230,12 @@ centralised_messages = {
         "description": "Raised when DuckDB cannot read a Parquet file because it is "
         "corrupted, truncated, or not a valid Parquet file (e.g. missing magic bytes).",
     },
+    "0-3-1-17": {
+        "message": "On Dataset {name} loading: Component {comp_name} is not nullable, "
+        "found null values on it.",
+        "description": "Raised when a component declared as not nullable in the DataStructure "
+        "carries a null value in the datapoints. An Identifier reports 0-3-1-3 instead.",
+    },
     # Input validation errors for URL datapoints
     "0-1-3-8": {
         "message": "data_structures must be a file path or URL "
