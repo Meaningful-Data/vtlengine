@@ -111,8 +111,10 @@ class InputValidationException(VTLEngineException):
         **kwargs: Any,
     ) -> None:
         if code is not None:
-            message = centralised_messages[code]["message"].format(**kwargs)
-            super().__init__(message, lino, colno, code)
+            catalogued = centralised_messages[code]["message"].format(**kwargs)
+            if message != "default_value":
+                catalogued = f"{catalogued} {message}"
+            super().__init__(catalogued, lino, colno, code)
         else:
             super().__init__(message, lino, colno)
 

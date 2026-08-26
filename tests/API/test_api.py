@@ -2379,3 +2379,53 @@ def test_run_handles_deeply_chained_expression():
     )
 
     assert len(result["DS_r"].data) == 2
+
+
+_TWO_DATASET_STRUCTURE = {
+    "datasets": [
+        {
+            "name": name,
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+            ],
+        }
+        for name in ("DS_1", "DS_2")
+    ]
+}
+
+
+@pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+def test_run_reads_a_datapoint_dictionary_of_a_dataframe_and_a_file(tmp_path, use_duckdb):
+    """A dictionary says where each dataset's Data Points are, one dataset at a time.
+
+    Holding a DataFrame for one and a file for another was refused on the pandas
+    engine, while the DuckDb engine read both (issue #1072).
+    """
+    csv_path = tmp_path / "DS_2.csv"
+    csv_path.write_text("Id_1,Me_1\n1,5\n")
+
+    result = run(
+        script="DS_r <- DS_1 + DS_2;",
+        data_structures=_TWO_DATASET_STRUCTURE,
+        datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0]}), "DS_2": csv_path},
+        use_duckdb=use_duckdb,
+    )
+
+    assert result["DS_r"].data.to_dict("records") == [{"Id_1": 1, "Me_1": 15.0}]
+
+
+@pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+def test_run_rejects_a_datapoint_dictionary_value_that_is_no_input(use_duckdb):
+    """A value that is neither a DataFrame nor a path still names no Data Points.
+
+    Both engines say the same thing now: the old wording asked for all Paths or all
+    DataFrames, a restriction neither engine has any more.
+    """
+    with pytest.raises(InputValidationException, match="Must be DataFrame, Path, or string"):
+        run(
+            script="DS_r <- DS_1;",
+            data_structures=_TWO_DATASET_STRUCTURE,
+            datapoints={"DS_1": 42},
+            use_duckdb=use_duckdb,
+        )

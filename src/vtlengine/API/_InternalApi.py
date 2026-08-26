@@ -192,6 +192,21 @@ def _generate_single_path_dict(
     return {dataset_name: datapoint}
 
 
+def _check_datapoint_format(datapoint: Path) -> None:
+    """A Parquet file is read by the DuckDb engine only.
+
+    The pandas engine read its bytes as a CSV and reported the Identifiers it could
+    not find in them, which sends whoever loaded it looking for a problem in the
+    data structure instead of naming the engine the file needs.
+    """
+    if datapoint.suffix.lower() == ".parquet":
+        raise InputValidationException(
+            code="0-1-1-2",
+            input=datapoint,
+            message="Parquet files are only supported with use_duckdb=True.",
+        )
+
+
 def _load_single_datapoint(
     datapoint: Union[str, Path],
     sdmx_mappings: Optional[Dict[str, str]] = None,
@@ -239,6 +254,7 @@ def _load_single_datapoint(
                 dict_results.update(_generate_single_path_dict(f, sdmx_mappings=sdmx_mappings))
             # Skip other files
     else:
+        _check_datapoint_format(datapoint)
         dict_results.update(_generate_single_path_dict(datapoint, sdmx_mappings=sdmx_mappings))
     return dict_results
 
@@ -305,6 +321,9 @@ def _load_datapoints_path(
             # Validate file exists
             if isinstance(datapoint, Path) and not datapoint.exists():
                 raise DataLoadError(code="0-3-1-1", file=datapoint)
+
+            if isinstance(datapoint, Path):
+                _check_datapoint_format(datapoint)
 
             # Use explicit dataset_name from dict key
             _check_unique_datapoints([dataset_name], list(all_paths.keys()))
@@ -496,36 +515,32 @@ def load_datasets_with_data(
         _handle_scalars_values(scalars, scalar_values)
         return datasets, scalars, None
 
-    # Handling dictionary of Pandas Dataframes
-    if isinstance(datapoints, dict) and all(
-        isinstance(v, pd.DataFrame) for v in datapoints.values()
-    ):
-        for dataset_name, data in datapoints.items():
+    if isinstance(datapoints, dict):
+        dataframes = {k: v for k, v in datapoints.items() if isinstance(v, pd.DataFrame)}
+        paths: Dict[str, Union[pd.DataFrame, Path, str]] = {
+            k: v for k, v in datapoints.items() if isinstance(v, (str, Path))
+        }
+        for dataset_name in datapoints:
+            if dataset_name not in dataframes and dataset_name not in paths:
+                raise InputValidationException(
+                    f"Invalid datapoint for {dataset_name}. Must be DataFrame, Path, or string."
+                )
+
+        for dataset_name, data in dataframes.items():
             if dataset_name not in datasets:
                 raise InputValidationException(
                     f"Not found dataset {dataset_name} in datastructures."
                 )
-            # This exception is not needed due to the all() check above, but it is left for safety
-            if not isinstance(data, pd.DataFrame):
-                raise InputValidationException(
-                    f"Invalid datapoint for dataset {dataset_name}. Must be a Pandas Dataframe."
-                )
             datasets[dataset_name].data = _validate_pandas(
                 datasets[dataset_name].components, data, dataset_name
             )
-        # Handle empty datasets and scalar values for remaining datasets
-        _handle_empty_datasets(datasets)
-        _handle_scalars_values(scalars, scalar_values)
-        return datasets, scalars, None
 
-    # Checking mixed types in the dictionary
-    if isinstance(datapoints, dict) and any(
-        not isinstance(v, (str, Path)) for v in datapoints.values()
-    ):
-        raise InputValidationException(
-            "Invalid datapoints. All values in the dictionary must be Paths, "
-            "or all values must be Pandas Dataframes."
-        )
+        if not paths:
+            # Handle empty datasets and scalar values for remaining datasets
+            _handle_empty_datasets(datasets)
+            _handle_scalars_values(scalars, scalar_values)
+            return datasets, scalars, None
+        datapoints = paths
 
     # Handling Individual, List or Dict of Paths or URLs
     # At this point, datapoints is narrowed to exclude None and Dict[str, DataFrame]
@@ -732,7 +747,7 @@ def _return_only_persistent_datasets(
 
 def _load_single_external_routine_from_file(input: Path) -> Any:
     if not isinstance(input, Path):
-        raise InputValidationException(code="0-1-1-2", input=input)
+        raise InputValidationException(code="0-1-1-2", input=input, message="Input must be a Path.")
     if not input.exists():
         raise DataLoadError(code="0-3-1-1", file=input)
     if input.suffix != ".json":
