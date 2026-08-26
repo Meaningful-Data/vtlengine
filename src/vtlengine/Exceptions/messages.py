@@ -45,9 +45,9 @@ centralised_messages = {
         "to the expected one.",
     },
     "0-1-1-6": {
-        "message": "Duplicated records. Combination of Identifiers are repeated.",
-        "description": "Raised when duplicate rows are detected based on the Identifiers "
-        "combination.",
+        "message": "File {file} is empty: no line naming its columns was found in it.",
+        "description": "Raised when a datapoint file holds nothing at all. A file holding "
+        "only the line that names its columns is a Data Set with no Data Points, and loads.",
     },
     "0-1-1-7": {
         "message": "G1 - The provided CSV file is empty.",
