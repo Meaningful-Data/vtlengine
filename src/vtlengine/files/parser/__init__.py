@@ -273,9 +273,7 @@ def _validate_pandas(
                     except ValueError:
                         raise ValueError(f"Duration values are not correct in column {comp_name}")
             else:
-                data[comp_name] = data[comp_name].map(
-                    lambda x: str(x).replace('"', ""), na_action="ignore"
-                )
+                data[comp_name] = data[comp_name].map(str, na_action="ignore")
             data[comp_name] = data[comp_name].astype(comp.data_type.dtype())  # type: ignore[call-overload]
 
     except (ValueError, InputValidationException) as e:

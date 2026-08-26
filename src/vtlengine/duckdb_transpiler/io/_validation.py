@@ -478,8 +478,7 @@ def build_select_columns(
                     stripped = f"NULLIF({stripped}, '')"
                 select_cols.append(f'CAST({stripped} AS BOOLEAN) AS "{comp_name}"')
             elif csv_type == "VARCHAR" and comp.data_type == String:
-                # Strip double quotes from String values (match pandas loader behavior)
-                expr = f"""REPLACE("{comp_name}", '"', '')"""
+                expr = f'"{comp_name}"'
                 if comp.nullable:
                     expr = f"NULLIF({expr}, '')"
                 select_cols.append(f'{expr} AS "{comp_name}"')
