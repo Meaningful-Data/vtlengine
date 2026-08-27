@@ -934,14 +934,16 @@ class DataLoadTest(DataLoadHelper):
         )
 
     def test_GH_676_1(self):
-        """Empty CSV file (no columns) triggers 0-1-1-6 on both engines.
+        """Empty CSV file (no columns) triggers 0-1-1-17 on both engines.
 
         The DuckDb engine used to report the Identifiers it could not find in a file
         that names no columns at all, so this ran on the pandas engine only (#1075).
         """
         code = "GH_676_1"
         number_inputs = 1
-        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code="0-1-1-6")
+        self.DataLoadExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="0-1-1-17"
+        )
 
     def test_GH_676_2(self):
         """CSV header missing an identifier declared in the structure triggers 0-1-1-8."""

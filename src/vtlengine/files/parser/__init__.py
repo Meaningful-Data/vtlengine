@@ -76,7 +76,7 @@ def _validate_csv_path(components: Dict[str, Component], csv_path: Path) -> None
         ) from None
 
     if not csv_columns:
-        raise InputValidationException(code="0-1-1-6", file=csv_path.name)
+        raise InputValidationException(code="0-1-1-17", file=csv_path.name)
 
     if len(list(set(csv_columns))) != len(csv_columns):
         duplicates = list(set([item for item in csv_columns if csv_columns.count(item) > 1]))
