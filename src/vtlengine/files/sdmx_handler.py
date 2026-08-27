@@ -8,6 +8,7 @@ This module consolidates all SDMX-related file operations including:
 - Extracting dataset names from SDMX files
 """
 
+import csv
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
@@ -60,6 +61,11 @@ def is_sdmx_csv_file(file_path: Path, components: Dict[str, Component]) -> bool:
     pysdmx parses. It is taken on the header line alone, which is all the CSV branch
     of that detection reads. A DataStructure that defines a Component of the name
     carrying the structure keeps its file plain.
+
+    SDMX-CSV opens the row with the column naming the structure, and pysdmx accepts
+    that column wherever it sits, so the position is read here as well: a plain file
+    holding a column called DATAFLOW somewhere along the row is a plain file with a
+    column of that name, which is what the engines read it as (issue #1064).
     """
     if file_path.suffix.lower() != ".csv":
         return False
@@ -70,6 +76,9 @@ def is_sdmx_csv_file(file_path: Path, components: Dict[str, Component]) -> bool:
     except Exception:
         return False
     if sdmx_format not in SDMX_CSV_DATA_FORMATS:
+        return False
+    first_column = next(csv.reader([header]), [""])[0].strip()
+    if first_column not in SDMX_CSV_STRUCTURE_COLUMNS:
         return False
     return not any(column in components for column in SDMX_CSV_STRUCTURE_COLUMNS)
 

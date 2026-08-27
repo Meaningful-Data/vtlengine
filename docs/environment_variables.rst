@@ -50,12 +50,13 @@ equal when ``|a - b| <= tolerance * max(|a|, |b|)``.
 ``OUTPUT_NUMBER_SIGNIFICANT_DIGITS``
 ====================================
 
-Controls the significant digits used for:
+Controls the significant digits used for, in **both** execution engines:
 
-1. **Numeric operations**: Precision of arithmetic operations (``+``, ``-``, ``*``, ``/``, ``mod``, ``power``, etc.) by setting the Decimal context precision.
-2. **CSV output**: Formatting Number values when writing to CSV files.
-3. **DuckDB DECIMAL scale**: Number of decimal places used by the DuckDB engine
-   (paired with :ref:`vtl_duckdb_decimal_width` for the precision).
+1. **Numeric operations**: every binary arithmetic result (``+``, ``-``, ``*``, ``/``,
+   ``mod``, ``power``) is computed in float64 and rounded to N significant digits
+   (round-half-even).
+2. **CSV output**: formatting of Number values when writing to CSV files
+   (datasets and ``_scalars.csv``).
 
 .. list-table::
    :header-rows: 1
@@ -64,19 +65,18 @@ Controls the significant digits used for:
    * - Value
      - Behaviour
    * - Not defined
-     - Uses default value of **15** significant digits for output rendering (both
-       engines); **10** is the DuckDB-internal DECIMAL storage scale
+     - Uses default value of **15** significant digits
    * - ``6`` to ``15``
      - Uses the specified number of significant digits
    * - ``-1``
-     - Disables precision limiting (uses Python/pandas defaults; DuckDB falls back to its
-       maximum scale of 15)
+     - Disables both the per-operation rounding (raw float64 arithmetic) and the
+       output formatting (Python/pandas default rendering)
 
 For output formatting, this variable controls the ``float_format`` parameter in pandas ``to_csv``,
 using the general format specifier (e.g., ``%.15g``) which automatically switches between fixed
-and exponential notation. When running with ``use_duckdb=True``, the same setting drives the text
-rendering of Number columns in the CSV files written by the DuckDB engine, so both execution
-backends produce identical CSV output.
+and exponential notation. When running with ``use_duckdb=True``, the same setting drives both the
+per-operation rounding and the text rendering of Number columns in the CSV files written by the
+DuckDB engine, so both execution backends produce identical results and identical CSV output.
 
 DuckDB Engine
 *************
@@ -180,27 +180,6 @@ Selects the DuckDB storage backend.
      - Use a file-backed database under ``VTL_TEMP_DIRECTORY`` (recommended for very large
        datasets that approach available RAM)
 
-.. _vtl_duckdb_decimal_width:
-
-``VTL_DUCKDB_DECIMAL_WIDTH``
-============================
-
-Total number of digits (precision) used for the DuckDB ``DECIMAL`` type. Decimal scale is
-controlled separately by :ref:`output_number_significant_digits`.
-
-.. list-table::
-   :header-rows: 1
-   :widths: 20 80
-
-   * - Value
-     - Behaviour
-   * - Not defined
-     - Uses default value of **28**
-   * - ``6`` to ``38``
-     - Uses the specified precision
-   * - ``-1``
-     - Disables precision limiting (uses DuckDB's maximum precision of 38)
-
 ``VTL_SKIP_LOAD_VALIDATION``
 ============================
 
@@ -298,9 +277,6 @@ Tuning the DuckDB engine
     export VTL_USE_IN_MEMORY_DB=0
     export VTL_TEMP_DIRECTORY=/var/lib/vtlengine/duckdb-spill
     export VTL_MAX_TEMP_DIRECTORY_SIZE=200GB
-
-    # Increase DECIMAL precision to 38 digits (max)
-    export VTL_DUCKDB_DECIMAL_WIDTH=38
 
 Using S3 with environment variables
 ====================================

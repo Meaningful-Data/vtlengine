@@ -30,6 +30,7 @@ from vtlengine.Model import (
     Scalar,
     ValueDomain,
 )
+from vtlengine.Utils._number_config import get_float_format
 
 # VTL_ENGINE_BACKEND can be "pandas" (default) or "duckdb"
 VTL_ENGINE_BACKEND = os.environ.get("VTL_ENGINE_BACKEND", "duckdb").lower()
@@ -253,8 +254,10 @@ class TestHelper(TestCase):
                 structure = json.load(f)
             if "datasets" in structure:
                 for ds in structure["datasets"]:
-                    # If CSV doesn't exist (semantic-only test), pass None
-                    datapoints[ds["name"]] = csv_file if csv_file.exists() else None
+                    # A dataset with no CSV (semantic-only test) is left out, which is
+                    # how the API is told that it carries no datapoints
+                    if csv_file.exists():
+                        datapoints[ds["name"]] = csv_file
             # Scalars don't need datapoints
 
         # Load value domains if specified
@@ -305,7 +308,9 @@ class TestHelper(TestCase):
             ref_dataset = reference_datasets[dataset.name]
             param_name = ref_dataset.ref_name
             csv_file_name = str(cls.filepath_out_csv / f"{code}-{param_name}{cls.CSV}")
-            dataset.data.to_csv(csv_file_name, index=False, header=True)
+            dataset.data.to_csv(
+                csv_file_name, index=False, header=True, float_format=get_float_format()
+            )
 
     @classmethod
     def NewSemanticExceptionTest(

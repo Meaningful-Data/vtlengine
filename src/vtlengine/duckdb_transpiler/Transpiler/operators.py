@@ -12,7 +12,10 @@ from duckdb.sqltypes import BOOLEAN, VARCHAR
 import vtlengine.AST.Grammar.tokens as tokens
 from vtlengine.DataTypes import Duration, Integer, Number, TimePeriod
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Utils._number_config import get_effective_comparison_digits
+from vtlengine.Utils._number_config import (
+    get_effective_comparison_digits,
+    get_effective_numeric_digits,
+)
 
 # Ordering-only comparisons (TimeInterval ordering is forbidden).
 _ORDERING_OPS: Set[str] = {tokens.GT, tokens.GTE, tokens.LT, tokens.LTE}
@@ -192,7 +195,7 @@ def _create_default_registry() -> OperatorRegistry:
     ops.register(tokens.MINUS, "({0} - {1})")
     ops.register(tokens.MULT, "({0} * {1})")
     ops.register(tokens.DIV, "vtl_div({0}, {1})")
-    ops.register(tokens.MOD, "({0} % {1})")
+    ops.register(tokens.MOD, "vtl_mod({0}, {1})")
     # Comparison
     ops.register(tokens.EQ, "({0} = {1})")
     ops.register(tokens.NEQ, "({0} <> {1})")
@@ -215,8 +218,8 @@ def _create_default_registry() -> OperatorRegistry:
     # String
     ops.register(tokens.CONCAT, "({0} || {1})")
     # Numeric functions (come through BinOp AST)
-    ops.register(tokens.POWER, "POWER({0}, {1})")
-    ops.register(tokens.LOG, "LOG({1}, {0})")  # DuckDB: LOG(base, value)
+    ops.register(tokens.POWER, "vtl_power({0}, {1})")
+    ops.register(tokens.LOG, "vtl_log({0}, {1})")  # macro internally calls LOG(base, value)
     # Conditional (come through BinOp AST)
     ops.register(tokens.NVL, "COALESCE({0}, {1})")
     # Date/Time
@@ -253,8 +256,8 @@ def _create_default_registry() -> OperatorRegistry:
     ops.register(tokens.FLOOR, "CAST(FLOOR({0}) AS BIGINT)")
     ops.register(tokens.ABS, "ABS({0})")
     ops.register(tokens.EXP, "EXP({0})")
-    ops.register(tokens.LN, "LN({0})")
-    ops.register(tokens.SQRT, "SQRT({0})")
+    ops.register(tokens.LN, "vtl_ln({0})")
+    ops.register(tokens.SQRT, "vtl_sqrt({0})")
     # Logical
     ops.register(tokens.NOT, "NOT {0}", is_prefix=True)
     # String functions
@@ -310,7 +313,11 @@ def _create_default_registry() -> OperatorRegistry:
             without_digits = len(args) < 2 or args[1] is None
             precision = "0" if without_digits else str(args[1])
             expr = f"{sql_fn}(CAST({args[0]} AS DOUBLE), COALESCE(CAST({precision} AS INTEGER), 0))"
-            return f"CAST({expr} AS BIGINT)" if without_digits else expr
+            if without_digits:
+                return f"CAST({expr} AS BIGINT)"
+            # Number result: normalize to the configured significant digits so
+            # both engines' round/trunc agree bit-for-bit (issue #985)
+            return numeric_rounding_sql(expr)
 
         return gen
 
@@ -344,8 +351,8 @@ def _create_default_registry() -> OperatorRegistry:
             custom_generator=_instr_generator,
         ),
     )
-    ops.register(tokens.LOG, "LOG({1}, {0})")
-    ops.register(tokens.POWER, "POWER({0}, {1})")
+    ops.register(tokens.LOG, "vtl_log({0}, {1})")
+    ops.register(tokens.POWER, "vtl_power({0}, {1})")
 
     # Multi-parameter operations
     def _substr_generator(*args: Optional[str]) -> str:
@@ -446,6 +453,31 @@ def number_tolerance_sql(op: str, left: str, right: str) -> Optional[str]:
     # value DuckDB parses is the nearest double to 5 * 10^-digits exactly.
     expr = f"{macro}({left}, {right}, 5e-{digits})"
     return f"(NOT {expr})" if op == tokens.NEQ else f"({expr})"
+
+
+# Binary arithmetic whose Number results are rounded per operation to the
+# configured significant digits, mirroring the pandas engine kernel (issue #985).
+ROUNDED_NUMERIC_OPS: Set[str] = {
+    tokens.PLUS,
+    tokens.MINUS,
+    tokens.MULT,
+    tokens.DIV,
+    tokens.MOD,
+    tokens.POWER,
+}
+
+
+def numeric_rounding_sql(sql: str) -> str:
+    """Wrap an arithmetic expression in the significant-digits rounding macro.
+
+    Reads OUTPUT_NUMBER_SIGNIFICANT_DIGITS at SQL-generation time (once per
+    ``run()``, like the comparison tolerance); disabled (-1) leaves the raw
+    float64 expression untouched.
+    """
+    digits = get_effective_numeric_digits()
+    if digits is None:
+        return sql
+    return f"vtl_round_sig({sql}, {digits})"
 
 
 # DuckDB's ``regexp_*`` functions use Google's RE2 library, which deliberately

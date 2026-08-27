@@ -284,11 +284,6 @@ class Dataset:
         if len(self.data) == len(other.data) == 0 and self.data.shape != other.data.shape:
             raise SemanticError("0-1-1-14", dataset1=self.name, dataset2=other.name)
 
-        sorted_identifiers = sorted(self.get_identifiers_names())
-        self.data = self.data.sort_values(by=sorted_identifiers).reset_index(drop=True)
-        other.data = other.data.sort_values(by=sorted_identifiers).reset_index(drop=True)
-        self.data = self.data.reindex(sorted(self.data.columns), axis=1)
-        other.data = other.data.reindex(sorted(other.data.columns), axis=1)
         for comp in self.components.values():
             type_name: str = comp.data_type.__name__.__str__()
             if type_name in ["String", "Date", "TimeInterval", "Duration"]:
@@ -304,10 +299,21 @@ class Dataset:
                     lambda x: str(TimePeriodHandler(str(x))) if x != "" else "",
                 )
             elif type_name in ["Integer", "Number"]:
-                type_ = "int64" if type_name == "Integer" else "float32"
+                type_ = "int64" if type_name == "Integer" else "float64"
                 self.data[comp.name] = self.data[comp.name].fillna(-1234997).astype(type_)  # type: ignore[call-overload]
                 other.data[comp.name] = other.data[comp.name].fillna(-1234997).astype(type_)  # type: ignore[call-overload]
+        # Sort AFTER normalization so TimePeriod identifiers sort by their canonical
+        # text on both sides ("2020-M6" vs "2020-M06" would otherwise misalign rows).
+        sorted_identifiers = sorted(self.get_identifiers_names())
+        self.data = self.data.sort_values(by=sorted_identifiers).reset_index(drop=True)
+        other.data = other.data.sort_values(by=sorted_identifiers).reset_index(drop=True)
+        self.data = self.data.reindex(sorted(self.data.columns), axis=1)
+        other.data = other.data.reindex(sorted(other.data.columns), axis=1)
         try:
+            # Number is compared as float64 at rtol 1e-12: two orders of margin over
+            # the engines' 15-significant-digit kernel (drift <= ~1e-14) and over the
+            # %.15g reference parse-back error, while real precision bugs (the old
+            # DECIMAL truncation class) sit at >= 1e-10 (issue #985).
             assert_frame_equal(
                 self.data,
                 other.data,
@@ -315,15 +321,17 @@ class Dataset:
                 check_index_type=False,
                 check_datetimelike_compat=True,
                 check_exact=False,
-                rtol=0.01,
-                atol=0.01,
+                rtol=1e-12,
+                atol=0.0,
             )
         except AssertionError as e:
             if "DataFrame shape" in str(e):
                 print(f"\nDataFrame shape mismatch {self.name}:")
                 print("result:", self.data.shape)
                 print("reference:", other.data.shape)
-            # Differences between the dataframes
+            # Exact-equality rescue: with float64 columns this is strictly tighter
+            # than the rtol comparison above, so it can only salvage frames where
+            # assert_frame_equal tripped on representation rather than value.
             diff = pd.concat([self.data, other.data]).drop_duplicates(keep=False)
             if len(diff) == 0:
                 return True

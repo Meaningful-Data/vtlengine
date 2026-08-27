@@ -108,6 +108,7 @@ from vtlengine.Utils import (
     UNARY_MAPPING,
 )
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.Utils._number_config import format_scalar_value_for_csv
 from vtlengine.ViralPropagation import (
     ViralPropagationRegistry,
     ViralPropagationRule,
@@ -237,8 +238,10 @@ class InterpreterAnalyzer(ASTTemplate):
                         format_time_period_external_representation(
                             scalar, self.time_period_representation
                         )
-                    value_to_write = "" if scalar.value is None else scalar.value
-                    writer.writerow([name, str(value_to_write)])
+                    if scalar.value is None:
+                        writer.writerow([name, ""])
+                    else:
+                        writer.writerow([name, format_scalar_value_for_csv(scalar.value)])
 
     # **********************************
     # *                                *

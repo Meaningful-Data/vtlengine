@@ -12,7 +12,7 @@ from typing import Dict, List, Literal, Optional, Tuple, Union
 import duckdb
 import pandas as pd
 
-from vtlengine.DataTypes import Date, Number, String, TimePeriod
+from vtlengine.DataTypes import Date, String, TimeInterval, TimePeriod
 from vtlengine.duckdb_transpiler.io._validation import (
     VALID_DATE_REGEX,
     build_create_table_sql,
@@ -35,6 +35,7 @@ from vtlengine.files.sdmx_handler import (
     load_sdmx_datapoints,
 )
 from vtlengine.Model import Component, Dataset, Role, Scalar
+from vtlengine.Utils._number_config import format_scalar_value_for_csv
 
 
 def _skip_load_validation() -> bool:
@@ -58,10 +59,19 @@ def _validate_loaded_table(
     On validation failure, drops the table and re-raises DataLoadError.
     Respects VTL_SKIP_LOAD_VALIDATION (skips checks 2-4 when set).
     """
-    # Normalize TimePeriod columns to canonical internal representation
-    _normalize_time_period_columns(conn, table_name, components)
+    skip_validation = _skip_load_validation()
 
-    if _skip_load_validation():
+    if not skip_validation:
+        try:
+            validate_temporal_columns(conn, table_name, components)
+        except DataLoadError:
+            conn.execute(f'DROP TABLE IF EXISTS "{table_name}"')
+            raise
+
+    _normalize_time_period_columns(conn, table_name, components)
+    _normalize_time_interval_columns(conn, table_name, components)
+
+    if skip_validation:
         return
 
     try:
@@ -73,11 +83,9 @@ def _validate_loaded_table(
             if result and result[0] > 1:
                 raise DataLoadError("0-3-1-4", name=table_name)
 
-        # Duplicate check (GROUP BY HAVING)
+        # Duplicate check (GROUP BY HAVING), on the normalized values so that two
+        # spellings of one period are read as the same Data Point
         validate_no_duplicates(conn, table_name, id_columns)
-
-        # Temporal type validation
-        validate_temporal_columns(conn, table_name, components)
 
     except DataLoadError:
         conn.execute(f'DROP TABLE IF EXISTS "{table_name}"')
@@ -99,7 +107,7 @@ def _normalize_time_period_columns(
             try:
                 conn.execute(
                     f'UPDATE "{table_name}" SET "{comp_name}" = '
-                    f'vtl_period_normalize("{comp_name}") '
+                    f'vtl_period_normalize(TRIM("{comp_name}")) '
                     f'WHERE "{comp_name}" IS NOT NULL AND "{comp_name}" != \'\''
                 )
             except duckdb.Error as e:
@@ -110,6 +118,34 @@ def _normalize_time_period_columns(
                     type="Time_Period",
                     error=str(e),
                 )
+
+
+def _normalize_time_interval_columns(
+    conn: duckdb.DuckDBPyConnection,
+    table_name: str,
+    components: Dict[str, Component],
+) -> None:
+    """Store a Time interval without the space around it.
+
+    Its check reads the value without that space, and the pandas loader strips it
+    before reading, so the value stored is the value that was read.
+    """
+    for comp_name, comp in components.items():
+        if comp.data_type != TimeInterval:
+            continue
+        try:
+            conn.execute(
+                f'UPDATE "{table_name}" SET "{comp_name}" = TRIM("{comp_name}") '
+                f'WHERE "{comp_name}" IS NOT NULL AND "{comp_name}" != \'\''
+            )
+        except duckdb.Error as e:
+            raise DataLoadError(
+                "0-3-1-6",
+                name=table_name,
+                column=comp_name,
+                type="Time",
+                error=str(e),
+            )
 
 
 def _detect_csv_format(
@@ -221,10 +257,9 @@ def load_datapoints_duckdb(
     if file_path is None:
         return _create_empty_table(conn, components, dataset_name)
 
+    # A path that does not exist names data that never arrived, which validate_input_path
+    # reports; only the absence of a path at all is an empty dataset (issue #1061).
     file_path = Path(file_path) if isinstance(file_path, str) else file_path
-    if not file_path.exists():
-        return _create_empty_table(conn, components, dataset_name)
-
     validate_input_path(file_path)
 
     if file_path.suffix.lower() == ".parquet":
@@ -250,6 +285,9 @@ def load_datapoints_duckdb(
         with open(file_path, newline="", encoding="utf-8") as f:
             reader = csv.reader(f, delimiter=sniffed_delim)
             csv_columns = next(reader, [])
+
+        if not csv_columns:
+            raise InputValidationException(code="0-1-1-17", file=file_path.name)
 
         if len(set(csv_columns)) != len(csv_columns):
             duplicates = list({item for item in csv_columns if csv_columns.count(item) > 1})
@@ -285,9 +323,9 @@ def load_datapoints_duckdb(
         ordered_dtypes = {col: all_csv_dtypes[col] for col in csv_columns if col in all_csv_dtypes}
         type_str = ", ".join(f"'{k}': '{v}'" for k, v in ordered_dtypes.items())
 
-        # 7. Build filter for SDMX ACTION column
+        # 7. Build filter for SDMX ACTION column, which only an SDMX-CSV file carries
         action_filter = ""
-        if "ACTION" in csv_columns and "ACTION" not in components:
+        if "ACTION" in csv_columns and "ACTION" not in keep_columns:
             action_filter = 'WHERE "ACTION" != \'D\' OR "ACTION" IS NULL'
 
         # 8. Execute INSERT
@@ -360,7 +398,7 @@ def _load_parquet(
         select_exprs = _build_dataframe_select_columns(components, df_columns=parquet_cols)
 
         action_filter = ""
-        if "ACTION" in parquet_cols and "ACTION" not in components:
+        if "ACTION" in parquet_cols and "ACTION" not in keep_columns:
             action_filter = 'WHERE "ACTION" != \'D\' OR "ACTION" IS NULL'
 
         col_list = ", ".join(f'"{c}"' for c in components)
@@ -444,8 +482,33 @@ def save_scalars_duckdb(
         writer = csv.writer(csv_file)
         writer.writerow(["name", "value"])
         for name, scalar in sorted(scalars.items(), key=lambda item: item[0]):
-            value_to_write = "" if scalar.value is None else scalar.value
-            writer.writerow([name, str(value_to_write)])
+            if scalar.value is None:
+                writer.writerow([name, ""])
+            else:
+                writer.writerow([name, format_scalar_value_for_csv(scalar.value)])
+
+
+# The files a directory of datapoints is read from: what the pandas engine reads,
+# plus the Parquet files only this engine can.
+DATAPOINT_SUFFIXES = (".csv", ".xml", ".parquet")
+
+
+def _as_datapoint_path(value: Union[str, Path]) -> Path:
+    """The Path a datapoint input stands for."""
+    return Path(value) if isinstance(value, str) else value
+
+
+def _datapoint_files(path: Path) -> List[Path]:
+    """The files a datapoint path stands for.
+
+    A path that does not exist is rejected rather than read as no data at all, and a
+    directory stands for the datapoint files in it, as the pandas engine reads them.
+    """
+    if not path.exists():
+        raise DataLoadError(code="0-3-1-1", file=path)
+    if not path.is_dir():
+        return [path]
+    return sorted(f for f in path.iterdir() if f.suffix.lower() in DATAPOINT_SUFFIXES)
 
 
 def _sdmx_dataframe(
@@ -496,6 +559,9 @@ def extract_datapoint_paths(
     This function is optimized for DuckDB execution - it only extracts paths
     without loading or validating data. DuckDB will validate during its native CSV load.
 
+    An input that names no dataset, or a path that does not exist, is rejected here
+    rather than read as an empty dataset, as the pandas engine rejects it.
+
     Args:
         datapoints: Dict of DataFrames/paths, list of paths, or single path
         input_datasets: Dict of input dataset structures (for validation)
@@ -507,6 +573,7 @@ def extract_datapoint_paths(
 
     Raises:
         InputValidationException: If dataset name not found in structures
+        DataLoadError: If a datapoint path does not exist
     """
     if datapoints is None:
         return None, {}
@@ -514,54 +581,51 @@ def extract_datapoint_paths(
     path_dict: Dict[str, Path] = {}
     df_dict: Dict[str, pd.DataFrame] = {}
 
+    def add_path(path: Path, name: Optional[str]) -> None:
+        """Resolve one file to the dataset it holds."""
+        loaded = _sdmx_dataframe(path, name, input_datasets)
+        if loaded is not None:
+            df_dict[loaded[0]] = loaded[1]
+            return
+        resolved = name or path.stem
+        if resolved not in input_datasets:
+            raise InputValidationException(f"Not found dataset {resolved} in datastructures.")
+        path_dict[resolved] = path
+
     # Handle dictionary input
     if isinstance(datapoints, dict):
         for name, value in datapoints.items():
             if name not in input_datasets:
                 raise InputValidationException(f"Not found dataset {name} in datastructures.")
 
-            if value is None:
-                # No datapoints for this dataset (e.g. semantic-only test)
-                continue
-            elif isinstance(value, pd.DataFrame):
+            if isinstance(value, pd.DataFrame):
                 # Store DataFrame for direct DuckDB registration
                 df_dict[name] = value
-            elif isinstance(value, (str, Path)):
-                path = Path(value) if isinstance(value, str) else value
-                loaded = _sdmx_dataframe(path, name, input_datasets)
-                if loaded is not None:
-                    df_dict[loaded[0]] = loaded[1]
-                    continue
-                path_dict[name] = path
-            else:
+                continue
+            if not isinstance(value, (str, Path)):
+                # The pandas engine reads the dictionary as one kind or the other, so a
+                # value that is neither names no data to load.
                 raise InputValidationException(
-                    f"Invalid datapoint for {name}. Must be DataFrame, Path, or string."
+                    "Invalid datapoints. All values in the dictionary must be Paths, "
+                    "or all values must be Pandas Dataframes."
                 )
+            # A dictionary names one file per dataset, so a directory is no more a
+            # datapoint file here than a missing path is, as the pandas engine reads it.
+            path = _as_datapoint_path(value)
+            validate_input_path(path)
+            add_path(path, name)
         return path_dict if path_dict else None, df_dict
 
     # Handle list of paths
     if isinstance(datapoints, list):
         for item in datapoints:
-            path = Path(item) if isinstance(item, str) else item
-            loaded = _sdmx_dataframe(path, None, input_datasets)
-            if loaded is not None:
-                df_dict[loaded[0]] = loaded[1]
-                continue
-            # Extract dataset name from filename (without extension)
-            name = path.stem
-            if name in input_datasets:
-                path_dict[name] = path
+            for file_path in _datapoint_files(_as_datapoint_path(item)):
+                add_path(file_path, None)
         return path_dict if path_dict else None, df_dict
 
     # Handle single path
-    path = Path(datapoints) if isinstance(datapoints, str) else datapoints
-    loaded = _sdmx_dataframe(path, None, input_datasets)
-    if loaded is not None:
-        df_dict[loaded[0]] = loaded[1]
-        return None, df_dict
-    name = path.stem
-    if name in input_datasets:
-        path_dict[name] = path
+    for file_path in _datapoint_files(_as_datapoint_path(datapoints)):
+        add_path(file_path, None)
     return path_dict if path_dict else None, df_dict
 
 
@@ -602,8 +666,6 @@ def _build_dataframe_select_columns(
         target_type = overrides.get(comp_name, get_column_sql_type(comp))
         if df_col_set is not None and comp_name not in df_col_set:
             exprs.append(f'CAST(NULL AS {target_type}) AS "{comp_name}"')
-        elif comp.data_type == Number:
-            exprs.append(f'CAST(CAST("{comp_name}" AS VARCHAR) AS {target_type}) AS "{comp_name}"')
         elif comp.data_type == Date:
             # Accept only a bare date, or a date with a COMPLETE, in-range time
             # (HH:MM:SS, optional fractional seconds / timezone), matching the strict

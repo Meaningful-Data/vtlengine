@@ -23,7 +23,6 @@ from vtlengine.DataTypes import (
     TimeInterval,
     TimePeriod,
 )
-from vtlengine.duckdb_transpiler.Config.config import get_decimal_type
 from vtlengine.Exceptions import DataLoadError, InputValidationException
 from vtlengine.Model import Component, Role
 
@@ -33,7 +32,7 @@ from vtlengine.Model import Component, Role
 
 TIME_PERIOD_PATTERN = (
     r"^\d{4}$|"  # Year - 2024
-    r"^\d{4}[A]\d?$|"  # Annual - 2024A, 2024A1
+    r"^\d{4}A$|"  # Annual - 2024A
     r"^\d{4}[S][1-2]$|"  # Semester - 2024S1
     r"^\d{4}[Q][1-4]$|"  # Quarter - 2024Q1
     r"^\d{4}[M]\d{1,2}$|"  # Month - 2024M01, 2024M1
@@ -41,7 +40,7 @@ TIME_PERIOD_PATTERN = (
     r"^\d{4}[D]\d{1,3}$|"  # Day - 2024D001, 2024D01, 2024D1
     # SDMX Gregorian formats (hyphen-separated)
     r"^\d{4}-\d{1,2}$|"  # Month numeric - 2024-01, 2024-1
-    r"^\d{4}-A\d?$|"  # Annual - 2024-A1, 2024-A
+    r"^\d{4}-A1$|"  # Annual - 2024-A1
     r"^\d{4}-S[1-2]$|"  # Semester - 2024-S1
     r"^\d{4}-Q[1-4]$|"  # Quarter - 2024-Q1
     r"^\d{4}-M\d{1,2}$|"  # Month - 2024-M01, 2024-M1
@@ -173,7 +172,7 @@ def get_column_sql_type(comp: Component) -> str:
     Get SQL type for a component with special handling for VTL types.
 
     - Integer → BIGINT
-    - Number → DECIMAL(precision, scale) from config
+    - Number → DOUBLE (IEEE 754 float64, same as the pandas engine)
     - Boolean → BOOLEAN
     - Date → DATE (may be overridden to TIMESTAMP when values contain time)
     - TimePeriod, TimeInterval, Duration, String → VARCHAR
@@ -181,7 +180,7 @@ def get_column_sql_type(comp: Component) -> str:
     if comp.data_type == Integer:
         return "BIGINT"
     elif comp.data_type == Number:
-        return get_decimal_type()
+        return "DOUBLE"
     elif comp.data_type == Boolean:
         return "BOOLEAN"
     elif comp.data_type == Date:
@@ -196,17 +195,19 @@ def get_csv_read_type(comp: Component) -> str:
     Get type for CSV reading. DuckDB read_csv needs slightly different types.
 
     For temporal strings (TimePeriod, etc.) we read as VARCHAR.
-    For numerics, we let DuckDB parse directly.
+    For Number, we let DuckDB parse directly.
 
-    Note: Integer columns are read as DOUBLE to enable strict validation
-    that rejects non-integer values (e.g., 1.5) instead of silently rounding.
+    Note: Integer columns are read as VARCHAR so integer text casts exactly to
+    BIGINT (a DOUBLE hop would corrupt values beyond 2^53, issue #985); the
+    strict validation that rejects non-integer values (e.g., 1.5) happens in
+    ``build_select_columns``.
     Date columns are read as VARCHAR to preserve original format (date-only vs datetime).
     Boolean columns are read as VARCHAR to handle quoted values (e.g., ``"TRUE"``).
     """
     if comp.data_type == Integer:
-        return "DOUBLE"  # Read as DOUBLE to validate no decimal component
+        return "VARCHAR"  # Exact BIGINT cast + strict validation in build_select_columns
     elif comp.data_type == Number:
-        return get_decimal_type()  # Read directly as DECIMAL to preserve exact precision
+        return "DOUBLE"  # float64, matching the pandas engine's parse
     elif comp.data_type == Boolean:
         return "VARCHAR"  # Read as VARCHAR to handle quoted values; cast during INSERT
     elif comp.data_type == Date:
@@ -312,6 +313,11 @@ def handle_sdmx_columns(columns: List[str], components: Dict[str, Component]) ->
     """
     Identify SDMX-CSV special columns to exclude.
     Returns list of columns to keep.
+
+    A file is SDMX-CSV when its first column names the structure its rows belong to,
+    and only then does it carry the columns around it. A plain CSV that happens to
+    hold a column of one of those names holds a column of the Data Set, which the
+    DataStructure has to define, as the pandas loader reads it.
     """
     exclude = set()
 
@@ -319,15 +325,14 @@ def handle_sdmx_columns(columns: List[str], components: Dict[str, Component]) ->
     if columns and columns[0] == "DATAFLOW" and "DATAFLOW" not in components:
         exclude.add("DATAFLOW")
 
-    # STRUCTURE columns
-    if "STRUCTURE" in columns and "STRUCTURE" not in components:
+    # STRUCTURE columns, and the ones an SDMX-CSV file carries beside them
+    if columns and columns[0] == "STRUCTURE" and "STRUCTURE" not in components:
         exclude.add("STRUCTURE")
-    if "STRUCTURE_ID" in columns and "STRUCTURE_ID" not in components:
-        exclude.add("STRUCTURE_ID")
-
-    # ACTION column (handled specially - need to filter, not just exclude)
-    if "ACTION" in columns and "ACTION" not in components:
-        exclude.add("ACTION")
+        if "STRUCTURE_ID" in columns and "STRUCTURE_ID" not in components:
+            exclude.add("STRUCTURE_ID")
+        # ACTION is handled specially - the rows it marks deleted are filtered out
+        if "ACTION" in columns and "ACTION" not in components:
+            exclude.add("ACTION")
 
     return [c for c in columns if c not in exclude]
 
@@ -370,9 +375,10 @@ def validate_temporal_columns(
     # Returns first invalid value found for any column
     case_expressions = []
     for col_name, pattern, type_name in temporal_checks:
+        checked = f'"{col_name}"' if type_name == "Duration" else f'TRIM("{col_name}")'
         case_expressions.append(f"""
             CASE WHEN "{col_name}" IS NOT NULL AND "{col_name}" != ''
-                 AND NOT regexp_matches(UPPER(TRIM("{col_name}")), '{pattern}')
+                 AND NOT regexp_matches({checked}, '{pattern}')
             THEN '{col_name}|{type_name}|' || "{col_name}"
             ELSE NULL END
         """)
@@ -416,22 +422,33 @@ def build_select_columns(
             csv_type = csv_dtypes.get(comp_name, "VARCHAR")
             table_type = overrides.get(comp_name, get_column_sql_type(comp))
 
-            # Strict Integer validation: reject non-integer values (e.g., 1.5)
-            # Read as DOUBLE, validate no decimal component, then cast to BIGINT
-            if csv_type == "DOUBLE" and table_type == "BIGINT":
-                error_msg = (
+            # Strict Integer validation on VARCHAR input. Integer-form text casts
+            # straight to BIGINT so values beyond 2^53 stay exact (issue #985);
+            # decimal-form text ("1.0", "1e5") goes through DOUBLE and keeps the
+            # non-integer rejection (a direct VARCHAR->BIGINT cast would silently
+            # round "1.5"); anything else is a conversion error.
+            if csv_type == "VARCHAR" and table_type == "BIGINT":
+                val = f"NULLIF(\"{comp_name}\", '')" if comp.nullable else f'"{comp_name}"'
+                decimal_msg = (
                     f"'Column {comp_name}: value ' || \"{comp_name}\" || "
                     f"' has non-zero decimal component for Integer type'"
                 )
+                convert_msg = (
+                    f"'Column {comp_name}: could not convert value ' || \"{comp_name}\" || "
+                    f"' to Integer type'"
+                )
                 select_cols.append(
                     f"""CASE
-                        WHEN "{comp_name}" IS NOT NULL AND "{comp_name}" <> FLOOR("{comp_name}")
-                        THEN error({error_msg})
-                        ELSE CAST("{comp_name}" AS BIGINT)
+                        WHEN {val} IS NULL THEN NULL
+                        WHEN regexp_matches(TRIM({val}), '^[+-]?[0-9]+$')
+                        THEN CAST({val} AS BIGINT)
+                        WHEN TRY_CAST({val} AS DOUBLE) IS NULL
+                        THEN error({convert_msg})
+                        WHEN CAST({val} AS DOUBLE) <> FLOOR(CAST({val} AS DOUBLE))
+                        THEN error({decimal_msg})
+                        ELSE CAST(CAST({val} AS DOUBLE) AS BIGINT)
                     END AS "{comp_name}\""""
                 )
-            elif csv_type == "DOUBLE" and "DECIMAL" in table_type:
-                select_cols.append(f'CAST("{comp_name}" AS {table_type}) AS "{comp_name}"')
             # Date columns: read as VARCHAR, validate format, cast to DATE or TIMESTAMP.
             # Accepts a bare date or a full datetime with the T or space separator and an
             # optional timezone (+HH:MM or Z); the same set the pandas loader accepts.

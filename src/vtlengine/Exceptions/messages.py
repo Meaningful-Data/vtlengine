@@ -86,6 +86,11 @@ centralised_messages = {
         "description": "Raised when the provided output_format is not one "
         "of the supported file formats.",
     },
+    "0-1-1-17": {
+        "message": "File {file} is empty: no line naming its columns was found in it.",
+        "description": "Raised when a datapoint file holds nothing at all. A file holding "
+        "only the line that names its columns is a Data Set with no Data Points, and loads.",
+    },
     "0-1-2-3": {
         "message": "{element_type} '{element}' is/are duplicated.",
         "description": "Occurs when an element (e.g., Identifier or component) "
@@ -778,6 +783,18 @@ centralised_messages = {
         "of components",
         "description": "Raised when set operations are performed on Datasets with differing "
         "numbers of components.",
+    },
+    "1-1-17-2": {
+        "message": "At op {op}: Component {comp_name} of dataset {dataset_1} not found "
+        "in dataset {dataset_2}",
+        "description": "Raised when set operations are performed on Datasets whose components "
+        "do not match by name.",
+    },
+    "1-1-17-3": {
+        "message": "At op {op}: Component {comp_name} has different roles in datasets "
+        "{dataset_1} and {dataset_2}",
+        "description": "Raised when set operations are performed on Datasets where a common "
+        "component holds a different role in each Dataset.",
     },
     # String Operators
     "1-1-18-1": {

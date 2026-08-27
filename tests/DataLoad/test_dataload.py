@@ -933,21 +933,52 @@ class DataLoadTest(DataLoadHelper):
             code=code, number_inputs=number_inputs, exception_message=message
         )
 
-    @pytest.mark.skipif(
-        _use_duckdb_backend,
-        reason="DuckDB backend handles empty CSVs differently and does not surface 0-1-1-6.",
-    )
     def test_GH_676_1(self):
-        """Empty CSV file (no columns) triggers 0-1-1-6 on the pandas backend."""
+        """Empty CSV file (no columns) triggers 0-1-1-17 on both engines.
+
+        The DuckDb engine used to report the Identifiers it could not find in a file
+        that names no columns at all, so this ran on the pandas engine only (#1075).
+        """
         code = "GH_676_1"
         number_inputs = 1
-        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code="0-1-1-6")
+        self.DataLoadExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="0-1-1-17"
+        )
 
     def test_GH_676_2(self):
         """CSV header missing an identifier declared in the structure triggers 0-1-1-8."""
         code = "GH_676_2"
         number_inputs = 1
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code="0-1-1-8")
+
+    def test_GH_1075_1(self):
+        """A file holding only the line that names its columns is a Data Set with no
+        Data Points, and loads on both engines: the empty file is the only shape refused."""
+        code = "GH_1075_1"
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1067_1(self):
+        """A Duration with space around it is rejected, not silently accepted."""
+        code = "GH_1067_1"
+        number_inputs = 1
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code="0-3-1-6")
+
+    def test_GH_1067_2(self):
+        """
+        Status: OK
+        Expression: DS_r := DS_1;
+        Description: A Time_Period and a Time are stored without the space around them.
+        Git issue: 1067.
+        Goal: Check Result.
+        """
+        code = "GH_1067_2"
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
 
 BOM = b"\xef\xbb\xbf"

@@ -286,6 +286,10 @@ class StructureVisitor(ASTTemplate):
                     return f"'{canonical.replace(chr(39), chr(39) * 2)}'"
                 return f"vtl_period_normalize('{escaped}')"
             return f"'{escaped}'"
+        if isinstance(value, float):
+            # A bare float literal would be typed DECIMAL(p,s) by DuckDB; Number
+            # arithmetic and storage are DOUBLE (repr round-trips the exact value).
+            return f"CAST({value!r} AS DOUBLE)"
         return str(value)
 
     def _constant_to_sql(self, node: AST.Constant) -> str:

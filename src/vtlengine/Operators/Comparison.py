@@ -68,6 +68,17 @@ class IsNull(Unary):
         return result
 
 
+def _tolerance_applies(*values: Any) -> bool:
+    """Number comparisons use the configured tolerance only when a float is
+    involved: the tolerance absorbs float representation noise, so two exact
+    integers compare exactly — matching the DuckDB engine, whose BIGINT
+    comparisons never go through the tolerance macros (issue #985).
+    """
+    return all(isinstance(v, (int, float)) for v in values) and any(
+        isinstance(v, float) for v in values
+    )
+
+
 class Binary(Operator.Binary):
     """
     Binary comparison operator. It returns a boolean.
@@ -163,8 +174,8 @@ class Equal(Binary):
             return None
         x, y = cls._cast_values(x, y)
 
-        # Use tolerance-based comparison for numeric types
-        if isinstance(x, (int, float)) and isinstance(y, (int, float)):
+        # Use tolerance-based comparison for float-involved numeric types
+        if _tolerance_applies(x, y):
             return numbers_are_equal(x, y)
 
         return cls.py_op(x, y)
@@ -181,8 +192,8 @@ class NotEqual(Binary):
             return None
         x, y = cls._cast_values(x, y)
 
-        # Use tolerance-based comparison for numeric types
-        if isinstance(x, (int, float)) and isinstance(y, (int, float)):
+        # Use tolerance-based comparison for float-involved numeric types
+        if _tolerance_applies(x, y):
             return not numbers_are_equal(x, y)
 
         return cls.py_op(x, y)
@@ -204,8 +215,8 @@ class GreaterEqual(Binary):
             return None
         x, y = cls._cast_values(x, y)
 
-        # Use tolerance-based comparison for numeric types
-        if isinstance(x, (int, float)) and isinstance(y, (int, float)):
+        # Use tolerance-based comparison for float-involved numeric types
+        if _tolerance_applies(x, y):
             return numbers_are_greater_equal(x, y)
 
         return cls.py_op(x, y)
@@ -227,8 +238,8 @@ class LessEqual(Binary):
             return None
         x, y = cls._cast_values(x, y)
 
-        # Use tolerance-based comparison for numeric types
-        if isinstance(x, (int, float)) and isinstance(y, (int, float)):
+        # Use tolerance-based comparison for float-involved numeric types
+        if _tolerance_applies(x, y):
             return numbers_are_less_equal(x, y)
 
         return cls.py_op(x, y)
@@ -303,11 +314,14 @@ class Between(Operator.Operator):
         if pd.isnull(x) or pd.isnull(y) or pd.isnull(z):
             return None
 
-        # Use tolerance-based comparison for numeric types
+        # Use tolerance-based comparison for float-involved numeric types
+        # (exact integers compare exactly, like _tolerance_applies; the
+        # isinstance chain is spelled out so mypy narrows the operands)
         if (
             isinstance(x, (int, float))
             and isinstance(y, (int, float))
             and isinstance(z, (int, float))
+            and (isinstance(x, float) or isinstance(y, float) or isinstance(z, float))
         ):
             return numbers_are_greater_equal(x, y) and numbers_are_less_equal(x, z)
 
