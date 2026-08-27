@@ -581,11 +581,11 @@ def extract_datapoint_paths(
                 df_dict[name] = value
                 continue
             if not isinstance(value, (str, Path)):
-                # The pandas engine reads the dictionary as one kind or the other, so a
-                # value that is neither names no data to load.
+                # Each value says where one dataset's Data Points are, and either kind
+                # may sit beside the other, so what is refused is a value that names no
+                # Data Points at all. Both engines say this (issues #1061 and #1072).
                 raise InputValidationException(
-                    "Invalid datapoints. All values in the dictionary must be Paths, "
-                    "or all values must be Pandas Dataframes."
+                    f"Invalid datapoint for {name}. Must be DataFrame, Path, or string."
                 )
             # A dictionary names one file per dataset, so a directory is no more a
             # datapoint file here than a missing path is, as the pandas engine reads it.

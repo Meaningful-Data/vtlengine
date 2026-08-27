@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 from vtlengine import run
-from vtlengine.Exceptions import DataLoadError
+from vtlengine.Exceptions import DataLoadError, InputValidationException
 
 SCRIPT = "DS_A <- DS_1 * 10;"
 
@@ -339,3 +339,31 @@ def test_run_parquet_without_duckdb_warns(tmp_path: Path) -> None:
             use_duckdb=False,
             output_format="parquet",
         )
+
+
+def test_parquet_input_without_duckdb_names_the_engine(tmp_path: Path) -> None:
+    """Parquet input is read by the DuckDb engine only, and the error says so.
+
+    The pandas engine read the parquet bytes as a CSV and reported the Identifiers
+    it could not find in them, which sends whoever loaded it looking for a problem
+    in the data structure (issue #1072).
+    """
+    pq = tmp_path / "DS_1.parquet"
+    _write_parquet(pd.DataFrame({"Id_1": [1], "Me_1": [10.0]}), pq)
+
+    with pytest.raises(InputValidationException, match="use_duckdb=True"):
+        run(
+            script=SCRIPT,
+            data_structures=DATA_STRUCTURE,
+            datapoints={"DS_1": pq},
+            use_duckdb=False,
+        )
+
+
+def test_parquet_single_path_without_duckdb_names_the_engine(tmp_path: Path) -> None:
+    """The same for a file named on its own, not through a dictionary."""
+    pq = tmp_path / "DS_1.parquet"
+    _write_parquet(pd.DataFrame({"Id_1": [1], "Me_1": [10.0]}), pq)
+
+    with pytest.raises(InputValidationException, match="use_duckdb=True"):
+        run(script=SCRIPT, data_structures=DATA_STRUCTURE, datapoints=pq, use_duckdb=False)
