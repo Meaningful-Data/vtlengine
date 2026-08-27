@@ -15,6 +15,7 @@ import pandas as pd
 from vtlengine.DataTypes import Date, String, TimeInterval, TimePeriod
 from vtlengine.duckdb_transpiler.io._validation import (
     VALID_DATE_REGEX,
+    VALID_DATE_YEAR_REGEX,
     build_create_table_sql,
     build_csv_column_types,
     build_select_columns,
@@ -603,11 +604,11 @@ def extract_datapoint_paths(
                 df_dict[name] = value
                 continue
             if not isinstance(value, (str, Path)):
-                # The pandas engine reads the dictionary as one kind or the other, so a
-                # value that is neither names no data to load.
+                # Each value says where one dataset's Data Points are, and either kind
+                # may sit beside the other, so what is refused is a value that names no
+                # Data Points at all. Both engines say this (issues #1061 and #1072).
                 raise InputValidationException(
-                    "Invalid datapoints. All values in the dictionary must be Paths, "
-                    "or all values must be Pandas Dataframes."
+                    f"Invalid datapoint for {name}. Must be DataFrame, Path, or string."
                 )
             # A dictionary names one file per dataset, so a directory is no more a
             # datapoint file here than a missing path is, as the pandas engine reads it.
@@ -673,16 +674,22 @@ def _build_dataframe_select_columns(
             # a bad separator ("2020-01-01X12:30:45") and out-of-range times
             # ("2020-01-01T25:00:00") here with a clear message, instead of letting the
             # cast silently truncate them or surface a cryptic out-of-range error.
-            col_as_varchar = f'CAST("{comp_name}" AS VARCHAR)'
+            col_as_varchar = f'TRIM(CAST("{comp_name}" AS VARCHAR))'
             err = (
                 f"'Date ' || {col_as_varchar} || "
                 f"' has an invalid or incomplete time; expected YYYY-MM-DD HH:MM:SS.'"
+            )
+            year_err = (
+                f"'Date ' || {col_as_varchar} || ' is invalid. Year must be between 1800 and 9999.'"
             )
             exprs.append(
                 f'CASE WHEN "{comp_name}" IS NOT NULL '
                 f"AND NOT regexp_matches({col_as_varchar}, '{VALID_DATE_REGEX}') "
                 f"THEN error({err}) "
-                f'ELSE CAST("{comp_name}" AS {target_type}) END AS "{comp_name}"'
+                f'WHEN "{comp_name}" IS NOT NULL '
+                f"AND NOT regexp_matches({col_as_varchar}, '{VALID_DATE_YEAR_REGEX}') "
+                f"THEN error({year_err}) "
+                f'ELSE CAST({col_as_varchar} AS {target_type}) END AS "{comp_name}"'
             )
         else:
             exprs.append(f'CAST("{comp_name}" AS {target_type}) AS "{comp_name}"')

@@ -277,9 +277,7 @@ def _validate_pandas(
                     except ValueError:
                         raise ValueError(f"Duration values are not correct in column {comp_name}")
             else:
-                data[comp_name] = data[comp_name].map(
-                    lambda x: str(x).replace('"', ""), na_action="ignore"
-                )
+                data[comp_name] = data[comp_name].map(str, na_action="ignore")
             data[comp_name] = data[comp_name].astype(comp.data_type.dtype())  # type: ignore[call-overload]
 
     except (ValueError, InputValidationException) as e:
@@ -341,7 +339,9 @@ def load_datapoints(
                 _validate_csv_path(components, csv_path)
             data = _pandas_load_csv(components, csv_path)
     else:
-        raise InputValidationException(code="0-1-1-2", input=csv_path)
+        raise InputValidationException(
+            code="0-1-1-2", input=csv_path, message="Input must be a Path."
+        )
     data = _validate_pandas(components, data, dataset_name)
 
     return data

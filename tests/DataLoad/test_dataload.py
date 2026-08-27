@@ -1157,3 +1157,55 @@ class TestBOMHandling:
         ds = result["DS_r"]
         assert "Id_1" in ds.data.columns
         assert "\ufeffId_1" not in ds.data.columns
+
+
+_STRING_STRUCTURE = {
+    "datasets": [
+        {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "String", "role": "Measure", "nullable": True},
+            ],
+        }
+    ]
+}
+
+
+@pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+class TestStringKeepsItsQuotes:
+    """A double quote a String value holds is part of it, whichever of the four ways
+    the value reaches the engine (issue #1073)."""
+
+    def _load(self, datapoints, use_duckdb):
+        result = run(
+            script="DS_r <- DS_1;",
+            data_structures=_STRING_STRUCTURE,
+            datapoints=datapoints,
+            use_duckdb=use_duckdb,
+        )
+        return result["DS_r"].data["Me_1"].tolist()
+
+    def test_dataframe(self, use_duckdb):
+        """The DuckDb engine kept the quote here while the other three took it out."""
+        data_df = pd.DataFrame({"Id_1": [1], "Me_1": ['he"llo']})
+        assert self._load({"DS_1": data_df}, use_duckdb) == ['he"llo']
+
+    def test_csv(self, tmp_path: Path, use_duckdb):
+        """The same value written in a file."""
+        csv_path = tmp_path / "DS_1.csv"
+        csv_path.write_text('Id_1,Me_1\n1,he"llo\n')
+        assert self._load({"DS_1": csv_path}, use_duckdb) == ['he"llo']
+
+    def test_csv_quoted_value(self, tmp_path: Path, use_duckdb):
+        """A quote delimiting a value is the file's dialect, and the reader takes it
+        off on its own: what is stored is the value, commas and all."""
+        csv_path = tmp_path / "DS_1.csv"
+        csv_path.write_text('Id_1,Me_1\n1,"a,b"\n')
+        assert self._load({"DS_1": csv_path}, use_duckdb) == ["a,b"]
+
+    def test_csv_escaped_quote(self, tmp_path: Path, use_duckdb):
+        """A quote written twice inside a quoted value is one quote in it."""
+        csv_path = tmp_path / "DS_1.csv"
+        csv_path.write_text('Id_1,Me_1\n1,"say ""hi"""\n')
+        assert self._load({"DS_1": csv_path}, use_duckdb) == ['say "hi"']

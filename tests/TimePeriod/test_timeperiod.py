@@ -68,6 +68,8 @@ ds_param = [
         """,
     ),
     ("GH_1062_1", "DS_r := DS_1;"),
+    # The period number at the edge of what each indicator holds, leap year included
+    ("GH_1063_1", "DS_r := DS_1;"),
 ]
 
 error_param = [
@@ -77,6 +79,16 @@ error_param = [
     ("GH_1062_4", "DS_r := DS_1;", "0-3-1-6"),
     ("GH_1062_5", "DS_r := DS_1;", "0-3-1-6"),
     ("GH_1062_6", "DS_r := DS_1;", "0-3-1-6"),
+    # A period number past what its indicator holds is no period at all. The DuckDb
+    # loader checked the shape of a Time_Period and never its range (issue #1063)
+    ("GH_1063_2", "DS_r := DS_1;", "0-3-1-6"),
+    ("GH_1063_3", "DS_r := DS_1;", "0-3-1-6"),
+    ("GH_1063_4", "DS_r := DS_1;", "0-3-1-6"),
+    ("GH_1063_5", "DS_r := DS_1;", "0-3-1-6"),
+    ("GH_1063_6", "DS_r := DS_1;", "0-3-1-6"),
+    ("GH_1063_7", "DS_r := DS_1;", "0-3-1-6"),
+    ("GH_1063_8", "DS_r := DS_1;", "0-3-1-6"),
+    ("GH_1063_9", "DS_r := DS_1;", "0-3-1-6"),
 ]
 
 
@@ -305,3 +317,51 @@ def test_GH_676_11():
     with pytest.raises(RT) as ctx:
         Year_to_Day.py_op("not-a-duration")
     assert ctx.value.args[1] == "2-1-19-22"
+
+
+out_of_range_periods = [
+    "2024M13",  # a month past December
+    "2024W54",  # a week past the last of the year
+    "2023D366",  # the 366th day of a year that holds 365
+    "1900D366",  # a century year is a leap year only every four hundred
+]
+
+
+@pytest.mark.parametrize("value", out_of_range_periods)
+def test_out_of_range_time_period_is_rejected(tmp_path, value):
+    """A Time_Period whose period number is out of range never reaches the output."""
+    csv_path = tmp_path / "DS_1.csv"
+    csv_path.write_text(f"Id_1,Me_1\n1,{value}\n")
+    output_folder = tmp_path / "out"
+    output_folder.mkdir()
+
+    with pytest.raises((DataLoadError, RT)):
+        run(
+            script="DS_r <- DS_1;",
+            data_structures={
+                "datasets": [
+                    {
+                        "name": "DS_1",
+                        "DataStructure": [
+                            {
+                                "name": "Id_1",
+                                "type": "Integer",
+                                "role": "Identifier",
+                                "nullable": False,
+                            },
+                            {
+                                "name": "Me_1",
+                                "type": "Time_Period",
+                                "role": "Measure",
+                                "nullable": True,
+                            },
+                        ],
+                    }
+                ]
+            },
+            datapoints={"DS_1": csv_path},
+            output_folder=output_folder,
+            use_duckdb=_use_duckdb_backend(),
+        )
+
+    assert not (output_folder / "DS_r.csv").exists()
