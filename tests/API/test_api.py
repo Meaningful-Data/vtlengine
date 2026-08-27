@@ -2242,7 +2242,7 @@ def test_run_error_on_extra_columns(tmp_path, input_kind, use_duckdb):
         )
 
 
-_MARKER_STRUCTURE = {
+_DS_1_STRUCTURE = {
     "datasets": [
         {
             "name": "DS_1",
@@ -2253,6 +2253,78 @@ _MARKER_STRUCTURE = {
         }
     ]
 }
+
+
+def _datapoint_files(tmp_path):
+    """A folder holding DS_1.csv, and a CSV whose name matches no dataset."""
+    folder = tmp_path / "input"
+    folder.mkdir()
+    (folder / "DS_1.csv").write_text("Id_1,Me_1\n1,10\n")
+    unknown = tmp_path / "UNKNOWN.csv"
+    unknown.write_text("Id_1,Me_1\n1,10\n")
+    return folder, unknown
+
+
+@pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+def test_run_rejects_a_datapoint_path_that_does_not_exist(tmp_path, use_duckdb):
+    """A path naming data that never arrived is reported, not read as no data.
+
+    The DuckDb engine loaded an empty dataset, so the script ran to completion over
+    nothing (issue #1061).
+    """
+    with pytest.raises(DataLoadError, match="0-3-1-1"):
+        run(
+            script="DS_r <- DS_1;",
+            data_structures=_DS_1_STRUCTURE,
+            datapoints={"DS_1": tmp_path / "does_not_exist.csv"},
+            use_duckdb=use_duckdb,
+        )
+
+
+@pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+def test_run_reads_the_datapoint_files_of_a_directory(tmp_path, use_duckdb):
+    """A directory stands for the datapoint files in it."""
+    folder, _ = _datapoint_files(tmp_path)
+
+    result = run(
+        script="DS_r <- DS_1;",
+        data_structures=_DS_1_STRUCTURE,
+        datapoints=folder,
+        use_duckdb=use_duckdb,
+    )
+
+    assert result["DS_r"].data.to_dict("records") == [{"Id_1": 1, "Me_1": 10.0}]
+
+
+@pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+def test_run_rejects_a_datapoint_file_naming_no_dataset(tmp_path, use_duckdb):
+    """A file whose name matches no dataset is reported, not dropped."""
+    _, unknown = _datapoint_files(tmp_path)
+
+    with pytest.raises(InputValidationException, match="Not found dataset UNKNOWN"):
+        run(
+            script="DS_r <- DS_1;",
+            data_structures=_DS_1_STRUCTURE,
+            datapoints=[unknown],
+            use_duckdb=use_duckdb,
+        )
+
+
+@pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+@pytest.mark.parametrize("value", [None, 42], ids=["none", "number"])
+def test_run_rejects_a_datapoint_dictionary_value_that_is_no_input(value, use_duckdb):
+    """A dictionary value that is neither a Path nor a DataFrame names no data.
+
+    The wording asked for all Paths or all DataFrames until issue #1072 dropped that
+    restriction, so what is refused now is a value that names no Data Points at all.
+    """
+    with pytest.raises(InputValidationException, match="Must be DataFrame, Path, or string"):
+        run(
+            script="DS_r <- DS_1;",
+            data_structures=_DS_1_STRUCTURE,
+            datapoints={"DS_1": value},
+            use_duckdb=use_duckdb,
+        )
 
 
 @pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
@@ -2270,7 +2342,7 @@ def test_run_error_on_sdmx_marker_column_of_a_plain_csv(tmp_path, marker, use_du
     with pytest.raises(DataLoadError, match="0-3-1-15"):
         run(
             script="DS_r <- DS_1;",
-            data_structures=_MARKER_STRUCTURE,
+            data_structures=_DS_1_STRUCTURE,
             datapoints={"DS_1": csv_path},
             use_duckdb=use_duckdb,
         )
@@ -2288,7 +2360,7 @@ def test_run_sdmx_csv_still_filters_the_rows_action_deletes(tmp_path, use_duckdb
 
     result = run(
         script="DS_r <- DS_1;",
-        data_structures=_MARKER_STRUCTURE,
+        data_structures=_DS_1_STRUCTURE,
         datapoints={"DS_1": csv_path},
         use_duckdb=use_duckdb,
     )
@@ -2413,19 +2485,3 @@ def test_run_reads_a_datapoint_dictionary_of_a_dataframe_and_a_file(tmp_path, us
     )
 
     assert result["DS_r"].data.to_dict("records") == [{"Id_1": 1, "Me_1": 15.0}]
-
-
-@pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
-def test_run_rejects_a_datapoint_dictionary_value_that_is_no_input(use_duckdb):
-    """A value that is neither a DataFrame nor a path still names no Data Points.
-
-    Both engines say the same thing now: the old wording asked for all Paths or all
-    DataFrames, a restriction neither engine has any more.
-    """
-    with pytest.raises(InputValidationException, match="Must be DataFrame, Path, or string"):
-        run(
-            script="DS_r <- DS_1;",
-            data_structures=_TWO_DATASET_STRUCTURE,
-            datapoints={"DS_1": 42},
-            use_duckdb=use_duckdb,
-        )
