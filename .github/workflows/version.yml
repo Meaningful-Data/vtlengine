@@ -5,6 +5,7 @@ on:
     branches: [ main, 1.6.X, 1.9.X ]
   pull_request:
     branches: [ main, 1.6.X, 1.9.X ]
+  merge_group:
 
 permissions:
   contents: read
