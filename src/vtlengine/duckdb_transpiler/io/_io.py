@@ -285,6 +285,9 @@ def load_datapoints_duckdb(
             reader = csv.reader(f, delimiter=sniffed_delim)
             csv_columns = next(reader, [])
 
+        if not csv_columns:
+            raise InputValidationException(code="0-1-1-17", file=file_path.name)
+
         if len(set(csv_columns)) != len(csv_columns):
             duplicates = list({item for item in csv_columns if csv_columns.count(item) > 1})
             raise InputValidationException(
