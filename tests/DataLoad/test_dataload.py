@@ -949,6 +949,26 @@ class DataLoadTest(DataLoadHelper):
         number_inputs = 1
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code="0-1-1-8")
 
+    def test_GH_1067_1(self):
+        """A Duration with space around it is rejected, not silently accepted."""
+        code = "GH_1067_1"
+        number_inputs = 1
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code="0-3-1-6")
+
+    def test_GH_1067_2(self):
+        """
+        Status: OK
+        Expression: DS_r := DS_1;
+        Description: A Time_Period and a Time are stored without the space around them.
+        Git issue: 1067.
+        Goal: Check Result.
+        """
+        code = "GH_1067_2"
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 BOM = b"\xef\xbb\xbf"
 

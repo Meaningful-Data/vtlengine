@@ -375,9 +375,10 @@ def validate_temporal_columns(
     # Returns first invalid value found for any column
     case_expressions = []
     for col_name, pattern, type_name in temporal_checks:
+        checked = f'"{col_name}"' if type_name == "Duration" else f'TRIM("{col_name}")'
         case_expressions.append(f"""
             CASE WHEN "{col_name}" IS NOT NULL AND "{col_name}" != ''
-                 AND NOT regexp_matches(TRIM("{col_name}"), '{pattern}')
+                 AND NOT regexp_matches({checked}, '{pattern}')
             THEN '{col_name}|{type_name}|' || "{col_name}"
             ELSE NULL END
         """)
