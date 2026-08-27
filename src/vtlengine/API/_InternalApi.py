@@ -198,12 +198,15 @@ def _check_datapoint_format(datapoint: Path) -> None:
     The pandas engine read its bytes as a CSV and reported the Identifiers it could
     not find in them, which sends whoever loaded it looking for a problem in the
     data structure instead of naming the engine the file needs.
+
+    Only the pandas engine reaches this: run() hands a DuckDb run to _run_with_duckdb
+    before the loader this belongs to, so a Parquet file loads there as it always did.
     """
     if datapoint.suffix.lower() == ".parquet":
         raise InputValidationException(
             code="0-1-1-2",
             input=datapoint,
-            message="Parquet files are only supported with use_duckdb=True.",
+            message="Parquet files are read by the DuckDb engine only (use_duckdb=True).",
         )
 
 
