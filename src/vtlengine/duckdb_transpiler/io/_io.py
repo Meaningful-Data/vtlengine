@@ -9,7 +9,7 @@ import os
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Literal, Optional, Tuple, Union
+from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import duckdb
 import pandas as pd
@@ -170,6 +170,35 @@ def _normalize_time_interval_columns(
             )
 
 
+def _cast_probe(
+    conn: duckdb.DuckDBPyConnection,
+    read_expr: str,
+    components: Dict[str, Component],
+    select_cols: List[str],
+) -> Optional[Callable[[str], bool]]:
+    """Whether reading one column on its own fails, so a failure DuckDB reports
+    without naming a column is traced back to the column that caused it.
+
+    One expression was built per component, in the same order, so every column is
+    read back through the very expression the load used, over the same file.
+    COUNT() reads each value without holding the column in memory.
+    """
+    if not read_expr or len(select_cols) != len(components):
+        return None
+    expressions = dict(zip(components, select_cols))
+
+    def fails(comp_name: str) -> bool:
+        try:
+            conn.execute(
+                f'SELECT COUNT("{comp_name}") FROM (SELECT {expressions[comp_name]} {read_expr})'
+            )
+            return False
+        except duckdb.Error:
+            return True
+
+    return fails
+
+
 def _detect_csv_format(
     conn: duckdb.DuckDBPyConnection,
     csv_path: Path,
@@ -296,6 +325,10 @@ def load_datapoints_duckdb(
     # 1. Create table (NOT NULL only, no PRIMARY KEY)
     conn.execute(build_create_table_sql(dataset_name, components, csv_date_overrides))
 
+    # Kept out of the try so a failure before the read can still be reported
+    read_expr = ""
+    select_cols: List[str] = []
+
     try:
         # 2. Detect CSV format (delimiter, quote, escape) using sniff_csv.
         # Pass expected component names so the fast-path can skip sniffing
@@ -353,9 +386,7 @@ def load_datapoints_duckdb(
             action_filter = 'WHERE "ACTION" != \'D\' OR "ACTION" IS NULL'
 
         # 8. Execute INSERT
-        insert_sql = f"""
-            INSERT INTO "{dataset_name}"
-            SELECT {", ".join(select_cols)}
+        read_expr = f"""
             FROM read_csv(
                 '{file_path}',
                 header=true,
@@ -368,11 +399,18 @@ def load_datapoints_duckdb(
             )
             {action_filter}
         """
+        insert_sql = f"""
+            INSERT INTO "{dataset_name}"
+            SELECT {", ".join(select_cols)}
+            {read_expr}
+        """
         conn.execute(insert_sql)
 
     except duckdb.Error as e:
         conn.execute(f'DROP TABLE IF EXISTS "{dataset_name}"')
-        raise map_duckdb_error(e, dataset_name, components)
+        raise map_duckdb_error(
+            e, dataset_name, components, _cast_probe(conn, read_expr, components, select_cols)
+        )
     except Exception:
         conn.execute(f'DROP TABLE IF EXISTS "{dataset_name}"')
         raise
@@ -718,7 +756,7 @@ def _build_dataframe_select_columns(
             # cast silently truncate them or surface a cryptic out-of-range error.
             col_as_varchar = f'TRIM(CAST("{comp_name}" AS VARCHAR))'
             err = (
-                f"'Date ' || {col_as_varchar} || "
+                f"'Column {comp_name}: Date ' || {col_as_varchar} || "
                 f"' has an invalid or incomplete time; expected YYYY-MM-DD HH:MM:SS.'"
             )
             year_err = (
