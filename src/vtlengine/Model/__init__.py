@@ -62,7 +62,7 @@ class Scalar:
     def to_dict(self) -> Dict[str, Any]:
         data_type = self.data_type
         if not inspect.isclass(self.data_type):
-            data_type = self.data_type.__class__  # type: ignore[assignment]
+            data_type = self.data_type.__class__
         return {
             "name": self.name,
             "type": DataTypes.SCALAR_TYPES_CLASS_REVERSE[data_type],
@@ -130,7 +130,7 @@ class DataComponent:
     def to_dict(self) -> Dict[str, Any]:
         data_type = self.data_type
         if not inspect.isclass(self.data_type):
-            data_type = self.data_type.__class__  # type: ignore[assignment]
+            data_type = self.data_type.__class__
         return {
             "name": self.name,
             "data": self.data,
@@ -184,7 +184,7 @@ class Component:
     def to_dict(self) -> Dict[str, Any]:
         data_type = self.data_type
         if not inspect.isclass(self.data_type):
-            data_type = self.data_type.__class__  # type: ignore[assignment]
+            data_type = self.data_type.__class__
         return {
             "name": self.name,
             "type": DataTypes.SCALAR_TYPES_CLASS_REVERSE[data_type],

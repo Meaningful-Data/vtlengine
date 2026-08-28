@@ -637,11 +637,13 @@ params_sdmx_csv_custom_columns = [
         "dataflow,MD:DS_1(1.0),I,2,20.0,x\n",
         id="v2_custom_column",
     ),
+    # labels=name (SDMX-CSV 2.0 field guide): STRUCTURE_NAME, and a localised-name
+    # column right after every component column.
     pytest.param(
-        "STRUCTURE,STRUCTURE_ID,STRUCTURE_NAME,ACTION,Id_1,Me_1\n"
-        "dataflow,MD:DS_1(1.0),Dataflow 1,I,1,10.0\n"
-        "dataflow,MD:DS_1(1.0),Dataflow 1,I,2,20.0\n",
-        id="v2_structure_name",
+        "STRUCTURE,STRUCTURE_ID,STRUCTURE_NAME,ACTION,Id_1,Identifier 1,Me_1,Measure 1\n"
+        "dataflow,MD:DS_1(1.0),Dataflow 1,I,1,One,10.0,Ten\n"
+        "dataflow,MD:DS_1(1.0),Dataflow 1,I,2,Two,20.0,Twenty\n",
+        id="v2_labels_name",
     ),
 ]
 
