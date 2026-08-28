@@ -53,9 +53,13 @@ TIME_PERIOD_PATTERN = (
     r"^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$"  # Full date - 2024-01-15
 )
 
+# A Time interval is written as a pair of dates, or as the year or the month it covers,
+# which the pandas loader expands into that pair (issue #1066).
 TIME_INTERVAL_PATTERN = (
     r"^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2})?/"
-    r"\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2})?$"
+    r"\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2})?$|"
+    r"^\d{4}$|"  # Year - 2020, covering it whole
+    r"^\d{4}-[0-1]?\d$"  # Month - 2020-05, 2020-5, covering it whole
 )
 
 DURATION_PATTERN = r"^(A|S|Q|M|W|D)$"  # Year, Semester, Quarter, Month, Week, Day
@@ -350,6 +354,15 @@ def handle_sdmx_columns(columns: List[str], components: Dict[str, Component]) ->
 # =============================================================================
 
 
+def _time_interval_out_of_order(col_name: str) -> str:
+    """Whether the interval a Time value writes starts after it ends.
+
+    The two dates are read as text, as the pandas loader compares them.
+    """
+    value = f'TRIM("{col_name}")'
+    return f"(CONTAINS({value}, '/') AND SPLIT_PART({value}, '/', 1) > SPLIT_PART({value}, '/', 2))"
+
+
 def _time_period_day_out_of_range(col_name: str) -> str:
     """Whether the day of year a Time_Period carries passes the days its year holds.
 
@@ -403,6 +416,8 @@ def validate_temporal_columns(
         # the pandas loader reads each of them (issue #1067).
         checked = f'"{col_name}"' if type_name == "Duration" else f'TRIM("{col_name}")'
         invalid = f"NOT regexp_matches({checked}, '{pattern}')"
+        if type_name == "Time":
+            invalid = f"({invalid} OR {_time_interval_out_of_order(col_name)})"
         if type_name == "Time_Period":
             invalid = f"({invalid} OR {_time_period_day_out_of_range(col_name)})"
         case_expressions.append(f"""

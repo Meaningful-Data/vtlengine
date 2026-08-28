@@ -126,17 +126,31 @@ def _normalize_time_interval_columns(
     table_name: str,
     components: Dict[str, Component],
 ) -> None:
-    """Store a Time interval without the space around it.
+    """Expand a Time interval written as the year or the month it covers, and store
+    it without the space around it.
 
-    Its check reads the value without that space, and the pandas loader strips it
-    before reading, so the value stored is the value that was read.
+    2020 covers 2020-01-01/2020-12-31 and 2020-05 covers 2020-05-01/2020-05-31, which
+    the pandas loader reads them as; a value already written as a pair of dates is
+    left as it is (issue #1066). Every form is read from the value without the space
+    around it, the way its check reads it and the way the pandas loader strips it
+    before reading, so the value stored is the value that was read (issue #1067).
     """
     for comp_name, comp in components.items():
         if comp.data_type != TimeInterval:
             continue
+        value = f'TRIM("{comp_name}")'
+        year = f"CAST(SUBSTR({value}, 1, 4) AS INTEGER)"
+        month = f"CAST(SUBSTR({value}, 6) AS INTEGER)"
+        first_day = f"MAKE_DATE({year}, {month}, 1)"
         try:
             conn.execute(
-                f'UPDATE "{table_name}" SET "{comp_name}" = TRIM("{comp_name}") '
+                f'UPDATE "{table_name}" SET "{comp_name}" = CASE '
+                f"WHEN regexp_matches({value}, '^\\d{{4}}$') "
+                f"THEN {value} || '-01-01/' || {value} || '-12-31' "
+                f"WHEN regexp_matches({value}, '^\\d{{4}}-[0-1]?\\d$') "
+                f"THEN strftime({first_day}, '%Y-%m-%d') || '/' "
+                f"|| strftime(LAST_DAY({first_day}), '%Y-%m-%d') "
+                f"ELSE {value} END "
                 f'WHERE "{comp_name}" IS NOT NULL AND "{comp_name}" != \'\''
             )
         except duckdb.Error as e:
