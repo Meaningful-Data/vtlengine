@@ -730,7 +730,11 @@ def run_sdmx(
         dataset_name = mapping_dict[schema.short_urn]
         vtl_structure = to_vtl_json(schema, dataset_name)
         data_structures_list.append(vtl_structure)
-        datapoints_dict[dataset_name] = dataset.data
+        defined = {comp["name"] for comp in vtl_structure["datasets"][0]["DataStructure"]}
+        undefined = [name for name in dataset.data.columns if name not in defined]
+        datapoints_dict[dataset_name] = (
+            dataset.data.drop(columns=undefined) if undefined else dataset.data
+        )
 
     # Validate all script inputs are mapped
     missing = [name for name in input_names if name not in mapping_dict.values()]

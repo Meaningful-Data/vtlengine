@@ -8,11 +8,14 @@ This module consolidates all SDMX-related file operations including:
 - Extracting dataset names from SDMX files
 """
 
+import csv
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 import pandas as pd
 from pysdmx.io import get_datasets as sdmx_get_datasets
+from pysdmx.io.format import Format
+from pysdmx.io.input_processor import process_string_to_read
 from pysdmx.io.pd import PandasDataset
 from pysdmx.model.dataflow import Component as SDMXComponent
 from pysdmx.model.dataflow import Dataflow, DataStructureDefinition, Schema
@@ -33,9 +36,62 @@ SDMX_DATAPOINT_EXTENSIONS = {".xml", ".json"}
 SDMX_STRUCTURE_EXTENSIONS = {".xml", ".json"}
 
 
+# The SDMX-CSV flavours pysdmx reads data from.
+SDMX_CSV_DATA_FORMATS = (
+    Format.DATA_SDMX_CSV_1_0_0,
+    Format.DATA_SDMX_CSV_2_0_0,
+    Format.DATA_SDMX_CSV_2_1_0,
+)
+
+# The header column that names the structure, which a DataStructure may also define.
+SDMX_CSV_STRUCTURE_COLUMNS = ("DATAFLOW", "STRUCTURE")
+
+
 def is_sdmx_datapoint_file(file_path: Path) -> bool:
     """Check if a file should be treated as SDMX when loading datapoints."""
     return file_path.suffix.lower() in SDMX_DATAPOINT_EXTENSIONS
+
+
+def is_sdmx_csv_file(file_path: Path, components: Dict[str, Component]) -> bool:
+    """Whether pysdmx reads this CSV file as SDMX-CSV.
+
+    A plain CSV file and an SDMX-CSV one share the .csv extension, so the format is
+    read off the header, which names the structure the rows belong to. The verdict is
+    the one pysdmx gives its own readers, so a file called SDMX-CSV here is a file
+    pysdmx parses. It is taken on the header line alone, which is all the CSV branch
+    of that detection reads. A DataStructure that defines a Component of the name
+    carrying the structure keeps its file plain.
+
+    SDMX-CSV opens the row with the column naming the structure, and pysdmx accepts
+    that column wherever it sits, so the position is read here as well: a plain file
+    holding a column called DATAFLOW somewhere along the row is a plain file with a
+    column of that name, which is what the engines read it as (issue #1064).
+    """
+    if file_path.suffix.lower() != ".csv":
+        return False
+    try:
+        with open(file_path, encoding="utf-8-sig", errors="replace") as file:
+            header = file.readline()
+        _, sdmx_format = process_string_to_read(header)
+    except Exception:
+        return False
+    if sdmx_format not in SDMX_CSV_DATA_FORMATS:
+        return False
+    first_column = next(csv.reader([header]), [""])[0].strip()
+    if first_column not in SDMX_CSV_STRUCTURE_COLUMNS:
+        return False
+    return not any(column in components for column in SDMX_CSV_STRUCTURE_COLUMNS)
+
+
+def drop_undefined_columns(data: pd.DataFrame, components: Dict[str, Component]) -> pd.DataFrame:
+    """Drop the columns the DataStructure does not define.
+
+    SDMX-CSV lets implementers append custom columns, and pysdmx keeps them, so an
+    SDMX input carries columns with no VTL meaning. They are dropped rather than
+    rejected, which is what plain input gets.
+    """
+    undefined = [name for name in data.columns if name not in components]
+    return data.drop(columns=undefined) if undefined else data
 
 
 def is_sdmx_structure_file(file_path: Path) -> bool:
@@ -206,6 +262,8 @@ def _sanitize_sdmx_columns(
         if "ACTION" in data.columns:
             data = data[data["ACTION"] != "D"]
             data.drop(columns=["ACTION"], inplace=True)
+
+    data = drop_undefined_columns(data, components)
 
     # Validate identifiers are present
     comp_names = {c.name for c in components.values() if c.role == Role.IDENTIFIER}
