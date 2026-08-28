@@ -157,6 +157,26 @@ dataload_params = [
         id="datetime_values",
     ),
     pytest.param(
+        ["2020-1-1T12:30:45", "2020-1-5 08:00:00"],
+        ["2020-01-01T12:30:45", "2020-01-05T08:00:00"],
+        id="month_and_day_written_short_with_time",
+    ),
+    pytest.param(
+        list(pd.to_datetime(["2020-01-01 12:30:45", "2020-06-15 23:59:59"])),
+        ["2020-01-01T12:30:45", "2020-06-15T23:59:59"],
+        id="already_parsed_datetime_with_time",
+    ),
+    pytest.param(
+        list(pd.to_datetime(["2020-01-01 12:30:45.123456"])),
+        ["2020-01-01T12:30:45.123456"],
+        id="already_parsed_datetime_with_microseconds",
+    ),
+    pytest.param(
+        list(pd.to_datetime(["2020-01-01", "2021-02-02"])),
+        ["2020-01-01", "2021-02-02"],
+        id="already_parsed_dates_stay_dates",
+    ),
+    pytest.param(
         ["2020-01-15T10:30:00", "2020-06-01T00:00:00"],
         ["2020-01-15T10:30:00", "2020-06-01T00:00:00"],
         id="t_separator_preserved",
