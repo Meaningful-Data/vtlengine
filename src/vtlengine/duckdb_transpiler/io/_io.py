@@ -240,6 +240,51 @@ def _read_parquet_columns(
     return list(rel.columns)
 
 
+# A Date value writes its time after the date, with the month and the day allowed to be
+# written short, as VALID_DATE_REGEX allows them. Read by DuckDB, not by Python.
+_SQL_DATE_WITH_TIME = r"^\d{4}-\d{1,2}-\d{1,2}[T ]"
+
+
+def _parquet_date_type_overrides(
+    conn: duckdb.DuckDBPyConnection,
+    file_path: Path,
+    components: Dict[str, Component],
+) -> Dict[str, str]:
+    """The Date columns a parquet file needs stored as TIMESTAMP.
+
+    Every Date column was created as DATE whatever the file held, so a value carrying
+    a time was cast down to the bare date, which is what the CSV path and the DataFrame
+    path both keep. A column the file types as a timestamp is stored as
+    one; a column of text is read the way the CSV path reads it, by looking for a time
+    written after the date.
+    """
+    rel = conn.sql(f"SELECT * FROM read_parquet('{file_path}') LIMIT 0")
+    column_types = dict(zip(rel.columns, (str(t) for t in rel.types)))
+
+    overrides: Dict[str, str] = {}
+    text_columns = []
+    for comp_name, comp in components.items():
+        column_type = column_types.get(comp_name)
+        if comp.data_type != Date or column_type is None:
+            continue
+        if "TIMESTAMP" in column_type:
+            overrides[comp_name] = "TIMESTAMP"
+        elif column_type == "VARCHAR":
+            text_columns.append(comp_name)
+
+    if text_columns:
+        checks = ", ".join(
+            f"MAX(CASE WHEN regexp_matches(\"{name}\", '{_SQL_DATE_WITH_TIME}') THEN 1 ELSE 0 END)"
+            for name in text_columns
+        )
+        row = conn.execute(f"SELECT {checks} FROM read_parquet('{file_path}')").fetchone()
+        if row is not None:
+            overrides.update(
+                {name: "TIMESTAMP" for name, has_time in zip(text_columns, row) if has_time}
+            )
+    return overrides
+
+
 def load_datapoints_duckdb(
     conn: duckdb.DuckDBPyConnection,
     components: Dict[str, Component],
@@ -393,8 +438,6 @@ def _load_parquet(
     """Load a Parquet file into a DuckDB table via read_parquet."""
     id_columns = [n for n, c in components.items() if c.role == Role.IDENTIFIER]
 
-    conn.execute(build_create_table_sql(dataset_name, components))
-
     try:
         parquet_cols = _read_parquet_columns(conn, file_path)
 
@@ -410,7 +453,12 @@ def _load_parquet(
         check_missing_identifiers(id_columns, keep_columns, file_path)
         check_extra_columns(keep_columns, components, dataset_name)
 
-        select_exprs = _build_dataframe_select_columns(components, df_columns=parquet_cols)
+        date_overrides = _parquet_date_type_overrides(conn, file_path, components)
+        conn.execute(build_create_table_sql(dataset_name, components, date_overrides))
+
+        select_exprs = _build_dataframe_select_columns(
+            components, df_columns=parquet_cols, type_overrides=date_overrides
+        )
 
         action_filter = ""
         if "ACTION" in parquet_cols and "ACTION" not in keep_columns:
