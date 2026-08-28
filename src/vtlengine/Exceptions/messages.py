@@ -96,6 +96,12 @@ centralised_messages = {
         "description": "Occurs when an element (e.g., Identifier or component) "
         "appears more than once.",
     },
+    "0-1-2-5": {
+        "message": "File {file} must be encoded in UTF-8.",
+        "description": "Raised when a file is not valid UTF-8. A UTF-8 BOM is read "
+        "transparently, but any other encoding is refused instead of read with the "
+        "characters it holds replaced.",
+    },
     "0-1-2-6": {
         "message": "Not found scalar {name} in datastructures",
         "description": "Occurs when a scalar value expected in the data structures is missing.",
@@ -234,6 +240,12 @@ centralised_messages = {
         'Error found: "{error}"',
         "description": "Raised when DuckDB cannot read a Parquet file because it is "
         "corrupted, truncated, or not a valid Parquet file (e.g. missing magic bytes).",
+    },
+    "0-3-1-17": {
+        "message": "On Dataset {name} loading: Component {comp_name} is not nullable, "
+        "found null values on it.",
+        "description": "Raised when a component declared as not nullable in the DataStructure "
+        "carries a null value in the datapoints. An Identifier reports 0-3-1-3 instead.",
     },
     # Input validation errors for URL datapoints
     "0-1-3-8": {

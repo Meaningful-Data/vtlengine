@@ -536,3 +536,74 @@ class TestCsvLoadDateFormats:
                 datapoints={"DS_1": str(csv)},
                 use_duckdb=True,
             )
+
+
+class TestCastErrorNamesItsColumn:
+    """A value the DuckDb loader cannot read names the column it is in and the type
+    that column is declared as, and reports nothing of the generated SQL."""
+
+    @staticmethod
+    def _structure(*measures):
+        components = [{"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False}]
+        components += [
+            {"name": name, "type": data_type, "role": "Measure", "nullable": True}
+            for name, data_type in measures
+        ]
+        return {"datasets": [{"name": "DS_1", "DataStructure": components}]}
+
+    def _load_error(self, tmp_path, structure, csv_text):
+        from vtlengine.API import run
+        from vtlengine.Exceptions import DataLoadError
+
+        csv = tmp_path / "DS_1.csv"
+        csv.write_text(csv_text)
+        with pytest.raises(DataLoadError) as context:
+            run(
+                script="DS_A <- DS_1;",
+                data_structures=structure,
+                datapoints={"DS_1": str(csv)},
+                use_duckdb=True,
+            )
+        assert context.value.args[1] == "0-3-1-6"
+        return str(context.value.args[0])
+
+    def test_boolean_names_its_own_column(self, tmp_path):
+        """It used to name Id_1, the first component appearing in the statement."""
+        message = self._load_error(
+            tmp_path, self._structure(("Me_1", "Boolean")), "Id_1,Me_1\n1,abc\n"
+        )
+        assert "cast column Me_1 to Boolean" in message
+        assert "Id_1" not in message
+
+    def test_the_generated_sql_is_not_reported(self, tmp_path):
+        """The statement DuckDB was running says nothing to whoever wrote the file."""
+        message = self._load_error(
+            tmp_path, self._structure(("Me_1", "Boolean")), "Id_1,Me_1\n1,abc\n"
+        )
+        assert "LINE" not in message
+        assert "CAST(" not in message
+
+    def test_date_names_its_column_and_type(self, tmp_path):
+        """Both used to come out empty: "not possible to cast column  to "."""
+        message = self._load_error(
+            tmp_path, self._structure(("Me_1", "Date")), "Id_1,Me_1\n1,2020-01-01T12\n"
+        )
+        assert "cast column Me_1 to Date" in message
+
+    def test_second_column_of_a_type(self, tmp_path):
+        """Where two columns share a type, the one that failed is the one named."""
+        message = self._load_error(
+            tmp_path,
+            self._structure(("Me_1", "Boolean"), ("Me_2", "Boolean")),
+            "Id_1,Me_1,Me_2\n1,true,abc\n",
+        )
+        assert "cast column Me_2 to Boolean" in message
+
+    def test_second_date_out_of_range(self, tmp_path):
+        """A day the month does not hold, in the second of two Date columns."""
+        message = self._load_error(
+            tmp_path,
+            self._structure(("Me_1", "Date"), ("Me_2", "Date")),
+            "Id_1,Me_1,Me_2\n1,2020-01-01,2014-02-31\n",
+        )
+        assert "cast column Me_2 to Date" in message

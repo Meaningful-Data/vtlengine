@@ -6,8 +6,10 @@ This module contains the core load/save implementations to avoid circular import
 
 import csv
 import os
+import re
+from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Literal, Optional, Tuple, Union
+from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import duckdb
 import pandas as pd
@@ -16,6 +18,7 @@ from vtlengine.DataTypes import Date, String, TimeInterval, TimePeriod
 from vtlengine.duckdb_transpiler.io._validation import (
     VALID_DATE_REGEX,
     VALID_DATE_YEAR_REGEX,
+    build_boolean_cast,
     build_create_table_sql,
     build_csv_column_types,
     build_select_columns,
@@ -37,6 +40,10 @@ from vtlengine.files.sdmx_handler import (
 )
 from vtlengine.Model import Component, Dataset, Role, Scalar
 from vtlengine.Utils._number_config import format_scalar_value_for_csv
+
+# A Date value writes its time after the date, with the month and the day allowed to
+# be written short, as VALID_DATE_REGEX allows them.
+_DATE_WITH_TIME_RE = re.compile(r"^\d{4}-\d{1,2}-\d{1,2}[T ]")
 
 
 def _skip_load_validation() -> bool:
@@ -163,6 +170,35 @@ def _normalize_time_interval_columns(
             )
 
 
+def _cast_probe(
+    conn: duckdb.DuckDBPyConnection,
+    read_expr: str,
+    components: Dict[str, Component],
+    select_cols: List[str],
+) -> Optional[Callable[[str], bool]]:
+    """Whether reading one column on its own fails, so a failure DuckDB reports
+    without naming a column is traced back to the column that caused it.
+
+    One expression was built per component, in the same order, so every column is
+    read back through the very expression the load used, over the same file.
+    COUNT() reads each value without holding the column in memory.
+    """
+    if not read_expr or len(select_cols) != len(components):
+        return None
+    expressions = dict(zip(components, select_cols))
+
+    def fails(comp_name: str) -> bool:
+        try:
+            conn.execute(
+                f'SELECT COUNT("{comp_name}") FROM (SELECT {expressions[comp_name]} {read_expr})'
+            )
+            return False
+        except duckdb.Error:
+            return True
+
+    return fails
+
+
 def _detect_csv_format(
     conn: duckdb.DuckDBPyConnection,
     csv_path: Path,
@@ -178,7 +214,7 @@ def _detect_csv_format(
     """
     if expected_columns:
         try:
-            with open(csv_path, newline="", encoding="utf-8") as f:
+            with open(csv_path, newline="", encoding="utf-8-sig") as f:
                 reader = csv.reader(f, delimiter=",")
                 header = next(reader, [])
             header_set = {h.strip() for h in header}
@@ -334,17 +370,23 @@ def load_datapoints_duckdb(
     # 1. Create table (NOT NULL only, no PRIMARY KEY)
     conn.execute(build_create_table_sql(dataset_name, components, csv_date_overrides))
 
+    # Kept out of the try so a failure before the read can still be reported
+    read_expr = ""
+    select_cols: List[str] = []
+
     try:
         # 2. Detect CSV format (delimiter, quote, escape) using sniff_csv.
         # Pass expected component names so the fast-path can skip sniffing
         # when the header already parses cleanly with a comma delimiter.
         _sniffed_fmt = _detect_csv_format(conn, file_path, expected_columns=list(components.keys()))
 
-        # 3. Read CSV header and check for duplicate columns
         sniffed_delim = _sniffed_fmt.split("'")[1] if "delim=" in _sniffed_fmt else ","
-        with open(file_path, newline="", encoding="utf-8") as f:
-            reader = csv.reader(f, delimiter=sniffed_delim)
-            csv_columns = next(reader, [])
+        try:
+            with open(file_path, newline="", encoding="utf-8-sig") as f:
+                reader = csv.reader(f, delimiter=sniffed_delim)
+                csv_columns = next(reader, [])
+        except UnicodeDecodeError:
+            raise InputValidationException(code="0-1-2-5", file=Path(file_path).name) from None
 
         if not csv_columns:
             raise InputValidationException(code="0-1-1-17", file=file_path.name)
@@ -389,9 +431,7 @@ def load_datapoints_duckdb(
             action_filter = 'WHERE "ACTION" != \'D\' OR "ACTION" IS NULL'
 
         # 8. Execute INSERT
-        insert_sql = f"""
-            INSERT INTO "{dataset_name}"
-            SELECT {", ".join(select_cols)}
+        read_expr = f"""
             FROM read_csv(
                 '{file_path}',
                 header=true,
@@ -404,11 +444,18 @@ def load_datapoints_duckdb(
             )
             {action_filter}
         """
+        insert_sql = f"""
+            INSERT INTO "{dataset_name}"
+            SELECT {", ".join(select_cols)}
+            {read_expr}
+        """
         conn.execute(insert_sql)
 
     except duckdb.Error as e:
         conn.execute(f'DROP TABLE IF EXISTS "{dataset_name}"')
-        raise map_duckdb_error(e, dataset_name, components)
+        raise map_duckdb_error(
+            e, dataset_name, components, _cast_probe(conn, read_expr, components, select_cols)
+        )
     except Exception:
         conn.execute(f'DROP TABLE IF EXISTS "{dataset_name}"')
         raise
@@ -453,11 +500,13 @@ def _load_parquet(
         check_missing_identifiers(id_columns, keep_columns, file_path)
         check_extra_columns(keep_columns, components, dataset_name)
 
+        # The table is created once the file has been read, so a Date column holding a
+        # time is created as a TIMESTAMP and keeps it (issue #895).
         date_overrides = _parquet_date_type_overrides(conn, file_path, components)
         conn.execute(build_create_table_sql(dataset_name, components, date_overrides))
 
         select_exprs = _build_dataframe_select_columns(
-            components, df_columns=parquet_cols, type_overrides=date_overrides
+            components, dataset_name, df_columns=parquet_cols, type_overrides=date_overrides
         )
 
         action_filter = ""
@@ -692,35 +741,50 @@ def extract_datapoint_paths(
     return path_dict if path_dict else None, df_dict
 
 
+def _carries_a_time(value: object) -> bool:
+    """Whether a Date input value writes a time beside the date.
+
+    A value is read the way the Date check reads it, rather than by looking for a
+    separator at a fixed place in text: a month or a day written short moved it
+    along, and a column pandas had already parsed carried no text to look at, so
+    either one was stored as a DATE and lost the time it held.
+    """
+    if isinstance(value, str):
+        return bool(_DATE_WITH_TIME_RE.match(value.strip()))
+    if isinstance(value, datetime):
+        return (value.hour, value.minute, value.second, value.microsecond) != (0, 0, 0, 0)
+    return False
+
+
 def _detect_date_type_overrides(
     df: pd.DataFrame, components: Dict[str, Component]
 ) -> Dict[str, str]:
     """Determine which Date columns need TIMESTAMP instead of DATE.
 
-    Inspects actual string values: if any value in a Date column has a time
-    component (length > 10 with 'T' or ' ' separator), the column is stored
-    as TIMESTAMP to preserve the time part. Otherwise DATE is used.
+    A Date column holding a value that writes a time is stored as TIMESTAMP to keep
+    that time; a column of bare dates is stored as DATE.
     """
     overrides: Dict[str, str] = {}
     for comp_name, comp in components.items():
         if comp.data_type != Date or comp_name not in df.columns:
             continue
-        for val in df[comp_name].dropna():
-            if isinstance(val, str) and len(val) > 10 and val[10] in ("T", " "):
-                overrides[comp_name] = "TIMESTAMP"
-                break
+        if any(_carries_a_time(val) for val in df[comp_name].dropna()):
+            overrides[comp_name] = "TIMESTAMP"
     return overrides
 
 
 def _build_dataframe_select_columns(
     components: Dict[str, Component],
+    dataset_name: str,
     df_columns: Optional[List[str]] = None,
     type_overrides: Optional[Dict[str, str]] = None,
 ) -> List[str]:
     """Build SELECT expressions with explicit CAST for DataFrame → DuckDB table insertion.
 
     Ensures type enforcement matches the CSV loading path (load_datapoints_duckdb).
-    Columns missing from the DataFrame are filled with NULL.
+    A missing column is filled with NULL, and, when the component is not nullable,
+    reported as missing the way the CSV path and the pandas loader report it: filling
+    it left a DataFrame with no rows loading a structure it did not carry.
     """
     df_col_set = set(df_columns) if df_columns is not None else None
     overrides = type_overrides or {}
@@ -728,6 +792,8 @@ def _build_dataframe_select_columns(
     for comp_name, comp in components.items():
         target_type = overrides.get(comp_name, get_column_sql_type(comp))
         if df_col_set is not None and comp_name not in df_col_set:
+            if not comp.nullable:
+                raise DataLoadError("0-3-1-5", name=dataset_name, comp_name=comp_name)
             exprs.append(f'CAST(NULL AS {target_type}) AS "{comp_name}"')
         elif comp.data_type == Date:
             # Accept only a bare date, or a date with a COMPLETE, in-range time
@@ -738,7 +804,7 @@ def _build_dataframe_select_columns(
             # cast silently truncate them or surface a cryptic out-of-range error.
             col_as_varchar = f'TRIM(CAST("{comp_name}" AS VARCHAR))'
             err = (
-                f"'Date ' || {col_as_varchar} || "
+                f"'Column {comp_name}: Date ' || {col_as_varchar} || "
                 f"' has an invalid or incomplete time; expected YYYY-MM-DD HH:MM:SS.'"
             )
             year_err = (
@@ -753,6 +819,11 @@ def _build_dataframe_select_columns(
                 f"THEN error({year_err}) "
                 f'ELSE CAST({col_as_varchar} AS {target_type}) END AS "{comp_name}"'
             )
+        elif target_type == "BOOLEAN":
+            # A Boolean is read on the documented set, not on DuckDB's wider one,
+            # so a DataFrame and a CSV are read the same way (issue #1068).
+            boolean_cast = build_boolean_cast(f'"{comp_name}"', comp_name)
+            exprs.append(f'{boolean_cast} AS "{comp_name}"')
         else:
             exprs.append(f'CAST("{comp_name}" AS {target_type}) AS "{comp_name}"')
     return exprs
@@ -794,7 +865,7 @@ def register_dataframes(
         conn.register(temp_view, df)
         try:
             select_exprs = _build_dataframe_select_columns(
-                components, list(df.columns), type_overrides
+                components, name, list(df.columns), type_overrides
             )
             col_list = ", ".join(f'"{c}"' for c in components)
             conn.execute(

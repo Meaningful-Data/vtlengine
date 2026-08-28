@@ -18,6 +18,7 @@ Summary
 
 import json
 from pathlib import Path
+from typing import Any, Dict
 
 import pandas as pd
 import pytest
@@ -29,6 +30,7 @@ from vtlengine.API._InternalApi import (
     _load_single_value_domain,
     load_vtl,
 )
+from vtlengine.Exceptions import VTLEngineException
 
 
 class DataLoadHelper(TestHelper):
@@ -195,6 +197,36 @@ class DataLoadTest(DataLoadHelper):
             code=code, number_inputs=number_inputs, exception_code=exception_code
         )
 
+    def test_GH_1069_1(self):
+        """An empty value in a Measure the structure declares as not nullable."""
+        code = "GH_1069_1"
+        number_inputs = 1
+        self.DataLoadExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="0-3-1-17"
+        )
+
+    def test_GH_1069_2(self):
+        """
+        Status: OK
+        Expression: DS_r := DS_1;
+        Description: an empty value in a nullable Measure still loads as a null.
+        Git issue: 1069.
+        Goal: Check Result.
+        """
+        code = "GH_1069_2"
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1069_3(self):
+        """An Attribute declared as not nullable is checked the same way a Measure is."""
+        code = "GH_1069_3"
+        number_inputs = 1
+        self.DataLoadExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="0-3-1-17"
+        )
+
     def test_11(self):
         """
         Status: OK
@@ -357,18 +389,20 @@ class DataLoadTest(DataLoadHelper):
     def test_22(self):
         """
         Status: OK
-        Description: Data Load, with utf-16 encoding.
+        Description: Data Load, with utf-16 encoding. It used to surface as
+                     "line contains NUL"; a file in an encoding other than UTF-8
+                     now has an error of its own, on both engines (issue #1070).
         Git issue: 81-triple-doble-quote-commas-data-loading-and-intermediate-results.
         Git Branch: bug-81-triple-doble-quote-commas-data-loading-and-intermediate-results.
         Goal: Check Exception.
         """
-        # code = "GL_81-21"
-        # number_inputs = 1
-        # message = "ERROR: line contains NUL"
-        # TODO: Check the dialect on the Dataload.
-        # self.DataLoadExceptionTest(code=code, number_inputs=number_inputs,
-        #                            exception_message=message)
-        assert True
+        code = "GH_1070_2"
+        number_inputs = 1
+
+        exception_code = "0-1-2-5"
+        self.DataLoadExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
 
     # Quotes on the types
     def test_23(self):
@@ -960,6 +994,26 @@ class DataLoadTest(DataLoadHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1070_1(self):
+        """A latin-1 file is refused, not read with the characters it holds replaced."""
+        code = "GH_1070_1"
+        number_inputs = 1
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code="0-1-2-5")
+
+    def test_GH_1070_3(self):
+        """
+        Status: OK
+        Expression: DS_r := DS_1;
+        Description: a UTF-8 BOM is taken off the first column name on both engines.
+        Git issue: 1070.
+        Goal: Check Result.
+        """
+        code = "GH_1070_3"
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_1067_1(self):
         """A Duration with space around it is rejected, not silently accepted."""
         code = "GH_1067_1"
@@ -980,6 +1034,24 @@ class DataLoadTest(DataLoadHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1068_1(self):
+        """A Boolean that cannot be read ('abc') is refused, not loaded as False."""
+        code = "GH_1068_1"
+        number_inputs = 1
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code="0-3-1-6")
+
+    def test_GH_1068_2(self):
+        """'yes' is outside the documented Boolean set, on both engines."""
+        code = "GH_1068_2"
+        number_inputs = 1
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code="0-3-1-6")
+
+    def test_GH_1068_3(self):
+        """A number other than 1 or 0 is not a Boolean when it is written as text."""
+        code = "GH_1068_3"
+        number_inputs = 1
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code="0-3-1-6")
+
 
 BOM = b"\xef\xbb\xbf"
 
@@ -987,8 +1059,13 @@ BOM = b"\xef\xbb\xbf"
 class TestBOMHandling:
     """Tests that UTF-8 BOM files are handled transparently."""
 
-    def test_bom_csv(self, tmp_path: Path) -> None:
-        """CSV with BOM loads correctly, first column name is clean."""
+    @pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+    def test_bom_csv(self, tmp_path: Path, use_duckdb: bool) -> None:
+        """CSV with BOM loads correctly, first column name is clean.
+
+        Both engines are asked: this test read the default engine only, so the
+        DuckDb loader reading the header as plain UTF-8 went unseen (issue #1070).
+        """
         script = "DS_r <- DS_1;"
         data_structures = {
             "datasets": [
@@ -1018,6 +1095,7 @@ class TestBOMHandling:
             script=script,
             data_structures=data_structures,
             datapoints={"DS_1": csv_path},
+            use_duckdb=use_duckdb,
         )
         ds = result["DS_r"]
         assert "Id_1" in ds.data.columns
@@ -1159,6 +1237,72 @@ class TestBOMHandling:
         assert "\ufeffId_1" not in ds.data.columns
 
 
+def _dataframe_structures(measure_type: str) -> Dict[str, Any]:
+    return {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": measure_type, "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+
+
+@pytest.mark.parametrize("use_duckdb", [False, True])
+class TestBooleanFromDataFrame:
+    """A DataFrame is read on the documented Boolean set, the same on both engines
+    and the same as a CSV (issue #1068)."""
+
+    def test_boolean_strings(self, use_duckdb: bool) -> None:
+        """The set the documentation states, whatever the case."""
+        data_df = pd.DataFrame({"Id_1": [1, 2, 3, 4], "Me_1": ["true", "FALSE", "1", "0"]})
+        result = run(
+            script="DS_r <- DS_1;",
+            data_structures=_dataframe_structures("Boolean"),
+            datapoints={"DS_1": data_df},
+            use_duckdb=use_duckdb,
+        )
+        assert result["DS_r"].data["Me_1"].tolist() == [True, False, True, False]
+
+    def test_boolean_unknown_string(self, use_duckdb: bool) -> None:
+        """'yes' reads as a Boolean in SQL, so it used to load as True on DuckDb
+        and as False on pandas. It is outside the documented set on both now."""
+        data_df = pd.DataFrame({"Id_1": [1], "Me_1": ["yes"]})
+        with pytest.raises(VTLEngineException) as context:
+            run(
+                script="DS_r <- DS_1;",
+                data_structures=_dataframe_structures("Boolean"),
+                datapoints={"DS_1": data_df},
+                use_duckdb=use_duckdb,
+            )
+        assert context.value.args[1] == "0-3-1-6"
+
+    def test_boolean_numbers(self, use_duckdb: bool) -> None:
+        """A number is compared against zero, as the Boolean type reads it."""
+        data_df = pd.DataFrame({"Id_1": [1, 2], "Me_1": [1.0, 0.0]})
+        result = run(
+            script="DS_r <- DS_1;",
+            data_structures=_dataframe_structures("Boolean"),
+            datapoints={"DS_1": data_df},
+            use_duckdb=use_duckdb,
+        )
+        assert result["DS_r"].data["Me_1"].tolist() == [True, False]
+
+    def test_integer_booleans(self, use_duckdb: bool) -> None:
+        """A boolean in an Integer column is 1 or 0, the Integer type's own reading."""
+        data_df = pd.DataFrame({"Id_1": [1, 2], "Me_1": [True, False]})
+        result = run(
+            script="DS_r <- DS_1;",
+            data_structures=_dataframe_structures("Integer"),
+            datapoints={"DS_1": data_df},
+            use_duckdb=use_duckdb,
+        )
+        assert result["DS_r"].data["Me_1"].tolist() == [1, 0]
+
+
 _STRING_STRUCTURE = {
     "datasets": [
         {
@@ -1209,3 +1353,58 @@ class TestStringKeepsItsQuotes:
         csv_path = tmp_path / "DS_1.csv"
         csv_path.write_text('Id_1,Me_1\n1,"say ""hi"""\n')
         assert self._load({"DS_1": csv_path}, use_duckdb) == ['say "hi"']
+
+
+def _nullability_structures(nullable: bool) -> Dict[str, Any]:
+    return {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": nullable},
+                ],
+            }
+        ]
+    }
+
+
+@pytest.mark.parametrize("use_duckdb", [False, True])
+class TestNullabilityFromDataFrame:
+    """A DataFrame is held to the nullability the DataStructure declares, the same
+    on both engines and the same as a CSV (issue #1069)."""
+
+    def _run(self, data_df: pd.DataFrame, use_duckdb: bool, nullable: bool = False) -> Any:
+        return run(
+            script="DS_r <- DS_1;",
+            data_structures=_nullability_structures(nullable),
+            datapoints={"DS_1": data_df},
+            use_duckdb=use_duckdb,
+        )
+
+    def test_missing_measure(self, use_duckdb: bool) -> None:
+        """A DataFrame that does not carry a Measure that cannot be null."""
+        with pytest.raises(VTLEngineException) as context:
+            self._run(pd.DataFrame({"Id_1": [1, 2]}), use_duckdb)
+        assert context.value.args[1] == "0-3-1-5"
+
+    def test_missing_measure_no_rows(self, use_duckdb: bool) -> None:
+        """The same, with no rows: the DuckDb engine used to load it as an empty
+        Data Set, since a column filled with NULL breaks no constraint on no rows."""
+        with pytest.raises(VTLEngineException) as context:
+            self._run(pd.DataFrame({"Id_1": pd.Series(dtype="int64")}), use_duckdb)
+        assert context.value.args[1] == "0-3-1-5"
+
+    def test_null_in_measure(self, use_duckdb: bool) -> None:
+        """A null in a Measure that cannot be null names the Measure."""
+        with pytest.raises(VTLEngineException) as context:
+            self._run(pd.DataFrame({"Id_1": [1, 2], "Me_1": [1.0, None]}), use_duckdb)
+        assert context.value.args[1] == "0-3-1-17"
+        assert "Me_1" in context.value.args[0]
+
+    def test_null_in_nullable_measure(self, use_duckdb: bool) -> None:
+        """A nullable Measure still takes a null."""
+        result = self._run(
+            pd.DataFrame({"Id_1": [1, 2], "Me_1": [1.0, None]}), use_duckdb, nullable=True
+        )
+        assert result["DS_r"].data["Me_1"].isnull().tolist() == [False, True]

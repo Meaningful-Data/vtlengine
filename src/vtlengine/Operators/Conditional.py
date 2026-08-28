@@ -313,9 +313,9 @@ class Nvl(Binary):
         dataset_name = VirtualCounter._new_ds_name()
         comp_name = VirtualCounter._new_dc_name()
         result_components = {}
-        # A null applicable value replaces nothing, so the nulls of the operand survive
-        # and the result stays as nullable as the operand was (issue #1008).
         keeps_nulls = isinstance(right, Scalar) and (right.data_type is Null or right.value is None)
+        if isinstance(right, DataComponent):
+            keeps_nulls = right.nullable
         if isinstance(left, Scalar):
             if not isinstance(right, Scalar):
                 raise SemanticError(
@@ -358,7 +358,10 @@ class Nvl(Binary):
                 if comp.role != Role.ATTRIBUTE
             }
             for comp in result_components.values():
-                comp.nullable = keeps_nulls and comp.nullable
+                replacement_keeps_nulls = keeps_nulls
+                if isinstance(right, Dataset) and comp.name in right.components:
+                    replacement_keeps_nulls = right.components[comp.name].nullable
+                comp.nullable = replacement_keeps_nulls and comp.nullable
                 if comp.name in promoted:
                     comp.data_type = promoted[comp.name]
         return Dataset(name=dataset_name, components=result_components, data=None)

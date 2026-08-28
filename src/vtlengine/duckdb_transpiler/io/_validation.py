@@ -8,12 +8,14 @@ This module contains:
 - Table creation and validation helpers
 """
 
+import re
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Callable, Dict, List, Optional
 
 import duckdb
 
 from vtlengine.DataTypes import (
+    SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
     Date,
     Duration,
@@ -82,11 +84,68 @@ VALID_DATE_YEAR_REGEX = r"^(1[89]\d{2}|[2-9]\d{3})-"
 # Error Mapping
 # =============================================================================
 
+_SQL_EXCERPT = re.compile(r"\n+LINE \d+:.*", re.DOTALL)
+_COLUMN_MARKER = re.compile(r"Column ([^:]+):")
+
+
+def _clean_duckdb_message(error: duckdb.Error) -> str:
+    """What DuckDB reported, without the generated statement it reported it on."""
+    return _SQL_EXCERPT.sub("", str(error)).strip()
+
+
+def _failing_component(
+    message: str,
+    components: Dict[str, Component],
+    probe: Optional[Callable[[str], bool]] = None,
+) -> Optional[str]:
+    """The component a value error belongs to.
+
+    Read from the marker this engine's own checks write, then from what DuckDB
+    reported, and, where neither names it, by reading each column on its own until
+    one fails. Taking the first component name that appeared anywhere in the
+    statement named a column that had nothing to do with the failure.
+    """
+    marker = _COLUMN_MARKER.search(message)
+    if marker and marker.group(1) in components:
+        return marker.group(1)
+    lowered = message.lower()
+    for comp_name in components:
+        if comp_name.lower() in lowered:
+            return comp_name
+    if probe is not None:
+        for comp_name in components:
+            if probe(comp_name):
+                return comp_name
+    return None
+
+
+def _value_error(
+    message: str,
+    dataset_name: str,
+    components: Dict[str, Component],
+    probe: Optional[Callable[[str], bool]] = None,
+) -> DataLoadError:
+    """A 0-3-1-6 naming the column that failed and the type it is declared as."""
+    comp_name = _failing_component(message, components, probe)
+    if comp_name is None:
+        return DataLoadError(
+            "0-3-1-6", name=dataset_name, column="unknown", type="unknown", error=message
+        )
+    data_type = components[comp_name].data_type
+    return DataLoadError(
+        "0-3-1-6",
+        name=dataset_name,
+        column=comp_name,
+        type=SCALAR_TYPES_CLASS_REVERSE.get(data_type, "unknown"),
+        error=message,
+    )
+
 
 def map_duckdb_error(
     error: duckdb.Error,
     dataset_name: str,
     components: Dict[str, Component],
+    probe: Optional[Callable[[str], bool]] = None,
 ) -> Exception:
     """
     Map DuckDB constraint errors to VTL error codes.
@@ -96,8 +155,14 @@ def map_duckdb_error(
     - NOT NULL violation: "NOT NULL constraint failed" or "cannot be null"
     - Type conversion: "Could not convert" or "Conversion Error"
     - Corrupt/invalid Parquet: "magic bytes" or "invalid input" in the message.
+
+    ``probe`` tells whether reading one column on its own fails, which is how a
+    failure DuckDB does not attribute is traced back to the column that caused it.
     """
     error_msg = str(error).lower()
+
+    if "invalid unicode" in error_msg:
+        return InputValidationException(code="0-1-2-5", file=dataset_name)
 
     # Corrupt or invalid Parquet file
     if "magic bytes" in error_msg or "no magic bytes" in error_msg:
@@ -111,67 +176,34 @@ def map_duckdb_error(
     if "duplicate" in error_msg or "primary key" in error_msg:
         return DataLoadError("0-3-1-7", name=dataset_name, row_index="unknown")
 
-    # NULL in identifier (NOT NULL violation)
     if "null" in error_msg and "constraint" in error_msg:
-        # Try to extract column name from error
+        violated = error_msg.rsplit(".", 1)[-1].strip()
         for comp_name, comp in components.items():
-            if comp.role == Role.IDENTIFIER and comp_name.lower() in error_msg:
-                return DataLoadError("0-3-1-3", null_identifier=comp_name, name=dataset_name)
-        # Generic null error for identifier
+            if comp_name.lower() == violated:
+                if comp.role == Role.IDENTIFIER:
+                    return DataLoadError("0-3-1-3", null_identifier=comp_name, name=dataset_name)
+                return DataLoadError("0-3-1-17", name=dataset_name, comp_name=comp_name)
         return DataLoadError("0-3-1-3", null_identifier="unknown", name=dataset_name)
 
     # Date/timestamp range error (e.g. 2014-02-31)
     if "timestamp field value out of range" in error_msg:
-        import re
-
         match = re.search(r'"(\d{4}-\d{2}-\d{2})"', str(error))
         date_val = match.group(1) if match else "unknown"
         friendly_msg = f"Date {date_val} is out of range for the month."
-        # Find the Date column
-        for comp_name, comp in components.items():
-            if comp.data_type == Date:
-                return DataLoadError(
-                    "0-3-1-6",
-                    name=dataset_name,
-                    column=comp_name,
-                    type="Date",
-                    error=friendly_msg,
-                )
+        date_columns = [n for n, c in components.items() if c.data_type == Date]
+        column = _failing_component(str(error), components, probe)
+        if column not in date_columns:
+            column = date_columns[0] if date_columns else "unknown"
         return DataLoadError(
             "0-3-1-6",
             name=dataset_name,
-            column="unknown",
+            column=column,
             type="Date",
             error=friendly_msg,
         )
 
-    # Type conversion error
-    if "convert" in error_msg or "conversion" in error_msg or "cast" in error_msg:
-        # Try to extract column and type info
-        for comp_name, comp in components.items():
-            if comp_name.lower() in error_msg:
-                type_name = (
-                    comp.data_type.__name__
-                    if hasattr(comp.data_type, "__name__")
-                    else str(comp.data_type)
-                )
-                return DataLoadError(
-                    "0-3-1-6",
-                    name=dataset_name,
-                    column=comp_name,
-                    type=type_name,
-                    error=str(error),
-                )
-        return DataLoadError(
-            "0-3-1-6",
-            name=dataset_name,
-            column="unknown",
-            type="unknown",
-            error=str(error),
-        )
-
-    # Generic data load error
-    return DataLoadError("0-3-1-6", name=dataset_name, column="", type="", error=str(error))
+    # A value DuckDB could not read as the type its column is declared as
+    return _value_error(_clean_duckdb_message(error), dataset_name, components, probe)
 
 
 # =============================================================================
@@ -450,6 +482,29 @@ def validate_temporal_columns(
         )
 
 
+def build_boolean_cast(value_expr: str, column_name: str) -> str:
+    """SQL reading a Boolean input value on the documented set: "true"/"false"/"1"/"0"
+    whatever the case, a real boolean, or a number, which is compared against zero.
+
+    DuckDB's own VARCHAR->BOOLEAN cast reads "yes", "y" and "t" as well, so a value
+    that arrives as text is mapped by hand here and anything outside the set is an
+    error, the same answer the pandas loader gives. A column that is
+    already a boolean or a number keeps DuckDB's cast, which reads it as pandas does.
+    """
+    text = f"lower(CAST({value_expr} AS VARCHAR))"
+    err = (
+        f"'Column {column_name}: value ' || CAST({value_expr} AS VARCHAR) || "
+        f"' is not a Boolean, use true, false, 1 or 0'"
+    )
+    return f"""CASE
+        WHEN {value_expr} IS NULL THEN NULL
+        WHEN typeof({value_expr}) != 'VARCHAR' THEN CAST({value_expr} AS BOOLEAN)
+        WHEN {text} IN ('true', '1') THEN TRUE
+        WHEN {text} IN ('false', '0') THEN FALSE
+        ELSE error({err})
+    END"""
+
+
 def build_select_columns(
     components: Dict[str, Component],
     keep_columns: List[str],
@@ -502,7 +557,7 @@ def build_select_columns(
                 if comp.nullable:
                     null_check += f""" AND "{comp_name}" != ''"""
                 format_err = (
-                    f"'Date ' || \"{comp_name}\" || "
+                    f"'Column {comp_name}: Date ' || \"{comp_name}\" || "
                     f"' is not in the correct format. "
                     f"Use YYYY-MM-DD or YYYY-MM-DD HH:MM:SS.'"
                 )
@@ -526,11 +581,11 @@ def build_select_columns(
                     END AS "{comp_name}\""""
                 )
             elif csv_type == "VARCHAR" and comp.data_type == Boolean:
-                # Strip double quotes and cast to BOOLEAN (handles """TRUE""" from CSV)
+                # Strip double quotes and read as BOOLEAN (handles """TRUE""" from CSV)
                 stripped = f"""REPLACE("{comp_name}", '"', '')"""
                 if comp.nullable:
                     stripped = f"NULLIF({stripped}, '')"
-                select_cols.append(f'CAST({stripped} AS BOOLEAN) AS "{comp_name}"')
+                select_cols.append(f'{build_boolean_cast(stripped, comp_name)} AS "{comp_name}"')
             elif csv_type == "VARCHAR" and comp.data_type == String:
                 expr = f'"{comp_name}"'
                 if comp.nullable:

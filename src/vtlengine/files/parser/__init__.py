@@ -69,9 +69,11 @@ def _validate_csv_path(components: Dict[str, Component], csv_path: Path) -> None
     register_rfc()
     try:
         delimiter = _detect_delimiter(csv_path)
-        with open(csv_path, "r", errors="replace", encoding="utf-8-sig") as f:
+        with open(csv_path, "r", encoding="utf-8-sig") as f:
             reader = DictReader(f, delimiter=delimiter)
             csv_columns = reader.fieldnames
+    except UnicodeDecodeError:
+        raise InputValidationException(code="0-1-2-5", file=csv_path.name) from None
     except InputValidationException as ie:
         raise InputValidationException("{}".format(str(ie))) from None
     except Exception as e:
@@ -152,25 +154,39 @@ def _pandas_load_csv(components: Dict[str, Component], csv_path: Union[str, Path
 
     sep = _detect_delimiter(csv_path)
 
-    data = pd.read_csv(  # type: ignore[call-overload, unused-ignore]
-        csv_path,
-        dtype=obj_dtypes,
-        engine="c",
-        sep=sep,
-        keep_default_na=False,
-        na_values=na_values,
-        encoding="utf-8-sig",
-        encoding_errors="replace",
-    )
+    try:
+        data = pd.read_csv(  # type: ignore[call-overload, unused-ignore]
+            csv_path,
+            dtype=obj_dtypes,
+            engine="c",
+            sep=sep,
+            keep_default_na=False,
+            na_values=na_values,
+            encoding="utf-8-sig",
+        )
+    except UnicodeDecodeError:
+        name = csv_path if isinstance(csv_path, str) else csv_path.name
+        raise InputValidationException(code="0-1-2-5", file=name) from None
 
     return _sanitize_pandas_columns(components, csv_path, data)
 
 
-def _parse_boolean(value: str) -> bool:
-    if isinstance(value, bool):
-        return value
-    result = value.lower() == "true" or value == "1"
-    return result
+def _parse_boolean(value: Any) -> bool:
+    """Read a Boolean input value on the set the Boolean type declares and the
+    documentation states: "true"/"false"/"1"/"0" whatever the case, a real boolean,
+    or a number, which is compared against zero. Anything else raises here so the
+    loader reports 0-3-1-6, instead of the old mapping that turned every value it
+    could not read -- "abc", "yes", "2" -- into a perfectly valid False."""
+    if pd.api.types.is_bool(value):
+        return bool(value)
+    if pd.api.types.is_number(value):
+        return bool(value != 0)
+    # A quoted CSV value ("""TRUE""") reaches here with its quotes, which the other
+    # types and the DuckDb engine's own Boolean reading take out the same way.
+    text = str(value).replace('"', "")
+    if not Boolean.check(text):
+        raise ValueError(f"Value {value} is not a Boolean")
+    return bool(Boolean.cast(text))
 
 
 _INT64_MIN = -(2**63)
@@ -182,7 +198,10 @@ def _cast_exact_integer(value: Any) -> Optional[int]:
     beyond 2**53 (issue #985). Decimal-form text ("1.0", "1e5") keeps the float
     path and its non-integral validation ("1.5" raises). Values outside int64
     raise here so the loader reports 0-3-1-6 instead of a raw pyarrow error,
-    like the DuckDB engine's BIGINT range error."""
+    like the DuckDB engine's BIGINT range error. A boolean is read as 1 or 0, the
+    Integer type's own reading of it, and the DuckDb engine's."""
+    if pd.api.types.is_bool(value):
+        return int(value)
     text = str(value)
     try:
         result: Optional[int] = int(text)
@@ -199,6 +218,18 @@ def _check_extra_columns(
     extra_columns = sorted(set(data.columns) - set(components))
     if extra_columns:
         raise DataLoadError("0-3-1-15", name=dataset_name, extra_columns=", ".join(extra_columns))
+
+
+def _check_non_nullable_components(
+    components: Dict[str, Component], data: pd.DataFrame, dataset_name: str
+) -> None:
+    """A component the DataStructure declares as not nullable cannot carry a null,
+    whatever its role: an empty value in one used to load as a null and leave the
+    declared structure violated with no error. An Identifier keeps its
+    own error, which is checked before this one."""
+    for comp_name, comp in components.items():
+        if not comp.nullable and comp.role != Role.IDENTIFIER and data[comp_name].isnull().any():
+            raise DataLoadError("0-3-1-17", name=dataset_name, comp_name=comp_name)
 
 
 def _validate_pandas(
@@ -235,6 +266,9 @@ def _validate_pandas(
             data[comp_name] = data[comp_name].replace("", pd.NA)
 
     data = data.fillna(value=pd.NA)
+
+    _check_non_nullable_components(components, data, dataset_name)
+
     # Checking data types on all data types
     comp_name = ""
     try:
@@ -248,9 +282,7 @@ def _validate_pandas(
             elif comp.data_type == Number:
                 data[comp_name] = data[comp_name].map(lambda x: float((str(x))), na_action="ignore")
             elif comp.data_type == Boolean:
-                data[comp_name] = data[comp_name].map(
-                    lambda x: _parse_boolean(str(x)), na_action="ignore"
-                )
+                data[comp_name] = data[comp_name].map(_parse_boolean, na_action="ignore")
             elif comp.data_type == Duration:
                 values_correct = (
                     data[comp_name]
