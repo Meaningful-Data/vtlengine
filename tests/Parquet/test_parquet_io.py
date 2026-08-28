@@ -367,3 +367,76 @@ def test_parquet_single_path_without_duckdb_names_the_engine(tmp_path: Path) -> 
 
     with pytest.raises(InputValidationException, match="use_duckdb=True"):
         run(script=SCRIPT, data_structures=DATA_STRUCTURE, datapoints=pq, use_duckdb=False)
+
+
+DATE_STRUCTURE = {
+    "datasets": [
+        {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Date", "role": "Measure", "nullable": True},
+            ],
+        }
+    ]
+}
+
+
+def _load_parquet_dates(values, tmp_path: Path):
+    """Load a Date column from a parquet file and return what was stored."""
+    pq = tmp_path / "DS_1.parquet"
+    _write_parquet(pd.DataFrame({"Id_1": list(range(1, len(values) + 1)), "Me_1": values}), pq)
+    result = run(
+        script="DS_A <- DS_1;",
+        data_structures=DATE_STRUCTURE,
+        datapoints={"DS_1": pq},
+        use_duckdb=True,
+    )
+    return result["DS_A"].data["Me_1"].tolist()
+
+
+def test_parquet_date_keeps_a_time_written_as_text(tmp_path: Path) -> None:
+    """Every Date column was created as DATE, so a value carrying a time was cast
+    down to the bare date the CSV path keeps whole (issue #895)."""
+    assert _load_parquet_dates(["2020-01-15T10:30:00"], tmp_path) == ["2020-01-15T10:30:00"]
+
+
+def test_parquet_date_keeps_a_time_the_file_types(tmp_path: Path) -> None:
+    """The same for a column the file already types as a timestamp."""
+    values = list(pd.to_datetime(["2020-01-15 10:30:00"]))
+    assert _load_parquet_dates(values, tmp_path) == ["2020-01-15T10:30:00"]
+
+
+def test_parquet_date_keeps_the_microseconds(tmp_path: Path) -> None:
+    """A time is kept whole, down to the microseconds."""
+    values = list(pd.to_datetime(["2020-01-15 10:30:00.123456"]))
+    assert _load_parquet_dates(values, tmp_path) == ["2020-01-15T10:30:00.123456"]
+
+
+def test_parquet_date_written_short_keeps_its_time(tmp_path: Path) -> None:
+    """A month or a day written short does not hide the time after it."""
+    assert _load_parquet_dates(["2020-1-5T10:30:00"], tmp_path) == ["2020-01-05T10:30:00"]
+
+
+def test_parquet_dates_stay_dates(tmp_path: Path) -> None:
+    """A column of bare dates is stored as dates, whether the file types it or not."""
+    assert _load_parquet_dates(["2020-01-15", "2021-02-02"], tmp_path) == [
+        "2020-01-15",
+        "2021-02-02",
+    ]
+    assert _load_parquet_dates(list(pd.to_datetime(["2020-01-15"])), tmp_path) == ["2020-01-15"]
+
+
+def test_parquet_date_reads_as_the_csv_path_reads_it(tmp_path: Path) -> None:
+    """The two input paths agree on the same value, which is what the issue reports."""
+    value = "2020-01-15T10:30:00"
+    csv_path = tmp_path / "from_csv" / "DS_1.csv"
+    csv_path.parent.mkdir()
+    csv_path.write_text(f"Id_1,Me_1\n1,{value}\n")
+    from_csv = run(
+        script="DS_A <- DS_1;",
+        data_structures=DATE_STRUCTURE,
+        datapoints={"DS_1": csv_path},
+        use_duckdb=True,
+    )
+    assert _load_parquet_dates([value], tmp_path) == from_csv["DS_A"].data["Me_1"].tolist()
