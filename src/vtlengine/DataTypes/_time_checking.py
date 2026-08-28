@@ -2,6 +2,7 @@ import calendar
 import re
 from datetime import date, datetime
 from functools import lru_cache
+from typing import Any
 
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.Exceptions import InputValidationException
@@ -12,6 +13,21 @@ _DATE_PART_RE = re.compile(r"^(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})")
 def _has_time_component(value: str) -> bool:
     """Check if a date string includes a time component (T or space separator at position 10)."""
     return len(value) > 10 and value[10] in ("T", " ")
+
+
+def _from_date_value(value: Any) -> str:
+    """The text of a value pandas has already parsed into a date or a datetime.
+
+    A datetime at midnight is written as the bare date it stands for, so a column of
+    dates reads as dates whether pandas parsed it or left it as text.
+    """
+    if isinstance(value, datetime):
+        if (value.hour, value.minute, value.second, value.microsecond) == (0, 0, 0, 0):
+            return value.strftime("%Y-%m-%d")
+        return value.isoformat(sep=" ")
+    if isinstance(value, date):
+        return value.isoformat()
+    return str(value)
 
 
 def _truncate_nanoseconds(value: str) -> str:
@@ -105,14 +121,19 @@ def _pad_date_parts(value: str) -> str:
     return f"{year}-{int(month):02d}-{int(day):02d}{rest}"
 
 
-def check_date(value: str) -> str:
+def check_date(value: Any) -> str:
     """Check a date is in the correct format.
 
     Accepts ``YYYY-MM-DD`` and ``YYYY-MM-DD[T| ]HH:MM:SS[.ffffff][+HH:MM|Z]`` (ISO 8601).
     A time component, when present, must be a COMPLETE ``HH:MM:SS``; partial times such
     as ``HH`` or ``HH:MM`` are rejected. Datetime output uses a single space separator;
     nanosecond input is truncated to microsecond precision.
+
+    A DataFrame may carry a column pandas has already parsed, so a date or a datetime
+    arrives as itself rather than as text. It used to reach here and raise a raw
+    AttributeError for the strip a string would have.
     """
+    value = _from_date_value(value)
     value = _pad_date_parts(value.strip())
     has_time = _has_time_component(value)
     try:

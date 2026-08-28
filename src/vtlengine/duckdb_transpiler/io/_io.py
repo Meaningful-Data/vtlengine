@@ -6,6 +6,8 @@ This module contains the core load/save implementations to avoid circular import
 
 import csv
 import os
+import re
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Literal, Optional, Tuple, Union
 
@@ -38,6 +40,10 @@ from vtlengine.files.sdmx_handler import (
 )
 from vtlengine.Model import Component, Dataset, Role, Scalar
 from vtlengine.Utils._number_config import format_scalar_value_for_csv
+
+# A Date value writes its time after the date, with the month and the day allowed to
+# be written short, as VALID_DATE_REGEX allows them.
+_DATE_WITH_TIME_RE = re.compile(r"^\d{4}-\d{1,2}-\d{1,2}[T ]")
 
 
 def _skip_load_validation() -> bool:
@@ -649,23 +655,35 @@ def extract_datapoint_paths(
     return path_dict if path_dict else None, df_dict
 
 
+def _carries_a_time(value: object) -> bool:
+    """Whether a Date input value writes a time beside the date.
+
+    A value is read the way the Date check reads it, rather than by looking for a
+    separator at a fixed place in text: a month or a day written short moved it
+    along, and a column pandas had already parsed carried no text to look at, so
+    either one was stored as a DATE and lost the time it held.
+    """
+    if isinstance(value, str):
+        return bool(_DATE_WITH_TIME_RE.match(value.strip()))
+    if isinstance(value, datetime):
+        return (value.hour, value.minute, value.second, value.microsecond) != (0, 0, 0, 0)
+    return False
+
+
 def _detect_date_type_overrides(
     df: pd.DataFrame, components: Dict[str, Component]
 ) -> Dict[str, str]:
     """Determine which Date columns need TIMESTAMP instead of DATE.
 
-    Inspects actual string values: if any value in a Date column has a time
-    component (length > 10 with 'T' or ' ' separator), the column is stored
-    as TIMESTAMP to preserve the time part. Otherwise DATE is used.
+    A Date column holding a value that writes a time is stored as TIMESTAMP to keep
+    that time; a column of bare dates is stored as DATE.
     """
     overrides: Dict[str, str] = {}
     for comp_name, comp in components.items():
         if comp.data_type != Date or comp_name not in df.columns:
             continue
-        for val in df[comp_name].dropna():
-            if isinstance(val, str) and len(val) > 10 and val[10] in ("T", " "):
-                overrides[comp_name] = "TIMESTAMP"
-                break
+        if any(_carries_a_time(val) for val in df[comp_name].dropna()):
+            overrides[comp_name] = "TIMESTAMP"
     return overrides
 
 
