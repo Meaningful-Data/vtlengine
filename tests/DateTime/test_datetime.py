@@ -9,7 +9,12 @@ from vtlengine import run
 from vtlengine.DataTypes import Date, Integer
 from vtlengine.DataTypes._time_checking import check_date
 from vtlengine.DataTypes.TimeHandling import check_max_date
-from vtlengine.Exceptions import InputValidationException, RunTimeError, SemanticError
+from vtlengine.Exceptions import (
+    DataLoadError,
+    InputValidationException,
+    RunTimeError,
+    SemanticError,
+)
 
 
 def _run_scalar(expression):
@@ -55,6 +60,11 @@ check_date_valid_params = [
         "2020-01-15 10:30:00.123456",
         id="datetime_nanoseconds_truncated",
     ),
+    pytest.param("2020-1-5", "2020-01-05", id="date_month_and_day_short"),
+    pytest.param("2020-1-05", "2020-01-05", id="date_month_short"),
+    pytest.param("2020-01-5", "2020-01-05", id="date_day_short"),
+    pytest.param("2020-1-5T10:30:00", "2020-01-05 10:30:00", id="datetime_date_part_short"),
+    pytest.param(" 2020-01-15 ", "2020-01-15", id="date_padded_with_spaces"),
 ]
 
 check_date_invalid_params = [
@@ -1095,3 +1105,64 @@ def test_time_operator_over_null_scalar(expression):
         use_duckdb=_use_duckdb_backend(),
     )
     assert result["DS_r"].value is None
+
+
+_DATE_STRUCTURE = {
+    "datasets": [
+        {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Date", "role": "Measure", "nullable": True},
+            ],
+        }
+    ]
+}
+
+# One rule set for Date, read by either engine: a month or a day may be written short,
+# the space around a value is not part of it, and the year runs from 1800 (issue #1065).
+date_load_valid_params = [
+    pytest.param("2020-1-5", "2020-01-05", id="month_and_day_short"),
+    pytest.param("2020-01-5", "2020-01-05", id="day_short"),
+    pytest.param("2020-1-05", "2020-01-05", id="month_short"),
+    pytest.param("2020-1-5T12:30:45", "2020-01-05T12:30:45", id="date_part_short_with_time"),
+    pytest.param(" 2020-01-01", "2020-01-01", id="leading_space"),
+    pytest.param("2020-01-01 ", "2020-01-01", id="trailing_space"),
+    pytest.param("1800-01-01", "1800-01-01", id="first_year"),
+    pytest.param("9999-12-31", "9999-12-31", id="last_year"),
+]
+
+date_load_invalid_params = [
+    pytest.param("1799-12-31", id="year_below_range"),
+    pytest.param("1700-01-01", id="year_well_below_range"),
+    pytest.param("0500-01-01", id="year_of_three_digits"),
+    pytest.param("2020-13-01", id="month_past_december"),
+    pytest.param("2020-02-30", id="day_past_the_month"),
+    pytest.param("2020-01-01T12", id="incomplete_time"),
+]
+
+
+def _load_date(value, tmp_path):
+    """Load a single Date value from a CSV file, on the engine under test."""
+    csv_path = tmp_path / "DS_1.csv"
+    csv_path.write_text(f"Id_1,Me_1\n1,{value}\n")
+    result = run(
+        script="DS_r <- DS_1;",
+        data_structures=_DATE_STRUCTURE,
+        datapoints={"DS_1": csv_path},
+        use_duckdb=_use_duckdb_backend(),
+    )
+    return result["DS_r"].data["Me_1"].astype(str).tolist()
+
+
+@pytest.mark.parametrize("value, loaded", date_load_valid_params)
+def test_date_load_valid(tmp_path, value, loaded):
+    """Both engines read the same Date values, and read them the same way."""
+    assert _load_date(value, tmp_path) == [loaded]
+
+
+@pytest.mark.parametrize("value", date_load_invalid_params)
+def test_date_load_invalid(tmp_path, value):
+    """Both engines refuse the same Date values."""
+    with pytest.raises(DataLoadError, match="0-3-1-6"):
+        _load_date(value, tmp_path)

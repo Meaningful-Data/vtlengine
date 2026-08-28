@@ -935,21 +935,32 @@ class DataLoadTest(DataLoadHelper):
             code=code, number_inputs=number_inputs, exception_message=message
         )
 
-    @pytest.mark.skipif(
-        _use_duckdb_backend,
-        reason="DuckDB backend handles empty CSVs differently and does not surface 0-1-1-6.",
-    )
     def test_GH_676_1(self):
-        """Empty CSV file (no columns) triggers 0-1-1-6 on the pandas backend."""
+        """Empty CSV file (no columns) triggers 0-1-1-17 on both engines.
+
+        The DuckDb engine used to report the Identifiers it could not find in a file
+        that names no columns at all, so this ran on the pandas engine only (#1075).
+        """
         code = "GH_676_1"
         number_inputs = 1
-        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code="0-1-1-6")
+        self.DataLoadExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="0-1-1-17"
+        )
 
     def test_GH_676_2(self):
         """CSV header missing an identifier declared in the structure triggers 0-1-1-8."""
         code = "GH_676_2"
         number_inputs = 1
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code="0-1-1-8")
+
+    def test_GH_1075_1(self):
+        """A file holding only the line that names its columns is a Data Set with no
+        Data Points, and loads on both engines: the empty file is the only shape refused."""
+        code = "GH_1075_1"
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GH_1067_1(self):
         """A Duration with space around it is rejected, not silently accepted."""
@@ -1232,3 +1243,55 @@ class TestBooleanFromDataFrame:
             use_duckdb=use_duckdb,
         )
         assert result["DS_r"].data["Me_1"].tolist() == [1, 0]
+
+
+_STRING_STRUCTURE = {
+    "datasets": [
+        {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "String", "role": "Measure", "nullable": True},
+            ],
+        }
+    ]
+}
+
+
+@pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+class TestStringKeepsItsQuotes:
+    """A double quote a String value holds is part of it, whichever of the four ways
+    the value reaches the engine (issue #1073)."""
+
+    def _load(self, datapoints, use_duckdb):
+        result = run(
+            script="DS_r <- DS_1;",
+            data_structures=_STRING_STRUCTURE,
+            datapoints=datapoints,
+            use_duckdb=use_duckdb,
+        )
+        return result["DS_r"].data["Me_1"].tolist()
+
+    def test_dataframe(self, use_duckdb):
+        """The DuckDb engine kept the quote here while the other three took it out."""
+        data_df = pd.DataFrame({"Id_1": [1], "Me_1": ['he"llo']})
+        assert self._load({"DS_1": data_df}, use_duckdb) == ['he"llo']
+
+    def test_csv(self, tmp_path: Path, use_duckdb):
+        """The same value written in a file."""
+        csv_path = tmp_path / "DS_1.csv"
+        csv_path.write_text('Id_1,Me_1\n1,he"llo\n')
+        assert self._load({"DS_1": csv_path}, use_duckdb) == ['he"llo']
+
+    def test_csv_quoted_value(self, tmp_path: Path, use_duckdb):
+        """A quote delimiting a value is the file's dialect, and the reader takes it
+        off on its own: what is stored is the value, commas and all."""
+        csv_path = tmp_path / "DS_1.csv"
+        csv_path.write_text('Id_1,Me_1\n1,"a,b"\n')
+        assert self._load({"DS_1": csv_path}, use_duckdb) == ["a,b"]
+
+    def test_csv_escaped_quote(self, tmp_path: Path, use_duckdb):
+        """A quote written twice inside a quoted value is one quote in it."""
+        csv_path = tmp_path / "DS_1.csv"
+        csv_path.write_text('Id_1,Me_1\n1,"say ""hi"""\n')
+        assert self._load({"DS_1": csv_path}, use_duckdb) == ['say "hi"']
