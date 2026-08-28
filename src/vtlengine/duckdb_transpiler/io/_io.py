@@ -15,6 +15,7 @@ import pandas as pd
 from vtlengine.DataTypes import Date, TimeInterval, TimePeriod
 from vtlengine.duckdb_transpiler.io._validation import (
     VALID_DATE_REGEX,
+    VALID_DATE_YEAR_REGEX,
     build_create_table_sql,
     build_csv_column_types,
     build_select_columns,
@@ -270,10 +271,9 @@ def load_datapoints_duckdb(
     if file_path is None:
         return _create_empty_table(conn, components, dataset_name)
 
+    # A path that does not exist names data that never arrived, which validate_input_path
+    # reports; only the absence of a path at all is an empty dataset (issue #1061).
     file_path = Path(file_path) if isinstance(file_path, str) else file_path
-    if not file_path.exists():
-        return _create_empty_table(conn, components, dataset_name)
-
     validate_input_path(file_path)
 
     if file_path.suffix.lower() == ".parquet":
@@ -299,6 +299,9 @@ def load_datapoints_duckdb(
         with open(file_path, newline="", encoding="utf-8") as f:
             reader = csv.reader(f, delimiter=sniffed_delim)
             csv_columns = next(reader, [])
+
+        if not csv_columns:
+            raise InputValidationException(code="0-1-1-17", file=file_path.name)
 
         if len(set(csv_columns)) != len(csv_columns):
             duplicates = list({item for item in csv_columns if csv_columns.count(item) > 1})
@@ -497,6 +500,45 @@ def save_scalars_duckdb(
                 writer.writerow([name, format_scalar_value_for_csv(scalar.value)])
 
 
+# The files a directory of datapoints is read from: what the pandas engine reads,
+# plus the Parquet files only this engine can.
+DATAPOINT_SUFFIXES = (".csv", ".xml", ".parquet")
+
+
+def _as_datapoint_path(value: Union[str, Path]) -> Path:
+    """The Path a datapoint input stands for."""
+    return Path(value) if isinstance(value, str) else value
+
+
+def _datapoint_files(path: Path) -> List[Path]:
+    """The files a datapoint path stands for.
+
+    A path that does not exist is rejected rather than read as no data at all, and a
+    directory stands for the datapoint files in it, as the pandas engine reads them.
+    """
+    if not path.exists():
+        raise DataLoadError(code="0-3-1-1", file=path)
+    if not path.is_dir():
+        return [path]
+    return sorted(f for f in path.iterdir() if f.suffix.lower() in DATAPOINT_SUFFIXES)
+
+
+def _sdmx_dataframe_for(
+    path: Path, name: Optional[str], input_datasets: Dict[str, Dataset]
+) -> Optional[Tuple[str, pd.DataFrame]]:
+    """The DataFrame pysdmx reads from an SDMX file, where the path holds one."""
+    if path.suffix.lower() == ".parquet" or not is_sdmx_datapoint_file(path):
+        return None
+    try:
+        resolved = name or extract_sdmx_dataset_name(path)
+        if resolved not in input_datasets:
+            return None
+        components = input_datasets[resolved].components
+        return resolved, load_sdmx_datapoints(components, resolved, path)
+    except Exception:
+        return None
+
+
 def extract_datapoint_paths(
     datapoints: Optional[
         Union[Dict[str, Union[pd.DataFrame, str, Path]], List[Union[str, Path]], str, Path]
@@ -509,6 +551,9 @@ def extract_datapoint_paths(
     This function is optimized for DuckDB execution - it only extracts paths
     without loading or validating data. DuckDB will validate during its native CSV load.
 
+    An input that names no dataset, or a path that does not exist, is rejected here
+    rather than read as an empty dataset, as the pandas engine rejects it.
+
     Args:
         datapoints: Dict of DataFrames/paths, list of paths, or single path
         input_datasets: Dict of input dataset structures (for validation)
@@ -520,6 +565,7 @@ def extract_datapoint_paths(
 
     Raises:
         InputValidationException: If dataset name not found in structures
+        DataLoadError: If a datapoint path does not exist
     """
     if datapoints is None:
         return None, {}
@@ -527,73 +573,51 @@ def extract_datapoint_paths(
     path_dict: Dict[str, Path] = {}
     df_dict: Dict[str, pd.DataFrame] = {}
 
+    def add_path(path: Path, name: Optional[str]) -> None:
+        """Resolve one file to the dataset it holds."""
+        loaded = _sdmx_dataframe_for(path, name, input_datasets)
+        if loaded is not None:
+            df_dict[loaded[0]] = loaded[1]
+            return
+        resolved = name or path.stem
+        if resolved not in input_datasets:
+            raise InputValidationException(f"Not found dataset {resolved} in datastructures.")
+        path_dict[resolved] = path
+
     # Handle dictionary input
     if isinstance(datapoints, dict):
         for name, value in datapoints.items():
             if name not in input_datasets:
                 raise InputValidationException(f"Not found dataset {name} in datastructures.")
 
-            if value is None:
-                # No datapoints for this dataset (e.g. semantic-only test)
-                continue
-            elif isinstance(value, pd.DataFrame):
+            if isinstance(value, pd.DataFrame):
                 # Store DataFrame for direct DuckDB registration
                 df_dict[name] = value
-            elif isinstance(value, (str, Path)):
-                path = Path(value) if isinstance(value, str) else value
-                # Check if this is an SDMX file — load via pysdmx into DataFrame
-                if path.suffix.lower() != ".parquet" and is_sdmx_datapoint_file(path):
-                    try:
-                        components = input_datasets[name].components
-                        sdmx_df = load_sdmx_datapoints(components, name, path)
-                        df_dict[name] = sdmx_df
-                        continue
-                    except Exception:  # noqa: S110
-                        pass  # Fall through to treat as regular file
-                path_dict[name] = path
-            else:
+                continue
+            if not isinstance(value, (str, Path)):
+                # Each value says where one dataset's Data Points are, and either kind
+                # may sit beside the other, so what is refused is a value that names no
+                # Data Points at all. Both engines say this (issues #1061 and #1072).
                 raise InputValidationException(
                     f"Invalid datapoint for {name}. Must be DataFrame, Path, or string."
                 )
+            # A dictionary names one file per dataset, so a directory is no more a
+            # datapoint file here than a missing path is, as the pandas engine reads it.
+            path = _as_datapoint_path(value)
+            validate_input_path(path)
+            add_path(path, name)
         return path_dict if path_dict else None, df_dict
 
     # Handle list of paths
     if isinstance(datapoints, list):
         for item in datapoints:
-            path = Path(item) if isinstance(item, str) else item
-            # Check if this is an SDMX file — load via pysdmx into DataFrame
-            if path.suffix.lower() != ".parquet" and is_sdmx_datapoint_file(path):
-                try:
-                    sdmx_name = extract_sdmx_dataset_name(path)
-                    if sdmx_name in input_datasets:
-                        components = input_datasets[sdmx_name].components
-                        sdmx_df = load_sdmx_datapoints(components, sdmx_name, path)
-                        df_dict[sdmx_name] = sdmx_df
-                        continue
-                except Exception:  # noqa: S110
-                    pass  # Fall through to treat as regular file
-            # Extract dataset name from filename (without extension)
-            name = path.stem
-            if name in input_datasets:
-                path_dict[name] = path
+            for file_path in _datapoint_files(_as_datapoint_path(item)):
+                add_path(file_path, None)
         return path_dict if path_dict else None, df_dict
 
     # Handle single path
-    path = Path(datapoints) if isinstance(datapoints, str) else datapoints
-    # Check if this is an SDMX file — load via pysdmx into DataFrame
-    if path.suffix.lower() != ".parquet" and is_sdmx_datapoint_file(path):
-        try:
-            sdmx_name = extract_sdmx_dataset_name(path)
-            if sdmx_name in input_datasets:
-                components = input_datasets[sdmx_name].components
-                sdmx_df = load_sdmx_datapoints(components, sdmx_name, path)
-                df_dict[sdmx_name] = sdmx_df
-                return None, df_dict
-        except Exception:  # noqa: S110
-            pass  # Fall through to treat as regular file
-    name = path.stem
-    if name in input_datasets:
-        path_dict[name] = path
+    for file_path in _datapoint_files(_as_datapoint_path(datapoints)):
+        add_path(file_path, None)
     return path_dict if path_dict else None, df_dict
 
 
@@ -641,16 +665,22 @@ def _build_dataframe_select_columns(
             # a bad separator ("2020-01-01X12:30:45") and out-of-range times
             # ("2020-01-01T25:00:00") here with a clear message, instead of letting the
             # cast silently truncate them or surface a cryptic out-of-range error.
-            col_as_varchar = f'CAST("{comp_name}" AS VARCHAR)'
+            col_as_varchar = f'TRIM(CAST("{comp_name}" AS VARCHAR))'
             err = (
                 f"'Date ' || {col_as_varchar} || "
                 f"' has an invalid or incomplete time; expected YYYY-MM-DD HH:MM:SS.'"
+            )
+            year_err = (
+                f"'Date ' || {col_as_varchar} || ' is invalid. Year must be between 1800 and 9999.'"
             )
             exprs.append(
                 f'CASE WHEN "{comp_name}" IS NOT NULL '
                 f"AND NOT regexp_matches({col_as_varchar}, '{VALID_DATE_REGEX}') "
                 f"THEN error({err}) "
-                f'ELSE CAST("{comp_name}" AS {target_type}) END AS "{comp_name}"'
+                f'WHEN "{comp_name}" IS NOT NULL '
+                f"AND NOT regexp_matches({col_as_varchar}, '{VALID_DATE_YEAR_REGEX}') "
+                f"THEN error({year_err}) "
+                f'ELSE CAST({col_as_varchar} AS {target_type}) END AS "{comp_name}"'
             )
         else:
             exprs.append(f'CAST("{comp_name}" AS {target_type}) AS "{comp_name}"')
