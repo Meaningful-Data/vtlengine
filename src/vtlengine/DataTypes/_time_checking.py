@@ -88,6 +88,23 @@ def _build_date_error(value: str) -> InputValidationException:
     )
 
 
+_unpadded_date_re = re.compile(r"^(\d{4})-(\d{1,2})-(\d{1,2})(.*)$", re.DOTALL)
+
+
+def _pad_date_parts(value: str) -> str:
+    """Zero pad a month or a day written short, so that 2020-1-5 reads as 2020-01-05.
+
+    Only the day was padded, and only where the value was nine characters long, so
+    2020-01-5 was read and 2020-1-5 was not, while the DuckDb loader read both. What
+    follows the date, a time component, is left as it was written.
+    """
+    match = _unpadded_date_re.fullmatch(value)
+    if match is None:
+        return value
+    year, month, day, rest = match.groups()
+    return f"{year}-{int(month):02d}-{int(day):02d}{rest}"
+
+
 def check_date(value: str) -> str:
     """Check a date is in the correct format.
 
@@ -96,14 +113,12 @@ def check_date(value: str) -> str:
     as ``HH`` or ``HH:MM`` are rejected. Datetime output uses a single space separator;
     nanosecond input is truncated to microsecond precision.
     """
-    value = value.strip()
+    value = _pad_date_parts(value.strip())
     has_time = _has_time_component(value)
     try:
         if has_time:
             iso_result = normalize_datetime(value)
         else:
-            if len(value) == 9 and value[7] == "-":
-                value = value[:-1] + "0" + value[-1]
             iso_result = date.fromisoformat(value).isoformat()
     except ValueError:
         raise _build_date_error(value) from None
