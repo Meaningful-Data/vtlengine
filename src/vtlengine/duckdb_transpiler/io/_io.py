@@ -12,7 +12,7 @@ from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 import duckdb
 import pandas as pd
 
-from vtlengine.DataTypes import Date, TimeInterval, TimePeriod
+from vtlengine.DataTypes import Date, String, TimeInterval, TimePeriod
 from vtlengine.duckdb_transpiler.io._validation import (
     VALID_DATE_REGEX,
     VALID_DATE_YEAR_REGEX,
@@ -31,6 +31,7 @@ from vtlengine.duckdb_transpiler.io._validation import (
 from vtlengine.Exceptions import DataLoadError, InputValidationException
 from vtlengine.files.sdmx_handler import (
     extract_sdmx_dataset_name,
+    is_sdmx_csv_file,
     is_sdmx_datapoint_file,
     load_sdmx_datapoints,
 )
@@ -333,7 +334,9 @@ def load_datapoints_duckdb(
         # 4. Handle SDMX-CSV special columns
         keep_columns = handle_sdmx_columns(csv_columns, components)
 
-        # Check required identifier columns exist, and that no other column is left
+        # Check required identifier columns exist, and that no other column is left.
+        # An SDMX file does not reach here: extract_datapoint_paths reads it with
+        # pysdmx and hands over a DataFrame.
         check_missing_identifiers(id_columns, keep_columns, file_path)
         check_extra_columns(keep_columns, components, dataset_name)
 
@@ -547,18 +550,38 @@ def _datapoint_files(path: Path) -> List[Path]:
     return sorted(f for f in path.iterdir() if f.suffix.lower() in DATAPOINT_SUFFIXES)
 
 
-def _sdmx_dataframe_for(
+def _sdmx_dataframe(
     path: Path, name: Optional[str], input_datasets: Dict[str, Dataset]
 ) -> Optional[Tuple[str, pd.DataFrame]]:
-    """The DataFrame pysdmx reads from an SDMX file, where the path holds one."""
-    if path.suffix.lower() == ".parquet" or not is_sdmx_datapoint_file(path):
+    """Read a path with pysdmx where it holds SDMX data, whichever the format.
+
+    SDMX-ML, SDMX-JSON and SDMX-CSV are all read by pysdmx, so this engine loads
+    them the way the pandas engine does (issue #1052). The formats that name their
+    structure resolve a dataset name from it; an SDMX-CSV file is named after the
+    file, as a plain CSV one is.
+    """
+    if path.suffix.lower() == ".parquet":
         return None
     try:
-        resolved = name or extract_sdmx_dataset_name(path)
+        if is_sdmx_datapoint_file(path):
+            resolved = name or extract_sdmx_dataset_name(path)
+        else:
+            resolved = name or path.stem
+            if resolved not in input_datasets:
+                return None
+            if not is_sdmx_csv_file(path, input_datasets[resolved].components):
+                return None
         if resolved not in input_datasets:
             return None
         components = input_datasets[resolved].components
-        return resolved, load_sdmx_datapoints(components, resolved, path)
+        data = load_sdmx_datapoints(components, resolved, path)
+        # pysdmx reads every cell as text, so an empty one arrives as an empty string
+        # rather than as no value. Only a String Component can hold one, which is what
+        # the pandas engine reads from the same file.
+        for column, comp in components.items():
+            if column in data.columns and comp.data_type is not String:
+                data[column] = data[column].replace("", None)
+        return resolved, data
     except Exception:
         return None
 
@@ -599,7 +622,7 @@ def extract_datapoint_paths(
 
     def add_path(path: Path, name: Optional[str]) -> None:
         """Resolve one file to the dataset it holds."""
-        loaded = _sdmx_dataframe_for(path, name, input_datasets)
+        loaded = _sdmx_dataframe(path, name, input_datasets)
         if loaded is not None:
             df_dict[loaded[0]] = loaded[1]
             return
