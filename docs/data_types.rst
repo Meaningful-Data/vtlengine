@@ -91,6 +91,8 @@ Integer
     * - **Input (DataFrame)**
       - Values are cast via ``str → float → int``.
         Non-integer floats (e.g. ``3.5``) are rejected.
+        A native Python ``bool`` is read as ``1`` or
+        ``0``.
     * - **Internal representation**
       - Python ``int``, stored as ``int64[pyarrow]``.
     * - **Output dtype**
@@ -131,10 +133,13 @@ Boolean
 
     * - **Input (CSV)**
       - ``"true"``, ``"false"`` (case-insensitive),
-        ``"1"``, ``"0"``.
+        ``"1"``, ``"0"``. Any other text is refused
+        with error ``0-3-1-6``.
     * - **Input (DataFrame)**
       - Same string values or native Python
-        ``bool``/``int``/``float``.
+        ``bool``/``int``/``float``; a number is
+        read as ``False`` when it is zero and
+        ``True`` otherwise.
     * - **Internal representation**
       - Python ``bool``, stored as ``bool[pyarrow]``.
     * - **Output dtype**

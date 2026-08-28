@@ -16,6 +16,7 @@ from vtlengine.DataTypes import Date, String, TimeInterval, TimePeriod
 from vtlengine.duckdb_transpiler.io._validation import (
     VALID_DATE_REGEX,
     VALID_DATE_YEAR_REGEX,
+    build_boolean_cast,
     build_create_table_sql,
     build_csv_column_types,
     build_select_columns,
@@ -743,6 +744,11 @@ def _build_dataframe_select_columns(
                 f"THEN error({year_err}) "
                 f'ELSE CAST({col_as_varchar} AS {target_type}) END AS "{comp_name}"'
             )
+        elif target_type == "BOOLEAN":
+            # A Boolean is read on the documented set, not on DuckDB's wider one,
+            # so a DataFrame and a CSV are read the same way (issue #1068).
+            boolean_cast = build_boolean_cast(f'"{comp_name}"', comp_name)
+            exprs.append(f'{boolean_cast} AS "{comp_name}"')
         else:
             exprs.append(f'CAST("{comp_name}" AS {target_type}) AS "{comp_name}"')
     return exprs
