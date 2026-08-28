@@ -3,6 +3,7 @@ name: Ubuntu 24.04 Tests
 on:
   pull_request:
     branches: ["main", "1.6.X", "1.9.X"]
+  merge_group:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
