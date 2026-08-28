@@ -59,11 +59,11 @@ jobs:
         run: |
           pip install --no-dependencies --break-system-packages \
             pyarrow==24.0.0 \
-            sdmxschemas==1.0.0 \
+            sdmxschemas==1.1.0 \
             parsy==2.2 \
             msgspec==0.21.1 \
-            duckdb==1.4.4 \
-            pysdmx==1.15.1
+            duckdb==1.4.5 \
+            pysdmx==1.19.0
 
       - name: Download ANTLR4 C++ runtime source
         if: steps.cpp-cache.outputs.cache-hit != 'true' && steps.antlr4-cache.outputs.cache-hit != 'true'
