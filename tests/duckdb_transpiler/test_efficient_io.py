@@ -586,7 +586,7 @@ class TestCastErrorNamesItsColumn:
     def test_date_names_its_column_and_type(self, tmp_path):
         """Both used to come out empty: "not possible to cast column  to "."""
         message = self._load_error(
-            tmp_path, self._structure(("Me_1", "Date")), "Id_1,Me_1\n1, 2020-01-01\n"
+            tmp_path, self._structure(("Me_1", "Date")), "Id_1,Me_1\n1,2020-01-01T12\n"
         )
         assert "cast column Me_1 to Date" in message
 
