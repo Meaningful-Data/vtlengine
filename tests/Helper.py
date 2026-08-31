@@ -65,8 +65,15 @@ class TestHelper(TestCase):
     def LoadDataset(
         cls, ds_path, dp_path, only_semantic=False
     ) -> Dict[str, Union[Dataset, Scalar]]:
+        from vtlengine.API._InternalApi import _validate_json, schema
+
         with open(ds_path, "r") as file:
             structures = json.load(file)
+
+        # Validate against the public JSON schema so the pandas loading path reports
+        # the same structural errors as the DuckDB one (run() validates in
+        # _load_dataset_from_structure).
+        _validate_json(structures, schema, kind="DataStructures")
 
         datasets = {}
 
