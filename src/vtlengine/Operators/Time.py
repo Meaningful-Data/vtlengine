@@ -1160,9 +1160,7 @@ class Date_Add(Parametrized):
             unary_implicit_promotion(operand.data_type, Date)
 
         if isinstance(operand, Scalar):
-            return Scalar(
-                name=operand.name, data_type=Date, value=None, nullable=operand.nullable
-            )
+            return Scalar(name=operand.name, data_type=Date, value=None, nullable=operand.nullable)
         if isinstance(operand, DataComponent):
             return DataComponent(
                 name=operand.name, data_type=Date, data=None, nullable=operand.nullable
