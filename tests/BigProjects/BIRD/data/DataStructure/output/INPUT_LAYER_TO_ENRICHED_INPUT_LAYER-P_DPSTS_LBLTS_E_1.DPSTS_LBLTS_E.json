@@ -67,7 +67,7 @@
           "name": "DT_LGL_FNL_MTRTY",
           "role": "Measure",
           "type": "Date",
-          "nullable": true
+          "nullable": false
         },
         {
           "name": "DT_RFRNC",
@@ -85,7 +85,7 @@
           "name": "ERLY_RDMPTN_DT",
           "role": "Measure",
           "type": "Date",
-          "nullable": true
+          "nullable": false
         },
         {
           "name": "EXCLDD_FRM_BL_IN",
