@@ -285,6 +285,7 @@ def _parquet_date_type_overrides(
     conn: duckdb.DuckDBPyConnection,
     file_path: Path,
     components: Dict[str, Component],
+    column_types: Dict[str, str],
 ) -> Dict[str, str]:
     """The Date columns a parquet file needs stored as TIMESTAMP.
 
@@ -292,11 +293,9 @@ def _parquet_date_type_overrides(
     a time was cast down to the bare date, which is what the CSV path and the DataFrame
     path both keep. A column the file types as a timestamp is stored as
     one; a column of text is read the way the CSV path reads it, by looking for a time
-    written after the date.
+    written after the date. ``column_types`` is the name -> DuckDB type mapping the
+    caller already read from the file's zero-row scan.
     """
-    rel = conn.sql(f"SELECT * FROM read_parquet('{file_path}') LIMIT 0")
-    column_types = dict(zip(rel.columns, (str(t) for t in rel.types)))
-
     overrides: Dict[str, str] = {}
     text_columns = []
     for comp_name, comp in components.items():
@@ -502,7 +501,7 @@ def _load_parquet(
 
         # The table is created once the file has been read, so a Date column holding a
         # time is created as a TIMESTAMP and keeps it (issue #895).
-        date_overrides = _parquet_date_type_overrides(conn, file_path, components)
+        date_overrides = _parquet_date_type_overrides(conn, file_path, components, parquet_types)
         conn.execute(build_create_table_sql(dataset_name, components, date_overrides))
 
         select_exprs = _build_dataframe_select_columns(

@@ -109,7 +109,10 @@ def create_ast(text: str) -> Start:
         visitor = ASTVisitor()
         with recursion_headroom():
             ast = visitor.visitStart(cst)
-            DAGAnalyzer.create_dag(ast)
+    # create_dag walks the materialised pure-Python AST: it holds no parser
+    # pointers, so it runs outside the lock (still under recursion headroom).
+    with recursion_headroom():
+        DAGAnalyzer.create_dag(ast)
     return ast
 
 
