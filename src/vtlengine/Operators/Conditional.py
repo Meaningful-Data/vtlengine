@@ -322,7 +322,10 @@ class Nvl(Binary):
                     "1-1-9-2", op=cls.op, left_type="Scalar", right_type=type(right).__name__
                 )
             data_type = cls.type_validation(left.data_type, right.data_type)
-            return Scalar(name="result", value=None, data_type=data_type, nullable=keeps_nulls)
+            # Matching main (#762): a scalar nvl result is reported non-nullable. The flag
+            # must not depend on the operand VALUES (keeps_nulls tests right.value), or
+            # semantic_analysis and run() would disagree on the same script's structure.
+            return Scalar(name="result", value=None, data_type=data_type, nullable=False)
         if isinstance(left, DataComponent):
             if isinstance(right, Dataset):
                 raise SemanticError(
