@@ -2172,9 +2172,7 @@ FROM (
         over_parts: List[str] = []
         partition_cols_list = self._resolve_partition_cols(node)
         if partition_cols_list:
-            partition_cols = ", ".join(
-                quote_name(self._resolve_udo_name(p)) for p in partition_cols_list
-            )
+            partition_cols = ", ".join(quote_name(p) for p in partition_cols_list)
             over_parts.append(f"PARTITION BY {partition_cols}")
         if node.order_by:
             order_cols = ", ".join(
@@ -2194,8 +2192,12 @@ FROM (
         return " ".join(over_parts)
 
     def _resolve_partition_cols(self, node: AST.Analytic) -> List[str]:
-        """Resolve the partition column list applying VTL 2.2 EXCEPT semantics."""
-        listed = list(node.partition_by) if node.partition_by else []
+        """Resolve the partition column list applying VTL 2.2 EXCEPT semantics.
+
+        UDO component parameters are substituted first, so ``partition except c``
+        removes the identifier bound to ``c`` rather than the parameter name.
+        """
+        listed = [self._resolve_udo_name(p) for p in node.partition_by] if node.partition_by else []
         if node.partition_op == "except all":
             return []
         if node.partition_op == "except":
@@ -2280,9 +2282,7 @@ FROM (
         # rules must reduce over the full partition, so we use only PARTITION BY.
         partition_cols_list = self._resolve_partition_cols(node)
         if partition_cols_list:
-            partition_cols = ", ".join(
-                quote_name(self._resolve_udo_name(p)) for p in partition_cols_list
-            )
+            partition_cols = ", ".join(quote_name(p) for p in partition_cols_list)
             vp_over_clause = f"PARTITION BY {partition_cols}"
         else:
             vp_over_clause = ""

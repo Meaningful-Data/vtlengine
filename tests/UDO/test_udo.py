@@ -327,6 +327,27 @@ class UdoTest(UDOHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_13(self):
+        """
+        USER DEFINED OPERATORS
+        Dataset --> Dataset
+        Status: OK
+        Expression: define operator sum_except (x dataset, c component, e component, m component)
+                        returns dataset is
+                        x[calc Me_2 := sum(m over (partition except c order by e))]
+                    end operator;
+                    DS_A <- sum_except(DS_1, Id_1, Id_2, Me_1);
+        Description: Component parameters of a UDO are resolved inside an analytic
+                     partition clause, including the VTL 2.2 ``partition except`` form,
+                     on both engines. Same data and result as Analytic GH_750_9.
+        Goal: Check Result.
+        """
+        code = "1-1-1-13"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GL_286_1(self):
         """
         USER DEFINED OPERATORS
