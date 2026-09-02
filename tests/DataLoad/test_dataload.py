@@ -1200,8 +1200,9 @@ class TestBOMHandling:
         assert not content.startswith("\ufeff")
         assert content == "DS_r <- DS_1;"
 
-    def test_bom_dataframe_columns(self) -> None:
-        """DataFrame with BOM in column names is handled transparently."""
+    @pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+    def test_bom_dataframe_columns(self, use_duckdb: bool) -> None:
+        """DataFrame with BOM in column names is handled transparently on both engines."""
         script = "DS_r <- DS_1;"
         data_structures = {
             "datasets": [
@@ -1231,6 +1232,7 @@ class TestBOMHandling:
             script=script,
             data_structures=data_structures,
             datapoints={"DS_1": data_df},
+            use_duckdb=use_duckdb,
         )
         ds = result["DS_r"]
         assert "Id_1" in ds.data.columns
@@ -1249,6 +1251,22 @@ def _dataframe_structures(measure_type: str) -> Dict[str, Any]:
             }
         ]
     }
+
+
+@pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+def test_non_string_dataframe_column_label_is_an_extra_column(use_duckdb: bool) -> None:
+    """A DataFrame label that is not a string is reported as a column the
+    DataStructure does not define (0-3-1-15) on both engines, the way the pandas
+    loader always read it, instead of crashing while the extra columns are listed."""
+    data_df = pd.DataFrame({"Id_1": [1, 2], "Me_1": [1.0, 2.0], 0: [5, 6]})
+    with pytest.raises(VTLEngineException) as context:
+        run(
+            script="DS_r <- DS_1;",
+            data_structures=_dataframe_structures("Number"),
+            datapoints={"DS_1": data_df},
+            use_duckdb=use_duckdb,
+        )
+    assert context.value.args[1] == "0-3-1-15"
 
 
 @pytest.mark.parametrize("use_duckdb", [False, True])

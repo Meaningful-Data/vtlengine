@@ -865,6 +865,13 @@ def register_dataframes(
 
         components = input_datasets[name].components
 
+        # Normalize the column names the way the pandas loader does (_validate_pandas):
+        # labels become str and a leading UTF-8 BOM is dropped (a DataFrame built from a
+        # BOM-encoded CSV without utf-8-sig decoding carries it on its first column).
+        # A shallow copy keeps the caller's DataFrame untouched without copying its data.
+        df = df.copy(deep=False)
+        df.columns = pd.Index([str(col).removeprefix("\ufeff") for col in df.columns])
+
         # A DataFrame carries its columns as they are, so the SDMX markers are taken
         # out before what is left is checked against the DataStructure.
         check_extra_columns(handle_sdmx_columns(list(df.columns), components), components, name)
