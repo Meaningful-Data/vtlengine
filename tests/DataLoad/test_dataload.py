@@ -1408,3 +1408,63 @@ class TestNullabilityFromDataFrame:
             pd.DataFrame({"Id_1": [1, 2], "Me_1": [1.0, None]}), use_duckdb, nullable=True
         )
         assert result["DS_r"].data["Me_1"].isnull().tolist() == [False, True]
+
+
+@pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+class TestInputDataFrameIsLeftUntouched:
+    """The DataFrame passed in ``datapoints`` belongs to the caller: loading it must not
+    add the components it does not carry, rename its labels or replace its values, on
+    either engine (issue #1103)."""
+
+    _structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                    {"name": "Me_2", "type": "String", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+
+    def _run(self, data_df: pd.DataFrame, use_duckdb: bool) -> Any:
+        return run(
+            script="DS_r <- DS_1;",
+            data_structures=self._structures,
+            datapoints={"DS_1": data_df},
+            use_duckdb=use_duckdb,
+        )
+
+    def test_missing_nullable_measure(self, use_duckdb: bool) -> None:
+        """Me_2 is not provided: the result carries it as null, the caller's DataFrame
+        does not get it."""
+        data_df = pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [10.0, 20.0, 30.0]})
+        snapshot = data_df.copy()
+
+        result = self._run(data_df, use_duckdb)
+
+        assert result["DS_r"].data["Me_2"].isnull().all()
+        assert list(data_df.columns) == list(snapshot.columns)
+        pd.testing.assert_frame_equal(data_df, snapshot)
+
+    def test_labels_and_empty_strings(self, use_duckdb: bool) -> None:
+        """A BOM-prefixed label and an empty string in a Number column are normalized
+        for the engine, not on the caller's DataFrame."""
+        if use_duckdb:
+            pytest.skip(
+                "the DuckDB engine does not take these inputs on this branch: the BOM label "
+                "is rejected as an undefined column until PR #1100 and an empty string in a "
+                "Number column fails to convert"
+            )
+        data_df = pd.DataFrame(
+            {"\ufeffId_1": [1, 2, 3], "Me_1": [10.0, "", 30.0], "Me_2": ["a", "b", "c"]}
+        )
+        snapshot = data_df.copy()
+
+        result = self._run(data_df, use_duckdb)
+
+        assert result["DS_r"].data["Me_1"].isnull().tolist() == [False, True, False]
+        assert list(data_df.columns) == list(snapshot.columns)
+        pd.testing.assert_frame_equal(data_df, snapshot)
