@@ -243,7 +243,7 @@ class DataLoadTest(DataLoadHelper):
         assert dataset_input.data["OBS_VALUE"][0] == string_to_compare
 
     @pytest.mark.skipif(
-        _use_duckdb_backend,
+        _use_duckdb_backend(),
         reason="Duckdb cannot handle unmatched types errors as pandas, so it not raises the same error",
     )
     def test_12(self):
@@ -291,7 +291,7 @@ class DataLoadTest(DataLoadHelper):
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     @pytest.mark.skipif(
-        _use_duckdb_backend,
+        _use_duckdb_backend(),
         reason="Duckdb cannot handle unmatched types errors as pandas, so it not raises the same error",
     )
     def test_15(self):

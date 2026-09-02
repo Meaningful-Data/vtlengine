@@ -796,7 +796,7 @@ class ClauseClauseTests(SemanticHelper):
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     @pytest.mark.skipif(
-        _use_duckdb_backend,
+        _use_duckdb_backend(),
         reason="DuckDB is case-insensitive for column names",
     )
     def test_46(self):
