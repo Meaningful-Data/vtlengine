@@ -776,6 +776,11 @@ def _detect_date_type_overrides(
     return overrides
 
 
+def _is_string_like(source_type: str) -> bool:
+    """A VARCHAR source column, or an ENUM one (a pandas categorical), holds text."""
+    return "VARCHAR" in source_type or source_type.startswith("ENUM")
+
+
 def _build_dataframe_select_columns(
     components: Dict[str, Component],
     dataset_name: str,
@@ -799,13 +804,16 @@ def _build_dataframe_select_columns(
     for comp_name, comp in components.items():
         target_type = overrides.get(comp_name, get_column_sql_type(comp))
         source_type = src_types.get(comp_name, "VARCHAR").upper()
+        source = f'"{comp_name}"'
+        if _is_string_like(source_type) and comp.data_type != String:
+            # An empty string in a text column is a null for every type but String,
+            # as the pandas loader reads it and as an empty CSV field loads.
+            source = f"NULLIF(CAST({source} AS VARCHAR), '')"
         if df_col_set is not None and comp_name not in df_col_set:
             if not comp.nullable:
                 raise DataLoadError("0-3-1-5", name=dataset_name, comp_name=comp_name)
             exprs.append(f'CAST(NULL AS {target_type}) AS "{comp_name}"')
-        elif comp.data_type == Date and (
-            "VARCHAR" in source_type or source_type.startswith("ENUM")
-        ):
+        elif comp.data_type == Date and _is_string_like(source_type):
             # Accept only a bare date, or a date with a COMPLETE, in-range time
             # (HH:MM:SS, optional fractional seconds / timezone), matching the strict
             # rule on the pandas path. This rejects partial times ("...HH" / "...HH:MM"),
@@ -817,7 +825,7 @@ def _build_dataframe_select_columns(
             # cannot hold a malformed string, and its VARCHAR rendering (e.g. a "+01"
             # offset) is not the input format the regex validates, so those keep the
             # plain CAST.
-            col_as_varchar = f'TRIM(CAST("{comp_name}" AS VARCHAR))'
+            col_as_varchar = f"TRIM(CAST({source} AS VARCHAR))"
             err = (
                 f"'Column {comp_name}: Date ' || {col_as_varchar} || "
                 f"' has an invalid or incomplete time; expected YYYY-MM-DD HH:MM:SS.'"
@@ -826,10 +834,10 @@ def _build_dataframe_select_columns(
                 f"'Date ' || {col_as_varchar} || ' is invalid. Year must be between 1800 and 9999.'"
             )
             exprs.append(
-                f'CASE WHEN "{comp_name}" IS NOT NULL '
+                f"CASE WHEN {source} IS NOT NULL "
                 f"AND NOT regexp_matches({col_as_varchar}, '{VALID_DATE_REGEX}') "
                 f"THEN error({err}) "
-                f'WHEN "{comp_name}" IS NOT NULL '
+                f"WHEN {source} IS NOT NULL "
                 f"AND NOT regexp_matches({col_as_varchar}, '{VALID_DATE_YEAR_REGEX}') "
                 f"THEN error({year_err}) "
                 f'ELSE CAST({col_as_varchar} AS {target_type}) END AS "{comp_name}"'
@@ -837,10 +845,10 @@ def _build_dataframe_select_columns(
         elif target_type == "BOOLEAN":
             # A Boolean is read on the documented set, not on DuckDB's wider one,
             # so a DataFrame and a CSV are read the same way (issue #1068).
-            boolean_cast = build_boolean_cast(f'"{comp_name}"', comp_name)
+            boolean_cast = build_boolean_cast(source, comp_name)
             exprs.append(f'{boolean_cast} AS "{comp_name}"')
         else:
-            exprs.append(f'CAST("{comp_name}" AS {target_type}) AS "{comp_name}"')
+            exprs.append(f'CAST({source} AS {target_type}) AS "{comp_name}"')
     return exprs
 
 

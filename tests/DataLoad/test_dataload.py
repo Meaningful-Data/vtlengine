@@ -18,7 +18,7 @@ Summary
 
 import json
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import pandas as pd
 import pytest
@@ -1319,6 +1319,58 @@ class TestBooleanFromDataFrame:
             use_duckdb=use_duckdb,
         )
         assert result["DS_r"].data["Me_1"].tolist() == [1, 0]
+
+
+_EMPTY_STRING_LITERALS = {
+    "Integer": "1",
+    "Number": "1.5",
+    "Boolean": "true",
+    "Date": "2024-01-01",
+    "Time_Period": "2024Q1",
+    "Duration": "A",
+    "Time": "2024-01-01/2024-12-31",
+}
+
+
+@pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+class TestEmptyStringFromDataFrame:
+    """An empty string in a DataFrame column is a null for every type but String, the
+    same on both engines and the same as an empty field of a CSV. The pandas loader
+    always read it so; the DuckDb engine failed the cast, or kept the empty string."""
+
+    def _run(self, measure_type: str, values: List[Any], use_duckdb: bool) -> Any:
+        return run(
+            script="DS_r <- DS_1;",
+            data_structures=_dataframe_structures(measure_type),
+            datapoints={"DS_1": pd.DataFrame({"Id_1": [1, 2], "Me_1": values})},
+            use_duckdb=use_duckdb,
+        )
+
+    @pytest.mark.parametrize("measure_type", sorted(_EMPTY_STRING_LITERALS))
+    def test_empty_string_is_null(self, use_duckdb: bool, measure_type: str) -> None:
+        result = self._run(measure_type, [_EMPTY_STRING_LITERALS[measure_type], ""], use_duckdb)
+        assert result["DS_r"].data["Me_1"].isnull().tolist() == [False, True]
+
+    def test_empty_string_among_numbers(self, use_duckdb: bool) -> None:
+        """The reported shape: a float column with an empty string in it."""
+        result = self._run("Number", [10.0, ""], use_duckdb)
+        assert result["DS_r"].data["Me_1"].isnull().tolist() == [False, True]
+        assert result["DS_r"].data["Me_1"].tolist()[0] == 10.0
+
+    def test_empty_string_is_a_value_in_string(self, use_duckdb: bool) -> None:
+        result = self._run("String", ["a", ""], use_duckdb)
+        assert result["DS_r"].data["Me_1"].tolist() == ["a", ""]
+
+    def test_empty_string_in_non_nullable_measure(self, use_duckdb: bool) -> None:
+        """Read as a null, it breaks a Measure that cannot be null (0-3-1-17)."""
+        with pytest.raises(VTLEngineException) as context:
+            run(
+                script="DS_r <- DS_1;",
+                data_structures=_nullability_structures(False),
+                datapoints={"DS_1": pd.DataFrame({"Id_1": [1, 2], "Me_1": [1.0, ""]})},
+                use_duckdb=use_duckdb,
+            )
+        assert context.value.args[1] == "0-3-1-17"
 
 
 _STRING_STRUCTURE = {
