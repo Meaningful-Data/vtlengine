@@ -69,8 +69,10 @@ issue carries the `documentation` label.
   libxml2/libxslt) is not enforced by the patched lockfile, so the demo runs it on
   the `lxml` 6.0.2 of the Pyodide 314 distribution, built against libxml2 2.9.10 and
   libxslt 1.1.33. For the same reason a plain `micropip.install("vtlengine")` on
-  stock Pyodide 314 fails on `lxml>=6.1.0` until Pyodide updates `lxml`; installing
-  `pysdmx[xml]==1.16.0` first and `vtlengine` in a second call gets through, on that
-  same lxml.
+  stock Pyodide 314 fails on `lxml>=6.1.0`; installing `pysdmx[xml]==1.16.0` first
+  and `vtlengine` in a second call gets through, on that same lxml. The floor is
+  being addressed on the Pyodide side: <https://github.com/pyodide/pyodide-recipes/pull/656>
+  moves the recipes to lxml 6.1.3, libxslt 1.1.45 and libxml2 2.15.3, so a next
+  Pyodide release ships a compliant `lxml` and both workarounds become unnecessary.
 - To refresh the dependency graph baked into `patch_lock.py`, re-run
   `micropip.freeze()` in the target Pyodide and update the `EXTRA` table.

@@ -45,6 +45,9 @@ if [ "$(ls "$WHEELS"/vtlengine-*pyemscripten_2026_0_wasm32.whl 2>/dev/null | wc 
 fi
 
 echo "==> 2/5  pure-Python deps not bundled in Pyodide (the versions poetry.lock pins)"
+# pysdmx's lxml >= 6.1.0 floor is not checked here: the served lockfile carries no
+# version constraints, so the demo runs on the distribution's lxml 6.0.2 (see
+# README.md). A next Pyodide release fixes this: pyodide/pyodide-recipes#656.
 # Drop whatever an earlier build left (other versions, the duckdb wheel of the
 # pre-314 flow...): every wheel in $WHEELS ends up in the served lockfile.
 find "$WHEELS" -name '*.whl' ! -name 'vtlengine-*' -delete
