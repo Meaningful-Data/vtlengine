@@ -10,8 +10,8 @@ Run *after* ``jupyter lite build``, pointing at the served Pyodide directory
 ``imports`` drives JupyterLite's import-triggered auto-load; ``depends`` mirrors
 the runtime dependency graph resolved by ``micropip`` (regenerate with
 ``micropip.freeze()`` if vtlengine's dependencies change). Everything else
-(pandas, numpy, pyarrow, lxml, msgspec, networkx, jsonschema, httpx) already
-ships in the stock Pyodide distribution.
+(pandas 3, numpy, pyarrow, duckdb, lxml, msgspec, networkx, jsonschema, httpx)
+already ships in the stock Pyodide 314 distribution.
 """
 
 import hashlib
@@ -33,14 +33,13 @@ EXTRA = {
             "sqlglot",
         ],
     },
-    "duckdb": {"imports": ["duckdb"], "depends": []},
     "pysdmx": {
         "imports": ["pysdmx"],
-        # ssl + certifi ship in stock Pyodide but are NOT auto-loaded: httpx imports
-        # them at runtime for HTTPS, so without them a remote read_sdmx/run_sdmx(URL)
-        # fails with "No module named 'ssl'". Listing them here loads them alongside
-        # pysdmx so remote SDMX URLs work out of the box (ssl also pulls libopenssl).
-        # Local-file SDMX needs neither.
+        # certifi ships in stock Pyodide but is NOT auto-loaded: httpx imports it at
+        # runtime for HTTPS, so without it a remote read_sdmx/run_sdmx(URL) fails.
+        # Listing it here loads it alongside pysdmx so remote SDMX URLs work out of
+        # the box (the ssl module itself is part of Pyodide 314's core). Local-file
+        # SDMX needs none of this.
         "depends": [
             "certifi",
             "httpx",
@@ -48,7 +47,6 @@ EXTRA = {
             "msgspec",
             "parsy",
             "sdmxschemas",
-            "ssl",
             "xmltodict",
             "pyarrow",
             "pandas",

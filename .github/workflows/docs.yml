@@ -104,32 +104,35 @@ jobs:
         with:
           ref: ${{ github.event.client_payload.tag_name || github.ref }}
           fetch-depth: 0
-      - name: Set up host Python 3.13
+      - name: Set up host Python 3.14
         # pyodide-build requires the host interpreter's major.minor to match the
-        # target Pyodide's Python; Pyodide 0.29.3 targets 3.13.
+        # target Pyodide's Python; Pyodide 314.x targets 3.14.
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: '3.13'
+          python-version: '3.14'
       - name: Cache vtlengine WebAssembly wheel
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: wasm-wheel-cache
         with:
           path: docs/jupyterlite/wheels
-          key: vtl-wasm-wheel-${{ hashFiles('src/vtlengine/**', 'CMakeLists.txt', 'pyproject.toml', 'scripts/setup_antlr4_runtime.sh') }}
+          key: vtl-wasm-wheel-${{ hashFiles('src/vtlengine/**', 'CMakeLists.txt', 'pyproject.toml', 'scripts/setup_antlr4_runtime.sh', 'docs/jupyterlite/build-wheel.sh') }}
       - name: Cache Emscripten SDK
         if: steps.wasm-wheel-cache.outputs.cache-hit != 'true'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: emsdk
-          key: emsdk-4.0.9-${{ runner.os }}
+          key: emsdk-5.0.3-${{ runner.os }}
       - name: Build the vtlengine wasm wheel
         if: steps.wasm-wheel-cache.outputs.cache-hit != 'true'
+        # Emscripten 5.0.3 and the 314.0.6 cross-build environment are the pair the
+        # Pyodide 314.x line pins (`pyodide xbuildenv search --all`); keep them in
+        # step with build-wheel.sh and build.sh.
         run: |
           [ -d emsdk ] || git clone --depth 1 https://github.com/emscripten-core/emsdk.git
-          ( cd emsdk && ./emsdk install 4.0.9 && ./emsdk activate 4.0.9 )
+          ( cd emsdk && ./emsdk install 5.0.3 && ./emsdk activate 5.0.3 )
           python -m venv .pyobuild
-          .pyobuild/bin/pip install pyodide-build wheel
-          .pyobuild/bin/pyodide xbuildenv install 0.29.3
+          .pyobuild/bin/pip install pyodide-build
+          .pyobuild/bin/pyodide xbuildenv install 314.0.6
           source emsdk/emsdk_env.sh
           export PATH="$PWD/.pyobuild/bin:$PATH"
           bash docs/jupyterlite/build-wheel.sh
@@ -137,14 +140,14 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: docs/jupyterlite/.build
-          key: pyodide-dist-0.29.3
+          key: pyodide-dist-314.0.6
       - name: Assemble the JupyterLite site
         run: |
           python -m venv .jlite
           .jlite/bin/pip install -r docs/jupyterlite/requirements.txt
           export PATH="$PWD/.jlite/bin:$PATH"
           export PYTHON="$PWD/.jlite/bin/python"
-          export VTLENGINE_WHEEL="$(ls "$PWD"/docs/jupyterlite/wheels/vtlengine-*-pyodide_2025_0_wasm32.whl)"
+          export VTLENGINE_WHEEL="$(ls "$PWD"/docs/jupyterlite/wheels/vtlengine-*-pyemscripten_2026_0_wasm32.whl)"
           bash docs/jupyterlite/build.sh
       - name: Upload JupyterLite site artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
