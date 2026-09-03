@@ -168,15 +168,14 @@ before-build = "bash {project}/scripts/setup_antlr4_runtime.sh"
 
 # WebAssembly wheel (cp314-pyodide_wasm32, PEP 783 `pyemscripten_2026_0_wasm32` tag),
 # built with `CIBW_PLATFORM=pyodide` in release.yml. The linux/macos/windows tables
-# above do not apply to this platform, so before-build is repeated here.
+# above do not apply to this platform, so before-build is repeated here. The tests are
+# the same tests/API run as for the native wheels, executed in cibuildwheel's
+# `pyodide venv` (Node.js) against the installed wheel and the Pyodide distribution's
+# pandas/numpy/pyarrow/duckdb.
 [tool.cibuildwheel.pyodide]
 before-build = "bash {project}/scripts/setup_antlr4_runtime.sh"
-# tests/API cannot run wholesale under wasm (no threads or multiprocessing, no real
-# filesystem or S3), so the wheel is smoke-tested instead: import + a run() on both
-# engines, executed in cibuildwheel's `pyodide venv` (Node.js) against the installed
-# wheel and the Pyodide distribution's pandas/numpy/pyarrow/duckdb.
 # pip inside the `pyodide venv` follows wheel metadata only, while the wasm pyarrow
 # imports `unix_timezones`, a dependency the Pyodide lockfile carries instead: it has
 # to be installed explicitly for `import pyarrow` (hence vtlengine) to work.
-test-requires = ["pyodide-unix-timezones"]
-test-command = "python {project}/scripts/wasm_smoke_test.py"
+test-requires = ["pytest", "pyodide-unix-timezones"]
+test-command = "pytest {project}/tests/API -x --tb=short --strict-markers -o pythonpath="
