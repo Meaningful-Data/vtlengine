@@ -64,9 +64,13 @@ issue carries the `documentation` label.
 - Build artifacts (`_output/`, `wheels/`, `.build/`) are git-ignored.
 - Pyodide is single-threaded; `run()` uses in-memory DuckDB, so no spill-to-disk
   or remote file access is involved.
-- `pysdmx` is injected at the version `poetry.lock` pins; its `lxml >= 6.1` floor
-  is not enforced by the patched lockfile, so it runs on the `lxml` 6.0.x the
-  Pyodide 314 distribution ships (a plain `micropip.install("pysdmx[xml]")` would
-  refuse that combination until Pyodide updates `lxml`).
+- `pysdmx` is injected at the version `poetry.lock` pins. Its `lxml >= 6.1.0` floor
+  (a security floor: lxml 6.1.0 fixes CVE-2026-41066 and bundles patched
+  libxml2/libxslt) is not enforced by the patched lockfile, so the demo runs it on
+  the `lxml` 6.0.2 of the Pyodide 314 distribution, built against libxml2 2.9.10 and
+  libxslt 1.1.33. For the same reason a plain `micropip.install("vtlengine")` on
+  stock Pyodide 314 fails on `lxml>=6.1.0` until Pyodide updates `lxml`; installing
+  `pysdmx[xml]==1.16.0` first and `vtlengine` in a second call gets through, on that
+  same lxml.
 - To refresh the dependency graph baked into `patch_lock.py`, re-run
   `micropip.freeze()` in the target Pyodide and update the `EXTRA` table.
