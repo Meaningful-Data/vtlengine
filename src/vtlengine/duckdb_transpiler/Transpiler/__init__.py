@@ -270,6 +270,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     # Hierarchical rulesets
     _hrs: Dict[str, Dict[str, Any]] = field(default_factory=dict, init=False)
 
+    # Sub-expressions to precompute in the source subquery, innermost scope last
+    _hoisted: List[List[str]] = field(default_factory=list, init=False)
+    _hoist_count: int = field(default=0, init=False)
+
     def __post_init__(self) -> None:
         """Initialize available tables."""
         self.datasets = {**self.input_datasets, **self.output_datasets}
@@ -295,6 +299,37 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             self._in_clause = old_in_clause
             self._current_dataset = old_current_ds
             self._column_prefix = old_prefix
+
+    @contextmanager
+    def _hoist_scope(self) -> Generator[List[str], None, None]:
+        """Collect the sub-expressions hoisted while building one statement."""
+        self._hoisted.append([])
+        try:
+            yield self._hoisted[-1]
+        finally:
+            self._hoisted.pop()
+
+    def _hoist(self, expr_sql: str) -> str:
+        """Precompute *expr_sql* in the source subquery and return its column name.
+
+        DuckDB expands a scalar macro by substituting the argument at every place
+        the parameter is used, so a nested chain of macros multiplies copies of the
+        inner expressions and the binder pays for each one. Reading the expression
+        from a column instead binds it once (issue #1106). Returns the expression
+        unchanged when no enclosing statement can hold the extra column.
+        """
+        if not self._hoisted:
+            return expr_sql
+        alias = quote_name(f"_vtl_h{self._hoist_count}")
+        self._hoist_count += 1
+        self._hoisted[-1].append(f"{expr_sql} AS {alias}")
+        return alias
+
+    def _hoisted_source(self, src: str, hoisted: List[str]) -> str:
+        """Add the hoisted columns to *src*, leaving it alone when there are none."""
+        if not hoisted:
+            return src
+        return f"(SELECT *, {', '.join(hoisted)} FROM {self._as_subquery(src)} AS _vtl_h)"
 
     @contextmanager
     def _stash_assignment(self) -> Generator[None, None, None]:
@@ -372,9 +407,12 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
                 is_persistent = isinstance(child, AST.PersistentAssignment)
                 if name in self.output_scalars:
-                    value_sql = self.visit(child)
-                    if not value_sql.strip().upper().startswith("SELECT"):
-                        value_sql = f"SELECT {value_sql} AS value"
+                    with self._hoist_scope() as hoisted:
+                        value_sql = self.visit(child)
+                        if not value_sql.strip().upper().startswith("SELECT"):
+                            value_sql = f"SELECT {value_sql} AS value"
+                            if hoisted:
+                                value_sql += f" FROM (SELECT {', '.join(hoisted)}) AS _vtl_h"
                     queries.append((name, value_sql, is_persistent))
                 else:
                     query = self.visit(child)
@@ -1689,7 +1727,7 @@ FROM (
         ds, table_src = resolved
 
         calc_exprs: Dict[str, str] = {}
-        with self._clause_scope(ds):
+        with self._hoist_scope() as hoisted, self._clause_scope(ds):
             for child in node.children:
                 assignment = self._unwrap_assignment(child)
                 if isinstance(assignment, AST.Assignment):
@@ -1716,7 +1754,7 @@ FROM (
             if col_name not in ds.components:
                 select_cols.append(f"{expr_sql} AS {quote_name(col_name)}")
 
-        inner_src = self._as_subquery(table_src)
+        inner_src = self._as_subquery(self._hoisted_source(table_src, hoisted))
 
         return SQLBuilder().select(*select_cols).from_table(inner_src, "t").build()
 
@@ -1851,27 +1889,29 @@ FROM (
         grouping_names: List[str] = []
         time_agg_expr: Optional[str] = None
         time_agg_id: Optional[str] = None
-        for child in node.children:
-            assignment = self._unwrap_assignment(child)
-            if isinstance(assignment, AST.Assignment):
-                agg_node = assignment.right
-                if isinstance(agg_node, AST.Aggregation) and agg_node.grouping:
-                    grouping_op = agg_node.grouping_op or ""
-                    for g in agg_node.grouping:
-                        if isinstance(g, (AST.VarID, AST.Identifier)):
-                            resolved = self._resolve_udo_name(g.value)
-                            if resolved not in grouping_names:
-                                grouping_names.append(resolved)
-                        elif isinstance(g, AST.TimeAggregation) and time_agg_expr is None:
-                            with self._clause_scope(ds):
-                                time_agg_expr = self.visit_TimeAggregation(g)
-                            for comp in ds.components.values():
-                                if (
-                                    comp.data_type in (TimePeriod, Date)
-                                    and comp.role == Role.IDENTIFIER
-                                ):
-                                    time_agg_id = comp.name
-                                    break
+        with self._hoist_scope() as hoisted:
+            for child in node.children:
+                assignment = self._unwrap_assignment(child)
+                if isinstance(assignment, AST.Assignment):
+                    agg_node = assignment.right
+                    if isinstance(agg_node, AST.Aggregation) and agg_node.grouping:
+                        grouping_op = agg_node.grouping_op or ""
+                        for g in agg_node.grouping:
+                            if isinstance(g, (AST.VarID, AST.Identifier)):
+                                resolved = self._resolve_udo_name(g.value)
+                                if resolved not in grouping_names:
+                                    grouping_names.append(resolved)
+                            elif isinstance(g, AST.TimeAggregation) and time_agg_expr is None:
+                                with self._clause_scope(ds):
+                                    time_agg_expr = self.visit_TimeAggregation(g)
+                                for comp in ds.components.values():
+                                    if (
+                                        comp.data_type in (TimePeriod, Date)
+                                        and comp.role == Role.IDENTIFIER
+                                    ):
+                                        time_agg_id = comp.name
+                                        break
+            group_src = self._hoisted_source(table_src, hoisted)
 
         all_input_ids = list(ds.get_identifiers_names())
         if grouping_op == "group by":
@@ -1911,7 +1951,7 @@ FROM (
             else:
                 cols.append(f"{vp_group_sql(v_rule, v_qn)} AS {v_qn}")
 
-        builder = SQLBuilder().select(*cols).from_table(table_src)
+        builder = SQLBuilder().select(*cols).from_table(group_src)
         if group_ids:
             builder.group_by(*[_id_group_sql(id_) for id_ in group_ids])
 
@@ -2100,7 +2140,9 @@ FROM (
         # Resolve group columns from input identifiers.
         all_ids = ds.get_identifiers_names()
         group_cols = self._resolve_group_cols(node, all_ids)
-        cols, group_by_cols = self._build_agg_group_cols(node, ds, group_cols)
+        with self._hoist_scope() as hoisted:
+            cols, group_by_cols = self._build_agg_group_cols(node, ds, group_cols)
+            group_src = self._hoisted_source(table_src, hoisted)
         ds_tp_minmax_cols: List[tuple[str, str]] = []
 
         # count() produces a single int_var measure.
@@ -2140,7 +2182,7 @@ FROM (
             else:
                 cols.append(f"{vp_group_sql(v_rule, v_qn)} AS {v_qn}")
 
-        builder = SQLBuilder().select(*cols).from_table(table_src)
+        builder = SQLBuilder().select(*cols).from_table(group_src)
 
         if group_cols:
             builder.group_by(*group_by_cols)
@@ -3844,7 +3886,8 @@ FROM (
 
             operand_sql = self.visit(node.operand)
             if self._is_operand_type(node.operand, TimePeriod):
-                return f"vtl_time_agg_tp(vtl_period_parse({operand_sql}), '{target}')"
+                parsed = self._hoist(f"vtl_period_parse({operand_sql})")
+                return f"vtl_time_agg_tp({parsed}, '{target}')"
             else:
                 agg_expr = f"vtl_time_agg_date({operand_sql}, '{target}')"
                 return self._apply_time_agg_conf(agg_expr, conf)
@@ -3854,7 +3897,8 @@ FROM (
                 for comp in self._current_dataset.components.values():
                     if comp.data_type == TimePeriod and comp.role == Role.IDENTIFIER:
                         col = quote_name(comp.name)
-                        return f"vtl_time_agg_tp(vtl_period_parse({col}), '{target}')"
+                        parsed = self._hoist(f"vtl_period_parse({col})")
+                        return f"vtl_time_agg_tp({parsed}, '{target}')"
                 for comp in self._current_dataset.components.values():
                     if comp.data_type == Date and comp.role == Role.IDENTIFIER:
                         col = quote_name(comp.name)
@@ -3862,13 +3906,12 @@ FROM (
                         return self._apply_time_agg_conf(agg, conf)
             return f"vtl_time_agg_date(CURRENT_DATE, '{target}')"
 
-    @staticmethod
-    def _apply_time_agg_conf(expr: str, conf: Optional[str]) -> str:
+    def _apply_time_agg_conf(self, expr: str, conf: Optional[str]) -> str:
         """Apply time_agg conf (first/last) modifier to a Date aggregation expression."""
-        if conf == "first":
-            return f"vtl_tp_start_date(vtl_period_parse({expr}))"
-        if conf == "last":
-            return f"vtl_tp_end_date(vtl_period_parse({expr}))"
+        if conf in ("first", "last"):
+            parsed = self._hoist(f"vtl_period_parse({expr})")
+            edge = "start" if conf == "first" else "end"
+            return f"vtl_tp_{edge}_date({parsed})"
         return expr
 
     def _resolve_period_to_ref(self, ref: AST.AST) -> str:
@@ -3891,17 +3934,20 @@ FROM (
 
         # Find time measures to transform
         cols = []
-        for comp in ds.components.values():
-            col = quote_name(comp.name)
-            if comp.role == Role.IDENTIFIER:
-                cols.append(col)
-            elif comp.data_type == TimePeriod:
-                cols.append(f"vtl_time_agg_tp(vtl_period_parse({col}), '{target}') AS {col}")
-            elif comp.data_type == Date:
-                expr = self._apply_time_agg_conf(f"vtl_time_agg_date({col}, '{target}')", conf)
-                cols.append(f"{expr} AS {col}")
-            else:
-                cols.append(col)
+        with self._hoist_scope() as hoisted:
+            for comp in ds.components.values():
+                col = quote_name(comp.name)
+                if comp.role == Role.IDENTIFIER:
+                    cols.append(col)
+                elif comp.data_type == TimePeriod:
+                    parsed = self._hoist(f"vtl_period_parse({col})")
+                    cols.append(f"vtl_time_agg_tp({parsed}, '{target}') AS {col}")
+                elif comp.data_type == Date:
+                    expr = self._apply_time_agg_conf(f"vtl_time_agg_date({col}, '{target}')", conf)
+                    cols.append(f"{expr} AS {col}")
+                else:
+                    cols.append(col)
+            src = self._hoisted_source(src, hoisted)
 
         return SQLBuilder().select(*cols).from_table(src).build()
 

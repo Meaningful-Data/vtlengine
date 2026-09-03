@@ -16,6 +16,7 @@ from vtlengine.AST import (
     VarID,
 )
 from vtlengine.DataTypes import Number, TimeInterval, TimePeriod
+from vtlengine.duckdb_transpiler import transpile
 from vtlengine.duckdb_transpiler.sql import initialize_time_types
 from vtlengine.duckdb_transpiler.Transpiler import SQLTranspiler
 from vtlengine.Model import Component, Dataset, Role
@@ -260,5 +261,86 @@ class TestSQLInitialization:
                 conn.execute(sql).fetchone()
             except Exception as e:
                 pytest.fail(f"Function test failed: {sql}\nError: {e}")
+
+        conn.close()
+
+
+# =============================================================================
+# Tests: time_agg operand binding (#1106)
+# =============================================================================
+
+
+TIME_AGG_STRUCTURE = {
+    "datasets": [
+        {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "String", "role": "Identifier", "nullable": False},
+                {"name": "Id_2", "type": "Date", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Integer", "role": "Measure", "nullable": True},
+            ],
+        },
+        {
+            "name": "DS_2",
+            "DataStructure": [
+                {"name": "Id_1", "type": "String", "role": "Identifier", "nullable": False},
+                {"name": "Id_2", "type": "Time_Period", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Integer", "role": "Measure", "nullable": True},
+            ],
+        },
+    ]
+}
+
+
+class TestTimeAggOperandBoundOnce:
+    """time_agg reads its operand from a column instead of nesting the macros.
+
+    DuckDB substitutes a macro argument at every place the parameter is used, so a
+    nested chain of time macros multiplies copies of the inner expressions and the
+    binder pays seconds for each statement (#1106).
+    """
+
+    @pytest.mark.parametrize(
+        "script,outer",
+        [
+            (
+                "DS_r <- DS_1[calc identifier Id_3 := "
+                'time_agg("M", "D", cast(Id_2, time_period))];',
+                "vtl_time_agg_tp",
+            ),
+            ('DS_r <- DS_2[calc Me_2 := time_agg("A", Id_2)];', "vtl_time_agg_tp"),
+            (
+                'DS_r <- DS_2[aggr Me_2 := sum(Me_1) group all time_agg("A")];',
+                "vtl_time_agg_tp",
+            ),
+            ('DS_r <- sum(DS_2 group all time_agg("A"));', "vtl_time_agg_tp"),
+            ('DS_r <- sum(DS_1 group all time_agg("A", last));', "vtl_tp_end_date"),
+            ('sc <- time_agg("A", cast("2020-05-05", date), first);', "vtl_tp_start_date"),
+        ],
+    )
+    def test_operand_read_from_a_column(self, script, outer):
+        """The operand is computed once as a column and the macro reads that column."""
+        sql = normalize_sql(transpile(script, TIME_AGG_STRUCTURE)[0][1])
+
+        assert f'{outer}("_vtl_h0"' in sql, sql
+        assert 'AS "_vtl_h0"' in sql, sql
+        assert f"{outer}(vtl_period_parse" not in sql, sql
+
+    def test_hoisted_sql_executes(self):
+        """The precomputed column is in scope: the generated SQL runs and aggregates."""
+        conn = duckdb.connect(":memory:")
+        initialize_time_types(conn)
+        conn.execute(
+            'CREATE TABLE "DS_1" AS SELECT * FROM (VALUES'
+            " ('A', '2024-02-29', 1), ('A', '2024-03-01', 2)) v(\"Id_1\", \"Id_2\", \"Me_1\")"
+        )
+
+        script = (
+            'DS_r <- DS_1[calc identifier Id_3 := time_agg("M", "D", cast(Id_2, time_period))];'
+        )
+        _, sql, _ = transpile(script, TIME_AGG_STRUCTURE)[0]
+        rows = conn.execute(f'SELECT "Id_3" FROM ({sql}) ORDER BY 1').fetchall()
+
+        assert rows == [("2024-M02",), ("2024-M03",)]
 
         conn.close()
