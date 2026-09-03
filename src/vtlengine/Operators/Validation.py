@@ -265,12 +265,21 @@ class Validation(Operator):
         )
         viral_names = [c.name for c in viral_comps]
         viral_src_data = viral_values if viral_values is not None else dataset_element.data
+        # A viral attribute the ruleset signature names is already carried through the
+        # rule output (issue #898); the "invalid" branch keeps its column, so only the
+        # stripped ones are re-attached.
         if viral_names and viral_src_data is not None:
-            join_ids = [
-                name for name in result.get_identifiers_names() if name in viral_src_data.columns
-            ]
-            viral_src = viral_src_data[join_ids + viral_names].drop_duplicates(subset=join_ids)
-            result.data = result.data.merge(viral_src, on=join_ids, how="left")
+            missing_viral = [name for name in viral_names if name not in result.data.columns]
+            if missing_viral:
+                join_ids = [
+                    name
+                    for name in result.get_identifiers_names()
+                    if name in viral_src_data.columns
+                ]
+                viral_src = viral_src_data[join_ids + missing_viral].drop_duplicates(
+                    subset=join_ids
+                )
+                result.data = result.data.merge(viral_src, on=join_ids, how="left")
 
         result.data = result.data[result.get_components_names()]
         return result

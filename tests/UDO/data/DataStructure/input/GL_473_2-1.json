@@ -22,7 +22,7 @@
             "role": "Attribute"
           },
           {
-            "name": "__index_id__",
+            "name": "INDEX_ID",
             "type": "Number",
             "nullable": false,
             "role": "Identifier"

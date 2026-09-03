@@ -79,7 +79,7 @@
           "name": "CLLTRL_OBTND_TKNG_PSSSSN",
           "role": "Measure",
           "type": "String",
-          "nullable": true
+          "nullable": false
         },
         {
           "name": "CLLTRL_OBTND_TKNG_PSSSSN_DT",
@@ -223,13 +223,13 @@
           "name": "FV_HRRCHY",
           "role": "Measure",
           "type": "String",
-          "nullable": true
+          "nullable": false
         },
         {
           "name": "FVO_DSGNTN",
           "role": "Measure",
           "type": "String",
-          "nullable": true
+          "nullable": false
         },
         {
           "name": "GRSS_CRRYNG_AMNT_E_INTRST",
@@ -241,7 +241,7 @@
           "name": "GV_RS_CR_PST",
           "role": "Measure",
           "type": "String",
-          "nullable": true
+          "nullable": false
         },
         {
           "name": "IMPRMNT_ASSSSMNT_MTHD",
@@ -301,7 +301,7 @@
           "name": "IS_HFS",
           "role": "Measure",
           "type": "String",
-          "nullable": true
+          "nullable": false
         },
         {
           "name": "IS_LW_CRDT_RSK",
@@ -349,7 +349,7 @@
           "name": "PRCHSD_ORGNTD_CRDT_IMPRD",
           "role": "Measure",
           "type": "String",
-          "nullable": true
+          "nullable": false
         },
         {
           "name": "PRCNTG_TRNSFRRD",
@@ -433,7 +433,7 @@
           "name": "IS_CRDT_LN_OTHR_RV_CRDT",
           "role": "Measure",
           "type": "String",
-          "nullable": true
+          "nullable": false
         },
         {
           "name": "SYNDCTD_CNTRCT_ID",
@@ -445,7 +445,7 @@
           "name": "RPYMNT_RGHTS",
           "role": "Measure",
           "type": "String",
-          "nullable": true
+          "nullable": false
         },
         {
           "name": "IS_TRNSFRBL_DPST",
@@ -457,19 +457,19 @@
           "name": "SBRDNTD_DBT",
           "role": "Measure",
           "type": "String",
-          "nullable": true
+          "nullable": false
         },
         {
           "name": "IS_RVLVNG_LN",
           "role": "Measure",
           "type": "String",
-          "nullable": true
+          "nullable": false
         },
         {
           "name": "FRZNG_PRD_DYS",
           "role": "Measure",
           "type": "Integer",
-          "nullable": true
+          "nullable": false
         },
         {
           "name": "TYP_INSTRMNT",

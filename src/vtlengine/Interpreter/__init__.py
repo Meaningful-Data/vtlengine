@@ -1371,6 +1371,7 @@ class InterpreterAnalyzer(ASTTemplate):
             name=str(node.value),
             value=node.value,
             data_type=BASIC_TYPES[type(node.value)],
+            nullable=node.value is None,
         )
 
     def _strip_join_prefixes(self, result: Dataset) -> None:
@@ -1720,12 +1721,18 @@ class InterpreterAnalyzer(ASTTemplate):
 
         rule_output_values = {}
         # Keep viral attributes out of rule handling; they are re-attached from the
-        # original dataset in Validation.evaluate (issue #877).
+        # original dataset in Validation.evaluate (issue #877). A viral attribute the
+        # ruleset signature names is kept: the rules read it (issue #898).
+        signature_components = set((dpr_info.get("signature") or {}).values())
+        stripped_viral = [
+            name
+            for name in dataset_element.get_viral_attributes_names()
+            if name not in signature_components
+        ]
         ruleset_dataset = dataset_element
-        dp_viral_names = dataset_element.get_viral_attributes_names()
-        if dp_viral_names:
+        if stripped_viral:
             stripped_data = (
-                dataset_element.data.drop(columns=dp_viral_names)
+                dataset_element.data.drop(columns=stripped_viral)
                 if dataset_element.data is not None
                 else None
             )
@@ -1734,7 +1741,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 components={
                     name: comp
                     for name, comp in dataset_element.components.items()
-                    if comp.role != Role.VIRAL_ATTRIBUTE
+                    if name not in stripped_viral
                 },
                 data=stripped_data,
             )
@@ -2048,7 +2055,10 @@ class InterpreterAnalyzer(ASTTemplate):
                 if "default" in param:
                     value = self.visit(param["default"]).value
                     signature_values[param["name"]] = Scalar(
-                        name=str(value), value=value, data_type=BASIC_TYPES[type(value)]
+                        name=str(value),
+                        value=value,
+                        data_type=BASIC_TYPES[type(value)],
+                        nullable=value is None,
                     )
                 else:
                     raise SemanticError(
@@ -2116,6 +2126,7 @@ class InterpreterAnalyzer(ASTTemplate):
                         name=param_element.name,
                         value=scalar_type.cast(param_element.value),
                         data_type=scalar_type,
+                        nullable=param_element.nullable,
                     )
                 else:
                     raise NotImplementedError

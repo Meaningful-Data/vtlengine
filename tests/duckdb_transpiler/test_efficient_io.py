@@ -484,6 +484,45 @@ class TestRegisterDataframesPartialTime:
         )
         assert result["DS_A"].data["Me_1"].notna().all()
 
+    @pytest.mark.parametrize(
+        "values",
+        [
+            pd.to_datetime(["2020-01-01 12:30:45"]).tz_localize("Europe/Madrid"),
+            pd.to_datetime(["2020-01-01 12:30:45"]),
+            pd.to_datetime(["2020-01-01"]).date,
+        ],
+        ids=["tz-aware-datetime64", "naive-datetime64", "date-objects"],
+    )
+    def test_typed_columns_bypass_string_guard(self, values):
+        """Typed temporal columns cannot hold malformed strings; the regex guard must
+        not reject them (a TIMESTAMPTZ renders to VARCHAR with a '+01' offset that is
+        not the string input format)."""
+        from vtlengine.API import run
+
+        df = pd.DataFrame({"Id_1": [1], "Me_1": values})
+        result = run(
+            script="DS_A <- DS_1;",
+            data_structures=self._STRUCT,
+            datapoints={"DS_1": df},
+            use_duckdb=True,
+        )
+        assert result["DS_A"].data["Me_1"].notna().all()
+
+    def test_categorical_strings_are_still_validated(self):
+        """A pandas categorical of strings registers as ENUM in DuckDB; the guard must
+        treat it as a string source and reject malformed values."""
+        from vtlengine.API import run
+        from vtlengine.Exceptions import DataLoadError
+
+        df = pd.DataFrame({"Id_1": [1], "Me_1": pd.Series(["2020-01-01T12:30"], dtype="category")})
+        with pytest.raises(DataLoadError):
+            run(
+                script="DS_A <- DS_1;",
+                data_structures=self._STRUCT,
+                datapoints={"DS_1": df},
+                use_duckdb=True,
+            )
+
 
 class TestCsvLoadDateFormats:
     """DuckDB CSV loader must accept the same Date formats as pandas (T, tz, Z)."""

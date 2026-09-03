@@ -1,0 +1,5 @@
+define operator sum_except (x dataset, c component, e component, m component)
+    returns dataset is
+    x[calc Me_2 := sum(m over (partition except c order by e))]
+end operator;
+DS_A <- sum_except(DS_1, Id_1, Id_2, Me_1);

@@ -531,4 +531,4 @@ Returns:
             rule ACCOUNTING_ENTRY);
 
 
-For more information on usage, please refer to the `API documentation <https://docs.vtlengine.meaningfuldata.eu/api.html>`_
+For more information on usage, please refer to the :doc:`API documentation <api>`.

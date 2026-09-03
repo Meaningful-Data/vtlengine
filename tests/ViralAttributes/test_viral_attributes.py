@@ -64,6 +64,9 @@ execution_codes = [
     ("12-8", 1),  # boolean result (in) under keep, no rule needed
     # -- reserved component names, issue #944 --
     ("13-4", 1),  # non-viral roles may use reserved names (bool_var measure, int_var attr)
+    # -- datapoint ruleset whose signature variable is a viral attribute, issue #898 --
+    ("14-3", 1),
+    ("14-4", 1),  # same ruleset, default "invalid" output mode
 ]
 
 
@@ -97,6 +100,19 @@ semantic_codes = [
 
 @pytest.mark.parametrize("code,number_inputs", semantic_codes)
 def test_structure(code: str, number_inputs: int) -> None:
+    ViralHelper.BaseTest(
+        code=code, number_inputs=number_inputs, references_names=["DS_r"], only_semantic=True
+    )
+
+
+statement_ordering_codes = [
+    ("14-1", 1),
+    ("14-2", 1),
+]
+
+
+@pytest.mark.parametrize("code,number_inputs", statement_ordering_codes)
+def test_definition_statement_ordering(code: str, number_inputs: int) -> None:
     ViralHelper.BaseTest(
         code=code, number_inputs=number_inputs, references_names=["DS_r"], only_semantic=True
     )

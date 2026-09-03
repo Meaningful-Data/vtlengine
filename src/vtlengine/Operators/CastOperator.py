@@ -148,7 +148,7 @@ class Cast(Operator.Unary):
         cls.check_cast(from_type, to_type, mask)
         if from_type == String and to_type == Date and operand.value is not None:
             Date.explicit_cast(operand.value, String)
-        return Scalar(name=operand.name, data_type=to_type, value=None)
+        return Scalar(name=operand.name, data_type=to_type, value=None, nullable=operand.nullable)
 
     @classmethod
     def evaluate(  # type: ignore[override]
@@ -195,12 +195,16 @@ class Cast(Operator.Unary):
         from_type = operand.data_type
         result_scalar = cls.scalar_validation(operand, to_type, mask)
         if pd.isna(operand.value):
-            return Scalar(name=result_scalar.name, data_type=to_type, value=None)
+            return Scalar(
+                name=result_scalar.name, data_type=to_type, value=None, nullable=operand.nullable
+            )
         if to_type.is_included(IMPLICIT_TYPE_PROMOTION_MAPPING[from_type]):
             casted_data = to_type.implicit_cast(operand.value, from_type)
         else:
             casted_data = to_type.explicit_cast(operand.value, from_type)
-        return Scalar(name=result_scalar.name, data_type=to_type, value=casted_data)
+        return Scalar(
+            name=result_scalar.name, data_type=to_type, value=casted_data, nullable=operand.nullable
+        )
 
     @classmethod
     def component_evaluation(  # type: ignore[override]

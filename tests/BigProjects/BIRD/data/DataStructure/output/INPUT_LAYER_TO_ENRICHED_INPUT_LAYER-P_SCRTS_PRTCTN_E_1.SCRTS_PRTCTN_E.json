@@ -73,7 +73,7 @@
           "name": "PRTCTN_VLTN_APPRCH_PRTCTN_VL",
           "role": "Measure",
           "type": "String",
-          "nullable": true
+          "nullable": false
         },
         {
           "name": "FNNCL_GRNT_CNSDRD_MX_AMNT",
@@ -85,7 +85,7 @@
           "name": "TYP_PRTCTN",
           "role": "Measure",
           "type": "String",
-          "nullable": true
+          "nullable": false
         }
       ]
     }

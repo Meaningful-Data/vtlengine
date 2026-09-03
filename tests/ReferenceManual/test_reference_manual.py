@@ -67,7 +67,7 @@ time_operators.remove(100)
 validation_operators.remove(159)
 
 # Remove random tests if duckdb
-if _use_duckdb_backend:
+if _use_duckdb_backend():
     new_operators.remove(184)
     new_operators.remove(185)
 
@@ -202,7 +202,7 @@ def get_test_files(dataPoints, dataStructures, dp_dir, param):
     return vtl, ds, dp
 
 
-@pytest.mark.parametrize("param", params if _use_duckdb_backend else [])
+@pytest.mark.parametrize("param", params if _use_duckdb_backend() else [])
 def test_reference_duckdb(input_datasets, reference_datasets, ast, param):
     warnings.filterwarnings("ignore", category=FutureWarning)
     reference_datasets = load_dataset(*reference_datasets, dp_dir=reference_dp_dir, param=param)
@@ -215,7 +215,28 @@ def test_reference_duckdb(input_datasets, reference_datasets, ast, param):
         datapoints=dp,
         value_domains=vd_files if vd_files else None,
         return_only_persistent=False,
-        use_duckdb=_use_duckdb_backend,
+        use_duckdb=_use_duckdb_backend(),
+    )
+
+    assert result == reference_datasets
+
+
+@pytest.mark.parametrize("param", params if _use_duckdb_backend() else [])
+def test_reference_defined_operators_duckdb(input_datasets, reference_datasets, param):
+    """Run each reference-manual example via the user-defined-operator VTL variant."""
+    warnings.filterwarnings("ignore", category=FutureWarning)
+    reference_datasets = load_dataset(*reference_datasets, dp_dir=reference_dp_dir, param=param)
+
+    _, ds, dp = get_test_files(*input_datasets, dp_dir=input_dp_dir, param=param)
+    vtl = Path(f"{vtl_def_operators_dir}/RM{param:03d}.vtl")
+    vd_files = list(value_domain_dir.glob("*.json"))
+    result = run(
+        script=vtl,
+        data_structures=ds,
+        datapoints=dp,
+        value_domains=vd_files if vd_files else None,
+        return_only_persistent=False,
+        use_duckdb=_use_duckdb_backend(),
     )
 
     assert result == reference_datasets

@@ -72,7 +72,20 @@ set(VTL_PARSER_SOURCES
 if(NOT VTLENGINE_BUILD_ANTLR4_PREBUILT)
     find_package(pybind11 CONFIG REQUIRED)
 
-    pybind11_add_module(vtl_cpp_parser
+    # Under Emscripten, wasm-ld resolves symbols by name AND type signature
+    # (wasm is a typed format), unlike native ELF/Mach-O/COFF linkers which
+    # match by name only. pybind11 enables LTO on the module in Release, but
+    # the antlr4_runtime static library is built without it. Mixing LTO bitcode
+    # with non-LTO objects makes wasm-ld reject the by-value std::map virtual
+    # methods (Recognizer::getRuleIndexMap/getTokenTypeMap) with
+    # "function signature mismatch". NO_EXTRAS suppresses pybind11's -flto so
+    # both sides agree. Native builds keep LTO.
+    set(_vtl_pybind_extras "")
+    if(EMSCRIPTEN)
+        set(_vtl_pybind_extras NO_EXTRAS)
+    endif()
+
+    pybind11_add_module(vtl_cpp_parser ${_vtl_pybind_extras}
         "${VTL_PARSER_DIR}/bindings.cpp"
         ${VTL_PARSER_SOURCES}
     )

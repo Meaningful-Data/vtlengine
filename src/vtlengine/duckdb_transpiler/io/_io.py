@@ -270,10 +270,10 @@ def _detect_csv_format(
 def _read_parquet_columns(
     conn: duckdb.DuckDBPyConnection,
     file_path: Path,
-) -> List[str]:
-    """Read the column list of a parquet file via a zero-row scan."""
+) -> Tuple[List[str], Dict[str, str]]:
+    """Read the column list and column types of a parquet file via a zero-row scan."""
     rel = conn.sql(f"SELECT * FROM read_parquet('{file_path}') LIMIT 0")
-    return list(rel.columns)
+    return list(rel.columns), {name: str(t) for name, t in zip(rel.columns, rel.types)}
 
 
 # A Date value writes its time after the date, with the month and the day allowed to be
@@ -285,6 +285,7 @@ def _parquet_date_type_overrides(
     conn: duckdb.DuckDBPyConnection,
     file_path: Path,
     components: Dict[str, Component],
+    column_types: Dict[str, str],
 ) -> Dict[str, str]:
     """The Date columns a parquet file needs stored as TIMESTAMP.
 
@@ -292,11 +293,9 @@ def _parquet_date_type_overrides(
     a time was cast down to the bare date, which is what the CSV path and the DataFrame
     path both keep. A column the file types as a timestamp is stored as
     one; a column of text is read the way the CSV path reads it, by looking for a time
-    written after the date.
+    written after the date. ``column_types`` is the name -> DuckDB type mapping the
+    caller already read from the file's zero-row scan.
     """
-    rel = conn.sql(f"SELECT * FROM read_parquet('{file_path}') LIMIT 0")
-    column_types = dict(zip(rel.columns, (str(t) for t in rel.types)))
-
     overrides: Dict[str, str] = {}
     text_columns = []
     for comp_name, comp in components.items():
@@ -486,7 +485,7 @@ def _load_parquet(
     id_columns = [n for n, c in components.items() if c.role == Role.IDENTIFIER]
 
     try:
-        parquet_cols = _read_parquet_columns(conn, file_path)
+        parquet_cols, parquet_types = _read_parquet_columns(conn, file_path)
 
         if len(set(parquet_cols)) != len(parquet_cols):
             duplicates = list({item for item in parquet_cols if parquet_cols.count(item) > 1})
@@ -502,11 +501,15 @@ def _load_parquet(
 
         # The table is created once the file has been read, so a Date column holding a
         # time is created as a TIMESTAMP and keeps it (issue #895).
-        date_overrides = _parquet_date_type_overrides(conn, file_path, components)
+        date_overrides = _parquet_date_type_overrides(conn, file_path, components, parquet_types)
         conn.execute(build_create_table_sql(dataset_name, components, date_overrides))
 
         select_exprs = _build_dataframe_select_columns(
-            components, dataset_name, df_columns=parquet_cols, type_overrides=date_overrides
+            components,
+            dataset_name,
+            df_columns=parquet_cols,
+            type_overrides=date_overrides,
+            source_types=parquet_types,
         )
 
         action_filter = ""
@@ -773,11 +776,17 @@ def _detect_date_type_overrides(
     return overrides
 
 
+def _is_string_like(source_type: str) -> bool:
+    """A VARCHAR source column, or an ENUM one (a pandas categorical), holds text."""
+    return "VARCHAR" in source_type or source_type.startswith("ENUM")
+
+
 def _build_dataframe_select_columns(
     components: Dict[str, Component],
     dataset_name: str,
     df_columns: Optional[List[str]] = None,
     type_overrides: Optional[Dict[str, str]] = None,
+    source_types: Optional[Dict[str, str]] = None,
 ) -> List[str]:
     """Build SELECT expressions with explicit CAST for DataFrame → DuckDB table insertion.
 
@@ -785,24 +794,38 @@ def _build_dataframe_select_columns(
     A missing column is filled with NULL, and, when the component is not nullable,
     reported as missing the way the CSV path and the pandas loader report it: filling
     it left a DataFrame with no rows loading a structure it did not carry.
+    ``source_types`` maps source column names to their DuckDB types; a column absent
+    from it is assumed to be VARCHAR.
     """
     df_col_set = set(df_columns) if df_columns is not None else None
     overrides = type_overrides or {}
+    src_types = source_types or {}
     exprs: List[str] = []
     for comp_name, comp in components.items():
         target_type = overrides.get(comp_name, get_column_sql_type(comp))
+        source_type = src_types.get(comp_name, "VARCHAR").upper()
+        source = f'"{comp_name}"'
+        if _is_string_like(source_type) and comp.data_type != String:
+            # An empty string in a text column is a null for every type but String,
+            # as the pandas loader reads it and as an empty CSV field loads.
+            source = f"NULLIF(CAST({source} AS VARCHAR), '')"
         if df_col_set is not None and comp_name not in df_col_set:
             if not comp.nullable:
                 raise DataLoadError("0-3-1-5", name=dataset_name, comp_name=comp_name)
             exprs.append(f'CAST(NULL AS {target_type}) AS "{comp_name}"')
-        elif comp.data_type == Date:
+        elif comp.data_type == Date and _is_string_like(source_type):
             # Accept only a bare date, or a date with a COMPLETE, in-range time
             # (HH:MM:SS, optional fractional seconds / timezone), matching the strict
             # rule on the pandas path. This rejects partial times ("...HH" / "...HH:MM"),
             # a bad separator ("2020-01-01X12:30:45") and out-of-range times
             # ("2020-01-01T25:00:00") here with a clear message, instead of letting the
             # cast silently truncate them or surface a cryptic out-of-range error.
-            col_as_varchar = f'TRIM(CAST("{comp_name}" AS VARCHAR))'
+            # The guard only applies to string-like source columns (VARCHAR, or ENUM
+            # from pandas categoricals): a temporal source (DATE/TIMESTAMP/TIMESTAMPTZ)
+            # cannot hold a malformed string, and its VARCHAR rendering (e.g. a "+01"
+            # offset) is not the input format the regex validates, so those keep the
+            # plain CAST.
+            col_as_varchar = f"TRIM(CAST({source} AS VARCHAR))"
             err = (
                 f"'Column {comp_name}: Date ' || {col_as_varchar} || "
                 f"' has an invalid or incomplete time; expected YYYY-MM-DD HH:MM:SS.'"
@@ -811,10 +834,10 @@ def _build_dataframe_select_columns(
                 f"'Date ' || {col_as_varchar} || ' is invalid. Year must be between 1800 and 9999.'"
             )
             exprs.append(
-                f'CASE WHEN "{comp_name}" IS NOT NULL '
+                f"CASE WHEN {source} IS NOT NULL "
                 f"AND NOT regexp_matches({col_as_varchar}, '{VALID_DATE_REGEX}') "
                 f"THEN error({err}) "
-                f'WHEN "{comp_name}" IS NOT NULL '
+                f"WHEN {source} IS NOT NULL "
                 f"AND NOT regexp_matches({col_as_varchar}, '{VALID_DATE_YEAR_REGEX}') "
                 f"THEN error({year_err}) "
                 f'ELSE CAST({col_as_varchar} AS {target_type}) END AS "{comp_name}"'
@@ -822,10 +845,10 @@ def _build_dataframe_select_columns(
         elif target_type == "BOOLEAN":
             # A Boolean is read on the documented set, not on DuckDB's wider one,
             # so a DataFrame and a CSV are read the same way (issue #1068).
-            boolean_cast = build_boolean_cast(f'"{comp_name}"', comp_name)
+            boolean_cast = build_boolean_cast(source, comp_name)
             exprs.append(f'{boolean_cast} AS "{comp_name}"')
         else:
-            exprs.append(f'CAST("{comp_name}" AS {target_type}) AS "{comp_name}"')
+            exprs.append(f'CAST({source} AS {target_type}) AS "{comp_name}"')
     return exprs
 
 
@@ -850,6 +873,13 @@ def register_dataframes(
 
         components = input_datasets[name].components
 
+        # Normalize the column names the way the pandas loader does (_validate_pandas):
+        # labels become str and a leading UTF-8 BOM is dropped (a DataFrame built from a
+        # BOM-encoded CSV without utf-8-sig decoding carries it on its first column).
+        # A shallow copy keeps the caller's DataFrame untouched without copying its data.
+        df = df.copy(deep=False)
+        df.columns = pd.Index([str(col).removeprefix("\ufeff") for col in df.columns])
+
         # A DataFrame carries its columns as they are, so the SDMX markers are taken
         # out before what is left is checked against the DataStructure.
         check_extra_columns(handle_sdmx_columns(list(df.columns), components), components, name)
@@ -864,8 +894,12 @@ def register_dataframes(
         temp_view = f"_temp_{name}"
         conn.register(temp_view, df)
         try:
+            source_types = {
+                str(row[0]): str(row[1])
+                for row in conn.execute(f'DESCRIBE "{temp_view}"').fetchall()
+            }
             select_exprs = _build_dataframe_select_columns(
-                components, name, list(df.columns), type_overrides
+                components, name, list(df.columns), type_overrides, source_types
             )
             col_list = ", ".join(f'"{c}"' for c in components)
             conn.execute(

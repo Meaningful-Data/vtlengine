@@ -25,22 +25,22 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install poetry
         run: pipx install poetry
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: ${{ matrix.python-version }}
           cache: poetry
       - name: Cache ANTLR4 runtime prebuilt
-        uses: actions/cache@v4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: antlr4-cache
         with:
           path: build/antlr4-prefix
           key: antlr4-runtime-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('scripts/setup_antlr4_runtime.sh', 'CMakeLists.txt') }}
       - name: Cache compiled C++ parser
-        uses: actions/cache@v4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: cpp-cache
         with:
           # Just the compiled extension binary — restoring it puts it back

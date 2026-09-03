@@ -42,7 +42,6 @@ from vtlengine.Model import (
     Dataset,
     ExternalRoutine,
     Role,
-    Role_keys,
     Scalar,
     ValueDomain,
 )
@@ -81,85 +80,66 @@ def _extract_data_type(component: Dict[str, Any]) -> Tuple[str, Any]:
     return key, SCALAR_TYPES[component[key]]
 
 
+def _build_component(component: Dict[str, Any]) -> VTL_Component:
+    role = Role("Viral Attribute" if component["role"] == "ViralAttribute" else component["role"])
+    nullable = component.get("nullable", role != Role.IDENTIFIER)
+    _, scalar_type = _extract_data_type(component)
+    return VTL_Component(
+        name=component["name"],
+        data_type=scalar_type,
+        role=role,
+        nullable=nullable,
+    )
+
+
+def _resolve_components(
+    dataset_json: Dict[str, Any],
+    structures: Dict[str, Any],
+) -> List[Dict[str, Any]]:
+    """Return the inline DataStructure list or resolve it via the dataset's 'structure' ref."""
+    if "DataStructure" in dataset_json:
+        return cast(List[Dict[str, Any]], dataset_json["DataStructure"])
+    structure_name = dataset_json["structure"]
+    for s in structures.get("structures", []):
+        if s["name"] == structure_name:
+            return cast(List[Dict[str, Any]], s["components"])
+    raise InputValidationException(
+        code="0-2-1-1",
+        element=f"DataStructure '{dataset_json['name']}'",
+        error=f"Referenced structure '{structure_name}' not found",
+    )
+
+
 def _load_dataset_from_structure(
     structures: Dict[str, Any],
 ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     """
-    Loads a dataset with the structure given.
+    Loads datasets and scalars from a VTL JSON structure definition.
     """
-    datasets = {}
-    scalars = {}
+    _validate_json(structures, schema, kind="DataStructures")
 
-    if "datasets" in structures:
-        for dataset_json in structures["datasets"]:
-            dataset_name = dataset_json["name"]
-            components = {}
+    datasets = {
+        dataset_json["name"]: Dataset(
+            name=dataset_json["name"],
+            components={
+                c["name"]: _build_component(c)
+                for c in _resolve_components(dataset_json, structures)
+            },
+            data=None,
+        )
+        for dataset_json in structures.get("datasets", [])
+    }
 
-            if "structure" in dataset_json:
-                structure_name = dataset_json["structure"]
-                structure_json = None
-                for s in structures["structures"]:
-                    if s["name"] == structure_name:
-                        structure_json = s
-                if structure_json is None:
-                    raise InputValidationException(code="0-2-1-2", message="Structure not found.")
-                try:
-                    jsonschema.validate(instance=structure_json, schema=schema)
-                except jsonschema.exceptions.ValidationError as e:
-                    raise InputValidationException(code="0-2-1-2", message=e.message)
+    scalars = {
+        scalar_json["name"]: Scalar(
+            name=scalar_json["name"],
+            data_type=_extract_data_type(scalar_json)[1],
+            value=None,
+            nullable=scalar_json.get("nullable", True),
+        )
+        for scalar_json in structures.get("scalars", [])
+    }
 
-                for component in structure_json["components"]:
-                    # Support both 'type' and 'data_type' for backward compatibility
-                    _, scalar_type = _extract_data_type(component)
-                    if component["role"] == "ViralAttribute":
-                        component["role"] = "Viral Attribute"
-
-                    check_key("role", Role_keys, component["role"])
-
-                    if "nullable" not in component:
-                        if Role(component["role"]) == Role.IDENTIFIER:
-                            component["nullable"] = False
-                        elif Role(component["role"]) in (
-                            Role.MEASURE,
-                            Role.ATTRIBUTE,
-                            Role.VIRAL_ATTRIBUTE,
-                        ):
-                            component["nullable"] = True
-                        else:
-                            component["nullable"] = False
-
-                    components[component["name"]] = VTL_Component(
-                        name=component["name"],
-                        data_type=scalar_type,
-                        role=Role(component["role"]),
-                        nullable=component["nullable"],
-                    )
-
-            if "DataStructure" in dataset_json:
-                for component in dataset_json["DataStructure"]:
-                    # Support both 'type' and 'data_type' for backward compatibility
-                    _, scalar_type = _extract_data_type(component)
-                    if component["role"] == "ViralAttribute":
-                        component["role"] = "Viral Attribute"
-                    check_key("role", Role_keys, component["role"])
-                    components[component["name"]] = VTL_Component(
-                        name=component["name"],
-                        data_type=scalar_type,
-                        role=Role(component["role"]),
-                        nullable=component["nullable"],
-                    )
-
-            datasets[dataset_name] = Dataset(name=dataset_name, components=components, data=None)
-    if "scalars" in structures:
-        for scalar_json in structures["scalars"]:
-            scalar_name = scalar_json["name"]
-            check_key("type", SCALAR_TYPES.keys(), scalar_json["type"])
-            scalar = Scalar(
-                name=scalar_name,
-                data_type=SCALAR_TYPES[scalar_json["type"]],
-                value=None,
-            )
-            scalars[scalar_name] = scalar
     return datasets, scalars
 
 
@@ -623,17 +603,48 @@ def load_vtl(input: Union[str, Path]) -> str:
         return f.read()
 
 
+_SECTION_KINDS = {
+    "datasets": "Dataset",
+    "scalars": "Scalar",
+    "structures": "Structure",
+}
+
+
+# Compiled validator per schema document, keyed by the dict's identity. The engine's
+# schemas are module constants, and jsonschema.validate() would re-run the (expensive)
+# metaschema check of the schema itself on every call.
+_VALIDATORS: Dict[int, Any] = {}
+
+
+def _validator_for(schema: Dict[str, Any]) -> Any:
+    validator = _VALIDATORS.get(id(schema))
+    if validator is None:
+        validator_cls = jsonschema.validators.validator_for(schema)
+        validator_cls.check_schema(schema)
+        validator = validator_cls(schema)
+        _VALIDATORS[id(schema)] = validator
+    return validator
+
+
 def _validate_json(
     data: Dict[str, Any],
     schema: Dict[str, Any],
     kind: str,
     name: Optional[str] = None,
 ) -> None:
-    try:
-        jsonschema.validate(instance=data, schema=schema)
-    except jsonschema.ValidationError as e:
-        element = f"{kind} '{name}'" if name else f"the provided {kind}"
-        raise InputValidationException(code="0-2-1-1", element=element, error=e.message)
+    # Same behaviour as jsonschema.validate(instance=data, schema=schema): raise the
+    # best-matching error, but against a validator compiled once per schema.
+    e = jsonschema.exceptions.best_match(_validator_for(schema).iter_errors(data))
+    if e is not None:
+        if name is None:
+            path = list(e.absolute_path)
+            if len(path) >= 2 and path[0] in _SECTION_KINDS and isinstance(path[1], int):
+                kind = _SECTION_KINDS[path[0]]
+                element = data[path[0]][path[1]]
+                if isinstance(element, dict):
+                    name = element.get("name")
+        identifier = f"{kind} '{name}'" if name else f"the provided {kind}"
+        raise InputValidationException(code="0-2-1-1", element=identifier, error=e.message)
 
 
 def _load_single_value_domain(input: Path) -> Dict[str, ValueDomain]:

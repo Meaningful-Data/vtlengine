@@ -18,7 +18,7 @@ Summary
 
 import json
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import pandas as pd
 import pytest
@@ -243,7 +243,7 @@ class DataLoadTest(DataLoadHelper):
         assert dataset_input.data["OBS_VALUE"][0] == string_to_compare
 
     @pytest.mark.skipif(
-        _use_duckdb_backend,
+        _use_duckdb_backend(),
         reason="Duckdb cannot handle unmatched types errors as pandas, so it not raises the same error",
     )
     def test_12(self):
@@ -291,7 +291,7 @@ class DataLoadTest(DataLoadHelper):
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     @pytest.mark.skipif(
-        _use_duckdb_backend,
+        _use_duckdb_backend(),
         reason="Duckdb cannot handle unmatched types errors as pandas, so it not raises the same error",
     )
     def test_15(self):
@@ -901,7 +901,7 @@ class DataLoadTest(DataLoadHelper):
         """ """
         code = "IK-1"
         number_inputs = 1
-        message = "Invalid key on role field: Identfier. Did you mean Identifier?."
+        message = "'Identfier' is not one of"
 
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_message=message
@@ -911,7 +911,7 @@ class DataLoadTest(DataLoadHelper):
         """ """
         code = "IK-2"
         number_inputs = 1
-        message = "Invalid key on role field: Masure. Did you mean Measure?."
+        message = "'Masure' is not one of"
 
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_message=message
@@ -921,7 +921,7 @@ class DataLoadTest(DataLoadHelper):
         """ """
         code = "IK-3"
         number_inputs = 1
-        message = "Invalid key on type field: Numver. Did you mean Number?."
+        message = "'Numver' is not one of"
 
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_message=message
@@ -931,7 +931,7 @@ class DataLoadTest(DataLoadHelper):
         """ """
         code = "IK-4"
         number_inputs = 1
-        message = "Invalid key on type field: boolean. Did you mean Boolean?."
+        message = "'boolean' is not one of"
 
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_message=message
@@ -941,7 +941,7 @@ class DataLoadTest(DataLoadHelper):
         """ """
         code = "IK-5"
         number_inputs = 1
-        message = "Invalid key on type field: TimePeriod. Did you mean Time_Period?."
+        message = "'TimePeriod' is not one of"
 
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_message=message
@@ -951,7 +951,7 @@ class DataLoadTest(DataLoadHelper):
         """ """
         code = "IK-6"
         number_inputs = 1
-        message = "Invalid key on type field: TimPerod. Did you mean Time_Period?."
+        message = "'TimPerod' is not one of"
 
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_message=message
@@ -961,7 +961,7 @@ class DataLoadTest(DataLoadHelper):
         """ """
         code = "IK-7"
         number_inputs = 1
-        message = "Invalid key on type field: jbhfae."
+        message = "'jbhfae' is not one of"
 
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_message=message
@@ -1200,8 +1200,9 @@ class TestBOMHandling:
         assert not content.startswith("\ufeff")
         assert content == "DS_r <- DS_1;"
 
-    def test_bom_dataframe_columns(self) -> None:
-        """DataFrame with BOM in column names is handled transparently."""
+    @pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+    def test_bom_dataframe_columns(self, use_duckdb: bool) -> None:
+        """DataFrame with BOM in column names is handled transparently on both engines."""
         script = "DS_r <- DS_1;"
         data_structures = {
             "datasets": [
@@ -1231,6 +1232,7 @@ class TestBOMHandling:
             script=script,
             data_structures=data_structures,
             datapoints={"DS_1": data_df},
+            use_duckdb=use_duckdb,
         )
         ds = result["DS_r"]
         assert "Id_1" in ds.data.columns
@@ -1249,6 +1251,22 @@ def _dataframe_structures(measure_type: str) -> Dict[str, Any]:
             }
         ]
     }
+
+
+@pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+def test_non_string_dataframe_column_label_is_an_extra_column(use_duckdb: bool) -> None:
+    """A DataFrame label that is not a string is reported as a column the
+    DataStructure does not define (0-3-1-15) on both engines, the way the pandas
+    loader always read it, instead of crashing while the extra columns are listed."""
+    data_df = pd.DataFrame({"Id_1": [1, 2], "Me_1": [1.0, 2.0], 0: [5, 6]})
+    with pytest.raises(VTLEngineException) as context:
+        run(
+            script="DS_r <- DS_1;",
+            data_structures=_dataframe_structures("Number"),
+            datapoints={"DS_1": data_df},
+            use_duckdb=use_duckdb,
+        )
+    assert context.value.args[1] == "0-3-1-15"
 
 
 @pytest.mark.parametrize("use_duckdb", [False, True])
@@ -1301,6 +1319,58 @@ class TestBooleanFromDataFrame:
             use_duckdb=use_duckdb,
         )
         assert result["DS_r"].data["Me_1"].tolist() == [1, 0]
+
+
+_EMPTY_STRING_LITERALS = {
+    "Integer": "1",
+    "Number": "1.5",
+    "Boolean": "true",
+    "Date": "2024-01-01",
+    "Time_Period": "2024Q1",
+    "Duration": "A",
+    "Time": "2024-01-01/2024-12-31",
+}
+
+
+@pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+class TestEmptyStringFromDataFrame:
+    """An empty string in a DataFrame column is a null for every type but String, the
+    same on both engines and the same as an empty field of a CSV. The pandas loader
+    always read it so; the DuckDb engine failed the cast, or kept the empty string."""
+
+    def _run(self, measure_type: str, values: List[Any], use_duckdb: bool) -> Any:
+        return run(
+            script="DS_r <- DS_1;",
+            data_structures=_dataframe_structures(measure_type),
+            datapoints={"DS_1": pd.DataFrame({"Id_1": [1, 2], "Me_1": values})},
+            use_duckdb=use_duckdb,
+        )
+
+    @pytest.mark.parametrize("measure_type", sorted(_EMPTY_STRING_LITERALS))
+    def test_empty_string_is_null(self, use_duckdb: bool, measure_type: str) -> None:
+        result = self._run(measure_type, [_EMPTY_STRING_LITERALS[measure_type], ""], use_duckdb)
+        assert result["DS_r"].data["Me_1"].isnull().tolist() == [False, True]
+
+    def test_empty_string_among_numbers(self, use_duckdb: bool) -> None:
+        """The reported shape: a float column with an empty string in it."""
+        result = self._run("Number", [10.0, ""], use_duckdb)
+        assert result["DS_r"].data["Me_1"].isnull().tolist() == [False, True]
+        assert result["DS_r"].data["Me_1"].tolist()[0] == 10.0
+
+    def test_empty_string_is_a_value_in_string(self, use_duckdb: bool) -> None:
+        result = self._run("String", ["a", ""], use_duckdb)
+        assert result["DS_r"].data["Me_1"].tolist() == ["a", ""]
+
+    def test_empty_string_in_non_nullable_measure(self, use_duckdb: bool) -> None:
+        """Read as a null, it breaks a Measure that cannot be null (0-3-1-17)."""
+        with pytest.raises(VTLEngineException) as context:
+            run(
+                script="DS_r <- DS_1;",
+                data_structures=_nullability_structures(False),
+                datapoints={"DS_1": pd.DataFrame({"Id_1": [1, 2], "Me_1": [1.0, ""]})},
+                use_duckdb=use_duckdb,
+            )
+        assert context.value.args[1] == "0-3-1-17"
 
 
 _STRING_STRUCTURE = {
