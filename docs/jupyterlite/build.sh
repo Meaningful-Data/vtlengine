@@ -57,8 +57,23 @@ find "$WHEELS" -name '*.whl' ! -name 'vtlengine-*' -delete
 echo "==> 3/5  jupyter lite build (stock Pyodide ${PYODIDE_VERSION})"
 [ -f "$PYODIDE_TARBALL" ] || curl -fsSL -o "$PYODIDE_TARBALL" \
     "https://github.com/pyodide/pyodide/releases/download/${PYODIDE_VERSION}/pyodide-${PYODIDE_VERSION}.tar.bz2"
-rm -rf "$OUT"
+# Also drop the doit state of the previous build: with the output gone but the state
+# kept, `jupyter lite build` skips the tasks that patch jupyter-lite.json (appName and
+# the kernel's pyodideUrl), and the served site then loads Pyodide from the kernel's
+# default CDN instead of static/pyodide, where `import vtlengine` does not exist.
+rm -rf "$OUT" "$HERE/.jupyterlite.doit.db"
 ( cd "$HERE" && jupyter lite build --pyodide="$PYODIDE_TARBALL" --contents=content --output-dir="$OUT" )
+# Fail loudly if the kernel is not pointed at the bundled Pyodide.
+"$PY" - "$OUT/jupyter-lite.json" <<'PY'
+import json, sys
+
+cfg = json.load(open(sys.argv[1]))["jupyter-config-data"]
+kernel = cfg.get("litePluginSettings", {}).get("@jupyterlite/pyodide-kernel-extension:kernel", {})
+url = kernel.get("pyodideUrl", "")
+if "static/pyodide/pyodide" not in url:
+    sys.exit(f"ERROR: jupyter-lite.json does not point the kernel at static/pyodide (pyodideUrl={url!r})")
+print(f"  kernel pyodideUrl: {url}")
+PY
 
 echo "==> 4/5  inject wheels + patch the served lockfile (zero-install auto-load)"
 cp "$WHEELS"/*.whl "$OUT/static/pyodide/"
