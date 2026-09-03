@@ -1,5 +1,5 @@
 from copy import copy
-from typing import Any, List, Union
+from typing import Any, List, Union, cast
 
 import pandas as pd
 
@@ -13,6 +13,7 @@ from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Role, Scalar
 from vtlengine.Operators import Binary, Operator
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.Utils._dataframe import merge_frames
 from vtlengine.ViralPropagation import (
     apply_viral_return_types,
     combined_viral_components,
@@ -36,7 +37,7 @@ def dataset_assign(
     if isinstance(op, Dataset):
         if op.data is None or cond.empty:
             return pd.DataFrame(columns=ids + measures + [COND_COL])
-        return cond.merge(op.data, on=ids, how="inner")
+        return merge_frames(cond, op.data, on=ids, how="inner")
     return cond.assign(**dict.fromkeys(measures, op.value))
 
 
@@ -65,9 +66,9 @@ def _combine_viral_attributes(result: Any, operands: List[Any]) -> None:
             base = res_data[ids]
             cols = [
                 list(
-                    base.merge(d[ids + [va]].rename(columns={va: "__v__"}), on=ids, how="left")[
-                        "__v__"
-                    ]
+                    merge_frames(
+                        base, d[ids + [va]].rename(columns={va: "__v__"}), on=ids, how="left"
+                    )["__v__"]
                 )
                 for d in carriers
             ]
@@ -152,7 +153,7 @@ class If(Operator):
                 )
                 t_base[col] = t_base[col].astype(common_dtype)
                 f_base[col] = f_base[col].astype(common_dtype)
-        result.data = t_base.merge(f_base, how="outer").drop(columns=COND_COL)
+        result.data = merge_frames(t_base, f_base, how="outer").drop(columns=COND_COL)
         _combine_viral_attributes(result, [true_branch, false_branch])
 
     @classmethod
@@ -386,21 +387,26 @@ class Case(Operator):
         else:
             operation_level = list({type(c) for c in conditions if not isinstance(c, Scalar)})
             if operation_level[0] == DataComponent:
-                result.data = cls.component_level_evaluation(conditions, thenOps, elseOp)
+                component = cast(DataComponent, result)
+                component.data = cls.component_level_evaluation(
+                    conditions, thenOps, elseOp, component.data_type.dtype()
+                )
             else:
                 cls.dataset_level_evaluation(result, conditions, thenOps, elseOp)
         return result
 
     @classmethod
     def component_level_evaluation(
-        cls, conditions: List[Any], thenOps: List[Any], elseOp: Any
+        cls, conditions: List[Any], thenOps: List[Any], elseOp: Any, result_dtype: str
     ) -> Any:
+        # Build the result on an object Series: the branches come in different dtypes
+        # (numpy float, pyarrow double, string...) and pandas 3 no longer lets a .loc
+        # assignment widen the target's dtype. The declared result dtype is applied
+        # once every branch is in place.
         if isinstance(elseOp, DataComponent):
-            result = (
-                pd.Series(dtype=elseOp.data_type.dtype()) if elseOp.data is None else elseOp.data
-            )
+            result = pd.Series(dtype=object) if elseOp.data is None else elseOp.data.astype(object)
         else:
-            result = pd.Series(elseOp.value, index=conditions[0].data.index)
+            result = pd.Series(elseOp.value, index=conditions[0].data.index, dtype=object)
 
         for i in range(len(conditions)):
             case = conditions[i].data[conditions[i].data.fillna(False).astype("bool[pyarrow]")]
@@ -408,7 +414,7 @@ class Case(Operator):
             result = result.reindex(result.index.union(case.index))
             result.loc[case.index] = case_result
 
-        return result
+        return result.astype(result_dtype)  # type: ignore[call-overload]
 
     @classmethod
     def dataset_level_evaluation(

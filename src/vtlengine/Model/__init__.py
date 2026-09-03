@@ -332,7 +332,6 @@ class Dataset:
                 other.data,
                 check_dtype=False,
                 check_index_type=False,
-                check_datetimelike_compat=True,
                 check_exact=False,
                 rtol=1e-12,
                 atol=0.0,

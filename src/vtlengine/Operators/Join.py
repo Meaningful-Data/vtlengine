@@ -11,6 +11,7 @@ from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators import Operator, _id_type_promotion_join_keys
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.Utils._dataframe import merge_frames
 from vtlengine.ViralPropagation import (
     apply_viral_return_types,
     get_current_registry,
@@ -264,10 +265,10 @@ class Join(Operator):
                         op.data,
                     )
                 if op.data is not None and result.data is not None:
-                    result.data = pd.merge(
+                    result.data = merge_frames(
                         result.data,
                         op.data,
-                        how=cls.how,  # type: ignore[arg-type]
+                        how=cls.how,
                         on=merge_join_keys,
                     )
                     cls._combine_viral_attributes(result, viral_common, registry)
@@ -474,10 +475,10 @@ class CrossJoin(Join):
                 result.data = op.data
             else:
                 if result.data is not None:
-                    result.data = pd.merge(
+                    result.data = merge_frames(
                         result.data,
                         op.data,
-                        how=cls.how,  # type: ignore[arg-type]
+                        how=cls.how,
                     )
                     cls._combine_viral_attributes(result, viral_common, registry)
             if result.data is not None:

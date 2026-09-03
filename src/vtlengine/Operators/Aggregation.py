@@ -35,6 +35,7 @@ from vtlengine.DataTypes.TimeHandling import (
 )
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, Dataset, Role
+from vtlengine.Utils._dataframe import merge_frames
 from vtlengine.ViralPropagation import (
     apply_viral_return_types,
     get_current_registry,
@@ -302,7 +303,7 @@ class Aggregation(Operator.Unary):
         elif len(aux_df) == 0:
             aux_df = pd.DataFrame(columns=result.get_components_names())
         else:
-            aux_df = pd.merge(aux_df, result_df, how="left", on=grouping_keys)
+            aux_df = merge_frames(aux_df, result_df, how="left", on=grouping_keys)
         if having_expr is not None:
             aux_df.dropna(subset=result.get_measures_names(), how="any", inplace=True)
         if cls.op == COUNT and grouping_keys:
@@ -325,8 +326,11 @@ class Aggregation(Operator.Unary):
                         for va_name in viral_attr_names
                     }
                 ).reset_index()
-                aux_df = aux_df.drop(columns=viral_attr_names, errors="ignore").merge(
-                    resolved, how="left", on=grouping_keys
+                aux_df = merge_frames(
+                    aux_df.drop(columns=viral_attr_names, errors="ignore"),
+                    resolved,
+                    how="left",
+                    on=grouping_keys,
                 )
             else:
                 for va_name in viral_attr_names:

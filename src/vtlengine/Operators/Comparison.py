@@ -22,6 +22,7 @@ from vtlengine.DataTypes import COMP_NAME_MAPPING, Boolean, Null, String
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.Utils._dataframe import merge_frames
 from vtlengine.Utils._number_config import (
     numbers_are_equal,
     numbers_are_greater_equal,
@@ -532,7 +533,7 @@ class ExistIn(Operator.Operator):
 
         # Check if the common identifiers are equal between the two datasets
         if dataset_1.data is not None and dataset_2.data is not None:
-            true_results = pd.merge(
+            true_results = merge_frames(
                 dataset_1.data,
                 dataset_2.data,
                 how="inner",
@@ -550,7 +551,7 @@ class ExistIn(Operator.Operator):
             true_results["bool_var"] = True
         if dataset_1.data is None:
             dataset_1.data = pd.DataFrame(columns=reference_identifiers_names)
-        final_result = pd.merge(
+        final_result = merge_frames(
             dataset_1.data,
             true_results,
             how="left",

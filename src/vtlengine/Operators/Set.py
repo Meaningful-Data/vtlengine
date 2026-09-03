@@ -7,6 +7,7 @@ from vtlengine.DataTypes import binary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset
 from vtlengine.Operators import Operator
+from vtlengine.Utils._dataframe import merge_frames
 
 
 class Set(Operator):
@@ -96,8 +97,8 @@ class Intersection(Set):
                 if data is None:
                     result.data = pd.DataFrame(columns=result.get_identifiers_names())
                     break
-                result.data = result.data.merge(
-                    data, how="inner", on=result.get_identifiers_names()
+                result.data = merge_frames(
+                    result.data, data, how="inner", on=result.get_identifiers_names()
                 )
 
                 not_identifiers = (
@@ -133,7 +134,8 @@ class Symdiff(Set):
             if result.data is None:
                 result.data = data
                 continue
-            merged = result.data.merge(
+            merged = merge_frames(
+                result.data,
                 data,
                 how="outer",
                 on=id_names,
@@ -164,7 +166,8 @@ class Setdiff(Set):
                 if data is None:
                     data = pd.DataFrame(columns=result.get_identifiers_names())
                 id_names = result.get_identifiers_names()
-                result.data = result.data.merge(
+                result.data = merge_frames(
+                    result.data,
                     data[id_names].drop_duplicates(),
                     how="left",
                     on=id_names,

@@ -2,7 +2,7 @@ import csv
 from copy import copy, deepcopy
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Type, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Type, Union, cast
 
 import pandas as pd
 
@@ -108,6 +108,7 @@ from vtlengine.Utils import (
     UNARY_MAPPING,
 )
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.Utils._dataframe import merge_frames
 from vtlengine.Utils._number_config import format_scalar_value_for_csv
 from vtlengine.ViralPropagation import (
     ViralPropagationRegistry,
@@ -911,8 +912,8 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.regular_aggregation_dataset is not None
                 and self.regular_aggregation_dataset.data is not None
             ):
-                joined_result = pd.merge(
-                    self.regular_aggregation_dataset.data[id_columns],
+                joined_result = merge_frames(
+                    cast(pd.DataFrame, self.regular_aggregation_dataset.data[id_columns]),
                     result.data,
                     on=id_columns,
                     how="inner",
@@ -1339,11 +1340,12 @@ class InterpreterAnalyzer(ASTTemplate):
             elif isinstance(operand, Dataset) and operand.data is not None:
                 ids = merge_dataset.get_identifiers_names()
                 if set(ids).issubset(operand.data.columns):
-                    operand.data = (
-                        operand.data.assign(__idx__=operand.data.index)
-                        .merge(merge_data[ids], on=ids, how="inner")
-                        .set_index("__idx__")
-                    )
+                    operand.data = merge_frames(
+                        operand.data.assign(__idx__=operand.data.index),
+                        merge_data[ids],
+                        on=ids,
+                        how="inner",
+                    ).set_index("__idx__")
 
         return operand
 
@@ -1836,7 +1838,10 @@ class InterpreterAnalyzer(ASTTemplate):
             # If no filtering indexes, then all datapoints are valid on DPR and HR
             if len(filtering_indexes) == 0 and not (self.is_from_hr_agg or self.is_from_hr_val):
                 self.rule_data["bool_var"] = True
-                self.rule_data.loc[nan_indexes, "bool_var"] = None
+                if nan_indexes:
+                    # pandas 3 refuses to write None into a bool column: widen it first.
+                    self.rule_data["bool_var"] = self.rule_data["bool_var"].astype(object)
+                    self.rule_data.loc[nan_indexes, "bool_var"] = None
                 return self.rule_data
             non_filtering_indexes = list(set(filter_comp.data.index) - set(filtering_indexes))
 
@@ -1847,11 +1852,14 @@ class InterpreterAnalyzer(ASTTemplate):
                 # We only need to filter rule_data on DPR
                 return result_validation
             self.rule_data["bool_var"] = result_validation.data
-            original_data = original_data.merge(
-                self.rule_data, how="left", on=original_data.columns.tolist()
+            original_data = merge_frames(
+                original_data, self.rule_data, how="left", on=original_data.columns.tolist()
             )
             original_data.loc[non_filtering_indexes, "bool_var"] = True
-            original_data.loc[nan_indexes, "bool_var"] = None
+            if nan_indexes:
+                # pandas 3 refuses to write None into a bool column: widen it first.
+                original_data["bool_var"] = original_data["bool_var"].astype(object)
+                original_data.loc[nan_indexes, "bool_var"] = None
             return original_data
 
         self.compute_partial_data &= not self.is_from_hr_agg or node.op not in HR_COMP_MAPPING
@@ -1976,8 +1984,13 @@ class InterpreterAnalyzer(ASTTemplate):
             df = self.hr_agg_rules_computed[node.value].copy()
             if self.hr_input in (RULE_PRIORITY, DATASET_PRIORITY):
                 input_df = rule_data.copy().rename(columns={me_name: "__input_me__"})
-                merged = df.merge(input_df, on=ruleset_ds.get_identifiers_names(), how="inner")
-                df[me_name].where(df[me_name].notna(), merged["__input_me__"], inplace=True)
+                merged = merge_frames(
+                    df, input_df, on=ruleset_ds.get_identifiers_names(), how="inner"
+                )
+                # Assign the result back: an in-place `where` on the column selection is
+                # a chained assignment, which pandas 3 Copy-on-Write no longer writes
+                # through to `df`.
+                df[me_name] = df[me_name].where(df[me_name].notna(), merged["__input_me__"])
             self.update_partial_data(df, me_name, node.value)
             return Dataset(name=node.value, components=result_components, data=df)
 
@@ -2002,7 +2015,9 @@ class InterpreterAnalyzer(ASTTemplate):
         if node.value in df[hr_component].values:
             value_data = df[df[hr_component] == node.value]
             if other_ids:
-                merged = value_data.merge(code_data, how="right", on=other_ids, indicator=True)
+                merged = merge_frames(
+                    value_data, code_data, how="right", on=other_ids, indicator=True
+                )
                 merged[me_name] = merged[me_name].astype(object)
                 merged.loc[merged["_merge"] == "right_only", me_name] = REMOVE
                 df = merged.drop(columns=["_merge"]).set_index(code_data.index)

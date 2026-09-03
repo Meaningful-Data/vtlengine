@@ -16,6 +16,7 @@ from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators import Operator
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.Utils._dataframe import merge_frames
 
 
 # noinspection PyTypeChecker
@@ -149,8 +150,7 @@ class Validation(Operator):
 
         if len(rule_list_df) == 1:
             return rule_list_df[0]
-        df = pd.concat(rule_list_df, ignore_index=True, copy=False)
-        return df
+        return pd.concat(rule_list_df, ignore_index=True)
 
     @classmethod
     def validate(
@@ -279,7 +279,7 @@ class Validation(Operator):
                 viral_src = viral_src_data[join_ids + missing_viral].drop_duplicates(
                     subset=join_ids
                 )
-                result.data = result.data.merge(viral_src, on=join_ids, how="left")
+                result.data = merge_frames(result.data, viral_src, on=join_ids, how="left")
 
         result.data = result.data[result.get_components_names()]
         return result
