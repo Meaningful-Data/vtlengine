@@ -206,7 +206,7 @@ class Drop(Operator):
     def evaluate(cls, operands: List[str], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
         if dataset.data is not None:
-            result_dataset.data = dataset.data.drop(columns=operands, axis=1)
+            result_dataset.data = dataset.data.drop(columns=operands)
         return result_dataset
 
 
@@ -402,6 +402,6 @@ class Sub(Operator):
                             set(operand.data[operand.data == True].index)
                         )
             result_dataset.data = result_dataset.data.iloc[list(true_indexes)]
-        result_dataset.data = result_dataset.data.drop(columns=operand_names, axis=1)
+        result_dataset.data = result_dataset.data.drop(columns=operand_names)
         result_dataset.data = result_dataset.data.reset_index(drop=True)
         return result_dataset

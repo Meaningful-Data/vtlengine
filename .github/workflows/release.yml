@@ -43,9 +43,36 @@ jobs:
           name: wheels-${{ matrix.runner }}-${{ matrix.arch }}
           path: wheelhouse/*.whl
 
+  build-wasm-wheel:
+    name: Build wheels (ubuntu-latest / wasm32, Pyodide)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.client_payload.tag_name || github.ref }}
+
+      - name: Build the WebAssembly wheel
+        # cibuildwheel's pyodide platform brings its own host Python 3.14
+        # (python-build-standalone), the Pyodide 314 cross-build environment,
+        # Emscripten and Node.js, then runs tests/API against the wheel in a
+        # `pyodide venv` (see [tool.cibuildwheel.pyodide] in pyproject.toml). The wheel carries the
+        # PEP 783 `pyemscripten_2026_0_wasm32` platform tag PyPI accepts, so the
+        # publish job uploads it like any other wheel.
+        uses: pypa/cibuildwheel@1828c10ab37f080699c7b81cea34097c684a7074 # v4.2.0
+        with:
+          only: cp314-pyodide_wasm32
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: wheels-pyodide-wasm32
+          path: wheelhouse/*.whl
+
   publish:
     name: Publish to PyPI
-    needs: [build-wheels]
+    needs: [build-wheels, build-wasm-wheel]
     if: github.event_name == 'release' || github.event_name == 'repository_dispatch' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     environment: pypi

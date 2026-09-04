@@ -10,6 +10,7 @@ from vtlengine.AST.Grammar.tokens import HIERARCHY, NON_NULL, NON_ZERO
 from vtlengine.DataTypes import Boolean, Number
 from vtlengine.Model import Component, DataComponent, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.Utils._dataframe import merge_frames
 from vtlengine.Utils._number_config import (
     numbers_are_equal,
     numbers_are_greater_equal,
@@ -303,7 +304,7 @@ class Hierarchy(Operators.Operator):
                 # combination (issue #969): left-join every child onto the node's group
                 # universe so the propagation rule sees one value per child and group.
                 groups = combined[other_ids].drop_duplicates()
-                padded = [groups.merge(cf, on=other_ids, how="left") for cf in child_frames]
+                padded = [merge_frames(groups, cf, on=other_ids, how="left") for cf in child_frames]
                 combined = pd.concat(padded, ignore_index=True)
                 grouped = combined.groupby(other_ids, sort=False)
                 agg = {
@@ -367,8 +368,8 @@ class Hierarchy(Operators.Operator):
                 viral_values, viral_names, node_children, rule_component, other_ids
             )
             if computed_viral is not None:
-                computed_data = computed_data.merge(
-                    computed_viral, on=other_ids + [rule_component], how="left"
+                computed_data = merge_frames(
+                    computed_data, computed_viral, on=other_ids + [rule_component], how="left"
                 )
 
         if output == "computed":
@@ -377,8 +378,8 @@ class Hierarchy(Operators.Operator):
             # union(setdiff(op, R), R): union then drop duplicates, keeping the computed row.
             original = dataset.data
             if viral_names and viral_values is not None and original is not None:
-                original = original.merge(
-                    viral_values, on=dataset.get_identifiers_names(), how="left"
+                original = merge_frames(
+                    original, viral_values, on=dataset.get_identifiers_names(), how="left"
                 )
             result.data = pd.concat([original, computed_data], axis=0, ignore_index=True)
             result.data.drop_duplicates(

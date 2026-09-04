@@ -165,14 +165,14 @@ class Binary(Operator.Binary):
         if scalar is None:
             return pd.Series(None, index=series.index, dtype=result_dtype)
         digits = get_effective_numeric_digits()
+        # Iterate the values rather than Series.map: on pandas 3, map turns a nullable
+        # Integer column into float64, so whole results would read back as "1.0" and
+        # the cast to the Integer dtype would fail.
         if series_left:
-            return series.map(
-                lambda x: cls._numeric_op(x, scalar, digits), na_action="ignore"
-            ).astype(result_dtype)
+            result = [cls._null_aware_numeric_op(x, scalar, digits) for x in series.values]
         else:
-            return series.map(
-                lambda x: cls._numeric_op(scalar, x, digits), na_action="ignore"
-            ).astype(result_dtype)
+            result = [cls._null_aware_numeric_op(scalar, x, digits) for x in series.values]
+        return pd.Series(result, index=series.index, dtype=result_dtype)
 
 
 class UnPlus(Unary):

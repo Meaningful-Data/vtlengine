@@ -40,6 +40,7 @@ from vtlengine.DataTypes import (
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.Utils._dataframe import merge_frames
 from vtlengine.ViralPropagation import (
     apply_viral_return_types,
     get_current_registry,
@@ -420,7 +421,7 @@ class Analytic(Operator.Unary):
                     ].transform(lambda vals, n=va_name: registry.resolve_group(n, list(vals)))
                 else:
                     viral_src[va_name] = registry.resolve_group(va_name, list(viral_src[va_name]))
-            result.data = result.data.merge(viral_src, on=identifier_names, how="left")
+            result.data = merge_frames(result.data, viral_src, on=identifier_names, how="left")
 
         if result.data is not None:
             for comp_name, comp in result.components.items():

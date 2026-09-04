@@ -34,6 +34,7 @@ from vtlengine.DataTypes.TimeHandling import (
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.Utils._dataframe import merge_frames
 from vtlengine.ViralPropagation import (
     apply_viral_return_types,
     combined_viral_components,
@@ -618,7 +619,7 @@ class Binary(Operator):
             if base_operand_data is None or other_operand_data is None:
                 result_data: pd.DataFrame = pd.DataFrame()
             else:
-                result_data = pd.merge(
+                result_data = merge_frames(
                     base_operand_data,
                     other_operand_data,
                     how="inner",

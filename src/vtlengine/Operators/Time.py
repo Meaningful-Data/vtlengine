@@ -584,7 +584,11 @@ class Fill_time_series(Binary):
             date_range = cls._period_range(min_max["min"], min_max["max"], min_frequency)
             date_df = pd.DataFrame(date_range, columns=[cls.time_id])
             if cls.other_ids:
-                date_df[cls.other_ids] = group.iloc[0][cls.other_ids]
+                # One column at a time: a multi-column assignment from the row Series
+                # takes its values positionally, which pandas 3 no longer allows.
+                first_row = group.iloc[0]
+                for other_id in cls.other_ids:
+                    date_df[other_id] = first_row[other_id]
             date_df[cls.measures] = None
             return date_df, min_max["date_format"]
 
