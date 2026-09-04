@@ -86,7 +86,8 @@ issue carries the `documentation` label.
   moves the recipes to lxml 6.1.3, libxslt 1.1.45 and libxml2 2.15.3, so a next
   Pyodide release ships a compliant `lxml` and both workarounds become unnecessary.
 - `scripts/check_micropip_install.mjs` performs that plain install for the wheel
-  `release.yml` has just built, on stock Pyodide in Node.js: micropip resolution against
+  `pyodide_test.yml` (pull requests) and `release.yml` have just built, on stock Pyodide
+  in Node.js: micropip resolution against
   the Pyodide lockfile and PyPI, then `import vtlengine` and one statement on both
   engines. Run it locally with `npm install --no-save pyodide@314.0.6` and
   `node scripts/check_micropip_install.mjs <wheel>`. The lxml failure above is

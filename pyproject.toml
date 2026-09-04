@@ -167,7 +167,8 @@ before-build = "bash {project}/scripts/setup_antlr4_runtime.sh"
 before-build = "bash {project}/scripts/setup_antlr4_runtime.sh"
 
 # WebAssembly wheel (cp314-pyodide_wasm32, PEP 783 `pyemscripten_2026_0_wasm32` tag),
-# built with `CIBW_PLATFORM=pyodide` in release.yml. The linux/macos/windows tables
+# built with `only: cp314-pyodide_wasm32` in pyodide_test.yml (pull requests) and
+# release.yml. The linux/macos/windows tables
 # above do not apply to this platform, so before-build is repeated here. The tests are
 # the same tests/API run as for the native wheels, executed in cibuildwheel's
 # `pyodide venv` (Node.js) against the installed wheel and the Pyodide distribution's

@@ -2,8 +2,8 @@
 //
 // This is what a Pyodide user does, `micropip.install(...)` resolving the wheel's dependencies
 // against the Pyodide lockfile and PyPI (micropip does not backtrack), as opposed to the
-// pip-based `pyodide venv` cibuildwheel tests the wheel with. release.yml runs it on the wheel
-// it has just built. Locally:
+// pip-based `pyodide venv` cibuildwheel tests the wheel with. pyodide_test.yml (pull requests)
+// and release.yml run it on the wheel they have just built. Locally:
 //
 //     npm install --no-save pyodide@314.0.6   # the line the wheel targets (pyemscripten_2026_0)
 //     node scripts/check_micropip_install.mjs wheelhouse/vtlengine-*.whl [--preinstall REQ]...

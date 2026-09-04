@@ -1,0 +1,59 @@
+name: Pyodide test
+
+on:
+  pull_request:
+    branches: ["main", "1.6.X", "1.9.X"]
+  merge_group:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  pyodide-test:
+    name: Build the wasm wheel, run tests/API in a pyodide venv, check the micropip install
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Cache the Pyodide cross-build toolchain
+        # cibuildwheel downloads its host Python 3.14, the Pyodide cross-build
+        # environment, Emscripten and Node.js into this directory (about 1 GB); keep
+        # them between runs. The set is fixed by the cibuildwheel version, hence the key.
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/cibuildwheel
+          key: cibuildwheel-pyodide-${{ runner.os }}-1828c10ab37f080699c7b81cea34097c684a7074
+
+      - name: Build the WebAssembly wheel and run tests/API in a pyodide venv
+        # The same build as release.yml: cp314-pyodide_wasm32 (PEP 783
+        # pyemscripten_2026_0_wasm32 tag), with tests/API run against the installed
+        # wheel in cibuildwheel's `pyodide venv` ([tool.cibuildwheel.pyodide] in
+        # pyproject.toml).
+        uses: pypa/cibuildwheel@1828c10ab37f080699c7b81cea34097c684a7074 # v4.2.0
+        with:
+          only: cp314-pyodide_wasm32
+
+      - name: Check that the wheel installs with micropip on stock Pyodide
+        # What a Pyodide user runs: micropip resolving the wheel's dependencies against
+        # the Pyodide lockfile and PyPI (no backtracking), then `import vtlengine` and one
+        # statement on both engines. The `pyodide` npm package must be the line the wheel
+        # targets (314.x = pyemscripten_2026_0); keep it in step with release.yml and
+        # docs/jupyterlite/build.sh.
+        run: |
+          npm install --no-save --no-audit --no-fund --ignore-scripts pyodide@314.0.6
+          node --test scripts/check_micropip_install.test.mjs
+          node scripts/check_micropip_install.mjs wheelhouse/vtlengine-*.whl
+
+      - name: Upload the wheel
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: wheel-pyodide-wasm32
+          path: wheelhouse/*.whl
+          retention-days: 7
