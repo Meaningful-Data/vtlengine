@@ -237,6 +237,12 @@ def _validate_pandas(
 ) -> pd.DataFrame:
     warnings.filterwarnings("ignore", category=FutureWarning)
 
+    # The DataFrame belongs to the caller: work on a shallow copy so the label
+    # normalization, the columns added for missing components and the value
+    # replacements below never reach it. No data is copied; every step that changes
+    # values assigns a new column.
+    data = data.copy(deep=False)
+
     # Strip UTF-8 BOM from column names (e.g. DataFrames read from BOM-encoded CSVs)
     bom_stripped = [str(col).removeprefix("\ufeff") for col in data.columns]
     data.columns = pd.Index(bom_stripped)
