@@ -16,6 +16,7 @@ from vtlengine.AST import (
     VarID,
 )
 from vtlengine.DataTypes import Number, TimeInterval, TimePeriod
+from vtlengine.duckdb_transpiler import transpile
 from vtlengine.duckdb_transpiler.sql import initialize_time_types
 from vtlengine.duckdb_transpiler.Transpiler import SQLTranspiler
 from vtlengine.Model import Component, Dataset, Role
@@ -260,5 +261,90 @@ class TestSQLInitialization:
                 conn.execute(sql).fetchone()
             except Exception as e:
                 pytest.fail(f"Function test failed: {sql}\nError: {e}")
+
+        conn.close()
+
+
+# =============================================================================
+# Tests: sub-expressions bound once (#1106)
+# =============================================================================
+
+
+HOIST_STRUCTURE = {
+    "datasets": [
+        {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "String", "role": "Identifier", "nullable": False},
+                {"name": "Id_2", "type": "Date", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Integer", "role": "Measure", "nullable": True},
+            ],
+        },
+        {
+            "name": "DS_2",
+            "DataStructure": [
+                {"name": "Id_1", "type": "String", "role": "Identifier", "nullable": False},
+                {"name": "Id_2", "type": "Time_Period", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Integer", "role": "Measure", "nullable": True},
+            ],
+        },
+    ]
+}
+
+CALC_IDENTIFIER_SCRIPT = (
+    'DS_r <- DS_1[calc identifier Id_3 := time_agg("M", "D", cast(Id_2, time_period))];'
+)
+
+
+class TestOperandBoundOnce:
+    """An operand read repeatedly is computed once as a column of a subquery.
+
+    DuckDB substitutes a macro argument at every place the parameter is used, so a
+    nested chain of time macros multiplies copies of the inner expressions and the
+    binder pays seconds for each statement (#1106).
+    """
+
+    @pytest.mark.parametrize(
+        "script,outer",
+        [
+            (CALC_IDENTIFIER_SCRIPT, "vtl_time_agg_tp"),
+            ('DS_r <- DS_2[calc Me_2 := time_agg("A", Id_2)];', "vtl_time_agg_tp"),
+            ('DS_r <- DS_2[aggr Me_2 := sum(Me_1) group all time_agg("A")];', "vtl_time_agg_tp"),
+            ('DS_r <- sum(DS_2 group all time_agg("A"));', "vtl_time_agg_tp"),
+            ('DS_r <- sum(DS_1 group all time_agg("A", last));', "vtl_tp_end_date"),
+            ('sc <- time_agg("A", cast("2020-05-05", date), first);', "vtl_tp_start_date"),
+        ],
+    )
+    def test_time_agg_operand_read_from_a_column(self, script, outer):
+        """The operand is computed once as a column and the macro reads that column."""
+        sql = normalize_sql(transpile(script, HOIST_STRUCTURE)[0][1])
+
+        assert f'{outer}("__vtl_hoisted_0__"' in sql, sql
+        assert 'AS "__vtl_hoisted_0__"' in sql, sql
+        assert f"{outer}(vtl_period_parse" not in sql, sql
+
+    def test_calc_identifier_null_guard_evaluates_once(self):
+        """The null guard tests and returns a column, not the expression twice."""
+        script = 'DS_r <- DS_1[calc identifier Id_3 := Id_1 || "x"];'
+        sql = normalize_sql(transpile(script, HOIST_STRUCTURE)[0][1])
+
+        assert sql.count("\"Id_1\" || 'x'") == 1, sql
+        assert 'CASE WHEN "__vtl_hoisted_0__" IS NULL' in sql, sql
+        assert 'ELSE "__vtl_hoisted_0__" END' in sql, sql
+
+    def test_hoisted_columns_do_not_reach_the_result(self):
+        """The precomputed columns are in scope, and excluded from the output."""
+        conn = duckdb.connect(":memory:")
+        initialize_time_types(conn)
+        conn.execute(
+            'CREATE TABLE "DS_1" AS SELECT * FROM (VALUES'
+            " ('A', '2024-02-29', 1), ('A', '2024-03-01', 2)) v(\"Id_1\", \"Id_2\", \"Me_1\")"
+        )
+
+        _, sql, _ = transpile(CALC_IDENTIFIER_SCRIPT, HOIST_STRUCTURE)[0]
+        result = conn.execute(f'SELECT * FROM ({sql}) ORDER BY "Id_2"')
+
+        assert [d[0] for d in result.description] == ["Id_1", "Id_2", "Me_1", "Id_3"]
+        assert [row[-1] for row in result.fetchall()] == ["2024-M02", "2024-M03"]
 
         conn.close()

@@ -290,6 +290,14 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     _pending_nested_analytics: List[Tuple[str, str]] = field(default_factory=list, init=False)
     _materialize_nested_analytics: bool = field(default=False, init=False)
 
+    # Hoisted sub-expressions (#1106): DuckDB expands a scalar macro by substituting
+    # the argument at every place the parameter is used, so a nested chain of macros
+    # multiplies copies of the inner expressions and the binder pays for each one. An
+    # operand collected here is computed once as a column of a wrapping subquery and
+    # the outer expression reads that column instead
+    _hoisted: List[List[Tuple[str, str]]] = field(default_factory=list, init=False)
+    _hoist_counter: int = field(default=0, init=False)
+
     def __post_init__(self) -> None:
         """Initialize available tables."""
         self.datasets = {**self.input_datasets, **self.output_datasets}
@@ -315,6 +323,41 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             self._in_clause = old_in_clause
             self._current_dataset = old_current_ds
             self._column_prefix = old_prefix
+
+    @contextmanager
+    def _hoist_scope(self) -> Generator[List[Tuple[str, str]], None, None]:
+        """Collect the sub-expressions hoisted while building one statement."""
+        self._hoisted.append([])
+        try:
+            yield self._hoisted[-1]
+        finally:
+            self._hoisted.pop()
+
+    def _hoist(self, expr_sql: str) -> str:
+        """Compute *expr_sql* once in a wrapping subquery and return its column name.
+
+        Returns the expression unchanged when no enclosing statement can hold the
+        extra column (issue #1106).
+        """
+        if not self._hoisted:
+            return expr_sql
+        alias = f"__vtl_hoisted_{self._hoist_counter}__"
+        self._hoist_counter += 1
+        self._hoisted[-1].append((alias, expr_sql))
+        return quote_name(alias)
+
+    def _hoisted_source(self, src: str, hoisted: List[Tuple[str, str]]) -> str:
+        """Wrap *src* in the subquery that computes the hoisted columns."""
+        if not hoisted:
+            return src
+        for alias, expr_sql in hoisted:
+            src = (
+                SQLBuilder()
+                .select("t.*", f"{expr_sql} AS {quote_name(alias)}")
+                .from_table(self._as_subquery(src), "t")
+                .build()
+            )
+        return self._as_subquery(src)
 
     @contextmanager
     def _stash_assignment(self) -> Generator[None, None, None]:
@@ -399,14 +442,18 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
                 is_persistent = isinstance(child, AST.PersistentAssignment)
                 if name in self.output_scalars:
-                    value_sql = self.visit(child)
-                    if value_sql.strip().upper().startswith("SELECT"):
-                        # Full SELECT (e.g. membership on an ungrouped
-                        # aggregation): fold to a scalar subquery so the table
-                        # exposes the single ``value`` column consumers expect.
-                        value_sql = f"SELECT ({value_sql}) AS value"
-                    else:
-                        value_sql = f"SELECT {value_sql} AS value"
+                    with self._hoist_scope() as hoisted:
+                        value_sql = self.visit(child)
+                        if value_sql.strip().upper().startswith("SELECT"):
+                            # Full SELECT (e.g. membership on an ungrouped
+                            # aggregation): fold to a scalar subquery so the table
+                            # exposes the single ``value`` column consumers expect.
+                            value_sql = f"SELECT ({value_sql}) AS value"
+                        else:
+                            value_sql = f"SELECT {value_sql} AS value"
+                            if hoisted:
+                                one_row = self._hoisted_source("(SELECT 1)", hoisted)
+                                value_sql += f" FROM {one_row} AS t"
                     queries.append((name, value_sql, is_persistent))
                 else:
                     query = self.visit(child)
@@ -2140,17 +2187,18 @@ FROM (
 
     def _calc_clause_exprs(
         self, clause: AST.RegularAggregation, ds: Dataset
-    ) -> Tuple[Dict[str, str], List[Tuple[str, str]]]:
+    ) -> Tuple[Dict[str, str], List[Tuple[str, str]], List[Tuple[str, str]]]:
         """Evaluate one calc clause's assignments against *ds*.
 
-        Returns the column expressions together with the nested analytic columns
-        they reference, which the caller must compute in a wrapping subquery.
+        Returns the column expressions together with the nested analytic columns and
+        the hoisted columns they reference, which the caller must compute in a
+        wrapping subquery.
         """
         exprs: Dict[str, str] = {}
         old_materialize = self._materialize_nested_analytics
         self._materialize_nested_analytics = True
         try:
-            with self._clause_scope(ds):
+            with self._hoist_scope() as hoisted, self._clause_scope(ds):
                 for child in clause.children:
                     assignment = self._unwrap_assignment(child)
                     if not isinstance(assignment, AST.Assignment):
@@ -2158,48 +2206,61 @@ FROM (
                     col_name = self._resolve_udo_name(self._get_node_value(assignment.left))
                     expr_sql = self.visit(assignment.right)
                     if _CALC_ROLE_BY_TOKEN.get(getattr(child, "op", "")) is Role.IDENTIFIER:
+                        # The null guard names the expression twice, so bind it once
+                        # instead of leaving the binder to expand it again (#1106)
+                        guarded = self._hoist(expr_sql)
                         expr_sql = (
-                            f"CASE WHEN ({expr_sql}) IS NULL THEN "
+                            f"CASE WHEN {guarded} IS NULL THEN "
                             f"error('VTL 2-1-1-16: null value on a calculated Identifier') "
-                            f"ELSE ({expr_sql}) END"
+                            f"ELSE {guarded} END"
                         )
                     exprs[col_name] = expr_sql
+                hoisted_cols = list(hoisted)
         finally:
             self._materialize_nested_analytics = old_materialize
         nested_cols = list(self._pending_nested_analytics)
         self._pending_nested_analytics.clear()
-        return exprs, nested_cols
+        return exprs, nested_cols, hoisted_cols
 
     def visit_RegularAggregation_calc(self, node: AST.RegularAggregation) -> str:
         chain = self._calc_chain(node)
         with self._stash_assignment():
             base_ds = self._get_dataset_structure(chain[0].dataset)
             src = self._get_dataset_sql(chain[0].dataset)
-        levels: List[Tuple[Dataset, Dict[str, str], List[Tuple[str, str]]]] = []
+        levels: List[
+            Tuple[Dataset, Dict[str, str], List[Tuple[str, str]], List[Tuple[str, str]]]
+        ] = []
         level_ds: Optional[Dataset] = None
         level_exprs: Dict[str, str] = {}
         level_nested: List[Tuple[str, str]] = []
+        level_hoisted: List[Tuple[str, str]] = []
         for i, clause in enumerate(chain):
             clause_ds = base_ds if i == 0 else self._get_dataset_structure(clause.dataset)
-            exprs, nested_cols = self._calc_clause_exprs(clause, clause_ds)
-            # A column produced by an earlier clause may be referenced from the
-            # clause expressions or from the nested analytics they hand over
-            clause_sqls = list(exprs.values()) + [sql for _, sql in nested_cols]
+            exprs, nested_cols, hoisted_cols = self._calc_clause_exprs(clause, clause_ds)
+            # A column produced by an earlier clause may be referenced from the clause
+            # expressions or from the nested analytics and hoisted columns they hand over
+            clause_sqls = list(exprs.values()) + [sql for _, sql in nested_cols + hoisted_cols]
             conflicts = set(exprs) & set(level_exprs) or any(
                 f'"{produced}"' in sql for sql in clause_sqls for produced in level_exprs
             )
             if level_exprs and conflicts:
-                levels.append((level_ds, level_exprs, level_nested))  # type: ignore[arg-type]
-                level_ds, level_exprs, level_nested = clause_ds, dict(exprs), list(nested_cols)
+                levels.append(
+                    (level_ds, level_exprs, level_nested, level_hoisted)  # type: ignore[arg-type]
+                )
+                level_ds, level_exprs = clause_ds, dict(exprs)
+                level_nested, level_hoisted = list(nested_cols), list(hoisted_cols)
             else:
                 if level_ds is None:
                     level_ds = clause_ds
                 level_exprs.update(exprs)
                 level_nested.extend(nested_cols)
+                level_hoisted.extend(hoisted_cols)
         if level_exprs or level_ds is not None:
-            levels.append((level_ds, level_exprs, level_nested))  # type: ignore[arg-type]
+            levels.append(
+                (level_ds, level_exprs, level_nested, level_hoisted)  # type: ignore[arg-type]
+            )
 
-        for ds, calc_exprs, nested_cols in levels:
+        for ds, calc_exprs, nested_cols, hoisted_cols in levels:
             # Analytics nested inside another analytic are computed one wrapping
             # subquery at a time, innermost first, so no SELECT nests window calls
             for alias, win_sql in nested_cols:
@@ -2209,13 +2270,15 @@ FROM (
                     .from_table(self._as_subquery(src), "t")
                     .build()
                 )
+            # Hoisted operands read the nested analytics, so they come after them
+            src = self._hoisted_source(src, hoisted_cols)
             # Carry the operand through as it actually comes out rather than naming its
             # Components one by one. An operator applied over the Measures drops the
             # plain Attributes from its query while still reporting them in its
             # structure, and listing them here asked the binder for columns the
             # subquery never selected (issue #978).
             replaced = [name for name in calc_exprs if name in ds.components]
-            hidden = replaced + [alias for alias, _ in nested_cols]
+            hidden = replaced + [alias for alias, _ in nested_cols + hoisted_cols]
             passthrough = "t.*"
             if hidden:
                 excluded = ", ".join(quote_name(name) for name in hidden)
@@ -2360,27 +2423,29 @@ FROM (
         grouping_names: List[str] = []
         time_agg_expr: Optional[str] = None
         time_agg_id: Optional[str] = None
-        for child in node.children:
-            assignment = self._unwrap_assignment(child)
-            if isinstance(assignment, AST.Assignment):
-                agg_node = assignment.right
-                if isinstance(agg_node, AST.Aggregation) and agg_node.grouping:
-                    grouping_op = agg_node.grouping_op or ""
-                    for g in agg_node.grouping:
-                        if isinstance(g, (AST.VarID, AST.Identifier)):
-                            resolved = self._resolve_udo_name(g.value)
-                            if resolved not in grouping_names:
-                                grouping_names.append(resolved)
-                        elif isinstance(g, AST.TimeAggregation) and time_agg_expr is None:
-                            with self._clause_scope(ds):
-                                time_agg_expr = self.visit_TimeAggregation(g)
-                            for comp in ds.components.values():
-                                if (
-                                    comp.data_type in (TimePeriod, Date)
-                                    and comp.role == Role.IDENTIFIER
-                                ):
-                                    time_agg_id = comp.name
-                                    break
+        with self._hoist_scope() as hoisted:
+            for child in node.children:
+                assignment = self._unwrap_assignment(child)
+                if isinstance(assignment, AST.Assignment):
+                    agg_node = assignment.right
+                    if isinstance(agg_node, AST.Aggregation) and agg_node.grouping:
+                        grouping_op = agg_node.grouping_op or ""
+                        for g in agg_node.grouping:
+                            if isinstance(g, (AST.VarID, AST.Identifier)):
+                                resolved = self._resolve_udo_name(g.value)
+                                if resolved not in grouping_names:
+                                    grouping_names.append(resolved)
+                            elif isinstance(g, AST.TimeAggregation) and time_agg_expr is None:
+                                with self._clause_scope(ds):
+                                    time_agg_expr = self.visit_TimeAggregation(g)
+                                for comp in ds.components.values():
+                                    if (
+                                        comp.data_type in (TimePeriod, Date)
+                                        and comp.role == Role.IDENTIFIER
+                                    ):
+                                        time_agg_id = comp.name
+                                        break
+            group_src = self._hoisted_source(table_src, hoisted)
 
         all_input_ids = list(ds.get_identifiers_names())
         if grouping_op == "group by":
@@ -2420,7 +2485,7 @@ FROM (
             else:
                 cols.append(f"{vp_group_sql(v_rule, v_qn)} AS {v_qn}")
 
-        builder = SQLBuilder().select(*cols).from_table(table_src)
+        builder = SQLBuilder().select(*cols).from_table(group_src)
         if group_ids:
             builder.group_by(*[_id_group_sql(id_) for id_ in group_ids])
 
@@ -2591,7 +2656,9 @@ FROM (
         # Resolve group columns from input identifiers.
         all_ids = ds.get_identifiers_names()
         group_cols = self._resolve_group_cols(node, all_ids)
-        cols, group_by_cols = self._build_agg_group_cols(node, ds, group_cols)
+        with self._hoist_scope() as hoisted:
+            cols, group_by_cols = self._build_agg_group_cols(node, ds, group_cols)
+            group_src = self._hoisted_source(table_src, hoisted)
         ds_tp_minmax_cols: List[tuple[str, str]] = []
 
         if op == tokens.COUNT:
@@ -2631,7 +2698,7 @@ FROM (
             else:
                 cols.append(f"{vp_group_sql(v_rule, v_qn)} AS {v_qn}")
 
-        builder = SQLBuilder().select(*cols).from_table(table_src)
+        builder = SQLBuilder().select(*cols).from_table(group_src)
 
         if group_cols:
             builder.group_by(*group_by_cols)
@@ -4480,7 +4547,8 @@ FROM (
 
             operand_sql = self.visit(node.operand)
             if self._is_operand_type(node.operand, TimePeriod):
-                return f"vtl_time_agg_tp(vtl_period_parse({operand_sql}), '{target}')"
+                parsed = self._hoist(f"vtl_period_parse({operand_sql})")
+                return f"vtl_time_agg_tp({parsed}, '{target}')"
             else:
                 agg_expr = f"vtl_time_agg_date({operand_sql}, '{target}')"
                 return self._apply_time_agg_conf(agg_expr, conf)
@@ -4490,7 +4558,8 @@ FROM (
                 for comp in self._current_dataset.components.values():
                     if comp.data_type == TimePeriod and comp.role == Role.IDENTIFIER:
                         col = quote_name(comp.name)
-                        return f"vtl_time_agg_tp(vtl_period_parse({col}), '{target}')"
+                        parsed = self._hoist(f"vtl_period_parse({col})")
+                        return f"vtl_time_agg_tp({parsed}, '{target}')"
                 for comp in self._current_dataset.components.values():
                     if comp.data_type == Date and comp.role == Role.IDENTIFIER:
                         col = quote_name(comp.name)
@@ -4498,13 +4567,12 @@ FROM (
                         return self._apply_time_agg_conf(agg, conf)
             return f"vtl_time_agg_date(CURRENT_DATE, '{target}')"
 
-    @staticmethod
-    def _apply_time_agg_conf(expr: str, conf: Optional[str]) -> str:
+    def _apply_time_agg_conf(self, expr: str, conf: Optional[str]) -> str:
         """Apply time_agg conf (first/last) modifier to a Date aggregation expression."""
-        if conf == "first":
-            return f"vtl_tp_start_date(vtl_period_parse({expr}))"
-        if conf == "last":
-            return f"vtl_tp_end_date(vtl_period_parse({expr}))"
+        if conf in ("first", "last"):
+            parsed = self._hoist(f"vtl_period_parse({expr})")
+            edge = "start" if conf == "first" else "end"
+            return f"vtl_tp_{edge}_date({parsed})"
         return expr
 
     def _resolve_period_to_ref(self, ref: AST.AST) -> str:
@@ -4527,17 +4595,20 @@ FROM (
 
         # Find time measures to transform
         cols = []
-        for comp in ds.components.values():
-            col = quote_name(comp.name)
-            if comp.role == Role.IDENTIFIER:
-                cols.append(col)
-            elif comp.data_type == TimePeriod:
-                cols.append(f"vtl_time_agg_tp(vtl_period_parse({col}), '{target}') AS {col}")
-            elif comp.data_type == Date:
-                expr = self._apply_time_agg_conf(f"vtl_time_agg_date({col}, '{target}')", conf)
-                cols.append(f"{expr} AS {col}")
-            else:
-                cols.append(col)
+        with self._hoist_scope() as hoisted:
+            for comp in ds.components.values():
+                col = quote_name(comp.name)
+                if comp.role == Role.IDENTIFIER:
+                    cols.append(col)
+                elif comp.data_type == TimePeriod:
+                    parsed = self._hoist(f"vtl_period_parse({col})")
+                    cols.append(f"vtl_time_agg_tp({parsed}, '{target}') AS {col}")
+                elif comp.data_type == Date:
+                    expr = self._apply_time_agg_conf(f"vtl_time_agg_date({col}, '{target}')", conf)
+                    cols.append(f"{expr} AS {col}")
+                else:
+                    cols.append(col)
+            src = self._hoisted_source(src, hoisted)
 
         return SQLBuilder().select(*cols).from_table(src).build()
 
