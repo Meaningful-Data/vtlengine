@@ -205,5 +205,6 @@ vtl-output/*
 # JupyterLite demo build artifacts
 docs/jupyterlite/_output/
 docs/jupyterlite/.build/
+docs/jupyterlite/.cache/
 docs/jupyterlite/wheels/
 docs/jupyterlite/.jupyterlite.doit.db

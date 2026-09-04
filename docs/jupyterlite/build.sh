@@ -2,7 +2,8 @@
 #
 # Build a self-contained JupyterLite site that runs the VTL Engine entirely in
 # the browser (Pyodide kernel), with vtlengine + DuckDB + deps preloaded so
-# `import vtlengine` works with no %pip / piplite step.
+# `import vtlengine` works with no %pip / piplite step. The served Pyodide
+# distribution is pruned to what the demo can reach (see prune_dist.py).
 #
 # Prerequisites (see README.md):
 #   * A Python 3.10+ environment with the build tools:  pip install -r requirements.txt
@@ -30,7 +31,7 @@ PY="${PYTHON:-python}"
 
 mkdir -p "$WORK" "$WHEELS"
 
-echo "==> 1/5  vtlengine wheel"
+echo "==> 1/6  vtlengine wheel"
 if [ -n "${VTLENGINE_WHEEL:-}" ]; then
     # build-wheel.sh (and CI) may already drop the wheel into $WHEELS; skip the
     # copy when VTLENGINE_WHEEL already points there (cp errors on same-file).
@@ -44,7 +45,7 @@ if [ "$(ls "$WHEELS"/vtlengine-*pyemscripten_2026_0_wasm32.whl 2>/dev/null | wc 
     exit 1
 fi
 
-echo "==> 2/5  pure-Python deps not bundled in Pyodide (the versions poetry.lock pins)"
+echo "==> 2/6  pure-Python deps not bundled in Pyodide (the versions poetry.lock pins)"
 # pysdmx's lxml >= 6.1.0 floor is not checked here: the served lockfile carries no
 # version constraints, so the demo runs on the distribution's lxml 6.0.2 (see
 # README.md). A next Pyodide release fixes this: pyodide/pyodide-recipes#656.
@@ -54,7 +55,7 @@ find "$WHEELS" -name '*.whl' ! -name 'vtlengine-*' -delete
 "$PY" -m pip download --no-deps --quiet --dest "$WHEELS" \
     parsy==2.2 pysdmx==1.19.0 sdmxschemas==1.1.0 sqlglot==22.5.0 xmltodict==1.0.4
 
-echo "==> 3/5  jupyter lite build (stock Pyodide ${PYODIDE_VERSION})"
+echo "==> 3/6  jupyter lite build (stock Pyodide ${PYODIDE_VERSION})"
 [ -f "$PYODIDE_TARBALL" ] || curl -fsSL -o "$PYODIDE_TARBALL" \
     "https://github.com/pyodide/pyodide/releases/download/${PYODIDE_VERSION}/pyodide-${PYODIDE_VERSION}.tar.bz2"
 # Also drop the doit state of the previous build: with the output gone but the state
@@ -75,11 +76,16 @@ if "static/pyodide/pyodide" not in url:
 print(f"  kernel pyodideUrl: {url}")
 PY
 
-echo "==> 4/5  inject wheels + patch the served lockfile (zero-install auto-load)"
+echo "==> 4/6  inject wheels + patch the served lockfile (zero-install auto-load)"
 cp "$WHEELS"/*.whl "$OUT/static/pyodide/"
 "$PY" "${HERE}/patch_lock.py" "$OUT/static/pyodide"
 
-echo "==> 5/5  redirect the demo root (/) to the vtl-demo notebook"
+echo "==> 5/6  prune the served Pyodide distribution to what the demo can reach"
+# The tarball is the whole distribution (~380 MB); the demo can load ~60 MB of it.
+"$PY" "${HERE}/prune_dist.py" "$OUT/static/pyodide" \
+    "$OUT/extensions/@jupyterlite/pyodide-kernel-extension/static/pypi"
+
+echo "==> 6/6  redirect the demo root (/) to the vtl-demo notebook"
 # Point the bare demo URL (e.g. /jupyterlite/) straight at the vtl-demo notebook.
 # IMPORTANT: do NOT overwrite index.html. JupyterLite's config-utils.js fetches the
 # site-root index.html and reads its embedded <script id="jupyter-config-data">, so

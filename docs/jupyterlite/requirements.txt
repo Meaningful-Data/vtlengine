@@ -5,3 +5,4 @@
 jupyterlite-core~=0.8.3
 jupyterlite-pyodide-kernel~=0.8.5
 jupyterlab~=4.6.3  # the JupyterLab line jupyterlite-core 0.8's `lab` extra pins
+packaging  # prune_dist.py evaluates PEP 508 markers with it (a jupyterlab dependency anyway)

@@ -17,7 +17,10 @@ WebAssembly build. The build therefore:
    `parsy`, `xmltodict`, `sqlglot`), at the versions `poetry.lock` pins;
 3. runs `jupyter lite build` against stock Pyodide 314.0.6, then **adds these
    wheels to the served `pyodide-lock.json`** (`patch_lock.py`) so Pyodide
-   auto-loads them on `import` — the key to the zero-install experience.
+   auto-loads them on `import` — the key to the zero-install experience;
+4. prunes the served Pyodide distribution to what the demo can reach
+   (`prune_dist.py`): the dependency closure of `vtlengine` and of the kernel,
+   ~60 MB of the ~380 MB the tarball ships.
 
 Everything else (`pandas` 3, `numpy`, `pyarrow`, `duckdb` 1.5.1, `lxml`, `msgspec`,
 `networkx`, `jsonschema`, `httpx`) already ships in Pyodide 314.
@@ -34,7 +37,7 @@ Prerequisites: Node.js, and a Python 3.10+ environment
 ./build-wheel.sh
 
 # 2. Assemble the JupyterLite site (downloads the deps + Pyodide, builds,
-#    patches the lockfile).
+#    patches the lockfile, prunes the distribution).
 ./build.sh
 ```
 
@@ -61,7 +64,15 @@ issue carries the `documentation` label.
 
 ## Notes
 
-- Build artifacts (`_output/`, `wheels/`, `.build/`) are git-ignored.
+- Build artifacts are git-ignored and safe to delete: `_output/` (the site), `wheels/`
+  (the injected wheels), `.build/` (the Pyodide tarball, re-downloaded when missing)
+  and `.cache/` (jupyterlite's extraction of that tarball, re-extracted when missing).
+- `static/pyodide/` is pruned to what the demo can reach: 51 of the 362 packages of
+  the distribution, ~60 MB instead of ~380 MB (`prune_dist.py`). Visitors download
+  the same files either way, since Pyodide only fetches what a notebook imports;
+  the pruning shrinks the Pages artifact, of which the demo was ~90%. The cost:
+  `%pip install` of a *compiled* package outside that closure (scipy, polars...)
+  no longer works in the demo. Pure-Python packages still resolve from PyPI.
 - Pyodide is single-threaded; `run()` uses in-memory DuckDB, so no spill-to-disk
   or remote file access is involved.
 - `pysdmx` is injected at the version `poetry.lock` pins. Its `lxml >= 6.1.0` floor
