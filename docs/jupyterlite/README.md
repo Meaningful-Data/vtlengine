@@ -73,8 +73,8 @@ issue carries the `documentation` label.
   the pruning shrinks the Pages artifact, of which the demo was ~90%. The cost:
   `%pip install` of a *compiled* package outside that closure (scipy, polars...)
   no longer works in the demo. Pure-Python packages still resolve from PyPI.
-- Pyodide is single-threaded; `run()` uses in-memory DuckDB, so no spill-to-disk
-  or remote file access is involved.
+- Pyodide is single-threaded; the DuckDB engine (`use_duckdb=True`) runs on an in-memory
+  database there, so no spill-to-disk or remote file access is involved.
 - `pysdmx` is injected at the version `poetry.lock` pins. Its `lxml >= 6.1.0` floor
   (a security floor: lxml 6.1.0 fixes CVE-2026-41066 and bundles patched
   libxml2/libxslt) is not enforced by the patched lockfile, so the demo runs it on
