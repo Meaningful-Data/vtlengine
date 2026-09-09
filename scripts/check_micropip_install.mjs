@@ -9,31 +9,15 @@
 //     node scripts/check_micropip_install.mjs wheelhouse/vtlengine-*.whl
 //
 // The wheel is copied into the Emscripten filesystem and installed from there (emfs:), then
-// `import vtlengine` and one statement on both engines are run.
+// scripts/check_install.py runs inside Pyodide: `import vtlengine` and one statement on both
+// engines (the same script the `pip install vtlengine` stage of pyodide_test.yml runs natively).
 //
 // Exit code 0: installed and ran. Exit code 1: the install or the run failed. Exit code 2: usage
 // error.
 import fs from "node:fs";
 import path from "node:path";
 
-const PY_SMOKE = `
-import duckdb, lxml, networkx, numpy, pandas, pyarrow, pysdmx, sqlglot, vtlengine
-from vtlengine import run
-
-print("versions:", " | ".join(f"{m.__name__} {m.__version__}" for m in
-      (vtlengine, pysdmx, lxml, pandas, numpy, pyarrow, duckdb, networkx, sqlglot)))
-data_structures = {"datasets": [{"name": "DS_1", "DataStructure": [
-    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
-    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True}]}]}
-for use_duckdb in (False, True):
-    result = run(script="DS_r <- DS_1 * 10;", data_structures=data_structures,
-                 datapoints={"DS_1": pandas.DataFrame({"Id_1": [1, 2], "Me_1": [10.0, 20.0]})},
-                 use_duckdb=use_duckdb)
-    got = result["DS_r"].data.sort_values("Id_1")["Me_1"].tolist()
-    if got != [100.0, 200.0]:
-        raise AssertionError(f"use_duckdb={use_duckdb}: expected [100.0, 200.0], got {got}")
-    print(f"run() with use_duckdb={use_duckdb}: OK")
-`;
+const PY_SMOKE = fs.readFileSync(new URL("./check_install.py", import.meta.url), "utf8");
 
 /** Print a one-line message, doubled as a GitHub Actions annotation when running there. */
 function annotate(level, message) {
