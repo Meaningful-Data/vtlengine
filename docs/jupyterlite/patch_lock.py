@@ -26,7 +26,6 @@ EXTRA = {
             "duckdb",
             "jsonschema",
             "networkx",
-            "numpy",
             "pandas",
             "pyarrow",
             "pysdmx",
