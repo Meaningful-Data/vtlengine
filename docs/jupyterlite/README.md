@@ -87,12 +87,13 @@ issue carries the `documentation` label.
   (<https://github.com/pyodide/pyodide-recipes/pull/656> moves the recipes to lxml 6.1.3,
   libxslt 1.1.45 and libxml2 2.15.3), the floor goes back to `lxml >= 6.1.0` everywhere.
 - `scripts/check_micropip_install.mjs` performs that plain install for the wheel
-  `pyodide_test.yml` (pull requests and a weekly schedule) and `release.yml` have just
-  built, on stock Pyodide in Node.js: micropip resolution against the Pyodide lockfile and
-  PyPI, then `scripts/check_install.py` (`import vtlengine` and one statement on both
-  engines). Run it locally with `npm install --no-save pyodide@314.0.6` and
-  `node scripts/check_micropip_install.mjs <wheel>`. The scheduled run also checks that the
-  latest release on PyPI installs with `pip install vtlengine` on every supported Python
-  and OS, then runs the same script with `--latest`.
+  `pyodide_test.yml` (weekly, and on pull requests that touch `pyproject.toml` or the
+  check itself) and `release.yml` have just built, on stock Pyodide in Node.js: micropip
+  resolution against the Pyodide lockfile and PyPI, then `scripts/check_install.py`
+  (`import vtlengine` and one statement on both engines). Run it locally with
+  `npm install --no-save pyodide@314.0.6` and `node scripts/check_micropip_install.mjs <wheel>`.
+  The weekly run also checks that the latest release on PyPI installs with
+  `pip install vtlengine` on every supported Python and OS, then runs the same script with
+  `--latest`.
 - To refresh the dependency graph baked into `patch_lock.py`, re-run
   `micropip.freeze()` in the target Pyodide and update the `EXTRA` table.

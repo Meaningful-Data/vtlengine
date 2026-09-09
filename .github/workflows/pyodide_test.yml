@@ -3,7 +3,13 @@ name: Pyodide test
 on:
   pull_request:
     branches: ["main", "1.6.X", "1.9.X"]
-  merge_group:
+    # Only pull requests that change what the wheel depends on, or the check itself; the
+    # weekly run below covers everything else (no merge_group trigger for the same reason).
+    paths:
+      - "pyproject.toml"
+      - ".github/workflows/pyodide_test.yml"
+      - "scripts/check_micropip_install.mjs"
+      - "scripts/check_install.py"
   schedule:
     # Weekly, Mondays 06:00 UTC. Both stages resolve dependencies against PyPI as it is on
     # the day, so a new release of a dependency can break an install with no change in this
