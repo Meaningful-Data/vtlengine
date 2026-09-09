@@ -6,33 +6,15 @@
 // and release.yml run it on the wheel they have just built. Locally:
 //
 //     npm install --no-save pyodide@314.0.6   # the line the wheel targets (pyemscripten_2026_0)
-//     node scripts/check_micropip_install.mjs wheelhouse/vtlengine-*.whl [--preinstall REQ]...
+//     node scripts/check_micropip_install.mjs wheelhouse/vtlengine-*.whl
 //
 // The wheel is copied into the Emscripten filesystem and installed from there (emfs:), then
-// `import vtlengine` and one statement on both engines are run. `--preinstall REQ` installs a
-// requirement beforehand, e.g. `--preinstall "pysdmx[xml]==1.16.0"` exercises the rest of the
-// check while the lxml floor blocks the plain install (see KNOWN_FAILURES).
+// `import vtlengine` and one statement on both engines are run.
 //
-// Exit code 0: installed and ran, or the plain install failed with an allowlisted error
-// (reported as a warning). Exit code 1: any other failure. Exit code 2: usage error.
-// Unit tests of the decision logic: node --test scripts/check_micropip_install.test.mjs
+// Exit code 0: installed and ran. Exit code 1: the install or the run failed. Exit code 2: usage
+// error.
 import fs from "node:fs";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
-
-/**
- * Install failures expected until an upstream fix ships. The check passes with a warning when
- * the plain install fails with one of these, and asks to drop the entry once it succeeds.
- */
-export const KNOWN_FAILURES = [
-  {
-    needle: "Can't find a pure Python 3 wheel for 'lxml>=6.1.0",
-    reason:
-      "pysdmx[xml] requires lxml>=6.1.0 while Pyodide 314.x ships lxml 6.0.2, so micropip " +
-      "cannot resolve the plain install until pyodide/pyodide-recipes#656 reaches a Pyodide " +
-      "release.",
-  },
-];
 
 const PY_SMOKE = `
 import duckdb, lxml, networkx, numpy, pandas, pyarrow, pysdmx, sqlglot, vtlengine
@@ -53,44 +35,6 @@ for use_duckdb in (False, True):
     print(f"run() with use_duckdb={use_duckdb}: OK")
 `;
 
-export function parseArgs(argv) {
-  const args = { wheel: null, preinstall: [] };
-  for (let i = 0; i < argv.length; i++) {
-    const arg = argv[i];
-    if (arg === "--preinstall") {
-      if (i + 1 >= argv.length) throw new Error("--preinstall needs a requirement");
-      args.preinstall.push(argv[++i]);
-    } else if (arg.startsWith("--")) {
-      throw new Error(`unknown option ${arg}`);
-    } else if (args.wheel === null) {
-      args.wheel = arg;
-    } else {
-      throw new Error(`expected exactly one wheel, got ${args.wheel} and ${arg}`);
-    }
-  }
-  if (args.wheel === null) throw new Error("the wheel to check is required");
-  return args;
-}
-
-/** Turn the outcome of the plain install into a verdict and an exit code. */
-export function classifyInstall({ error, preinstalled, knownFailures = KNOWN_FAILURES }) {
-  if (error) {
-    const known = knownFailures.find((entry) => error.includes(entry.needle));
-    if (known) return { verdict: "known-failure", exitCode: 0, note: known.reason };
-    return { verdict: "failure", exitCode: 1, note: error };
-  }
-  if (!preinstalled && knownFailures.length > 0) {
-    return {
-      verdict: "unexpected-pass",
-      exitCode: 0,
-      note:
-        "The plain install no longer fails with an allowlisted error: drop the obsolete " +
-        "KNOWN_FAILURES entries.",
-    };
-  }
-  return { verdict: "pass", exitCode: 0, note: "" };
-}
-
 /** Print a one-line message, doubled as a GitHub Actions annotation when running there. */
 function annotate(level, message) {
   if (process.env.GITHUB_ACTIONS === "true") {
@@ -105,21 +49,19 @@ function describe(error) {
   return String(error?.message ?? error).trim();
 }
 
-function lastLine(text) {
-  return text.split("\n").at(-1);
+/** The line naming the exception, without the hints micropip appends after it. */
+function summary(traceback) {
+  return traceback.replace(/\n(?:See|You can use)\b.*$/s, "").split("\n").at(-1);
 }
 
 async function main() {
-  let args;
-  try {
-    args = parseArgs(process.argv.slice(2));
-  } catch (error) {
-    console.error(`error: ${error.message}`);
-    console.error("usage: node scripts/check_micropip_install.mjs <wheel> [--preinstall REQ]...");
+  const [wheel, ...unexpected] = process.argv.slice(2);
+  if (!wheel || unexpected.length > 0) {
+    console.error("usage: node scripts/check_micropip_install.mjs <wheel>");
     return 2;
   }
-  const wheelName = path.basename(args.wheel);
-  const wheelBytes = fs.readFileSync(args.wheel);
+  const wheelName = path.basename(wheel);
+  const wheelBytes = fs.readFileSync(wheel);
 
   let loadPyodide;
   try {
@@ -137,53 +79,24 @@ async function main() {
   pyodide.FS.mkdirTree("/wheels");
   pyodide.FS.writeFile(`/wheels/${wheelName}`, wheelBytes);
 
-  for (const requirement of args.preinstall) {
-    console.log(`micropip.install(${JSON.stringify(requirement)})`);
-    try {
-      await micropip.install(requirement);
-    } catch (error) {
-      const traceback = describe(error);
-      annotate("error", `Preinstalling ${requirement} failed: ${lastLine(traceback)}`);
-      console.log(traceback);
-      return 1;
-    }
-  }
-
   console.log(`micropip.install("emfs:/wheels/${wheelName}")`);
-  let installError = null;
   try {
     await micropip.install(`emfs:/wheels/${wheelName}`);
   } catch (error) {
-    installError = describe(error);
-  }
-  const outcome = classifyInstall({
-    error: installError,
-    preinstalled: args.preinstall.length > 0,
-  });
-  if (outcome.verdict === "known-failure") {
-    annotate(
-      "warning",
-      `${wheelName} does not install with micropip on stock Pyodide, for a known reason: ` +
-        outcome.note,
-    );
-    console.log(lastLine(installError.replace(/\nSee: .*|\nYou can use .*/gs, "")));
-    return 0;
-  }
-  if (outcome.verdict === "failure") {
+    const traceback = describe(error);
     annotate(
       "error",
-      `${wheelName} does not install with micropip on stock Pyodide: ${lastLine(outcome.note)}`,
+      `${wheelName} does not install with micropip on stock Pyodide: ${summary(traceback)}`,
     );
-    console.log(outcome.note);
+    console.log(traceback);
     return 1;
   }
-  if (outcome.verdict === "unexpected-pass") annotate("notice", outcome.note);
 
   try {
     await pyodide.runPythonAsync(PY_SMOKE);
   } catch (error) {
     const traceback = describe(error);
-    annotate("error", `${wheelName} installed but failed to run: ${lastLine(traceback)}`);
+    annotate("error", `${wheelName} installed but failed to run: ${summary(traceback)}`);
     console.log(traceback);
     return 1;
   }
@@ -191,6 +104,4 @@ async function main() {
   return 0;
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  process.exitCode = await main();
-}
+process.exitCode = await main();

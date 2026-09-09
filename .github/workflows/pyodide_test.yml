@@ -48,7 +48,6 @@ jobs:
         # docs/jupyterlite/build.sh.
         run: |
           npm install --no-save --no-audit --no-fund --ignore-scripts pyodide@314.0.6
-          node --test scripts/check_micropip_install.test.mjs
           node scripts/check_micropip_install.mjs wheelhouse/vtlengine-*.whl
 
       - name: Upload the wheel
