@@ -75,15 +75,25 @@ issue carries the `documentation` label.
   no longer works in the demo. Pure-Python packages still resolve from PyPI.
 - Pyodide is single-threaded; the DuckDB engine (`use_duckdb=True`) runs on an in-memory
   database there, so no spill-to-disk or remote file access is involved.
-- `pysdmx` is injected at the version `poetry.lock` pins. Its `lxml >= 6.1.0` floor
-  (a security floor: lxml 6.1.0 fixes CVE-2026-41066 and bundles patched
-  libxml2/libxslt) is not enforced by the patched lockfile, so the demo runs it on
-  the `lxml` 6.0.2 of the Pyodide 314 distribution, built against libxml2 2.9.10 and
-  libxslt 1.1.33. For the same reason a plain `micropip.install("vtlengine")` on
-  stock Pyodide 314 fails on `lxml>=6.1.0`; installing `pysdmx[xml]==1.16.0` first
-  and `vtlengine` in a second call gets through, on that same lxml. The floor is
-  being addressed on the Pyodide side: <https://github.com/pyodide/pyodide-recipes/pull/656>
-  moves the recipes to lxml 6.1.3, libxslt 1.1.45 and libxml2 2.15.3, so a next
-  Pyodide release ships a compliant `lxml` and both workarounds become unnecessary.
+- `pysdmx` is injected at the version `poetry.lock` pins. Up to 1.19.0 it declares
+  `lxml >= 6.1.0` on every platform (a security floor: lxml 6.1.0 fixes CVE-2026-41066
+  and bundles patched libxml2/libxslt), which the patched lockfile does not enforce: the
+  demo runs on the `lxml` 6.0.2 of the Pyodide 314 distribution, built against libxml2
+  2.9.10 and libxslt 1.1.33. pysdmx 1.20.0 lowers the floor to `lxml >= 6.0.2` on
+  Emscripten only (<https://github.com/bis-med-it/pysdmx/pull/692>; its XML validation
+  disables external entity resolution explicitly, so the CVE fix does not depend on the
+  lxml version), which is what lets a plain `micropip.install("vtlengine")` resolve on
+  stock Pyodide 314. That allowance is temporary: once a Pyodide release ships lxml 6.1
+  (<https://github.com/pyodide/pyodide-recipes/pull/656> moves the recipes to lxml 6.1.3,
+  libxslt 1.1.45 and libxml2 2.15.3), the floor goes back to `lxml >= 6.1.0` everywhere.
+- `scripts/check_micropip_install.mjs` performs that plain install for the wheel
+  `pyodide_test.yml` (weekly, and on pull requests that touch `pyproject.toml` or the
+  check itself) and `release.yml` have just built, on stock Pyodide in Node.js: micropip
+  resolution against the Pyodide lockfile and PyPI, then `scripts/check_install.py`
+  (`import vtlengine` and one statement on both engines). Run it locally with
+  `npm install --no-save pyodide@314.0.6` and `node scripts/check_micropip_install.mjs <wheel>`.
+  The weekly run also checks that the latest release on PyPI installs with
+  `pip install vtlengine` on every supported Python and OS, then runs the same script with
+  `--latest`.
 - To refresh the dependency graph baked into `patch_lock.py`, re-run
   `micropip.freeze()` in the target Pyodide and update the `EXTRA` table.

@@ -42,10 +42,10 @@ EXTRA = {
         "depends": [
             "certifi",
             "httpx",
-            # The distribution's lxml (6.0.2 in 314.0.6) is below pysdmx's
-            # `lxml >= 6.1.0` floor; a lockfile carries no version constraints, so
-            # the demo runs on it anyway. A next Pyodide release fixes this:
-            # https://github.com/pyodide/pyodide-recipes/pull/656 moves lxml to 6.1.3.
+            # The distribution's lxml (6.0.2 in 314.0.6). A lockfile carries no version
+            # constraints, so the demo runs on it whatever the pinned pysdmx declares
+            # (`lxml >= 6.1.0` up to 1.19.0, `>= 6.0.2` on Emscripten from 1.20.0; see
+            # README.md).
             "lxml",
             "msgspec",
             "parsy",

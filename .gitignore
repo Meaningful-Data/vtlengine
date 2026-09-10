@@ -208,3 +208,6 @@ docs/jupyterlite/.build/
 docs/jupyterlite/.cache/
 docs/jupyterlite/wheels/
 docs/jupyterlite/.jupyterlite.doit.db
+
+# Node.js packages the micropip check pulls in (npm install --no-save pyodide)
+node_modules/

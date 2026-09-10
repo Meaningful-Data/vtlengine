@@ -70,6 +70,18 @@ jobs:
           name: wheels-pyodide-wasm32
           path: wheelhouse/*.whl
 
+      - name: Check that the wheel installs with micropip on stock Pyodide
+        # cibuildwheel tested the wheel with pip inside a `pyodide venv`. This is what a
+        # Pyodide user runs instead: micropip resolving the wheel's dependencies against
+        # the Pyodide lockfile and PyPI (no backtracking), then `import vtlengine` and one
+        # statement on both engines. The `pyodide` npm package must be the line the wheel
+        # targets (314.x = pyemscripten_2026_0); keep it in step with docs/jupyterlite/build.sh.
+        # The step runs after the artifact upload so nothing installed from npm can touch
+        # the bytes that get published; a failure still fails the job and blocks `publish`.
+        run: |
+          npm install --no-save --no-audit --no-fund --ignore-scripts pyodide@314.0.6
+          node scripts/check_micropip_install.mjs wheelhouse/vtlengine-*.whl
+
   publish:
     name: Publish to PyPI
     needs: [build-wheels, build-wasm-wheel]
