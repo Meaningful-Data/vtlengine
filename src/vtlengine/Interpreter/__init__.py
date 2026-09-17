@@ -150,6 +150,7 @@ class InterpreterAnalyzer(ASTTemplate):
     # Handlers for simplicity
     condition_stack: Optional[List[Dataset]] = None
     regular_aggregation_dataset: Optional[Dataset] = None
+    regular_aggregation_op: Optional[str] = None
     aggregation_grouping: Optional[List[str]] = None
     aggregation_dataset: Optional[Dataset] = None
     ruleset_dataset: Optional[Dataset] = None
@@ -607,6 +608,10 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.visit(node.operand)
             return self._data_point_count_operand(node, self.aggregation_dataset)
         if self.is_from_regular_aggregation and self.regular_aggregation_dataset is not None:
+            # calc and filter are evaluated for each Data Point, so an aggregation has no
+            # grouping context there however deeply it is nested in the expression.
+            if self.regular_aggregation_op in (CALC, FILTER):
+                raise SemanticError("1-2-14", op=self.regular_aggregation_op)
             operand = self.regular_aggregation_dataset
             if node.operand is not None and operand is not None:
                 op_comp: DataComponent = self.visit(node.operand)
@@ -1133,6 +1138,7 @@ class InterpreterAnalyzer(ASTTemplate):
         if isinstance(dataset, Scalar):
             raise SemanticError("1-1-1-20", op=node.op)
         self.regular_aggregation_dataset = dataset
+        self.regular_aggregation_op = node.op
         if node.op == APPLY:
             op_map = BINARY_MAPPING
             result = REGULAR_AGGREGATION_MAPPING[node.op].analyze(dataset, node.children, op_map)
@@ -1190,6 +1196,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 )
             operands = aux_operands
         self.regular_aggregation_dataset = None
+        self.regular_aggregation_op = None
         if node.op == FILTER:
             if isinstance(operands[0], Scalar):
                 raise SemanticError("1-2-16", op=node.op)

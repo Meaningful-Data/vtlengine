@@ -3616,6 +3616,82 @@ class ClauseBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1119_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ filter Me_1 = sum(Me_1) ];
+        Description: an aggregation inside a filter clause was only rejected when it
+                     was the whole condition. Combined with a Component, the binary
+                     operator had no branch for a Component against a Data Set and
+                     returned None, so both engines aborted with AttributeError:
+                     'NoneType' object has no attribute 'data'. The aggregation is now
+                     rejected where it is resolved, whatever surrounds it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1119
+        Goal: Check Exception.
+        """
+        code = "GH_1119_1"
+        number_inputs = 1
+        error_code = "1-2-14"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
+    def test_GH_1119_2(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := Me_1 + sum(Me_1) ];
+        Description: the same construction inside a calc clause reached the
+                     assignment with a None operand and aborted with AttributeError:
+                     'NoneType' object has no attribute 'name'. Only an aggregation
+                     standing alone on the right-hand side was rejected before.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1119
+        Goal: Check Exception.
+        """
+        code = "GH_1119_2"
+        number_inputs = 1
+        error_code = "1-2-14"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
+    def test_GH_1119_3(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1, DS_2 filter Me_1 = sum(Me_1) );
+        Description: a filter clause inside a join body took the same path and
+                     aborted with AttributeError: 'NoneType' object has no attribute
+                     'data'.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1119
+        Goal: Check Exception.
+        """
+        code = "GH_1119_3"
+        number_inputs = 2
+        error_code = "1-2-14"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
+    def test_GH_1119_4(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ filter if Me_1 = sum(Me_1) then true else false ];
+        Description: an aggregation nested inside an if condition of a filter clause
+                     aborted with AttributeError: 'NoneType' object has no attribute
+                     'data_type' while building the then/else Data Sets.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1119
+        Goal: Check Exception.
+        """
+        code = "GH_1119_4"
+        number_inputs = 1
+        error_code = "1-2-14"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
 
 class DefinedBugs(BugHelper):
     """ """
