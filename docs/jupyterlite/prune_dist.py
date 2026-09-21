@@ -14,7 +14,8 @@ Run *after* ``patch_lock.py`` (the closure is computed on the patched lockfile):
 
 Kept:
 
-* the dependency closure of the injected packages (``patch_lock.EXTRA``);
+* the dependency closure of ``vtlengine`` (the ``depends`` micropip resolved, merged into
+  the lockfile by ``patch_lock.py``);
 * the closure of what the kernel needs at boot: ``micropip`` (the worker loads it
   before anything else) and the requirements of the kernel's own wheels in
   ``static/pypi`` (``ipython`` and its stack);
@@ -41,10 +42,10 @@ import zipfile
 from pathlib import Path
 
 from packaging.requirements import InvalidRequirement, Requirement
-from patch_lock import EXTRA
 
-# Loaded by the kernel worker before anything else (`loadPackage(["micropip"])`).
-KERNEL_ROOTS = ["micropip"]
+# What `import vtlengine` auto-loads, plus what the kernel worker loads before anything else
+# (`loadPackage(["micropip"])`).
+ROOTS = ["vtlengine", "micropip"]
 # The Python standard library is a core file, not a package: never a prune candidate.
 RUNTIME_ZIPS = {"python_stdlib.zip"}
 
@@ -142,11 +143,10 @@ def main() -> None:
     lock = json.loads(lock_path.read_text())
     packages = lock["packages"]
 
-    missing = [pkg for pkg in EXTRA if pkg not in packages]
-    if missing:
-        raise SystemExit(f"ERROR: {missing} not in {lock_path}: run patch_lock.py first")
+    if "vtlengine" not in packages:
+        raise SystemExit(f"ERROR: vtlengine not in {lock_path}: run patch_lock.py first")
 
-    roots = [*EXTRA, *KERNEL_ROOTS, *kernel_requirements(pypi, marker_environment(lock))]
+    roots = [*ROOTS, *kernel_requirements(pypi, marker_environment(lock))]
     keep, unknown = closure(dist, lock, roots)
     kept_files = {packages[name]["file_name"] for name in keep}
 

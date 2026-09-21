@@ -13,13 +13,15 @@ WebAssembly build. The build therefore:
 
 1. compiles `vtlengine` to a `pyemscripten_2026_0_wasm32` wasm wheel (PEP 783,
    the ABI of the Pyodide 314.x line — see `build-wheel.sh`);
-2. gathers the pure-Python deps not bundled in Pyodide (`pysdmx`, `sdmxschemas`,
-   `parsy`, `xmltodict`, `sqlglot`) at the versions `poetry.lock` pins, which
-   `lock_pins.py` reads from the lock for the Python of the wasm wheel;
-3. runs `jupyter lite build` against stock Pyodide 314.0.6, then **adds these
-   wheels to the served `pyodide-lock.json`** (`patch_lock.py`) so Pyodide
-   auto-loads them on `import` — the key to the zero-install experience — and
-   drops the matplotlib dependency Pyodide's networkx recipe declares;
+2. runs `jupyter lite build` against stock Pyodide 314.0.6;
+3. resolves the wheel's dependencies with **micropip itself**, in that served Pyodide
+   (`resolve_wheels.mjs`, Node.js): the same resolution a user gets from
+   `micropip.install("vtlengine")` — the packages the distribution ships from its
+   lockfile, the rest (`pysdmx`, `sqlglot`, `parsy`, `sdmxschemas`, `xmltodict` today)
+   from PyPI at the newest releases the engine allows — then **merges
+   `micropip.freeze()` into the served `pyodide-lock.json`** (`patch_lock.py`, wheels
+   downloaded next to it) so Pyodide auto-loads everything on `import` — the key to the
+   zero-install experience;
 4. prunes the served Pyodide distribution to what the demo can reach
    (`prune_dist.py`): the dependency closure of `vtlengine` and of the kernel,
    ~50 MB of the ~380 MB the tarball ships.
@@ -29,7 +31,7 @@ Everything else (`pandas` 3, `numpy`, `pyarrow`, `duckdb` 1.5.1, `lxml`, `msgspe
 
 ## Build
 
-Prerequisites: Node.js, and a Python 3.11+ environment
+Prerequisites: Node.js 20+, and a Python 3.10+ environment
 (`pip install -r requirements.txt`). Versions are pinned to the JupyterLite
 0.8.x line, whose Pyodide kernel is 314.x — the ABI the wasm wheel targets.
 
@@ -67,8 +69,9 @@ issue carries the `documentation` label.
 ## Notes
 
 - Build artifacts are git-ignored and safe to delete: `_output/` (the site), `wheels/`
-  (the injected wheels), `.build/` (the Pyodide tarball, re-downloaded when missing)
-  and `.cache/` (jupyterlite's extraction of that tarball, re-extracted when missing).
+  (the vtlengine wheel), `.build/` (the Pyodide tarball, re-downloaded when missing, and
+  micropip's resolution) and `.cache/` (jupyterlite's extraction of that tarball,
+  re-extracted when missing).
 - `static/pyodide/` is pruned to what the demo can reach: 42 of the 362 packages of
   the distribution, ~50 MB instead of ~380 MB (`prune_dist.py`). Visitors download
   the same files either way, since Pyodide only fetches what a notebook imports;
@@ -77,8 +80,9 @@ issue carries the `documentation` label.
   no longer works in the demo. Pure-Python packages still resolve from PyPI.
 - Pyodide is single-threaded; the DuckDB engine (`use_duckdb=True`) runs on an in-memory
   database there, so no spill-to-disk or remote file access is involved.
-- `pysdmx` is injected at the version `poetry.lock` pins, and runs on the `lxml` 6.0.2 of
-  the Pyodide 314 distribution (built against libxml2 2.9.10 and libxslt 1.1.33). pysdmx
+- `pysdmx` comes in at the newest release the engine allows, micropip's pick, and runs on
+  the `lxml` 6.0.2 of the Pyodide 314 distribution (built against libxml2 2.9.10 and
+  libxslt 1.1.33). pysdmx
   accepts that since 1.20.0: its floor is `lxml >= 6.0.2` on Emscripten and `lxml >= 6.1.0`
   everywhere else (a security floor: lxml 6.1.0 fixes CVE-2026-41066 and bundles patched
   libxml2/libxslt; pysdmx's XML validation disables external entity resolution explicitly,
@@ -88,8 +92,7 @@ issue carries the `documentation` label.
   Pyodide release ships lxml 6.1 (<https://github.com/pyodide/pyodide-recipes/pull/656>
   moves the recipes to lxml 6.1.3, libxslt 1.1.45 and libxml2 2.15.3), the floor goes back
   to `lxml >= 6.1.0` everywhere. The patched lockfile carries no version constraints, so
-  nothing in the build enforces the floor: `poetry.lock` has to keep `pysdmx` at 1.20.0 or
-  later.
+  nothing in the build checks the floor the resolved pysdmx declares.
 - `scripts/check_micropip_install.mjs` performs that plain install for the wheel
   `pyodide_test.yml` (weekly, and on pull requests that touch `pyproject.toml` or the
   check itself) and `release.yml` have just built, on stock Pyodide in Node.js: micropip
@@ -99,5 +102,7 @@ issue carries the `documentation` label.
   The weekly run also checks that the latest release on PyPI installs with
   `pip install vtlengine` on every supported Python and OS, then runs the same script with
   `--latest`.
-- To refresh the dependency graph baked into `patch_lock.py`, re-run
-  `micropip.freeze()` in the target Pyodide and update the `EXTRA` table.
+- The served lockfile differs from a plain micropip install in two deliberate ways, both
+  in `patch_lock.py`: `networkx` loses the `matplotlib` dependency Pyodide's recipe declares
+  (networkx 3.x needs none of it, and it is ~10 MB), and `httpx` gains `certifi`, which
+  stock Pyodide ships but never auto-loads, so remote SDMX URLs work out of the box.
