@@ -13,8 +13,8 @@ micropip resolved. Whatever it added to, or swapped in, the distribution's lockf
 ``pyodide-lock.json``, with the wheels downloaded next to it (sha256 checked) so the demo
 stays self-contained, and with ``imports`` filled from the wheel contents where micropip
 left them empty: ``imports`` is what drives JupyterLite's import-triggered auto-load.
-Everything else the distribution ships is left as is, except for the two deviations at the
-end of ``main`` (see README.md).
+Everything else the distribution ships is left as is, except for the three deviations at
+the end of ``main`` (see README.md).
 """
 
 import hashlib
@@ -81,7 +81,15 @@ def main() -> None:
         depends = " ".join(entry["depends"]) or "-"
         print(f"  + {name} {entry['version']} {verb} {origin}, depends: {depends}")
 
-    # Two deliberate differences from a plain micropip install on stock Pyodide (README.md):
+    # Three deliberate differences from a plain micropip install on stock Pyodide (README.md).
+    # JupyterLite loads packages per `import`, while micropip.install loads the whole set at
+    # once, so a lockfile entry has to bring what its package needs at runtime.
+    # pysdmx reads and writes data with pandas and pyarrow (its `data` extra). vtlengine asks
+    # for `pysdmx[xml]` and brings both itself, so micropip records neither under pysdmx and
+    # a notebook importing pysdmx before vtlengine would get it without them.
+    for name in ("pandas", "pyarrow"):
+        if name not in packages["pysdmx"]["depends"]:
+            packages["pysdmx"]["depends"].append(name)
     # Pyodide's networkx recipe lists matplotlib (and networkx 2.x's decorator/setuptools)
     # as run dependencies; networkx 3.x declares none and vtlengine needs none of them.
     packages["networkx"]["depends"] = []

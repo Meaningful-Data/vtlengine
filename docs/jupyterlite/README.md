@@ -102,7 +102,10 @@ issue carries the `documentation` label.
   The weekly run also checks that the latest release on PyPI installs with
   `pip install vtlengine` on every supported Python and OS, then runs the same script with
   `--latest`.
-- The served lockfile differs from a plain micropip install in two deliberate ways, both
-  in `patch_lock.py`: `networkx` loses the `matplotlib` dependency Pyodide's recipe declares
-  (networkx 3.x needs none of it, and it is ~10 MB), and `httpx` gains `certifi`, which
+- The served lockfile differs from a plain micropip install in three deliberate ways, all
+  in `patch_lock.py`, because JupyterLite loads packages per `import` where
+  `micropip.install` loads the whole set at once: `pysdmx` gains `pandas` and `pyarrow`
+  (its `data` extra, which vtlengine brings itself, so a notebook may import `pysdmx` before
+  `vtlengine`); `networkx` loses the `matplotlib` dependency Pyodide's recipe declares
+  (networkx 3.x needs none of it, and it is ~10 MB); and `httpx` gains `certifi`, which
   stock Pyodide ships but never auto-loads, so remote SDMX URLs work out of the box.
