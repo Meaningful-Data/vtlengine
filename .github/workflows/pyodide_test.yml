@@ -62,13 +62,6 @@ jobs:
           npm install --no-save --no-audit --no-fund --ignore-scripts pyodide@314.0.6
           node scripts/check_micropip_install.mjs wheelhouse/vtlengine-*.whl
 
-      - name: Upload the wheel
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: wheel-pyodide-wasm32
-          path: wheelhouse/*.whl
-          retention-days: 7
-
   pip-install-latest:
     name: pip install vtlengine (latest release), ${{ matrix.os }}, Python ${{ matrix.python-version }}
     # The release users install today, with pip's own resolution against PyPI (no lock):
