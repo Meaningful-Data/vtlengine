@@ -4,7 +4,7 @@
 into ``static/pyodide``: every package the Pyodide project builds (polars, scipy,
 opencv...), the unvendored test suites of those packages (``*-tests.zip``),
 CPython's own ``test`` package and Pyodide's self-test fixtures. That is ~380 MB,
-of which ``import vtlengine`` and the kernel can reach ~60 MB. A browser only
+of which ``import vtlengine`` and the kernel can reach ~50 MB. A browser only
 downloads what a notebook imports, so the surplus costs visitors nothing, but it
 is ~90% of the Pages artifact (GitHub caps a published site at 1 GB).
 

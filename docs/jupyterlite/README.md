@@ -17,10 +17,11 @@ WebAssembly build. The build therefore:
    `parsy`, `xmltodict`, `sqlglot`), at the versions `poetry.lock` pins;
 3. runs `jupyter lite build` against stock Pyodide 314.0.6, then **adds these
    wheels to the served `pyodide-lock.json`** (`patch_lock.py`) so Pyodide
-   auto-loads them on `import` — the key to the zero-install experience;
+   auto-loads them on `import` — the key to the zero-install experience — and
+   drops the matplotlib dependency Pyodide's networkx recipe declares;
 4. prunes the served Pyodide distribution to what the demo can reach
    (`prune_dist.py`): the dependency closure of `vtlengine` and of the kernel,
-   ~60 MB of the ~380 MB the tarball ships.
+   ~50 MB of the ~380 MB the tarball ships.
 
 Everything else (`pandas` 3, `numpy`, `pyarrow`, `duckdb` 1.5.1, `lxml`, `msgspec`,
 `networkx`, `jsonschema`, `httpx`) already ships in Pyodide 314.
@@ -67,25 +68,27 @@ issue carries the `documentation` label.
 - Build artifacts are git-ignored and safe to delete: `_output/` (the site), `wheels/`
   (the injected wheels), `.build/` (the Pyodide tarball, re-downloaded when missing)
   and `.cache/` (jupyterlite's extraction of that tarball, re-extracted when missing).
-- `static/pyodide/` is pruned to what the demo can reach: 51 of the 362 packages of
-  the distribution, ~60 MB instead of ~380 MB (`prune_dist.py`). Visitors download
+- `static/pyodide/` is pruned to what the demo can reach: 42 of the 362 packages of
+  the distribution, ~50 MB instead of ~380 MB (`prune_dist.py`). Visitors download
   the same files either way, since Pyodide only fetches what a notebook imports;
   the pruning shrinks the Pages artifact, of which the demo was ~90%. The cost:
   `%pip install` of a *compiled* package outside that closure (scipy, polars...)
   no longer works in the demo. Pure-Python packages still resolve from PyPI.
 - Pyodide is single-threaded; the DuckDB engine (`use_duckdb=True`) runs on an in-memory
   database there, so no spill-to-disk or remote file access is involved.
-- `pysdmx` is injected at the version `poetry.lock` pins. Up to 1.19.0 it declares
-  `lxml >= 6.1.0` on every platform (a security floor: lxml 6.1.0 fixes CVE-2026-41066
-  and bundles patched libxml2/libxslt), which the patched lockfile does not enforce: the
-  demo runs on the `lxml` 6.0.2 of the Pyodide 314 distribution, built against libxml2
-  2.9.10 and libxslt 1.1.33. pysdmx 1.20.0 lowers the floor to `lxml >= 6.0.2` on
-  Emscripten only (<https://github.com/bis-med-it/pysdmx/pull/692>; its XML validation
-  disables external entity resolution explicitly, so the CVE fix does not depend on the
-  lxml version), which is what lets a plain `micropip.install("vtlengine")` resolve on
-  stock Pyodide 314. That allowance is temporary: once a Pyodide release ships lxml 6.1
-  (<https://github.com/pyodide/pyodide-recipes/pull/656> moves the recipes to lxml 6.1.3,
-  libxslt 1.1.45 and libxml2 2.15.3), the floor goes back to `lxml >= 6.1.0` everywhere.
+- `pysdmx` is injected at the version `poetry.lock` pins, and runs on the `lxml` 6.0.2 of
+  the Pyodide 314 distribution (built against libxml2 2.9.10 and libxslt 1.1.33). pysdmx
+  accepts that since 1.20.0: its floor is `lxml >= 6.0.2` on Emscripten and `lxml >= 6.1.0`
+  everywhere else (a security floor: lxml 6.1.0 fixes CVE-2026-41066 and bundles patched
+  libxml2/libxslt; pysdmx's XML validation disables external entity resolution explicitly,
+  so the CVE fix does not depend on the lxml version, see
+  <https://github.com/bis-med-it/pysdmx/pull/692>). The same allowance is what lets a plain
+  `micropip.install("vtlengine")` resolve on stock Pyodide 314. It is temporary: once a
+  Pyodide release ships lxml 6.1 (<https://github.com/pyodide/pyodide-recipes/pull/656>
+  moves the recipes to lxml 6.1.3, libxslt 1.1.45 and libxml2 2.15.3), the floor goes back
+  to `lxml >= 6.1.0` everywhere. The patched lockfile carries no version constraints, so
+  nothing in the build enforces the floor: keep the `pysdmx` pin in `build.sh` at 1.20.0 or
+  later.
 - `scripts/check_micropip_install.mjs` performs that plain install for the wheel
   `pyodide_test.yml` (weekly, and on pull requests that touch `pyproject.toml` or the
   check itself) and `release.yml` have just built, on stock Pyodide in Node.js: micropip

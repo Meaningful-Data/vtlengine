@@ -42,10 +42,9 @@ EXTRA = {
         "depends": [
             "certifi",
             "httpx",
-            # The distribution's lxml (6.0.2 in 314.0.6). A lockfile carries no version
-            # constraints, so the demo runs on it whatever the pinned pysdmx declares
-            # (`lxml >= 6.1.0` up to 1.19.0, `>= 6.0.2` on Emscripten from 1.20.0; see
-            # README.md).
+            # The distribution's lxml (6.0.2 in 314.0.6), which pysdmx >= 1.20.0 accepts
+            # on Emscripten (`lxml >= 6.0.2` there; see README.md). A lockfile carries no
+            # version constraints, so nothing here enforces that floor.
             "lxml",
             "msgspec",
             "parsy",
@@ -91,6 +90,10 @@ def main() -> None:
             "unvendored_tests": False,
         }
         print(f"  + {pkg} {version}")
+
+    # Pyodide's networkx recipe lists matplotlib (and networkx 2.x's decorator/setuptools)
+    # as run dependencies; networkx 3.x declares none and vtlengine needs none of them.
+    lock["packages"]["networkx"]["depends"] = []
 
     lock_path.write_text(json.dumps(lock))
     print(f"patched {lock_path} ({len(lock['packages'])} packages)")

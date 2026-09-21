@@ -46,15 +46,14 @@ if [ "$(ls "$WHEELS"/vtlengine-*pyemscripten_2026_0_wasm32.whl 2>/dev/null | wc 
 fi
 
 echo "==> 2/6  pure-Python deps not bundled in Pyodide (the versions poetry.lock pins)"
-# pysdmx's lxml floor is not checked here: the served lockfile carries no version
-# constraints, so the demo runs on the distribution's lxml 6.0.2 whatever the pinned
-# pysdmx declares (`lxml >= 6.1.0` up to 1.19.0, `>= 6.0.2` on Emscripten from 1.20.0;
-# see README.md).
+# pysdmx >= 1.20.0 accepts the distribution's lxml 6.0.2 on Emscripten (`lxml >= 6.0.2`
+# there, `>= 6.1.0` elsewhere; see README.md). Nothing checks that here: the served
+# lockfile carries no version constraints, so an older pysdmx would run on it too.
 # Drop whatever an earlier build left (other versions, the duckdb wheel of the
 # pre-314 flow...): every wheel in $WHEELS ends up in the served lockfile.
 find "$WHEELS" -name '*.whl' ! -name 'vtlengine-*' -delete
 "$PY" -m pip download --no-deps --quiet --dest "$WHEELS" \
-    parsy==2.2 pysdmx==1.19.0 sdmxschemas==1.1.0 sqlglot==22.5.0 xmltodict==1.0.4
+    parsy==2.2 pysdmx==1.20.0 sdmxschemas==1.1.0 sqlglot==22.5.0 xmltodict==1.0.4
 
 echo "==> 3/6  jupyter lite build (stock Pyodide ${PYODIDE_VERSION})"
 [ -f "$PYODIDE_TARBALL" ] || curl -fsSL -o "$PYODIDE_TARBALL" \
@@ -82,7 +81,7 @@ cp "$WHEELS"/*.whl "$OUT/static/pyodide/"
 "$PY" "${HERE}/patch_lock.py" "$OUT/static/pyodide"
 
 echo "==> 5/6  prune the served Pyodide distribution to what the demo can reach"
-# The tarball is the whole distribution (~380 MB); the demo can load ~60 MB of it.
+# The tarball is the whole distribution (~380 MB); the demo can load ~50 MB of it.
 "$PY" "${HERE}/prune_dist.py" "$OUT/static/pyodide" \
     "$OUT/extensions/@jupyterlite/pyodide-kernel-extension/static/pypi"
 
