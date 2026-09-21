@@ -6,7 +6,7 @@
 # distribution is pruned to what the demo can reach (see prune_dist.py).
 #
 # Prerequisites (see README.md):
-#   * A Python 3.10+ environment with the build tools:  pip install -r requirements.txt
+#   * A Python 3.11+ environment with the build tools:  pip install -r requirements.txt
 #   * Node.js (used by the Pyodide kernel at build time)
 #   * The vtlengine WebAssembly wheel for Pyodide 314.x (PEP 783
 #     pyemscripten_2026_0_wasm32 ABI). Build it with ./build-wheel.sh and pass it
@@ -46,14 +46,18 @@ if [ "$(ls "$WHEELS"/vtlengine-*pyemscripten_2026_0_wasm32.whl 2>/dev/null | wc 
 fi
 
 echo "==> 2/6  pure-Python deps not bundled in Pyodide (the versions poetry.lock pins)"
-# pysdmx >= 1.20.0 accepts the distribution's lxml 6.0.2 on Emscripten (`lxml >= 6.0.2`
-# there, `>= 6.1.0` elsewhere; see README.md). Nothing checks that here: the served
-# lockfile carries no version constraints, so an older pysdmx would run on it too.
+# The packages are patch_lock.EXTRA and the versions come from ../../poetry.lock for the
+# wheel's Python (lock_pins.py), so the list cannot drift from what the engine is tested
+# with. pysdmx >= 1.20.0 accepts the distribution's lxml 6.0.2 on Emscripten
+# (`lxml >= 6.0.2` there, `>= 6.1.0` elsewhere; see README.md); nothing checks that here,
+# the served lockfile carries no version constraints.
 # Drop whatever an earlier build left (other versions, the duckdb wheel of the
 # pre-314 flow...): every wheel in $WHEELS ends up in the served lockfile.
 find "$WHEELS" -name '*.whl' ! -name 'vtlengine-*' -delete
-"$PY" -m pip download --no-deps --quiet --dest "$WHEELS" \
-    parsy==2.2 pysdmx==1.20.0 sdmxschemas==1.1.0 sqlglot==22.5.0 xmltodict==1.0.4
+pins=$("$PY" "${HERE}/lock_pins.py" "$WHEELS"/vtlengine-*pyemscripten_2026_0_wasm32.whl)
+echo "    $pins"
+# shellcheck disable=SC2086  # one pin per word
+"$PY" -m pip download --no-deps --quiet --dest "$WHEELS" $pins
 
 echo "==> 3/6  jupyter lite build (stock Pyodide ${PYODIDE_VERSION})"
 [ -f "$PYODIDE_TARBALL" ] || curl -fsSL -o "$PYODIDE_TARBALL" \

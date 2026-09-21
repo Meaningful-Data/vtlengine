@@ -14,7 +14,8 @@ WebAssembly build. The build therefore:
 1. compiles `vtlengine` to a `pyemscripten_2026_0_wasm32` wasm wheel (PEP 783,
    the ABI of the Pyodide 314.x line — see `build-wheel.sh`);
 2. gathers the pure-Python deps not bundled in Pyodide (`pysdmx`, `sdmxschemas`,
-   `parsy`, `xmltodict`, `sqlglot`), at the versions `poetry.lock` pins;
+   `parsy`, `xmltodict`, `sqlglot`) at the versions `poetry.lock` pins, which
+   `lock_pins.py` reads from the lock for the Python of the wasm wheel;
 3. runs `jupyter lite build` against stock Pyodide 314.0.6, then **adds these
    wheels to the served `pyodide-lock.json`** (`patch_lock.py`) so Pyodide
    auto-loads them on `import` — the key to the zero-install experience — and
@@ -28,7 +29,7 @@ Everything else (`pandas` 3, `numpy`, `pyarrow`, `duckdb` 1.5.1, `lxml`, `msgspe
 
 ## Build
 
-Prerequisites: Node.js, and a Python 3.10+ environment
+Prerequisites: Node.js, and a Python 3.11+ environment
 (`pip install -r requirements.txt`). Versions are pinned to the JupyterLite
 0.8.x line, whose Pyodide kernel is 314.x — the ABI the wasm wheel targets.
 
@@ -87,7 +88,7 @@ issue carries the `documentation` label.
   Pyodide release ships lxml 6.1 (<https://github.com/pyodide/pyodide-recipes/pull/656>
   moves the recipes to lxml 6.1.3, libxslt 1.1.45 and libxml2 2.15.3), the floor goes back
   to `lxml >= 6.1.0` everywhere. The patched lockfile carries no version constraints, so
-  nothing in the build enforces the floor: keep the `pysdmx` pin in `build.sh` at 1.20.0 or
+  nothing in the build enforces the floor: `poetry.lock` has to keep `pysdmx` at 1.20.0 or
   later.
 - `scripts/check_micropip_install.mjs` performs that plain install for the wheel
   `pyodide_test.yml` (weekly, and on pull requests that touch `pyproject.toml` or the

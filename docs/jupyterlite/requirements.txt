@@ -1,4 +1,4 @@
-# Build-time tools for the JupyterLite demo (host Python 3.10+; 3.14 if you also
+# Build-time tools for the JupyterLite demo (host Python 3.11+; 3.14 if you also
 # build the vtlengine wheel here). Pinned to the 0.8.x line, which ships the
 # Pyodide 314 kernel (Python 3.14, PEP 783 `pyemscripten_2026_0` wheels) that the
 # vtlengine wasm wheel targets.
