@@ -2,7 +2,7 @@ import csv
 import warnings
 from csv import DictReader
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any, Dict, List, Optional, SupportsInt, Type, Union, cast
 
 import pandas as pd
 
@@ -334,7 +334,10 @@ def _validate_pandas(
 def check_identifiers_duplicity(data: pd.DataFrame, identifiers: List[str], name: str) -> None:
     dup_id_row = data.duplicated(subset=identifiers, keep=False)
     if dup_id_row.any():
-        row_index = int(dup_id_row.idxmax()) + 1
+        # The index label of the first duplicated row: an integer position on the
+        # range index the loaders build, which pandas-stubs only knows as Hashable.
+        first_duplicate = cast(SupportsInt, dup_id_row.idxmax())
+        row_index = int(first_duplicate) + 1
         raise DataLoadError("0-3-1-7", name=name, row_index=row_index)
 
 
