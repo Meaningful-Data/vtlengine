@@ -1,5 +1,5 @@
 from copy import copy
-from typing import Any, List, Optional
+from typing import Any, Callable, List, Optional
 
 import duckdb
 import pandas as pd
@@ -318,11 +318,15 @@ class Aggregation(Operator.Unary):
             registry = get_current_registry()
             if grouping_keys:
                 grouped = viral_df.groupby(grouping_keys, sort=False)
+
+                def _group_resolver(va_name: str) -> Callable[[pd.Series], Any]:
+                    # Binds the attribute name per column: a lambda in the
+                    # comprehension below would see the last one only.
+                    return lambda vals: registry.resolve_group(va_name, list(vals))
+
                 resolved = pd.DataFrame(
                     {
-                        va_name: grouped[va_name].agg(
-                            lambda vals, _n=va_name: registry.resolve_group(_n, list(vals))
-                        )
+                        va_name: grouped[va_name].agg(_group_resolver(va_name))
                         for va_name in viral_attr_names
                     }
                 ).reset_index()
