@@ -7,7 +7,7 @@
 #
 # Prerequisites (see README.md):
 #   * A Python 3.10+ environment with the build tools:  pip install -r requirements.txt
-#   * Node.js (used by the Pyodide kernel at build time)
+#   * Node.js 20+ (the Pyodide kernel at build time, and micropip in resolve_wheels.mjs)
 #   * The vtlengine WebAssembly wheel for Pyodide 314.x (PEP 783
 #     pyemscripten_2026_0_wasm32 ABI). Build it with ./build-wheel.sh and pass it
 #     via VTLENGINE_WHEEL=..., or drop it into ./wheels/ beforehand.
@@ -45,17 +45,7 @@ if [ "$(ls "$WHEELS"/vtlengine-*pyemscripten_2026_0_wasm32.whl 2>/dev/null | wc 
     exit 1
 fi
 
-echo "==> 2/6  pure-Python deps not bundled in Pyodide (the versions poetry.lock pins)"
-# pysdmx's lxml >= 6.1.0 floor is not checked here: the served lockfile carries no
-# version constraints, so the demo runs on the distribution's lxml 6.0.2 (see
-# README.md). A next Pyodide release fixes this: pyodide/pyodide-recipes#656.
-# Drop whatever an earlier build left (other versions, the duckdb wheel of the
-# pre-314 flow...): every wheel in $WHEELS ends up in the served lockfile.
-find "$WHEELS" -name '*.whl' ! -name 'vtlengine-*' -delete
-"$PY" -m pip download --no-deps --quiet --dest "$WHEELS" \
-    parsy==2.2 pysdmx==1.19.0 sdmxschemas==1.1.0 sqlglot==22.5.0 xmltodict==1.0.4
-
-echo "==> 3/6  jupyter lite build (stock Pyodide ${PYODIDE_VERSION})"
+echo "==> 2/6  jupyter lite build (stock Pyodide ${PYODIDE_VERSION})"
 [ -f "$PYODIDE_TARBALL" ] || curl -fsSL -o "$PYODIDE_TARBALL" \
     "https://github.com/pyodide/pyodide/releases/download/${PYODIDE_VERSION}/pyodide-${PYODIDE_VERSION}.tar.bz2"
 # Also drop the doit state of the previous build: with the output gone but the state
@@ -76,12 +66,19 @@ if "static/pyodide/pyodide" not in url:
 print(f"  kernel pyodideUrl: {url}")
 PY
 
-echo "==> 4/6  inject wheels + patch the served lockfile (zero-install auto-load)"
-cp "$WHEELS"/*.whl "$OUT/static/pyodide/"
-"$PY" "${HERE}/patch_lock.py" "$OUT/static/pyodide"
+echo "==> 3/6  resolve the wheel's dependencies with micropip, in the served Pyodide"
+# The resolution a user gets from micropip.install("vtlengine") on stock Pyodide: what the
+# distribution ships comes from its lockfile (pandas 3, duckdb, lxml 6.0.2...), the rest
+# from PyPI at the newest releases the engine allows. pysdmx >= 1.20.0 accepts that lxml
+# on Emscripten (`lxml >= 6.0.2` there, `>= 6.1.0` elsewhere; see README.md).
+WHEEL="$(ls "$WHEELS"/vtlengine-*pyemscripten_2026_0_wasm32.whl)"
+node "${HERE}/resolve_wheels.mjs" "$OUT/static/pyodide" "$WHEEL" "$WORK/micropip-lock.json"
+
+echo "==> 4/6  merge that resolution into the served lockfile (zero-install auto-load)"
+"$PY" "${HERE}/patch_lock.py" "$OUT/static/pyodide" "$WORK/micropip-lock.json" "$WHEEL"
 
 echo "==> 5/6  prune the served Pyodide distribution to what the demo can reach"
-# The tarball is the whole distribution (~380 MB); the demo can load ~60 MB of it.
+# The tarball is the whole distribution (~380 MB); the demo can load ~50 MB of it.
 "$PY" "${HERE}/prune_dist.py" "$OUT/static/pyodide" \
     "$OUT/extensions/@jupyterlite/pyodide-kernel-extension/static/pypi"
 
