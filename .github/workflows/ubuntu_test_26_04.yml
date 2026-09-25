@@ -1,0 +1,114 @@
+name: Ubuntu 26.04 Tests
+
+on:
+  pull_request:
+    branches: ["main", "1.6.X", "1.9.X"]
+  merge_group:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-26.04
+    # A bare Ubuntu 26.04 image, so that nothing APT did not install can stand in for a
+    # missing package: the runner image brings its own CMake, Ninja and Python builds.
+    container: ubuntu:26.04
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      PIP_BREAK_SYSTEM_PACKAGES: "1"
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+      PIP_ROOT_USER_ACTION: ignore
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Cache ANTLR4 runtime prebuilt
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: antlr4-cache
+        with:
+          path: build/antlr4-prefix
+          key: antlr4-runtime-ubuntu2604-py3.14-${{ hashFiles('scripts/setup_antlr4_runtime.sh', 'CMakeLists.txt') }}
+
+      - name: Install system dependencies
+        # The runtime dependencies, pytest, and the build backend with its toolchain, so that
+        # neither the build nor the install takes anything from PyPI.
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            ca-certificates \
+            curl \
+            python3-pip \
+            python3-pandas \
+            python3-pyarrow \
+            python3-jsonschema \
+            python3-networkx \
+            python3-sqlglot \
+            python3-httpx \
+            python3-h2 \
+            python3-msgspec \
+            python3-lxml \
+            python3-xmltodict \
+            python3-packaging \
+            python3-pytest \
+            python3-scikit-build-core \
+            python3-pybind11 \
+            pybind11-dev \
+            cmake \
+            ninja-build \
+            g++
+
+      - name: Install pip-only dependencies
+        # The only dependencies Ubuntu 26.04 does not package.
+        run: |
+          python3 -m pip install --no-dependencies \
+            pysdmx==1.20.0 \
+            sdmxschemas==1.1.0 \
+            duckdb==1.5.5 \
+            parsy==2.2
+
+      - name: Download ANTLR4 C++ runtime source
+        if: steps.antlr4-cache.outputs.cache-hit != 'true'
+        run: bash scripts/setup_antlr4_runtime.sh
+
+      - name: Build ANTLR4 runtime
+        if: steps.antlr4-cache.outputs.cache-hit != 'true'
+        run: |
+          cmake -S . -B build/antlr4-build \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DVTLENGINE_BUILD_ANTLR4_PREBUILT=ON
+          cmake --build build/antlr4-build --target antlr4_runtime --config Release
+          cmake --install build/antlr4-build --prefix "$PWD/build/antlr4-prefix" --config Release
+
+      - name: Install vtlengine
+        # Built with the APT scikit-build-core and pybind11, and without its dependencies:
+        # the next step compares the installed ones with the declared ranges.
+        id: install
+        run: |
+          python3 -m pip install --no-deps --no-build-isolation --check-build-dependencies -v . \
+            -C cmake.define.VTLENGINE_USE_PREBUILT_ANTLR4=ON \
+            -C "cmake.define.VTLENGINE_ANTLR4_PREFIX=$PWD/build/antlr4-prefix"
+
+      - name: Check the installed packages against the declared requirements
+        run: python3 scripts/check_requirements.py
+
+      # The tests also run when the requirements check fails, to show whether the code works
+      # on these versions. `-o pythonpath=` empties the ["src"] setting of pyproject.toml, so
+      # that they import the installed package.
+      - name: Run tests (pandas backend)
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        env:
+          VTL_ENGINE_BACKEND: pandas
+        run: python3 -m pytest -o pythonpath= --verbose --tb=short --strict-markers --strict-config --durations=10
+
+      - name: Run tests (duckdb backend)
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        env:
+          VTL_ENGINE_BACKEND: duckdb
+        run: python3 -m pytest -o pythonpath= --verbose --tb=short --strict-markers --strict-config --durations=10
