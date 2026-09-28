@@ -83,49 +83,51 @@ class Expr:
         ;
         """  # noqa E501
         ctx_list = ctx.children
+        # Each read of ctx_id crosses into the C++ parse tree
+        ctx_id = ctx.ctx_id
         c = ctx_list[0]
 
-        if ctx.ctx_id == RC.PARENTHESIS_EXPR:
+        if ctx_id == RC.PARENTHESIS_EXPR:
             return self.visitParenthesisExpr(ctx)
 
-        elif ctx.ctx_id == RC.MEMBERSHIP_EXPR:
+        elif ctx_id == RC.MEMBERSHIP_EXPR:
             return self.visitMembershipExpr(ctx)
 
         # dataset=expr  QLPAREN  clause=datasetClause  QRPAREN                  # clauseExpr
-        elif ctx.ctx_id == RC.CLAUSE_EXPR:
+        elif ctx_id == RC.CLAUSE_EXPR:
             return self.visitClauseExpr(ctx)
 
         # functions
-        elif ctx.ctx_id == RC.FUNCTIONS_EXPRESSION:
+        elif ctx_id == RC.FUNCTIONS_EXPRESSION:
             return self.visitFunctionsExpression(c)
 
         # op=(PLUS|MINUS|NOT) right=expr # unary expression
-        elif ctx.ctx_id == RC.UNARY_EXPR:
+        elif ctx_id == RC.UNARY_EXPR:
             return self.visitUnaryExpr(ctx)
 
         # | left=expr op=(MUL|DIV) right=expr               # arithmeticExpr
-        elif ctx.ctx_id == RC.ARITHMETIC_EXPR:
+        elif ctx_id == RC.ARITHMETIC_EXPR:
             return self.visitArithmeticExpr(ctx)
 
         # | left=expr op=(PLUS|MINUS|CONCAT) right=expr     # arithmeticExprOrConcat
-        elif ctx.ctx_id == RC.ARITHMETIC_EXPR_OR_CONCAT:
+        elif ctx_id == RC.ARITHMETIC_EXPR_OR_CONCAT:
             return self.visitArithmeticExprOrConcat(ctx)
 
         # | left=expr op=comparisonOperand  right=expr      # comparisonExpr
-        elif ctx.ctx_id == RC.COMPARISON_EXPR:
+        elif ctx_id == RC.COMPARISON_EXPR:
             return self.visitComparisonExpr(ctx)
 
         # | left=expr op=(IN|NOT_IN)(lists|valueDomainID)   # inNotInExpr
-        elif ctx.ctx_id == RC.IN_NOT_IN_EXPR:
+        elif ctx_id == RC.IN_NOT_IN_EXPR:
             return self.visitInNotInExpr(ctx)
 
         # | left=expr op=AND right=expr                                           # booleanExpr
         # | left=expr op=(OR|XOR) right=expr
-        elif ctx.ctx_id == RC.BOOLEAN_EXPR:
+        elif ctx_id == RC.BOOLEAN_EXPR:
             return self.visitBooleanExpr(ctx)
 
         # IF  conditionalExpr=expr  THEN thenExpr=expr ELSE elseExpr=expr       # ifExpr
-        elif ctx.ctx_id == RC.IF_EXPR:
+        elif ctx_id == RC.IF_EXPR:
             condition_node = self.visitExpr(ctx_list[1])
             then_op_node = self.visitExpr(ctx_list[3])
             else_op_node = self.visitExpr(ctx_list[5])
@@ -140,7 +142,7 @@ class Expr:
             return if_node
 
         # CASE WHEN expr THEN expr ELSE expr END                             # caseExpr
-        elif ctx.ctx_id == RC.CASE_EXPR:
+        elif ctx_id == RC.CASE_EXPR:
             if len(ctx_list) % 4 != 3:
                 raise ValueError("Syntax error.")
 
@@ -163,11 +165,11 @@ class Expr:
             return case_node
 
         # constant
-        elif ctx.ctx_id == RC.CONSTANT_EXPR:
+        elif ctx_id == RC.CONSTANT_EXPR:
             return Terminals().visitConstant(c)
 
         # varID
-        elif ctx.ctx_id == RC.VAR_ID_EXPR:
+        elif ctx_id == RC.VAR_ID_EXPR:
             return Terminals().visitVarIdExpr(c)
 
         else:
