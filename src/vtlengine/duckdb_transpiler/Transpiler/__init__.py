@@ -116,6 +116,12 @@ _MIN_FOLDED_CHAIN_OPERANDS = 3
 # The operations of those giving Number values from Integer ones
 _NUMBER_RESULT_CHAIN_OPS = frozenset({tokens.DIV, tokens.POWER, tokens.LOG})
 
+# Left-nested Number expressions (and xor ones) of components or scalars with at least
+# this many operands are computed by one list_reduce (see
+# SQLTranspiler._build_expression_chain). Below it, the nested SQL is cheaper to run.
+_FOLDED_BOOLEAN_OPS = frozenset({tokens.AND, tokens.OR, tokens.XOR})
+_MIN_FOLDED_EXPRESSION_OPERANDS = 5
+
 # Imbalance operations a ``check`` computes over the join of its comparison when both
 # read the same datasets (see SQLTranspiler._check_shared_join)
 _SHARED_JOIN_IMBALANCE_OPS = (tokens.PLUS, tokens.MINUS, tokens.MULT, tokens.DIV)
@@ -877,6 +883,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return self._build_ds_scalar_binary(node.right, node.left, op, ds_on_left=False)
 
         # Scalar-scalar binary: detect types and delegate to _make_binary_expr
+        chain_sql = self._build_expression_chain(node, self.visit, self._detect_scalar_type)
+        if chain_sql is not None:
+            return chain_sql
         left_sql = self.visit(node.left)
         right_sql = self.visit(node.right)
         if op == tokens.CONCAT:
@@ -1236,6 +1245,63 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             f"SELECT {', '.join(cols)} FROM ({' UNION ALL '.join(branches)}) AS t "
             f"GROUP BY {id_cols} HAVING count(*) = {len(operands)}"
         )
+
+    def _build_expression_chain(
+        self,
+        node: Union[AST.BinOp, AST.HRBinOp],
+        visit: Callable[[AST.AST], str],
+        node_type: Callable[[AST.AST], Optional[type]],
+    ) -> Optional[str]:
+        """Compute a long left-nested Number or xor expression with one list_reduce.
+
+        Every Number operation rounds its result with ``vtl_round_sig``, which repeats its
+        argument three times, and ``xor`` repeats both operands. Nested operation by
+        operation, the SQL DuckDB binds for ``a + b * c - d ...`` so grows threefold per
+        operand (twofold for ``xor``): 11 Number operands take 10 s to plan, and each one
+        more over three times as long. The operands go into a list instead, folded in
+        the written order by one lambda holding each operation once.
+
+        The chain follows the left side while each operation gives a Number (``+``, ``-``,
+        ``*``, ``/``, ``mod``, ``power``), or while it is ``and``, ``or`` or ``xor``. Its first
+        operation is built as usual, so the list opens with its Number or Boolean result
+        and the later operands convert as the operations convert them. ``visit`` and
+        ``node_type`` give an operand's SQL and data type, as the pairwise operation
+        gets them.
+
+        Returns ``None`` when the chain is too short, or when its nested SQL does not grow
+        (``and`` and ``or`` without ``xor``).
+        """
+        numeric = node.op in ROUNDED_NUMERIC_OPS
+        if not numeric and node.op not in _FOLDED_BOOLEAN_OPS:
+            return None
+        family = ROUNDED_NUMERIC_OPS if numeric else _FOLDED_BOOLEAN_OPS
+        chain: List[Union[AST.BinOp, AST.HRBinOp]] = []
+        current: AST.AST = node
+        while (
+            isinstance(current, (AST.BinOp, AST.HRBinOp))
+            and current.op in family
+            and (not numeric or node_type(current) is Number)
+        ):
+            chain.append(current)
+            current = current.left
+        if len(chain) + 1 < _MIN_FOLDED_EXPRESSION_OPERANDS:
+            return None
+        if not numeric and all(link.op != tokens.XOR for link in chain):
+            return None
+
+        first, *rest = reversed(chain)
+        elements = [visit(first)] + [visit(link.right) for link in rest]
+        steps = [
+            self._make_binary_expr(
+                "__vtl_acc",
+                "__vtl_next",
+                link.op,
+                node_type(link.left),
+                node_type(link.right),
+            )
+            for link in rest
+        ]
+        return f"list_reduce([{', '.join(elements)}], {self._fold_lambda(steps)})"
 
     def _build_ds_scalar_binary(
         self,
@@ -3809,6 +3875,13 @@ FROM (
     ) -> str:
         """Visit an expression in datapoint-rule context."""
         if isinstance(node, (AST.HRBinOp, AST.BinOp)):
+            chain_sql = self._build_expression_chain(
+                node,
+                lambda operand: self._visit_dp_expr(operand, signature, components),
+                lambda operand: self._detect_dp_type(operand, signature, components),
+            )
+            if chain_sql is not None:
+                return chain_sql
             left_sql = self._visit_dp_expr(node.left, signature, components)
             right_sql = self._visit_dp_expr(node.right, signature, components)
             if isinstance(node, AST.HRBinOp) and node.op == tokens.WHEN:

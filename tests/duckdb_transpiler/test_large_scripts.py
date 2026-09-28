@@ -1,10 +1,10 @@
 """
 Large Script Tests
 
-Scripts generated from validation rule sets chain many datasets in a single expression,
-check each rule with its imbalance and repeat whole statements. These tests pin how the
-DuckDB backend computes them and check that the results do not change: against the
-pandas engine, and against the queries they were computed with before.
+Scripts generated from validation rule sets chain many datasets or components in a
+single expression, check each rule with its imbalance and repeat whole statements. These
+tests pin how the DuckDB backend computes them and check that the results do not change:
+against the pandas engine, and against the queries they were computed with before.
 
 Naming conventions:
 - Identifiers: Id_1, Id_2, etc.
@@ -367,6 +367,175 @@ class TestDatasetChainResults:
             _sorted(folded["DS_r"].data), _sorted(joined["DS_r"].data), check_exact=True
         )
         assert folded["DS_r"] == on_pandas["DS_r"]
+
+
+# =============================================================================
+# Chains of components
+# =============================================================================
+
+
+_COMPONENT_MEASURES = {
+    **{f"Me_{i}": "Number" for i in range(1, 26)},
+    **{f"Me_i{i}": "Integer" for i in range(1, 4)},
+    **{f"Me_b{i}": "Boolean" for i in range(1, 6)},
+}
+
+
+def _component_structures() -> Dict[str, object]:
+    components = [{"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False}]
+    components += [
+        {"name": name, "type": dt, "role": "Measure", "nullable": True}
+        for name, dt in _COMPONENT_MEASURES.items()
+    ]
+    return {"datasets": [{"name": "DS_1", "DataStructure": components}]}
+
+
+def _component_datapoints() -> Dict[str, pd.DataFrame]:
+    """One dataset with Number, Integer and Boolean Measures, a few of them null."""
+    rng = np.random.default_rng(11)
+    df = pd.DataFrame({"Id_1": np.arange(60)})
+    for k, (name, dt) in enumerate(_COMPONENT_MEASURES.items()):
+        values = _values(rng, dt, 60)
+        column = pd.Series(values, dtype=float if dt == "Number" else object)
+        column[(np.arange(60) + k) % 13 == 0] = None
+        df[name] = column
+    return {"DS_1": df}
+
+
+_DATAPOINT_RULESET = """
+    define datapoint ruleset dpr (variable Me_1, Me_2, Me_3, Me_4, Me_5, Me_6) is
+        r1: when Me_1 > 0 then Me_1 * Me_2 - Me_3 + Me_4 / Me_5 - Me_6 > 0
+            errorcode "E1" errorlevel 1
+    end datapoint ruleset;
+"""
+
+
+class TestExpressionChainSQL:
+    """A long left-nested Number or xor expression is computed by one list_reduce."""
+
+    @staticmethod
+    def _sql(script: str) -> str:
+        return transpile(script, _component_structures())[-1][1]
+
+    def test_number_expression_is_one_list_reduce(self) -> None:
+        sql = self._sql(
+            "DS_r := DS_1[calc Me_r := Me_1 + Me_2 - Me_3 * Me_4 + Me_5 / Me_6 - Me_7];"
+        )
+
+        # The first operation opens the list, and each later operand is one element
+        assert (
+            'list_reduce([vtl_round_sig(("Me_1" + "Me_2"), 15), '
+            'vtl_round_sig(("Me_3" * "Me_4"), 15), vtl_round_sig(vtl_div("Me_5", "Me_6"), 15), '
+            '"Me_7"], lambda __vtl_acc, __vtl_next, __vtl_pos: CASE [0, 0, 1, 0][__vtl_pos] '
+            "WHEN 0 THEN vtl_round_sig((__vtl_acc - __vtl_next), 15) "
+            "WHEN 1 THEN vtl_round_sig((__vtl_acc + __vtl_next), 15) END)"
+        ) in sql
+
+    def test_integer_operands_before_the_first_number_one_stay_exact(self) -> None:
+        sql = self._sql(
+            "DS_r := DS_1[calc Me_r := Me_i1 + Me_i2 * Me_i3 + Me_1 - Me_2 + Me_3 + Me_4];"
+        )
+
+        assert 'list_reduce([vtl_round_sig((("Me_i1" + ("Me_i2" * "Me_i3")) + "Me_1"), 15), ' in sql
+
+    @pytest.mark.parametrize(
+        "expression",
+        [
+            pytest.param("Me_1 + Me_2 - Me_3 + Me_4", id="four-operands"),
+            pytest.param(" + ".join(["Me_i1", "Me_i2", "Me_i3"] * 4), id="integer"),
+            pytest.param(" and ".join(f"Me_b{i}" for i in range(1, 6)), id="and"),
+            pytest.param(" or ".join(f"Me_b{i}" for i in range(1, 6)), id="or"),
+        ],
+    )
+    def test_expressions_without_repeated_operands_stay_nested(self, expression: str) -> None:
+        sql = self._sql(f"DS_r := DS_1[calc Me_r := {expression}];")
+
+        assert "list_reduce" not in sql
+
+    def test_xor_expression_is_one_list_reduce(self) -> None:
+        sql = self._sql("DS_r := DS_1[calc Me_r := Me_b1 xor Me_b2 xor Me_b3 or Me_b4 xor Me_b5];")
+
+        assert sql.count("list_reduce(") == 1
+        assert sql.count("AND NOT") == 2
+
+    @pytest.mark.parametrize(
+        "script",
+        [
+            "DS_r := DS_1[filter Me_1 + Me_2 + Me_3 + Me_4 + Me_5 > 0];",
+            "DS_r := DS_1[aggr Me_r := sum(Me_1 + Me_2 + Me_3 + Me_4 + Me_5)];",
+            "sc_r := 1.5 + 2.25 + 3.125 + 4.0625 + 5.5;",
+            _DATAPOINT_RULESET + "DS_r := check_datapoint(DS_1, dpr);",
+        ],
+        ids=["filter", "aggr", "scalar", "datapoint-rule"],
+    )
+    def test_every_expression_context_folds(self, script: str) -> None:
+        assert "list_reduce([" in self._sql(script)
+
+
+class TestExpressionChainResults:
+    """A folded expression gives the pandas engine's result and the nested SQL's result."""
+
+    @pytest.mark.parametrize(
+        "script",
+        [
+            "DS_r := DS_1[calc Me_r := Me_1 + Me_2 - Me_3 * Me_4 + Me_5 / Me_6 - Me_7];",
+            "DS_r := DS_1[calc Me_r := Me_1 * Me_2 * Me_3 * Me_4 * Me_5 * Me_6];",
+            "DS_r := DS_1[calc Me_r := Me_1 / Me_2 / Me_3 / Me_4 * Me_5];",
+            "DS_r := DS_1[calc Me_r := Me_i1 / Me_i2 - Me_i3 + Me_1 - Me_2 * 2 + 0.5];",
+            "DS_r := DS_1[calc Me_r := Me_i1 + Me_i2 * Me_i3 + Me_1 - Me_2 + Me_3 + Me_4];",
+            "DS_r := DS_1[calc Me_r := mod(Me_1, 7) + Me_2 - Me_3 - Me_4 - Me_5];",
+            "DS_r := DS_1[calc Me_r := Me_b1 xor Me_b2 xor Me_b3 or Me_b4 xor Me_b5];",
+            "DS_r := DS_1[filter Me_1 + Me_2 + Me_3 + Me_4 + Me_5 > Me_6];",
+            "DS_r := DS_1[aggr Me_r := sum(Me_1 - Me_2 + Me_3 - Me_4 + Me_5) group by Id_1];",
+            _DATAPOINT_RULESET + "DS_r := check_datapoint(DS_1, dpr all);",
+        ],
+    )
+    def test_same_result_as_pandas_and_nested(
+        self, monkeypatch: pytest.MonkeyPatch, script: str
+    ) -> None:
+        on_pandas, folded = _run_both(script, _component_structures(), _component_datapoints())
+        monkeypatch.setattr(transpiler_module, "_MIN_FOLDED_EXPRESSION_OPERANDS", 10**9)
+        nested = run(
+            script=script,
+            data_structures=_component_structures(),
+            datapoints=_component_datapoints(),
+            use_duckdb=True,
+            return_only_persistent=False,
+        )
+
+        pd.testing.assert_frame_equal(
+            _sorted(folded["DS_r"].data), _sorted(nested["DS_r"].data), check_exact=True
+        )
+        assert folded["DS_r"] == on_pandas["DS_r"]
+
+    def test_long_expression_same_result_as_pandas(self) -> None:
+        """25 operands, which the nested SQL takes too long to bind."""
+        chain = " - ".join(f"Me_{i}" for i in range(1, 26))
+        script = f"DS_r := DS_1[calc Me_r := {chain}];"
+
+        on_pandas, folded = _run_both(script, _component_structures(), _component_datapoints())
+
+        assert folded["DS_r"] == on_pandas["DS_r"]
+
+    def test_division_by_zero_raises_as_nested(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        script = "DS_r := DS_1[calc Me_r := Me_1 / Me_2 / Me_3 / Me_4 / Me_5];"
+        datapoints = _component_datapoints()
+        datapoints["DS_1"].loc[5, "Me_3"] = 0.0
+
+        def error(**kwargs: object) -> str:
+            with pytest.raises(Exception, match="2-1-15-6") as exc_info:
+                run(
+                    script=script,
+                    data_structures=_component_structures(),
+                    datapoints={k: v.copy() for k, v in datapoints.items()},
+                    use_duckdb=True,
+                    **kwargs,
+                )
+            return f"{type(exc_info.value).__name__}: {exc_info.value}"
+
+        folded = error()
+        monkeypatch.setattr(transpiler_module, "_MIN_FOLDED_EXPRESSION_OPERANDS", 10**9)
+        assert folded == error()
 
 
 # =============================================================================
