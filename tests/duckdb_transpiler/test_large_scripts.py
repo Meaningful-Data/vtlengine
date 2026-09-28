@@ -1,10 +1,10 @@
 """
 Large Script Tests
 
-Scripts generated from validation rule sets chain many datasets in a single expression
-and repeat whole statements. These tests pin how the DuckDB backend computes them and
-check that the results do not change: against the pandas engine, and against the
-pairwise joins the chains were computed with before.
+Scripts generated from validation rule sets chain many datasets in a single expression,
+check each rule with its imbalance and repeat whole statements. These tests pin how the
+DuckDB backend computes them and check that the results do not change: against the
+pandas engine, and against the queries they were computed with before.
 
 Naming conventions:
 - Identifiers: Id_1, Id_2, etc.
@@ -22,6 +22,7 @@ import vtlengine.duckdb_transpiler.Transpiler as transpiler_module
 from vtlengine import run
 from vtlengine.AST import Assignment, BinOp, Start, VarID
 from vtlengine.DataTypes import Integer, Number, String
+from vtlengine.duckdb_transpiler import transpile
 from vtlengine.duckdb_transpiler.Transpiler import SQLTranspiler
 from vtlengine.Model import Component, Dataset, Role
 
@@ -379,3 +380,58 @@ class TestRepeatedStatements:
             rel=1e-12,
             nan_ok=True,
         )
+
+
+# =============================================================================
+# Validations
+# =============================================================================
+
+
+class TestCheckSharedJoin:
+    """A check whose imbalance combines the compared datasets reads them in one join."""
+
+    @staticmethod
+    def _sql(script: str) -> str:
+        data_structures = {"datasets": [_structure(f"DS_{k}", ["Me_1"], "Number") for k in (1, 2)]}
+        return transpile(script, data_structures)[0][1]
+
+    def test_comparison_and_imbalance_share_the_join(self) -> None:
+        sql = self._sql('DS_r := check(DS_1 >= DS_2 errorcode "E1" imbalance DS_1 - DS_2);')
+
+        assert sql.count(" JOIN ") == 1
+        assert 't."__vtl_imbalance__" AS "imbalance"' in sql
+
+    @pytest.mark.parametrize("imbalance", ["DS_2 - DS_1", "DS_1 - DS_1", "DS_1 - DS_2 + DS_1"])
+    def test_other_operands_keep_their_join(self, imbalance: str) -> None:
+        sql = self._sql(f"DS_r := check(DS_1 >= DS_2 imbalance {imbalance});")
+
+        assert "__vtl_imbalance__" not in sql
+
+    @pytest.mark.parametrize("mode", ["invalid", "all"])
+    @pytest.mark.parametrize("measure_type", ["Number", "Integer"])
+    def test_same_result_as_pandas_and_separate_joins(
+        self, monkeypatch: pytest.MonkeyPatch, mode: str, measure_type: str
+    ) -> None:
+        script = (
+            f'DS_r := check(DS_1 >= DS_2 errorcode "E1" errorlevel 5 imbalance DS_1 - DS_2 {mode});'
+        )
+        data_structures = {
+            "datasets": [_structure(f"DS_{k}", ["Me_1"], measure_type) for k in (1, 2)]
+        }
+        datapoints = _datapoints(["Me_1"], measure_type, with_nulls=True)
+        datapoints = {name: datapoints[name] for name in ("DS_1", "DS_2")}
+
+        on_pandas, shared = _run_both(script, data_structures, datapoints)
+        monkeypatch.setattr(SQLTranspiler, "_check_shared_join", lambda self, node: None)
+        separate = run(
+            script=script,
+            data_structures=data_structures,
+            datapoints={k: v.copy() for k, v in datapoints.items()},
+            use_duckdb=True,
+            return_only_persistent=False,
+        )
+
+        pd.testing.assert_frame_equal(
+            _sorted(shared["DS_r"].data), _sorted(separate["DS_r"].data), check_exact=True
+        )
+        assert shared["DS_r"] == on_pandas["DS_r"]

@@ -87,6 +87,10 @@ _VTL_PERIOD_PARSE_LITERAL = re.compile(
 _FOLDED_CHAIN_OPS = (tokens.PLUS, tokens.MINUS)
 _MIN_FOLDED_CHAIN_OPERANDS = 3
 
+# Imbalance operations a ``check`` computes over the join of its comparison when both
+# read the same datasets (see SQLTranspiler._check_shared_join)
+_SHARED_JOIN_IMBALANCE_OPS = (tokens.PLUS, tokens.MINUS, tokens.MULT, tokens.DIV)
+
 
 def _match_plain_sql_string_literal(expr: str) -> Optional[str]:
     """Return the inner string of a plain SQL literal, or None if not one."""
@@ -227,6 +231,27 @@ class _ParsedHRRule:
     right_code_items: List[str]  # All code item names in the right-side expression
     left_cond_sql: Optional[str] = None  # Left-side `_right_condition` SQL, when cond_mapping given
     right_conds: Dict[str, str] = field(default_factory=dict)  # Right-side per-item conditions
+
+
+@dataclass
+class _PairwiseJoin:
+    """A dataset-dataset binary operation before it is written as one query."""
+
+    id_cols: List[str]
+    measure_cols: List[Tuple[str, str]]  # (expression, output name)
+    viral_cols: List[str]
+    left_src: str
+    right_src: str
+    on_clause: str
+
+    def sql(self, cols: List[str]) -> str:
+        """Select ``cols`` from the join of both operands (``a`` and ``b``)."""
+        builder = SQLBuilder().select(*cols).from_table(self.left_src, "a")
+        if self.on_clause != "1=1":
+            builder.join(self.right_src, "b", on=self.on_clause, join_type="INNER")
+        else:
+            builder.cross_join(self.right_src, "b")
+        return builder.build()
 
 
 @dataclass
@@ -942,6 +967,17 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         op: str,
     ) -> str:
         """Build SQL for dataset-dataset binary operations using JOIN."""
+        join = self._ds_ds_binary_join(left_node, right_node, op)
+        measure_cols = [f"{expr} AS {quote_name(name)}" for expr, name in join.measure_cols]
+        return join.sql(join.id_cols + measure_cols + join.viral_cols)
+
+    def _ds_ds_binary_join(
+        self,
+        left_node: AST.AST,
+        right_node: AST.AST,
+        op: str,
+    ) -> _PairwiseJoin:
+        """Work out the columns and the join of a dataset-dataset binary operation."""
         left_ds = self._get_dataset_structure(left_node)
         right_ds = self._get_dataset_structure(right_node)
         output_ds = self._get_output_dataset()
@@ -972,13 +1008,14 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             else:
                 paired_measures = [(left_measures[0], right_measures[0])]
 
-        cols: List[str] = []
+        id_cols: List[str] = []
         for id_name in all_ids:
             if id_name in left_ids:
-                cols.append(f"{alias_a}.{quote_name(id_name)}")
+                id_cols.append(f"{alias_a}.{quote_name(id_name)}")
             else:
-                cols.append(f"{alias_b}.{quote_name(id_name)}")
+                id_cols.append(f"{alias_b}.{quote_name(id_name)}")
 
+        measure_cols: List[Tuple[str, str]] = []
         for left_m, right_m in paired_measures:
             left_ref = f"{alias_a}.{quote_name(left_m)}"
             right_ref = f"{alias_b}.{quote_name(right_m)}"
@@ -1007,20 +1044,17 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 and len(output_measure_names) == 1
             ):
                 out_name = output_measure_names[0]
-            cols.append(f"{expr} AS {quote_name(out_name)}")
+            measure_cols.append((expr, out_name))
 
-        # Viral attribute propagation across the two operands (issue #906).
-        cols.extend(self._ds_ds_viral_cols(op, left_ds, right_ds, output_ds, alias_a, alias_b))
-
-        on_clause = self._join_on_clause(common_ids, alias_a, alias_b)
-
-        builder = SQLBuilder().select(*cols).from_table(left_src, alias_a)
-        if on_clause != "1=1":
-            builder.join(right_src, alias_b, on=on_clause, join_type="INNER")
-        else:
-            builder.cross_join(right_src, alias_b)
-
-        return builder.build()
+        return _PairwiseJoin(
+            id_cols=id_cols,
+            measure_cols=measure_cols,
+            # Viral attribute propagation across the two operands (issue #906).
+            viral_cols=self._ds_ds_viral_cols(op, left_ds, right_ds, output_ds, alias_a, alias_b),
+            left_src=left_src,
+            right_src=right_src,
+            on_clause=self._join_on_clause(common_ids, alias_a, alias_b),
+        )
 
     def _flatten_ds_chain(self, node: AST.BinOp) -> Tuple[List[AST.AST], List[str]]:
         """Split a left-nested chain of dataset ``+``/``-`` into its operands and operators.
@@ -4435,12 +4469,53 @@ FROM (
         """Convert an errorcode value to a SQL literal."""
         return "CAST(NULL AS VARCHAR)" if value is None else self._to_sql_literal(value=value)
 
+    def _check_shared_join(self, node: AST.Validation) -> Optional[str]:
+        """One join computing both the comparison and the imbalance of a ``check``.
+
+        ``check(L >= R imbalance L - R)`` joins L and R for the comparison, joins them
+        again for the imbalance and then joins both results. When both operations read
+        the same two datasets, the query of the comparison also selects the imbalance
+        (as ``__vtl_imbalance__``). Returns ``None`` when the operations differ.
+        """
+        validation, imbalance = node.validation, node.imbalance
+        if not isinstance(validation, AST.BinOp) or not isinstance(imbalance, AST.BinOp):
+            return None
+        if validation.op not in COMPARISON_OPS or imbalance.op not in _SHARED_JOIN_IMBALANCE_OPS:
+            return None
+        operands = (validation.left, validation.right, imbalance.left, imbalance.right)
+        if self._udo_params is not None or not all(isinstance(o, AST.VarID) for o in operands):
+            return None
+        names = [o.value for o in operands]  # type: ignore[attr-defined]
+        if names[:2] != names[2:] or any(self._get_node_type(o) != _DATASET for o in operands):
+            return None
+        ds = self._get_dataset_structure(validation)
+        if ds is None or len(ds.get_measures_names()) != 1:
+            return None
+
+        with self._stash_assignment():
+            comparison = self._ds_ds_binary_join(validation.left, validation.right, validation.op)
+            difference = self._ds_ds_binary_join(imbalance.left, imbalance.right, imbalance.op)
+        if comparison.viral_cols or difference.viral_cols:
+            return None
+        if len(comparison.measure_cols) != 1 or len(difference.measure_cols) != 1:
+            return None
+        cols = [
+            *comparison.id_cols,
+            f"{comparison.measure_cols[0][0]} AS {quote_name(ds.get_measures_names()[0])}",
+            f'{difference.measure_cols[0][0]} AS "__vtl_imbalance__"',
+        ]
+        return comparison.sql(cols)
+
     def visit_Validation(self, node: AST.Validation) -> str:
         """Visit CHECK validation operator."""
-        # Stash ``current_assignment`` so _build_ds_ds_binary doesn't rename the
-        # inner comparison's measures to match the outer assignment target.
-        with self._stash_assignment():
-            validation_sql = self.visit(node.validation)
+        shared_join = self._check_shared_join(node)
+        if shared_join is not None:
+            validation_sql = shared_join
+        else:
+            # Stash ``current_assignment`` so _build_ds_ds_binary doesn't rename the
+            # inner comparison's measures to match the outer assignment target.
+            with self._stash_assignment():
+                validation_sql = self.visit(node.validation)
 
         error_code = self._error_code_sql(node.error_code)
         error_level = self._error_code_sql(node.error_level)
@@ -4464,7 +4539,9 @@ FROM (
         imbalance_sql: Optional[str] = None
         join_cond: Optional[str] = None
         imbalance_col = 'CAST(NULL AS DOUBLE) AS "imbalance"'
-        if node.imbalance is not None:
+        if shared_join is not None:
+            imbalance_col = 't."__vtl_imbalance__" AS "imbalance"'
+        elif node.imbalance is not None:
             with self._stash_assignment():
                 imbalance_sql = self.visit(node.imbalance)
             imb_ds = self._get_dataset_structure(node.imbalance)
