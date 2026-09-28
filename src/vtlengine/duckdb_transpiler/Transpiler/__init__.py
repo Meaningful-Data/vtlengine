@@ -2352,7 +2352,14 @@ FROM (
                         continue
                     col_name = self._resolve_udo_name(self._get_node_value(assignment.left))
                     expr_sql = self.visit(assignment.right)
-                    if _CALC_ROLE_BY_TOKEN.get(getattr(child, "op", "")) is Role.IDENTIFIER:
+                    is_identifier = (
+                        _CALC_ROLE_BY_TOKEN.get(getattr(child, "op", "")) is Role.IDENTIFIER
+                    )
+                    # A literal that is not null never trips the guard, and each hoisted
+                    # column costs the statement one more subquery
+                    right = assignment.right
+                    non_null_literal = isinstance(right, AST.Constant) and right.value is not None
+                    if is_identifier and not non_null_literal:
                         # The null guard names the expression twice, so bind it once
                         # instead of leaving the binder to expand it again (#1106)
                         guarded = self._hoist(expr_sql)
