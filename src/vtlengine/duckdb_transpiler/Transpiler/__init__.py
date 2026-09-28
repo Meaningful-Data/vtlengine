@@ -5,7 +5,19 @@ from collections import Counter
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, Generator, List, Optional, Set, Tuple, Union, cast
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    FrozenSet,
+    Generator,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+    cast,
+)
 
 import vtlengine.AST as AST
 from vtlengine.AST.ASTTemplate import ASTTemplate
@@ -17,6 +29,7 @@ from vtlengine.DataTypes import (
     Duration,
     Integer,
     Number,
+    String,
     TimeInterval,
     TimePeriod,
 )
@@ -82,10 +95,26 @@ _VTL_PERIOD_PARSE_LITERAL = re.compile(
     r"'\)"
 )
 
-# Left-nested chains of dataset ``+``/``-`` with at least this many operands are
-# computed by one grouped query (see SQLTranspiler._build_ds_ds_chain)
-_FOLDED_CHAIN_OPS = (tokens.PLUS, tokens.MINUS)
+# Left-nested chains of a dataset operation that gives its operands' types back, with
+# at least this many operands, are computed by one grouped query (see
+# SQLTranspiler._build_ds_ds_chain). Each operator maps to the Measure types it folds.
+_NUMERIC_TYPES = frozenset({Integer, Number})
+_FOLDED_CHAIN_TYPES: Dict[str, FrozenSet[type]] = {
+    tokens.PLUS: _NUMERIC_TYPES,
+    tokens.MINUS: _NUMERIC_TYPES,
+    tokens.MULT: _NUMERIC_TYPES,
+    tokens.DIV: _NUMERIC_TYPES,
+    tokens.MOD: _NUMERIC_TYPES,
+    tokens.POWER: _NUMERIC_TYPES,
+    tokens.LOG: _NUMERIC_TYPES,
+    tokens.AND: frozenset({Boolean}),
+    tokens.OR: frozenset({Boolean}),
+    tokens.XOR: frozenset({Boolean}),
+    tokens.CONCAT: frozenset({String}),
+}
 _MIN_FOLDED_CHAIN_OPERANDS = 3
+# The operations of those giving Number values from Integer ones
+_NUMBER_RESULT_CHAIN_OPS = frozenset({tokens.DIV, tokens.POWER, tokens.LOG})
 
 # Imbalance operations a ``check`` computes over the join of its comparison when both
 # read the same datasets (see SQLTranspiler._check_shared_join)
@@ -839,7 +868,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
                 return self._apply_measures(node.left, _in_expr, output_name_override="bool_var")
             if left_type == _DATASET and right_type == _DATASET:
-                chain_sql = self._build_ds_ds_chain(node) if op in _FOLDED_CHAIN_OPS else None
+                chain_sql = self._build_ds_ds_chain(node) if op in _FOLDED_CHAIN_TYPES else None
                 if chain_sql is not None:
                     return chain_sql
                 return self._build_ds_ds_binary(node.left, node.right, op)
@@ -1056,32 +1085,29 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             on_clause=self._join_on_clause(common_ids, alias_a, alias_b),
         )
 
-    def _flatten_ds_chain(self, node: AST.BinOp) -> Tuple[List[AST.AST], List[str]]:
-        """Split a left-nested chain of dataset ``+``/``-`` into its operands and operators.
+    def _flatten_ds_chain(self, node: AST.BinOp) -> List[AST.BinOp]:
+        """The operations of a left-nested chain of dataset operations, innermost first.
 
-        ``A - B + C`` gives ``[A, B, C]`` and ``["-", "+"]``. A parenthesised or
-        right-hand operand is kept whole, as the chain only follows the left side.
+        In ``A - B * C + D`` they are the ``-`` and the ``+``: ``B * C`` binds first and
+        is one operand, as is any parenthesised or right-hand operand, since the chain
+        only follows the left side.
         """
-        operands: List[AST.AST] = []
-        ops: List[str] = []
+        links: List[AST.BinOp] = []
         current: AST.AST = node
         while (
             isinstance(current, AST.BinOp)
-            and current.op in _FOLDED_CHAIN_OPS
+            and current.op in _FOLDED_CHAIN_TYPES
             and self._get_node_type(current.left) == _DATASET
             and self._get_node_type(current.right) == _DATASET
         ):
-            operands.append(current.right)
-            ops.append(current.op)
+            links.append(current)
             current = current.left
-        operands.append(current)
-        operands.reverse()
-        ops.reverse()
-        return operands, ops
+        links.reverse()
+        return links
 
     @staticmethod
-    def _chain_operands_match(structures: List[Optional[Dataset]]) -> bool:
-        """Whether every operand has the same identifiers and Integer or Number Measures.
+    def _chain_measure_types(structures: List[Optional[Dataset]]) -> Optional[Dict[str, Any]]:
+        """The type of each Measure when every operand has the same identifiers and Measures.
 
         Viral attributes and Number identifiers keep the pairwise joins: the former
         combine through their propagation rules, the latter would group ``-0.0``
@@ -1099,34 +1125,65 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         reference = signature(structures[0])
         if not reference or any(signature(ds) != reference for ds in structures[1:]):
-            return False
-        roles = {role for role, _ in reference.values()}
-        if roles != {Role.IDENTIFIER, Role.MEASURE}:
-            return False
-        return all(
-            dt is not Number if role == Role.IDENTIFIER else dt in (Integer, Number)
-            for role, dt in reference.values()
-        )
+            return None
+        if {role for role, _ in reference.values()} != {Role.IDENTIFIER, Role.MEASURE}:
+            return None
+        if any(dt is Number for role, dt in reference.values() if role == Role.IDENTIFIER):
+            return None
+        return {name: dt for name, (role, dt) in reference.items() if role == Role.MEASURE}
+
+    @staticmethod
+    def _fold_lambda(steps: List[str]) -> str:
+        """The list_reduce lambda folding each next value into the running one.
+
+        ``steps[k]`` is the operation folding the value at 1-based position ``k + 2`` of
+        the list, the position the lambda gets as its third argument. Operations written
+        the same way share their branch, so a chain of one operator needs no lookup.
+        """
+        distinct = list(dict.fromkeys(steps))
+        if len(distinct) == 1:
+            body = distinct[0]
+        else:
+            # The first position is never folded: it opens the running value
+            codes = ", ".join(str(distinct.index(step)) for step in [steps[0], *steps])
+            branches = " ".join(f"WHEN {k} THEN {step}" for k, step in enumerate(distinct))
+            body = f"CASE [{codes}][__vtl_pos] {branches} END"
+        return f"lambda __vtl_acc, __vtl_next, __vtl_pos: {body}"
 
     def _build_ds_ds_chain(self, node: AST.BinOp) -> Optional[str]:
-        """Build one grouped query for a left-nested chain of dataset ``+``/``-``.
+        """Build one grouped query for a left-nested chain of a dataset operation.
 
-        Each operation of ``A - B + C ...`` joins its operands on the identifiers, so
+        Each operation of ``A - B * C + D ...`` joins its operands on the identifiers, so
         a chain of N operands nests N-1 joins and DuckDB pays for every one of them
         when it plans and runs the statement. When all the operands share their
-        identifiers and Measures, the chain keeps the data points found in every
-        operand and folds their values in the written order, rounding each step as
-        the pairwise operation does, which one pass over the stacked operands gives.
+        identifiers and Measures, and every operation gives its operands' types back
+        (``+``, ``-``, ``*``, ``/``, ``mod``, ``power``, ``log``, ``and``, ``or``, ``xor``
+        and ``||``), the chain keeps the data points found in every operand and
+        folds their values in the written order, each operation built as the pairwise
+        one builds it (rounding included), which one pass over the stacked operands gives.
+
+        A division, power or log gives Number values even from Integer ones, which the
+        values before it are not: the chain starts at the first of them, from the value
+        of the operations below it.
 
         Returns ``None`` when the chain is too short or its operands do not qualify,
         leaving the pairwise joins.
         """
-        operands, ops = self._flatten_ds_chain(node)
-        if len(operands) < _MIN_FOLDED_CHAIN_OPERANDS:
+        links = self._flatten_ds_chain(node)
+        first_number = next(
+            (k for k, link in enumerate(links) if link.op in _NUMBER_RESULT_CHAIN_OPS), 0
+        )
+        links = links[first_number:]
+        if len(links) + 1 < _MIN_FOLDED_CHAIN_OPERANDS:
             return None
+        operands = [links[0].left, *(link.right for link in links)]
         structures = [self._get_dataset_structure(operand) for operand in operands]
-        if not self._chain_operands_match(structures):
+        measure_types = self._chain_measure_types(structures)
+        if measure_types is None or any(
+            not set(measure_types.values()) <= _FOLDED_CHAIN_TYPES[link.op] for link in links
+        ):
             return None
+        gives_number = links[0].op in _NUMBER_RESULT_CHAIN_OPS
 
         first = cast(Dataset, structures[0])
         id_names = sorted(first.get_identifiers_names())
@@ -1136,11 +1193,19 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         # Same naming as _build_ds_ds_binary: a single Measure takes the output name
         out_names = output_measures if len(measures) == 1 == len(output_measures) else measures
 
+        # Number values are folded as DOUBLE, and so are Integer ones that turn Number,
+        # which the operations compute in DOUBLE anyway: list_reduce gives back the type
+        # of its list
+        as_double = {
+            m
+            for m in measures
+            if measure_types[m] is Number or (measure_types[m] is Integer and gives_number)
+        }
         position = quote_name("__vtl_chain_position__")
         branch_cols = [quote_name(name) for name in id_names]
         branch_cols += [
             f"CAST({quote_name(m)} AS DOUBLE) AS {quote_name(m)}"
-            if first.components[m].data_type is Number
+            if m in as_double
             else quote_name(m)
             for m in measures
         ]
@@ -1150,27 +1215,20 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             for k, operand in enumerate(operands)
         ]
 
-        # The lambda gets the running value, the next operand value and its 1-based
-        # position in the list, which picks the operator written before that operand
-        is_minus = ", ".join(
-            "true" if op == tokens.MINUS else "false" for op in [tokens.PLUS, *ops]
-        )
+        ops = [link.op for link in links]
         cols = [quote_name(name) for name in id_names]
         for measure, out_name in zip(measures, out_names):
-            dt = first.components[measure].data_type
-            steps = {
-                op: self._make_binary_expr("__vtl_acc", "__vtl_next", op, dt, dt) for op in set(ops)
+            # Typed as the pairwise joins type them: each partial result has the
+            # structure of its left operand, so every operation gets the operands' type
+            dt = measure_types[measure]
+            step_sql = {
+                op: self._make_binary_expr("__vtl_acc", "__vtl_next", op, dt, dt)
+                for op in dict.fromkeys(ops)
             }
-            if len(steps) == 1:
-                step = next(iter(steps.values()))
-            else:
-                step = (
-                    f"CASE WHEN [{is_minus}][__vtl_pos] THEN {steps[tokens.MINUS]} "
-                    f"ELSE {steps[tokens.PLUS]} END"
-                )
+            steps = [step_sql[op] for op in ops]
             cols.append(
                 f"list_reduce(list({quote_name(measure)} ORDER BY {position}), "
-                f"lambda __vtl_acc, __vtl_next, __vtl_pos: {step}) AS {quote_name(out_name)}"
+                f"{self._fold_lambda(steps)}) AS {quote_name(out_name)}"
             )
 
         id_cols = ", ".join(quote_name(name) for name in id_names)

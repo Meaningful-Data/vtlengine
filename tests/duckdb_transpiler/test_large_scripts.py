@@ -85,21 +85,34 @@ def _structure(name: str, measures: Sequence[str], measure_type: str) -> Dict[st
     return {"name": name, "DataStructure": components}
 
 
+def _values(rng: np.random.Generator, measure_type: str, size: int) -> list:
+    """Random values of a type, none of them zero so that any of them can divide."""
+    if measure_type == "Integer":
+        return (rng.integers(1, 1000, size) * rng.choice([-1, 1], size)).tolist()
+    if measure_type == "Boolean":
+        return rng.choice([True, False], size).tolist()
+    if measure_type == "String":
+        return [f"s{v}" for v in rng.integers(0, 100, size)]
+    return (rng.normal(0, 1e6, size) / 7.0).tolist()
+
+
 def _datapoints(
-    measures: Sequence[str], measure_type: str, with_nulls: bool
+    measures: Sequence[str], measure_type: str, with_nulls: bool, operands: int = 4
 ) -> Dict[str, pd.DataFrame]:
-    """Four operands over overlapping data points, some with null values."""
+    """Operands over overlapping data points, some with null values."""
     rng = np.random.default_rng(7)
     frames = {}
-    for k, dropped in enumerate(([], [3, 7], [11], [0, 39])):
+    dropped_rows = ([], [3, 7], [11], [0, 39])
+    for k in range(operands):
         df = pd.DataFrame({"Id_1": np.arange(40) % 5, "Id_2": [f"K{i // 5}" for i in range(40)]})
         for m in measures:
-            if measure_type == "Integer":
-                df[m] = rng.integers(-1000, 1000, 40)
-            else:
-                df[m] = rng.normal(0, 1e6, 40) / 7.0
+            values = _values(rng, measure_type, 40)
+            # Object columns take the nulls without changing the values' type
+            numeric = measure_type in ("Integer", "Number")
+            df[m] = values if numeric else pd.Series(values, dtype=object)
         if with_nulls and k == 0:
             df.loc[df.index % 4 == 1, measures[0]] = None
+        dropped = dropped_rows[k % len(dropped_rows)]
         frames[f"DS_{k + 1}"] = df.drop(index=dropped).reset_index(drop=True)
     return frames
 
@@ -153,7 +166,8 @@ class TestLongChainTranspile:
             return original(self, node)
 
         monkeypatch.setattr(SQLTranspiler, "_resolve_dataset_structure", counting)
-        # ``*`` keeps the pairwise joins, where the structures are looked up level by level
+        # Without the fold, the structures are looked up level by level of the joins
+        monkeypatch.setattr(transpiler_module, "_MIN_FOLDED_CHAIN_OPERANDS", 10**9)
         sql = _transpile(datasets, _chain(names, ["*"] * 59), datasets["DS_0"])
 
         assert sql.count(" JOIN ") == 59
@@ -161,7 +175,7 @@ class TestLongChainTranspile:
 
 
 class TestDatasetChainSQL:
-    """A left-nested chain of dataset ``+``/``-`` is computed by one grouped query."""
+    """A left-nested chain of a dataset operation is computed by one grouped query."""
 
     def test_chain_is_one_grouped_query(self) -> None:
         names = ["DS_1", "DS_2", "DS_3"]
@@ -177,9 +191,9 @@ class TestDatasetChainSQL:
         assert sql == (
             'SELECT "Id_1", list_reduce(list("Me_1" ORDER BY "__vtl_chain_position__"), '
             "lambda __vtl_acc, __vtl_next, __vtl_pos: "
-            "CASE WHEN [false, true, false][__vtl_pos] "
-            "THEN vtl_round_sig((__vtl_acc - __vtl_next), 15) "
-            'ELSE vtl_round_sig((__vtl_acc + __vtl_next), 15) END) AS "Me_1" '
+            "CASE [0, 0, 1][__vtl_pos] "
+            "WHEN 0 THEN vtl_round_sig((__vtl_acc - __vtl_next), 15) "
+            'WHEN 1 THEN vtl_round_sig((__vtl_acc + __vtl_next), 15) END) AS "Me_1" '
             f'FROM ({branches}) AS t GROUP BY "Id_1" HAVING count(*) = 3'
         )
 
@@ -235,6 +249,70 @@ class TestDatasetChainSQL:
         assert "list_reduce" not in sql
         assert " INNER JOIN " in sql
 
+    @staticmethod
+    def _sql(script: str, measure_type: str, operands: int = 4) -> str:
+        data_structures = {
+            "datasets": [
+                _structure(f"DS_{k}", ["Me_1"], measure_type) for k in range(1, operands + 1)
+            ]
+        }
+        return transpile(script, data_structures)[0][1]
+
+    @pytest.mark.parametrize(
+        "expression, measure_type, step",
+        [
+            ("DS_1 * DS_2 * DS_3", "Integer", "(__vtl_acc * __vtl_next)"),
+            ("DS_1 * DS_2 * DS_3", "Number", "vtl_round_sig((__vtl_acc * __vtl_next), 15)"),
+            ("DS_1 / DS_2 / DS_3", "Number", "vtl_round_sig(vtl_div(__vtl_acc, __vtl_next), 15)"),
+            ("mod(mod(DS_1, DS_2), DS_3)", "Integer", "vtl_mod(__vtl_acc, __vtl_next)"),
+            ("DS_1 and DS_2 and DS_3", "Boolean", "(__vtl_acc AND __vtl_next)"),
+            ("DS_1 or DS_2 or DS_3", "Boolean", "(__vtl_acc OR __vtl_next)"),
+            (
+                "DS_1 xor DS_2 xor DS_3",
+                "Boolean",
+                "((__vtl_acc AND NOT __vtl_next) OR (NOT __vtl_acc AND __vtl_next))",
+            ),
+            ("DS_1 || DS_2 || DS_3", "String", "(__vtl_acc || __vtl_next)"),
+        ],
+    )
+    def test_operators_giving_their_operands_type_fold(
+        self, expression: str, measure_type: str, step: str
+    ) -> None:
+        sql = self._sql(f"DS_r := {expression};", measure_type)
+
+        assert f"lambda __vtl_acc, __vtl_next, __vtl_pos: {step})" in sql
+        assert " JOIN " not in sql
+
+    def test_integer_division_folds_as_number(self) -> None:
+        sql = self._sql("DS_r := DS_1 / DS_2 / DS_3;", "Integer")
+
+        assert sql.count('CAST("Me_1" AS DOUBLE)') == 3
+        assert "vtl_round_sig(vtl_div(__vtl_acc, __vtl_next), 15)" in sql
+
+    def test_left_side_of_other_types_is_an_operand(self) -> None:
+        """Integer ``DS_1 + DS_2`` is exact, so it is not folded with the Number divisions."""
+        sql = self._sql("DS_r := (DS_1 + DS_2) / DS_3 / DS_4;", "Integer")
+
+        assert sql.count("list_reduce") == 1
+        assert sql.count(" JOIN ") == 1
+        assert sql.endswith("HAVING count(*) = 3")
+
+    def test_mixed_operators_pick_their_step(self) -> None:
+        sql = self._sql("DS_r := DS_1 * DS_2 - DS_3 + DS_4;", "Integer")
+
+        assert (
+            "CASE [0, 0, 1, 2][__vtl_pos] WHEN 0 THEN (__vtl_acc * __vtl_next) "
+            "WHEN 1 THEN (__vtl_acc - __vtl_next) WHEN 2 THEN (__vtl_acc + __vtl_next) END"
+        ) in sql
+
+    def test_right_operand_is_kept_whole(self) -> None:
+        """``*`` binds first: DS_3 * DS_4 is one operand of the chain, computed by its join."""
+        sql = self._sql("DS_r := DS_1 * DS_2 - DS_3 * DS_4;", "Integer")
+
+        assert sql.count("list_reduce") == 1
+        assert sql.count(" JOIN ") == 1
+        assert sql.endswith("HAVING count(*) = 3")
+
 
 class TestDatasetChainResults:
     """A folded chain gives the pandas engine's result and the pairwise joins' result."""
@@ -248,6 +326,17 @@ class TestDatasetChainResults:
             ("DS_r := DS_1 + DS_2 - DS_3 + DS_4 - DS_1;", ["Me_1"], "Integer"),
             ("DS_r := (DS_1 - DS_2) - (DS_3 + DS_4) + DS_2;", ["Me_1"], "Number"),
             ("DS_r := DS_1 - DS_2 + DS_3 - DS_4 * 2;", ["Me_1"], "Number"),
+            ("DS_r := DS_1 * DS_2 * DS_3 * DS_4;", ["Me_1", "Me_2"], "Number"),
+            ("DS_r := DS_1 * DS_2 * DS_3 * DS_4;", ["Me_1"], "Integer"),
+            ("DS_r := DS_1 * DS_2 * DS_3 + DS_4 - DS_1;", ["Me_1"], "Number"),
+            ("DS_r := DS_1 / DS_2 / DS_3 * DS_4;", ["Me_1"], "Number"),
+            ("DS_r := DS_1 / DS_2 / DS_3 / DS_4;", ["Me_1"], "Integer"),
+            ("DS_r := (DS_1 + DS_2) / DS_3 / DS_4;", ["Me_1"], "Integer"),
+            ("DS_r := DS_1 / DS_2 + DS_3 - DS_4;", ["Me_1"], "Integer"),
+            ("DS_r := mod(mod(mod(DS_1, DS_2), DS_3), DS_4);", ["Me_1"], "Integer"),
+            ("DS_r := DS_1 xor DS_2 xor DS_3 xor DS_4;", ["Me_1"], "Boolean"),
+            ("DS_r := DS_1 and DS_2 or DS_3 xor DS_4 and DS_1;", ["Me_1"], "Boolean"),
+            ("DS_r := DS_1 || DS_2 || DS_3 || DS_4;", ["Me_1", "Me_2"], "String"),
         ],
     )
     @pytest.mark.parametrize("with_nulls", [False, True])
