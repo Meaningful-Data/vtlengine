@@ -180,6 +180,13 @@ class Component:
     def __eq__(self, other: Any) -> bool:
         return self.to_dict() == other.to_dict()
 
+    def __copy__(self) -> "Component":
+        # The structure checks copy every Component of their operands, and the generic
+        # reduce protocol costs several times more than the same field-for-field copy
+        clone = object.__new__(type(self))
+        clone.__dict__.update(self.__dict__)
+        return clone
+
     def copy(self) -> "Component":
         return Component(self.name, self.data_type, self.role, self.nullable)
 
