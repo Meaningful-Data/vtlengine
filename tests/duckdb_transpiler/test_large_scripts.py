@@ -11,6 +11,7 @@ Naming conventions:
 - Measures: Me_1, Me_2, etc.
 """
 
+import pickle
 from pathlib import Path
 from typing import Dict, List, Sequence
 
@@ -20,6 +21,7 @@ import pytest
 
 import vtlengine.duckdb_transpiler.Transpiler as transpiler_module
 from vtlengine import run
+from vtlengine.API import _copy_ast, create_ast
 from vtlengine.AST import Assignment, BinOp, Start, VarID
 from vtlengine.DataTypes import Integer, Number, String
 from vtlengine.duckdb_transpiler import transpile
@@ -435,3 +437,36 @@ class TestCheckSharedJoin:
             _sorted(shared["DS_r"].data), _sorted(separate["DS_r"].data), check_exact=True
         )
         assert shared["DS_r"] == on_pandas["DS_r"]
+
+
+# =============================================================================
+# Run pipeline
+# =============================================================================
+
+
+class TestSemanticAnalysisCopy:
+    """The semantic analysis of a DuckDB run works on its own copy of the AST."""
+
+    SCRIPT = "DS_r := DS_1 - DS_2 + DS_3;"
+
+    def test_copy_is_equal_and_independent(self) -> None:
+        ast = create_ast(self.SCRIPT)
+
+        copied = _copy_ast(ast)
+        copied.children[0].left.value = "DS_x"
+
+        assert ast.children[0].left.value == "DS_r"
+        copied.children[0].left.value = "DS_r"
+        assert copied == ast
+
+    def test_ast_pickle_cannot_copy_is_deep_copied(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        ast = create_ast(self.SCRIPT)
+
+        def refuse(*args: object, **kwargs: object) -> bytes:
+            raise pickle.PicklingError("refused")
+
+        monkeypatch.setattr(pickle, "dumps", refuse)
+        copied = _copy_ast(ast)
+
+        assert copied == ast
+        assert copied.children[0] is not ast.children[0]
