@@ -5,7 +5,7 @@ from collections import Counter
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, Generator, List, Optional, Set, Tuple, Union
+from typing import Any, Callable, Dict, Generator, List, Optional, Set, Tuple, Union, cast
 
 import vtlengine.AST as AST
 from vtlengine.AST.ASTTemplate import ASTTemplate
@@ -81,6 +81,11 @@ _VTL_PERIOD_PARSE_LITERAL = re.compile(
     r")"
     r"'\)"
 )
+
+# Left-nested chains of dataset ``+``/``-`` with at least this many operands are
+# computed by one grouped query (see SQLTranspiler._build_ds_ds_chain)
+_FOLDED_CHAIN_OPS = (tokens.PLUS, tokens.MINUS)
+_MIN_FOLDED_CHAIN_OPERANDS = 3
 
 
 def _match_plain_sql_string_literal(expr: str) -> Optional[str]:
@@ -809,6 +814,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
                 return self._apply_measures(node.left, _in_expr, output_name_override="bool_var")
             if left_type == _DATASET and right_type == _DATASET:
+                chain_sql = self._build_ds_ds_chain(node) if op in _FOLDED_CHAIN_OPS else None
+                if chain_sql is not None:
+                    return chain_sql
                 return self._build_ds_ds_binary(node.left, node.right, op)
             if left_type == _DATASET:
                 return self._build_ds_scalar_binary(node.left, node.right, op, ds_on_left=True)
@@ -1013,6 +1021,129 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             builder.cross_join(right_src, alias_b)
 
         return builder.build()
+
+    def _flatten_ds_chain(self, node: AST.BinOp) -> Tuple[List[AST.AST], List[str]]:
+        """Split a left-nested chain of dataset ``+``/``-`` into its operands and operators.
+
+        ``A - B + C`` gives ``[A, B, C]`` and ``["-", "+"]``. A parenthesised or
+        right-hand operand is kept whole, as the chain only follows the left side.
+        """
+        operands: List[AST.AST] = []
+        ops: List[str] = []
+        current: AST.AST = node
+        while (
+            isinstance(current, AST.BinOp)
+            and current.op in _FOLDED_CHAIN_OPS
+            and self._get_node_type(current.left) == _DATASET
+            and self._get_node_type(current.right) == _DATASET
+        ):
+            operands.append(current.right)
+            ops.append(current.op)
+            current = current.left
+        operands.append(current)
+        operands.reverse()
+        ops.reverse()
+        return operands, ops
+
+    @staticmethod
+    def _chain_operands_match(structures: List[Optional[Dataset]]) -> bool:
+        """Whether every operand has the same identifiers and Integer or Number Measures.
+
+        Viral attributes and Number identifiers keep the pairwise joins: the former
+        combine through their propagation rules, the latter would group ``-0.0``
+        and ``0.0`` where the join compares them.
+        """
+
+        def signature(ds: Optional[Dataset]) -> Optional[Dict[str, Tuple[Role, Any]]]:
+            if ds is None or any(c.role == Role.VIRAL_ATTRIBUTE for c in ds.components.values()):
+                return None
+            return {
+                name: (comp.role, comp.data_type)
+                for name, comp in ds.components.items()
+                if comp.role in (Role.IDENTIFIER, Role.MEASURE)
+            }
+
+        reference = signature(structures[0])
+        if not reference or any(signature(ds) != reference for ds in structures[1:]):
+            return False
+        roles = {role for role, _ in reference.values()}
+        if roles != {Role.IDENTIFIER, Role.MEASURE}:
+            return False
+        return all(
+            dt is not Number if role == Role.IDENTIFIER else dt in (Integer, Number)
+            for role, dt in reference.values()
+        )
+
+    def _build_ds_ds_chain(self, node: AST.BinOp) -> Optional[str]:
+        """Build one grouped query for a left-nested chain of dataset ``+``/``-``.
+
+        Each operation of ``A - B + C ...`` joins its operands on the identifiers, so
+        a chain of N operands nests N-1 joins and DuckDB pays for every one of them
+        when it plans and runs the statement. When all the operands share their
+        identifiers and Measures, the chain keeps the data points found in every
+        operand and folds their values in the written order, rounding each step as
+        the pairwise operation does, which one pass over the stacked operands gives.
+
+        Returns ``None`` when the chain is too short or its operands do not qualify,
+        leaving the pairwise joins.
+        """
+        operands, ops = self._flatten_ds_chain(node)
+        if len(operands) < _MIN_FOLDED_CHAIN_OPERANDS:
+            return None
+        structures = [self._get_dataset_structure(operand) for operand in operands]
+        if not self._chain_operands_match(structures):
+            return None
+
+        first = cast(Dataset, structures[0])
+        id_names = sorted(first.get_identifiers_names())
+        measures = first.get_measures_names()
+        output_ds = self._get_output_dataset()
+        output_measures = output_ds.get_measures_names() if output_ds else []
+        # Same naming as _build_ds_ds_binary: a single Measure takes the output name
+        out_names = output_measures if len(measures) == 1 == len(output_measures) else measures
+
+        position = quote_name("__vtl_chain_position__")
+        branch_cols = [quote_name(name) for name in id_names]
+        branch_cols += [
+            f"CAST({quote_name(m)} AS DOUBLE) AS {quote_name(m)}"
+            if first.components[m].data_type is Number
+            else quote_name(m)
+            for m in measures
+        ]
+        branches = [
+            f"SELECT {', '.join(branch_cols)}, {k} AS {position} "
+            f"FROM {self._get_dataset_sql(operand)} AS t"
+            for k, operand in enumerate(operands)
+        ]
+
+        # The lambda gets the running value, the next operand value and its 1-based
+        # position in the list, which picks the operator written before that operand
+        is_minus = ", ".join(
+            "true" if op == tokens.MINUS else "false" for op in [tokens.PLUS, *ops]
+        )
+        cols = [quote_name(name) for name in id_names]
+        for measure, out_name in zip(measures, out_names):
+            dt = first.components[measure].data_type
+            steps = {
+                op: self._make_binary_expr("__vtl_acc", "__vtl_next", op, dt, dt) for op in set(ops)
+            }
+            if len(steps) == 1:
+                step = next(iter(steps.values()))
+            else:
+                step = (
+                    f"CASE WHEN [{is_minus}][__vtl_pos] THEN {steps[tokens.MINUS]} "
+                    f"ELSE {steps[tokens.PLUS]} END"
+                )
+            cols.append(
+                f"list_reduce(list({quote_name(measure)} ORDER BY {position}), "
+                f"lambda __vtl_acc, __vtl_next, __vtl_pos: {step}) AS {quote_name(out_name)}"
+            )
+
+        id_cols = ", ".join(quote_name(name) for name in id_names)
+        return (
+            f"SELECT {', '.join(cols)} FROM ({' UNION ALL '.join(branches)}) AS t "
+            f"GROUP BY {id_cols} HAVING count(*) = {len(operands)}"
+        )
 
     def _build_ds_scalar_binary(
         self,
