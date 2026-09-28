@@ -298,6 +298,16 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     _hoisted: List[List[Tuple[str, str]]] = field(default_factory=list, init=False)
     _hoist_counter: int = field(default=0, init=False)
 
+    # Structures and operand types resolved for the statement being built (see
+    # StructureVisitor._statement_memo)
+    _structure_memo: Optional[Dict[Tuple[int, str], Tuple[AST.AST, Any]]] = field(
+        default=None, init=False
+    )
+    _node_type_memo: Optional[Dict[int, Tuple[AST.AST, str]]] = field(default=None, init=False)
+
+    # Assignment name -> the inputs the DAG found for it, built on first use
+    _assignment_inputs: Optional[Dict[str, List[str]]] = field(default=None, init=False)
+
     def __post_init__(self) -> None:
         """Initialize available tables."""
         self.datasets = {**self.input_datasets, **self.output_datasets}
@@ -406,13 +416,16 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         return ds, table_src
 
     def _get_assignment_inputs(self, name: str) -> List[str]:
-        if self.dag is None:
+        if self.dag is None or not hasattr(self.dag, "dependencies"):
             return []
-        if hasattr(self.dag, "dependencies"):
+        if self._assignment_inputs is None:
+            # Index the statements once: scanning them for every assignment is
+            # quadratic in the length of the script
+            self._assignment_inputs = {}
             for deps in self.dag.dependencies.values():
-                if name in deps.outputs or name in deps.persistent:
-                    return deps.inputs
-        return []
+                for produced in (*deps.outputs, *deps.persistent):
+                    self._assignment_inputs.setdefault(produced, deps.inputs)
+        return self._assignment_inputs.get(name, [])
 
     # Top-level visitors
 
@@ -436,34 +449,37 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             elif isinstance(child, AST.HRuleset):
                 self._visit_HRuleset(child)
             elif isinstance(child, AST.Assignment):
-                name = child.left.value  # type: ignore[attr-defined]
-                self.current_assignment = name
-                self.inputs = self._get_assignment_inputs(name)
-
-                is_persistent = isinstance(child, AST.PersistentAssignment)
-                if name in self.output_scalars:
-                    with self._hoist_scope() as hoisted:
-                        value_sql = self.visit(child)
-                        if value_sql.strip().upper().startswith("SELECT"):
-                            # Full SELECT (e.g. membership on an ungrouped
-                            # aggregation): fold to a scalar subquery so the table
-                            # exposes the single ``value`` column consumers expect.
-                            value_sql = f"SELECT ({value_sql}) AS value"
-                        else:
-                            value_sql = f"SELECT {value_sql} AS value"
-                            if hoisted:
-                                one_row = self._hoisted_source("(SELECT 1)", hoisted)
-                                value_sql += f" FROM {one_row} AS t"
-                    queries.append((name, value_sql, is_persistent))
-                else:
-                    query = self.visit(child)
-                    query = self._unqualify_join_columns(name, query)
-                    queries.append((name, query, is_persistent))
-
+                with self._statement_memo():
+                    queries.append(self._transpile_assignment(child))
                 self._join_alias_map = {}
                 self._consumed_join_aliases = set()
 
         return queries
+
+    def _transpile_assignment(self, child: AST.Assignment) -> Tuple[str, str, bool]:
+        """Return the (name, sql, is_persistent) query of a top-level assignment."""
+        name = child.left.value  # type: ignore[attr-defined]
+        self.current_assignment = name
+        self.inputs = self._get_assignment_inputs(name)
+
+        is_persistent = isinstance(child, AST.PersistentAssignment)
+        if name in self.output_scalars:
+            with self._hoist_scope() as hoisted:
+                value_sql = self.visit(child)
+                if value_sql.strip().upper().startswith("SELECT"):
+                    # Full SELECT (e.g. membership on an ungrouped
+                    # aggregation): fold to a scalar subquery so the table
+                    # exposes the single ``value`` column consumers expect.
+                    value_sql = f"SELECT ({value_sql}) AS value"
+                else:
+                    value_sql = f"SELECT {value_sql} AS value"
+                    if hoisted:
+                        one_row = self._hoisted_source("(SELECT 1)", hoisted)
+                        value_sql += f" FROM {one_row} AS t"
+            return name, value_sql, is_persistent
+        query = self.visit(child)
+        query = self._unqualify_join_columns(name, query)
+        return name, query, is_persistent
 
     def _unqualify_join_columns(self, ds_name: str, query: str) -> str:
         """Rename remaining alias#comp columns to plain component names."""
