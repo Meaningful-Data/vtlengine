@@ -6,6 +6,7 @@ handling dataset loading/saving with DAG scheduling for memory efficiency.
 """
 
 import re
+from dataclasses import replace
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
@@ -39,6 +40,9 @@ from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.files.output._time_period_representation import TimePeriodRepresentation
 from vtlengine.Model import Component, Dataset, Scalar
 from vtlengine.Utils._number_config import get_effective_output_digits
+
+# A query that returns one table as it is: ``SELECT * FROM "name"``
+_PLAIN_TABLE_COPY = re.compile(r'SELECT \* FROM "[^"]*"')
 
 
 def _contains_time_components(datasets: Dict[str, Dataset]) -> bool:
@@ -565,6 +569,47 @@ def fetch_result(
     return ds
 
 
+def _reuse_repeated_statements(
+    queries: List[Tuple[str, str, bool]], ds_analysis: DatasetSchedule
+) -> Tuple[Dict[int, str], DatasetSchedule]:
+    """Find the statements whose query repeats an earlier one, and keep that one alive.
+
+    A name is assigned once and every table a query reads keeps its content for the
+    whole run, so a statement whose SQL repeats an earlier statement's gets the same
+    result, and copying that result is cheaper than computing it again (generated
+    scripts repeat whole expressions many times). The earlier result has to exist
+    when the copy is made, so its deletion moves to the last statement copying it.
+
+    Returns the statement number -> copied result name mapping and the schedule to
+    run with, which is ``ds_analysis`` itself when nothing repeats.
+    """
+    first_by_sql: Dict[str, str] = {}
+    copies: Dict[int, str] = {}
+    last_copy: Dict[str, int] = {}
+    for statement_num, (result_name, sql_query, _) in enumerate(queries, start=1):
+        source = first_by_sql.setdefault(sql_query, result_name)
+        # A plain copy of a table costs the same as copying the repeated result
+        if source != result_name and not _is_plain_table_copy(sql_query):
+            copies[statement_num] = source
+            last_copy[source] = statement_num
+    if not copies:
+        return copies, ds_analysis
+
+    deletion = {num: list(names) for num, names in ds_analysis.deletion.items()}
+    for num, names in ds_analysis.deletion.items():
+        for name in names:
+            copied_until = last_copy.get(name)
+            if copied_until is not None and copied_until > num:
+                deletion[num].remove(name)
+                deletion.setdefault(copied_until, []).append(name)
+    return copies, replace(ds_analysis, deletion=deletion)
+
+
+def _is_plain_table_copy(sql_query: str) -> bool:
+    """Whether a query only reads one table as it is."""
+    return _PLAIN_TABLE_COPY.fullmatch(sql_query.strip()) is not None
+
+
 def execute_queries(
     conn: duckdb.DuckDBPyConnection,
     queries: List[Tuple[str, str, bool]],
@@ -621,6 +666,8 @@ def execute_queries(
     if output_folder:
         output_folder.mkdir(parents=True, exist_ok=True)
 
+    copies, ds_analysis = _reuse_repeated_statements(queries, ds_analysis)
+
     # Execute each query with DAG scheduling
     for statement_num, (result_name, sql_query, _) in enumerate(queries, start=1):
         # Load datasets scheduled for this statement
@@ -634,8 +681,10 @@ def execute_queries(
         )
 
         # Execute query and create table
+        copied = copies.get(statement_num)
+        source_sql = sql_query if copied is None else f'SELECT * FROM "{copied}"'
         try:
-            conn.execute(f'CREATE TABLE "{result_name}" AS {sql_query}')
+            conn.execute(f'CREATE TABLE "{result_name}" AS {source_sql}')
         except duckdb.Error as e:
             mapped = _map_query_error(e, sql_query)
             if mapped is not e:

@@ -1,16 +1,17 @@
 """
 Large Script Tests
 
-Scripts generated from validation rule sets chain many datasets in a single expression.
-These tests pin how the DuckDB backend computes them and check that the results do not
-change: against the pandas engine, and against the pairwise joins the chains were
-computed with before.
+Scripts generated from validation rule sets chain many datasets in a single expression
+and repeat whole statements. These tests pin how the DuckDB backend computes them and
+check that the results do not change: against the pandas engine, and against the
+pairwise joins the chains were computed with before.
 
 Naming conventions:
 - Identifiers: Id_1, Id_2, etc.
 - Measures: Me_1, Me_2, etc.
 """
 
+from pathlib import Path
 from typing import Dict, List, Sequence
 
 import numpy as np
@@ -274,3 +275,107 @@ class TestDatasetChainResults:
             _sorted(folded["DS_r"].data), _sorted(joined["DS_r"].data), check_exact=True
         )
         assert folded["DS_r"] == on_pandas["DS_r"]
+
+
+# =============================================================================
+# Repeated statements
+# =============================================================================
+
+
+class TestRepeatedStatements:
+    """A statement repeating an earlier statement's query copies that result."""
+
+    @pytest.mark.parametrize("return_only_persistent", [False, True])
+    def test_copy_outlives_the_first_result(self, return_only_persistent: bool) -> None:
+        """DS_C repeats DS_A after DS_A's last reader, so DS_A has to be kept for it."""
+        script = """
+            DS_A := DS_1 - DS_2 + DS_3;
+            DS_B <- DS_A * 2;
+            DS_C := DS_1 - DS_2 + DS_3;
+            DS_D <- DS_C + DS_B;
+            DS_E <- DS_1 - DS_2 + DS_3;
+        """
+        data_structures = {
+            "datasets": [_structure(f"DS_{k}", ["Me_1"], "Number") for k in range(1, 4)]
+        }
+        datapoints = _datapoints(["Me_1"], "Number", with_nulls=True)
+        datapoints.pop("DS_4")
+
+        on_pandas, on_duckdb = _run_both(
+            script, data_structures, datapoints, return_only_persistent=return_only_persistent
+        )
+
+        assert set(on_duckdb) == set(on_pandas)
+        for name, dataset in on_pandas.items():
+            assert on_duckdb[name] == dataset
+
+    def test_repeated_results_are_formatted_once(self) -> None:
+        """DS_A is fetched, and formatted for output, only once DS_C has copied it."""
+        script = """
+            DS_A <- DS_1 - DS_2 + DS_3;
+            DS_B <- DS_1 * 2;
+            DS_C <- DS_1 - DS_2 + DS_3;
+        """
+        components = [
+            {"name": "Id_1", "type": "Time_Period", "role": "Identifier", "nullable": False},
+            {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+        ]
+        data_structures = {
+            "datasets": [{"name": f"DS_{k}", "DataStructure": components} for k in range(1, 4)]
+        }
+        periods = ["2020A", "2021M03", "2021M11", "2022A"]
+        datapoints = {
+            f"DS_{k}": pd.DataFrame({"Id_1": periods, "Me_1": [1.5 * k, 2.0, None, 4.25 - k]})
+            for k in range(1, 4)
+        }
+
+        for output_format in ("vtl", "sdmx_reporting", "sdmx_gregorian", "natural"):
+            on_pandas, on_duckdb = _run_both(
+                script,
+                data_structures,
+                datapoints,
+                return_only_persistent=True,
+                time_period_output_format=output_format,
+            )
+            for name in ("DS_A", "DS_C"):
+                expected = _sorted(on_pandas[name].data)
+                actual = _sorted(on_duckdb[name].data)
+                assert actual["Id_1"].tolist() == expected["Id_1"].tolist(), output_format
+                assert actual["Me_1"].astype("float64").tolist() == pytest.approx(
+                    expected["Me_1"].astype("float64").tolist(), rel=1e-12, nan_ok=True
+                )
+
+    def test_repeated_results_saved_to_the_output_folder(self, tmp_path: Path) -> None:
+        """DS_A is saved once DS_C has copied it, and both files hold the same rows."""
+        script = """
+            DS_A <- DS_1 - DS_2 + DS_3;
+            DS_B <- DS_1 * 2;
+            DS_C <- DS_1 - DS_2 + DS_3;
+        """
+        data_structures = {
+            "datasets": [_structure(f"DS_{k}", ["Me_1"], "Number") for k in range(1, 4)]
+        }
+        datapoints = _datapoints(["Me_1"], "Number", with_nulls=True)
+        datapoints.pop("DS_4")
+        expected = run(
+            script=script,
+            data_structures=data_structures,
+            datapoints={k: v.copy() for k, v in datapoints.items()},
+        )
+
+        run(
+            script=script,
+            data_structures=data_structures,
+            datapoints={k: v.copy() for k, v in datapoints.items()},
+            use_duckdb=True,
+            output_folder=tmp_path,
+        )
+
+        saved = {name: _sorted(pd.read_csv(tmp_path / f"{name}.csv")) for name in ("DS_A", "DS_C")}
+        pd.testing.assert_frame_equal(saved["DS_A"], saved["DS_C"])
+        assert len(saved["DS_A"]) == len(expected["DS_A"].data)
+        assert saved["DS_A"]["Me_1"].tolist() == pytest.approx(
+            _sorted(expected["DS_A"].data)["Me_1"].astype("float64").tolist(),
+            rel=1e-12,
+            nan_ok=True,
+        )
