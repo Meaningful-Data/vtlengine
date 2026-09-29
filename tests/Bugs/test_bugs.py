@@ -5169,3 +5169,74 @@ class AnalyticBugs(BugHelper):
         references_names = ["1", "2", "3"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1131_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 / DS_2 / DS_3;
+        Description: DS_1 / DS_2 divides by zero at Id_1 = 1, which DS_3 does not have.
+                     The DuckDB engine computed the division only for the data points
+                     the join with DS_3 keeps and returned a result, while the pandas
+                     engine raised. The division is now checked over all its data
+                     points on both engines.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1131
+        Goal: Check Exception.
+        """
+        code = "GH_1131_1"
+        number_inputs = 3
+        message = "2-1-15-6"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1131_2(self):
+        """
+        Status: OK
+        Expression: DS_r <- (DS_1 / DS_2)[filter Id_1 = 2];
+        Description: Same as GH_1131_1 with a filter dropping the data point that
+                     divides by zero.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1131
+        Goal: Check Exception.
+        """
+        code = "GH_1131_2"
+        number_inputs = 2
+        message = "2-1-15-6"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1131_3(self):
+        """
+        Status: OK
+        Expression: DS_r <- sqrt(DS_1) + DS_2;
+        Description: Same as GH_1131_1 with the square root of a negative value at the
+                     data point that DS_2 does not have.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1131
+        Goal: Check Exception.
+        """
+        code = "GH_1131_3"
+        number_inputs = 2
+        message = "2-1-15-2"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1131_4(self):
+        """
+        Status: OK
+        Expression: DS_r <- ln(DS_1) + DS_2;
+        Description: Same as GH_1131_1 with the logarithm of a negative value at the
+                     data point that DS_2 does not have.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1131
+        Goal: Check Exception.
+        """
+        code = "GH_1131_4"
+        number_inputs = 2
+        message = "2-1-15-8"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )

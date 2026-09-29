@@ -298,6 +298,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     _hoisted: List[List[Tuple[str, str]]] = field(default_factory=list, init=False)
     _hoist_counter: int = field(default=0, init=False)
 
+    _materialized_operands: List[str] = field(default_factory=list, init=False)
+
     def __post_init__(self) -> None:
         """Initialize available tables."""
         self.datasets = {**self.input_datasets, **self.output_datasets}
@@ -462,6 +464,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
                 self._join_alias_map = {}
                 self._consumed_join_aliases = set()
+                self._materialized_operands = []
 
         return queries
 
