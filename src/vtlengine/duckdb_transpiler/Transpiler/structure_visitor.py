@@ -323,8 +323,9 @@ class StructureVisitor(ASTTemplate):
         keeps, so the error of a data point that the enclosing operation drops never
         raises, while the pandas engine computes each operation in full.
         A MATERIALIZED CTE computes the operand before the enclosing operation: it stops
-        the join filters, and its OFFSET 0 stops the filters DuckDB pushes into the CTE.
-        The operands already materialized inside it are not checked again.
+        the join filters, and the connection disables the CTE filter pusher that would
+        move the filters into it (see ``configure_duckdb_connection``). The operands
+        already materialized inside it are not checked again.
         """
         unchecked = sql
         for fragment in sorted(self._materialized_operands, key=len, reverse=True):
@@ -332,7 +333,7 @@ class StructureVisitor(ASTTemplate):
         if not references_raising_macro(unchecked):
             return sql
         cte = quote_name(f"_vtl_checked_{len(self._materialized_operands)}")
-        wrapped = f"(WITH {cte} AS MATERIALIZED (SELECT * FROM {sql} OFFSET 0) SELECT * FROM {cte})"
+        wrapped = f"(WITH {cte} AS MATERIALIZED {sql} SELECT * FROM {cte})"
         self._materialized_operands.append(wrapped)
         return wrapped
 

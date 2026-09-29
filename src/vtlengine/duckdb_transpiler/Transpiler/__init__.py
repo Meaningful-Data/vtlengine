@@ -3030,6 +3030,9 @@ FROM (
                     f"SELECT * FROM "
                     f"{quote_name(child.value if hasattr(child, 'value') else child_sql)}"
                 )
+            checked_sql = self._materialize_raising_operand(f"({child_sql})")
+            if checked_sql != f"({child_sql})":
+                child_sql = f"SELECT * FROM {checked_sql}"
             child_sqls.append(child_sql)
 
         if op == tokens.UNION:

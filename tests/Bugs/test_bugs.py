@@ -5240,3 +5240,37 @@ class AnalyticBugs(BugHelper):
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
+
+    def test_GH_1131_5(self):
+        """
+        Status: OK
+        Expression: DS_r <- intersect(DS_1 / DS_2, DS_3);
+        Description: Same as GH_1131_1 with a set operation dropping the data point
+                     that divides by zero.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1131
+        Goal: Check Exception.
+        """
+        code = "GH_1131_5"
+        number_inputs = 3
+        message = "2-1-15-6"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1131_6(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := Me_1 / 0][filter Id_1 = 3];
+        Description: The filter keeps no data point, so DuckDB could drop the whole
+                     calc instead of computing its division by zero.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1131
+        Goal: Check Exception.
+        """
+        code = "GH_1131_6"
+        number_inputs = 1
+        message = "2-1-15-6"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
