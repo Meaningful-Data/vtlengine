@@ -5,7 +5,7 @@ import weakref
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, FrozenSet, Iterable, Iterator, List, Optional, Set
+from typing import TYPE_CHECKING, Dict, FrozenSet, Iterable, Iterator, List, Optional, Set, Tuple
 
 if TYPE_CHECKING:
     import duckdb
@@ -111,6 +111,30 @@ def _raising_macros() -> FrozenSet[str]:
 def references_raising_macro(sql: str) -> bool:
     """Tell whether ``sql`` calls a VTL macro that can raise a data point error."""
     return not _raising_macros().isdisjoint(_VTL_REF.findall(sql))
+
+
+_MACRO_SIGNATURE = re.compile(r"\bMACRO\s+\w+\s*\(([^)]*)\)\s*AS\b", re.IGNORECASE)
+
+
+@lru_cache(maxsize=1)
+def macro_parameter_uses() -> Dict[str, Tuple[int, Tuple[int, ...]]]:
+    """Return the body length and the uses of each parameter of every VTL macro.
+
+    DuckDB expands a macro by copying each argument into every use of its parameter,
+    so these give the size of the SQL a call expands to.
+    """
+    uses: Dict[str, Tuple[int, Tuple[int, ...]]] = {}
+    for name, stmt in _macro_graph().statements.items():
+        text = _LINE_COMMENT.sub("", stmt)
+        match = _MACRO_SIGNATURE.search(text)
+        if match is None:  # a type
+            continue
+        # A parameter may carry a type or a default: its name is the first word
+        params = [param.split()[0] for param in match.group(1).split(",") if param.strip()]
+        body = text[match.end() :]
+        counts = tuple(len(re.findall(rf"\b{re.escape(param)}\b", body)) for param in params)
+        uses[name] = (len(body), counts)
+    return uses
 
 
 def _required_macros_sql(sql_fragments: Iterable[str]) -> Optional[str]:
