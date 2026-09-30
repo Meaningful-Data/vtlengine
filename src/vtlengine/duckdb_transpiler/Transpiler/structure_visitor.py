@@ -20,6 +20,7 @@ from vtlengine.DataTypes import (
 )
 from vtlengine.DataTypes import String as StringType
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
+from vtlengine.duckdb_transpiler.sql import references_raising_macro
 from vtlengine.duckdb_transpiler.Transpiler.operators import COMPARISON_OPS, get_duckdb_type
 from vtlengine.duckdb_transpiler.Transpiler.sql_builder import quote_name
 from vtlengine.Model import Component, Dataset, Role
@@ -70,6 +71,7 @@ class StructureVisitor(ASTTemplate):
         self._udos: Dict[str, Dict[str, Any]] = {}
         self._structure_memo: Optional[Dict[Tuple[int, str], Tuple[AST.AST, Any]]] = None
         self._node_type_memo: Optional[Dict[int, Tuple[AST.AST, str]]] = None
+        self._materialized_operands: List[str] = []
 
     # Dispatcher: two-level visit — first ``visit_{Class}_{op}``, then ``visit_{Class}``
 
@@ -351,9 +353,30 @@ class StructureVisitor(ASTTemplate):
             if kind == "varid":
                 return quote_name(val.value)
             if kind == "ast":
-                return f"({self.visit(val)})"
+                return self._materialize_raising_operand(f"({self.visit(val)})")
             return quote_name(node.value)
-        return f"({self.visit(node)})"
+        return self._materialize_raising_operand(f"({self.visit(node)})")
+
+    def _materialize_raising_operand(self, sql: str) -> str:
+        """Compute an operand that can raise a data point error over all its data points.
+
+        DuckDB computes an expression only for the rows that a later join or filter
+        keeps, so the error of a data point that the enclosing operation drops never
+        raises, while the pandas engine computes each operation in full.
+        A MATERIALIZED CTE computes the operand before the enclosing operation: it stops
+        the join filters, and the connection disables the CTE filter pusher that would
+        move the filters into it (see ``configure_duckdb_connection``). The operands
+        already materialized inside it are not checked again.
+        """
+        unchecked = sql
+        for fragment in sorted(self._materialized_operands, key=len, reverse=True):
+            unchecked = unchecked.replace(fragment, "")
+        if not references_raising_macro(unchecked):
+            return sql
+        cte = quote_name(f"_vtl_checked_{len(self._materialized_operands)}")
+        wrapped = f"(WITH {cte} AS MATERIALIZED {sql} SELECT * FROM {cte})"
+        self._materialized_operands.append(wrapped)
+        return wrapped
 
     def _resolve_dataset_name(self, node: AST.AST) -> str:
         """Resolve a VarID to its actual dataset name (handles UDO params)."""
