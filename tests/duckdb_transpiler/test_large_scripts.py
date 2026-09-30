@@ -265,8 +265,6 @@ class TestDatasetChainSQL:
         [
             ("DS_1 * DS_2 * DS_3", "Integer", "(__vtl_acc * __vtl_next)"),
             ("DS_1 * DS_2 * DS_3", "Number", "vtl_round_sig((__vtl_acc * __vtl_next), 15)"),
-            ("DS_1 / DS_2 / DS_3", "Number", "vtl_round_sig(vtl_div(__vtl_acc, __vtl_next), 15)"),
-            ("mod(mod(DS_1, DS_2), DS_3)", "Integer", "vtl_mod(__vtl_acc, __vtl_next)"),
             ("DS_1 and DS_2 and DS_3", "Boolean", "(__vtl_acc AND __vtl_next)"),
             ("DS_1 or DS_2 or DS_3", "Boolean", "(__vtl_acc OR __vtl_next)"),
             (
@@ -285,15 +283,25 @@ class TestDatasetChainSQL:
         assert f"lambda __vtl_acc, __vtl_next, __vtl_pos: {step})" in sql
         assert " JOIN " not in sql
 
-    def test_integer_division_folds_as_number(self) -> None:
-        sql = self._sql("DS_r := DS_1 / DS_2 / DS_3;", "Integer")
+    @pytest.mark.parametrize(
+        "expression",
+        [
+            "DS_1 / DS_2 / DS_3",
+            "mod(mod(DS_1, DS_2), DS_3)",
+            "power(power(DS_1, DS_2), DS_3)",
+            "log(log(DS_1, DS_2), DS_3)",
+        ],
+    )
+    def test_operations_failing_at_a_data_point_keep_the_joins(self, expression: str) -> None:
+        """They must fail even at a data point a later operand does not have (#1131)."""
+        sql = self._sql(f"DS_r := {expression};", "Number")
 
-        assert sql.count('CAST("Me_1" AS DOUBLE)') == 3
-        assert "vtl_round_sig(vtl_div(__vtl_acc, __vtl_next), 15)" in sql
+        assert "list_reduce" not in sql
+        assert sql.count(" JOIN ") == 2
 
-    def test_left_side_of_other_types_is_an_operand(self) -> None:
-        """Integer ``DS_1 + DS_2`` is exact, so it is not folded with the Number divisions."""
-        sql = self._sql("DS_r := (DS_1 + DS_2) / DS_3 / DS_4;", "Integer")
+    def test_division_on_the_left_is_an_operand(self) -> None:
+        """``DS_1 / DS_2`` is computed by its join and folded with the later operands."""
+        sql = self._sql("DS_r := DS_1 / DS_2 + DS_3 - DS_4;", "Integer")
 
         assert sql.count("list_reduce") == 1
         assert sql.count(" JOIN ") == 1
@@ -369,6 +377,39 @@ class TestDatasetChainResults:
             _sorted(folded["DS_r"].data), _sorted(joined["DS_r"].data), check_exact=True
         )
         assert folded["DS_r"] == on_pandas["DS_r"]
+
+    def test_division_by_zero_at_a_dropped_data_point_as_the_joins(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """``DS_1 / DS_2`` divides by zero where DS_3 has no data point: the chain gets the
+        joins' outcome, which raises once operands failing at a data point are computed
+        in full (#1131)."""
+        script = "DS_r <- DS_1 / DS_2 / DS_3 + DS_1 + DS_2;"
+        data_structures = {
+            "datasets": [_structure(f"DS_{k}", ["Me_1"], "Number") for k in (1, 2, 3)]
+        }
+        frame = pd.DataFrame({"Id_1": [1, 2], "Id_2": ["A", "A"]})
+        datapoints = {
+            "DS_1": frame.assign(Me_1=[5.0, 6.0]),
+            "DS_2": frame.assign(Me_1=[0.0, 2.0]),
+            "DS_3": frame.iloc[[1]].assign(Me_1=[3.0]),
+        }
+
+        def outcome() -> object:
+            try:
+                result = run(
+                    script=script,
+                    data_structures=data_structures,
+                    datapoints={k: v.copy() for k, v in datapoints.items()},
+                    use_duckdb=True,
+                )
+            except Exception as error:
+                return type(error), error.args[1:]
+            return _sorted(result["DS_r"].data).to_dict("records")
+
+        folded = outcome()
+        monkeypatch.setattr(_TRANSPILER + "._MIN_FOLDED_CHAIN_OPERANDS", 10**9)
+        assert folded == outcome()
 
 
 # =============================================================================

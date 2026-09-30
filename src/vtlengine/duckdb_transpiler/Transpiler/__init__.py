@@ -98,23 +98,20 @@ _VTL_PERIOD_PARSE_LITERAL = re.compile(
 # Left-nested chains of a dataset operation that gives its operands' types back, with
 # at least this many operands, are computed by one grouped query (see
 # SQLTranspiler._build_ds_ds_chain). Each operator maps to the Measure types it folds.
+# Division, mod, power and log keep the joins: they can fail at a data point, which
+# must raise even when a later operand does not have it, and the grouped
+# query only computes the data points found in every operand.
 _NUMERIC_TYPES = frozenset({Integer, Number})
 _FOLDED_CHAIN_TYPES: Dict[str, FrozenSet[type]] = {
     tokens.PLUS: _NUMERIC_TYPES,
     tokens.MINUS: _NUMERIC_TYPES,
     tokens.MULT: _NUMERIC_TYPES,
-    tokens.DIV: _NUMERIC_TYPES,
-    tokens.MOD: _NUMERIC_TYPES,
-    tokens.POWER: _NUMERIC_TYPES,
-    tokens.LOG: _NUMERIC_TYPES,
     tokens.AND: frozenset({Boolean}),
     tokens.OR: frozenset({Boolean}),
     tokens.XOR: frozenset({Boolean}),
     tokens.CONCAT: frozenset({String}),
 }
 _MIN_FOLDED_CHAIN_OPERANDS = 3
-# The operations of those giving Number values from Integer ones
-_NUMBER_RESULT_CHAIN_OPS = frozenset({tokens.DIV, tokens.POWER, tokens.LOG})
 
 # Left-nested Number expressions (and xor ones) of components or scalars with at least
 # this many operands are computed by one list_reduce (see
@@ -1166,23 +1163,15 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         a chain of N operands nests N-1 joins and DuckDB pays for every one of them
         when it plans and runs the statement. When all the operands share their
         identifiers and Measures, and every operation gives its operands' types back
-        (``+``, ``-``, ``*``, ``/``, ``mod``, ``power``, ``log``, ``and``, ``or``, ``xor``
-        and ``||``), the chain keeps the data points found in every operand and
-        folds their values in the written order, each operation built as the pairwise
-        one builds it (rounding included), which one pass over the stacked operands gives.
-
-        A division, power or log gives Number values even from Integer ones, which the
-        values before it are not: the chain starts at the first of them, from the value
-        of the operations below it.
+        and cannot fail at a data point (``+``, ``-``, ``*``, ``and``, ``or``, ``xor`` and
+        ``||``), the chain keeps the data points found in every operand and folds their
+        values in the written order, each operation built as the pairwise one builds it
+        (rounding included), which one pass over the stacked operands gives.
 
         Returns ``None`` when the chain is too short or its operands do not qualify,
         leaving the pairwise joins.
         """
         links = self._flatten_ds_chain(node)
-        first_number = next(
-            (k for k, link in enumerate(links) if link.op in _NUMBER_RESULT_CHAIN_OPS), 0
-        )
-        links = links[first_number:]
         if len(links) + 1 < _MIN_FOLDED_CHAIN_OPERANDS:
             return None
         operands = [links[0].left, *(link.right for link in links)]
@@ -1192,7 +1181,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             not set(measure_types.values()) <= _FOLDED_CHAIN_TYPES[link.op] for link in links
         ):
             return None
-        gives_number = links[0].op in _NUMBER_RESULT_CHAIN_OPS
 
         first = cast(Dataset, structures[0])
         id_names = sorted(first.get_identifiers_names())
@@ -1202,14 +1190,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         # Same naming as _build_ds_ds_binary: a single Measure takes the output name
         out_names = output_measures if len(measures) == 1 == len(output_measures) else measures
 
-        # Number values are folded as DOUBLE, and so are Integer ones that turn Number,
-        # which the operations compute in DOUBLE anyway: list_reduce gives back the type
-        # of its list
-        as_double = {
-            m
-            for m in measures
-            if measure_types[m] is Number or (measure_types[m] is Integer and gives_number)
-        }
+        # Number values are folded as DOUBLE, which the operations compute in anyway:
+        # list_reduce gives back the type of its list
+        as_double = {m for m in measures if measure_types[m] is Number}
         position = quote_name("__vtl_chain_position__")
         branch_cols = [quote_name(name) for name in id_names]
         branch_cols += [
