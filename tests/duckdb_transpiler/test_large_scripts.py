@@ -19,7 +19,6 @@ import numpy as np
 import pandas as pd
 import pytest
 
-import vtlengine.duckdb_transpiler.Transpiler as transpiler_module
 from vtlengine import run
 from vtlengine.API import _copy_ast, create_ast
 from vtlengine.AST import Assignment, BinOp, Start, VarID
@@ -27,6 +26,9 @@ from vtlengine.DataTypes import Integer, Number, String
 from vtlengine.duckdb_transpiler import transpile
 from vtlengine.duckdb_transpiler.Transpiler import SQLTranspiler
 from vtlengine.Model import Component, Dataset, Role
+
+# Patched by dotted path: importing the module as well as names from it trips CodeQL
+_TRANSPILER = "vtlengine.duckdb_transpiler.Transpiler"
 
 # =============================================================================
 # Helpers
@@ -167,7 +169,7 @@ class TestLongChainTranspile:
 
         monkeypatch.setattr(SQLTranspiler, "_resolve_dataset_structure", counting)
         # Without the fold, the structures are looked up level by level of the joins
-        monkeypatch.setattr(transpiler_module, "_MIN_FOLDED_CHAIN_OPERANDS", 10**9)
+        monkeypatch.setattr(_TRANSPILER + "._MIN_FOLDED_CHAIN_OPERANDS", 10**9)
         sql = _transpile(datasets, _chain(names, ["*"] * 59), datasets["DS_0"])
 
         assert sql.count(" JOIN ") == 59
@@ -354,7 +356,7 @@ class TestDatasetChainResults:
         datapoints = _datapoints(measures, measure_type, with_nulls)
 
         on_pandas, folded = _run_both(script, data_structures, datapoints)
-        monkeypatch.setattr(transpiler_module, "_MIN_FOLDED_CHAIN_OPERANDS", 10**9)
+        monkeypatch.setattr(_TRANSPILER + "._MIN_FOLDED_CHAIN_OPERANDS", 10**9)
         joined = run(
             script=script,
             data_structures=data_structures,
@@ -494,7 +496,7 @@ class TestExpressionChainResults:
         self, monkeypatch: pytest.MonkeyPatch, script: str
     ) -> None:
         on_pandas, folded = _run_both(script, _component_structures(), _component_datapoints())
-        monkeypatch.setattr(transpiler_module, "_MIN_FOLDED_EXPRESSION_OPERANDS", 10**9)
+        monkeypatch.setattr(_TRANSPILER + "._MIN_FOLDED_EXPRESSION_OPERANDS", 10**9)
         nested = run(
             script=script,
             data_structures=_component_structures(),
@@ -534,7 +536,7 @@ class TestExpressionChainResults:
             return f"{type(exc_info.value).__name__}: {exc_info.value}"
 
         folded = error()
-        monkeypatch.setattr(transpiler_module, "_MIN_FOLDED_EXPRESSION_OPERANDS", 10**9)
+        monkeypatch.setattr(_TRANSPILER + "._MIN_FOLDED_EXPRESSION_OPERANDS", 10**9)
         assert folded == error()
 
 
