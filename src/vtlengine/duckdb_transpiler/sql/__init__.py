@@ -96,6 +96,23 @@ def _closure(seeds: Iterable[str], deps: Dict[str, FrozenSet[str]]) -> Set[str]:
     return needed
 
 
+@lru_cache(maxsize=1)
+def _raising_macros() -> FrozenSet[str]:
+    """Return the macros that raise, directly or through another one, via ``error()``."""
+    graph = _macro_graph()
+    direct = {
+        name
+        for name, stmt in graph.statements.items()
+        if "error(" in _LINE_COMMENT.sub("", stmt).lower()
+    }
+    return frozenset(name for name in graph.statements if _closure([name], graph.deps) & direct)
+
+
+def references_raising_macro(sql: str) -> bool:
+    """Tell whether ``sql`` calls a VTL macro that can raise a data point error."""
+    return not _raising_macros().isdisjoint(_VTL_REF.findall(sql))
+
+
 def _required_macros_sql(sql_fragments: Iterable[str]) -> Optional[str]:
     """Return the minimal SQL needed for ``sql_fragments``, or ``None`` if no
     VTL macros are referenced."""

@@ -298,6 +298,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     _hoisted: List[List[Tuple[str, str]]] = field(default_factory=list, init=False)
     _hoist_counter: int = field(default=0, init=False)
 
+    _materialized_operands: List[str] = field(default_factory=list, init=False)
+
     def __post_init__(self) -> None:
         """Initialize available tables."""
         self.datasets = {**self.input_datasets, **self.output_datasets}
@@ -462,6 +464,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
                 self._join_alias_map = {}
                 self._consumed_join_aliases = set()
+                self._materialized_operands = []
 
         return queries
 
@@ -3027,6 +3030,9 @@ FROM (
                     f"SELECT * FROM "
                     f"{quote_name(child.value if hasattr(child, 'value') else child_sql)}"
                 )
+            checked_sql = self._materialize_raising_operand(f"({child_sql})")
+            if checked_sql != f"({child_sql})":
+                child_sql = f"SELECT * FROM {checked_sql}"
             child_sqls.append(child_sql)
 
         if op == tokens.UNION:
