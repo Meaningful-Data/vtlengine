@@ -5170,6 +5170,27 @@ class AnalyticBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1130_1(self):
+        """
+        Status: OK
+        Expression: DS_r1 <- nvl(DS_1, DS_2);
+                    DS_r2 <- nvl(DS_1, DS_3);
+        Description: nvl between two datasets filled the nulls of DS_1 with the value
+                     found in the same row position of the second operand, not with
+                     the value of the data point with the same identifiers. The
+                     operands are now paired on their common identifiers and only the
+                     data points found in both are kept, as in the other binary
+                     operators. DS_2 holds the same data points as DS_1 in another
+                     order (DS_r1); DS_3 misses Id_1 = 3 and adds Id_1 = 4 (DS_r2).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1130
+        Goal: Check Result.
+        """
+        code = "GH_1130_1"
+        number_inputs = 3
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_1131_1(self):
         """
         Status: OK

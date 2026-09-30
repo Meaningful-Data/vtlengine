@@ -11,7 +11,7 @@ from vtlengine.DataTypes import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Role, Scalar
-from vtlengine.Operators import Binary, Operator
+from vtlengine.Operators import Binary, Operator, _id_type_promotion_join_keys
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._dataframe import merge_frames
 from vtlengine.ViralPropagation import (
@@ -301,6 +301,33 @@ class Nvl(Binary):
                                 result.data[me] = result.data[me].fillna(right.value)
                     elif not fill_null:
                         result.data = result.data.fillna(right.value)
+                elif isinstance(result, Dataset):
+                    join_keys = [
+                        id_name
+                        for id_name in left.get_identifiers_names()
+                        if id_name in right.get_identifiers_names()
+                    ]
+                    measures = [
+                        me for me in result.get_measures_names() if me in right.data.columns
+                    ]
+                    right_data = right.data[join_keys + measures].copy()
+                    for join_key in join_keys:
+                        _id_type_promotion_join_keys(
+                            left.get_component(join_key),
+                            right.get_component(join_key),
+                            join_key,
+                            result.data,
+                            right_data,
+                        )
+                    result.data = merge_frames(
+                        result.data, right_data, how="inner", on=join_keys, suffixes=("", "_r")
+                    )
+                    for me in measures:
+                        result.data[me] = (
+                            result.data[me]
+                            .fillna(result.data[f"{me}_r"])
+                            .astype(result.components[me].data_type.dtype())  # type: ignore[call-overload]
+                        )
                 else:
                     # nvl is single-operand: the primary operand's viral attributes are
                     # copied through unchanged; no rule is executed (issue #906).
