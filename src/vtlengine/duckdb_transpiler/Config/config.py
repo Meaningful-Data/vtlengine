@@ -104,6 +104,9 @@ def configure_duckdb_connection(conn: duckdb.DuckDBPyConnection) -> None:
         expression depth limit which can be too low for complex VTL queries
     - Enable object cache for better performance on repeated queries: DuckDB can cache query plans
         and data structures to speed up repeated queries
+    - Disable the CTE filter pusher: a MATERIALIZED CTE holds an operand that must be computed
+        over all its data points, so an operation failing at a data point that a later filter
+        drops still raises its error, as in the pandas engine.
     """
     max_temp_dir_size = _max_temp_directory_size()
     statements = [
@@ -111,6 +114,7 @@ def configure_duckdb_connection(conn: duckdb.DuckDBPyConnection) -> None:
         "SET preserve_insertion_order = false",
         "SET max_expression_depth TO 10000",
         "SET enable_object_cache = true",
+        "SET disabled_optimizers = 'cte_filter_pusher'",
         f"SET threads = {_threads()}",
     ]
     memory_limit = _duckdb_memory_limit()
