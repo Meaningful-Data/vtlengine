@@ -64,10 +64,12 @@ jobs:
             g++
 
       - name: Install pip-only dependencies
-        # The only dependencies Ubuntu 26.04 does not package.
+        # The only dependencies Ubuntu 26.04 does not package. pysdmx stays on 1.16.0, the last
+        # release requiring lxml>=5.2: since 1.17.0 it requires lxml>=6.1.0 outside emscripten,
+        # and 26.04 packages 6.0.2.
         run: |
           python3 -m pip install --no-dependencies \
-            pysdmx==1.20.0 \
+            pysdmx==1.16.0 \
             sdmxschemas==1.1.0 \
             duckdb==1.5.5 \
             parsy==2.2
