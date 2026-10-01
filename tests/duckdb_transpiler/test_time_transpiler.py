@@ -332,6 +332,15 @@ class TestOperandBoundOnce:
         assert 'CASE WHEN "__vtl_hoisted_0__" IS NULL' in sql, sql
         assert 'ELSE "__vtl_hoisted_0__" END' in sql, sql
 
+    def test_calc_identifier_literal_has_no_guard(self):
+        """A literal that is not null never trips the guard, so none is built for it."""
+        script = 'DS_r <- DS_1[calc identifier Id_3 := "x", identifier Id_4 := 1];'
+        sql = normalize_sql(transpile(script, HOIST_STRUCTURE)[0][1])
+
+        assert "__vtl_hoisted" not in sql, sql
+        assert "2-1-1-16" not in sql, sql
+        assert '\'x\' AS "Id_3", 1 AS "Id_4"' in sql, sql
+
     def test_hoisted_columns_do_not_reach_the_result(self):
         """The precomputed columns are in scope, and excluded from the output."""
         conn = duckdb.connect(":memory:")

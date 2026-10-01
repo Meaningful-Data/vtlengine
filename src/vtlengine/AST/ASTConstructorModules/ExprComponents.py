@@ -53,55 +53,57 @@ class ExprComp:
         ;
         """  # noqa E501
         ctx_list = ctx.children
+        # Each read of ctx_id crosses into the C++ parse tree
+        ctx_id = ctx.ctx_id
         c = ctx_list[0]
 
-        if ctx.ctx_id == RC.PARENTHESIS_EXPR_COMP:
+        if ctx_id == RC.PARENTHESIS_EXPR_COMP:
             return self.visitParenthesisExprComp(ctx)
 
         # functions
-        elif ctx.ctx_id == RC.FUNCTIONS_EXPRESSION_COMP:
+        elif ctx_id == RC.FUNCTIONS_EXPRESSION_COMP:
             return self.visitFunctionsComponents(c)
 
         # op=(PLUS|MINUS|NOT) right=expr # unary expression
-        elif ctx.ctx_id == RC.UNARY_EXPR_COMP:
+        elif ctx_id == RC.UNARY_EXPR_COMP:
             return self.visitUnaryExprComp(ctx)
 
         # | left=expr op=(MUL|DIV) right=expr               # arithmeticExpr
-        elif ctx.ctx_id == RC.ARITHMETIC_EXPR_COMP:
+        elif ctx_id == RC.ARITHMETIC_EXPR_COMP:
             return self.visitArithmeticExprComp(ctx)
 
         # | left=expr op=(PLUS|MINUS|CONCAT) right=expr     # arithmeticExprOrConcat
-        elif ctx.ctx_id == RC.ARITHMETIC_EXPR_OR_CONCAT_COMP:
+        elif ctx_id == RC.ARITHMETIC_EXPR_OR_CONCAT_COMP:
             return self.visitArithmeticExprOrConcatComp(ctx)
 
         # | left=expr op=comparisonOperand  right=expr      # comparisonExpr
-        elif ctx.ctx_id == RC.COMPARISON_EXPR_COMP:
+        elif ctx_id == RC.COMPARISON_EXPR_COMP:
             return self.visitComparisonExprComp(ctx)
 
         # | left=expr op=(IN|NOT_IN)(lists|valueDomainID)   # inNotInExpr
-        elif ctx.ctx_id == RC.IN_NOT_IN_EXPR_COMP:
+        elif ctx_id == RC.IN_NOT_IN_EXPR_COMP:
             return self.visitInNotInExprComp(ctx)
 
         # | left=expr op=AND right=expr                                           # booleanExpr
         # | left=expr op=(OR|XOR) right=expr
-        elif ctx.ctx_id == RC.BOOLEAN_EXPR_COMP:
+        elif ctx_id == RC.BOOLEAN_EXPR_COMP:
             return self.visitBooleanExprComp(ctx)
 
         # IF  conditionalExpr=expr  THEN thenExpr=expr ELSE elseExpr=expr       # ifExpr
-        elif ctx.ctx_id == RC.IF_EXPR_COMP:
+        elif ctx_id == RC.IF_EXPR_COMP:
             return self.visitIfExprComp(ctx)
 
         # CASE WHEN conditionalExpr=expr THEN thenExpr=expr ELSE elseExpr=expr END # caseExpr
-        elif ctx.ctx_id == RC.CASE_EXPR_COMP:
+        elif ctx_id == RC.CASE_EXPR_COMP:
             return self.visitCaseExprComp(ctx)
 
         # constant
-        elif ctx.ctx_id == RC.CONSTANT_EXPR_COMP:
+        elif ctx_id == RC.CONSTANT_EXPR_COMP:
             return Terminals().visitConstant(c)
 
         # componentID
         # TODO Changed to pass more tests. Original code: return Terminals().visitComponentID(c)
-        elif ctx.ctx_id == RC.COMP_ID:
+        elif ctx_id == RC.COMP_ID:
             if len(c.children) > 1:
                 return Terminals().visitComponentID(c)
             token = c.children[0]

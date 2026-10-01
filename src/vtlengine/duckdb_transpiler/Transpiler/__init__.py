@@ -5,7 +5,19 @@ from collections import Counter
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, Generator, List, Optional, Set, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    FrozenSet,
+    Generator,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+    cast,
+)
 
 import vtlengine.AST as AST
 from vtlengine.AST.ASTTemplate import ASTTemplate
@@ -17,6 +29,7 @@ from vtlengine.DataTypes import (
     Duration,
     Integer,
     Number,
+    String,
     TimeInterval,
     TimePeriod,
 )
@@ -81,6 +94,34 @@ _VTL_PERIOD_PARSE_LITERAL = re.compile(
     r")"
     r"'\)"
 )
+
+# Left-nested chains of a dataset operation that gives its operands' types back, with
+# at least this many operands, are computed by one grouped query (see
+# SQLTranspiler._build_ds_ds_chain). Each operator maps to the Measure types it folds.
+# Division, mod, power and log keep the joins: they can fail at a data point, which
+# must raise even when a later operand does not have it, and the grouped
+# query only computes the data points found in every operand.
+_NUMERIC_TYPES = frozenset({Integer, Number})
+_FOLDED_CHAIN_TYPES: Dict[str, FrozenSet[type]] = {
+    tokens.PLUS: _NUMERIC_TYPES,
+    tokens.MINUS: _NUMERIC_TYPES,
+    tokens.MULT: _NUMERIC_TYPES,
+    tokens.AND: frozenset({Boolean}),
+    tokens.OR: frozenset({Boolean}),
+    tokens.XOR: frozenset({Boolean}),
+    tokens.CONCAT: frozenset({String}),
+}
+_MIN_FOLDED_CHAIN_OPERANDS = 3
+
+# Left-nested Number expressions (and xor ones) of components or scalars with at least
+# this many operands are computed by one list_reduce (see
+# SQLTranspiler._build_expression_chain). Below it, the nested SQL is cheaper to run.
+_FOLDED_BOOLEAN_OPS = frozenset({tokens.AND, tokens.OR, tokens.XOR})
+_MIN_FOLDED_EXPRESSION_OPERANDS = 5
+
+# Imbalance operations a ``check`` computes over the join of its comparison when both
+# read the same datasets (see SQLTranspiler._check_shared_join)
+_SHARED_JOIN_IMBALANCE_OPS = (tokens.PLUS, tokens.MINUS, tokens.MULT, tokens.DIV)
 
 
 def _match_plain_sql_string_literal(expr: str) -> Optional[str]:
@@ -225,6 +266,27 @@ class _ParsedHRRule:
 
 
 @dataclass
+class _PairwiseJoin:
+    """A dataset-dataset binary operation before it is written as one query."""
+
+    id_cols: List[str]
+    measure_cols: List[Tuple[str, str]]  # (expression, output name)
+    viral_cols: List[str]
+    left_src: str
+    right_src: str
+    on_clause: str
+
+    def sql(self, cols: List[str]) -> str:
+        """Select ``cols`` from the join of both operands (``a`` and ``b``)."""
+        builder = SQLBuilder().select(*cols).from_table(self.left_src, "a")
+        if self.on_clause != "1=1":
+            builder.join(self.right_src, "b", on=self.on_clause, join_type="INNER")
+        else:
+            builder.cross_join(self.right_src, "b")
+        return builder.build()
+
+
+@dataclass
 class SQLTranspiler(StructureVisitor, ASTTemplate):
     """Transpiler that converts VTL AST nodes to SQL queries."""
 
@@ -297,6 +359,16 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     # the outer expression reads that column instead
     _hoisted: List[List[Tuple[str, str]]] = field(default_factory=list, init=False)
     _hoist_counter: int = field(default=0, init=False)
+
+    # Structures and operand types resolved for the statement being built (see
+    # StructureVisitor._statement_memo)
+    _structure_memo: Optional[Dict[Tuple[int, str], Tuple[AST.AST, Any]]] = field(
+        default=None, init=False
+    )
+    _node_type_memo: Optional[Dict[int, Tuple[AST.AST, str]]] = field(default=None, init=False)
+
+    # Assignment name -> the inputs the DAG found for it, built on first use
+    _assignment_inputs: Optional[Dict[str, List[str]]] = field(default=None, init=False)
 
     _materialized_operands: List[str] = field(default_factory=list, init=False)
 
@@ -408,13 +480,16 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         return ds, table_src
 
     def _get_assignment_inputs(self, name: str) -> List[str]:
-        if self.dag is None:
+        if self.dag is None or not hasattr(self.dag, "dependencies"):
             return []
-        if hasattr(self.dag, "dependencies"):
+        if self._assignment_inputs is None:
+            # Index the statements once: scanning them for every assignment is
+            # quadratic in the length of the script
+            self._assignment_inputs = {}
             for deps in self.dag.dependencies.values():
-                if name in deps.outputs or name in deps.persistent:
-                    return deps.inputs
-        return []
+                for produced in (*deps.outputs, *deps.persistent):
+                    self._assignment_inputs.setdefault(produced, deps.inputs)
+        return self._assignment_inputs.get(name, [])
 
     # Top-level visitors
 
@@ -438,35 +513,38 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             elif isinstance(child, AST.HRuleset):
                 self._visit_HRuleset(child)
             elif isinstance(child, AST.Assignment):
-                name = child.left.value  # type: ignore[attr-defined]
-                self.current_assignment = name
-                self.inputs = self._get_assignment_inputs(name)
-
-                is_persistent = isinstance(child, AST.PersistentAssignment)
-                if name in self.output_scalars:
-                    with self._hoist_scope() as hoisted:
-                        value_sql = self.visit(child)
-                        if value_sql.strip().upper().startswith("SELECT"):
-                            # Full SELECT (e.g. membership on an ungrouped
-                            # aggregation): fold to a scalar subquery so the table
-                            # exposes the single ``value`` column consumers expect.
-                            value_sql = f"SELECT ({value_sql}) AS value"
-                        else:
-                            value_sql = f"SELECT {value_sql} AS value"
-                            if hoisted:
-                                one_row = self._hoisted_source("(SELECT 1)", hoisted)
-                                value_sql += f" FROM {one_row} AS t"
-                    queries.append((name, value_sql, is_persistent))
-                else:
-                    query = self.visit(child)
-                    query = self._unqualify_join_columns(name, query)
-                    queries.append((name, query, is_persistent))
-
+                with self._statement_memo():
+                    queries.append(self._transpile_assignment(child))
                 self._join_alias_map = {}
                 self._consumed_join_aliases = set()
                 self._materialized_operands = []
 
         return queries
+
+    def _transpile_assignment(self, child: AST.Assignment) -> Tuple[str, str, bool]:
+        """Return the (name, sql, is_persistent) query of a top-level assignment."""
+        name = child.left.value  # type: ignore[attr-defined]
+        self.current_assignment = name
+        self.inputs = self._get_assignment_inputs(name)
+
+        is_persistent = isinstance(child, AST.PersistentAssignment)
+        if name in self.output_scalars:
+            with self._hoist_scope() as hoisted:
+                value_sql = self.visit(child)
+                if value_sql.strip().upper().startswith("SELECT"):
+                    # Full SELECT (e.g. membership on an ungrouped
+                    # aggregation): fold to a scalar subquery so the table
+                    # exposes the single ``value`` column consumers expect.
+                    value_sql = f"SELECT ({value_sql}) AS value"
+                else:
+                    value_sql = f"SELECT {value_sql} AS value"
+                    if hoisted:
+                        one_row = self._hoisted_source("(SELECT 1)", hoisted)
+                        value_sql += f" FROM {one_row} AS t"
+            return name, value_sql, is_persistent
+        query = self.visit(child)
+        query = self._unqualify_join_columns(name, query)
+        return name, query, is_persistent
 
     def _unqualify_join_columns(self, ds_name: str, query: str) -> str:
         """Rename remaining alias#comp columns to plain component names."""
@@ -796,12 +874,18 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
                 return self._apply_measures(node.left, _in_expr, output_name_override="bool_var")
             if left_type == _DATASET and right_type == _DATASET:
+                chain_sql = self._build_ds_ds_chain(node) if op in _FOLDED_CHAIN_TYPES else None
+                if chain_sql is not None:
+                    return chain_sql
                 return self._build_ds_ds_binary(node.left, node.right, op)
             if left_type == _DATASET:
                 return self._build_ds_scalar_binary(node.left, node.right, op, ds_on_left=True)
             return self._build_ds_scalar_binary(node.right, node.left, op, ds_on_left=False)
 
         # Scalar-scalar binary: detect types and delegate to _make_binary_expr
+        chain_sql = self._build_expression_chain(node, self.visit, self._detect_scalar_type)
+        if chain_sql is not None:
+            return chain_sql
         left_sql = self.visit(node.left)
         right_sql = self.visit(node.right)
         if op == tokens.CONCAT:
@@ -921,6 +1005,17 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         op: str,
     ) -> str:
         """Build SQL for dataset-dataset binary operations using JOIN."""
+        join = self._ds_ds_binary_join(left_node, right_node, op)
+        measure_cols = [f"{expr} AS {quote_name(name)}" for expr, name in join.measure_cols]
+        return join.sql(join.id_cols + measure_cols + join.viral_cols)
+
+    def _ds_ds_binary_join(
+        self,
+        left_node: AST.AST,
+        right_node: AST.AST,
+        op: str,
+    ) -> _PairwiseJoin:
+        """Work out the columns and the join of a dataset-dataset binary operation."""
         left_ds = self._get_dataset_structure(left_node)
         right_ds = self._get_dataset_structure(right_node)
         output_ds = self._get_output_dataset()
@@ -951,13 +1046,14 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             else:
                 paired_measures = [(left_measures[0], right_measures[0])]
 
-        cols: List[str] = []
+        id_cols: List[str] = []
         for id_name in all_ids:
             if id_name in left_ids:
-                cols.append(f"{alias_a}.{quote_name(id_name)}")
+                id_cols.append(f"{alias_a}.{quote_name(id_name)}")
             else:
-                cols.append(f"{alias_b}.{quote_name(id_name)}")
+                id_cols.append(f"{alias_b}.{quote_name(id_name)}")
 
+        measure_cols: List[Tuple[str, str]] = []
         for left_m, right_m in paired_measures:
             left_ref = f"{alias_a}.{quote_name(left_m)}"
             right_ref = f"{alias_b}.{quote_name(right_m)}"
@@ -986,20 +1082,212 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 and len(output_measure_names) == 1
             ):
                 out_name = output_measure_names[0]
-            cols.append(f"{expr} AS {quote_name(out_name)}")
+            measure_cols.append((expr, out_name))
 
-        # Viral attribute propagation across the two operands (issue #906).
-        cols.extend(self._ds_ds_viral_cols(op, left_ds, right_ds, output_ds, alias_a, alias_b))
+        return _PairwiseJoin(
+            id_cols=id_cols,
+            measure_cols=measure_cols,
+            # Viral attribute propagation across the two operands (issue #906).
+            viral_cols=self._ds_ds_viral_cols(op, left_ds, right_ds, output_ds, alias_a, alias_b),
+            left_src=left_src,
+            right_src=right_src,
+            on_clause=self._join_on_clause(common_ids, alias_a, alias_b),
+        )
 
-        on_clause = self._join_on_clause(common_ids, alias_a, alias_b)
+    def _flatten_ds_chain(self, node: AST.BinOp) -> List[AST.BinOp]:
+        """The operations of a left-nested chain of dataset operations, innermost first.
 
-        builder = SQLBuilder().select(*cols).from_table(left_src, alias_a)
-        if on_clause != "1=1":
-            builder.join(right_src, alias_b, on=on_clause, join_type="INNER")
+        In ``A - B * C + D`` they are the ``-`` and the ``+``: ``B * C`` binds first and
+        is one operand, as is any parenthesised or right-hand operand, since the chain
+        only follows the left side.
+        """
+        links: List[AST.BinOp] = []
+        current: AST.AST = node
+        while (
+            isinstance(current, AST.BinOp)
+            and current.op in _FOLDED_CHAIN_TYPES
+            and self._get_node_type(current.left) == _DATASET
+            and self._get_node_type(current.right) == _DATASET
+        ):
+            links.append(current)
+            current = current.left
+        links.reverse()
+        return links
+
+    @staticmethod
+    def _chain_measure_types(structures: List[Optional[Dataset]]) -> Optional[Dict[str, Any]]:
+        """The type of each Measure when every operand has the same identifiers and Measures.
+
+        Viral attributes and Number identifiers keep the pairwise joins: the former
+        combine through their propagation rules, the latter would group ``-0.0``
+        and ``0.0`` where the join compares them.
+        """
+
+        def signature(ds: Optional[Dataset]) -> Optional[Dict[str, Tuple[Role, Any]]]:
+            if ds is None or any(c.role == Role.VIRAL_ATTRIBUTE for c in ds.components.values()):
+                return None
+            return {
+                name: (comp.role, comp.data_type)
+                for name, comp in ds.components.items()
+                if comp.role in (Role.IDENTIFIER, Role.MEASURE)
+            }
+
+        reference = signature(structures[0])
+        if not reference or any(signature(ds) != reference for ds in structures[1:]):
+            return None
+        if {role for role, _ in reference.values()} != {Role.IDENTIFIER, Role.MEASURE}:
+            return None
+        if any(dt is Number for role, dt in reference.values() if role == Role.IDENTIFIER):
+            return None
+        return {name: dt for name, (role, dt) in reference.items() if role == Role.MEASURE}
+
+    @staticmethod
+    def _fold_lambda(steps: List[str]) -> str:
+        """The list_reduce lambda folding each next value into the running one.
+
+        ``steps[k]`` is the operation folding the value at 1-based position ``k + 2`` of
+        the list, the position the lambda gets as its third argument. Operations written
+        the same way share their branch, so a chain of one operator needs no lookup.
+        """
+        distinct = list(dict.fromkeys(steps))
+        if len(distinct) == 1:
+            body = distinct[0]
         else:
-            builder.cross_join(right_src, alias_b)
+            # The first position is never folded: it opens the running value
+            codes = ", ".join(str(distinct.index(step)) for step in [steps[0], *steps])
+            branches = " ".join(f"WHEN {k} THEN {step}" for k, step in enumerate(distinct))
+            body = f"CASE [{codes}][__vtl_pos] {branches} END"
+        return f"lambda __vtl_acc, __vtl_next, __vtl_pos: {body}"
 
-        return builder.build()
+    def _build_ds_ds_chain(self, node: AST.BinOp) -> Optional[str]:
+        """Build one grouped query for a left-nested chain of a dataset operation.
+
+        Each operation of ``A - B * C + D ...`` joins its operands on the identifiers, so
+        a chain of N operands nests N-1 joins and DuckDB pays for every one of them
+        when it plans and runs the statement. When all the operands share their
+        identifiers and Measures, and every operation gives its operands' types back
+        and cannot fail at a data point (``+``, ``-``, ``*``, ``and``, ``or``, ``xor`` and
+        ``||``), the chain keeps the data points found in every operand and folds their
+        values in the written order, each operation built as the pairwise one builds it
+        (rounding included), which one pass over the stacked operands gives.
+
+        Returns ``None`` when the chain is too short or its operands do not qualify,
+        leaving the pairwise joins.
+        """
+        links = self._flatten_ds_chain(node)
+        if len(links) + 1 < _MIN_FOLDED_CHAIN_OPERANDS:
+            return None
+        operands = [links[0].left, *(link.right for link in links)]
+        structures = [self._get_dataset_structure(operand) for operand in operands]
+        measure_types = self._chain_measure_types(structures)
+        if measure_types is None or any(
+            not set(measure_types.values()) <= _FOLDED_CHAIN_TYPES[link.op] for link in links
+        ):
+            return None
+
+        first = cast(Dataset, structures[0])
+        id_names = sorted(first.get_identifiers_names())
+        measures = first.get_measures_names()
+        output_ds = self._get_output_dataset()
+        output_measures = output_ds.get_measures_names() if output_ds else []
+        # Same naming as _build_ds_ds_binary: a single Measure takes the output name
+        out_names = output_measures if len(measures) == 1 == len(output_measures) else measures
+
+        # Number values are folded as DOUBLE, which the operations compute in anyway:
+        # list_reduce gives back the type of its list
+        as_double = {m for m in measures if measure_types[m] is Number}
+        position = quote_name("__vtl_chain_position__")
+        branch_cols = [quote_name(name) for name in id_names]
+        branch_cols += [
+            f"CAST({quote_name(m)} AS DOUBLE) AS {quote_name(m)}"
+            if m in as_double
+            else quote_name(m)
+            for m in measures
+        ]
+        branches = [
+            f"SELECT {', '.join(branch_cols)}, {k} AS {position} "
+            f"FROM {self._get_dataset_sql(operand)} AS t"
+            for k, operand in enumerate(operands)
+        ]
+
+        ops = [link.op for link in links]
+        cols = [quote_name(name) for name in id_names]
+        for measure, out_name in zip(measures, out_names):
+            # Typed as the pairwise joins type them: each partial result has the
+            # structure of its left operand, so every operation gets the operands' type
+            dt = measure_types[measure]
+            step_sql = {
+                op: self._make_binary_expr("__vtl_acc", "__vtl_next", op, dt, dt)
+                for op in dict.fromkeys(ops)
+            }
+            steps = [step_sql[op] for op in ops]
+            cols.append(
+                f"list_reduce(list({quote_name(measure)} ORDER BY {position}), "
+                f"{self._fold_lambda(steps)}) AS {quote_name(out_name)}"
+            )
+
+        id_cols = ", ".join(quote_name(name) for name in id_names)
+        return (
+            f"SELECT {', '.join(cols)} FROM ({' UNION ALL '.join(branches)}) AS t "
+            f"GROUP BY {id_cols} HAVING count(*) = {len(operands)}"
+        )
+
+    def _build_expression_chain(
+        self,
+        node: Union[AST.BinOp, AST.HRBinOp],
+        visit: Callable[[AST.AST], str],
+        node_type: Callable[[AST.AST], Optional[type]],
+    ) -> Optional[str]:
+        """Compute a long left-nested Number or xor expression with one list_reduce.
+
+        Every Number operation rounds its result with ``vtl_round_sig``, which repeats its
+        argument three times, and ``xor`` repeats both operands. Nested operation by
+        operation, the SQL DuckDB binds for ``a + b * c - d ...`` so grows threefold per
+        operand (twofold for ``xor``): 11 Number operands take 10 s to plan, and each one
+        more over three times as long. The operands go into a list instead, folded in
+        the written order by one lambda holding each operation once.
+
+        The chain follows the left side while each operation gives a Number (``+``, ``-``,
+        ``*``, ``/``, ``mod``, ``power``), or while it is ``and``, ``or`` or ``xor``. Its first
+        operation is built as usual, so the list opens with its Number or Boolean result
+        and the later operands convert as the operations convert them. ``visit`` and
+        ``node_type`` give an operand's SQL and data type, as the pairwise operation
+        gets them.
+
+        Returns ``None`` when the chain is too short, or when its nested SQL does not grow
+        (``and`` and ``or`` without ``xor``).
+        """
+        numeric = node.op in ROUNDED_NUMERIC_OPS
+        if not numeric and node.op not in _FOLDED_BOOLEAN_OPS:
+            return None
+        family = ROUNDED_NUMERIC_OPS if numeric else _FOLDED_BOOLEAN_OPS
+        chain: List[Union[AST.BinOp, AST.HRBinOp]] = []
+        current: AST.AST = node
+        while (
+            isinstance(current, (AST.BinOp, AST.HRBinOp))
+            and current.op in family
+            and (not numeric or node_type(current) is Number)
+        ):
+            chain.append(current)
+            current = current.left
+        if len(chain) + 1 < _MIN_FOLDED_EXPRESSION_OPERANDS:
+            return None
+        if not numeric and all(link.op != tokens.XOR for link in chain):
+            return None
+
+        first, *rest = reversed(chain)
+        elements = [visit(first)] + [visit(link.right) for link in rest]
+        steps = [
+            self._make_binary_expr(
+                "__vtl_acc",
+                "__vtl_next",
+                link.op,
+                node_type(link.left),
+                node_type(link.right),
+            )
+            for link in rest
+        ]
+        return f"list_reduce([{', '.join(elements)}], {self._fold_lambda(steps)})"
 
     def _build_ds_scalar_binary(
         self,
@@ -2208,7 +2496,14 @@ FROM (
                         continue
                     col_name = self._resolve_udo_name(self._get_node_value(assignment.left))
                     expr_sql = self.visit(assignment.right)
-                    if _CALC_ROLE_BY_TOKEN.get(getattr(child, "op", "")) is Role.IDENTIFIER:
+                    is_identifier = (
+                        _CALC_ROLE_BY_TOKEN.get(getattr(child, "op", "")) is Role.IDENTIFIER
+                    )
+                    # A literal that is not null never trips the guard, and each hoisted
+                    # column costs the statement one more subquery
+                    right = assignment.right
+                    non_null_literal = isinstance(right, AST.Constant) and right.value is not None
+                    if is_identifier and not non_null_literal:
                         # The null guard names the expression twice, so bind it once
                         # instead of leaving the binder to expand it again (#1106)
                         guarded = self._hoist(expr_sql)
@@ -3569,6 +3864,13 @@ FROM (
     ) -> str:
         """Visit an expression in datapoint-rule context."""
         if isinstance(node, (AST.HRBinOp, AST.BinOp)):
+            chain_sql = self._build_expression_chain(
+                node,
+                lambda operand: self._visit_dp_expr(operand, signature, components),
+                lambda operand: self._detect_dp_type(operand, signature, components),
+            )
+            if chain_sql is not None:
+                return chain_sql
             left_sql = self._visit_dp_expr(node.left, signature, components)
             right_sql = self._visit_dp_expr(node.right, signature, components)
             if isinstance(node, AST.HRBinOp) and node.op == tokens.WHEN:
@@ -4287,12 +4589,53 @@ FROM (
         """Convert an errorcode value to a SQL literal."""
         return "CAST(NULL AS VARCHAR)" if value is None else self._to_sql_literal(value=value)
 
+    def _check_shared_join(self, node: AST.Validation) -> Optional[str]:
+        """One join computing both the comparison and the imbalance of a ``check``.
+
+        ``check(L >= R imbalance L - R)`` joins L and R for the comparison, joins them
+        again for the imbalance and then joins both results. When both operations read
+        the same two datasets, the query of the comparison also selects the imbalance
+        (as ``__vtl_imbalance__``). Returns ``None`` when the operations differ.
+        """
+        validation, imbalance = node.validation, node.imbalance
+        if not isinstance(validation, AST.BinOp) or not isinstance(imbalance, AST.BinOp):
+            return None
+        if validation.op not in COMPARISON_OPS or imbalance.op not in _SHARED_JOIN_IMBALANCE_OPS:
+            return None
+        operands = (validation.left, validation.right, imbalance.left, imbalance.right)
+        if self._udo_params is not None or not all(isinstance(o, AST.VarID) for o in operands):
+            return None
+        names = [o.value for o in operands]  # type: ignore[attr-defined]
+        if names[:2] != names[2:] or any(self._get_node_type(o) != _DATASET for o in operands):
+            return None
+        ds = self._get_dataset_structure(validation)
+        if ds is None or len(ds.get_measures_names()) != 1:
+            return None
+
+        with self._stash_assignment():
+            comparison = self._ds_ds_binary_join(validation.left, validation.right, validation.op)
+            difference = self._ds_ds_binary_join(imbalance.left, imbalance.right, imbalance.op)
+        if comparison.viral_cols or difference.viral_cols:
+            return None
+        if len(comparison.measure_cols) != 1 or len(difference.measure_cols) != 1:
+            return None
+        cols = [
+            *comparison.id_cols,
+            f"{comparison.measure_cols[0][0]} AS {quote_name(ds.get_measures_names()[0])}",
+            f'{difference.measure_cols[0][0]} AS "__vtl_imbalance__"',
+        ]
+        return comparison.sql(cols)
+
     def visit_Validation(self, node: AST.Validation) -> str:
         """Visit CHECK validation operator."""
-        # Stash ``current_assignment`` so _build_ds_ds_binary doesn't rename the
-        # inner comparison's measures to match the outer assignment target.
-        with self._stash_assignment():
-            validation_sql = self.visit(node.validation)
+        shared_join = self._check_shared_join(node)
+        if shared_join is not None:
+            validation_sql = shared_join
+        else:
+            # Stash ``current_assignment`` so _build_ds_ds_binary doesn't rename the
+            # inner comparison's measures to match the outer assignment target.
+            with self._stash_assignment():
+                validation_sql = self.visit(node.validation)
 
         error_code = self._error_code_sql(node.error_code)
         error_level = self._error_code_sql(node.error_level)
@@ -4316,7 +4659,9 @@ FROM (
         imbalance_sql: Optional[str] = None
         join_cond: Optional[str] = None
         imbalance_col = 'CAST(NULL AS DOUBLE) AS "imbalance"'
-        if node.imbalance is not None:
+        if shared_join is not None:
+            imbalance_col = 't."__vtl_imbalance__" AS "imbalance"'
+        elif node.imbalance is not None:
             with self._stash_assignment():
                 imbalance_sql = self.visit(node.imbalance)
             imb_ds = self._get_dataset_structure(node.imbalance)
