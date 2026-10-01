@@ -1,3 +1,4 @@
+import copy
 from typing import Any, Dict, List, Tuple
 
 import pytest
@@ -179,6 +180,21 @@ def test_component_serialization_uses_type():
     assert comp_dict["name"] == "test_comp"
     assert comp_dict["role"] == "Measure"
     assert comp_dict["nullable"] is True
+
+
+def test_component_shallow_copy():
+    """copy() gives an equal, independent Component sharing the same field values"""
+    comp = Component(name="Me_1", data_type=DataTypes.Number, role=Role.MEASURE, nullable=False)
+
+    clone = copy.copy(comp)
+    clone.nullable = True
+    clone.rename("Me_2")
+
+    assert type(clone) is Component
+    assert clone.data_type is comp.data_type
+    assert clone.role is comp.role
+    assert (comp.name, comp.nullable) == ("Me_1", False)
+    assert (clone.name, clone.nullable) == ("Me_2", True)
 
 
 def test_component_from_json_supports_type():

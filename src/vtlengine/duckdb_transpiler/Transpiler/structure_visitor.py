@@ -1,6 +1,7 @@
 """Resolve VTL dataset structures for the DuckDB transpiler."""
 
-from typing import Any, Dict, List, Optional, Set, Tuple
+from contextlib import contextmanager
+from typing import Any, Dict, Generator, List, Optional, Set, Tuple
 
 import vtlengine.AST as AST
 from vtlengine.AST.ASTTemplate import ASTTemplate
@@ -68,6 +69,8 @@ class StructureVisitor(ASTTemplate):
         self._join_alias_map: Dict[str, str] = {}
         self._udo_params: Optional[List[Dict[str, Any]]] = None
         self._udos: Dict[str, Dict[str, Any]] = {}
+        self._structure_memo: Optional[Dict[Tuple[int, str], Tuple[AST.AST, Any]]] = None
+        self._node_type_memo: Optional[Dict[int, Tuple[AST.AST, str]]] = None
         self._materialized_operands: List[str] = []
 
     # Dispatcher: two-level visit — first ``visit_{Class}_{op}``, then ``visit_{Class}``
@@ -196,6 +199,31 @@ class StructureVisitor(ASTTemplate):
         """Return None for any unhandled node type."""
         return None
 
+    # Per-statement memo
+
+    @contextmanager
+    def _statement_memo(self) -> Generator[None, None, None]:
+        """Remember the structures and operand types resolved while one statement is built.
+
+        Every level of a left-nested chain of dataset operations resolves its operands
+        again, so without the memo a chain of N operands costs O(N^3) lookups.
+        """
+        self._structure_memo = {}
+        self._node_type_memo = {}
+        try:
+            yield
+        finally:
+            self._structure_memo = None
+            self._node_type_memo = None
+
+    def _memo_applies(self) -> bool:
+        """Whether a lookup only depends on the node and the assignment being built.
+
+        Inside a clause or a UDO body the same node resolves differently depending on
+        the clause dataset or the parameter bindings, so those lookups are not kept.
+        """
+        return self._udo_params is None and not self._in_clause
+
     # Operand type resolution
 
     def _get_op_type(self, nodes: List[Optional[AST.AST]]) -> str:
@@ -211,8 +239,21 @@ class StructureVisitor(ASTTemplate):
                 result = _COMPONENT
         return result
 
-    def _get_node_type(self, node: AST.AST) -> str:  # noqa: C901
+    def _get_node_type(self, node: AST.AST) -> str:
         """Determine the operand type of a node."""
+        memo = self._node_type_memo
+        if memo is None or not self._memo_applies():
+            return self._resolve_node_type(node)
+        hit = memo.get(id(node))
+        # The memo holds the node itself, so its id cannot be reused while it is kept
+        if hit is not None and hit[0] is node:
+            return hit[1]
+        node_type = self._resolve_node_type(node)
+        memo[id(node)] = (node, node_type)
+        return node_type
+
+    def _resolve_node_type(self, node: AST.AST) -> str:  # noqa: C901
+        """Work out the operand type of a node."""
         if isinstance(node, (AST.Analytic, AST.Identifier)) or (
             isinstance(node, AST.BinOp) and self._in_clause
         ):
@@ -408,6 +449,21 @@ class StructureVisitor(ASTTemplate):
         """Get dataset structure for a node, tracing to the source dataset."""
         if node is None:
             return None
+        memo = self._structure_memo
+        if memo is None or not self._memo_applies():
+            return self._resolve_dataset_structure(node)
+        # Some structures follow the output of the assignment being built, which the
+        # clauses stash while they resolve their operand
+        key = (id(node), self.current_assignment)
+        hit = memo.get(key)
+        if hit is not None and hit[0] is node:
+            return hit[1]
+        structure = self._resolve_dataset_structure(node)
+        memo[key] = (node, structure)
+        return structure
+
+    def _resolve_dataset_structure(self, node: AST.AST) -> Any:
+        """Work out the dataset structure of a node, tracing to the source dataset."""
         if isinstance(node, AST.VarID):
             return self._resolve_varid_structure(node)
         if isinstance(node, AST.RegularAggregation) and node.dataset:

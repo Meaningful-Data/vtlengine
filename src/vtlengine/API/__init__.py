@@ -1,4 +1,5 @@
 import copy
+import pickle
 import warnings
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Sequence, Union, cast
@@ -265,6 +266,20 @@ def semantic_analysis(
     return result
 
 
+def _copy_ast(ast: Start) -> Start:
+    """Return an independent copy of ``ast``, which the semantic analysis modifies.
+
+    A pickle round trip copies the plain-data AST several times faster than
+    ``copy.deepcopy``; an AST holding something pickle cannot handle is deep-copied.
+    """
+    try:
+        # Only the bytes just produced from ``ast`` are loaded, never outside data
+        payload = pickle.dumps(ast, protocol=pickle.HIGHEST_PROTOCOL)
+        return cast(Start, pickle.loads(payload))  # noqa: S301
+    except (pickle.PicklingError, TypeError, AttributeError):
+        return copy.deepcopy(ast)
+
+
 @with_recursion_headroom
 def _run_with_duckdb(
     script: Union[str, TransformationScheme, Path],
@@ -324,7 +339,7 @@ def _run_with_duckdb(
         only_semantic=True,
         return_only_persistent=False,
     )
-    semantic_results = interpreter.visit(copy.deepcopy(ast))
+    semantic_results = interpreter.visit(_copy_ast(ast))
 
     # Separate output datasets and scalars
     output_datasets: Dict[str, Dataset] = {}
