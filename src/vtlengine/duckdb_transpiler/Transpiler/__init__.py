@@ -33,6 +33,7 @@ from vtlengine.DataTypes import (
     TimeInterval,
     TimePeriod,
 )
+from vtlengine.duckdb_transpiler.Transpiler.macro_binding import bind_repeated_macro_arguments
 from vtlengine.duckdb_transpiler.Transpiler.operators import (
     _BOOLEAN_RESULT_BINOPS,
     _BOOLEAN_RESULT_UNARY_OPS,
@@ -498,8 +499,12 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         with recursion_headroom():
             queries = self.visit(node)
         # Constant-fold ``vtl_period_parse('canonical')`` calls now that all
-        # nested macro expansion is in place.
-        return [(name, _inline_period_parse_literals(sql), p) for name, sql, p in queries]
+        # nested macro expansion is in place, then bind the macro arguments that
+        # would expand too far.
+        return [
+            (name, bind_repeated_macro_arguments(_inline_period_parse_literals(sql)), p)
+            for name, sql, p in queries
+        ]
 
     def visit_Start(self, node: AST.Start) -> List[Tuple[str, str, bool]]:
         """Generate SQL for top-level nodes."""
