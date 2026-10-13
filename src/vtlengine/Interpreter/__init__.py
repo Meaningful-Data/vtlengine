@@ -1876,11 +1876,13 @@ class InterpreterAnalyzer(ASTTemplate):
         if isinstance(right_operand, Dataset):
             right_operand = get_measure_from_dataset(right_operand, node.right.value)
 
-        if self.ruleset_mode in (PARTIAL_NULL, PARTIAL_ZERO):
+        if self.ruleset_mode in (PARTIAL_NULL, PARTIAL_ZERO) and self.partial_rule_data is not None:
+            # Operands may cover different groups, so filter them by label.
+            kept = self.partial_rule_data.index[self.partial_rule_data]
             if left_operand.data is not None:
-                left_operand.data = left_operand.data[self.partial_rule_data]
+                left_operand.data = left_operand.data[left_operand.data.index.isin(kept)]
             if right_operand.data is not None:
-                right_operand.data = right_operand.data[self.partial_rule_data]
+                right_operand.data = right_operand.data[right_operand.data.index.isin(kept)]
 
         if node.op in HR_COMP_MAPPING:
             op = HAAssignment if self.is_from_hr_agg else HR_COMP_MAPPING[node.op]
@@ -2051,7 +2053,10 @@ class InterpreterAnalyzer(ASTTemplate):
             if self.partial_rule_data is None:
                 self.partial_rule_data = exists
             else:
-                self.partial_rule_data |= exists
+                # A code item computed by an earlier rule may lack some groups: widen
+                # the mask over the union of both indexes instead of keeping the first.
+                mask, exists = self.partial_rule_data.align(exists, join="outer", fill_value=False)
+                self.partial_rule_data = mask | exists
             self.partial_rule_elements.add(name)  # type: ignore[union-attr]
 
     def visit_UDOCall(self, node: AST.UDOCall) -> None:  # noqa: C901
