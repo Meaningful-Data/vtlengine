@@ -4182,7 +4182,9 @@ FROM (
             right_val_expr=r_val,
             is_hierarchy=False,
         )
-        if output == "invalid" and when_sql is not None:
+        # The rule only applies where its condition holds: elsewhere there is no
+        # comparison, so no data point (issue #1141).
+        if when_sql is not None:
             val_where.append(f"({when_sql})")
         val_where_clause = f" WHERE {' AND '.join(val_where)}" if val_where else ""
         val_sql = f"SELECT {', '.join(val_cols)} FROM _pivot{val_where_clause}"
@@ -4194,17 +4196,11 @@ FROM (
             bool_expr = number_tolerance_sql(rule_op, "_lv", "_rv")
         if bool_expr is None:
             bool_expr = f"(_lv {rule_op} _rv)"
-        imbalance_expr = "(_lv - _rv)"
-        if when_sql is not None:
-            bool_expr = f"CASE WHEN NOT ({when_sql}) THEN TRUE ELSE {bool_expr} END"
-            imbalance_expr = (
-                f"CASE WHEN NOT ({when_sql}) THEN CAST(NULL AS DOUBLE) ELSE {imbalance_expr} END"
-            )
 
         inner_cols = [quote_name(c) for c in other_ids]
         inner_cols.append("_lv")
         inner_cols.append(f"{bool_expr} AS _bv")
-        inner_cols.append(f"{imbalance_expr} AS _imb")
+        inner_cols.append("(_lv - _rv) AS _imb")
         inner_sql = f"SELECT {', '.join(inner_cols)} FROM ({val_sql}) _v"
 
         ec_sql = self._error_code_sql(rule.erCode)
@@ -4461,13 +4457,9 @@ FROM (
     ) -> str:
         """Generate SELECT for _rule_N CTE in hierarchy CTE chain."""
         r_val = self._build_hr_expr_sql(parsed.right_expr_node, mode)
-        computed_expr = r_val
-        if parsed.has_when:
-            when_sql = self._build_hr_when_sql(parsed.when_node, cond_mapping)
-            computed_expr = f"CASE WHEN {when_sql} THEN {computed_expr} ELSE NULL END"
 
         select_parts = [quote_name(c) for c in (*other_ids, *cond_mapping.values())]
-        select_parts.append(f"{computed_expr} AS _computed")
+        select_parts.append(f"{r_val} AS _computed")
         # Constant marker so a rule row is detectable after a LEFT JOIN even when
         # its computed value is NULL and there are no join keys (issue #969).
         select_parts.append("1 AS _present")
@@ -4483,6 +4475,9 @@ FROM (
         right_presence = [f"{_has_col(ci)} = 1" for ci in parsed.right_code_items]
         if right_presence:
             where_parts.append(f"({' OR '.join(right_presence)})")
+        # The rule computes nothing where its condition does not hold (issue #1141).
+        if parsed.has_when:
+            where_parts.append(f"({self._build_hr_when_sql(parsed.when_node, cond_mapping)})")
 
         where_clause = f" WHERE {' AND '.join(where_parts)}" if where_parts else ""
         return f"  SELECT {', '.join(select_parts)} FROM {pivot_ref}{where_clause}"
@@ -4513,8 +4508,13 @@ FROM (
             guard = "r._computed IS NOT NULL"
         else:
             guard = f"r.{first_key} IS NOT NULL"
-        val_expr = f"CASE WHEN {guard} THEN r._computed ELSE p.{val_col} END AS {val_col}"
-        has_expr = f"CASE WHEN r.{first_key} IS NOT NULL THEN 1 ELSE p.{has_col} END AS {has_col}"
+        fallback_val, fallback_has = (
+            ("NULL", "0") if input_mode == "rule" else (f"p.{val_col}", f"p.{has_col}")
+        )
+        val_expr = f"CASE WHEN {guard} THEN r._computed ELSE {fallback_val} END AS {val_col}"
+        has_expr = (
+            f"CASE WHEN r.{first_key} IS NOT NULL THEN 1 ELSE {fallback_has} END AS {has_col}"
+        )
 
         all_select = key_cols + other_val_has + [val_expr, has_expr]
         # Without join keys the pivot is a single global row; LEFT JOIN ON TRUE
