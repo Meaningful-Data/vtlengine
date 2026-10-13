@@ -616,11 +616,17 @@ centralised_messages = {
         "match as required.",
     },
     "1-1-10-10": {
-        "message": "Duplicated EQ rules on the Hierarchy Roll-up {ruleset}. "
-        "Check the EQ rules: {rule}.",
-        "description": "Raised when there are no applicable rules in a Hierarchy Roll-up "
-        "due to missing '=' operators.",
+        "message": "Code item {code_item} is defined by more than one rule of the Hierarchy "
+        "Roll-up {ruleset} and at least one of them has no condition.",
+        "description": "Raised when several '=' rules define the same code item in a hierarchy "
+        "operation and one of them has no when condition, so their results always overlap.",
     },
+    "2-1-10-1": {
+        "message": "More than one rule of the Hierarchy Roll-up {ruleset} computes code item "
+        "{code_item} for the same data point.",
+        "description": "Raised when the conditions of several rules that define the same code "
+        "item hold on the same data point of a hierarchy operation.",
+    },  # RunTimeError.
     # General Operators
     "2-1-12-1": {
         "message": "At op {op}: Create a null Measure without a Scalar type is not allowed. "
@@ -1037,12 +1043,6 @@ centralised_messages = {
         "message": "All rules must be named or not named, but found mixed criteria at "
         "{type} definition {name}.",
         "description": "Occurs when some rules are named and others are not in the same ruleset.",
-    },
-    "1-3-1-8": {
-        "message": "All rules must have different code items in the left side of '=' in "
-        "hierarchy operator at hierachical ruleset definition {name}.",
-        "description": "Raised when duplicate left-hand side code items are found "
-        "in hierarchical ruleset definitions.",
     },
     "1-3-1-9": {
         "message": "At op check_datapoint: {name} has an invalid datatype expected Dataset, "
