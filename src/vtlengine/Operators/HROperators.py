@@ -224,7 +224,8 @@ class HAAssignment(Operators.Binary):
         result.data = left.data.copy() if left.data is not None else pd.DataFrame()
         if right.data is not None:
             result.data[measure_name] = right.data.map(lambda x: cls.handle_mode(x, hr_mode))
-            result.data = result.data.iloc[right.data.index[0 : len(result.data)]]
+            # The partial modes filter the operands, so their labels are not positions.
+            result.data = result.data[result.data.index.isin(right.data.index)]
 
         result.data = result.data[result.data[measure_name] != REMOVE]
         return result

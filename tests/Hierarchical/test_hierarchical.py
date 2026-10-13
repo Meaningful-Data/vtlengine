@@ -2929,3 +2929,95 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1140_1(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (valuedomain rule VD_1) is
+                        C = A + B
+                    end hierarchical ruleset;
+
+                    DS_r <- hierarchy(DS_1, HR_1 rule Id_2 partial_zero);
+
+        Description: The pandas engine computes partial_zero rules when no right-side code item of C is found for Id_1 = 1.
+
+        Git Branch: #1140.
+        Goal: Check the result matches the DuckDB engine.
+        """
+
+        code = "GH_1140_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1140_2(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (valuedomain rule VD_1) is
+                        C = A + B
+                    end hierarchical ruleset;
+
+                    DS_r <- hierarchy(DS_1, HR_1 rule Id_2 partial_null);
+
+        Description: The pandas engine computes partial_null rules when no right-side code item of C is found for Id_1 = 1.
+
+        Git Branch: #1140.
+        Goal: Check the result matches the DuckDB engine.
+        """
+
+        code = "GH_1140_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1140_3(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (valuedomain rule VD_1) is
+                        C = A + B; E = C + D
+                    end hierarchical ruleset;
+
+                    DS_r <- hierarchy(DS_1, HR_1 rule Id_2 partial_zero);
+
+        Description: The pandas engine computes partial_zero rules when E takes C from the first rule, which gives no C for Id_1 = 3.
+
+        Git Branch: #1140.
+        Goal: Check the result matches the DuckDB engine.
+        """
+
+        code = "GH_1140_3"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1140_4(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (valuedomain rule VD_1) is
+                        C = A + B; E = C + D
+                    end hierarchical ruleset;
+
+                    DS_r <- hierarchy(DS_1, HR_1 rule Id_2 partial_null);
+
+        Description: The pandas engine computes partial_null rules when E takes C from the first rule, which gives no C for Id_1 = 3.
+
+        Git Branch: #1140.
+        Goal: Check the result matches the DuckDB engine.
+        """
+
+        code = "GH_1140_4"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
