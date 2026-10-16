@@ -1181,6 +1181,32 @@ class Expr:
                             -----------------------------------
     """
 
+    def _default_hr_components(
+        self, ctx: Any, op: str, ruleset_name: str, rule_comp: Any, conditions: List[Any]
+    ) -> Tuple[Any, List[Any]]:
+        """
+        On a ruleset defined on variables, the call can omit the rule and condition
+        components, which then are the variables of the ruleset signature.
+        """
+        if ruleset_name not in de_ruleset_elements:
+            return rule_comp, conditions
+        elements = de_ruleset_elements[ruleset_name]
+        elements = elements if isinstance(elements, list) else [elements]
+        if elements[-1].kind != "DatasetID":  # ValuedomainID
+            if not rule_comp:
+                raise SemanticError("1-1-10-4", op=op)
+            return rule_comp, conditions
+
+        token_info = extract_token_info(ctx)
+        if not rule_comp:
+            rule_comp = Identifier(value=elements[-1].value, kind="ComponentID", **token_info)
+        if not conditions:
+            conditions = [
+                Identifier(value=element.value, kind="ComponentID", **token_info)
+                for element in elements[:-1]
+            ]
+        return rule_comp, conditions
+
     def visitHierarchyFunctions(self, ctx: Any) -> HROperation:
         """
         HIERARCHY LPAREN op=expr COMMA hrName=IDENTIFIER (conditionClause)? (RULE ruleComponent=componentID)? (validationMode)? (inputModeHierarchy)? outputModeHierarchy? RPAREN
@@ -1219,21 +1245,9 @@ class Expr:
                 output = HierarchyOutput(output_str)
 
         conditions = conditions[0] if conditions else []
-
-        if not rule_comp and ruleset_name in de_ruleset_elements:
-            if isinstance(de_ruleset_elements[ruleset_name], list):
-                rule_element = de_ruleset_elements[ruleset_name][-1]
-            else:
-                rule_element = de_ruleset_elements[ruleset_name]
-            if rule_element.kind == "DatasetID":
-                check_hierarchy_rule = rule_element.value
-                rule_comp = Identifier(
-                    value=check_hierarchy_rule,
-                    kind="ComponentID",
-                    **extract_token_info(ctx),
-                )
-            else:  # ValuedomainID
-                raise SemanticError("1-1-10-4", op=op)
+        rule_comp, conditions = self._default_hr_components(
+            ctx, op, ruleset_name, rule_comp, conditions
+        )
 
         return HROperation(
             op=op,
@@ -1338,22 +1352,9 @@ class Expr:
 
         # AST_ASTCONSTRUCTOR.22
         conditions = conditions[0] if conditions else []
-
-        if not rule_comp and ruleset_name in de_ruleset_elements:
-            if isinstance(de_ruleset_elements[ruleset_name], list):
-                rule_element = de_ruleset_elements[ruleset_name][-1]
-            else:
-                rule_element = de_ruleset_elements[ruleset_name]
-
-            if rule_element.kind == "DatasetID":
-                check_hierarchy_rule = rule_element.value
-                rule_comp = Identifier(
-                    value=check_hierarchy_rule,
-                    kind="ComponentID",
-                    **extract_token_info(ctx),
-                )
-            else:  # ValuedomainID
-                raise SemanticError("1-1-10-4", op=op)
+        rule_comp, conditions = self._default_hr_components(
+            ctx, op, ruleset_name, rule_comp, conditions
+        )
 
         return HROperation(
             op=op,

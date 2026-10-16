@@ -1269,16 +1269,14 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         component over a set of data point.
 
         Git Branch: #397.
-        Goal: Rule is provided but condition is not.
+        Goal: Condition and rule are not provided, so the ones of the signature are used.
         """
 
         code = "GL_397_24"
         number_inputs = 1
-        message = "1-1-10-2"
+        references_names = ["1"]
 
-        self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code=message
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_397_25(self):
         """
@@ -3021,3 +3019,97 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1151_1(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Id_1 rule Id_2) is
+                        when Id_1 > 1995 then EU = BE + FR errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r <- check_hierarchy(DS_1, HR_1 invalid);
+
+        Description: On a ruleset defined on variables, the call can omit condition and rule.
+
+        Git Branch: #1151.
+        Goal: Check the call takes the condition and rule variables of the signature.
+        """
+
+        code = "GH_1151_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1151_2(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Id_1 rule Id_2) is
+                        when Id_1 > 1995 then EU = BE + FR
+                    end hierarchical ruleset;
+
+                    DS_r <- hierarchy(DS_1, HR_1);
+
+        Description: On a ruleset defined on variables, the call can omit condition and rule.
+
+        Git Branch: #1151.
+        Goal: Check the call takes the condition and rule variables of the signature.
+        """
+
+        code = "GH_1151_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1151_3(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Id_1 rule Id_2) is
+                        when Id_1 > 1995 then EU = BE + FR errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r <- check_hierarchy(DS_1, HR_1 rule Id_2 invalid);
+
+        Description: On a ruleset defined on variables, the call can omit condition only.
+
+        Git Branch: #1151.
+        Goal: Check the call takes the condition variables of the signature.
+        """
+
+        code = "GH_1151_3"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1151_4(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (valuedomain condition VD_1 rule VD_2) is
+                        when VD_1 > 1995 then EU = BE + FR errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r <- check_hierarchy(DS_1, HR_1 rule Id_2 invalid);
+
+        Description: On a ruleset defined on value domains, the condition is mandatory.
+
+        Git Branch: #1151.
+        Goal: Check the call without condition still raises an error.
+        """
+
+        code = "GH_1151_4"
+        number_inputs = 1
+        error_code = "1-1-10-2"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
