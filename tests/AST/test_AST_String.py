@@ -118,6 +118,22 @@ def test_ast_string_partition_clause(clause):
     assert clause in ASTString().render(create_ast(rendered))
 
 
+@pytest.mark.parametrize(
+    "signature",
+    ["variable condition Id_1 as A_1", "valuedomain condition Id_1 as A_1, Id_2"],
+)
+def test_ast_string_hr_condition_alias(signature):
+    """ASTString must keep the alias of the condition of a hierarchical ruleset (#1150)."""
+    script = (
+        f"define hierarchical ruleset HR_1 ({signature} rule Id_3) is "
+        f"when A_1 > 1995 then EU = BE + FR end hierarchical ruleset;"
+    )
+    condition = signature.split(" ", 1)[1]
+
+    assert condition in ASTString().render(create_ast(script))
+    assert condition in prettify(script)
+
+
 def test_comments_parsing():
     with open(vtl_filepath / "comments.vtl", "r") as file:
         script = file.read()

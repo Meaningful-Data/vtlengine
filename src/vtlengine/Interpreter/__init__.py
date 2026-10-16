@@ -422,8 +422,11 @@ class InterpreterAnalyzer(ASTTemplate):
                 rule.name = (i + 1).__str__()
 
         cond_comp: List[Any] = []
+        cond_variables: List[str] = []
         if isinstance(node.element, list):
-            cond_comp = [x.value for x in node.element[:-1]]
+            # The rules refer to each condition by its alias, the call by its name
+            cond_comp = [x.alias or x.value for x in node.element[:-1]]
+            cond_variables = [x.value for x in node.element[:-1]]
             node.element = node.element[-1]
 
         signature_actual_name = node.element.value
@@ -432,6 +435,7 @@ class InterpreterAnalyzer(ASTTemplate):
             "rules": node.rules,
             "signature": signature_actual_name,
             "condition": cond_comp,
+            "condition_variables": cond_variables,
             "node": node,
         }
 
@@ -1570,11 +1574,15 @@ class InterpreterAnalyzer(ASTTemplate):
 
             cond_info = {}
             for i, cond_comp in enumerate(hr_info["condition"]):
-                if hr_info["node"].signature_type == "variable" and cond_components[i] != cond_comp:
+                cond_variable = hr_info["condition_variables"][i]
+                if (
+                    hr_info["node"].signature_type == "variable"
+                    and cond_components[i] != cond_variable
+                ):
                     raise SemanticError(
                         "1-1-10-6",
                         op=node.op,
-                        expected=cond_comp,
+                        expected=cond_variable,
                         found=cond_components[i],
                     )
                 cond_info[cond_comp] = cond_components[i]

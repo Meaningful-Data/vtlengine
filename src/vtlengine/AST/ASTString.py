@@ -120,7 +120,9 @@ class ASTString(ASTTemplate):
     def visit_HRuleset(self, node: AST.HRuleset) -> None:
         if isinstance(node.element, list):
             sep = nl + tab if self.pretty else " "
-            conditons = ", ".join([str(e.value) for e in node.element[:-1]])
+            conditons = ", ".join(
+                f"{e.value} as {e.alias}" if e.alias else str(e.value) for e in node.element[:-1]
+            )
             signature = (
                 f"{sep}{node.signature_type}{sep}"
                 f"condition {conditons}{sep}rule {node.element[-1].value}"

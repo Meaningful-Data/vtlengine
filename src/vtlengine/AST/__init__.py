@@ -601,11 +601,12 @@ class Operator(AST):
 @dataclass
 class DefIdentifier(AST):
     """
-    DefIdentifier: (value, kind, was_quoted)"""
+    DefIdentifier: (value, kind, was_quoted, alias)"""
 
     value: str
     kind: str
     was_quoted: bool = False
+    alias: Optional[str] = None
 
     __eq__ = AST.ast_equality
 
