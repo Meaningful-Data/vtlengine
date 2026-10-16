@@ -525,11 +525,7 @@ class ASTVisitor:
         token_info = extract_token_info(ctx)
         if conditions:
             identifiers_list = [
-                DefIdentifier(
-                    value=elto.alias if getattr(elto, "alias", None) else elto.value,
-                    kind=kind,
-                    **token_info,
-                )
+                DefIdentifier(value=elto.value, kind=kind, alias=elto.alias, **token_info)
                 for elto in conditions[0]
             ]
             identifiers_list.append(DefIdentifier(value=dataset.text, kind=kind, **token_info))
