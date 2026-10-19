@@ -1,4 +1,5 @@
 import operator
+from collections import Counter
 from copy import copy
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -254,7 +255,7 @@ class Hierarchy(Operators.Operator):
         output: str,
         viral_components: Optional[List[Component]] = None,
         viral_values: Optional[DataFrame] = None,
-        node_children: Optional[Dict[str, List[str]]] = None,
+        node_children: Optional[Dict[str, Tuple[str, List[str]]]] = None,
         rule_component: Optional[str] = None,
     ) -> Dataset:
         dataset_name = VirtualCounter._new_ds_name()
@@ -274,19 +275,24 @@ class Hierarchy(Operators.Operator):
     def _combine_node_viral(
         viral_values: DataFrame,
         viral_names: List[str],
-        node_children: Dict[str, List[str]],
+        node_children: Dict[str, Tuple[str, List[str]]],
         rule_component: str,
         other_ids: List[str],
+        computed_dict: Dict[str, DataFrame],
     ) -> Optional[DataFrame]:
         """Combine child viral values into each computed node via the propagation rule.
 
-        Nodes are processed in topological order (``node_children`` is insertion-ordered by
-        the rule sequence); a child that is itself a computed node reuses its combined value.
+        ``node_children`` maps each rule to the node it computes and the children it
+        combines. Rules are processed in topological order (the mapping is insertion-ordered
+        by the rule sequence); a child that is itself a computed node reuses its combined
+        value. When several rules compute the same node, each one only combines the groups
+        it computed (issue #1142).
         """
         registry = get_current_registry()
+        rules_per_node = Counter(node for node, _ in node_children.values())
         node_viral: Dict[str, DataFrame] = {}
         tagged_frames: List[DataFrame] = []
-        for node, children in node_children.items():
+        for rule_name, (node, children) in node_children.items():
             child_frames = []
             for child in children:
                 if child in node_viral:
@@ -326,7 +332,15 @@ class Hierarchy(Operators.Operator):
                         for va in viral_names
                     }
                 )
-            node_viral[node] = nv
+            if rules_per_node[node] > 1:
+                if rule_name not in computed_dict:
+                    continue
+                if other_ids:
+                    computed_groups = computed_dict[rule_name][other_ids].drop_duplicates()
+                    nv = merge_frames(nv, computed_groups, on=other_ids, how="inner")
+            node_viral[node] = (
+                pd.concat([node_viral[node], nv], ignore_index=True) if node in node_viral else nv
+            )
             tagged = nv.copy()
             tagged[rule_component] = node
             tagged_frames.append(tagged)
@@ -342,7 +356,7 @@ class Hierarchy(Operators.Operator):
         output: str,
         viral_components: Optional[List[Component]] = None,
         viral_values: Optional[DataFrame] = None,
-        node_children: Optional[Dict[str, List[str]]] = None,
+        node_children: Optional[Dict[str, Tuple[str, List[str]]]] = None,
         rule_component: Optional[str] = None,
     ) -> Dataset:
         result = cls.validate(dataset, computed_dict, output, viral_components=viral_components)
@@ -366,7 +380,7 @@ class Hierarchy(Operators.Operator):
         ):
             other_ids = [i for i in dataset.get_identifiers_names() if i != rule_component]
             computed_viral = cls._combine_node_viral(
-                viral_values, viral_names, node_children, rule_component, other_ids
+                viral_values, viral_names, node_children, rule_component, other_ids, computed_dict
             )
             if computed_viral is not None:
                 computed_data = merge_frames(
