@@ -434,6 +434,13 @@ class InterpreterAnalyzer(ASTTemplate):
                 ruleset_name=node.name,
             )
 
+        for rule in node.rules:
+            comparison = cast(AST.HRBinOp, rule.rule.right if rule.rule.op == WHEN else rule.rule)
+            if comparison.op not in HR_COMP_MAPPING:
+                raise SemanticError(
+                    "1-3-1-11", op=comparison.op, rule=rule.name, ruleset_name=node.name
+                )
+
         cond_comp: List[Any] = []
         if isinstance(node.element, list):
             cond_comp = [x.value for x in node.element[:-1]]

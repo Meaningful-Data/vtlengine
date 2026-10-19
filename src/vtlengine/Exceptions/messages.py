@@ -1050,6 +1050,12 @@ centralised_messages = {
         "description": "Occurs when a datapoint has an invalid datatype; a Dataset is expected "
         "but a Scalar was found.",
     },
+    "1-3-1-11": {
+        "message": "Invalid comparison {op} in rule {rule} of Hierarchical Ruleset "
+        "{ruleset_name}, only =, >, <, >= and <= are allowed.",
+        "description": "Raised when a hierarchical rule uses a comparison operator other than "
+        "=, >, <, >= or <=.",
+    },
     "1-3-12": {
         "message": "Default arguments cannot be followed by non-default arguments.",
         "description": "Occurs when a function definition places non-default parameters "

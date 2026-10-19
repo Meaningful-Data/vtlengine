@@ -3298,3 +3298,53 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         references_names = ["1", "2"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1156_1(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (valuedomain rule VD_2) is
+                        R1: TOTAL <> A + B
+                    end hierarchical ruleset;
+
+                    DS_r <- check_hierarchy(DS_1, HR_1 rule Id_2 all);
+
+        Description: The rule compares with <>, which a hierarchical rule does not allow.
+
+        Git Branch: #1156.
+        Goal: Check the semantic error is raised at the ruleset definition.
+        """
+
+        code = "GH_1156_1"
+        number_inputs = 1
+        exception_code = "1-3-1-11"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
+    def test_GH_1156_2(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (valuedomain condition VD_1 as C_1 rule VD_2) is
+                        R1: when C_1 = "X" then TOTAL <> A + B
+                    end hierarchical ruleset;
+
+                    DS_r <- check_hierarchy(DS_1, HR_1 condition Id_1 rule Id_2 all);
+
+        Description: The conditioned rule compares with <>, which a hierarchical rule does not allow.
+
+        Git Branch: #1156.
+        Goal: Check the semantic error is raised at the ruleset definition.
+        """
+
+        code = "GH_1156_2"
+        number_inputs = 1
+        exception_code = "1-3-1-11"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
