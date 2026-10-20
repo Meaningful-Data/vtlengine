@@ -80,6 +80,7 @@ from vtlengine.Operators.Comparison import Between, ExistIn
 from vtlengine.Operators.Conditional import Case, If
 from vtlengine.Operators.General import Eval
 from vtlengine.Operators.HROperators import (
+    EXCLUDE,
     REMOVE,
     HAAssignment,
     Hierarchy,
@@ -2025,6 +2026,24 @@ class InterpreterAnalyzer(ASTTemplate):
         if rule_data is None:
             return Dataset(name=node.value, components=result_components, data=None)
 
+        df = rule_data.copy()
+        code_data = df[other_ids].drop_duplicates().reset_index(drop=True)
+        if not other_ids:
+            # Without extra identifiers there is exactly one (global) group; a
+            # zero-column frame keeps one row per data point otherwise.
+            code_data = code_data.iloc[:1]
+        excluded = pd.Series(False, index=code_data.index)
+        condition = getattr(node, "_right_condition", None)
+        if condition is not None:
+            condition = self.visit(condition)
+            if condition is not None and condition.data is not None:
+                df = df.loc[condition.data.fillna(False).astype(bool)]
+                if other_ids:
+                    keys = pd.MultiIndex.from_frame(df[other_ids].drop_duplicates())
+                    excluded[:] = ~pd.MultiIndex.from_frame(code_data[other_ids]).isin(keys)
+                else:
+                    excluded[:] = len(df) == 0
+
         computed_by = (
             None
             if self.is_hr_rule_left or self.hr_agg_item_rules is None
@@ -2043,28 +2062,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 # a chained assignment, which pandas 3 Copy-on-Write no longer writes
                 # through to `df`.
                 df[me_name] = df[me_name].where(df[me_name].notna(), merged["__input_me__"])
-            self.update_partial_data(df, me_name, node.value)
-            return Dataset(name=node.value, components=result_components, data=df)
-
-        df = rule_data.copy()
-        code_data = df[other_ids].drop_duplicates().reset_index(drop=True)
-        if not other_ids:
-            # Without extra identifiers there is exactly one (global) group; a
-            # zero-column frame keeps one row per data point otherwise.
-            code_data = code_data.iloc[:1]
-        condition = getattr(node, "_right_condition", None)
-        if condition is not None:
-            condition = self.visit(condition)
-            if condition is not None and condition.data is not None:
-                df = df.loc[condition.data]
-                if other_ids:
-                    keys = pd.MultiIndex.from_frame(df[other_ids].drop_duplicates())
-                    mask = pd.MultiIndex.from_frame(code_data[other_ids]).isin(keys)
-                    code_data = code_data.loc[mask]  # type: ignore[index, unused-ignore]
-                else:
-                    code_data = code_data.iloc[: 1 if len(df) else 0]
-
-        if node.value in df[hr_component].values:
+        elif node.value in df[hr_component].values:
             value_data = df[df[hr_component] == node.value]
             if other_ids:
                 merged = merge_frames(
@@ -2082,17 +2080,16 @@ class InterpreterAnalyzer(ASTTemplate):
             df = code_data.copy()
             df[me_name] = REMOVE
         df[hr_component] = node.value
+        if excluded.any():
+            rows = code_data[excluded].assign(**{hr_component: node.value, me_name: EXCLUDE})
+            df = pd.concat([df.drop(index=rows.index, errors="ignore"), rows]).sort_index()
 
         self.update_partial_data(df, me_name, node.value)
         return Dataset(name=node.value, components=result_components, data=df)
 
     def update_partial_data(self, df: pd.DataFrame, measure: str, name: str) -> None:
         if self.compute_partial_data:
-            # partial_null/partial_zero require at least one *existing* involved data
-            # point; a null measure still exists — only the REMOVE sentinel marks
-            # absence. fillna covers pd.NA measures, whose comparison against the
-            # sentinel yields NA instead of True.
-            exists = (df[measure] != REMOVE).fillna(True).astype(bool)
+            exists = ~df[measure].isin([REMOVE, EXCLUDE])
             if self.partial_rule_data is None:
                 self.partial_rule_data = exists
             else:

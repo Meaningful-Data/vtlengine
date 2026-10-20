@@ -3298,3 +3298,101 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         references_names = ["1", "2"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1168_1(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Id_1 rule Id_2) is
+                        EU = BE [Id_1 > 1995] + FR
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition Id_1 rule Id_2 non_null);
+                    ... the same for the other five modes (DS_r2 to DS_r6)
+
+        Description: The condition of BE is FALSE in 1990, where the rule is EU = FR.
+
+        Git Branch: #1168.
+        Goal: Check BE is left out of the rule, not read as a missing data point, in every mode.
+        """
+
+        code = "GH_1168_1"
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4", "5", "6"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1168_2(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Id_1 rule Id_2) is
+                        EU = BE [Id_1 > 1995] + FR
+                    end hierarchical ruleset;
+
+                    DS_r1 <- check_hierarchy(DS_1, HR_1 condition Id_1 rule Id_2 non_null all);
+                    ... the same for the other five modes (DS_r2 to DS_r6)
+
+        Description: The condition of BE is FALSE in 1990, where the rule is EU = FR.
+
+        Git Branch: #1168.
+        Goal: Check BE is left out of the rule, not read as a missing data point, in every mode.
+        """
+
+        code = "GH_1168_2"
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4", "5", "6"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1168_3(self):
+        """
+        HIERARCHICAL RULSET: hierarchy, check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Id_1 rule Id_2) is
+                        EU = BE [Id_1 > 1995] + FR
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition Id_1 rule Id_2 non_null);
+                    DS_r2 <- check_hierarchy(DS_1, HR_1 condition Id_1 rule Id_2 partial_null all);
+                    DS_r3 <- check_hierarchy(DS_1, HR_1 condition Id_1 rule Id_2 always_zero all);
+
+        Description: BE is missing in 2000, where its condition is TRUE.
+
+        Git Branch: #1168.
+        Goal: Check BE is still read as a missing data point where its condition holds.
+        """
+
+        code = "GH_1168_3"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1168_4(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Id_1 rule Id_2) is
+                        EU = FR - BE [Id_1 > 1995];
+                        WORLD = EU [Id_1 > 1995] + US
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition Id_1 rule Id_2 non_null);
+                    DS_r2 <- hierarchy(DS_1, HR_1 condition Id_1 rule Id_2 partial_null);
+
+        Description: A subtracted code item and a computed code item have a condition.
+
+        Git Branch: #1168.
+        Goal: Check both are left out of their rules in 1990, where the conditions are FALSE.
+        """
+
+        code = "GH_1168_4"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
