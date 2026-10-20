@@ -201,7 +201,7 @@ cast_sc_int_str :=
 cast_sc_str_int :=
 	cast("2", integer);
 cast_sc_num_str :=
-	cast(3, string);
+	cast(3.0, string);
 cast_sc_str_num :=
 	cast("4.0", number);
 cast_sc_bool_str :=
@@ -209,7 +209,7 @@ cast_sc_bool_str :=
 cast_sc_int_num :=
 	cast(5, number);
 cast_sc_num_int :=
-	cast(6, integer);
+	cast(6.0, integer);
 cast_sc_str_date :=
 	cast("2020-01-01", date);
 cast_sc_str_time_period :=
@@ -423,7 +423,7 @@ HR_ds :=
 	check_hierarchy(
 		DS_1#Me_num,
 		hr_test
-		rule Id_2);
+		rule Id_2 dataset);
 /*************************************************
 JOIN
 *************************************************/
