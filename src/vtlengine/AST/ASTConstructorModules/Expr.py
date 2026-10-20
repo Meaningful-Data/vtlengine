@@ -1341,11 +1341,7 @@ class Expr:
                 mode_str = Terminals().visitValidationMode(c)
                 validation_mode = ValidationMode(mode_str)
             elif c.rule_index == RC.INPUT_MODE[0]:
-                input_str = Terminals().visitInputMode(c)
-                if input_str == DATASET_PRIORITY:
-                    msg = "Dataset Priority input mode on HR is not implemented"
-                    raise NotImplementedError(msg)
-                input_mode = CHInputMode(input_str)
+                input_mode = CHInputMode(Terminals().visitInputMode(c))
             elif c.rule_index == RC.VALIDATION_OUTPUT[0]:
                 output_str = Terminals().visitValidationOutput(c)
                 output = ValidationOutput(output_str)

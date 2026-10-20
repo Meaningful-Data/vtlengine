@@ -3836,3 +3836,105 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1173_1(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        TOTAL = A + B;
+                        GRAND = TOTAL + C
+                    end hierarchical ruleset;
+
+                    DS_r <- check_hierarchy(DS_1, HR_1 rule Id_2 dataset_priority all);
+
+        Description: TOTAL is missing from DS_1 on Id_1 = 2.
+
+        Git Branch: #1173.
+        Goal: Check the second rule takes TOTAL from the first rule there.
+        """
+
+        code = "GH_1173_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1173_2(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Id_1 rule Id_2) is
+                        R1: when Id_1 = 1 then TOTAL = A + B;
+                        R2: when Id_1 = 2 then TOTAL = D + E;
+                        R3: GRAND = TOTAL + C
+                    end hierarchical ruleset;
+
+                    DS_r <- check_hierarchy(DS_1, HR_1 condition Id_1 rule Id_2 dataset_priority all);
+
+        Description: TOTAL is missing from DS_1, and two rules compute it under different
+        conditions.
+
+        Git Branch: #1173.
+        Goal: Check R3 takes TOTAL from the rule that computes it on each Id_1.
+        """
+
+        code = "GH_1173_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1173_3(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        TOTAL = A + B;
+                        GRAND = TOTAL + C
+                    end hierarchical ruleset;
+
+                    DS_r <- check_hierarchy(DS_1, HR_1 rule Id_2 dataset_priority);
+
+        Description: TOTAL is null in DS_1 on Id_1 = 1.
+
+        Git Branch: #1173.
+        Goal: Check the second rule takes TOTAL from the first rule there, while the first rule
+        validates the TOTAL of DS_1.
+        """
+
+        code = "GH_1173_3"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1173_4(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        R1: TOTAL = A + B;
+                        R2: TOTAL = D + E;
+                        R3: GRAND = TOTAL + C
+                    end hierarchical ruleset;
+
+                    DS_r <- check_hierarchy(DS_1, HR_1 rule Id_2 dataset_priority all);
+
+        Description: TOTAL is missing from DS_1 on Id_1 = 2, where R1 and R2 both compute it.
+
+        Git Branch: #1173.
+        Goal: Check the runtime error is raised.
+        """
+
+        code = "GH_1173_4"
+        number_inputs = 1
+        exception_code = "2-1-10-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )

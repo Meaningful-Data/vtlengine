@@ -1,0 +1,7 @@
+define hierarchical ruleset HR_1 (variable condition Id_1 rule Id_2) is
+    R1: when Id_1 = 1 then TOTAL = A + B;
+    R2: when Id_1 = 2 then TOTAL = D + E;
+    R3: GRAND = TOTAL + C
+end hierarchical ruleset;
+
+DS_r <- check_hierarchy(DS_1, HR_1 condition Id_1 rule Id_2 dataset_priority all);

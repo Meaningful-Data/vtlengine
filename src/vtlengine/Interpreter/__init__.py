@@ -177,6 +177,7 @@ class InterpreterAnalyzer(ASTTemplate):
     hr_agg_item_rules: Optional[Dict[str, List[str]]] = None
     ruleset_mode: Optional[str] = None
     hr_input: Optional[str] = None
+    hr_name: Optional[str] = None
     # DL
     dprs: Optional[Dict[str, Optional[Dict[str, Any]]]] = None
     udos: Optional[Dict[str, Optional[Dict[str, Any]]]] = None
@@ -1541,6 +1542,35 @@ class InterpreterAnalyzer(ASTTemplate):
                 items.extend(self._collect_hr_code_items(child))
         return items
 
+    @staticmethod
+    def _hr_eq_rules(rules: List[AST.HRule]) -> List[AST.HRule]:
+        """The '=' rules of a ruleset, with or without a condition: they compute code items."""
+        return [
+            rule
+            for rule in rules
+            if rule.rule.op == EQ
+            or rule.rule.op == WHEN
+            and cast(AST.HRBinOp, rule.rule.right).op == EQ
+        ]
+
+    @staticmethod
+    def _sort_hr_rules(
+        node: AST.HROperation, hr_info: Dict[str, Any], rules: List[AST.HRule]
+    ) -> List[AST.HRule]:
+        """Order the '=' rules so each code item is computed before the rules that read it."""
+        hierarchy_ast = AST.HRuleset(
+            name=node.ruleset_name,
+            signature_type=hr_info["node"].signature_type,
+            element=hr_info["node"].element,
+            rules=rules,
+            line_start=node.line_start,
+            line_stop=node.line_stop,
+            column_start=node.column_start,
+            column_stop=node.column_stop,
+        )
+        HRDAGAnalyzer.sort_hierarchy_rules(hierarchy_ast)
+        return hierarchy_ast.rules
+
     def visit_HROperation(self, node: AST.HROperation) -> None:  # noqa: C901
         """Handle hierarchy and check_hierarchy operators."""
         # Visit dataset and get component if present
@@ -1601,11 +1631,7 @@ class InterpreterAnalyzer(ASTTemplate):
             if node.op == HIERARCHY:
                 # Only the '=' rules compute code items. The ruleset keeps all its rules for
                 # a later check_hierarchy (issue #1142).
-                rules = [
-                    rule
-                    for rule in rules
-                    if rule.rule.op == EQ or rule.rule.op == WHEN and rule.rule.right.op == EQ
-                ]
+                rules = self._hr_eq_rules(rules)
 
                 if len(rules) == 0:
                     raise SemanticError("1-1-10-5")
@@ -1614,24 +1640,16 @@ class InterpreterAnalyzer(ASTTemplate):
                 # (issue #1142), but a rule without a condition would overlap the others.
                 item_rules: Dict[str, List[AST.HRule]] = {}
                 for rule in rules:
-                    left_part = rule.rule.left if rule.rule.op == EQ else rule.rule.right.left
+                    eq_node = (
+                        rule.rule if rule.rule.op == EQ else cast(AST.HRBinOp, rule.rule.right)
+                    )
+                    left_part = eq_node.left
                     item_rules.setdefault(left_part.value, []).append(rule)
                 for code_item, defining_rules in item_rules.items():
                     if len(defining_rules) > 1 and any(r.rule.op == EQ for r in defining_rules):
                         raise SemanticError("1-1-10-10", ruleset=hr_name, code_item=code_item)
 
-                hierarchy_ast = AST.HRuleset(
-                    name=hr_name,
-                    signature_type=hr_info["node"].signature_type,
-                    element=hr_info["node"].element,
-                    rules=rules,
-                    line_start=node.line_start,
-                    line_stop=node.line_stop,
-                    column_start=node.column_start,
-                    column_stop=node.column_stop,
-                )
-                HRDAGAnalyzer.sort_hierarchy_rules(hierarchy_ast)
-                rules = hierarchy_ast.rules
+                rules = self._sort_hr_rules(node, hr_info, rules)
 
                 # Map each rule to its computed node and the code items it combines, for viral
                 # combination at the final evaluate (outside the rule handling, issue #877).
@@ -1663,6 +1681,7 @@ class InterpreterAnalyzer(ASTTemplate):
             self.ruleset_signature = {**{"RULE_COMPONENT": component}, **cond_info}
             self.ruleset_mode = mode
             self.hr_input = input_
+            self.hr_name = hr_name
             rule_output_values = {}
 
             if node.op == HIERARCHY:
@@ -1676,6 +1695,13 @@ class InterpreterAnalyzer(ASTTemplate):
                 self._check_hr_overlaps(hr_name, other_ids)
                 self.hr_agg_item_rules = None
             else:
+                if input_ == DATASET_PRIORITY:
+                    self.is_from_hr_agg = True
+                    self.hr_agg_rules_computed = {}
+                    self.hr_agg_item_rules = {}
+                    for rule in self._sort_hr_rules(node, hr_info, self._hr_eq_rules(rules)):
+                        self.visit(rule)
+                    self.is_from_hr_agg = False
                 self.is_from_hr_val = True
                 for rule in rules:
                     rule_output_values[rule.name] = {
@@ -1684,12 +1710,15 @@ class InterpreterAnalyzer(ASTTemplate):
                         "output": self.visit(rule),
                     }
                 self.is_from_hr_val = False
+                self.hr_agg_rules_computed = None
+                self.hr_agg_item_rules = None
 
             # Clean up interpreter state
             self.ruleset_signature = None
             self.ruleset_dataset = None
             self.ruleset_mode = None
             self.hr_input = None
+            self.hr_name = None
 
             # Final evaluation
             if node.op == CHECK_HIERARCHY:
@@ -1854,7 +1883,6 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.hr_agg_rules_computed is not None
                 and self.hr_agg_item_rules is not None
                 and rule_result.data is not None
-                and not (self.hr_input == DATASET_PRIORITY and node.rule.op != EQ)
             ):
                 # Keyed by rule: several rules may compute the same code item (issue #1142).
                 # A rule that computes no data point is kept too: with input rule, the later
@@ -1908,7 +1936,10 @@ class InterpreterAnalyzer(ASTTemplate):
         self.compute_partial_data &= not self.is_from_hr_agg or node.op not in HR_COMP_MAPPING
         # The left code item of a hierarchy rule is the one this rule computes: it does not
         # read what another rule computed for it (issue #1142).
-        self.is_hr_rule_left = self.is_from_hr_agg and node.op in HR_COMP_MAPPING
+        # check_hierarchy validates the left code item as the operand gives it (issue #1173).
+        self.is_hr_rule_left = (self.is_from_hr_agg or self.is_from_hr_val) and (
+            node.op in HR_COMP_MAPPING
+        )
         left_operand = self.visit(node.left)
         self.is_hr_rule_left = False
         self.compute_partial_data = self.ruleset_mode in (PARTIAL_NULL, PARTIAL_ZERO)
@@ -2077,7 +2108,13 @@ class InterpreterAnalyzer(ASTTemplate):
         )
         if computed_by:
             computed = self._hr_computed_item(computed_by, rule_data, other_ids)
-            if self.hr_input in (RULE_PRIORITY, DATASET_PRIORITY):
+            if self.hr_input == DATASET_PRIORITY:
+                in_operand = df.index[~df[me_name].isin([REMOVE]) & df[me_name].notna()]
+                computed = computed.drop(index=in_operand, errors="ignore")
+                if computed.index.has_duplicates:
+                    raise RunTimeError("2-1-10-1", ruleset=self.hr_name, code_item=node.value)
+                computed = pd.concat([computed, df.drop(index=computed.index, errors="ignore")])
+            elif self.hr_input == RULE_PRIORITY:
                 # The operand's data point where no rule computed a non-null one; a null
                 # computed one is kept where the operand has none
                 in_operand = df.index[~df[me_name].isin([REMOVE])]
@@ -2137,7 +2174,9 @@ class InterpreterAnalyzer(ASTTemplate):
                 )
                 overlap = bool(keys.duplicated().any())
             else:
-                overlap = True
+                # A single (global) data point, which a rule that computed nothing lacks
+                computing = [n for n in rule_names if len(self.hr_agg_rules_computed[n]) > 0]
+                overlap = len(computing) > 1
             if overlap:
                 raise RunTimeError("2-1-10-1", ruleset=ruleset, code_item=code_item)
 
