@@ -609,12 +609,6 @@ centralised_messages = {
         "description": "Occurs when operands involve non-numerical Measures "
         "where numerical are required.",
     },
-    "1-1-10-9": {
-        "message": "Invalid signature for the ruleset {ruleset}. On variables, condComp and "
-        "ruleComp must be the same",
-        "description": "Raised when condComp and ruleComp in a ruleset signature do not "
-        "match as required.",
-    },
     "1-1-10-10": {
         "message": "Duplicated EQ rules on the Hierarchy Roll-up {ruleset}. "
         "Check the EQ rules: {rule}.",

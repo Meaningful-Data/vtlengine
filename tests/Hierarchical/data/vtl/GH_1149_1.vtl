@@ -1,0 +1,5 @@
+define hierarchical ruleset HR_1 (variable condition Id_1, Id_2 rule Id_3) is
+    when Id_1 > 1995 and Id_2 = "S1" then EU = BE + FR errorcode "E1" errorlevel 1
+end hierarchical ruleset;
+
+DS_r <- check_hierarchy(DS_1, HR_1 condition Id_1, Id_2 rule Id_3 invalid);
