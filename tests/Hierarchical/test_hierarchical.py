@@ -3392,3 +3392,78 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1155_1(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (valuedomain condition VD_1 rule VD_2) is
+                        when Id_3 = "X" then TOTAL = A + B
+                    end hierarchical ruleset;
+
+                    DS_r <- check_hierarchy(DS_1, HR_1 condition Id_1 rule Id_2 all);
+
+        Description: The condition of the rule uses Id_3, which is not in the signature.
+
+        Git Branch: #1155.
+        Goal: Check the semantic error is raised at the ruleset definition.
+        """
+
+        code = "GH_1155_1"
+        number_inputs = 1
+        exception_code = "1-3-1-10"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
+    def test_GH_1155_2(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (valuedomain condition VD_1 rule VD_2) is
+                        when VD_1 = "X" then TOTAL = A [Id_3 = "Y"] + B
+                    end hierarchical ruleset;
+
+                    DS_r <- check_hierarchy(DS_1, HR_1 condition Id_1 rule Id_2 all);
+
+        Description: The condition of the code item A uses Id_3, which is not in the signature.
+
+        Git Branch: #1155.
+        Goal: Check the semantic error is raised at the ruleset definition.
+        """
+
+        code = "GH_1155_2"
+        number_inputs = 1
+        exception_code = "1-3-1-10"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
+    def test_GH_1155_3(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (valuedomain condition VD_1 as C_1 rule VD_2) is
+                        when VD_1 = "X" then TOTAL = A + B
+                    end hierarchical ruleset;
+
+                    DS_r <- check_hierarchy(DS_1, HR_1 condition Id_1 rule Id_2 all);
+
+        Description: The condition uses VD_1, but the signature declares it with the alias C_1.
+
+        Git Branch: #1155.
+        Goal: Check the semantic error is raised at the ruleset definition.
+        """
+
+        code = "GH_1155_3"
+        number_inputs = 1
+        exception_code = "1-3-1-10"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
