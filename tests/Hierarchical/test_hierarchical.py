@@ -1480,6 +1480,52 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
             code=code, number_inputs=number_inputs, references_names=references_names, text=rendered
         )
 
+    def test_GH_1141_1(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (valuedomain condition VD_2 as C_2
+                        rule VD_1) is
+                        when C_2 = "X" then TOTAL = A + B
+                    end hierarchical ruleset;
+
+                    DS_r <- check_hierarchy(DS_1, HR_1 condition Id_2 rule Id_1 all);
+
+        Description: A rule whose condition is FALSE for Id_2 = "Y" gives no data point there.
+
+        Git Branch: #1141.
+        Goal: Check output all returns only the data points where the condition is TRUE.
+        """
+        code = "GH_1141_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1141_2(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (valuedomain condition VD_2 as C_2
+                        rule VD_1) is
+                        when C_2 = "X" then TOTAL = A + B
+                    end hierarchical ruleset;
+
+                    DS_r <- check_hierarchy(DS_1, HR_1 condition Id_2 rule Id_1 all_measures);
+
+        Description: A rule whose condition is FALSE for Id_2 = "Y" gives no data point there.
+
+        Git Branch: #1141.
+        Goal: Check output all_measures returns only the data points where the condition is TRUE.
+        """
+        code = "GH_1141_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
     """
@@ -3296,6 +3342,54 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         code = "GH_1142_11"
         number_inputs = 1
         references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1141_3(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (valuedomain condition VD_2 as C_2
+                        rule VD_1) is
+                        when C_2 = "X" then TOTAL = A + B
+                    end hierarchical ruleset;
+
+                    DS_r <- hierarchy(DS_1, HR_1 condition Id_2 rule Id_1 always_zero);
+
+        Description: A rule whose condition is FALSE for Id_2 = "Y" computes nothing there.
+
+        Git Branch: #1141.
+        Goal: Check no null TOTAL is computed where the condition is FALSE.
+        """
+        code = "GH_1141_3"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1141_4(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (valuedomain condition VD_2 as C_2
+                        rule VD_1) is
+                        when C_2 = "X" then TOTAL = A + B;
+                        GRAND = TOTAL + C
+                    end hierarchical ruleset;
+
+                    DS_r <- hierarchy(DS_1, HR_1 condition Id_2 rule Id_1 always_zero rule computed);
+
+        Description: With input rule, GRAND takes TOTAL from the first rule, which computes no
+        TOTAL for Id_2 = "Y", so TOTAL counts as missing there.
+
+        Git Branch: #1141.
+        Goal: Check the next rule does not read the dataset TOTAL where the rule gives none.
+        """
+        code = "GH_1141_4"
+        number_inputs = 1
+        references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
