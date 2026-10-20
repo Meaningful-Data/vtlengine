@@ -513,7 +513,7 @@ class Terminals:
         """
         The type that outputParameterType declares, read as visitInputParameterType reads a
         parameter type, or None when a parameter type cannot represent it (a value domain,
-        a type constraint or not null).
+        a type constraint, not null or a multiplicity modifier).
         """
         c = ctx.children[0]
         try:
@@ -524,6 +524,7 @@ class Terminals:
             elif not c.is_terminal and c.ctx_id == RC.COMPONENT_TYPE:
                 return self.visitComponentType(c)
         except (NotImplementedError, SyntaxError):
+            # The type visitors reject these forms, so only output_type describes the result
             pass
         return None
 
