@@ -2,7 +2,7 @@ import csv
 from copy import copy, deepcopy
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Type, Union, cast
+from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Type, Union, cast
 
 import pandas as pd
 
@@ -116,6 +116,18 @@ from vtlengine.ViralPropagation import (
     get_current_registry,
     set_current_registry,
 )
+
+
+def _var_id_names(node: Any) -> Iterator[str]:
+    """Yield the names of the VarID nodes in a subtree, including the code item conditions."""
+    if isinstance(node, AST.VarID):
+        yield node.value
+    elif isinstance(node, list):
+        for child in node:
+            yield from _var_id_names(child)
+    elif isinstance(node, AST.AST):
+        for child in vars(node).values():
+            yield from _var_id_names(child)
 
 
 # noinspection PyTypeChecker
@@ -438,6 +450,11 @@ class InterpreterAnalyzer(ASTTemplate):
         if isinstance(node.element, list):
             cond_comp = [x.value for x in node.element[:-1]]
             node.element = node.element[-1]
+
+        for rule in node.rules:
+            for comp_name in _var_id_names(rule.rule):
+                if comp_name not in cond_comp:
+                    raise SemanticError("1-3-1-10", comp_name=comp_name, ruleset_name=node.name)
 
         signature_actual_name = node.element.value
 
