@@ -1050,6 +1050,12 @@ centralised_messages = {
         "description": "Occurs when a datapoint has an invalid datatype; a Dataset is expected "
         "but a Scalar was found.",
     },
+    "1-3-1-10": {
+        "message": "Component {comp_name} used in a condition of Hierarchical Ruleset "
+        "{ruleset_name} is not declared in the condition of its signature.",
+        "description": "Raised when a hierarchical ruleset condition refers to a component "
+        "that is not declared in the condition of the ruleset signature.",
+    },
     "1-3-12": {
         "message": "Default arguments cannot be followed by non-default arguments.",
         "description": "Occurs when a function definition places non-default parameters "
