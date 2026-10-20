@@ -4,7 +4,7 @@ define datapoint ruleset signValidation(variable ACCOUNTING_ENTRY as AE, INT_ACC
 				AE = "C" and IAI = "G"
 			then
 				O > 0
-			errorcode  "sign1c"
+			errorcode "sign1c"
 			errorlevel 1;
 
 		sign2c:
@@ -12,7 +12,7 @@ define datapoint ruleset signValidation(variable ACCOUNTING_ENTRY as AE, INT_ACC
 				AE = "C" and IAI = "GA"
 			then
 				O > 0
-			errorcode  "sign2c"
+			errorcode "sign2c"
 			errorlevel 1;
 
 		sign3c:
@@ -20,7 +20,7 @@ define datapoint ruleset signValidation(variable ACCOUNTING_ENTRY as AE, INT_ACC
 				AE = "C" and IAI = "S"
 			then
 				O > 0
-			errorcode  "sign3c"
+			errorcode "sign3c"
 			errorlevel 1;
 
 		sign4c:
@@ -28,7 +28,7 @@ define datapoint ruleset signValidation(variable ACCOUNTING_ENTRY as AE, INT_ACC
 				AE = "C" and IAI = "IN1"
 			then
 				O > 0
-			errorcode  "sign4c"
+			errorcode "sign4c"
 			errorlevel 2;
 
 		sign9:
@@ -36,7 +36,7 @@ define datapoint ruleset signValidation(variable ACCOUNTING_ENTRY as AE, INT_ACC
 				IAI = "D4Q" and FC = "D" and IA = "FL"
 			then
 				O > 0
-			errorcode  "sign9"
+			errorcode "sign9"
 			errorlevel 3;
 
 		sign10:
@@ -44,7 +44,7 @@ define datapoint ruleset signValidation(variable ACCOUNTING_ENTRY as AE, INT_ACC
 				IAI = "D45" and FC = "P" and IA = "F"
 			then
 				O > 0
-			errorcode  "sign10"
+			errorcode "sign10"
 			errorlevel 4
 end datapoint ruleset;
 

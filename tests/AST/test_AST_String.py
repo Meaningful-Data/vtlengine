@@ -41,6 +41,7 @@ params = [
     "GH_1164.vtl",
     "GH_1179.vtl",
     "GH_1180.vtl",
+    "GH_1181.vtl",
 ]
 
 params_prettier = [
@@ -74,6 +75,7 @@ params_prettier = [
     ("GH_1164.vtl", "reference_GH_1164.vtl"),
     ("GH_1179.vtl", "reference_GH_1179.vtl"),
     ("GH_1180.vtl", "reference_GH_1180.vtl"),
+    ("GH_1181.vtl", "reference_GH_1181.vtl"),
 ]
 
 POSITION_FIELDS = {"line_start", "column_start", "line_stop", "column_stop"}
@@ -185,8 +187,9 @@ def test_comments_end_line_parsing():
     assert ast.children[1].line_stop == 2
 
 
-def test_check_ast_string_output():
-    with open(vtl_filepath / "comments.vtl", "r") as file:
+@pytest.mark.parametrize("filename", ["comments.vtl", "GH_1181.vtl"])
+def test_check_ast_string_output(filename):
+    with open(vtl_filepath / filename, "r") as file:
         script = file.read()
 
     ast = create_ast_with_comments(script)
@@ -210,6 +213,16 @@ def test_prettier(filename, expected):
     expected_input_ast = create_ast(expected_script)
     assert normalize_lines_in_text(result_script) == normalize_lines_in_text(expected_script)
     assert ast_difference(input_ast, expected_input_ast) is None
+
+
+@pytest.mark.parametrize("filename, expected", params_prettier)
+def test_prettier_no_trailing_whitespace(filename, expected):
+    with open(prettier_path / filename, "r") as file:
+        script = file.read()
+
+    lines = prettify(script).splitlines()
+
+    assert [line for line in lines if line != line.rstrip()] == []
 
 
 @pytest.mark.parametrize("filename", params)
