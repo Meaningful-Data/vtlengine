@@ -1,4 +1,5 @@
 import copy
+import re
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any, Optional, Tuple, Union
@@ -56,11 +57,19 @@ from vtlengine.AST.Grammar.tokens import (
     VIRAL_ATTRIBUTE,
 )
 from vtlengine.DataTypes import SCALAR_TYPES_CLASS_REVERSE
-from vtlengine.Model import Component, Dataset
+from vtlengine.Model import Component, Dataset, Scalar
 
 nl = "\n"
 tab = "\t"
 RESERVED_WORDS = {x.replace("'", ""): x for x in LITERAL_NAMES}
+# A name the lexer reads as an IDENTIFIER without quotes (VtlTokens.g4)
+UNQUOTED_NAME = re.compile(
+    r"(?:[0-9][A-Za-z0-9_.]*)?[A-Za-z][A-Za-z0-9_.]*"
+    r"|[A-Za-z_][A-Za-z0-9_.]*:[A-Za-z_][A-Za-z0-9_.]*"
+    r"(?:\((?:[0-9]+(?:\.[0-9]+)*(?:\.[_+*~])?|[_+*~])\))?(?::[.A-Za-z0-9_]+)?"
+)
+# String literals and quoted names, which pretty printing must not split
+QUOTED_TEXT = re.compile(r"(\"[^\"]*\"|'[^']*')")
 
 
 def _format_number(value: float) -> str:
@@ -101,6 +110,23 @@ def _format_reserved_word(value: str):
     if value in RESERVED_WORDS:
         return RESERVED_WORDS[value]
     return value
+
+
+def _format_name(value: str) -> str:
+    """A name written so that it reads back as the same name.
+
+    The parser drops the quotes around a name, so they go back on reserved words and
+    on any name the lexer would not read as one identifier, such as 'Me 1'.
+    """
+    if value not in RESERVED_WORDS and not UNQUOTED_NAME.fullmatch(value):
+        return f"'{value}'"
+    return _format_reserved_word(value)
+
+
+def _replace_outside_quotes(text: str, old: str, new: str) -> str:
+    """text.replace(old, new), leaving string literals and quoted names as they are."""
+    parts = QUOTED_TEXT.split(text)
+    return "".join(part if i % 2 else part.replace(old, new) for i, part in enumerate(parts))
 
 
 @dataclass
@@ -218,9 +244,9 @@ class ASTString(ASTTemplate):
             return vtl_script
 
     def visit_DPRIdentifier(self, node: AST.DPRIdentifier) -> str:
-        vtl_script = f"{node.value}"
+        vtl_script = _format_name(node.value)
         if node.alias is not None:
-            vtl_script += f" as {node.alias}"
+            vtl_script += f" as {_format_name(node.alias)}"
         return vtl_script
 
     def visit_DPRuleset(self, node: AST.DPRuleset) -> None:
@@ -280,9 +306,11 @@ class ASTString(ASTTemplate):
         if node.has_default:
             clauses_strs.append(f"else {self._vp_constant(node.default_value)}")
 
+        name = _format_name(node.name)
+        target = _format_name(node.target)
         if self.pretty:
             self.vtl_script += (
-                f"define viral propagation {node.name}({node.signature_type} {node.target}) is{nl}"
+                f"define viral propagation {name}({node.signature_type} {target}) is{nl}"
             )
             for i, c in enumerate(clauses_strs):
                 self.vtl_script += f"{tab}{c}"
@@ -294,8 +322,8 @@ class ASTString(ASTTemplate):
         else:
             clauses_joined = ";".join(clauses_strs)
             self.vtl_script += (
-                f"define viral propagation {node.name} "
-                f"({node.signature_type} {node.target}) is "
+                f"define viral propagation {name} "
+                f"({node.signature_type} {target}) is "
                 f"{clauses_joined} "
                 f"end viral propagation;"
             )
@@ -309,10 +337,12 @@ class ASTString(ASTTemplate):
             argument_type = "dataset"
         elif isinstance(node.type_, Component):
             argument_type = "component"
+        elif isinstance(node.type_, Scalar):
+            argument_type = "scalar"
         else:
             argument_type = node.type_.__name__.lower()
 
-        name = _format_reserved_word(node.name)
+        name = _format_name(node.name)
 
         return f"{name} {argument_type}{default}"
 
@@ -324,8 +354,8 @@ class ASTString(ASTTemplate):
             self.vtl_script += f"\treturns {node.output_type.lower()} is{nl}"
             expression = self.visit(node.expression)
             if "(" in expression:
-                expression = expression.replace("(", f"({nl}{tab * 2}")
-                expression = expression.replace(")", f"{nl}{tab * 2})")
+                expression = _replace_outside_quotes(expression, "(", f"({nl}{tab * 2}")
+                expression = _replace_outside_quotes(expression, ")", f"{nl}{tab * 2})")
 
             self.vtl_script += f"{tab * 2}{expression}{nl}"
             self.vtl_script += f"end operator;{nl}"
@@ -490,54 +520,28 @@ class ASTString(ASTTemplate):
 
     def visit_HROperation(self, node: AST.HROperation) -> str:
         operand = self.visit(node.dataset)
-        rule_name = node.ruleset_name
+        clause_sep = f"{nl}{tab * 2}" if self.pretty else " "
 
-        # Handle case with no rule component
-        if node.rule_component is None:
-            if self.pretty:
-                return f"{node.op}({nl}{tab * 2}{operand},{nl}{tab * 2}{rule_name}{nl})"
-            else:
-                return f"{node.op}({operand}, {rule_name})"
-
-        component_name = self.visit(node.rule_component)
-
-        # Build condition string
-        condition_str = ""
+        # The condition and rule clauses are optional, independently of each other
+        clauses = [node.ruleset_name]
         if node.conditions:
-            condition_str += "condition "
-            conditions = [self.visit(condition) for condition in node.conditions]
-            condition_str += ", ".join(conditions)
-            condition_str += f"{nl}{tab * 2}" if self.pretty else " "
+            conditions = ", ".join([self.visit(condition) for condition in node.conditions])
+            clauses.append(f"condition {conditions}")
+        if node.rule_component is not None:
+            clauses.append(f"rule {self.visit(node.rule_component)}")
 
-        # Determine defaults based on operator
-        default_input = "dataset" if node.op == CHECK_HIERARCHY else "rule"
-        default_output = "invalid" if node.op == CHECK_HIERARCHY else "computed"
-
-        # Build mode strings (only include if different from default)
-        param_mode = ""
-        if node.validation_mode is not None and node.validation_mode.value != "non_null":
-            param_mode = f" {node.validation_mode.value}"
-
-        param_input = ""
-        if node.input_mode is not None and node.input_mode.value != default_input:
-            param_input = f" {node.input_mode.value}"
-
-        param_output = ""
-        if node.output is not None and node.output.value != default_output:
-            param_output = f" {node.output.value}"
+        # Modes are written whenever the script wrote them, defaults included
+        modes = "".join(
+            f" {mode.value}"
+            for mode in (node.validation_mode, node.input_mode, node.output)
+            if mode is not None
+        )
+        body = f"{clause_sep.join(clauses)}{modes}"
 
         if self.pretty:
-            return (
-                f"{node.op}({nl}{tab * 2}{operand},"
-                f"{nl}{tab * 2}{rule_name}{nl}{tab * 2}{condition_str}rule "
-                f"{component_name}"
-                f"{param_mode}{param_input}{param_output})"
-            )
-        else:
-            return (
-                f"{node.op}({operand}, {rule_name} {condition_str}rule {component_name}"
-                f"{param_mode}{param_input}{param_output})"
-            )
+            closing = "" if node.rule_component is not None else nl
+            return f"{node.op}({nl}{tab * 2}{operand},{nl}{tab * 2}{body}{closing})"
+        return f"{node.op}({operand}, {body})"
 
     def visit_DPValidation(self, node: AST.DPValidation) -> str:
         operand = self.visit(node.dataset)
@@ -546,18 +550,18 @@ class ASTString(ASTTemplate):
         # Build components string if present
         components_str = ""
         if node.components:
-            components_str = " components " + ", ".join(node.components)
+            components_str = " components " + ", ".join(
+                [_format_name(component) for component in node.components]
+            )
 
-        # Output mode (only include if not default "invalid")
+        # Output mode (written whenever the script wrote it, default "invalid" included)
         output_str = ""
-        if node.output is not None and node.output.value != "invalid":
+        if node.output is not None:
             output_str = f" {node.output.value}"
 
         if self.pretty:
-            # In pretty mode, output line always present (empty if default invalid)
-            output_line = (
-                node.output.value if (node.output and node.output.value != "invalid") else ""
-            )
+            # In pretty mode, output line always present (empty if not written)
+            output_line = node.output.value if node.output is not None else ""
             return (
                 f"{CHECK_DATAPOINT}({nl}{tab}{operand},{nl}{tab}{rule_name}"
                 f"{components_str}{nl}{tab}{output_line}{nl})"
@@ -572,14 +576,16 @@ class ASTString(ASTTemplate):
             return "", ""
         grouping = ""
         if node.grouping is not None:
-            grouping_sep = ", " if len(node.grouping) > 1 else ""
-            grouping_values = []
+            names = []
+            time_aggregations = []
             for grouping_value in node.grouping:
                 if isinstance(grouping_value, TimeAggregation):
-                    grouping_values.append(self.visit(grouping_value))
+                    time_aggregations.append(self.visit(grouping_value))
                 else:
-                    grouping_values.append(_format_reserved_word(grouping_value.value))
-            grouping = f" {node.grouping_op} {grouping_sep.join(grouping_values)}"
+                    names.append(_format_name(grouping_value.value))
+            # time_agg follows the components without a comma: group by Id_1 time_agg("A")
+            grouping_values = [", ".join(names)] if names else []
+            grouping = f" {node.grouping_op} {' '.join(grouping_values + time_aggregations)}"
         having = f" {self.visit(node.having_clause)}" if node.having_clause is not None else ""
         return grouping, having
 
@@ -597,7 +603,7 @@ class ASTString(ASTTemplate):
             partition = "partition except all"
         elif node.partition_by:
             keyword = "except" if node.partition_op == "except" else "by"
-            partition_values = [_format_reserved_word(x) for x in node.partition_by]
+            partition_values = [_format_name(x) for x in node.partition_by]
             partition = f"partition {keyword} {', '.join(partition_values)}"
         order = ""
         if node.order_by:
@@ -673,8 +679,7 @@ class ASTString(ASTTemplate):
         nvl_str = ""
         if node.nvl:
             nvl_parts = [
-                f"nvl({_format_reserved_word(p.component)}, {self.visit(p.default)})"
-                for p in node.nvl
+                f"nvl({_format_name(p.component)}, {self.visit(p.default)})" for p in node.nvl
             ]
             nvl_str = ", " + ", ".join(nvl_parts)
         if self.pretty:
@@ -683,7 +688,7 @@ class ASTString(ASTTemplate):
             using = ""
             if node.using is not None:
                 using_sep = ", " if len(node.using) > 1 else ""
-                using_values = [_format_reserved_word(x) for x in node.using]
+                using_values = [_format_name(x) for x in node.using]
                 using = f"using {using_sep.join(using_values)}{nvl_str}"
             return f"{node.op}({nl}{tab * 2}{clauses}{nl}{tab * 2}{using})"
         else:
@@ -692,7 +697,7 @@ class ASTString(ASTTemplate):
             using = ""
             if node.using is not None:
                 using_sep = ", " if len(node.using) > 1 else ""
-                using_values = [_format_reserved_word(x) for x in node.using]
+                using_values = [_format_name(x) for x in node.using]
                 using = f" using {using_sep.join(using_values)}{nvl_str}"
             return f"{node.op}({clauses}{using})"
 
@@ -725,11 +730,12 @@ class ASTString(ASTTemplate):
             condition = self.visit(node.children[0])
             if " and " in condition or " or " in condition:
                 for op in (" and ", " or "):
-                    condition = condition.replace(op, f"{op}{nl}{tab * 5}")
+                    condition = _replace_outside_quotes(condition, op, f"{op}{nl}{tab * 5}")
             body = f"{nl}{tab * 4}{condition}{nl}{tab * 2}"
         else:
             body = child_sep.join([self.visit(x) for x in node.children])
         if self._in_join_body(node) and node.op in [
+            AGGREGATE,
             CALC,
             DROP,
             FILTER,
@@ -750,7 +756,7 @@ class ASTString(ASTTemplate):
                 return f"{dataset}[{node.op} {body}]"
 
     def visit_RenameNode(self, node: AST.RenameNode) -> str:
-        return f"{node.old_name} to {node.new_name}"
+        return f"{_format_name(node.old_name)} to {_format_name(node.new_name)}"
 
     def visit_TimeAggregation(self, node: AST.TimeAggregation) -> str:
         if node.period_to_ref is not None:
@@ -799,10 +805,10 @@ class ASTString(ASTTemplate):
     # ---------------------- Constants and IDs ----------------------
 
     def visit_VarID(self, node: AST.VarID) -> str:
-        return _format_reserved_word(node.value)
+        return _format_name(node.value)
 
     def visit_Identifier(self, node: AST.Identifier) -> Any:
-        return _format_reserved_word(node.value)
+        return _format_name(node.value)
 
     def visit_Constant(self, node: AST.Constant) -> str:
         if node.value is None:
@@ -848,8 +854,8 @@ class ASTString(ASTTemplate):
 
     def visit_OrderBy(self, node: AST.OrderBy) -> str:
         if node.order == "asc":
-            return f"{_format_reserved_word(node.component)}"
-        return f"{_format_reserved_word(node.component)} {node.order}"
+            return f"{_format_name(node.component)}"
+        return f"{_format_name(node.component)} {node.order}"
 
     def visit_Comment(self, node: AST.Comment) -> None:
         value = copy.copy(node.value)

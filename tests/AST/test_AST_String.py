@@ -1,9 +1,10 @@
+from dataclasses import fields
 from pathlib import Path
 
 import pytest
 
 from vtlengine.API import create_ast, prettify
-from vtlengine.AST import Comment
+from vtlengine.AST import AST, Comment
 from vtlengine.AST.ASTComment import create_ast_with_comments
 from vtlengine.AST.ASTString import ASTString
 
@@ -38,6 +39,7 @@ params = [
     "join_body_clauses.vtl",
     "GH_987.vtl",
     "GH_1164.vtl",
+    "GH_1179.vtl",
 ]
 
 params_prettier = [
@@ -69,7 +71,40 @@ params_prettier = [
     ("viral_propagation.vtl", "reference_viral_propagation.vtl"),
     ("GH_987.vtl", "reference_GH_987.vtl"),
     ("GH_1164.vtl", "reference_GH_1164.vtl"),
+    ("GH_1179.vtl", "reference_GH_1179.vtl"),
 ]
+
+POSITION_FIELDS = {"line_start", "column_start", "line_stop", "column_stop"}
+
+
+def ast_difference(expected, actual, path="ast"):
+    """Where two ASTs differ, or None when they are the same.
+
+    AST.__eq__ skips children and Python takes 2 == 2.0, so neither tells whether a
+    rendered script reads back as the script it came from.
+    """
+    if type(expected) is not type(actual):
+        return f"{path}: {expected!r} != {actual!r}"
+    if isinstance(expected, AST):
+        for field in fields(expected):
+            if field.name not in POSITION_FIELDS:
+                difference = ast_difference(
+                    getattr(expected, field.name),
+                    getattr(actual, field.name),
+                    f"{path}.{field.name}",
+                )
+                if difference is not None:
+                    return difference
+        return None
+    if isinstance(expected, (list, tuple)):
+        if len(expected) != len(actual):
+            return f"{path}: {len(expected)} != {len(actual)} elements"
+        for i, (expected_item, actual_item) in enumerate(zip(expected, actual)):
+            difference = ast_difference(expected_item, actual_item, f"{path}[{i}]")
+            if difference is not None:
+                return difference
+        return None
+    return None if expected == actual else f"{path}: {expected!r} != {actual!r}"
 
 
 @pytest.mark.parametrize("filename", params)
@@ -82,7 +117,7 @@ def test_ast_string(filename):
     ast_result = create_ast(result_script)
     ast.children = sorted(ast.children, key=lambda x: x.__class__.__name__)
     ast_result.children = sorted(ast_result.children, key=lambda x: x.__class__.__name__)
-    assert ast == ast_result
+    assert ast_difference(ast, ast_result) is None
 
 
 @pytest.mark.parametrize("filename", params)
@@ -93,7 +128,7 @@ def test_ast_string_with_comments(filename):
     ast = create_ast_with_comments(script)
     result_script = ASTString().render(ast)
     ast_result = create_ast_with_comments(result_script)
-    assert ast == ast_result
+    assert ast_difference(ast, ast_result) is None
 
 
 partition_clauses = [
@@ -172,7 +207,7 @@ def test_prettier(filename, expected):
     input_ast = create_ast(script)
     expected_input_ast = create_ast(expected_script)
     assert normalize_lines_in_text(result_script) == normalize_lines_in_text(expected_script)
-    assert input_ast == expected_input_ast
+    assert ast_difference(input_ast, expected_input_ast) is None
 
 
 @pytest.mark.parametrize("filename", params)
