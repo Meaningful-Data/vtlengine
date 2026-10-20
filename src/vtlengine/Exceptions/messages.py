@@ -1093,11 +1093,6 @@ centralised_messages = {
         "description": "Raised when two define viral propagation statements "
         "target the same variable.",
     },
-    "1-3-3-2": {
-        "message": "Duplicate viral propagation rule for value domain {name}.",
-        "description": "Raised when two define viral propagation statements "
-        "target the same value domain.",
-    },
     "1-3-3-3": {
         "message": "Cannot mix enumerated and aggregate clauses in viral "
         "propagation definition {name}.",
@@ -1114,7 +1109,7 @@ centralised_messages = {
         "message": "Viral propagation rule for {name} uses aggregate '{function}', which "
         "requires a numeric attribute, but {name} has type {type}.",
         "description": "Raised when an aggregate viral propagation rule using sum or avg "
-        "targets a viral attribute (variable or value domain) whose data type is not "
+        "targets a viral attribute whose data type is not "
         "Number or Integer.",
     },
     "1-3-3-6": {
@@ -1132,6 +1127,13 @@ centralised_messages = {
         "the component names the engine reserves for automatically named measures "
         "(str_var, num_var, int_var, time_var, time_period_var, date_var, duration_var, "
         "bool_var, null_var), which would collide with a promoted measure of the same name.",
+    },
+    "1-3-3-8": {
+        "message": "Viral propagation definition {name} is defined on value domain "
+        "{value_domain}, which is not supported yet; define it on a variable instead.",
+        "description": "Raised when a viral propagation definition uses a valuedomain "
+        "signature. Components do not carry a value domain yet, so the rule could not be "
+        "applied to any viral attribute.",
     },
     # ---------- Interpreter ----------
     "1-3-5": {

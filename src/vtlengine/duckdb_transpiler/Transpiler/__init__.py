@@ -4209,7 +4209,9 @@ FROM (
             right_val_expr=r_val,
             is_hierarchy=False,
         )
-        if output == "invalid" and when_sql is not None:
+        # The rule only applies where its condition holds: elsewhere there is no
+        # comparison, so no data point (issue #1141).
+        if when_sql is not None:
             val_where.append(f"({when_sql})")
         val_where_clause = f" WHERE {' AND '.join(val_where)}" if val_where else ""
         val_sql = f"SELECT {', '.join(val_cols)} FROM _pivot{val_where_clause}"
@@ -4221,17 +4223,11 @@ FROM (
             bool_expr = number_tolerance_sql(rule_op, "_lv", "_rv")
         if bool_expr is None:
             bool_expr = f"(_lv {rule_op} _rv)"
-        imbalance_expr = "(_lv - _rv)"
-        if when_sql is not None:
-            bool_expr = f"CASE WHEN NOT ({when_sql}) THEN TRUE ELSE {bool_expr} END"
-            imbalance_expr = (
-                f"CASE WHEN NOT ({when_sql}) THEN CAST(NULL AS DOUBLE) ELSE {imbalance_expr} END"
-            )
 
         inner_cols = [quote_name(c) for c in other_ids]
         inner_cols.append("_lv")
         inner_cols.append(f"{bool_expr} AS _bv")
-        inner_cols.append(f"{imbalance_expr} AS _imb")
+        inner_cols.append("(_lv - _rv) AS _imb")
         inner_sql = f"SELECT {', '.join(inner_cols)} FROM ({val_sql}) _v"
 
         ec_sql = self._error_code_sql(rule.erCode)
@@ -4398,6 +4394,7 @@ FROM (
         current_pivot = "_pivot"
 
         join_keys = [quote_name(c) for c in (*other_ids, *cond_mapping.values())]
+        computed_items: Set[str] = set()
 
         for i, parsed in enumerate(parsed_rules):
             rule_cte_name = f"_rule_{i}"
@@ -4429,9 +4426,11 @@ FROM (
                     join_keys=join_keys,
                     input_mode=input_mode,
                     unique_items=unique_items,
+                    first_for_item=parsed.left_code_item not in computed_items,
                 ),
                 materialized=True,
             )
+            computed_items.add(parsed.left_code_item)
             current_pivot = next_pivot
 
         # Build final SELECT per rule
@@ -4554,6 +4553,7 @@ FROM (
         join_keys: List[str],
         input_mode: str,
         unique_items: List[str],
+        first_for_item: bool,
     ) -> str:
         """Generate _pivot_N CTE that updates pivot with a rule's computed value."""
         val_col = _val_col(left_code_item)
@@ -4572,8 +4572,17 @@ FROM (
             guard = "r._computed IS NOT NULL"
         else:
             guard = f"r.{first_key} IS NOT NULL"
-        val_expr = f"CASE WHEN {guard} THEN r._computed ELSE p.{val_col} END AS {val_col}"
-        has_expr = f"CASE WHEN r.{first_key} IS NOT NULL THEN 1 ELSE p.{has_col} END AS {has_col}"
+        # Only the first rule computing the item drops its dataset value: later rules for the
+        # same item keep the earlier rules' output (issue #1142).
+        fallback_val, fallback_has = (
+            ("NULL", "0")
+            if input_mode == "rule" and first_for_item
+            else (f"p.{val_col}", f"p.{has_col}")
+        )
+        val_expr = f"CASE WHEN {guard} THEN r._computed ELSE {fallback_val} END AS {val_col}"
+        has_expr = (
+            f"CASE WHEN r.{first_key} IS NOT NULL THEN 1 ELSE {fallback_has} END AS {has_col}"
+        )
 
         all_select = key_cols + other_val_has + [val_expr, has_expr]
         # Without join keys the pivot is a single global row; LEFT JOIN ON TRUE

@@ -51,8 +51,6 @@ from vtlengine.DataTypes import (
     BASIC_TYPES,
     SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
-    Integer,
-    Number,
     ScalarType,
     check_unary_implicit_promotion,
 )
@@ -471,6 +469,9 @@ class InterpreterAnalyzer(ASTTemplate):
         """Validate and store the viral propagation definition in the registry."""
         registry = get_current_registry()
 
+        if node.signature_type == "valuedomain":
+            raise SemanticError("1-3-3-8", name=node.name, value_domain=node.target)
+
         # Validate: cannot mix enumerated and aggregate clauses
         if node.enumerated_clauses and node.aggregate_clause:
             raise SemanticError("1-3-3-3", name=node.name)
@@ -483,11 +484,9 @@ class InterpreterAnalyzer(ASTTemplate):
                 raise SemanticError("1-3-3-4", values=clause.values, name=node.name)
             seen_values.add(key)
 
-        # Validate: no duplicate rules for the same target (variable or value domain)
-        existing = registry.get_existing(node.signature_type, node.target)
-        if existing is not None:
-            code = "1-3-3-1" if node.signature_type == "variable" else "1-3-3-2"
-            raise SemanticError(code, name=node.target)
+        # Validate: no duplicate rules for the same variable
+        if registry.get_existing(node.signature_type, node.target) is not None:
+            raise SemanticError("1-3-3-1", name=node.target)
 
         enumerated_clauses = [
             {"values": clause.values, "result": clause.result} for clause in node.enumerated_clauses
@@ -503,20 +502,6 @@ class InterpreterAnalyzer(ASTTemplate):
             default_value=node.default_value,
         )
         registry.register(rule)
-
-        # sum/avg on a value-domain rule is checked at definition time: the value
-        # domain's type is intrinsic to the rule target. Variable rules are checked in
-        # require_rules, where the rule is actually applied — a non-numeric viral
-        # attribute that is never combined must not raise (issue #910).
-        if aggregate_function in ("sum", "avg") and node.signature_type == "valuedomain":
-            vd = (self.value_domains or {}).get(node.target)
-            if vd is not None and vd.type not in (Integer, Number):
-                raise SemanticError(
-                    "1-3-3-5",
-                    name=node.target,
-                    function=aggregate_function,
-                    type=vd.type.__name__,
-                )
 
     # Execution Language
     def visit_Assignment(self, node: AST.Assignment) -> Any:
