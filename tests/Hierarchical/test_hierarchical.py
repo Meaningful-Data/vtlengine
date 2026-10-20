@@ -3786,3 +3786,53 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         references_names = ["1", "2", "3"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1170_1(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        TOTAL = A + B;
+                        GRAND = TOTAL + C
+                    end hierarchical ruleset;
+
+                    DS_r <- hierarchy(DS_1, HR_1 rule Id_2 rule_priority);
+
+        Description: The first rule computes no TOTAL for Id_1 = 2, where A and B are missing.
+
+        Git Branch: #1170.
+        Goal: Check GRAND takes TOTAL from the operand where the rule computes no TOTAL.
+        """
+
+        code = "GH_1170_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1170_2(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (valuedomain condition VD_2 as C_2
+                        rule VD_1) is
+                        when C_2 = "X" then TOTAL = A + B;
+                        GRAND = TOTAL + C
+                    end hierarchical ruleset;
+
+                    DS_r <- hierarchy(DS_1, HR_1 condition Id_2 rule Id_1 always_zero rule_priority);
+
+        Description: The condition of the first rule is FALSE for Id_2 = "Y", where it computes
+        no TOTAL.
+
+        Git Branch: #1170.
+        Goal: Check GRAND takes TOTAL from the operand there, instead of reading it as 0.
+        """
+
+        code = "GH_1170_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
