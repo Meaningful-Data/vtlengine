@@ -91,7 +91,6 @@ def test_combine_without_rule(code: str, number_inputs: int, exception_code: str
 
 # -- Structure-only (semantic) --
 semantic_codes = [
-    ("5-1", 1),  # a value-domain rule registers; viral attr preserved
     ("9-1", 2),  # intersect preserves viral attributes
     ("10-1", 2),  # a non-viral attribute is still dropped
     ("10-2", 1),  # calc creates a viral attribute
@@ -118,11 +117,11 @@ def test_definition_statement_ordering(code: str, number_inputs: int) -> None:
     )
 
 
-# -- Semantic validation: duplicate rules --
+# -- Semantic validation: rule definitions --
 validation_codes = [
     ("6-1", "1-3-3-1"),  # duplicate variable-level rule
     ("6-2", "1-3-3-4"),  # duplicate enumeration combination
-    ("6-3", "1-3-3-2"),  # duplicate value-domain-level rule
+    ("5-1", "1-3-3-8"),  # a value-domain rule is not supported yet
 ]
 
 
