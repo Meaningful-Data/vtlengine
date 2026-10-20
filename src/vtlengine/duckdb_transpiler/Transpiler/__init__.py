@@ -1,7 +1,7 @@
 """Transpile VTL AST nodes into DuckDB SQL."""
 
 import re
-from collections import Counter
+from collections import Counter, defaultdict
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import dataclass, field
@@ -21,6 +21,7 @@ from typing import (
 
 import vtlengine.AST as AST
 from vtlengine.AST.ASTTemplate import ASTTemplate
+from vtlengine.AST.DAG import HRDAGAnalyzer
 from vtlengine.AST.Grammar import tokens
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
@@ -3949,7 +3950,9 @@ FROM (
         parsed_rules = [self._parse_hr_rule(r, cond_mapping) for r in hr_info["rules"]]
 
         if node.op == tokens.HIERARCHY:
-            eq_rules = [p for p in parsed_rules if p.comparison_node.op == tokens.EQ]
+            eq_rules = self._sort_hierarchy_rules(
+                node, [p for p in parsed_rules if p.comparison_node.op == tokens.EQ]
+            )
             return self._build_hierarchy_sql(
                 table_src=table_src,
                 ds=ds,
@@ -3959,6 +3962,7 @@ FROM (
                 input_mode=node.input_mode.value if node.input_mode else "rule",
                 output=node.output.value if node.output else "computed",
                 cond_mapping=cond_mapping,
+                ruleset_name=node.ruleset_name,
             )
         return self._build_check_hierarchy_sql(
             table_src=table_src,
@@ -3969,6 +3973,29 @@ FROM (
             output=node.output.value if node.output else "invalid",
             cond_mapping=cond_mapping,
         )
+
+    @staticmethod
+    def _sort_hierarchy_rules(
+        node: AST.HROperation, parsed_rules: List[_ParsedHRRule]
+    ) -> List[_ParsedHRRule]:
+        """Order the '=' rules so a code item is computed before any rule reads it.
+
+        Several rules can compute the same code item under different conditions
+        (issue #1142): the rules reading it come after all of them.
+        """
+        ruleset = AST.HRuleset(
+            name=node.ruleset_name,
+            signature_type="",
+            element=[],
+            rules=[parsed.rule for parsed in parsed_rules],
+            line_start=node.line_start,
+            column_start=node.column_start,
+            line_stop=node.line_stop,
+            column_stop=node.column_stop,
+        )
+        HRDAGAnalyzer.sort_hierarchy_rules(ruleset)
+        by_rule = {id(parsed.rule): parsed for parsed in parsed_rules}
+        return [by_rule[id(rule)] for rule in ruleset.rules]
 
     def _parse_hr_rule(
         self, rule: AST.HRule, cond_mapping: Optional[Dict[str, str]] = None
@@ -4247,13 +4274,15 @@ FROM (
         rule_comp: str,
         other_ids: List[str],
         table_src: str,
+        rule_groups: List[str],
     ) -> Optional[Tuple[str, List[str]]]:
         """Combine child viral values per computed node, outside the measure rule chain.
 
-        For each node the child viral values (leaf code items from the source, nested
-        nodes from their own CTE) are unioned, grouped by the non-rule identifiers and
-        reduced with the propagation rule (issue #877). Returns (cte_name, viral_names)
-        or None when there are no viral attributes.
+        For each rule the child viral values (leaf code items from the source, nested
+        nodes from their own CTEs) are unioned, grouped by the non-rule identifiers and
+        reduced with the propagation rule (issue #877). When several rules compute the
+        same node, each one only keeps the groups it computed (``rule_groups``, issue
+        #1142). Returns (cte_name, viral_names) or None when there are no viral attributes.
         """
         viral_comps = [c for c in ds.components.values() if c.role == Role.VIRAL_ATTRIBUTE]
         if not viral_comps:
@@ -4261,13 +4290,17 @@ FROM (
         reg = get_current_registry()
         other_q = [quote_name(c) for c in other_ids]
         raw_cols = [quote_name(c.name) for c in viral_comps]
-        node_cte: Dict[str, str] = {}
+        rules_per_node = Counter(parsed.left_code_item for parsed in parsed_rules)
+        node_cte: Dict[str, List[str]] = defaultdict(list)
+        rule_cte: Dict[int, str] = {}
         for i, parsed in enumerate(parsed_rules):
             child_selects = []
             for child in parsed.right_code_items:
                 proj = ", ".join(other_q + raw_cols)
                 if child in node_cte:
-                    child_selects.append(f"SELECT {proj} FROM {node_cte[child]}")
+                    child_selects.append(
+                        " UNION ALL ".join(f"SELECT {proj} FROM {name}" for name in node_cte[child])
+                    )
                 else:
                     child_selects.append(
                         f"SELECT {proj} FROM {table_src} WHERE {quote_name(rule_comp)} = '{child}'"
@@ -4311,15 +4344,21 @@ FROM (
                 agg_cols.append(f"{expr} AS {vq}")
             gb = f" GROUP BY {', '.join(other_q)}" if other_q else ""
             name = f"_vp_{i}"
-            cte.cte(
-                name,
-                f"SELECT {', '.join(other_q + agg_cols)} FROM ({union}) AS _vps_{i}{gb}",
-                materialized=True,
-            )
-            node_cte[parsed.left_code_item] = name
+            node_sql = f"SELECT {', '.join(other_q + agg_cols)} FROM ({union}) AS _vps_{i}{gb}"
+            if rules_per_node[parsed.left_code_item] > 1:
+                if other_q:
+                    node_sql = (
+                        f"SELECT _vpn_{i}.* FROM ({node_sql}) AS _vpn_{i} "
+                        f"JOIN ({rule_groups[i]}) AS _vpr_{i} USING ({', '.join(other_q)})"
+                    )
+                else:
+                    node_sql = f"{node_sql} HAVING EXISTS ({rule_groups[i]})"
+            cte.cte(name, node_sql, materialized=True)
+            node_cte[parsed.left_code_item].append(name)
+            rule_cte[i] = name
         tagged = []
-        for parsed in parsed_rules:
-            cte_name = node_cte.get(parsed.left_code_item)
+        for i, parsed in enumerate(parsed_rules):
+            cte_name = rule_cte.get(i)
             if cte_name is None:
                 continue
             proj = ", ".join(
@@ -4341,6 +4380,7 @@ FROM (
         input_mode: str,
         output: str,
         cond_mapping: Dict[str, str],
+        ruleset_name: str,
     ) -> str:
         """Generate SQL for hierarchy operator using CTE chain."""
         if not parsed_rules:
@@ -4396,6 +4436,8 @@ FROM (
 
         # Build final SELECT per rule
         final_selects: List[str] = []
+        # The groups each rule computed, to combine its viral values on them only
+        rule_groups: List[str] = []
         q_rc = quote_name(rule_comp)
         q_m = quote_name(measure)
         for rule_cte, left_ci in rule_result_refs:
@@ -4411,12 +4453,29 @@ FROM (
 
             where = f" WHERE {' AND '.join(result_filter)}" if result_filter else ""
             final_selects.append(f"SELECT {', '.join(cols)} FROM {rule_cte}{where}")
+            group_cols = ", ".join(quote_name(c) for c in other_ids) or "1 AS _one"
+            rule_groups.append(f"SELECT DISTINCT {group_cols} FROM {rule_cte}{where}")
 
         computed_sql = " UNION ALL ".join(final_selects)
 
+        left_items = [parsed.left_code_item for parsed in parsed_rules]
+        if len(set(left_items)) < len(left_items):
+            # Several rules compute the same code item under different conditions
+            # (issue #1142): two of them must not hold on the same data point.
+            keys = ", ".join([*(quote_name(c) for c in other_ids), q_rc])
+            ruleset_sql = ruleset_name.replace("'", "''")
+            message = (
+                f"'VTL 2-1-10-1: ruleset {ruleset_sql}, code item ' || CAST({q_rc} AS VARCHAR)"
+            )
+            computed_sql = (
+                f"SELECT * FROM ({computed_sql}) AS _hr_rules QUALIFY "
+                f"CASE WHEN COUNT(*) OVER (PARTITION BY {keys}) > 1 "
+                f"THEN error({message}) ELSE TRUE END"
+            )
+
         # Combine child viral values into each computed node (issue #877).
         vp_info = self._build_hierarchy_viral_ctes(
-            cte, ds, parsed_rules, rule_comp, other_ids, table_src
+            cte, ds, parsed_rules, rule_comp, other_ids, table_src, rule_groups
         )
         if vp_info is not None:
             vp_name, viral_names = vp_info
@@ -4461,13 +4520,9 @@ FROM (
     ) -> str:
         """Generate SELECT for _rule_N CTE in hierarchy CTE chain."""
         r_val = self._build_hr_expr_sql(parsed.right_expr_node, mode)
-        computed_expr = r_val
-        if parsed.has_when:
-            when_sql = self._build_hr_when_sql(parsed.when_node, cond_mapping)
-            computed_expr = f"CASE WHEN {when_sql} THEN {computed_expr} ELSE NULL END"
 
         select_parts = [quote_name(c) for c in (*other_ids, *cond_mapping.values())]
-        select_parts.append(f"{computed_expr} AS _computed")
+        select_parts.append(f"{r_val} AS _computed")
         # Constant marker so a rule row is detectable after a LEFT JOIN even when
         # its computed value is NULL and there are no join keys (issue #969).
         select_parts.append("1 AS _present")
@@ -4483,6 +4538,10 @@ FROM (
         right_presence = [f"{_has_col(ci)} = 1" for ci in parsed.right_code_items]
         if right_presence:
             where_parts.append(f"({' OR '.join(right_presence)})")
+        if parsed.has_when:
+            # The rule only computes where its condition holds: another rule may compute
+            # the same code item elsewhere (issue #1142).
+            where_parts.append(f"({self._build_hr_when_sql(parsed.when_node, cond_mapping)})")
 
         where_clause = f" WHERE {' AND '.join(where_parts)}" if where_parts else ""
         return f"  SELECT {', '.join(select_parts)} FROM {pivot_ref}{where_clause}"

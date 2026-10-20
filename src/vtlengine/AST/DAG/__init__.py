@@ -391,6 +391,40 @@ class HRDAGAnalyzer(DAGAnalyzer):
             node.rules = dag.sort_elements(node.rules)
         node._hr_sorted = True  # type: ignore[attr-defined]
 
+    @classmethod
+    def sort_hierarchy_rules(cls, node: HRuleset) -> None:
+        """Sort the '=' rules of a hierarchy operation so each code item is computed first.
+
+        Several rules can compute the same code item under different conditions (issue
+        #1142), so a rule reading it comes after all of them, which sort_hr_rules does
+        not ensure. The rule names do not change: they follow the order sort_hr_rules gave
+        the ruleset when it was defined.
+        """
+        dag = cls()
+        dag.visit(node)
+        dag.load_vertex()
+        dag._load_edges_from_every_definer()
+        if len(dag.edges) != 0:
+            dag._build_and_sort_graph("hierarchy")
+            node.rules = dag.sort_elements(node.rules)
+
+    def _load_edges_from_every_definer(self) -> None:
+        """Link each rule to every rule that computes one of the code items it reads."""
+        if len(self.vertex) == 0:
+            return
+        definers: Dict[str, List[int]] = defaultdict(list)
+        for key, statement in self.dependencies.items():
+            reference = statement.outputs + statement.persistent
+            if reference:
+                definers[reference[0]].append(key)
+
+        count_edges = 0
+        for sub_key, sub_statement in self.dependencies.items():
+            for input_val in sub_statement.inputs:
+                for key in definers.get(input_val, []):
+                    self.edges[count_edges] = (key, sub_key)
+                    count_edges += 1
+
     def visit_HRuleset(self, node: HRuleset) -> None:
         """
         HRuleset: (name, element, rules)
