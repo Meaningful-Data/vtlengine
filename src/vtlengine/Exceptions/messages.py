@@ -1127,6 +1127,12 @@ centralised_messages = {
         "(str_var, num_var, int_var, time_var, time_period_var, date_var, duration_var, "
         "bool_var, null_var), which would collide with a promoted measure of the same name.",
     },
+    "1-3-3-9": {
+        "message": "Viral propagation rule {rule} for {name} uses the constant {value}, which "
+        "is not a value of the {type} type of the viral attribute.",
+        "description": "Raised when a constant of an enumerated viral propagation rule does "
+        "not match the data type of the viral attribute the rule is applied to.",
+    },
     # ---------- Interpreter ----------
     "1-3-5": {
         "message": "{node_op} not found or not valid for {op_type}.",
