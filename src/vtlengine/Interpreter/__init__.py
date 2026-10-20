@@ -56,7 +56,7 @@ from vtlengine.DataTypes import (
     ScalarType,
     check_unary_implicit_promotion,
 )
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.files.output import save_datapoints
 from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
@@ -146,6 +146,7 @@ class InterpreterAnalyzer(ASTTemplate):
     is_from_join: bool = False
     is_from_hr_val: bool = False
     is_from_hr_agg: bool = False
+    is_hr_rule_left: bool = False
     compute_partial_data: bool = False
     # Handlers for simplicity
     condition_stack: Optional[List[Dataset]] = None
@@ -160,6 +161,8 @@ class InterpreterAnalyzer(ASTTemplate):
     ruleset_signature: Optional[Dict[str, str]] = None
     udo_params: Optional[List[Dict[str, Any]]] = None
     hr_agg_rules_computed: Optional[Dict[str, pd.DataFrame]] = None
+    # Names of the rules that computed each code item, in evaluation order
+    hr_agg_item_rules: Optional[Dict[str, List[str]]] = None
     ruleset_mode: Optional[str] = None
     hr_input: Optional[str] = None
     # DL
@@ -416,10 +419,20 @@ class InterpreterAnalyzer(ASTTemplate):
 
         rule_names = [rule.name for rule in node.rules if rule.name is not None]
         if len(rule_names) != 0 and len(node.rules) != len(rule_names):
-            raise ValueError("All rules must have a name, or none of them")
+            raise SemanticError("1-3-1-7", type="Hierarchical Ruleset", name=node.name)
         if len(rule_names) == 0:
             for i, rule in enumerate(node.rules):
                 rule.name = (i + 1).__str__()
+
+        # The hierarchy operator keeps the output of each rule under its name (issue #1142)
+        if len(rule_names) != len(set(rule_names)):
+            not_unique = list(dict.fromkeys(n for n in rule_names if rule_names.count(n) > 1))
+            raise SemanticError(
+                "1-3-1-5",
+                type="Hierarchical Ruleset",
+                names=", ".join(not_unique),
+                ruleset_name=node.name,
+            )
 
         cond_comp: List[Any] = []
         if isinstance(node.element, list):
@@ -1579,45 +1592,56 @@ class InterpreterAnalyzer(ASTTemplate):
                     )
                 cond_info[cond_comp] = cond_components[i]
 
-            node_children: Dict[str, List[str]] = {}
+            rules = hr_info["rules"]
+            node_children: Dict[str, Tuple[str, List[str]]] = {}
             if node.op == HIERARCHY:
-                aux = []
-                for rule in hr_info["rules"]:
-                    if rule.rule.op == EQ or rule.rule.op == WHEN and rule.rule.right.op == EQ:
-                        aux.append(rule)
+                # Only the '=' rules compute code items. The ruleset keeps all its rules for
+                # a later check_hierarchy (issue #1142).
+                rules = [
+                    rule
+                    for rule in rules
+                    if rule.rule.op == EQ or rule.rule.op == WHEN and rule.rule.right.op == EQ
+                ]
 
-                if len(aux) == 0:
+                if len(rules) == 0:
                     raise SemanticError("1-1-10-5")
 
-                left_parts = []
-                for rule in aux:
+                # Several rules may compute the same code item under different conditions
+                # (issue #1142), but a rule without a condition would overlap the others.
+                item_rules: Dict[str, List[AST.HRule]] = {}
+                for rule in rules:
                     left_part = rule.rule.left if rule.rule.op == EQ else rule.rule.right.left
-                    if left_part in left_parts:
-                        raise SemanticError("1-1-10-10", ruleset=hr_name, rule=left_part.value)
-                    left_parts.append(left_part)
-
-                hr_info["rules"] = aux
-
-                # Map each computed node to the code items it combines, for viral combination
-                # at the final evaluate (outside the rule handling, issue #877).
-                for agg_rule in aux:
-                    if agg_rule.rule.op == EQ:
-                        lhs_id, rhs_expr = agg_rule.rule.left, agg_rule.rule.right
-                    else:  # WHEN ... EQ
-                        lhs_id, rhs_expr = agg_rule.rule.right.left, agg_rule.rule.right.right
-                    node_children[lhs_id.value] = self._collect_hr_code_items(rhs_expr)
+                    item_rules.setdefault(left_part.value, []).append(rule)
+                for code_item, defining_rules in item_rules.items():
+                    if len(defining_rules) > 1 and any(r.rule.op == EQ for r in defining_rules):
+                        raise SemanticError("1-1-10-10", ruleset=hr_name, code_item=code_item)
 
                 hierarchy_ast = AST.HRuleset(
                     name=hr_name,
                     signature_type=hr_info["node"].signature_type,
                     element=hr_info["node"].element,
-                    rules=aux,
+                    rules=rules,
                     line_start=node.line_start,
                     line_stop=node.line_stop,
                     column_start=node.column_start,
                     column_stop=node.column_stop,
                 )
-                HRDAGAnalyzer().visit(hierarchy_ast)
+                HRDAGAnalyzer.sort_hierarchy_rules(hierarchy_ast)
+                rules = hierarchy_ast.rules
+
+                # Map each rule to its computed node and the code items it combines, for viral
+                # combination at the final evaluate (outside the rule handling, issue #877).
+                for agg_rule in rules:
+                    eq_node = (
+                        agg_rule.rule
+                        if agg_rule.rule.op == EQ
+                        else cast(AST.HRBinOp, agg_rule.rule.right)  # WHEN ... EQ
+                    )
+                    lhs_id, rhs_expr = eq_node.left, eq_node.right
+                    node_children[cast(str, agg_rule.name)] = (
+                        lhs_id.value,
+                        self._collect_hr_code_items(rhs_expr),
+                    )
 
             # Capture viral attributes before the strip; re-attached/combined at the final
             # evaluate, outside the rule handling (issue #877).
@@ -1640,12 +1664,16 @@ class InterpreterAnalyzer(ASTTemplate):
             if node.op == HIERARCHY:
                 self.is_from_hr_agg = True
                 self.hr_agg_rules_computed = {}
-                for rule in hr_info["rules"]:
+                self.hr_agg_item_rules = {}
+                for rule in rules:
                     self.visit(rule)
                 self.is_from_hr_agg = False
+                other_ids = [i for i in dataset.get_identifiers_names() if i != component]
+                self._check_hr_overlaps(hr_name, other_ids)
+                self.hr_agg_item_rules = None
             else:
                 self.is_from_hr_val = True
-                for rule in hr_info["rules"]:
+                for rule in rules:
                     rule_output_values[rule.name] = {
                         "errorcode": rule.erCode,
                         "errorlevel": rule.erLevel,
@@ -1821,11 +1849,15 @@ class InterpreterAnalyzer(ASTTemplate):
             measure_name = rule_result.get_measures_names()[0]
             if (
                 self.hr_agg_rules_computed is not None
+                and self.hr_agg_item_rules is not None
                 and rule_result.data is not None
                 and len(rule_result.data[measure_name]) > 0
                 and not (self.hr_input == DATASET_PRIORITY and node.rule.op != EQ)
             ):
-                self.hr_agg_rules_computed[rule_result.name] = rule_result.data
+                # Keyed by rule: several rules may compute the same code item (issue #1142)
+                rule_name = cast(str, node.name)
+                self.hr_agg_rules_computed[rule_name] = rule_result.data
+                self.hr_agg_item_rules.setdefault(rule_result.name, []).append(rule_name)
         else:
             rule_result = rule_result.data
 
@@ -1870,17 +1902,23 @@ class InterpreterAnalyzer(ASTTemplate):
             return original_data
 
         self.compute_partial_data &= not self.is_from_hr_agg or node.op not in HR_COMP_MAPPING
+        # The left code item of a hierarchy rule is the one this rule computes: it does not
+        # read what another rule computed for it (issue #1142).
+        self.is_hr_rule_left = self.is_from_hr_agg and node.op in HR_COMP_MAPPING
         left_operand = self.visit(node.left)
+        self.is_hr_rule_left = False
         self.compute_partial_data = self.ruleset_mode in (PARTIAL_NULL, PARTIAL_ZERO)
         right_operand = self.visit(node.right)
         if isinstance(right_operand, Dataset):
             right_operand = get_measure_from_dataset(right_operand, node.right.value)
 
-        if self.ruleset_mode in (PARTIAL_NULL, PARTIAL_ZERO):
+        if self.ruleset_mode in (PARTIAL_NULL, PARTIAL_ZERO) and self.partial_rule_data is not None:
+            # Operands may cover different groups, so filter them by label.
+            kept = self.partial_rule_data.index[self.partial_rule_data]
             if left_operand.data is not None:
-                left_operand.data = left_operand.data[self.partial_rule_data]
+                left_operand.data = left_operand.data[left_operand.data.index.isin(kept)]
             if right_operand.data is not None:
-                right_operand.data = right_operand.data[self.partial_rule_data]
+                right_operand.data = right_operand.data[right_operand.data.index.isin(kept)]
 
         if node.op in HR_COMP_MAPPING:
             op = HAAssignment if self.is_from_hr_agg else HR_COMP_MAPPING[node.op]
@@ -1987,13 +2025,20 @@ class InterpreterAnalyzer(ASTTemplate):
         if rule_data is None:
             return Dataset(name=node.value, components=result_components, data=None)
 
-        if self.hr_agg_rules_computed is not None and node.value in self.hr_agg_rules_computed:
-            df = self.hr_agg_rules_computed[node.value].copy()
+        computed_by = (
+            None
+            if self.is_hr_rule_left or self.hr_agg_item_rules is None
+            else self.hr_agg_item_rules.get(node.value)
+        )
+        if computed_by:
+            df = self._hr_computed_item(computed_by, rule_data, other_ids)
             if self.hr_input in (RULE_PRIORITY, DATASET_PRIORITY):
-                input_df = rule_data.copy().rename(columns={me_name: "__input_me__"})
-                merged = merge_frames(
-                    df, input_df, on=ruleset_ds.get_identifiers_names(), how="inner"
+                identifiers = ruleset_ds.get_identifiers_names()
+                input_df = rule_data[[*identifiers, me_name]].rename(
+                    columns={me_name: "__input_me__"}
                 )
+                merged = merge_frames(df, input_df, on=identifiers, how="left")
+                merged.index = df.index
                 # Assign the result back: an in-place `where` on the column selection is
                 # a chained assignment, which pandas 3 Copy-on-Write no longer writes
                 # through to `df`.
@@ -2051,8 +2096,49 @@ class InterpreterAnalyzer(ASTTemplate):
             if self.partial_rule_data is None:
                 self.partial_rule_data = exists
             else:
-                self.partial_rule_data |= exists
+                # A code item computed by an earlier rule may lack some groups: widen
+                # the mask over the union of both indexes instead of keeping the first.
+                mask, exists = self.partial_rule_data.align(exists, join="outer", fill_value=False)
+                self.partial_rule_data = mask | exists
             self.partial_rule_elements.add(name)  # type: ignore[union-attr]
+
+    def _hr_computed_item(
+        self, rule_names: List[str], rule_data: pd.DataFrame, other_ids: List[str]
+    ) -> pd.DataFrame:
+        """Data points that earlier rules computed for a code item, on this rule's groups.
+
+        Every rule that computed the code item contributes its data points (issue #1142).
+        They take the labels of the matching groups of the current rule: a rule with a
+        condition numbers the groups of its own rows only, so the labels of its output do
+        not match the ones of another rule.
+        """
+        computed = cast(Dict[str, pd.DataFrame], self.hr_agg_rules_computed)
+        df = pd.concat([computed[name] for name in rule_names], ignore_index=True)
+        if not other_ids:
+            # A single (global) group, labelled 0 like the code items of the rule
+            return df
+        groups = rule_data[other_ids].drop_duplicates().reset_index(drop=True)
+        groups["__group__"] = groups.index
+        labelled = merge_frames(df, groups, on=other_ids, how="inner")
+        return labelled.set_index("__group__").rename_axis(None)
+
+    def _check_hr_overlaps(self, ruleset: str, other_ids: List[str]) -> None:
+        """Raise when two rules computed the same code item for the same data point."""
+        if self.hr_agg_rules_computed is None or self.hr_agg_item_rules is None:
+            return
+        for code_item, rule_names in self.hr_agg_item_rules.items():
+            if len(rule_names) < 2:
+                continue
+            if other_ids:
+                keys = pd.concat(
+                    [self.hr_agg_rules_computed[name][other_ids] for name in rule_names],
+                    ignore_index=True,
+                )
+                overlap = bool(keys.duplicated().any())
+            else:
+                overlap = True
+            if overlap:
+                raise RunTimeError("2-1-10-1", ruleset=ruleset, code_item=code_item)
 
     def visit_UDOCall(self, node: AST.UDOCall) -> None:  # noqa: C901
         if self.udos is None:

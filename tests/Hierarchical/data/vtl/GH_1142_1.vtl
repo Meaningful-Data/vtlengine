@@ -1,0 +1,6 @@
+define hierarchical ruleset HR_1 (valuedomain condition VD_1 as C_1 rule VD_2) is
+    when C_1 = "X" then TOTAL = A + B;
+    when C_1 = "Y" then TOTAL = A
+end hierarchical ruleset;
+
+DS_r <- hierarchy(DS_1, HR_1 condition Id_1 rule Id_2);
