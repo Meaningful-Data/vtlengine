@@ -1,5 +1,6 @@
 import copy
 from dataclasses import dataclass
+from decimal import Decimal
 from typing import Any, Optional, Tuple, Union
 
 from vtlengine import AST
@@ -62,6 +63,17 @@ tab = "\t"
 RESERVED_WORDS = {x.replace("'", ""): x for x in LITERAL_NAMES}
 
 
+def _format_number(value: float) -> str:
+    """A float written as a number literal that reads back to the same Number.
+
+    The grammar takes no exponent and needs digits on both sides of the point, so
+    the shortest digits that round-trip are written out in full. A whole value keeps
+    its ".0": written as 2 it would read back as the Integer 2.
+    """
+    text = format(Decimal(str(value)), "f")
+    return text if "." in text else f"{text}.0"
+
+
 def _handle_literal(value: Union[str, int, float, bool]):
     if isinstance(value, str):
         if '"' in value:
@@ -70,11 +82,7 @@ def _handle_literal(value: Union[str, int, float, bool]):
     elif isinstance(value, bool):
         return "true" if value else "false"
     elif isinstance(value, float):
-        decimal = str(value).split(".")[1]
-        if len(decimal) > 4:
-            return f"{value:f}".rstrip("0")
-        else:
-            return f"{value:g}"
+        return _format_number(value)
     return str(value)
 
 
@@ -252,7 +260,9 @@ class ASTString(ASTTemplate):
             return "null"
         if isinstance(value, bool):
             return "true" if value else "false"
-        if isinstance(value, (int, float)):
+        if isinstance(value, float):
+            return _format_number(value)
+        if isinstance(value, int):
             return str(value)
         return f'"{value}"'
 

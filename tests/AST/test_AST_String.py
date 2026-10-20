@@ -37,6 +37,7 @@ params = [
     "hierarchical_unquoted_codeitems.vtl",
     "join_body_clauses.vtl",
     "GH_987.vtl",
+    "GH_1164.vtl",
 ]
 
 params_prettier = [
@@ -67,6 +68,7 @@ params_prettier = [
     ("time_agg_ref.vtl", "reference_time_agg_ref.vtl"),
     ("viral_propagation.vtl", "reference_viral_propagation.vtl"),
     ("GH_987.vtl", "reference_GH_987.vtl"),
+    ("GH_1164.vtl", "reference_GH_1164.vtl"),
 ]
 
 
