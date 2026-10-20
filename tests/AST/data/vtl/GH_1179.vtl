@@ -1,0 +1,25 @@
+define operator f_1 (x string)
+    returns string is x || "(a)"
+end operator;
+
+define operator f_2 (x scalar)
+    returns scalar is x
+end operator;
+
+define datapoint ruleset DPR_1 (variable 'Me 2' as m2) is
+    when m2 > 0 then m2 < 10
+end datapoint ruleset;
+
+define viral propagation VP_1 (variable 'At 1') is
+    when "A" then "A"
+end viral propagation;
+
+DS_r1 <- check_hierarchy(DS_1, HR_1 condition Id_2 non_zero dataset all);
+DS_r2 <- hierarchy(DS_1, HR_1 always_zero rule_priority all);
+DS_r3 <- check_hierarchy(DS_1, HR_1 rule Id_3 non_null dataset invalid);
+DS_r4 <- check_datapoint(DS_1, DPR_1 components 'Me 2' invalid);
+DS_r5 <- DS_1[filter Me_1 = "salt and pepper" or Me_1 = "this or that"];
+DS_r6 <- DS_1[calc 'Me 2' := Me_1][keep 'Me 2'][rename 'Me 2' to Me_2];
+DS_r7 <- check(DS_1 > 0 errorcode "E1" errorlevel 1 invalid)[rename 'errorlevel' to Me_2];
+DS_r8 <- DS_1[aggr Me_2 := sum(Me_1) group by Id_1 time_agg("A")];
+DS_r9 <- inner_join(DS_1 as d1, DS_2 as d2 aggr Me_3 := sum(d1#Me_1) group by Id_1);
