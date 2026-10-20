@@ -3205,7 +3205,7 @@ class TestHierarchy:
     # -------------------------------------------------------------------------
 
     def test_multi_rule_dataset_uses_original(self, hierarchy_structures):
-        """Dataset mode with dependent rules: later rules still see computed values."""
+        """Dataset mode with dependent rules: later rules read the operand (issue #1169)."""
         vtl_script = """
             define hierarchical ruleset hr1 (variable rule Id_2) is
                 A = C + D;
@@ -3224,12 +3224,12 @@ class TestHierarchy:
         results = execute_vtl_with_duckdb(vtl_script, hierarchy_structures, {"DS_1": input_df})
         result = results["DS_r"].sort_values(["Id_1", "Id_2"]).reset_index(drop=True)
 
-        # Matches pandas behavior: A = C+D = 11, B = A(computed=11) - D = 8
+        # A = C+D = 11, B = A(operand=100) - D = 97
         expected = pd.DataFrame(
             {
                 "Id_1": ["X", "X"],
                 "Id_2": ["A", "B"],
-                "Me_1": [11.0, 8.0],
+                "Me_1": [11.0, 97.0],
             }
         )
         expected = expected.sort_values(["Id_1", "Id_2"]).reset_index(drop=True)

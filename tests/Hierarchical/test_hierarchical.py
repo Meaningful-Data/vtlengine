@@ -3710,3 +3710,79 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         references_names = ["1", "2"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1169_1(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        TOTAL = A + B;
+                        GRAND = TOTAL + C
+                    end hierarchical ruleset;
+
+                    DS_r <- hierarchy(DS_1, HR_1 rule Id_2 dataset);
+
+        Description: GRAND reads TOTAL, which the first rule computes.
+
+        Git Branch: #1169.
+        Goal: Check GRAND reads TOTAL from the operand, also where the first rule computes none.
+        """
+
+        code = "GH_1169_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1169_2(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        TOTAL = A + B;
+                        GRAND = TOTAL + C
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 rule Id_2 rule);
+                    DS_r2 <- hierarchy(DS_1, HR_1 rule Id_2 rule_priority);
+                    DS_r3 <- hierarchy(DS_1, HR_1 rule Id_2 always_zero dataset);
+
+        Description: GRAND reads TOTAL, which the first rule computes, in each input mode.
+
+        Git Branch: #1169.
+        Goal: Check only input dataset reads TOTAL from the operand where the rule computes it.
+        """
+
+        code = "GH_1169_2"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1169_3(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        TOTAL = A + B;
+                        GRAND = TOTAL + C
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 rule Id_2 rule);
+                    DS_r2 <- hierarchy(DS_1, HR_1 rule Id_2 rule_priority);
+                    DS_r3 <- hierarchy(DS_1, HR_1 rule Id_2 dataset);
+
+        Description: A and B are missing, so the first rule computes no TOTAL at all.
+
+        Git Branch: #1169.
+        Goal: Check input rule reads no TOTAL, and the other inputs read it from the operand.
+        """
+
+        code = "GH_1169_3"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
