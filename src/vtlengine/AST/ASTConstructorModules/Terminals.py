@@ -525,7 +525,7 @@ class Terminals:
                 return self.visitComponentType(c)
         except (NotImplementedError, SyntaxError):
             # The type visitors reject these forms, so only output_type describes the result
-            pass
+            return None
         return None
 
     def visitOutputParameterTypeComponent(self, ctx):
