@@ -446,8 +446,9 @@ class InterpreterAnalyzer(ASTTemplate):
 
         cond_comp: List[Any] = []
         if isinstance(node.element, list):
-            cond_comp = [x.value for x in node.element[:-1]]
-            node.element = node.element[-1]
+            # The rules name a condition by its alias, if it has one
+            cond_comp = [getattr(x, "alias", None) or x.value for x in node.element[:-1]]
+            node.element = cast(AST.DefIdentifier, node.element[-1])
 
         for rule in node.rules:
             for comp_name in _var_id_names(rule.rule):

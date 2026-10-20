@@ -509,6 +509,24 @@ class Terminals:
         else:
             raise NotImplementedError
 
+    def visitDeclaredOutputType(self, ctx):
+        """
+        The type that outputParameterType declares, read as visitInputParameterType reads a
+        parameter type, or None when a parameter type cannot represent it (a value domain,
+        a type constraint or not null).
+        """
+        c = ctx.children[0]
+        try:
+            if not c.is_terminal and c.ctx_id == RC.SCALAR_TYPE:
+                return self.visitScalarType(c)
+            elif not c.is_terminal and c.ctx_id == RC.DATASET_TYPE:
+                return self.visitDatasetType(c)
+            elif not c.is_terminal and c.ctx_id == RC.COMPONENT_TYPE:
+                return self.visitComponentType(c)
+        except (NotImplementedError, SyntaxError):
+            pass
+        return None
+
     def visitOutputParameterTypeComponent(self, ctx):
         """
         outputParameterType: scalarType

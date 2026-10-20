@@ -123,6 +123,33 @@ def _format_name(value: str) -> str:
     return _format_reserved_word(value)
 
 
+def _format_component_type(component: Component) -> str:
+    role = "component" if component.role is None else component.role.value.lower()
+    # A component declared without a type is parsed with a String instance, not the class
+    if isinstance(component.data_type, type):
+        return f"{role}<{_format_type(component.data_type)}>"
+    return role
+
+
+def _format_type(type_: Any) -> str:
+    """The type of an operator parameter or result, written as declared."""
+    if isinstance(type_, Dataset):
+        if not type_.components:
+            return "dataset"
+        components = ", ".join(
+            [
+                f"{_format_component_type(component)} {_format_name(component.name)}"
+                for component in type_.components.values()
+            ]
+        )
+        return f"dataset {{{components}}}"
+    if isinstance(type_, Component):
+        return _format_component_type(type_)
+    if isinstance(type_, Scalar):
+        return "scalar"
+    return SCALAR_TYPES_CLASS_REVERSE[type_].lower()
+
+
 def _replace_outside_quotes(text: str, old: str, new: str) -> str:
     """text.replace(old, new), leaving string literals and quoted names as they are."""
     parts = QUOTED_TEXT.split(text)
@@ -154,7 +181,7 @@ class ASTString(ASTTemplate):
     def visit_HRuleset(self, node: AST.HRuleset) -> None:
         if isinstance(node.element, list):
             sep = nl + tab if self.pretty else " "
-            conditons = ", ".join([str(e.value) for e in node.element[:-1]])
+            conditons = ", ".join([self.visit(e) for e in node.element[:-1]])
             signature = (
                 f"{sep}{node.signature_type}{sep}"
                 f"condition {conditons}{sep}rule {node.element[-1].value}"
@@ -162,10 +189,12 @@ class ASTString(ASTTemplate):
         else:
             signature = f"{node.signature_type} rule {node.element.value}"
 
+        # create_ast sorts the rules by dependency, so they go back in the order written
+        written_rules = sorted(node.rules, key=lambda rule: (rule.line_start, rule.column_start))
         rules_strs = []
         if self.pretty:
             self.vtl_script += f"define hierarchical ruleset {node.name}({signature}) is{nl}"
-            for _i, rule in enumerate(node.rules):
+            for _i, rule in enumerate(written_rules):
                 rule_str = f"{tab}{self.visit(rule)}"
                 if rule.erCode is not None:
                     rule_str += f"{nl}{tab}errorcode {_handle_literal(rule.erCode)}"
@@ -177,7 +206,7 @@ class ASTString(ASTTemplate):
             self.vtl_script += rules + nl
             self.vtl_script += f"end hierarchical ruleset;{nl}"
         else:
-            for rule in node.rules:
+            for rule in written_rules:
                 rule_str = self.visit(rule)
                 if rule.erCode is not None:
                     rule_str += f" errorcode {_handle_literal(rule.erCode)}"
@@ -333,25 +362,19 @@ class ASTString(ASTTemplate):
     def visit_Argument(self, node: AST.Argument) -> str:
         default = f" default {self.visit(node.default)}" if node.default is not None else ""
 
-        if isinstance(node.type_, Dataset):
-            argument_type = "dataset"
-        elif isinstance(node.type_, Component):
-            argument_type = "component"
-        elif isinstance(node.type_, Scalar):
-            argument_type = "scalar"
-        else:
-            argument_type = node.type_.__name__.lower()
-
         name = _format_name(node.name)
 
-        return f"{name} {argument_type}{default}"
+        return f"{name} {_format_type(node.type_)}{default}"
 
     def visit_Operator(self, node: AST.Operator) -> None:
         signature_sep = ", " if len(node.parameters) > 1 else ""
         signature = signature_sep.join([self.visit(x) for x in node.parameters])
+        returns = (
+            node.output_type.lower() if node.return_type is None else _format_type(node.return_type)
+        )
         if self.pretty:
             self.vtl_script += f"define operator {node.op}({signature}){nl}"
-            self.vtl_script += f"\treturns {node.output_type.lower()} is{nl}"
+            self.vtl_script += f"\treturns {returns} is{nl}"
             expression = self.visit(node.expression)
             if "(" in expression:
                 expression = _replace_outside_quotes(expression, "(", f"({nl}{tab * 2}")
@@ -360,7 +383,7 @@ class ASTString(ASTTemplate):
             self.vtl_script += f"{tab * 2}{expression}{nl}"
             self.vtl_script += f"end operator;{nl}"
         else:
-            body = f"returns {node.output_type.lower()} is {self.visit(node.expression)}"
+            body = f"returns {returns} is {self.visit(node.expression)}"
             self.vtl_script += f"define operator {node.op}({signature}) {body} end operator;"
 
     # ---------------------- Basic Operators ----------------------
