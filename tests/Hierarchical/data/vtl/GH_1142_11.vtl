@@ -1,0 +1,7 @@
+define hierarchical ruleset HR_1 (valuedomain rule VD_2) is
+    R1: TOTAL = A + B;
+    R2: TOTAL >= A
+end hierarchical ruleset;
+
+DS_h <- hierarchy(DS_1, HR_1 rule Id_2);
+DS_r <- check_hierarchy(DS_1, HR_1 rule Id_2 all);

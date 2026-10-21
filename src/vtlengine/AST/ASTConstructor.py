@@ -474,10 +474,6 @@ class ASTVisitor:
 
         ruleset_name = Terminals().visitRulesetID(ctx_list[3])
         signature_type, ruleset_elements = self.visitHierRuleSignature(ctx_list[5])
-        if signature_type == "variable" and isinstance(ruleset_elements, list):
-            unique_id_names = list(set([elto.value for elto in ruleset_elements]))
-            if len(ruleset_elements) > 2 or len(unique_id_names) < 1:
-                raise SemanticError("1-1-10-9", ruleset=ruleset_name)
         ruleset_rules = self.visitRuleClauseHierarchical(ctx_list[8])
         # Keep k,v for the hierarchical rulesets
         de_ruleset_elements[ruleset_name] = ruleset_elements
