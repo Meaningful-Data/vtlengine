@@ -5295,3 +5295,46 @@ class AnalyticBugs(BugHelper):
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
+
+    def test_GH_1191_1(self):
+        """
+        Status: OK
+        Expression: DS_A <- DS_1;
+                    DS_r <- sqrt(DS_1);
+        Description: The square root of a negative value fails while the second statement runs.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1191
+        Goal: Check the error names the output of the failing statement, and that the name is
+              cleared afterwards.
+        """
+        code = "GH_1191_1"
+        number_inputs = 1
+        message = "2-1-15-2"
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message,
+            exception_message="Please check transformation with output Dataset DS_r",
+        )
+        # An error raised after the failing run names no transformation
+        assert "Please check transformation" not in SemanticError("1-2-5").args[0]
+
+    def test_GH_1191_2(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := random(Id_1, -1)];
+        Description: A negative random index, which the DuckDB engine rejects while it
+                     generates the SQL.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1191
+        Goal: Check the error names the output of the failing statement.
+        """
+        code = "GH_1191_2"
+        number_inputs = 1
+        message = "2-1-15-2"
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message,
+            exception_message="Please check transformation with output Dataset DS_r",
+        )

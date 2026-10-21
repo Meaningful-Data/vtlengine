@@ -7,7 +7,6 @@ from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Type, Union,
 import pandas as pd
 
 import vtlengine.AST as AST
-import vtlengine.Exceptions
 import vtlengine.Operators as Operators
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.DAG import HRDAGAnalyzer
@@ -55,7 +54,7 @@ from vtlengine.DataTypes import (
     ScalarType,
     check_unary_implicit_promotion,
 )
-from vtlengine.Exceptions import RunTimeError, SemanticError
+from vtlengine.Exceptions import RunTimeError, SemanticError, transformation_output
 from vtlengine.files.output import save_datapoints
 from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
@@ -280,15 +279,20 @@ class InterpreterAnalyzer(ASTTemplate):
         invalid_dataset_outputs = []
         invalid_scalar_outputs = []
         for child in node.children:
-            if isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
-                vtlengine.Exceptions.dataset_output = child.left.value  # type: ignore[attr-defined]
-                self._load_datapoints_efficient(statement_num)
-            if not isinstance(
+            is_assignment = isinstance(child, (AST.Assignment, AST.PersistentAssignment))
+            if not is_assignment and not isinstance(
                 child,
                 (AST.HRuleset, AST.DPRuleset, AST.Operator, AST.ViralPropagationDef),
-            ) and not isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
+            ):
                 raise SemanticError("1-2-5")
-            result = self.visit(child)
+            output = child.left.value if is_assignment else None  # type: ignore[attr-defined]
+            with transformation_output(output):
+                if is_assignment:
+                    self._load_datapoints_efficient(statement_num)
+                result = self.visit(child)
+                # Enforce output dtypes match DataStructure declarations
+                if isinstance(result, Dataset):
+                    result.enforce_dtypes()
             if isinstance(result, Dataset) and result.name in self.datasets_inputs:
                 invalid_dataset_outputs.append(result.name)
             if isinstance(result, Scalar) and result.name in self.scalars_inputs:
@@ -307,12 +311,6 @@ class InterpreterAnalyzer(ASTTemplate):
             if result is None:
                 continue
 
-            # Enforce output dtypes match DataStructure declarations
-            if isinstance(result, Dataset):
-                result.enforce_dtypes()
-
-            # Removing output dataset
-            vtlengine.Exceptions.dataset_output = None
             # Save results
             self.datasets[result.name] = copy(result)
             results[result.name] = result
