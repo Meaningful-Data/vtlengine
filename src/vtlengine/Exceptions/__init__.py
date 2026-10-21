@@ -7,11 +7,27 @@ Description
 All exceptions exposed by the Vtl engine.
 """
 
-from typing import Any, List, Optional
+from contextlib import contextmanager
+from typing import Any, Iterator, List, Optional
 
 from vtlengine.Exceptions.messages import centralised_messages
 
 dataset_output = None
+
+
+@contextmanager
+def transformation_output(name: Optional[str]) -> Iterator[None]:
+    """Name the output Dataset of a transformation in the errors raised while it runs.
+
+    The previous name is restored afterwards, also when the transformation raises
+    (issue #1191). ``None`` leaves the name out of the errors.
+    """
+    global dataset_output  # noqa: PLW0603
+    previous, dataset_output = dataset_output, name
+    try:
+        yield
+    finally:
+        dataset_output = previous
 
 
 class VTLEngineException(Exception):
