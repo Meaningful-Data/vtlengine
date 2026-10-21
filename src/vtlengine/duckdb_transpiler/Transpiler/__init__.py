@@ -3918,7 +3918,8 @@ FROM (
 
         cond_comp: List[str] = []
         if isinstance(node.element, list):
-            cond_comp = [x.value for x in node.element[:-1]]
+            # The rules name a condition by its alias, if it has one
+            cond_comp = [getattr(x, "alias", None) or x.value for x in node.element[:-1]]
             signature_value = node.element[-1].value
         else:
             signature_value = node.element.value
