@@ -8,11 +8,13 @@ All exceptions exposed by the Vtl engine.
 """
 
 from contextlib import contextmanager
+from contextvars import ContextVar
 from typing import Any, Iterator, List, Optional
 
 from vtlengine.Exceptions.messages import centralised_messages
 
-dataset_output = None
+# The output Dataset of the transformation running, set through transformation_output
+_dataset_output: ContextVar[Optional[str]] = ContextVar("dataset_output", default=None)
 
 
 @contextmanager
@@ -22,12 +24,11 @@ def transformation_output(name: Optional[str]) -> Iterator[None]:
     The previous name is restored afterwards, also when the transformation raises
     (issue #1191). ``None`` leaves the name out of the errors.
     """
-    global dataset_output  # noqa: PLW0603
-    previous, dataset_output = dataset_output, name
+    token = _dataset_output.set(name)
     try:
         yield
     finally:
-        dataset_output = previous
+        _dataset_output.reset(token)
 
 
 class VTLEngineException(Exception):
@@ -61,14 +62,10 @@ class SemanticError(VTLEngineException):
     comp_code = None
 
     def __init__(self, code: str, comp_code: Optional[str] = None, **kwargs: Any) -> None:
+        message = centralised_messages[code]["message"].format(**kwargs)
+        dataset_output = _dataset_output.get()
         if dataset_output:
-            message = (
-                centralised_messages[code]["message"].format(**kwargs)
-                + self.output_message
-                + str(dataset_output)
-            )
-        else:
-            message = centralised_messages[code]["message"].format(**kwargs)
+            message += self.output_message + dataset_output
 
         super().__init__(message, None, None, code)
 
@@ -87,8 +84,9 @@ class RunTimeError(VTLEngineException):
         **kwargs: Any,
     ) -> None:
         message = centralised_messages[code]["message"].format(**kwargs)
+        dataset_output = _dataset_output.get()
         if dataset_output:
-            message += self.output_message + str(dataset_output)
+            message += self.output_message + dataset_output
 
         super().__init__(message, None, None, code)
 
@@ -184,11 +182,10 @@ class DataLoadError(VTLEngineException):
         comp_code: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
-        message = centralised_messages[code]["message"].format(**kwargs)
+        message = centralised_messages[code]["message"].format(**kwargs) + self.output_message
+        dataset_output = _dataset_output.get()
         if dataset_output:
-            message += self.output_message + " " + str(dataset_output)
-        else:
-            message += self.output_message
+            message += " " + dataset_output
 
         super().__init__(message, None, None, code)
 

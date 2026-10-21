@@ -5,7 +5,6 @@ import duckdb
 import pandas as pd
 import pytest
 
-import vtlengine.Exceptions
 from tests.Helper import TestHelper, _use_duckdb_backend
 from vtlengine.API import create_ast, run
 from vtlengine.Exceptions import RunTimeError, SemanticError
@@ -5317,7 +5316,8 @@ class AnalyticBugs(BugHelper):
             exception_code=message,
             exception_message="Please check transformation with output Dataset DS_r",
         )
-        assert vtlengine.Exceptions.dataset_output is None
+        # An error raised after the failing run names no transformation
+        assert "Please check transformation" not in SemanticError("1-2-5").args[0]
 
     def test_GH_1191_2(self):
         """
