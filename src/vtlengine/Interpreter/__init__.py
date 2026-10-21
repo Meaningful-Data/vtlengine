@@ -7,7 +7,6 @@ from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Type, Union,
 import pandas as pd
 
 import vtlengine.AST as AST
-import vtlengine.Exceptions
 import vtlengine.Operators as Operators
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.DAG import HRDAGAnalyzer
@@ -24,6 +23,7 @@ from vtlengine.AST.Grammar.tokens import (
     CHECK_HIERARCHY,
     COUNT,
     CURRENT_DATE,
+    DATASET,
     DATASET_PRIORITY,
     DATE_ADD,
     DROP,
@@ -54,7 +54,7 @@ from vtlengine.DataTypes import (
     ScalarType,
     check_unary_implicit_promotion,
 )
-from vtlengine.Exceptions import RunTimeError, SemanticError
+from vtlengine.Exceptions import RunTimeError, SemanticError, transformation_output
 from vtlengine.files.output import save_datapoints
 from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
@@ -279,15 +279,20 @@ class InterpreterAnalyzer(ASTTemplate):
         invalid_dataset_outputs = []
         invalid_scalar_outputs = []
         for child in node.children:
-            if isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
-                vtlengine.Exceptions.dataset_output = child.left.value  # type: ignore[attr-defined]
-                self._load_datapoints_efficient(statement_num)
-            if not isinstance(
+            is_assignment = isinstance(child, (AST.Assignment, AST.PersistentAssignment))
+            if not is_assignment and not isinstance(
                 child,
                 (AST.HRuleset, AST.DPRuleset, AST.Operator, AST.ViralPropagationDef),
-            ) and not isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
+            ):
                 raise SemanticError("1-2-5")
-            result = self.visit(child)
+            output = child.left.value if is_assignment else None  # type: ignore[attr-defined]
+            with transformation_output(output):
+                if is_assignment:
+                    self._load_datapoints_efficient(statement_num)
+                result = self.visit(child)
+                # Enforce output dtypes match DataStructure declarations
+                if isinstance(result, Dataset):
+                    result.enforce_dtypes()
             if isinstance(result, Dataset) and result.name in self.datasets_inputs:
                 invalid_dataset_outputs.append(result.name)
             if isinstance(result, Scalar) and result.name in self.scalars_inputs:
@@ -306,12 +311,6 @@ class InterpreterAnalyzer(ASTTemplate):
             if result is None:
                 continue
 
-            # Enforce output dtypes match DataStructure declarations
-            if isinstance(result, Dataset):
-                result.enforce_dtypes()
-
-            # Removing output dataset
-            vtlengine.Exceptions.dataset_output = None
             # Save results
             self.datasets[result.name] = copy(result)
             results[result.name] = result
@@ -1850,15 +1849,15 @@ class InterpreterAnalyzer(ASTTemplate):
             self.is_from_rule = False
             return None
         if self.is_from_hr_agg:
-            measure_name = rule_result.get_measures_names()[0]
             if (
                 self.hr_agg_rules_computed is not None
                 and self.hr_agg_item_rules is not None
                 and rule_result.data is not None
-                and len(rule_result.data[measure_name]) > 0
                 and not (self.hr_input == DATASET_PRIORITY and node.rule.op != EQ)
             ):
-                # Keyed by rule: several rules may compute the same code item (issue #1142)
+                # Keyed by rule: several rules may compute the same code item (issue #1142).
+                # A rule that computes no data point is kept too: with input rule, the later
+                # rules read no data point for its code item (issue #1169).
                 rule_name = cast(str, node.name)
                 self.hr_agg_rules_computed[rule_name] = rule_result.data
                 self.hr_agg_item_rules.setdefault(rule_result.name, []).append(rule_name)
@@ -1935,6 +1934,8 @@ class InterpreterAnalyzer(ASTTemplate):
 
     def visit_HRUnOp(self, node: AST.HRUnOp) -> None:
         operand = self.visit(node.operand)
+        if isinstance(operand, Dataset):
+            operand = get_measure_from_dataset(operand, node.operand.value)
         return HR_UNARY_MAPPING[node.op].analyze(operand)
 
     def visit_Validation(self, node: AST.Validation) -> Dataset:
@@ -2035,6 +2036,8 @@ class InterpreterAnalyzer(ASTTemplate):
             # Without extra identifiers there is exactly one (global) group; a
             # zero-column frame keeps one row per data point otherwise.
             code_data = code_data.iloc[:1]
+        # Groups where the code item condition is not TRUE leave the code item out of the
+        # rule: it is excluded, not a missing data point (issue #1168)
         excluded = pd.Series(False, index=code_data.index)
         condition = getattr(node, "_right_condition", None)
         if condition is not None:
@@ -2047,25 +2050,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 else:
                     excluded[:] = len(df) == 0
 
-        computed_by = (
-            None
-            if self.is_hr_rule_left or self.hr_agg_item_rules is None
-            else self.hr_agg_item_rules.get(node.value)
-        )
-        if computed_by:
-            df = self._hr_computed_item(computed_by, rule_data, other_ids)
-            if self.hr_input in (RULE_PRIORITY, DATASET_PRIORITY):
-                identifiers = ruleset_ds.get_identifiers_names()
-                input_df = rule_data[[*identifiers, me_name]].rename(
-                    columns={me_name: "__input_me__"}
-                )
-                merged = merge_frames(df, input_df, on=identifiers, how="left")
-                merged.index = df.index
-                # Assign the result back: an in-place `where` on the column selection is
-                # a chained assignment, which pandas 3 Copy-on-Write no longer writes
-                # through to `df`.
-                df[me_name] = df[me_name].where(df[me_name].notna(), merged["__input_me__"])
-        elif node.value in df[hr_component].values:
+        if node.value in df[hr_component].values:
             value_data = df[df[hr_component] == node.value]
             if other_ids:
                 merged = merge_frames(
@@ -2083,6 +2068,23 @@ class InterpreterAnalyzer(ASTTemplate):
             df = code_data.copy()
             df[me_name] = REMOVE
         df[hr_component] = node.value
+
+        # A code item that other rules compute is read from them, except with input
+        # dataset, which reads every code item from the operand (issue #1169)
+        computed_by = (
+            None
+            if self.is_hr_rule_left or self.hr_agg_item_rules is None or self.hr_input == DATASET
+            else self.hr_agg_item_rules.get(node.value)
+        )
+        if computed_by:
+            computed = self._hr_computed_item(computed_by, rule_data, other_ids)
+            if self.hr_input in (RULE_PRIORITY, DATASET_PRIORITY):
+                # The operand's data point where no rule computed a non-null one; a null
+                # computed one is kept where the operand has none
+                in_operand = df.index[~df[me_name].isin([REMOVE])]
+                computed = computed[computed[me_name].notna() | ~computed.index.isin(in_operand)]
+                computed = pd.concat([computed, df.drop(index=computed.index, errors="ignore")])
+            df = computed.sort_index()
         if excluded.any():
             rows = code_data[excluded].assign(**{hr_component: node.value, me_name: EXCLUDE})
             df = pd.concat([df.drop(index=rows.index, errors="ignore"), rows]).sort_index()

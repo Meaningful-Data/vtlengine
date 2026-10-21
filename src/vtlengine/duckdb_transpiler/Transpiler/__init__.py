@@ -67,7 +67,7 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
     StructureVisitor,
     _try_normalize_time_period,
 )
-from vtlengine.Exceptions import RunTimeError, SemanticError
+from vtlengine.Exceptions import RunTimeError, SemanticError, transformation_output
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 from vtlengine.Operators.Analytic import DEFAULT_ANALYTIC_WINDOW
 from vtlengine.Operators.Join import merged_viral_attribute_names
@@ -519,7 +519,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             elif isinstance(child, AST.HRuleset):
                 self._visit_HRuleset(child)
             elif isinstance(child, AST.Assignment):
-                with self._statement_memo():
+                name = child.left.value  # type: ignore[attr-defined]
+                with transformation_output(name), self._statement_memo():
                     queries.append(self._transpile_assignment(child))
                 self._join_alias_map = {}
                 self._consumed_join_aliases = set()
@@ -4438,6 +4439,9 @@ FROM (
                 materialized=True,
             )
             rule_result_refs.append((rule_cte_name, parsed.left_code_item))
+            if input_mode == "dataset":
+                # Every rule reads its code items from the operand (issue #1169)
+                continue
 
             next_pivot = f"_pivot_{i}"
             # Each _pivot_i is consumed by the next iteration's _rule_{i+1} and

@@ -1,0 +1,8 @@
+define hierarchical ruleset HR_1 (variable rule Id_2) is
+    TOTAL = A + B;
+    GRAND = TOTAL + C
+end hierarchical ruleset;
+
+DS_r1 <- hierarchy(DS_1, HR_1 rule Id_2 rule);
+DS_r2 <- hierarchy(DS_1, HR_1 rule Id_2 rule_priority);
+DS_r3 <- hierarchy(DS_1, HR_1 rule Id_2 dataset);
