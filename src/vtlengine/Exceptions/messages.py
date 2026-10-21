@@ -610,11 +610,17 @@ centralised_messages = {
         "where numerical are required.",
     },
     "1-1-10-10": {
-        "message": "Duplicated EQ rules on the Hierarchy Roll-up {ruleset}. "
-        "Check the EQ rules: {rule}.",
-        "description": "Raised when there are no applicable rules in a Hierarchy Roll-up "
-        "due to missing '=' operators.",
+        "message": "Code item {code_item} is defined by more than one rule of the Hierarchy "
+        "Roll-up {ruleset} and at least one of them has no condition.",
+        "description": "Raised when several '=' rules define the same code item in a hierarchy "
+        "operation and one of them has no when condition, so their results always overlap.",
     },
+    "2-1-10-1": {
+        "message": "More than one rule of the Hierarchy Roll-up {ruleset} computes code item "
+        "{code_item} for the same data point.",
+        "description": "Raised when the conditions of several rules that define the same code "
+        "item hold on the same data point of a hierarchy operation.",
+    },  # RunTimeError.
     # General Operators
     "2-1-12-1": {
         "message": "At op {op}: Create a null Measure without a Scalar type is not allowed. "
@@ -1032,17 +1038,17 @@ centralised_messages = {
         "{type} definition {name}.",
         "description": "Occurs when some rules are named and others are not in the same ruleset.",
     },
-    "1-3-1-8": {
-        "message": "All rules must have different code items in the left side of '=' in "
-        "hierarchy operator at hierachical ruleset definition {name}.",
-        "description": "Raised when duplicate left-hand side code items are found "
-        "in hierarchical ruleset definitions.",
-    },
     "1-3-1-9": {
         "message": "At op check_datapoint: {name} has an invalid datatype expected Dataset, "
         "found Scalar.",
         "description": "Occurs when a datapoint has an invalid datatype; a Dataset is expected "
         "but a Scalar was found.",
+    },
+    "1-3-1-10": {
+        "message": "Component {comp_name} used in a condition of Hierarchical Ruleset "
+        "{ruleset_name} is not declared in the condition of its signature.",
+        "description": "Raised when a hierarchical ruleset condition refers to a component "
+        "that is not declared in the condition of the ruleset signature.",
     },
     "1-3-12": {
         "message": "Default arguments cannot be followed by non-default arguments.",
@@ -1081,11 +1087,6 @@ centralised_messages = {
         "description": "Raised when two define viral propagation statements "
         "target the same variable.",
     },
-    "1-3-3-2": {
-        "message": "Duplicate viral propagation rule for value domain {name}.",
-        "description": "Raised when two define viral propagation statements "
-        "target the same value domain.",
-    },
     "1-3-3-3": {
         "message": "Cannot mix enumerated and aggregate clauses in viral "
         "propagation definition {name}.",
@@ -1102,7 +1103,7 @@ centralised_messages = {
         "message": "Viral propagation rule for {name} uses aggregate '{function}', which "
         "requires a numeric attribute, but {name} has type {type}.",
         "description": "Raised when an aggregate viral propagation rule using sum or avg "
-        "targets a viral attribute (variable or value domain) whose data type is not "
+        "targets a viral attribute whose data type is not "
         "Number or Integer.",
     },
     "1-3-3-6": {
@@ -1120,6 +1121,13 @@ centralised_messages = {
         "the component names the engine reserves for automatically named measures "
         "(str_var, num_var, int_var, time_var, time_period_var, date_var, duration_var, "
         "bool_var, null_var), which would collide with a promoted measure of the same name.",
+    },
+    "1-3-3-8": {
+        "message": "Viral propagation definition {name} is defined on value domain "
+        "{value_domain}, which is not supported yet; define it on a variable instead.",
+        "description": "Raised when a viral propagation definition uses a valuedomain "
+        "signature. Components do not carry a value domain yet, so the rule could not be "
+        "applied to any viral attribute.",
     },
     # ---------- Interpreter ----------
     "1-3-5": {

@@ -1,0 +1,10 @@
+define hierarchical ruleset HR_1 (variable condition Id_1 rule Id_2) is
+    EU = BE [Id_1 > 1995] + FR
+end hierarchical ruleset;
+
+DS_r1 <- check_hierarchy(DS_1, HR_1 condition Id_1 rule Id_2 non_null all);
+DS_r2 <- check_hierarchy(DS_1, HR_1 condition Id_1 rule Id_2 non_zero all);
+DS_r3 <- check_hierarchy(DS_1, HR_1 condition Id_1 rule Id_2 partial_null all);
+DS_r4 <- check_hierarchy(DS_1, HR_1 condition Id_1 rule Id_2 partial_zero all);
+DS_r5 <- check_hierarchy(DS_1, HR_1 condition Id_1 rule Id_2 always_null all);
+DS_r6 <- check_hierarchy(DS_1, HR_1 condition Id_1 rule Id_2 always_zero all);

@@ -1,4 +1,5 @@
 import operator
+from collections import Counter
 from copy import copy
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -23,6 +24,8 @@ from vtlengine.ViralPropagation import (
 )
 
 REMOVE = "REMOVE_VALUE"
+# A right code item whose condition is not TRUE is left out of the rule (issue #1168)
+EXCLUDE = "EXCLUDE_VALUE"
 
 
 def get_measure_from_dataset(dataset: Dataset, code_item: str) -> DataComponent:
@@ -47,9 +50,12 @@ class HRBinOp(Operators.Binary):
     @classmethod
     def align_series(cls, left: Any, right: Any, mode: str) -> Tuple[Any, Any]:
         fill_value = 0 if mode.endswith("zero") else None
-        # Convert to object dtype for sentinel-based alignment
-        left_obj = left.astype(object)
-        right_obj = right.astype(object) if isinstance(right, pd.Series) else right
+        # Convert to object dtype for sentinel-based alignment. A rule whose right code
+        # items are all excluded reads them as missing.
+        left_obj = left.astype(object).replace(EXCLUDE, REMOVE)
+        right_obj = (
+            right.astype(object).replace(EXCLUDE, REMOVE) if isinstance(right, pd.Series) else right
+        )
         left_aligned, right_aligned = left_obj.align(right_obj, join="outer")
 
         left_aligned[left_aligned.index.difference(left.index, sort=False)] = REMOVE
@@ -68,8 +74,32 @@ class HRBinOp(Operators.Binary):
 
     @classmethod
     def hr_op(cls, left_series: Any, right_series: Any, hr_mode: str) -> Any:
-        left, right = cls.align_series(left_series, right_series, hr_mode)
-        return cls.apply_operation_two_series(left, right)
+        left_obj, right_obj = left_series.astype(object).align(
+            right_series.astype(object), join="outer"
+        )
+        left_obj[left_obj.index.difference(left_series.index, sort=False)] = REMOVE
+        right_obj[right_obj.index.difference(right_series.index, sort=False)] = REMOVE
+        excluded = (left_obj == EXCLUDE) | (right_obj == EXCLUDE)
+        left, right = cls.align_series(left_obj[~excluded], right_obj[~excluded], hr_mode)
+        result = cls.apply_operation_two_series(left, right)
+        if not excluded.any():
+            return result
+        kept = pd.Series(
+            map(cls.without_excluded, left_obj[excluded], right_obj[excluded]),
+            index=left_obj.index[excluded],
+            dtype=object,
+        )
+        return pd.concat([result, kept]).sort_index()
+
+    @classmethod
+    def without_excluded(cls, left: Any, right: Any) -> Any:
+        """Leave an excluded operand out of the operation (issue #1168): the other one is
+        combined with 0, a missing or excluded one is kept as it is."""
+        left_excluded = isinstance(left, str) and left == EXCLUDE
+        other, zero_left = (right, True) if left_excluded else (left, False)
+        if isinstance(other, str) or pd.isnull(other):
+            return other
+        return cls.op_func(0, other) if zero_left else cls.op_func(other, 0)
 
 
 class HRComparison(HRBinOp):
@@ -189,7 +219,14 @@ class HRBinMinus(HRBinNumeric):
 class HRUnNumeric(Operators.Unary):
     @classmethod
     def evaluate(cls, operand: DataComponent) -> DataComponent:  # type: ignore[override]
-        result_data = cls.apply_operation_component(operand.data)
+        # A missing or excluded code item is kept as it is
+        result_data = (
+            None
+            if operand.data is None
+            else operand.data.map(
+                lambda x: x if isinstance(x, str) else cls.op_func(x), na_action="ignore"
+            )
+        )
         return DataComponent(
             name=f"{cls.op}({operand.name})",
             data=result_data,
@@ -232,7 +269,12 @@ class HAAssignment(Operators.Binary):
 
     @classmethod
     def handle_mode(cls, x: Any, hr_mode: str) -> Any:
-        remove = (hr_mode == NON_NULL and pd.isnull(x)) or (hr_mode == NON_ZERO and x == 0)
+        # A right side whose code items are all excluded reads as missing (issue #1168)
+        remove = (
+            isinstance(x, str)
+            or (hr_mode == NON_NULL and pd.isnull(x))
+            or (hr_mode == NON_ZERO and not pd.isnull(x) and x == 0)
+        )
         return REMOVE if remove else x
 
 
@@ -254,7 +296,7 @@ class Hierarchy(Operators.Operator):
         output: str,
         viral_components: Optional[List[Component]] = None,
         viral_values: Optional[DataFrame] = None,
-        node_children: Optional[Dict[str, List[str]]] = None,
+        node_children: Optional[Dict[str, Tuple[str, List[str]]]] = None,
         rule_component: Optional[str] = None,
     ) -> Dataset:
         dataset_name = VirtualCounter._new_ds_name()
@@ -274,19 +316,24 @@ class Hierarchy(Operators.Operator):
     def _combine_node_viral(
         viral_values: DataFrame,
         viral_names: List[str],
-        node_children: Dict[str, List[str]],
+        node_children: Dict[str, Tuple[str, List[str]]],
         rule_component: str,
         other_ids: List[str],
+        computed_dict: Dict[str, DataFrame],
     ) -> Optional[DataFrame]:
         """Combine child viral values into each computed node via the propagation rule.
 
-        Nodes are processed in topological order (``node_children`` is insertion-ordered by
-        the rule sequence); a child that is itself a computed node reuses its combined value.
+        ``node_children`` maps each rule to the node it computes and the children it
+        combines. Rules are processed in topological order (the mapping is insertion-ordered
+        by the rule sequence); a child that is itself a computed node reuses its combined
+        value. When several rules compute the same node, each one only combines the groups
+        it computed (issue #1142).
         """
         registry = get_current_registry()
+        rules_per_node = Counter(node for node, _ in node_children.values())
         node_viral: Dict[str, DataFrame] = {}
         tagged_frames: List[DataFrame] = []
-        for node, children in node_children.items():
+        for rule_name, (node, children) in node_children.items():
             child_frames = []
             for child in children:
                 if child in node_viral:
@@ -326,7 +373,15 @@ class Hierarchy(Operators.Operator):
                         for va in viral_names
                     }
                 )
-            node_viral[node] = nv
+            if rules_per_node[node] > 1:
+                if rule_name not in computed_dict:
+                    continue
+                if other_ids:
+                    computed_groups = computed_dict[rule_name][other_ids].drop_duplicates()
+                    nv = merge_frames(nv, computed_groups, on=other_ids, how="inner")
+            node_viral[node] = (
+                pd.concat([node_viral[node], nv], ignore_index=True) if node in node_viral else nv
+            )
             tagged = nv.copy()
             tagged[rule_component] = node
             tagged_frames.append(tagged)
@@ -342,7 +397,7 @@ class Hierarchy(Operators.Operator):
         output: str,
         viral_components: Optional[List[Component]] = None,
         viral_values: Optional[DataFrame] = None,
-        node_children: Optional[Dict[str, List[str]]] = None,
+        node_children: Optional[Dict[str, Tuple[str, List[str]]]] = None,
         rule_component: Optional[str] = None,
     ) -> Dataset:
         result = cls.validate(dataset, computed_dict, output, viral_components=viral_components)
@@ -366,7 +421,7 @@ class Hierarchy(Operators.Operator):
         ):
             other_ids = [i for i in dataset.get_identifiers_names() if i != rule_component]
             computed_viral = cls._combine_node_viral(
-                viral_values, viral_names, node_children, rule_component, other_ids
+                viral_values, viral_names, node_children, rule_component, other_ids, computed_dict
             )
             if computed_viral is not None:
                 computed_data = merge_frames(

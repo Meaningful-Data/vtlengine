@@ -128,17 +128,6 @@ class TestViralPropagationParsing:
         )
         assert "DS_r" in result
 
-    def test_parse_valuedomain(self) -> None:
-        script = """
-            define viral propagation OBS (valuedomain CL_OBS) is
-                when "M" then "M";
-                else "A"
-            end viral propagation;
-            DS_r <- DS_1;
-        """
-        result = run(script=script, data_structures=SIMPLE_DS, datapoints=SIMPLE_DP)
-        assert "DS_r" in result
-
 
 # -- End-to-end propagation (single viral attribute) --
 
