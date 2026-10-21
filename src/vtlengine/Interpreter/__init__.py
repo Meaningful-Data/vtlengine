@@ -1966,6 +1966,8 @@ class InterpreterAnalyzer(ASTTemplate):
 
     def visit_HRUnOp(self, node: AST.HRUnOp) -> None:
         operand = self.visit(node.operand)
+        if isinstance(operand, Dataset):
+            operand = get_measure_from_dataset(operand, node.operand.value)
         return HR_UNARY_MAPPING[node.op].analyze(operand)
 
     def visit_Validation(self, node: AST.Validation) -> Dataset:
@@ -2115,7 +2117,6 @@ class InterpreterAnalyzer(ASTTemplate):
                     raise RunTimeError("2-1-10-1", ruleset=self.hr_name, code_item=node.value)
                 computed = pd.concat([computed, df.drop(index=computed.index, errors="ignore")])
             elif self.hr_input == RULE_PRIORITY:
-            if self.hr_input in (RULE_PRIORITY, DATASET_PRIORITY):
                 # The operand's data point where no rule computed a non-null one; a null
                 # computed one is kept where the operand has none
                 in_operand = df.index[~df[me_name].isin([REMOVE])]

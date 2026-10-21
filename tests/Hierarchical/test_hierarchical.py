@@ -3837,6 +3837,82 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1190_1(self):
+        """
+        HIERARCHICAL RULSET: hierarchy, check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        C = - A + B
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 rule Id_2);
+                    DS_r2 <- check_hierarchy(DS_1, HR_1 rule Id_2 all);
+
+        Description: The right side of the rule starts with a minus sign.
+
+        Git Branch: #1190.
+        Goal: Check the rule computes C = B - A.
+        """
+
+        code = "GH_1190_1"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1190_2(self):
+        """
+        HIERARCHICAL RULSET: hierarchy, check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        C = + A + B
+                    end hierarchical ruleset;
+                    define hierarchical ruleset HR_2 (variable rule Id_2) is
+                        C = - A
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 rule Id_2);
+                    DS_r2 <- hierarchy(DS_1, HR_2 rule Id_2);
+                    DS_r3 <- check_hierarchy(DS_1, HR_2 rule Id_2 all);
+
+        Description: A plus sign before the first code item, and a signed code item alone.
+
+        Git Branch: #1190.
+        Goal: Check both rules compute their signed code items.
+        """
+
+        code = "GH_1190_2"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1190_3(self):
+        """
+        HIERARCHICAL RULSET: hierarchy, check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Id_1 rule Id_2) is
+                        C = - A [Id_1 > 1995] + B
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition Id_1 rule Id_2);
+                    DS_r2 <- check_hierarchy(DS_1, HR_1 condition Id_1 rule Id_2 all);
+
+        Description: The signed code item has a condition, which is FALSE in 1990.
+
+        Git Branch: #1190.
+        Goal: Check A is left out of the rule in 1990 and subtracted in 2000.
+        """
+
+        code = "GH_1190_3"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_1173_1(self):
         """
         HIERARCHICAL RULSET: check_hierarchy
