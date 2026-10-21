@@ -586,13 +586,17 @@ class Argument(AST):
 @dataclass
 class Operator(AST):
     """
-    Operator: (operator, parameters, outputType, expression)
+    Operator: (operator, parameters, outputType, expression, return_type)
+
+    output_type is the kind of the result (Scalar, Component or Dataset), and return_type
+    the type the operator declares, when it can be represented like a parameter type.
     """
 
     op: str
     parameters: List[Argument]
     output_type: str
     expression: AST
+    return_type: Optional[Any] = None
 
     __eq__ = AST.ast_equality
 
@@ -601,12 +605,11 @@ class Operator(AST):
 @dataclass
 class DefIdentifier(AST):
     """
-    DefIdentifier: (value, kind, was_quoted, alias)"""
+    DefIdentifier: (value, kind, was_quoted)"""
 
     value: str
     kind: str
     was_quoted: bool = False
-    alias: Optional[str] = None
 
     __eq__ = AST.ast_equality
 
@@ -686,11 +689,14 @@ class DPRule(AST):
 class HRuleset(AST):
     """
     HRuleset: (name, element, rules)
+
+    element is the rule DefIdentifier, or the conditions (DPRIdentifier, with the
+    value domain or variable and its alias) followed by the rule DefIdentifier.
     """
 
     name: str
     signature_type: str
-    element: Union[DefIdentifier, List[DefIdentifier]]
+    element: Union[DefIdentifier, List[Union[DPRIdentifier, DefIdentifier]]]
     rules: List[HRule]
 
     __eq__ = AST.ast_equality

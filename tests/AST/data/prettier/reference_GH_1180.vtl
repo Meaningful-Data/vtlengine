@@ -1,0 +1,49 @@
+define operator f_1(x measure<integer>, y identifier, z component<number>, w dataset {identifier<integer> Id_1, measure<number> Me_1})
+	returns measure<integer> is
+		x
+end operator;
+
+define operator f_2(x time_period, y time)
+	returns number is
+		1.0
+end operator;
+
+define operator f_3(x dataset)
+	returns dataset {identifier<integer> Id_1, measure<number> Me_1} is
+		x
+end operator;
+
+define hierarchical ruleset HR_3(
+	variable
+	condition Id_1
+	rule Id_2) is
+	G = TOTAL + B;
+
+	
+			when
+				Id_1 = "X"
+			then
+				TOTAL = A + B;
+
+	
+			when
+				Id_1 = "Y"
+			then
+				TOTAL = A;
+
+	X > Y + Z;
+
+	W <= G
+end hierarchical ruleset;
+
+define hierarchical ruleset HR_2(
+	valuedomain
+	condition VD_1 as C_1, VD_3
+	rule VD_2) is
+	
+			when
+				C_1 = "X" and VD_3 = "Y"
+			then
+				A = B + C
+end hierarchical ruleset;
+
