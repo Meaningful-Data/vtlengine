@@ -36,7 +36,7 @@ from vtlengine.duckdb_transpiler.io._time_handling import (
     format_time_period_scalar,
 )
 from vtlengine.duckdb_transpiler.sql import initialize_time_types
-from vtlengine.Exceptions import RunTimeError, SemanticError
+from vtlengine.Exceptions import RunTimeError, SemanticError, transformation_output
 from vtlengine.files.output._time_period_representation import TimePeriodRepresentation
 from vtlengine.Model import Component, Dataset, Scalar
 from vtlengine.Utils._number_config import get_effective_output_digits
@@ -432,8 +432,8 @@ def load_scheduled_datasets(
                 file_path=path_dict[ds_name],
             )
         elif ds_name in dataframe_dict:
-            # Register DataFrame directly with proper schema
-            register_dataframes(conn, {ds_name: dataframe_dict[ds_name]}, input_datasets)
+            with transformation_output(None):
+                register_dataframes(conn, {ds_name: dataframe_dict[ds_name]}, input_datasets)
         else:
             # No data provided - create empty table with proper schema
             load_datapoints_duckdb(
@@ -676,28 +676,27 @@ def execute_queries(
 
     # Execute each query with DAG scheduling
     for statement_num, (result_name, sql_query, _) in enumerate(queries, start=1):
-        # Load datasets scheduled for this statement
-        load_scheduled_datasets(
-            conn=conn,
-            statement_num=statement_num,
-            ds_analysis=ds_analysis,
-            path_dict=path_dict,
-            dataframe_dict=dataframe_dict,
-            input_datasets=input_datasets,
-        )
+        with transformation_output(result_name):
+            # Load datasets scheduled for this statement
+            load_scheduled_datasets(
+                conn=conn,
+                statement_num=statement_num,
+                ds_analysis=ds_analysis,
+                path_dict=path_dict,
+                dataframe_dict=dataframe_dict,
+                input_datasets=input_datasets,
+            )
 
-        # Execute query and create table
-        copied = copies.get(statement_num)
-        source_sql = sql_query if copied is None else f'SELECT * FROM "{copied}"'
-        try:
-            conn.execute(f'CREATE TABLE "{result_name}" AS {source_sql}')
-        except duckdb.Error as e:
-            mapped = _map_query_error(e, sql_query)
-            if mapped is not e:
-                raise mapped from e
-            raise
-        except Exception:
-            raise
+            # Execute query and create table
+            copied = copies.get(statement_num)
+            source_sql = sql_query if copied is None else f'SELECT * FROM "{copied}"'
+            try:
+                conn.execute(f'CREATE TABLE "{result_name}" AS {source_sql}')
+            except duckdb.Error as e:
+                mapped = _map_query_error(e, sql_query)
+                if mapped is not e:
+                    raise mapped from e
+                raise
 
         # Clean up datasets scheduled for deletion
         cleanup_scheduled_datasets(

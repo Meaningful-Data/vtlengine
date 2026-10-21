@@ -329,6 +329,7 @@ class TestHelper(TestCase):
         sql_names: List[str] = None,
         text: Optional[str] = None,
         scalars: Dict[str, Any] = None,
+        exception_message: Optional[str] = None,
     ):
         # Data Loading.--------------------------------------------------------
         warnings.filterwarnings("ignore", category=FutureWarning)
@@ -386,6 +387,8 @@ class TestHelper(TestCase):
         if result is False:
             print(f"\n{exception_code} != {context.value.args[1]}")
         assert result
+        if exception_message is not None:
+            assert exception_message in str(context.value.args[0])
 
     @classmethod
     def LoadValueDomains(cls, vd_names):

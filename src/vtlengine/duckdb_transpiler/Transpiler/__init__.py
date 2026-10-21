@@ -67,7 +67,7 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
     StructureVisitor,
     _try_normalize_time_period,
 )
-from vtlengine.Exceptions import RunTimeError, SemanticError
+from vtlengine.Exceptions import RunTimeError, SemanticError, transformation_output
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 from vtlengine.Operators.Analytic import DEFAULT_ANALYTIC_WINDOW
 from vtlengine.Operators.Join import merged_viral_attribute_names
@@ -519,7 +519,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             elif isinstance(child, AST.HRuleset):
                 self._visit_HRuleset(child)
             elif isinstance(child, AST.Assignment):
-                with self._statement_memo():
+                name = child.left.value  # type: ignore[attr-defined]
+                with transformation_output(name), self._statement_memo():
                     queries.append(self._transpile_assignment(child))
                 self._join_alias_map = {}
                 self._consumed_join_aliases = set()
@@ -3917,7 +3918,8 @@ FROM (
 
         cond_comp: List[str] = []
         if isinstance(node.element, list):
-            cond_comp = [x.value for x in node.element[:-1]]
+            # The rules name a condition by its alias, if it has one
+            cond_comp = [getattr(x, "alias", None) or x.value for x in node.element[:-1]]
             signature_value = node.element[-1].value
         else:
             signature_value = node.element.value
