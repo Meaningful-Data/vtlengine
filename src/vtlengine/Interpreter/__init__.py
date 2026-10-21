@@ -1935,6 +1935,8 @@ class InterpreterAnalyzer(ASTTemplate):
 
     def visit_HRUnOp(self, node: AST.HRUnOp) -> None:
         operand = self.visit(node.operand)
+        if isinstance(operand, Dataset):
+            operand = get_measure_from_dataset(operand, node.operand.value)
         return HR_UNARY_MAPPING[node.op].analyze(operand)
 
     def visit_Validation(self, node: AST.Validation) -> Dataset:
