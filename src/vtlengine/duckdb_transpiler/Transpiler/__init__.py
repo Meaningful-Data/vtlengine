@@ -4438,6 +4438,9 @@ FROM (
                 materialized=True,
             )
             rule_result_refs.append((rule_cte_name, parsed.left_code_item))
+            if input_mode == "dataset":
+                # Every rule reads its code items from the operand (issue #1169)
+                continue
 
             next_pivot = f"_pivot_{i}"
             # Each _pivot_i is consumed by the next iteration's _rule_{i+1} and

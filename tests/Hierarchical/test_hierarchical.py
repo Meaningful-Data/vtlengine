@@ -3710,3 +3710,205 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         references_names = ["1", "2"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1169_1(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        TOTAL = A + B;
+                        GRAND = TOTAL + C
+                    end hierarchical ruleset;
+
+                    DS_r <- hierarchy(DS_1, HR_1 rule Id_2 dataset);
+
+        Description: GRAND reads TOTAL, which the first rule computes.
+
+        Git Branch: #1169.
+        Goal: Check GRAND reads TOTAL from the operand, also where the first rule computes none.
+        """
+
+        code = "GH_1169_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1169_2(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        TOTAL = A + B;
+                        GRAND = TOTAL + C
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 rule Id_2 rule);
+                    DS_r2 <- hierarchy(DS_1, HR_1 rule Id_2 rule_priority);
+                    DS_r3 <- hierarchy(DS_1, HR_1 rule Id_2 always_zero dataset);
+
+        Description: GRAND reads TOTAL, which the first rule computes, in each input mode.
+
+        Git Branch: #1169.
+        Goal: Check only input dataset reads TOTAL from the operand where the rule computes it.
+        """
+
+        code = "GH_1169_2"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1169_3(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        TOTAL = A + B;
+                        GRAND = TOTAL + C
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 rule Id_2 rule);
+                    DS_r2 <- hierarchy(DS_1, HR_1 rule Id_2 rule_priority);
+                    DS_r3 <- hierarchy(DS_1, HR_1 rule Id_2 dataset);
+
+        Description: A and B are missing, so the first rule computes no TOTAL at all.
+
+        Git Branch: #1169.
+        Goal: Check input rule reads no TOTAL, and the other inputs read it from the operand.
+        """
+
+        code = "GH_1169_3"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1170_1(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        TOTAL = A + B;
+                        GRAND = TOTAL + C
+                    end hierarchical ruleset;
+
+                    DS_r <- hierarchy(DS_1, HR_1 rule Id_2 rule_priority);
+
+        Description: The first rule computes no TOTAL for Id_1 = 2, where A and B are missing.
+
+        Git Branch: #1170.
+        Goal: Check GRAND takes TOTAL from the operand where the rule computes no TOTAL.
+        """
+
+        code = "GH_1170_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1170_2(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (valuedomain condition VD_2 as C_2
+                        rule VD_1) is
+                        when C_2 = "X" then TOTAL = A + B;
+                        GRAND = TOTAL + C
+                    end hierarchical ruleset;
+
+                    DS_r <- hierarchy(DS_1, HR_1 condition Id_2 rule Id_1 always_zero rule_priority);
+
+        Description: The condition of the first rule is FALSE for Id_2 = "Y", where it computes
+        no TOTAL.
+
+        Git Branch: #1170.
+        Goal: Check GRAND takes TOTAL from the operand there, instead of reading it as 0.
+        """
+
+        code = "GH_1170_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1190_1(self):
+        """
+        HIERARCHICAL RULSET: hierarchy, check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        C = - A + B
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 rule Id_2);
+                    DS_r2 <- check_hierarchy(DS_1, HR_1 rule Id_2 all);
+
+        Description: The right side of the rule starts with a minus sign.
+
+        Git Branch: #1190.
+        Goal: Check the rule computes C = B - A.
+        """
+
+        code = "GH_1190_1"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1190_2(self):
+        """
+        HIERARCHICAL RULSET: hierarchy, check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        C = + A + B
+                    end hierarchical ruleset;
+                    define hierarchical ruleset HR_2 (variable rule Id_2) is
+                        C = - A
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 rule Id_2);
+                    DS_r2 <- hierarchy(DS_1, HR_2 rule Id_2);
+                    DS_r3 <- check_hierarchy(DS_1, HR_2 rule Id_2 all);
+
+        Description: A plus sign before the first code item, and a signed code item alone.
+
+        Git Branch: #1190.
+        Goal: Check both rules compute their signed code items.
+        """
+
+        code = "GH_1190_2"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1190_3(self):
+        """
+        HIERARCHICAL RULSET: hierarchy, check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Id_1 rule Id_2) is
+                        C = - A [Id_1 > 1995] + B
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition Id_1 rule Id_2);
+                    DS_r2 <- check_hierarchy(DS_1, HR_1 condition Id_1 rule Id_2 all);
+
+        Description: The signed code item has a condition, which is FALSE in 1990.
+
+        Git Branch: #1190.
+        Goal: Check A is left out of the rule in 1990 and subtracted in 2000.
+        """
+
+        code = "GH_1190_3"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
