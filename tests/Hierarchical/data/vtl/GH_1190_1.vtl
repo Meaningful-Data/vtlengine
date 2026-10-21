@@ -1,0 +1,6 @@
+define hierarchical ruleset HR_1 (variable rule Id_2) is
+    C = - A + B
+end hierarchical ruleset;
+
+DS_r1 <- hierarchy(DS_1, HR_1 rule Id_2);
+DS_r2 <- check_hierarchy(DS_1, HR_1 rule Id_2 all);
