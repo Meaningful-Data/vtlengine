@@ -6,6 +6,7 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.compute as pc
 
+from vtlengine.AST.Grammar.tokens import AS
 from vtlengine.DataTypes import COMP_NAME_MAPPING, Date
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, ExternalRoutine, Role, Scalar
@@ -110,7 +111,7 @@ class Alias(Binary):
     def validate(cls, left_operand: Dataset, right_operand: Union[str, Dataset]) -> Dataset:
         new_name = right_operand if isinstance(right_operand, str) else right_operand.name
         if new_name != left_operand.name and new_name in left_operand.get_components_names():
-            raise SemanticError("1-3-1", alias=new_name)
+            raise SemanticError("1-1-6-4", op=AS, symbol_name=new_name, comp_name=new_name)
         return Dataset(name=new_name, components=left_operand.components, data=None)
 
     @classmethod

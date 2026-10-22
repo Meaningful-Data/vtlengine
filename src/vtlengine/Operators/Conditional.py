@@ -479,7 +479,7 @@ class Case(Operator):
         dataset_name = VirtualCounter._new_ds_name()
         comp_name = VirtualCounter._new_dc_name()
         if len(set(map(type, conditions))) > 1:
-            raise SemanticError("2-1-9-1", op=cls.op)
+            raise SemanticError("1-1-9-14", op=cls.op)
 
         ops = thenOps + [elseOp]
         then_else_types = set(map(type, ops))
@@ -488,9 +488,9 @@ class Case(Operator):
         if condition_type is Scalar:
             for condition in conditions:
                 if condition.data_type != Boolean:
-                    raise SemanticError("2-1-9-2", op=cls.op, name=condition.name)
+                    raise SemanticError("1-1-9-15", op=cls.op, name=condition.name)
             if list(then_else_types) != [Scalar]:
-                raise SemanticError("2-1-9-3", op=cls.op)
+                raise SemanticError("1-1-9-16", op=cls.op)
 
             # The output data type is the data type of the last then operation that has a true
             # condition, defaulting to the data type of the else operation if no condition is true
@@ -510,7 +510,7 @@ class Case(Operator):
         elif condition_type is DataComponent:
             for condition in conditions:
                 if not condition.data_type == Boolean:
-                    raise SemanticError("2-1-9-4", op=cls.op, name=condition.name)
+                    raise SemanticError("1-1-9-17", op=cls.op, name=condition.name)
 
             nullable = any(
                 (thenOp.nullable if isinstance(thenOp, DataComponent) else thenOp.data_type == Null)
@@ -534,10 +534,10 @@ class Case(Operator):
             if len(condition.get_measures_names()) != 1:
                 raise SemanticError("1-1-1-4", op=cls.op)
             if condition.get_measures()[0].data_type != Boolean:
-                raise SemanticError("2-1-9-5", op=cls.op, name=condition.name)
+                raise SemanticError("1-1-9-18", op=cls.op, name=condition.name)
 
         if Dataset not in then_else_types:
-            raise SemanticError("2-1-9-6", op=cls.op)
+            raise SemanticError("1-1-9-19", op=cls.op)
 
         # Rebuild the dict: the result must never share it with the branch dataset, as
         # apply_viral_return_types may replace entries in it.
@@ -547,7 +547,7 @@ class Case(Operator):
             # The operands must hold the same Components, in whatever order each one
             # happens to declare them (issue #1008).
             if isinstance(op, Dataset) and set(op.get_components_names()) != comp_names:
-                raise SemanticError("2-1-9-7", op=cls.op)
+                raise SemanticError("1-1-9-20", op=cls.op)
 
         # case over two or more datasets combines their data points, so viral attributes
         # carried by two or more branches require a propagation rule (issue #906).

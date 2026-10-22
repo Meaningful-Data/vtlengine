@@ -552,7 +552,7 @@ class Instr(Parameterized):
         if not param:
             return
         if position not in (1, 2, 3):
-            raise SemanticError("1-1-18-9", op=cls.op)
+            raise SemanticError("1-1-18-3", op=cls.op, pos=position)
         data_type: Any = param.data_type
 
         if position == 1:

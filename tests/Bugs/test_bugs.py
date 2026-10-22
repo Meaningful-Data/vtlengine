@@ -683,6 +683,23 @@ class JoinBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1192_23(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join(DS_1 as Me_1, DS_2 as d2);
+        Description: An alias named as a Component of its Data Set is rejected with a VTL
+                     error, where the engine raised a KeyError on a missing message code.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_23"
+        number_inputs = 2
+        message = "1-1-6-4"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
 
 class NumericBugs(BugHelper):
     """ """

@@ -547,31 +547,31 @@ centralised_messages = {
         "the same number of components.",
         "description": "Occurs when then and else Datasets have differing numbers of components.",
     },
-    "2-1-9-1": {
+    "1-1-9-14": {
         "message": "At op {op}: Condition operators must have the same operator type.",
         "description": "Raised when condition operators differ in type, which is invalid.",
     },
-    "2-1-9-2": {
+    "1-1-9-15": {
         "message": "At op {op}: Condition {name} it's not a boolean.",
         "description": "Occurs when a condition variable is not Boolean.",
     },
-    "2-1-9-3": {
+    "1-1-9-16": {
         "message": "At op {op}: All then and else operands must be Scalars.",
         "description": "Raised when then/else operands are not all Scalars.",
     },
-    "2-1-9-4": {
+    "1-1-9-17": {
         "message": "At op {op}: Condition {name} must be boolean type.",
         "description": "Occurs when the condition variable is not of Boolean type.",
     },
-    "2-1-9-5": {
+    "1-1-9-18": {
         "message": "At op {op}: Condition Dataset {name} Measure must be Boolean.",
         "description": "Raised when the Measure in a condition Dataset is not Boolean.",
     },
-    "2-1-9-6": {
+    "1-1-9-19": {
         "message": "At op {op}: At least a then or else operand must be Dataset.",
         "description": "Occurs when neither then nor else operands are Datasets.",
     },
-    "2-1-9-7": {
+    "1-1-9-20": {
         "message": "At op {op}: All Dataset operands must have the same components.",
         "description": "Raised when Dataset operands have mismatched components.",
     },
@@ -633,12 +633,12 @@ centralised_messages = {
         "item hold on the same data point of a hierarchy operation.",
     },  # RunTimeError.
     # General Operators
-    "2-1-12-1": {
+    "1-1-12-1": {
         "message": "At op {op}: Create a null Measure without a Scalar type is not allowed. "
         "Please use Cast operator.",
         "description": "Raised when attempting to create a null Measure without specifying a "
         "Scalar type; a Cast operator must be used.",
-    },  # RunTimeError.
+    },
     # Join Operators
     "1-1-13-1": {
         "message": "At op {op}: Duplicated alias {duplicates}.",
@@ -945,6 +945,20 @@ centralised_messages = {
         "description": "Raised when a RANGE window is applied to a component with an "
         "incompatible data type (String, Duration, TimePeriod, Time).",
     },
+    "1-1-19-14": {
+        "message": "At op {op}: Invalid param type {type} for param {name}, expected {expected}.",
+        "description": "Raised when a parameter has a type different from what is expected.",
+    },
+    "1-1-19-15": {
+        "message": "At op {op}: Invalid param data_type {type} for param {name}, "
+        "expected {expected}.",
+        "description": "Occurs when a parameter has an invalid data type for the operation.",
+    },
+    "1-1-19-16": {
+        "message": "At op {op}: Invalid Dataset {name}, requires at least one "
+        "Date/Time_Period Measure.",
+        "description": "Raised when a Dataset lacks required Date/Time_Period Measures.",
+    },
     "1-1-19-17": {
         "message": "Invalid period indicator {period}.",
         "description": "Occurs when the specified period indicator is not recognized or valid.",
@@ -1035,6 +1049,35 @@ centralised_messages = {
         "message": "At op {op}: The condition must be a Component expression, found a Scalar.",
         "description": "Raised when the condition of a filter clause does not depend on the "
         "Components of the operand, so it cannot be evaluated for each Data Point.",
+    },
+    "1-2-17": {
+        "message": "{op} operator must have a {comp}",
+        "description": "Occurs when a required component is missing for the operator.",
+    },
+    "1-2-18": {
+        "message": "Expected {param_type}, got {type_name} on UDO {op}, parameter {param_name}.",
+        "description": "Raised when a user-defined operator receives a parameter of "
+        "an unexpected type.",
+    },
+    "1-2-19": {
+        "message": "Dataset or Scalar {dataset_name} not found, please check input datastructures.",
+        "description": "Occurs when an input Dataset or Scalar is missing.",
+    },
+    "1-2-20": {
+        "message": "Ruleset Dataset not found, please check the ruleset definition.",
+        "description": "Occurs when the Ruleset Dataset is missing.",
+    },
+    "1-2-21": {
+        "message": "{comp_type} {comp_name} not found in {param}.",
+        "description": "Raised when a component is not found within a specified parameter.",
+    },
+    "1-2-22": {
+        "message": "No {comp_type} have been defined.",
+        "description": "Occurs when no components of the required type have been defined.",
+    },
+    "1-2-23": {
+        "message": "{pos} operand must be a Dataset.",
+        "description": "Raised when an operand expected to be a Dataset is not a Dataset.",
     },
     # AST Helpers
     "1-3-1-1": {
@@ -1225,20 +1268,6 @@ centralised_messages = {
         "message": "{op} operator is not compatible with time values",
         "description": "Occurs when a time operator is applied to incompatible values.",
     },
-    "2-1-19-12": {
-        "message": "At op {op}: Invalid param type {type} for param {name}, expected {expected}.",
-        "description": "Raised when a parameter has a type different from what is expected.",
-    },
-    "2-1-19-13": {
-        "message": "At op {op}: Invalid param data_type {type} for param {name}, "
-        "expected {expected}.",
-        "description": "Occurs when a parameter has an invalid data type for the operation.",
-    },
-    "2-1-19-14": {
-        "message": "At op {op}: Invalid Dataset {name}, requires at least one "
-        "Date/Time_Period Measure.",
-        "description": "Raised when a Dataset lacks required Date/Time_Period Measures.",
-    },
     "2-1-19-15": {
         "message": "{op} can only be applied according to the iso 8601 format mask",
         "description": "Occurs when the operator is applied to values not conforming to "
@@ -1291,38 +1320,9 @@ centralised_messages = {
         "description": "Raised when datediff reads a Time value, which holds two dates.",
     },
     # ----------- Interpreter Common ------
-    "2-3-4": {
-        "message": "{op} operator must have a {comp}",
-        "description": "Occurs when a required component is missing for the operator.",
-    },
-    "2-3-5": {
-        "message": "Expected {param_type}, got {type_name} on UDO {op}, parameter {param_name}.",
-        "description": "Raised when a user-defined operator receives a parameter of "
-        "an unexpected type.",
-    },
-    "2-3-6": {
-        "message": "Dataset or Scalar {dataset_name} not found, please check input datastructures.",
-        "description": "Occurs when an input Dataset or Scalar is missing.",
-    },
-    "2-3-7": {
-        "message": "Ruleset Dataset not found, please check the ruleset definition.",
-        "description": "Occurs when the Ruleset Dataset is missing.",
-    },
     "2-3-8": {
         "message": "At op {op}: Data conversion error: {msg}.",
         "description": "Raised when DuckDB encounters a data conversion error during "
         "aggregation query execution.",
-    },
-    "2-3-9": {
-        "message": "{comp_type} {comp_name} not found in {param}.",
-        "description": "Raised when a component is not found within a specified parameter.",
-    },
-    "2-3-10": {
-        "message": "No {comp_type} have been defined.",
-        "description": "Occurs when no components of the required type have been defined.",
-    },
-    "2-3-11": {
-        "message": "{pos} operand must be a Dataset.",
-        "description": "Raised when an operand expected to be a Dataset is not a Dataset.",
     },
 }

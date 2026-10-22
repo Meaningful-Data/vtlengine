@@ -1140,20 +1140,21 @@ class Date_Add(Parametrized):
         dataset_name = VirtualCounter._new_ds_name()
         expected_types = [Integer, String]
         for i, param in enumerate(param_list):
-            error = (
-                12
-                if not isinstance(param, Scalar)  # type: ignore[redundant-expr]
-                else 13
-                if (param.data_type != expected_types[i])
-                else None
-            )
-            if error is not None:
+            if not isinstance(param, Scalar):
                 raise SemanticError(
-                    f"2-1-19-{error}",
+                    "1-1-19-14",
                     op=cls.op,
-                    type=(param.__class__.__name__ if error == 12 else param.data_type.__name__),
-                    name="shiftNumber" if error == 12 else "periodInd",
-                    expected="Scalar" if error == 12 else expected_types[i].__name__,
+                    type=param.__class__.__name__,
+                    name="shiftNumber",
+                    expected="Scalar",
+                )
+            if param.data_type != expected_types[i]:
+                raise SemanticError(
+                    "1-1-19-15",
+                    op=cls.op,
+                    type=param.data_type.__name__,
+                    name="periodInd",
+                    expected=expected_types[i].__name__,
                 )
 
         period_ind = param_list[1].value if len(param_list) > 1 else None
@@ -1177,7 +1178,7 @@ class Date_Add(Parametrized):
             )
 
         if all(comp.data_type not in [Date, TimePeriod] for comp in operand.components.values()):
-            raise SemanticError("2-1-19-14", op=cls.op, name=operand.name)
+            raise SemanticError("1-1-19-16", op=cls.op, name=operand.name)
         # Fresh Component copies: the retype below must not reach the operand's
         # (shared) Component objects (#1032)
         result_components = {name: copy(comp) for name, comp in operand.components.items()}
