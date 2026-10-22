@@ -1,0 +1,10 @@
+define hierarchical ruleset HR_1 (valuedomain condition VD_1 rule VD_2) is
+    when (VD_1 = "X") then TOTAL = B + C
+end hierarchical ruleset;
+
+define hierarchical ruleset HR_2 (valuedomain condition VD_1 as A rule VD_2) is
+    TOTAL = B [substr(A, 1, 1) = "X"] + C
+end hierarchical ruleset;
+
+DS_r1 <- check_hierarchy(DS_1, HR_1 condition Id_1 rule Id_2 all);
+DS_r2 <- check_hierarchy(DS_1, HR_2 condition Id_1 rule Id_2 all);

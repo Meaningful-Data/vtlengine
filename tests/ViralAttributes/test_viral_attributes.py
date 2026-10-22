@@ -67,6 +67,8 @@ execution_codes = [
     # -- datapoint ruleset whose signature variable is a viral attribute, issue #898 --
     ("14-3", 1),
     ("14-4", 1),  # same ruleset, default "invalid" output mode
+    ("15-4", 2),  # enumerated rule with Integer constants
+    ("15-5", 2),  # enumerated rule with Boolean constants
 ]
 
 
@@ -128,6 +130,19 @@ validation_codes = [
 @pytest.mark.parametrize("code,exception_code", validation_codes)
 def test_validation(code: str, exception_code: str) -> None:
     ViralHelper.NewSemanticExceptionTest(code=code, number_inputs=1, exception_code=exception_code)
+
+
+# -- Rule constants must be values of the viral attribute's type, issue #1158 --
+rule_constant_type_codes = [
+    ("15-1", "1-3-3-9"),  # String constants on an Integer viral attribute
+    ("15-2", "1-3-3-9"),  # numeric strings on an Integer viral attribute
+    ("15-3", "1-3-3-9"),  # a constant that is not a Date on a Date viral attribute
+]
+
+
+@pytest.mark.parametrize("code,exception_code", rule_constant_type_codes)
+def test_rule_constant_type(code: str, exception_code: str) -> None:
+    ViralHelper.NewSemanticExceptionTest(code=code, number_inputs=2, exception_code=exception_code)
 
 
 # -- Reserved component names: a viral attribute may not use the names the engine

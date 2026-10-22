@@ -236,6 +236,21 @@ def _has_col(code_item: str) -> str:
     return f"_has_{code_item}"
 
 
+def _rename_var_ids(node: AST.AST, names: Dict[str, str]) -> AST.AST:
+    """A copy of ``node`` whose VarIDs named in ``names`` take their new name."""
+    node = deepcopy(node)
+    pending: List[Any] = [node]
+    while pending:
+        item = pending.pop()
+        if isinstance(item, AST.VarID) and item.value in names:
+            item.value = names[item.value]
+        elif isinstance(item, list):
+            pending.extend(item)
+        elif isinstance(item, AST.AST):
+            pending.extend(vars(item).values())
+    return node
+
+
 def _contains_analytic(node: Any) -> bool:
     """Return True if any descendant of ``node`` is an ``AST.Analytic``."""
     if isinstance(node, AST.Analytic):
@@ -4694,8 +4709,7 @@ FROM (
         if isinstance(node, AST.MulOp):
             children_sql = [self._build_hr_when_sql(c, cond_mapping) for c in node.children]
             return registry.sql(node.op, *children_sql)
-        # Fallback to general visitor.
-        return self.visit(node)
+        return self.visit(_rename_var_ids(node, cond_mapping))
 
     def _error_code_sql(self, value: Any) -> str:
         """Convert an errorcode value to a SQL literal."""

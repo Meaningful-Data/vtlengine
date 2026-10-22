@@ -686,7 +686,8 @@ class ASTVisitor:
         right_condition = [
             ExprComp().visitExprComponent(right_condition)
             for right_condition in ctx_list
-            if not right_condition.is_terminal and right_condition.ctx_id == RC.COMPARISON_EXPR_COMP
+            if not right_condition.is_terminal
+            and right_condition.rule_index == RC.EXPR_COMPONENT[0]
         ]
 
         if ctx_list[0].is_terminal:
