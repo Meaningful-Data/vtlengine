@@ -1027,6 +1027,38 @@ class NumericBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1192_5(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := random(Id_1, -1)];
+        Description: A negative literal index is rejected by the semantic analysis.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_5"
+        number_inputs = 1
+        message = "1-1-15-9"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_6(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := random(Id_1, sc_1)];
+        Description: A negative index given as a scalar value is a runtime error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_6"
+        number_inputs = 1
+        message = "2-1-15-2"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message, scalars={"sc_1": -1}
+        )
+
 
 class ComparisonBugs(BugHelper):
     """ """
@@ -1948,6 +1980,38 @@ class TimeBugs(BugHelper):
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1192_10(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := dateadd(Me_1, 1, "X")];
+        Description: An invalid literal period indicator is rejected by the semantic analysis.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_10"
+        number_inputs = 1
+        message = "1-1-19-17"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_11(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := dateadd(Me_1, 1, sc_1)];
+        Description: An invalid period indicator given as a scalar value is a runtime error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_11"
+        number_inputs = 1
+        message = "2-1-19-2"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message, scalars={"sc_1": "X"}
+        )
 
 
 class SetBugs(BugHelper):
@@ -4294,6 +4358,71 @@ class OtherBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1192_7(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_3 := substr(Me_1, 1, Me_2)];
+        Description: A negative length read from a Component is a runtime error on both engines.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_7"
+        number_inputs = 1
+        message = "2-1-18-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_8(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_3 := instr(Me_1, "l", Me_2)];
+        Description: A start of 0 read from a Component is a runtime error on both engines.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_8"
+        number_inputs = 1
+        message = "2-1-18-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_9(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := substr(Me_1, 1, sc_1)];
+        Description: A negative length given as a scalar value is a runtime error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_9"
+        number_inputs = 1
+        message = "2-1-18-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message, scalars={"sc_1": -3}
+        )
+
+    def test_GH_1192_14(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := f(Me_1, -2)]; (f calls substr(x, 1, n))
+        Description: A negative literal passed to a user defined operator is rejected by the
+                     semantic analysis, as when it is written in place.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_14"
+        number_inputs = 1
+        message = "1-1-18-4"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
 
 class ExternalRoutineBugs(BugHelper):
     """ """
@@ -5071,6 +5200,41 @@ class CastBugs(BugHelper):
         )
         assert list(result["DS_r"].data["m"]) == [10, 10, 10]
 
+    def test_GH_1192_12(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := cast("2022Q1", date)];
+        Description: A literal that cannot be cast to a date is rejected by the semantic analysis.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_12"
+        number_inputs = 1
+        message = "1-1-5-6"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_13(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := cast(sc_1, date)];
+        Description: A scalar value that cannot be cast to a date is a runtime error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_13"
+        number_inputs = 1
+        message = "2-1-19-8"
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message,
+            scalars={"sc_1": "2022Q1"},
+        )
+
 
 class AnalyticBugs(BugHelper):
     """Bugs on analytic (window) operators."""
@@ -5395,7 +5559,7 @@ class AnalyticBugs(BugHelper):
         """
         code = "GH_1191_2"
         number_inputs = 1
-        message = "2-1-15-2"
+        message = "1-1-15-9"
 
         self.NewSemanticExceptionTest(
             code=code,

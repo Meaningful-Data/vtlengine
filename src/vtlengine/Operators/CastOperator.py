@@ -14,7 +14,7 @@ from vtlengine.DataTypes import (
     ScalarType,
     String,
 )
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
@@ -147,7 +147,15 @@ class Cast(Operator.Unary):
         from_type = operand.data_type
         cls.check_cast(from_type, to_type, mask)
         if from_type == String and to_type == Date and operand.value is not None:
-            Date.explicit_cast(operand.value, String)
+            try:
+                Date.explicit_cast(operand.value, String)
+            except RunTimeError as error:
+                # A literal is part of the script, a scalar value is data (issue #1192)
+                if operand.literal:
+                    raise SemanticError(
+                        "1-1-5-6", value=operand.value, type_1="String", type_2="Date"
+                    ) from error
+                raise
         return Scalar(name=operand.name, data_type=to_type, value=None, nullable=operand.nullable)
 
     @classmethod

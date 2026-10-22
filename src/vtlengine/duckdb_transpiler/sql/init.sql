@@ -372,6 +372,17 @@ CREATE OR REPLACE MACRO vtl_period_to_natural(input VARCHAR) AS (
 -- VTL String Functions
 -- =========================================================================
 
+-- An integer parameter of substr or instr read from the data, which must be at
+-- least min_value (mirrors VTL error 2-1-18-1). A literal parameter is checked
+-- by the semantic analysis before any SQL runs.
+CREATE OR REPLACE MACRO vtl_param_min(x, min_value, op_name, param_name) AS (
+    CASE WHEN x < min_value
+         THEN error('VTL 2-1-18-1 ' || op_name || ' ' || param_name || ' '
+                    || CAST(min_value AS VARCHAR))
+         ELSE x
+    END
+);
+
 -- VTL instr(string, pattern, start, occurrence)
 CREATE OR REPLACE MACRO vtl_instr(
     s VARCHAR, pat VARCHAR, start_pos_raw BIGINT, occur_raw BIGINT

@@ -245,7 +245,8 @@ class TestGlobalRegistry:
             (
                 SUBSTR,
                 ('"str"', "1", "5"),
-                'SUBSTR("str", COALESCE(1, 1), COALESCE(5, LENGTH("str")))',
+                "SUBSTR(\"str\", COALESCE(vtl_param_min(1, 1, 'substr', 'Start'), 1), "
+                "COALESCE(vtl_param_min(5, 0, 'substr', 'Length'), LENGTH(\"str\")))",
             ),
             (REPLACE, ('"str"', "'a'", "'b'"), "REPLACE(\"str\", 'a', 'b')"),
         ],

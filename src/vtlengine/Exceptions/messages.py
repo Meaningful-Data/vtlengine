@@ -399,6 +399,11 @@ centralised_messages = {
         "description": "Raised when a mask is provided in a context where it should not be used "
         "for the cast.",
     },
+    "1-1-5-6": {
+        "message": "Impossible to cast {value} from type {type_1} to {type_2}.",
+        "description": "Raised when a literal written in the script cannot be cast to the "
+        "target type.",
+    },
     "2-1-5-1": {
         "message": "Impossible to cast {value} from type {type_1} to {type_2}.",
         "description": "Occurs when a value cannot be converted between the specified types.",
@@ -758,6 +763,11 @@ centralised_messages = {
         "description": "Raised when an operator receives a component type that "
         "is not allowed as a parameter.",
     },
+    "1-1-15-9": {
+        "message": "At op {op}: Value {value} could not be negative.",
+        "description": "Raised when a literal parameter of an operator is negative but must be "
+        "non-negative.",
+    },
     "2-1-15-1": {
         "message": "At op {op}: Component {comp_name} from Dataset {dataset_name} "
         "contains negative values.",
@@ -856,6 +866,11 @@ centralised_messages = {
         "description": "Raised when the hamming method of string_distance is invoked on two "
         "strings of unequal length.",
     },
+    "2-1-18-1": {
+        "message": "At op {op}: {param_type} parameter should be {correct_type}.",
+        "description": "Runtime error when a parameter value read from the data does not "
+        "match what the operator expects.",
+    },  # RunTimeError.
     # Time operators
     "1-1-19-1": {
         "message": "At op {op}: {op} must have a {data_type} type on {comp}.",
@@ -923,6 +938,10 @@ centralised_messages = {
         "data type in component {comp_name}.",
         "description": "Raised when a RANGE window is applied to a component with an "
         "incompatible data type (String, Duration, TimePeriod, Time).",
+    },
+    "1-1-19-17": {
+        "message": "Invalid period indicator {period}.",
+        "description": "Occurs when the specified period indicator is not recognized or valid.",
     },
     # ---------Semantic Analyzer Common----
     "1-2-1": {

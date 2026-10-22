@@ -125,6 +125,12 @@ def _map_vtl_macro_error(msg: str, msg_lower: str) -> Optional[Exception]:
         op = "power" if "2-1-15-2 power:" in msg_lower else "sqrt"
         return RunTimeError("2-1-15-2", op=op, value=msg.rsplit(" ", 1)[-1])
 
+    # substr / instr: an integer parameter read from the data below its minimum
+    if "vtl 2-1-18-1" in msg_lower:
+        match = re.search(r"VTL 2-1-18-1 (\S+) (\S+) (-?\d+)", msg)
+        op, param, minimum = match.groups() if match else ("", "", "")
+        return RunTimeError("2-1-18-1", op=op, param_type=param, correct_type=f">= {minimum}")
+
     # hierarchy: two rules compute the same code item for one data point (issue #1142)
     if "vtl 2-1-10-1" in msg_lower:
         match = re.search(r"ruleset (.+?), code item (.+)", msg)

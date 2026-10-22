@@ -1155,7 +1155,10 @@ class Date_Add(Parametrized):
 
         period_ind = param_list[1].value if len(param_list) > 1 else None
         if isinstance(period_ind, str) and period_ind not in PERIOD_IND_MAPPING:
-            raise SemanticError("2-1-19-2", period=period_ind)
+            # A literal is part of the script, a scalar value is data (issue #1192)
+            if param_list[1].literal:
+                raise SemanticError("1-1-19-17", period=period_ind)
+            raise RunTimeError("2-1-19-2", period=period_ind)
 
         if isinstance(operand, (Scalar, DataComponent)) and operand.data_type not in [
             Date,

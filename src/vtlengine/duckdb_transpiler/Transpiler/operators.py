@@ -11,7 +11,6 @@ from duckdb.sqltypes import BOOLEAN, VARCHAR
 
 import vtlengine.AST.Grammar.tokens as tokens
 from vtlengine.DataTypes import Duration, Integer, Number, TimePeriod
-from vtlengine.Exceptions import SemanticError
 from vtlengine.Utils._number_config import (
     get_effective_comparison_digits,
     get_effective_numeric_digits,
@@ -173,17 +172,16 @@ class OperatorRegistry:
         return f"{vtl_token.upper()}({', '.join(operands)})"
 
 
-def _validate_int_param(value: Optional[str], *, op: str, param_name: str, min_val: int) -> None:
-    """Validate a scalar integer parameter against a minimum value."""
+def _param_min_sql(
+    value: Optional[str], *, op: str, param_name: str, min_val: int
+) -> Optional[str]:
+    """Guard an integer parameter read from the data with its minimum value (VTL 2-1-18-1).
+
+    A literal parameter is checked by the semantic analysis before any SQL runs.
+    """
     if value is None or value == "NULL":
-        return
-    try:
-        if int(value) < min_val:
-            raise SemanticError(
-                "1-1-18-4", op=op, param_type=param_name, correct_type=f">= {min_val}"
-            )
-    except (ValueError, TypeError):
-        pass  # Column reference, not a constant
+        return value
+    return f"vtl_param_min({value}, {min_val}, '{op}', '{param_name}')"
 
 
 def _create_default_registry() -> OperatorRegistry:
@@ -336,10 +334,10 @@ def _create_default_registry() -> OperatorRegistry:
         params.append(str(args[0]) if len(args) > 0 and args[0] is not None else "NULL")
         params.append(str(args[1]) if len(args) > 1 and args[1] is not None else "NULL")
         start_arg = args[2] if len(args) > 2 and args[2] is not None else None
-        _validate_int_param(start_arg, op="instr", param_name="Start", min_val=1)
+        start_arg = _param_min_sql(start_arg, op="instr", param_name="Start", min_val=1)
         params.append(str(start_arg) if start_arg is not None else "NULL")
         occur_arg = args[3] if len(args) > 3 and args[3] is not None else None
-        _validate_int_param(occur_arg, op="instr", param_name="Occurrence", min_val=1)
+        occur_arg = _param_min_sql(occur_arg, op="instr", param_name="Occurrence", min_val=1)
         params.append(str(occur_arg) if occur_arg is not None else "NULL")
 
         return f"vtl_instr({', '.join(params)})"
@@ -360,11 +358,13 @@ def _create_default_registry() -> OperatorRegistry:
         if len(args) == 1:
             return str(args[0])
         string_arg = str(args[0])
-        start = args[1] if len(args) > 1 else None
-        _validate_int_param(start, op="substr", param_name="Start", min_val=1)
+        start = _param_min_sql(
+            args[1] if len(args) > 1 else None, op="substr", param_name="Start", min_val=1
+        )
         start_sql = "1" if start is None or start == "NULL" else f"COALESCE({start}, 1)"
-        length = args[2] if len(args) > 2 else None
-        _validate_int_param(length, op="substr", param_name="Length", min_val=0)
+        length = _param_min_sql(
+            args[2] if len(args) > 2 else None, op="substr", param_name="Length", min_val=0
+        )
         if length is None or length == "NULL":
             return f"SUBSTR({string_arg}, {start_sql})"
         return f"SUBSTR({string_arg}, {start_sql}, COALESCE({length}, LENGTH({string_arg})))"

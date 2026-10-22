@@ -27,7 +27,7 @@ from vtlengine.AST.Grammar.tokens import (
     TRUNC,
 )
 from vtlengine.DataTypes import SCALAR_TYPES_CLASS_REVERSE, Integer, Number
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import DataComponent, Dataset, Scalar
 from vtlengine.Operators import ALL_MODEL_DATA_TYPES
 from vtlengine.Utils._number_config import get_effective_numeric_digits
@@ -561,7 +561,10 @@ class Random(Parameterized):
         # A Component carries its values in its data, so only a Scalar can be read here.
         value = index.value if isinstance(index, Scalar) else None
         if value is not None and value < 0:
-            raise SemanticError("2-1-15-2", op=cls.op, value=value)
+            # A literal is part of the script, a scalar value is data (issue #1192)
+            if index.literal:
+                raise SemanticError("1-1-15-9", op=cls.op, value=value)
+            raise RunTimeError("2-1-15-2", op=cls.op, value=value)
         if value is not None and value > 10000:
             warnings.warn(
                 "Random: The value of 'index' is very big. This can affect performance.",

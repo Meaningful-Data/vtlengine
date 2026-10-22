@@ -23,7 +23,7 @@ from vtlengine.AST.Grammar.tokens import (
     UCASE,
 )
 from vtlengine.DataTypes import Integer, Number, String, check_unary_implicit_promotion
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import DataComponent, Dataset, Role, Scalar
 
 
@@ -327,15 +327,18 @@ class Substr(Parameterized):
             if param.data is not None:
                 param.data.map(lambda x: cls.check_param_value(x, position))
         else:
-            cls.check_param_value(param.value, position)
+            cls.check_param_value(param.value, position, literal=param.literal)
 
     @classmethod
-    def check_param_value(cls, param: Optional[Any], position: int) -> None:
+    def check_param_value(cls, param: Optional[Any], position: int, literal: bool = False) -> None:
+        # A literal is part of the script, a scalar or component value is data (issue #1192)
+        error = SemanticError if literal else RunTimeError
+        code = "1-1-18-4" if literal else "2-1-18-1"
         if param is not None:
             if not pd.isnull(param) and not param >= 1 and position == 1:
-                raise SemanticError("1-1-18-4", op=cls.op, param_type="Start", correct_type=">= 1")
+                raise error(code, op=cls.op, param_type="Start", correct_type=">= 1")
             elif not pd.isnull(param) and not param >= 0 and position == 2:
-                raise SemanticError("1-1-18-4", op=cls.op, param_type="Length", correct_type=">= 0")
+                raise error(code, op=cls.op, param_type="Length", correct_type=">= 0")
 
 
 class Replace(Parameterized):
@@ -574,14 +577,17 @@ class Instr(Parameterized):
             if param.data is not None:
                 param.data.map(lambda x: cls.check_param_value(x, position))
         else:
-            cls.check_param_value(param.value, position)
+            cls.check_param_value(param.value, position, literal=param.literal)
 
     @classmethod
-    def check_param_value(cls, param: Any, position: int) -> None:
+    def check_param_value(cls, param: Any, position: int, literal: bool = False) -> None:
+        # A literal is part of the script, a scalar or component value is data (issue #1192)
+        error = SemanticError if literal else RunTimeError
+        code = "1-1-18-4" if literal else "2-1-18-1"
         if position == 2 and not pd.isnull(param) and param < 1:
-            raise SemanticError("1-1-18-4", op=cls.op, param_type="Start", correct_type=">= 1")
+            raise error(code, op=cls.op, param_type="Start", correct_type=">= 1")
         elif position == 3 and not pd.isnull(param) and param < 1:
-            raise SemanticError("1-1-18-4", op=cls.op, param_type="Occurrence", correct_type=">= 1")
+            raise error(code, op=cls.op, param_type="Occurrence", correct_type=">= 1")
 
     @classmethod
     def apply_operation_series_scalar(
@@ -719,8 +725,8 @@ class Instr(Parameterized):
                 start = int(start - 1)
             else:
                 # OPERATORS_STRINGOPERATORS.92
-                raise SemanticError(
-                    "1-1-18-4", op=cls.op, param_type="Start", correct_type="Integer"
+                raise RunTimeError(
+                    "2-1-18-1", op=cls.op, param_type="Start", correct_type="Integer"
                 )
         else:
             start = 0
@@ -730,8 +736,8 @@ class Instr(Parameterized):
                 occurrence = int(occurrence - 1)
             else:
                 # OPERATORS_STRINGOPERATORS.93
-                raise SemanticError(
-                    "1-1-18-4",
+                raise RunTimeError(
+                    "2-1-18-1",
                     op=cls.op,
                     param_type="Occurrence",
                     correct_type="Integer",

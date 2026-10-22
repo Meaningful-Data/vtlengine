@@ -2177,12 +2177,14 @@ class InterpreterAnalyzer(ASTTemplate):
         for i, param in enumerate(operator["params"]):
             if i >= len(node.params):
                 if "default" in param:
-                    value = self.visit(param["default"]).value
+                    default = self.visit(param["default"])
+                    value = default.value
                     signature_values[param["name"]] = Scalar(
                         name=str(value),
                         value=value,
                         data_type=BASIC_TYPES[type(value)],
                         nullable=value is None,
+                        literal=default.literal,
                     )
                 else:
                     raise SemanticError(
@@ -2251,6 +2253,8 @@ class InterpreterAnalyzer(ASTTemplate):
                         value=scalar_type.cast(param_element.value),
                         data_type=scalar_type,
                         nullable=param_element.nullable,
+                        # A literal argument stays a literal inside the operator (issue #1192)
+                        literal=param_element.literal,
                     )
                 else:
                     raise NotImplementedError
