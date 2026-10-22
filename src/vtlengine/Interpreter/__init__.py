@@ -2041,6 +2041,11 @@ class InterpreterAnalyzer(ASTTemplate):
         me_name = ruleset_ds.get_measures_names()[0]
         other_ids = list(set(ruleset_ds.get_identifiers_names()) - {hr_component})
 
+        # The code item condition is visited without data too, so that the semantic
+        # analysis checks it against the structures (issue #1192)
+        condition = getattr(node, "_right_condition", None)
+        if condition is not None:
+            condition = self.visit(condition)
         if rule_data is None:
             return Dataset(name=node.value, components=result_components, data=None)
 
@@ -2053,16 +2058,13 @@ class InterpreterAnalyzer(ASTTemplate):
         # Groups where the code item condition is not TRUE leave the code item out of the
         # rule: it is excluded, not a missing data point (issue #1168)
         excluded = pd.Series(False, index=code_data.index)
-        condition = getattr(node, "_right_condition", None)
-        if condition is not None:
-            condition = self.visit(condition)
-            if condition is not None and condition.data is not None:
-                df = df.loc[condition.data.fillna(False).astype(bool)]
-                if other_ids:
-                    keys = pd.MultiIndex.from_frame(df[other_ids].drop_duplicates())
-                    excluded[:] = ~pd.MultiIndex.from_frame(code_data[other_ids]).isin(keys)
-                else:
-                    excluded[:] = len(df) == 0
+        if condition is not None and condition.data is not None:
+            df = df.loc[condition.data.fillna(False).astype(bool)]
+            if other_ids:
+                keys = pd.MultiIndex.from_frame(df[other_ids].drop_duplicates())
+                excluded[:] = ~pd.MultiIndex.from_frame(code_data[other_ids]).isin(keys)
+            else:
+                excluded[:] = len(df) == 0
 
         if node.value in df[hr_component].values:
             value_data = df[df[hr_component] == node.value]

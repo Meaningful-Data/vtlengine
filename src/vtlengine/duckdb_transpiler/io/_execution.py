@@ -125,6 +125,10 @@ def _map_vtl_macro_error(msg: str, msg_lower: str) -> Optional[Exception]:
         op = "power" if "2-1-15-2 power:" in msg_lower else "sqrt"
         return RunTimeError("2-1-15-2", op=op, value=msg.rsplit(" ", 1)[-1])
 
+    # datediff: a Time value, which holds two dates
+    if "vtl 2-1-19-25" in msg_lower:
+        return RunTimeError("2-1-19-25", op="datediff", comp_type="Date or Time_Period value")
+
     # substr / instr: an integer parameter read from the data below its minimum
     if "vtl 2-1-18-1" in msg_lower:
         match = re.search(r"VTL 2-1-18-1 (\S+) (\S+) (-?\d+)", msg)

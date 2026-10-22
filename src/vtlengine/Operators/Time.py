@@ -1095,8 +1095,11 @@ class Date_Diff(SimpleBinaryTime):
 
     @classmethod
     def py_op(cls, x: Any, y: Any) -> int:
+        # datediff counts the days between dates or time periods: a Time value holds two
+        # dates. The reference manual types the operands as time, so the value is checked,
+        # not the type (issue #1192)
         if (x.count("/") >= 1) or (y.count("/") >= 1):
-            raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
+            raise RunTimeError("2-1-19-25", op=cls.op, comp_type="Date or Time_Period value")
 
         if x.count("-") == 2:
             date_1 = parse_date_value(x)

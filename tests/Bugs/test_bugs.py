@@ -1604,6 +1604,23 @@ class ComparisonBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1192_20(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 > DS_1;
+        Description: Time values cannot be ordered, so the semantic analysis rejects the comparison
+                     even when the Data Set holds no data point.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_20"
+        number_inputs = 1
+        message = "1-1-19-18"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
 
 class TimeBugs(BugHelper):
     """ """
@@ -2027,6 +2044,23 @@ class TimeBugs(BugHelper):
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message, scalars={"sc_1": None}
+        )
+
+    def test_GH_1192_21(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := datediff(Me_1, Me_1)];
+        Description: datediff reads dates and time periods, so a Time value is a runtime error on
+                     both engines.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_21"
+        number_inputs = 1
+        message = "2-1-19-25"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
         )
 
 
@@ -4532,6 +4566,26 @@ class ExternalRoutineBugs(BugHelper):
             number_inputs=number_inputs,
             references_names=references_names,
             sql_names=sql_names,
+        )
+
+    def test_GH_1192_22(self):
+        """
+        Status: OK
+        Expression: DS_r <- eval(SQL_GH_1192_22(DS_1) language "SQL" returns dataset {...});
+        Description: A query that reads a Component the operand does not have fails on the
+                     structures, so the semantic analysis rejects it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_22"
+        number_inputs = 1
+        message = "1-1-1-23"
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message,
+            sql_names=["SQL_GH_1192_22"],
         )
 
 

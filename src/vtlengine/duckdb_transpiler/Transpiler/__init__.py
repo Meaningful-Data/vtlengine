@@ -39,7 +39,6 @@ from vtlengine.duckdb_transpiler.Transpiler.operators import (
     _BOOLEAN_RESULT_BINOPS,
     _BOOLEAN_RESULT_UNARY_OPS,
     _NUMERIC_RESULT_BINOPS,
-    _ORDERING_OPS,
     _STRING_PARAM_OPS,
     _STRING_UNARY_OPS,
     COMPARISON_OPS,
@@ -158,7 +157,10 @@ def _datediff_to_date(ref: str, dt: Optional[type]) -> str:
         return f"vtl_tp_end_date(vtl_period_parse({ref}))"
     if dt == Date:
         return f"CAST({ref} AS DATE)"
-    # TimeInterval or unknown: pass through (NULL propagates, non-null errors at runtime)
+    if dt == TimeInterval:
+        # A Time value holds two dates: a null passes, any other value fails (VTL 2-1-19-25)
+        return f"CAST(vtl_datediff_no_time({ref}) AS DATE)"
+    # Unknown: pass through (NULL propagates, non-null errors at runtime)
     return f"CAST({ref} AS DATE)"
 
 
@@ -917,9 +919,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         # ones with registry overrides, and Number is inferred for bare literals.
         dt = next((t for t in (left_type, right_type) if t not in (None, Number)), None)
         dt = dt or left_type or right_type
-        # TimeInterval: ordering not supported
-        if op in _ORDERING_OPS and dt == TimeInterval:
-            raise RunTimeError("2-1-19-17", op=op)
         # datediff: convert each operand to DATE individually based on its type
         if op == tokens.DATEDIFF and dt in (TimePeriod, TimeInterval, Date):
             left_ref = _datediff_to_date(left_ref, left_type)

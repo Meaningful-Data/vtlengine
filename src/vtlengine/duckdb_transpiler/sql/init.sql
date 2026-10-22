@@ -474,6 +474,14 @@ CREATE OR REPLACE MACRO vtl_sqrt(x) AS (
     END
 );
 
+-- datediff reads dates and time periods. A Time value holds two dates, so any
+-- value but a null fails (mirrors VTL error 2-1-19-25).
+CREATE OR REPLACE MACRO vtl_datediff_no_time(x) AS (
+    CASE WHEN x IS NULL THEN NULL
+         ELSE error('VTL 2-1-19-25 datediff: Time value ' || CAST(x AS VARCHAR))
+    END
+);
+
 -- Natural logarithm that mirrors VTL error 2-1-15-8 on non-positive values.
 CREATE OR REPLACE MACRO vtl_ln(x) AS (
     CASE WHEN x IS NULL OR isnan(CAST(x AS DOUBLE)) THEN NULL

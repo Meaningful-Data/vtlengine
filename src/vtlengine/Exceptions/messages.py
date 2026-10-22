@@ -338,6 +338,12 @@ centralised_messages = {
         "description": "Raised when an eval query attempts to access an external URL "
         "in the FROM clause.",
     },
+    "1-1-1-23": {
+        "message": "At op {op}: Error running the External Routine query on the structures "
+        "of its operands: {error}.",
+        "description": "Raised when the query of an External Routine cannot run on the "
+        "structures of the Data Sets it reads.",
+    },
     # Aggregate errors
     "1-1-2-2": {
         "message": "At op {op}: Only Identifiers are allowed for grouping, "
@@ -943,6 +949,12 @@ centralised_messages = {
         "message": "Invalid period indicator {period}.",
         "description": "Occurs when the specified period indicator is not recognized or valid.",
     },
+    "1-1-19-18": {
+        "message": "At op {op}: Time operators comparison are only support = and <> "
+        "comparison operations",
+        "description": "Occurs when a time operator comparison uses unsupported operators "
+        "like < or >.",
+    },
     # ---------Semantic Analyzer Common----
     "1-2-1": {
         "message": "Please don't use twice {alias} like var_to.",
@@ -1242,12 +1254,6 @@ centralised_messages = {
         "description": "Occurs when a time operator comparison uses unsupported operators "
         "like < or >.",
     },
-    "2-1-19-18": {
-        "message": "At op {op}: Time operators do not support < and > comparison operations, "
-        "so its not possible to use get the max or min between two time operators",
-        "description": "Raised when attempting to compute max or min using unsupported "
-        "Time operator comparisons.",
-    },
     "2-1-19-19": {
         "message": "Time Period comparison (>, <, >=, <=) with different period indicator "
         "is not supported, found {value1} {op} {value2}",
@@ -1279,6 +1285,10 @@ centralised_messages = {
         "message": "At op time_agg: The period indicator {name} to aggregate to has no value.",
         "description": "Raised when the scalar that gives time_agg its period indicator holds "
         "a null.",
+    },
+    "2-1-19-25": {
+        "message": "At op {op}: {op} can only be applied to a {comp_type}",
+        "description": "Raised when datediff reads a Time value, which holds two dates.",
     },
     # ----------- Interpreter Common ------
     "2-3-4": {

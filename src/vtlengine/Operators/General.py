@@ -133,8 +133,18 @@ class Eval(Unary):
 
     @staticmethod
     def _execute_query(
-        query: str, dataset_names: List[str], data: Dict[str, pd.DataFrame]
+        query: str,
+        dataset_names: List[str],
+        data: Dict[str, pd.DataFrame],
+        on_structures: bool = False,
     ) -> pd.DataFrame:
+        def query_error(error: Exception) -> Exception:
+            # Run on the empty operands of the validation, the query only meets the
+            # structures, so its failure is a structure error (issue #1192)
+            if on_structures:
+                return SemanticError("1-1-1-23", op="eval", error=error)
+            return RunTimeError("2-1-1-1", op="eval", error=error)
+
         query = re.sub(r'"([^"]*)"', r"'\1'", query)
         for forbidden in ["INSTALL", "LOAD"]:
             if re.search(rf"\b{forbidden}\b", query, re.IGNORECASE):
@@ -163,11 +173,11 @@ class Eval(Unary):
                 conn.close()
             except Exception as e:
                 conn.close()
-                raise RunTimeError("2-1-1-1", op="eval", error=e)
-        except RunTimeError:
+                raise query_error(e)
+        except (RunTimeError, SemanticError):
             raise
         except Exception as e:
-            raise RunTimeError("2-1-1-1", op="eval", error=e)
+            raise query_error(e)
         return df_result
 
     @classmethod
@@ -189,7 +199,10 @@ class Eval(Unary):
             empty_data_dict[ds_name] = empty_data
 
         df = cls._execute_query(
-            external_routine.query, external_routine.dataset_names, empty_data_dict
+            external_routine.query,
+            external_routine.dataset_names,
+            empty_data_dict,
+            on_structures=True,
         )
         component_names = df.columns.tolist()
         for comp_name in component_names:
