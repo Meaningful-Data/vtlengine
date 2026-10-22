@@ -186,13 +186,13 @@ class DataLoadError(InputValidationException):
         comp_code: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
-        message = centralised_messages[code]["message"].format(**kwargs) + self.output_message
+        # InputValidationException appends this to the catalogued message after a space
+        suffix = self.output_message.lstrip()
         dataset_output = _dataset_output.get()
         if dataset_output:
-            message += " " + dataset_output
+            suffix += " " + dataset_output
 
-        # The message is already built: skip the catalogue lookup of InputValidationException
-        VTLEngineException.__init__(self, message, None, None, code)
+        super().__init__(suffix, code=code, **kwargs)
 
         if comp_code:
             self.comp_code = comp_code

@@ -16,6 +16,7 @@ from vtlengine.Exceptions import (
     InputValidationException,
     RunTimeError,
     check_key,
+    transformation_output,
 )
 from vtlengine.Exceptions.messages import centralised_messages
 from vtlengine.Model import Component, DataComponent, Dataset, Role
@@ -160,8 +161,12 @@ def test_engine_raises_only_vtl_errors():
 def test_load_errors_are_input_errors():
     error = DataLoadError("0-3-1-1", file="DS_1.csv")
     assert isinstance(error, InputValidationException)
-    assert error.args[1] == "0-3-1-1"
-    assert error.args[0].endswith(" Please check loaded file")
+    message = centralised_messages["0-3-1-1"]["message"].format(file="DS_1.csv")
+    assert error.args == (f"{message} Please check loaded file", "0-3-1-1")
+    with transformation_output("DS_r"):
+        error = DataLoadError("0-3-1-1", comp_code="Me_1", file="DS_1.csv")
+    assert error.args == (f"{message} Please check loaded file DS_r", "0-3-1-1")
+    assert error.comp_code == "Me_1"
 
 
 def test_input_error_codes_are_input_codes():
