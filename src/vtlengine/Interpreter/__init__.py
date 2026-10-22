@@ -37,8 +37,10 @@ from vtlengine.AST.Grammar.tokens import (
     INSTR,
     KEEP,
     MEMBERSHIP,
+    MINUS,
     PARTIAL_NULL,
     PARTIAL_ZERO,
+    PLUS,
     REPLACE,
     ROUND,
     RULE_PRIORITY,
@@ -570,6 +572,17 @@ class InterpreterAnalyzer(ASTTemplate):
         operand = self.visit(node.operand)
         if node.op not in UNARY_MAPPING and node.op not in ROLE_SETTER_MAPPING:
             raise NotImplementedError
+        if (
+            node.op in (PLUS, MINUS)
+            and isinstance(node.operand, AST.Constant)
+            and isinstance(node.operand.value, (int, float))
+            and not isinstance(node.operand.value, bool)
+        ):
+            # A signed number is a literal too: the semantic analysis knows its value and
+            # the checks on literal parameters read it (issue #1192)
+            result = UNARY_MAPPING[node.op].evaluate(operand)
+            result.literal = True
+            return result
         if (
             self.is_from_regular_aggregation
             and self.regular_aggregation_dataset is not None
@@ -1397,6 +1410,7 @@ class InterpreterAnalyzer(ASTTemplate):
             value=node.value,
             data_type=BASIC_TYPES[type(node.value)],
             nullable=node.value is None,
+            literal=True,
         )
 
     def _strip_join_prefixes(self, result: Dataset) -> None:

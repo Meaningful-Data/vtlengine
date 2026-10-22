@@ -4229,6 +4229,71 @@ class OtherBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1192_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := nvl(Me_1, -1)];
+        Description: A negative literal is a literal, so nvl replaces every null of Me_1 and
+                     Me_2 is not nullable, as with a positive literal.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Result.
+        """
+        code = "GH_1192_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1192_2(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := nvl(Me_1, -1)];
+        Description: The semantic analysis gives the structure of GH_1192_1, without data.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Result.
+        """
+        code = "GH_1192_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            only_semantic=True,
+        )
+
+    def test_GH_1192_3(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := substr(Me_1, 1, -9)];
+        Description: A negative literal length is rejected by the semantic analysis, as a
+                     literal length of 0 is.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_3"
+        number_inputs = 1
+        message = "1-1-18-4"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_4(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := -1, Me_3 := +1.5, Me_4 := Me_1 * -2];
+        Description: Signed literals keep their values and types.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Result.
+        """
+        code = "GH_1192_4"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class ExternalRoutineBugs(BugHelper):
     """ """

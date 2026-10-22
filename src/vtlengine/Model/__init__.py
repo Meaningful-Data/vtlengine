@@ -28,6 +28,8 @@ class Scalar:
     _value: Any
     nullable: bool = True
     persistent: bool = False
+    # A literal written in the script, whose value the semantic analysis already knows
+    literal: bool = False
 
     def __init__(
         self,
@@ -36,12 +38,14 @@ class Scalar:
         value: Any,
         nullable: bool = True,
         persistent: bool = False,
+        literal: bool = False,
     ) -> None:
         self.name = name
         self.data_type = data_type
         self.value = value
         self.nullable = nullable
         self.persistent = persistent
+        self.literal = literal
 
     @property
     def value(self) -> Any:
