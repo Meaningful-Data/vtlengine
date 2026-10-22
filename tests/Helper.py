@@ -7,9 +7,11 @@ from unittest import TestCase
 
 import pytest
 
-from vtlengine.API import create_ast, run
+from vtlengine.API import create_ast, run, semantic_analysis
 from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.Exceptions import (
+    DataLoadError,
+    InputValidationException,
     RunTimeError,
     SemanticError,
     VTLEngineException,
@@ -39,6 +41,13 @@ VTL_ENGINE_BACKEND = os.environ.get("VTL_ENGINE_BACKEND", "duckdb").lower()
 def _use_duckdb_backend() -> bool:
     """Check if DuckDB backend should be used."""
     return VTL_ENGINE_BACKEND == "duckdb"
+
+
+def _error_class(code: str) -> type:
+    """The exception class an error code belongs to: input, semantic or runtime (issue #1192)."""
+    if code.startswith("0-3"):
+        return DataLoadError
+    return {"0": InputValidationException, "1": SemanticError, "2": RunTimeError}[code[0]]
 
 
 class TestHelper(TestCase):
@@ -320,6 +329,35 @@ class TestHelper(TestCase):
             )
 
     @classmethod
+    def _api_inputs(
+        cls,
+        code: str,
+        number_inputs: int,
+        vd_names: List[str] = None,
+        sql_names: List[str] = None,
+    ) -> Dict[str, Any]:
+        """The structures, value domains and external routines of a test, as the API takes them."""
+        return {
+            "data_structures": [
+                cls.filepath_json / f"{code}-{cls.ds_input_prefix}{str(i + 1)}{cls.JSON}"
+                for i in range(number_inputs)
+            ],
+            "value_domains": (
+                None
+                if vd_names is None
+                else [cls.filepath_valueDomain / f"{name}.json" for name in vd_names]
+            ),
+            "external_routines": (
+                None
+                if sql_names is None
+                else [
+                    {"name": name, "query": (cls.filepath_sql / f"{name}.sql").read_text()}
+                    for name in sql_names
+                ]
+            ),
+        }
+
+    @classmethod
     def NewSemanticExceptionTest(
         cls,
         code: str,
@@ -336,59 +374,64 @@ class TestHelper(TestCase):
         if text is None:
             text = cls.LoadVTL(code)
 
-        is_runtime_error = exception_code.startswith("2")
-
-        # Runtime errors on DuckDB backend go through run()
-        if _use_duckdb_backend() and is_runtime_error:
-            with pytest.raises((SemanticError, RunTimeError, Exception)) as context:
-                cls._run_with_duckdb_backend(
-                    code=code,
-                    number_inputs=number_inputs,
-                    script=text,
-                    vd_names=vd_names,
-                    sql_names=sql_names,
-                    scalars=scalars,
-                )
+        api_inputs = cls._api_inputs(code, number_inputs, vd_names, sql_names)
+        if not exception_code.startswith("2"):
+            # A structure error is raised by semantic_analysis, which takes no datapoints
+            with pytest.raises(VTLEngineException) as context:
+                semantic_analysis(script=text, **api_inputs)
         else:
-            # Semantic errors: use only_semantic=True (no execution needed)
-            input_datasets = cls.LoadInputs(code=code, number_inputs=number_inputs)
+            # A runtime error comes from the datapoints, so the structures alone are valid
+            semantic_analysis(script=text, **api_inputs)
+            if _use_duckdb_backend():
+                with pytest.raises(VTLEngineException) as context:
+                    cls._run_with_duckdb_backend(
+                        code=code,
+                        number_inputs=number_inputs,
+                        script=text,
+                        vd_names=vd_names,
+                        sql_names=sql_names,
+                        scalars=scalars,
+                    )
+            else:
+                input_datasets = cls.LoadInputs(code=code, number_inputs=number_inputs)
 
-            value_domains = None
-            if vd_names is not None:
-                value_domains = cls.LoadValueDomains(vd_names)
+                value_domains = None
+                if vd_names is not None:
+                    value_domains = cls.LoadValueDomains(vd_names)
 
-            external_routines = None
-            if sql_names is not None:
-                external_routines = cls.LoadExternalRoutines(sql_names)
+                external_routines = None
+                if sql_names is not None:
+                    external_routines = cls.LoadExternalRoutines(sql_names)
 
-            if scalars is not None:
-                for scalar_name, scalar_value in scalars.items():
-                    if scalar_name not in input_datasets:
-                        raise Exception(f"Scalar {scalar_name} not found in the input datasets")
-                    if not isinstance(input_datasets[scalar_name], Scalar):
-                        raise Exception(f"{scalar_name} is a dataset")
-                    input_datasets[scalar_name].value = scalar_value
+                if scalars is not None:
+                    for scalar_name, scalar_value in scalars.items():
+                        if scalar_name not in input_datasets:
+                            raise Exception(f"Scalar {scalar_name} not found in the input datasets")
+                        if not isinstance(input_datasets[scalar_name], Scalar):
+                            raise Exception(f"{scalar_name} is a dataset")
+                        input_datasets[scalar_name].value = scalar_value
 
-            datasets = {k: v for k, v in input_datasets.items() if isinstance(v, Dataset)}
-            scalars_obj = {k: v for k, v in input_datasets.items() if isinstance(v, Scalar)}
+                datasets = {k: v for k, v in input_datasets.items() if isinstance(v, Dataset)}
+                scalars_obj = {k: v for k, v in input_datasets.items() if isinstance(v, Scalar)}
 
-            interpreter = InterpreterAnalyzer(
-                datasets=datasets,
-                scalars=scalars_obj,
-                value_domains=value_domains,
-                external_routines=external_routines,
-                only_semantic=not is_runtime_error,
-            )
-            with pytest.raises((SemanticError, RunTimeError)) as context:
-                ast = create_ast(text)
-                interpreter.visit(ast)
+                interpreter = InterpreterAnalyzer(
+                    datasets=datasets,
+                    scalars=scalars_obj,
+                    value_domains=value_domains,
+                    external_routines=external_routines,
+                )
+                with pytest.raises(VTLEngineException) as context:
+                    ast = create_ast(text)
+                    interpreter.visit(ast)
 
-        result = exception_code == str(context.value.args[1])
-        if result is False:
-            print(f"\n{exception_code} != {context.value.args[1]}")
-        assert result
+        error = context.value
+        expected_class = _error_class(exception_code)
+        assert type(error) is expected_class, (
+            f"{exception_code} expects {expected_class.__name__}, got {type(error).__name__}: {error}"
+        )
+        assert error.args[1] == exception_code, f"{exception_code} != {error.args[1]}: {error}"
         if exception_message is not None:
-            assert exception_message in str(context.value.args[0])
+            assert exception_message in str(error.args[0])
 
     @classmethod
     def LoadValueDomains(cls, vd_names):
