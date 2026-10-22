@@ -758,7 +758,7 @@ class Time_Shift(Binary):
                     months=months * shift_value,
                     days=days * shift_value,
                 )
-        raise SemanticError("2-1-19-2", period=frequency)
+        raise RunTimeError("2-1-19-2", period=frequency)
 
     @classmethod
     def shift_period(

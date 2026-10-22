@@ -129,7 +129,7 @@ class String(ScalarType):
         if from_type in {Boolean, String}:
             return str(value)
 
-        raise SemanticError(
+        raise RunTimeError(
             "2-1-5-1",
             value=value,
             type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],

@@ -92,7 +92,7 @@ class Binary(Operator.Binary):
         """
         if isinstance(x, int) and isinstance(y, int):
             if cls.op == DIV and y == 0:
-                raise SemanticError("2-1-15-6", op=cls.op, value=y)
+                raise RunTimeError("2-1-15-6", op=cls.op, value=y)
             if cls.op == RANDOM:
                 return cls.py_op(x, y)
             if cls.op in (PLUS, MINUS, MULT):
@@ -101,18 +101,18 @@ class Binary(Operator.Binary):
         x = float(x)
         y = float(y)
         if cls.op == DIV and y == 0:
-            raise SemanticError("2-1-15-6", op=cls.op, value=y)
+            raise RunTimeError("2-1-15-6", op=cls.op, value=y)
         if cls.op == MOD:
             if y == 0:
-                raise SemanticError("2-1-15-6", op=cls.op, value=y)
+                raise RunTimeError("2-1-15-6", op=cls.op, value=y)
             # fmod keeps the dividend's sign, like DuckDB ``%`` (and the former
             # Decimal remainder): -5 mod 3 is -2, not Python's 1.
             result = math.fmod(x, y)
         elif cls.op == POWER:
             if x < 0 and not y.is_integer():
-                raise SemanticError("2-1-15-2", op=cls.op, value=x)
+                raise RunTimeError("2-1-15-2", op=cls.op, value=x)
             if x == 0 and y < 0:
-                raise SemanticError("2-1-15-6", op=cls.op, value=x)
+                raise RunTimeError("2-1-15-6", op=cls.op, value=x)
             result = cls.py_op(x, y)
         else:
             result = cls.py_op(x, y)
@@ -232,7 +232,7 @@ class NaturalLogarithm(Unary):
     @classmethod
     def py_op(cls, x: Any) -> Any:
         if x <= 0:
-            raise SemanticError("2-1-15-8", op=cls.op, value=x)
+            raise RunTimeError("2-1-15-8", op=cls.op, value=x)
         return math.log(x)
 
     @classmethod
@@ -240,7 +240,7 @@ class NaturalLogarithm(Unary):
         bad = series.dropna()
         bad = bad[bad <= 0]
         if len(bad):
-            raise SemanticError("2-1-15-8", op=cls.op, value=bad.iloc[0])
+            raise RunTimeError("2-1-15-8", op=cls.op, value=bad.iloc[0])
 
 
 class SquareRoot(Unary):
@@ -256,7 +256,7 @@ class SquareRoot(Unary):
     @classmethod
     def py_op(cls, x: Any) -> Any:
         if x < 0:
-            raise SemanticError("2-1-15-2", op=cls.op, value=x)
+            raise RunTimeError("2-1-15-2", op=cls.op, value=x)
         return math.sqrt(x)
 
     @classmethod
@@ -264,7 +264,7 @@ class SquareRoot(Unary):
         bad = series.dropna()
         bad = bad[bad < 0]
         if len(bad):
-            raise SemanticError("2-1-15-2", op=cls.op, value=bad.iloc[0])
+            raise RunTimeError("2-1-15-2", op=cls.op, value=bad.iloc[0])
 
 
 class Ceil(Unary):
@@ -343,11 +343,11 @@ class Logarithm(Binary):
         if pd.isnull(param):
             return None
         if param <= 0:
-            raise SemanticError("2-1-15-3", op=cls.op, value=param)
+            raise RunTimeError("2-1-15-3", op=cls.op, value=param)
         if pd.isnull(x):
             return None
         if x <= 0:
-            raise SemanticError("2-1-15-8", op=cls.op, value=x)
+            raise RunTimeError("2-1-15-8", op=cls.op, value=x)
 
         return math.log(x, param)
 
@@ -438,7 +438,7 @@ class Parameterized(Unary):
                         result.data[measure_name], param_value
                     )
             except ValueError:
-                raise SemanticError(
+                raise RunTimeError(
                     "2-1-15-1",
                     op=cls.op,
                     comp_name=measure_name,
