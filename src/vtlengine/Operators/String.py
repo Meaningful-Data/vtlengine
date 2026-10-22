@@ -331,14 +331,20 @@ class Substr(Parameterized):
 
     @classmethod
     def check_param_value(cls, param: Optional[Any], position: int, literal: bool = False) -> None:
+        if param is None or pd.isnull(param):
+            return
+        if position == 1 and not param >= 1:
+            param_type, correct_type = "Start", ">= 1"
+        elif position == 2 and not param >= 0:
+            param_type, correct_type = "Length", ">= 0"
+        else:
+            return
         # A literal is part of the script, a scalar or component value is data (issue #1192)
-        error = SemanticError if literal else RunTimeError
-        code = "1-1-18-4" if literal else "2-1-18-1"
-        if param is not None:
-            if not pd.isnull(param) and not param >= 1 and position == 1:
-                raise error(code, op=cls.op, param_type="Start", correct_type=">= 1")
-            elif not pd.isnull(param) and not param >= 0 and position == 2:
-                raise error(code, op=cls.op, param_type="Length", correct_type=">= 0")
+        if literal:
+            raise SemanticError(
+                "1-1-18-4", op=cls.op, param_type=param_type, correct_type=correct_type
+            )
+        raise RunTimeError("2-1-18-1", op=cls.op, param_type=param_type, correct_type=correct_type)
 
 
 class Replace(Parameterized):
@@ -581,13 +587,13 @@ class Instr(Parameterized):
 
     @classmethod
     def check_param_value(cls, param: Any, position: int, literal: bool = False) -> None:
+        if position not in (2, 3) or pd.isnull(param) or not param < 1:
+            return
+        param_type = "Start" if position == 2 else "Occurrence"
         # A literal is part of the script, a scalar or component value is data (issue #1192)
-        error = SemanticError if literal else RunTimeError
-        code = "1-1-18-4" if literal else "2-1-18-1"
-        if position == 2 and not pd.isnull(param) and param < 1:
-            raise error(code, op=cls.op, param_type="Start", correct_type=">= 1")
-        elif position == 3 and not pd.isnull(param) and param < 1:
-            raise error(code, op=cls.op, param_type="Occurrence", correct_type=">= 1")
+        if literal:
+            raise SemanticError("1-1-18-4", op=cls.op, param_type=param_type, correct_type=">= 1")
+        raise RunTimeError("2-1-18-1", op=cls.op, param_type=param_type, correct_type=">= 1")
 
     @classmethod
     def apply_operation_series_scalar(

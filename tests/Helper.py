@@ -250,9 +250,10 @@ class TestHelper(TestCase):
         vd_names: List[str] = None,
         sql_names: List[str] = None,
         scalars: Dict[str, Any] = None,
+        use_duckdb: bool = True,
     ) -> Dict[str, Union[Dataset, Scalar]]:
         """
-        Execute test using DuckDB backend.
+        Execute test through run(), on the DuckDB backend unless use_duckdb is False.
         """
         # Collect data structure JSON files
         data_structures = []
@@ -304,7 +305,7 @@ class TestHelper(TestCase):
             external_routines=external_routines,
             scalar_values=scalar_values,
             return_only_persistent=False,
-            use_duckdb=True,
+            use_duckdb=use_duckdb,
         )
 
     @classmethod
@@ -376,9 +377,21 @@ class TestHelper(TestCase):
 
         api_inputs = cls._api_inputs(code, number_inputs, vd_names, sql_names)
         if not exception_code.startswith("2"):
-            # A structure error is raised by semantic_analysis, which takes no datapoints
+            # A structure error is raised by semantic_analysis, which takes no datapoints,
+            # and by run on the backend, with the datapoints
             with pytest.raises(VTLEngineException) as context:
                 semantic_analysis(script=text, **api_inputs)
+            cls._check_error(context.value, exception_code, exception_message)
+            with pytest.raises(VTLEngineException) as context:
+                cls._run_with_duckdb_backend(
+                    code=code,
+                    number_inputs=number_inputs,
+                    script=text,
+                    vd_names=vd_names,
+                    sql_names=sql_names,
+                    scalars=scalars,
+                    use_duckdb=_use_duckdb_backend(),
+                )
         else:
             # A runtime error comes from the datapoints, so the structures alone are valid
             semantic_analysis(script=text, **api_inputs)
@@ -424,7 +437,13 @@ class TestHelper(TestCase):
                     ast = create_ast(text)
                     interpreter.visit(ast)
 
-        error = context.value
+        cls._check_error(context.value, exception_code, exception_message)
+
+    @staticmethod
+    def _check_error(
+        error: BaseException, exception_code: str, exception_message: Optional[str] = None
+    ) -> None:
+        """The error has the class its code implies, the code and, if given, the message."""
         expected_class = _error_class(exception_code)
         assert type(error) is expected_class, (
             f"{exception_code} expects {expected_class.__name__}, got {type(error).__name__}: {error}"

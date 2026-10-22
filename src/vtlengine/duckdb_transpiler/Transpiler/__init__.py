@@ -160,8 +160,8 @@ def _datediff_to_date(ref: str, dt: Optional[type]) -> str:
     if dt == TimeInterval:
         # A Time value holds two dates: a null passes, any other value fails (VTL 2-1-19-25)
         return f"CAST(vtl_datediff_no_time({ref}) AS DATE)"
-    # Unknown: pass through (NULL propagates, non-null errors at runtime)
-    return f"CAST({ref} AS DATE)"
+    # Unknown: the value is read as the pandas engine reads it (issue #1192)
+    return f"vtl_datediff_date({ref})"
 
 
 def _add_tp_indicator_check(sql: str, table_src: str, tp_cols: List[tuple[str, str]]) -> str:
@@ -920,7 +920,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         dt = next((t for t in (left_type, right_type) if t not in (None, Number)), None)
         dt = dt or left_type or right_type
         # datediff: convert each operand to DATE individually based on its type
-        if op == tokens.DATEDIFF and dt in (TimePeriod, TimeInterval, Date):
+        if op == tokens.DATEDIFF:
             left_ref = _datediff_to_date(left_ref, left_type)
             right_ref = _datediff_to_date(right_ref, right_type)
             return f"ABS(DATE_DIFF('day', {left_ref}, {right_ref}))"

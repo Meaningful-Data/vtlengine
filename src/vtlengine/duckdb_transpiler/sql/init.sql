@@ -482,6 +482,19 @@ CREATE OR REPLACE MACRO vtl_datediff_no_time(x) AS (
     END
 );
 
+-- A datediff operand whose type the SQL generation could not tell, read as the
+-- pandas engine reads it: a Time value fails (VTL error 2-1-19-25), a value with
+-- two dashes is a date and any other is a time period, read as its last day.
+CREATE OR REPLACE MACRO vtl_datediff_date(x) AS (
+    CASE WHEN x IS NULL THEN NULL
+         WHEN contains(CAST(x AS VARCHAR), '/')
+         THEN error('VTL 2-1-19-25 datediff: Time value ' || CAST(x AS VARCHAR))
+         WHEN length(CAST(x AS VARCHAR)) - length(replace(CAST(x AS VARCHAR), '-', '')) = 2
+         THEN CAST(CAST(x AS VARCHAR) AS DATE)
+         ELSE vtl_tp_end_date(vtl_period_parse(CAST(x AS VARCHAR)))
+    END
+);
+
 -- Natural logarithm that mirrors VTL error 2-1-15-8 on non-positive values.
 CREATE OR REPLACE MACRO vtl_ln(x) AS (
     CASE WHEN x IS NULL OR isnan(CAST(x AS DOUBLE)) THEN NULL

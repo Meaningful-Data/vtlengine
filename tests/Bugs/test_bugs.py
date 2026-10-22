@@ -2080,6 +2080,64 @@ class TimeBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=message
         )
 
+    def test_GH_1192_24(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := datediff(Me_1, sc_1)];
+        Description: A Time value given as a scalar is a runtime error on both engines, where
+                     DuckDB read the first date of the interval.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_24"
+        number_inputs = 1
+        message = "2-1-19-25"
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message,
+            scalars={"sc_1": "2020-01-01/2020-12-31"},
+        )
+
+    def test_GH_1192_25(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join(DS_1 as d1, DS_2 as d2
+                        calc Me_3 := datediff(d1#Me_1, d2#Me_2));
+        Description: A Time value read through a join alias is a runtime error on both
+                     engines, where DuckDB failed to bind the SQL.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_25"
+        number_inputs = 2
+        message = "2-1-19-25"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_26(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := datediff(Me_1, sc_1)];
+        Description: A Time scalar without value gives a null on both engines, where DuckDB
+                     failed to bind the SQL.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Result.
+        """
+        code = "GH_1192_26"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            scalars={"sc_1": None},
+        )
+
 
 class SetBugs(BugHelper):
     """ """

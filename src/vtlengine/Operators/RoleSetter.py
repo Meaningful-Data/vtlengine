@@ -61,13 +61,13 @@ class Identifier(RoleSetter):
     def evaluate(  # type: ignore[override]
         cls, operand: ALLOWED_MODEL_TYPES, data_size: int = 0
     ) -> DataComponent:
-        if isinstance(operand, Scalar) and operand.value is None:
-            raise RunTimeError("2-1-1-16")
         # What the structure declares is read before what the data holds, so that an
         # expression declared nullable reports the same error on either engine, and an
         # expression declared not nullable that still holds a null is caught on the
         # data alone.
         cls.validate(operand, data_size)
+        if isinstance(operand, Scalar) and operand.value is None:
+            raise RunTimeError("2-1-1-16")
         if (
             isinstance(operand, DataComponent)
             and operand.data is not None

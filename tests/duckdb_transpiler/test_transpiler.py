@@ -1267,7 +1267,10 @@ class TestTimeOperators:
         )
 
         result = transpiler.visit_BinOp(binop)
-        expected_sql = "ABS(DATE_DIFF('day', '2024-01-15', '2024-01-01'))"
+        expected_sql = (
+            "ABS(DATE_DIFF('day', vtl_datediff_date('2024-01-15'), "
+            "vtl_datediff_date('2024-01-01')))"
+        )
         assert_sql_equal(result, expected_sql)
 
     # NOTE: Tests for period_indicator, flow_to_stock, stock_to_flow, and

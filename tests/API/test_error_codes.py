@@ -44,8 +44,45 @@ def _error_code_failures() -> List[str]:
     return failures
 
 
+def _indirect_error_uses() -> List[str]:
+    """Every use of SemanticError or RunTimeError other than building one, catching it or
+    checking it: an error class held in a variable is built where its code cannot be read."""
+    failures = []
+    for path in sorted(SOURCE.rglob("*.py")):
+        if "_cpp_parser" in path.parts:
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        allowed = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call):
+                allowed.add(id(node.func))
+                if getattr(node.func, "id", None) in ("isinstance", "issubclass"):
+                    allowed.update(id(arg) for arg in ast.walk(node.args[1]))
+            elif isinstance(node, ast.ExceptHandler) and node.type is not None:
+                allowed.update(id(sub) for sub in ast.walk(node.type))
+            elif isinstance(node, ast.ClassDef):
+                allowed.update(id(base) for base in node.bases)
+            elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.returns:
+                allowed.update(id(sub) for sub in ast.walk(node.returns))
+            elif isinstance(node, (ast.arg, ast.AnnAssign)) and node.annotation is not None:
+                allowed.update(id(sub) for sub in ast.walk(node.annotation))
+        for node in ast.walk(tree):
+            name = getattr(node, "id", None) or getattr(node, "attr", None)
+            if (
+                name in CODE_FAMILY
+                and isinstance(node, (ast.Name, ast.Attribute))
+                and id(node) not in allowed
+            ):
+                failures.append(f"{path.relative_to(SOURCE)}:{node.lineno} {name}")
+    return failures
+
+
 def test_error_codes_match_their_class():
     assert _error_code_failures() == []
+
+
+def test_error_classes_are_built_directly():
+    assert _indirect_error_uses() == []
 
 
 def test_check_key_raises_input_error():
