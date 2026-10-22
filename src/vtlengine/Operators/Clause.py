@@ -5,8 +5,18 @@ from typing import List, Type, Union
 import pandas as pd
 
 from vtlengine.AST import RenameNode
-from vtlengine.AST.Grammar.tokens import AGGREGATE, CALC, DROP, KEEP, RENAME, SUBSPACE, UNPIVOT
+from vtlengine.AST.Grammar.tokens import (
+    AGGREGATE,
+    CALC,
+    DROP,
+    FILTER,
+    KEEP,
+    RENAME,
+    SUBSPACE,
+    UNPIVOT,
+)
 from vtlengine.DataTypes import (
+    SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
     ScalarType,
     String,
@@ -131,7 +141,9 @@ class Filter(Operator):
     @classmethod
     def validate(cls, condition: DataComponent, dataset: Dataset) -> Dataset:
         if condition.data_type != Boolean:
-            raise ValueError(f"Filter condition must be of type {Boolean}")
+            raise SemanticError(
+                "1-1-9-1", op=FILTER, type=SCALAR_TYPES_CLASS_REVERSE[condition.data_type]
+            )
         dataset_name = VirtualCounter._new_ds_name()
         return Dataset(name=dataset_name, components=dataset.components, data=None)
 
@@ -150,6 +162,10 @@ class Keep(Operator):
 
     @classmethod
     def validate(cls, operands: List[str], dataset: Dataset) -> Dataset:
+        if len(operands) == 0:
+            raise SemanticError("1-1-6-15", op=cls.op)
+        if dataset is None and sum(isinstance(operand, Dataset) for operand in operands) != 1:
+            raise SemanticError("1-1-6-16", op=cls.op)
         dataset_name = VirtualCounter._new_ds_name()
         _check_repeated(cls.op, operands)
         for operand in operands:
@@ -171,10 +187,6 @@ class Keep(Operator):
 
     @classmethod
     def evaluate(cls, operands: List[str], dataset: Dataset) -> Dataset:
-        if len(operands) == 0:
-            raise ValueError("Keep clause requires at least one operand")
-        if dataset is None and sum(isinstance(operand, Dataset) for operand in operands) != 1:
-            raise ValueError("Keep clause requires at most one dataset operand")
         result_dataset = cls.validate(operands, dataset)
         if dataset.data is not None:
             keep_cols = dataset.get_identifiers_names() + operands
@@ -271,11 +283,11 @@ class Rename(Operator):
 class Pivot(Operator):
     @classmethod
     def validate(cls, operands: List[str], dataset: Dataset) -> Dataset:
-        raise NotImplementedError
+        raise SemanticError("1-3-13", construct="pivot")
 
     @classmethod
     def evaluate(cls, operands: List[str], dataset: Dataset) -> Dataset:
-        raise NotImplementedError
+        raise SemanticError("1-3-13", construct="pivot")
 
 
 class Unpivot(Operator):
@@ -285,7 +297,7 @@ class Unpivot(Operator):
     def validate(cls, operands: List[str], dataset: Dataset) -> Dataset:
         dataset_name = VirtualCounter._new_ds_name()
         if len(operands) != 2:
-            raise ValueError("Unpivot clause requires two operands")
+            raise SemanticError("1-1-6-17", op=cls.op)
         identifier, measure = operands
 
         if len(dataset.get_identifiers()) < 1:

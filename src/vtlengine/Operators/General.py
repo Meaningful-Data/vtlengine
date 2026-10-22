@@ -191,9 +191,7 @@ class Eval(Unary):
         empty_data_dict = {}
         for ds_name in external_routine.dataset_names:
             if ds_name not in operands:
-                raise ValueError(
-                    f"External Routine dataset {ds_name} is not present in Eval operands"
-                )
+                raise SemanticError("1-1-1-24", op="eval", ds_name=ds_name)
             empty_data = pd.DataFrame(
                 columns=[comp.name for comp in operands[ds_name].components.values()]
             )
@@ -214,7 +212,9 @@ class Eval(Unary):
 
         for comp_name in output.components:
             if comp_name not in component_names:
-                raise ValueError(f"Component {comp_name} not found in External Routine result")
+                raise SemanticError(
+                    "1-1-1-10", comp_name=comp_name, dataset_name=external_routine.name
+                )
 
         output.name = external_routine.name
 

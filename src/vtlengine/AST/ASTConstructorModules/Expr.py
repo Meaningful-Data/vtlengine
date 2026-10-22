@@ -42,7 +42,7 @@ from vtlengine.AST.ASTDataExchange import de_ruleset_elements
 from vtlengine.AST.Grammar._cpp_parser import vtl_cpp_parser
 from vtlengine.AST.Grammar._cpp_parser._rule_constants import RC
 from vtlengine.AST.Grammar.tokens import DATASET_PRIORITY, STRING_DISTANCE
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.Model import Role
 
 
@@ -144,7 +144,7 @@ class Expr:
         # CASE WHEN expr THEN expr ELSE expr END                             # caseExpr
         elif ctx_id == RC.CASE_EXPR:
             if len(ctx_list) % 4 != 3:
-                raise ValueError("Syntax error.")
+                raise InputValidationException(code="0-5-1-1")
 
             else_node = self.visitExpr(ctx_list[-1])
             ctx_list = ctx_list[1:-2]
@@ -174,7 +174,7 @@ class Expr:
 
         else:
             # AST_ASTCONSTRUCTOR.3
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="Expr")
 
     def bin_op_creator(self, ctx: Any) -> BinOp:
         ctx_list = ctx.children
@@ -208,7 +208,7 @@ class Expr:
         elif not ctx_list[2].is_terminal and ctx_list[2].rule_index == RC.VALUE_DOMAIN_ID[0]:
             right_node = Terminals().visitValueDomainID(ctx_list[2])
         else:
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="InNotInExpr")
         bin_op_node = BinOp(left=left_node, op=op, right=right_node, **extract_token_info(ctx))
 
         return bin_op_node
@@ -323,7 +323,7 @@ class Expr:
             return self.visitAnalyticFunctions(c)
 
         else:
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="FunctionsExpression")
 
     """
                         -----------------------------------
@@ -444,7 +444,7 @@ class Expr:
 
         for c in ctx_list:
             if c.is_terminal:
-                raise NotImplementedError
+                raise SemanticError("1-3-13", construct="JoinBody")
             elif c.rule_index == RC.FILTER_CLAUSE[0]:
                 body_nodes.append(self.visitFilterClause(c))
             elif c.rule_index == RC.CALC_CLAUSE[0]:
@@ -458,7 +458,7 @@ class Expr:
             elif c.rule_index == RC.RENAME_CLAUSE[0]:
                 body_nodes.append(self.visitRenameClause(c))
             else:
-                raise NotImplementedError
+                raise SemanticError("1-3-13", construct="JoinBody")
 
         return body_nodes
 
@@ -487,7 +487,7 @@ class Expr:
         elif ctx.ctx_id == RC.CAST_EXPR_DATASET:
             return self.visitCastExprDataset(ctx)
         else:
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="GenericFunctions")
 
     def visitCallDataset(self, ctx: Any) -> UDOCall:
         """
@@ -603,7 +603,7 @@ class Expr:
 
         else:
             # AST_ASTCONSTRUCTOR.14
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="CastExprDataset")
 
     def visitParameter(self, ctx: Any) -> Any:
         ctx_list = ctx.children
@@ -614,7 +614,7 @@ class Expr:
         elif c.is_terminal:
             return ID(type_="OPTIONAL", value=c.text, **extract_token_info(c))
         else:
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="Parameter")
 
     """
                         -----------------------------------
@@ -634,7 +634,7 @@ class Expr:
         elif ctx.ctx_id == RC.STRING_DISTANCE_ATOM:
             return self.visitStringDistanceAtom(ctx)
         else:
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="StringFunctions")
 
     def visitUnaryStringFunction(self, ctx: Any) -> UnaryOp:
         ctx_list = ctx.children
@@ -776,7 +776,7 @@ class Expr:
         elif ctx.ctx_id == RC.BINARY_NUMERIC:
             return self.visitBinaryNumeric(ctx)
         else:
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="NumericFunctions")
 
     def visitUnaryNumeric(self, ctx: Any) -> UnaryOp:
         ctx_list = ctx.children
@@ -842,7 +842,7 @@ class Expr:
         elif ctx.ctx_id == RC.EXIST_IN_ATOM:
             return self.visitExistInAtom(ctx)
         else:
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="ComparisonFunctions")
 
     def visitBetweenAtom(self, ctx: Any) -> MulOp:
         ctx_list = ctx.children
@@ -928,7 +928,7 @@ class Expr:
         ):
             return self.visitTimeUnaryAtom(ctx)
         else:
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="TimeFunctions")
 
     def visitTimeUnaryAtom(self, ctx: Any) -> UnaryOp:
         ctx_list = ctx.children
@@ -943,7 +943,7 @@ class Expr:
 
         if len(operand_node) == 0:
             # AST_ASTCONSTRUCTOR.15
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="TimeUnaryAtom")
 
         return UnaryOp(op=op, operand=operand_node[0], **extract_token_info(ctx))
 
@@ -1113,7 +1113,7 @@ class Expr:
         if ctx.ctx_id == RC.NVL_ATOM:
             return self.visitNvlAtom(ctx)
         else:
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="ConditionalFunctions")
 
     def visitNvlAtom(self, ctx: Any) -> BinOp:
         ctx_list = ctx.children
@@ -1143,7 +1143,7 @@ class Expr:
         elif ctx.ctx_id == RC.SET_OR_SYM_DIFF_ATOM:
             return self.visitSetOrSYmDiffAtom(ctx)
         else:
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="SetFunctions")
 
     def visitUnionAtom(self, ctx: Any) -> MulOp:
         ctx_list = ctx.children
@@ -1237,8 +1237,7 @@ class Expr:
             elif c.rule_index == RC.INPUT_MODE_HIERARCHY[0]:
                 input_str = Terminals().visitInputModeHierarchy(c)
                 if input_str == DATASET_PRIORITY:
-                    msg = "Dataset Priority input mode on HR is not implemented"
-                    raise NotImplementedError(msg)
+                    raise InputValidationException(code="0-5-1-9")
                 input_mode = HRInputMode(input_str)
             elif c.rule_index == RC.OUTPUT_MODE_HIERARCHY[0]:
                 output_str = Terminals().visitOutputModeHierarchy(c)
@@ -1343,8 +1342,7 @@ class Expr:
             elif c.rule_index == RC.INPUT_MODE[0]:
                 input_str = Terminals().visitInputMode(c)
                 if input_str == DATASET_PRIORITY:
-                    msg = "Dataset Priority input mode on HR is not implemented"
-                    raise NotImplementedError(msg)
+                    raise InputValidationException(code="0-5-1-9")
                 input_mode = CHInputMode(input_str)
             elif c.rule_index == RC.VALIDATION_OUTPUT[0]:
                 output_str = Terminals().visitValidationOutput(c)
@@ -1432,7 +1430,7 @@ class Expr:
         if ctx.ctx_id == RC.AGGR_DATASET:
             return self.visitAggrDataset(ctx)
         else:
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="AggregateFunctions")
 
     def visitAggrDataset(self, ctx: Any) -> Aggregation:
         ctx_list = ctx.children
@@ -1485,7 +1483,7 @@ class Expr:
         elif ctx.ctx_id == RC.RATIO_TO_REPORT_AN:
             return self.visitRatioToReportAn(ctx)
         else:
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="AnalyticFunctions")
 
     def visitAnSimpleFunction(self, ctx: Any) -> Analytic:
         ctx_list = ctx.children
@@ -1509,7 +1507,7 @@ class Expr:
                 window = Terminals().visitWindowingClause(c)
                 continue
             else:
-                raise NotImplementedError
+                raise SemanticError("1-3-13", construct="AnSimpleFunction")
 
         if window is None and (partition_by is not None or order_by is not None):
             window = Windowing(
@@ -1569,9 +1567,9 @@ class Expr:
                 params.append(Terminals().visitVarID(c))
                 continue
 
-        if len(params) == 0:
-            # AST_ASTCONSTRUCTOR.16
-            raise Exception(f"{op_node} requires an offset parameter.")
+        if not params:
+            # AST_ASTCONSTRUCTOR.16: params stays None when no offset is given
+            raise InputValidationException(code="0-5-1-3", op=op_node)
 
         return Analytic(
             op=op_node,
@@ -1805,7 +1803,7 @@ class Expr:
         elif ctx.ctx_id == RC.GROUP_ALL:
             return self.visitGroupAll(ctx)
         else:
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="GroupingClause")
 
     def visitHavingClause(self, ctx: Any) -> Any:
         """
@@ -1831,7 +1829,7 @@ class Expr:
         elif expr_component.ctx_id == RC.BOOLEAN_EXPR_COMP:
             param_nodes = ExprComp().visitBooleanExprComp(expr_component)
         else:
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="HavingClause")
 
         return ParamOp(
             op=op_node, children=None, params=param_nodes, **extract_token_info(ctx)
@@ -1879,7 +1877,7 @@ class Expr:
         if has_time_agg:
             period_to, period_to_ref, conf = self._extract_time_agg_tokens(ctx_list)
             if period_to is None and period_to_ref is None:
-                raise NotImplementedError
+                raise SemanticError("1-3-13", construct="GroupByOrExcept")
             children_nodes.append(
                 TimeAggregation(
                     op="time_agg",

@@ -23,6 +23,7 @@ from vtlengine.DataTypes import (
     TimeInterval,
     TimePeriod,
 )
+from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.Model import Component, Dataset, Role, Scalar
 
 
@@ -66,7 +67,7 @@ class Terminals:
                 elif child.text == "false":
                     constant_node = Constant(type_="BOOLEAN_CONSTANT", value=False, **token_info)
                 else:
-                    raise NotImplementedError
+                    raise SemanticError("1-3-13", construct="Constant")
 
             elif child.symbol_type == vtl_cpp_parser.STRING_CONSTANT:
                 constant_node = Constant(
@@ -77,7 +78,7 @@ class Terminals:
                 constant_node = Constant(type_="NULL_CONSTANT", value=None, **token_info)
 
             else:
-                raise NotImplementedError
+                raise SemanticError("1-3-13", construct="Constant")
 
         return constant_node
 
@@ -179,10 +180,7 @@ class Terminals:
         """
         ctx_list = ctx.children
         # AST_ASTCONSTRUCTOR.48
-        raise NotImplementedError(
-            "Value Domain '{}' not available for cast operator or scalar type "
-            "representation or rulesets.".format(ctx_list[0].text)
-        )
+        raise InputValidationException(code="0-5-1-8", name=ctx_list[0].text)
 
     def visitValueDomainValue(self, ctx):
         child = ctx.children[0]
@@ -322,7 +320,7 @@ class Terminals:
 
         if len(component_mult) != 0:
             # AST_ASTCONSTRUCTOR.51
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="CompConstraint")
 
         component_node[0].name = component_name[0]
         return component_node[0]
@@ -333,7 +331,7 @@ class Terminals:
         if not c.is_terminal and c.rule_index == RC.CONSTANT[0]:
             return self.visitConstant(c)
         else:
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="SimpleScalar")
 
     def visitScalarType(self, ctx):
         """
@@ -383,15 +381,15 @@ class Terminals:
 
         if len(scalartype_constraint) != 0:
             # AST_ASTCONSTRUCTOR.45
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="constraint on a scalar type")
 
         if len(not_) != 0:
             # AST_ASTCONSTRUCTOR.46
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="not null on a scalar type")
 
         if len(null_constant) != 0:
             # AST_ASTCONSTRUCTOR.47
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="null on a scalar type")
 
         return type_node
 
@@ -417,7 +415,7 @@ class Terminals:
                    | hrRuleset
                    ;
         """
-        raise NotImplementedError
+        raise SemanticError("1-3-13", construct="RulesetType")
 
     def visitDpRuleset(self, ctx):
         """
@@ -427,7 +425,7 @@ class Terminals:
         ;
         """  # noqa E501
         # AST_ASTCONSTRUCTOR.54
-        raise NotImplementedError
+        raise SemanticError("1-3-13", construct="DpRuleset")
 
     def visitHrRuleset(self, ctx):
         """
@@ -437,7 +435,7 @@ class Terminals:
         ;
         """  # noqa E501
         # AST_ASTCONSTRUCTOR.55
-        raise NotImplementedError
+        raise SemanticError("1-3-13", construct="HrRuleset")
 
     def visitComponentType(self, ctx):
         """
@@ -485,7 +483,7 @@ class Terminals:
         elif not c.is_terminal and c.ctx_id == RC.COMPONENT_TYPE:
             return self.visitComponentType(c)
         else:
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="InputParameterType")
 
     def visitOutputParameterType(self, ctx):
         """
@@ -507,7 +505,7 @@ class Terminals:
         elif not c.is_terminal and c.ctx_id == RC.COMPONENT_TYPE:
             return "Component"
         else:
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="OutputParameterType")
 
     def visitDeclaredOutputType(self, ctx):
         """
@@ -523,8 +521,12 @@ class Terminals:
                 return self.visitDatasetType(c)
             elif not c.is_terminal and c.ctx_id == RC.COMPONENT_TYPE:
                 return self.visitComponentType(c)
-        except (NotImplementedError, SyntaxError):
+        except SyntaxError:
+            return None
+        except SemanticError as error:
             # The type visitors reject these forms, so only output_type describes the result
+            if error.args[1] != "1-3-13":
+                raise
             return None
         return None
 
@@ -543,7 +545,7 @@ class Terminals:
         elif not c.is_terminal and c.ctx_id == RC.COMPONENT_TYPE:
             return self.visitComponentType(c)
         else:
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="OutputParameterTypeComponent")
 
     def visitScalarItem(self, ctx):
         # ctx is a scalarItem node (either simpleScalar or scalarWithCast alternative)
@@ -552,7 +554,7 @@ class Terminals:
         elif ctx.ctx_id == RC.SCALAR_WITH_CAST:
             return self.visitScalarWithCast(ctx)
         else:
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="ScalarItem")
 
     def visitScalarWithCast(self, ctx):
         """
@@ -584,14 +586,14 @@ class Terminals:
 
         else:
             # AST_ASTCONSTRUCTOR.14
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="ScalarWithCast")
 
     def visitScalarSetType(self, ctx):
         """
         scalarSetType: SET ('<' scalarType '>')? ;
         """
         # AST_ASTCONSTRUCTOR.60
-        raise NotImplementedError
+        raise SemanticError("1-3-13", construct="ScalarSetType")
 
     def visitRetainType(self, ctx):
         """
@@ -611,7 +613,7 @@ class Terminals:
                     type_="BOOLEAN_CONSTANT", value=False, **extract_token_info(token)
                 )
             else:
-                raise NotImplementedError
+                raise SemanticError("1-3-13", construct="RetainType")
 
         elif token.symbol_type == vtl_cpp_parser.ALL:
             param_constant_node = ParamConstant(
@@ -619,7 +621,7 @@ class Terminals:
             )
 
         else:
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="RetainType")
 
         return param_constant_node
 
@@ -632,7 +634,7 @@ class Terminals:
         elif not c.is_terminal and c.ctx_id == RC.SCALAR_TYPE:
             return self.visitScalarType(c)
         else:
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="EvalDatasetType")
 
     def visitAlias(self, ctx):
         return ctx.children[0].text
@@ -657,7 +659,7 @@ class Terminals:
         try:
             return str(self.visitConstant(ctx_list[1]).value)
         except Exception:
-            raise Exception(f"Error code must be a string, line {ctx_list[1].start_line}")
+            raise InputValidationException(code="0-5-1-5", line=ctx_list[1].start_line)
 
     def visitErLevel(self, ctx):
         """
@@ -779,18 +781,12 @@ class Terminals:
             and num_rows_1 == -1
             and num_rows_2 == -1
         ):  # preceding and preceding (error)
-            raise Exception(
-                f"Cannot have 2 preceding clauses with unbounded in analytic clause, "
-                f"line {ctx_list[3].start_line}"
-            )
+            raise InputValidationException(code="0-5-1-6", line=ctx_list[3].start_line)
 
         if (
             mode_1 == "following" and num_rows_1 == -1 and num_rows_2 == -1
         ):  # following and following (error)
-            raise Exception(
-                f"Cannot have 2 following clauses with unbounded in analytic clause, "
-                f"line {ctx_list[3].start_line}"
-            )
+            raise InputValidationException(code="0-5-1-7", line=ctx_list[3].start_line)
 
         if mode_1 == mode_2:
             if mode_1 == "preceding" and first != -1 and second > first:  # 3 and 1: must be [-3:-1]

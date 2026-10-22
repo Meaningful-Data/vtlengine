@@ -11,7 +11,7 @@ import pandas as pd
 import pytest
 
 from vtlengine.DataTypes import Integer
-from vtlengine.Exceptions import InputValidationException, check_key
+from vtlengine.Exceptions import DataLoadError, InputValidationException, check_key
 from vtlengine.Exceptions.messages import centralised_messages
 from vtlengine.Model import Component, Dataset, Role
 
@@ -77,6 +77,22 @@ def _indirect_error_uses() -> List[str]:
     return failures
 
 
+def _plain_raises() -> List[str]:
+    """Every raise of a plain Python error that a VTL error should replace (issue #1192)."""
+    failures = []
+    for path in sorted(SOURCE.rglob("*.py")):
+        if "_cpp_parser" in path.parts:
+            continue
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+            if not isinstance(node, ast.Raise) or node.exc is None:
+                continue
+            exc = node.exc.func if isinstance(node.exc, ast.Call) else node.exc
+            name = getattr(exc, "id", None) or getattr(exc, "attr", None)
+            if name in ("Exception", "ValueError", "NotImplementedError"):
+                failures.append(f"{path.relative_to(SOURCE)}:{node.lineno} {name}")
+    return failures
+
+
 def test_error_codes_match_their_class():
     assert _error_code_failures() == []
 
@@ -101,3 +117,14 @@ def test_empty_dataset_shape_mismatch_raises_input_error():
     with pytest.raises(InputValidationException) as context:
         _ = left == right
     assert context.value.args[1] == "0-1-1-14"
+
+
+def test_engine_raises_only_vtl_errors():
+    assert _plain_raises() == []
+
+
+def test_load_errors_are_input_errors():
+    error = DataLoadError("0-3-1-1", file="DS_1.csv")
+    assert isinstance(error, InputValidationException)
+    assert error.args[1] == "0-3-1-1"
+    assert error.args[0].endswith(" Please check loaded file")

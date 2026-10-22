@@ -168,8 +168,11 @@ class If(Operator):
             if (isinstance(true_branch, DataComponent) and isinstance(false_branch, Dataset)) or (
                 isinstance(true_branch, Dataset) and isinstance(false_branch, DataComponent)
             ):
-                raise ValueError(
-                    "If then and else operands cannot be dataset and component respectively"
+                raise SemanticError(
+                    "1-1-9-12",
+                    op=cls.op,
+                    then_symbol=true_branch.name,
+                    else_symbol=false_branch.name,
                 )
             if isinstance(true_branch, Scalar):
                 left = false_branch

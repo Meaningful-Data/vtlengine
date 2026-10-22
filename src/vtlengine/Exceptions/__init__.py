@@ -174,7 +174,9 @@ def key_distance(key: str, objetive: str) -> int:
     return dp[-1][-1]
 
 
-class DataLoadError(VTLEngineException):
+class DataLoadError(InputValidationException):
+    """An input error found while loading data (0-3-* codes)."""
+
     output_message = " Please check loaded file"
     comp_code: Optional[str] = None
 
@@ -189,7 +191,8 @@ class DataLoadError(VTLEngineException):
         if dataset_output:
             message += " " + dataset_output
 
-        super().__init__(message, None, None, code)
+        # The message is already built: skip the catalogue lookup of InputValidationException
+        VTLEngineException.__init__(self, message, None, None, code)
 
         if comp_code:
             self.comp_code = comp_code

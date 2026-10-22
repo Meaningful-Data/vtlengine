@@ -622,12 +622,12 @@ class TestCastSemanticErrors:
 
 
 # ===========================================================================
-# Mask raises NotImplementedError
+# Mask raises the SemanticError of an unsupported construct
 # ===========================================================================
 
 
 class TestCastMaskNotImplemented:
-    """Any cast with mask raises NotImplementedError."""
+    """Any cast with mask is an unsupported construct (SemanticError 1-3-13)."""
 
     @pytest.mark.parametrize(
         "operand, to_type, mask",
@@ -642,7 +642,7 @@ class TestCastMaskNotImplemented:
         ],
     )
     def test_mask_raises_not_implemented(self, operand: Scalar, to_type: type, mask: str) -> None:
-        with pytest.raises(NotImplementedError):
+        with pytest.raises(SemanticError, match="1-3-13"):
             Cast.validate(operand=operand, scalarType=to_type, mask=mask)
 
 

@@ -942,7 +942,7 @@ class Time_Aggregation(Time):
                 return value
             return _date_access(value, period_to, start)
         else:
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct=f"time_agg over {data_type.__name__}")
 
     @classmethod
     def dataset_evaluation(

@@ -173,7 +173,7 @@ class Component:
 
     def __post_init__(self) -> None:
         if self.role == Role.IDENTIFIER and self.nullable:
-            raise ValueError(f"Identifier {self.name} cannot be nullable")
+            raise InputValidationException(code="0-1-1-18", name=self.name)
         if self.role == Role.VIRAL_ATTRIBUTE and self.name in RESERVED_COMPONENT_NAMES:
             raise SemanticError(
                 "1-3-3-7",
@@ -239,12 +239,10 @@ class Dataset:
     def __post_init__(self) -> None:
         if self.data is not None:
             if len(self.components) != len(self.data.columns):
-                raise ValueError(
-                    "The number of components must match the number of columns in the data"
-                )
+                raise InputValidationException(code="0-1-1-19", name=self.name)
             for name, _ in self.components.items():
                 if name not in self.data.columns:
-                    raise ValueError(f"Component {name} not found in the data")
+                    raise InputValidationException(code="0-1-1-20", comp_name=name, name=self.name)
 
     def enforce_dtypes(self) -> None:
         """Ensure all DataFrame column dtypes match their component DataType."""
@@ -372,7 +370,7 @@ class Dataset:
 
     def add_component(self, component: Component) -> None:
         if component.name in self.components:
-            raise ValueError(f"Component with name {component.name} already exists")
+            raise SemanticError("1-3-13", construct=f"duplicated component {component.name}")
         self.components[component.name] = component
 
     def delete_component(self, component_name: str) -> None:
@@ -517,9 +515,7 @@ class ValueDomain:
     def __post_init__(self) -> None:
         if len(set(self.setlist)) != len(self.setlist):
             duplicated = [item for item, count in Counter(self.setlist).items() if count > 1]
-            raise ValueError(
-                f"The setlist must have unique values. Duplicated values: {duplicated}"
-            )
+            raise InputValidationException(code="0-1-1-21", name=self.name, duplicated=duplicated)
 
         # Cast values to the correct type
         self.setlist = [self.type.cast(value) for value in self.setlist]
@@ -527,7 +523,7 @@ class ValueDomain:
     @classmethod
     def from_json(cls, json_str: str) -> str:
         if len(json_str) == 0:
-            raise ValueError("Empty JSON string for ValueDomain")
+            raise InputValidationException(code="0-1-1-22")
 
         json_info = json.loads(json_str)
         return cls.from_dict(json_info)
@@ -536,9 +532,9 @@ class ValueDomain:
     def from_dict(cls, value: Dict[str, Any]) -> Any:
         for x in ("name", "type", "setlist"):
             if x not in value:
-                raise Exception("Invalid format for ValueDomain. Requires name, type and setlist.")
+                raise InputValidationException(code="0-1-1-23")
         if value["type"] not in SCALAR_TYPES:
-            raise ValueError(f"Invalid data type {value['type']} for ValueDomain {value['name']}")
+            raise InputValidationException(code="0-1-1-24", type=value["type"], name=value["name"])
 
         return cls(value["name"], SCALAR_TYPES[value["type"]], value["setlist"])
 
@@ -568,7 +564,7 @@ class ExternalRoutine:
             dataset_names = cls._extract_dataset_names(query)
             return cls(dataset_names, query, name)
         except sqlglot.errors.ParseError as e:
-            raise Exception(f"Invalid SQL query in external routine '{name}': {e}") from e
+            raise InputValidationException(code="0-1-1-25", name=name, error=e) from e
 
     @classmethod
     def _extract_dataset_names(cls, query: str) -> List[str]:

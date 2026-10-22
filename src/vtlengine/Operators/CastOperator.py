@@ -42,7 +42,7 @@ class Cast(Operator.Unary):
     def check_with_mask(
         cls, from_type: Type[ScalarType], to_type: Type[ScalarType], mask_value: str
     ) -> None:
-        raise NotImplementedError("Cast with mask is not yet implemented.")
+        raise SemanticError("1-3-13", construct="cast with mask")
 
     @classmethod
     def check_without_mask(cls, from_type: Type[ScalarType], to_type: Type[ScalarType]) -> None:
@@ -75,7 +75,7 @@ class Cast(Operator.Unary):
         mask: Optional[str] = None,
     ) -> Any:
         if mask is not None and not isinstance(mask, str):
-            raise Exception(f"{cls.op} mask must be a string")
+            raise SemanticError("1-1-5-7", op=cls.op)
 
         if isinstance(operand, Dataset):
             return cls.dataset_validation(operand, scalarType, mask)
@@ -92,8 +92,10 @@ class Cast(Operator.Unary):
         mask: Optional[str] = None,
     ) -> Dataset:
         """This method validates the operation when the operand is a Dataset."""
-        if len(operand.get_measures()) != 1:
-            raise Exception(f"{cls.op} can only be applied to a Dataset with one measure")
+        if len(operand.get_measures()) == 0:
+            raise SemanticError("1-1-1-8", op=cls.op, name=operand.name)
+        if len(operand.get_measures()) > 1:
+            raise SemanticError("1-1-1-4", op=cls.op)
         measure = operand.get_measures()[0]
         from_type = measure.data_type
 

@@ -455,7 +455,7 @@ class Between(Operator.Operator):
             and isinstance(to_data, pd.Series)
             and len(from_data) != len(to_data)
         ):
-            raise ValueError("From and To must have the same length")
+            raise SemanticError("1-3-13", construct="between bounds of different lengths")
 
         if isinstance(operand, Dataset):
             result.data = operand.data.copy()

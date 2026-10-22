@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional, Union
 import pandas as pd
 
 from vtlengine.AST.Grammar.tokens import GT, GTE, LT, LTE
-from vtlengine.Exceptions import RunTimeError
+from vtlengine.Exceptions import InputValidationException, RunTimeError
 
 PERIOD_IND_MAPPING = {"A": 6, "S": 5, "Q": 4, "M": 3, "W": 2, "D": 1}
 
@@ -605,7 +605,7 @@ def check_max_date(str_: Optional[str]) -> Optional[str]:
     if _has_time_component(str_):
         try:
             return normalize_datetime(str_)
-        except ValueError:
+        except (ValueError, InputValidationException):
             raise RunTimeError("2-1-19-8", date=str_) from None
     elif len(str_) == 10 and str_[7] == "-":
         return date.fromisoformat(str_).isoformat()

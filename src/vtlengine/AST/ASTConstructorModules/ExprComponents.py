@@ -23,7 +23,7 @@ from vtlengine.AST.ASTConstructorModules.Terminals import Terminals
 from vtlengine.AST.Grammar._cpp_parser import vtl_cpp_parser
 from vtlengine.AST.Grammar._cpp_parser._rule_constants import RC
 from vtlengine.AST.Grammar.tokens import STRING_DISTANCE
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import InputValidationException, SemanticError
 
 
 class ExprComp:
@@ -117,7 +117,7 @@ class ExprComp:
 
         else:
             # AST_ASTCONSTRUCTOR.3
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="ExprComponent")
 
     def bin_op_creator_comp(self, ctx):  # type: ignore[no-untyped-def]
         ctx_list = ctx.children
@@ -151,7 +151,7 @@ class ExprComp:
         elif not ctx_list[2].is_terminal and ctx_list[2].ctx_id == RC.VALUE_DOMAIN_ID:
             right_node = Terminals().visitValueDomainID(ctx_list[2])
         else:
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="InNotInExprComp")
         bin_op_node = BinOp(left=left_node, op=op, right=right_node, **extract_token_info(ctx))
 
         return bin_op_node
@@ -190,7 +190,7 @@ class ExprComp:
         ctx_list = ctx.children
 
         if len(ctx_list) % 4 != 3:
-            raise ValueError("Syntax error.")
+            raise InputValidationException(code="0-5-1-1")
 
         else_node = self.visitExprComponent(ctx_list[-1])
         ctx_list = ctx_list[1:-2]
@@ -271,7 +271,7 @@ class ExprComp:
         elif ctx.ctx_id == RC.ANALYTIC_FUNCTIONS_COMPONENTS:
             return self.visitAnalyticFunctionsComponents(c)
         else:
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="FunctionsComponents")
 
     """
                                 -----------------------------------
@@ -287,7 +287,7 @@ class ExprComp:
         elif ctx.ctx_id == RC.CAST_EXPR_COMPONENT:
             return self.visitCastExprComponent(ctx)
         else:
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="GenericFunctionsComponents")
 
     def visitCallComponent(self, ctx):  # type: ignore[no-untyped-def]
         """
@@ -327,7 +327,7 @@ class ExprComp:
         children_nodes = var_ids_nodes + constant_nodes
 
         if len(children_nodes) > 1:
-            raise Exception("Only one operand is allowed in Eval")
+            raise InputValidationException(code="0-5-1-4")
 
         # Reference manual says it is mandatory.
         language_name = [
@@ -403,7 +403,7 @@ class ExprComp:
 
         else:
             # AST_ASTCONSTRUCTOR.14
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="CastExprComponent")
 
     def visitParameterComponent(self, ctx):  # type: ignore[no-untyped-def]
         ctx_list = ctx.children
@@ -414,7 +414,7 @@ class ExprComp:
         elif c.is_terminal:
             return ID(type_="OPTIONAL", value=c.text, **extract_token_info(ctx))
         else:
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="ParameterComponent")
 
     """
                             -----------------------------------
@@ -434,7 +434,7 @@ class ExprComp:
         elif ctx.ctx_id == RC.STRING_DISTANCE_ATOM_COMPONENT:
             return self.visitStringDistanceAtomComponent(ctx)
         else:
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="StringFunctionsComponents")
 
     def visitUnaryStringFunctionComponent(self, ctx):  # type: ignore[no-untyped-def]
         ctx_list = ctx.children
@@ -568,7 +568,7 @@ class ExprComp:
         elif ctx.ctx_id == RC.BINARY_NUMERIC_COMPONENT:
             return self.visitBinaryNumericComponent(ctx)
         else:
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="NumericFunctionsComponents")
 
     def visitUnaryNumericComponent(self, ctx):  # type: ignore[no-untyped-def]
         ctx_list = ctx.children
@@ -652,7 +652,7 @@ class ExprComp:
         ):
             return self.visitTimeUnaryAtomComponent(ctx)
         else:
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="TimeFunctionsComponents")
 
     def visitTimeUnaryAtomComponent(self, ctx):  # type: ignore[no-untyped-def]
         """
@@ -670,7 +670,7 @@ class ExprComp:
 
         if len(operand_node) == 0:
             # AST_ASTCONSTRUCTOR.15
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="TimeUnaryAtomComponent")
 
         return UnaryOp(op=op, operand=operand_node[0], **extract_token_info(ctx))
 
@@ -850,7 +850,7 @@ class ExprComp:
         if ctx.ctx_id == RC.NVL_ATOM_COMPONENT:
             return self.visitNvlAtomComponent(ctx)
         else:
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="ConditionalFunctionsComponents")
 
     def visitNvlAtomComponent(self, ctx):  # type: ignore[no-untyped-def]
         ctx_list = ctx.children
@@ -875,7 +875,7 @@ class ExprComp:
         elif ctx.ctx_id == RC.IS_NULL_ATOM_COMPONENT:
             return self.visitIsNullAtomComponent(ctx)
         else:
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="ComparisonFunctionsComponents")
 
     def visitBetweenAtomComponent(self, ctx):  # type: ignore[no-untyped-def]
         ctx_list = ctx.children
@@ -923,7 +923,7 @@ class ExprComp:
         elif ctx.ctx_id == RC.COUNT_AGGR_COMP:
             return self.visitCountAggrComp(ctx)
         else:
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="AggregateFunctionsComponents")
 
     def visitAggrComp(self, ctx):  # type: ignore[no-untyped-def]
         ctx_list = ctx.children
@@ -952,7 +952,7 @@ class ExprComp:
         elif ctx.ctx_id == RC.RATIO_TO_REPORT_AN_COMPONENT:
             return self.visitRatioToReportAnComponent(ctx)
         else:
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct="AnalyticFunctionsComponents")
 
     def visitAnSimpleFunctionComponent(self, ctx):  # type: ignore[no-untyped-def]
         ctx_list = ctx.children
@@ -976,7 +976,7 @@ class ExprComp:
                 params = Terminals().visitWindowingClause(c)
                 continue
             else:
-                raise NotImplementedError
+                raise SemanticError("1-3-13", construct="AnSimpleFunctionComponent")
 
         return Analytic(
             op=op_node,

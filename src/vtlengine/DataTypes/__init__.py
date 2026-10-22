@@ -56,7 +56,7 @@ class ScalarType(metaclass=DataTypeSimpleRepr):
 
     def strictly_same_class(self, obj: "ScalarType") -> bool:
         if not isinstance(obj, ScalarType):
-            raise Exception("Not use strictly_same_class")
+            raise SemanticError("1-3-13", construct="strictly_same_class")
         return self.__class__ == obj.__class__
 
     def __eq__(self, other: Any) -> bool:
@@ -78,11 +78,11 @@ class ScalarType(metaclass=DataTypeSimpleRepr):
 
     @classmethod
     def implicit_cast(cls, value: Any, from_type: Any) -> Any:
-        raise Exception("Method should be implemented by inheritors")
+        raise SemanticError("1-3-13", construct=f"{cls.__name__}.implicit_cast")
 
     @classmethod
     def explicit_cast(cls, value: Any, from_type: Any) -> Any:
-        raise Exception("Method should be implemented by inheritors")
+        raise SemanticError("1-3-13", construct=f"{cls.__name__}.explicit_cast")
 
     @classmethod
     def is_subtype(cls, obj: Any) -> bool:
@@ -96,7 +96,7 @@ class ScalarType(metaclass=DataTypeSimpleRepr):
     def check_type(cls, value: Any) -> bool:
         if isinstance(value, CAST_MAPPING[cls.__name__]):
             return True
-        raise Exception(f"Value {value} is not a {cls.__name__}")
+        raise InputValidationException(code="0-1-1-26", value=value, type=cls.__name__)
 
     @classmethod
     def cast(cls, value: Any) -> Any:
@@ -314,7 +314,7 @@ class Integer(Number):
             if value.is_integer():
                 return int(value)
             else:
-                raise ValueError(f"Value {value} has decimals, cannot cast to integer")
+                raise InputValidationException(code="0-1-1-27", value=value)
         if isinstance(value, str):
             if value.lower() == "true":
                 return 1

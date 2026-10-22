@@ -13,6 +13,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Type, Union
 
 from vtlengine.DataTypes import ScalarType
+from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Dataset, Role
 
 if hasattr(inspect, "get_annotations"):
@@ -374,7 +375,7 @@ class OrderBy(AST):
 
     def __post_init__(self):
         if self.order not in ["asc", "desc"]:
-            raise ValueError(f"Invalid order: {self.order}")
+            raise SemanticError("1-3-13", construct=f"order {self.order}")
 
     __eq__ = AST.ast_equality
 

@@ -9,6 +9,8 @@ Node Dispatcher.
 
 from typing import Any
 
+from vtlengine.Exceptions import SemanticError
+
 
 class NodeVisitor(object):
     """ """
@@ -22,4 +24,4 @@ class NodeVisitor(object):
     def generic_visit(self, node):
         """ """
         # AST_ASTVISITOR.1
-        raise Exception("No visit_{} method".format(type(node).__name__))
+        raise SemanticError("1-3-13", construct=type(node).__name__)

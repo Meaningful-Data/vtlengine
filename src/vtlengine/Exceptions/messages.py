@@ -13,6 +13,7 @@ All exceptions exposed by the Vtl engine.
 # 0-2-X-X = JSON Schema Errors
 # 0-3-X-X = DataLoad Errors
 # 0-4-X-X = Configuration Errors
+# 0-5-X-X = Script Errors
 #
 # -------------- SEMANTIC ERRORS --------------
 # 1-1-X-X = Operators Semantic Errors
@@ -91,6 +92,80 @@ centralised_messages = {
         "message": "File {file} is empty: no line naming its columns was found in it.",
         "description": "Raised when a datapoint file holds nothing at all. A file holding "
         "only the line that names its columns is a Data Set with no Data Points, and loads.",
+    },
+    "0-1-1-18": {
+        "message": "Identifier {name} cannot be nullable.",
+        "description": "Raised when an Identifier Component is declared nullable.",
+    },
+    "0-1-1-19": {
+        "message": "The number of components must match the number of columns in the data of "
+        "Dataset {name}.",
+        "description": "Raised when the data of a Dataset does not have one column per Component.",
+    },
+    "0-1-1-20": {
+        "message": "Component {comp_name} not found in the data of Dataset {name}.",
+        "description": "Raised when the data of a Dataset has no column for one of its Components.",
+    },
+    "0-1-1-21": {
+        "message": "The setlist of Value Domain {name} must have unique values. Duplicated values: "
+        "{duplicated}",
+        "description": "Raised when the setlist of a Value Domain repeats a value.",
+    },
+    "0-1-1-22": {
+        "message": "Empty JSON string for ValueDomain",
+        "description": "Raised when a Value Domain is read from an empty JSON string.",
+    },
+    "0-1-1-23": {
+        "message": "Invalid format for ValueDomain. Requires name, type and setlist.",
+        "description": "Raised when a Value Domain lacks its name, type or setlist.",
+    },
+    "0-1-1-24": {
+        "message": "Invalid data type {type} for ValueDomain {name}",
+        "description": "Raised when a Value Domain declares a data type the engine does not know.",
+    },
+    "0-1-1-25": {
+        "message": "Invalid SQL query in external routine '{name}': {error}",
+        "description": "Raised when the query of an External Routine is not valid SQL.",
+    },
+    "0-1-1-26": {
+        "message": "Value {value} is not a {type}.",
+        "description": "Raised when a value does not belong to the data type it is checked "
+        "against.",
+    },
+    "0-1-1-27": {
+        "message": "Value {value} has decimals, cannot cast to integer",
+        "description": "Raised when a value with decimals is read as an Integer.",
+    },
+    "0-1-1-28": {
+        "message": "Invalid or incomplete time component in {value}",
+        "description": "Raised when the time part of a date value is missing, truncated or out of "
+        "range.",
+    },
+    "0-1-1-29": {
+        "message": "Start date is greater than end date in Time {value}.",
+        "description": "Raised when a Time value starts after it ends.",
+    },
+    "0-1-1-30": {
+        "message": "Time {value} is not in the correct format. Use YYYY-MM-DD/YYYY-MM-DD or "
+        "YYYY or YYYY-MM.",
+        "description": "Raised when a Time value has none of the accepted formats.",
+    },
+    "0-1-1-31": {
+        "message": "Time period '{value}' is not in a valid format. Accepted formats: {formats}.",
+        "description": "Raised when a Time_Period value has none of the accepted formats.",
+    },
+    "0-1-1-32": {
+        "message": "Value {value} is not a Boolean",
+        "description": "Raised when a value read as a Boolean is not one.",
+    },
+    "0-1-1-33": {
+        "message": "Value {value} is out of range for Integer (int64)",
+        "description": "Raised when a value read as an Integer does not fit in 64 bits.",
+    },
+    "0-1-1-34": {
+        "message": "Duration values are not correct in column {comp_name}",
+        "description": "Raised when a column read as Duration holds a value that is not a "
+        "duration.",
     },
     "0-1-2-3": {
         "message": "{element_type} '{element}' is/are duplicated.",
@@ -263,6 +338,45 @@ centralised_messages = {
         "description": "Raised when the provided time period output format "
         "is not one of the supported representations.",
     },
+    "0-5-1-1": {
+        "message": "Syntax error.",
+        "description": "Raised when the script has a construct the grammar accepts but the engine "
+        "cannot read.",
+    },
+    "0-5-1-2": {
+        "message": "No rules found for the ruleset {ruleset_name}",
+        "description": "Raised when a hierarchical ruleset defines no rule.",
+    },
+    "0-5-1-3": {
+        "message": "{op} requires an offset parameter.",
+        "description": "Raised when lag or lead is called without its offset.",
+    },
+    "0-5-1-4": {
+        "message": "Only one operand is allowed in Eval",
+        "description": "Raised when an eval inside a clause receives more than one operand.",
+    },
+    "0-5-1-5": {
+        "message": "Error code must be a string, line {line}",
+        "description": "Raised when the errorcode of a rule is not a string.",
+    },
+    "0-5-1-6": {
+        "message": "Cannot have 2 preceding clauses with unbounded in analytic clause, line {line}",
+        "description": "Raised when both bounds of an analytic window are unbounded preceding.",
+    },
+    "0-5-1-7": {
+        "message": "Cannot have 2 following clauses with unbounded in analytic clause, line {line}",
+        "description": "Raised when both bounds of an analytic window are unbounded following.",
+    },
+    "0-5-1-8": {
+        "message": "Value Domain '{name}' not available for cast operator or scalar type "
+        "representation or rulesets.",
+        "description": "Raised when a value domain is used where only a scalar type is allowed.",
+    },
+    "0-5-1-9": {
+        "message": "Dataset Priority input mode on HR is not implemented",
+        "description": "Raised when a hierarchy operator uses the dataset_priority input mode, "
+        "which the engine does not support.",
+    },
     # ------------Operators-------------
     # General Semantic errors
     "1-1-1-1": {
@@ -345,6 +459,12 @@ centralised_messages = {
         "description": "Raised when the query of an External Routine cannot run on the "
         "structures of the Data Sets it reads.",
     },
+    "1-1-1-24": {
+        "message": "At op {op}: External Routine dataset {ds_name} is not present in Eval "
+        "operands.",
+        "description": "Raised when the query of an External Routine reads a Dataset the eval "
+        "does not pass to it.",
+    },
     # Aggregate errors
     "1-1-2-2": {
         "message": "At op {op}: Only Identifiers are allowed for grouping, "
@@ -379,6 +499,11 @@ centralised_messages = {
         "description": "Raised when a component that is not nullable holds null values, "
         "which the data shows and the structure alone cannot.",
     },
+    "2-1-1-17": {
+        "message": "At op {op}: Error merging datasets on Binary Operator: {error}.",
+        "description": "Raised when the data points of two Datasets cannot be merged while "
+        "computing a binary operation.",
+    },  # RunTimeError.
     "2-1-3-1": {
         "message": "At op {op}: Division by zero produced infinite values.",
         "description": "Raised when a division by zero in a DuckDB query produces "
@@ -410,6 +535,10 @@ centralised_messages = {
         "message": "Impossible to cast {value} from type {type_1} to {type_2}.",
         "description": "Raised when a literal written in the script cannot be cast to the "
         "target type.",
+    },
+    "1-1-5-7": {
+        "message": "At op {op}: {op} mask must be a string",
+        "description": "Raised when the mask of a cast is not a string.",
     },
     "2-1-5-1": {
         "message": "Impossible to cast {value} from type {type_1} to {type_2}.",
@@ -483,6 +612,19 @@ centralised_messages = {
         "included in the {op} op.",
         "description": "Raised when a component cannot be included in the specified operation "
         "because its name collides with a component already present in the result.",
+    },
+    "1-1-6-15": {
+        "message": "At op {op}: {op} clause requires at least one operand.",
+        "description": "Raised when a keep clause names no Component.",
+    },
+    "1-1-6-16": {
+        "message": "At op {op}: {op} clause requires at most one dataset operand.",
+        "description": "Raised when a keep clause outside a join receives more than one Dataset.",
+    },
+    "1-1-6-17": {
+        "message": "At op {op}: {op} clause requires two operands.",
+        "description": "Raised when an unpivot clause does not name its identifier and its "
+        "measure.",
     },
     # Comparison errors
     "1-1-7-1": {
@@ -627,6 +769,12 @@ centralised_messages = {
         "description": "Raised when several '=' rules define the same code item in a hierarchy "
         "operation and one of them has no when condition, so their results always overlap.",
     },
+    "1-1-10-11": {
+        "message": "At op {op}: The validation and imbalance operands must have the same "
+        "identifiers.",
+        "description": "Raised when the imbalance of a check does not have the Identifiers of its "
+        "validation.",
+    },
     "2-1-10-1": {
         "message": "More than one rule of the Hierarchy Roll-up {ruleset} computes code item "
         "{code_item} for the same data point.",
@@ -736,6 +884,21 @@ centralised_messages = {
         "{type_1} and {type_2}.",
         "description": "Raised when datasets in a join operation have a common identifier "
         "with incompatible types.",
+    },
+    "1-1-13-19": {
+        "message": "At op {op}: Join operator requires at least 1 dataset.",
+        "description": "Raised when a join receives no Dataset.",
+    },
+    "1-1-13-20": {
+        "message": "At op {op}: Invalid expression {expression} on apply operator. Only BinOp are "
+        "accepted.",
+        "description": "Raised when the apply clause of a join holds an expression that is not "
+        "a binary operation.",
+    },
+    "1-1-13-21": {
+        "message": "At op {op}: {left} and {right} has not any match on dataset components.",
+        "description": "Raised when the operands of an apply clause name no Component of the "
+        "joined Datasets.",
     },
     # Operators general errors
     "1-1-14-1": {
@@ -1080,6 +1243,22 @@ centralised_messages = {
         "message": "{pos} operand must be a Dataset.",
         "description": "Raised when an operand expected to be a Dataset is not a Dataset.",
     },
+    "1-2-24": {
+        "message": "{element_type} {name} already exists.",
+        "description": "Raised when a user defined operator or a ruleset is defined twice.",
+    },
+    "1-2-25": {
+        "message": "All elements in a set must be of the same type.",
+        "description": "Raised when a set literal mixes values of different types.",
+    },
+    "1-2-26": {
+        "message": "A set must contain at least one element.",
+        "description": "Raised when a set literal is empty.",
+    },
+    "1-2-27": {
+        "message": "A set must not contain duplicates, found {duplicates}.",
+        "description": "Raised when a set literal repeats a value.",
+    },
     # AST Helpers
     "1-3-1-1": {
         "message": "At op {op}: User defined {option} declared as {type_1}, found {type_2}.",
@@ -1129,6 +1308,11 @@ centralised_messages = {
         "message": "Default arguments cannot be followed by non-default arguments.",
         "description": "Occurs when a function definition places non-default parameters "
         "after default ones.",
+    },
+    "1-3-13": {
+        "message": "Unsupported VTL construct: {construct}.",
+        "description": "Raised when the engine meets a construct it does not support or does "
+        "not expect, which points to a missing feature or to an engine bug.",
     },
     # AST Creation
     "1-3-2-0": {

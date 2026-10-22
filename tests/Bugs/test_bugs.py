@@ -1638,6 +1638,40 @@ class ComparisonBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=message
         )
 
+    def test_GH_1192_33(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[filter Me_1 in {1, "a"}];
+        Description: A set literal that mixes types is a structure error, where a plain Exception
+                     was raised.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_33"
+        number_inputs = 1
+        message = "1-2-25"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_34(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[filter Me_1 in {1, 1}];
+        Description: A set literal that repeats a value is a structure error, where a plain
+                     Exception was raised.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_34"
+        number_inputs = 1
+        message = "1-2-27"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
 
 class TimeBugs(BugHelper):
     """ """
@@ -2385,6 +2419,23 @@ class SetBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=message
         )
 
+    def test_GH_1192_35(self):
+        """
+        Status: OK
+        Expression: DS_r <- union(DS_1, 1);
+        Description: A set operator over a Scalar is a structure error, where a ValueError was
+                     raised.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_35"
+        number_inputs = 1
+        message = "1-2-23"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
 
 class AggregationBugs(BugHelper):
     """ """
@@ -2976,6 +3027,39 @@ class DataValidationBugs(BugHelper):
             number_inputs=number_inputs,
             exception_code=message,
             vd_names=vd_names,
+        )
+
+    def test_GH_1192_32(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset dpr1 ... (twice); DS_r <- check_datapoint(DS_1, dpr1);
+        Description: A datapoint ruleset defined twice is a structure error, where a ValueError
+                     was raised.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_32"
+        number_inputs = 1
+        message = "1-2-24"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_36(self):
+        """
+        Status: OK
+        Expression: DS_r <- check(1 > 0);
+        Description: check over a Scalar is a structure error, where a ValueError was raised.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_36"
+        number_inputs = 1
+        message = "1-2-23"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
         )
 
 
@@ -3913,6 +3997,39 @@ class ClauseBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=message, scalars={"sc_1": None}
         )
 
+    def test_GH_1192_37(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[filter Me_1];
+        Description: A filter condition that is not Boolean is a structure error, where a
+                     ValueError was raised.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_37"
+        number_inputs = 1
+        message = "1-1-9-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_38(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[pivot Id_1, Me_1];
+        Description: pivot is not supported: a SemanticError instead of a NotImplementedError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_38"
+        number_inputs = 1
+        message = "1-3-13"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
 
 class DefinedBugs(BugHelper):
     """ """
@@ -4045,6 +4162,40 @@ class DefinedBugs(BugHelper):
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1192_30(self):
+        """
+        Status: OK
+        Expression: define operator f ... (twice); DS_r <- f(DS_1);
+        Description: A user defined operator defined twice is a structure error, where a
+                     ValueError was raised.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_30"
+        number_inputs = 1
+        message = "1-2-24"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_31(self):
+        """
+        Status: OK
+        Expression: define operator f (x dataset, x dataset) ...; DS_r <- f(DS_1, DS_1);
+        Description: A user defined operator with a repeated parameter is a structure error,
+                     where a ValueError was raised.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_31"
+        number_inputs = 1
+        message = "1-3-1-4"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
 
 class OtherBugs(BugHelper):
@@ -5428,6 +5579,23 @@ class CastBugs(BugHelper):
             scalars={"sc_1": "2022Q1"},
         )
 
+    def test_GH_1192_29(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := cast(Me_1, VD_1)];
+        Description: A value domain is no scalar type for cast: a script error, where a
+                     NotImplementedError was raised.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_29"
+        number_inputs = 1
+        message = "0-5-1-8"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
 
 class AnalyticBugs(BugHelper):
     """Bugs on analytic (window) operators."""
@@ -5759,4 +5927,37 @@ class AnalyticBugs(BugHelper):
             number_inputs=number_inputs,
             exception_code=message,
             exception_message="Please check transformation with output Dataset DS_r",
+        )
+
+    def test_GH_1192_27(self):
+        """
+        Status: OK
+        Expression: DS_r <- lag(DS_1 over (order by Id_1));
+        Description: lag without its offset is a script error, where a TypeError was raised.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_27"
+        number_inputs = 1
+        message = "0-5-1-3"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_28(self):
+        """
+        Status: OK
+        Expression: DS_r <- sum(DS_1 over (order by Id_1 data points between unbounded preceding and unbounded preceding));
+        Description: An analytic window bounded by two unbounded preceding is a script error,
+                     where a plain Exception was raised.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_28"
+        number_inputs = 1
+        message = "0-5-1-6"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
         )
