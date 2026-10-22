@@ -1,0 +1,25 @@
+define hierarchical ruleset HR_1 (valuedomain condition VD_1 as A rule VD_2) is
+    when (A = "X") then TOTAL = B + C
+end hierarchical ruleset;
+
+define hierarchical ruleset HR_2 (valuedomain condition VD_1 as A rule VD_2) is
+    when not (A = "Y") then TOTAL = B + C
+end hierarchical ruleset;
+
+define hierarchical ruleset HR_3 (valuedomain condition VD_1 as A rule VD_2) is
+    when substr(A, 1, 1) = "X" then TOTAL = B + C
+end hierarchical ruleset;
+
+define hierarchical ruleset HR_4 (valuedomain condition VD_1 as A rule VD_2) is
+    when if A = "X" then true else false then TOTAL = B + C
+end hierarchical ruleset;
+
+define hierarchical ruleset HR_5 (valuedomain condition VD_1 as A rule VD_2) is
+    when A in {"X", "Y"} and (A = "X" or A = "W") then TOTAL = B + C
+end hierarchical ruleset;
+
+DS_r1 <- hierarchy(DS_1, HR_1 condition Id_1 rule Id_2);
+DS_r2 <- hierarchy(DS_1, HR_2 condition Id_1 rule Id_2);
+DS_r3 <- hierarchy(DS_1, HR_3 condition Id_1 rule Id_2);
+DS_r4 <- hierarchy(DS_1, HR_4 condition Id_1 rule Id_2);
+DS_r5 <- hierarchy(DS_1, HR_5 condition Id_1 rule Id_2);
