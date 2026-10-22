@@ -56,7 +56,12 @@ from vtlengine.DataTypes import (
     ScalarType,
     check_unary_implicit_promotion,
 )
-from vtlengine.Exceptions import RunTimeError, SemanticError, transformation_output
+from vtlengine.Exceptions import (
+    InputValidationException,
+    RunTimeError,
+    SemanticError,
+    transformation_output,
+)
 from vtlengine.files.output import save_datapoints
 from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
@@ -324,9 +329,9 @@ class InterpreterAnalyzer(ASTTemplate):
             self._save_datapoints_efficient(statement_num)
             statement_num += 1
         if invalid_dataset_outputs:
-            raise SemanticError("0-1-2-8", names=", ".join(invalid_dataset_outputs))
+            raise InputValidationException(code="0-1-2-8", names=", ".join(invalid_dataset_outputs))
         if invalid_scalar_outputs:
-            raise SemanticError("0-1-2-8", names=", ".join(invalid_scalar_outputs))
+            raise InputValidationException(code="0-1-2-8", names=", ".join(invalid_scalar_outputs))
 
         if self.output_path is not None and scalars_to_save:
             scalars_filtered = {

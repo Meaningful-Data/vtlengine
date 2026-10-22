@@ -137,7 +137,9 @@ def check_key(field: str, dict_keys: Any, key: str) -> None:
     if key not in dict_keys:
         closest_key = find_closest_key(dict_keys, key)
         message_append = f". Did you mean {closest_key}?" if closest_key else ""
-        raise SemanticError("0-1-1-13", field=field, key=key, closest_key=message_append)
+        raise InputValidationException(
+            code="0-1-1-13", field=field, key=key, closest_key=message_append
+        )
 
 
 def find_closest_key(dict_keys: Any, key: str) -> Optional[str]:

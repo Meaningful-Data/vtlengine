@@ -7,7 +7,13 @@ import ast
 from pathlib import Path
 from typing import List
 
+import pandas as pd
+import pytest
+
+from vtlengine.DataTypes import Integer
+from vtlengine.Exceptions import InputValidationException, check_key
 from vtlengine.Exceptions.messages import centralised_messages
+from vtlengine.Model import Component, Dataset, Role
 
 SOURCE = Path(__file__).parents[2] / "src" / "vtlengine"
 CODE_FAMILY = {"SemanticError": "1-", "RunTimeError": "2-"}
@@ -40,3 +46,21 @@ def _error_code_failures() -> List[str]:
 
 def test_error_codes_match_their_class():
     assert _error_code_failures() == []
+
+
+def test_check_key_raises_input_error():
+    with pytest.raises(InputValidationException) as context:
+        check_key("type", ["Integer"], "Integr")
+    assert context.value.args[1] == "0-1-1-13"
+    assert "Did you mean Integer?" in context.value.args[0]
+
+
+def test_empty_dataset_shape_mismatch_raises_input_error():
+    components = {"Id_1": Component("Id_1", Integer, Role.IDENTIFIER, False)}
+    left = Dataset("DS_1", components, pd.DataFrame(columns=["Id_1"]))
+    right = Dataset("DS_2", components, pd.DataFrame(columns=["Id_1"]))
+    # Data replaced after the construction, which checks it against the components
+    right.data = pd.DataFrame(columns=["Id_1", "Me_1"])
+    with pytest.raises(InputValidationException) as context:
+        _ = left == right
+    assert context.value.args[1] == "0-1-1-14"

@@ -63,6 +63,7 @@ class TestErrorMessagesGenerator:
 
             content = output_path.read_text(encoding="utf-8")
             assert "INPUT ERRORS" in content
+            assert "0-4-X-X = Configuration Errors" in content
             assert "SEMANTIC ERRORS" in content
             assert "RUNTIME ERRORS" in content
 

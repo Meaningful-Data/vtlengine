@@ -12,6 +12,7 @@ All exceptions exposed by the Vtl engine.
 # 0-1-X-X = Input Validation Errors
 # 0-2-X-X = JSON Schema Errors
 # 0-3-X-X = DataLoad Errors
+# 0-4-X-X = Configuration Errors
 #
 # -------------- SEMANTIC ERRORS --------------
 # 1-1-X-X = Operators Semantic Errors

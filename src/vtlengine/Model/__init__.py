@@ -306,7 +306,7 @@ class Dataset:
         elif self.data is None or other.data is None:
             return False
         if len(self.data) == len(other.data) == 0 and self.data.shape != other.data.shape:
-            raise SemanticError("0-1-1-14", dataset1=self.name, dataset2=other.name)
+            raise InputValidationException(code="0-1-1-14", dataset1=self.name, dataset2=other.name)
 
         for comp in self.components.values():
             type_name: str = comp.data_type.__name__.__str__()

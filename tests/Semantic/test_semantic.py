@@ -6,7 +6,7 @@ from tests.Helper import TestHelper, _use_duckdb_backend
 from vtlengine import semantic_analysis
 from vtlengine.API import create_ast
 from vtlengine.API._InternalApi import load_datasets_with_data
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Dataset, Scalar
 
@@ -2928,9 +2928,9 @@ def test_bug_349():
             },
         ],
     }
-    with pytest.raises(SemanticError, match="0-1-2-8"):
+    with pytest.raises(InputValidationException, match="0-1-2-8"):
         semantic_analysis(script_1, data_structures=data_structures_1)
-    with pytest.raises(SemanticError, match="0-1-2-8"):
+    with pytest.raises(InputValidationException, match="0-1-2-8"):
         semantic_analysis(script_2, data_structures=data_structures_2)
 
 
