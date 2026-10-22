@@ -13,7 +13,6 @@ from vtlengine.Exceptions import (
     DataLoadError,
     InputValidationException,
     RunTimeError,
-    SemanticError,
 )
 
 
@@ -969,7 +968,7 @@ def test_timeshift_interval(intervals, shift, expected):
 
 
 def test_fill_time_series_interval_mixed_frequency():
-    """Intervals of more than one frequency cannot define a grid (1-1-19-9)."""
+    """Intervals of more than one frequency cannot define a grid (2-1-19-23)."""
     structure = {
         "datasets": [
             {
@@ -993,7 +992,7 @@ def test_fill_time_series_interval_mixed_frequency():
             "Me_1": [1, 2, 3],
         }
     )
-    with pytest.raises(SemanticError, match="1-1-19-9"):
+    with pytest.raises(RunTimeError, match="2-1-19-23"):
         run(
             script="DS_r <- fill_time_series(DS_1, single);",
             data_structures=structure,

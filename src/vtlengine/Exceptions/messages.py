@@ -860,16 +860,16 @@ centralised_messages = {
         "description": "Occurs when a Dataset is incorrectly used as a parameter in a "
         "string operation.",
     },
-    "1-1-18-11": {
-        "message": "At op {op}: Hamming distance requires both strings to have the same length, "
-        "got lengths {len1} and {len2}.",
-        "description": "Raised when the hamming method of string_distance is invoked on two "
-        "strings of unequal length.",
-    },
     "2-1-18-1": {
         "message": "At op {op}: {param_type} parameter should be {correct_type}.",
         "description": "Runtime error when a parameter value read from the data does not "
         "match what the operator expects.",
+    },  # RunTimeError.
+    "2-1-18-2": {
+        "message": "At op {op}: Hamming distance requires both strings to have the same length, "
+        "got lengths {len1} and {len2}.",
+        "description": "Raised when the hamming method of string_distance is invoked on two "
+        "strings of unequal length.",
     },  # RunTimeError.
     # Time operators
     "1-1-19-1": {
@@ -1270,6 +1270,15 @@ centralised_messages = {
         "message": "At op {op}: Invalid ISO 8601 duration format '{value}', expected {expected}",
         "description": "Raised when a duration string does not match the expected "
         "format for the operator.",
+    },
+    "2-1-19-23": {
+        "message": "At op {op}: {op} can only be applied to a {comp_type} with a {param}",
+        "description": "Raised when the time values of the operand hold more than one frequency.",
+    },
+    "2-1-19-24": {
+        "message": "At op time_agg: The period indicator {name} to aggregate to has no value.",
+        "description": "Raised when the scalar that gives time_agg its period indicator holds "
+        "a null.",
     },
     # ----------- Interpreter Common ------
     "2-3-4": {

@@ -1936,7 +1936,7 @@ class TimeBugs(BugHelper):
         Goal: Check Exception.
         """
         code = "GH_960_2"
-        with pytest.raises(SemanticError, match="1-1-19-9"):
+        with pytest.raises(RunTimeError, match="2-1-19-23"):
             run(
                 script=self.LoadVTL(code),
                 data_structures=self.filepath_json / f"{code}-1.json",
@@ -2011,6 +2011,22 @@ class TimeBugs(BugHelper):
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message, scalars={"sc_1": "X"}
+        )
+
+    def test_GH_1192_18(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[aggr Me_2 := sum(Me_1) group all time_agg(sc_1)];
+        Description: The scalar that gives time_agg its period holds no value: a runtime error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_18"
+        number_inputs = 1
+        message = "2-1-19-24"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message, scalars={"sc_1": None}
         )
 
 
@@ -3756,6 +3772,38 @@ class ClauseBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=error_code
         )
 
+    def test_GH_1192_16(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc identifier Id_2 := null];
+        Description: A null literal cannot be an Identifier: the semantic analysis rejects it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_16"
+        number_inputs = 1
+        message = "1-1-1-16"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_17(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc identifier Id_2 := sc_1];
+        Description: A scalar without value is a null read from the data: a runtime error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_17"
+        number_inputs = 1
+        message = "2-1-1-16"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message, scalars={"sc_1": None}
+        )
+
 
 class DefinedBugs(BugHelper):
     """ """
@@ -4418,6 +4466,22 @@ class OtherBugs(BugHelper):
         code = "GH_1192_14"
         number_inputs = 1
         message = "1-1-18-4"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_15(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := string_distance(hamming, Me_1, "fooo")];
+        Description: Strings of different lengths read from the data are a runtime error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_15"
+        number_inputs = 1
+        message = "2-1-18-2"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message

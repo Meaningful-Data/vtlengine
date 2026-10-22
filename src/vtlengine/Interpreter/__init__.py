@@ -2328,7 +2328,8 @@ class InterpreterAnalyzer(ASTTemplate):
         if self.aggregation_dataset is None:
             raise SemanticError("1-3-2-4")
         if period_to is None and not self.only_semantic:
-            raise SemanticError("1-3-2-4")
+            # The reference gave no period indicator: its scalar holds no value (issue #1192)
+            raise RunTimeError("2-1-19-24", name=cast(AST.VarID, node.period_to_ref).value)
         return Time_Aggregation._execute_without_operand(
             aggregation_dataset=self.aggregation_dataset,
             period_from=node.period_from,

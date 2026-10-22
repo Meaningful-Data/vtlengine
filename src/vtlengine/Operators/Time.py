@@ -456,8 +456,8 @@ class Fill_time_series(Binary):
         elif data_type == TimeInterval:
             categories = result.data[cls.time_id].apply(cls._classify_interval_period).unique()
             if len(categories) > 1:
-                raise SemanticError(
-                    "1-1-19-9",
+                raise RunTimeError(
+                    "2-1-19-23",
                     op=cls.op,
                     comp_type="dataset",
                     param="single time interval frequency",
@@ -685,8 +685,8 @@ class Time_Shift(Binary):
             if not result.data.empty:
                 categories = result.data[cls.time_id].apply(cls._classify_interval_period).unique()
                 if len(categories) > 1:
-                    raise SemanticError(
-                        "1-1-19-9",
+                    raise RunTimeError(
+                        "2-1-19-23",
                         op=cls.op,
                         comp_type="dataset",
                         param="single time series frequency",
@@ -720,8 +720,8 @@ class Time_Shift(Binary):
             if series.nunique() > 1:
                 frequencies.add(cls.find_min_frequency(series))
         if len(frequencies) > 1:
-            raise SemanticError(
-                "1-1-19-9",
+            raise RunTimeError(
+                "2-1-19-23",
                 op=cls.op,
                 comp_type="dataset",
                 param="single time series frequency",

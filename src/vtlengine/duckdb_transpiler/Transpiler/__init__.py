@@ -1933,7 +1933,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         cte.cte(
             "freq",
             "SELECT CASE WHEN COUNT(DISTINCT f) > 1 THEN error("
-            "'VTL 1-1-19-9: fill_time_series needs a single time interval frequency') "
+            "'VTL 2-1-19-23: fill_time_series needs a single time interval frequency') "
             "ELSE vtl_interval_freq_to_step(MIN(f)) END AS step, MIN(iv) AS sample "
             f"FROM (SELECT vtl_interval_freq({time_col}) AS f, {time_col} AS iv "
             f"FROM source WHERE {time_col} IS NOT NULL)",
@@ -2068,7 +2068,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             ]
             freq_sql = (
                 "SELECT CASE WHEN COUNT(DISTINCT vtl_interval_freq(iv)) > 1 THEN error("
-                "'VTL 1-1-19-9: timeshift needs a single time series frequency') "
+                "'VTL 2-1-19-23: timeshift needs a single time series frequency') "
                 "ELSE vtl_interval_step(MIN(iv)) END AS step "
                 f"FROM (SELECT {time_col} AS iv FROM {src} WHERE {time_col} IS NOT NULL)"
             )
@@ -2102,7 +2102,7 @@ FROM {src}, (
             cte.cte(
                 "freq",
                 "SELECT CASE WHEN COUNT(DISTINCT period_ind) > 1 THEN error("
-                "'VTL 1-1-19-9: timeshift needs a single time series frequency') "
+                "'VTL 2-1-19-23: timeshift needs a single time series frequency') "
                 "ELSE COALESCE(MIN(period_ind), 'A') END AS period_ind FROM freq_series",
             )
             return cte.select(f"SELECT {', '.join(cols)} FROM source s, freq")
@@ -4988,7 +4988,8 @@ FROM (
         if target is None and node.period_to_ref is not None:
             target = self._resolve_period_to_ref(node.period_to_ref)
         if target is None:
-            raise SemanticError("1-3-2-4")
+            # The reference gave no period indicator: its scalar holds no value (issue #1192)
+            raise RunTimeError("2-1-19-24", name=cast(AST.VarID, node.period_to_ref).value)
 
         if node.operand is not None:
             operand_type = self._get_node_type(node.operand)
@@ -5025,9 +5026,10 @@ FROM (
             return f"vtl_tp_{edge}_date({parsed})"
         return expr
 
-    def _resolve_period_to_ref(self, ref: AST.AST) -> str:
+    def _resolve_period_to_ref(self, ref: AST.AST) -> Optional[str]:
         name = ref.value  # type: ignore[attr-defined]
-        return str(self.input_scalars[name].value)
+        value = self.input_scalars[name].value
+        return None if value is None else str(value)
 
     def _resolve_scalar_varid(self, value: Any) -> Any:
         """Non-VarID values pass through unchanged."""

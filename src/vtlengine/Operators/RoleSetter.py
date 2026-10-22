@@ -3,6 +3,7 @@ from typing import Any, Union
 
 import pandas as pd
 
+from vtlengine.DataTypes import Null
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import DataComponent, Role, Scalar
 from vtlengine.Operators import Unary
@@ -35,7 +36,7 @@ class RoleSetter(Unary):
             and not operand.nullable
             and any(operand.data.isnull())
         ):
-            raise SemanticError("1-1-1-16")
+            raise RunTimeError("2-1-1-16")
         result = cls.validate(operand, data_size)
         if isinstance(operand, Scalar):
             result.data = pd.Series([operand.value] * data_size, dtype=operand.data_type.dtype())
@@ -51,8 +52,8 @@ class Identifier(RoleSetter):
     def validate(cls, operand: ALLOWED_MODEL_TYPES, data_size: int = 0) -> DataComponent:
         result = super().validate(operand)
         # An Identifier cannot be nullable, so the expression it is calculated from
-        # has to be declared not nullable itself.
-        if result.nullable:
+        # has to be declared not nullable itself, and cannot be the null literal.
+        if result.nullable or (isinstance(operand, Scalar) and operand.data_type is Null):
             raise SemanticError("1-1-1-16")
         return result
 
@@ -61,7 +62,7 @@ class Identifier(RoleSetter):
         cls, operand: ALLOWED_MODEL_TYPES, data_size: int = 0
     ) -> DataComponent:
         if isinstance(operand, Scalar) and operand.value is None:
-            raise SemanticError("1-1-1-16")
+            raise RunTimeError("2-1-1-16")
         # What the structure declares is read before what the data holds, so that an
         # expression declared nullable reports the same error on either engine, and an
         # expression declared not nullable that still holds a null is caught on the

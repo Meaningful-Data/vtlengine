@@ -36,7 +36,7 @@ from vtlengine.duckdb_transpiler.io._time_handling import (
     format_time_period_scalar,
 )
 from vtlengine.duckdb_transpiler.sql import initialize_time_types
-from vtlengine.Exceptions import RunTimeError, SemanticError, transformation_output
+from vtlengine.Exceptions import RunTimeError, transformation_output
 from vtlengine.files.output._time_period_representation import TimePeriodRepresentation
 from vtlengine.Model import Component, Dataset, Scalar
 from vtlengine.Utils._number_config import get_effective_output_digits
@@ -72,14 +72,14 @@ def _map_time_agg_error(msg: str, msg_lower: str) -> RunTimeError:
 def _mixed_frequency_error(msg_lower: str) -> Exception:
     """The time operator that rejected an operand holding more than one frequency."""
     if "timeshift" in msg_lower:
-        return SemanticError(
-            "1-1-19-9",
+        return RunTimeError(
+            "2-1-19-23",
             op="timeshift",
             comp_type="dataset",
             param="single time series frequency",
         )
-    return SemanticError(
-        "1-1-19-9",
+    return RunTimeError(
+        "2-1-19-23",
         op="fill_time_series",
         comp_type="dataset",
         param="single time interval frequency",
@@ -201,14 +201,14 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
         value = m.group(2).strip() if m else "unknown"
         return RunTimeError("2-1-19-22", op=op, value=value, expected=expected)
 
-    # VTL macro vtl_hamming: strings of unequal length (mirrors 1-1-18-11)
-    if "vtl 1-1-18-11" in msg_lower:
+    # VTL macro vtl_hamming: strings of unequal length (mirrors 2-1-18-2)
+    if "vtl 2-1-18-2" in msg_lower:
         m = re.search(r"hamming length mismatch (\d+) (\d+)", msg)
         len1, len2 = (m.group(1), m.group(2)) if m else ("?", "?")
-        return SemanticError("1-1-18-11", op="string_distance", len1=len1, len2=len2)
+        return RunTimeError("2-1-18-2", op="string_distance", len1=len1, len2=len2)
 
-    # A time operator over an operand of more than one frequency (mirrors 1-1-19-9)
-    if "vtl 1-1-19-9" in msg_lower:
+    # A time operator over an operand of more than one frequency (mirrors 2-1-19-23)
+    if "vtl 2-1-19-23" in msg_lower:
         return _mixed_frequency_error(msg_lower)
 
     # Division by zero: the specific VTL error crafted by ratio_to_report must be
