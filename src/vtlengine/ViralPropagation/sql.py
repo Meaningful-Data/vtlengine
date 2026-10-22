@@ -23,9 +23,13 @@ _AGG_GROUP: Dict[str, str] = {"min": "MIN", "max": "MAX", "sum": "SUM", "avg": "
 
 
 def _sql_literal(value: Optional[Any]) -> str:
-    """Render an enumerated clause value as a single-quoted SQL string literal."""
+    """Render an enumerated clause value as an SQL literal of its own type."""
     if value is None:
         return "NULL"
+    if isinstance(value, bool):
+        return "TRUE" if value else "FALSE"
+    if isinstance(value, (int, float)):
+        return repr(value)
     return "'" + value.replace("'", "''") + "'"
 
 

@@ -1404,6 +1404,12 @@ centralised_messages = {
         "signature. Components do not carry a value domain yet, so the rule could not be "
         "applied to any viral attribute.",
     },
+    "1-3-3-9": {
+        "message": "Viral propagation rule {rule} for {name} uses the constant {value}, which "
+        "is not a value of the {type} type of the viral attribute.",
+        "description": "Raised when a constant of an enumerated viral propagation rule does "
+        "not match the data type of the viral attribute the rule is applied to.",
+    },
     # ---------- Interpreter ----------
     "1-3-5": {
         "message": "{node_op} not found or not valid for {op_type}.",
