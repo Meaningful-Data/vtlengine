@@ -10,11 +10,21 @@ in :mod:`vtlengine.ViralPropagation.sql`.
 from copy import copy
 from dataclasses import dataclass, field
 from functools import reduce
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, Type
 
 import pandas as pd
 
-from vtlengine.DataTypes import Integer, Number
+from vtlengine.DataTypes import (
+    BASIC_TYPES,
+    Duration,
+    Integer,
+    Null,
+    Number,
+    ScalarType,
+    String,
+    TimeInterval,
+    check_unary_implicit_promotion,
+)
 from vtlengine.Exceptions import SemanticError
 
 
@@ -180,6 +190,17 @@ def set_current_registry(registry: ViralPropagationRegistry) -> None:
     _current_registry = registry
 
 
+def _is_value_of(value: Any, data_type: Type[ScalarType]) -> bool:
+    """Check that a rule constant is a value of ``data_type``. A temporal value can only be
+    written as a string, any other constant must have a type promotable to ``data_type``."""
+    value_type = BASIC_TYPES[type(value)]
+    if issubclass(data_type, (TimeInterval, Duration)):
+        compatible = value_type in (String, Null)
+    else:
+        compatible = check_unary_implicit_promotion(value_type, data_type)
+    return compatible and data_type.check(value)
+
+
 def require_rules(components: Iterable[Any]) -> None:
     """Raise SemanticError 1-3-3-6 for any viral component lacking a propagation rule.
 
@@ -191,6 +212,8 @@ def require_rules(components: Iterable[Any]) -> None:
     Also raises SemanticError 1-3-3-5 when a ``sum``/``avg`` rule applies to a
     non-numeric viral attribute: the check runs only where the rule actually executes,
     so a non-numeric attribute that is never combined raises nothing (issue #910).
+    Likewise raises SemanticError 1-3-3-9 when a constant of an enumerated rule is not a
+    value of the viral attribute's data type.
     """
     registry = get_current_registry()
     for comp in components:
@@ -204,6 +227,16 @@ def require_rules(components: Iterable[Any]) -> None:
                 function=rule.aggregate_function,
                 type=comp.data_type.__name__,
             )
+        constants = [v for c in rule.enumerated_clauses for v in (*c["values"], c["result"])]
+        for value in [*constants, rule.default_value]:
+            if not _is_value_of(value, comp.data_type):
+                raise SemanticError(
+                    "1-3-3-9",
+                    rule=rule.name,
+                    name=comp.name,
+                    value=repr(value),
+                    type=comp.data_type.__name__,
+                )
 
 
 def apply_viral_return_types(components: Iterable[Any], result_components: Dict[str, Any]) -> None:
