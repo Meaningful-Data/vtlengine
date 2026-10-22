@@ -2,12 +2,11 @@ import csv
 from copy import copy, deepcopy
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Type, Union, cast
+from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Type, Union, cast
 
 import pandas as pd
 
 import vtlengine.AST as AST
-import vtlengine.Exceptions
 import vtlengine.Operators as Operators
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.DAG import HRDAGAnalyzer
@@ -24,6 +23,7 @@ from vtlengine.AST.Grammar.tokens import (
     CHECK_HIERARCHY,
     COUNT,
     CURRENT_DATE,
+    DATASET,
     DATASET_PRIORITY,
     DATE_ADD,
     DROP,
@@ -51,12 +51,10 @@ from vtlengine.DataTypes import (
     BASIC_TYPES,
     SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
-    Integer,
-    Number,
     ScalarType,
     check_unary_implicit_promotion,
 )
-from vtlengine.Exceptions import RunTimeError, SemanticError
+from vtlengine.Exceptions import RunTimeError, SemanticError, transformation_output
 from vtlengine.files.output import save_datapoints
 from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
@@ -80,6 +78,7 @@ from vtlengine.Operators.Comparison import Between, ExistIn
 from vtlengine.Operators.Conditional import Case, If
 from vtlengine.Operators.General import Eval
 from vtlengine.Operators.HROperators import (
+    EXCLUDE,
     REMOVE,
     HAAssignment,
     Hierarchy,
@@ -116,6 +115,18 @@ from vtlengine.ViralPropagation import (
     get_current_registry,
     set_current_registry,
 )
+
+
+def _var_id_names(node: Any) -> Iterator[str]:
+    """Yield the names of the VarID nodes in a subtree, including the code item conditions."""
+    if isinstance(node, AST.VarID):
+        yield node.value
+    elif isinstance(node, list):
+        for child in node:
+            yield from _var_id_names(child)
+    elif isinstance(node, AST.AST):
+        for child in vars(node).values():
+            yield from _var_id_names(child)
 
 
 # noinspection PyTypeChecker
@@ -268,15 +279,20 @@ class InterpreterAnalyzer(ASTTemplate):
         invalid_dataset_outputs = []
         invalid_scalar_outputs = []
         for child in node.children:
-            if isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
-                vtlengine.Exceptions.dataset_output = child.left.value  # type: ignore[attr-defined]
-                self._load_datapoints_efficient(statement_num)
-            if not isinstance(
+            is_assignment = isinstance(child, (AST.Assignment, AST.PersistentAssignment))
+            if not is_assignment and not isinstance(
                 child,
                 (AST.HRuleset, AST.DPRuleset, AST.Operator, AST.ViralPropagationDef),
-            ) and not isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
+            ):
                 raise SemanticError("1-2-5")
-            result = self.visit(child)
+            output = child.left.value if is_assignment else None  # type: ignore[attr-defined]
+            with transformation_output(output):
+                if is_assignment:
+                    self._load_datapoints_efficient(statement_num)
+                result = self.visit(child)
+                # Enforce output dtypes match DataStructure declarations
+                if isinstance(result, Dataset):
+                    result.enforce_dtypes()
             if isinstance(result, Dataset) and result.name in self.datasets_inputs:
                 invalid_dataset_outputs.append(result.name)
             if isinstance(result, Scalar) and result.name in self.scalars_inputs:
@@ -295,12 +311,6 @@ class InterpreterAnalyzer(ASTTemplate):
             if result is None:
                 continue
 
-            # Enforce output dtypes match DataStructure declarations
-            if isinstance(result, Dataset):
-                result.enforce_dtypes()
-
-            # Removing output dataset
-            vtlengine.Exceptions.dataset_output = None
             # Save results
             self.datasets[result.name] = copy(result)
             results[result.name] = result
@@ -436,8 +446,14 @@ class InterpreterAnalyzer(ASTTemplate):
 
         cond_comp: List[Any] = []
         if isinstance(node.element, list):
-            cond_comp = [x.value for x in node.element[:-1]]
-            node.element = node.element[-1]
+            # The rules name a condition by its alias, if it has one
+            cond_comp = [getattr(x, "alias", None) or x.value for x in node.element[:-1]]
+            node.element = cast(AST.DefIdentifier, node.element[-1])
+
+        for rule in node.rules:
+            for comp_name in _var_id_names(rule.rule):
+                if comp_name not in cond_comp:
+                    raise SemanticError("1-3-1-10", comp_name=comp_name, ruleset_name=node.name)
 
         signature_actual_name = node.element.value
 
@@ -454,6 +470,9 @@ class InterpreterAnalyzer(ASTTemplate):
         """Validate and store the viral propagation definition in the registry."""
         registry = get_current_registry()
 
+        if node.signature_type == "valuedomain":
+            raise SemanticError("1-3-3-8", name=node.name, value_domain=node.target)
+
         # Validate: cannot mix enumerated and aggregate clauses
         if node.enumerated_clauses and node.aggregate_clause:
             raise SemanticError("1-3-3-3", name=node.name)
@@ -466,11 +485,9 @@ class InterpreterAnalyzer(ASTTemplate):
                 raise SemanticError("1-3-3-4", values=clause.values, name=node.name)
             seen_values.add(key)
 
-        # Validate: no duplicate rules for the same target (variable or value domain)
-        existing = registry.get_existing(node.signature_type, node.target)
-        if existing is not None:
-            code = "1-3-3-1" if node.signature_type == "variable" else "1-3-3-2"
-            raise SemanticError(code, name=node.target)
+        # Validate: no duplicate rules for the same variable
+        if registry.get_existing(node.signature_type, node.target) is not None:
+            raise SemanticError("1-3-3-1", name=node.target)
 
         enumerated_clauses = [
             {"values": clause.values, "result": clause.result} for clause in node.enumerated_clauses
@@ -486,20 +503,6 @@ class InterpreterAnalyzer(ASTTemplate):
             default_value=node.default_value,
         )
         registry.register(rule)
-
-        # sum/avg on a value-domain rule is checked at definition time: the value
-        # domain's type is intrinsic to the rule target. Variable rules are checked in
-        # require_rules, where the rule is actually applied — a non-numeric viral
-        # attribute that is never combined must not raise (issue #910).
-        if aggregate_function in ("sum", "avg") and node.signature_type == "valuedomain":
-            vd = (self.value_domains or {}).get(node.target)
-            if vd is not None and vd.type not in (Integer, Number):
-                raise SemanticError(
-                    "1-3-3-5",
-                    name=node.target,
-                    function=aggregate_function,
-                    type=vd.type.__name__,
-                )
 
     # Execution Language
     def visit_Assignment(self, node: AST.Assignment) -> Any:
@@ -1846,15 +1849,15 @@ class InterpreterAnalyzer(ASTTemplate):
             self.is_from_rule = False
             return None
         if self.is_from_hr_agg:
-            measure_name = rule_result.get_measures_names()[0]
             if (
                 self.hr_agg_rules_computed is not None
                 and self.hr_agg_item_rules is not None
                 and rule_result.data is not None
-                and len(rule_result.data[measure_name]) > 0
                 and not (self.hr_input == DATASET_PRIORITY and node.rule.op != EQ)
             ):
-                # Keyed by rule: several rules may compute the same code item (issue #1142)
+                # Keyed by rule: several rules may compute the same code item (issue #1142).
+                # A rule that computes no data point is kept too: with input rule, the later
+                # rules read no data point for its code item (issue #1169).
                 rule_name = cast(str, node.name)
                 self.hr_agg_rules_computed[rule_name] = rule_result.data
                 self.hr_agg_item_rules.setdefault(rule_result.name, []).append(rule_name)
@@ -1931,6 +1934,8 @@ class InterpreterAnalyzer(ASTTemplate):
 
     def visit_HRUnOp(self, node: AST.HRUnOp) -> None:
         operand = self.visit(node.operand)
+        if isinstance(operand, Dataset):
+            operand = get_measure_from_dataset(operand, node.operand.value)
         return HR_UNARY_MAPPING[node.op].analyze(operand)
 
     def visit_Validation(self, node: AST.Validation) -> Dataset:
@@ -2025,44 +2030,25 @@ class InterpreterAnalyzer(ASTTemplate):
         if rule_data is None:
             return Dataset(name=node.value, components=result_components, data=None)
 
-        computed_by = (
-            None
-            if self.is_hr_rule_left or self.hr_agg_item_rules is None
-            else self.hr_agg_item_rules.get(node.value)
-        )
-        if computed_by:
-            df = self._hr_computed_item(computed_by, rule_data, other_ids)
-            if self.hr_input in (RULE_PRIORITY, DATASET_PRIORITY):
-                identifiers = ruleset_ds.get_identifiers_names()
-                input_df = rule_data[[*identifiers, me_name]].rename(
-                    columns={me_name: "__input_me__"}
-                )
-                merged = merge_frames(df, input_df, on=identifiers, how="left")
-                merged.index = df.index
-                # Assign the result back: an in-place `where` on the column selection is
-                # a chained assignment, which pandas 3 Copy-on-Write no longer writes
-                # through to `df`.
-                df[me_name] = df[me_name].where(df[me_name].notna(), merged["__input_me__"])
-            self.update_partial_data(df, me_name, node.value)
-            return Dataset(name=node.value, components=result_components, data=df)
-
         df = rule_data.copy()
         code_data = df[other_ids].drop_duplicates().reset_index(drop=True)
         if not other_ids:
             # Without extra identifiers there is exactly one (global) group; a
             # zero-column frame keeps one row per data point otherwise.
             code_data = code_data.iloc[:1]
+        # Groups where the code item condition is not TRUE leave the code item out of the
+        # rule: it is excluded, not a missing data point (issue #1168)
+        excluded = pd.Series(False, index=code_data.index)
         condition = getattr(node, "_right_condition", None)
         if condition is not None:
             condition = self.visit(condition)
             if condition is not None and condition.data is not None:
-                df = df.loc[condition.data]
+                df = df.loc[condition.data.fillna(False).astype(bool)]
                 if other_ids:
                     keys = pd.MultiIndex.from_frame(df[other_ids].drop_duplicates())
-                    mask = pd.MultiIndex.from_frame(code_data[other_ids]).isin(keys)
-                    code_data = code_data.loc[mask]  # type: ignore[index, unused-ignore]
+                    excluded[:] = ~pd.MultiIndex.from_frame(code_data[other_ids]).isin(keys)
                 else:
-                    code_data = code_data.iloc[: 1 if len(df) else 0]
+                    excluded[:] = len(df) == 0
 
         if node.value in df[hr_component].values:
             value_data = df[df[hr_component] == node.value]
@@ -2083,16 +2069,32 @@ class InterpreterAnalyzer(ASTTemplate):
             df[me_name] = REMOVE
         df[hr_component] = node.value
 
+        # A code item that other rules compute is read from them, except with input
+        # dataset, which reads every code item from the operand (issue #1169)
+        computed_by = (
+            None
+            if self.is_hr_rule_left or self.hr_agg_item_rules is None or self.hr_input == DATASET
+            else self.hr_agg_item_rules.get(node.value)
+        )
+        if computed_by:
+            computed = self._hr_computed_item(computed_by, rule_data, other_ids)
+            if self.hr_input in (RULE_PRIORITY, DATASET_PRIORITY):
+                # The operand's data point where no rule computed a non-null one; a null
+                # computed one is kept where the operand has none
+                in_operand = df.index[~df[me_name].isin([REMOVE])]
+                computed = computed[computed[me_name].notna() | ~computed.index.isin(in_operand)]
+                computed = pd.concat([computed, df.drop(index=computed.index, errors="ignore")])
+            df = computed.sort_index()
+        if excluded.any():
+            rows = code_data[excluded].assign(**{hr_component: node.value, me_name: EXCLUDE})
+            df = pd.concat([df.drop(index=rows.index, errors="ignore"), rows]).sort_index()
+
         self.update_partial_data(df, me_name, node.value)
         return Dataset(name=node.value, components=result_components, data=df)
 
     def update_partial_data(self, df: pd.DataFrame, measure: str, name: str) -> None:
         if self.compute_partial_data:
-            # partial_null/partial_zero require at least one *existing* involved data
-            # point; a null measure still exists — only the REMOVE sentinel marks
-            # absence. fillna covers pd.NA measures, whose comparison against the
-            # sentinel yields NA instead of True.
-            exists = (df[measure] != REMOVE).fillna(True).astype(bool)
+            exists = ~df[measure].isin([REMOVE, EXCLUDE])
             if self.partial_rule_data is None:
                 self.partial_rule_data = exists
             else:

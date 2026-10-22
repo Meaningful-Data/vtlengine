@@ -14,6 +14,7 @@ from vtlengine.AST import (
     Argument,
     Assignment,
     DefIdentifier,
+    DPRIdentifier,
     DPRule,
     DPRuleset,
     EnumeratedVpClause,
@@ -277,7 +278,10 @@ class ASTVisitor:
             if not parameter.is_terminal and parameter.rule_index == RC.PARAMETER_ITEM[0]
         ]
         return_ = [
-            Terminals().visitOutputParameterType(datatype)
+            (
+                Terminals().visitOutputParameterType(datatype),
+                Terminals().visitDeclaredOutputType(datatype),
+            )
             for datatype in ctx_list
             if not datatype.is_terminal and datatype.rule_index == RC.OUTPUT_PARAMETER_TYPE[0]
         ]
@@ -291,7 +295,7 @@ class ASTVisitor:
         if len(return_) == 0:
             raise SemanticError("1-3-2-2", op=operator)
         else:
-            return_node = return_[0]
+            return_node, return_type = return_[0]
 
         token_info = extract_token_info(ctx)
 
@@ -300,6 +304,7 @@ class ASTVisitor:
             parameters=parameters,
             output_type=return_node,
             expression=expr,
+            return_type=return_type,
             **token_info,
         )
 
@@ -474,10 +479,6 @@ class ASTVisitor:
 
         ruleset_name = Terminals().visitRulesetID(ctx_list[3])
         signature_type, ruleset_elements = self.visitHierRuleSignature(ctx_list[5])
-        if signature_type == "variable" and isinstance(ruleset_elements, list):
-            unique_id_names = list(set([elto.value for elto in ruleset_elements]))
-            if len(ruleset_elements) > 2 or len(unique_id_names) < 1:
-                raise SemanticError("1-1-10-9", ruleset=ruleset_name)
         ruleset_rules = self.visitRuleClauseHierarchical(ctx_list[8])
         # Keep k,v for the hierarchical rulesets
         de_ruleset_elements[ruleset_name] = ruleset_elements
@@ -524,12 +525,9 @@ class ASTVisitor:
 
         token_info = extract_token_info(ctx)
         if conditions:
+            # The rules name a condition by its alias, if it has one
             identifiers_list = [
-                DefIdentifier(
-                    value=elto.alias if getattr(elto, "alias", None) else elto.value,
-                    kind=kind,
-                    **token_info,
-                )
+                DPRIdentifier(value=elto.value, kind=kind, alias=elto.alias, **token_info)
                 for elto in conditions[0]
             ]
             identifiers_list.append(DefIdentifier(value=dataset.text, kind=kind, **token_info))

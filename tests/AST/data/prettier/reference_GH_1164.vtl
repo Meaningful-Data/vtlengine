@@ -1,0 +1,29 @@
+define viral propagation VP_1(variable At_1) is
+	when 0.00001 then 2.0;
+	else 10000000000000000.0
+end viral propagation;
+
+s :=
+	2.0;
+DS_r :=
+	DS_1
+		[calc Me_2 := 0.0, Me_3 := -2.0];
+s_1 :=
+	123456.5;
+s_2 :=
+	1234567.5;
+s_3 :=
+	0.1234567;
+s_4 :=
+	2.0000001;
+s_5 :=
+	0.0000001;
+s_6 :=
+	10000000000000000.0;
+DS_r2 :=
+	check(
+		DS_1 > 0.0
+		errorcode "E1"
+		errorlevel 1.0
+		invalid
+	);

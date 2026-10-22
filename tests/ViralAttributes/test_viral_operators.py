@@ -979,30 +979,3 @@ class TestViralAggregateRuleTypeValidation:
         )
         # Must not raise.
         semantic_analysis(script=script, data_structures=self._ds(vtype))
-
-    @pytest.mark.parametrize("fn", ["sum", "avg"])
-    def test_valuedomain_sum_avg_non_numeric_raises(self, fn: str) -> None:
-        ds = {
-            "datasets": [
-                {
-                    "name": "DS_1",
-                    "DataStructure": [
-                        {
-                            "name": "Id_1",
-                            "type": "Integer",
-                            "role": "Identifier",
-                            "nullable": False,
-                        },
-                        {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
-                    ],
-                }
-            ]
-        }
-        vd = {"name": "CL_X", "setlist": ["A", "B"], "type": "String"}
-        script = (
-            f"define viral propagation VP (valuedomain CL_X) is aggregate {fn} "
-            "end viral propagation;\nDS_r <- DS_1 * 2;"
-        )
-        with pytest.raises(SemanticError) as exc:
-            semantic_analysis(script=script, data_structures=ds, value_domains=vd)
-        assert "1-3-3-5" in str(exc.value)

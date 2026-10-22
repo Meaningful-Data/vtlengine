@@ -609,12 +609,6 @@ centralised_messages = {
         "description": "Occurs when operands involve non-numerical Measures "
         "where numerical are required.",
     },
-    "1-1-10-9": {
-        "message": "Invalid signature for the ruleset {ruleset}. On variables, condComp and "
-        "ruleComp must be the same",
-        "description": "Raised when condComp and ruleComp in a ruleset signature do not "
-        "match as required.",
-    },
     "1-1-10-10": {
         "message": "Code item {code_item} is defined by more than one rule of the Hierarchy "
         "Roll-up {ruleset} and at least one of them has no condition.",
@@ -1050,6 +1044,12 @@ centralised_messages = {
         "description": "Occurs when a datapoint has an invalid datatype; a Dataset is expected "
         "but a Scalar was found.",
     },
+    "1-3-1-10": {
+        "message": "Component {comp_name} used in a condition of Hierarchical Ruleset "
+        "{ruleset_name} is not declared in the condition of its signature.",
+        "description": "Raised when a hierarchical ruleset condition refers to a component "
+        "that is not declared in the condition of the ruleset signature.",
+    },
     "1-3-12": {
         "message": "Default arguments cannot be followed by non-default arguments.",
         "description": "Occurs when a function definition places non-default parameters "
@@ -1087,11 +1087,6 @@ centralised_messages = {
         "description": "Raised when two define viral propagation statements "
         "target the same variable.",
     },
-    "1-3-3-2": {
-        "message": "Duplicate viral propagation rule for value domain {name}.",
-        "description": "Raised when two define viral propagation statements "
-        "target the same value domain.",
-    },
     "1-3-3-3": {
         "message": "Cannot mix enumerated and aggregate clauses in viral "
         "propagation definition {name}.",
@@ -1108,7 +1103,7 @@ centralised_messages = {
         "message": "Viral propagation rule for {name} uses aggregate '{function}', which "
         "requires a numeric attribute, but {name} has type {type}.",
         "description": "Raised when an aggregate viral propagation rule using sum or avg "
-        "targets a viral attribute (variable or value domain) whose data type is not "
+        "targets a viral attribute whose data type is not "
         "Number or Integer.",
     },
     "1-3-3-6": {
@@ -1126,6 +1121,13 @@ centralised_messages = {
         "the component names the engine reserves for automatically named measures "
         "(str_var, num_var, int_var, time_var, time_period_var, date_var, duration_var, "
         "bool_var, null_var), which would collide with a promoted measure of the same name.",
+    },
+    "1-3-3-8": {
+        "message": "Viral propagation definition {name} is defined on value domain "
+        "{value_domain}, which is not supported yet; define it on a variable instead.",
+        "description": "Raised when a viral propagation definition uses a valuedomain "
+        "signature. Components do not carry a value domain yet, so the rule could not be "
+        "applied to any viral attribute.",
     },
     "1-3-3-9": {
         "message": "Viral propagation rule {rule} for {name} uses the constant {value}, which "

@@ -1,6 +1,8 @@
 import copy
-from dataclasses import dataclass
-from typing import Any, Optional, Tuple, Union
+import re
+from dataclasses import dataclass, field
+from decimal import Decimal
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from vtlengine import AST
 from vtlengine.AST import (
@@ -18,14 +20,12 @@ from vtlengine.AST.Grammar.tokens import (
     CAST,
     CHARSET_MATCH,
     CHECK_DATAPOINT,
-    CHECK_HIERARCHY,
     DATE_ADD,
     DATEDIFF,
     DROP,
     FILL_TIME_SERIES,
     FILTER,
     HAVING,
-    HIERARCHY,
     IDENTIFIER,
     INSTR,
     INTERSECT,
@@ -55,11 +55,30 @@ from vtlengine.AST.Grammar.tokens import (
     VIRAL_ATTRIBUTE,
 )
 from vtlengine.DataTypes import SCALAR_TYPES_CLASS_REVERSE
-from vtlengine.Model import Component, Dataset
+from vtlengine.Model import Component, Dataset, Scalar
 
 nl = "\n"
 tab = "\t"
 RESERVED_WORDS = {x.replace("'", ""): x for x in LITERAL_NAMES}
+# A name the lexer reads as an IDENTIFIER without quotes (VtlTokens.g4)
+UNQUOTED_NAME = re.compile(
+    r"(?:[0-9][A-Za-z0-9_.]*)?[A-Za-z][A-Za-z0-9_.]*"
+    r"|[A-Za-z_][A-Za-z0-9_.]*:[A-Za-z_][A-Za-z0-9_.]*"
+    r"(?:\((?:[0-9]+(?:\.[0-9]+)*(?:\.[_+*~])?|[_+*~])\))?(?::[.A-Za-z0-9_]+)?"
+)
+# String literals, quoted names and comments, which pretty printing must not change
+QUOTED_TEXT = re.compile(r"(\"[^\"]*\"|'[^']*'|//[^\n]*|/\*.*?\*/)", re.DOTALL)
+
+
+def _format_number(value: float) -> str:
+    """A float written as a number literal that reads back to the same Number.
+
+    The grammar takes no exponent and needs digits on both sides of the point, so
+    the shortest digits that round-trip are written out in full. A whole value keeps
+    its ".0": written as 2 it would read back as the Integer 2.
+    """
+    text = format(Decimal(str(value)), "f")
+    return text if "." in text else f"{text}.0"
 
 
 def _handle_literal(value: Union[str, int, float, bool]):
@@ -70,23 +89,8 @@ def _handle_literal(value: Union[str, int, float, bool]):
     elif isinstance(value, bool):
         return "true" if value else "false"
     elif isinstance(value, float):
-        decimal = str(value).split(".")[1]
-        if len(decimal) > 4:
-            return f"{value:f}".rstrip("0")
-        else:
-            return f"{value:g}"
+        return _format_number(value)
     return str(value)
-
-
-def _format_dataset_eval(dataset: Dataset) -> str:
-    def __format_component(component: Component) -> str:
-        return (
-            f"\n\t\t\t{component.role.value.lower()}"
-            f"<{SCALAR_TYPES_CLASS_REVERSE[component.data_type].lower()}> "
-            f"{component.name}"
-        )
-
-    return f"{{ {', '.join([__format_component(x) for x in dataset.components.values()])} \n\t\t}}"
 
 
 def _format_reserved_word(value: str):
@@ -95,12 +99,79 @@ def _format_reserved_word(value: str):
     return value
 
 
+def _format_name(value: str) -> str:
+    """A name written so that it reads back as the same name.
+
+    The parser drops the quotes around a name, so they go back on reserved words and
+    on any name the lexer would not read as one identifier, such as 'Me 1'.
+    """
+    if value not in RESERVED_WORDS and not UNQUOTED_NAME.fullmatch(value):
+        return f"'{value}'"
+    return _format_reserved_word(value)
+
+
+def _format_component_type(component: Component) -> str:
+    role = "component" if component.role is None else component.role.value.lower()
+    # A component declared without a type is parsed with a String instance, not the class
+    if isinstance(component.data_type, type):
+        return f"{role}<{_format_type(component.data_type)}>"
+    return role
+
+
+def _format_type(type_: Any) -> str:
+    """The type of an operator parameter or result, written as declared."""
+    if isinstance(type_, Dataset):
+        if not type_.components:
+            return "dataset"
+        components = ", ".join(
+            [
+                f"{_format_component_type(component)} {_format_name(component.name)}"
+                for component in type_.components.values()
+            ]
+        )
+        return f"dataset {{{components}}}"
+    if isinstance(type_, Component):
+        return _format_component_type(type_)
+    if isinstance(type_, Scalar):
+        return "scalar"
+    return SCALAR_TYPES_CLASS_REVERSE[type_].lower()
+
+
+def _format_dataset_eval(dataset: Dataset) -> str:
+    """The components of the dataset an eval returns, one per line."""
+    components = f",{nl}{tab * 3}".join(
+        [
+            f"{_format_component_type(component)} {_format_name(component.name)}"
+            for component in dataset.components.values()
+        ]
+    )
+    return f"dataset {{{nl}{tab * 3}{components}{nl}{tab * 2}}}"
+
+
+def _replace_outside_quotes(text: str, old: str, new: str) -> str:
+    """text.replace(old, new), leaving string literals and quoted names as they are."""
+    parts = QUOTED_TEXT.split(text)
+    return "".join(part if i % 2 else part.replace(old, new) for i, part in enumerate(parts))
+
+
+def _strip_line_ends(text: str) -> str:
+    """The spaces and tabs that end each line removed, outside string literals."""
+    parts = [
+        part if i % 2 else re.sub(r"[ \t]+(?=\n)", "", part)
+        for i, part in enumerate(QUOTED_TEXT.split(text))
+    ]
+    parts[-1] = parts[-1].rstrip(" \t")
+    return "".join(parts)
+
+
 @dataclass
 class ASTString(ASTTemplate):
     vtl_script: str = ""
     pretty: bool = False
     is_first_assignment: bool = False
     is_from_agg: bool = False  # Handler to write grouping at aggr level
+    # Comments written inside the ruleset being rendered, which go before their rule
+    ruleset_comments: List[AST.Comment] = field(default_factory=list)
 
     def render(self, ast: AST.AST) -> str:
         self.vtl_script = ""
@@ -110,40 +181,97 @@ class ASTString(ASTTemplate):
         return self.vtl_script
 
     def visit_Start(self, node: AST.Start) -> Any:
+        inner_comments = self._inner_comments(node.children) if self.pretty else {}
+        moved = {id(comment) for comments in inner_comments.values() for comment in comments}
         for child in node.children:
+            if id(child) in moved:
+                continue
+            comments = inner_comments.get(id(child), [])
+            if isinstance(child, (AST.DPRuleset, AST.HRuleset)):
+                self.ruleset_comments = comments
+            else:
+                # Any other statement is written whole, after the comments inside it
+                for comment in comments:
+                    self.vtl_script += f"{self._comment_text(comment)}{nl}"
             if isinstance(child, (Assignment, PersistentAssignment)):
                 self.is_first_assignment = True
+            start = len(self.vtl_script)
             self.visit(child)
+            if self.pretty:
+                self.vtl_script = self.vtl_script[:start] + _strip_line_ends(
+                    self.vtl_script[start:]
+                )
             self.vtl_script += "\n"
+
+    @staticmethod
+    def _inner_comments(children: List[AST.AST]) -> Dict[int, List[AST.Comment]]:
+        """The comments written inside each statement, by the id of the statement.
+
+        The children come sorted by position, so a statement is followed by its comments.
+        """
+        inner: Dict[int, List[AST.Comment]] = {}
+        statement: Optional[AST.AST] = None
+        for child in children:
+            if not isinstance(child, AST.Comment):
+                statement = child
+            elif statement is not None and (child.line_start, child.column_start) < (
+                statement.line_stop,
+                statement.column_stop,
+            ):
+                inner.setdefault(id(statement), []).append(child)
+        return inner
+
+    def _comment_text(self, node: AST.Comment) -> str:
+        value = node.value[:-1] if node.value[-1] == "\n" else node.value
+        if self.pretty:
+            value = nl.join([line.rstrip() for line in value.split(nl)])
+        return value
+
+    def _comments_before(self, rule: Optional[AST.AST], indent: str) -> str:
+        """The ruleset comments written before a rule (all those left, without a rule)."""
+        lines = ""
+        while self.ruleset_comments and (
+            rule is None
+            or (self.ruleset_comments[0].line_start, self.ruleset_comments[0].column_start)
+            < (rule.line_start, rule.column_start)
+        ):
+            lines += f"{indent}{self._comment_text(self.ruleset_comments.pop(0))}{nl}"
+        return lines
 
     # ---------------------- Rulesets ----------------------
     def visit_HRuleset(self, node: AST.HRuleset) -> None:
         if isinstance(node.element, list):
             sep = nl + tab if self.pretty else " "
-            conditons = ", ".join([str(e.value) for e in node.element[:-1]])
+            conditons = ", ".join([self.visit(e) for e in node.element[:-1]])
             signature = (
-                f"{sep}{node.signature_type}{sep}"
+                f"{sep if self.pretty else ''}{node.signature_type}{sep}"
                 f"condition {conditons}{sep}rule {node.element[-1].value}"
             )
         else:
             signature = f"{node.signature_type} rule {node.element.value}"
 
+        # create_ast sorts the rules by dependency, so they go back in the order written
+        written_rules = sorted(node.rules, key=lambda rule: (rule.line_start, rule.column_start))
         rules_strs = []
         if self.pretty:
             self.vtl_script += f"define hierarchical ruleset {node.name}({signature}) is{nl}"
-            for _i, rule in enumerate(node.rules):
-                rule_str = f"{tab}{self.visit(rule)}"
+            for _i, rule in enumerate(written_rules):
+                rule_str = self.visit(rule)
+                # An unnamed when rule comes indented already
+                if rule.name is not None or rule.rule.op != "when":
+                    rule_str = f"{tab}{rule_str}"
                 if rule.erCode is not None:
                     rule_str += f"{nl}{tab}errorcode {_handle_literal(rule.erCode)}"
                 if rule.erLevel is not None:
                     rule_str += f"{nl}{tab}errorlevel {_handle_literal(rule.erLevel)}"
-                rules_strs.append(rule_str)
+                indent = rule_str[: len(rule_str) - len(rule_str.lstrip(tab))]
+                rules_strs.append(self._comments_before(rule, indent) + rule_str)
             rules_sep = f";{nl * 2}" if len(rules_strs) > 1 else ""
             rules = rules_sep.join(rules_strs)
-            self.vtl_script += rules + nl
+            self.vtl_script += rules + nl + self._comments_before(None, tab)
             self.vtl_script += f"end hierarchical ruleset;{nl}"
         else:
-            for rule in node.rules:
+            for rule in written_rules:
                 rule_str = self.visit(rule)
                 if rule.erCode is not None:
                     rule_str += f" errorcode {_handle_literal(rule.erCode)}"
@@ -160,9 +288,12 @@ class ASTString(ASTTemplate):
     def visit_HRule(self, node: AST.HRule) -> str:
         vtl_script = ""
         if node.name is not None:
-            vtl_script += f"{node.name}: "
-        if self.pretty and node.rule.op == "when":
-            vtl_script += nl
+            # In pretty mode a when rule starts on the line after its name
+            vtl_script += (
+                f"{node.name}:{nl}"
+                if self.pretty and node.rule.op == "when"
+                else (f"{node.name}: ")
+            )
         vtl_script += f"{self.visit(node.rule)}"
         return vtl_script
 
@@ -191,10 +322,13 @@ class ASTString(ASTTemplate):
         if self.pretty:
             lines = []
             if node.name is not None:
-                lines.append(f"{tab}{node.name}: ")
-            lines.append(self.visit(node.rule))
+                lines.append(f"{tab * 2}{node.name}:")
+            rule = self.visit(node.rule)
+            # A when rule comes indented already, and any other rule goes at its depth
+            is_when = isinstance(node.rule, AST.HRBinOp) and node.rule.op == "when"
+            lines.append(rule if is_when else f"{tab * 3}{rule}")
             if node.erCode is not None:
-                lines.append(f"{tab * 3}errorcode  {_handle_literal(node.erCode)}")
+                lines.append(f"{tab * 3}errorcode {_handle_literal(node.erCode)}")
             if node.erLevel is not None:
                 lines.append(f"{tab * 3}errorlevel {_handle_literal(node.erLevel)}")
             return nl.join(lines)
@@ -210,9 +344,9 @@ class ASTString(ASTTemplate):
             return vtl_script
 
     def visit_DPRIdentifier(self, node: AST.DPRIdentifier) -> str:
-        vtl_script = f"{node.value}"
+        vtl_script = _format_name(node.value)
         if node.alias is not None:
-            vtl_script += f" as {node.alias}"
+            vtl_script += f" as {_format_name(node.alias)}"
         return vtl_script
 
     def visit_DPRuleset(self, node: AST.DPRuleset) -> None:
@@ -222,15 +356,17 @@ class ASTString(ASTTemplate):
         signature = f"{node.signature_type} {params}" if params else node.signature_type
 
         if self.pretty:
-            self.vtl_script += f"define datapoint ruleset {node.name}({signature}) is {nl}"
+            self.vtl_script += f"define datapoint ruleset {node.name}({signature}) is{nl}"
             rules = ""
             for i, rule in enumerate(node.rules):
-                rules += f"\t{self.visit(rule)}"
+                rule_str = self.visit(rule)
+                indent = rule_str[: len(rule_str) - len(rule_str.lstrip(tab))]
+                rules += self._comments_before(rule, indent) + rule_str
                 if i != len(node.rules) - 1:
                     rules += f";{nl * 2}"
                 else:
                     rules += f"{nl}"
-            self.vtl_script += rules
+            self.vtl_script += rules + self._comments_before(None, tab)
             self.vtl_script += f"end datapoint ruleset;{nl}"
         else:
             rules = rules_sep.join([self.visit(x) for x in node.rules])
@@ -252,7 +388,9 @@ class ASTString(ASTTemplate):
             return "null"
         if isinstance(value, bool):
             return "true" if value else "false"
-        if isinstance(value, (int, float)):
+        if isinstance(value, float):
+            return _format_number(value)
+        if isinstance(value, int):
             return str(value)
         return f'"{value}"'
 
@@ -270,9 +408,11 @@ class ASTString(ASTTemplate):
         if node.has_default:
             clauses_strs.append(f"else {self._vp_constant(node.default_value)}")
 
+        name = _format_name(node.name)
+        target = _format_name(node.target)
         if self.pretty:
             self.vtl_script += (
-                f"define viral propagation {node.name}({node.signature_type} {node.target}) is{nl}"
+                f"define viral propagation {name}({node.signature_type} {target}) is{nl}"
             )
             for i, c in enumerate(clauses_strs):
                 self.vtl_script += f"{tab}{c}"
@@ -282,10 +422,10 @@ class ASTString(ASTTemplate):
                     self.vtl_script += nl
             self.vtl_script += f"end viral propagation;{nl}"
         else:
-            clauses_joined = ";".join(clauses_strs)
+            clauses_joined = "; ".join(clauses_strs)
             self.vtl_script += (
-                f"define viral propagation {node.name} "
-                f"({node.signature_type} {node.target}) is "
+                f"define viral propagation {name} "
+                f"({node.signature_type} {target}) is "
                 f"{clauses_joined} "
                 f"end viral propagation;"
             )
@@ -295,32 +435,28 @@ class ASTString(ASTTemplate):
     def visit_Argument(self, node: AST.Argument) -> str:
         default = f" default {self.visit(node.default)}" if node.default is not None else ""
 
-        if isinstance(node.type_, Dataset):
-            argument_type = "dataset"
-        elif isinstance(node.type_, Component):
-            argument_type = "component"
-        else:
-            argument_type = node.type_.__name__.lower()
+        name = _format_name(node.name)
 
-        name = _format_reserved_word(node.name)
-
-        return f"{name} {argument_type}{default}"
+        return f"{name} {_format_type(node.type_)}{default}"
 
     def visit_Operator(self, node: AST.Operator) -> None:
         signature_sep = ", " if len(node.parameters) > 1 else ""
         signature = signature_sep.join([self.visit(x) for x in node.parameters])
+        returns = (
+            node.output_type.lower() if node.return_type is None else _format_type(node.return_type)
+        )
         if self.pretty:
             self.vtl_script += f"define operator {node.op}({signature}){nl}"
-            self.vtl_script += f"\treturns {node.output_type.lower()} is{nl}"
+            self.vtl_script += f"\treturns {returns} is{nl}"
             expression = self.visit(node.expression)
             if "(" in expression:
-                expression = expression.replace("(", f"({nl}{tab * 2}")
-                expression = expression.replace(")", f"{nl}{tab * 2})")
+                expression = _replace_outside_quotes(expression, "(", f"({nl}{tab * 2}")
+                expression = _replace_outside_quotes(expression, ")", f"{nl}{tab * 2})")
 
             self.vtl_script += f"{tab * 2}{expression}{nl}"
             self.vtl_script += f"end operator;{nl}"
         else:
-            body = f"returns {node.output_type.lower()} is {self.visit(node.expression)}"
+            body = f"returns {returns} is {self.visit(node.expression)}"
             self.vtl_script += f"define operator {node.op}({signature}) {body} end operator;"
 
     # ---------------------- Basic Operators ----------------------
@@ -388,65 +524,6 @@ class ASTString(ASTTemplate):
                 return f"{node.op}({self.visit(node.children[0])})"
             return f"{node.op}({self.visit(node.children[0])}, {params_sep.join(param_values)})"
 
-        elif node.op in (CHECK_HIERARCHY, HIERARCHY):
-            if len(node.children) == 2:
-                operand = self.visit(node.children[0])
-                rule_name = self.visit(node.children[1])
-
-                if self.pretty:
-                    return f"{node.op}({nl}{tab * 2}{operand},{nl}{tab * 2}{rule_name}{nl})"
-                else:
-                    return f"{node.op}({operand}, {rule_name})"
-            operand = self.visit(node.children[0])
-            component_name = self.visit(node.children[1])
-            rule_name = self.visit(node.children[2])
-
-            param_mode_value = node.params[0].value
-            param_input_value = node.params[1].value
-            param_output_value = node.params[2].value
-
-            condition_str = ""
-            if len(node.children) > 3:
-                condition_str += "condition "
-                conditions = []
-                for condition in node.children[3:]:
-                    conditions.append(self.visit(condition))
-                condition_str += ", ".join(conditions)
-                condition_str += f"{nl}{tab * 2}" if self.pretty else " "
-
-            default_value_input = "dataset" if node.op == CHECK_HIERARCHY else "rule"
-            default_value_output = "invalid" if node.op == CHECK_HIERARCHY else "computed"
-
-            param_mode = f" {param_mode_value}" if param_mode_value != "non_null" else ""
-            param_input = (
-                f" {param_input_value}" if param_input_value != default_value_input else ""
-            )
-            param_output = (
-                f" {param_output_value}" if param_output_value != default_value_output else ""
-            )
-            if self.pretty:
-                return (
-                    f"{node.op}({nl}{tab * 2}{operand},"
-                    f"{nl}{tab * 2}{rule_name}{nl}{tab * 2}{condition_str}rule "
-                    f"{component_name}"
-                    f"{param_mode}{param_input}{param_output})"
-                )
-            else:
-                return (
-                    f"{node.op}({operand}, {rule_name} {condition_str}rule {component_name}"
-                    f"{param_mode}{param_input}{param_output})"
-                )
-
-        elif node.op == CHECK_DATAPOINT:
-            operand = self.visit(node.children[0])
-            rule_name = node.children[1]
-            output = ""
-            if len(node.params) == 1 and node.params[0] != "invalid":
-                output = f"{node.params[0]}"
-            if self.pretty:
-                return f"{node.op}({nl}{tab}{operand},{nl}{tab}{rule_name}{nl}{tab}{output}{nl})"
-            else:
-                return f"{node.op}({operand}, {rule_name}{output})"
         elif node.op == CAST:
             operand = self.visit(node.children[0])
             data_type = SCALAR_TYPES_CLASS_REVERSE[node.children[1]].lower()
@@ -480,54 +557,28 @@ class ASTString(ASTTemplate):
 
     def visit_HROperation(self, node: AST.HROperation) -> str:
         operand = self.visit(node.dataset)
-        rule_name = node.ruleset_name
+        clause_sep = f"{nl}{tab * 2}" if self.pretty else " "
 
-        # Handle case with no rule component
-        if node.rule_component is None:
-            if self.pretty:
-                return f"{node.op}({nl}{tab * 2}{operand},{nl}{tab * 2}{rule_name}{nl})"
-            else:
-                return f"{node.op}({operand}, {rule_name})"
-
-        component_name = self.visit(node.rule_component)
-
-        # Build condition string
-        condition_str = ""
+        # The condition and rule clauses are optional, independently of each other
+        clauses = [node.ruleset_name]
         if node.conditions:
-            condition_str += "condition "
-            conditions = [self.visit(condition) for condition in node.conditions]
-            condition_str += ", ".join(conditions)
-            condition_str += f"{nl}{tab * 2}" if self.pretty else " "
+            conditions = ", ".join([self.visit(condition) for condition in node.conditions])
+            clauses.append(f"condition {conditions}")
+        if node.rule_component is not None:
+            clauses.append(f"rule {self.visit(node.rule_component)}")
 
-        # Determine defaults based on operator
-        default_input = "dataset" if node.op == CHECK_HIERARCHY else "rule"
-        default_output = "invalid" if node.op == CHECK_HIERARCHY else "computed"
-
-        # Build mode strings (only include if different from default)
-        param_mode = ""
-        if node.validation_mode is not None and node.validation_mode.value != "non_null":
-            param_mode = f" {node.validation_mode.value}"
-
-        param_input = ""
-        if node.input_mode is not None and node.input_mode.value != default_input:
-            param_input = f" {node.input_mode.value}"
-
-        param_output = ""
-        if node.output is not None and node.output.value != default_output:
-            param_output = f" {node.output.value}"
+        # Modes are written whenever the script wrote them, defaults included
+        modes = "".join(
+            f" {mode.value}"
+            for mode in (node.validation_mode, node.input_mode, node.output)
+            if mode is not None
+        )
+        body = f"{clause_sep.join(clauses)}{modes}"
 
         if self.pretty:
-            return (
-                f"{node.op}({nl}{tab * 2}{operand},"
-                f"{nl}{tab * 2}{rule_name}{nl}{tab * 2}{condition_str}rule "
-                f"{component_name}"
-                f"{param_mode}{param_input}{param_output})"
-            )
-        else:
-            return (
-                f"{node.op}({operand}, {rule_name} {condition_str}rule {component_name}"
-                f"{param_mode}{param_input}{param_output})"
-            )
+            closing = "" if node.rule_component is not None else nl
+            return f"{node.op}({nl}{tab * 2}{operand},{nl}{tab * 2}{body}{closing})"
+        return f"{node.op}({operand}, {body})"
 
     def visit_DPValidation(self, node: AST.DPValidation) -> str:
         operand = self.visit(node.dataset)
@@ -536,21 +587,21 @@ class ASTString(ASTTemplate):
         # Build components string if present
         components_str = ""
         if node.components:
-            components_str = " components " + ", ".join(node.components)
+            components_str = " components " + ", ".join(
+                [_format_name(component) for component in node.components]
+            )
 
-        # Output mode (only include if not default "invalid")
+        # Output mode (written whenever the script wrote it, default "invalid" included)
         output_str = ""
-        if node.output is not None and node.output.value != "invalid":
+        if node.output is not None:
             output_str = f" {node.output.value}"
 
         if self.pretty:
-            # In pretty mode, output line always present (empty if default invalid)
-            output_line = (
-                node.output.value if (node.output and node.output.value != "invalid") else ""
-            )
+            # In pretty mode the output mode goes on its own line, if the script wrote it
+            output_line = f"{nl}{tab}{node.output.value}" if node.output is not None else ""
             return (
                 f"{CHECK_DATAPOINT}({nl}{tab}{operand},{nl}{tab}{rule_name}"
-                f"{components_str}{nl}{tab}{output_line}{nl})"
+                f"{components_str}{output_line}{nl})"
             )
         else:
             return f"{CHECK_DATAPOINT}({operand}, {rule_name}{components_str}{output_str})"
@@ -562,14 +613,16 @@ class ASTString(ASTTemplate):
             return "", ""
         grouping = ""
         if node.grouping is not None:
-            grouping_sep = ", " if len(node.grouping) > 1 else ""
-            grouping_values = []
+            names = []
+            time_aggregations = []
             for grouping_value in node.grouping:
                 if isinstance(grouping_value, TimeAggregation):
-                    grouping_values.append(self.visit(grouping_value))
+                    time_aggregations.append(self.visit(grouping_value))
                 else:
-                    grouping_values.append(_format_reserved_word(grouping_value.value))
-            grouping = f" {node.grouping_op} {grouping_sep.join(grouping_values)}"
+                    names.append(_format_name(grouping_value.value))
+            # time_agg follows the components without a comma: group by Id_1 time_agg("A")
+            grouping_values = [", ".join(names)] if names else []
+            grouping = " " + " ".join([node.grouping_op] + grouping_values + time_aggregations)
         having = f" {self.visit(node.having_clause)}" if node.having_clause is not None else ""
         return grouping, having
 
@@ -587,26 +640,26 @@ class ASTString(ASTTemplate):
             partition = "partition except all"
         elif node.partition_by:
             keyword = "except" if node.partition_op == "except" else "by"
-            partition_values = [_format_reserved_word(x) for x in node.partition_by]
+            partition_values = [_format_name(x) for x in node.partition_by]
             partition = f"partition {keyword} {', '.join(partition_values)}"
         order = ""
         if node.order_by:
             order_sep = ", " if len(node.order_by) > 1 else ""
-            order = f" order by {order_sep.join([self.visit(x) for x in node.order_by])}"
-        window = f" {self.visit(node.window)}" if node.window is not None else ""
+            order = f"order by {order_sep.join([self.visit(x) for x in node.order_by])}"
+        window = self.visit(node.window) if node.window is not None else ""
         params = ""
         if node.params:
             rendered_params = [
                 self.visit(p) if isinstance(p, AST.AST) else str(p) for p in node.params
             ]
             params = ", " + ", ".join(rendered_params)
+        over = " ".join([clause for clause in (partition, order, window) if clause])
+        # An analytic function without operand, such as rank, starts with over
+        arguments = f"{operand}{params} " if operand or params else ""
         if self.pretty:
-            result = (
-                f"{node.op}({nl}{tab * 3}{operand}{params} over({partition}{order} {window})"
-                f"{nl}{tab * 2})"
-            )
+            result = f"{node.op}({nl}{tab * 3}{arguments}over({over}){nl}{tab * 2})"
         else:
-            result = f"{node.op}({operand}{params} over ({partition}{order}{window}))"
+            result = f"{node.op}({arguments}over ({over}))"
 
         return result
 
@@ -636,14 +689,14 @@ class ASTString(ASTTemplate):
         if self.pretty:
             operands = operand_sep.join([self.visit(x) for x in node.operands])
             ext_routine = f"{nl}{tab * 2}{node.name}({operands})"
-            language = f"{nl}{tab * 2}language {_handle_literal(node.language)}{nl}"
-            output = f"{tab * 2}returns dataset {_format_dataset_eval(node.output)}"
-            return f"eval({ext_routine} {language} {output})"
+            language = f"{nl}{tab * 2}language {_handle_literal(node.language)}"
+            output = f"{nl}{tab * 2}returns {_format_dataset_eval(node.output)}"
+            return f"eval({ext_routine}{language}{output})"
         else:
             operands = operand_sep.join([self.visit(x) for x in node.operands])
             ext_routine = f"{node.name}({operands})"
             language = f"language {_handle_literal(node.language)}"
-            output = f"returns dataset {_format_dataset_eval(node.output)}"
+            output = f"returns {_format_type(node.output)}"
             return f"eval({ext_routine} {language} {output})"
 
     def visit_If(self, node: AST.If) -> str:
@@ -663,8 +716,7 @@ class ASTString(ASTTemplate):
         nvl_str = ""
         if node.nvl:
             nvl_parts = [
-                f"nvl({_format_reserved_word(p.component)}, {self.visit(p.default)})"
-                for p in node.nvl
+                f"nvl({_format_name(p.component)}, {self.visit(p.default)})" for p in node.nvl
             ]
             nvl_str = ", " + ", ".join(nvl_parts)
         if self.pretty:
@@ -673,7 +725,7 @@ class ASTString(ASTTemplate):
             using = ""
             if node.using is not None:
                 using_sep = ", " if len(node.using) > 1 else ""
-                using_values = [_format_reserved_word(x) for x in node.using]
+                using_values = [_format_name(x) for x in node.using]
                 using = f"using {using_sep.join(using_values)}{nvl_str}"
             return f"{node.op}({nl}{tab * 2}{clauses}{nl}{tab * 2}{using})"
         else:
@@ -682,7 +734,7 @@ class ASTString(ASTTemplate):
             using = ""
             if node.using is not None:
                 using_sep = ", " if len(node.using) > 1 else ""
-                using_values = [_format_reserved_word(x) for x in node.using]
+                using_values = [_format_name(x) for x in node.using]
                 using = f" using {using_sep.join(using_values)}{nvl_str}"
             return f"{node.op}({clauses}{using})"
 
@@ -715,11 +767,12 @@ class ASTString(ASTTemplate):
             condition = self.visit(node.children[0])
             if " and " in condition or " or " in condition:
                 for op in (" and ", " or "):
-                    condition = condition.replace(op, f"{op}{nl}{tab * 5}")
+                    condition = _replace_outside_quotes(condition, op, f"{op}{nl}{tab * 5}")
             body = f"{nl}{tab * 4}{condition}{nl}{tab * 2}"
         else:
             body = child_sep.join([self.visit(x) for x in node.children])
         if self._in_join_body(node) and node.op in [
+            AGGREGATE,
             CALC,
             DROP,
             FILTER,
@@ -740,7 +793,7 @@ class ASTString(ASTTemplate):
                 return f"{dataset}[{node.op} {body}]"
 
     def visit_RenameNode(self, node: AST.RenameNode) -> str:
-        return f"{node.old_name} to {node.new_name}"
+        return f"{_format_name(node.old_name)} to {_format_name(node.new_name)}"
 
     def visit_TimeAggregation(self, node: AST.TimeAggregation) -> str:
         if node.period_to_ref is not None:
@@ -789,10 +842,10 @@ class ASTString(ASTTemplate):
     # ---------------------- Constants and IDs ----------------------
 
     def visit_VarID(self, node: AST.VarID) -> str:
-        return _format_reserved_word(node.value)
+        return _format_name(node.value)
 
     def visit_Identifier(self, node: AST.Identifier) -> Any:
-        return _format_reserved_word(node.value)
+        return _format_name(node.value)
 
     def visit_Constant(self, node: AST.Constant) -> str:
         if node.value is None:
@@ -838,13 +891,11 @@ class ASTString(ASTTemplate):
 
     def visit_OrderBy(self, node: AST.OrderBy) -> str:
         if node.order == "asc":
-            return f"{_format_reserved_word(node.component)}"
-        return f"{_format_reserved_word(node.component)} {node.order}"
+            return f"{_format_name(node.component)}"
+        return f"{_format_name(node.component)} {node.order}"
 
     def visit_Comment(self, node: AST.Comment) -> None:
-        value = copy.copy(node.value)
-        value = value[:-1] if value[-1] == "\n" else value
-        self.vtl_script += value
+        self.vtl_script += self._comment_text(node)
 
     def visit_ID(self, node: AST.ID) -> AST.AST:
         return node.value
