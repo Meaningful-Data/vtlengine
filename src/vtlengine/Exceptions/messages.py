@@ -1350,6 +1350,12 @@ centralised_messages = {
         "description": "Raised when a Time aggregation operator is missing the operand "
         "definition outside an aggregation context.",
     },
+    "1-3-2-5": {
+        "message": "At op eval: Eval in component execution is not supported, it only applies "
+        "to Data Sets.",
+        "description": "Raised when eval is used inside a clause, on Components, as it only "
+        "applies to Data Sets.",
+    },
     # ---------- Viral Propagation ----------
     "1-3-3-1": {
         "message": "Duplicate viral propagation rule for variable {name}.",

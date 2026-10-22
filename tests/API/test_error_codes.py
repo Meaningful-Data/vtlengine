@@ -5,7 +5,7 @@ carries a 1-* code and a RunTimeError a 2-* code.
 
 import ast
 from pathlib import Path
-from typing import Iterator, List, Optional, Tuple
+from typing import List
 
 import pandas as pd
 import pytest
@@ -83,41 +83,19 @@ def _indirect_error_uses() -> List[str]:
     return failures
 
 
-# Features the engine does not implement yet, which raise NotImplementedError on purpose
-NOT_IMPLEMENTED = {("AST/ASTConstructorModules/ExprComponents.py", "visitEvalAtomComponent")}
-
-
-def _raises_by_function(
-    node: ast.AST, function: Optional[str] = None
-) -> Iterator[Tuple[ast.Raise, Optional[str]]]:
-    """Every raise under the node, with the name of the innermost function holding it."""
-    for child in ast.iter_child_nodes(node):
-        if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            yield from _raises_by_function(child, child.name)
-            continue
-        if isinstance(child, ast.Raise):
-            yield child, function
-        yield from _raises_by_function(child, function)
-
-
 def _plain_raises() -> List[str]:
     """Every raise of a plain Python error that a VTL error should replace (issue #1192)."""
     failures = []
     for path in sorted(SOURCE.rglob("*.py")):
         if "_cpp_parser" in path.parts:
             continue
-        relative = str(path.relative_to(SOURCE))
-        tree = ast.parse(path.read_text(encoding="utf-8"))
-        for node, function in _raises_by_function(tree):
-            if node.exc is None:
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+            if not isinstance(node, ast.Raise) or node.exc is None:
                 continue
             exc = node.exc.func if isinstance(node.exc, ast.Call) else node.exc
             name = getattr(exc, "id", None) or getattr(exc, "attr", None)
-            if name not in ("Exception", "ValueError", "NotImplementedError", "SyntaxError"):
-                continue
-            if name == "NotImplementedError" and (relative, function) in NOT_IMPLEMENTED:
-                continue
-            failures.append(f"{relative}:{node.lineno} {name}")
+            if name in ("Exception", "ValueError", "NotImplementedError", "SyntaxError"):
+                failures.append(f"{path.relative_to(SOURCE)}:{node.lineno} {name}")
     return failures
 
 

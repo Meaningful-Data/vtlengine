@@ -308,9 +308,8 @@ class ExprComp:
         """
         | EVAL LPAREN routineName LPAREN (componentID|scalarItem)? (COMMA (componentID|scalarItem))* RPAREN (LANGUAGE STRING_CONSTANT)? (RETURNS outputParameterTypeComponent)? RPAREN      # evalAtomComponent
         """  # noqa E501
-        # The grammar accepts eval inside a clause, but the engine only evaluates it over
-        # Data Sets (issue #1192)
-        raise NotImplementedError("Eval inside a clause is not implemented.")
+        # The grammar accepts eval inside a clause, but eval only applies to Data Sets
+        raise SemanticError("1-3-2-5")
 
     def visitCastExprComponent(self, ctx):  # type: ignore[no-untyped-def]
         """

@@ -247,16 +247,18 @@ EVAL_IN_CLAUSE_STRUCTURES = {
         'DS_r <- DS_1[calc Me_2 := eval(SQL_1(Me_1, Me_1) language "SQL" returns number)];',
     ],
 )
-def test_eval_inside_a_clause_is_not_implemented(script: str) -> None:
-    """Eval inside a clause raises NotImplementedError, where an IndexError was raised."""
+def test_eval_inside_a_clause_is_not_supported(script: str) -> None:
+    """Eval only applies to Data Sets: inside a clause it is a SemanticError, where an
+    IndexError was raised."""
     external_routines = [{"name": "SQL_1", "query": "SELECT Me_1 FROM DS_1"}]
-    with pytest.raises(NotImplementedError, match="Eval inside a clause is not implemented"):
+    with pytest.raises(SemanticError) as context:
         semantic_analysis(
             script=script,
             data_structures=EVAL_IN_CLAUSE_STRUCTURES,
             external_routines=external_routines,
         )
-    with pytest.raises(NotImplementedError, match="Eval inside a clause is not implemented"):
+    assert context.value.args[1] == "1-3-2-5"
+    with pytest.raises(SemanticError) as context:
         run(
             script=script,
             data_structures=EVAL_IN_CLAUSE_STRUCTURES,
@@ -264,3 +266,4 @@ def test_eval_inside_a_clause_is_not_implemented(script: str) -> None:
             external_routines=external_routines,
             use_duckdb=_use_duckdb_backend(),
         )
+    assert context.value.args[1] == "1-3-2-5"
