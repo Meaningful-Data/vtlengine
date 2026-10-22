@@ -1,23 +1,23 @@
 ACCOUNTING_ENTRY,ADJUSTMENT,COMP_METHOD,COUNTERPART_AREA,COUNTERPART_SECTOR,CURRENCY_DENOM,FLOW_STOCK_ENTRY,FREQ,FUNCTIONAL_CAT,INSTR_ASSET,INT_ACC_ITEM,MATURITY,OBS_VALUE,REF_AREA,REF_SECTOR,TIME_PERIOD,UNIT_MEASURE,VALUATION,errorcode,errorlevel,imbalance,ruleid
-A,N,N,I8,S1,_T,T,M,P,F3,FA,S,1206.0,BE,S12T,2019-05-31,EUR,M,Monetary financial institutions other than central bank,4.0,-1.0,1
-A,N,N,J8,S1,_T,T,M,P,F3,FA,L,4.0,BE,S12T,2019-05-31,EUR,M,Monetary financial institutions other than central bank,4.0,-1.0,1
-A,N,N,J8,S1,_T,T,M,P,F3,FA,S,-1036.0,BE,S12T,2019-05-31,EUR,M,Monetary financial institutions other than central bank,4.0,-1.0,1
-A,N,N,W1,S1,_T,T,M,P,F3,FA,S,171.0,BE,S12T,2019-05-31,EUR,M,Monetary financial institutions other than central bank,4.0,1.0,1
-A,N,N,W1,S1,_T,T,M,D,FL,FA,_Z,-66870.0,BE,S1,2019-06-30,EUR,_X,total economy,4.0,-60182.0,3
-A,N,N,W1,S1,_T,T,M,O,F,FA,_Z,8105.0,BE,S1,2019-06-30,EUR,_X,total economy,4.0,1.0,3
-L,N,N,W1,S1,_T,T,M,P,F3,FA,S,-3414.0,BE,S1,2019-06-30,EUR,M,total economy,4.0,-1.0,3
-A,N,N,W1,S1,_T,T,M,O,F,FA,_Z,-10253.0,BE,S1,2019-05-31,EUR,_X,total economy,4.0,-1.0,3
-A,N,N,W1,S1,_T,T,M,O,F,FA,_Z,-5401.0,BE,S1,2019-04-30,EUR,_X,total economy,4.0,-1.0,3
-A,N,N,W1,S1,_T,T,M,P,F3,FA,L,-668.0,BE,S1,2019-04-30,EUR,M,total economy,4.0,-1.0,3
-A,N,N,W1,S1,_T,T,M,P,F3,FA,S,-8041.0,BE,S1,2019-04-30,EUR,M,total economy,4.0,-1.0,3
-A,N,N,W1,S1,_T,T,M,P,F5,FA,_Z,1784.0,BE,S1,2019-04-30,EUR,M,total economy,4.0,1.0,3
+A,N,N,I8,S1,_T,T,M,P,F3,FA,S,1206.0,BE,S12T,2019-05-31,EUR,M,Monetary financial institutions other than central bank,4.0,-1.0,2
+A,N,N,J8,S1,_T,T,M,P,F3,FA,L,4.0,BE,S12T,2019-05-31,EUR,M,Monetary financial institutions other than central bank,4.0,-1.0,2
+A,N,N,J8,S1,_T,T,M,P,F3,FA,S,-1036.0,BE,S12T,2019-05-31,EUR,M,Monetary financial institutions other than central bank,4.0,-1.0,2
+A,N,N,W1,S1,_T,T,M,P,F3,FA,S,171.0,BE,S12T,2019-05-31,EUR,M,Monetary financial institutions other than central bank,4.0,1.0,2
+A,N,N,W1,S1,_T,T,M,D,FL,FA,_Z,-66870.0,BE,S1,2019-06-30,EUR,_X,total economy,4.0,-60182.0,1
+A,N,N,W1,S1,_T,T,M,O,F,FA,_Z,8105.0,BE,S1,2019-06-30,EUR,_X,total economy,4.0,1.0,1
+L,N,N,W1,S1,_T,T,M,P,F3,FA,S,-3414.0,BE,S1,2019-06-30,EUR,M,total economy,4.0,-1.0,1
+A,N,N,W1,S1,_T,T,M,O,F,FA,_Z,-10253.0,BE,S1,2019-05-31,EUR,_X,total economy,4.0,-1.0,1
+A,N,N,W1,S1,_T,T,M,O,F,FA,_Z,-5401.0,BE,S1,2019-04-30,EUR,_X,total economy,4.0,-1.0,1
+A,N,N,W1,S1,_T,T,M,P,F3,FA,L,-668.0,BE,S1,2019-04-30,EUR,M,total economy,4.0,-1.0,1
+A,N,N,W1,S1,_T,T,M,P,F3,FA,S,-8041.0,BE,S1,2019-04-30,EUR,M,total economy,4.0,-1.0,1
+A,N,N,W1,S1,_T,T,M,P,F5,FA,_Z,1784.0,BE,S1,2019-04-30,EUR,M,total economy,4.0,1.0,1
 A,N,N,W1,S1,X1,T,M,R,F3,FA,T,73.0,BE,S121,2019-05-31,EUR,M,All original maturities,,-1.0,1
 A,N,N,W1,S1,_T,T,M,P,F3,FA,T,-8708.0,BE,S1,2019-04-30,EUR,M,All original maturities,,1.0,1
 A,N,N,W1,S1,X1,T,M,R,F3,FA,T,591.0,BE,S121,2019-04-30,EUR,M,All original maturities,,1.0,1
-C,N,N,W1,S1,_T,T,M,_Z,_Z,CA,_Z,37457.0,BE,S1,2019-06-30,EUR,_X,Current account,,1.0,3
-D,N,N,W1,S1,_T,T,M,_Z,_Z,CA,_Z,37959.0,BE,S1,2019-06-30,EUR,_X,Current account,,1.0,3
-D,N,N,W1,S1,_T,T,M,_Z,_Z,CA,_Z,42709.0,BE,S1,2019-05-31,EUR,_X,Current account,,-1.0,3
-C,N,N,W1,S1,_T,T,M,_Z,_Z,CA,_Z,37889.0,BE,S1,2019-04-30,EUR,_X,Current account,,1.0,3
+C,N,N,W1,S1,_T,T,M,_Z,_Z,CA,_Z,37457.0,BE,S1,2019-06-30,EUR,_X,Current account,,1.0,1
+D,N,N,W1,S1,_T,T,M,_Z,_Z,CA,_Z,37959.0,BE,S1,2019-06-30,EUR,_X,Current account,,1.0,1
+D,N,N,W1,S1,_T,T,M,_Z,_Z,CA,_Z,42709.0,BE,S1,2019-05-31,EUR,_X,Current account,,-1.0,1
+C,N,N,W1,S1,_T,T,M,_Z,_Z,CA,_Z,37889.0,BE,S1,2019-04-30,EUR,_X,Current account,,1.0,1
 C,N,N,W1,S1,_T,T,M,_Z,_Z,G,_Z,22849.0,BE,S1,2019-06-30,EUR,_X,Rest of the world,,-1.0,1
 D,N,N,W1,S1,_T,T,M,O,F,D4P,_Z,200.0,BE,S1,2019-06-30,EUR,_X,Rest of the world,,-1.0,1
 D,N,N,W1,S1,_T,T,M,D,FL,D4Q,_Z,728.0,BE,S1,2019-06-30,EUR,_X,Rest of the world,,1.0,1
@@ -49,6 +49,7 @@ C,N,N,W1,S1,_T,T,M,D,F5,D43S,_Z,99.0,BE,S122,2019-05-31,EUR,_X,Rest of the world
 A,N,N,W1,S1,_T,T,M,P,F3,FA,S,406.0,BE,S123,2019-05-31,EUR,M,Rest of the world,,-1.0,1
 A,N,N,W1,S1,_T,T,M,D,F5,FA,_Z,71.0,BE,S12T,2019-05-31,EUR,_X,Rest of the world,,1.0,1
 A,N,N,W1,S1,_T,T,M,P,F3,FA,L,1118.0,BE,S12T,2019-05-31,EUR,M,Rest of the world,,1.0,1
+A,N,N,W1,S1,_T,T,M,P,F3,FA,S,171.0,BE,S12T,2019-05-31,EUR,M,Rest of the world,,1.0,1
 C,N,N,W1,S1,_T,T,M,D,F5,D43S,_Z,99.0,BE,S12T,2019-05-31,EUR,_X,Rest of the world,,1.0,1
 A,N,N,W1,S1,_T,T,M,D,F5,FA,_Z,1.0,BE,S13,2019-05-31,EUR,_X,Rest of the world,,1.0,1
 A,N,N,W1,S1,_T,T,M,P,F3,FA,L,-5.0,BE,S13,2019-05-31,EUR,M,Rest of the world,,1.0,1
@@ -110,11 +111,11 @@ C,N,N,W1,S1,_T,T,M,_Z,_Z,G,_Z,24161.0,BE,S1,2019-04-30,EUR,_X,Rest of the world,
 C,N,N,W1,S1,_T,T,M,_Z,_Z,KA,_Z,89.0,BE,S1,2019-04-30,EUR,_X,Rest of the world,,-1.0,3
 C,N,N,W1,S1,_T,T,M,_Z,_Z,S,_Z,8391.0,BE,S1,2019-04-30,EUR,_X,Rest of the world,,-1.0,3
 D,N,N,W1,S1,_T,T,M,_Z,_Z,D1,_Z,223.0,BE,S1,2019-04-30,EUR,_X,Rest of the world,,-1.0,3
-A,N,N,W1,S12T,_T,T,M,P,F5,FA,_Z,-539.0,BE,S1,2019-05-31,EUR,M,Monetary financial institutions other than central bank,4.0,-1.0,1
-A,N,N,W1,S12T,_T,T,M,P,F5,FA,_Z,-374.0,BE,S1,2019-04-30,EUR,M,Monetary financial institutions other than central bank,4.0,-1.0,1
-A,N,N,W1,S1,_T,T,M,P,F5,FA,_Z,2000.0,BE,S1,2019-06-30,EUR,M,total economy,4.0,-1.0,3
-A,N,N,W1,S1,_T,T,M,P,F3,FA,L,1720.0,BE,S1,2019-05-31,EUR,M,total economy,4.0,1.0,3
-A,N,N,W1,S1,_T,T,M,P,F5,FA,_Z,-4009.0,BE,S1,2019-05-31,EUR,M,total economy,4.0,2.0,3
+A,N,N,W1,S12T,_T,T,M,P,F5,FA,_Z,-539.0,BE,S1,2019-05-31,EUR,M,Monetary financial institutions other than central bank,4.0,-1.0,2
+A,N,N,W1,S12T,_T,T,M,P,F5,FA,_Z,-374.0,BE,S1,2019-04-30,EUR,M,Monetary financial institutions other than central bank,4.0,-1.0,2
+A,N,N,W1,S1,_T,T,M,P,F5,FA,_Z,2000.0,BE,S1,2019-06-30,EUR,M,total economy,4.0,-1.0,1
+A,N,N,W1,S1,_T,T,M,P,F3,FA,L,1720.0,BE,S1,2019-05-31,EUR,M,total economy,4.0,1.0,1
+A,N,N,W1,S1,_T,T,M,P,F5,FA,_Z,-4009.0,BE,S1,2019-05-31,EUR,M,total economy,4.0,2.0,1
 B,N,N,W1,S1,_T,T,M,_Z,_Z,CA,_Z,-501.0,BE,S1,2019-06-30,EUR,_X,Balance (credit-debet),4.0,1.0,1
 B,N,C,W1,S1,_T,T,M,_Z,_Z,G,_Z,479.0,BE,S1,2019-06-30,EUR,_X,Balance (credit-debet),4.0,-1.0,1
 B,N,N,W1,S1,_T,T,M,_Z,_Z,KA,_Z,23.0,BE,S1,2019-06-30,EUR,_X,Balance (credit-debet),4.0,-1.0,1

@@ -3490,6 +3490,31 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1145_1(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_1) is
+                        G = B + C errorcode "G";
+                        B = M + N errorcode "B";
+                        C = P + Q errorcode "C"
+                    end hierarchical ruleset;
+
+                    DS_r <- check_hierarchy(DS_1, HR_1 rule Id_1 all);
+
+        Description: The unnamed rules are written in another order than their dependencies.
+
+        Git Branch: #1145.
+        Goal: Check each rule is numbered by its position in the ruleset.
+        """
+
+        code = "GH_1145_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_1141_3(self):
         """
         HIERARCHICAL RULSET: hierarchy
