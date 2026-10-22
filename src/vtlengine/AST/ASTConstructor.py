@@ -63,6 +63,8 @@ class ASTVisitor:
         start:
             (statement  EOL)* EOF
         """
+        # The calls of a script only use the rulesets it defines, not those of an earlier one
+        de_ruleset_elements.clear()
         ctx_list = ctx.children
 
         statements_nodes = []
