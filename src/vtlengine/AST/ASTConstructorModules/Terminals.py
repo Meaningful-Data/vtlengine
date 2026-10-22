@@ -382,12 +382,7 @@ class Terminals:
             type_node = self.visitBasicScalarType(scalartype)
 
         else:
-            raise InputValidationException(
-                code="0-5-1-10",
-                type=scalartype.children[0].text,
-                line=ctx.start_line,
-                column=ctx.start_column,
-            )
+            raise InputValidationException(code="0-5-1-10", definition=script_location(scalartype))
 
         if len(scalartype_constraint) != 0:
             # AST_ASTCONSTRUCTOR.45

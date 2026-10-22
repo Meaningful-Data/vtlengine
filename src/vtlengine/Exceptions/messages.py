@@ -378,7 +378,7 @@ centralised_messages = {
         "which the engine does not support.",
     },
     "0-5-1-10": {
-        "message": "Invalid parameter type definition {type} at line {line}:{column}.",
+        "message": "Invalid parameter type definition {definition}.",
         "description": "Raised when a user defined operator declares a parameter type that is "
         "not a scalar type.",
     },

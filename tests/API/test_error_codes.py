@@ -276,6 +276,16 @@ def test_unsupported_operations_name_the_transformation(script: str, construct: 
     )
 
 
+def test_invalid_parameter_type_quotes_the_script():
+    script = "define operator f (x my_vd) returns integer is 1 end operator;"
+    with pytest.raises(InputValidationException) as context:
+        semantic_analysis(script=script, data_structures=DATA_STRUCTURES)
+    assert context.value.args == (
+        "Invalid parameter type definition 'my_vd' (line 1, column 22).",
+        "0-5-1-10",
+    )
+
+
 def test_internal_errors_ask_to_report_them():
     with pytest.raises(SemanticError) as context:
         Operator.validate()
