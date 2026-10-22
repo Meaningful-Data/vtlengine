@@ -1,0 +1,30 @@
+define datapoint ruleset DPR_3 (variable Me_1) is
+    // positive and below ten
+    R1: when Me_1 > 0 then Me_1 < 10 errorcode "E1" errorlevel 1;
+    R2: Me_1 > 0 errorcode "E2"
+end datapoint ruleset;
+
+define datapoint ruleset DPR_4 (variable Me_1) is
+    when Me_1 > 0 then Me_1 < 10;
+    /* plain rule */
+    Me_1 < 100
+    // after the rules
+end datapoint ruleset;
+
+define hierarchical ruleset HR_5 (variable condition Id_1 rule Id_2) is
+    R1: A = B + C errorcode "E1" errorlevel 1;
+    // only for X
+    R2: when Id_1 = "X" then D = E
+end hierarchical ruleset;
+
+define hierarchical ruleset HR_6 (variable condition Id_1 rule Id_2) is
+    A = B + C;
+    when Id_1 = "Y" then F = G
+end hierarchical ruleset;
+
+DS_r1 := check_datapoint(DS_1, DPR_3);
+DS_r2 := eval(SQL_1(DS_1) language "sqlite" returns dataset {identifier<integer> Id_1, measure<number> Me_1});
+DS_r3 := DS_1[calc Me_2 := rank(over (order by Id_1))];
+DS_r4 := max(DS_1 over (partition by Id_1 order by Id_2));
+DS_r5 := DS_1 // trailing comment
+    + 1;

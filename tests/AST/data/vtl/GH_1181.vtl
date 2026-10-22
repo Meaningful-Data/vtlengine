@@ -1,0 +1,8 @@
+define viral propagation VP_1 (variable At_1) is when "A" then "A"; when "B" then "B"; else "C" end viral propagation;
+define hierarchical ruleset HR_4 (variable condition Id_1 rule Id_2) is when Id_1 = "X" then A = B + C end hierarchical ruleset;
+DS_r1 <- DS_1[calc Me_2 := rank(over (order by Id_1))];
+DS_r2 <- DS_1[calc Me_2 := lag(Me_1, 1 over (order by Id_1))];
+DS_r3 <- sum(DS_1 over (partition by Id_1 order by Id_2 data points between 1 preceding and 1 following));
+DS_r4 <- max(DS_1 over (partition by Id_1 order by Id_2));
+DS_r5 <- DS_1[aggr Me_2 := sum(Me_1) group all];
+DS_r6 <- eval(SQL_1(DS_1) language "sqlite" returns dataset {identifier<integer> Id_1, measure<number> Me_1});
