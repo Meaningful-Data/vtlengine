@@ -4197,6 +4197,23 @@ class DefinedBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=message
         )
 
+    def test_GH_1192_39(self):
+        """
+        Status: OK
+        Expression: define operator f (x VD_1) returns number is x end operator; DS_r <- DS_1[calc Me_2 := f(Me_1)];
+        Description: A value domain is no parameter type of a user defined operator: a script
+                     error, where a SyntaxError was raised.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_39"
+        number_inputs = 1
+        message = "0-5-1-10"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
 
 class OtherBugs(BugHelper):
     """ """

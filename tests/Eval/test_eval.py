@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 
 from tests.Helper import TestHelper, _use_duckdb_backend
-from vtlengine import run
+from vtlengine import run, semantic_analysis
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Operators.General import Eval
 
@@ -225,3 +225,42 @@ def test_eval_julian_with_date_columns():
 
     assert result["DS_r"] is not None
     assert result["DS_r"].data["DIFF_DAYS"].tolist() == expected_diff_days.tolist()
+
+
+EVAL_IN_CLAUSE_STRUCTURES = {
+    "datasets": [
+        {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+            ],
+        }
+    ]
+}
+
+
+@pytest.mark.parametrize(
+    "script",
+    [
+        'DS_r <- DS_1[calc Me_2 := eval(SQL_1(Me_1) language "SQL" returns number)];',
+        'DS_r <- DS_1[calc Me_2 := eval(SQL_1(Me_1, Me_1) language "SQL" returns number)];',
+    ],
+)
+def test_eval_inside_a_clause_is_not_implemented(script: str) -> None:
+    """Eval inside a clause raises NotImplementedError, where an IndexError was raised."""
+    external_routines = [{"name": "SQL_1", "query": "SELECT Me_1 FROM DS_1"}]
+    with pytest.raises(NotImplementedError, match="Eval inside a clause is not implemented"):
+        semantic_analysis(
+            script=script,
+            data_structures=EVAL_IN_CLAUSE_STRUCTURES,
+            external_routines=external_routines,
+        )
+    with pytest.raises(NotImplementedError, match="Eval inside a clause is not implemented"):
+        run(
+            script=script,
+            data_structures=EVAL_IN_CLAUSE_STRUCTURES,
+            datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [1.0]})},
+            external_routines=external_routines,
+            use_duckdb=_use_duckdb_backend(),
+        )

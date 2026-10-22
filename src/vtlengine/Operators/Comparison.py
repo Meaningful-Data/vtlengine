@@ -19,7 +19,7 @@ from vtlengine.AST.Grammar.tokens import (
     NOT_IN,
 )
 from vtlengine.DataTypes import COMP_NAME_MAPPING, Boolean, Null, String, TimeInterval
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._dataframe import merge_frames
@@ -455,7 +455,7 @@ class Between(Operator.Operator):
             and isinstance(to_data, pd.Series)
             and len(from_data) != len(to_data)
         ):
-            raise SemanticError("1-3-13", construct="between bounds of different lengths")
+            raise RunTimeError("2-1-1-18", op=cls.op)
 
         if isinstance(operand, Dataset):
             result.data = operand.data.copy()

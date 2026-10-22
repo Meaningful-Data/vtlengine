@@ -5,15 +5,21 @@ carries a 1-* code and a RunTimeError a 2-* code.
 
 import ast
 from pathlib import Path
-from typing import List
+from typing import Iterator, List, Optional, Tuple
 
 import pandas as pd
 import pytest
 
-from vtlengine.DataTypes import Integer
-from vtlengine.Exceptions import DataLoadError, InputValidationException, check_key
+from vtlengine.DataTypes import Duration, Integer
+from vtlengine.Exceptions import (
+    DataLoadError,
+    InputValidationException,
+    RunTimeError,
+    check_key,
+)
 from vtlengine.Exceptions.messages import centralised_messages
-from vtlengine.Model import Component, Dataset, Role
+from vtlengine.Model import Component, DataComponent, Dataset, Role
+from vtlengine.Operators.Comparison import Between
 
 SOURCE = Path(__file__).parents[2] / "src" / "vtlengine"
 CODE_FAMILY = {"SemanticError": "1-", "RunTimeError": "2-"}
@@ -77,19 +83,69 @@ def _indirect_error_uses() -> List[str]:
     return failures
 
 
+# Features the engine does not implement yet, which raise NotImplementedError on purpose
+NOT_IMPLEMENTED = {("AST/ASTConstructorModules/ExprComponents.py", "visitEvalAtomComponent")}
+
+
+def _raises_by_function(
+    node: ast.AST, function: Optional[str] = None
+) -> Iterator[Tuple[ast.Raise, Optional[str]]]:
+    """Every raise under the node, with the name of the innermost function holding it."""
+    for child in ast.iter_child_nodes(node):
+        if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            yield from _raises_by_function(child, child.name)
+            continue
+        if isinstance(child, ast.Raise):
+            yield child, function
+        yield from _raises_by_function(child, function)
+
+
 def _plain_raises() -> List[str]:
     """Every raise of a plain Python error that a VTL error should replace (issue #1192)."""
     failures = []
     for path in sorted(SOURCE.rglob("*.py")):
         if "_cpp_parser" in path.parts:
             continue
-        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
-            if not isinstance(node, ast.Raise) or node.exc is None:
+        relative = str(path.relative_to(SOURCE))
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node, function in _raises_by_function(tree):
+            if node.exc is None:
                 continue
             exc = node.exc.func if isinstance(node.exc, ast.Call) else node.exc
             name = getattr(exc, "id", None) or getattr(exc, "attr", None)
-            if name in ("Exception", "ValueError", "NotImplementedError"):
-                failures.append(f"{path.relative_to(SOURCE)}:{node.lineno} {name}")
+            if name not in ("Exception", "ValueError", "NotImplementedError", "SyntaxError"):
+                continue
+            if name == "NotImplementedError" and (relative, function) in NOT_IMPLEMENTED:
+                continue
+            failures.append(f"{relative}:{node.lineno} {name}")
+    return failures
+
+
+def _input_error_code_failures() -> List[str]:
+    """Every InputValidationException or DataLoadError built with a code outside 0-*."""
+    failures = []
+    for path in sorted(SOURCE.rglob("*.py")):
+        if "_cpp_parser" in path.parts:
+            continue
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+            if not isinstance(node, ast.Call):
+                continue
+            error_class = getattr(node.func, "id", None) or getattr(node.func, "attr", None)
+            if error_class not in ("InputValidationException", "DataLoadError"):
+                continue
+            keywords = {keyword.arg: keyword.value for keyword in node.keywords}
+            code_node = keywords.get("code")
+            if code_node is None and error_class == "DataLoadError" and node.args:
+                code_node = node.args[0]
+            if code_node is None:
+                continue
+            site = f"{path.relative_to(SOURCE)}:{node.lineno} {error_class}"
+            if not isinstance(code_node, ast.Constant) or not isinstance(code_node.value, str):
+                failures.append(f"{site} {ast.unparse(code_node)}")
+                continue
+            code = code_node.value
+            if not code.startswith("0-") or code not in centralised_messages:
+                failures.append(f"{site} {code}")
     return failures
 
 
@@ -128,3 +184,22 @@ def test_load_errors_are_input_errors():
     assert isinstance(error, InputValidationException)
     assert error.args[1] == "0-3-1-1"
     assert error.args[0].endswith(" Please check loaded file")
+
+
+def test_input_error_codes_are_input_codes():
+    assert _input_error_code_failures() == []
+
+
+def test_duration_value_is_an_input_error():
+    with pytest.raises(InputValidationException) as context:
+        Duration.validate_duration("X")
+    assert context.value.args[1] == "0-1-1-35"
+
+
+def test_between_bounds_of_different_lengths_is_a_runtime_error():
+    operand = DataComponent("Me_1", pd.Series([1, 2]), Integer, Role.MEASURE, True)
+    from_ = DataComponent("Me_2", pd.Series([0, 0]), Integer, Role.MEASURE, True)
+    to = DataComponent("Me_3", pd.Series([5]), Integer, Role.MEASURE, True)
+    with pytest.raises(RunTimeError) as context:
+        Between.evaluate(operand, from_, to)
+    assert context.value.args[1] == "2-1-1-18"

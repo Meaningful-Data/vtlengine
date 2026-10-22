@@ -374,9 +374,11 @@ class Terminals:
             type_node = self.visitBasicScalarType(scalartype)
 
         else:
-            raise SyntaxError(
-                f"Invalid parameter type definition {scalartype.children[0].text} at line "
-                f"{ctx.start_line}:{ctx.start_column}."
+            raise InputValidationException(
+                code="0-5-1-10",
+                type=scalartype.children[0].text,
+                line=ctx.start_line,
+                column=ctx.start_column,
             )
 
         if len(scalartype_constraint) != 0:
@@ -521,11 +523,9 @@ class Terminals:
                 return self.visitDatasetType(c)
             elif not c.is_terminal and c.ctx_id == RC.COMPONENT_TYPE:
                 return self.visitComponentType(c)
-        except SyntaxError:
-            return None
-        except SemanticError as error:
+        except (InputValidationException, SemanticError) as error:
             # The type visitors reject these forms, so only output_type describes the result
-            if error.args[1] != "1-3-13":
+            if error.args[1] not in ("0-5-1-10", "1-3-13"):
                 raise
             return None
         return None

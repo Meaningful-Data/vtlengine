@@ -167,6 +167,10 @@ centralised_messages = {
         "description": "Raised when a column read as Duration holds a value that is not a "
         "duration.",
     },
+    "0-1-1-35": {
+        "message": "Impossible to cast {value} from type {type_1} to {type_2}.",
+        "description": "Raised when a value given as Duration is not a duration code.",
+    },
     "0-1-2-3": {
         "message": "{element_type} '{element}' is/are duplicated.",
         "description": "Occurs when an element (e.g., Identifier or component) "
@@ -351,10 +355,6 @@ centralised_messages = {
         "message": "{op} requires an offset parameter.",
         "description": "Raised when lag or lead is called without its offset.",
     },
-    "0-5-1-4": {
-        "message": "Only one operand is allowed in Eval",
-        "description": "Raised when an eval inside a clause receives more than one operand.",
-    },
     "0-5-1-5": {
         "message": "Error code must be a string, line {line}",
         "description": "Raised when the errorcode of a rule is not a string.",
@@ -376,6 +376,11 @@ centralised_messages = {
         "message": "Dataset Priority input mode on HR is not implemented",
         "description": "Raised when a hierarchy operator uses the dataset_priority input mode, "
         "which the engine does not support.",
+    },
+    "0-5-1-10": {
+        "message": "Invalid parameter type definition {type} at line {line}:{column}.",
+        "description": "Raised when a user defined operator declares a parameter type that is "
+        "not a scalar type.",
     },
     # ------------Operators-------------
     # General Semantic errors
@@ -503,6 +508,11 @@ centralised_messages = {
         "message": "At op {op}: Error merging datasets on Binary Operator: {error}.",
         "description": "Raised when the data points of two Datasets cannot be merged while "
         "computing a binary operation.",
+    },  # RunTimeError.
+    "2-1-1-18": {
+        "message": "At op {op}: From and To must have the same length.",
+        "description": "Raised when the bounds of a between hold a different number of values "
+        "than its operand.",
     },  # RunTimeError.
     "2-1-3-1": {
         "message": "At op {op}: Division by zero produced infinite values.",

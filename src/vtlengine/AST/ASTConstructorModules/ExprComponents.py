@@ -6,7 +6,6 @@ from vtlengine.AST import (
     Case,
     CaseObj,
     Constant,
-    EvalOp,
     Identifier,
     If,
     MulOp,
@@ -309,52 +308,9 @@ class ExprComp:
         """
         | EVAL LPAREN routineName LPAREN (componentID|scalarItem)? (COMMA (componentID|scalarItem))* RPAREN (LANGUAGE STRING_CONSTANT)? (RETURNS outputParameterTypeComponent)? RPAREN      # evalAtomComponent
         """  # noqa E501
-        ctx_list = ctx.children
-
-        routine_name = Terminals().visitRoutineName(ctx_list[2])
-
-        # Think of a way to maintain the order, for now its not necessary.
-        var_ids_nodes = [
-            Terminals().visitVarID(varID)
-            for varID in ctx_list
-            if not varID.is_terminal and varID.ctx_id == RC.VAR_ID
-        ]
-        constant_nodes = [
-            Terminals().visitScalarItem(scalar)
-            for scalar in ctx_list
-            if not scalar.is_terminal and scalar.rule_index == RC.SCALAR_ITEM[0]
-        ]
-        children_nodes = var_ids_nodes + constant_nodes
-
-        if len(children_nodes) > 1:
-            raise InputValidationException(code="0-5-1-4")
-
-        # Reference manual says it is mandatory.
-        language_name = [
-            language
-            for language in ctx_list
-            if language.is_terminal and language.symbol_type == vtl_cpp_parser.STRING_CONSTANT
-        ]
-        if len(language_name) == 0:
-            # AST_ASTCONSTRUCTOR.12
-            raise SemanticError("1-3-2-1", option="language")
-        # Reference manual says it is mandatory.
-        output_node = [
-            Terminals().visitOutputParameterTypeComponent(output)
-            for output in ctx_list
-            if not output.is_terminal and output.ctx_id == RC.OUTPUT_PARAMETER_TYPE_COMPONENT
-        ]
-        if len(output_node) == 0:
-            # AST_ASTCONSTRUCTOR.13
-            raise SemanticError("1-3-2-1", option="output")
-
-        return EvalOp(
-            name=routine_name,
-            operands=children_nodes[0],
-            output=output_node[0],
-            language=language_name[0].text,
-            **extract_token_info(ctx),
-        )
+        # The grammar accepts eval inside a clause, but the engine only evaluates it over
+        # Data Sets (issue #1192)
+        raise NotImplementedError("Eval inside a clause is not implemented.")
 
     def visitCastExprComponent(self, ctx):  # type: ignore[no-untyped-def]
         """
